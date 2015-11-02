@@ -1,7 +1,7 @@
 /* 
- * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
- *
- * This file is part of the libcrc.
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,49 +18,22 @@
  */
 
 /** 
- * @file drv.h
- * @brief YARD-ICE libdrv
+ * @file vec_rand.c
+ * @brief YARD-ICE libbitvec
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __DRV_H__
-#define __DRV_H__
+#include <stdlib.h>
+#include <stdint.h>
 
+void vec_rand(void * vec, int len)
+{
+	uint8_t * ptr = (uint8_t *)vec;
+	int i;
+	int n;
 
-#include <sys/file.h>
-#include <yard-ice/audio.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void stm32f_dac_init(void);
-
-void stm32f_dac_vout_set(unsigned int mv);
-
-void stm32f_adc_init(void);
-
-void bsp_io_ini(void);
-
-void relay_on(void);
-
-void relay_off(void);
-
-int relay_stat(void);
-
-void ext_pwr_on(void);
-
-void ext_pwr_off(void);
-
-int ext_pwr_stat(void);
-
-int ext_pwr_mon(void);
-
-void tone_play(unsigned int tone, unsigned int ms);
-
-#ifdef __cplusplus
+	n = (len + 7) / 8;
+	for (i = 0; i < n; i++) {
+		ptr[i] = rand() & 0xff;
+	}
 }
-#endif	
-
-#endif /* __DRV_H__ */
-

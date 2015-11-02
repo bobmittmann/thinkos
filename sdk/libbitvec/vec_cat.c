@@ -1,7 +1,7 @@
 /* 
- * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
- *
- * This file is part of the libcrc.
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,44 +18,42 @@
  */
 
 /** 
- * @file audio.h
- * @brief YARD-ICE libdrv
+ * @file vec_cat.c
+ * @brief YARD-ICE libbitvec
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __AUDIO_H__
-#define __AUDIO_H__
-
+#include <stdlib.h>
 #include <stdint.h>
 
-#define TONE_DC 0
-#define TONE_A4 1
-#define TONE_A4S 2
-#define TONE_B4 3
-#define TONE_C4 4
-#define TONE_C4S 5
-#define TONE_D4 6
-#define TONE_D4S 7
-#define TONE_E4 8
-#define TONE_F4 9
-#define TONE_F4S 10
-#define TONE_G4 11
-#define TONE_G4S 12
-#define TONE_1KHZ 13
+int vec_cat(void * dst_vec, int dst_len, const void * src_vec, int src_len)
+{
+	uint8_t * dst = (uint8_t *)dst_vec;
+	uint8_t * src = (uint8_t *)src_vec;
+	uint8_t a;
+	int q;
+	int r;
+	int n;
+	int m;
+	int i;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+	q = dst_len / 8;
+	r = dst_len % 8;
 
-void wave_set(uint8_t * wave, unsigned int len);
+	dst += q;
 
-void wave_play(void);
+	n = 8 - r;
+	m = ((src_len + r) + 7) / 8;
 
-void wave_pause(void);
+	a = *dst & (0xff >> n);
+	for (i = 0; i < m; i++) {
+		a |= *src << r;
+		*dst = a;
+		a = *src >> n;
+		src++;
+		dst++;
+	}
 
-#ifdef __cplusplus
+	return dst_len + src_len;
 }
-#endif	
-
-#endif /* __AUDIO_H__ */
 
