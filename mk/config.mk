@@ -28,7 +28,7 @@ SOURCE_MK := $(firstword $(MAKEFILE_LIST))
 THISDIR := $(dir $(CONFIG_MK))
 SCRPTDIR := $(abspath $(THISDIR))
 BASEDIR := $(abspath $(THISDIR)/..)
-TOOLSDIR := $(abspath $(THISDIR)/../../tools)
+TOOLSDIR := $(abspath $(THISDIR)/../tools)
 LDDIR := $(abspath $(THISDIR)/../ld)
 
 #------------------------------------------------------------------------------ 
