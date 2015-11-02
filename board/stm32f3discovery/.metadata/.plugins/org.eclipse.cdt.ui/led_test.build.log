@@ -1,0 +1,23 @@
+07:59:04 **** Build of configuration Debug for project led_test ****
+make all 
+'Building file: ../led_test.c'
+'Invoking: Cross ARM C Compiler'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Og  -g3 -DTHINKAPP -DSTM32F303 -I"C:/devel/yard-ice/src/board/stm32f3discovery/led_test/../include" -I"C:/devel/yard-ice/src/board/stm32f3discovery/led_test/../../../sdk/include" -MMD -MP -MF"led_test.d" -MT"led_test.o" -c -o "led_test.o" "../led_test.c"
+'Finished building: ../led_test.c'
+' '
+'Building target: led_test.elf'
+'Invoking: Cross ARM C Linker'
+arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Og  -g3 -T stm32f303xc.ld -nostdlib -L"C:/devel/yard-ice/src/board/stm32f3discovery/led_test/../sdklibs/Debug" -L"C:/devel/yard-ice/src/board/stm32f3discovery/led_test/.." -Wl,-Map,"led_test.map" -o "led_test.elf"  ./led_test.o   -lcm3 -lstm32f -lc
+'Finished building target: led_test.elf'
+' '
+'Invoking: Cross ARM GNU Create Flash Image'
+arm-none-eabi-objcopy -O ihex "led_test.elf"  "led_test.hex"
+'Finished building: led_test.hex'
+' '
+'Invoking: Cross ARM GNU Create Listing'
+arm-none-eabi-objdump --source --all-headers --demangle --line-numbers --wide "led_test.elf" > "led_test.lst"
+'Finished building: led_test.lst'
+' '
+
+07:59:05 Build Finished (took 905ms)
+

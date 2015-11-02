@@ -1,0 +1,11 @@
+19:39:14 **** Incremental Build of configuration Debug for project rtsp_test ****
+make all 
+'Invoking: Cross ARM GNU Print Size'
+arm-none-eabi-size --format=berkeley "rtsp_test.elf"
+   text	   data	    bss	    dec	    hex	filename
+  50984	    956	  82496	 134436	  20d24	rtsp_test.elf
+'Finished building: rtsp_test.siz'
+' '
+
+19:39:14 Build Finished (took 290ms)
+

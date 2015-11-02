@@ -1,0 +1,43 @@
+07:58:48 **** Build of configuration Default for project boot ****
+make all 
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release/boot/"
+"Building : C:/devel/yard-ice/src/sdk/libcm3-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libcm3'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libcm3/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libcm3'
+"Building : C:/devel/yard-ice/src/sdk/libstm32f-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libstm32f'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libstm32f/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libstm32f/otg_fs/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libstm32f/otg_hs/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libstm32f/usart/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libstm32f/usb_fs/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libstm32f'
+"Building : C:/devel/yard-ice/src/sdk/libutil-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libutil'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libutil/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libutil'
+"Building : C:/devel/yard-ice/src/sdk/libthinkos-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libthinkos'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libthinkos/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libthinkos/console/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libthinkos/dmon/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libthinkos/misc/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libthinkos'
+"Building : C:/devel/yard-ice/src/sdk/libgdb-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libgdb'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\libgdb/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libgdb'
+"LD: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release\thinkos.elf"
+"BIN: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release/thinkos.bin"
+"SYM: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release/thinkos.sym"
+"LST: C:\devel\yard-ice\src\board\stm32f3discovery\boot\release/thinkos.lst"
+
+07:58:50 Build Finished (took 1s.934ms)
+

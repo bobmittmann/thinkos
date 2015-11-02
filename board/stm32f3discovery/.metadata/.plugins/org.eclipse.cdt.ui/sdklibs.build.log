@@ -1,0 +1,74 @@
+10:45:37 **** Incremental Build of configuration Default for project sdklibs ****
+make all 
+"Building : C:/devel/yard-ice/src/sdk/libcm3-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libcm3'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libcm3/"
+"AS: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libcm3/crt0.o"
+"AR: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libcm3.a"
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libcm3'
+"Building : C:/devel/yard-ice/src/sdk/libstm32f-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libstm32f'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/otg_fs/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/otg_hs/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/usart/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/usb_fs/"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/stm32f2x-init.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/stm32f1x-init.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/stm32f-flash.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/usb_fs/stm32f-usb_fs.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/usb_fs/stm32f-usb_fs_dev.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/otg_fs/stm32f-otg_fs_dev.o"
+"AS: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f/stm32f-vec.o"
+"AR: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32f.a"
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libstm32f'
+"Building : C:/devel/yard-ice/src/sdk/libstm32drv-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libstm32drv'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32drv/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32drv/serial/"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32drv/serial/stm32f-serial.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32drv/serial/stm32f-serial_dma.o"
+"AR: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libstm32drv.a"
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libstm32drv'
+"Building : C:/devel/yard-ice/src/sdk/libutil-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libutil'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libutil/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libutil'
+"Building : C:/devel/yard-ice/src/sdk/libc-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libc'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libc/"
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libc/inet/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libc'
+"Building : C:/devel/yard-ice/src/sdk/libconsole-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libconsole'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libconsole/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libconsole'
+"Building : C:/devel/yard-ice/src/sdk/libtty-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libtty'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libtty/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libtty'
+"Building : C:/devel/yard-ice/src/sdk/libshell-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libshell'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libshell/"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libshell/cmd_osinfo.o"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libshell/cmd_netstat.o"
+"AR: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libshell.a"
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libshell'
+"Building : C:/devel/yard-ice/src/sdk/libtrace-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libtrace'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libtrace/"
+"CC 1: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libtrace/trace_fmt.o"
+"AR: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libtrace.a"
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libtrace'
+"Building : C:/devel/yard-ice/src/sdk/libcrc-all"
+make[1]: Entering directory `C:/devel/yard-ice/src/sdk/libcrc'
+"Creating outdir: C:\devel\yard-ice\src\board\stm32f3discovery\sdklibs\Debug\libcrc/"
+make[1]: Nothing to be done for `all'.
+make[1]: Leaving directory `C:/devel/yard-ice/src/sdk/libcrc'
+
+10:45:45 Build Finished (took 8s.50ms)
+
