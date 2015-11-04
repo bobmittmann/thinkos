@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">&#x0A;<refactoring comment="Delete resource &apos;compass/release&apos;" deleteContents="false" description="Delete resource &apos;compass/release&apos;" element1="/compass/release" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1445959458486"/>&#x0A;<refactoring comment="Delete resource &apos;compass/Makefile&apos;" deleteContents="false" description="Delete resource &apos;compass/Makefile&apos;" element1="/compass/Makefile" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1445959620847"/>
-</session>

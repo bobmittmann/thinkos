@@ -1,7 +1,9 @@
-*~
 [Rr]elease*/
 [Dd]ebug*/
+.metadata/
+RemoteSystemsTempFiles/
 *.swp
 *.bak
 *.pyc
 *.log
+*~
