@@ -1,3 +1,7 @@
 *~
 [Rr]elease*/
 [Dd]ebug*/
+*.swp
+*.bak
+*.pyc
+*.log

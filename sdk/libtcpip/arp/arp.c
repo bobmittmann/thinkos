@@ -95,16 +95,34 @@ int ipv4_arp_query(in_addr_t __ipaddr)
 	return ret;
 }
 
+#ifdef ETHARP_TABLE_LEN
+#define ARP_ENUM_MAX ETHARP_TABLE_LEN
+#else
+#define ARP_ENUM_MAX 4
+#endif
+
 int ipv4_arp_enum(int (* __callback)(struct ipv4_arp *, void *), void * __arg)
 {
+	struct ipv4_arp arp[ARP_ENUM_MAX];
 	int ret;
+	int i;
+	int n;
 
 	tcpip_net_lock();
 
-	ret = etharp_enum(__callback, __arg);
+	ret = etharp_ipv4_get(arp, ARP_ENUM_MAX);
 
 	tcpip_net_unlock();
 
-	return ret;
+	if (ret <= 0)
+		return ret;
+
+	n = ret;
+	for(i = 0; i < n; i++) {
+		if ((ret = __callback(&arp[i], __arg)))
+			return ret;
+	}
+
+	return n;
 }
 

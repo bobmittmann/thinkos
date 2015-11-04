@@ -64,6 +64,7 @@ struct etharp_system __etharp__ = {
 	.pending = INADDR_ANY
 };
 
+#if 0
 int etharp_enum(int (* __callback)(struct ipv4_arp *, void *), void * __parm)
 {
 	struct etharp_entry * p;
@@ -82,6 +83,32 @@ int etharp_enum(int (* __callback)(struct ipv4_arp *, void *), void * __parm)
 			arp.ifn = NULL;
 			memcpy(arp.hwaddr, p->hwaddr, ETH_ADDR_LEN);
 			if (__callback(&arp, __parm))
+				break;
+		}
+		p++;
+	}
+
+	return n;
+}
+#endif
+
+int etharp_ipv4_get(struct ipv4_arp __arp[], unsigned int __max)
+{
+	struct etharp_entry * p;
+	int n;
+	int i;
+
+	p = __etharp__.tab;
+	n = 0;
+	for(i = 0; i < ETHARP_TABLE_LEN; i++) {
+		if (p->ipaddr) {
+			__arp[n].type = ARPHRD_ETHER;
+			__arp[n].flags = 0;
+			__arp[n].ipaddr = p->ipaddr;
+			__arp[n].ifn = NULL;
+			memcpy(__arp[n].hwaddr, p->hwaddr, ETH_ADDR_LEN);
+			n++;
+			if (n == __max)
 				break;
 		}
 		p++;

@@ -77,7 +77,7 @@ void etharp_proto_getstat(struct proto_stat * __st, int __rst);
 
 int etharp_query_pending(void);
 
-int etharp_enum(int (* __callback)(struct ipv4_arp *, void *), void * __parm);
+int etharp_ipv4_get(struct ipv4_arp __arp[], unsigned int __max);
 
 #ifdef __cplusplus
 }
