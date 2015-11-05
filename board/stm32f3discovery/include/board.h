@@ -52,6 +52,7 @@
 #define L3GD20_INT2 STM32_GPIOE, 1
 #define L3GD20_INT1 STM32_GPIOE, 0
 
+
 /* low level led on/off functions */
 static inline void __led_on(struct stm32_gpio *__gpio, int __pin) {
 	stm32_gpio_set(__gpio, __pin);

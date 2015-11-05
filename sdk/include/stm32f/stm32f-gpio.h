@@ -348,18 +348,24 @@ struct stm32_afio {
 
 #endif /* defined(STM32F1X) */
 
-#define	SPEED_LOW (0 << 0)
-#define	SPEED_MED (1 << 0)
-#define	SPEED_FAST (2 << 0)
-#define	SPEED_HIGH (3 << 0)
 
-#define OPT_SPEED(OPT) (((OPT) >> 0) & 0x3)
+#define INPUT           0
+#define OUTPUT          1
+#define ALT_FUNC        2
+#define ANALOG          3
 
-#define PUSH_PULL (0 << 4)
-#define OPEN_DRAIN (1 << 4)
+#define	SPEED_LOW       (0 << 0)
+#define	SPEED_MED       (1 << 0)
+#define	SPEED_FAST      (2 << 0)
+#define	SPEED_HIGH      (3 << 0)
 
-#define PULL_UP (1 << 5)
-#define PULL_DOWN (1 << 6)
+#define OPT_SPEED(OPT)  (((OPT) >> 0) & 0x3)
+
+#define PUSH_PULL       (0 << 4)
+#define OPEN_DRAIN      (1 << 4)
+
+#define PULL_UP         (1 << 5)
+#define PULL_DOWN       (1 << 6)
 
 #ifdef __cplusplus
 extern "C" {
@@ -448,6 +454,10 @@ void stm32_gpio_mode(struct stm32_gpio * gpio, unsigned int pin,
 
 /* Alternate function selection */
 void stm32_gpio_af(struct stm32_gpio * gpio, int port, int af);
+
+void stm32_gpio_clk_en(struct stm32_gpio * gpio);
+
+int stm32_gpio_id(struct stm32_gpio * gpio);
 
 #ifdef __cplusplus
 }

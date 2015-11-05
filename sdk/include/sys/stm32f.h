@@ -77,57 +77,6 @@ extern const usb_dev_t stm32f_usb_fs_dev;
 extern const usb_dev_t stm32f_otg_fs_dev;
 extern const usb_dev_t stm32f_otg_hs_dev;
 
-enum {
-	INPUT = 0,
-	OUTPUT,
-	ALT_FUNC,
-	ANALOG
-};
-
-#define GPIOA STM32_GPIOA_ID
-#define GPIOB STM32_GPIOB_ID
-#define GPIOC STM32_GPIOC_ID
-#define GPIOD STM32_GPIOD_ID
-#define GPIOE STM32_GPIOE_ID
-#define GPIOF STM32_GPIOF_ID
-#define GPIOG STM32_GPIOG_ID
-#define GPIOH STM32_GPIOH_ID
-#define GPIOI STM32_GPIOI_ID
-
-extern const struct stm32_gpio * const stm32_gpio_lut[];
-
-struct stm32_gpio_io {
-	uint8_t pin:4;
-	uint8_t port:4;
-} __attribute__((__packed__));
-
-typedef struct stm32_gpio_io gpio_io_t;
-
-#define GPIO(PORT, PIN) (struct stm32_gpio_io){ .port = PORT, .pin = PIN }
-
-/* set output */
-static inline void gpio_set(gpio_io_t __io) {
-	struct stm32_gpio * gpio = STM32_GPIO(__io.port);
-	gpio->bsr = GPIO_SET(__io.pin);
-};
-
-/* clear output */
-static inline void gpio_clr(gpio_io_t __io) {
-	struct stm32_gpio * gpio = STM32_GPIO(__io.port);
-	gpio->brr = GPIO_RESET(__io.pin);
-};
-
-/* pin status */
-static inline int gpio_status(gpio_io_t __io) {
-	struct stm32_gpio * gpio = STM32_GPIO(__io.port);
-	return (gpio->idr & (1 << __io.pin));
-};
-
-struct stm32f_spi_io {
-	struct stm32_gpio_io miso;
-	struct stm32_gpio_io mosi;
-	struct stm32_gpio_io sck;
-} __attribute__((__packed__));
 
 /*---------------------------------------------------------------------
  * DMA 
@@ -214,21 +163,6 @@ void stm32_dmactl_init(struct stm32_dmactl * ctl,
 		struct stm32f_dma * dma, int id);
 
 /*---------------------------------------------------------------------
- * GPIO
- *---------------------------------------------------------------------*/
-
-void stm32_gpio_clock_en(struct stm32_gpio * gpio);
-
-int stm32_gpio_id(struct stm32_gpio * gpio);
-
-static inline void gpio_mode_set(gpio_io_t __io, unsigned int __mode, 
-								 unsigned int __opt) {
-	struct stm32_gpio * gpio = STM32_GPIO(__io.port);
-
-	stm32_gpio_mode(gpio, __io.pin, __mode, __opt);
-}
-
-/*---------------------------------------------------------------------
  * FSMC
  *---------------------------------------------------------------------*/
 
@@ -261,17 +195,12 @@ void stm32f_mco2_enable(void);
  * USART 
  *---------------------------------------------------------------------*/
 
-struct file * stm32_usart_open(struct stm32_usart * us,
-								unsigned int baudrate, unsigned int flags);
-
-
 /*---------------------------------------------------------------------
  * SPI
  *---------------------------------------------------------------------*/
 
-int stm32f_spi_init(struct stm32f_spi * spi, 
-					const struct stm32f_spi_io * spi_io, 
-					unsigned int freq, unsigned int opt);
+int stm32f_spi_init(struct stm32f_spi * spi, unsigned int freq,
+		             unsigned int opt);
 int stm32f_spi_putc(struct stm32f_spi * spi, int c);
 int stm32f_spi_getc(struct stm32f_spi * spi);
 

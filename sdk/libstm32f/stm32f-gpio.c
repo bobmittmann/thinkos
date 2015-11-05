@@ -52,7 +52,7 @@ int stm32_gpio_id(struct stm32_gpio * gpio)
 	return (base - STM32_BASE_GPIOA) / 0x400;
 }
 
-void stm32_gpio_clock_en(struct stm32_gpio * gpio)
+void stm32_gpio_clk_en(struct stm32_gpio * gpio)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 

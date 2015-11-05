@@ -25,7 +25,7 @@ ifndef BASEDIR
 endif
 
 ifndef TOOLSDIR 
-  TOOLSDIR = $(BASEDIR)/../tools
+  TOOLSDIR = $(BASEDIR)/tools
 endif	
 
 CPU = cortex-m3

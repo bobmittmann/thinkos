@@ -131,6 +131,7 @@
 
 #define MONITOR_CONFIGURE_ENABLE  0
 #define MONITOR_DUMPMEM_ENABLE    0
+#define MONITOR_UPGRADE_ENABLE    0
 
 #endif /* __CONFIG_H__ */
 

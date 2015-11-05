@@ -59,11 +59,9 @@ static const struct {
 };
 
 int stm32f_spi_init(struct stm32f_spi * spi, 
-					const struct stm32f_spi_io * spi_io, 
 					unsigned int freq, unsigned int opt)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
-	gpio_io_t io;
 	uint32_t div;
 	int br;
 	int id;
@@ -72,6 +70,8 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 		/* invalid SPI ??? */
 		return id;
 	}
+#if 0
+	gpio_io_t io;
 
 	/* Configure IO pins */
 	io = spi_io->miso;
@@ -91,6 +91,7 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 	stm32_gpio_mode(STM32_GPIO(io.port), io.pin, ALT_FUNC, 
 					 PUSH_PULL | SPEED_MED);
 	stm32_gpio_af(STM32_GPIO(io.port), io.pin, spi_cfg[id].af);
+#endif
 
 	/* Enable peripheral clock */
 	if (spi_cfg[id].apb2) {

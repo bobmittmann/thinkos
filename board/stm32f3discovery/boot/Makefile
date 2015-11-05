@@ -37,6 +37,10 @@ CDEFS = CONFIG_H CM3_RAM_VECTORS
 CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
 LDFLAGS = -Wl,--gc-sections 
 
+VERSION_DATE = "2015-11-05"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "37"
+
 MACH = stm32f303xc
 HSE_HZ = 8000000
 include ../../../mk/stm32f3xx.mk

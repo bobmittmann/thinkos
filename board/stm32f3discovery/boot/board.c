@@ -23,6 +23,7 @@
 #define __THINKOS_DMON__
 #include <thinkos_dmon.h>
 #include "board.h"
+#include "version.h"
 
 /* GPIO pin description */ 
 struct stm32f_io {
@@ -79,7 +80,7 @@ static void io_init(void)
 	stm32_gpio_mode(LED9_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(LED10_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 
-	stm32_gpio_mode(SW_B1_IO, INPUT, PULL_UP | SPEED_LOW);
+	stm32_gpio_mode(SW_B1_IO, INPUT, SPEED_LOW);
 }
 
 bool board_init(void)
@@ -182,8 +183,9 @@ const struct thinkos_board this_board = {
 		.minor = 1,
 	},
 	.sw_ver = {
-		.major = 0,
-		.minor = 2,
+		.major = VERSION_MAJOR,
+		.minor = VERSION_MINOR,
+		.build = VERSION_BUILD
 	},
 	.memory = {
 		.ram = &sram_desc,

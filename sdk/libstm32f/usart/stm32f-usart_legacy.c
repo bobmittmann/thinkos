@@ -21,10 +21,10 @@
  */
 
 #include "usart-priv.h"
-
+#if 0
 static void io_rxd_cfg(struct stm32_gpio * gpio, int port, int af)
 {
-	stm32_gpio_clock_en(gpio);
+	stm32_gpio_clk_en(gpio);
 	stm32_gpio_mode(gpio, port, ALT_FUNC, PULL_UP);
 #ifdef STM32F2X
 	stm32_gpio_af(gpio, port, af);
@@ -33,7 +33,7 @@ static void io_rxd_cfg(struct stm32_gpio * gpio, int port, int af)
 
 static void io_txd_cfg(struct stm32_gpio * gpio, int port, int af)
 {
-	stm32_gpio_clock_en(gpio);
+	stm32_gpio_clk_en(gpio);
 	stm32_gpio_mode(gpio, port, ALT_FUNC, PUSH_PULL | SPEED_LOW);
 #ifdef STM32F2X
 	stm32_gpio_af(gpio, port, af);
@@ -90,4 +90,6 @@ struct file * stm32_usart_open(struct stm32_usart * us,
 
 	return (struct file *)&stm32f_uart_file[id];
 }
+
+#endif
 

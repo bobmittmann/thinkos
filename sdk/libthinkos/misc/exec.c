@@ -37,6 +37,11 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 	DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
 	__thinkos_thread_abort(thread_id);
 
+#if THINKOS_ENABLE_THREAD_ALLOC
+	/* allocate the thread block */
+	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 1);
+#endif
+
 	DCC_LOG2(LOG_TRACE, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
 	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, func, arg);
 

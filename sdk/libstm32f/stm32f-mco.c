@@ -42,7 +42,7 @@ void stm32f_mco2_init(void)
 
 	/* initial state is disabled */
 	stm32_gpio_mode(gpio, pin, OUTPUT, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_clock_en(gpio);
+	stm32_gpio_clk_en(gpio);
 	stm32_gpio_af(gpio, pin, GPIO_AF0);
 }
 

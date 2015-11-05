@@ -94,7 +94,6 @@ int8_t monitor_thread_id = MONITOR_STARTUP_MAGIC;
 #endif
 
 static const char monitor_menu[] = 
-"- ThinkOS Monitor Commands:\r\n"
 " Ctrl+C - Stop app\r\n"
 #if (MONITOR_CONFIGURE_ENABLE)
 " Ctrl+K - Configure Board\r\n"
@@ -134,6 +133,11 @@ static const char __hr__[] =
 static void monitor_show_help(struct dmon_comm * comm)
 {
 	dmon_comm_send(comm, __hr__, sizeof(__hr__) - 1);
+	dmprintf(comm, "ThinkOS-%d.%d.%d (%s):\r\n", 
+			 this_board.sw_ver.major,
+			 this_board.sw_ver.minor,
+			 this_board.sw_ver.build,
+			 this_board.name);
 	dmon_comm_send(comm, monitor_menu, sizeof(monitor_menu) - 1);
 	dmon_comm_send(comm, __hr__, sizeof(__hr__) - 1);
 }
@@ -317,8 +321,10 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 			dmprintf(comm, "^L\r\n");
 			dmprintf(comm, "Confirm (yes/no)? ");
 			dmscanf(comm, "yes%n", &i);
-			if (i == 3)
+			if (i == 3) {
 				this_board.upgrade(comm);
+				dmprintf(comm, "Failed !!!\r\n");
+			}
 			break;
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
