@@ -31,6 +31,7 @@
    -------------------------------------------------------------------------- */
 
 #define THINKOS_IRQ_MAX             80
+#define THINKOS_ENABLE_IRQ_CTL      1
 
 #define THINKOS_ENABLE_IDLE_WFI     1
 

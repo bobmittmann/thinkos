@@ -24,8 +24,6 @@
  */ 
 
 #include <sys/stm32f.h>
-#include <sys/console.h>
-#include <stdio.h>
 #include <thinkos.h>
 
 #include "board.h"
@@ -42,14 +40,10 @@ struct stm32f_io {
  */
 
 const struct stm32f_io led_io[] = {
-	{ LED3_IO }, /* LED3 */
-	{ LED5_IO }, /* LED5 */
-	{ LED7_IO }, /* LED7 */
-	{ LED9_IO }, /* LED9 */
-	{ LED10_IO }, /* LED10 */
-	{ LED8_IO }, /* LED8 */
-	{ LED6_IO }, /* LED6 */
-	{ LED4_IO }, /* LED4 */
+	{ IO_LED3 }, /* LED3 */
+	{ IO_LED5 }, /* LED5 */
+	{ IO_LED6 }, /* LED6 */
+	{ IO_LED4 }, /* LED4 */
 };
 
 #define LED_COUNT (sizeof(led_io) / sizeof(struct stm32f_io))
@@ -69,13 +63,29 @@ void led_toggle(unsigned int id)
 	__led_toggle(led_io[id].gpio, led_io[id].pin);
 }
 
+void io_init(void)
+{
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
+
+	stm32_gpio_mode(IO_LED3, OUTPUT, PUSH_PULL | SPEED_LOW);
+	__led_on(IO_LED3);
+	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_LED5, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_LED6, OUTPUT, PUSH_PULL | SPEED_LOW);
+}
+
 int main(int argc, char ** argv)
 {
 	int i;
+	
+	io_init();
+
+	thinkos_init(THINKOS_OPT_PRIORITY(3) | THINKOS_OPT_ID(3));
 
 	for (i = 0; ; ++i) {
-		led_off((i - 2) & 0x7);
-		led_on(i & 0x7);
+		led_off((i - 2) & 0x3);
+		led_on(i & 0x3);
 		/* wait 100 ms */
 		thinkos_sleep(100);
 	}

@@ -29,6 +29,7 @@
 
 #if defined(STM32F2X) || defined(STM32F4X)
 
+#if 0
 #define FSMC_D0	   STM32_GPIOD, 14
 #define FSMC_D1    STM32_GPIOD, 15
 #define FSMC_D2    STM32_GPIOD, 0
@@ -76,6 +77,7 @@ const gpio_io_t fsmc_io[] = {
 //	GPIO(GPIOD, 6), /* NWAIT */
 	GPIO(GPIOB, 7), /* NL */
 };
+#endif
 
 void stm32f_fsmc_speed(int div)
 {
@@ -90,12 +92,14 @@ void stm32f_fsmc_speed(int div)
 void stm32f_fsmc_init(void)
 {
 	struct stm32f_fsmc * fsmc = STM32F_FSMC;
-	int i;
 
 	DCC_LOG(LOG_TRACE, ".");
 
 	/* Flexible static memory controller module clock enable */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_FSMC);
+
+#if 0
+	int i;
 
 	/* Configure IO pins */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
@@ -109,6 +113,7 @@ void stm32f_fsmc_init(void)
 	}
 
 	stm32_gpio_mode(STM32_GPIO(GPIOD), 6, INPUT, PUSH_PULL | SPEED_HIGH);
+#endif
 
 	fsmc->bcr1 = FSMC_CBURSTRW |	
 		FSMC_WREN | 

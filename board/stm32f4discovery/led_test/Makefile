@@ -26,18 +26,20 @@ CFILES = led_test.c
 
 SDK = ../../../sdk
 
-LIBS = cm3 stm32f 
+LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
+		  $(SDK)/libthinkos 
+
+LIBS = cm3 stm32f thinkos
 
 INCPATH = $(SDK)/include ../include
 
-LIBPATH = ../sdklibs/Debug
+#LIBPATH = ../sdklibs/Debug
 
 CDEFS =
 
 CFLAGS = -g -O1 -Wall
 
-MACH = stm32f303xb
+MACH = stm32f405
 HSE_HZ = 8000000
-THINKAPP = 1
-include ../../../mk/stm32f3xx.mk
+include ../../../mk/stm32f4xx.mk
 
