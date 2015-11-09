@@ -100,7 +100,6 @@ static uint32_t ui_stack[64];
 void ui_init(void)
 {
 	int i;
-	int thread_id;
 
 	/* Initialize LEDs GPIO mapping */
 	ui.led[0].gpio = GPIO_LED1;

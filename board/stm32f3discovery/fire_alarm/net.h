@@ -7,17 +7,25 @@
 #ifndef __NET_H__
 #define __NET_H__
 
+#include "falrm.h"
+
+enum msg_type {
+	MSG_SYS_STARTUP = 0,
+	MSG_ZONE_STATUS = 1,
+	MSG_ALARM_ACK   = 2
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int netlnk_recv(void * data, unsigned int max);
+void net_init(void);
 
-int netlnk_send(unsigned int daddr, void * data, unsigned int len);
+unsigned int net_local_addr(void);
 
-void netlnk_init(void);
+int net_recv(uint8_t * msg_type, void * data, unsigned int max);
 
-unsigned int netlnk_addr(void);
+int net_send(uint8_t msg_type, const void * data, unsigned int max);
 
 #ifdef __cplusplus
 }

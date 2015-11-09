@@ -3,11 +3,11 @@
 
 PROG = fire_alarm
 
-CFILES = gpio.c ui.c net.c fire_alarm.c 
+CFILES = gpio.c ui.c nac.c zone.c net.c falrm.c main.c
 
 SDK = ../../../sdk
 
-LIBS = cm3 stm32f util c console
+LIBS = cm3 stm32f stm32drv util c console
 
 INCPATH = $(SDK)/include ../include
 
