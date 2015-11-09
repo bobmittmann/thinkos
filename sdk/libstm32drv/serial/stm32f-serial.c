@@ -44,8 +44,11 @@ void stm32f_serial_isr(struct stm32f_serial_drv * drv)
 	/* break detection */
 	if (sr & USART_LBD) {
 		/* clear the break detection interrupt flag */
+#if defined(STM32F3X)
+		uart->icr = USART_LBDCF;
+#else
 		uart->sr = sr & ~(USART_ORE | USART_LBD);
-
+#endif
 		DCC_LOG(LOG_INFO, "BRK");
 
 		/* remove the break char from the queue */
@@ -60,8 +63,12 @@ void stm32f_serial_isr(struct stm32f_serial_drv * drv)
 
 	if (sr & USART_IDLE) { /* idle detection */
 		DCC_LOG(LOG_INFO, "IDLE!");
+#if defined(STM32F3X)
+		uart->icr = USART_IDLECF;
+#else
 		c = uart->rdr;
 		(void)c;
+#endif
 #if SERIAL_ENABLE_STATS
 		drv->stats.rx_idle++;
 #endif
@@ -143,6 +150,10 @@ void stm32f_serial_isr(struct stm32f_serial_drv * drv)
 		DCC_LOG(LOG_INFO, "OVR!");
 #if SERIAL_ENABLE_STATS
 		drv->stats.err_ovr++;
+#endif
+#if defined(STM32F3X)
+		uart->icr = USART_ORECF;
+#else
 #endif
 	}
 }

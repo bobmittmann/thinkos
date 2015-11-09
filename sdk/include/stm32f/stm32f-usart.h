@@ -520,6 +520,50 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 	2: This bit is not available for UART4 & UART5. */
 
 
+#if defined(STM32F3X)
+
+/* Interrupt flag clear register (USARTx_ICR) */
+#define STM32F_USART_ICR 0x20
+
+#define USART_WUCF (1 << 20) /* Wakeup from Stop mode clear flag */
+	/* Writing 1 to this bit clears the WUF flag in the USARTx_ISR register.
+	Note: If the USART does not support the wakeup from Stop feature, this bit is reserved and
+	forced by hardware to ‘0’. */
+#define USART_CMCF (1 << 17) /* Character match clear flag */
+	/* Writing 1 to this bit clears the CMF flag in the USARTx_ISR register.
+	Bit 16:13 Reserved, must be kept at reset value. */
+#define USART_EOBCF (1 << 12) /* End of block clear flag */
+	/* Writing 1 to this bit clears the EOBF flag in the USARTx_ISR register.
+	Note: If the USART does not support Smartcard mode, this bit is reserved and forced by
+	hardware to ‘0’. Please refer to Section 29.4: USART implementation on page 893. */
+#define USART_RTOCF (1 << 11) /* Receiver timeout clear flag */
+	/* Writing 1 to this bit clears the RTOF flag in the USARTx_ISR register.
+	Note: If the USART does not support the Receiver timeout feature, this bit is reserved and
+	forced by hardware to ‘0’. Please refer to Section 29.4: USART implementation on
+	page 893. */
+#define USART_CTSCF (1 << 9) /* CTS clear flag */
+	/* Writing 1 to this bit clears the CTSIF flag in the USARTx_ISR register.
+	Note: If the hardware flow control feature is not supported, this bit is reserved and forced by
+	hardware to  ‘0’. Please refer to Section 29.4: USART implementation on page 893. */
+#define USART_LBDCF (1 << 8) /* LIN break detection clear flag */
+	/* Writing 1 to this bit clears the LBDF flag in the USARTx_ISR register.
+	Note: If LIN mode is not supported, this bit is reserved and forced by hardware to ‘0’. Please
+	refer to Section 29.4: USART implementation on page 893. */
+#define USART_TCCF (1 << 6) /* Transmission complete clear flag */
+	/* Writing 1 to this bit clears the TC flag in the USARTx_ISR register. */
+#define USART_IDLECF (1 << 4) /* Idle line detected clear flag */
+	/* Writing 1 to this bit clears the IDLE flag in the USARTx_ISR register */
+#define USART_ORECF (1 << 3) /* Overrun error clear flag */
+	/* Writing 1 to this bit clears the ORE flag in the USARTx_ISR register. */
+#define USART_NCF (1 << 2) /* Noise detected clear flag */
+	/* Writing 1 to this bit clears the NF flag in the USARTx_ISR register. */
+#define USART_FECF (1 << 1) /* Framing error clear flag */
+	/* Writing 1 to this bit clears the FE flag in the USARTx_ISR register. */
+#define USART_PECF (1 << 0) /* Parity error clear flag */
+	/* Writing 1 to this bit clears the PE flag in the USARTx_ISR register. */
+
+#endif
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>

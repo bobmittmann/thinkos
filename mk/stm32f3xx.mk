@@ -20,7 +20,7 @@
 
 THISDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
-include $(THISDIR)/config.mk
+include $(THISDIR)config.mk
 
 ifndef MACH 
 MACH = stm32f303
@@ -53,6 +53,6 @@ else
 LDFLAGS += -nostdlib -T $(MACH).ld
 endif
 
-include $(THISDIR)/prog.mk
+include $(THISDIR)prog.mk
 
-include $(THISDIR)/jtag.mk
+include $(THISDIR)jtag.mk

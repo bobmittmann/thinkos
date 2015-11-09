@@ -5,6 +5,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include <thinkos.h>
 #include <sys/serial.h>
 #include <sys/stm32f.h>
@@ -46,6 +47,8 @@ int netlnk_recv(void * data, unsigned int max)
 	int rem;
 
 	for (;;) {
+		thinkos_sleep(1000000);
+
 		cp = hdr;
 
 		/* Wait for a SYNC */
@@ -119,7 +122,7 @@ void netlnk_init(unsigned int addr)
     stm32_gpio_mode(UART_RX, ALT_FUNC, PULL_UP);
     stm32_gpio_af(UART_RX, GPIO_AF7);
     /* Open the serial port */
-    rs485.serial =  stm32f_uart2_serial_init(115200, SERIAL_8N1);
+    rs485.serial = stm32f_uart2_serial_init(38400, SERIAL_8N1);
     /* Set the local address */
     rs485.addr = addr;
  }

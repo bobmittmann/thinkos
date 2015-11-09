@@ -130,7 +130,7 @@ else
       $(call trace1,Windows 64bits)
       WIN := Win64
     endif
-    $(call trace2,MSYSTEM = '$(MSYSTEM)')
+    $(call trace3,MSYSTEM = '$(MSYSTEM)')
     $(call trace3,MSYSCON = '$(MSYSCON)')
     ifneq (,$(findstring MINGW, $(MSYSTEM)))
       HOST := Msys
@@ -151,7 +151,7 @@ else
       export SHELL
     else 
       ifeq (+++, $(firstword $(subst /,+++ ,$(BASEDIR))))
-      $(call trace1,UNIX style paths: BASEDIR = '$(BASEDIR)'...)
+        $(call trace1,UNIX style paths: BASEDIR = '$(BASEDIR)'...)
 	    # UNIX style path, it can be MinGW or Cygwin
         SHELL := /bin/sh.exe
         UNAME := $(shell uname -s) 
@@ -170,17 +170,30 @@ else
           endif
         endif
       else
-        $(call, trace1,Windows Native Host)
+#        ifdef SHELL 
+#          $(call trace1,SHELL = '$(SHELL)')
+#        endif
+        $(call trace1,Windows Native Host)
+#      ifdef SHELL 
+##          HOST := Msys
+#          DIRMODE := windows
+#          $(info SHELL --> '$(flavor SHELL)')
+#        else
         HOST := Windows
         DIRMODE := windows
         ifdef ComSpec
-          SHELL := $(ComSpec) # Force the shell to the Windows Command Prompt
+           # Force the shell to the Windows Command Prompt
+          SHELL := $(abspath $(ComSpec))
           export SHELL
+        else
+          ifdef COMSPEC
+            SHELL := $(abspath $(COMSPEC))
+            export SHELL
+          endif
         endif
-        ifdef COMSPEC
-          SHELL := $(COMSPEC) # Force the shell to the Windows Command Prompt
-          export SHELL
-        endif
+#        $(call trace1,SHELL --> '$(flavor SHELL) $(origin SHELL)')
+#        $(call trace1,SHELL = '$(SHELL)')
+#        endif
       endif
     endif
   else

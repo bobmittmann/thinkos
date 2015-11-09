@@ -50,6 +50,8 @@ static int nac_task(void * arg)
 				gpio_clr(GPIO_NAC_OUT);
 			}
 		}
+
+		thinkos_sleep(500);
 	}
 
 	return 0;

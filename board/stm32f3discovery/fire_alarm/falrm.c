@@ -177,14 +177,16 @@ static int net_input_task(void * arg)
 	return 0;
 }
 
-uint32_t ui_input_stack[64];
-uint32_t net_input_stack[64];
-uint32_t zone_input_stack[64];
+uint32_t ui_input_stack[256];
+uint32_t net_input_stack[256];
+uint32_t zone_input_stack[256];
 
 int falrm_init(void)
 {
 	int panel;
 	int input;
+
+	fa.mutex = thinkos_mutex_alloc();
 
 	thinkos_thread_create(ui_input_task, NULL, 
 						  ui_input_stack, sizeof(ui_input_stack));

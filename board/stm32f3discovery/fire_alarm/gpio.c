@@ -35,15 +35,15 @@ const struct gpio gpio_map[] = {
 			OUTPUT, PUSH_PULL | SPEED_LOW }, /* LED10 */
 	[GPIO_SWITCH] =  { STM32_GPIOA,  0,
 			 INPUT, SPEED_LOW },   /* User Switch */
-	[GPIO_NAC_OUT] = { STM32_GPIOA,  7,
+	[GPIO_NAC_OUT] = { STM32_GPIOC,  6,
 			OUTPUT, PUSH_PULL | SPEED_LOW },
-	[GPIO_ZONE1] =   { STM32_GPIOA,  1,
+	[GPIO_ZONE1] =   { STM32_GPIOD,  9,
 			 INPUT, PULL_UP | SPEED_LOW },
-	[GPIO_ZONE2] =   { STM32_GPIOA,  3,
+	[GPIO_ZONE2] =   { STM32_GPIOD, 11,
 			 INPUT, PULL_UP | SPEED_LOW },
-	[GPIO_ZONE3] =   { STM32_GPIOA,  5,
+	[GPIO_ZONE3] =   { STM32_GPIOD, 13,
 			 INPUT, PULL_UP | SPEED_LOW },
-	[GPIO_ZONE4] =   { STM32_GPIOA,  6,
+	[GPIO_ZONE4] =   { STM32_GPIOD, 15,
 			 INPUT, PULL_UP | SPEED_LOW },
 	[GPIO_ADDRESS] = { STM32_GPIOC,  1,
 			 INPUT, PULL_UP | SPEED_LOW }
@@ -77,10 +77,27 @@ void gpio_init(void)
 
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOF);
 
 	for (i = 0; i < GPIO_MAP_LEN; ++i) {
 		stm32_gpio_mode(gpio_map[i].gpio, gpio_map[i].pin,
 				gpio_map[i].mode, gpio_map[i].opt);
 	}
+
+	stm32_gpio_mode(STM32_GPIOC,  0, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(STM32_GPIOD,  8, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(STM32_GPIOD, 10, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(STM32_GPIOD, 12, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(STM32_GPIOD, 14, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(STM32_GPIOC,  7, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(STM32_GPIOC,  0);
+	stm32_gpio_clr(STM32_GPIOD,  8);
+	stm32_gpio_clr(STM32_GPIOD, 10);
+	stm32_gpio_clr(STM32_GPIOD, 12);
+	stm32_gpio_clr(STM32_GPIOD, 14);
+	stm32_gpio_clr(STM32_GPIOC,  7);
+
 }

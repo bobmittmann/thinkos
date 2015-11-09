@@ -97,7 +97,7 @@
 									<listOptionValue builtIn="false" value="THINKAPP"/>
 									<listOptionValue builtIn="false" value="HSE_HZ=8000000"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.1069682269" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" valueType="includePath">
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.1069682269" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../sdk/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../include&quot;"/>
 								</option>
@@ -110,7 +110,7 @@
 									<listOptionValue builtIn="false" value="THINKAPP"/>
 									<listOptionValue builtIn="false" value="HSE_HZ=8000000"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.679388881" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" valueType="includePath">
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.679388881" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../sdk/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../include&quot;"/>
 								</option>
@@ -123,7 +123,7 @@
 									<listOptionValue builtIn="false" value="THINKAPP"/>
 									<listOptionValue builtIn="false" value="HSE_HZ=8000000"/>
 								</option>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths.911479528" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths" valueType="includePath">
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths.911479528" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../../../sdk/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/../include&quot;"/>
 								</option>

@@ -27,6 +27,7 @@ static void stdio_init(void)
 	stdin = f;
 }
 
+
 int main(int argc, char ** argv)
 {
 	/* Initialize the stdio streams so we can use printf() */
