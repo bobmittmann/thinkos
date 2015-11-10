@@ -1,5 +1,0 @@
- - elf: debug/slcdev-hub.elf
- - symbols off: 0008f900  size: 35040  entsize: 16 link 00000013
-== ARM DCC log viewer ==
-
- - host: 192.168.10.50:1001
