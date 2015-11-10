@@ -30,9 +30,9 @@
 
 #include <sys/dcclog.h>
 
-#include "wavetab.h"
-
 #ifdef STM32F2X
+
+#include "wavetab.h"
 
 #define DAC1_GPIO STM32_GPIOA
 #define DAC1_PORT 4
