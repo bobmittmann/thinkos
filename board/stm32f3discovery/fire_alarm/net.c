@@ -20,10 +20,11 @@
    RS485 network - Link Layer
    ------------------------------------------------------------------------- */
 
-/* Driver private data */
+/* Link Layer private data */
 static struct {
 	uint8_t addr; /* this panel address */
     struct serial_dev * serial; /* serial device driver */
+    int mutex; /* protect the link layer send call */
 } rs485;
 
 #define PKT_SYNC 0x55
@@ -94,15 +95,22 @@ int netlnk_send(unsigned int daddr, void * data, unsigned int len)
 	struct serial_dev * serial = rs485.serial;
 	struct lnkhdr hdr;
 
+    thinkos_mutex_lock(rs485.mutex);
+
 	/* prepare header */
 	hdr.sync = PKT_SYNC;
 	hdr.daddr = daddr;
 	hdr.saddr = rs485.addr;
 	hdr.datalen = len;
+
 	/* send header */
 	serial_send(serial, &hdr, sizeof(struct lnkhdr));
 	/* send payload */
-	return serial_send(serial, data, len);
+	serial_send(serial, data, len);
+
+	thinkos_mutex_unlock(rs485.mutex);
+
+	return len;
 }
 
 unsigned int netlnk_addr(void)
@@ -124,6 +132,8 @@ void netlnk_init(unsigned int addr)
     rs485.serial = stm32f_uart1_serial_init(9600, SERIAL_8N1);
     /* Set the local address */
     rs485.addr = addr;
+    /* Alloc a mutex */
+    rs485.mutex = thinkos_mutex_alloc();
  }
 
 /* -------------------------------------------------------------------------

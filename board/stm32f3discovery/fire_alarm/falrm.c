@@ -174,7 +174,10 @@ static int net_input_task(void * arg)
 			break;
 		case MSG_ZONE_STATUS:
 			pzs = (struct zone_status *)data;
-			pzs->zone.panel--;
+#if 0
+			/* XXX: loopback */
+			pzs->zone.panel = 3 - pzs->zone.panel;
+#endif
 			zone_status_change(pzs);
 			break;
 		case MSG_ALARM_ACK:
