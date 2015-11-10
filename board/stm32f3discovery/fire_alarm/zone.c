@@ -35,56 +35,69 @@ static struct {
 	} queue;
 } zonedrv;
 
+static void zone_event_enqueu(int panel, int input, bool active)
+{
+	struct zone_status * entry;
+	unsigned int head;
+
+	head = zonedrv.queue.head;
+	assert ((head - zonedrv.queue.tail) < ZONE_EVENT_MAX);
+
+	entry = &zonedrv.queue.buf[head % ZONE_EVENT_MAX];
+	/* set the zone address */
+	entry->zone.panel = panel;
+	entry->zone.input = input;
+	/* set the zone active status */
+	entry->active = active;
+	zonedrv.queue.head = head + 1;
+	thinkos_sem_post(zonedrv.sem);
+}
+
+#define AVG_FILT_N 4
+
+#define ZONE_DET_LVL 32
+#define ZONE_DET_LO (2 * AVG_FILT_N)
+#define ZONE_DET_HI ((ZONE_DET_LVL - 2) * AVG_FILT_N)
+
 static int zone_task(void * arg)
 {
-	/* Last two state of the zone */
-	bool state[ZONE_COUNT][2];
-	unsigned int panel;
+	unsigned int avg[ZONE_COUNT]; /* Zone input filter */
+	bool active[ZONE_COUNT];      /* Zone state */
+	unsigned int panel;           /* Panel address */
 	int i;
 
-	/* Get the initial status of the input zones */
+	/* Set the initial status of the input zones */
 	for (i = 0; i < ZONE_COUNT; ++i) {
-		state[i][0] = gpio_status(zone_gpio_lut[i]);
-		state[i][1] = state[i][0];
+		avg[i] = 0;
+		active[i] = false;
 	}
 
-	/* this panel id */
+	/* This panel id */
 	panel = net_local_addr();
 
 	for (;;) {
-		bool val[ZONE_COUNT];
+		int val[ZONE_COUNT];
 
-		/* wait for 20 milliseconds */
-		thinkos_sleep(20);
+		/* Wait for 25 milliseconds */
+		thinkos_sleep(25);
 
-		/* Get the initial status of the input zones */
+		/* Get the status of the input zones */
 		for (i = 0; i < ZONE_COUNT; ++i)
-			val[i] = gpio_status(zone_gpio_lut[i]) ? false : true;
+			val[i] = gpio_status(zone_gpio_lut[i]) ? 0 : ZONE_DET_LVL;
 
+		/* Moving average Filter */
+		for (i = 0; i < ZONE_COUNT; ++i)
+			avg[i] = ((avg[i] * (AVG_FILT_N - 1)) / AVG_FILT_N) + val[i];
+
+		/* Transition detection */
 		for (i = 0; i < ZONE_COUNT; ++i) {
-			/* debouncing */
-			if (val[i] == state[i][0]) {
-				/* transition */
-				if (val[i] != state[i][1]) {
-					struct zone_status * entry;
-					unsigned int head;
-
-					state[i][1] = val[i];
-
-					head = zonedrv.queue.head;
-					assert ((head - zonedrv.queue.tail) < ZONE_EVENT_MAX);
-
-					entry = &zonedrv.queue.buf[head % ZONE_EVENT_MAX];
-					/* set the zone address */
-					entry->zone.panel = panel;
-					entry->zone.input = i + 1;
-					/* set the zone active status */
-					entry->active = state[i];
-					zonedrv.queue.head = head + 1;
-					thinkos_sem_post(zonedrv.sem);
-				}
-			} else
-				state[i][0] = val[i];
+			if (!active[i] && (avg[i] > ZONE_DET_HI)) {
+				active[i] = true;
+				zone_event_enqueu(panel, i + 1, true);
+			} else	if (active[i] && (avg[i] < ZONE_DET_LO)) {
+				active[i] = false;
+				zone_event_enqueu(panel, i + 1, false);
+			}
 		}
 	}
 
@@ -95,7 +108,7 @@ static int zone_task(void * arg)
 static uint32_t zone_stack[64];
 
 /* ----------------------------------------------------
-   UI API
+   Zone Detection API
    ---------------------------------------------------- */
 
 void zonedrv_init(void)

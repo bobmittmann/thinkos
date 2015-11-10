@@ -37,7 +37,7 @@ static int nac_task(void * arg)
 		}
 
 		if (active) {
-			/* Temporal three patern */
+			/* Temporal three pattern */
 			switch (cnt++ % 8) {
 			case 0:
 			case 2:

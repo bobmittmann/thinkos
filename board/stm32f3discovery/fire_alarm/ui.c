@@ -114,7 +114,7 @@ void ui_init(void)
 	/* Turn off all LEDs */
 	for (i = 0; i < UI_LED_COUNT; ++i) {
 		ui.led[i].state = LED_OFF;
-		gpio_set(ui.led[i].gpio); /* Turn LED off */
+		gpio_clr(ui.led[i].gpio); /* Turn LED off */
 	}
 
 	/* Initialize Key Switch GPIO mapping */
@@ -129,7 +129,7 @@ void ui_led_on(unsigned int id)
 {
 	if (--id < UI_LED_COUNT) {
 		ui.led[id].state = LED_ON;
-		gpio_clr(ui.led[id].gpio); /* Turn LED on */
+		gpio_set(ui.led[id].gpio); /* Turn LED on */
 	}
 }
 
@@ -137,7 +137,7 @@ void ui_led_off(unsigned int id)
 {
 	if (--id < UI_LED_COUNT) {
 		ui.led[id].state = LED_OFF;
-		gpio_set(ui.led[id].gpio); /* Turn LED off */
+		gpio_clr(ui.led[id].gpio); /* Turn LED off */
 	}
 }
 

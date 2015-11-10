@@ -13,8 +13,6 @@ INCPATH = $(SDK)/include ../include
 
 LIBPATH = ../sdklibs/Debug
 
-CDEFS =
-
 CFLAGS = -g -O1 -Wall
 
 MACH = stm32f303xb

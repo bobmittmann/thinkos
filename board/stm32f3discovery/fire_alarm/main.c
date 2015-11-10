@@ -27,7 +27,6 @@ static void stdio_init(void)
 	stdin = f;
 }
 
-
 int main(int argc, char ** argv)
 {
 	/* Initialize the stdio streams so we can use printf() */
@@ -45,13 +44,13 @@ int main(int argc, char ** argv)
 	/* Initialize the detection zone driver */
 	zonedrv_init();
 
-	/* Initialize the nac driver */
+	/* Initialize the NAC driver */
 	nacdrv_init();
 
 	/* Initialize the fire alarm module */
 	falrm_init();
 
-	/* Wait alittle bit */
+	/* Wait a little bit */
 	thinkos_sleep(1000);
 
 	/* Send a system startup message */
