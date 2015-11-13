@@ -714,6 +714,10 @@ int thinkos_udelay_factor(int32_t * factor);
  */
 void __attribute__((noreturn)) thinkos_abort(void);
 
+int thinkos_critical_enter(void);
+
+int thinkos_critical_exit(void);
+
 /**@}*/
 
 #ifdef __cplusplus

@@ -282,8 +282,7 @@ again:
 }
 #endif
 
-//void __thinkos_sem_post_i(uint32_t wq)
-void cm3_except7_isr(uint32_t wq)
+void __thinkos_sem_post_i(uint32_t wq) 
 {
 	uint32_t queue;
 	int th;
@@ -321,13 +320,14 @@ void cm3_except7_isr(uint32_t wq)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
 }
 
-void __thinkos_sem_post_i(uint32_t wq) 
-	__attribute__((weak, alias("cm3_except7_isr")));
-
+void cm3_except7_isr(uint32_t wq)
+{
+	__thinkos_sem_post_i(wq); 
+	/* signal the scheduler ... */
+	__thinkos_preempt();
+}
 
 void thinkos_sem_post_svc(int32_t * arg)
 {	
@@ -354,6 +354,8 @@ void thinkos_sem_post_svc(int32_t * arg)
 
 	arg[0] = 0;
 	__thinkos_sem_post_i(wq);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
 #endif /* THINKOS_SEM_MAX > 0 */

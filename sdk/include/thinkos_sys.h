@@ -277,6 +277,14 @@
 #define THINKOS_ENABLE_THREAD_VOID      1
 #endif
 
+#ifndef THINKOS_ENABLE_PREEMPTION
+#define THINKOS_ENABLE_PREEMPTION       1
+#endif
+
+#ifndef THINKOS_ENABLE_CRITICAL
+#define THINKOS_ENABLE_CRITICAL         0
+#endif
+
 #ifndef THINKOS_ENABLE_ESCALATE
 #define THINKOS_ENABLE_ESCALATE         THINKOS_ENABLE_MPU
 #endif
@@ -317,28 +325,28 @@
 #endif
 
 #if (THINKOS_ENABLE_COND_ALLOC) & !(THINKOS_COND_MAX)
-#undef THINKOS_ENABLE_COND_ALLOC
-#define THINKOS_ENABLE_COND_ALLOC 0
+ #undef THINKOS_ENABLE_COND_ALLOC
+ #define THINKOS_ENABLE_COND_ALLOC 0
 #endif
 
 #if (THINKOS_ENABLE_SEM_ALLOC) & !(THINKOS_SEMAPHORE_MAX)
-#undef THINKOS_ENABLE_SEM_ALLOC
-#define THINKOS_ENABLE_SEM_ALLOC 0
+ #undef THINKOS_ENABLE_SEM_ALLOC
+ #define THINKOS_ENABLE_SEM_ALLOC 0
 #endif
 
 #if (THINKOS_ENABLE_EVENT_ALLOC) & !(THINKOS_EVENT_MAX)
-#undef THINKOS_ENABLE_EVENT_ALLOC
-#define THINKOS_ENABLE_EVENT_ALLOC 0
+ #undef THINKOS_ENABLE_EVENT_ALLOC
+ #define THINKOS_ENABLE_EVENT_ALLOC 0
 #endif
 
 #if (THINKOS_ENABLE_FLAG_ALLOC) & !(THINKOS_FLAG_MAX)
-#undef THINKOS_ENABLE_FLAG_ALLOC
-#define THINKOS_ENABLE_FLAG_ALLOC 0
+ #undef THINKOS_ENABLE_FLAG_ALLOC
+ #define THINKOS_ENABLE_FLAG_ALLOC 0
 #endif
 
 #if (THINKOS_ENABLE_GATE_ALLOC) & !(THINKOS_GATE_MAX)
-#undef THINKOS_ENABLE_GATE_ALLOC
-#define THINKOS_ENABLE_GATE_ALLOC 0
+ #undef THINKOS_ENABLE_GATE_ALLOC
+ #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
 
 /* timed calls depends on clock */
@@ -368,9 +376,22 @@
 #endif
 
 #if THINKOS_ENABLE_MEMFAULT && !THINKOS_ENABLE_MPU 
-#undef THINKOS_ENABLE_MEMFAULT 
-#define THINKOS_ENABLE_MEMFAULT 0
+ #undef THINKOS_ENABLE_MEMFAULT 
+ #define THINKOS_ENABLE_MEMFAULT 0
 #endif
+
+#if THINKOS_ENABLE_TIMESHARE
+ #undef THINKOS_ENABLE_PREEMPTION
+ #define THINKOS_ENABLE_PREEMPTION 1
+ #undef THINKOS_ENABLE_CLOCK
+ #define THINKOS_ENABLE_CLOCK 1
+#endif
+
+#if !THINKOS_ENABLE_PREEMPTION
+ #undef THINKOS_ENABLE_CRITICAL
+ #define THINKOS_ENABLE_CRITICAL 0
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Thread context layout
  * --------------------------------------------------------------------------*/
@@ -424,7 +445,7 @@ struct thinkos_thread {
 	uint8_t sched_pri;
 	int32_t timeout;
 	uint32_t cyccnt;
-	struct thinkos_thread_inf * th_inf;
+	const struct thinkos_thread_inf * th_inf;
 	uint32_t sp;
 	struct thinkos_context ctx;
 };
@@ -448,15 +469,6 @@ struct thinkos_rt {
 
 	int32_t active; /* current active thread */
 
-#if THINKOS_ENABLE_DEBUG_STEP
-	uint32_t step_req; /* step request bitmap */
-	uint32_t step_svc; /* step at service call bitmap */
-	uint32_t step_brk; /* stop after at service call bitmap */
-	int8_t step_id; /* current stepping thread id */
-	int8_t break_id; /* thread stopped by a breakpoint or step request */
-	uint16_t xcpt_ipsr; /* Exception */
-#endif
-
 #if THINKOS_ENABLE_PROFILING
 	/* Reference cycle state ... */
 	uint32_t cycref;
@@ -466,6 +478,20 @@ struct thinkos_rt {
 #else
 	uint32_t cyccnt[(THINKOS_THREADS_MAX) + 1];
 #endif
+#endif
+
+#if THINKOS_ENABLE_DEBUG_STEP
+	uint32_t step_req;  /* step request bitmap */
+	uint32_t step_svc;  /* step at service call bitmap */
+	uint32_t step_brk;  /* stop after at service call bitmap */
+	int8_t step_id;     /* current stepping thread id */
+	int8_t break_id;    /* thread stopped by a breakpoint or step request */
+	uint16_t xcpt_ipsr; /* Exception */
+#endif
+
+#if THINKOS_ENABLE_CRITICAL
+	uint32_t critical_cnt; /* critical section entry counter, if not zero,
+							 thread preemption is disabled */
 #endif
 
 	uint32_t wq_lst[0]; /* queue list placeholder */
@@ -623,7 +649,7 @@ struct thinkos_rt {
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
-	struct thinkos_thread_inf * th_inf[THINKOS_THREADS_MAX]; 
+	const struct thinkos_thread_inf * th_inf[THINKOS_THREADS_MAX + 1]; 
 #endif
 };
 
@@ -850,6 +876,17 @@ static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending service interrupt */
 	scb->icsr = SCB_ICSR_PENDSVSET;
+	asm volatile ("dsb\n"); /* Data synchronization barrier */
+}
+
+/* flags a deferred execution of the scheduler */
+static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
+#if THINKOS_ENABLE_PREEMPTION
+#if THINKOS_ENABLE_CRITICAL
+	if (thinkos_rt.critical_cnt == 0)
+#endif
+		__thinkos_defer_sched();
+#endif
 }
 
 /* flags a deferred queued syscall */

@@ -914,14 +914,12 @@ void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	dcb->demcr = demcr;
 }
 
-void thinkos_dbgmon_svc(int32_t * arg)
+void thinkos_dbgmon_signal(unsigned int sig)
 {
-	unsigned int req = arg[0];
-
-	if (req == DBGMON_SIGNAL_IDLE) {
+	if (sig == DBGMON_SIGNAL_IDLE) {
 		struct cm3_dcb * dcb = CM3_DCB;
 		uint32_t demcr;
-		/* DEbug monitor request semaphore */
+		/* Debug monitor request semaphore */
 		if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
 			DCC_LOG(LOG_TRACE, "<<< Idle >>>");
 			__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DMON_IDLE, 1);  

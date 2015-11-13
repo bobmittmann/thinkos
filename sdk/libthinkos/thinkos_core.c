@@ -287,7 +287,7 @@ static void thinkos_time_wakeup(int thread_id)
 	DCC_LOG1(LOG_INFO, "Wakeup %d...", thread_id);
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
-	__thinkos_defer_sched();
+	__thinkos_preempt();
 }
 #endif /* THINKOS_ENABLE_CLOCK */
 
@@ -308,7 +308,7 @@ static void thinkos_timeshare(void)
 			/* insert into the CPU wait queue */
 			__bit_mem_wr(&thinkos_rt.wq_tmshare, idx, 1);  
 			__thinkos_suspend(idx);
-			__thinkos_defer_sched();
+			__thinkos_preempt();
 		}
 	}
 }

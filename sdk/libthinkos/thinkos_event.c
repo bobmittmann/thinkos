@@ -239,8 +239,7 @@ again:
 }
 #endif
 
-void cm3_except9_isr(uint32_t wq, int ev)
-//void __thinkos_ev_raise_i(uint32_t wq, int ev)
+void __thinkos_ev_raise_i(uint32_t wq, int ev)
 {
 	unsigned int no = wq - THINKOS_EVENT_BASE;
 	uint32_t queue;
@@ -281,12 +280,14 @@ void cm3_except9_isr(uint32_t wq, int ev)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
 }
 
-void __thinkos_ev_raise_i(uint32_t wq, int ev)
-	__attribute__((weak, alias("cm3_except9_isr")));
+void cm3_except9_isr(uint32_t wq, int ev)
+{
+	__thinkos_ev_raise_i(wq, ev);
+	/* signal the scheduler ... */
+	__thinkos_preempt();
+}
 
 void thinkos_ev_raise_svc(int32_t * arg)
 {
@@ -317,6 +318,8 @@ void thinkos_ev_raise_svc(int32_t * arg)
 
 	arg[0] = 0;
 	__thinkos_ev_raise_i(wq, ev);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
 

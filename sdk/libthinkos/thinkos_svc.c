@@ -149,7 +149,7 @@ void thinkos_ctl_svc(int32_t * arg);
 
 void thinkos_comm_svc(int32_t * arg);
 
-void thinkos_dbgmon_svc(int32_t * arg);
+void thinkos_idle_svc(int32_t * arg);
 
 #if THINKOS_ENABLE_ESCALATE
 /* Call a function in priviledged service mode. */
@@ -181,6 +181,27 @@ void thinkos_thread_self_svc(int32_t * arg)
 {
 	arg[0] = thinkos_rt.active;
 }
+
+#if THINKOS_ENABLE_CRITICAL
+void thinkos_critical_enter_svc(int32_t * arg)
+{
+	struct cm3_scb * scb = CM3_SCB;
+	if (++thinkos_rt.critical_cnt) {
+		/* clear possibly pending service interrupt */
+		scb->icsr = SCB_ICSR_PENDSVCLR;
+	}
+}
+
+void thinkos_critical_exit_svc(int32_t * arg)
+{
+	if (thinkos_rt.critical_cnt == 0) {
+		/* FIXME, this is a fault and should rise an exception... */
+		arg[0] = THINKOS_EFAULT;
+	} else if ((--thinkos_rt.critical_cnt) == 0) {
+		__thinkos_defer_sched();
+	}
+}
+#endif
 
 void cm3_svc_isr(void)
 {
@@ -718,6 +739,23 @@ void cm3_svc_isr(void)
 #endif
 		break;
 
+	case THINKOS_CRITICAL_ENTER:
+#if THINKOS_ENABLE_CRITICAL
+		thinkos_critical_enter_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_CRITICAL_EXIT:
+#if THINKOS_ENABLE_CRITICAL
+		thinkos_critical_exit_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+
 /* ----------------------------------------------
  * Comm 
  * --------------------------------------------- */
@@ -730,9 +768,9 @@ void cm3_svc_isr(void)
 #endif
 		break;
 
-	case THINKOS_DBGMON:
-#if THINKOS_ENABLE_MONITOR          
-		thinkos_dbgmon_svc(arg);
+	case THINKOS_ON_IDLE:
+#if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
+		thinkos_idle_svc(arg);
 #else
 		thinkos_nosys(arg);
 #endif

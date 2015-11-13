@@ -233,9 +233,7 @@ again:
 }
 #endif
 
-
-/* void __thinkos_flag_give_i(uint32_t wq) */
-void cm3_except10_isr(uint32_t wq)
+void __thinkos_flag_give_i(uint32_t wq)
 {
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 	uint32_t * flags_bmp;
@@ -280,12 +278,14 @@ void cm3_except10_isr(uint32_t wq)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
 }
 
-void __thinkos_flag_give_i(uint32_t wq) 
-	__attribute__((weak, alias("cm3_except10_isr")));
+void cm3_except10_isr(uint32_t wq)
+{
+	__thinkos_flag_give_i(wq);
+	/* signal the scheduler ... */
+	__thinkos_preempt();
+}
 
 /* wakeup a single thread waiting on the flag OR set the flag */
 void thinkos_flag_give_svc(int32_t * arg)
@@ -312,6 +312,8 @@ void thinkos_flag_give_svc(int32_t * arg)
 	arg[0] = 0;
 
 	__thinkos_flag_give_i(wq);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
 /* --------------------------------------------------------------------------

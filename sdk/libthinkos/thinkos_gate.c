@@ -393,8 +393,7 @@ again:
 }
 
 
-/* void __thinkos_gate_open_i(uint32_t wq) */
-void cm3_except13_isr(uint32_t wq)
+void __thinkos_gate_open_i(uint32_t wq)
 {
 	unsigned int idx = wq - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
@@ -465,12 +464,15 @@ again:
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
 }
 
-void __thinkos_gate_open_i(uint32_t wq) 
-	__attribute__((weak, alias("cm3_except13_isr")));
+void cm3_except13_isr(uint32_t wq)
+{
+	/* open the gate */
+	__thinkos_gate_open_i(wq);
+	/* signal the scheduler ... */
+	__thinkos_preempt();
+}
 
 void thinkos_gate_open_svc(int32_t * arg)
 {
@@ -498,6 +500,8 @@ void thinkos_gate_open_svc(int32_t * arg)
 
 	/* open the gate */
 	__thinkos_gate_open_i(wq);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
 void thinkos_gate_close_svc(int32_t * arg)

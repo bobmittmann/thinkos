@@ -37,7 +37,7 @@ void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin,
 	int port;
 
 	/* IRQ PIN */
-	stm32_gpio_clock_en(gpio);
+	stm32_gpio_clk_en(gpio);
 	stm32_gpio_mode(gpio, pin, INPUT, PUSH_PULL | SPEED_HIGH);
 
 	/* System configuration controller clock enable */

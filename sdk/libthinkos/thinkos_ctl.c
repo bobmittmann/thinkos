@@ -64,6 +64,33 @@ static void rt_snapshot(uint32_t * dst)
 }
 #endif
 
+
+#if THINKOS_ENABLE_PROFILING
+static int thinkos_cycnt_get(uint32_t cycnt[])
+{
+	uint32_t cyccnt;
+	int32_t delta;
+	int self;
+
+	self = thinkos_rt.active;
+	cyccnt = CM3_DWT->cyccnt;
+	delta = cyccnt - thinkos_rt.cycref;
+	/* update the reference */
+	thinkos_rt.cycref = cyccnt;
+	/* update thread's cycle counter */
+	thinkos_rt.cyccnt[self] += delta; 
+	/* copy cycle counters */
+	__thinkos_memcpy32(cycnt, thinkos_rt.cyccnt, 
+					   (THINKOS_THREADS_MAX + 1) * sizeof(uint32_t));
+	/* reset cycle counters */
+	__thinkos_memset32(thinkos_rt.cyccnt, 0,
+					   (THINKOS_THREADS_MAX + 1) * sizeof(uint32_t));
+
+	return THINKOS_THREADS_MAX + 1;
+}
+#endif
+
+
 extern int32_t udelay_factor;
 
 void thinkos_ctl_svc(int32_t * arg)
@@ -112,6 +139,20 @@ void thinkos_ctl_svc(int32_t * arg)
 #if THINKOS_ENABLE_RT_DEBUG
 	case THINKOS_CTL_SNAPSHOT:
 		rt_snapshot((uint32_t *)arg[1]);
+		break;
+#endif
+
+#if THINKOS_ENABLE_THREAD_INFO
+	case THINKOS_CTL_THREAD_INF:
+		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
+						   sizeof(void *) * THINKOS_THREADS_MAX + 1); 
+		arg[0] = THINKOS_THREADS_MAX + 1;
+		break;
+#endif
+
+#if THINKOS_ENABLE_PROFILING
+	case THINKOS_CTL_CYCCNT:
+		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1]);
 		break;
 #endif
 

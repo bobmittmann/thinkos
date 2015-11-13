@@ -34,6 +34,24 @@
 #error "Invalid multiple IDLE stack options!"
 #endif
 
+void thinkos_idle_svc(int32_t * arg)
+{
+#if (THINKOS_ENABLE_MONITOR)
+	thinkos_dbgmon_signal(DBGMON_SIGNAL_IDLE);
+#endif
+
+#if THINKOS_ENABLE_CRITICAL
+ #if ((THINKOS_THREADS_MAX) < 32) 
+	if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
+ #else
+	if (thinkos_rt.wq_ready != 0) 
+ #endif
+	{
+		__thinkos_defer_sched();
+	}
+#endif
+}
+
 void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
 //	DCC_LOG(LOG_TRACE, "ThinkOS Idle started..."); 
@@ -42,8 +60,8 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #if THINKOS_ENABLE_IDLE_WFI
 		asm volatile ("wfi\n"); /* wait for interrupt */
 #endif
-#if (THINKOS_ENABLE_MONITOR)
-		thinkos_dbgmon(DBGMON_SIGNAL_IDLE);
+#if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
+		thinkos_on_idle();
 #endif
 	}
 }
@@ -59,20 +77,34 @@ const struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx = {
 	.pc = (uint32_t)thinkos_idle_task,
 	.xpsr = CM_EPSR_T /* set the thumb bit */
 };
-uint32_t * const thinkos_idle_stack_ptr = (uint32_t *)&thinkos_idle_ctx;
+#define THINKOS_IDLE_STACK_BASE (uint32_t *)&thinkos_idle_ctx
 #endif
 
 #if THINKOS_IDLE_STACK_BSS
 /* IDLE stack on .bss section */
 struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx;
-uint32_t * const thinkos_idle_stack_ptr = (uint32_t *)&thinkos_idle_ctx;
+#define THINKOS_IDLE_STACK_BASE (uint32_t *)&thinkos_idle_ctx
 #endif
 
 #if THINKOS_IDLE_STACK_ALLOC
 extern uint32_t _stack[];
-
 /* IDLE stack allocated on main stack */
-uint32_t * const thinkos_idle_stack_ptr = &_stack[0];
+#define THINKOS_IDLE_STACK_BASE (uint32_t *)&_stack[0]
+#endif
+
+#define THINKOS_IDLE_STACK_SIZE sizeof(struct thinkos_context)
+
+uint32_t * const thinkos_idle_stack_ptr = THINKOS_IDLE_STACK_BASE;
+
+#if THINKOS_ENABLE_THREAD_INFO
+const struct thinkos_thread_inf thinkos_idle_inf = {
+	.tag = "IDLE",
+	.stack_ptr = THINKOS_IDLE_STACK_BASE,
+	.stack_size = THINKOS_IDLE_STACK_SIZE,
+	.priority = 255,
+	.thread_id = THINKOS_THREAD_IDLE,
+	.paused = 0
+};
 #endif
 
 /* initialize the idle thread */
@@ -80,17 +112,10 @@ void __thinkos_idle_init(void)
 {
 	struct thinkos_context * idle_ctx;
 
-	DCC_LOG(LOG_TRACE, "..."); 
+	idle_ctx = (struct thinkos_context *)THINKOS_IDLE_STACK_BASE;
 
-#if THINKOS_IDLE_STACK_CONST
-	idle_ctx = (struct thinkos_context *)&thinkos_idle_ctx;
-#else
-  #if THINKOS_IDLE_STACK_BSS
-	idle_ctx = (struct thinkos_context *)&thinkos_idle_ctx;
-  #elif THINKOS_IDLE_STACK_ALLOC
-	idle_ctx = (struct thinkos_context *)thinkos_idle_stack_ptr;
-  #endif
-	idle_ctx->pc = (uint32_t)thinkos_idle_task,
+#if !THINKOS_IDLE_STACK_CONST
+	idle_ctx->pc = (uint32_t)thinkos_idle_task;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 #endif /* THINKOS_IDLE_STACK_CONST */
 
@@ -100,5 +125,14 @@ void __thinkos_idle_init(void)
 	/* put the IDLE thread in the ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, THINKOS_THREADS_MAX, 1);
 #endif
+
+#if THINKOS_ENABLE_THREAD_INFO
+	/* set the IDLE thread info */
+	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
+#endif
+
+	DCC_LOG2(LOG_TRACE, "idle_stack=0x%08x idle_ctx=0x%08x", 
+			 thinkos_idle_stack_ptr, thinkos_rt.idle_ctx);
+
 }
 

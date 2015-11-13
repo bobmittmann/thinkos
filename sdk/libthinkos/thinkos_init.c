@@ -29,13 +29,32 @@ _Pragma ("GCC optimize (\"Os\")")
 #include <thinkos_dmon.h>
 
 #include <thinkos_except.h>
+#include <thinkos.h>
 
 #include <stdio.h>
 #include <string.h>
 
 extern const char thinkos_svc_nm[];
 extern const char thinkos_xcp_nm[];
-extern const struct thinkos_thread_inf thinkos_main_inf;
+
+#if THINKOS_ENABLE_THREAD_INFO
+extern uint32_t _stack;
+
+#ifndef THINKOS_MAIN_STACK_SIZE
+#define THINKOS_MAIN_STACK_SIZE 4096
+#endif
+
+/* FIXME: move this definition elsewere, or allow it 
+   to be configured by the user ... */
+const struct thinkos_thread_inf thinkos_main_inf = {
+	.tag = "MAIN",
+	.stack_ptr = (void *)((uintptr_t)&_stack - THINKOS_MAIN_STACK_SIZE),
+	.stack_size = THINKOS_MAIN_STACK_SIZE,
+	.priority = 0,
+	.thread_id = 0,
+	.paused = 0
+};
+#endif
 
 void __thinkos_irq_disable_all(void)
 {
@@ -384,9 +403,6 @@ int thinkos_init(uint32_t opt)
 	/* configure the main stack */
 	msp = (uint32_t)thinkos_except_stack + sizeof(thinkos_except_stack);
 	cm3_msp_set(msp);
-
-	DCC_LOG3(LOG_TRACE, "msp=0x%08x idle_stack=0x%08x idle_ctx=0x%08x", 
-			 msp, thinkos_idle_stack, thinkos_rt.idle_ctx);
 
 	/* configure the use of PSP in thread mode */
 	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV);

@@ -148,22 +148,3 @@ void thinkos_thread_create_svc(int32_t * arg)
 }
 
 
-#if THINKOS_ENABLE_THREAD_INFO
-extern uint32_t _stack;
-
-#ifndef THINKOS_MAIN_STACK_SIZE
-#define THINKOS_MAIN_STACK_SIZE 4096
-#endif
-
-/* FIXME: move this definition elsewere, or allow it 
-   to be configured by the user ... */
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = (void *)((uintptr_t)&_stack - THINKOS_MAIN_STACK_SIZE),
-	.stack_size = THINKOS_MAIN_STACK_SIZE,
-	.priority = 0,
-	.thread_id = 0,
-	.paused = 0
-};
-#endif
-

@@ -108,9 +108,13 @@
 
 #define THINKOS_COMM            59
 
-#define THINKOS_DBGMON          60
+#define THINKOS_ON_IDLE         60
 
 #define THINKOS_ESCALATE        61
+
+#define THINKOS_CRITICAL_ENTER	62
+
+#define THINKOS_CRITICAL_EXIT	63
 
 #define CONSOLE_WRITE             0
 #define CONSOLE_READ              1
@@ -123,18 +127,18 @@
 #define COMM_SEND                 0
 #define COMM_RECV                 1
 
-#define THINKOS_CTL_ABORT         0
-#define THINKOS_CTL_UDELAY_FACTOR 1
-#define THINKOS_CTL_CLOCKS        2
-#define THINKOS_CTL_SNAPSHOT      3
-#define THINKOS_CTL_TRACE         4
+#define THINKOS_CTL_ABORT           0
+#define THINKOS_CTL_UDELAY_FACTOR   1
+#define THINKOS_CTL_CLOCKS          2
+#define THINKOS_CTL_SNAPSHOT        3
+#define THINKOS_CTL_TRACE           4
+#define THINKOS_CTL_THREAD_INF      5
+#define THINKOS_CTL_CYCCNT          6
 
 #define THINKOS_IRQ_DISABLE       0
 #define THINKOS_IRQ_ENABLE        1
 #define THINKOS_IRQ_PRIORITY_SET  2
 #define THINKOS_IRQ_SVC_SET       3
-
-#define DBGMON_SIGNAL_IDLE        0
 
 #include <arch/cortex-m3.h>
 
@@ -613,6 +617,26 @@ static inline int __attribute__((always_inline))
 		return THINKOS_SVC2(THINKOS_CTL, THINKOS_CTL_SNAPSHOT, rt);
 	}
 
+static inline int __attribute__((always_inline)) 
+	thinkos_thread_inf(const struct thinkos_thread_inf * inf[]) {
+		return THINKOS_SVC2(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf);
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_cyccnt(uint32_t cyccnt[]) {
+		return THINKOS_SVC2(THINKOS_CTL, THINKOS_CTL_CYCCNT, cyccnt);
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_critical_enter(void) {
+		return THINKOS_SVC(THINKOS_CRITICAL_ENTER);
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_critical_exit(void) {
+		return THINKOS_SVC(THINKOS_CRITICAL_EXIT);
+	}
+
 /* ---------------------------------------------------------------------------
    Communication channel
    ---------------------------------------------------------------------------*/
@@ -636,8 +660,8 @@ static inline void thinkos_yield(void) {
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
-static inline void thinkos_dbgmon(unsigned int sig) {
-	THINKOS_SVC1(THINKOS_DBGMON, sig);
+static inline void thinkos_on_idle(void) {
+	THINKOS_SVC(THINKOS_ON_IDLE);
 }
 
 static inline int thinkos_escalate(int (* call)(void *), void * arg) {
