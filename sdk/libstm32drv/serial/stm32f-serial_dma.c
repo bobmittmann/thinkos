@@ -50,8 +50,8 @@ void stm32f_serial_dma_isr(struct stm32f_serial_dma_drv * drv)
 		} else {
 			/* Generate a brake condition */
 			uart->cr1 = cr | USART_SBK;
-			thinkos_flag_give_i(drv->tx_done);
 		}
+		thinkos_flag_give_i(drv->tx_done);
 	}
 
 	/* break detection */
