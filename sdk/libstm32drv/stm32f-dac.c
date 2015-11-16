@@ -105,7 +105,7 @@ void stm32f_dac_init(void)
 	struct stm32f_dma * dma = STM32F_DMA1;
 
 	/* I/O pins config */
-	stm32_gpio_clock_en(DAC2_GPIO);
+	stm32_gpio_clk_en(DAC2_GPIO);
 	stm32_gpio_mode(DAC2_GPIO, DAC2_PORT, ANALOG, 0);
 	stm32_gpio_mode(DAC1_GPIO, DAC1_PORT, ANALOG, 0);
 

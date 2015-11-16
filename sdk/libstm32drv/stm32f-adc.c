@@ -103,7 +103,7 @@ static void adc_tim2_init(uint32_t freq)
 static void adc_gpio_init(void)
 {
 	/* ADC Input pins */
-	stm32_gpio_clock_en(ADC6_GPIO);
+	stm32_gpio_clk_en(ADC6_GPIO);
 	stm32_gpio_mode(ADC6_GPIO, ADC6_PORT, ANALOG, 0);
 }
 
