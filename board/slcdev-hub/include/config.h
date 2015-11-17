@@ -78,11 +78,7 @@
 #define THINKOS_ENABLE_DEADLOCK_CHECK   1
 #define THINKOS_ENABLE_SANITY_CHECK     1
 
-#define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_ENABLE_EXCEPT_CLEAR     1
-
-#define THINKOS_EXCEPT_STACK_SIZE       320
-#define THINKOS_STDERR_FAULT_DUMP       0
+#define THINKOS_ENABLE_CTL              1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 
@@ -93,24 +89,31 @@
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1
+#define THINKOS_ENABLE_DMCLOCK          1
+
 #define THINKOS_ENABLE_CONSOLE          1
 
-#define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
-
+#define THINKOS_EXCEPT_STACK_SIZE       320
+#define THINKOS_ENABLE_EXCEPTIONS       1
+#define THINKOS_UNROLL_EXCEPTIONS       1
+#define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_UNROLL_EXCEPTIONS       1
+#define THINKOS_SYSRST_ONFAULT          0
+#define THINKOS_STDERR_FAULT_DUMP       0
+#define THINKOS_ENABLE_DEBUG_STEP       1
+#define THINKOS_ENABLE_DEBUG_FAULT      1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              0
 
 #define THINKOS_ENABLE_THREAD_VOID      1
-#define THINKOS_ENABLE_DMCLOCK          1
 
-#define THINKOS_ENABLE_CTL              1
+#define THINKOS_DMON_STACK_SIZE         512
+
+#define THINKOS_ENABLE_STACK_INIT       0
 
 /* -------------------------------------------------------------------------
    USB 
@@ -129,13 +132,13 @@
    Bootloader 
    -------------------------------------------------------------------------- */
 
-#define BOOT_ENABLE_GDB 1
-#define MONITOR_CONFIGURE_ENABLE  1
-#define MONITOR_DUMPMEM_ENABLE    1
-#define MONITOR_UPGRADE_ENABLE    1
-#define MONITOR_STACKUSAGE_ENABLE 1
-#define MONITOR_THREADINFO_ENABLE 1
-#define MONITOR_APPWIPE_ENABLE    1
+#define BOOT_ENABLE_GDB             1
+#define MONITOR_CONFIGURE_ENABLE    1
+#define MONITOR_DUMPMEM_ENABLE      1
+#define MONITOR_UPGRADE_ENABLE      1
+#define MONITOR_STACKUSAGE_ENABLE   1
+#define MONITOR_THREADINFO_ENABLE   1
+#define MONITOR_APPWIPE_ENABLE      1
 
 /* -------------------------------------------------------------------------
  * TCP/IP

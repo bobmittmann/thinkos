@@ -1424,5 +1424,3 @@ const struct usb_dev stm32f_otg_fs_dev = {
 };
 
 #endif /* STM32_ENABLE_OTG_FS && STM32F_OTG_FS */
-
-
