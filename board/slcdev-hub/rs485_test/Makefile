@@ -22,18 +22,27 @@
 
 PROG = rs485_test
 
-CFILES = rs485_test.c 
+CFILES = rs485_test.c rs485_net.c 
 
 SDK = ../../../sdk
 
-LIBS = cm3 stm32f util c trace crc stm32drv tty console
+LIBS = gcc cm3 stm32f util stm32drv c console trace crc
 
-O = Debug
 INCPATH = $(SDK)/include ../include
+
+CDEFS = CONFIG_H
+CFLAGS = -g -O1 -Wall -ffunction-sections -fdata-sections
+LDFLAGS = -Wl,--gc-sections 
+
+RELEASE_DIR := Release
+DEBUG_DIR := Debug
+#LIBPATH = ../sdklibs/Debug
 LIBPATH = ../sdklibs/Release
 
-CFLAGS = -g -O0 -Wall
+JTAGTOOL_ADDR= 192.168.10.50
 
 MACH = stm32f407
 THINKAPP = 1
+LDSCRIPT = ../stm32f407.ld
+LOAD_ADDR = 0x08010000
 include ../../../mk/stm32f4xx.mk

@@ -112,74 +112,11 @@ void supervisor_init(void)
 							  &supervisor_inf);
 }
 
-/* -------------------------------------------------------------------------
- * RS485
- * ------------------------------------------------------------------------- */
+void net_start(unsigned int addr);
 
-struct serial_dev * rs485_init(void)
-{
-	struct serial_dev * ser;
+int net_send(unsigned int addr, const void * buf, unsigned int len);
 
-    /* IO init */
-    stm32_gpio_mode(IO_RS485_RX, ALT_FUNC, PULL_UP);
-    stm32_gpio_af(IO_RS485_RX, RS485_USART_AF);
-
-    stm32_gpio_mode(IO_RS485_TX, ALT_FUNC, PUSH_PULL | SPEED_MED);
-    stm32_gpio_af(IO_RS485_TX, RS485_USART_AF);
-
-    stm32_gpio_mode(IO_RS485_MODE, OUTPUT, PUSH_PULL | SPEED_LOW);
-    stm32_gpio_set(IO_RS485_MODE);
-
-//	ser = stm32f_uart1_serial_init(500000, SERIAL_8N1);
-	ser = stm32f_uart1_serial_dma_init(500000, SERIAL_8N1);
-//	ser = stm32f_uart7_serial_init(500000, SERIAL_8N1);
-
-	return ser;
-}
-
-int netrcv_task(void * arg)
-{
-	struct serial_dev * ser = (struct serial_dev *)arg;
-	uint8_t buf[512];
-
-	printf("receive task started...\n");
-
-	for (;;) {
-		int cnt;
-
-		if ((cnt = serial_recv(ser, buf, 512, 1000)) <= 0) {
-			continue;
-		}
-
-		printf("cnt=%d\n", cnt);
-	}
-
-	return 0;
-}
-
-uint32_t netrcv_stack[512];
-
-const struct thinkos_thread_inf netrcv_inf = {
-	.stack_ptr = netrcv_stack,
-	.stack_size = sizeof(netrcv_stack),
-	.priority = 8,
-	.thread_id = 1,
-	.paused = 0,
-	.tag = "NET-RCV"
-};
-
-void net_start(int addr)
-{
-	struct serial_dev * ser;
-
-	printf("1. rs485_init() ...\n");
-	if ((ser = rs485_init()) == NULL) {
-		return;
-	}
-
-	printf("4. thinkos_thread_create_inf()\n");
-	thinkos_thread_create_inf(netrcv_task, ser, &netrcv_inf);
-}
+void net_probe(bool en);
 
 struct board_cfg {
     uint32_t magic;
@@ -194,13 +131,12 @@ int main(int argc, char ** argv)
 {
 	struct board_cfg * cfg = (struct board_cfg *)(CFG_ADDR);
 	uint8_t addr = 1;
-	uint8_t pdu[502];
 	int i;
 
 	if (cfg->magic == CFG_MAGIC)
 		addr = cfg->mstp_addr;
 	else
-		addr = *((uint32_t *)STM32F_UID) & 0x1f;
+		addr = 0;
 
 	stdio_init();
 
@@ -209,9 +145,12 @@ int main(int argc, char ** argv)
 	INF("Starting RS485 test");
 
 	net_start(addr);
+	net_probe(true);
 
 	for (i = 0;; ++i) {
+		(void)i;
 		thinkos_sleep(100);
+		net_send(0, "U U U U ", 8);
 	}
 
 	return 0;
