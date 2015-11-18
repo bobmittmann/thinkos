@@ -174,8 +174,10 @@ extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
 
 struct magic {
-	uint16_t pos;
-	uint16_t cnt;
+	struct {
+		uint16_t pos;
+		uint16_t cnt;
+	} hdr;
 	struct {
 		uint32_t mask;
 		uint32_t comp;
@@ -183,10 +185,12 @@ struct magic {
 };
 
 const struct magic bootloader_magic = {
-	.pos = 0,
-	.cnt = 4,
+	.hdr = {
+		.pos = 0,
+		.cnt = 4
+	},
 	.rec = {
-		{  0xffff0000, 0x10010000 },
+		{  0xfffc0000, 0x10000000 },
 		{  0xffff0000, 0x08000000 },
 		{  0xffff0000, 0x08000000 },
 		{  0xffff0000, 0x08000000 }
