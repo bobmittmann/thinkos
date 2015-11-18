@@ -392,6 +392,17 @@
  #define THINKOS_ENABLE_CRITICAL 0
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+ #undef THINKOS_ENABLE_MEMFAULT
+ #define THINKOS_ENABLE_MEMFAULT   1
+ #undef THINKOS_ENABLE_BUSFAULT
+ #define THINKOS_ENABLE_BUSFAULT   1
+ #undef THINKOS_ENABLE_USAGEFAULT 
+ #define THINKOS_ENABLE_USAGEFAULT 1
+ #undef THINKOS_UNROLL_EXCEPTIONS 
+ #define THINKOS_UNROLL_EXCEPTIONS 1
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Thread context layout
  * --------------------------------------------------------------------------*/

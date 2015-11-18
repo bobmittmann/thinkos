@@ -6,5 +6,11 @@ RemoteSystemsTempFiles/
 *.bak
 *.pyc
 *.log
+*.bin
+*.o
+*.a
+*.exe
+*.elf
+*.lst
 *~
-tools/dcclog.exe
+

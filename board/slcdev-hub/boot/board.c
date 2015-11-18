@@ -174,21 +174,22 @@ extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
 
 struct magic {
-	uint32_t cnt;
+	uint16_t pos;
+	uint16_t cnt;
 	struct {
-		uint32_t addr;
 		uint32_t mask;
 		uint32_t comp;
 	} rec[];
 };
 
 const struct magic bootloader_magic = {
+	.pos = 0,
 	.cnt = 4,
 	.rec = {
-		{  0x08000000, 0xffffffff, 0x10010000 },
-		{  0x08000004, 0xffff0000, 0x08000000 },
-		{  0x08000008, 0xffff0000, 0x08000000 },
-		{  0x0800000c, 0xffff0000, 0x08000000 }
+		{  0xffff0000, 0x10010000 },
+		{  0xffff0000, 0x08000000 },
+		{  0xffff0000, 0x08000000 },
+		{  0xffff0000, 0x08000000 }
 	}
 };
 
@@ -243,7 +244,8 @@ const struct thinkos_board this_board = {
 	},
 	.sw_ver = {
 		.major = 0,
-		.minor = 1,
+		.minor = 2,
+		.build = 0
 	},
 	.memory = {
 		.ram = &sram_desc,

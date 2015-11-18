@@ -88,6 +88,9 @@
 #define CTRL_Y 0x19
 #define CTRL_Z 0x1a
 
+extern int __heap_end;
+const void * heap_end = &__heap_end; 
+
 #if (MONITOR_THREADINFO_ENABLE)
 #define MONITOR_STARTUP_MAGIC -111
 int8_t monitor_thread_id = MONITOR_STARTUP_MAGIC;

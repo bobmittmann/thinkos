@@ -95,7 +95,7 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE       320
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       1
+#define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
@@ -111,9 +111,9 @@
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DMON_STACK_SIZE         512
+#define THINKOS_DMON_STACK_SIZE         960
 
-#define THINKOS_ENABLE_STACK_INIT       0
+#define THINKOS_ENABLE_STACK_INIT       1
 
 /* -------------------------------------------------------------------------
    USB 
