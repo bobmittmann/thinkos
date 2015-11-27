@@ -582,7 +582,7 @@ void otg_disconnect(struct stm32f_otg_hs * otg_hs)
 	udelay(3000);
 }
 
-static void otg_power_on(struct stm32f_otg_hs * otg_hs)
+void otg_power_on(struct stm32f_otg_hs * otg_hs)
 {
 	DCC_LOG(LOG_INFO, "Enabling USB FS clock...");
 	stm32_clk_enable(STM32_RCC, STM32_CLK_OTGHS);
@@ -596,11 +596,11 @@ static void otg_power_on(struct stm32f_otg_hs * otg_hs)
 	cm3_irq_enable(STM32F_IRQ_OTG_HS);
 }
 
-static void otg_power_off(struct stm32f_otg_hs * otg_hs)
+void otg_power_off(struct stm32f_otg_hs * otg_hs)
 {
 	otg_disconnect(otg_hs);
 
-	otg_hs_vbus_connect(false);
+	otg_vbus_connect(false);
 
 	DCC_LOG(LOG_INFO, "Disabling USB device clock...");
 	stm32_clk_disable(STM32_RCC, STM32_CLK_OTGHS);
@@ -1337,8 +1337,6 @@ const struct usb_dev_ops stm32f_otg_hs_ops = {
 /* USB device driver */
 const struct usb_dev stm32f_otg_hs_dev = {
 	.priv = (void *)&stm32f_otg_hs_drv0,
-	.irq[0] = STM32F_IRQ_OTG_HS,
-	.irq_cnt = 1,
 	.op = &stm32f_otg_hs_ops
 };
 
