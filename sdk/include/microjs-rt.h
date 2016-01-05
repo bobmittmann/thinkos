@@ -133,6 +133,8 @@ void microjs_vm_init(struct microjs_vm * vm, const struct microjs_rt * rt,
 void microjs_vm_clr_data(struct microjs_vm * vm, 
 						 const struct microjs_rt * rt);
 
+void microjs_vm_reset(struct microjs_vm * vm);
+
 int microjs_exec(struct microjs_vm * vm, uint8_t code[]);
 
 void microjs_abort(struct microjs_vm * vm);

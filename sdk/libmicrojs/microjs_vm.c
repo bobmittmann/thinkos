@@ -86,6 +86,15 @@ void microjs_vm_clr_data(struct microjs_vm * vm,
 		vm->data[i] = 0;
 }
 
+void microjs_vm_reset(struct microjs_vm * vm)
+{
+	vm->xp = 0;
+	vm->pc = 0;
+	vm->sp = 0;
+	vm->abort = 0;
+	vm->trace_en = 0;
+}
+
 _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (MICROJS_TRACE_ENABLED)
@@ -119,7 +128,7 @@ int microjs_exec(struct microjs_vm * vm, uint8_t code[])
 		return ERR_NULL_POINTER;
 	}
 
-	DCC_LOG3(LOG_INFO, "begin: SP=0x%04x XP=0x%04x PC=0x%04x", 
+	DCC_LOG3(LOG_TRACE, "begin: SP=0x%04x XP=0x%04x PC=0x%04x", 
 			 (int)((int)(sp - vm->sp) * sizeof(int32_t)),
 			 (int)((int)(xp - vm->sp) * sizeof(int32_t)),
 			 (int)(pc - code));
@@ -427,7 +436,7 @@ done:
 
 	VMTRACEF("SP=0x%04x\n", (int)(sp - data) * SIZEOF_WORD);
 
-	DCC_LOG3(LOG_INFO, "end: SP=0x%04x XP=0x%04x PC=0x%04x", 
+	DCC_LOG3(LOG_TRACE, "end: SP=0x%04x XP=0x%04x PC=0x%04x", 
 			 (int)(vm->sp * sizeof(int32_t)),
 			 (int)(vm->xp * sizeof(int32_t)),
 			 (int)(vm->pc));
