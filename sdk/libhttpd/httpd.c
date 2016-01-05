@@ -519,7 +519,7 @@ const struct httpdauth httpd_def_authlst[] = {
 	{ .uid = 0, .lvl = 0, .name = "", .passwd = "" }
 };
 
-int http_parser_test(void);
+//int http_parser_test(void);
 
 int httpd_init(struct httpd * httpd,
 							 int port, int backlog,

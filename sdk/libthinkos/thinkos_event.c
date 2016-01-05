@@ -330,6 +330,7 @@ void thinkos_ev_mask_svc(int32_t * arg)
 	unsigned int val = arg[2];
 	unsigned int no = wq - THINKOS_EVENT_BASE;
 	uint32_t queue;
+	uint32_t mask;
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -353,6 +354,26 @@ void thinkos_ev_mask_svc(int32_t * arg)
 		__bit_mem_wr(&thinkos_rt.ev[no].mask, ev, 0);  
 		return;
 	}
+
+again:
+	/* check for pending masked event */
+	mask = __ldrex(&thinkos_rt.ev[no].mask);
+
+	if (mask & (1 << ev)) {
+		/* mask bit already set */
+		__clrex();
+		return;
+	}
+
+	if (!__bit_mem_rd(&thinkos_rt.ev[no].pend, ev)) {
+		/* no pending event, set the mask bit and return */
+		mask |= (1 << ev);
+		if (__strex(&thinkos_rt.ev[no].mask, mask))
+			goto again;
+		return;
+	}
+
+	__clrex();
 
 	do {
 		/* get the event wait queue bitmap */
