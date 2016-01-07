@@ -67,6 +67,18 @@ tgt_reset_quiet = 'rst\n'\
 	'run\n'\
 	'connect\n'
 
+tgt_nrst_noisy = 'release\n'\
+	'beep 7 125\n'\
+	'beep 6 125\n'\
+	'beep 5 125\n'\
+	'nrst\n'\
+	'connect\n'
+
+tgt_nrst_quiet = 'release\n'\
+	'nrst\n'\
+	'connect\n'
+
+
 tgt_config = 'target {0} force\n'\
 	'target config\n'\
 	'connect\n'\
@@ -107,6 +119,7 @@ def show_usage():
 	print("  -t, --target   target platform."\
 		" Default to: '{0}'".format(def_target))
 	print("  -r, --reset    exec the reset script")
+	print("  -n, --nrst     force reset using the nRST pin (hardware)")
 	print("  -i, --init     exec init script")
 	print("  -q, --quiet    silent mode (no beeps)")
 	print("      --help     display this help and exit")
@@ -141,6 +154,7 @@ def main():
 	host = def_host
 	addr = def_addr
 	reset = False
+	nrst = False
 	quiet = False
 	init = False
 	erase = False
@@ -149,8 +163,8 @@ def main():
 	target = def_target
 
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "?rqivVpea:h:t:", \
-			["help", "reset", "quiet", "init" , "verbose", "version", \
+		opts, args = getopt.getopt(sys.argv[1:], "?rnqivVpea:h:t:", \
+			["help", "reset", "nrst", "quiet", "init" , "verbose", "version", \
 			"power", "erase", \
 			"addr=", "host=", "target="])
 	except err:
@@ -164,6 +178,9 @@ def main():
 			show_version()
 			sys.exit()
 		elif o in ("-r", "--reset"):
+			reset = True
+		elif o in ("-n", "--nrst"):
+			nrst = True
 			reset = True
 		elif o in ("-q", "--quiet"):
 			quiet = True
@@ -220,10 +237,16 @@ def main():
 
 	if quiet:
 		power_on = power_on_quiet 
-		tgt_reset = tgt_reset_quiet 
+		if nrst:
+			tgt_reset = tgt_nrst_quiet 
+		else:	
+			tgt_reset = tgt_reset_quiet 
 	else:
 		power_on = power_on_noisy
-		tgt_reset = tgt_reset_noisy
+		if nrst:
+			tgt_reset = tgt_nrst_noisy
+		else:	
+			tgt_reset = tgt_reset_noisy
 
 	if power:
 		try:

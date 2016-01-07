@@ -36,8 +36,6 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#include <gdb.h>
-
 #ifndef MONITOR_CONFIGURE_ENABLE
 #define MONITOR_CONFIGURE_ENABLE  1
 #endif
@@ -60,6 +58,10 @@
 
 #ifndef MONITOR_APPWIPE_ENABLE
 #define MONITOR_APPWIPE_ENABLE    1
+#endif
+
+#if (BOOT_ENABLE_GDB)
+#include <gdb.h>
 #endif
 
 #define CTRL_B 0x02
