@@ -76,7 +76,7 @@ void monitor_init(void)
 	thinkos_console_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "4. thinkos_dmon_init()");
+	DCC_LOG(LOG_TRACE, "3. thinkos_dmon_init()");
 	thinkos_dmon_init(comm, monitor_task);
 }
 
@@ -109,6 +109,8 @@ int main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "5. thinkos_thread_abort()");
 #endif
 	thinkos_thread_abort(thinkos_thread_self());
+
+	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
 
 	return 0;
 }

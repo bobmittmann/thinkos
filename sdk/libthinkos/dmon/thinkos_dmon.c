@@ -222,13 +222,11 @@ void dmon_reset(void)
 	dmon_context_swap(&thinkos_dmon_rt.ctx); 
 }
 
-void __attribute__((noreturn)) dmon_exec(void (* task)(struct dmon_comm *))
+void __attribute__((naked)) dmon_exec(void (* task)(struct dmon_comm *))
 {
 	DCC_LOG1(LOG_TRACE, "task=%p", task);
 	thinkos_dmon_rt.task = task;
-	dmon_signal(DMON_RESET);
-	dmon_context_swap(&thinkos_dmon_rt.ctx); 
-	for (;;);
+	dmon_reset();
 }
 
 
@@ -543,26 +541,52 @@ void __attribute__((noinline)) dmon_context_swap(void * ctx)
 				  : : "r" (ptr0) : "r1");
 }
 
+static void dmon_null_task(struct dmon_comm * comm)
+{
+	uint32_t buf[64 / 4];
+	int n;
+
+	thinkos_dmon_rt.mask = 0;
+
+	for (;;) {
+		/* Loopback COMM */
+		if ((n = dmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
+			dmon_comm_send(comm, buf, n);
+		}
+	}
+}
+
 static void __attribute__((naked)) dmon_bootstrap(void)
 {
+	void (* dmon_task)(struct dmon_comm *) = thinkos_dmon_rt.task; 
+	struct dmon_comm * comm = thinkos_dmon_rt.comm; 
+
+	thinkos_dmon_rt.task = dmon_null_task;
+	
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if THINKOS_ENABLE_DMCLOCK
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
-	thinkos_dmon_rt.task(thinkos_dmon_rt.comm);
-	dmon_context_swap(&thinkos_dmon_rt.ctx); 
+
+	dmon_task(comm);
+
+	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
+
+	dmon_reset();
 }
 
 static void dmon_on_reset(struct thinkos_dmon * dmon)
 {
 	uint32_t * sp;
+	int i;
 
 	DCC_LOG(LOG_TRACE, "DMON_RESET");
+
 	sp = &thinkos_dmon_stack[(sizeof(thinkos_dmon_stack) / 4) - 10];
 	sp[0] = 0x0100000f; /* CPSR */
-	sp[1] = 0; /* R4 */
-	sp[2] = 0; /* R5 */
+	for (i = 1; i < 8; ++i)
+		sp[i] = 0; /* R4 ... R11 */
 	sp[9] = ((uint32_t)dmon_bootstrap) | 1; /* LR */
 	dmon->ctx = sp;
 	dmon->events &= ~(1 << DMON_RESET);
@@ -754,11 +778,15 @@ step_done:
 	if ((sigset & sigmsk) != 0) {
 		DCC_LOG1(LOG_MSG, "<%08x>", sigset);
 		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dmon_rt.ctx);
+		if (thinkos_dmon_rt.ctx <  thinkos_dmon_stack) {
+			DCC_LOG(LOG_ERROR, "stack overflow!");
+		}
 		dmon_context_swap(&thinkos_dmon_rt.ctx); 
 	} else {
 		DCC_LOG1(LOG_JABBER, "Unhandled signal <%08x>", sigset);
 	}
 }
+
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 void __attribute__((noinline)) dbgmon_stop_isr(struct cm3_except_context * ctx, 
@@ -890,6 +918,8 @@ void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 	
+	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
+
 	thinkos_dmon_rt.events = (1 << DMON_RESET);
 	thinkos_dmon_rt.mask = (1 << DMON_RESET);
 	thinkos_dmon_rt.comm = comm;
@@ -899,7 +929,6 @@ void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	__thinkos_memset32(thinkos_dmon_stack, 0xdeadbeef, 
 					   sizeof(thinkos_dmon_stack));
 #endif
-	DCC_LOG1(LOG_TRACE, "comm=%0p", comm);
 
 	demcr = dcb->demcr;
 

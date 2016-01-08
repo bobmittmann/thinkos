@@ -109,6 +109,8 @@
 
 extern int __heap_end;
 const void * heap_end = &__heap_end; 
+extern int __heap_base;
+const void * heap_base = &__heap_base; 
 
 #if (MONITOR_THREADINFO_ENABLE)
 #define MONITOR_STARTUP_MAGIC -111
@@ -308,7 +310,6 @@ dump_line:
 }
 #endif
 
-//void gdb_task(struct dmon_comm *) __attribute__((weak, alias("monitor_task")));
 void monitor_task(struct dmon_comm *);
 
 #if (MONITOR_SELFTEST_ENABLE)
@@ -323,6 +324,7 @@ void __attribute__((naked)) monitor_selftest(struct dmon_comm * comm)
 #if (BOOT_ENABLE_GDB)
 void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm) 
 {
+	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_task(comm);
 	dmon_exec(monitor_task);
 }
@@ -470,7 +472,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	char buf[64];
 	int len;
 
-//	DCC_LOG(LOG_TRACE, "Monitor start...");
+	DCC_LOG(LOG_TRACE, "Monitor start...");
 //	dmon_comm_connect(comm);
 //	DCC_LOG(LOG_TRACE, "Comm connected.");
 
