@@ -145,21 +145,43 @@ struct thinkos_board {
 	bool (* autoboot)(unsigned int tick);
 	bool (* configure)(struct dmon_comm *);
 	void (* upgrade)(struct dmon_comm *);
+	void (* selftest)(struct dmon_comm *);
 	void (* on_appload)(void);
 	void (* comm_irqen)(void);
 };
 
 extern const struct thinkos_board this_board;
 
+struct ymodem_rcv {
+	unsigned int pktno;
+	unsigned int fsize;
+	unsigned int count;
+
+	unsigned char crc_mode;
+	unsigned char xmodem;
+	unsigned char sync;
+	unsigned char retry;
+
+	struct { 
+		unsigned char hdr[3];
+		unsigned char data[1024];
+		unsigned char fcs[2];
+	} pkt;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
+
+int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx);
 
 void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ));
 
 void dmon_reset(void);
 
-void dmon_exec(void (* task)(struct dmon_comm *));
+void __attribute__((noreturn)) dmon_exec(void (* task)(struct dmon_comm *));
 
 void dmon_unmask(int sig);
 
@@ -217,6 +239,8 @@ int dmon_print_osinfo(struct dmon_comm * comm);
 void dmon_print_alloc(struct dmon_comm * comm);
 
 void dmon_print_stack_usage(struct dmon_comm * comm);
+
+void dmon_thread_exec(void (* func)(void *), void * arg);
 
 bool dmon_app_exec(uint32_t addr, bool paused);
 
