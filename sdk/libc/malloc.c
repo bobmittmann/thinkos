@@ -85,7 +85,7 @@ struct {
 	unsigned int used;
 	unsigned int size;
 #endif
-} heap = { NULL
+} malloc_heap = { NULL
 #ifdef ENABLE_STATS
 	, 0, 0 
 #endif
@@ -94,12 +94,12 @@ struct {
 #ifdef ENABLE_STATS
 unsigned int heap_usage(void)
 {
-	return heap.used;
+	return malloc_heap.used;
 }
 
 unsigned int heap_size(void)
 {
-	return heap.size;
+	return malloc_heap.size;
 }
 #endif
 
@@ -132,16 +132,16 @@ void __attribute__ ((constructor)) malloc_init(void)
 	heap_begin = chunk_align((void *)&__heap_start);
 	stack = __sp();
 	heap_end = chunk_align((void *)stack - MAIN_THREAD_STACK_SIZE);
-	heap.holes = (struct hole *)heap_begin;
+	malloc_heap.holes = (struct hole *)heap_begin;
 
-	DCC_LOG1(LOG_TRACE, "heap starts at 0x%p, ends at 0x%p (%lu bytes long).",
+	DCC_LOG1(LOG_TRACE, "malloc_heap starts at 0x%p, ends at 0x%p (%lu bytes long).",
 		heap_begin, heap_end, chunks2bytes(heap_end - heap_begin));
 
 #ifdef ENABLE_STATS
-	heap.size = chunks2bytes(heap_end - heap_begin);
-	heap.used = 0;
+	malloc_heap.size = chunks2bytes(heap_end - heap_begin);
+	malloc_heap.used = 0;
 #endif
-	hole = heap.holes;
+	hole = malloc_heap.holes;
 	hole->size = heap_end - heap_begin;
 	hole->next = NULL;
 }
@@ -195,7 +195,7 @@ void hole_dump(void)
 	struct hole * curr;
 
 	puts("HOLE DUMP:");
-	for (curr = heap.holes; curr != NULL; curr = curr->next) {
+	for (curr = malloc_heap.holes; curr != NULL; curr = curr->next) {
 		printf("  0x%p(%u)\n", curr, curr->size);
 	}
 	puts("END.");
@@ -220,7 +220,7 @@ void * malloc(size_t bytes)
 
 	/* This is the First-Fit algorithm implementation. */
 	
-	/* This is redundant, since if heap is full, the for comparision fails and
+	/* This is redundant, since if malloc_heap is full, the for comparision fails and
 	   an invalid hole_descriptor is returned, as expected.
 	if (heap_is_full()) {
 		hole.addr = HOLE_EOL;
@@ -228,9 +228,9 @@ void * malloc(size_t bytes)
 		return hole;
 	} */
 	
-	DCC_LOG2(LOG_MSG, "%u chunks, starting at 0x%p", size, heap.holes);
+	DCC_LOG2(LOG_MSG, "%u chunks, starting at 0x%p", size, malloc_heap.holes);
 	prev = NULL;
-	hole = heap.holes;
+	hole = malloc_heap.holes;
 	while (hole != NULL) {
 		if (hole->size >= size) {
 			DCC_LOG2(LOG_MSG, "hole found: 0x%p(%u)", hole, hole->size);
@@ -246,7 +246,7 @@ void * malloc(size_t bytes)
 				if (prev)
 					prev->next = hole->next; 
 				else
-					heap.holes = hole->next;
+					malloc_heap.holes = hole->next;
 
 			} else {
 				int rem;
@@ -261,7 +261,7 @@ void * malloc(size_t bytes)
 				if (prev)
 					prev->next = hole;
 				else
-					heap.holes = hole;
+					malloc_heap.holes = hole;
 
 				DCC_LOG3(LOG_MSG, "hole resized: 0x%p(%u). return: 0x%p", 
 					hole, hole->size, mem->data);
@@ -270,7 +270,7 @@ void * malloc(size_t bytes)
 
 			mem->size = size;
 #ifdef ENABLE_STATS
-			heap.used += chunks2bytes(size);
+			malloc_heap.used += chunks2bytes(size);
 #endif
 			return mem->data;
 		}
@@ -291,8 +291,8 @@ void * malloc(size_t bytes)
 	mem->size = size;
 
 #ifdef ENABLE_STATS
-	heap.size += chunks2bytes(heap_end - heap_begin);
-	heap.used += chunks2bytes(size);
+	malloc_heap.size += chunks2bytes(heap_end - heap_begin);
+	malloc_heap.used += chunks2bytes(size);
 #endif
 
 
@@ -329,21 +329,21 @@ void free(void * ptr)
 #endif
 
 #ifdef ENABLE_STATS
-	heap.used -= chunks2bytes(mem->size);
+	malloc_heap.used -= chunks2bytes(mem->size);
 #endif
 	new = (struct hole *)mem;
 
-	if (heap.holes == NULL) {
+	if (malloc_heap.holes == NULL) {
 		new->next = NULL;
-		heap.holes = new;
-		DCC_LOG(LOG_MSG, "heap was full, freed memory starting new hole list.");
+		malloc_heap.holes = new;
+		DCC_LOG(LOG_MSG, "malloc_heap was full, freed memory starting new hole list.");
 		return;
 	}
 
 	/* Is there any hole before the new block? */
-	if (heap.holes < new) {
+	if (malloc_heap.holes < new) {
 		/* find it. */
-		for (prev = heap.holes; (prev->next < new) && (prev->next != NULL); 
+		for (prev = malloc_heap.holes; (prev->next < new) && (prev->next != NULL); 
 			 prev = prev->next);
 		next = prev->next;
 		
@@ -374,8 +374,8 @@ void free(void * ptr)
 		}
 	} else {
 		/* new is the first of a non-empty list. */
-		next = heap.holes;
-		heap.holes = new;
+		next = malloc_heap.holes;
+		malloc_heap.holes = new;
 	}
 
 	/* There's a hole after the new block, is it side by side? */
