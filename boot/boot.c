@@ -43,10 +43,6 @@
 #define BOOT_ENABLE_GDB 0
 #endif
 
-#if (BOOT_ENABLE_GDB)
-#include <gdb.h>
-#endif
-
 #include "board.h"
 
 #if 0
@@ -78,11 +74,6 @@ void monitor_init(void)
 #if THINKOS_ENABLE_CONSOLE
 	DCC_LOG(LOG_TRACE, "2. thinkos_console_init()");
 	thinkos_console_init();
-#endif
-
-#if (BOOT_ENABLE_GDB)
-	DCC_LOG(LOG_TRACE, "3. gdb_init()");
-	gdb_init(monitor_task);
 #endif
 
 	DCC_LOG(LOG_TRACE, "4. thinkos_dmon_init()");

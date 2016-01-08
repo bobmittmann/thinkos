@@ -37,44 +37,61 @@
 #include <sys/dcclog.h>
 
 #ifndef MONITOR_CONFIGURE_ENABLE
-#define MONITOR_CONFIGURE_ENABLE  1
+#define MONITOR_CONFIGURE_ENABLE   1
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
-#define MONITOR_DUMPMEM_ENABLE    1
+#define MONITOR_DUMPMEM_ENABLE     1
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
-#define MONITOR_UPGRADE_ENABLE    1
+#define MONITOR_UPGRADE_ENABLE     1
 #endif
 
 #ifndef MONITOR_STACKUSAGE_ENABLE
-#define MONITOR_STACKUSAGE_ENABLE 1
+#define MONITOR_STACKUSAGE_ENABLE  1
 #endif
 
 #ifndef MONITOR_THREADINFO_ENABLE
-#define MONITOR_THREADINFO_ENABLE 1
+#define MONITOR_THREADINFO_ENABLE  1
 #endif
 
 #ifndef MONITOR_APPWIPE_ENABLE
-#define MONITOR_APPWIPE_ENABLE    1
+#define MONITOR_APPWIPE_ENABLE     1
 #endif
+
+#ifndef MONITOR_APPTERM_ENABLE
+#define MONITOR_APPTERM_ENABLE     1
+#endif
+
+#ifndef MONITOR_APPRESTART_ENABLE
+#define MONITOR_APPRESTART_ENABLE  1
+#endif
+
+#ifndef MONITOR_SELFTEST_ENABLE
+#define MONITOR_SELFTEST_ENABLE    1
+#endif
+
+#ifndef MONITOR_FAULT_ENABLE
+#define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
+#endif
+
 
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif
 
-#define CTRL_B 0x02
-#define CTRL_C 0x03
-#define CTRL_D 0x04
-#define CTRL_E 0x05
-#define CTRL_F 0x06
-#define CTRL_G 0x07
-#define CTRL_H 0x08
-#define CTRL_I 0x09
-#define CTRL_J 0x0a
-#define CTRL_K 0x0b
-#define CTRL_L 0x0c
+#define CTRL_B 0x02 /* STX */
+#define CTRL_C 0x03 /* ETX */
+#define CTRL_D 0x04 /* EOT */
+#define CTRL_E 0x05 /* ENQ */
+#define CTRL_F 0x06 /* ACK */
+#define CTRL_G 0x07 /* BEL */
+#define CTRL_H 0x08 /* BS */
+#define CTRL_I 0x09 /* TAB */
+#define CTRL_J 0x0a /* LF */
+#define CTRL_K 0x0b /* VT */
+#define CTRL_L 0x0c /* FF */
 #define CTRL_M 0x0d /* CR */
 #define CTRL_N 0x0e
 #define CTRL_O 0x0f
@@ -99,7 +116,12 @@ int8_t monitor_thread_id = MONITOR_STARTUP_MAGIC;
 #endif
 
 static const char monitor_menu[] = 
+#if (MONITOR_APPTERM_ENABLE)
 " Ctrl+C - Stop app\r\n"
+#endif
+#if (MONITOR_SELFTEST_ENABLE)
+" Ctrl+E - Run selftest\r\n"
+#endif
 #if (MONITOR_CONFIGURE_ENABLE)
 " Ctrl+K - Configure Board\r\n"
 #endif
@@ -130,7 +152,10 @@ static const char monitor_menu[] =
 " Ctrl+X - Exception info\r\n"
 #endif
 " Ctrl+Y - YMODEM app upload\r\n"
-" Ctrl+Z - Restart app\r\n";
+#if (MONITOR_APPRESTART_ENABLE)
+" Ctrl+Z - Restart app\r\n"
+#endif
+;
 
 static const char __hr__[] = 
 "--------------------------------------------------------------\r\n";
@@ -178,7 +203,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 #if (MONITOR_THREADINFO_ENABLE)
 static void monitor_pause_all(struct dmon_comm * comm)
 {
-	dmprintf(comm, "\r\nPausing all threads...\r\n");
+	dmputs("\r\nPausing all threads...\r\n", comm);
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
 	__thinkos_pause_all();
 	if (dmon_wait_idle() < 0) {
@@ -188,47 +213,46 @@ static void monitor_pause_all(struct dmon_comm * comm)
 
 static void monitor_resume_all(struct dmon_comm * comm)
 {
-	dmprintf(comm, "\r\nResuming all threads...\r\n");
+	dmputs("\r\nResuming all threads...\r\n", comm);
 	__thinkos_resume_all();
-	dmprintf(comm, "Restarting...\r\n");
+	dmputs("Restarting...\r\n", comm);
 }
 #endif
 
-static const char ymodem_rcv_msg[] = 
-"\r\nYMODEM receive (^X to cancel) ... ";
-static const char ymodem_err_msg[] = 
-"\r\n#ERROR: YMODEM failed!\r\n";
-static const char app_invalid_msg[] = 
-"\r\n#ERROR: Invalid app!\r\n";
+static void monitor_exec(struct dmon_comm * comm, unsigned int addr)
+{
+	if (dmon_app_exec(addr, false) < 0) {
+		dmputs("\r\n#ERROR: Invalid app!\r\n", comm);
+		return;
+	}
+}
 
 static void monitor_ymodem_recv(struct dmon_comm * comm, 
 								uint32_t addr, unsigned int size)
 {
-	dmon_comm_send(comm, ymodem_rcv_msg, sizeof(ymodem_rcv_msg) - 1);
+	dmputs("\r\nYMODEM receive (^X to cancel) ... ", comm);
 	dmon_soft_reset(comm);
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
-		dmon_comm_send(comm, ymodem_err_msg, sizeof(ymodem_err_msg) - 1);
+		dmputs("\r\n#ERROR: YMODEM failed!\r\n", comm); 
 		return;
 	}	
 
-	if (dmon_app_exec(addr, false) < 0) {
-		dmon_comm_send(comm, app_invalid_msg, sizeof(app_invalid_msg) - 1);
-		return;
-	}
+	monitor_exec(comm, addr);
 }
 
 #if (MONITOR_APPWIPE_ENABLE)
 static void monitor_app_erase(struct dmon_comm * comm, 
 							  uint32_t addr, unsigned int size)
 {
-	dmprintf(comm, "\r\nErasing application block ... ");
+	dmputs("\r\nErasing application block ... ", comm);
 	dmon_soft_reset(comm);
 	if (dmon_app_erase(comm, addr, size))
-		dmprintf(comm, "done.\r\n");
+		dmputs("done.\r\n", comm);
 	else	
-		dmprintf(comm, "failed!\r\n");
+		dmputs("failed!\r\n", comm);
 }
 #endif
+
 
 #if (MONITOR_DUMPMEM_ENABLE)
 int long2hex_le(char * s, unsigned long val);
@@ -284,16 +308,25 @@ dump_line:
 }
 #endif
 
-static void monitor_exec(struct dmon_comm * comm, unsigned int addr)
-{
-	if (dmon_app_exec(addr, false) < 0) {
-		dmon_comm_send(comm, app_invalid_msg, sizeof(app_invalid_msg) - 1);
-		return;
-	}
-}
-
 //void gdb_task(struct dmon_comm *) __attribute__((weak, alias("monitor_task")));
 void monitor_task(struct dmon_comm *);
+
+#if (MONITOR_SELFTEST_ENABLE)
+void __attribute__((naked)) monitor_selftest(struct dmon_comm * comm) 
+{
+	if (this_board.selftest)
+		this_board.selftest(comm);
+	dmon_exec(monitor_task);
+}
+#endif
+
+#if (BOOT_ENABLE_GDB)
+void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm) 
+{
+	gdb_task(comm);
+	dmon_exec(monitor_task);
+}
+#endif
 
 int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 {
@@ -304,18 +337,27 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 	for (i = 0; i < len; ++i) {
 		c = buf[i];
 		switch (c) {
-		case CTRL_C:
-			dmon_comm_send(comm, "^C\r\n", 4);
-			dmon_soft_reset(comm);
-			break;
 #if (BOOT_ENABLE_GDB)
 		case '+':
-			dmon_exec(gdb_task);
+			dmon_exec(gdb_bootstrap);
+			break;
+#endif
+#if (MONITOR_APPTERM_ENABLE)
+		case CTRL_C:
+			dmputs("^C\r\n", comm);
+			dmon_soft_reset(comm);
+			break;
+#endif
+#if (MONITOR_SELFTEST_ENABLE)
+		case CTRL_E:
+			dmputs("^E\r\n", comm);
+			dmon_soft_reset(comm);
+			dmon_exec(monitor_selftest);
 			break;
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
 		case CTRL_K:
-			dmprintf(comm, "^K\r\n");
+			dmputs("^K\r\n", comm);
 			dmon_soft_reset(comm);
 			this_board.configure(comm);
 			break;
@@ -323,12 +365,11 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #if (MONITOR_UPGRADE_ENABLE)
 		case CTRL_L:
 			dmon_soft_reset(comm);
-			dmprintf(comm, "^L\r\n");
-			dmprintf(comm, "Confirm (yes/no)? ");
+			dmputs("^L\r\nConfirm (yes/no)? ", comm);
 			dmscanf(comm, "yes%n", &i);
 			if (i == 3) {
 				this_board.upgrade(comm);
-				dmprintf(comm, "Failed !!!\r\n");
+				dmputs("Failed !!!\r\n", comm);
 			}
 			break;
 #endif
@@ -344,21 +385,21 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 			dmon_print_osinfo(comm);
 			break;
 		case CTRL_P:
-			dmprintf(comm, "^P\r\n");
+			dmputs("^P\r\n", comm);
 			monitor_pause_all(comm);
 			break;
 		case CTRL_Q:
-			dmprintf(comm, "^Q\r\n");
+			dmputs("^Q\r\n", comm);
 			dmon_exec(monitor_task);
 			break;
 		case CTRL_R:
-			dmprintf(comm, "^R\r\n");
+			dmputs("^R\r\n", comm);
 			monitor_resume_all(comm);
 			break;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
 		case CTRL_S:
-			dmprintf(comm, "^S\r\n");
+			dmputs("^S\r\n", comm);
 			monitor_dump_mem(comm, this_board.application.start_addr, 
 							 this_board.application.block_size);
 			break;
@@ -376,28 +417,30 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 		case CTRL_V:
 			monitor_show_help(comm);
 			break;
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_FAULT_ENABLE)
 		case CTRL_X:
 			monitor_print_fault(comm);
 			break;
 #endif
 		case CTRL_Y:
-			dmon_comm_send(comm, "^Y\r\n", 4);
+			dmputs("^Y\r\n", comm);
 			monitor_ymodem_recv(comm, this_board.application.start_addr, 
 								this_board.application.block_size);
 			break;
 #if (MONITOR_APPWIPE_ENABLE)
 		case CTRL_W:
-			dmprintf(comm, "^W\r\n");
+			dmputs("^W\r\n", comm);
 			monitor_app_erase(comm, this_board.application.start_addr, 
 							  this_board.application.block_size);
 			break;
 #endif
+#if (MONITOR_APPRESTART_ENABLE)
 		case CTRL_Z:
-			dmon_comm_send(comm, "^Z\r\n", 4);
+			dmputs("^Z\r\n", comm);
 			dmon_soft_reset(comm);
 			monitor_exec(comm, this_board.application.start_addr);
 			break;
+#endif
 		default:
 			continue;
 		}
