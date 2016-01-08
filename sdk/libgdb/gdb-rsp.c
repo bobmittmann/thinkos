@@ -158,7 +158,6 @@ struct gdb_rspd {
 	} tx;
 #endif
 	struct dmon_comm * comm;
-	void (* shell_task)(struct dmon_comm * comm);
 };
 
 static int rsp_get_g_thread(struct gdb_rspd * gdb)
@@ -1340,10 +1339,7 @@ static int rsp_detach(struct gdb_rspd * gdb)
 	/* reply OK */
 	rsp_ok(gdb);
 
-#if 1
-	dmon_exec(gdb->shell_task);
-#endif
-	return 0;
+	return -1234;
 }
 
 static int rsp_kill(struct gdb_rspd * gdb)
@@ -1570,7 +1566,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 
 struct gdb_rspd gdb_rspd;
 
-void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
+void gdb_task(struct dmon_comm * comm)
 {
 	struct gdb_rspd * gdb = &gdb_rspd;
 	char pkt[RSP_BUFFER_LEN];
@@ -1593,9 +1589,6 @@ void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
 
 	dmon_breakpoint_clear_all();
 	dmon_watchpoint_clear_all();
-
-	if (gdb->shell_task == NULL)
-		gdb->shell_task = gdb_task;
 
 //	dmon_comm_connect(comm);
 
@@ -1658,7 +1651,7 @@ void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
 				rsp_pkt_rxmit(gdb);
 #else
 				DCC_LOG(LOG_WARNING, "[NACK]!");
-//				dmon_exec(gdb->shell_task);
+//				return;
 #endif
 				break;
 
@@ -1667,11 +1660,12 @@ void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
 
 				if ((len = rsp_pkt_recv(comm, pkt, RSP_BUFFER_LEN)) <= 0) {
 					DCC_LOG1(LOG_WARNING, "rsp_pkt_recv(): %d", len);
-					dmon_exec(gdb->shell_task);
+					return;
 				} else {
 					if (!gdb->noack_mode)
 						rsp_ack(gdb);
-					rsp_pkt_input(gdb, pkt, len);
+					if (rsp_pkt_input(gdb, pkt, len) == -1234)
+						return;
 				}
 				break;
 
@@ -1693,7 +1687,7 @@ void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
 			dmon_clear(DMON_COMM_CTL);
 			if (!dmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
-				dmon_exec(gdb->shell_task);
+				return;
 			}
 		}
 
@@ -1708,14 +1702,3 @@ void __attribute__((noreturn)) gdb_task(struct dmon_comm * comm)
 	}
 }
  
-void gdb_init(void (* shell)(struct dmon_comm * ))
-{
-	struct gdb_rspd * gdb = &gdb_rspd;
-
-	DCC_LOG(LOG_TRACE, "..... !!!!! ......");
-
-	if (shell == NULL)
-		shell = gdb_task;
-	gdb->shell_task = shell;
-}
-
