@@ -30,7 +30,7 @@
 
 int udp_enum(int (* __callback)(struct udp_inf *, void *), void * __arg) 
 {
-	struct udp_pcb * lst[NET_TCP_PCB_ACTIVE_MAX];
+	struct udp_pcb * lst[NET_UDP_PCB_MAX];
 	struct udp_pcb * up = NULL;
 	int cnt = 0;
 	int ret;
