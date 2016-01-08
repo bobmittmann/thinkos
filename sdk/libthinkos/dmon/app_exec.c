@@ -66,6 +66,13 @@ bool dmon_app_exec(uint32_t addr, bool paused)
 	return true;
 }
 
+void dmon_thread_exec(void (* func)(void *), void * arg)
+{
+	int thread_id = 0;
+	bool paused = false;
+
+	__thinkos_exec(thread_id, func, arg, paused);
+}
 
 static void __dmon_irq_disable_all(void)
 {
