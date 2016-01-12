@@ -33,7 +33,11 @@
 #define UDELAY_FACTOR 0
 #endif
 
+#if (UDELAY_FACTOR != 0)
+const int32_t udelay_factor = UDELAY_FACTOR;
+#else
 int32_t udelay_factor = UDELAY_FACTOR;
+#endif
 
 #if UDELAY_ERROR_ENABLE
 int32_t udelay_error;

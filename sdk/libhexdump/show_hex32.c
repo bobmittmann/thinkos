@@ -44,7 +44,7 @@ int show_hex32(FILE * f, uint32_t  addr, const void * buf, int size)
 		show_line_hex32(f, addr, cp, n);
 		fprintf(f, ": ");
 		show_line_char(f, addr, cp, n);
-		fprintf(f, "\n");
+		fprintf(f, "\r\n");
 		cp += n;
 		addr += n;
 		rem -= n;

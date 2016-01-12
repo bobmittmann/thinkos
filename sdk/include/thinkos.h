@@ -718,6 +718,8 @@ int thinkos_critical_enter(void);
 
 int thinkos_critical_exit(void);
 
+int thinkos_escalate(int (* call)(void *), void * arg);
+
 /**@}*/
 
 #ifdef __cplusplus

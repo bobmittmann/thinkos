@@ -31,7 +31,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if THINKOS_ENABLE_CONSOLE
 
-void __attribute__((noreturn)) console_task(struct dmon_comm * comm)
+void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
 {
 	uint32_t sigmask;
 	uint32_t sigset;

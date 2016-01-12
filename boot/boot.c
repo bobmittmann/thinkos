@@ -80,6 +80,10 @@ void monitor_init(void)
 	thinkos_dmon_init(comm, monitor_task);
 }
 
+#ifndef BOOT_MEM_RESERVED 
+#define BOOT_MEM_RESERVED 0x1000
+#endif
+
 int main(int argc, char ** argv)
 {
 	DCC_LOG_INIT();
@@ -99,7 +103,7 @@ int main(int argc, char ** argv)
 
 #if THINKOS_ENABLE_MPU
 	DCC_LOG(LOG_TRACE, "5. thinkos_mpu_init()");
-	thinkos_mpu_init(0x1000);
+	thinkos_mpu_init(BOOT_MEM_RESERVED);
 
 	DCC_LOG(LOG_TRACE, "6. thinkos_userland()");
 	thinkos_userland();
@@ -108,6 +112,7 @@ int main(int argc, char ** argv)
 #else
 	DCC_LOG(LOG_TRACE, "5. thinkos_thread_abort()");
 #endif
+
 	thinkos_thread_abort(thinkos_thread_self());
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");

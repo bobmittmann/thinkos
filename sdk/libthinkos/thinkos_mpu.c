@@ -97,31 +97,34 @@ void thinkos_mpu_init(unsigned int size)
 
 	for (n = 0; (n * 1024) < size; ++n);
 
-	bmp = 0xffff >> (16 - n);
+	bmp = 0xffffffff << n;
 
-	mpu_region_cfg(0, 0, 0); 
+	/* SRAM */
+	mpu_region_cfg(0, 0x20000000, 
+				   M_SRAM | USER_RW | 
+				   MPU_RASR_SIZE_512K | 
+				   MPU_RASR_SRD(0x00) |
+				   MPU_RASR_ENABLE);
+
+	/* Disable user write access on sram bottom */
 
 	/* SRAM */
 	/* 8 * 1K blocks low */
 	mpu_region_cfg(1, 0x20000000, 
-				   M_SRAM | USER_RW | 
+				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
 				   MPU_RASR_SRD(bmp & 0xff) |
 				   MPU_RASR_ENABLE);
 
 	/* 8 * 1K blocks high*/
 	mpu_region_cfg(2, 0x20000000 + 8 * 1024, 
-				   M_SRAM | USER_RW | 
+				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
-				   MPU_RASR_SRD(bmp >> 8) |
+				   MPU_RASR_SRD((bmp >> 8) & 0xff) |
 				   MPU_RASR_ENABLE);
 
-	/* SRAM */
-	mpu_region_cfg(3, 0x20000000, 
-				   M_SRAM | USER_RW | 
-				   MPU_RASR_SIZE_128K | 
-				   MPU_RASR_SRD(0x01) |
-				   MPU_RASR_ENABLE);
+
+	mpu_region_cfg(3, 0, 0); 
 
 #if 0
 	/* SRAM and Bitbanding */
