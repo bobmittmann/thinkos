@@ -26,6 +26,8 @@
 #ifndef __ICE_TRACE_H__
 #define __ICE_TRACE_H__
 
+#include <stdio.h>
+
 #ifdef DEBUG
  #define ENABLE_LOG 
  #ifdef DEBUG_LEVEL
@@ -264,6 +266,8 @@ extern "C" {
 void ice_trace_init(void);
 
 void ice_comm_connect();
+
+FILE * ice_comm_fopen(void);
 
 void ice_trace0(const struct dcc_trace_entry * __entry);
 
