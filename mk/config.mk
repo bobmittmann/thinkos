@@ -183,11 +183,11 @@ else
         DIRMODE := windows
         ifdef ComSpec
            # Force the shell to the Windows Command Prompt
-          SHELL := $(abspath $(ComSpec))
+            SHELL := $(ComSpec)
           export SHELL
         else
           ifdef COMSPEC
-            SHELL := $(abspath $(COMSPEC))
+            SHELL := $(COMSPEC)
             export SHELL
           endif
         endif
