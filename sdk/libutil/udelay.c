@@ -59,6 +59,7 @@ void udelay(uint32_t usec)
 	}
 }
 
+#if (UDELAY_FACTOR == 0)
 void udelay_calibrate(int32_t ticks1ms, uint32_t (* get_ticks)(void))
 {
 	uint32_t t0;
@@ -104,4 +105,5 @@ void udelay_calibrate(int32_t ticks1ms, uint32_t (* get_ticks)(void))
 	udelay_error = (err * 1000) / ticks1ms;
 #endif
 }
+#endif
 

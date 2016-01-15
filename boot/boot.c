@@ -39,10 +39,6 @@
 
 #include <sys/dcclog.h>
 
-#ifndef BOOT_ENABLE_GDB
-#define BOOT_ENABLE_GDB 0
-#endif
-
 #include "board.h"
 
 #if 0
@@ -89,8 +85,11 @@ int main(int argc, char ** argv)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 
+#ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");
 	cm3_udelay_calibrate();
+#endif
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
 	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));

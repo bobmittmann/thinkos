@@ -76,6 +76,9 @@
 #define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
 #endif
 
+#ifndef BOOT_ENABLE_GDB
+#define BOOT_ENABLE_GDB 0
+#endif
 
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
@@ -313,7 +316,7 @@ dump_line:
 void monitor_task(struct dmon_comm *);
 
 #if (MONITOR_SELFTEST_ENABLE)
-void __attribute__((naked)) monitor_selftest(struct dmon_comm * comm) 
+void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm) 
 {
 	if (this_board.selftest)
 		this_board.selftest(comm);
@@ -354,7 +357,7 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 		case CTRL_E:
 			dmputs("^E\r\n", comm);
 			dmon_soft_reset(comm);
-			dmon_exec(monitor_selftest);
+			dmon_exec(selftest_bootstrap);
 			break;
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)

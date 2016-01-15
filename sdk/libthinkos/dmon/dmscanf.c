@@ -50,21 +50,21 @@
 
 int dmgets(char * s, int size, struct dmon_comm * comm);
 
-typedef struct {
+struct stream {
 	struct dmon_comm * comm;
 	int pos;
 	int len;
 	char buf[FILE_BUF_LEN];
-} FILE;
+};
 
-int getc(FILE * f)
+int getc(struct stream * f)
 {
 	if (f->pos < f->len)
 		return f->buf[f->pos++];
 	return -1;
 }
 
-int ungetc(int c, FILE * f)
+int ungetc(int c, struct stream * f)
 {
 	if (f->pos > 0)
 		return f->buf[--f->pos];
@@ -101,7 +101,7 @@ static unsigned long mulacc(unsigned long val, unsigned char flags,
 	return val + c;
 }
 
-static unsigned char conv_int(FILE *stream, unsigned int width, 
+static unsigned char conv_int(struct stream *stream, unsigned int width, 
 							  void *addr, unsigned char flags)
 {
 	unsigned long val;
@@ -168,7 +168,7 @@ err:
 	return 0;
 }
 
-static int skip_spaces(FILE *stream)
+static int skip_spaces(struct stream *stream)
 {
 	int i;
 	do {
@@ -181,8 +181,8 @@ static int skip_spaces(FILE *stream)
 
 int dmscanf(struct dmon_comm * comm, const char *fmt, ... )
 {
-	FILE buf;
-	FILE * stream = &buf;
+	struct stream buf;
+	struct stream * stream = &buf;
 	unsigned char nconvs;
 	unsigned char c;
 	unsigned int width;
