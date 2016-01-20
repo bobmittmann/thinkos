@@ -166,14 +166,14 @@ void __attribute__((noreturn)) __thinkos_thread_exit(int code)
 #if THINKOS_ENABLE_EXIT
 void thinkos_exit_svc(struct cm3_except_context * ctx)
 {
-	DCC_LOG2(LOG_TRACE, "<%d> exit with code %d!", 
+	DCC_LOG2(LOG_MSG, "<%d> exit with code %d!", 
 			 thinkos_rt.active, ctx->r0); 
 
 #if THINKOS_ENABLE_JOIN
 	int self = thinkos_rt.active;
 
 	if (thinkos_rt.wq_join[self] == 0) {
-		DCC_LOG1(LOG_TRACE, "<%d> canceled...", self); 
+		DCC_LOG1(LOG_MSG, "<%d> canceled...", self); 
 		/* insert into the canceled wait queue and wait for a join call */ 
 		__thinkos_wq_insert(THINKOS_WQ_CANCELED, self);
 		/* remove from the ready wait queue */

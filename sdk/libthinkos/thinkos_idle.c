@@ -131,7 +131,7 @@ void __thinkos_idle_init(void)
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
 #endif
 
-	DCC_LOG2(LOG_TRACE, "idle_stack=0x%08x idle_ctx=0x%08x", 
+	DCC_LOG2(LOG_MSG, "idle_stack=0x%08x idle_ctx=0x%08x", 
 			 thinkos_idle_stack_ptr, thinkos_rt.idle_ctx);
 
 }

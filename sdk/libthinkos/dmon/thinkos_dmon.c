@@ -62,7 +62,7 @@ uint32_t dmon_select(uint32_t evmask)
 
 	evset = thinkos_dmon_rt.events;
 	if (evset & evmask) {
-		DCC_LOG1(LOG_INFO, "got evset=%08x !!", evset);
+		DCC_LOG1(LOG_MSG, "got evset=%08x !!", evset);
 		return evset & evmask;
 	}
 
@@ -224,7 +224,7 @@ void dmon_reset(void)
 
 void __attribute__((naked)) dmon_exec(void (* task)(struct dmon_comm *))
 {
-	DCC_LOG1(LOG_TRACE, "task=%p", task);
+	DCC_LOG1(LOG_MSG, "task=%p", task);
 	thinkos_dmon_rt.task = task;
 	dmon_reset();
 }
@@ -951,7 +951,7 @@ void thinkos_dbgmon_signal(unsigned int sig)
 		uint32_t demcr;
 		/* Debug monitor request semaphore */
 		if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
-			DCC_LOG(LOG_TRACE, "<<< Idle >>>");
+			DCC_LOG(LOG_MSG, "<<< Idle >>>");
 			__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DMON_IDLE, 1);  
 			dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
 			asm volatile ("isb\n" :  :  : );

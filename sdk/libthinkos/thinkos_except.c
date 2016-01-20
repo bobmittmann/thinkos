@@ -39,12 +39,11 @@ _Pragma ("GCC optimize (\"O2\")")
 #if THINKOS_ENABLE_EXCEPTIONS
 
 #if DEBUG
- #undef THINKOS_SYSRST_ONFAULT
- #define THINKOS_SYSRST_ONFAULT    0
-
- #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)
+  #undef THINKOS_SYSRST_ONFAULT
+  #define THINKOS_SYSRST_ONFAULT    0
+  #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)
 #else
- #define DCC_EXCEPT_DUMP(XCPT)
+  #define DCC_EXCEPT_DUMP(XCPT)
 #endif
 
 struct thinkos_except thinkos_except_buf __attribute__((section(".heap")));
@@ -661,9 +660,17 @@ void __attribute__((naked, noreturn)) cm3_mem_manage_isr(void)
 
 void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 {
+#if THINKOS_ENABLE_HARDFAULT
 	__xcpt_context_save();
 	__hard_fault();
 	__xcpt_process();
+#else
+  #if THINKOS_SYSRST_ONFAULT
+	cm3_sysrst();
+  #else
+	for(;;);
+  #endif
+#endif
 }
 
 /* -------------------------------------------------------------------------
@@ -684,7 +691,7 @@ struct thinkos_except * __thinkos_except_buf(void)
 
 void __exception_reset(void)
 {
-	DCC_LOG(LOG_WARNING, "!!!!");
+	DCC_LOG(LOG_MSG, "!!!!");
 #if THINKOS_ENABLE_EXCEPT_CLEAR
 	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
 					   sizeof(struct thinkos_except));
