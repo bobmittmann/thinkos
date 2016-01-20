@@ -475,7 +475,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	char buf[64];
 	int len;
 
-	DCC_LOG(LOG_TRACE, "Monitor start...");
+	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 //	dmon_comm_connect(comm);
 //	DCC_LOG(LOG_TRACE, "Comm connected.");
 
@@ -517,11 +517,11 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 
 	for(;;) {
 		sigset = dmon_select(sigmask);
-		DCC_LOG1(LOG_INFO, "sigset=%08x", sigset);
+		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 #if THINKOS_ENABLE_CONSOLE
 		if (sigset & (1 << DMON_COMM_CTL)) {
-			DCC_LOG(LOG_INFO, "Comm Ctl.");
+			DCC_LOG(LOG_MSG, "Comm Ctl.");
 			dmon_clear(DMON_COMM_CTL);
 			connected = dmon_comm_isconnected(comm);
 		}
@@ -530,7 +530,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		if (sigset & (1 << DMON_COMM_RCV)) {
 #if THINKOS_ENABLE_CONSOLE
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
-				DCC_LOG1(LOG_INFO, "Comm recv. rx_pipe.free=%d", cnt);
+				DCC_LOG1(LOG_MSG, "Comm recv. rx_pipe.free=%d", cnt);
 				if ((len = dmon_comm_recv(comm, ptr, cnt)) > 0) {
 					len = monitor_process_input(comm, (char *)ptr, len);
 					__console_rx_pipe_commit(len); 
@@ -570,16 +570,16 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 
 
 		if (sigset & (1 << DMON_TX_PIPE)) {
-			DCC_LOG(LOG_INFO, "TX Pipe.");
+			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
-				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
+				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
 				if (connected) 
 					len = dmon_comm_send(comm, ptr, cnt);
 				else
 					len = cnt;
 				__console_tx_pipe_commit(len); 
 			} else {
-				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
+				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
 				dmon_clear(DMON_TX_PIPE);
 			}
 		}

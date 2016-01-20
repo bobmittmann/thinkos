@@ -52,6 +52,20 @@ const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
 
 void monitor_task(struct dmon_comm * comm);
 
+void monitor_exec_protected(struct dmon_comm * comm)
+{
+	thinkos_dmon_init(comm, monitor_task);
+}
+
+void monitor_exec(void)
+{
+	struct dmon_comm * comm;
+
+	comm = usb_comm_getinstance();
+
+	thinkos_escalate((void *)monitor_exec_protected, comm);
+}
+
 void monitor_init(void)
 {
 	struct dmon_comm * comm;
@@ -72,8 +86,7 @@ void monitor_init(void)
 	thinkos_console_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "3. thinkos_dmon_init()");
-	thinkos_dmon_init(comm, monitor_task);
+	(void)comm;
 }
 
 #ifndef BOOT_MEM_RESERVED 
@@ -99,6 +112,8 @@ int main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, "4. monitor_init()");
 	monitor_init();
+
+	monitor_exec();
 
 #if THINKOS_ENABLE_MPU
 	DCC_LOG(LOG_TRACE, "5. thinkos_mpu_init()");
