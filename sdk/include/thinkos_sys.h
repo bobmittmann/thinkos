@@ -217,6 +217,10 @@
 #define THINKOS_ENABLE_MEMFAULT         0
 #endif
 
+#ifndef THINKOS_ENABLE_HARDFAULT
+#define THINKOS_ENABLE_HARDFAULT        0
+#endif
+
 #ifndef THINKOS_UNROLL_EXCEPTIONS 
 #define THINKOS_UNROLL_EXCEPTIONS       0
 #endif
@@ -1107,10 +1111,10 @@ void __console_reset(void);
 void __exception_reset(void);
 
 int __console_rx_pipe_ptr(uint8_t ** ptr);
-void __console_rx_pipe_commit(unsigned int cnt); 
+void __console_rx_pipe_commit(int cnt); 
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
-void __console_tx_pipe_commit(unsigned int cnt);
+void __console_tx_pipe_commit(int cnt);
 
 /* -------------------------------------------------------------------------
  * Exception handling utility functions

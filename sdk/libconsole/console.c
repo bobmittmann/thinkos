@@ -47,7 +47,8 @@ int console_read(void * dev, void * buf, unsigned int len, unsigned int msec)
 
 int console_drain(void * dev)
 {
-	return thinkos_console_drain();
+	while (thinkos_console_drain() != 0);
+	return 0;
 }
 
 int console_close(void * dev)

@@ -530,6 +530,9 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 	case STD_SET_CONFIGURATION: {
 		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
 		if (value) {
+			/* signal we are ready to transmmit */
+			dmon_signal(DMON_COMM_EOT);
+
 			dev->in_ep = usb_dev_ep_init(dev->usb, &usb_mon_in_info, NULL, 0);
 			dev->out_ep = usb_dev_ep_init(dev->usb, &usb_mon_out_info, NULL, 0);
 #if 1
@@ -651,8 +654,14 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 
 	rem = len;
 	while (rem) {
+		if ((ret = dmon_wait(DMON_COMM_EOT)) < 0) {
+			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
+			return ret;
+		}
+
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
 			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!!");
+//			dmon_wait(DMON_COMM_EOT);
 			return n;
 		}
 
@@ -660,11 +669,6 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 
 		rem -= n;
 		ptr += n;
-
-		if ((ret = dmon_wait(DMON_COMM_EOT)) < 0) {
-			DCC_LOG1(LOG_WARNING, "ret=%d!!", ret);
-			return ret;
-		}
 
 		DCC_LOG(LOG_MSG, "EOT");
 	}
@@ -777,7 +781,7 @@ void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool en)
 	dev->rx_flowctrl = en;
 }
 
-struct usb_cdc_acm_dev usb_cdc_rt;
+struct usb_cdc_acm_dev thinkos_usb_comm_cdc;
 
 const usb_class_events_t usb_mon_ev = {
 	.on_reset = usb_mon_on_reset,
@@ -788,7 +792,7 @@ const usb_class_events_t usb_mon_ev = {
 
 struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 {
-	struct usb_cdc_acm_dev * dev = &usb_cdc_rt;
+	struct usb_cdc_acm_dev * dev = &thinkos_usb_comm_cdc;
 	usb_class_t * cl =  (usb_class_t *)dev;
 
 	/* initialize USB device */
@@ -800,6 +804,13 @@ struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 
 	DCC_LOG(LOG_TRACE, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
+
+	return (struct dmon_comm *)dev;
+}
+
+struct dmon_comm * usb_comm_getinstance(void)
+{
+	struct usb_cdc_acm_dev * dev = &thinkos_usb_comm_cdc;
 
 	return (struct dmon_comm *)dev;
 }

@@ -39,7 +39,7 @@ void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
 	int cnt;
 	int len;
 
-	DCC_LOG(LOG_INFO, "Monitor start...");
+	DCC_LOG(LOG_TRACE, "Monitor COMM bypass start...");
 
 	dmon_comm_rxflowctrl(comm, true);
 	dmon_comm_connect(comm);
@@ -55,7 +55,7 @@ void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
 	for(;;) {
 		
 		sigset = dmon_select(sigmask);
-		DCC_LOG1(LOG_INFO, "sigset=%08x.", sigset);
+		DCC_LOG1(LOG_MSG, "sigset=%08x.", sigset);
 
 		if (sigset & (1 << DMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_INFO, "Thread fault.");
@@ -92,7 +92,7 @@ void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
 		}
 
 		if (sigset & (1 << DMON_TX_PIPE)) {
-			DCC_LOG(LOG_INFO, "TX Pipe.");
+			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&buf)) > 0) {
 				len = dmon_comm_send(comm, buf, cnt);
 				__console_tx_pipe_commit(len); 

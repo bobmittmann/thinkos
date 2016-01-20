@@ -136,6 +136,11 @@ static bool pipe_isfull(struct console_pipe * pipe)
 	return (pipe->tail + CONSOLE_PIPE_LEN) == pipe->head;
 }
 
+static bool pipe_isempty(struct console_pipe * pipe)
+{
+	return pipe->tail == pipe->head;
+}
+
 int __console_rx_pipe_ptr(uint8_t ** ptr) 
 {
 	struct console_pipe * pipe = &thinkos_console_rt.rx_pipe;
@@ -158,7 +163,7 @@ int __console_rx_pipe_ptr(uint8_t ** ptr)
 	return cnt;
 }
 
-void __console_rx_pipe_commit(unsigned int cnt) 
+void __console_rx_pipe_commit(int cnt) 
 {
 	int wq = THINKOS_WQ_CONSOLE_RD;
 	unsigned int max;
@@ -205,34 +210,44 @@ int __console_tx_pipe_ptr(uint8_t ** ptr)
 	pos = (tail % CONSOLE_PIPE_LEN);
 	/* get the used space */
 	cnt = pipe->head - tail;
-	DCC_LOG4(LOG_INFO, "head=%d tail=%d cnt=%d pos=%d", 
-			 pipe->head, tail, cnt, pos);
 	/* check whether to wrap around or on not */
 	if ((pos + cnt) > CONSOLE_PIPE_LEN) {
 		/* get the number of chars from tail pos until the end of buffer */
 		cnt = CONSOLE_PIPE_LEN - pos;
 	}
+	DCC_LOG4(LOG_INFO, "head=%d tail=%d cnt=%d pos=%d", 
+			 pipe->head, tail, cnt, pos);
 	*ptr = &pipe->buf[pos];
 
 	return cnt;
 }
 
-void __console_tx_pipe_commit(unsigned int cnt) 
+void __console_tx_pipe_commit(int cnt) 
 {
 	int wq = THINKOS_WQ_CONSOLE_WR;
 	int th;
 
-	thinkos_console_rt.tx_pipe.tail += cnt;
-	if ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
-		/* XXX: To avoid a race condition when writing to the 
-		   pipe from the service call and this function (invoked
-		   from an interrupt handler), let the thread to
-		   wakes up and retry. */
-		/* wakeup from the console wait queue */
-		__thinkos_wakeup(wq, th);
-		/* signal the scheduler ... */
-		__thinkos_defer_sched();
+	if (cnt <= 0) {
+		DCC_LOG1(LOG_WARNING, "cnt=%d", cnt);
+		return;
 	}
+
+	thinkos_console_rt.tx_pipe.tail += cnt;
+	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+		DCC_LOG(LOG_INFO, "no thread waiting.");
+		return;
+	}
+
+	DCC_LOG1(LOG_MSG, "thread_id=%d", th);
+
+	/* XXX: To avoid a race condition when writing to the 
+	   pipe from the service call and this function (invoked
+	   from an interrupt handler), let the thread to
+	   wakes up and retry. */
+	/* wakeup from the console wait queue */
+	__thinkos_wakeup(wq, th);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
 #if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
@@ -317,7 +332,7 @@ void thinkos_console_svc(int32_t * arg)
 		buf = (uint8_t *)arg[1];
 		len = arg[2];
 		wq = THINKOS_WQ_CONSOLE_WR;
-		DCC_LOG1(LOG_INFO, "Console write: len=%d", len);
+		DCC_LOG1(LOG_MSG, "Console write: len=%d", len);
 wr_again:
 		if ((n = pipe_write(&thinkos_console_rt.tx_pipe, buf, len)) > 0) {
 			DCC_LOG1(LOG_INFO, "pipe_write: n=%d", n);
@@ -389,6 +404,24 @@ wr_again:
 		arg[0] = 0;
 		break;
 
+	case CONSOLE_DRAIN:
+		DCC_LOG(LOG_MSG, "CONSOLE_DRAIN");
+		if (pipe_isempty(&thinkos_console_rt.tx_pipe)) {
+			DCC_LOG(LOG_INFO, "pipe empty.");
+			arg[0] = 0;
+			break;
+		}
+		arg[0] = THINKOS_EAGAIN;
+		/* wait for event */
+		__thinkos_suspend(self);
+		/* insert into the mutex wait queue */
+		__thinkos_wq_insert(THINKOS_WQ_CONSOLE_WR, self);
+		/* -- wait for event ---------------------------------------- */
+//		DCC_LOG(LOG_INFO, "waiting on console write");
+		/* signal the scheduler ... */
+		__thinkos_defer_sched(); 
+		break;
+
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
 		arg[0] = THINKOS_EINVAL;
@@ -398,6 +431,8 @@ wr_again:
 
 void __console_reset(void)
 {
+	DCC_LOG(LOG_MSG, "clearing pipes and signals.");
+
 	thinkos_console_rt.tx_pipe.head = 0;
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;

@@ -218,8 +218,9 @@ bool dmon_comm_isconnected(struct dmon_comm * comm);
 
 void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool en);
 
-
 struct dmon_comm * usb_comm_init(const usb_dev_t * usb);
+
+struct dmon_comm * usb_comm_getinstance(void);
 
 void dmon_console_io_task(struct dmon_comm * comm);
 
