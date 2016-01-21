@@ -41,7 +41,7 @@ _Pragma ("GCC optimize (\"O2\")")
 #endif
 
 #ifndef THINKOS_DMON_STACK_SIZE
-#define THINKOS_DMON_STACK_SIZE 960
+#define THINKOS_DMON_STACK_SIZE (960 + 16)
 #endif
 
 struct thinkos_dmon thinkos_dmon_rt;

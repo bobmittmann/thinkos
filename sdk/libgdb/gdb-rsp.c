@@ -36,6 +36,10 @@
 
 #include "signals.h"
 
+#ifndef GDB_DEBUG_PACKET
+#define GDB_DEBUG_PACKET 1
+#endif
+
 #define THREAD_ID_OFFS 64
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
@@ -208,7 +212,7 @@ static int rsp_get_c_thread(struct gdb_rspd * gdb)
 
 static inline int rsp_ack(struct gdb_rspd * gdb)
 {
-#ifdef DEBUG_PACKET
+#if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Ack.");
 #endif
 	return dmon_comm_send(gdb->comm, "+", 1);
@@ -223,7 +227,7 @@ static int rsp_nack(struct dmon_comm * comm)
 
 static inline int rsp_ok(struct gdb_rspd * gdb)
 {
-#ifdef DEBUG_PACKET
+#if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Ok.");
 #endif
 	return dmon_comm_send(gdb->comm, "$OK#9a", 6);
@@ -231,7 +235,7 @@ static inline int rsp_ok(struct gdb_rspd * gdb)
 
 static int rsp_empty(struct gdb_rspd * gdb)
 {
-#ifdef DEBUG_PACKET
+#if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Empty.");
 #endif
 	return dmon_comm_send(gdb->comm, "$#00", 4);
@@ -250,8 +254,8 @@ static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
 	pkt[5] = __hextab[((sum >> 4) & 0xf)];
 	pkt[6] = __hextab[sum & 0xf];
 
-#ifdef DEBUG_PACKET
-	DCC_LOG1(LOG_INFO, "--> Error(%d)!", err);
+#if GDB_DEBUG_PACKET
+	DCC_LOG1(LOG_WARNING, "--> Error(%d)!", err);
 #endif
 
 	return dmon_comm_send(gdb->comm, pkt, 7);
@@ -280,7 +284,7 @@ static int rsp_pkt_send(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 
 	pkt[n] = '\0';
 
-#ifdef DEBUG_PACKET
+#if GDB_DEBUG_PACKET
 	DCC_LOGSTR(LOG_INFO, "--> '%s'", pkt);
 #endif
 
@@ -450,7 +454,7 @@ int rsp_console_output(struct gdb_rspd * gdb, char * pkt)
 		n = cp - pkt;
 		rsp_pkt_send(gdb, pkt, n);
 	} else {
-		DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
+		DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
 	}
 
 
@@ -627,11 +631,11 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 			DCC_LOG(LOG_WARNING, "no active application, "
 					"calling dmon_app_exec()!");
 			if (!dmon_app_exec(this_board.application.start_addr, true)) {
-				return rsp_error(gdb, 1);
+				n = str2str(pkt, "$1");
+			} else {
+				gdb->active_app = true;
+				n = str2str(pkt, "$0");
 			}
-
-			gdb->active_app = true;
-			n = str2str(pkt, "$0");
 		} else {
 			n = str2str(pkt, "$1");
 		}
@@ -1539,7 +1543,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 				/* FIXME: check the sum!!! */
 				pos += j;
 				pkt[pos] = '\0';
-#ifdef DEBUG_PACKET
+#if GDB_DEBUG_PACKET
 				if (pkt[0] == 'X') 
 					DCC_LOG(LOG_MSG, "<-- '$X ...'");
 				else if (pkt[0] == 'm')
@@ -1693,7 +1697,7 @@ void gdb_task(struct dmon_comm * comm)
 
 #if (THINKOS_ENABLE_CONSOLE)
 		if (sigset & (1 << DMON_TX_PIPE)) {
-			DCC_LOG(LOG_INFO, "TX Pipe.");
+			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if (rsp_console_output(gdb, pkt) <= 0) {
 				dmon_clear(DMON_TX_PIPE);
 			}

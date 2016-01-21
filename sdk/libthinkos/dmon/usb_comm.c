@@ -654,15 +654,15 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 
 	rem = len;
 	while (rem) {
+		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
+			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!!");
+			dmon_wait(DMON_COMM_EOT);
+			return n;
+		}
+
 		if ((ret = dmon_wait(DMON_COMM_EOT)) < 0) {
 			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
 			return ret;
-		}
-
-		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
-			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!!");
-//			dmon_wait(DMON_COMM_EOT);
-			return n;
 		}
 
 		DCC_LOG1(LOG_MSG, "n=%d!!", n);
