@@ -25,7 +25,10 @@
 
 #define STM32F2X
 #include <stm32f/stm32f-flash.h>
+#include <arch/cortex-m3.h>
 #include <sys/param.h>
+
+#include <sys/dcclog.h>
 
 #define STM32_BASE_FLASH 0x40023c00
 #define STM32_FLASH ((struct stm32_flash *)STM32_BASE_FLASH)
@@ -48,27 +51,43 @@ void flash_unlock(void)
 }
 
 
-static int stm32f2x_flash_sect_erase(struct stm32_flash * flash, 
-									 unsigned int sect)
+uint32_t stm32f2x_flash_sect_erase(struct stm32_flash * flash, uint32_t cr)
 {
 	uint32_t sr;
 
-	flash->cr = FLASH_STRT | FLASH_SER | FLASH_SNB(sect);
+	flash->cr = cr;
+	asm volatile ("isb\n" :  :  : );
+	asm volatile ("dsb\n" :  :  : );
 
 	do {
 		sr = flash->sr;
+		asm volatile ("isb\n" :  :  : );
+		asm volatile ("dsb\n" :  :  : );
 	} while (sr & FLASH_BSY);
 
-	if (sr & FLASH_ERR)
-		return -1;
-
-	return 0;
+	return sr;
 }
 
-int flash_erase(uint32_t offs, unsigned int len)
+int flash_erase(unsigned int offs, unsigned int len)
 {
 	struct stm32_flash * flash = STM32_FLASH;
 	unsigned int cnt;
+	uint32_t cr;
+	uint32_t sr;
+
+#if 0
+	uint32_t pri;
+
+	pri = cm3_primask_get();
+
+	cr = flash->cr;
+	if (cr & FLASH_LOCK) {
+		DCC_LOG(LOG_TRACE, "unlocking flash...");
+		/* unlock flash write */
+		flash->keyr = FLASH_KEY1;
+		flash->keyr = FLASH_KEY2;
+	}
+#endif
 
 	cnt = 0;
 	while (cnt < len) {
@@ -78,8 +97,8 @@ int flash_erase(uint32_t offs, unsigned int len)
 
 		page = offs >> 14;
 		if ((page << 14) != (offs)) {
-			/* must start at a page boundary */
-			return -1;
+			DCC_LOG(LOG_WARNING, "offset must be a aligned to a page boundary.");
+			return 0;
 		};
 
 		if (page < 4) {
@@ -92,12 +111,20 @@ int flash_erase(uint32_t offs, unsigned int len)
 			sect = ((page - 7) / 8) + 5;
 			size = 131072;
 		} else {
-			/* must start at a sector boundary */
-			return -1;
+			DCC_LOG(LOG_WARNING, "offset must be a aligned to a "
+					"sector boundary.");
+			return 0;
 		}
 
-		if (stm32f2x_flash_sect_erase(flash, sect) < 0) {
-			return -1;
+		cr = FLASH_STRT | FLASH_SER | FLASH_PSIZE_32 | FLASH_SNB(sect);
+//		cm3_primask_set(1);
+		sr = stm32f2x_flash_sect_erase(flash, cr);
+//		cm3_primask_set(pri);
+
+		if (sr & FLASH_ERR) {
+			DCC_LOG1(LOG_WARNING, "stm32f2x_flash_sect_erase() failed"
+					 " sr=%08x!", sr);
+			return -sr;
 		}
 
 		cnt += size;
@@ -108,8 +135,8 @@ int flash_erase(uint32_t offs, unsigned int len)
 }
 
 
-static int stm32f2x_flash_wr32(struct stm32_flash * flash,
-							uint32_t volatile * addr, uint32_t data)
+uint32_t stm32f2x_flash_wr32(struct stm32_flash * flash,
+							 uint32_t volatile * addr, uint32_t data)
 {
 	uint32_t sr;
 
@@ -120,10 +147,7 @@ static int stm32f2x_flash_wr32(struct stm32_flash * flash,
 		sr = flash->sr;
 	} while (sr & FLASH_BSY);
 
-	if (sr & FLASH_ERR)
-		return -1;
-
-	return 0;
+	return sr;
 }
 
 int flash_write(uint32_t offs, const void * buf, unsigned int len)
@@ -132,21 +156,50 @@ int flash_write(uint32_t offs, const void * buf, unsigned int len)
 	uint32_t data;
 	uint32_t * addr;
 	uint8_t * ptr;
+	uint32_t sr;
 	int n;
 	int i;
+//	uint32_t cr;
+//	uint32_t pri;
+
+	if (offs & 0x00000003) {
+		DCC_LOG(LOG_ERROR, "offset must be 32bits aligned!");
+		return -1;
+	}
 
 	n = (len + 3) / 4;
 
 	ptr = (uint8_t *)buf;
-	addr = (uint32_t *)(STM32_FLASH_ADDR + offs);
+	addr = (uint32_t *)((uint32_t)STM32_FLASH_ADDR + offs);
+	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
+
+#if 0
+	cr = flash->cr;
+	if (cr & FLASH_LOCK) {
+		DCC_LOG(LOG_TRACE, "unlocking flash...");
+		/* unlock flash write */
+		flash->keyr = FLASH_KEY1;
+		flash->keyr = FLASH_KEY2;
+	}
+
+	pri = cm3_primask_get();
+#endif
 
 	for (i = 0; i < n; i++) {
 		data = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
-		if (stm32f2x_flash_wr32(flash, addr, data) < 0)
+		DCC_LOG2(LOG_MSG, "0x%08x data=0x%04x", addr, data);
+//		cm3_primask_set(1);
+		sr = stm32f2x_flash_wr32(flash, addr, data);
+//		cm3_primask_set(pri);
+		if (sr & FLASH_ERR) {
+			DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
 			return -1;
+		}
 		ptr += 4;
 		addr++;
 	}
 	
 	return n * 4;
 }
+
+

@@ -204,7 +204,7 @@ const uint32_t sysclk_hz[] = {
 	[SYSCLK_STM32_TIM2] = __HCLK_HZ,
 };
 
-void _init(void)
+void __attribute__((section(".init"))) _init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;

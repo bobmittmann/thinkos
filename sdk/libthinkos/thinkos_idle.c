@@ -34,6 +34,11 @@
 #error "Invalid multiple IDLE stack options!"
 #endif
 
+#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_CONST + \
+	 THINKOS_IDLE_STACK_BSS) == 0
+#error "Invalid IDLE stack option!"
+#endif
+
 void thinkos_idle_svc(int32_t * arg)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -88,7 +93,7 @@ struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx;
 
 #if THINKOS_IDLE_STACK_ALLOC
 extern uint32_t _stack[];
-/* IDLE stack allocated on main stack */
+/* IDLE stack pre allocated on main stack */
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)&_stack[0]
 #endif
 
@@ -114,6 +119,18 @@ void __thinkos_idle_init(void)
 
 	idle_ctx = (struct thinkos_context *)THINKOS_IDLE_STACK_BASE;
 
+#if THINKOS_IDLE_STACK_BSS
+	DCC_LOG1(LOG_TRACE, "BSS idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+#endif
+
+#if THINKOS_IDLE_STACK_ALLOC
+	DCC_LOG1(LOG_TRACE, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+#endif
+
+#if THINKOS_IDLE_STACK_CONST
+	DCC_LOG1(LOG_TRACE, "Const idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+#endif
+
 #if !THINKOS_IDLE_STACK_CONST
 	idle_ctx->pc = (uint32_t)thinkos_idle_task;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
@@ -130,9 +147,6 @@ void __thinkos_idle_init(void)
 	/* set the IDLE thread info */
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
 #endif
-
-	DCC_LOG2(LOG_MSG, "idle_stack=0x%08x idle_ctx=0x%08x", 
-			 thinkos_idle_stack_ptr, thinkos_rt.idle_ctx);
 
 }
 

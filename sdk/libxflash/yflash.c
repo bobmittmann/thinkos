@@ -27,6 +27,12 @@
 #include <crc.h>
 #include "xflash.h"
 
+#include <sys/dcclog.h>
+
+#ifndef XFLASH_VERBOSE
+#define XFLASH_VERBOSE 0
+#endif
+
 #define CDC_TX_EP 2
 #define CDC_RX_EP 1
 
@@ -43,6 +49,9 @@ void delay(unsigned int msec);
 #define CAN  0x18
 
 #define XMODEM_RCV_TMOUT_MS 2000
+
+#define LOG_CODE(CODE) ((uint32_t *)(0x20000000))[0] = (CODE)
+#define LOG_STATE(CODE) ((uint32_t *)(0x20000000))[1] = (CODE)
 
 struct ymodem_rcv {
 	unsigned int pktno;
@@ -79,6 +88,8 @@ static int usb_ymodem_rcv_cancel(struct ymodem_rcv * rx)
 {
 	unsigned char * pkt = rx->pkt.hdr;
 
+	DCC_LOG(LOG_WARNING, "CANCEL!");
+
 	pkt[0] = CAN;
 	pkt[1] = CAN;
 
@@ -109,6 +120,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 
 			if (rem == 0) {
 				ret = usb_recv(CDC_RX_EP, pkt, 128, 2000);
+				DCC_LOG1(LOG_TRACE, "usb_recv() ret=%d)", ret);
 
 				if (ret <= 0)
 					goto timeout;
@@ -155,6 +167,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 		/* receive the packet */
 		while (rem) {
 			ret = usb_recv(CDC_RX_EP, cp, rem, 500);
+			DCC_LOG1(LOG_TRACE, "usb_recv() ret=%d)", ret);
 			if (ret < 0)
 				goto timeout;
 
@@ -239,6 +252,7 @@ error:
 timeout:
 		if ((--rx->retry) == 0) {
 			/* too many errors */
+			DCC_LOG(LOG_WARNING, "too many errors!");
 			ret = -1;
 			break;
 		}
@@ -299,7 +313,15 @@ static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 }
 
 static const char s_xmodem[] = "\r\nYmodem (^X to cancel)... ";
+
+#if XFLASH_VERBOSE
 static const char s_invalid[] = "\r\nInvalid file!";
+static const char s_erase[] = "\r\nFlash erase error!";
+static const char s_program[] = "\r\nFlash program error!";
+#endif
+
+#define USB_PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR) - 1)
+
 int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
 									 const struct magic * magic)
 {
@@ -327,18 +349,28 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 		magic_buf.hdr.pos = 0;
 	}
 
+	DCC_LOG(LOG_TRACE, "flash_unlock()");
 	flash_unlock();
 
+	LOG_CODE(0);
+	LOG_STATE(0);
+
 	do {
-		usb_send(CDC_TX_EP, s_xmodem, sizeof(s_xmodem) - 1);
+		USB_PUTS(s_xmodem);
 		ymodem_rcv_init(&ry, true, false);
 		ry.fsize = blk_size;
 		offs = blk_offs;
 		cnt = 0;
 
 		while ((ret = usb_ymodem_rcv_pkt(&ry)) >= 0) {
-			if ((ret == 0) && (ry.xmodem) )
+
+			DCC_LOG1(LOG_TRACE, "usb_ymodem_rcv_pkt() ret=%d)", ret);
+
+			if ((ret == 0) && (ry.xmodem)) {
+				LOG_CODE(1);
 				break;
+			}
+
 			int len = ret;
 			if (ry.pktno == 1) {
 				char * cp;
@@ -349,7 +381,7 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 				cp++; /* skip null */
 				fsize = dec2int(cp);
 				if (fsize == 0) {
-					ret = 0;
+					LOG_CODE(2);
 					break;
 				}
 				ry.fsize = fsize;
@@ -357,22 +389,49 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 				if (ry.pktno == 2) {
 					if (!magic_match((struct magic *)&magic_buf, 
 									 cnt, ry.pkt.data, len)) {
-						usb_ymodem_rcv_cancel(&ry);
-#if 0
+						DCC_LOG(LOG_WARNING, "invalid file magic!");
+#if XFLASH_VERBOSE
 						usb_ymodem_rcv_cancel(&ry);
 						delay(1000);
-						usb_send(CDC_TX_EP, s_invalid, sizeof(s_invalid) - 1);
+						USB_PUTS(s_invalid);
 #endif
+						LOG_CODE(3);
 						ret = -1;
 						break;
 					}
 //					flash_erase(offs, ry->fsize);
 				}
 
-				flash_erase(offs, len);
-				flash_write(offs, ry.pkt.data, len);
+				DCC_LOG2(LOG_TRACE, "flash_erase(offs=0x%06x, len=%d)", 
+						 offs, len);
+				if ((ret = flash_erase(offs, len)) < 0) {
+					DCC_LOG(LOG_WARNING, "flash_erase() failed!");
+#if XFLASH_VERBOSE
+					usb_ymodem_rcv_cancel(&ry);
+					delay(1000);
+					USB_PUTS(s_erase);
+#endif
+					LOG_CODE(4 + (-ret * 0x10000));
+					ret = -1;
+					break;
+				}
+
+				DCC_LOG(LOG_TRACE, "flash_write()");
+				if ((ret = flash_write(offs, ry.pkt.data, len)) < 0) {
+					DCC_LOG(LOG_WARNING, "flash_write() failed!");
+#if XFLASH_VERBOSE
+					usb_ymodem_rcv_cancel(&ry);
+					delay(1000);
+					USB_PUTS(s_program);
+#endif
+					LOG_CODE(5);
+					ret = -1;
+					break;
+				}
 				offs += len;
 				cnt += len;
+
+				LOG_STATE(cnt);
 			}
 		}
 

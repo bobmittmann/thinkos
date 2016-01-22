@@ -401,7 +401,6 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 	return cnt;
 }
 
-
 int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv, 
 						  int ep_id, unsigned int opt)
 {

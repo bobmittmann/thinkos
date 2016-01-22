@@ -34,12 +34,8 @@
 #define STM32F_BASE_OTG_FS  0x50000000
 #define STM32F_OTG_FS ((struct stm32f_otg_fs *)STM32F_BASE_OTG_FS)
 
-void dbg_putstr(const char * s);
-void dbg_puthex(unsigned int val);
-
-const uint8_t stm32f_otg_fs_ep0_mpsiz_lut[] = {
-	64, 32, 16, 8
-};
+#undef OTGFS_EP0_MPSIZ_GET
+#define OTGFS_EP0_MPSIZ_GET(DEPCTL) (64 >> OTG_FS_MPSIZ_GET(DEPCTL))
 
 int usb_send(int ep_id, void * buf, unsigned int len)
 {

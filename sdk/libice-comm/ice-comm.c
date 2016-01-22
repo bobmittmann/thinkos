@@ -23,8 +23,12 @@
 #include <sys/ice-comm.h>
 #include <arch/cortex-m3.h>
 
-#ifndef THINKAPP
-//struct ice_comm_blk ice_comm_blk;
+#ifdef NEED_ICE_COMM_BLK
+#define NEED_ICE_COMM_BLK 0
+#endif
+
+#if NEED_ICE_COMM_BLK
+struct ice_comm_blk ice_comm_blk;
 #endif
 
 void ice_comm_sync(void) 
