@@ -48,6 +48,9 @@ void flash_unlock(void)
 		flash->keyr = FLASH_KEY1;
 		flash->keyr = FLASH_KEY2;
 	}
+
+	/* clear error flags */
+	flash->sr = FLASH_ERR;
 }
 
 
@@ -56,13 +59,8 @@ uint32_t stm32f2x_flash_sect_erase(struct stm32_flash * flash, uint32_t cr)
 	uint32_t sr;
 
 	flash->cr = cr;
-	asm volatile ("isb\n" :  :  : );
-	asm volatile ("dsb\n" :  :  : );
-
 	do {
 		sr = flash->sr;
-		asm volatile ("isb\n" :  :  : );
-		asm volatile ("dsb\n" :  :  : );
 	} while (sr & FLASH_BSY);
 
 	return sr;

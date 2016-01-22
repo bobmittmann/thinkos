@@ -50,8 +50,13 @@ void delay(unsigned int msec);
 
 #define XMODEM_RCV_TMOUT_MS 2000
 
+#if 0
 #define LOG_CODE(CODE) ((uint32_t *)(0x20000000))[0] = (CODE)
 #define LOG_STATE(CODE) ((uint32_t *)(0x20000000))[1] = (CODE)
+#else
+#define LOG_CODE(CODE)
+#define LOG_STATE(CODE)
+#endif
 
 struct ymodem_rcv {
 	unsigned int pktno;
@@ -350,7 +355,6 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 	}
 
 	DCC_LOG(LOG_TRACE, "flash_unlock()");
-	flash_unlock();
 
 	LOG_CODE(0);
 	LOG_STATE(0);
@@ -361,6 +365,8 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 		ry.fsize = blk_size;
 		offs = blk_offs;
 		cnt = 0;
+
+		flash_unlock();
 
 		while ((ret = usb_ymodem_rcv_pkt(&ry)) >= 0) {
 
@@ -415,7 +421,7 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 					ret = -1;
 					break;
 				}
-
+	
 				DCC_LOG(LOG_TRACE, "flash_write()");
 				if ((ret = flash_write(offs, ry.pkt.data, len)) < 0) {
 					DCC_LOG(LOG_WARNING, "flash_write() failed!");
