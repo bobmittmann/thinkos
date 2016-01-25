@@ -26,10 +26,8 @@ TFTPLOAD = $(TOOLSDIR)/tftp_load.py
 TFTRESET = $(TOOLSDIR)/tftp_reset.py
 DCCLOGVIEW = $(TOOLSDIR)/dcclog
 
-ifeq ($(HOST),Windows)
- PYTHON := "C:\Python27\python"
-else
- PYTHON := python
+ifndef PYTHON
+  $(error PYTHON undefined!)
 endif
 
 ifndef JTAGTOOL_ADDR

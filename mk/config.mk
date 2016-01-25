@@ -269,6 +269,13 @@ endif
 endif
 endif
 
+ifeq ($(HOST),Windows)
+#  PYTHON := "C:\Python27\python"
+  PYTHON := python
+else
+  PYTHON := python
+endif
+
 # ----------------------------------------------------------------------------
 # Function: windrv
 #   Return: windows driver letter

@@ -52,13 +52,19 @@ ifndef ASSEMBLY
   ASSEMBLY = "A"
 endif
 
-ifeq ($(HOST),Windows)
- PYTHON := "C:\Python27\python"
-else
- PYTHON := python
+ifndef PYTHON
+  $(error PYTHON undefined!)
 endif
 
-MKVER = $(TOOLSDIR)/mkver.py
+ifeq ($(HOST),Windows)
+  MKVER := $(subst /,\,$(TOOLSDIR)/mkver.py)
+else
+  ifeq ($(DIRMODE),msys)
+    MKVER := $(call windrv,$(TOOLSDIR)\mkver.py)
+  else
+    MKVER := $(TOOLSDIR)/mkver.py
+  endif
+endif
 
 $(VERSION_H): Makefile
 	$(ACTION) "Creating: $@"
