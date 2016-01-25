@@ -87,6 +87,7 @@ struct mstp_lnk {
 	struct {
 		void (* callback)(struct mstp_lnk * lnk, unsigned int ev);
 		uint32_t netmap[(MSTP_LNK_MAX_MASTERS + 31) / 32];
+		uint32_t active[MSTP_LNK_MAX_MASTERS];
 	} mgmt;
 	struct mstp_lnk_stat stat;
 };

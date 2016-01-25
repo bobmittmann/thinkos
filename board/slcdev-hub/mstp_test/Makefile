@@ -22,18 +22,25 @@
 
 PROG = mstp_test
 
-CFILES = mstp_crc.c mstp_lnk.c mstp_test.c lattice.c ice40lp384.c
+CFILES = mstp_crc.c mstp_lnk.c mstp_test.c 
+#lattice.c ice40lp384.c
 
 SDK = ../../../sdk
 
-LIBS = cm3 stm32f util c crc stm32drv tcpip tty console
+LIBS = cm3 stm32f util c crc stm32drv trace console
 
-O = Debug
+RELEASE_DIR := Release
+DEBUG_DIR := Debug
 INCPATH = $(SDK)/include ../include
-LIBPATH = ../sdklibs/Debug
+LIBPATH = ../ ../sdklibs/Release
 
-CFLAGS = -g -O0 -Wall
+CDEFS = CONFIG_H NDEBUG
+CFLAGS = -g -Os -Wall -fomit-frame-pointer -ffunction-sections -fdata-sections
+LDFLAGS = -Wl,--gc-sections 
 
-MACH = stm32f429
+MACH = stm32f407
 THINKAPP = 1
+LDSCRIPT = slcdev-hub.ld
+LOAD_ADDR = 0x08010000
 include ../../../mk/stm32f4xx.mk
+

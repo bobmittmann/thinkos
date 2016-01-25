@@ -35,6 +35,9 @@
 
 #include <bacnet/mstp_lnk.h>
 #include <sys/console.h>
+
+#define TRACE_LEVEL 7
+
 #include <trace.h>
 
 #include "board.h"
@@ -303,7 +306,7 @@ int main(int argc, char ** argv)
 	else
 		mstp_addr = *((uint32_t *)STM32F_UID) & 0x1f;
 
-	io_init();
+//	io_init();
 
 	stdio_init();
 
