@@ -132,7 +132,7 @@ struct board_cfg {
 
 bool board_configure(struct dmon_comm * comm)
 {
-	uint32_t offs = 0x10000 - 0x0100;
+	uint32_t offs = 0x0c000 + 0x4000 - 0x100;
 	struct board_cfg * cfg = (struct board_cfg *)(0x08000000 + offs);
 	struct board_cfg buf;
 	int n;
@@ -204,10 +204,24 @@ void board_upgrade(struct dmon_comm * comm)
 	int (* xflash_ram)(uint32_t, uint32_t, const struct magic *) = 
 		((void *)xflash_code) + 1;
 
+	/* Erasing configuration */
+	stm32_flash_erase(0xc000, 0x4000);
+
 	cm3_cpsid_f();
 	__thinkos_memcpy(xflash_code, otg_xflash_pic, sizeof_otg_xflash_pic);
 	xflash_ram(0, 65536, &bootloader_magic);
 }
+
+void monitor_dump_mem(struct dmon_comm * comm, 
+					  uint32_t addr, unsigned int size);
+
+void board_selftest(struct dmon_comm * comm)
+{
+	dmprintf(comm, "\r\nSelftest.\r\n");
+	/* Dump configuration */
+	monitor_dump_mem(comm, 0xc000, 0x4000);
+}
+
 
 const struct mem_desc sram_desc = {
 	.name = "RAM",
@@ -234,7 +248,8 @@ const struct mem_desc sram_desc = {
 const struct mem_desc flash_desc = {
 	.name = "FLASH",
 	.blk = {
-		{ 0x08000000, BLK_RO, SZ_16K,  4 }, /* Bootloader */
+		{ 0x08000000, BLK_RO, SZ_16K,  3 }, /* Bootloader */
+		{ 0x0800c000, BLK_RW, SZ_16K,  1 }, /* Configuration */
 		{ 0x08010000, BLK_RW, SZ_64K,  1 }, /* Application */
 		{ 0x08020000, BLK_RW, SZ_128K, 7 }, /* Application */
 		{ 0x00000000, 0, 0, 0 }
@@ -265,6 +280,7 @@ const struct thinkos_board this_board = {
 	.autoboot = board_autoboot,
 	.configure = board_configure,
 	.upgrade = board_upgrade,
+	.selftest = board_selftest,
 	.on_appload = board_on_appload,
 	.comm_irqen = board_comm_irqen
 };

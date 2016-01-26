@@ -263,8 +263,8 @@ static void monitor_app_erase(struct dmon_comm * comm,
 int long2hex_le(char * s, unsigned long val);
 int char2hex(char * s, int c);
 
-static void monitor_dump_mem(struct dmon_comm * comm, 
-							  uint32_t addr, unsigned int size)
+void monitor_dump_mem(struct dmon_comm * comm, 
+					  uint32_t addr, unsigned int size)
 {
 	char buf[14 + 16 * 3];
 	unsigned int rem = size;
