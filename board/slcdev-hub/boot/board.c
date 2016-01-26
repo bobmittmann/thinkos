@@ -29,6 +29,7 @@
 
 #include "board.h"
 #include "lattice.h"
+#include "version.h"
 
 void io_init(void)
 {
@@ -247,9 +248,9 @@ const struct thinkos_board this_board = {
 		.minor = 1,
 	},
 	.sw_ver = {
-		.major = 0,
-		.minor = 2,
-		.build = 0
+		.major = VERSION_MAJOR,
+		.minor = VERSION_MINOR,
+		.build = VERSION_BUILD
 	},
 	.memory = {
 		.ram = &sram_desc,
