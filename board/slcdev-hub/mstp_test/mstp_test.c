@@ -304,7 +304,7 @@ int main(int argc, char ** argv)
 	if (cfg->magic == CFG_MAGIC)
 		mstp_addr = cfg->mstp_addr;
 	else
-		mstp_addr = *((uint32_t *)STM32F_UID) & 0x1f;
+		mstp_addr = 15;
 
 //	io_init();
 
