@@ -905,8 +905,8 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		dmon_signal(DMON_EXCEPT);
 	}
 
-	DCC_LOG(LOG_TRACE, "this_board.comm_irqen().");
-	this_board.comm_irqen();
+//	DCC_LOG(LOG_TRACE, "this_board.comm_irqen().");
+//	this_board.comm_irqen();
 }
 
 /* -------------------------------------------------------------------------

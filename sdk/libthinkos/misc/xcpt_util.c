@@ -71,13 +71,13 @@ void __xdump(struct thinkos_except * xcpt)
 	uint32_t ipsr;
 	uint32_t xpsr;
 	uint32_t sp;
-	int irqmax;
+	int irqregs;
 	int irqbits;
 	int i;
 	int j;
 
-	irqmax = CM3_ICTR;
-	for (i = 0; i < irqmax ; ++i) {
+	irqregs = CM3_ICTR + 1;
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->iabr[i]);
 		while ((j = __clz(irqbits)) < 32) {
 			irqbits &= ~(0x80000000 >> j);
@@ -85,7 +85,7 @@ void __xdump(struct thinkos_except * xcpt)
 		}
 	}
 
-	for (i = 0; i < irqmax ; ++i) {
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->ispr[i]);
 		while ((j = __clz(irqbits)) < 32) {
 			irqbits &= ~(0x80000000 >> j);
@@ -172,15 +172,15 @@ void __idump(const char * s, uint32_t ipsr)
 #ifdef DEBUG
 	uint32_t shcsr;
 	uint32_t icsr;
-	int irqmax;
+	int irqregs;
 	int irqbits;
 	int i;
 	int j;
 
 	DCC_LOG1(LOG_TRACE, "%s() _________________________________", s); 
 
-	irqmax = CM3_ICTR;
-	for (i = 0; i < irqmax ; ++i) {
+	irqregs = CM3_ICTR + 1;
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->iabr[i]);
 		while ((j = __clz(irqbits)) < 32) {
 			irqbits &= ~(0x80000000 >> j);
@@ -188,7 +188,7 @@ void __idump(const char * s, uint32_t ipsr)
 		}
 	}
 
-	for (i = 0; i < irqmax ; ++i) {
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->ispr[i]);
 		while ((j = __clz(irqbits)) < 32) {
 			irqbits &= ~(0x80000000 >> j);
@@ -279,14 +279,14 @@ void __mpudump(void)
 
 int __xcpt_next_active_irq(int this_irq)
 {
-	int irqmax;
+	int irqregs;
 	int irqbits;
 	int irq;
 	int i;
 	int j;
 
-	irqmax = CM3_ICTR;
-	for (i = 0; i < irqmax ; ++i) {
+	irqregs = (CM3_ICTR + 1);
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->iabr[i]);
 		while ((j = __clz(irqbits)) < 32) {
 			irq = i * 32 + j;
@@ -303,8 +303,9 @@ void __xcpt_irq_disable_all(void)
 {
 	int i;
 
-	for (i = 0; i < CM3_ICTR; ++i)
+	for (i = 0; i < (CM3_ICTR + 1); ++i) {
 		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
+	}
 }
 
 void __xcpt_systick_int_disable(void)

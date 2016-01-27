@@ -40,10 +40,10 @@
  * ------------------------------------------------------------------------- */
 
 #define N_MAX_INFO_FRAMES 1
-#define N_MAX_MASTER MSTP_LNK_MAX_MASTERS
-#define N_POLL 50
-#define N_RETRY_TOKEN 1
-#define N_MIN_OCTETS 4
+#define N_MAX_MASTER      MSTP_LNK_MAX_MASTERS
+#define N_POLL            50
+#define N_RETRY_TOKEN     1
+#define N_MIN_OCTETS      4
 
 /* The minimum time without a DataAvailable or ReceiveError event within a 
    frame before a receiving node may discard the frame: 60 bit times. 
@@ -51,14 +51,31 @@
    100 milliseconds.) */
 #define T_FRAME_ABORT_MS 3
 
+#if 0
 /* The time without a DataAvailable or ReceiveError event before declaration 
    of loss of token: 500 millisecondsa */
-#define T_NO_TOKEN      500
-#define T_REPLY_DELAY   250
-#define T_REPLY_TIMEOUT 255
-#define T_SLOT          10
-#define T_USAGE_DELAY   15
-#define T_USAGE_TIMEOUT 20 
+#define T_NO_TOKEN       500
+/* The maximum time a node may wait after reception of a frame that expects
+ * a reply before sending the firstoctet of a reply or Reply
+ * Postponed frame: 250 milliseconds. */
+#define T_REPLY_DELAY    250
+/* The minimum time without a DataAvailable or ReceiveError event that a
+ * node must wait for a station to begin replying to a confirmed
+ * request: 255 milliseconds. (Implementations may use larger values for
+ * this timeout,not to exceed 300 milliseconds.) */
+#define T_REPLY_TIMEOUT  255
+#define T_SLOT           10
+#define T_USAGE_DELAY    15
+#define T_USAGE_TIMEOUT  20
+#else
+/* High speed (500Mbps) networks would benefit if we reduce this timeouts */
+#define T_NO_TOKEN       100
+#define T_REPLY_DELAY    50
+#define T_REPLY_TIMEOUT  50
+#define T_SLOT           2
+#define T_USAGE_DELAY    3
+#define T_USAGE_TIMEOUT  4
+#endif
 
 #define MSTP_TIMEOUT           1
 #define MSTP_RCVD_VALID_FRAME  0
@@ -72,6 +89,7 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 	unsigned int crc;
 	unsigned int type;
 	unsigned int daddr;
+	unsigned int saddr;
 	int pdu_len;
 	int cnt;
 
@@ -93,13 +111,16 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 		return MSTP_HDR_SYNC_ERROR;
 	}
 
-	crc = __mstp_crc8(0xff, buf[2]);
-	crc = __mstp_crc8(crc, buf[3]);
-	crc = __mstp_crc8(crc, buf[4]);
+	type = buf[2];
+	daddr = buf[3];
+	saddr = buf[4];
+	pdu_len = (buf[5] << 8) + buf[6];
+
+	crc = __mstp_crc8(0xff, type);
+	crc = __mstp_crc8(crc, daddr);
+	crc = __mstp_crc8(crc, saddr);
 	crc = __mstp_crc8(crc, buf[5]);
 	crc = (~__mstp_crc8(crc, buf[6]) & 0xff);
-
-	pdu_len = (buf[5] << 8) + buf[6];
 
 	if (buf[7] != crc) {
 		WARN("CRC error: %02x != %02x, %d->%d %02x (%d)", buf[7], crc,
@@ -109,7 +130,12 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 		return MSTP_HDR_CRC_ERROR;
 	}
 
-//	INF("cnt=%d pdu_len=%d", cnt, pdu_len);
+	lnk->rx.hdr.frm_type = type;
+	lnk->rx.hdr.dst_addr = daddr;
+	lnk->rx.hdr.src_addr = saddr;
+	lnk->rx.hdr.pdu_len = pdu_len;
+
+	DBG("cnt=%d pdu_len=%d", cnt, pdu_len);
 
 	if (pdu_len > 0) {
 		unsigned int chk;
@@ -125,9 +151,6 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 	} else {
 		lnk->rx.off = 8;
 	}
-
-	type = buf[2];
-	daddr = buf[3];
 
 	switch (type) {
 	case FRM_TOKEN:
@@ -282,6 +305,7 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 	int frm_type;
 	int src_addr;
 	int dst_addr;
+	int pdu_len;
 	int frame_count;
 	int retry_count;
 	int event_count;
@@ -306,10 +330,10 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 	};
 
 	lnk->tx.pdu_len = 0;
-	thinkos_flag_give(lnk->rx.flag);
-
-	lnk->rx.pdu_len = 0;
 	thinkos_flag_give(lnk->tx.flag);
+
+	lnk->recv.pdu_len = 0;
+	thinkos_flag_give(lnk->recv.flag);
 
 	/* set TS to the node's station address, set NS equal to TS 
 	   (indicating that the next station is unknown), set PS equal to TS, 
@@ -367,10 +391,13 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 again:
 	/* XXX: find the clock about to expire sooner  */
 	dt = silence_clk - clk + timer_ms[lnk->state];
+
 /*
 	INF("state=%s tmr=%d dt=%d", state_nm[lnk->state],
 			 timer_ms[lnk->state], dt);
-	if (dt <= 0) {
+*/
+
+/*	if (dt <= 0) {
 		INF("state=%s tmr=%d dt=%d", state_nm[lnk->state],
 			 timer_ms[lnk->state], dt);
 	}
@@ -382,12 +409,20 @@ again:
 	switch (ret) {
 	case MSTP_RCVD_VALID_FRAME:
 		rcvd_valid_frm = true;
-		frm_type = lnk->rx.buf[2];
-		dst_addr = lnk->rx.buf[3];
-		src_addr = lnk->rx.buf[4];
+		frm_type = lnk->rx.hdr.frm_type;
+		dst_addr = lnk->rx.hdr.dst_addr;
+		src_addr = lnk->rx.hdr.src_addr;
+		pdu_len = lnk->rx.hdr.pdu_len;
+
+		DBG("state=%s pdu_len=%d", state_nm[lnk->state], pdu_len);
+
 		/* update master active counter */
 		if (src_addr < MSTP_LNK_MAX_MASTERS)
 			lnk->mgmt.active[src_addr]++;
+
+		if (frm_type == FRM_DATA_NO_REPLY) {
+			INF("FRM_DATA_NO_REPLY");
+		}
 		RESET_SILENCE_TIMER();
 		break;
 
@@ -406,19 +441,7 @@ transition_now:
 
 	switch (lnk->state) {
 	case MSTP_IDLE:
-		if (SILENCE_TIMER() >= T_NO_TOKEN) {
-			event_count = 0; /* Addendum 135-2004d-8 */
-			lnk->state = MSTP_NO_TOKEN;
-			DBG("[IDLE] LostToken --> [NO_TOKEN]");
-			rcvd_invalid_frm = false;
-			rcvd_valid_frm = false;
-			lnk->stat.token_lost++;
-			lnk->mgmt.callback(lnk, MSTP_EV_TOKEN_LOST);
-			goto transition_now;
-		} if (rcvd_invalid_frm) {
-			rcvd_invalid_frm = false;
-			DBG("[IDLE] ReceivedInvalidFrame --> [IDLE]");
-		} if (rcvd_valid_frm) {
+		if (rcvd_valid_frm) {
 			if (dst_addr == ts || dst_addr == MSTP_ADDR_BCAST) {
 				switch (frm_type) {
 				case FRM_TOKEN:
@@ -445,28 +468,26 @@ transition_now:
 				case FRM_BACNET_DATA_NO_REPLY:
 				case FRM_TEST_RESPONSE:
 				case FRM_DATA_NO_REPLY ... (FRM_DATA_NO_REPLY + 0x3f):
-					lnk->rx.inf.type = frm_type;
-					lnk->rx.inf.saddr = src_addr;
-					lnk->rx.inf.daddr = dst_addr;
-					lnk->rx.pdu_len = lnk->rx.off - 10;
-					memcpy(lnk->rx.pdu, &lnk->rx.buf[8], lnk->rx.pdu_len);
-					thinkos_flag_give(lnk->rx.flag);
+					lnk->recv.inf.type = frm_type;
+					lnk->recv.inf.saddr = src_addr;
+					lnk->recv.inf.daddr = dst_addr;
+					lnk->recv.pdu_len = pdu_len;
+					memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+					thinkos_flag_give(lnk->recv.flag);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
-					INF("RCV saddr=%d pdu_len=%d", lnk->rx.inf.saddr, 
-						lnk->rx.pdu_len);
+					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 					DBG("[IDLE] ReceivedDataNoReply --> [IDLE]");
 					break;
 				case FRM_BACNET_DATA_XPCT_REPLY:
 				case FRM_TEST_REQUEST:
 				case FRM_DATA_XPCT_REPLY ... (FRM_DATA_XPCT_REPLY + 0x3f):
-					lnk->rx.inf.type = frm_type;
-					lnk->rx.inf.saddr = src_addr;
-					lnk->rx.inf.daddr = dst_addr;
-					lnk->rx.pdu_len = lnk->rx.off - 10;
-					memcpy(lnk->rx.pdu, &lnk->rx.buf[8], lnk->rx.pdu_len);
-					thinkos_flag_give(lnk->rx.flag);
-					INF("RCV saddr=%d pdu_len=%d", lnk->rx.inf.saddr, 
-						lnk->rx.pdu_len);
+					lnk->recv.inf.type = frm_type;
+					lnk->recv.inf.saddr = src_addr;
+					lnk->recv.inf.daddr = dst_addr;
+					lnk->recv.pdu_len = pdu_len;
+					memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+					thinkos_flag_give(lnk->recv.flag);
+					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 					if (dst_addr == MSTP_ADDR_BCAST) {
 						lnk->state = MSTP_ANSWER_DATA_REQUEST;
@@ -476,12 +497,12 @@ transition_now:
 					break;
 				default:
 					rcvd_valid_frm = false;
-					DBG("[IDLE] ReceivedUnwantedFrame"
+					INF("[IDLE] ReceivedUnwantedFrame"
 							" --> [IDLE]");
 					break;
 				}
 			} else {
-				DBG("[IDLE] NotForMe --> [IDLE]");
+				INF("[IDLE] NotForMe --> [IDLE]");
 				if (frm_type == FRM_REPLY_POLL_FOR_MASTER) {
 					int i = src_addr / 32;
 					int j = src_addr % 32;
@@ -493,6 +514,18 @@ transition_now:
 			   reference, and the flag will be cleared in the next state */
 			if (lnk->state != MSTP_ANSWER_DATA_REQUEST)
 				rcvd_valid_frm = false;
+		} else if (rcvd_invalid_frm) {
+			rcvd_invalid_frm = false;
+			DBG("[IDLE] ReceivedInvalidFrame --> [IDLE]");
+		} else if (SILENCE_TIMER() >= T_NO_TOKEN) {
+			event_count = 0; /* Addendum 135-2004d-8 */
+			lnk->state = MSTP_NO_TOKEN;
+			DBG("[IDLE] LostToken --> [NO_TOKEN]");
+			rcvd_invalid_frm = false;
+			rcvd_valid_frm = false;
+			lnk->stat.token_lost++;
+			lnk->mgmt.callback(lnk, MSTP_EV_TOKEN_LOST);
+			goto transition_now;
 		}
 		break;
 
@@ -566,16 +599,15 @@ transition_now:
 					case FRM_TEST_RESPONSE:
 					case FRM_BACNET_DATA_NO_REPLY:
 					case FRM_DATA_NO_REPLY ... (FRM_DATA_NO_REPLY + 0x3f):
-						lnk->rx.inf.type = frm_type;
-						lnk->rx.inf.saddr = src_addr;
-						lnk->rx.inf.daddr = dst_addr;
-						lnk->rx.pdu_len = lnk->rx.off - 10;
-						memcpy(lnk->rx.pdu, &lnk->rx.buf[8], lnk->rx.pdu_len);
-						thinkos_flag_give(lnk->rx.flag);
+						lnk->recv.inf.type = frm_type;
+						lnk->recv.inf.saddr = src_addr;
+						lnk->recv.inf.daddr = dst_addr;
+						lnk->recv.pdu_len = lnk->rx.off - 10;
+						memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+						thinkos_flag_give(lnk->recv.flag);
 //						bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 						lnk->state = MSTP_DONE_WITH_TOKEN;
-						INF("RCV saddr=%d pdu_len=%d", lnk->rx.inf.saddr, 
-							lnk->rx.pdu_len);
+						INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 						DBG("[WAIT_FOR_REPLY] ReceivedReply --> [DONE_WITH_TOKEN]");
 						break;
 					default:
@@ -677,13 +709,15 @@ transition_now:
 		break;
 
 	case MSTP_PASS_TOKEN:
+		if (event_count > N_MIN_OCTETS) {
+               /* Enter the IDLE state to process the frame. */
+			lnk->state = MSTP_IDLE;
+			DBG("[PASS_TOKEN] SawTokenUser --> [IDLE]");
+			goto transition_now;
+		}
+
 		if (SILENCE_TIMER() <= T_USAGE_TIMEOUT) {
-			if (event_count > N_MIN_OCTETS) {
-                /* Enter the IDLE state to process the frame. */
-				lnk->state = MSTP_IDLE;
-				DBG("[PASS_TOKEN] SawTokenUser --> [IDLE]");
-				goto transition_now;
-			}
+			WARN("[PASS_TOKEN] SILENCE <= USAGE_TMOUT --> [PASS_TOKEN]");
 		} else {
 			if (retry_count < N_RETRY_TOKEN) {
 				retry_count++;
@@ -840,21 +874,21 @@ int mstp_lnk_recv(struct mstp_lnk * lnk, void * buf, unsigned int max,
 	int pdu_len;
 
 	for(;;) {
-		if (thinkos_flag_take(lnk->rx.flag) < 0) {
+		if (thinkos_flag_take(lnk->recv.flag) < 0) {
 			ERR("thinkos_flag_take() failed!");
 			abort();
 		}
 
 		/* check for a slot in the xmit queue ... */
-		if (lnk->rx.pdu_len) 
+		if (lnk->recv.pdu_len)
 			break;
 	};
 
-	pdu_len = MIN(lnk->rx.pdu_len, max);
-	memcpy(buf, lnk->rx.pdu, pdu_len);
-	*inf = lnk->rx.inf;
+	pdu_len = MIN(lnk->recv.pdu_len, max);
+	memcpy(buf, lnk->recv.pdu, pdu_len);
+	*inf = lnk->recv.inf;
 
-	lnk->rx.pdu_len = 0;
+	lnk->recv.pdu_len = 0;
 
 	return pdu_len;
 }
@@ -921,13 +955,12 @@ int mstp_lnk_init(struct mstp_lnk * lnk, const char * name,
 	lnk->addr = addr;
 
 	DBG("[MSTP_INITIALIZE]");
-	lnk->rx.flag = thinkos_flag_alloc();
+	lnk->recv.flag = thinkos_flag_alloc();
 	lnk->tx.flag = thinkos_flag_alloc();
-
 
 	lnk->mgmt.callback = mstp_lnk_default_callback;
 
-	DBG("tx.flag=%d rx.flag=%d", lnk->rx.flag, lnk->tx.flag);
+	DBG("tx.flag=%d rx.flag=%d", lnk->recv.flag, lnk->tx.flag);
 
 	return 0;
 }

@@ -42,6 +42,44 @@
 
 #include "board.h"
 
+
+/* -------------------------------------------------------------------------
+ * Test
+ * ------------------------------------------------------------------------- */
+void io_init(void)
+{
+	thinkos_udelay_factor(&udelay_factor);
+
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
+
+    /* USART5 TX */
+    stm32_gpio_mode(UART5_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
+    stm32_gpio_af(UART5_TX, GPIO_AF8);
+    /* USART5 RX */
+    stm32_gpio_mode(UART5_RX, ALT_FUNC, PULL_UP);
+    stm32_gpio_af(UART5_RX, GPIO_AF8);
+
+    stm32_gpio_mode(IO_RS485_RX, ALT_FUNC, PULL_UP);
+    stm32_gpio_af(IO_RS485_RX, RS485_USART_AF);
+
+    stm32_gpio_mode(IO_RS485_TX, ALT_FUNC, PUSH_PULL | SPEED_MED);
+    stm32_gpio_af(IO_RS485_TX, RS485_USART_AF);
+
+    stm32_gpio_mode(IO_RS485_MODE, OUTPUT, PUSH_PULL | SPEED_LOW);
+    stm32_gpio_set(IO_RS485_MODE);
+
+    /* USART6_TX */
+    stm32_gpio_mode(UART6_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
+    stm32_gpio_af(UART6_TX, GPIO_AF7);
+    /* USART6_RX */
+    stm32_gpio_mode(UART6_RX, ALT_FUNC, PULL_UP);
+    stm32_gpio_af(UART6_RX, GPIO_AF7);
+}
+
 /* -------------------------------------------------------------------------
  * stdio
  * ------------------------------------------------------------------------- */
@@ -61,16 +99,15 @@ void stdio_init(void)
  * System Supervision
  * ------------------------------------------------------------------------- */
 
-const char * const trace_lvl_tab[] = {
-		"   NONE",
-		"  ERROR",
-		"WARNING",
-		"   INFO",
-		"  DEBUG"
-};
-
 void __attribute__((noreturn)) supervisor_task(void)
 {
+	static const char * const trace_lvl_tab[] = {
+			"   NONE",
+			"  ERROR",
+			"WARNING",
+			"   INFO",
+			"  DEBUG"
+	};
 	struct trace_entry trace;
 	uint32_t clk;
 
@@ -97,20 +134,19 @@ void __attribute__((noreturn)) supervisor_task(void)
 	}
 }
 
-
-uint32_t supervisor_stack[128];
-
-const struct thinkos_thread_inf supervisor_inf = {
-	.stack_ptr = supervisor_stack,
-	.stack_size = sizeof(supervisor_stack),
-	.priority = 32,
-	.thread_id = 31,
-	.paused = false,
-	.tag = "SUPV"
-};
-
 void supervisor_init(void)
 {
+	static uint32_t supervisor_stack[128];
+
+	static const struct thinkos_thread_inf supervisor_inf = {
+		.stack_ptr = supervisor_stack,
+		.stack_size = sizeof(supervisor_stack),
+		.priority = 1,
+		.thread_id = 1,
+		.paused = false,
+		.tag = "SUPV"
+	};
+
 	trace_init();
 
 	thinkos_thread_create_inf((void *)supervisor_task, (void *)NULL,
@@ -121,126 +157,54 @@ void supervisor_init(void)
  * MS/TP 
  * ------------------------------------------------------------------------- */
 
-int mstp_task(void * arg)
+int mstp_lnk_task(void * arg)
 {
 	struct mstp_lnk * mstp = (struct mstp_lnk *)arg;
 
-	printf("MS/TP task started...\n");
+	printf("MS/TP link task started...\n");
 
 	mstp_lnk_loop(mstp);
 
 	return 0;
 }
 
-struct serial_dev * rs485_init(void)
-{
-	struct serial_dev * ser;
-
-    /* IO init */
-    stm32_gpio_mode(IO_RS485_RX, ALT_FUNC, PULL_UP);
-    stm32_gpio_af(IO_RS485_RX, RS485_USART_AF);
-
-    stm32_gpio_mode(IO_RS485_TX, ALT_FUNC, PUSH_PULL | SPEED_MED);
-    stm32_gpio_af(IO_RS485_TX, RS485_USART_AF);
-
-    stm32_gpio_mode(IO_RS485_MODE, OUTPUT, PUSH_PULL | SPEED_LOW);
-    stm32_gpio_set(IO_RS485_MODE);
-
-//	ser = stm32f_uart1_serial_init(500000, SERIAL_8N1);
-	ser = stm32f_uart1_serial_dma_init(500000, SERIAL_8N1);
-//	ser = stm32f_uart7_serial_init(500000, SERIAL_8N1);
-
-	return ser;
-}
-
-uint32_t mstp_stack[512];
-
-const struct thinkos_thread_inf mstp_inf = {
-	.stack_ptr = mstp_stack,
-	.stack_size = sizeof(mstp_stack),
-	.priority = 8,
-	.thread_id = 1,
-	.paused = 0,
-	.tag = "MS/TP"
+struct net_stats {
+	struct {
+		unsigned int octet_cnt;
+		unsigned int bcast_cnt;
+		unsigned int unicast_cnt;
+	} rx;
+	struct {
+		unsigned int octet_cnt;
+		unsigned int bcast_cnt;
+		unsigned int unicast_cnt;
+	} tx;
 };
 
-struct mstp_lnk * mstp_start(int addr)
-{
-	struct serial_dev * ser;
+struct {
 	struct mstp_lnk * mstp;
+	struct net_stats stats;
+} net;
 
-	printf("1. rs485_init() ...\n");
-	if ((ser = rs485_init()) == NULL) {
-		return NULL;
-	}
-
-	printf("2. mstp_lnk_alloc() ...\n");
-	mstp = mstp_lnk_alloc();
-
-	printf("3. MS/TP link addr: %d ...\n", addr);
-	mstp_lnk_init(mstp, "MS/TP1", addr, ser);
-
-	printf("4. thinkos_thread_create_inf()\n");
-	thinkos_thread_create_inf(mstp_task, mstp, &mstp_inf);
-
-	thinkos_sleep(100);
-
-	printf("5. mstp_lnk_resume()\n");
-	mstp_lnk_resume(mstp);
-
-	return mstp;
-}
-
-/* -------------------------------------------------------------------------
- * Test
- * ------------------------------------------------------------------------- */
-void io_init(void)
-{
-	thinkos_udelay_factor(&udelay_factor);
-
-	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
-	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
-	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
-	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
-	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
-
-    /* USART5 TX */
-    stm32_gpio_mode(UART5_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-    stm32_gpio_af(UART5_TX, GPIO_AF8);
-    /* USART5 RX */
-    stm32_gpio_mode(UART5_RX, ALT_FUNC, PULL_UP);
-    stm32_gpio_af(UART5_RX, GPIO_AF8);
-
-    /* USART6_TX */
-    stm32_gpio_mode(UART6_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-    stm32_gpio_af(UART6_TX, GPIO_AF7);
-    /* USART6_RX */
-    stm32_gpio_mode(UART6_RX, ALT_FUNC, PULL_UP);
-    stm32_gpio_af(UART6_RX, GPIO_AF7);
-}
-
-int recv_task(void * arg)
+int net_recv_task(void * arg)
 {
 	struct mstp_lnk * mstp = (struct mstp_lnk *)arg;
 	struct mstp_frame_inf inf;
 	uint8_t pdu[502];
 	int len;
-	unsigned int octet_cnt = 0;
-	unsigned int bcast_cnt = 0;
-	unsigned int unicast_cnt = 0;
 	unsigned int seconds = 10;
 	uint32_t clk;
 
-	printf("receive task started...\n");
+	INF("MS/TP receive task started...");
 
 	clk = thinkos_clock() + seconds * 1000;
 	for (;;) {
 		len = mstp_lnk_recv(mstp, pdu, sizeof(pdu), &inf);
-		octet_cnt += len;
+		net.stats.rx.octet_cnt += len;
 		if (inf.daddr == MSTP_ADDR_BCAST)
-			bcast_cnt++;
+			net.stats.rx.bcast_cnt++;
 		else
-			unicast_cnt++;
+			net.stats.rx.unicast_cnt++;
 
 //		printf("RCV: %d->%d (%d) \"%s\"\n", inf.saddr, inf.daddr,
 //				len, (char*)pdu);
@@ -248,15 +212,15 @@ int recv_task(void * arg)
 		/* Log summary each 5 seconds */
 		if ((int32_t)(clk - thinkos_clock()) <= 0) {
 			unsigned int rate;
-			rate = octet_cnt / seconds;
+			rate = net.stats.rx.octet_cnt / seconds;
 
-			DBG("Receive: %d bcast, %d unicast, %d octets, %d.%03d KBps.",
-					bcast_cnt, unicast_cnt, octet_cnt,
+			INF("Receive: %d bcast, %d unicast, %d octets, %d.%03d KBps.",
+					net.stats.rx.bcast_cnt, net.stats.rx.unicast_cnt, net.stats.rx.octet_cnt,
 					rate / 1000, rate % 1000);
 
-			bcast_cnt = 0;
-			unicast_cnt = 0;
-			octet_cnt = 0;
+			net.stats.rx.bcast_cnt = 0;
+			net.stats.rx.unicast_cnt = 0;
+			net.stats.rx.octet_cnt = 0;
 			seconds = 10;
 			clk += seconds * 1000;
 		}
@@ -265,16 +229,142 @@ int recv_task(void * arg)
 	return 0;
 }
 
-uint32_t recv_stack[512];
+uint32_t mstp_lnk_stack[512];
 
-const struct thinkos_thread_inf recv_inf = {
-	.stack_ptr = recv_stack, 
-	.stack_size = sizeof(recv_stack), 
-	.priority = 32,
-	.thread_id = 8, 
+const struct thinkos_thread_inf mstp_lnk_inf = {
+	.stack_ptr = mstp_lnk_stack,
+	.stack_size = sizeof(mstp_lnk_stack),
+	.priority = 8,
+	.thread_id = 1,
 	.paused = 0,
-	.tag = "RECV"
+	.tag = "MS/TP"
 };
+
+uint32_t net_recv_stack[512];
+
+const struct thinkos_thread_inf net_recv_inf = {
+	.stack_ptr = net_recv_stack,
+	.stack_size = sizeof(net_recv_stack),
+	.priority = 32,
+	.thread_id = 8,
+	.paused = 0,
+	.tag = "NET RCV"
+};
+
+struct mstp_lnk * mstp_start(int addr)
+{
+	struct serial_dev * ser;
+	struct mstp_lnk * mstp;
+
+	INF("1. serial port init");
+	ser = stm32f_uart1_serial_dma_init(500000, SERIAL_8N1);
+
+	INF("2. mstp_lnk_alloc()");
+	mstp = mstp_lnk_alloc();
+
+	INF("3. MS/TP link addr: %d", addr);
+	mstp_lnk_init(mstp, "MS/TP1", addr, ser);
+
+	INF("4. thinkos_thread_create_inf()");
+	thinkos_thread_create_inf(mstp_lnk_task, mstp, &mstp_lnk_inf);
+
+	thinkos_thread_create_inf(net_recv_task, mstp, &net_recv_inf);
+
+	thinkos_sleep(100);
+
+	printf("5. mstp_lnk_resume()");
+	mstp_lnk_resume(mstp);
+
+	return mstp;
+}
+
+/* -------------------------------------------------------------------------
+ * Test
+ * ------------------------------------------------------------------------- */
+int test_mode = 0;
+
+int mstp_test_task(void * arg)
+{
+	struct mstp_lnk * mstp = (struct mstp_lnk *)arg;
+	struct mstp_frame_inf inf;
+	uint8_t pdu[502];
+	uint32_t clk;
+	uint32_t tmo;
+	unsigned int itval = 5;
+	int len;
+	int i;
+
+	INF("MS/TP test task started...\n");
+
+	clk = thinkos_clock();
+	tmo = clk + itval * 1000;
+
+	for (i = 0;; ++i) {
+		if (test_mode != 0) {
+			inf.daddr = MSTP_ADDR_BCAST;
+			inf.type = FRM_DATA_NO_REPLY;
+			len = snprintf((char *)pdu, 501, "%6d"
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog."
+					" The quick brown fox jumps over the lazy dog.",
+					i);
+			if (mstp_lnk_send(mstp, pdu, len, &inf) < 0) {
+				ERR("mstp_lnk_send() failed!");
+			}
+			net.stats.tx.octet_cnt += len;
+			net.stats.tx.bcast_cnt++;
+
+			/* Log summary each 10 seconds */
+			if ((int32_t)(tmo - clk) <= 0) {
+				unsigned int rate;
+
+				rate = net.stats.tx.octet_cnt / itval;
+
+				DBG("Send: %d bcasts, %d octets, %d.%03d KBps.",
+						net.stats.tx.bcast_cnt, net.stats.tx.octet_cnt,
+						rate / 1000, rate % 1000);
+
+				net.stats.tx.octet_cnt = 0;
+				net.stats.tx.bcast_cnt = 0;
+				itval = 10;
+				tmo += itval * 1000;
+			}
+
+			if (test_mode > 1) {
+				thinkos_alarm(clk + test_mode * 100);
+			}
+		} else {
+			thinkos_alarm(clk + 100);
+		}
+		clk = thinkos_clock();
+	}
+
+	return 0;
+}
+
+uint32_t test_stack[512];
+
+const struct thinkos_thread_inf test_inf = {
+	.stack_ptr = test_stack,
+	.stack_size = sizeof(test_stack),
+	.priority = 32,
+	.thread_id = 32,
+	.paused = 0,
+	.tag = "TEST"
+};
+
+void  mstp_test_start(struct mstp_lnk * mstp)
+{
+	thinkos_thread_create_inf(mstp_test_task, mstp, &test_inf);
+}
 
 struct board_cfg {
     uint32_t magic;
@@ -285,82 +375,53 @@ struct board_cfg {
 #define CFG_MAGIC 0x01020304
 #define CFG_ADDR  0x0800ff00
 
+void show_menu(void)
+{
+	printf("\n===== MS/TP test =====\n");
+	printf("[s] stop sending\n");
+	printf("[1..9] set sending mode\n");
+	printf("\n");
+}
 
 int main(int argc, char ** argv)
 {
 	struct board_cfg * cfg = (struct board_cfg *)(CFG_ADDR);
 	struct mstp_lnk * mstp;
-	struct mstp_frame_inf inf;
-	uint8_t mstp_addr = 1;
-	uint8_t pdu[502];
-	uint32_t clk;
-	uint32_t tmo;
-	unsigned int octet_cnt = 0;
-	unsigned int bcast_cnt = 0;
-	unsigned int itval = 5;
-	int len;
-	int i;
+	int mstp_addr;
 
 	if (cfg->magic == CFG_MAGIC)
 		mstp_addr = cfg->mstp_addr;
 	else
-		mstp_addr = 15;
+		mstp_addr = 2;
 
-//	io_init();
+	io_init();
 
 	stdio_init();
 
 	supervisor_init();
 
-	INF("Starting MS/TP test");
+	INF("Starting MS/TP network (addr=%d)", mstp_addr);
 
 	if ((mstp = mstp_start(mstp_addr)) == NULL) {
 		thinkos_sleep(1000);
 		return 1;
 	}
 
-	thinkos_thread_create_inf(recv_task, mstp, &recv_inf);
+	INF("Starting MS/TP test");
 
-	clk = thinkos_clock();
-	tmo = clk + itval * 1000;
+	mstp_test_start(mstp);
 
-	for (i = 0;; ++i) {
-		inf.daddr = MSTP_ADDR_BCAST;
-		inf.type = FRM_DATA_NO_REPLY;
-		len = snprintf((char *)pdu, 501, "%6d"
-					  " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog."
-				  	  " The quick brown fox jumps over the lazy dog."
-				  	  " The quick brown fox jumps over the lazy dog."
-				      " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog."
-				      " The quick brown fox jumps over the lazy dog."
-					  " The quick brown fox jumps over the lazy dog.",
-					  i);
-		if (mstp_lnk_send(mstp, pdu, len, &inf) < 0) {
-			ERR("mstp_lnk_send() failed!");
+	for (;;) {
+		int c = fgetc(stdin);
+
+		switch (c) {
+		case '0' ... '9':
+			test_mode = c - '0';
+			printf("\ntest mode %d\n", test_mode);
+			break;
+		default:
+			show_menu();
 		}
-		octet_cnt += len;
-		bcast_cnt++;
-
-		/* Log summary each 10 seconds */
-		if ((int32_t)(tmo - clk) <= 0) {
-			unsigned int rate;
-
-			rate = octet_cnt / itval;
-
-			DBG("Send: %d bcasts, %d octets, %d.%03d KBps.", bcast_cnt, octet_cnt,
-					rate / 1000, rate % 1000);
-
-			octet_cnt = 0;
-			bcast_cnt = 0;
-			itval = 10;
-			tmo += itval * 1000;
-		}
-		clk = thinkos_clock();
 	}
 
 	return 0;

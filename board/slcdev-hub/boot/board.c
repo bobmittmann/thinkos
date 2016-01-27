@@ -63,6 +63,11 @@ bool board_init(void)
 
     lattice_ice40_configure(ice40lp384_bin, sizeof_ice40lp384_bin);
 
+	/* set the interrupt priority */
+	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
+	/* Enable USB OTG FS interrupts */
+	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+
 	return true;
 }
 

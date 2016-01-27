@@ -63,6 +63,8 @@ bool dmon_app_exec(uint32_t addr, bool paused)
 
 	__thinkos_exec(thread_id, (void *)app_bootstrap, (void *)app, paused);
 
+	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
+
 	return true;
 }
 

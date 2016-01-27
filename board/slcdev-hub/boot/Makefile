@@ -39,7 +39,7 @@ CDEFS = CONFIG_H CM3_RAM_VECTORS
 
 VERSION_DATE = "2016-01-26"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "4"
+VERSION_MINOR = "5"
 
 #CFLAGS = -g -O2 -Wall
 CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections

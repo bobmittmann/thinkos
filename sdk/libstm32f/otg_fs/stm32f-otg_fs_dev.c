@@ -37,8 +37,6 @@
 #include <sys/usb-dev.h>
 #include <sys/param.h>
 
-#include <thinkos.h>
-
 #include <sys/dcclog.h>
 
 #ifndef STM32_ENABLE_OTG_FS 
@@ -677,8 +675,6 @@ void otg_power_on(struct stm32f_otg_fs * otg_fs)
 	/* Enable Cortex interrupt */
 #if 0
 	cm3_irq_enable(STM32F_IRQ_OTG_HS);
-#else
-	thinkos_irq_enable(STM32F_IRQ_OTG_HS);
 #endif
 }
 
@@ -689,7 +685,7 @@ void otg_power_off(struct stm32f_otg_fs * otg_fs)
 	otg_vbus_connect(false);
 
 	DCC_LOG(LOG_INFO, "Disabling USB device clock...");
-	stm32_clk_disable(STM32_RCC, STM32_CLK_OTGHS);
+	stm32_clk_disable(STM32_RCC, STM32_CLK_OTGFS);
 }
 
 int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
@@ -735,8 +731,6 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 	/* Enable Cortex interrupt */
 #if 0
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
-#else
-	thinkos_irq_enable(STM32F_IRQ_OTG_FS);
 #endif
 
 	DCC_LOG(LOG_TRACE, "done ----------------------------------------");

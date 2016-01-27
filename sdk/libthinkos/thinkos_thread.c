@@ -42,7 +42,6 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	pc = (uint32_t)task;
 	sp &= 0xfffffff8; /* 64bits alignemnt */
 
-	DCC_LOG3(LOG_TRACE, "thread_id=%d pc=%08x sp=%08x", thread_id, pc, sp);
 
 	sp -= sizeof(struct thinkos_context);
 	ctx = (struct thinkos_context *)sp;
@@ -50,6 +49,11 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 
 	ctx->r0 = (uint32_t)arg;
+#if DEBUG
+	ctx->r1 = (uint32_t)0x11111111;
+	ctx->r2 = (uint32_t)0x22222222;
+	ctx->r3 = (uint32_t)0x33333333;
+#endif
 #if THINKOS_ENABLE_EXIT
 	ctx->lr = (uint32_t)__exit_stub;
 #else
@@ -59,10 +63,21 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 	thinkos_rt.ctx[thread_id] = ctx;
 
+	DCC_LOG4(LOG_TRACE, "thread_id=%d sp=%08x lr=%08x pc=%08x", 
+			 thread_id, sp, ctx->lr, ctx->pc);
+	DCC_LOG4(LOG_TRACE, "r0=%08x r1=%08x r2=%08x r3=%08x", 
+			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
+
 #if THINKOS_ENABLE_PAUSE
 	/* insert into the paused list */
 	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 1);  
 #endif
+
+
+	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
+			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
+
+
 }
 
 /* initialize a thread context */

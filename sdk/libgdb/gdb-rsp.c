@@ -241,6 +241,17 @@ static int rsp_empty(struct gdb_rspd * gdb)
 	return dmon_comm_send(gdb->comm, "$#00", 4);
 }
 
+enum gdb_error_code {
+	GDB_ERR_THREAD_IS_DEAD = 1,
+	GDB_ERR_REGISTER_NOT_KNOWN = 2,
+	GDB_ERR_REGISTER_SET_FAIL = 3,
+	GDB_ERR_MEMORY_READ_FAIL = 4,
+	GDB_ERR_BREAKPOINT_SET_FAIL = 5,
+	GDB_ERR_WATCHPOINT_SET_FAIL = 6,
+	GDB_ERR_STEP_REQUEST_FAIL = 7,
+	GDB_ERR_APP_EXEC_FAIL = 8,
+};
+
 static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
 {
 	unsigned int sum;
@@ -335,7 +346,7 @@ static int rsp_thread_isalive(struct gdb_rspd * gdb, char * pkt)
 		ret = rsp_ok(gdb);
 	} else {
 		DCC_LOG1(LOG_INFO, "thread %d is dead!", thread_id);
-		ret = rsp_error(gdb, 1);
+		ret = rsp_error(gdb, GDB_ERR_THREAD_IS_DEAD);
 	}
 
 	return ret;
@@ -892,14 +903,14 @@ static int rsp_register_set(struct gdb_rspd * gdb, char * pkt)
 	}
 
 	if (reg > 16) {
-		return rsp_error(gdb, 2);
+		return rsp_error(gdb, GDB_ERR_REGISTER_NOT_KNOWN);
 	}
 
 	DCC_LOG3(LOG_TRACE, "thread_id=%d reg=%d val=0x%08x", thread_id, reg, val);
 
 	if (thread_register_set(thread_id, reg, val) < 0) {
 		DCC_LOG(LOG_WARNING, "thread_register_set() failed!");
-		return rsp_error(gdb, 2);
+		return rsp_error(gdb, GDB_ERR_REGISTER_SET_FAIL);
 	}
 
 	return rsp_ok(gdb);
@@ -930,8 +941,8 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 		size = max;
 
 	if ((ret = target_mem_read(addr, buf, size)) < 0) {
-		DCC_LOG3(LOG_MSG, "ERR: %d addr=%08x size=%d", ret, addr, size);
-		return rsp_error(gdb, 2);
+		DCC_LOG3(LOG_WARNING, "ERR: %d addr=%08x size=%d", ret, addr, size);
+		return rsp_error(gdb, GDB_ERR_MEMORY_READ_FAIL);
 	}
 	
 	data = (uint8_t *)buf;
@@ -983,25 +994,25 @@ static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 		/* 1 - hardware-breakpoint */
 		if (dmon_breakpoint_set(addr, size))
 			return rsp_ok(gdb);
-		return rsp_error(gdb, 1);
+		return rsp_error(gdb, GDB_ERR_BREAKPOINT_SET_FAIL);
 	}
 	if (type == 2) {
 		/* write-watchpoint */
 		if (dmon_watchpoint_set(addr, size, 2))
 			return rsp_ok(gdb);
-		return rsp_error(gdb, 1);
+		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 	if (type == 3) {
 		/* read-watchpoint */
 		if (dmon_watchpoint_set(addr, size, 1))
 			return rsp_ok(gdb);
-		return rsp_error(gdb, 1);
+		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 	if (type == 4) {
 		/* access-watchpoint */
 		if (dmon_watchpoint_set(addr, size, 3))
 			return rsp_ok(gdb);
-		return rsp_error(gdb, 1);
+		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 
 	DCC_LOG1(LOG_TRACE, "unsupported breakpoint type %d", type);
@@ -1266,8 +1277,9 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
 					if (!gdb->active_app) {
 						DCC_LOG(LOG_WARNING, "no active application, "
 								"calling dmon_app_exec()!");
-						if (!dmon_app_exec(this_board.application.start_addr, true)) {
-							return rsp_error(gdb, 1);
+						if (!dmon_app_exec(this_board.application.start_addr, 
+										   true)) {
+							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
 						gdb->active_app = true;
 					}
@@ -1298,13 +1310,13 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
 							"calling dmon_app_exec()!");
 					if (!dmon_app_exec(this_board.application.start_addr, 
 									   true)) {
-						return rsp_error(gdb, 1);
+						return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 					}
 					gdb->active_app = true;
 				}
 				if (thread_step_req(thread_id) < 0) {
 					DCC_LOG(LOG_WARNING, "thread_step_req() failed!");
-					return rsp_error(gdb, 1);
+					return rsp_error(gdb, GDB_ERR_STEP_REQUEST_FAIL);
 				}
 				break;
 			case 'S':
@@ -1393,7 +1405,7 @@ static int rsp_memory_write_bin(struct gdb_rspd * gdb, char * pkt)
 		DCC_LOG(LOG_WARNING, "active application!");
 	}
 
-	DCC_LOG3(LOG_TRACE, "addr=%08x size=%d cp=%08x", addr, size, cp);
+	DCC_LOG3(LOG_INFO, "addr=%08x size=%d cp=%08x", addr, size, cp);
 
 	if (target_mem_write(addr, cp, size) < 0) {
 		/* XXX: silently ignore writing errors ...

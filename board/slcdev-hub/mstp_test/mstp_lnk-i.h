@@ -69,13 +69,23 @@ struct mstp_lnk {
 	struct serial_dev * dev;
 	struct {
 		uint8_t buf[MSTP_LNK_MTU];
+		unsigned int off;
+		unsigned int cnt;
+		struct {
+			uint8_t frm_type;
+			uint8_t dst_addr;
+			uint8_t src_addr;
+			uint16_t pdu_len;
+		} hdr;
+	} rx;
+
+	struct {
 		struct mstp_frame_inf inf;
 		volatile uint16_t pdu_len;
 		uint8_t pdu[MSTP_LNK_PDU_MAX];
-		unsigned int off;
-		unsigned int cnt;
 		int flag;
-	} rx;
+	} recv;
+
 	struct {
 		uint8_t buf[MSTP_LNK_MTU];
 		uint8_t token[8];
@@ -84,6 +94,7 @@ struct mstp_lnk {
 		uint8_t pdu[MSTP_LNK_PDU_MAX];
 		int flag;
 	} tx;
+
 	struct {
 		void (* callback)(struct mstp_lnk * lnk, unsigned int ev);
 		uint32_t netmap[(MSTP_LNK_MAX_MASTERS + 31) / 32];

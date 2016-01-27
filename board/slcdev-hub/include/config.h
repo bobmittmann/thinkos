@@ -95,8 +95,9 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE       320
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       0
+#define THINKOS_UNROLL_EXCEPTIONS       1
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
+#define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
@@ -111,7 +112,7 @@
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DMON_STACK_SIZE         960
+#define THINKOS_DMON_STACK_SIZE         1024
 
 #define THINKOS_ENABLE_STACK_INIT       1
 
@@ -183,6 +184,12 @@
 #define STM32F_ETH_TX_NDESC      4
 /* Number of packet in the buffer pool */
 #define PKTBUF_POOL_SIZE        10 
+
+/* -------------------------------------------------------------------------
+ * MS/TP
+ * ------------------------------------------------------------------------- */
+
+#define MSTP_LNK_MAX_MASTERS    8
 
 #endif /* __CONFIG_H__ */
 

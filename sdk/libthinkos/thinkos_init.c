@@ -56,14 +56,6 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 };
 #endif
 
-void __thinkos_irq_disable_all(void)
-{
-	int i;
-
-	for (i = 0; i < CM3_ICTR; ++i)
-		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
-}
-
 void __thinkos_kill_all(void) 
 {
 	int wq;

@@ -682,12 +682,12 @@ int target_mem_write(uint32_t addr,
 				return -1;
 			}
 
-			DCC_LOG2(LOG_TRACE, "FLASH block addr=0x%08x size=%d", 
+			DCC_LOG2(LOG_INFO, "FLASH block addr=0x%08x size=%d", 
 					 blk.addr, blk.size);
 
 			offs = addr - FLASH_BASE;
 			if (blk.addr == addr) {
-				DCC_LOG2(LOG_TRACE, "block erase addr=0x%08x size=%d", 
+				DCC_LOG2(LOG_INFO, "block erase addr=0x%08x size=%d", 
 						 blk.addr, blk.size);
 				stm32_flash_erase(offs, blk.size);
 			};

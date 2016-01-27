@@ -171,14 +171,14 @@ void __xcpt_thinkos_process(struct thinkos_except * xcpt)
 
 int __xcpt_active_irq(void)
 {
-	int irqmax;
+	int irqregs;
 	int irqbits;
 	int irq;
 	int i;
 	int j;
 
-	irqmax = CM3_ICTR;
-	for (i = 0; i < irqmax ; ++i) {
+	irqregs = (CM3_ICTR + 1);
+	for (i = 0; i < irqregs ; ++i) {
 		irqbits = __rbit(CM3_NVIC->iabr[i]);
 		if ((j = __clz(irqbits)) < 32) {
 			irq = i * 32 + j;
