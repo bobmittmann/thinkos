@@ -57,24 +57,24 @@ void io_init(void)
 extern const uint8_t ice40lp384_bin[];
 extern const unsigned int sizeof_ice40lp384_bin;
 
+void board_comm_irqen(void)
+{
+	/* set the interrupt priority */
+	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
+//	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, IRQ_PRIORITY_VERY_LOW);
+	/* Enable USB OTG FS interrupts */
+	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+}
+
 bool board_init(void)
 {
 	io_init();
 
     lattice_ice40_configure(ice40lp384_bin, sizeof_ice40lp384_bin);
 
-	/* set the interrupt priority */
-	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
-	/* Enable USB OTG FS interrupts */
-	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+	board_comm_irqen();
 
 	return true;
-}
-
-void board_comm_irqen(void)
-{
-	/* Enable USB OTG FS interrupts */
-	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 }
 
 void board_softreset(void)

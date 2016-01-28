@@ -31,13 +31,13 @@ MEMORY
 	flash (rx) : ORIGIN = 0x08000000, LENGTH = 512K
 	sram0 (rw) : ORIGIN = 0x20000000, LENGTH = 112K
 	sram1 (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
-	sram2 (rw) : ORIGIN = 0x10000000, LENGTH = 64K
+	ccm   (rw) : ORIGIN = 0x10000000, LENGTH = 64K
 	dcclog (r) : ORIGIN = 0x50000000, LENGTH = 1024K
 }
 
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram0);
-REGION_ALIAS("STACK", sram2);
+REGION_ALIAS("CCM", ccm);
 
 __code_init = ORIGIN(flash) + (DEFINED(__thinkos) ? 0x10000 : 0) ;
 __data_init = ORIGIN(sram0) + (DEFINED(__thinkos) ? 0x01000 : 0) ;
@@ -124,5 +124,17 @@ SECTIONS
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
 	PROVIDE (__heap_start = . );
+
+	.ccm :
+	{
+		/* define a global symbol marking the start of the .bss section */
+		PROVIDE (__ccm_start = . );
+		/* all .bss sections  */
+		KEEP(*(.ccm .ccm*))
+	} >"CCM"
+
+	/* advance location counter to the next 32-bit boundary */
+	. = ALIGN(4);
+	PROVIDE (__ccm_end = . );
 }
 

@@ -255,7 +255,7 @@ bool dmon_app_suspend(void);
 
 bool dmon_app_continue(void);
 
-void dmon_soft_reset(struct dmon_comm * comm);
+void dmon_soft_reset(void);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 

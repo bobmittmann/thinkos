@@ -263,18 +263,6 @@ again:
 }
 #endif
 
-/** @brief Exit the gate, leaving the gate, optionally leaving it open 
- * or closed.
- *
- * @param gate The gate descriptor.
- * @param open Indicate the state of the gate on exit. 
- * - @p open > 0, the gate will be left open, allowing for another thread 
- * to enter the gate.
- * - @p open == 0, the gate will be opened if signaled otherwise will stay
- * closed. 
- * @return THINKOS_EINVAL if @p gate is invalid, 0 otherwise. 
- */
-
 void thinkos_gate_exit_svc(int32_t * arg)
 {
 	unsigned int wq = arg[0];

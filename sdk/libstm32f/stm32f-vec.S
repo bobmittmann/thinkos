@@ -252,7 +252,7 @@ __rom_vectors:
 	.global __sizeof_rom_vectors
 __sizeof_rom_vectors:
 	.type __sizeof_rom_vectors, %object
-	.word	__rom_vectors, . - __rom_vectors
+	.word	. - __rom_vectors
 	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
 
 #ifdef CM3_RAM_VECTORS
@@ -265,7 +265,15 @@ __ram_vectors:
 	.type __ram_vectors, %object
 	cortex_m_vectors
 	stm32f_irq_vectors
-	.size   __ram_vectors, . - __ram_vectors
+__ram_vectors_end:
+	.global __ram_vectors_end
+
+	.text
+	.global __sizeof_ram_vectors
+__sizeof_ram_vectors:
+	.type __sizeof_ram_vectors, %object
+	.word	__ram_vectors_end - __ram_vectors
+	.size   __sizeof_ram_vectors, . - __sizeof_ram_vectors
 #endif
 
 	.text

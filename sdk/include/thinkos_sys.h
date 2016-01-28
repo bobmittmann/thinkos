@@ -1078,6 +1078,8 @@ void __thinkos_thread_inf_set(unsigned int thread_id,
 
 void __thinkos_irq_disable_all(void);
 
+void __thinkos_irq_reset_all(void);
+
 void __thinkos_kill_all(void);
 
 void __thinkos_pause_all(void);

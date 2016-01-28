@@ -25,17 +25,33 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-void dmon_soft_reset(struct dmon_comm * comm)
+#ifdef CM3_RAM_VECTORS
+extern unsigned int __text_end;
+extern unsigned int __ram_vectors;
+extern unsigned int __sizeof_ram_vectors;
+
+void __reset_ram_vectors(void)
+{
+	unsigned int size = __sizeof_ram_vectors;
+	void * src = &__text_end;
+	void * dst = &__ram_vectors;
+
+	DCC_LOG3(LOG_TRACE, "dst=%08x src=%08x size=%d", dst, src, size); 
+	__thinkos_memcpy32(dst, src, size); 
+}
+#endif
+
+void dmon_soft_reset(void)
 {
 	DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
 	__thinkos_irq_disable_all();
-
+#if 0
 	DCC_LOG(LOG_TRACE, "2. kill all threads...");
 	__thinkos_kill_all(); 
 
 	DCC_LOG(LOG_TRACE, "3. wait idle..."); 
 	dmon_wait_idle();
-
+#endif
 	DCC_LOG(LOG_TRACE, "4. ThinkOS reset...");
 	__thinkos_reset();
 
@@ -52,6 +68,10 @@ void dmon_soft_reset(struct dmon_comm * comm)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	DCC_LOG(LOG_TRACE, "7. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
+#endif
+
+#ifdef CM3_RAM_VECTORS
+	__reset_ram_vectors();
 #endif
 
 	DCC_LOG(LOG_TRACE, "8. reset this board...");

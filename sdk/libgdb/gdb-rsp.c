@@ -37,10 +37,10 @@
 #include "signals.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 1
+#define GDB_DEBUG_PACKET 0
 #endif
 
-#define THREAD_ID_OFFS 64
+#define THREAD_ID_OFFS 100
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
 #define THREAD_ID_NONE -2
@@ -541,7 +541,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
 		if (gdb->active_app) {
-			dmon_soft_reset(gdb->comm);
+			dmon_soft_reset();
 			gdb->active_app = false;
 		}
 		if (dmon_app_exec(this_board.application.start_addr, true)) {
@@ -941,7 +941,7 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 		size = max;
 
 	if ((ret = target_mem_read(addr, buf, size)) < 0) {
-		DCC_LOG3(LOG_WARNING, "ERR: %d addr=%08x size=%d", ret, addr, size);
+		DCC_LOG3(LOG_INFO, "%d addr=%08x size=%d", ret, addr, size);
 		return rsp_error(gdb, GDB_ERR_MEMORY_READ_FAIL);
 	}
 	
@@ -1396,7 +1396,7 @@ static int rsp_memory_write_bin(struct gdb_rspd * gdb, char * pkt)
 		   writing over it may cause errors */
 		if (gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "active application!");
-			dmon_soft_reset(gdb->comm);
+			dmon_soft_reset();
 			gdb->active_app = false;
 		}
 		return rsp_ok(gdb);

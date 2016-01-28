@@ -367,7 +367,7 @@ wr_again:
 #endif
 				/* insert into the ready wait queue */
 				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_WARNING, "<%d> rollback 1 %d...", self, wq);
+				DCC_LOG2(LOG_INFO, "<%d> rollback 1 %d...", self, wq);
 				goto wr_again;
 			}
 			/* Insert into the event wait queue */
@@ -382,7 +382,7 @@ wr_again:
 #endif
 				/* insert into the ready wait queue */
 				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_WARNING, "<%d> rollback 2 %d...", self, wq);
+				DCC_LOG2(LOG_INFO, "<%d> rollback 2 %d...", self, wq);
 				goto wr_again;
 			}
 

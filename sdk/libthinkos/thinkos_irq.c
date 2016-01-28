@@ -38,8 +38,20 @@ void __thinkos_irq_disable_all(void)
 	for (i = 0; i < regs; ++i) {
 		CM3_NVIC->icer[i] = 0xffffffff; 
 	}
-
 }
+
+#if THINKOS_IRQ_MAX > 0
+void __thinkos_irq_reset_all(void)
+{
+	int irq;
+
+	/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
+	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
+		cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
+		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+	}
+}
+#endif
 
 #if THINKOS_IRQ_MAX > 0
 
@@ -51,9 +63,9 @@ void cm3_default_isr(int irq)
 	cm3_irq_disable(irq);
 
 	th = thinkos_rt.irq_th[irq];
-	thinkos_rt.irq_th[irq] = -1;
+	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 
-	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th, irq);
+	DCC_LOG2(LOG_TRACE, "<%d> IRQ %d", th, irq);
 	/* TODO: create a wait for IRQ waiting queue. */
 
 	/* insert the thread into ready queue */

@@ -229,13 +229,13 @@ int net_recv_task(void * arg)
 	return 0;
 }
 
-uint32_t mstp_lnk_stack[512];
+uint32_t mstp_lnk_stack[512] __attribute__((section (".ccm")));
 
 const struct thinkos_thread_inf mstp_lnk_inf = {
 	.stack_ptr = mstp_lnk_stack,
 	.stack_size = sizeof(mstp_lnk_stack),
-	.priority = 8,
-	.thread_id = 1,
+	.priority = 2,
+	.thread_id = 2,
 	.paused = 0,
 	.tag = "MS/TP"
 };
@@ -383,6 +383,12 @@ void show_menu(void)
 	printf("\n");
 }
 
+void motd(void)
+{
+	printf("\n--------- Test Application -------\n");
+	printf("\n");
+}
+
 int main(int argc, char ** argv)
 {
 	struct board_cfg * cfg = (struct board_cfg *)(CFG_ADDR);
@@ -392,11 +398,13 @@ int main(int argc, char ** argv)
 	if (cfg->magic == CFG_MAGIC)
 		mstp_addr = cfg->mstp_addr;
 	else
-		mstp_addr = 2;
+		mstp_addr = 1;
 
 	io_init();
 
 	stdio_init();
+
+	motd();
 
 	supervisor_init();
 

@@ -580,16 +580,20 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 			}
 		} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0
-			int irq;
-			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-				if (thinkos_rt.irq_th[irq] == thread_id) {
+			if (thread_id != THINKOS_THREAD_IDLE) {
+				int irq;
+				for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+					if (thinkos_rt.irq_th[irq] == thread_id) {
+						break;
+					}
+				}
+				if (irq < THINKOS_IRQ_MAX) {
 					cp += str2hex(cp, "wait on IRQ[");
 					cp += int2str2hex(cp, irq);
 					cp += char2hex(cp, ']');
-					break;
-				}
-			}
-			if (irq == THINKOS_IRQ_MAX)
+				} else
+					cp += str2hex(cp, "ready");
+			} else
 #endif
 			cp += str2hex(cp, "ready");
 		} else {

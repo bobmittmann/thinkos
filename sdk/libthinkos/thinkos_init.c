@@ -131,15 +131,8 @@ void __thinkos_reset(void)
 	/* clear the ThinkOS runtime structure */
 	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
 
-#if	(THINKOS_IRQ_MAX > 0)
-	{
-		int irq;
-		/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
-		for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
-			cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
-			thinkos_rt.irq_th[irq] = -1;
-		}
-	}
+#if THINKOS_IRQ_MAX > 0
+	__thinkos_irq_reset_all();
 #endif
 
 #if (THINKOS_MUTEX_MAX > 0)

@@ -32,7 +32,7 @@
 
 #undef DEBUG
 #undef TRACE_LEVEL
-#define TRACE_LEVEL TRACE_LVL_INF
+#define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
 /* -------------------------------------------------------------------------
@@ -135,7 +135,7 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 	lnk->rx.hdr.src_addr = saddr;
 	lnk->rx.hdr.pdu_len = pdu_len;
 
-	DBG("cnt=%d pdu_len=%d", cnt, pdu_len);
+//	DBG("cnt=%d pdu_len=%d", cnt, pdu_len);
 
 	if (pdu_len > 0) {
 		unsigned int chk;
@@ -187,8 +187,8 @@ static int mstp_frame_send(struct mstp_lnk * lnk, unsigned int route,
 	unsigned int crc;
 	unsigned int type;
 	unsigned int daddr;
-	int cnt;
-	int i;
+	unsigned int cnt;
+	unsigned int i;
 
 	/* encode header */
 	buf[0] = 0x55;
@@ -930,6 +930,7 @@ int mstp_lnk_getaddr(struct mstp_lnk * lnk)
 
 int mstp_lnk_getbcast(struct mstp_lnk * lnk)
 {
+	(void)lnk;
 	return MSTP_ADDR_BCAST;
 }
 
@@ -939,6 +940,8 @@ int mstp_lnk_getbcast(struct mstp_lnk * lnk)
 
 static void mstp_lnk_default_callback(struct mstp_lnk * lnk, unsigned int ev)
 {
+	(void)lnk;
+	(void)ev;
 }
 
 int mstp_lnk_init(struct mstp_lnk * lnk, const char * name, 
@@ -949,6 +952,8 @@ int mstp_lnk_init(struct mstp_lnk * lnk, const char * name,
 
 	if (addr > N_MAX_MASTER)
 		return -EINVAL;
+
+	(void)name;
 
 	lnk->dev = dev;
 	lnk->state = MSTP_INITIALIZE;
@@ -1037,9 +1042,9 @@ int mstp_lnk_getstat(struct mstp_lnk * lnk, struct mstp_lnk_stat * stat,
 	return 0;
 }
 
-int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[], unsigned int max)
+unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[], unsigned int max)
 {
-	int cnt = 0;
+	unsigned int cnt = 0;
 	int addr;
 
 	if (max > MSTP_LNK_MAX_MASTERS)

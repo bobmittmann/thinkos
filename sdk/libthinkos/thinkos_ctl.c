@@ -1,5 +1,5 @@
 /* 
- * thikos_sysinfo.c
+ * thinkos_ctl.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

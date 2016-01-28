@@ -205,7 +205,8 @@ int mstp_lnk_mgmt(struct mstp_lnk * lnk,
 int mstp_lnk_getstat(struct mstp_lnk * lnk,
 		struct mstp_lnk_stat * stat, bool reset);
 
-int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[], unsigned int max);
+unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[],
+		unsigned int max);
 
 /**@}*/
 

@@ -197,10 +197,16 @@ static void monitor_on_fault(struct dmon_comm * comm)
 	if (dmon_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}
+
+	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+
 	if (dmon_comm_isconnected(comm)) {
+		DCC_LOG(LOG_TRACE, "comm is connected!");
 		dmprintf(comm, __hr__);
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, __hr__);
+	} else {
+		DCC_LOG(LOG_TRACE, "comm NOT connected!");
 	}
 }
 #endif
@@ -236,7 +242,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 								uint32_t addr, unsigned int size)
 {
 	dmputs("\r\nYMODEM receive (^X to cancel) ... ", comm);
-	dmon_soft_reset(comm);
+	dmon_soft_reset();
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
 		dmputs("\r\n#ERROR: YMODEM failed!\r\n", comm); 
 		return;
@@ -250,7 +256,7 @@ static void monitor_app_erase(struct dmon_comm * comm,
 							  uint32_t addr, unsigned int size)
 {
 	dmputs("\r\nErasing application block ... ", comm);
-	dmon_soft_reset(comm);
+	dmon_soft_reset();
 	if (dmon_app_erase(comm, addr, size))
 		dmputs("done.\r\n", comm);
 	else	
@@ -350,26 +356,26 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #if (MONITOR_APPTERM_ENABLE)
 		case CTRL_C:
 			dmputs("^C\r\n", comm);
-			dmon_soft_reset(comm);
+			dmon_soft_reset();
 			break;
 #endif
 #if (MONITOR_SELFTEST_ENABLE)
 		case CTRL_E:
 			dmputs("^E\r\n", comm);
-			dmon_soft_reset(comm);
+			dmon_soft_reset();
 			dmon_exec(selftest_bootstrap);
 			break;
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
 		case CTRL_K:
 			dmputs("^K\r\n", comm);
-			dmon_soft_reset(comm);
+			dmon_soft_reset();
 			this_board.configure(comm);
 			break;
 #endif
 #if (MONITOR_UPGRADE_ENABLE)
 		case CTRL_L:
-			dmon_soft_reset(comm);
+			dmon_soft_reset();
 			dmputs("^L\r\nConfirm (yes/no)? ", comm);
 			dmscanf(comm, "yes%n", &i);
 			if (i == 3) {
@@ -442,7 +448,7 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #if (MONITOR_APPRESTART_ENABLE)
 		case CTRL_Z:
 			dmputs("^Z\r\n", comm);
-			dmon_soft_reset(comm);
+			dmon_soft_reset();
 			monitor_exec(comm, this_board.application.start_addr);
 			break;
 #endif
