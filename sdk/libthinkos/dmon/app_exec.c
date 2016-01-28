@@ -76,7 +76,28 @@ void dmon_thread_exec(void (* func)(void *), void * arg)
 	__thinkos_exec(thread_id, func, arg, paused);
 }
 
-static void __dmon_irq_disable_all(void)
+/**
+  * __dmon_irq_disable_all:
+  *
+  *  Disable all interrupts.
+  */
+void __dmon_irq_disable_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
+		thinkos_dmon_rt.nvic_ie[i] = 0xffffffff;
+	}
+}
+
+/**
+  * __dmon_irq_pause_all:
+  *
+  * Save the state of the interrupt enable registers and 
+  * disable all interrupts.
+  */
+void __dmon_irq_pause_all(void)
 {
 	int i;
 
@@ -87,10 +108,14 @@ static void __dmon_irq_disable_all(void)
 				i, thinkos_dmon_rt.nvic_ie[i]);
 		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
 	}
-	this_board.comm_irqen();
 }
 
-static void __dmon_irq_restore_all(void)
+/**
+  * __dmon_irq_restore_all:
+  *
+  * Restore the state of the interrupt enable registers.
+  */
+void __dmon_irq_restore_all(void)
 {
 	int i;
 
@@ -102,7 +127,7 @@ static void __dmon_irq_restore_all(void)
 
 bool dmon_app_suspend(void)
 {
-	__dmon_irq_disable_all();
+	__dmon_irq_pause_all();
 
 	__thinkos_pause_all();
 
@@ -117,6 +142,9 @@ bool dmon_app_suspend(void)
 	thinkos_rt.step_req = 0;
 #endif
 
+	/* Make sure the communication channel interrupts are enabled. */
+	this_board.comm_irqen();
+
 	dmon_wait_idle();
 
 	return true;
@@ -124,7 +152,7 @@ bool dmon_app_suspend(void)
 
 bool dmon_app_continue(void)
 {
-	DCC_LOG(LOG_INFO, "....");
+	DCC_LOG(LOG_TRACE, "....");
 
 	__thinkos_resume_all();
 

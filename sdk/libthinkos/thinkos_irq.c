@@ -27,19 +27,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #include <stdio.h>
 
-void __thinkos_irq_disable_all(void)
-{
-	int regs = CM3_ICTR + 1;
-	int i;
-
-	DCC_LOG1(LOG_TRACE, "regs=%d", regs);
-
-	/* disable all interrupts */
-	for (i = 0; i < regs; ++i) {
-		CM3_NVIC->icer[i] = 0xffffffff; 
-	}
-}
-
 #if THINKOS_IRQ_MAX > 0
 void __thinkos_irq_reset_all(void)
 {
@@ -129,8 +116,6 @@ void thinkos_irq_register_svc(int32_t * arg)
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
-	/* adjust the priority level */
-	cm3_irq_disable(irq);
 	if (priority > IRQ_PRIORITY_VERY_LOW)
 		priority = IRQ_PRIORITY_VERY_LOW;
 	else if (priority < IRQ_PRIORITY_VERY_HIGH)

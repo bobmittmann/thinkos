@@ -99,44 +99,138 @@ void stdio_init(void)
  * System Supervision
  * ------------------------------------------------------------------------- */
 
+FILE * trace_file;
+volatile bool trace_auto_flush = true;
+volatile bool trace_udp_enabled = false;
+const char trace_host[] = "192.168.10.1";
+const uint16_t trace_port = 1111;
+
 void __attribute__((noreturn)) supervisor_task(void)
 {
-	static const char * const trace_lvl_tab[] = {
-			"   NONE",
-			"  ERROR",
-			"WARNING",
-			"   INFO",
-			"  DEBUG"
-	};
 	struct trace_entry trace;
 	uint32_t clk;
+	uint32_t dump_tmo;
+	int n;
 
 	INF("<%d> started...", thinkos_thread_self());
 
+	/* set the supervisor stream to stdout */
+	trace_file = stdout;
+	/* enable auto flush */
+	trace_auto_flush = true;
+
 	trace_tail(&trace);
+#if 0
+    struct sockaddr_in sin;
+    struct udp_pcb * udp;
+    bool udp_enabled;
+
+    if ((udp = udp_alloc()) == NULL) {
+        abort();
+    }
+
+	if (!inet_aton(trace_host, &sin.sin_addr)) {
+		abort();
+	}
+	sin.sin_port = htons(trace_port);
+
+    if (udp_bind(udp, INADDR_ANY, htons(10)) < 0) {
+        abort();
+    }
+
+//    if (udp_connect(udp, sin.sin_addr.s_addr, htons(sin.sin_port)) < 0) {
+//		abort();
+//    }
+#endif
 
 	clk = thinkos_clock();
+	dump_tmo = clk + 15000;
 	for (;;) {
-		struct timeval tv;
-		char s[80];
+		char msg[80];
 
 		/* 8Hz periodic task */
 		clk += 125;
 		thinkos_alarm(clk);
+//		udp_enabled = trace_udp_enabled;
 
-		while (trace_getnext(&trace, s, sizeof(s)) >= 0) {
+		while (trace_getnext(&trace, msg, sizeof(msg)) >= 0) {
+			struct timeval tv;
+			char s[128];
+
 			trace_ts2timeval(&tv, trace.dt);
-			printf("%s %2d.%06d: %s\n", trace_lvl_tab[trace.ref->lvl],
-					(int)tv.tv_sec, (int)tv.tv_usec, s);
+			if (trace.ref->lvl <= TRACE_LVL_WARN)
+				n = sprintf(s, "%s %2d.%06d: %s,%d: %s\n",
+						trace_lvl_nm[trace.ref->lvl],
+						(int)tv.tv_sec, (int)tv.tv_usec,
+						trace.ref->func, trace.ref->line, msg);
+			else
+				n = sprintf(s, "%s %2d.%06d: %s\n",
+						trace_lvl_nm[trace.ref->lvl],
+						(int)tv.tv_sec, (int)tv.tv_usec, msg);
+
+            /* write log to local console */
+			fwrite(s, n, 1, trace_file);
+#if 0
+			if (udp_enabled) {
+				/* sent log to remote station */
+				if (udp_sendto(udp, s, n, &sin) < 0) {
+					udp_enabled = false;
+				}
+			}
+#endif
 		}
 
-		trace_flush(&trace);
+		if (trace_auto_flush)
+			trace_flush(&trace);
+
+		if ((int32_t)(clk - dump_tmo) >= 0) {
+			const struct thinkos_thread_inf * infbuf[33];
+			uint32_t cycbuf[33];
+	        uint32_t cycsum = 0;
+	        uint32_t cycbusy;
+	        uint32_t cycidle;
+	        uint32_t cycdiv;
+	        uint32_t idle;
+	        uint32_t busy;
+			int n;
+			int i;
+
+			thinkos_critical_enter();
+
+			thinkos_thread_inf(infbuf);
+			n = thinkos_cyccnt(cycbuf);
+
+			thinkos_critical_exit();
+
+	        cycsum = 0;
+	        for (i = 0; i < n; ++i)
+	        	cycsum += cycbuf[i];
+	        cycidle = cycbuf[n - 1]; /* The last item is IDLE */
+	        cycbusy = cycsum - cycidle;
+	        cycdiv = (cycsum + 5000) / 10000;
+	        busy = (cycbusy + (cycdiv / 2)) / cycdiv;
+	        idle = 1000 - busy;
+		    printf("CPU usage: %d.%02d%% busy, %d.%02d%% idle\n",
+		    		busy / 100, busy % 100, idle / 100, idle % 100);
+			for (i = 0; i < n; ++i) {
+				const struct thinkos_thread_inf * inf;
+				if (((inf = infbuf[i]) != NULL) && (cycbuf[i] != 0)) {
+					uint32_t usage;
+				    usage = (cycbuf[i] + cycdiv / 2) / cycdiv;
+				    printf("%2d %7s %3d.%02d%%\n", i, inf->tag,
+				    		usage / 100, usage % 100);
+				}
+			}
+			dump_tmo = clk + 15000;
+
+
+		}
 	}
 }
 
 void supervisor_init(void)
 {
-	static uint32_t supervisor_stack[128];
+	static uint32_t supervisor_stack[256];
 
 	static const struct thinkos_thread_inf supervisor_inf = {
 		.stack_ptr = supervisor_stack,
@@ -398,7 +492,7 @@ int main(int argc, char ** argv)
 	if (cfg->magic == CFG_MAGIC)
 		mstp_addr = cfg->mstp_addr;
 	else
-		mstp_addr = 1;
+		mstp_addr = 2;
 
 	io_init();
 

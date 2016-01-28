@@ -618,6 +618,9 @@ void __attribute__((naked, noreturn)) __xcpt_process(void)
 	DCC_LOG(LOG_TRACE, "...");
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 	cm3_cpsid_i();
+	/* XXX: since we are disabling the interrupts here 
+	   I don see the point of disabling the individual interrupts
+	 here. It could be done on the upper layers. */
 	__xcpt_irq_disable_all();
 	__xcpt_systick_int_disable();
 	__xcpt_unroll(&thinkos_except_buf, thinkos_except_buf.ctx.xpsr);

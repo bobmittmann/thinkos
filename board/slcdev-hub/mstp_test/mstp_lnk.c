@@ -32,7 +32,7 @@
 
 #undef DEBUG
 #undef TRACE_LEVEL
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_INF
 #include <trace.h>
 
 /* -------------------------------------------------------------------------
@@ -502,7 +502,7 @@ transition_now:
 					break;
 				}
 			} else {
-				INF("[IDLE] NotForMe --> [IDLE]");
+				DBG("[IDLE] NotForMe --> [IDLE]");
 				if (frm_type == FRM_REPLY_POLL_FOR_MASTER) {
 					int i = src_addr / 32;
 					int j = src_addr % 32;

@@ -65,6 +65,8 @@ void __reset_ram_vectors(void)
 }
 #endif
 
+void __dmon_irq_disable_all(void);
+
 /**
  * dmon_soft_reset:
  *
@@ -75,7 +77,7 @@ void __reset_ram_vectors(void)
 void dmon_soft_reset(void)
 {
 	DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
-	__thinkos_irq_disable_all();
+	__dmon_irq_disable_all();
 
 #if 0
 /*

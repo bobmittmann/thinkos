@@ -854,8 +854,6 @@ void __attribute__((naked)) cm3_debug_mon_isr(void)
 	dbgmon_isr(ctx);
 }
 
-void __thinkos_irq_disable_all(void);
-
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
 	if (xcpt->thread_id >= 0) {
@@ -883,7 +881,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 
 #if 0
 			DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
-			__thinkos_irq_disable_all();
+			__dmon_irq_disable_all();
 			DCC_LOG(LOG_TRACE, "2. ThinkOS reset...");
 			__thinkos_reset();
 #if THINKOS_ENABLE_CONSOLE
