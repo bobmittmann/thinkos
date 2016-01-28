@@ -71,12 +71,6 @@ struct mstp_lnk {
 		uint8_t buf[MSTP_LNK_MTU];
 		unsigned int off;
 		unsigned int cnt;
-		struct {
-			uint8_t frm_type;
-			uint8_t dst_addr;
-			uint8_t src_addr;
-			uint16_t pdu_len;
-		} hdr;
 	} rx;
 
 	struct {

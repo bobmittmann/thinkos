@@ -83,7 +83,16 @@
 #define MSTP_HDR_CRC_ERROR    -2
 #define MSTP_DATA_CRC_ERROR   -3
 
-int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
+struct mstp_frm_ref {
+	uint8_t frm_type;
+	uint8_t dst_addr;
+	uint8_t src_addr;
+	uint16_t pdu_len;
+	uint8_t * pdu;
+};
+
+int mstp_frame_recv(struct mstp_lnk * lnk, struct mstp_frm_ref * frm,
+		unsigned int tmo)
 {
 	uint8_t * buf = lnk->rx.buf;
 	unsigned int crc;
@@ -119,8 +128,8 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 	crc = __mstp_crc8(0xff, type);
 	crc = __mstp_crc8(crc, daddr);
 	crc = __mstp_crc8(crc, saddr);
-	crc = __mstp_crc8(crc, buf[5]);
-	crc = (~__mstp_crc8(crc, buf[6]) & 0xff);
+	crc = __mstp_crc8(crc, pdu_len >> 8);
+	crc = (~__mstp_crc8(crc, pdu_len & 0xff) & 0xff);
 
 	if (buf[7] != crc) {
 		WARN("CRC error: %02x != %02x, %d->%d %02x (%d)", buf[7], crc,
@@ -130,10 +139,11 @@ int mstp_frame_recv(struct mstp_lnk * lnk, unsigned int tmo)
 		return MSTP_HDR_CRC_ERROR;
 	}
 
-	lnk->rx.hdr.frm_type = type;
-	lnk->rx.hdr.dst_addr = daddr;
-	lnk->rx.hdr.src_addr = saddr;
-	lnk->rx.hdr.pdu_len = pdu_len;
+	frm->frm_type = type;
+	frm->dst_addr = daddr;
+	frm->src_addr = saddr;
+	frm->pdu_len = pdu_len;
+	frm->pdu = &buf[8];
 
 //	DBG("cnt=%d pdu_len=%d", cnt, pdu_len);
 
@@ -300,12 +310,14 @@ const char * state_nm[] = {
 
 void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 {
+	struct mstp_frm_ref frm;
 	uint32_t clk = 0;
 	int32_t dt;
-	int frm_type;
-	int src_addr;
-	int dst_addr;
-	int pdu_len;
+	unsigned int frm_type;
+	unsigned int src_addr;
+	unsigned int dst_addr;
+	unsigned int pdu_len;
+	uint8_t * pdu;
 	int frame_count;
 	int retry_count;
 	int event_count;
@@ -402,17 +414,18 @@ again:
 			 timer_ms[lnk->state], dt);
 	}
 */
-	ret = mstp_frame_recv(lnk, dt);
+	ret = mstp_frame_recv(lnk,  &frm, dt);
 	event_count += lnk->rx.off;
 	clk = thinkos_clock();
 
 	switch (ret) {
 	case MSTP_RCVD_VALID_FRAME:
 		rcvd_valid_frm = true;
-		frm_type = lnk->rx.hdr.frm_type;
-		dst_addr = lnk->rx.hdr.dst_addr;
-		src_addr = lnk->rx.hdr.src_addr;
-		pdu_len = lnk->rx.hdr.pdu_len;
+		frm_type = frm.frm_type;
+		dst_addr = frm.dst_addr;
+		src_addr = frm.src_addr;
+		pdu_len = frm.pdu_len;
+		pdu = frm.pdu;
 
 		DBG("state=%s pdu_len=%d", state_nm[lnk->state], pdu_len);
 
@@ -472,7 +485,7 @@ transition_now:
 					lnk->recv.inf.saddr = src_addr;
 					lnk->recv.inf.daddr = dst_addr;
 					lnk->recv.pdu_len = pdu_len;
-					memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+					memcpy(lnk->recv.pdu, pdu, pdu_len);
 					thinkos_flag_give(lnk->recv.flag);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
@@ -485,7 +498,7 @@ transition_now:
 					lnk->recv.inf.saddr = src_addr;
 					lnk->recv.inf.daddr = dst_addr;
 					lnk->recv.pdu_len = pdu_len;
-					memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+					memcpy(lnk->recv.pdu, pdu, pdu_len);
 					thinkos_flag_give(lnk->recv.flag);
 					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
@@ -602,8 +615,8 @@ transition_now:
 						lnk->recv.inf.type = frm_type;
 						lnk->recv.inf.saddr = src_addr;
 						lnk->recv.inf.daddr = dst_addr;
-						lnk->recv.pdu_len = lnk->rx.off - 10;
-						memcpy(lnk->recv.pdu, &lnk->rx.buf[8], pdu_len);
+						lnk->recv.pdu_len = pdu_len;
+						memcpy(lnk->recv.pdu, pdu, pdu_len);
 						thinkos_flag_give(lnk->recv.flag);
 //						bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 						lnk->state = MSTP_DONE_WITH_TOKEN;
