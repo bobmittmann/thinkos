@@ -32,7 +32,7 @@
 
 #undef DEBUG
 #undef TRACE_LEVEL
-#define TRACE_LEVEL TRACE_LVL_INF
+#define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
 /* -------------------------------------------------------------------------
@@ -99,12 +99,19 @@ int mstp_frame_recv(struct mstp_lnk * lnk, struct mstp_frm_ref * frm,
 	unsigned int type;
 	unsigned int daddr;
 	unsigned int saddr;
-	int pdu_len;
-	int cnt;
+	unsigned int pdu_len;
+	unsigned int cnt;
+	unsigned int frm_cnt;
 
-	if ((cnt = serial_recv(lnk->dev, buf, MSTP_LNK_MTU, tmo)) <= 0) {
+	frm_cnt = lnk->rx.cnt;
+
+	if ((cnt = serial_recv(lnk->dev, lnk->rx.buf[(frm_cnt + 1) & 1],
+			MSTP_LNK_MTU, tmo)) <= 0) {
 		return MSTP_TIMEOUT;
 	}
+
+	buf = lnk->rx.buf[frm_cnt & 1];
+	lnk->rx.cnt = frm_cnt + 1;
 
 	if (buf[0] != 0x55) {
 		WARN("frame error 1");
@@ -340,6 +347,9 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 		[MSTP_DONE_WITH_TOKEN] = 0,
 		[MSTP_WAIT_FOR_REPLY] = T_REPLY_TIMEOUT
 	};
+
+	lnk->rx.off = 0;
+	lnk->rx.cnt = 0;
 
 	lnk->tx.pdu_len = 0;
 	thinkos_flag_give(lnk->tx.flag);

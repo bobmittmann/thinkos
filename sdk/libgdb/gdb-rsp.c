@@ -37,7 +37,7 @@
 #include "signals.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 0
+#define GDB_DEBUG_PACKET 1
 #endif
 
 #define THREAD_ID_OFFS 100

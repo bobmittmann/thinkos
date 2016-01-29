@@ -214,6 +214,9 @@ void init_queue_test(void)
 volatile unsigned int cnt1 = 0;
 volatile unsigned int cnt2 = 0;
 
+void read_fault(void);
+void write_fault(void);
+
 int main(int argc, char ** argv)
 {
 	io_init();
@@ -239,11 +242,12 @@ int main(int argc, char ** argv)
 			: : : "r0");
 
 	for (;;) {
-		usleep(4000000);
-//		thinkos_sleep(2000);
+//		usleep(4000000);
+		thinkos_sleep(2000);
 		cnt1++;
 		thinkos_sleep(2000);
 		cnt2++;
+//		write_fault();
 	}
 	return 0;
 }

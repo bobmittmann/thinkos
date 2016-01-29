@@ -155,6 +155,8 @@ void __xcpt_thinkos_process(struct thinkos_except * xcpt)
 
 	thinkos_exception_dsr(xcpt);
 
+	/* reset reentry counter */
+	xcpt->unroll = 0;
 	__xcpt_systick_int_enable();
 	cm3_cpsie_i();
 
@@ -206,10 +208,14 @@ void __attribute__((naked)) __xcpt_unroll(struct thinkos_except * xcpt,
 	__idump(__func__, ipsr);
 #endif
 
-	/* reset reentry counter */
-	if (++xcpt->unroll > 4) {
+	/* increment reentry counter */
+	if (++xcpt->unroll > 8) {
 		DCC_LOG(LOG_ERROR, "too many reentries...");
+#if THINKOS_SYSRST_ONFAULT
+		cm3_sysrst();
+#else
 		for(;;);
+#endif
 	}
 
 //	if ((irq = __xcpt_next_active_irq(ipsr - 16)) >= 0) {

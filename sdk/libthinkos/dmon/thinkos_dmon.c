@@ -863,7 +863,6 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.break_id = xcpt->thread_id;
 		thinkos_rt.xcpt_ipsr = 0;
 #endif
-		this_board.comm_irqen();
 		dmon_signal(DMON_THREAD_FAULT);
 	} else {
 #if THINKOS_ENABLE_DEBUG_STEP
@@ -878,7 +877,6 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.void_ctx = &xcpt->ctx;
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-
 #if 0
 			DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
 			__dmon_irq_disable_all();
@@ -903,13 +901,15 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 
 			DCC_LOG(LOG_TRACE, "8. reset.");
 			dmon_signal(DMON_RESET);
-		}
+		} else 
 #endif
-		dmon_signal(DMON_EXCEPT);
+		{
+			dmon_signal(DMON_EXCEPT);
+		}
 	}
 
-//	DCC_LOG(LOG_TRACE, "this_board.comm_irqen().");
-//	this_board.comm_irqen();
+	DCC_LOG(LOG_TRACE, "this_board.comm_irqen().");
+	this_board.comm_irqen();
 }
 
 /* -------------------------------------------------------------------------

@@ -235,8 +235,8 @@ void supervisor_init(void)
 	static const struct thinkos_thread_inf supervisor_inf = {
 		.stack_ptr = supervisor_stack,
 		.stack_size = sizeof(supervisor_stack),
-		.priority = 1,
-		.thread_id = 1,
+		.priority = 8,
+		.thread_id = 2,
 		.paused = false,
 		.tag = "SUPV"
 	};
@@ -328,8 +328,8 @@ uint32_t mstp_lnk_stack[512] __attribute__((section (".ccm")));
 const struct thinkos_thread_inf mstp_lnk_inf = {
 	.stack_ptr = mstp_lnk_stack,
 	.stack_size = sizeof(mstp_lnk_stack),
-	.priority = 2,
-	.thread_id = 2,
+	.priority = 1,
+	.thread_id = 1,
 	.paused = 0,
 	.tag = "MS/TP"
 };
@@ -340,7 +340,7 @@ const struct thinkos_thread_inf net_recv_inf = {
 	.stack_ptr = net_recv_stack,
 	.stack_size = sizeof(net_recv_stack),
 	.priority = 32,
-	.thread_id = 8,
+	.thread_id = 3,
 	.paused = 0,
 	.tag = "NET RCV"
 };

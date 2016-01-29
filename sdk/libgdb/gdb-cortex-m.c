@@ -70,6 +70,7 @@ int uint2hex2hex(char * pkt, unsigned int val);
 #define THREAD_ID_ANY 0
 #define THREAD_ID_NONE -2
 #define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
+#define THREAD_ID_IRQ (THINKOS_THREAD_VOID + THREAD_ID_OFFS)
 
 int thread_getnext(int thread_id)
 {
@@ -81,12 +82,22 @@ int thread_getnext(int thread_id)
 		return THREAD_ID_IDLE;
 	} 
 	
+	if (thread_id == THREAD_ID_IRQ) {
+		DCC_LOG(LOG_MSG, "no more threads.");
+		return -1;
+	}
+
 	if (thread_id == THREAD_ID_IDLE)
 		id = __thinkos_thread_getnext(-1);
 	else
 		id = __thinkos_thread_getnext(thread_id - THREAD_ID_OFFS);
 
 	if (id < 0) {
+		if (thinkos_rt.xcpt_ipsr != 0) {
+			DCC_LOG1(LOG_WARNING, "Exception at IRQ:%d!", 
+					 thinkos_rt.xcpt_ipsr - 16);
+			return THREAD_ID_IRQ;
+		}
 		DCC_LOG(LOG_MSG, "no more threads.");
 		return -1;
 	}
@@ -124,7 +135,7 @@ int thread_break_id(void)
 		}
 		DCC_LOG1(LOG_WARNING, "Exception at IRQ:%d!", 
 				 thinkos_rt.xcpt_ipsr - 16);
-		return THINKOS_THREAD_VOID + THREAD_ID_OFFS;
+		return THREAD_ID_IRQ;
 	}
 
 	DCC_LOG1(LOG_INFO, "break_id=%d", thinkos_rt.break_id);
@@ -447,6 +458,8 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_INFO, "ThinkOS Idle thread");
+	} else if (thread_id == THINKOS_THREAD_VOID) {
+		DCC_LOG(LOG_INFO, "ThinkOS Void thread");
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
 		if (xcpt->thread_id != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");

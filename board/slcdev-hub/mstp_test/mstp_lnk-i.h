@@ -68,7 +68,7 @@ struct mstp_lnk {
 	uint8_t addr; /* this station address */
 	struct serial_dev * dev;
 	struct {
-		uint8_t buf[MSTP_LNK_MTU];
+		uint8_t buf[2][MSTP_LNK_MTU];
 		unsigned int off;
 		unsigned int cnt;
 	} rx;
