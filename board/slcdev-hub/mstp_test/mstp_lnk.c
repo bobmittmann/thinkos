@@ -32,7 +32,7 @@
 
 #undef DEBUG
 #undef TRACE_LEVEL
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_INF
 #include <trace.h>
 
 /* -------------------------------------------------------------------------
@@ -94,14 +94,14 @@ struct mstp_frm_ref {
 int mstp_frame_recv(struct mstp_lnk * lnk, struct mstp_frm_ref * frm,
 		unsigned int tmo)
 {
-	uint8_t * buf = lnk->rx.buf;
+	uint8_t * buf;
 	unsigned int crc;
 	unsigned int type;
 	unsigned int daddr;
 	unsigned int saddr;
 	unsigned int pdu_len;
-	unsigned int cnt;
 	unsigned int frm_cnt;
+	int cnt;
 
 	frm_cnt = lnk->rx.cnt;
 
@@ -376,6 +376,8 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 	frm_type = 0;
 	src_addr = 0;
 	dst_addr = 0;
+	pdu_len = 0;
+	pdu = NULL;
 
 	/* prepare the token buffer for fast transfers */
 	lnk->tx.token[0] = 0x55;
@@ -431,11 +433,13 @@ again:
 	switch (ret) {
 	case MSTP_RCVD_VALID_FRAME:
 		rcvd_valid_frm = true;
+
 		frm_type = frm.frm_type;
 		dst_addr = frm.dst_addr;
 		src_addr = frm.src_addr;
 		pdu_len = frm.pdu_len;
 		pdu = frm.pdu;
+
 
 		DBG("state=%s pdu_len=%d", state_nm[lnk->state], pdu_len);
 
@@ -443,9 +447,6 @@ again:
 		if (src_addr < MSTP_LNK_MAX_MASTERS)
 			lnk->mgmt.active[src_addr]++;
 
-		if (frm_type == FRM_DATA_NO_REPLY) {
-			INF("FRM_DATA_NO_REPLY");
-		}
 		RESET_SILENCE_TIMER();
 		break;
 
@@ -740,7 +741,7 @@ transition_now:
 		}
 
 		if (SILENCE_TIMER() <= T_USAGE_TIMEOUT) {
-			WARN("[PASS_TOKEN] SILENCE <= USAGE_TMOUT --> [PASS_TOKEN]");
+			DBG("[PASS_TOKEN] SILENCE <= USAGE_TMOUT --> [PASS_TOKEN]");
 		} else {
 			if (retry_count < N_RETRY_TOKEN) {
 				retry_count++;
@@ -815,7 +816,7 @@ transition_now:
 					lnk->sole_master = false;
 				}
 				lnk->state = MSTP_PASS_TOKEN;
-				DBG("[POLL_FOR_MASTER] ReceivedReplyToPFM --> [PASS_TOKEN]");
+				INF("[POLL_FOR_MASTER] ReceivedReplyToPFM --> [PASS_TOKEN]");
 			} else {
 				rcvd_valid_frm = false;
 				lnk->state = MSTP_IDLE;
