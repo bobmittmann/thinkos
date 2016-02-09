@@ -514,6 +514,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 	__thinkos_defer_sched();
 
 	if (sync) {
+		DCC_LOG(LOG_INFO, "synchronous step, waiting for signal...");
 		if ((ret = dmon_wait(DMON_THREAD_STEP)) < 0)
 			return ret;
 	}

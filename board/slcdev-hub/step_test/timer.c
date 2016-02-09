@@ -198,5 +198,5 @@ void __attribute__((constructor)) irq_timer_init(void)
 	tmr_sem = thinkos_sem_alloc(0);
 
 //	oneshot_timer_init(168000000 / 2);
-	periodic_timer_init(2);
+//	periodic_timer_init(2);
 }
