@@ -22,8 +22,7 @@
 
 PROG = mstp_test
 
-CFILES = mstp_crc.c mstp_lnk.c mstp_test.c 
-#lattice.c ice40lp384.c
+CFILES = mstp_crc.c mstp_lnk.c mstp_test.c lattice.c ice40lp384.c
 
 SDK = ../../../sdk
 
@@ -44,3 +43,10 @@ LDSCRIPT = slcdev-hub.ld
 LOAD_ADDR = 0x08010000
 include ../../../mk/stm32f4xx.mk
 
+FPGA_DIR = C:\\mircom/rs485-class-a/rs485hub
+#FPGA_BMP_DIR = $(FPGA_DIR)/rs485hub_Implmnt/sbt/outputs/bitmap
+FPGA_BMP_DIR = .
+FPGA_BIN = $(FPGA_BMP_DIR)/rs485hub_bitmap.bin
+
+ice40lp384.c : $(FPGA_BIN) 
+	$(PYTHON) $(TOOLSDIR)/bin2hex.py -n ice40lp384_bin -o $@ $<

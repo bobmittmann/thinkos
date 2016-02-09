@@ -1076,8 +1076,6 @@ bool __thinkos_thread_isfaulty(unsigned int thread_id);
 void __thinkos_thread_inf_set(unsigned int thread_id, 
 							  const struct thinkos_thread_inf * inf);
 
-void __thinkos_irq_disable_all(void);
-
 void __thinkos_irq_reset_all(void);
 
 void __thinkos_kill_all(void);

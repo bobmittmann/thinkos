@@ -40,6 +40,8 @@
 
 #include <trace.h>
 
+#include "lattice.h"
+
 #include "board.h"
 
 
@@ -483,6 +485,11 @@ void motd(void)
 	printf("\n");
 }
 
+
+extern const uint8_t ice40lp384_bin[];
+extern const unsigned int sizeof_ice40lp384_bin;
+
+
 int main(int argc, char ** argv)
 {
 	struct board_cfg * cfg = (struct board_cfg *)(CFG_ADDR);
@@ -499,6 +506,8 @@ int main(int argc, char ** argv)
 	stdio_init();
 
 	motd();
+
+    lattice_ice40_configure(ice40lp384_bin, sizeof_ice40lp384_bin);
 
 	supervisor_init();
 
