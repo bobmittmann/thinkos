@@ -139,6 +139,7 @@ struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn,
 /* get network ipv4 address */
 int dhcp_ipv4_get(struct dhcp * __dhcp, in_addr_t * __addr, in_addr_t * __mask);
 
+int dhcp_ipv4_bind(struct dhcp * __dhcp);
 
 int dhcp_gateway_get(struct dhcp * __dhcp, in_addr_t * __gw);
 
