@@ -48,6 +48,9 @@
 
 #include <thinkos.h>
 
+#include <assert.h>
+
+
 #ifndef DHCP_DISCOVER_MAXIMUM_RETRIES
 /*!	\brief How many times to try to locate a DHCP server.
  *	2: ~28 seconds
@@ -263,9 +266,11 @@ struct dhcp * dhcp_xid_lookup(int __xid)
 	return NULL;
 }
 
-struct dhcp * dhcp_ifn_lookup(struct ifnet * __ifn)
+struct dhcp * dhcp_lookup(struct ifnet * __ifn)
 {
 	int i;
+
+	assert(__ifn != NULL);
 
 	for (i = 0; i < DHCP_CLIENT_MAX; ++i) {
 		if (__dhcpc__.dhcp[i].ifn == __ifn) {
@@ -862,7 +867,7 @@ static void dhcp_handle_ack(struct dhcp * dhcp, struct dhcp_msg * msg, int len)
 	}
 #endif
 
-	dhcp->callback(dhcp);
+	dhcp->callback(dhcp, DHCP_EVENT_BIND);
 }
 
 /* Simply select the first offer received. */
@@ -902,7 +907,7 @@ static void tmo_reply(struct dhcp * dhcp)
 					 " aborting.", DHCP_DISCOVER_MAXIMUM_RETRIES);
 			dhcp->tmo_reply = 0;
 			/* Issue callback. */
-			dhcp->callback(dhcp);
+			dhcp->callback(dhcp, DHCP_EVENT_TIMEOUT);
 			return;
 		}
 		tmo_reply_set(dhcp);
@@ -993,6 +998,10 @@ void dhcp_tmr(unsigned int dt)
 		if (dhcp->ifn == NULL)
 			continue;
 
+		if (dhcp->state == DHCP_OFF) {
+			continue;
+		}
+
 		if (dhcp->state == DHCP_IDLE) {
 			/* start the DHCP negotiation */
 			if (dhcp->ip == INADDR_ANY) {	// Previous IP unknown
@@ -1027,7 +1036,7 @@ void dhcp_tmr(unsigned int dt)
 			/* Lease out? */
 			if (dhcp->time >= dhcp->lease) {
 				DCC_LOG(LOG_WARNING, "lease time off");
-				dhcp->callback(dhcp);
+				dhcp->callback(dhcp, DHCP_EVENT_LEASE_OUT);
 			} else {
 				/* T2 (rebinding) out? */
 				/* XXX: T2 is fixed as (7/8)*lease */
@@ -1130,6 +1139,11 @@ void __attribute__((noreturn)) dhcpc_task(struct udp_pcb * udp)
 			continue;
 		}
 
+		/* ignore disabled interfaces */
+		if (dhcp->state == DHCP_OFF) {
+			continue;
+		}
+
 		/* obtain pointer to DHCP message type */
 		opt_len = len - ((sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN));
 		/* obtain the server address */
@@ -1182,7 +1196,6 @@ void __attribute__((noreturn)) dhcpc_task(struct udp_pcb * udp)
 	}
 }
 
-
 uint32_t dhcpc_stack[512];
 
 const struct thinkos_thread_inf dhcpc_inf = {
@@ -1227,56 +1240,60 @@ void dhcpc_stop(void)
 	udp_close(pcb);
 }
 
-void dhcpc_default_callback(struct dhcp * dhcp)
+int dhcp_ipv4_bind(struct dhcp * __dhcp)
 {
-	in_addr_t ip_addr;
+	in_addr_t ipaddr;
 	in_addr_t netmask;
 
-#ifdef DEBUG
-	/* sanity check */
-	if (dhcp == NULL) {
-		DCC_LOG(LOG_ERROR, "dhcp cannot be NULL");
-		return;
-	}
-#endif
+	assert(__dhcp != NULL);
 
-	if (dhcp_get_state(dhcp) != DHCP_BOUND) {
+	if (__dhcp->state != DHCP_BOUND) {
 		DCC_LOG(LOG_ERROR, "dhcp error!");
-		return;
+		return -1;
 	}
 
-	ifn_ipv4_get(dhcp->ifn, &ip_addr, &netmask);
+	ifn_ipv4_get(__dhcp->ifn, &ipaddr, &netmask);
 
-	if (dhcp->ip == ip_addr) {	/* Reconfiguring... */
-		if (dhcp->mask == INADDR_NONE)
-			dhcp->mask = netmask;
-		if (dhcp->gw == INADDR_NONE) {
+	if (__dhcp->ip == ipaddr) {	/* Reconfiguring... */
+		if (__dhcp->mask == INADDR_NONE)
+			__dhcp->mask = netmask;
+		if (__dhcp->gw == INADDR_NONE) {
 			struct route * route;
 			route = ipv4_route_lookup(INADDR_ANY);
-			if (route->rt_ifn == dhcp->ifn) {
-				dhcp->gw = route->rt_gateway;
+			if (route->rt_ifn == __dhcp->ifn) {
+				__dhcp->gw = route->rt_gateway;
 				DCC_LOG1(LOG_TRACE, "No GW, found previous GW: %I.", dhcp->gw);
 			}
 		}
 	}
 
 	/* configure the ip address */
-	if (ifn_ipv4_set(dhcp->ifn, dhcp->ip, dhcp->mask) >= 0) {
+	if (ifn_ipv4_set(__dhcp->ifn, __dhcp->ip, __dhcp->mask) >= 0) {
 		/* add the default route (gateway) to ifn */
 		ipv4_route_del(INADDR_ANY);
-		ipv4_route_add(INADDR_ANY, INADDR_ANY, dhcp->gw, dhcp->ifn);
-		return;
+		ipv4_route_add(INADDR_ANY, INADDR_ANY, __dhcp->gw, __dhcp->ifn);
+
+		return 0;
 	}
 
-	if (dhcp->bcast != INADDR_NONE) {
+	if (__dhcp->bcast != INADDR_NONE) {
 		ipv4_route_del(INADDR_NONE);
-		ipv4_route_add(INADDR_NONE, INADDR_NONE, dhcp->bcast, dhcp->ifn);
+		ipv4_route_add(INADDR_NONE, INADDR_NONE, __dhcp->bcast, __dhcp->ifn);
 	}
+
+	return 0;
 }
 
+/*! \brief Default DHCP configuration OK callback.
+ */
 
-struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn, 
-							void (* __callback)(struct dhcp *))
+void dhcpc_default_callback(struct dhcp * dhcp, enum dhcp_event event)
+{
+	dhcp_ipv4_bind(dhcp);
+}
+
+struct dhcp * dhcpc_ifattach(struct ifnet * __ifn,
+							void (* __callback)(struct dhcp *, enum dhcp_event))
 {
 	/* XXX */
 	struct dhcp * dhcp = NULL; 
@@ -1284,14 +1301,7 @@ struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn,
 	in_addr_t ip_addr;
 	in_addr_t netmask;
 
-	if (__ifn == NULL) {
-		DCC_LOG(LOG_ERROR, "invalid interface!");
-		return NULL;
-	}
-
-	DCC_LOG1(LOG_TRACE, "%s: ....", ifn_name(__ifn));
-
-	if ((dhcp = dhcp_ifn_lookup(__ifn)) == NULL) {
+	if ((dhcp = dhcp_lookup(__ifn)) == NULL) {
 		/* allocate memory for dhcp */
 		if ((dhcp = dhcp_alloc(__ifn)) == NULL) {
 			DCC_LOG(LOG_ERROR, "dhcp_alloc() failed!");
@@ -1332,6 +1342,73 @@ struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn,
 	dhcp->state = DHCP_IDLE;
 
 	return dhcp;
+}
+
+int dhcp_pause(struct dhcp * __dhcp)
+{
+	assert(__dhcp != NULL);
+
+	__dhcp->state = DHCP_OFF;
+
+	return 0;
+}
+
+int dhcp_resume(struct dhcp * __dhcp)
+{
+	assert(__dhcp != NULL);
+
+	__dhcp->time = 0;
+	__dhcp->retries = 0;
+	__dhcp->state = DHCP_IDLE;
+
+	return 0;
+}
+
+struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn,
+							void (* __callback)(struct dhcp *, enum dhcp_event))
+{
+	struct dhcp * dhcp;
+
+	dhcp = dhcpc_ifattach(__ifn, __callback);
+
+	dhcp_resume(dhcp);
+
+	return dhcp;
+}
+
+
+/* get network ipv4 address */
+int dhcp_ipv4_get(struct dhcp * __dhcp, in_addr_t * __addr, in_addr_t * __mask)
+{
+	assert(__dhcp != NULL);
+
+	*__addr = __dhcp->ip;
+	*__mask = __dhcp->mask;
+
+	return 0;
+}
+
+int dhcp_gateway_get(struct dhcp * __dhcp, in_addr_t * __gw)
+{
+	assert(__dhcp != NULL);
+
+	*__gw = __dhcp->gw;
+
+	return 0;
+}
+
+enum dhcp_state dhcp_get_state(struct dhcp * __dhcp)
+{
+	assert(__dhcp != NULL);
+
+	return __dhcp->state;
+}
+
+struct ifnet * dhcp_ifget(struct dhcp * __dhcp)
+{
+	assert(__dhcp != NULL);
+
+	return __dhcp->ifn;
 }
 
 /* EOF */

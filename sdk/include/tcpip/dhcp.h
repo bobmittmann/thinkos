@@ -61,14 +61,35 @@
 struct dhcp;
 
 
+/*! DHCP client states */
+enum dhcp_state {
+	DHCP_IDLE       = 0,
+	DHCP_INIT       = 1,
+	DHCP_SELECTING	= 2,
+	DHCP_REQUESTING	= 3,
+	//DHCP_CHECKING	= 8,
+	//DHCP_INFORMING	= 9,
+	//DHCP_PERMANENT	= 10,
+	DHCP_BOUND		= 4,
+	DHCP_RENEWING	= 5,
+	DHCP_REBINDING	= 6,
+	/* not yet implemented
+	DHCP_RELEASING	= 11, */
+	DHCP_INIT_REBOOT = 7,
+	DHCP_REBOOTING	= 8,
+	//DHCP_BACKING_OFF	= 12,
+	DHCP_OFF		= 13
+};
+
+enum dhcp_event {
+	DHCP_EVENT_BIND = 1,
+	DHCP_EVENT_TIMEOUT = 2,
+	DHCP_EVENT_LEASE_OUT = 3
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*! \brief Default DHCP configuration OK callback.
- *	This is provided so it is possible to use it inside a custom callback.
- */
-void dhcpc_default_callback(struct dhcp * dhcp);
 
 /*!	\brief Starts DHCP client daemon.
  *
@@ -96,8 +117,6 @@ void dhcpc_stop(void);
  *	\return
  *	Returns <b>0</b> on success and less then 0 on failure.
  */
-struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn, 
-							void (* __callback)(struct dhcp *));
 
 int dhcp_ifrelease(struct ifnet * __ifn);
 
@@ -106,6 +125,26 @@ int dhcp_ifdone(struct ifnet * __ifn);
 /*! Returns current state of the DHCP client state machine. */
 enum dhcp_state dhcp_get_state(struct dhcp * dhcp);
 
+struct dhcp * dhcpc_ifattach(struct ifnet * __ifn,
+							void (* __callback)(struct dhcp *, enum dhcp_event));
+
+int dhcp_pause(struct dhcp * __dhcp);
+
+int dhcp_resume(struct dhcp * __dhcp);
+
+struct dhcp * dhcpc_ifconfig(struct ifnet * __ifn,
+							void (* __callback)(struct dhcp *, enum dhcp_event));
+
+
+/* get network ipv4 address */
+int dhcp_ipv4_get(struct dhcp * __dhcp, in_addr_t * __addr, in_addr_t * __mask);
+
+
+int dhcp_gateway_get(struct dhcp * __dhcp, in_addr_t * __gw);
+
+struct ifnet * dhcp_ifget(struct dhcp * __dhcp);
+
+struct dhcp * dhcp_lookup(struct ifnet * __ifn);
 
 #ifdef __cplusplus
 }

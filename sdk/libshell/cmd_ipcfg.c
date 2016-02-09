@@ -32,6 +32,7 @@
 #include <arpa/inet.h>
 #include <tcpip/ethif.h>
 #include <tcpip/route.h>
+#include <tcpip/dhcp.h>
 #include <netinet/in.h>
 
 int cmd_ipcfg(FILE *f, int argc, char ** argv)
@@ -41,6 +42,7 @@ int cmd_ipcfg(FILE *f, int argc, char ** argv)
 	in_addr_t ipv4_addr;
 	in_addr_t ipv4_mask = INADDR_ANY;
 	in_addr_t gw_addr = INADDR_ANY;
+	struct dhcp * dhcp;
 	int use_dhcp = 0;
 	int change = 0;
 	char s[64];
@@ -116,7 +118,7 @@ int cmd_ipcfg(FILE *f, int argc, char ** argv)
 		}
 	} 
 
-#if 0
+#if 1
 	for (;;) {
 		int c;
 
@@ -155,6 +157,14 @@ int cmd_ipcfg(FILE *f, int argc, char ** argv)
 	ipv4_route_del(INADDR_ANY);
 	ipv4_route_add(INADDR_ANY, INADDR_ANY, gw_addr, ifn);
 
+	if ((dhcp = dhcp_lookup(ifn)) != NULL) {
+		if (use_dhcp) {
+			/* schedule the interface to be configured through DHCP */
+			dhcp_resume(dhcp);
+		} else {
+			dhcp_pause(dhcp);
+		}
+	}
 
 #if 0
 	fprintf(f, "\n - Restart the system [y/n]? ");

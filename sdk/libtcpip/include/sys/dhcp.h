@@ -153,26 +153,6 @@ struct dhcp_extra {
 /*!	\brief Defines the clock tick time interval in seconds. */
 #define DHCP_TIME_GRANULARITY 4
 
-/*! DHCP client states */
-enum dhcp_state {
-	DHCP_IDLE       = 0,
-	DHCP_INIT       = 1,
-	DHCP_SELECTING	= 2,
-	DHCP_REQUESTING	= 3,
-	//DHCP_CHECKING	= 8,
-	//DHCP_INFORMING	= 9,
-	//DHCP_PERMANENT	= 10,
-	DHCP_BOUND		= 4,
-	DHCP_RENEWING	= 5,
-	DHCP_REBINDING	= 6,
-	/* not yet implemented
-	DHCP_RELEASING	= 11, */
-	DHCP_INIT_REBOOT = 7,
-	DHCP_REBOOTING	= 8,
-	//DHCP_BACKING_OFF	= 12,
-	//DHCP_OFF		= 13
-};
-
 /*!	\brief Minimal data about the network infrastructure.
  * 
  *	Contains the basic information about the host. */
@@ -188,7 +168,7 @@ struct dhcp {
 	 *	being a pointer to the given struct dhcp_min filled with data 
 	 *	gathered by the DHCP client. \n 
 	 *	\see sys/msg.h for details. */
-	void (* callback)(struct dhcp *);
+	void (* callback)(struct dhcp *, enum dhcp_event);
 	/*! Host IP address. */
 	in_addr_t ip;
 	/*! Local subnet mask. */
