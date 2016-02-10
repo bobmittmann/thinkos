@@ -210,8 +210,10 @@ void cm3_svc_isr(void)
 	int svc;
 
 #if THINKOS_ENABLE_DEBUG_STEP
-	if ((1 << thinkos_rt.active) & thinkos_rt.step_svc)
+	if ((1 << thinkos_rt.active) & thinkos_rt.step_svc) {
+		DCC_LOG(LOG_TRACE, "SVC call step");
 		__thinkos_defer_sched();
+	}
 #endif
 
 	/* get a pointer to the caller's stack */

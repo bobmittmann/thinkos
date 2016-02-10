@@ -46,6 +46,8 @@ void thinkos_idle_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_CRITICAL
+	/* Force the scheduler to run if there are 
+	   threads in the ready queue. */
  #if ((THINKOS_THREADS_MAX) < 32) 
 	if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
  #else
@@ -59,6 +61,8 @@ void thinkos_idle_svc(int32_t * arg)
 
 void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
+	asm volatile ("nop\n"); 
+
 //	DCC_LOG(LOG_TRACE, "ThinkOS Idle started..."); 
 
 	for (;;) {

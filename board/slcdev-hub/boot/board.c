@@ -106,7 +106,7 @@ void board_softreset(void)
 	io_init();
 
 	/* Enable USB OTG FS interrupts */
-	board_comm_irqen();
+//	board_comm_irqen();
 }
 
 bool board_autoboot(uint32_t tick)
@@ -287,6 +287,6 @@ const struct thinkos_board this_board = {
 	.upgrade = board_upgrade,
 	.selftest = board_selftest,
 	.on_appload = board_on_appload,
-	.comm_irqen = board_comm_irqen
+//	.comm_irqen = board_comm_irqen
 };
 

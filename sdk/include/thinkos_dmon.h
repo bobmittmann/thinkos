@@ -32,6 +32,14 @@
 #define __THINKOS_IRQ__
 #include <thinkos_irq.h>
 
+#ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
+  #ifdef CM3_RAM_VECTORS
+    #define THINKOS_ENABLE_RESET_RAM_VECTORS 1
+  #else
+    #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
+  #endif
+#endif
+
 #include <sys/usb-dev.h>
 
 enum dbgmon_event {
@@ -62,6 +70,7 @@ struct thinkos_dmon {
 	uint32_t * ctx;           /* monitor context */
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
+	uint8_t irq_en_lst[4]; /* list of interrupts forced enable */
 	uint32_t nvic_ie[NVIC_IRQ_REGS]; /* interrupt state */
 	void (* task)(struct dmon_comm * comm);
 };
@@ -147,7 +156,7 @@ struct thinkos_board {
 	void (* upgrade)(struct dmon_comm *);
 	void (* selftest)(struct dmon_comm *);
 	void (* on_appload)(void);
-	void (* comm_irqen)(void);
+//	void (* comm_irqen)(void);
 };
 
 extern const struct thinkos_board this_board;

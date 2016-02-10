@@ -25,6 +25,10 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
+void __dmon_irq_pause_all(void);
+void __dmon_irq_restore_all(void);
+void __dmon_irq_force_enable(void);
+
 static const char * const app_argv[] = {
 	"thinkos_app"
 };
@@ -76,55 +80,6 @@ void dmon_thread_exec(void (* func)(void *), void * arg)
 	__thinkos_exec(thread_id, func, arg, paused);
 }
 
-/**
-  * __dmon_irq_disable_all:
-  *
-  *  Disable all interrupts.
-  */
-void __dmon_irq_disable_all(void)
-{
-	int i;
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
-		thinkos_dmon_rt.nvic_ie[i] = 0xffffffff;
-	}
-}
-
-/**
-  * __dmon_irq_pause_all:
-  *
-  * Save the state of the interrupt enable registers and 
-  * disable all interrupts.
-  */
-void __dmon_irq_pause_all(void)
-{
-	int i;
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		/* save interrupt state */
-		thinkos_dmon_rt.nvic_ie[i] = CM3_NVIC->iser[i];
-		DCC_LOG2(LOG_TRACE, "nvic_ie[%d]=0x%08x", 
-				i, thinkos_dmon_rt.nvic_ie[i]);
-		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
-	}
-}
-
-/**
-  * __dmon_irq_restore_all:
-  *
-  * Restore the state of the interrupt enable registers.
-  */
-void __dmon_irq_restore_all(void)
-{
-	int i;
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		/* restore interrupt state */
-		CM3_NVIC->iser[i] = thinkos_dmon_rt.nvic_ie[i];
-	}
-}
-
 bool dmon_app_suspend(void)
 {
 	__dmon_irq_pause_all();
@@ -143,7 +98,10 @@ bool dmon_app_suspend(void)
 #endif
 
 	/* Make sure the communication channel interrupts are enabled. */
+#if 0
 	this_board.comm_irqen();
+#endif
+	__dmon_irq_force_enable();
 
 	dmon_wait_idle();
 

@@ -213,12 +213,15 @@ void init_queue_test(void)
 
 volatile unsigned int cnt1 = 0;
 volatile unsigned int cnt2 = 0;
+volatile uint32_t now = 0;
 
 void read_fault(void);
 void write_fault(void);
 
 int main(int argc, char ** argv)
 {
+	uint32_t clk;
+
 	io_init();
 
 //	init_step_task();
@@ -242,12 +245,13 @@ int main(int argc, char ** argv)
 			: : : "r0");
 
 	for (;;) {
-//		usleep(4000000);
-		thinkos_sleep(2000);
-		cnt1++;
-		thinkos_sleep(2000);
-		cnt2++;
-//		write_fault();
+		clk = thinkos_clock();
+		now = clk;
+		thinkos_alarm(clk + 10000);
+//		cnt1++;
+//		thinkos_sleep(2000);
+//		cnt2++;
+		write_fault();
 	}
 	return 0;
 }

@@ -44,6 +44,10 @@ _Pragma ("GCC optimize (\"O2\")")
 #define THINKOS_DMON_STACK_SIZE (960 + 16)
 #endif
 
+void __dmon_irq_init(void);
+void __dmon_irq_force_enable(void);
+void __dmon_irq_disable_all(void);
+
 struct thinkos_dmon thinkos_dmon_rt;
 uint32_t thinkos_dmon_stack[THINKOS_DMON_STACK_SIZE / 4];
 const uint16_t thinkos_dmon_stack_size = sizeof(thinkos_dmon_stack);
@@ -514,6 +518,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 	__thinkos_defer_sched();
 
 	if (sync) {
+		DCC_LOG(LOG_INFO, "synchronous step, waiting for signal...");
 		if ((ret = dmon_wait(DMON_THREAD_STEP)) < 0)
 			return ret;
 	}
@@ -863,6 +868,9 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.break_id = xcpt->thread_id;
 		thinkos_rt.xcpt_ipsr = 0;
 #endif
+		__dmon_irq_disable_all();
+		__dmon_irq_force_enable();
+
 		dmon_signal(DMON_THREAD_FAULT);
 	} else {
 #if THINKOS_ENABLE_DEBUG_STEP
@@ -877,26 +885,6 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.void_ctx = &xcpt->ctx;
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-#if 0
-			DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
-			__dmon_irq_disable_all();
-			DCC_LOG(LOG_TRACE, "2. ThinkOS reset...");
-			__thinkos_reset();
-#if THINKOS_ENABLE_CONSOLE
-			DCC_LOG(LOG_TRACE, "3. console reset...");
-			__console_reset();
-#endif
-			DCC_LOG(LOG_TRACE, "4. exception reset...");
-#if (THINKOS_ENABLE_EXCEPTIONS)
-			__exception_reset();
-#endif
-#if (THINKOS_ENABLE_DEBUG_STEP)
-			DCC_LOG(LOG_TRACE, "6. clear all breakpoints...");
-			dmon_breakpoint_clear_all();
-#endif
-			DCC_LOG(LOG_TRACE, "7. reset board...");
-			this_board.softreset();
-#endif
 			dmon_soft_reset();
 
 			DCC_LOG(LOG_TRACE, "8. reset.");
@@ -904,12 +892,11 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		} else 
 #endif
 		{
+			__dmon_irq_disable_all();
+			__dmon_irq_force_enable();
 			dmon_signal(DMON_EXCEPT);
 		}
 	}
-
-	DCC_LOG(LOG_TRACE, "this_board.comm_irqen().");
-	this_board.comm_irqen();
 }
 
 /* -------------------------------------------------------------------------
@@ -927,6 +914,8 @@ void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	thinkos_dmon_rt.mask = (1 << DMON_RESET);
 	thinkos_dmon_rt.comm = comm;
 	thinkos_dmon_rt.task = task;
+
+	__dmon_irq_init();
 
 #if THINKOS_ENABLE_STACK_INIT
 	__thinkos_memset32(thinkos_dmon_stack, 0xdeadbeef, 
