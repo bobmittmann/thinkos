@@ -153,84 +153,84 @@ struct serial_dev {
 	const struct serial_op * op;
 };
 
-extern inline int serial_send(struct serial_dev * dev, const void * buf, 
+static inline int serial_send(struct serial_dev * dev, const void * buf,
 							  unsigned int len) {
 	return dev->op->send(dev->drv, buf, len);
 }
 
-extern inline int serial_recv(struct serial_dev * dev, void * buf, 
+static inline int serial_recv(struct serial_dev * dev, void * buf,
 							  unsigned int len, unsigned int msec) {
 	return dev->op->recv(dev->drv, buf, len, msec);
 }
 
-extern inline int serial_drain(struct serial_dev * dev) {
+static inline int serial_drain(struct serial_dev * dev) {
 	return dev->op->drain(dev->drv);
 }
 
-extern inline int serial_close(struct serial_dev * dev){
+static inline int serial_close(struct serial_dev * dev){
 	return dev->op->close(dev->drv);
 }
 
-extern inline int serial_ioctl(struct serial_dev * dev, 
+static inline int serial_ioctl(struct serial_dev * dev,
 							   int opt, uintptr_t arg1, uintptr_t arg2) {
 	return dev->op->ioctl(dev->drv, opt, arg1, arg2);
 }
 
 #if 0
-extern inline int serial_drain(struct serial_dev * dev) {
+static inline int serial_drain(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_DRAIN, 0);
 }
 #endif
 
-extern inline int serial_flush(struct serial_dev * dev) {
+static inline int serial_flush(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_FLUSH, 0, 0);
 }
 
 
-extern inline int serial_reset(struct serial_dev * dev) {
+static inline int serial_reset(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_RESET, 0, 0);
 }
 
-extern inline int serial_stats_get(struct serial_dev * dev, 
+static inline int serial_stats_get(struct serial_dev * dev,
 								  struct serial_stats * stats) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_STATS_GET, 
 						  (uintptr_t)stats, 0);
 }
 
-extern inline int serial_enable(struct serial_dev * dev) {
+static inline int serial_enable(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_ENABLE, 
 						  SERIAL_RX_EN | SERIAL_TX_EN, 0);
 }
 
-extern inline int serial_disable(struct serial_dev * dev) {
+static inline int serial_disable(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_DISABLE, 
 						  SERIAL_RX_EN | SERIAL_TX_EN, 0);
 }
 
-extern inline int serial_rx_enable(struct serial_dev * dev) {
+static inline int serial_rx_enable(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_ENABLE, 
 						  SERIAL_RX_EN, 0);
 }
 
-extern inline int serial_rx_disable(struct serial_dev * dev) {
+static inline int serial_rx_disable(struct serial_dev * dev) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_DISABLE, 
 						  SERIAL_RX_EN, 0);
 }
 
-extern inline int serial_flowctrl_set(struct serial_dev * dev, 
+static inline int serial_flowctrl_set(struct serial_dev * dev,
 									  unsigned int flowctrl) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_FLOWCTRL_SET, 
 						  flowctrl, 0);
 }
 
-extern inline int serial_config_get(struct serial_dev * dev, 
+static inline int serial_config_get(struct serial_dev * dev,
 									struct serial_config * cfg)
 {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_CONF_GET, 
 						  (uintptr_t)cfg, 0);
 }
 
-extern inline int serial_config_set(struct serial_dev * dev, 
+static inline int serial_config_set(struct serial_dev * dev,
 									const struct serial_config * cfg)
 {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_CONF_SET, 

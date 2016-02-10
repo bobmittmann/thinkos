@@ -218,12 +218,6 @@ struct dhcp {
 //	in_addr_t offered_gw;
 };
 
-extern inline enum dhcp_state dhcp_get_state(struct dhcp * dhcp)
-{
-	return (enum dhcp_state) dhcp->state;
-}
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

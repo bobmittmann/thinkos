@@ -183,61 +183,63 @@ static inline void ifn_signal(int event) {
 	thinkos_ev_raise(__ifnet__.evset, event);
 }
 
-extern inline int ifn_init(struct ifnet * __if) {
+static inline int ifn_init(struct ifnet * __if) {
 	return __if->if_op->op_init(__if);
 }
 
-extern inline int ifn_cleanup(struct ifnet * __if) {
+static inline int ifn_cleanup(struct ifnet * __if) {
 	return __if->if_op->op_cleanup(__if);
 }
 
-extern inline void * ifn_mmap(struct ifnet * __if, int __length) {
+static inline void * ifn_mmap(struct ifnet * __if, int __length) {
 	return __if->if_op->op_mmap(__if, __length);
 }
 
-extern inline int ifn_munmap(struct ifnet * __if, void * __mem) {
+static inline int ifn_munmap(struct ifnet * __if, void * __mem) {
 	return __if->if_op->op_munmap(__if, __mem);
 }
 
-extern inline int ifn_send(struct ifnet * __if, const uint8_t * __dst, 
+static inline int ifn_send(struct ifnet * __if, const uint8_t * __dst,
 							  int __proto, const void * __buf, int __len) {
 	return __if->if_op->op_send(__if, __dst, __proto, __buf, __len);
 }
 
-extern inline int  ifn_sleep(struct ifnet * __if) {
+static inline int  ifn_sleep(struct ifnet * __if) {
 	return __if->if_op->op_sleep(__if);
 }
 
-extern inline int ifn_wakeup(struct ifnet * __if) {
+static inline int ifn_wakeup(struct ifnet * __if) {
 	return __if->if_op->op_wakeup(__if);
 }
 
-extern inline int ifn_getaddr(struct ifnet * __if, uint8_t * __buf) {
+#if 0
+static inline int ifn_getaddr(struct ifnet * __if, uint8_t * __buf) {
 	return __if->if_op->op_getaddr(__if, __buf);
 }
+#endif
 
-extern inline int ifn_getdesc(struct ifnet * __if, char * __s, int __len) {
+static inline int ifn_getdesc(struct ifnet * __if, char * __s, int __len) {
 	return __if->if_op->op_getdesc(__if, __s, __len);
 }
 
-extern inline void * ifn_arplookup(struct ifnet * __if, in_addr_t __ipaddr) {
+static inline void * ifn_arplookup(struct ifnet * __if, in_addr_t __ipaddr) {
 	return __if->if_op->op_arplookup(__if, __ipaddr);
 }
 
-extern inline int ifn_arpquery(struct ifnet * __if, in_addr_t __ipaddr) {
+static inline int ifn_arpquery(struct ifnet * __if, in_addr_t __ipaddr) {
 	return __if->if_op->op_arpquery(__if, __ipaddr);
 }
 
-extern inline int in_broadcast(in_addr_t __addr, struct ifnet * __if) {
+static inline int in_broadcast(in_addr_t __addr, struct ifnet * __if) {
 	return (__addr | __if->if_ipv4_mask) == INADDR_BROADCAST;
 }
 
-extern inline int ifn_pkt_recv(struct ifnet * __if, uint8_t ** __src,
+static inline int ifn_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 					unsigned int * __proto, uint8_t ** __pkt) {
 	return __if->if_op->op_pkt_recv(__if, __src, __proto, __pkt);
 }
 
-extern inline int ifn_pkt_free(struct ifnet * __if, uint8_t * __pkt) {
+static inline int ifn_pkt_free(struct ifnet * __if, uint8_t * __pkt) {
 	return __if->if_op->op_pkt_free(__if, __pkt);
 }
 

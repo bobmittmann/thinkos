@@ -235,10 +235,15 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 
 #if THINKOS_ENABLE_DEBUG_STEP
 	if ((1 << new_thread_id) & thinkos_rt.step_req) {
+		/* process a step request */
 		if ((1 << new_thread_id) & thinkos_rt.step_svc) {
+#if 0
+			/* XXX: the step service is cleared by calling 
+			   __thinkos_thread_pause() in the debug monitor handler,
+			   so it is not necessary to clear it here. */
+			/* clear the step service flag */
 			thinkos_rt.step_svc &= ~(1 << new_thread_id);
-			/* set the step thread as the current thread ... */
-			thinkos_rt.step_id = new_thread_id;
+#endif
 			/* step the IDLE thread instead  */
 			thinkos_rt.active = THINKOS_THREAD_IDLE;
 			new_ctx = thinkos_rt.idle_ctx;
@@ -260,9 +265,17 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 				thinkos_rt.step_svc |= (1 << new_thread_id);
 				goto context_restore;
 			}
-			thinkos_rt.step_id = new_thread_id;
 		}
+		/* set the step thread as the current thread ... */
+		thinkos_rt.step_id = new_thread_id;
+#if 0
+		/* XXX: the step request is cleared by calling 
+		   __thinkos_thread_pause() in the debug monitor handler,
+		 so it is not necessary to clear it here. */
+		/* clear the step request flag */
 		thinkos_rt.step_req &= ~(1 << new_thread_id);
+#endif
+		/* return and step the next instruction */
 		__sched_exit_step(new_ctx, new_thread_id);
 	} else
 context_restore:

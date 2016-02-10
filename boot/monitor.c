@@ -182,7 +182,7 @@ static void monitor_print_fault(struct dmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
-	switch (xcpt->type == 0) {
+	if (xcpt->type == 0) {
 		dmprintf(comm, "No fault!");
 		return;
 	}
