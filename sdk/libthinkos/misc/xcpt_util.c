@@ -299,15 +299,6 @@ int __xcpt_next_active_irq(int this_irq)
 	return -16;
 }
 
-void __xcpt_irq_disable_all(void)
-{
-	int i;
-
-	for (i = 0; i < (CM3_ICTR + 1); ++i) {
-		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
-	}
-}
-
 void __xcpt_systick_int_disable(void)
 {
 #if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE

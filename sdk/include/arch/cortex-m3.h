@@ -1212,6 +1212,8 @@ void cm3_udelay_calibrate(void);
 
 void __attribute__((noreturn)) cm3_sysrst(void);
 
+void cm3_nvic_irq_disable_all(void);
+
 #ifdef __cplusplus
 }
 #endif

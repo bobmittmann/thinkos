@@ -28,6 +28,7 @@
 #define __USE_SYS_ROUTE__
 #include <sys/route.h>
 
+#include <tcpip/ifnet.h>
 #include <netinet/in.h>
 #include <string.h> 
 #include <stdlib.h> 

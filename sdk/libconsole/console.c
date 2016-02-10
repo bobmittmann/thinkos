@@ -42,7 +42,13 @@ int console_write(void * dev, const void * buf, unsigned int len)
 
 int console_read(void * dev, void * buf, unsigned int len, unsigned int msec) 
 {
-	return thinkos_console_timedread(buf, len, msec);
+	int ret = 0;
+
+	do {
+		ret = thinkos_console_timedread(buf, len, msec);
+	} while (ret == 0);
+
+	return ret;
 }
 
 int console_drain(void * dev)
