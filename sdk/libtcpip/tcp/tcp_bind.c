@@ -27,7 +27,7 @@
 #include <sys/tcp.h>
 #include <errno.h>
 
-static int can_bind(addr, port)
+static int can_bind(in_addr_t addr, uint16_t port)
 {
 	/* Check to see if this address is not in use already. */
 	if (pcb_lookup(INADDR_ANY, 0, addr, port, &__tcp__.listen) != NULL) {

@@ -385,6 +385,8 @@ bool __thinkos_thread_pause(unsigned int th)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* posibly clear the step request */
 	__bit_mem_wr(&thinkos_rt.step_req, th, 0);
+	/* posibly clear the step on service */
+	__bit_mem_wr(&thinkos_rt.step_svc, th, 0);
 #endif
 
 #if THINKOS_ENABLE_CLOCK
