@@ -157,7 +157,7 @@ void __xcpt_thinkos_process(struct thinkos_except * xcpt)
 
 	/* reset reentry counter */
 	xcpt->unroll = 0;
-	__xcpt_systick_int_enable();
+//	__xcpt_systick_int_enable();
 	cm3_cpsie_i();
 
 #if 0
@@ -627,8 +627,8 @@ void __attribute__((naked, noreturn)) __xcpt_process(void)
 	/* XXX: since we are disabling the interrupts here 
 	   I don see the point of disabling the individual interrupts
 	 here. It could be done on the upper layers. */
-	__xcpt_irq_disable_all();
-	__xcpt_systick_int_disable();
+//	__xcpt_irq_disable_all();
+//	__xcpt_systick_int_disable();
 	__xcpt_unroll(&thinkos_except_buf, thinkos_except_buf.ctx.xpsr);
 #else /* THINKOS_UNROLL_EXCEPTIONS */
 	thinkos_exception_dsr(&thinkos_except_buf);

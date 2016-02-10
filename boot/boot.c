@@ -98,10 +98,21 @@ int main(int argc, char ** argv)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 
+#ifdef DEBUG
+	{
+		int i;
+
+		for (i = 0; i < 8; ++i) {
+			DCC_LOG(LOG_TRACE, ".");
+		}
+	}
+#endif
+
 #ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");
 	cm3_udelay_calibrate();
 #endif
+
 	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_init().");

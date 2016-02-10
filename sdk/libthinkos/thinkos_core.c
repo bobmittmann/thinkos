@@ -33,6 +33,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 //#undef THINKOS_ENABLE_SCHED_DEBUG
 //#define THINKOS_ENABLE_SCHED_DEBUG 1
 
+void thinkos_idle_task(void);
+
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
@@ -244,14 +246,29 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 			/* clear the step service flag */
 			thinkos_rt.step_svc &= ~(1 << new_thread_id);
 #endif
+#if THINKOS_ENABLE_SCHED_DEBUG
+			DCC_LOG1(LOG_TRACE, "SVC step thread=%d, active is IDLE"
+					 , new_thread_id);
+#endif
 			/* step the IDLE thread instead  */
 			thinkos_rt.active = THINKOS_THREAD_IDLE;
+			/* set the new context to the idle context */
 			new_ctx = thinkos_rt.idle_ctx;
+			/* XXX: reset the IDLE task. There is a problem when stepping
+			   at a SVC call. The  __sched_exit_step() disable interrupts,
+			   but the idle thread next instruction could potentially be 
+			   SVC, which generate a soft IRQ. The fact that the interrupts 
+			   are disabled causes a hard fault to the system. 
+			   We force the ide thread to start from the beginning where
+			   at least one nop instruction will be executed before 
+			   a SVC call.
+			 */ 
+			new_ctx->pc = (uint32_t)thinkos_idle_task;
 		} else { 
 			uint32_t insn;
 			uint16_t * pc;
 #if THINKOS_ENABLE_SCHED_DEBUG
-			DCC_LOG1(LOG_TRACE, "active=%d", new_thread_id);
+			DCC_LOG1(LOG_TRACE, "normal step, active=%d", new_thread_id);
 #endif
 			/* get the PC value */
 			pc = (uint16_t *)new_ctx->pc;

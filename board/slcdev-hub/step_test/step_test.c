@@ -247,11 +247,11 @@ int main(int argc, char ** argv)
 	for (;;) {
 		clk = thinkos_clock();
 		now = clk;
-//		thinkos_alarm(clk + 2000);
+		thinkos_alarm(clk + 10000);
 //		cnt1++;
 //		thinkos_sleep(2000);
 //		cnt2++;
-//		write_fault();
+		write_fault();
 	}
 	return 0;
 }
