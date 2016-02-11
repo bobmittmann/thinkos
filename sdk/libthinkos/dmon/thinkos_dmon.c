@@ -792,61 +792,6 @@ step_done:
 	}
 }
 
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-void __attribute__((noinline)) dbgmon_stop_isr(struct cm3_except_context * ctx, 
-											   unsigned int thread_id)
-{
-	DCC_LOG2(LOG_TRACE, "thread_id=%d PC=%08x", thread_id, ctx->pc);
-
-	/* suspend the thread, this will clear the 
-	   step request flag */
-	__thinkos_thread_pause(thread_id);
-	__thinkos_defer_sched();
-	/* clear the break signal */
-	__bit_mem_wr(&thinkos_rt.step_brk, thread_id, 0);
-	/* ser the break thread */
-	thinkos_rt.break_id = thread_id;
-	/* signal the monitor */
-	thinkos_dmon_rt.events |= (1 << DMON_THREAD_STEP);
-
-	dmon_context_swap(&thinkos_dmon_rt.ctx); 
-}
-
-void __attribute__((naked)) dbgmon_step_isr(struct cm3_except_context * ctx, 
-											unsigned int thread_id)
-{
-//	DCC_LOG2(LOG_TRACE, "PC=%08x REQ=%08x", ctx->pc, &thinkos_step_req);
-	if (__bit_mem_rd(&thinkos_rt.step_brk, thread_id)) {
-		/* signal the monitor */
-		dbgmon_stop_isr(ctx, thread_id);
-		return;
-	}	
-
-	/* save the current stepping thread */
-	thinkos_rt.step_id = thread_id;
-
-	/* Clear PendSV active */
-	CM3_SCB->shcsr &= ~SCB_SHCSR_PENDSVACT; 
-
-	/* Remove DebugMon context */
-	asm volatile ("pop    {r0-r3,r12,lr}\n"
-				  "add    sp, sp, #2 * 4\n"
-				  : : : ); 
-	/* Step and return */
-	/* CM3_DCB->demcr |= DCB_DEMCR_MON_STEP */
-	asm volatile ("movw   r3, #0xedf0\n"
-				  "movt   r3, #0xe000\n"
-				  "ldr    r2, [r3, #12]\n"
-				  "orr.w  r2, r2, #(1 << 18)\n"
-				  "str    r2, [r3, #12]\n"
-				  "bx     lr\n"
-				  : :  : "r3", "r2"); 
-}
-
-extern uintptr_t thinkos_thread_step_call;
-#endif
-
 void __attribute__((naked)) cm3_debug_mon_isr(void)
 {
 	register struct cm3_except_context * ctx asm("r0");
