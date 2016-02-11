@@ -92,15 +92,7 @@ bool dmon_app_suspend(void)
 		DCC_LOG1(LOG_INFO, "current_thread=%d", thinkos_rt.active);
 	}
 
-#if (THINKOS_ENABLE_DEBUG_STEP)
-	/* clear stepping requests */
-	thinkos_rt.step_req = 0;
-#endif
-
 	/* Make sure the communication channel interrupts are enabled. */
-#if 0
-	this_board.comm_irqen();
-#endif
 	__dmon_irq_force_enable();
 
 	dmon_wait_idle();
