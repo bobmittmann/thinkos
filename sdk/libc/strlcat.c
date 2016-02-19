@@ -27,21 +27,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* FIXME:  this implementation is wrong */
-size_t strlcat(char * restrict dst, const char * restrict src, size_t size)
+size_t strlcat(char * dst, const char * src, size_t size)
 {
-	register char *cp = dst;
+    register char *d = dst;
+    register const char *s = src;
+    register size_t n = size;
+    size_t dlen;
 
-	if ((!cp) || (!src))
-		return 0;
+    while (n-- != 0 && *d != '\0')
+            d++;
+    dlen = d - dst;
+    n = size - dlen;
 
-	while (*cp)
-    	cp++;
-
-	while (size-- != 0 && (*cp++ = *src++)) {
-		if (n == 0)
-			*cp = '\0';
+    if (n == 0)
+            return(dlen + strlen(s));
+    while (*s != '\0') {
+            if (n != 1) {
+                    *d++ = *s;
+                    n--;
+            }
+            s++;
     }
+    *d = '\0';
 
-	return cp - dst;
+    return(dlen + (s - src));
 }

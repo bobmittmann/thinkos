@@ -28,19 +28,21 @@
 
 char * strrchr(const char * s, int c)
 {
-	register char * cp;
-	register char * last;
+	register const char * cp = s;
+	register char * found;
 
-	if (c == '\0') {
-		return strchr(cp, '\0');
+	if (!cp)
+		return NULL;
 
-	last = NULL;
-	cp = (char *)s;
-	while ((cp = strchr(cp, c))) {
-		last = cp;
+	c &= 0xff;
+	found = NULL;
+
+	while (*cp) {
+		if (*cp == c)
+			found = (char *) cp;
 		cp++;
 	}
 
-	return last;
+	return found;
 }
 

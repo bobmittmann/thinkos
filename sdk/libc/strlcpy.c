@@ -25,21 +25,24 @@
 
 #include <string.h>
 
-/* FIXME:  this implementation is wrong */
-size_t strlcpy(char * restrict dst, const char * restrict src, size_t size);
+size_t strlcpy(char * dst, const char * src, size_t size)
 {
-	char * dcp;
-	const char *scp;
+    register char *d = dst;
+    register const char *s = src;
+    register size_t n = size;
 
-	dcp = dst;
-	scp = src;
-	while (size > 0) {
-		--size;
-		if ((*dcp++ = *scp++) == '\0')
-			break;
+    if (n != 0 && --n != 0) {
+            do {
+                    if ((*d++ = *s++) == 0)
+                            break;
+            } while (--n != 0);
     }
-	if (size-- > 0)
-		*dcp++ = '\0';
 
-  return dcp - dst;
+    if (n == 0) {
+            if (size != 0)
+                    *d = '\0';
+            while (*s++);
+    }
+
+    return (s - src - 1);
 }
