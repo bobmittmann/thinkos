@@ -146,7 +146,7 @@ void lsm303_mag_init(void)
 	exti->imr |= LSM303_DRDY_EXTI;
 
 	cfg[0] = CRA_TEMP_EN | CRA_DO_30_HZ;
-	cfg[1] = CRB_GN_8_1; /* ±8.1 Gauss */
+	cfg[1] = CRB_GN_8_1; /* ï¿½8.1 Gauss */
 	cfg[2] = MR_MD_CONTINOUS;
 	lsm303_mag_wr(LSM303_CRA_REG_M, cfg, 3);
 
@@ -189,6 +189,9 @@ void accelerometer_task(struct acc_info * acc)
 	off.x = 0;
 	off.y = 0;
 	off.z = 0;
+
+	/* poll the sensor */
+	lsm303_acc_rd(LSM303_STATUS_REG_A, &st, 1);
 
 	for (;;) {
 //		thinkos_sleep(10);
@@ -294,13 +297,23 @@ void lsm303_acc_init(void)
 	/* unmask interrupt */
 	exti->imr |= LSM303_INT2_EXTI;
 
+	/* CTRL_REG1_A */
 	cfg[0] = ODR_10HZ | CTRL_ZEN | CTRL_YEN | CTRL_XEN;
+	/* CTRL_REG2_A */
 	cfg[1] = 0;
+	/* CTRL_REG3_A */
 	cfg[2] = CTRL_I1_DRDY1;
+	/* CTRL_REG4_A */
 	cfg[3] = CTRL_FS_16G | CTRL_HR;
-	cfg[4] = 0;
+	/* CTRL_REG5_A */
+	cfg[4] = CTRL_LIR_INT1;
+	/* CTRL_REG6_A */
 	cfg[5] = 0;
 	lsm303_acc_wr(LSM303_CTRL_REG1_A, cfg, 6);
+
+	cfg[0] = 32;
+	lsm303_acc_wr(LSM303_INT1_DURATION_A, cfg, 1);
+
 
     acc.sem = thinkos_sem_alloc(0);
     acc.mutex = thinkos_mutex_alloc();

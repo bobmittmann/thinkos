@@ -52,8 +52,8 @@ void cm3_default_isr(int irq)
 	th = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 
-	DCC_LOG2(LOG_TRACE, "<%d> IRQ %d", th, irq);
-	/* TODO: create a wait for IRQ waiting queue. */
+	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th, irq);
+	/* TODO: create a wait queue for IRQ waiting. */
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  

@@ -27,9 +27,9 @@ PROG = thinkos
 CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c
 
 LIBDIRS = $(SDK)/libcm3 $(SDK)/libstm32f $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libgdb
+		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb
 
-LIBS = cm3 stm32f util thinkos gdb gcc 
+LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
 
 INCPATH = $(SDK)/include ../include
 
@@ -37,9 +37,9 @@ CDEFS = CONFIG_H CM3_RAM_VECTORS
 CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
 LDFLAGS = -Wl,--gc-sections 
 
-VERSION_DATE = "2015-11-05"
+VERSION_DATE = "2016-02-13"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "37"
+VERSION_MINOR = "38"
 
 MACH = stm32f303xc
 HSE_HZ = 8000000

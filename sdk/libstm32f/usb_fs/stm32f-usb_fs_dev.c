@@ -85,6 +85,9 @@ struct stm32f_usb_ep {
 
 //#define DEBUG_DBLBUF
 
+/* FIXME: find another way of initializing the packet buffer addresses */
+#define PKTBUF_BUF_BASE (8 * 8)
+
 /* USB Driver */
 struct stm32f_usb_drv {
 	struct stm32f_usb_ep ep[STM32_USB_DEV_EP_MAX];
@@ -95,7 +98,7 @@ struct stm32f_usb_drv {
 	uint32_t pkt_recv;
 	uint32_t pkt_read;
 #endif
-
+	uint16_t pktbuf_addr;
 };
 
 /* -------------------------------------------------------------------------
@@ -419,10 +422,6 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 }
 
 
-/* FIXME: find another way of initializing the packet buffer addresses */
-#define PKTBUF_BUF_BASE (8 * 8)
-static unsigned int addr = PKTBUF_BUF_BASE;
-
 int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv, 
 						   const usb_dev_ep_info_t * info,
 						   void * xfr_buf, int buf_len)
@@ -460,13 +459,13 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		__set_ep_txstat(usb, 0, USB_TX_NAK);
 
 		/* reset packet buffer address pointer */
-		addr = PKTBUF_BUF_BASE;
+		drv->pktbuf_addr = PKTBUF_BUF_BASE;
 
 		/* allocate single buffers for TX and RX */
-		sz = __pktbuf_tx_cfg(&pktbuf[0].tx, addr, mxpktsz);
-		addr += sz;
-		sz = __pktbuf_rx_cfg(&pktbuf[0].rx, addr, mxpktsz);
-		addr += sz;
+		sz = __pktbuf_tx_cfg(&pktbuf[0].tx, drv->pktbuf_addr, mxpktsz);
+		drv->pktbuf_addr += sz;
+		sz = __pktbuf_rx_cfg(&pktbuf[0].rx, drv->pktbuf_addr, mxpktsz);
+		drv->pktbuf_addr += sz;
 
 		__clr_ep_flag(usb, 0, USB_EP_STATUS_OUT);
 		__set_ep_rxstat(usb, 0, USB_RX_VALID);
@@ -487,10 +486,10 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 	case ENDPOINT_TYPE_CONTROL:
 		__set_ep_type(usb, ep_id, USB_EP_CONTROL);
 		/* allocate single buffers for TX and RX */
-		sz = __pktbuf_tx_cfg(&pktbuf[ep_id].tx, addr, mxpktsz);
-		addr += sz;
-		sz = __pktbuf_rx_cfg(&pktbuf[ep_id].rx, addr, mxpktsz);
-		addr += sz;
+		sz = __pktbuf_tx_cfg(&pktbuf[ep_id].tx, drv->pktbuf_addr, mxpktsz);
+		drv->pktbuf_addr += sz;
+		sz = __pktbuf_rx_cfg(&pktbuf[ep_id].rx, drv->pktbuf_addr, mxpktsz);
+		drv->pktbuf_addr += sz;
 		DCC_LOG(LOG_INFO, "CONTROL");
 		break;
 
@@ -503,17 +502,21 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		__set_ep_flag(usb, ep_id, USB_EP_DBL_BUF);
 		if (info->addr & USB_ENDPOINT_IN) {
 			DCC_LOG(LOG_INFO, "BULK IN");
-			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[0], addr, mxpktsz);
-			addr += sz;
-			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[1], addr, mxpktsz);
-			addr += sz;
+			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[0], 
+								 drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
+			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[1], 
+								 drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
 			__set_ep_txstat(usb, ep_id, USB_TX_VALID);
 		} else {
 			DCC_LOG(LOG_INFO, "BULK OUT");
-			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].dbrx[0], addr, mxpktsz);
-			addr += sz;
-			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].dbrx[1], addr, mxpktsz);
-			addr += sz;
+			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].dbrx[0], 
+								 drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
+			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].dbrx[1], 
+								 drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
 			__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
 		}
 		break;
@@ -522,12 +525,12 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		__set_ep_type(usb, ep_id, USB_EP_INTERRUPT);
 		if (info->addr & USB_ENDPOINT_IN) {
 			DCC_LOG(LOG_INFO, "INTERRUPT IN");
-			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].tx, addr, mxpktsz);
-			addr += sz;
+			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].tx, drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
 		} else {
 			DCC_LOG(LOG_INFO, "INTERRUPT OUT");
-			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].rx, addr, mxpktsz);
-			addr += sz;
+			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].rx, drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
 			__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
 		}
 		break;
@@ -743,6 +746,9 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 
 	drv->cl = cl;
 	drv->ev = ev;
+
+	/* reset packet buffer address pointer */
+	drv->pktbuf_addr = PKTBUF_BUF_BASE;
 
 	DCC_LOG1(LOG_INFO, "ev=0x%08x", drv->ev);
 

@@ -33,20 +33,6 @@
 #define FLASH_ERR (FLASH_PGSERR | FLASH_PGPERR | FLASH_PGAERR | FLASH_WRPERR | \
 				   FLASH_OPERR)
 
-uint32_t __attribute__((section (".data#"), noinline)) 
-	stm32f2x_flash_sect_erase(struct stm32_flash * flash, uint32_t cr)
-{
-	uint32_t sr;
-
-	flash->cr = cr;
-
-	do {
-		sr = flash->sr;
-	} while (sr & FLASH_BSY);
-
-	return sr;
-}
-
 void stm32_flash_unlock(void)
 {
 	struct stm32_flash * flash = STM32_FLASH;
@@ -59,6 +45,20 @@ void stm32_flash_unlock(void)
 		flash->keyr = FLASH_KEY1;
 		flash->keyr = FLASH_KEY2;
 	}
+}
+
+uint32_t __attribute__((section (".data#"), noinline)) 
+	stm32f2x_flash_sect_erase(struct stm32_flash * flash, uint32_t cr)
+{
+	uint32_t sr;
+
+	flash->cr = cr;
+
+	do {
+		sr = flash->sr;
+	} while (sr & FLASH_BSY);
+
+	return sr;
 }
 
 int stm32_flash_erase(unsigned int offs, unsigned int len)
