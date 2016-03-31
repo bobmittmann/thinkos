@@ -1,6 +1,6 @@
 /* 
- * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
- *
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
  * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,36 +18,22 @@
  */
 
 /** 
- * @file sys/types.h
+ * @file dirent.h
  * @brief YARD-ICE libc
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __SYS_TYPES_H__
-#define __SYS_TYPES_H__
+#ifndef __DIRENT_H__
+#define __DIRENT_H__
 
-#define __need_size_t
-#include <stddef.h>
+#include <sys/types.h>
 
-typedef long ssize_t;
-typedef long clock_t;
-typedef long time_t;
+struct dirent {
+	ino_t          d_ino;       /* inode number */
+    off_t          d_off;       /* offset to the next dirent */
+    unsigned short d_reclen;    /* length of this record */
+    char           d_name[54];  /* filename */
+};
 
-typedef int clockid_t;
-
-typedef	unsigned int off_t;
-
-typedef unsigned long useconds_t;
-typedef long suseconds_t;
-
-typedef unsigned long dev_t;
-typedef unsigned long ino_t;
-typedef unsigned short mode_t;
-typedef unsigned char nlink_t;
-typedef unsigned char uid_t;
-typedef unsigned char gid_t;
-typedef	unsigned int pid_t;
-
-
-#endif	/* __SYS_TYPES_H__ */
+#endif /* __DIRENT_H__ */
 

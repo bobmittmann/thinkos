@@ -44,10 +44,6 @@
 #define	X_OK	1		/* Test for execute permission.  */
 #define	F_OK	0		/* Test for existence.  */
 
-typedef	unsigned int uid_t;
-typedef	unsigned int gid_t;
-typedef	unsigned int pid_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
