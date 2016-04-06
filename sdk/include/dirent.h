@@ -27,13 +27,32 @@
 #define __DIRENT_H__
 
 #include <sys/types.h>
+#define __need_NULL
+#include <stddef.h>
+
+#define MAXNAMLEN 53
 
 struct dirent {
 	ino_t          d_ino;       /* inode number */
     off_t          d_off;       /* offset to the next dirent */
     unsigned short d_reclen;    /* length of this record */
-    char           d_name[54];  /* filename */
+    char           d_name[MAXNAMLEN - 1];  /* filename */
 };
 
-#endif /* __DIRENT_H__ */
+struct dir;
 
+typedef struct dir DIR;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+DIR * opendir(const char * name);
+
+struct dirent * readdir(DIR * dirp);
+
+void rewinddir(DIR * dirp);
+
+int closedir(DIR * dirp);
+
+#endif /* __DIRENT_H__ */
