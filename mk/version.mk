@@ -58,12 +58,16 @@ endif
 
 ifeq ($(HOST),Windows)
   MKVER := $(subst /,\,$(TOOLSDIR)/mkver.py)
-else ifeq ($(HOST),Msys)
-#   MKVER := $(call windrv,$(TOOLSDIR)\mkver.py)
-    MKVER := $(subst /,\\,$(call windrv,$(TOOLSDIR)\\mkver.py))
 else
+  ifeq ($(HOST),Msys)
+    ifeq ($(DIRMODE),msys)
+      MKVER := $(subst /,\\,$(call windrv,$(TOOLSDIR)\\mkver.py))
+    else
+      MKVER := $(TOOLSDIR)/mkver.py
+    endif
+  else
     MKVER := $(TOOLSDIR)/mkver.py
-#endif
+  endif
 endif
 
 $(VERSION_H): Makefile
