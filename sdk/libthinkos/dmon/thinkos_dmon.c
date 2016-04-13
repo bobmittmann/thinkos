@@ -480,14 +480,10 @@ void dmon_watchpoint_clear_all(void)
 		dwt->wp[i].function = 0;
 }
 
-
-#endif
-
 /* -------------------------------------------------------------------------
  * Thread stepping
  * ------------------------------------------------------------------------- */
 
-#if (THINKOS_ENABLE_DEBUG_STEP)
 int dmon_thread_step(unsigned int thread_id, bool sync)
 {
 	int ret;
@@ -525,7 +521,8 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 
 	return 0;
 }
-#endif
+
+#endif /* THINKOS_ENABLE_DEBUG_STEP */
 
 /* -------------------------------------------------------------------------
  * Debug Monitor Core
@@ -773,7 +770,7 @@ step_done:
 			}
 		}
 	}
-#endif
+#endif /* THINKOS_ENABLE_DEBUG_STEP */
 
 	if (sigset & (1 << DMON_RESET)) {
 		dmon_on_reset(&thinkos_dmon_rt);
