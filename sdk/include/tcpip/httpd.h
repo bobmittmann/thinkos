@@ -26,19 +26,19 @@
 #ifndef __HTTPD_H__
 #define __HTTPD_H__
 
+#include <stdint.h>
+#include <tcpip/tcp.h>
+
 #ifdef CONFIG_H
 #include "config.h"
 #endif
-
-#include <stdint.h>
-#include <tcpip/tcp.h>
 
 #ifndef HTTPD_SERVER_NAME 
 #define HTTPD_SERVER_NAME "ThinkOS Web Server"
 #endif
 
 #ifndef HTTPD_URI_MAX_LEN
-#define HTTPD_URI_MAX_LEN 255
+#define HTTPD_URI_MAX_LEN 512
 #endif
 
 #ifndef HTTPD_QUERY_LST_MAX
@@ -47,7 +47,6 @@
 
 /* 'GET http://www.domain.xxx/somedir/subdir/file.html HTTP/1.1' CRLF */
 #define HTTP_RCVBUF_LEN (HTTPD_URI_MAX_LEN + 17)
-
 
 enum http_oid {
 	OBJ_VOID = 0,

@@ -113,6 +113,7 @@ struct sym http_req_hdr[] = {
 	{"Warning", "HTTP_HDR_WARNING"},
 	{"WWW-Authenticate", "HTTP_HDR_WWW_AUTHENTICATE"},
 	{"X-Requested-With", "HTTP_HDR_X_REQUESTED_WITH"},
+	{"UA-CPU", "HTTP_HDR_UA_CPU"},
 	{NULL, NULL}
 };
 
