@@ -579,3 +579,9 @@ struct httpd * httpd_alloc(void)
 
 	return httpd;
 }
+
+struct httpctl * httpctl_alloc(void)
+{
+}
+
+}

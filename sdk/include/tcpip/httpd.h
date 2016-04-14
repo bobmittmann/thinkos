@@ -29,24 +29,6 @@
 #include <stdint.h>
 #include <tcpip/tcp.h>
 
-#ifdef CONFIG_H
-#include "config.h"
-#endif
-
-#ifndef HTTPD_SERVER_NAME 
-#define HTTPD_SERVER_NAME "ThinkOS Web Server"
-#endif
-
-#ifndef HTTPD_URI_MAX_LEN
-#define HTTPD_URI_MAX_LEN 255
-#endif
-
-#ifndef HTTPD_QUERY_LST_MAX
-#define HTTPD_QUERY_LST_MAX 16
-#endif
-
-/* 'GET http://www.domain.xxx/somedir/subdir/file.html HTTP/1.1' CRLF */
-#define HTTP_RCVBUF_LEN (HTTPD_URI_MAX_LEN + 17)
 
 enum http_oid {
 	OBJ_VOID = 0,
@@ -140,32 +122,7 @@ struct httpqry {
 /* 
  * HTTP connection control structure
  */
-struct httpctl {
-	struct httpd * httpd;
-	struct tcp_pcb * tp;
-	uint16_t version;
-	uint8_t method;
-	uint8_t auth;
-	struct {
-		uint8_t type;
-		uint8_t bdry_len;
-		uint32_t bdry_hash;
-		uint32_t len;
-		uint32_t pos;
-	} content;
-	struct {
-		uint16_t head;
-		uint16_t pos;
-		uint16_t tail;
-		uint32_t pat; /* search compare window */
-		uint32_t buf[(HTTP_RCVBUF_LEN + 3) / 4];
-	} rcvq; /* receive queue */
-	uint8_t qrycnt;
-	struct httpqry qrylst[HTTPD_QUERY_LST_MAX];
-	char * usr;
-	char * pwd;
-	char uri[HTTPD_URI_MAX_LEN + 1];
-};
+struct httpctl;
 
 typedef int (* httpd_cgi_t)(struct httpctl ctl);
 
@@ -209,6 +166,11 @@ int httpd_stop(struct httpd * httpd);
  * Connections
  * ------------------------------------------------------------------------- */
 
+struct httpctl * httpctl_alloc(void);
+
+int httpctl_free(struct httpctl * ctl);
+
+
 int http_accept(struct httpd * httpd, struct httpctl * ctl);
 
 const char * http_uri_get(struct httpctl * http);
@@ -231,76 +193,76 @@ const struct httpdobj * http_obj_lookup(struct httpctl * ctl);
 
 char * http_query_lookup(struct httpctl * ctl, char * key);
 
-int httpd_contenttype(struct tcp_pcb * __tp, unsigned int __type);
+int httpd_contenttype(struct httpctl * ctl, unsigned int __type);
 
 /* 200 OK */
-int httpd_200(struct tcp_pcb * __tp, unsigned int __type);
-int httpd_200_html(struct tcp_pcb * __tp);
+int httpd_200(struct httpctl * ctl, unsigned int __type);
+int httpd_200_html(struct httpctl * ctl);
 
 /* 400 Bad Request */
-int httpd_400(struct tcp_pcb * __tp);
+int httpd_400(struct httpctl * ctl);
 
 /* 401 Unauthorized */
-int httpd_401(struct tcp_pcb * __tp);
-int httpd_401_auth(struct tcp_pcb * __tp);
+int httpd_401(struct httpctl * ctl);
+int httpd_401_auth(struct httpctl * ctl);
 
 /* 402 Payment Required */
 
 /* 403 Forbidden */
-int httpd_403(struct tcp_pcb * __tp);
+int httpd_403(struct httpctl * ctl);
 
 /* 404 Not Found */
-int httpd_404(struct tcp_pcb * __tp);
+int httpd_404(struct httpctl * ctl);
 
 /* 405 Method Not Allowed */
-int httpd_405(struct tcp_pcb * __tp);
+int httpd_405(struct httpctl * ctl);
 
 /* 406 Not Acceptable */
 
 /* 407 Proxy Authentication Required */
 
 /* 408 Request Timeout */
-int httpd_408(struct tcp_pcb * __tp);
+int httpd_408(struct httpctl * ctl);
 
 /* 409 Conflict */
-int httpd_409(struct tcp_pcb * __tp);
+int httpd_409(struct httpctl * ctl);
 
 /* 410 Gone */
-int httpd_410(struct tcp_pcb * __tp);
+int httpd_410(struct httpctl * ctl);
 
 /* 411 Length Required */
-int httpd_411(struct tcp_pcb * __tp);
+int httpd_411(struct httpctl * ctl);
 
 /* 412 Precondition Failed */
 
 /* 413 Request Entity Too Large */
-int httpd_413(struct tcp_pcb * __tp);
+int httpd_413(struct httpctl * ctl);
 
 /* 414 Request-URI Too Long */
-int httpd_414(struct tcp_pcb * __tp);
+int httpd_414(struct httpctl * ctl);
 
 /* 415 Unsupported Media Type */
-int httpd_415(struct tcp_pcb * __tp);
+int httpd_415(struct httpctl * ctl);
 
 /* 416 Requested Range Not Satisfiable */
 
 /* 417 Expectation Failed */
 
 /* 500 Internal Server Error */
-int httpd_500(struct tcp_pcb * __tp);
+int httpd_500(struct httpctl * ctl);
 
 /* 501 Not Implemented */
-int httpd_501(struct tcp_pcb * __tp);
+int httpd_501(struct httpctl * ctl);
 
 /* 502 Bad Gateway */
 
 /* 503 Service Unavailable */
-int httpd_503(struct tcp_pcb * __tp);
+int httpd_503(struct httpctl * ctl);
 
 /* 504 Gateway Timeout */
 
 /* 505 HTTP Version Not Supported */
-int httpd_505(struct tcp_pcb * __tp);
+int httpd_505(struct httpctl * ctl);
 
 /* Auxiliar Name Value List parser */
 int httpd_nvparse(const char * s, char * name[], char * value[], int count);
@@ -308,7 +270,6 @@ int httpd_nvparse(const char * s, char * name[], char * value[], int count);
 /* */
 void httpd_listen_callback(struct tcp_pcb * tp, int event, 
 						   struct httpd * httpd);
-
 
 #ifdef __cplusplus
 }

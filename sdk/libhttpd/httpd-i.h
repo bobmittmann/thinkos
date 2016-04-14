@@ -36,6 +36,56 @@
 
 #include <sys/dcclog.h>
 
+
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
+#ifndef HTTPD_SERVER_NAME
+#define HTTPD_SERVER_NAME "ThinkOS Web Server"
+#endif
+
+#ifndef HTTPD_URI_MAX_LEN
+#define HTTPD_URI_MAX_LEN 255
+#endif
+
+#ifndef HTTPD_QUERY_LST_MAX
+#define HTTPD_QUERY_LST_MAX 16
+#endif
+
+/* 'GET http://www.domain.xxx/somedir/subdir/file.html HTTP/1.1' CRLF */
+#define HTTP_RCVBUF_LEN (HTTPD_URI_MAX_LEN + 17)
+
+/*
+ * HTTP connection control structure
+ */
+struct httpctl {
+	struct httpd * httpd;
+	struct tcp_pcb * tp;
+	uint16_t version;
+	uint8_t method;
+	uint8_t auth;
+	struct {
+		uint8_t type;
+		uint8_t bdry_len;
+		uint32_t bdry_hash;
+		uint32_t len;
+		uint32_t pos;
+	} content;
+	struct {
+		uint16_t head;
+		uint16_t pos;
+		uint16_t tail;
+		uint32_t pat; /* search compare window */
+		uint32_t buf[(HTTP_RCVBUF_LEN + 3) / 4];
+	} rcvq; /* receive queue */
+	uint8_t qrycnt;
+	struct httpqry qrylst[HTTPD_QUERY_LST_MAX];
+	char * usr;
+	char * pwd;
+	char uri[HTTPD_URI_MAX_LEN + 1];
+};
+
 /*
  * Preformatted HTML macros 
  */
