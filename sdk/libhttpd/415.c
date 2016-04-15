@@ -27,9 +27,9 @@
 
 static const char http_msg_415[] = HTTPD_MSG(415, "Unsupported Media Type", "");
 
-int httpd_415(struct tcp_pcb * __tp)
+int http_415(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_415, 
+	return tcp_send(__ctl->tp, http_msg_415,
 					sizeof(http_msg_415) - 1, TCP_SEND_NOCOPY);
 }
 

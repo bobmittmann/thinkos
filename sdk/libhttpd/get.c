@@ -27,7 +27,7 @@ int http_get(struct httpctl * ctl, const struct httpdobj * obj)
 	case OBJ_STATIC_CSS_GZ:
 	case OBJ_STATIC_JPEG:
 	case OBJ_STATIC_PNG:
-		httpd_200(ctl->tp, obj->typ); 
+		http_200(ctl, obj->typ);
 		ret = tcp_send(ctl->tp, obj->ptr, obj->len, 0);
 		break;
 	case OBJ_CODE_CGI:

@@ -27,9 +27,9 @@
 
 static const char http_msg_405[] = HTTPD_MSG(405, "Method Not Allowed", "");
 
-int httpd_405(struct tcp_pcb * __tp) 
+int http_405(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_405, 
+	return tcp_send(__ctl->tp, http_msg_405,
 					sizeof(http_msg_405) - 1, TCP_SEND_NOCOPY);
 }
 

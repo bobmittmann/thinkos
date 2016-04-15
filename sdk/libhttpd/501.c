@@ -27,9 +27,9 @@
 
 static const char http_msg_501[] = HTTPD_MSG(501, "Not Implemented", "");
 
-int httpd_501(struct tcp_pcb * __tp)
+int http_501(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_501, sizeof(http_msg_501) - 1, 
+	return tcp_send(__ctl->tp, http_msg_501, sizeof(http_msg_501) - 1,
 					TCP_SEND_NOCOPY);
 }
 

@@ -153,7 +153,7 @@ int http_post(struct httpctl * ctl, const struct httpdobj * obj)
 			}
 			buf = (char *)ctl->rcvq.buf;
 
-			n = http_decode_uri_query(buf, len, ctl->qrylst, HTTPD_QUERY_LST_MAX);
+			n = http_decode_uri_query(buf, len, ctl->qrylst, HTTP_QUERY_LST_MAX);
 			if (n < 0) {
 				/* FIXME: return error code */
 				DCC_LOG(LOG_ERROR, "http_decode_uri_query() failed!");
@@ -169,17 +169,17 @@ int http_post(struct httpctl * ctl, const struct httpdobj * obj)
 		if (http_multipart_boundary_lookup(ctl) < 0) {
 			DCC_LOG(LOG_WARNING, "http_parse_header() failed!");
 			/* Malformed request line, respond with: 400 Bad Request */
-			httpd_400(ctl->tp);
+			http_400(ctl);
 			tcp_close(ctl->tp);
 			return -1;
 		}
 
 		http_recv_queue_shift(ctl);
 
-		if (http_parse_header(ctl->tp, ctl) < 0) {
+		if (http_parse_header(ctl) < 0) {
 			DCC_LOG(LOG_WARNING, "http_parse_header() failed!");
 			/* Malformed request line, respond with: 400 Bad Request */
-			httpd_400(ctl->tp);
+			http_400(ctl);
 			tcp_close(ctl->tp);
 			return -1;
 		}

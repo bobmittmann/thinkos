@@ -28,9 +28,9 @@
 static const char http_msg_404[] = HTTPD_MSG(404, "Not Found", 
 	"Sorry, the page you are requesting was not found on this server.");
 
-int httpd_404(struct tcp_pcb * __tp) 
+int http_404(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_404, 
+	return tcp_send(__ctl->tp, http_msg_404,
 					sizeof(http_msg_404) - 1, TCP_SEND_NOCOPY);
 }
 

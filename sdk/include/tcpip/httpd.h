@@ -160,7 +160,12 @@ int httpd_init(struct httpd * httpd, int port, int backlog,
 		const struct httpddir dirlst[],
 		const struct httpdauth authlst[]);
 
+
 int httpd_stop(struct httpd * httpd);
+
+int httpd_accept(struct httpd * httpd, struct httpctl * ctl);
+
+const struct httpdobj * httpd_obj_lookup(struct httpd * httpd, struct httpctl * ctl);
 
 /* -------------------------------------------------------------------------
  * Connections
@@ -168,14 +173,15 @@ int httpd_stop(struct httpd * httpd);
 
 struct httpctl * httpctl_alloc(void);
 
-int httpctl_free(struct httpctl * ctl);
-
-
-int http_accept(struct httpd * httpd, struct httpctl * ctl);
+void httpctl_free(struct httpctl * ctl);
 
 const char * http_uri_get(struct httpctl * http);
 
+int http_method_get(struct httpctl * http);
+
 int http_close(struct httpctl * ctl);
+
+int http_recv_request(struct httpctl * ctl);
 
 int http_recv(struct httpctl * ctl, void * buf, unsigned int len);
 
@@ -189,87 +195,76 @@ int http_get(struct httpctl * ctl, const struct httpdobj * obj);
 
 int http_post(struct httpctl * ctl, const struct httpdobj * obj);
 
-const struct httpdobj * http_obj_lookup(struct httpctl * ctl);
-
 char * http_query_lookup(struct httpctl * ctl, char * key);
 
-int httpd_contenttype(struct httpctl * ctl, unsigned int __type);
-
 /* 200 OK */
-int httpd_200(struct httpctl * ctl, unsigned int __type);
-int httpd_200_html(struct httpctl * ctl);
+int http_200(struct httpctl * __ctl, unsigned int __type);
 
 /* 400 Bad Request */
-int httpd_400(struct httpctl * ctl);
+int http_400(struct httpctl * __ctl);
 
 /* 401 Unauthorized */
-int httpd_401(struct httpctl * ctl);
-int httpd_401_auth(struct httpctl * ctl);
+int http_401(struct httpctl * __ctl);
+int http_401_auth(struct httpctl * __ctl);
 
 /* 402 Payment Required */
 
 /* 403 Forbidden */
-int httpd_403(struct httpctl * ctl);
+int http_403(struct httpctl * __ctl);
 
 /* 404 Not Found */
-int httpd_404(struct httpctl * ctl);
+int http_404(struct httpctl * __ctl);
 
 /* 405 Method Not Allowed */
-int httpd_405(struct httpctl * ctl);
+int http_405(struct httpctl * __ctl);
 
 /* 406 Not Acceptable */
 
 /* 407 Proxy Authentication Required */
 
 /* 408 Request Timeout */
-int httpd_408(struct httpctl * ctl);
+int http_408(struct httpctl * __ctl);
 
 /* 409 Conflict */
-int httpd_409(struct httpctl * ctl);
+int http_409(struct httpctl * __ctl);
 
 /* 410 Gone */
-int httpd_410(struct httpctl * ctl);
+int http_410(struct httpctl * __ctl);
 
 /* 411 Length Required */
-int httpd_411(struct httpctl * ctl);
+int http_411(struct httpctl * __ctl);
 
 /* 412 Precondition Failed */
 
 /* 413 Request Entity Too Large */
-int httpd_413(struct httpctl * ctl);
+int http_413(struct httpctl * __ctl);
 
 /* 414 Request-URI Too Long */
-int httpd_414(struct httpctl * ctl);
+int http_414(struct httpctl * __ctl);
 
 /* 415 Unsupported Media Type */
-int httpd_415(struct httpctl * ctl);
+int http_415(struct httpctl * __ctl);
 
 /* 416 Requested Range Not Satisfiable */
 
 /* 417 Expectation Failed */
 
 /* 500 Internal Server Error */
-int httpd_500(struct httpctl * ctl);
+int http_500(struct httpctl * __ctl);
 
 /* 501 Not Implemented */
-int httpd_501(struct httpctl * ctl);
+int http_501(struct httpctl * __ctl);
 
 /* 502 Bad Gateway */
 
 /* 503 Service Unavailable */
-int httpd_503(struct httpctl * ctl);
+int http_503(struct httpctl * __ctl);
 
 /* 504 Gateway Timeout */
 
 /* 505 HTTP Version Not Supported */
-int httpd_505(struct httpctl * ctl);
+int http_505(struct httpctl * __ctl);
 
-/* Auxiliar Name Value List parser */
-int httpd_nvparse(const char * s, char * name[], char * value[], int count);
-
-/* */
-void httpd_listen_callback(struct tcp_pcb * tp, int event, 
-						   struct httpd * httpd);
 
 #ifdef __cplusplus
 }

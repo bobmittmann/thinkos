@@ -34,15 +34,15 @@ static const char http_msg_401_auth[] = "HTTP/1.1 401 Unauthorized\r\n"\
 	"<html><head><title> 401</title></head>"\
 	"<h2> 401 - Unauthorized</h2>" HTTPD_MSG_FOOTER;
 
-int httpd_401(struct tcp_pcb * __tp) 
+int http_401(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_401, 
+	return tcp_send(__ctl->tp, http_msg_401,
 					sizeof(http_msg_401) - 1, TCP_SEND_NOCOPY);
 }
 
-int httpd_401_auth(struct tcp_pcb * __tp) 
+int http_401_auth(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_401_auth, 
+	return tcp_send(__ctl->tp, http_msg_401_auth,
 		sizeof(http_msg_401_auth) - 1, TCP_SEND_NOCOPY);
 }
 

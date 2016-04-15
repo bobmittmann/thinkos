@@ -28,9 +28,9 @@
 static const char http_msg_413[] = HTTPD_MSG(413, 
 	"Request Entity Too Large", "");
 
-int httpd_413(struct tcp_pcb * __tp) 
+int http_413(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_413, sizeof(http_msg_413) - 1, 
+	return tcp_send(__ctl->tp, http_msg_413, sizeof(http_msg_413) - 1,
 					TCP_SEND_NOCOPY);
 }
 

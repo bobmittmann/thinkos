@@ -27,9 +27,9 @@
 
 static const char http_msg_414[] = HTTPD_MSG(414, "Request-URI Too Long", "");
 
-int httpd_414(struct tcp_pcb * __tp)
+int http_414(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_414, sizeof(http_msg_414) - 1, 
+	return tcp_send(__ctl->tp, http_msg_414, sizeof(http_msg_414) - 1,
 					TCP_SEND_NOCOPY);
 }
 
