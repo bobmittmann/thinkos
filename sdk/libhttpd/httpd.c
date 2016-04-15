@@ -128,14 +128,13 @@ const struct httpdobj * httpd_obj_lookup(struct httpd * httpd, struct httpctl * 
 	if (qry != NULL) {
 		int n;
 
-		n = http_decode_uri_query(qry, 10000, ctl->qrylst, 
-								  HTTP_QUERY_LST_MAX);
+		n = http_decode_query_str(qry, 10000,
+				&ctl->qry.lst, HTTP_QUERY_LST_MAX);
 		if (n < 0) {
 			DCC_LOG(LOG_WARNING, "400 Invalid Request");
 			http_400(ctl);
 			return NULL;
 		}
-		ctl->qrycnt = n;
 	}
 
 	return obj;

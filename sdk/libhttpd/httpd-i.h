@@ -54,7 +54,7 @@
 #endif
 
 #ifndef HTTP_QUERY_LST_MAX
-#define HTTP_QUERY_LST_MAX 16
+#define HTTP_QUERY_LST_MAX 15
 #endif
 
 #ifndef HTTP_CTL_POOL_SIZE
@@ -66,15 +66,26 @@
 #define HTTP_RCVBUF_LEN (HTTP_URI_MAX_LEN + 17)
 #endif
 
+struct httpkeyval {
+	uint16_t key_len: 5;
+	uint16_t val_len: 11;
+};
+
+struct httpqry_lst {
+	char * buf;
+	uint16_t len;
+	struct httpkeyval item[];
+};
+
 /*
  * HTTP connection control structure
  */
 struct httpctl {
-//	struct httpd * httpd;
 	struct tcp_pcb * tp;
 	uint16_t version;
 	uint8_t method;
 	uint8_t auth;
+	char uri[HTTP_URI_MAX_LEN + 1];
 	struct {
 		uint8_t type;
 		uint8_t bdry_len;
@@ -89,11 +100,12 @@ struct httpctl {
 		uint32_t pat; /* search compare window */
 		uint32_t buf[(HTTP_RCVBUF_LEN + 3) / 4];
 	} rcvq; /* receive queue */
-	uint8_t qrycnt;
-	struct httpqry qrylst[HTTP_QUERY_LST_MAX];
+	struct {
+		struct httpqry_lst lst;
+		struct httpkeyval item[HTTP_QUERY_LST_MAX];
+	} qry;
 	char * usr;
 	char * pwd;
-	char uri[HTTP_URI_MAX_LEN + 1];
 };
 
 /*
@@ -125,8 +137,8 @@ struct httpctl {
 extern "C" {
 #endif
 
-int http_decode_uri_query(char * buf, int len, 
-						  struct httpqry lst[], int max);
+int http_decode_query_str(char * buf, unsigned int len,
+		  struct httpqry_lst * qry, unsigned int max);
 
 int http_multipart_boundary_lookup(struct httpctl * ctl);
 

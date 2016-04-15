@@ -113,12 +113,6 @@ struct httpdauth {
 	char passwd[HTTPDAUTH_PASSWD_MAX + 1];
 };
 
-struct httpqry {
-	char * key;
-	char * val;
-};
-
-
 /* 
  * HTTP connection control structure
  */
