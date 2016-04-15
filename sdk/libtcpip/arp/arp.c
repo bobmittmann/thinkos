@@ -36,7 +36,6 @@
 #include <stdlib.h> 
 #include <errno.h> 
 
-
 int ipv4_arp_lookup(in_addr_t __ipaddr, struct ipv4_arp * __arp)
 {
 	struct route * rt;

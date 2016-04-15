@@ -34,6 +34,7 @@
 #include <tcpip/tcp.h>
 #include <tcpip/udp.h>
 #include <tcpip/route.h>
+#include <tcpip/arp.h>
 
 #include <tcpip/ethif.h>
 #include <tcpip/loopif.h>

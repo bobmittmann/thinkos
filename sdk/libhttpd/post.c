@@ -140,7 +140,7 @@ char * http_query_lookup(struct httpctl * ctl, char * key)
 			return val;
 	}
 
-	return "\0";
+	return NULL;
 }
 
 /* Receive content on the receiving queue */
