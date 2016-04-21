@@ -1044,8 +1044,8 @@ static inline void stm32f_adc_seq_set(struct stm32f_adc * adc,
 	uint32_t sqr1;
 	uint32_t sqr2;
 	uint32_t sqr3;
-	int n;
-	int i;
+	unsigned int n;
+	unsigned int i;
 
 	sqr1 = ADC_L_SET(len);
 	sqr2 = 0;
