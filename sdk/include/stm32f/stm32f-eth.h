@@ -131,7 +131,7 @@
 /* Bit 7 - Automatic pad/CRC stripping */
 #define ETH_APCS (1 << 7)
 /* When this bit is set, the MAC strips the Pad/FCS field on incoming frames 
-   only if the length’s field value is less than or equal to 1 500 bytes. All 
+   only if the lengthâ€™s field value is less than or equal to 1 500 bytes. All 
    received frames with length field greater than or equal to 1 501 bytes are 
    passed on to the application without stripping the Pad/FCS field.
    When this bit is reset, the MAC passes all incoming frames unmodified. */
@@ -147,7 +147,7 @@ Note: This bit is applicable only to Half-duplex mode.
 01: k = min (n, 8)
 10: k = min (n, 4)
 11: k = min (n, 1),
-where n = retransmission attempt. The random integer r takes the value in the range 0 ≤ r < 2k */
+where n = retransmission attempt. The random integer r takes the value in the range 0 â‰¤ r < 2k */
 
 /* Bit 4 - Deferral check */
 #define ETH_DC (1 << 4)
@@ -339,6 +339,7 @@ This field contains the lower 32 bits of the Hash table */
 #define ETH_CR_HCLK_62 (1 << 2)
 #define ETH_CR_HCLK_16 (2 << 2)
 #define ETH_CR_HCLK_26 (3 << 2)
+#define ETH_CR_HCLK_102 (4 << 2)
 
 /* The CR clock range selection determines the HCLK frequency and is used 
    to decide the frequency of the MDC clock:
@@ -347,7 +348,8 @@ This field contains the lower 32 bits of the Hash table */
 	001 100-120 MHz HCLK/62
 	010 20-35 MHz HCLK/16
 	011 35-60 MHz HCLK/26
-	100, 101, 110, 111 Reserved
+	100 150-180 MHz HCLK/102
+	101, 110, 111 Reserved
 - */
 
 /* Bit 1 - MII write */
@@ -412,7 +414,7 @@ generation is enabled. */
 This field configures the threshold of the Pause timer at which the Pause frame is
 automatically retransmitted. The threshold values should always be less than the Pause Time
 configured in bits[31:16]. For example, if PT = 100H (256 slot-times), and PLT = 01, then a
-second PAUSE frame is automatically transmitted if initiated at 228 (256 – 28) slot-times after
+second PAUSE frame is automatically transmitted if initiated at 228 (256 â€“ 28) slot-times after
 the first PAUSE frame is transmitted.
 Selection
 Threshold
@@ -429,7 +431,7 @@ Slot time is defined as time taken to transmit 512 bits (64 bytes) on the MII in
 /* Bit 3 - Unicast pause frame detect */
 #define ETH_UPFD (1 << 3)
 /* 
-When this bit is set, the MAC detects the Pause frames with the station’s unicast address
+When this bit is set, the MAC detects the Pause frames with the stationâ€™s unicast address
 specified in the ETH_MACA0HR and ETH_MACA0LR registers, in addition to detecting Pause
 frames with the unique multicast address.
 When this bit is reset, the MAC detects only a Pause frame with the unique multicast address
@@ -477,7 +479,7 @@ mode, the BPA is automatically disabled. */
 When this bit is set, a 12-bit VLAN identifier, rather than the complete 16-bit VLAN tag, is used
 for comparison and filtering. Bits[11:0] of the VLAN tag are compared with the corresponding
 field in the received VLAN-tagged frame.
-When this bit is reset, all 16 bits of the received VLAN frame’s fifteenth and sixteenth bytes are
+When this bit is reset, all 16 bits of the received VLAN frameâ€™s fifteenth and sixteenth bytes are
 used for comparison. */
 
 /* Bits [15..0] - VLAN tag identifier (for receive frames) */
@@ -485,7 +487,7 @@ used for comparison. */
 /* 
 This contains the 802.1Q VLAN tag to identify VLAN frames, and is compared to the fifteenth
 and sixteenth bytes of the frames being received for VLAN frames. Bits[15:13] are the user
-priority, Bit[12] is the canonical format indicator (CFI) and bits[11:0] are the VLAN tag’s VLAN
+priority, Bit[12] is the canonical format indicator (CFI) and bits[11:0] are the VLAN tagâ€™s VLAN
 identifier (VID) field. When the VLANTC bit is set, only the VID (bits[11:0]) is used for
 comparison.
 If VLANTI (VLANTI[11:0] if VLANTC is set) is all zeros, the MAC does not check the fifteenth
@@ -775,11 +777,11 @@ These bits are mask control bits for comparison of each of the MAC address1 byte
 they are set high, the MAC core does not compare the corresponding byte of received DA/SA
 with the contents of the MAC address1 registers. Each bit controls the masking of the bytes as
 follows:
-– Bit 29: ETH_MACA1HR [15:8]
-– Bit 28: ETH_MACA1HR [7:0]
-– Bit 27: ETH_MACA1LR [31:24]
+â€“ Bit 29: ETH_MACA1HR [15:8]
+â€“ Bit 28: ETH_MACA1HR [7:0]
+â€“ Bit 27: ETH_MACA1LR [31:24]
 ...
-– Bit 24: ETH_MACA1LR [7:0] */
+â€“ Bit 24: ETH_MACA1LR [7:0] */
 
 /* [23..16] Reserved */
 
@@ -819,11 +821,11 @@ MBC: Mask byte control
 These bits are mask control bits for comparison of each of the MAC address2 bytes. When set
 high, the MAC core does not compare the corresponding byte of received DA/SA with the
 contents of the MAC address 2 registers. Each bit controls the masking of the bytes as follows:
-Bits 29:24– Bit 29: ETH_MACA2HR [15:8]
-– Bit 28: ETH_MACA2HR [7:0]
-– Bit 27: ETH_MACA2LR [31:24]
+Bits 29:24â€“ Bit 29: ETH_MACA2HR [15:8]
+â€“ Bit 28: ETH_MACA2HR [7:0]
+â€“ Bit 27: ETH_MACA2LR [31:24]
 ...
-– Bit 24: ETH_MACA2LR [7:0] */
+â€“ Bit 24: ETH_MACA2LR [7:0] */
 
 /* [23..16] Reserved */
 
@@ -864,11 +866,11 @@ These bits are mask control bits for comparison of each of the MAC address3 byte
 these bits are set high, the MAC core does not compare the corresponding byte of received
 DA/SA with the contents of the MAC address 3 registers. Each bit controls the masking of the
 bytes as follows:
-– Bit 29: ETH_MACA3HR [15:8]
-– Bit 28: ETH_MACA3HR [7:0]
-– Bit 27: ETH_MACA3LR [31:24]
+â€“ Bit 29: ETH_MACA3HR [15:8]
+â€“ Bit 28: ETH_MACA3HR [7:0]
+â€“ Bit 27: ETH_MACA3LR [31:24]
 ...
-– Bit 24: ETH_MACA3LR [7:0] */
+â€“ Bit 24: ETH_MACA3LR [7:0] */
 
 /* [23..16] Reserved */
 
@@ -1180,7 +1182,7 @@ Received frames with alignment error counter */
  * When this bit is cleared, the rollover value of the subsecond register
  * reaches 0x7FFF FFFF.
  * The subsecond increment has to be programmed correctly depending on the
- * PTP’s reference clock frequency and this bit value.
+ * PTPâ€™s reference clock frequency and this bit value.
  */
 
 /* Bit 8 - Time stamp snapshot for all received frames enable */
@@ -1194,7 +1196,7 @@ Received frames with alignment error counter */
 
 /* Bit 5 - Time stamp addend register update */
 #define ETH_TSARU (1 << 5)
-/* When this bit is set, the Time stamp addend register’s contents are
+/* When this bit is set, the Time stamp addend registerâ€™s contents are
  * updated to the PTP block for fine correction. This bit is cleared when the
  * update is complete. This register bit must be
  * read as zero before you can set it.
@@ -1407,7 +1409,7 @@ frequency will always be correct during any one-second window). */
 #define ETH_AAB (1 << 25)
 /* When this bit is set high and the FB bit equals 1, the AHB interface 
    generates all bursts aligned to the start address LS bits. If the FB bit 
-   equals 0, the first burst (accessing the data buffer’s start address) is 
+   equals 0, the first burst (accessing the data bufferâ€™s start address) is 
    not aligned, but subsequent bursts are aligned to the address. */
 
 /* Bit 24 - 4xPBL mode */
@@ -1473,13 +1475,13 @@ frequency will always be correct during any one-second window). */
    other value results in undefined behavior. When USP is set, this PBL 
    value is applicable for TxDMA transactions only.
    The PBL values have the following limitations:
-   – The maximum number of beats (PBL) possible is limited by the size 
+   â€“ The maximum number of beats (PBL) possible is limited by the size 
    of the Tx FIFO and Rx FIFO.
-   – The FIFO has a constraint that the maximum beat supported is half 
+   â€“ The FIFO has a constraint that the maximum beat supported is half 
    the depth of the FIFO.
-   – If the PBL is common for both transmit and receive DMA, the minimum 
+   â€“ If the PBL is common for both transmit and receive DMA, the minimum 
    Rx FIFO and Tx FIFO depths must be considered.
-   – Do not program out-of-range PBL values, because the system may 
+   â€“ Do not program out-of-range PBL values, because the system may 
    not behave properly. */
 
 /* Bit 7 - Enhanced descriptor format enable */
@@ -1578,13 +1580,13 @@ frequency will always be correct during any one-second window). */
 /* Bit 29 - Time stamp trigger status */
 #define ETH_DMA_TSTS (1 << 29)
 /* This bit indicates an interrupt event in the MAC core's Time stamp 
- * generator block. The software must read the MAC core’s status 
+ * generator block. The software must read the MAC coreâ€™s status 
  * register, clearing its source (bit 9), to reset this bit to 0.
  * When this bit is high an interrupt is generated if enabled. */
 
 /* Bit 28 - PMT status */
 #define ETH_DMA_PMTS (1 << 28)
-/* This bit indicates an event in the MAC core’s PMT. The software must 
+/* This bit indicates an event in the MAC coreâ€™s PMT. The software must 
  * read the corresponding registers in the MAC core to get the exact cause 
  * of interrupt and clear its source to reset this bit to 0. The interrupt 
  * is generated when this bit is high if enabled. */
@@ -1653,10 +1655,10 @@ frequency will always be correct during any one-second window). */
 /* The normal interrupt summary bit value is the logical OR of the 
  * following when the corresponding interrupt bits are enabled in the 
  * ETH_DMAIER register:
- * – ETH_DMASR [0]: Transmit interrupt
- * – ETH_DMASR [2]: Transmit buffer unavailable
- * – ETH_DMASR [6]: Receive interrupt
- * – ETH_DMASR [14]: Early receive interrupt
+ * â€“ ETH_DMASR [0]: Transmit interrupt
+ * â€“ ETH_DMASR [2]: Transmit buffer unavailable
+ * â€“ ETH_DMASR [6]: Receive interrupt
+ * â€“ ETH_DMASR [14]: Early receive interrupt
  * Only unmasked bits affect the normal interrupt summary bit.
  * This is a sticky bit and it must be cleared (by writing a 1 to this 
  * bit) each time a corresponding bit that causes NIS to be set is cleared. */
@@ -1666,15 +1668,15 @@ frequency will always be correct during any one-second window). */
 /* The abnormal interrupt summary bit value is the logical OR of the 
  * following when the corresponding interrupt bits are enabled in the 
  * ETH_DMAIER register:
- * – ETH_DMASR [1]: Transmit process stopped
- * – ETH_DMASR [3]: Transmit jabber timeout
- * – ETH_DMASR [4]: Receive FIFO overflow
- * – ETH_DMASR [5]: Transmit underflow
- * – ETH_DMASR [7]: Receive buffer unavailable
- * – ETH_DMASR [8]: Receive process stopped
- * – ETH_DMASR [9]: Receive watchdog timeout
- * – ETH_DMASR [10]: Early transmit interrupt
- * – ETH_DMASR [13]: Fatal bus error
+ * â€“ ETH_DMASR [1]: Transmit process stopped
+ * â€“ ETH_DMASR [3]: Transmit jabber timeout
+ * â€“ ETH_DMASR [4]: Receive FIFO overflow
+ * â€“ ETH_DMASR [5]: Transmit underflow
+ * â€“ ETH_DMASR [7]: Receive buffer unavailable
+ * â€“ ETH_DMASR [8]: Receive process stopped
+ * â€“ ETH_DMASR [9]: Receive watchdog timeout
+ * â€“ ETH_DMASR [10]: Early transmit interrupt
+ * â€“ ETH_DMASR [13]: Fatal bus error
  * Only unmasked bits affect the abnormal interrupt summary bit.
  * This is a sticky bit and it must be cleared each time a corresponding 
  * bit that causes AIS to be set is cleared. */
@@ -1866,7 +1868,7 @@ frequency will always be correct during any one-second window). */
  * to the DMA.
  * When this bit is cleared, the Rx FIFO drops frames with error status 
  * (CRC error, collision error, giant frame, watchdog timeout, overflow). 
- * However, if the frame’s start byte (write) pointer is already 
+ * However, if the frameâ€™s start byte (write) pointer is already 
  * transferred to the read controller side (in Threshold mode), then the 
  * frames are not dropped. The Rx FIFO drops the error frames if that 
  * frame's start byte is not transferred (output) on the ARI bus. */
@@ -1936,25 +1938,25 @@ frequency will always be correct during any one-second window). */
 /* When this bit is set, a normal interrupt is enabled. When this bit is 
    cleared, a normal interrupt is disabled. This bit enables 
    the following bits:
-   – ETH_DMASR [0]: Transmit Interrupt
-   – ETH_DMASR [2]: Transmit buffer unavailable
-   – ETH_DMASR [6]: Receive interrupt
-   – ETH_DMASR [14]: Early receive interrupt */
+   â€“ ETH_DMASR [0]: Transmit Interrupt
+   â€“ ETH_DMASR [2]: Transmit buffer unavailable
+   â€“ ETH_DMASR [6]: Receive interrupt
+   â€“ ETH_DMASR [14]: Early receive interrupt */
 
 /* Bit 15 - Abnormal interrupt summary enable */
 #define ETH_AISE (1 << 15)
 /* When this bit is set, an abnormal interrupt is enabled. When this 
    bit is cleared, an abnormal interrupt is disabled. This bit enables 
    the following bits:
-   – ETH_DMASR [1]: Transmit process stopped
-   – ETH_DMASR [3]: Transmit jabber timeout
-   – ETH_DMASR [4]: Receive overflow
-   – ETH_DMASR [5]: Transmit underflow
-   – ETH_DMASR [7]: Receive buffer unavailable
-   – ETH_DMASR [8]: Receive process stopped
-   – ETH_DMASR [9]: Receive watchdog timeout
-   – ETH_DMASR [10]: Early transmit interrupt
-   – ETH_DMASR [13]: Fatal bus error */
+   â€“ ETH_DMASR [1]: Transmit process stopped
+   â€“ ETH_DMASR [3]: Transmit jabber timeout
+   â€“ ETH_DMASR [4]: Receive overflow
+   â€“ ETH_DMASR [5]: Transmit underflow
+   â€“ ETH_DMASR [7]: Receive buffer unavailable
+   â€“ ETH_DMASR [8]: Receive process stopped
+   â€“ ETH_DMASR [9]: Receive watchdog timeout
+   â€“ ETH_DMASR [10]: Early transmit interrupt
+   â€“ ETH_DMASR [13]: Fatal bus error */
 
 /* Bit 14 - Early receive interrupt enable */
 #define ETH_ERIE (1 << 14)
@@ -2146,14 +2148,14 @@ frequency will always be correct during any one-second window). */
 /* Bit 15 - Error summary */
 #define ETH_RXDMA_ES (1 << 15)
 /* Indicates the logical OR of the following bits:
-   – RDES0[1]: CRC error
-   – RDES0[3]: Receive error
-   – RDES0[4]: Watchdog timeout
-   – RDES0[6]: Late collision
-   – RDES0[7]: Giant frame (This is not applicable when RDES0[7] 
+   â€“ RDES0[1]: CRC error
+   â€“ RDES0[3]: Receive error
+   â€“ RDES0[4]: Watchdog timeout
+   â€“ RDES0[6]: Late collision
+   â€“ RDES0[7]: Giant frame (This is not applicable when RDES0[7] 
    indicates an IPV4 header checksum error.)
-   – RDES0[11]: Overflow error
-   – RDES0[14]: Descriptor error.
+   â€“ RDES0[11]: Overflow error
+   â€“ RDES0[14]: Descriptor error.
    This field is valid only when the last descriptor (RDES0[8]) is set. */
 
 /* Bit 14 - Descriptor error */
@@ -2246,7 +2248,7 @@ frequency will always be correct during any one-second window). */
    Bit 0 PCE/ESA: Payload checksum error / extended status available
    When set, it indicates that the TCP, UDP or ICMP checksum the core 
    calculated does not match the received encapsulated TCP, UDP or ICMP 
-   segment’s Checksum field. This bit is also set when the received number 
+   segmentâ€™s Checksum field. This bit is also set when the received number 
    of payload bytes does not match the value indicated in the Length 
    field of the encapsulated IPv4 or IPv6 datagram in the received Ethernet 
    frame. This bit can take on special meaning as specified in Table 145.
@@ -2268,7 +2270,7 @@ frequency will always be correct during any one-second window). */
    DMA. When this bit is reset, it indicates that the descriptor is 
    owned by the CPU. The DMA clears this bit either when it completes 
    the frame transmission or when the buffers allocated in the 
-   descriptor are read completely. The ownership bit of the frame’s 
+   descriptor are read completely. The ownership bit of the frameâ€™s 
    first descriptor must be set after all subsequent descriptors belonging 
    to the same frame have been set. */
 
@@ -2332,8 +2334,8 @@ frequency will always be correct during any one-second window). */
 #define ETH_TXDMA_TCH (1 << 20)
 /* When set, this bit indicates that the second address in the 
    descriptor is the next descriptor address rather than the second buffer 
-   address. When TDES0[20] is set, TBS2 (TDES1[28:16]) is a “don’t 
-   care” value. TDES0[21] takes precedence over TDES0[20]. */
+   address. When TDES0[20] is set, TBS2 (TDES1[28:16]) is a â€œdonâ€™t 
+   careâ€� value. TDES0[21] takes precedence over TDES0[20]. */
 
 /* Bits 19:18 Reserved, must be kept at reset value. */
 
@@ -2342,7 +2344,7 @@ frequency will always be correct during any one-second window). */
 /* This field is used as a status bit to indicate that a time stamp was 
    captured for the described transmit frame. When this bit is set, 
    TDES2 and TDES3 have a time stamp value captured for the transmit 
-   frame. This field is only valid when the descriptor’s Last segment 
+   frame. This field is only valid when the descriptorâ€™s Last segment 
    control bit (TDES0[29]) is set.
    Note that when enhanced descriptors are enabled (EDFE=1 in 
    ETH_DMABMR), TTSS=1 indicates that TDES6 and TDES7 have the 
@@ -2378,7 +2380,7 @@ frequency will always be correct during any one-second window). */
 #define ETH_TXDMA_JT (1 << 14)
 /* When set, this bit indicates the MAC transmitter has experienced a 
    jabber timeout. This bit is only set when the MAC configuration 
-   register’s JD bit is not set. */
+   registerâ€™s JD bit is not set. */
 
 /* Bit 13 - Frame flushed */
 #define ETH_TXDMA_FF (1 << 13)

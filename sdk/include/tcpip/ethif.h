@@ -28,12 +28,15 @@
 
 #include <tcpip/ifnet.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr, in_addr_t netmask);
+
+bool ethif_link_up(void);
 
 void ethif_stats_show(FILE * f, int clear);
 

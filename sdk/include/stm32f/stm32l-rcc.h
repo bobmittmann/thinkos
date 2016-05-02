@@ -130,7 +130,10 @@ is stable, OFF if not) */
 /* Internal high-speed clock calibration
    These bits are initialized automatically at startup.*/
 
-#define RCC_HSITRIM (1 << 3)
+#define RCC_HSITRIM (1 << 8)
+#define RCC_HSITRIM_SET(VAL) ((VAL & 0x1f) << 8)
+#define RCC_HSITRIM_MSK (0x1f << 8)
+#define RCC_HSITRIM_GET(ICSCR) ((ICSCR >> 8) & 0x1f)
 /* Internal high-speed clock trimming
    These bits provide an additional user-programmable trimming value that is 
    added to the HSICAL[7:0] bits. It can be programmed to adjust to 
