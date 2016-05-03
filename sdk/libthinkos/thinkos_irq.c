@@ -59,7 +59,7 @@ void cm3_default_isr(int irq)
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  
 
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__thinkos_preempt();
 }
 
 void thinkos_irq_wait_svc(int32_t * arg)
