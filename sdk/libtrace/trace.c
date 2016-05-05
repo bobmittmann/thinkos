@@ -266,6 +266,38 @@ void tracef(const struct trace_ref * ref, ... )
 void trace(const struct trace_ref * ref)
 {
 	unsigned int head;
+#if !THINKOS_ENABLE_CRITICAL
+	unsigned int pri;
+#endif
+	uint32_t now;
+
+	now = __timer_ts();
+
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_enter();
+#else
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+#endif
+
+
+	head = trace_ring.head;
+	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= 2) {
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
+		trace_ring.head = head;
+	}
+
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_exit();
+#else
+	cm3_primask_set(pri);
+#endif
+}
+
+void trace_i(const struct trace_ref * ref)
+{
+	unsigned int head;
 	unsigned int pri;
 	uint32_t now;
 
