@@ -31,20 +31,6 @@
 #include "config.h"
 #endif
 
-#ifdef THINKOS_DEBUG
-#ifndef DEBUG
-#define DEBUG
-#endif
-#endif
-#include <sys/dcclog.h>
-
-#ifndef __ASSEMBLER__
-
-#include <arch/cortex-m3.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-
 /* -------------------------------------------------------------------------- 
  * Set default configuration options
  * --------------------------------------------------------------------------*/
@@ -407,6 +393,44 @@
  #define THINKOS_UNROLL_EXCEPTIONS 1
 #endif
 
+#if THINKOS_ENABLE_FPU 
+  #define CTX_R0 (8 + 32)
+#else
+  #define CTX_R0 8
+#endif
+
+/* -------------------------------------------------------------------------- 
+ * Static thead references
+ * --------------------------------------------------------------------------*/
+
+#define THINKOS_THREAD_NULL (32)
+#define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
+#if THINKOS_ENABLE_THREAD_VOID 
+#define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + 1)
+#endif
+
+#if 0
+#define THINKOS_CYCCNT_SYS  (THINKOS_THREADS_MAX)
+#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX + 1)
+#else
+#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
+#endif
+
+
+#ifndef __ASSEMBLER__
+
+#ifdef THINKOS_DEBUG
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
+#include <sys/dcclog.h>
+#include <arch/cortex-m3.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 /* -------------------------------------------------------------------------- 
  * Thread context layout
  * --------------------------------------------------------------------------*/
@@ -440,12 +464,6 @@ struct thinkos_context {
 	uint32_t pc;
 	uint32_t xpsr;
 };
-
-#if THINKOS_ENABLE_FPU 
-  #define CTX_R0 (8 + 32)
-#else
-  #define CTX_R0 8
-#endif
 
 /* -------------------------------------------------------------------------- 
  * Flattened thread state structure
@@ -482,11 +500,7 @@ struct thinkos_rt {
 	struct thinkos_context * void_ctx; 
 #endif
 
-	int32_t active; /* current active thread */
-
 #if THINKOS_ENABLE_PROFILING
-	/* Reference cycle state ... */
-	uint32_t cycref;
 	/* Per thread cycle count */
 #if THINKOS_ENABLE_THREAD_VOID 
 	uint32_t cyccnt[(THINKOS_THREADS_MAX) + 2]; /* extra slot for void thread */
@@ -495,18 +509,25 @@ struct thinkos_rt {
 #endif
 #endif
 
-#if THINKOS_ENABLE_DEBUG_STEP
-	uint32_t step_req;  /* step request bitmap */
-	uint32_t step_svc;  /* step at service call bitmap */
-	int8_t step_id;     /* current stepping thread id */
-	int8_t break_id;    /* thread stopped by a breakpoint or step request */
-	uint16_t xcpt_ipsr; /* Exception */
-#endif
-
 #if THINKOS_ENABLE_CRITICAL
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
 							 thread preemption is disabled */
 #endif
+
+#if THINKOS_ENABLE_DEBUG_STEP
+	uint16_t xcpt_ipsr; /* Exception IPSR */
+	int8_t step_id;     /* current stepping thread id */
+	int8_t break_id;    /* thread stopped by a breakpoint or step request */
+	uint32_t step_svc;  /* step at service call bitmap */
+	uint32_t step_req;  /* step request bitmap */
+#endif
+
+#if THINKOS_ENABLE_PROFILING
+	/* Reference cycle state ... */
+	uint32_t cycref;
+#endif
+
+	int32_t active; /* current active thread */
 
 	uint32_t wq_lst[0]; /* queue list placeholder */
 
@@ -752,23 +773,6 @@ struct thinkos_rt {
 #define THINKOS_EVENT_DESC(_ID) (THINKOS_EVENT_BASE + (_ID))
 #define THINKOS_FLAG_DESC(_ID)  (THINKOS_FLAG_BASE + (_ID))
 #define THINKOS_GATE_DESC(_ID)  (THINKOS_GATE_BASE + (_ID))
-
-/* -------------------------------------------------------------------------- 
- * Static thead references
- * --------------------------------------------------------------------------*/
-
-#define THINKOS_THREAD_NULL (32)
-#define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
-#if THINKOS_ENABLE_THREAD_VOID 
-#define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + 1)
-#endif
-
-#if 0
-#define THINKOS_CYCCNT_SYS  (THINKOS_THREADS_MAX)
-#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX + 1)
-#else
-#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
-#endif
 
 /* -------------------------------------------------------------------------- 
  * Thread initialization 

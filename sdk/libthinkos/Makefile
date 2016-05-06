@@ -37,6 +37,7 @@ MISC_CFILES = thinkos_util.c thinkos_type.c obj_type_get.c \
 			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c
 
 CONSOLE_CFILES = thinkos_console.c bypass.c 
+
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
 		 thinkos_semaphore.c thinkos_event.c thinkos_irq.c \
@@ -47,6 +48,8 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 		 $(addprefix dmon/,$(DMON_CFILES)) \
 		 $(addprefix console/,$(CONSOLE_CFILES))
+
+SFILES = thinkos_sched.S
 
 include ../../mk/lib.mk
 
