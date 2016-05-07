@@ -80,6 +80,8 @@ static inline void __attribute__((always_inline)) __wait(void) {
  * Scheduler
  * --------------------------------------------------------------------------*/
 
+#if !THINKOS_ASM_SCHEDULER
+
 static inline struct thinkos_context * __attribute__((always_inline)) 
 __sched_entry(void) {
 	register struct thinkos_context * ctx asm("r0");
@@ -117,45 +119,6 @@ __sched_exit(struct thinkos_context * __ctx) {
 				  "bx     lr\n"
 				  : : "r" (r0) : "r3"); 
 }
-
-#if 0
-/* Partially restore the context and then set the DbgMon pending
-   to step the thread. */ 
-static inline void __attribute__((always_inline)) 
-__sched_exit_step(struct thinkos_context * ctx, unsigned int thread_id) 
-{
-	register struct thinkos_context * r0 asm("r0") = ctx;
-	register unsigned int r1 asm("r1") = thread_id;
-	asm volatile (
-#if THINKOS_ENABLE_SCHED_DEBUG
-				  "add    sp, #16\n"
-				  "pop    {lr}\n"
-#endif				  
-#if THINKOS_ENABLE_FPU 
-				  "add    r3, %0, #40 * 4\n"
-				  "msr    PSP, r3\n"
-				  "vldmia.64 %0!, {d0-d15}\n"
-#else
-				  "add    r3, %0, #8 * 4\n"
-				  "msr    PSP, r3\n"
-#endif
-				  "ldmia  %0, {r4-r11}\n"
-				  /* CM3_DCB->demcr |= DCB_DEMCR_MON_PEND; */
-				  "movw   r3, #0xedf0\n"
-				  "movt   r3, #0xe000\n"
-				  "ldr    r2, [r3, #12]\n"
-				  "orr    r2, r2, #(1 << 17)\n"
-				  "str    r2, [r3, #12]\n"
-				  "isb    sy\n"
-				  /* This is a dummm symbol used to identify a thread step 
-					 request in the debug monitor service handler.
-				  	 The PC saved on the exception stack will point
-					 to this location. */
-				  "thinkos_thread_step_call:\n"
-				  ".global thinkos_thread_step_call\n"
-				  : : "r" (r0), "r" (r1) : "r2", "r3"); 
-}
-#endif
 
 static inline void __attribute__((always_inline)) 
 __sched_exit_step(struct thinkos_context * ctx, unsigned int thread_id) 
@@ -239,13 +202,6 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 	if ((1 << new_thread_id) & thinkos_rt.step_req) {
 		/* process a step request */
 		if ((1 << new_thread_id) & thinkos_rt.step_svc) {
-#if 0
-			/* XXX: the step service is cleared by calling 
-			   __thinkos_thread_pause() in the debug monitor handler,
-			   so it is not necessary to clear it here. */
-			/* clear the step service flag */
-			thinkos_rt.step_svc &= ~(1 << new_thread_id);
-#endif
 #if THINKOS_ENABLE_SCHED_DEBUG
 			DCC_LOG1(LOG_TRACE, "SVC step thread=%d, active is IDLE"
 					 , new_thread_id);
@@ -285,13 +241,6 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 		}
 		/* set the step thread as the current thread ... */
 		thinkos_rt.step_id = new_thread_id;
-#if 0
-		/* XXX: the step request is cleared by calling 
-		   __thinkos_thread_pause() in the debug monitor handler,
-		 so it is not necessary to clear it here. */
-		/* clear the step request flag */
-		thinkos_rt.step_req &= ~(1 << new_thread_id);
-#endif
 		/* return and step the next instruction */
 		__sched_exit_step(new_ctx, new_thread_id);
 	} else
@@ -300,6 +249,7 @@ context_restore:
 	/* restore the context */
 	__sched_exit(new_ctx);
 }
+#endif /* !THINKOS_ASM_SCHEDULER */
 
 #if THINKOS_ENABLE_CLOCK
 static void thinkos_time_wakeup(int thread_id) 

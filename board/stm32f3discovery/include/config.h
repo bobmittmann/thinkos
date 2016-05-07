@@ -42,7 +42,7 @@
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
-#define THINKOS_THREADS_MAX             16
+#define THINKOS_THREADS_MAX             32
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 
 #define THINKOS_ENABLE_JOIN             1
@@ -115,6 +115,8 @@
 #define THINKOS_DMON_STACK_SIZE         (1024 + 128)
 
 #define THINKOS_ENABLE_STACK_INIT       1
+
+#define THINKOS_ASM_SCHEDULER           1
 
 /* -------------------------------------------------------------------------
    USB 

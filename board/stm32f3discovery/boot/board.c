@@ -143,11 +143,8 @@ void board_on_appload(void)
 		led_off(i);
 }
 
-void _thinkos_sched(void);
-
 void board_upgrade(struct dmon_comm * comm)
 {
-	_thinkos_sched();
 }
 
 bool board_configure(struct dmon_comm * comm)

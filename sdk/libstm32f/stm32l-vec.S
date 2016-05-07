@@ -207,9 +207,9 @@ _fault:
 	.weak       cm3_except13_isr
 	.thumb_set  cm3_except13_isr,_fault
 
-	.weak     	cm3_pendsv_isr
+/*	.weak     	cm3_pendsv_isr
 	.thumb_set  cm3_pendsv_isr,_fault
-
+*/
 	.weak       cm3_systick_isr
 	.thumb_set  cm3_systick_isr,_fault
 
