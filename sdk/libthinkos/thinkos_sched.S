@@ -21,6 +21,7 @@
 
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
+#include <arch/cortex-m3.h>
 
 #if THINKOS_ENABLE_CLOCK
   #define SIZEOF_TCB_CLOCK 4
@@ -126,6 +127,8 @@
 #define THINKOS_ACTIVE_OFFS     (THINKOS_CYCREF_OFFS + SIZEOF_CYCREF)
 #define THINKOS_READY_OFFS      (THINKOS_ACTIVE_OFFS + 4)
 
+#define DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
+
 /* -------------------------------------------------------------------------- 
  * Scheduler
  * --------------------------------------------------------------------------*/
@@ -138,12 +141,12 @@
 
 	.thumb
 	.text
-	.section	.text.cm3_pendsv_isr,"ax",%progbits
+	.section .text.cm3_pendsv_isr,"ax",%progbits
 	.align	4
-	.global	cm3_pendsv_isr
+	.global cm3_pendsv_isr
 	.thumb
 	.thumb_func
-	.type	cm3_pendsv_isr, %function
+	.type   cm3_pendsv_isr, %function
 cm3_pendsv_isr:
 
 	mrs     r0, PSP
@@ -151,46 +154,7 @@ cm3_pendsv_isr:
 #if THINKOS_ENABLE_FPU 
 	vstmdb.64 r0!, {d0-d15}
 #endif
-
-#if !THINKOS_ASM_SCHEDULER
-	/* call the scheduler function */
-	mov     r6, lr
-	bl      thinkos_scheduler
-	mov     lr, r6
-
-	/* r7: thinkos_rt */
-	ldr.n   r7, .L_thinkos_rt
-	ldr.w	r3, [r7, r0, lsl #2]
-
-#if THINKOS_ENABLE_DEBUG_STEP
-	/* r4: step_req */
-	ldr.w	r4, [r7, #THINKOS_STEP_REQ_OFFS]
-	movs	r1, #1
-	lsls	r1, r0
-	tst     r1, r4
-	bne.n   thinkos_sched_step
-#endif
-
-.L_context_restore:
-	/* Restore the context and return */
-#if THINKOS_ENABLE_FPU 
-	add     r2, r3, #40 * 4
-	msr     PSP, r2
-	vldmia.64 r3!, {d0-d15}
-#else
-	add     r2, r3, #8 * 4
-	msr     PSP, r2
-#endif
-	ldmia   r3, {r4-r11}
-	bx      lr
-
-	.align	2
-.L_thinkos_rt:
-	.word	thinkos_rt
-#endif /* !THINKOS_ASM_SCHEDULER */
-
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
-
 
 #if THINKOS_ASM_SCHEDULER
 	.thumb_func
@@ -199,12 +163,6 @@ thinkos_scheduler:
 	.type   thinkos_scheduler, %function
 	/* r7: thinkos_rt */
 	ldr.n     r7, .L_thinkos_rt
-#if THINKOS_THREADS_MAX > 32
-	/* r2: active, 
-	   r3,r4: wq_ready */
-	ldr     r2, [r7, #THINKOS_ACTIVE_OFFS]
-	ldrd    r3, r4, [r7, #THINKOS_READY_OFFS]
-#else
 	/* get the active (current) thread and the
 	 ready wait queue in a single reading. 
 	 XXX: this double reading assumes the order of
@@ -212,7 +170,6 @@ thinkos_scheduler:
 	/* r2: active, 
 	   r3: wq_ready */
 	ldrd    r2, r3, [r7, #THINKOS_ACTIVE_OFFS]
-#endif
 	/* store the old context pointer into the context vector */
 	/* r0: thread stack
 	   r2: old active thread */
@@ -221,14 +178,6 @@ thinkos_scheduler:
 	 leading zeros on the bitmap */
 	rbit    r3, r3
  	clz     r3, r3
-#if THINKOS_THREADS_MAX > 32
-	/* 64 bits bitmap */
-	cmp     r3, #32
-	ittt    eq
-	rbiteq  r3, r4
- 	clzeq   r3, r3
- 	addeq   r3, #32
-#endif
 	/* r3: new active thread */
 	str     r3, [r7, #THINKOS_ACTIVE_OFFS]
 #if THINKOS_ENABLE_PROFILING
@@ -237,24 +186,24 @@ thinkos_scheduler:
 	/* r1: cyccnt = CM3_DWT->cyccnt */
 	ldr     r1, [r1, #4]
 #if THINKOS_ENABLE_DEBUG_STEP
-	/* r5: cycref */
 	/* r4: step_req */
+	/* r5: cycref */
 	ldrd	r4, r5, [r7, #THINKOS_STEP_REQ_OFFS]
 #else
 	/* r5: cycref */
-	ldr.w   r5, [r7, #THINKOS_CYCREF_OFFS]
+	ldr     r5, [r7, #THINKOS_CYCREF_OFFS]
 #endif
 	/* update the reference */
 	/* thinkos_rt.cycref = cyccnt */
-	str.w   r1, [r7, #THINKOS_CYCREF_OFFS]
-	/* r6: delta =  cyccnt - cycref */	
-	subs    r6, r1, r5
+	str     r1, [r7, #THINKOS_CYCREF_OFFS]
+	/* r1: delta =  cyccnt - cycref */	
+	subs    r1, r1, r5
     /* update thread's cycle counter */
     adds    r2, #(SIZEOF_CTX / 4)
-	ldr.w	r1, [r7, r2, lsl #2]
+	ldr     r5, [r7, r2, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
-	adds    r1, r6
-	str.w   r1, [r7, r2, lsl #2]
+	adds    r5, r1
+	str     r5, [r7, r2, lsl #2]
 #else
 #if THINKOS_ENABLE_DEBUG_STEP
 	/* r4: step_req */
@@ -288,7 +237,7 @@ thinkos_scheduler:
 .L_thinkos_rt:
 	.word	thinkos_rt
 .L_cm_dwt:
-	.word   0xe0001000
+	.word   CM3_DWT_BASE    /* DWT Base Address */
 
 	.size   thinkos_scheduler, . - thinkos_scheduler
 #endif /* THINKOS_ASM_SCHEDULER */
@@ -300,7 +249,12 @@ thinkos_sched_step:
 	.global thinkos_sched_step
 	.type   thinkos_sched_step , %function
 
+	/* r0: thread context pointer */
+	/* r1: (1 << new_thread_id) */
+	/* r3: new thread id */
+	/* r7: thinkos_rt */
 	ldr.w	r2, [r7, #THINKOS_STEP_SVC_OFFS]	
+	/* r2: step_svc */
 	tst     r1, r2
 	beq.n   .L_normal_step
 	/* this thread got a step request when calling a service.
@@ -337,36 +291,44 @@ thinkos_sched_step:
 	/* get the PC value */
 	ldr     r5, [r0, #56]
 	/* load the next instruction */
-	ldrh    r5, [r5, #0]
+	ldrb    r5, [r5, #1]
 	/* if the thread is running, and it is about to invoke 
 	   a system call then we don't step but set the service 
 	   flag for stepping on service exit. */
-	and.w   r5, r5, #0xdf00
-	cmp.w   r5, #0xdf00
+	and     r5, r5, #0xdf
+	cmp     r5, #0xdf
 	bne.n   .L_restore_and_step
     /* the thread is stepping into a system call */
-	orrs	r4, r2
-	str.w	r4, [r7, #THINKOS_STEP_SVC_OFFS]
+	orrs	r2, r1
+	str.w	r2, [r7, #THINKOS_STEP_SVC_OFFS]
 	b       .L_context_restore
 
 .L_restore_and_step:
 	/* Return and step */
-	strb.w	r3, [r7, #THINKOS_STEP_ID_OFFS]
-	movw	r2, #(1 << 5)
+	strb    r3, [r7, #THINKOS_STEP_ID_OFFS]
+	mov     r2, #(1 << 5)
 	msr	    BASEPRI, r2
-	add.w	r2, r0, #32
-	msr	    PSP, r2
-	ldmia.w	r0, {r4, r5, r6, r7, r8, r9, sl, fp}
-	movw	r7, #0xedf0
-	movt	r7, #0xe000
-	ldr     r2, [r7, #12]
-	orr.w	r2, r2, #0x40000
-	str     r2, [r7, #12]
+#if THINKOS_ENABLE_FPU 
+	add     r3, r0, #40 * 4
+	msr     PSP, r3
+	vldmia.64 r0!, {d0-d15}
+#else
+	add     r3, r0, #8 * 4
+	msr     PSP, r3
+#endif
+	ldmia   r0, {r4-r11}
+	ldr.n   r3, .L_cm_dcb
+	ldr     r1, [r3, #DEMCR_OFFS]
+	orr     r1, r1, #0x40000
+	str     r1, [r3, #DEMCR_OFFS]
 	bx      lr
 
-	.align  0
+	.align  2
 .L_idle_task:
 	.word	thinkos_idle_task
+.L_cm_dcb:
+	.word   CM3_DCB_BASE /* Core Debug Base Address */
+
 
 	.size   thinkos_sched_step, . - thinkos_sched_step
 #endif

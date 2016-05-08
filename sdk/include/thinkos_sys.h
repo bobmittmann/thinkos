@@ -642,7 +642,6 @@ struct thinkos_rt {
 	uint32_t gate[(THINKOS_GATE_MAX + 15) / 16]; /* gates states */
 #endif /* THINKOS_GATE_MAX > 0 */
 
-
 #if THINKOS_MUTEX_MAX > 0
 	int8_t lock[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
@@ -677,10 +676,6 @@ struct thinkos_rt {
 
 #if THINKOS_ENABLE_GATE_ALLOC
 	uint32_t gate_alloc[(THINKOS_GATE_MAX + 31) / 32];
-#endif
-
-#if THINKOS_ENABLE_SCHED_DEBUG
-	uint32_t sched_trace_req;
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
