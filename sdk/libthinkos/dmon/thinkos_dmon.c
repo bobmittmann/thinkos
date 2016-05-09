@@ -595,7 +595,7 @@ static void dmon_on_reset(struct thinkos_dmon * dmon)
 	dmon->mask |= (1 << DMON_RESET) | (1 << DMON_COMM_CTL) | (1 << DMON_EXCEPT);
 }
 
-void __attribute__((noinline)) dbgmon_isr(struct cm3_except_context * ctx)
+void thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 {
 	uint32_t sigset = thinkos_dmon_rt.events;
 	uint32_t sigmsk = thinkos_dmon_rt.mask;
@@ -787,18 +787,6 @@ step_done:
 	} else {
 		DCC_LOG1(LOG_JABBER, "Unhandled signal <%08x>", sigset);
 	}
-}
-
-void __attribute__((naked)) cm3_debug_mon_isr(void)
-{
-	register struct cm3_except_context * ctx asm("r0");
-	/* select the context stack according to the content of LR */
-	asm volatile ("tst lr, #4\n" 
-				  "ite eq\n" 
-				  "mrseq %0, MSP\n" 
-				  "mrsne %0, PSP\n" 
-				  : "=r"(ctx) : : );
-	dbgmon_isr(ctx);
 }
 
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
