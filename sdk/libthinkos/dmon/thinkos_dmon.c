@@ -528,21 +528,6 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-void __attribute__((noinline)) dmon_context_swap(void * ctx) 
-{
-	register void * ptr0 asm("r0") = ctx;
-	asm volatile ("push   {r4-r11,lr}\n"
-				  "mrs    r1, APSR\n"
-				  "push   {r1}\n"
-				  "mov    r1, sp\n"
-				  "ldr    sp, [%0]\n" /* restore context */
-				  "str    r1, [%0]\n" /* save context */
-				  "pop    {r1}\n"
-				  "msr    APSR_nzcvq, r1\n"
-				  "pop    {r4-r11,lr}\n"
-				  : : "r" (ptr0) : "r1");
-}
-
 static void dmon_null_task(struct dmon_comm * comm)
 {
 	uint32_t buf[64 / 4];
@@ -661,14 +646,6 @@ void thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 					/* diasble all breakpoints */
 					dmon_breakpoint_clear_all();
 				}
-#if 0
-				{
-					register uint32_t * ctx asm("r0");
-					ctx = (uint32_t *)&thinkos_except_buf.ctx.r4;
-
-					asm volatile ( "stmia %0, {r4-r11}\n" : : "r" (ctx) );
-				}
-#endif
 			} else if ((uint32_t)thinkos_rt.active < THINKOS_THREADS_MAX) {
 				sigset |= (1 << DMON_BREAKPOINT);
 				sigmsk |= (1 << DMON_BREAKPOINT);

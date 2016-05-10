@@ -29,6 +29,8 @@ DMON_CFILES = thinkos_dmon.c usb_comm.c dbgmon_irq.c \
 			  app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
 			  print_exception.c dmgets.c dmprintf.c dmscanf.c  
 
+DMON_SFILES = dbgmon_swap.S
+
 MISC_CFILES = thinkos_util.c thinkos_type.c obj_type_get.c \
 			  alloc_bmp_get.c bmp_alloc.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
@@ -49,7 +51,6 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 $(addprefix dmon/,$(DMON_CFILES)) \
 		 $(addprefix console/,$(CONSOLE_CFILES))
 
-SFILES = thinkos_sched.S thinkos_vector.S
-
+SFILES = thinkos_sched.S thinkos_vector.S $(addprefix dmon/,$(DMON_SFILES))
 include ../../mk/lib.mk
 

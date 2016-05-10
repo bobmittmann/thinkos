@@ -289,6 +289,8 @@ int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
 
 void thinkos_dbgmon_signal(unsigned int sig);
 
+void dmon_context_swap(void * ctx); 
+
 #ifdef __cplusplus
 }
 #endif

@@ -564,7 +564,6 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 				 (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
 				 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
 				 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-		A
 	}
 #endif
 	xcpt->type = CM3_EXCEPT_MEM_MANAGE;
