@@ -49,7 +49,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 $(addprefix dmon/,$(DMON_CFILES)) \
 		 $(addprefix console/,$(CONSOLE_CFILES))
 
-SFILES = thinkos_sched.S
+SFILES = thinkos_sched.S thinkos_vector.S
 
 include ../../mk/lib.mk
 

@@ -404,7 +404,7 @@
 #endif
 
 /* -------------------------------------------------------------------------- 
- * Static thead references
+ * Static trhead references
  * --------------------------------------------------------------------------*/
 
 #define THINKOS_THREAD_NULL (32)
@@ -420,6 +420,80 @@
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
 #endif
 
+/* -------------------------------------------------------------------------- 
+ * ThinkOS RT structure offsets for assembler
+ * --------------------------------------------------------------------------*/
+
+#if THINKOS_ENABLE_THREAD_VOID
+  #define SIZEOF_VOID_CTX 4
+  #define SIZEOF_CTX ((THINKOS_THREADS_MAX + 2) * 4)
+#else
+  #define SIZEOF_VOID_CTX 0
+  #define SIZEOF_CTX ((THINKOS_THREADS_MAX + 1) * 4)
+#endif
+
+#if THINKOS_ENABLE_PROFILING
+  #if THINKOS_ENABLE_THREAD_VOID
+    #define SIZEOF_CYCCNT ((THINKOS_THREADS_MAX + 2) * 4)
+  #else
+    #define SIZEOF_CYCCNT ((THINKOS_THREADS_MAX + 1) * 4)
+  #endif
+  #define SIZEOF_CYCREF 4
+#else
+  #define SIZEOF_CYCCNT 0
+  #define SIZEOF_CYCREF 0
+#endif
+
+#if THINKOS_ENABLE_CRITICAL
+  #define SIZEOF_CRITCNT 4
+#else
+  #define SIZEOF_CRITCNT 0
+#endif
+
+#if THINKOS_ENABLE_TIMESHARE
+  #define SIZEOF_SCHED_LM 4
+#else
+  #define SIZEOF_SCHED_LM 0
+#endif
+
+#if THINKOS_ENABLE_CLOCK
+  #define SIZEOF_TICKS 4
+  #if THINKOS_ENABLE_DMCLOCK
+    #define SIZEOF_DMCLOCK 4
+  #else
+    #define SIZEOF_DMCLOCK 0
+  #endif
+#else
+  #define SIZEOF_TICKS 0
+  #define SIZEOF_DMCLOCK 0
+#endif
+
+#if THINKOS_ENABLE_DEBUG_STEP
+  #define SIZEOF_XCPT_IPSR 2
+  #define SIZEOF_STEP_ID  1
+  #define SIZEOF_BREAK_ID 1
+  #define SIZEOF_STEP_REQ 4
+  #define SIZEOF_STEP_SVC 4
+#else
+  #define SIZEOF_XCPT_IPSR 0
+  #define SIZEOF_STEP_ID  0
+  #define SIZEOF_BREAK_ID 0
+  #define SIZEOF_STEP_REQ 0
+  #define SIZEOF_STEP_SVC 0
+#endif
+
+#define THINKOS_RT_IDLE_CTX_OFFS   (4 * THINKOS_THREADS_MAX)
+#define THINKOS_RT_VOID_CTX_OFFS   (THINKOS_RT_IDLE_CTX_OFFS + 4)
+#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
+#define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
+#define THINKOS_RT_XCPT_IPSR_OFFS  (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
+#define THINKOS_RT_STEP_ID_OFFS    (THINKOS_RT_XCPT_IPSR_OFFS + SIZEOF_XCPT_IPSR)
+#define THINKOS_RT_BREAK_ID_OFFS   (THINKOS_RT_STEP_ID_OFFS + SIZEOF_STEP_ID)
+#define THINKOS_RT_STEP_SVC_OFFS   (THINKOS_RT_BREAK_ID_OFFS + SIZEOF_BREAK_ID)
+#define THINKOS_RT_STEP_REQ_OFFS   (THINKOS_RT_STEP_SVC_OFFS + SIZEOF_STEP_SVC)
+#define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_STEP_REQ_OFFS + SIZEOF_STEP_REQ)
+#define THINKOS_RT_ACTIVE_OFFS     (THINKOS_RT_CYCREF_OFFS + SIZEOF_CYCREF)
+#define THINKOS_RT_READY_OFFS      (THINKOS_RT_ACTIVE_OFFS + 4)
 
 #ifndef __ASSEMBLER__
 

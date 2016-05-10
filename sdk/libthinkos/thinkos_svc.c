@@ -177,9 +177,9 @@ void thinkos_clock_svc(int32_t * arg)
 	arg[0] = thinkos_rt.ticks;
 }
 
-void thinkos_thread_self_svc(int32_t * arg)
+void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {
-	arg[0] = thinkos_rt.active;
+	arg[0] = self;
 }
 
 #if THINKOS_ENABLE_CRITICAL
@@ -203,32 +203,11 @@ void thinkos_critical_exit_svc(int32_t * arg)
 }
 #endif
 
-void cm3_svc_isr(void)
+void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 {
-	int32_t * arg;
-	uint8_t * pc;
-	int svc;
-
-#if THINKOS_ENABLE_DEBUG_STEP
-	if ((1 << thinkos_rt.active) & thinkos_rt.step_svc) {
-		DCC_LOG(LOG_TRACE, "SVC call step");
-		__thinkos_defer_sched();
-	}
-#endif
-
-	/* get a pointer to the caller's stack */
-	arg = (int32_t * )cm3_psp_get();
-
-	/* get PC value */
-	pc = (uint8_t *)arg[6];
-	/* get the immediate data from instruction */
-	svc = pc[-2];
-
-	DCC_LOG2(LOG_MSG, "pc=0x%08x svc=%d", pc, svc);
-
 	switch (svc) {
 	case THINKOS_THREAD_SELF:
-		thinkos_thread_self_svc(arg);
+		thinkos_thread_self_svc(arg, self);
 		break;
 
 	case THINKOS_THREAD_CREATE:
