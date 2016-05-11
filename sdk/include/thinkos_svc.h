@@ -230,8 +230,8 @@ static inline int __attribute__((always_inline))
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_cancel(unsigned int id, int code) {
-	return THINKOS_SVC2(THINKOS_CANCEL, id, code);
+__attribute__((always_inline)) thinkos_cancel(unsigned int thread, int code) {
+	return THINKOS_SVC2(THINKOS_CANCEL, thread, code);
 }
 
 static inline int 
@@ -240,28 +240,28 @@ __attribute__((always_inline)) thinkos_exit(int code) {
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_terminate(int code, unsigned int id) {
-	return THINKOS_SVC2(THINKOS_TERMINATE, code, id);
+__attribute__((always_inline)) thinkos_terminate(unsigned int thread, int code) {
+	return THINKOS_SVC2(THINKOS_TERMINATE, thread, code);
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_thread_abort(unsigned int id) {
-	return THINKOS_SVC2(THINKOS_TERMINATE, THINKOS_THREAD_ABORTED, id);
+__attribute__((always_inline)) thinkos_thread_abort(unsigned int thread) {
+	return THINKOS_SVC2(THINKOS_TERMINATE, thread, THINKOS_THREAD_ABORTED);
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_join(unsigned int id) {
-	return THINKOS_SVC1(THINKOS_JOIN, id);
+__attribute__((always_inline)) thinkos_join(unsigned int thread) {
+	return THINKOS_SVC1(THINKOS_JOIN, thread);
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_pause(unsigned int id) {
-	return THINKOS_SVC1(THINKOS_PAUSE, id);
+__attribute__((always_inline)) thinkos_pause(unsigned int thread) {
+	return THINKOS_SVC1(THINKOS_PAUSE, thread);
 }
 
 static inline int 
-__attribute__((always_inline)) thinkos_resume(unsigned int id) {
-	return THINKOS_SVC1(THINKOS_RESUME, id);
+__attribute__((always_inline)) thinkos_resume(unsigned int thread) {
+	return THINKOS_SVC1(THINKOS_RESUME, thread);
 }
 
 static inline int

@@ -720,6 +720,8 @@ int thinkos_critical_exit(void);
 
 int thinkos_escalate(int (* call)(void *), void * arg);
 
+int thinkos_thread_abort(unsigned int thread);
+
 /**@}*/
 
 #ifdef __cplusplus

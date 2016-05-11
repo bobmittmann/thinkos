@@ -137,6 +137,7 @@ void __thinkos_idle_init(void)
 
 #if !THINKOS_IDLE_STACK_CONST
 	idle_ctx->pc = (uint32_t)thinkos_idle_task;
+	idle_ctx->lr = (uint32_t)__thinkos_thread_exit;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 #endif /* THINKOS_IDLE_STACK_CONST */
 

@@ -49,11 +49,6 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 
 	ctx->r0 = (uint32_t)arg;
-#if DEBUG
-	ctx->r1 = (uint32_t)0x11111111;
-	ctx->r2 = (uint32_t)0x22222222;
-	ctx->r3 = (uint32_t)0x33333333;
-#endif
 #if THINKOS_ENABLE_EXIT
 	ctx->lr = (uint32_t)__exit_stub;
 #else
@@ -81,25 +76,29 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 void thinkos_thread_create_svc(int32_t * arg)
 {
 	struct thinkos_thread_init * init = (struct thinkos_thread_init *)arg;
-	uint32_t sp;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	int target_id = init->opt.id - 1;
 	int thread_id;
+	uint32_t sp;
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	DCC_LOG1(LOG_INFO, "thinkos_rt.th_alloc=0x%08x", thinkos_rt.th_alloc[0]);
 
-	if (init->opt.id >= THINKOS_THREADS_MAX) {
+	if (target_id >= THINKOS_THREADS_MAX) {
 		thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, THINKOS_THREADS_MAX);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", init->opt.id, 
+		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", target_id, 
 				 thread_id);
 	} else {
 		/* Look for the next available slot */
-		thread_id = thinkos_alloc_lo(thinkos_rt.th_alloc, init->opt.id);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", init->opt.id, 
-				 thread_id);
+		if (target_id < 0)
+			target_id = 0;
+		thread_id = thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
+		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", target_id, thread_id);
 		if (thread_id < 0) {
-			thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, init->opt.id);
+			thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
 			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
-					init->opt.id, thread_id);
+					target_id, thread_id);
 		}
 	}
 
@@ -108,7 +107,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 		return;
 	}
 #else
-	thread_id = init->opt.id;
+	thread_id = target_id;
 	if (thread_id >= THINKOS_THREADS_MAX) {
 		arg[0] = THINKOS_EINVAL;
 		return;
