@@ -848,18 +848,16 @@ void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	dcb->demcr = demcr;
 }
 
-void thinkos_dbgmon_signal(unsigned int sig)
+void thinkos_dbgmon_idle_signal(void)
 {
-	if (sig == DBGMON_SIGNAL_IDLE) {
-		struct cm3_dcb * dcb = CM3_DCB;
-		uint32_t demcr;
-		/* Debug monitor request semaphore */
-		if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
-			DCC_LOG(LOG_MSG, "<<< Idle >>>");
-			__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DMON_IDLE, 1);  
-			dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
-			asm volatile ("isb\n" :  :  : );
-		}
+	struct cm3_dcb * dcb = CM3_DCB;
+	uint32_t demcr;
+	/* Debug monitor request semaphore */
+	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
+		DCC_LOG(LOG_MSG, "<<< Idle >>>");
+		__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DMON_IDLE, 1);  
+		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
+		asm volatile ("isb\n" :  :  : );
 	}
 }
 

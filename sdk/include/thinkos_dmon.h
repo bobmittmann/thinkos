@@ -60,8 +60,6 @@ enum dbgmon_event {
 	DMON_RESET        = 31
 };
 
-#define DBGMON_SIGNAL_IDLE 0
-
 struct dmon_comm;
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
@@ -288,7 +286,7 @@ int dmgets(char * s, int size, struct dmon_comm * comm);
 
 int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
 
-void thinkos_dbgmon_signal(unsigned int sig);
+void thinkos_dbgmon_idle_signal(void);
 
 int dmon_context_swap(void * ctx); 
 

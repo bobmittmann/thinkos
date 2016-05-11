@@ -42,7 +42,7 @@
 void thinkos_idle_svc(int32_t * arg)
 {
 #if (THINKOS_ENABLE_MONITOR)
-	thinkos_dbgmon_signal(DBGMON_SIGNAL_IDLE);
+	thinkos_dbgmon_idle_signal();
 #endif
 
 #if THINKOS_ENABLE_CRITICAL
