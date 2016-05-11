@@ -165,9 +165,9 @@ cm3_debug_mon_isr:
 	ite     eq
 	mrseq   r0, MSP
 	mrsne   r0, PSP
-#if THINKOS_ENABLE_DEBUG_STEP
 	b       thinkos_dbgmon_isr
-#else
+#if 0
+	/* FIXME: add suport for step on interrupt */
 	push    {lr}
 	bl      thinkos_dbgmon_isr
 	pop     {lr}

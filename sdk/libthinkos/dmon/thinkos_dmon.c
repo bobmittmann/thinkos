@@ -495,8 +495,9 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 	}
 
 	if (thread_id == THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_WARNING, "void thread, IRQ step!");
-		dmon_context_swap_ext(&thinkos_dmon_rt.ctx, 1); 
+		DCC_LOG(LOG_ERROR, "void thread, IRQ step!");
+		return -1;
+//		dmon_context_swap_ext(&thinkos_dmon_rt.ctx, 1); 
 	} else {
 		if (thread_id >= THINKOS_THREADS_MAX) {
 			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id);
@@ -749,9 +750,6 @@ step_done:
 				DCC_LOG(LOG_TRACE, "SCB_DFSR_HALTED !!!");
 			}
 		}
-	}
-	if (sigset & (1 << DMON_RESET)) {
-		dmon_on_reset(&thinkos_dmon_rt);
 	}
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 

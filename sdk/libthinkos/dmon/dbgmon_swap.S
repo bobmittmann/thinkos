@@ -36,19 +36,23 @@
 	.global	dmon_context_swap_ext
 	.thumb
 	.thumb_func
+dmon_context_swap:
+
+#if 0
+	mov    r1, #0
 	.type	dmon_context_swap, %function
 	.type	dmon_context_swap_ext, %function
-
-dmon_context_swap:
-	mov    r1, #0
 dmon_context_swap_ext:
+#endif
 	push   {r4-r11,lr}
 	mrs    r3, APSR
 	push   {r3}
 	mov    r3, sp
 	ldr    sp, [r0] /* restore context */
 	str    r3, [r0] /* save context */
+#if 0
 	mov    r0, r1 /* optional return value */
+#endif
 	pop    {r3}
 	msr    APSR_nzcvq, r3
 	pop    {r4-r11,lr}
