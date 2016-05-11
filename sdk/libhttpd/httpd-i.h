@@ -36,6 +36,78 @@
 
 #include <sys/dcclog.h>
 
+
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
+#ifndef HTTPD_SERVER_NAME
+#define HTTPD_SERVER_NAME "ThinkOS Web Server"
+#endif
+
+#ifndef HTTPD_POOL_SIZE
+#define HTTPD_POOL_SIZE 1
+#endif
+
+#ifndef HTTP_URI_MAX_LEN
+#define HTTP_URI_MAX_LEN 255
+#endif
+
+#ifndef HTTP_QUERY_LST_MAX
+#define HTTP_QUERY_LST_MAX 15
+#endif
+
+#ifndef HTTP_CTL_POOL_SIZE
+#define HTTP_CTL_POOL_SIZE 1
+#endif
+
+#ifndef HTTP_RCVBUF_LEN
+/* 'GET http://www.domain.xxx/somedir/subdir/file.html HTTP/1.1' CRLF */
+#define HTTP_RCVBUF_LEN (HTTP_URI_MAX_LEN + 17)
+#endif
+
+struct httpkeyval {
+	uint16_t key_len: 5;
+	uint16_t val_len: 11;
+};
+
+struct httpqry_lst {
+	char * buf;
+	uint16_t len;
+	struct httpkeyval item[];
+};
+
+/*
+ * HTTP connection control structure
+ */
+struct httpctl {
+	struct tcp_pcb * tp;
+	uint16_t version;
+	uint8_t method;
+	uint8_t auth;
+	char uri[HTTP_URI_MAX_LEN + 1];
+	struct {
+		uint8_t type;
+		uint8_t bdry_len;
+		uint32_t bdry_hash;
+		uint32_t len;
+		uint32_t pos;
+	} content;
+	struct {
+		uint16_t head;
+		uint16_t pos;
+		uint16_t tail;
+		uint32_t pat; /* search compare window */
+		uint32_t buf[(HTTP_RCVBUF_LEN + 3) / 4];
+	} rcvq; /* receive queue */
+	struct {
+		struct httpqry_lst lst;
+		struct httpkeyval item[HTTP_QUERY_LST_MAX];
+	} qry;
+	char * usr;
+	char * pwd;
+};
+
 /*
  * Preformatted HTML macros 
  */
@@ -56,25 +128,21 @@
 	"<h2>" #CODE " - " INFO "</h2><p>" MSG "</p>"\
 	HTTPD_MSG_FOOTER
 
+/* Authentication */
+#define HTTPAUTH_BASIC              0x77
+#define HTTPAUTH_DIGEST             0x00
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int httpd_200_css(struct tcp_pcb * __tp); 
-
-int httpd_200_png(struct tcp_pcb * __tp); 
-
-int httpd_200_jpeg(struct tcp_pcb * __tp);
-
-int httpd_200_js(struct tcp_pcb * __tp);
-
-int http_decode_uri_query(char * buf, int len, 
-						  struct httpqry lst[], int max);
+int http_decode_query_str(char * buf, unsigned int len,
+		  struct httpqry_lst * qry, unsigned int max);
 
 int http_multipart_boundary_lookup(struct httpctl * ctl);
 
-int http_parse_header(struct tcp_pcb * tp, struct httpctl * ctl);
+int http_parse_header(struct httpctl * ctl);
 
 int http_recv_queue_shift(struct httpctl * ctl);
 

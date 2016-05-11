@@ -69,7 +69,8 @@ const char * http_hdr_name[] = {
 	"Via",
 	"Warning",
 	"WWW-Authenticate",
-	"X-Requested-With"
+	"X-Requested-With",
+	"UA-CPU"
 };
 
 /* ----------------------------------------------------------------
@@ -112,7 +113,7 @@ static const uint8_t p_tab[] = {
 };
 
 static const uint8_t h_tab[] = {
-	  0,   0,   0,  19,   0,   0,   0,   0,
+	 55,   0,   0,  19,   0,   0,   0,   0,
 	  0,   0,   9,   0,   0,   0,   0,   0,
 	  0,   0,   0,   0,   0,   0,   1,   0,
 	  0,  43,   0,   0,   0,   0,   0,  47,

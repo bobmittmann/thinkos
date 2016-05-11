@@ -30,6 +30,9 @@ int atoi(const char * s)
 	int c;
 	int n = 0;
 
+	if (s == NULL)
+		return 0;
+
 	for (;;) {
 		c = *s++;
 

@@ -38,6 +38,20 @@
 
 #define FLASH_ERR (FLASH_WRPRTERR | FLASH_PGPERR)
 
+void stm32_flash_unlock(void)
+{
+	struct stm32_flash * flash = STM32_FLASH;
+	uint32_t cr;
+
+	cr = flash->cr;
+	if (cr & FLASH_LOCK) {
+		DCC_LOG(LOG_TRACE, "unlocking flash...");
+		/* unlock flash write */
+		flash->keyr = FLASH_KEY1;
+		flash->keyr = FLASH_KEY2;
+	}
+}
+
 int __attribute__((section (".data#"))) 
 	stm32f10x_flash_blk_erase(struct stm32_flash * flash, uint32_t addr)
 {
@@ -99,6 +113,11 @@ int stm32_flash_erase(unsigned int offs, unsigned int len)
 
 	cnt = 0;
 	while (cnt < len) {
+		/* Clear errors */
+		flash->sr = FLASH_ERR;
+
+		DCC_LOG1(LOG_TRACE, "addr=0x%08x...", addr);
+
 		pri = cm3_primask_get();
 		cm3_primask_set(1);
 		sr = stm32f10x_flash_blk_erase(flash, addr);
@@ -164,10 +183,13 @@ int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 
 	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
 
+	/* Clear errors */
+	flash->sr = FLASH_ERR;
+
+	pri = cm3_primask_get();
 	for (i = 0; i < n; i++) {
-		data = ptr[0] | (ptr[1] << 8);
 		DCC_LOG2(LOG_MSG, "0x%08x data=0x%04x", addr, data);
-		pri = cm3_primask_get();
+		data = ptr[0] | (ptr[1] << 8);
 		cm3_primask_set(1);
 		sr = stm32f10x_flash_wr16(flash, addr, data);
 		cm3_primask_set(pri);

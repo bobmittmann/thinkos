@@ -38,6 +38,13 @@ extern FILE * stdin;
 extern FILE * stdout;
 extern FILE * stderr;
 
+/* Values for the WHENCE argument to fseek.  */
+#ifndef	__UNISTD_H__ /* <unistd.h> has the same definitions.  */
+#define SEEK_SET	0	/* Seek from beginning of file.  */
+#define SEEK_CUR	1	/* Seek from current position.  */
+#define SEEK_END	2	/* Seek from end of file.  */
+#endif
+
 #define EOF	(-1)
 
 #ifdef __cplusplus

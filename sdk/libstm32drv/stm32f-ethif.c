@@ -52,6 +52,12 @@
 
 void stm32f_eth_isr(void);
 
+#if defined(STM32F2X)
+#define ETH_CR_HCLK ETH_CR_HCLK_62
+#elif defined(STM32F4X)
+#define ETH_CR_HCLK ETH_CR_HCLK_102
+#endif
+
 void stm32f_eth_mii_wr(struct stm32f_eth * eth, unsigned int addr, 
 					   unsigned int reg, uint16_t data)
 {
@@ -62,28 +68,29 @@ void stm32f_eth_mii_wr(struct stm32f_eth * eth, unsigned int addr,
 
 	eth->macmiidr = data;
 	eth->macmiiar = ETH_PA_SET(addr) | ETH_MR_SET(reg) | 
-		ETH_CR_HCLK_16 | ETH_MII_MW | ETH_MII_MB;
+			ETH_CR_HCLK | ETH_MII_MW | ETH_MII_MB;
 }
 
 void stm32f_eth_mii_rd(struct stm32f_eth * eth, unsigned int addr, 
 					   unsigned int reg, uint16_t * data)
 {
+	uint32_t pkt;
+
 	DCC_LOG1(LOG_MSG, "reg: %d", reg);
 
 	while (eth->macmiiar & ETH_MII_MB) {
+		__nop();
 	}
 
-	eth->macmiiar = ETH_PA_SET(addr) | ETH_MR_SET(reg) | 
-		ETH_CR_HCLK_16 | ETH_MII_MB;
+	pkt = ETH_PA_SET(addr) | ETH_MR_SET(reg) | ETH_CR_HCLK | ETH_MII_MB;
+	eth->macmiiar = pkt;
 
 	while (eth->macmiiar & ETH_MII_MB) {
+		__nop();
 	}
 
 	*data = eth->macmiidr;
 }
-
-
-#if THINKOS_ENABLE_FLAG_ALLOC
 
 void * stm32f_ethif_mmap(struct ifnet * __if, size_t __len)
 {
@@ -630,18 +637,18 @@ struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr,
 {
 	struct stm32f_eth * eth = STM32F_ETH;
 	struct ifnet * ifn;
+	unsigned int addr;
+	uint32_t phy_id;
+	uint16_t data;
 
 	stm32f_eth_init(eth);
 	stm32f_eth_mac_set(eth, 0, ethaddr);
 
-	unsigned int addr;
-	uint16_t data;
-	uint32_t phy_id;
 	DCC_LOG(LOG_TRACE, "probing PHY...");
 	for (addr = 0; addr < 32; ++addr) {
 		stm32f_eth_mii_rd(eth, addr, 0, &data);
 		DCC_LOG2(LOG_INFO, "addr=%d r0=%04x", addr, data);
-		if (data != 0xff)
+		if (data != 0xffff)
 			break;
 	}
 
@@ -654,8 +661,9 @@ struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr,
 		(void)phy_id;	
 		DCC_LOG(LOG_TRACE, "PHY reset...");
 		stm32f_eth_mii_wr(eth, addr, 0, PHY_RESET);
-/*
 		stm32f_eth_mii_wr(eth, addr, 0, PHY_AUTO);
+
+/*
 		do {
 			stm32f_eth_mii_rd(eth, addr, 1, &data);
 		} while (!(data & PHY_AUTO_DONE)); 
@@ -664,6 +672,8 @@ struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr,
 				 data & PHY_LINK_UP ? "up" : " down");
 */
 	}
+
+	stm32f_eth_drv.phy_addr = addr;
 
 	DCC_LOG2(LOG_INFO, "ifn_register(%I, %I)", ip_addr, netmask);
 
@@ -679,7 +689,27 @@ struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr,
 	return ifn;
 }
 
-#endif
+bool ethif_link_up(void)
+{
+	struct stm32f_eth * eth = STM32F_ETH;
+	unsigned int addr;
+	uint16_t data;
+
+	addr = stm32f_eth_drv.phy_addr;
+
+
+	stm32f_eth_mii_rd(eth, addr, 0, &data);
+
+	stm32f_eth_mii_rd(eth, addr, 1, &data);
+
+	if (data == 0xffff)
+		return false;
+
+	if (!(data & PHY_AUTO_DONE))
+		return false;
+
+	return data & PHY_LINK_UP ? true : false;
+}
 
 #endif /* STM32F_ETH */
 

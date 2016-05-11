@@ -1343,6 +1343,8 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
 #endif
 }
 
+#define GDB_RSP_QUIT -0x80000000
+
 static int rsp_detach(struct gdb_rspd * gdb)
 {
 	DCC_LOG(LOG_TRACE, "[DETACH]");
@@ -1355,7 +1357,7 @@ static int rsp_detach(struct gdb_rspd * gdb)
 	/* reply OK */
 	rsp_ok(gdb);
 
-	return -1234;
+	return GDB_RSP_QUIT;
 }
 
 static int rsp_kill(struct gdb_rspd * gdb)
@@ -1369,11 +1371,7 @@ static int rsp_kill(struct gdb_rspd * gdb)
 
 	rsp_ok(gdb);
 
-#if 0
-	dmon_exec(gdb->shell_task);
-#endif
-
-	return 0;
+	return GDB_RSP_QUIT;
 }
 
 
@@ -1680,7 +1678,7 @@ void gdb_task(struct dmon_comm * comm)
 				} else {
 					if (!gdb->noack_mode)
 						rsp_ack(gdb);
-					if (rsp_pkt_input(gdb, pkt, len) == -1234)
+					if (rsp_pkt_input(gdb, pkt, len) == GDB_RSP_QUIT)
 						return;
 				}
 				break;
@@ -1693,7 +1691,7 @@ void gdb_task(struct dmon_comm * comm)
 
 			default:
 				DCC_LOG1(LOG_WARNING, "invalid: %02x", buf[0]);
-				break;
+				return;
 			}
 
 		}

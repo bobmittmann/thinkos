@@ -1,7 +1,7 @@
 /* 
- * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
- *
- * This file is part of the libtcpip.
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,31 +18,41 @@
  */
 
 /** 
- * @file tcpip/ethif.h
- * @brief 
+ * @file dirent.h
+ * @brief YARD-ICE libc
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __TCPIP_ETHIF_H__
-#define __TCPIP_ETHIF_H__
+#ifndef __DIRENT_H__
+#define __DIRENT_H__
 
-#include <tcpip/ifnet.h>
-#include <stdio.h>
-#include <stdbool.h>
+#include <sys/types.h>
+#define __need_NULL
+#include <stddef.h>
+
+#define MAXNAMLEN 53
+
+struct dirent {
+	ino_t          d_ino;       /* inode number */
+    off_t          d_off;       /* offset to the next dirent */
+    unsigned short d_reclen;    /* length of this record */
+    char           d_name[MAXNAMLEN - 1];  /* filename */
+};
+
+struct dir;
+
+typedef struct dir DIR;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct ifnet * ethif_init(const uint8_t ethaddr[], in_addr_t ip_addr, in_addr_t netmask);
+DIR * opendir(const char * name);
 
-bool ethif_link_up(void);
+struct dirent * readdir(DIR * dirp);
 
-void ethif_stats_show(FILE * f, int clear);
+void rewinddir(DIR * dirp);
 
-#ifdef __cplusplus
-}
-#endif
+int closedir(DIR * dirp);
 
-#endif /* __TCPIP_ETHIF_H__ */
-
+#endif /* __DIRENT_H__ */

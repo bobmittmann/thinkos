@@ -27,9 +27,9 @@
 
 static const char http_msg_408[] = HTTPD_MSG(408, "Request Timeout", "");
 
-int httpd_408(struct tcp_pcb * __tp) 
+int http_408(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_408, sizeof(http_msg_408) - 1, 
+	return tcp_send(__ctl->tp, http_msg_408, sizeof(http_msg_408) - 1,
 					TCP_SEND_NOCOPY);
 }
 

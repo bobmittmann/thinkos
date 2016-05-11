@@ -40,5 +40,14 @@ typedef	unsigned int off_t;
 typedef unsigned long useconds_t;
 typedef long suseconds_t;
 
+typedef unsigned long dev_t;
+typedef unsigned long ino_t;
+typedef unsigned short mode_t;
+typedef unsigned char nlink_t;
+typedef unsigned char uid_t;
+typedef unsigned char gid_t;
+typedef	unsigned int pid_t;
+
+
 #endif	/* __SYS_TYPES_H__ */
 

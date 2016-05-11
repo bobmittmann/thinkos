@@ -27,9 +27,9 @@
 
 static const char http_msg_409[] = HTTPD_MSG(409, "Confilct", "");
 
-int httpd_409(struct tcp_pcb * __tp) 
+int http_409(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_409, sizeof(http_msg_409) - 1, 
+	return tcp_send(__ctl->tp, http_msg_409, sizeof(http_msg_409) - 1,
 					TCP_SEND_NOCOPY);
 }
 

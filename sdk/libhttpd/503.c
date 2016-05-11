@@ -27,9 +27,9 @@
 
 static const char http_msg_503[] = HTTPD_MSG(503, "Service Unavailable", "");
 
-int httpd_503(struct tcp_pcb * __tp)
+int http_503(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_503, sizeof(http_msg_503) - 1, 
+	return tcp_send(__ctl->tp, http_msg_503, sizeof(http_msg_503) - 1,
 					TCP_SEND_NOCOPY);
 }
 

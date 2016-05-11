@@ -70,6 +70,7 @@ struct stm32f_eth_drv {
 	struct ifnet * ifn;
 	struct stm32f_eth * eth;
 	int event;
+	unsigned int phy_addr;
 	struct {
 		struct rxdma_enh_desc desc[STM32F_ETH_RX_NDESC];
 		uint32_t head;

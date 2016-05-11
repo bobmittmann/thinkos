@@ -28,9 +28,9 @@
 static const char http_msg_505[] = HTTPD_MSG(505, 
 	"HTTP Version Not Supported", "");
 
-int httpd_505(struct tcp_pcb * __tp)
+int http_505(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_505, sizeof(http_msg_505) - 1, 
+	return tcp_send(__ctl->tp, http_msg_505, sizeof(http_msg_505) - 1,
 					TCP_SEND_NOCOPY);
 }
 

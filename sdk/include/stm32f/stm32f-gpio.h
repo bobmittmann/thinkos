@@ -403,7 +403,7 @@ static inline void stm32_gpio_mode_af(struct stm32_gpio * __gpio,
 
 static inline bool stm32_gpio_is_mode_af(struct stm32_gpio * __gpio, 
 										 unsigned int __pin) {
-	return (__gpio->moder & GPIO_MODE_MASK(__pin)) == GPIO_MODE_ALT_FUNC(__pin);
+	return (__gpio->moder & GPIO_MODE_MASK(__pin)) == (uint32_t)GPIO_MODE_ALT_FUNC(__pin);
 }
 
 static inline uint32_t stm32_gpio_mode_get(struct stm32_gpio * __gpio, 

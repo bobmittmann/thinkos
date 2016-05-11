@@ -89,17 +89,15 @@ bool board_init(void)
 
 	led_on(0);
 
+	/* Adjust USB interrupts priority */
 	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
 	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 
-	return true;
-}
-
-void board_comm_irqen(void)
-{
 	/* Enable USB interrupts */
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
+
+	return true;
 }
 
 void board_softreset(void)
@@ -126,9 +124,6 @@ void board_softreset(void)
 	/* restore USB interrupt priority */
 	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
 	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
-
-	/* Enable USB interrupts */
-	board_comm_irqen();
 }
 
 bool board_autoboot(uint32_t tick)
@@ -148,14 +143,28 @@ void board_on_appload(void)
 		led_off(i);
 }
 
+void _thinkos_sched(void);
+
 void board_upgrade(struct dmon_comm * comm)
 {
+	_thinkos_sched();
 }
 
 bool board_configure(struct dmon_comm * comm)
 {
 	return true;
 }
+
+void monitor_dump_mem(struct dmon_comm * comm, 
+					  uint32_t addr, unsigned int size);
+
+void board_selftest(struct dmon_comm * comm)
+{
+	dmprintf(comm, "\r\nSelftest.\r\n");
+	/* Dump */
+	monitor_dump_mem(comm, 0x20000000, 0x1000);
+}
+
 
 const struct mem_desc sram_desc = {
 	.name = "RAM",
@@ -170,8 +179,8 @@ const struct mem_desc sram_desc = {
 const struct mem_desc flash_desc = {
 	.name = "FLASH",
 	.blk = {
-		{ 0x08000000, BLK_RO, SZ_2K,  20 }, /* Bootloader: 40 KiB */
-		{ 0x0800a000, BLK_RW, SZ_2K, 108 }, /* Application:  */
+		{ 0x08000000, BLK_RO, SZ_2K,  24 }, /* Bootloader: 48 KiB */
+		{ 0x0800c000, BLK_RW, SZ_2K, 104 }, /* Application:  */
 		{ 0x00000000, 0, 0, 0 }
 	}
 }; 
@@ -192,8 +201,8 @@ const struct thinkos_board this_board = {
 		.flash = &flash_desc
 	},
 	.application = {
-		.start_addr = 0x0800a000,
-		.block_size = 2048 * 108
+		.start_addr = 0x0800c000,
+		.block_size = 2048 * 104
 	},
 
 	.init = board_init,
@@ -201,8 +210,7 @@ const struct thinkos_board this_board = {
 	.autoboot = board_autoboot,
 	.configure = board_configure,
 	.upgrade = board_upgrade,
-	.on_appload = board_on_appload,
-	.comm_irqen = board_comm_irqen
+	.selftest = board_selftest,
+	.on_appload = board_on_appload
 };
-
 

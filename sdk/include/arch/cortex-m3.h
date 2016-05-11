@@ -1010,7 +1010,7 @@ static inline int __attribute__((always_inline)) cm3_except_pri_get(int xcpt) {
 }
 
 /* read a bit from a bitbang memory region */
-static uint32_t inline __attribute__((always_inline)) __bit_mem_rd(void * ptr, int32_t bit) {
+static inline uint32_t __attribute__((always_inline)) __bit_mem_rd(void * ptr, int32_t bit) {
 	/* get the bitband bit address */
 	uint32_t * bit_addr = CM3_BITBAND_MEM(ptr, 0);
 	return bit_addr[bit];

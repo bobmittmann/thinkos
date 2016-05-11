@@ -96,13 +96,11 @@ struct trace_entry {
 		tracef(&__ref, ## __VA_ARGS__); \
 		}} else (void) 0
 
-
 #define INF(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
 		}} else (void) 0
-
 
 #define WARN(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
@@ -117,30 +115,79 @@ struct trace_entry {
 		}} else (void) 0
 
 
-#define DBG_S(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+#define DBG_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef_i(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
+
+#define INF_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef_i(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
+
+#define WARN_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef_i(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
+
+#define ERR_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef_i(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
+
+
+#define DBGS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
 		}} else (void) 0
 
-#define INF_S(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+#define INFS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
 		}} else (void) 0
 
-#define WARN_S(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+#define WARNS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
 		}} else (void) 0
 
-#define ERR_S(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+#define ERRS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
 		}} else (void) 0
 
+
+#define DBGS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace_I(&__ref); \
+		}} else (void) 0
+
+#define INFS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace_i(&__ref); \
+		}} else (void) 0
+
+#define WARNS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace_i(&__ref); \
+		}} else (void) 0
+
+#define ERRS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace_i(&__ref); \
+		}} else (void) 0
 
 #else
 
@@ -149,10 +196,20 @@ struct trace_entry {
 #define WARN(__FMT, ...)
 #define ERR(__FMT, ...)
 
-#define DBG_S(__STR)
-#define INF_S(__STR)
-#define WARN_S(__STR)
-#define ERR_S(__STR)
+#define DBG_I(__FMT, ...)
+#define INF_I(__FMT, ...)
+#define WARN_I(__FMT, ...)
+#define ERR_I(__FMT, ...)
+
+#define DBGS(__STR)
+#define INFS(__STR)
+#define WARNS(__STR)
+#define ERRS(__STR)
+
+#define DBGS_I(__STR)
+#define INFS_I(__STR)
+#define WARNS_I(__STR)
+#define ERRS_I(__STR)
 
 #endif
 
@@ -180,6 +237,10 @@ int32_t trace_dt(uint32_t * prev);
 void tracef(const struct trace_ref * ref, ... );
 
 void trace(const struct trace_ref * ref);
+
+void tracef_i(const struct trace_ref * ref, ... );
+
+void trace_i(const struct trace_ref * ref);
 
 int trace_tm2timeval(struct timeval * tv, uint64_t tm);
 

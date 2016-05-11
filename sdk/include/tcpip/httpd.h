@@ -26,27 +26,8 @@
 #ifndef __HTTPD_H__
 #define __HTTPD_H__
 
-#ifdef CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdint.h>
 #include <tcpip/tcp.h>
-
-#ifndef HTTPD_SERVER_NAME 
-#define HTTPD_SERVER_NAME "ThinkOS Web Server"
-#endif
-
-#ifndef HTTPD_URI_MAX_LEN
-#define HTTPD_URI_MAX_LEN 255
-#endif
-
-#ifndef HTTPD_QUERY_LST_MAX
-#define HTTPD_QUERY_LST_MAX 16
-#endif
-
-/* 'GET http://www.domain.xxx/somedir/subdir/file.html HTTP/1.1' CRLF */
-#define HTTP_RCVBUF_LEN (HTTPD_URI_MAX_LEN + 17)
 
 
 enum http_oid {
@@ -132,41 +113,10 @@ struct httpdauth {
 	char passwd[HTTPDAUTH_PASSWD_MAX + 1];
 };
 
-struct httpqry {
-	char * key;
-	char * val;
-};
-
-
 /* 
  * HTTP connection control structure
  */
-struct httpctl {
-	struct httpd * httpd;
-	struct tcp_pcb * tp;
-	uint16_t version;
-	uint8_t method;
-	uint8_t auth;
-	struct {
-		uint8_t type;
-		uint8_t bdry_len;
-		uint32_t bdry_hash;
-		uint32_t len;
-		uint32_t pos;
-	} content;
-	struct {
-		uint16_t head;
-		uint16_t pos;
-		uint16_t tail;
-		uint32_t pat; /* search compare window */
-		uint32_t buf[(HTTP_RCVBUF_LEN + 3) / 4];
-	} rcvq; /* receive queue */
-	uint8_t qrycnt;
-	struct httpqry qrylst[HTTPD_QUERY_LST_MAX];
-	char * usr;
-	char * pwd;
-	char uri[HTTPD_URI_MAX_LEN + 1];
-};
+struct httpctl;
 
 typedef int (* httpd_cgi_t)(struct httpctl ctl);
 
@@ -204,17 +154,28 @@ int httpd_init(struct httpd * httpd, int port, int backlog,
 		const struct httpddir dirlst[],
 		const struct httpdauth authlst[]);
 
+
 int httpd_stop(struct httpd * httpd);
+
+int httpd_accept(struct httpd * httpd, struct httpctl * ctl);
+
+const struct httpdobj * httpd_obj_lookup(struct httpd * httpd, struct httpctl * ctl);
 
 /* -------------------------------------------------------------------------
  * Connections
  * ------------------------------------------------------------------------- */
 
-int http_accept(struct httpd * httpd, struct httpctl * ctl);
+struct httpctl * httpctl_alloc(void);
+
+void httpctl_free(struct httpctl * ctl);
 
 const char * http_uri_get(struct httpctl * http);
 
+int http_method_get(struct httpctl * http);
+
 int http_close(struct httpctl * ctl);
+
+int http_recv_request(struct httpctl * ctl);
 
 int http_recv(struct httpctl * ctl, void * buf, unsigned int len);
 
@@ -228,87 +189,75 @@ int http_get(struct httpctl * ctl, const struct httpdobj * obj);
 
 int http_post(struct httpctl * ctl, const struct httpdobj * obj);
 
-const struct httpdobj * http_obj_lookup(struct httpctl * ctl);
-
 char * http_query_lookup(struct httpctl * ctl, char * key);
 
-int httpd_contenttype(struct tcp_pcb * __tp, unsigned int __type);
-
 /* 200 OK */
-int httpd_200(struct tcp_pcb * __tp, unsigned int __type);
-int httpd_200_html(struct tcp_pcb * __tp);
+int http_200(struct httpctl * __ctl, unsigned int __type);
 
 /* 400 Bad Request */
-int httpd_400(struct tcp_pcb * __tp);
+int http_400(struct httpctl * __ctl);
 
 /* 401 Unauthorized */
-int httpd_401(struct tcp_pcb * __tp);
-int httpd_401_auth(struct tcp_pcb * __tp);
+int http_401(struct httpctl * __ctl);
+int http_401_auth(struct httpctl * __ctl);
 
 /* 402 Payment Required */
 
 /* 403 Forbidden */
-int httpd_403(struct tcp_pcb * __tp);
+int http_403(struct httpctl * __ctl);
 
 /* 404 Not Found */
-int httpd_404(struct tcp_pcb * __tp);
+int http_404(struct httpctl * __ctl);
 
 /* 405 Method Not Allowed */
-int httpd_405(struct tcp_pcb * __tp);
+int http_405(struct httpctl * __ctl);
 
 /* 406 Not Acceptable */
 
 /* 407 Proxy Authentication Required */
 
 /* 408 Request Timeout */
-int httpd_408(struct tcp_pcb * __tp);
+int http_408(struct httpctl * __ctl);
 
 /* 409 Conflict */
-int httpd_409(struct tcp_pcb * __tp);
+int http_409(struct httpctl * __ctl);
 
 /* 410 Gone */
-int httpd_410(struct tcp_pcb * __tp);
+int http_410(struct httpctl * __ctl);
 
 /* 411 Length Required */
-int httpd_411(struct tcp_pcb * __tp);
+int http_411(struct httpctl * __ctl);
 
 /* 412 Precondition Failed */
 
 /* 413 Request Entity Too Large */
-int httpd_413(struct tcp_pcb * __tp);
+int http_413(struct httpctl * __ctl);
 
 /* 414 Request-URI Too Long */
-int httpd_414(struct tcp_pcb * __tp);
+int http_414(struct httpctl * __ctl);
 
 /* 415 Unsupported Media Type */
-int httpd_415(struct tcp_pcb * __tp);
+int http_415(struct httpctl * __ctl);
 
 /* 416 Requested Range Not Satisfiable */
 
 /* 417 Expectation Failed */
 
 /* 500 Internal Server Error */
-int httpd_500(struct tcp_pcb * __tp);
+int http_500(struct httpctl * __ctl);
 
 /* 501 Not Implemented */
-int httpd_501(struct tcp_pcb * __tp);
+int http_501(struct httpctl * __ctl);
 
 /* 502 Bad Gateway */
 
 /* 503 Service Unavailable */
-int httpd_503(struct tcp_pcb * __tp);
+int http_503(struct httpctl * __ctl);
 
 /* 504 Gateway Timeout */
 
 /* 505 HTTP Version Not Supported */
-int httpd_505(struct tcp_pcb * __tp);
-
-/* Auxiliar Name Value List parser */
-int httpd_nvparse(const char * s, char * name[], char * value[], int count);
-
-/* */
-void httpd_listen_callback(struct tcp_pcb * tp, int event, 
-						   struct httpd * httpd);
+int http_505(struct httpctl * __ctl);
 
 
 #ifdef __cplusplus

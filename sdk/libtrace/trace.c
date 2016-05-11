@@ -144,25 +144,17 @@ void trace_init(void)
  *---------------------------------------------------------------------------
  */
 
-void vtracef(const struct trace_ref * ref, uint32_t ts, va_list ap)
+#define TRACE_ARG_MAX 20
+
+int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 {
 	const char * fmt = ref->fmt;
-	unsigned int head;
-	unsigned int tail;
+	int cnt = 0;
 	uint32_t val;
 	char * cp;
 	int flags;
 	int c;
 	int i;
-
-	head = trace_ring.head;
-	tail = trace_ring.tail;
-
-	if ((TRACE_RING_SIZE + tail - head) < 2)
-		return;
-
-	trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
-	trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = ts;
 
 	for (flags = 0; (c = *fmt) != '\0'; ++fmt) {
 		if (flags == 0) {
@@ -182,9 +174,9 @@ void vtracef(const struct trace_ref * ref, uint32_t ts, va_list ap)
 			case 'p':
 			case 'I':
 				val = va_arg(ap, uint32_t);
-				if ((TRACE_RING_SIZE + tail - head) == 0)
-					return;
-				trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = val;
+				if (cnt >= TRACE_ARG_MAX)
+					return -1;
+				buf[cnt++] = val;
 				flags = 0;
 				break;
 
@@ -205,15 +197,15 @@ void vtracef(const struct trace_ref * ref, uint32_t ts, va_list ap)
 							}
 						}
 					}
-					if ((TRACE_RING_SIZE + tail - head) == 0)
-						return;
 					i += 4;
 					/* Limit the length of the string */
 					if (i >= TRACE_STRING_MAX) {
 						val &= 0x00ffffff;
 						c = '\0';
 					}
-					trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = val;
+					if (cnt >= TRACE_ARG_MAX)
+						return -1;
+					buf[cnt++] = val;
 				} while (c != '\0');
 				flags = 0;
 				break;
@@ -224,29 +216,86 @@ void vtracef(const struct trace_ref * ref, uint32_t ts, va_list ap)
 		}
 	}
 
-	trace_ring.head = head;
+	return cnt;
 }
 
 void tracef(const struct trace_ref * ref, ... )
 {
+	uint32_t buf[TRACE_ARG_MAX];
+	unsigned int head;
+#if !THINKOS_ENABLE_CRITICAL
 	unsigned int pri;
+#endif
 	uint32_t now;
 	va_list ap;
+	int cnt;
 
 	now = __timer_ts();
-	va_start(ap, ref);
 
+	va_start(ap, ref);
+	cnt = vtracef(buf, ref, ap);
+	va_end(ap);
+
+	if (cnt < 0)
+		return;
+
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_enter();
+#else
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
+#endif
 
-	vtracef(ref, now, ap);
+	head = trace_ring.head;
+	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (cnt + 2)) {
+		int i;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
+		for (i = 0; i < cnt; ++i)
+			trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = buf[i];
+		trace_ring.head = head;
+	}
 
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_exit();
+#else
 	cm3_primask_set(pri);
-
-	va_end(ap);
+#endif
 }
 
 void trace(const struct trace_ref * ref)
+{
+	unsigned int head;
+#if !THINKOS_ENABLE_CRITICAL
+	unsigned int pri;
+#endif
+	uint32_t now;
+
+	now = __timer_ts();
+
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_enter();
+#else
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+#endif
+
+
+	head = trace_ring.head;
+	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= 2) {
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
+		trace_ring.head = head;
+	}
+
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_exit();
+#else
+	cm3_primask_set(pri);
+#endif
+}
+
+void trace_i(const struct trace_ref * ref)
 {
 	unsigned int head;
 	unsigned int pri;

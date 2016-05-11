@@ -59,8 +59,12 @@ endif
 ifeq ($(HOST),Windows)
   MKVER := $(subst /,\,$(TOOLSDIR)/mkver.py)
 else
-  ifeq ($(DIRMODE),msys)
-    MKVER := $(call windrv,$(TOOLSDIR)\mkver.py)
+  ifeq ($(HOST),Msys)
+    ifeq ($(DIRMODE),msys)
+      MKVER := $(subst /,\\,$(call windrv,$(TOOLSDIR)\\mkver.py))
+    else
+      MKVER := $(TOOLSDIR)/mkver.py
+    endif
   else
     MKVER := $(TOOLSDIR)/mkver.py
   endif

@@ -38,8 +38,6 @@
 #define THINKOS_IDLE_STACK_BSS          0
 #define THINKOS_IDLE_STACK_ALLOC        1
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
@@ -74,6 +72,11 @@
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
+#define THINKOS_ENABLE_CLOCK            1
+#define THINKOS_ENABLE_ALARM            1
+#define THINKOS_ENABLE_SLEEP            1
+#define THINKOS_ENABLE_BREAK            0
+
 #define THINKOS_ENABLE_ARG_CHECK        1
 #define THINKOS_ENABLE_DEADLOCK_CHECK   1
 #define THINKOS_ENABLE_SANITY_CHECK     1
@@ -81,10 +84,7 @@
 #define THINKOS_ENABLE_CTL              1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
-
 #define THINKOS_ENABLE_RT_DEBUG         1
-
-#define THINKOS_ENABLE_BREAK            1
 
 #define THINKOS_ENABLE_PROFILING        1
 

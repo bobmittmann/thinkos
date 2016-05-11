@@ -28,71 +28,71 @@
 #include <string.h>
 
 /* Preformatted HTTP header */
-const char http_hdr_200_html[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_html[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Content-type: text/html;charset=UTF-8\r\n\r\n";
 
-const char http_hdr_200_js[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_js[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: private, max-age=21600\r\n"
 	"Content-type: application/javascript\r\n\r\n";
 
-const char http_hdr_200_text[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_text[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Content-type: text/plain\r\n\r\n";
 
-const char http_hdr_200_css[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_css[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: private, max-age=21600\r\n"
 	"Content-type: text/css\r\n\r\n";
 
-const char http_hdr_200_html_gz[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_html_gz[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: private, max-age=21600\r\n"
 	"Content-type: text/html;charset=UTF-8\r\n"
 	"Content-Encoding: gzip\r\n\r\n";
 
-const char http_hdr_200_js_gz[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_js_gz[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: application/javascript\r\n"
 	"Content-Encoding: gzip\r\n\r\n";
 
-const char http_hdr_200_text_gz[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_text_gz[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: text/plain\r\n"
 	"Content-Encoding: gzip\r\n\r\n";
 
-const char http_hdr_200_css_gz[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_css_gz[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: text/css\r\n"
 	"Content-Encoding: gzip\r\n\r\n";
 
-const char http_hdr_200_png[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_png[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: image/png\r\n\r\n";
 
-const char http_hdr_200_jpeg[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_jpeg[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: image/jpeg\r\n\r\n";
 
-const char http_hdr_200_gif[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_gif[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: public, max-age=21600\r\n"
 	"Content-type: image/gif\r\n\r\n";
 
-const char http_hdr_200_json[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_json[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: no-cache\r\n"
 	"Connection: keep-alive\r\n"
 	"Content-Type: application/json\r\n"
 	"\r\n";
 
-const char http_hdr_200_xml[] = "HTTP/1.1 200 OK\r\n"
+static const char http_hdr_200_xml[] = "HTTP/1.1 200 OK\r\n"
 	"Server: " HTTPD_SERVER_NAME "\r\n"
 	"Cache-Control: no-cache\r\n"
 	"Connection: keep-alive\r\n"
@@ -107,7 +107,7 @@ const char http_hdr_200_text_js[] = "HTTP/1.1 200 OK\r\n"
 	"\r\n";
 */
 
-const char * const http_200_hdr[] = {
+static const char * const http_200_hdr[] = {
 	[OBJ_STATIC_HTML] = http_hdr_200_html,
 	[OBJ_STATIC_TEXT] = http_hdr_200_text,
 	[OBJ_STATIC_CSS] = http_hdr_200_css,
@@ -123,7 +123,7 @@ const char * const http_200_hdr[] = {
 	[OBJ_STATIC_JS_GZ] = http_hdr_200_js_gz
 };
 
-const uint16_t http_200_len[] = {
+static const uint16_t http_200_len[] = {
 	[OBJ_STATIC_HTML] = sizeof(http_hdr_200_html) - 1,
 	[OBJ_STATIC_TEXT] = sizeof(http_hdr_200_text) - 1,
 	[OBJ_STATIC_CSS] = sizeof(http_hdr_200_css) - 1,
@@ -139,7 +139,7 @@ const uint16_t http_200_len[] = {
 	[OBJ_STATIC_JS_GZ] = sizeof(http_hdr_200_js_gz) - 1
 };
 
-int httpd_200(struct tcp_pcb * __tp, int unsigned __type)
+int http_200(struct httpctl * __ctl, int unsigned __type)
 {
 	char * hdr;
 	int len;
@@ -147,6 +147,6 @@ int httpd_200(struct tcp_pcb * __tp, int unsigned __type)
 	hdr = (char *)http_200_hdr[__type];
 	len = http_200_len[__type];
 
-	return tcp_send(__tp, hdr, len, TCP_SEND_NOCOPY);
+	return tcp_send(__ctl->tp, hdr, len, TCP_SEND_NOCOPY);
 }
 

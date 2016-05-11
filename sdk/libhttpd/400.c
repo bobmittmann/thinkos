@@ -27,9 +27,9 @@
 
 static const char http_msg_400[] = HTTPD_MSG(400, "Bad Request", "");
 
-int httpd_400(struct tcp_pcb * __tp) 
+int http_400(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_400, 
+	return tcp_send(__ctl->tp, http_msg_400,
 					sizeof(http_msg_400) - 1, 0);
 }
 

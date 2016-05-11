@@ -54,8 +54,10 @@ void dmon_soft_reset(void)
 	__exception_reset();
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_STEP)
 	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
+#endif
 
 #if (THINKOS_ENABLE_RESET_RAM_VECTORS)
 	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");

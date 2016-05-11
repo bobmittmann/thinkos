@@ -27,9 +27,9 @@
 
 static const char http_msg_410[] = HTTPD_MSG(410, "Gone", "");
 
-int httpd_410(struct tcp_pcb * __tp) 
+int http_410(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_410, sizeof(http_msg_410) - 1, 
+	return tcp_send(__ctl->tp, http_msg_410, sizeof(http_msg_410) - 1,
 					TCP_SEND_NOCOPY);
 }
 

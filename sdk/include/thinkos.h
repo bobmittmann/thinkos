@@ -153,7 +153,7 @@ int thinkos_thread_create_inf(int (* task_ptr)(void *), void * task_arg,
  *
  * @return This function always succeeds, returning the calling thread's ID.
  */
-int const thinkos_thread_self(void);
+int thinkos_thread_self(void);
 
 /** @brief request a thread to terminate
  *

@@ -27,9 +27,9 @@
 
 static const char http_msg_411[] = HTTPD_MSG(411, "Length Required", "");
 
-int httpd_411(struct tcp_pcb * __tp) 
+int http_411(struct httpctl * __ctl)
 {
-	return tcp_send(__tp, http_msg_411, sizeof(http_msg_411) - 1, 
+	return tcp_send(__ctl->tp, http_msg_411, sizeof(http_msg_411) - 1,
 					TCP_SEND_NOCOPY);
 }
 
