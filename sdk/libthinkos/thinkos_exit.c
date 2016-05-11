@@ -80,12 +80,16 @@ void __thinkos_thread_abort(int thread_id)
 
 #if THINKOS_ENABLE_TERMINATE
 /* Terminate the target thread */
-void thinkos_terminate_svc(struct cm3_except_context * ctx)
+void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 {
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one... */
-	unsigned int thread_id = (unsigned int)ctx->r0 - 1;
+	unsigned int thread = (unsigned int)ctx->r0;
 	int code = ctx->r1;
+	unsigned int thread_id;
+
+	if (thread == 0)
+		thread_id = self;
+	else
+		thread_id = thread - 1;
 
 	(void)code;
 
@@ -158,9 +162,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx)
 
 void __attribute__((noreturn)) __thinkos_thread_exit(int code)
 {
-	int self = thinkos_thread_self();
-
-	thinkos_terminate(self, code);
+	thinkos_terminate(0, code);
 
 	for(;;);
 }

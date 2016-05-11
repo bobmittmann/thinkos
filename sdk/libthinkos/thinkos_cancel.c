@@ -25,14 +25,20 @@
 #include <sys/delay.h>
 
 #if THINKOS_ENABLE_CANCEL
-void thinkos_cancel_svc(int32_t * arg)
+void thinkos_cancel_svc(int32_t * arg, int self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	unsigned int thread_id = (unsigned int)arg[0] - 1;
+	unsigned int thread = (unsigned int)arg[0];
+	unsigned int thread_id;
 	int code = arg[1];
 	unsigned int wq;
 	int stat;
+
+	if (thread == 0)
+		thread_id = self;
+	else
+		thread_id = thread - 1;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {

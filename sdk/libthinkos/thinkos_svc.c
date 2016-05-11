@@ -26,17 +26,17 @@
 
 void thinkos_thread_create_svc(int32_t * arg);
 
-void thinkos_pause_svc(int32_t * arg);
+void thinkos_pause_svc(int32_t * arg, int self);
 
 void thinkos_resume_svc(int32_t * arg);
 
 void thinkos_join_svc(int32_t * arg, int self);
 
-void thinkos_cancel_svc(int32_t * arg);
+void thinkos_cancel_svc(int32_t * arg, int self);
 
 void thinkos_exit_svc(int32_t * arg, int self);
 
-void thinkos_terminate_svc(int32_t * arg);
+void thinkos_terminate_svc(int32_t * arg, int self);
 
 
 void thinkos_sleep_svc(int32_t * arg, int self);
@@ -674,7 +674,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 
 	case THINKOS_PAUSE:
 #if THINKOS_ENABLE_PAUSE
-		thinkos_pause_svc(arg);
+		thinkos_pause_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -690,7 +690,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 
 	case THINKOS_CANCEL:
 #if THINKOS_ENABLE_CANCEL
-		thinkos_cancel_svc(arg);
+		thinkos_cancel_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -706,7 +706,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 
 	case THINKOS_TERMINATE:
 #if THINKOS_ENABLE_TERMINATE
-		thinkos_terminate_svc(arg);
+		thinkos_terminate_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif

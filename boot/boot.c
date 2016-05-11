@@ -138,7 +138,7 @@ int main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "5. thinkos_thread_abort()");
 #endif
 
-	thinkos_thread_abort(thinkos_thread_self());
+	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
 
