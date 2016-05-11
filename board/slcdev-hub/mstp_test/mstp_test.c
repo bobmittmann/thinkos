@@ -471,11 +471,30 @@ struct board_cfg {
 #define CFG_MAGIC 0x01020304
 #define CFG_ADDR  0x0800ff00
 
+void show_netmap(struct mstp_lnk * mstp)
+{
+	uint8_t map[16];
+	unsigned int cnt;
+	int i;
+
+	cnt = mstp_lnk_getnetmap(mstp, map, sizeof(map));
+	printf("\n---- Network Map ----\n");
+
+	for (i = 0; i < cnt; ++i) {
+		printf("%2d - Node %2d\n", i, map[i]);
+	}
+
+	printf("\n");
+}
+
+
+
 void show_menu(void)
 {
 	printf("\n===== MS/TP test =====\n");
 	printf("[s] stop sending\n");
 	printf("[1..9] set sending mode\n");
+	printf("[n] show network map\n");
 	printf("\n");
 }
 

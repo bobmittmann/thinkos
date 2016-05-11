@@ -340,7 +340,7 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 		[MSTP_INITIALIZE] = 100,
 		[MSTP_IDLE] = T_NO_TOKEN,
 		[MSTP_ANSWER_DATA_REQUEST] = T_REPLY_DELAY,
-		[MSTP_NO_TOKEN] = (T_NO_TOKEN + T_SLOT * lnk->addr),
+		[MSTP_NO_TOKEN] = (T_NO_TOKEN + T_SLOT * lnk->this_station),
 		[MSTP_POLL_FOR_MASTER] = T_USAGE_TIMEOUT,
 		[MSTP_PASS_TOKEN] = T_USAGE_TIMEOUT,
 		[MSTP_USE_TOKEN] = 5,
@@ -363,7 +363,7 @@ void __attribute__((noreturn)) mstp_lnk_loop(struct mstp_lnk * lnk)
 	   when this node first receives the token), set SoleMaster to FALSE, 
 	   set ReceivedValidFrame and ReceivedInvalidFrame to FALSE, and enter 
 	   the IDLE state.a */
-	ts = lnk->addr;
+	ts = lnk->this_station;
 	ns = ts;
 	ps = ns;
 	lnk->sole_master = false;
@@ -705,7 +705,7 @@ transition_now:
 				token_count = 1;
 				/* event_count = 0; removed in Addendum 135-2004d-8 */
 				lnk->state = MSTP_POLL_FOR_MASTER;
-				DBG("[DONE_WITH_TOKEN]"
+				INF("[DONE_WITH_TOKEN]"
 						" SoleMasterRestartMaintenancePFM -->"
 						" [POLL_FOR_MASTER]");
 			} else {
@@ -717,7 +717,7 @@ transition_now:
 				token_count = 1;
 				event_count = 0;
 				lnk->state = MSTP_PASS_TOKEN;
-				DBG("[DONE_WITH_TOKEN] ResetMaintenancePFM"
+				INF("[DONE_WITH_TOKEN] ResetMaintenancePFM"
 						" --> [PASS_TOKEN]");
 			}
 		} else {
@@ -726,7 +726,7 @@ transition_now:
 			RESET_SILENCE_TIMER();
 			retry_count = 0;
 			lnk->state = MSTP_POLL_FOR_MASTER;
-			DBG("[DONE_WITH_TOKEN] SendMaintenancePFM"
+			INF("[DONE_WITH_TOKEN] SendMaintenancePFM"
 					" --> [POLL_FOR_MASTER]");
 		}
 
@@ -803,7 +803,11 @@ transition_now:
 		/* a successor node. */
 		if (rcvd_valid_frm == true) {
 			if (dst_addr == ts && frm_type == FRM_REPLY_POLL_FOR_MASTER) {
-				ns = src_addr;
+				if (ns != src_addr) {
+					ns = src_addr;
+					lnk->next_station = ns;
+					INF("MS/TP next_station=%d", ns);
+				}
 				event_count = 0;
 				mstp_fast_send(lnk, FRM_TOKEN, ns);
 				RESET_SILENCE_TIMER();
@@ -820,7 +824,7 @@ transition_now:
 			} else {
 				rcvd_valid_frm = false;
 				lnk->state = MSTP_IDLE;
-				DBG("[POLL_FOR_MASTER] "
+				INF("[POLL_FOR_MASTER] "
 						 "ReceivedUnexpectedFrame --> [IDLE]");
 				goto transition_now;
 			}
@@ -840,14 +844,14 @@ transition_now:
 					RESET_SILENCE_TIMER();
 					retry_count = 0;
 					lnk->state = MSTP_PASS_TOKEN;
-					DBG("[POLL_FOR_MASTER] DoneWithPFM --> [PASS_TOKEN]");
+					INF("[POLL_FOR_MASTER] DoneWithPFM --> [PASS_TOKEN]");
 				} else {
 					if ((ps + 1) % (N_MAX_MASTER + 1) != ts) {
 						ps = (ps + 1) % (N_MAX_MASTER + 1);
 						mstp_fast_send(lnk, FRM_POLL_FOR_MASTER, ps);
 						RESET_SILENCE_TIMER();
 						retry_count = 0;
-						DBG("[POLL_FOR_MASTER] SendNextPFM --> "
+						INF("[POLL_FOR_MASTER] SendNextPFM --> "
 							"[POLL_FOR_MASTER]");
 					} else {
 						lnk->sole_master = true;
@@ -855,7 +859,7 @@ transition_now:
 						rcvd_invalid_frm = false;
 						lnk->state = MSTP_USE_TOKEN;
 						lnk->mgmt.callback(lnk, MSTP_EV_SOLE_MASTER);
-						DBG("[POLL_FOR_MASTER] DeclareSoleMaster --> [USE_TOKEN]");
+						INF("[POLL_FOR_MASTER] DeclareSoleMaster --> [USE_TOKEN]");
 						goto transition_now;
 					}
 				}
@@ -949,7 +953,7 @@ int mstp_lnk_send(struct mstp_lnk * lnk, const void * buf, unsigned int cnt,
 
 int mstp_lnk_getaddr(struct mstp_lnk * lnk)
 {
-	return lnk->addr;
+	return lnk->this_station;
 }
 
 int mstp_lnk_getbcast(struct mstp_lnk * lnk)
@@ -981,7 +985,7 @@ int mstp_lnk_init(struct mstp_lnk * lnk, const char * name,
 
 	lnk->dev = dev;
 	lnk->state = MSTP_INITIALIZE;
-	lnk->addr = addr;
+	lnk->this_station = addr;
 
 	DBG("[MSTP_INITIALIZE]");
 	lnk->recv.flag = thinkos_flag_alloc();
