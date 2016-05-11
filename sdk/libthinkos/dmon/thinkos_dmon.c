@@ -52,8 +52,6 @@ struct thinkos_dmon thinkos_dmon_rt;
 uint32_t thinkos_dmon_stack[THINKOS_DMON_STACK_SIZE / 4];
 const uint16_t thinkos_dmon_stack_size = sizeof(thinkos_dmon_stack);
 
-void dmon_context_swap(void * ctx); 
-
 /* -------------------------------------------------------------------------
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
@@ -496,22 +494,27 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 		return -1;
 	}
 
-	if (thread_id >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id);
-		return -1;
-	}
+	if (thread_id == THINKOS_THREAD_VOID) {
+		DCC_LOG(LOG_WARNING, "void thread, IRQ step!");
+		dmon_context_swap_ext(&thinkos_dmon_rt.ctx, 1); 
+	} else {
+		if (thread_id >= THINKOS_THREADS_MAX) {
+			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id);
+			return -1;
+		}
 
-	if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
-		DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", thread_id);
-		return -1;
-	}
+		if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
+			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", thread_id);
+			return -1;
+		}
 
-	/* request stepping the thread  */
-	__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
-	/* resume the thread */
-	__thinkos_thread_resume(thread_id);
-	/* make sure to run the scheduler */
-	__thinkos_defer_sched();
+		/* request stepping the thread  */
+		__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
+		/* resume the thread */
+		__thinkos_thread_resume(thread_id);
+		/* make sure to run the scheduler */
+		__thinkos_defer_sched();
+	}
 
 	if (sync) {
 		DCC_LOG(LOG_INFO, "synchronous step, waiting for signal...");
@@ -580,7 +583,7 @@ static void dmon_on_reset(struct thinkos_dmon * dmon)
 	dmon->mask |= (1 << DMON_RESET) | (1 << DMON_COMM_CTL) | (1 << DMON_EXCEPT);
 }
 
-void thinkos_dbgmon_isr(struct cm3_except_context * ctx)
+int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 {
 	uint32_t sigset = thinkos_dmon_rt.events;
 	uint32_t sigmsk = thinkos_dmon_rt.mask;
@@ -747,6 +750,9 @@ step_done:
 			}
 		}
 	}
+	if (sigset & (1 << DMON_RESET)) {
+		dmon_on_reset(&thinkos_dmon_rt);
+	}
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 
 	if (sigset & (1 << DMON_RESET)) {
@@ -760,10 +766,11 @@ step_done:
 		if (thinkos_dmon_rt.ctx <  thinkos_dmon_stack) {
 			DCC_LOG(LOG_ERROR, "stack overflow!");
 		}
-		dmon_context_swap(&thinkos_dmon_rt.ctx); 
-	} else {
-		DCC_LOG1(LOG_JABBER, "Unhandled signal <%08x>", sigset);
+		return dmon_context_swap(&thinkos_dmon_rt.ctx); 
 	}
+
+	DCC_LOG1(LOG_JABBER, "Unhandled signal <%08x>", sigset);
+	return 0;
 }
 
 void thinkos_exception_dsr(struct thinkos_except * xcpt)

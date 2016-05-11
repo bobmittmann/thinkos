@@ -24,6 +24,7 @@
 #include <arch/cortex-m3.h>
 
 #define SCB_ICSR_OFFS 4
+#define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
@@ -153,36 +154,62 @@ cm3_hard_fault_isr:
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
-	.align	2
-	.global	cm3_debug_mon_isr
+	.align  2
+	.global cm3_debug_mon_isr
 	.thumb
 	.thumb_func
-	.type	cm3_debug_mon_isr, %function
+	.type   cm3_debug_mon_isr, %function
 cm3_debug_mon_isr:
 	/* select the context stack according to the content of LR */
 	tst     lr, #4
 	ite     eq
 	mrseq   r0, MSP
 	mrsne   r0, PSP
-	b thinkos_dbgmon_isr
-	.size  cm3_debug_mon_isr, . - cm3_debug_mon_isr
+#if THINKOS_ENABLE_DEBUG_STEP
+	b       thinkos_dbgmon_isr
+#else
+	push    {lr}
+	bl      thinkos_dbgmon_isr
+	pop     {lr}
+	cbnz    r0, 1f
+	bx      lr
+1f:
+	/* Disable low priority interrupts */
+	mov     r2, #(1 << 5)
+	msr	    BASEPRI, r2
+	/* Step request */
+	ldr.n   r3, .L_cm_dcb
+	ldr     r1, [r3, #DCB_DEMCR_OFFS]
+	orr     r1, r1, #DCB_DEMCR_MON_STEP
+	str     r1, [r3, #DCB_DEMCR_OFFS]
+	bx      lr
+.L_cm_dcb:
+	.word   CM3_DCB_BASE /* Core Debug Base Address */
+#endif
+	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 
-	.align	2
-	.global	cm3_svc_isr
+	.align  2
+	.global cm3_svc_isr
 	.thumb
 	.thumb_func
-	.type	cm3_svc_isr, %function
+	.type   cm3_svc_isr, %function
 cm3_svc_isr:
 	ldr     r3, .L_thinkos_rt_1
 	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if THINKOS_ENABLE_DEBUG_STEP
 	ldr     r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
+#if 0
+	movs    r0, #1
+	lsls    r0, r1
+	tst     r2, r0
+	beq     1f
+#endif
 	adds    r0, r1, #1
-	lsls    r2, r0
-	ittt    cc
-	ldrcc   r3, .L_cm3_scb_1
-	movcc   r0, #SCB_ICSR_PENDSVSET
-	strcc   r0, [r3, #SCB_ICSR_OFFS]
+	lsrs    r2, r0
+	bcc     1f
+	ldr     r3, .L_cm3_scb_1
+	mov     r0, #SCB_ICSR_PENDSVSET
+	str     r0, [r3, #SCB_ICSR_OFFS]
 1:
 #endif
 	mrs     r0, PSP
@@ -192,19 +219,23 @@ cm3_svc_isr:
 	ldrb    r2, [r2, #-2]
 	b       thinkos_svc_isr
 
-	.align	2
+	.align  2
 .L_thinkos_rt_1:
-	.word	thinkos_rt
+	.word   thinkos_rt
 .L_cm3_scb_1:
-	.word	CM3_SCB_BASE
+	.word   CM3_SCB_BASE
 
-	.size  cm3_svc_isr, . - cm3_svc_isr
+	.size   cm3_svc_isr, . - cm3_svc_isr
 
-	.align 2
-	.global	thinkos_vec_nm
+
+
+
+
+	.align  2
+	.global thinkos_vec_nm
 	.section .rodata,"a",%progbits
 	.type   thinkos_vec_nm, %object
 	.size   thinkos_vec_nm, 4
 thinkos_vec_nm:
-	.ascii	"VEC\000"
+	.ascii  "VEC\000"
 

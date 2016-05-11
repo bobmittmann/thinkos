@@ -34,7 +34,7 @@ LIBS = cm3 stm32f util thinkos ice-comm gdb gcc
 INCPATH = $(SDK)/include ../include
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
+CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections #--save-temps
 LDFLAGS = -Wl,--gc-sections 
 
 VERSION_DATE = "2016-02-13"

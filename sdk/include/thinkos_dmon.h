@@ -54,6 +54,7 @@ enum dbgmon_event {
 	DMON_THREAD_STEP  = 8,
 	DMON_THREAD_FAULT = 12,
 	DMON_BREAKPOINT   = 16,
+	DMON_IRQ_STEP     = 28,
 	DMON_IDLE         = 29,
 	DMON_EXCEPT       = 30,
 	DMON_RESET        = 31
@@ -289,7 +290,9 @@ int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
 
 void thinkos_dbgmon_signal(unsigned int sig);
 
-void dmon_context_swap(void * ctx); 
+int dmon_context_swap(void * ctx); 
+
+int dmon_context_swap_ext(void * ctx, int arg); 
 
 #ifdef __cplusplus
 }

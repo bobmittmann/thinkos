@@ -23,7 +23,7 @@
 #include <thinkos_sys.h>
 #include <arch/cortex-m3.h>
 
-#define DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
+#define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
 /* --------------------------------------------------------------------------
  * ThinkOS - Real Time Scheduler 
@@ -145,7 +145,7 @@ thinkos_sched_step:
 	/* r1: (1 << new_thread_id) */
 	/* r3: new thread id */
 	/* r7: thinkos_rt */
-	ldr.w	r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]	
+	ldr     r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]	
 	/* r2: step_svc */
 	tst     r1, r2
 	beq.n   .L_normal_step
@@ -191,8 +191,8 @@ thinkos_sched_step:
 	cmp     r5, #0xdf
 	bne.n   .L_restore_and_step
     /* the thread is stepping into a system call */
-	orrs	r2, r1
-	str.w	r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]
+	orrs    r2, r1
+	str     r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]
 	b       .L_context_restore
 
 .L_restore_and_step:
@@ -210,9 +210,9 @@ thinkos_sched_step:
 #endif
 	ldmia   r0, {r4-r11}
 	ldr.n   r3, .L_cm_dcb
-	ldr     r1, [r3, #DEMCR_OFFS]
-	orr     r1, r1, #0x40000
-	str     r1, [r3, #DEMCR_OFFS]
+	ldr     r1, [r3, #DCB_DEMCR_OFFS]
+	orr     r1, r1, #DCB_DEMCR_MON_STEP
+	str     r1, [r3, #DCB_DEMCR_OFFS]
 	bx      lr
 
 	.align  2

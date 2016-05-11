@@ -26,27 +26,33 @@
 /* --------------------------------------------------------------------------
  * ThinkOS - debug monitor context swap
  * --------------------------------------------------------------------------*/
+
 	.syntax unified
 	.cpu cortex-m3
 
 	.text
 	.align	2
 	.global	dmon_context_swap
+	.global	dmon_context_swap_ext
 	.thumb
 	.thumb_func
 	.type	dmon_context_swap, %function
+	.type	dmon_context_swap_ext, %function
 
 dmon_context_swap:
-
+	mov    r1, #0
+dmon_context_swap_ext:
 	push   {r4-r11,lr}
-	mrs    r1, APSR
-	push   {r1}
-	mov    r1, sp
+	mrs    r3, APSR
+	push   {r3}
+	mov    r3, sp
 	ldr    sp, [r0] /* restore context */
-	str    r1, [r0] /* save context */
-	pop    {r1}
-	msr    APSR_nzcvq, r1
+	str    r3, [r0] /* save context */
+	mov    r0, r1 /* optional return value */
+	pop    {r3}
+	msr    APSR_nzcvq, r3
 	pop    {r4-r11,lr}
+	bx     lr
 
 	.size   dmon_context_swap, . - dmon_context_swap
 
