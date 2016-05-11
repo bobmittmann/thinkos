@@ -62,10 +62,9 @@ void cm3_default_isr(int irq)
 	__thinkos_preempt();
 }
 
-void thinkos_irq_wait_svc(int32_t * arg)
+void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
-	int32_t self = thinkos_rt.active;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {

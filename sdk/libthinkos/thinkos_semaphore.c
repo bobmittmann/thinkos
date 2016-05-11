@@ -125,11 +125,10 @@ void thinkos_sem_trywait_svc(int32_t * arg)
 	} while (__strex(&thinkos_rt.sem_val[sem], sem_val));
 }
 
-void thinkos_sem_wait_svc(int32_t * arg)
+void thinkos_sem_wait_svc(int32_t * arg, int self)
 {	
 	unsigned int wq = arg[0];
 	unsigned int sem = wq - THINKOS_SEM_BASE;
-	int self = thinkos_rt.active;
 	uint32_t sem_val;
 	uint32_t queue;
 
@@ -214,12 +213,11 @@ again:
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_sem_timedwait_svc(int32_t * arg)
+void thinkos_sem_timedwait_svc(int32_t * arg, int self)
 {	
 	unsigned int wq = arg[0];
 	unsigned int sem = wq - THINKOS_SEM_BASE;
 	uint32_t ms = (uint32_t)arg[1];
-	int self = thinkos_rt.active;
 	uint32_t sem_val;
 	uint32_t queue;
 

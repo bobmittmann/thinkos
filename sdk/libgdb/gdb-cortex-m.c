@@ -65,7 +65,7 @@ int uint2hex2hex(char * pkt, unsigned int val);
  * Threads auxiliarly functions
  * ------------------------------------------------------------------------- */
 
-#define THREAD_ID_OFFS 64
+#define THREAD_ID_OFFS 1
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
 #define THREAD_ID_NONE -2

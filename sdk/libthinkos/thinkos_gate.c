@@ -70,10 +70,9 @@ void thinkos_gate_free_svc(int32_t * arg)
 #define __GATE_SIGNALED 1
 #define __GATE_LOCKED   2
 
-void thinkos_gate_wait_svc(int32_t * arg)
+void thinkos_gate_wait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
 	uint32_t gates;
@@ -156,11 +155,10 @@ again:
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_gate_timedwait_svc(int32_t * arg)
+void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
 	uint32_t gates;

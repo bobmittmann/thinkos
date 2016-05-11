@@ -273,9 +273,8 @@ void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 }
 #endif
 
-void thinkos_console_svc(int32_t * arg)
+void thinkos_console_svc(int32_t * arg, int self)
 {
-	int self = thinkos_rt.active;
 	unsigned int req = arg[0];
 	unsigned int wq;
 	unsigned int len;

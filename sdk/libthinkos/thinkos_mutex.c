@@ -59,11 +59,10 @@ void thinkos_mutex_free_svc(int32_t * arg)
 }
 #endif
 
-void thinkos_mutex_lock_svc(int32_t * arg)
+void thinkos_mutex_lock_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
-	int self = thinkos_rt.active;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
@@ -107,11 +106,10 @@ void thinkos_mutex_lock_svc(int32_t * arg)
 	__thinkos_defer_sched();
 }
 
-void thinkos_mutex_trylock_svc(int32_t * arg)
+void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
-	int self = thinkos_rt.active;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
@@ -147,12 +145,11 @@ void thinkos_mutex_trylock_svc(int32_t * arg)
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_mutex_timedlock_svc(int32_t * arg)
+void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
-	int self = thinkos_rt.active;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
@@ -200,14 +197,10 @@ void thinkos_mutex_timedlock_svc(int32_t * arg)
 }
 #endif
 
-
-void thinkos_mutex_unlock_svc(int32_t * arg)
+void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
-#if THINKOS_ENABLE_SANITY_CHECK
-	int self = thinkos_rt.active;
-#endif
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK

@@ -38,7 +38,9 @@ void dmon_print_thread(struct dmon_comm * comm, int id)
 
 	type = thinkos_obj_type_get(st.wq);
 
-	dmprintf(comm, " - Id: %d", id); 
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	dmprintf(comm, " - No: %d", id + 1); 
 	if (st.th_inf != NULL)
 		dmprintf(comm, ", '%s'", st.th_inf->tag); 
 	else

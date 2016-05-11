@@ -45,7 +45,9 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
-			dmprintf(comm, "%3d", i);
+			/* Internal thread ids start form 0 whereas user
+			   thread numbers start form one ... */
+			dmprintf(comm, "%3d", i + 1);
 #if THINKOS_ENABLE_THREAD_INFO
 			if (rt->th_inf[i] != NULL) {
 				dmprintf(comm, " | %7s", rt->th_inf[i]->tag); 
@@ -72,7 +74,7 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 		}
 	}
 
-	dmprintf(comm, "%3d", THINKOS_THREAD_IDLE);
+	dmprintf(comm, "%3d", THINKOS_THREAD_IDLE + 1);
 	dmprintf(comm, " |  <IDLE>"); 
 	dmprintf(comm, " | %08x", (uint32_t)*thinkos_idle_stack_ptr); 
 	dmprintf(comm, " | %08x", (uint32_t)rt->idle_ctx); 

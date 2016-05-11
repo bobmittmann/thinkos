@@ -156,7 +156,9 @@ void thinkos_thread_create_svc(int32_t * arg)
 		__thinkos_defer_sched();
 	}
 
-	arg[0] = thread_id;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	arg[0] = thread_id + 1;
 }
 
 

@@ -61,7 +61,9 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 	dmprintf(comm, "\r\n------------------------------------------------"
 			 "---------------------\r\n");
-	dmprintf(comm, "[ Current = %d ]", rt->active);
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	dmprintf(comm, "[ Current = %d ]", rt->active + 1);
 
 #if THINKOS_ENABLE_CLOCK
 	dmprintf(comm, "[ %d ticks ]", rt->ticks);
@@ -118,7 +120,9 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
-			dmprintf(comm, "%3d", i);
+			/* Internal thread ids start form 0 whereas user
+			   thread numbers start form one ... */
+			dmprintf(comm, "%3d", i + 1);
 #if THINKOS_ENABLE_THREAD_INFO
 			if (rt->th_inf[i] != NULL) {
 				dmprintf(comm, " | %7s", rt->th_inf[i]->tag); 
@@ -162,7 +166,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 
 	/* IDLE thread */
-	dmprintf(comm, "%3d", i);
+	dmprintf(comm, "%3d", i + 1);
 #if THINKOS_ENABLE_THREAD_INFO
 	dmprintf(comm, " |  <IDLE>");
 	dmprintf(comm, " | %08x", (uint32_t)*thinkos_idle_stack_ptr); 
@@ -196,7 +200,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 			dmprintf(comm, "%3d %5s: {", j, thinkos_type_name_lut[type]);
 			for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 				if (wq & (1 << i)) 
-					dmprintf(comm, " %d", i);
+					dmprintf(comm, " %d", i + 1);
 			}
 			dmprintf(comm, " }");
 #if THINKOS_MUTEX_MAX > 0

@@ -67,10 +67,9 @@ void thinkos_flag_free_svc(int32_t * arg)
  * -------------------------------------------------------------------------- */
 
 /* wait for the flag */
-void thinkos_flag_take_svc(int32_t * arg)
+void thinkos_flag_take_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 	uint32_t * flags_bmp;
 	uint32_t flags;
@@ -146,11 +145,10 @@ again:
 
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_flag_timedtake_svc(int32_t * arg)
+void thinkos_flag_timedtake_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 	uint32_t * flags_bmp;
 	uint32_t flags;
@@ -416,10 +414,9 @@ void thinkos_flag_set_svc(int32_t * arg)
 	}
 }
 
-void thinkos_flag_watch_svc(int32_t * arg)
+void thinkos_flag_watch_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -453,11 +450,10 @@ void thinkos_flag_watch_svc(int32_t * arg)
 
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_flag_timedwatch_svc(int32_t * arg)
+void thinkos_flag_timedwatch_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-	int self = thinkos_rt.active;
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 
 #if THINKOS_ENABLE_ARG_CHECK

@@ -62,7 +62,7 @@ void thinkos_cond_free_svc(int32_t * arg)
 }
 #endif
 
-void thinkos_cond_wait_svc(int32_t * arg)
+void thinkos_cond_wait_svc(int32_t * arg, int self)
 {
 	unsigned int cwq = arg[0];
 	unsigned int mwq = arg[1];
@@ -70,7 +70,6 @@ void thinkos_cond_wait_svc(int32_t * arg)
 	unsigned int cond = cwq - THINKOS_COND_BASE;
 #endif
 	unsigned int mutex = mwq - THINKOS_MUTEX_BASE;
-	int self = thinkos_rt.active;
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -144,7 +143,7 @@ void thinkos_cond_wait_svc(int32_t * arg)
 
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_cond_timedwait_svc(int32_t * arg)
+void thinkos_cond_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int cwq = arg[0];
 	unsigned int mwq = arg[1];
@@ -153,7 +152,6 @@ void thinkos_cond_timedwait_svc(int32_t * arg)
 #endif
 	unsigned int mutex = mwq - THINKOS_MUTEX_BASE;
 	uint32_t ms = (uint32_t)arg[2];
-	int self = thinkos_rt.active;
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK

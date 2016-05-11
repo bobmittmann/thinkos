@@ -77,11 +77,10 @@ void thinkos_ev_free_svc(int32_t * arg)
 }
 #endif
 
-void thinkos_ev_wait_svc(int32_t * arg)
+void thinkos_ev_wait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int no = wq - THINKOS_EVENT_BASE;
-	int self = thinkos_rt.active;
 	unsigned int ev;
 	uint32_t mask;
 	uint32_t pend;
@@ -160,12 +159,11 @@ again:
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_ev_timedwait_svc(int32_t * arg)
+void thinkos_ev_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 	unsigned int no = wq - THINKOS_EVENT_BASE;
-	int self = thinkos_rt.active;
 	unsigned int ev;
 	uint32_t mask;
 	uint32_t pend;

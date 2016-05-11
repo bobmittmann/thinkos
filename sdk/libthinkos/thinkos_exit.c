@@ -82,7 +82,9 @@ void __thinkos_thread_abort(int thread_id)
 /* Terminate the target thread */
 void thinkos_terminate_svc(struct cm3_except_context * ctx)
 {
-	int thread_id = ctx->r1;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one... */
+	unsigned int thread_id = (unsigned int)ctx->r1 - 1;
 	int code = ctx->r0;
 
 	(void)code;
@@ -164,14 +166,12 @@ void __attribute__((noreturn)) __thinkos_thread_exit(int code)
 }
 
 #if THINKOS_ENABLE_EXIT
-void thinkos_exit_svc(struct cm3_except_context * ctx)
+void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
 	DCC_LOG2(LOG_MSG, "<%d> exit with code %d!", 
 			 thinkos_rt.active, ctx->r0); 
 
 #if THINKOS_ENABLE_JOIN
-	int self = thinkos_rt.active;
-
 	if (thinkos_rt.wq_join[self] == 0) {
 		DCC_LOG1(LOG_MSG, "<%d> canceled...", self); 
 		/* insert into the canceled wait queue and wait for a join call */ 

@@ -25,21 +25,22 @@
 #include <sys/delay.h>
 
 #if THINKOS_ENABLE_JOIN
-void thinkos_join_svc(int32_t * arg)
+void thinkos_join_svc(int32_t * arg, int self)
 {
-	int self = thinkos_rt.active;
-	unsigned int th = arg[0];
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	unsigned int thread_id = (unsigned int)arg[0] - 1;
 	unsigned int wq;
 
 #if THINKOS_ENABLE_ARG_CHECK
-	if (th >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a thread!", th);
+	if (thread_id >= THINKOS_THREADS_MAX) {
+		DCC_LOG1(LOG_ERROR, "object %d is not a thread!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (__bit_mem_rd(thinkos_rt.th_alloc, th) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", th);
+	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
+		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -47,13 +48,13 @@ void thinkos_join_svc(int32_t * arg)
 #endif
 
 	/* remove thread from the canceled wait queue */
-	if (__bit_mem_rd(&thinkos_rt.wq_canceled, th)) {
-		__bit_mem_wr(&thinkos_rt.wq_canceled, th, 0);  
-		__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  
+	if (__bit_mem_rd(&thinkos_rt.wq_canceled, thread_id)) {
+		__bit_mem_wr(&thinkos_rt.wq_canceled, thread_id, 0);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
 	}
 
 	/* insert the current thread (self) into the joining thread wait queue */
-	wq = THINKOS_JOIN_BASE + th;
+	wq = THINKOS_JOIN_BASE + thread_id;
 	__thinkos_wq_insert(wq, self);
 
 	DCC_LOG2(LOG_TRACE, "<%d> waiting to join at %d.", self, wq);

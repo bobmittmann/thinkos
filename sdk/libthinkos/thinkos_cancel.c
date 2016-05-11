@@ -27,19 +27,21 @@
 #if THINKOS_ENABLE_CANCEL
 void thinkos_cancel_svc(int32_t * arg)
 {
-	unsigned int th = arg[0];
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	unsigned int thread_id = (unsigned int)arg[0] - 1;
 	int code = arg[1];
 	unsigned int wq;
 	int stat;
 
 #if THINKOS_ENABLE_ARG_CHECK
-	if (th >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", th);
+	if (thread_id >= THINKOS_THREADS_MAX) {
+		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (__bit_mem_rd(thinkos_rt.th_alloc, th) == 0) {
+	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -49,9 +51,9 @@ void thinkos_cancel_svc(int32_t * arg)
 #if (THINKOS_ENABLE_THREAD_STAT == 0)
 #error "thinkos_cancel() depends on THINKOS_ENABLE_THREAD_STAT"	
 #endif
-	stat = thinkos_rt.th_stat[th];
+	stat = thinkos_rt.th_stat[thread_id];
 	/* remove from other wait queue including wq_ready */
-	__bit_mem_wr(&thinkos_rt.wq_lst[stat >> 1], th, 0);
+	__bit_mem_wr(&thinkos_rt.wq_lst[stat >> 1], thread_id, 0);
 
 #if THINKOS_ENABLE_JOIN
 	/* insert into the canceled wait queue and wait for a join call */ 
@@ -61,23 +63,23 @@ void thinkos_cancel_svc(int32_t * arg)
 	wq = __wq_idx(&thinkos_rt.wq_ready);
 #endif /* THINKOS_ENABLE_JOIN */
 
-	__thinkos_wq_insert(wq, th);
+	__thinkos_wq_insert(wq, thread_id);
 
 #if THINKOS_ENABLE_TIMESHARE
 	/* possibly remove from the time share wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_tmshare, th, 0); 
+	__bit_mem_wr(&thinkos_rt.wq_tmshare, thread_id, 0); 
 #endif
 
 #if THINKOS_ENABLE_CLOCK
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);  
 #endif
 
 	DCC_LOG3(LOG_TRACE, "<%d> cancel %d, with code %d!", 
-			 thinkos_rt.active, th, code); 
+			 thinkos_rt.active, thread_id, code); 
 
-	thinkos_rt.ctx[th]->pc = (uint32_t)__thinkos_thread_exit;
-	thinkos_rt.ctx[th]->r0 = code;
+	thinkos_rt.ctx[thread_id]->pc = (uint32_t)__thinkos_thread_exit;
+	thinkos_rt.ctx[thread_id]->r0 = code;
 	arg[0] = 0;
 }
 #endif
