@@ -153,7 +153,7 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
-	DCC_LOG2(LOG_ERROR, "thread_id=%d active=%d", xcpt->thread_id,
+	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", xcpt->active,
 			 thinkos_rt.active); 
 
 #if (THINKOS_ENABLE_MONITOR)

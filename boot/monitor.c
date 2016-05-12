@@ -203,6 +203,8 @@ static void monitor_on_fault(struct dmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
+	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
+
 	if (dmon_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}

@@ -757,8 +757,6 @@ step_done:
 		dmon_on_reset(&thinkos_dmon_rt);
 	}
 
-	DCC_LOG1(LOG_WARNING, "VOID context=%08x!", thinkos_rt.void_ctx);
-
 	/* Process monitor events */
 	if ((sigset & sigmsk) != 0) {
 		DCC_LOG1(LOG_MSG, "<%08x>", sigset);
@@ -775,26 +773,27 @@ step_done:
 
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
-	if (xcpt->thread_id >= 0) {
-		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
-				 xcpt->thread_id);
+	int ipsr;
+
+	ipsr = xcpt->ctx.xpsr & 0x1ff;
 #if THINKOS_ENABLE_DEBUG_STEP
-		thinkos_rt.break_id = xcpt->thread_id;
-		thinkos_rt.xcpt_ipsr = 0;
+	thinkos_rt.xcpt_ipsr = ipsr;
+#endif
+	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
+		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
+				 xcpt->active);
+#if THINKOS_ENABLE_DEBUG_STEP
+		thinkos_rt.break_id = xcpt->active;
 #endif
 		__dmon_irq_disable_all();
 		__dmon_irq_force_enable();
 		dmon_signal(DMON_THREAD_FAULT);
 	} else {
 #if THINKOS_ENABLE_DEBUG_STEP
-		int ipsr;
-
-		ipsr = (xcpt->ctx.xpsr & 0x1ff);
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
 				 ipsr - 16);
 		/* exceptions on IRQ */
 		thinkos_rt.break_id = -1;
-		thinkos_rt.xcpt_ipsr = ipsr;
 		thinkos_rt.void_ctx = &xcpt->ctx;
 
 		DCC_LOG2(LOG_WARNING, "VOID context=%08x active=%d!", 

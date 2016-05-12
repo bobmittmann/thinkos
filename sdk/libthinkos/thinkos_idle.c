@@ -29,13 +29,11 @@
  * Idle task
  * --------------------------------------------------------------------------*/
 
-#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_CONST + \
-	 THINKOS_IDLE_STACK_BSS) > 1
+#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_BSS) > 1
 #error "Invalid multiple IDLE stack options!"
 #endif
 
-#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_CONST + \
-	 THINKOS_IDLE_STACK_BSS) == 0
+#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_BSS) == 0
 #error "Invalid IDLE stack option!"
 #endif
 
@@ -75,20 +73,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 	}
 }
 
-#if THINKOS_IDLE_STACK_CONST
-/* Constant IDLE stack:
-
-   Define the IDLE context (stack) in Flash or read only memory. This
-   is helpful in two aspects:
-   1 - it reduces the memory footprint.
-   2 - it won't be unintetionally modified by a misbehaved application. */
-const struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx = {
-	.pc = (uint32_t)thinkos_idle_task,
-	.xpsr = CM_EPSR_T /* set the thumb bit */
-};
-#define THINKOS_IDLE_STACK_BASE (uint32_t *)&thinkos_idle_ctx
-#endif
-
 #if THINKOS_IDLE_STACK_BSS
 /* IDLE stack on .bss section */
 struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx;
@@ -117,7 +101,7 @@ uint32_t * const thinkos_idle_stack_ptr = THINKOS_IDLE_STACK_BASE;
 #endif
 
 /* initialize the idle thread */
-void __thinkos_idle_init(void)
+struct thinkos_context * __thinkos_idle_init(void)
 {
 	struct thinkos_context * idle_ctx;
 
@@ -131,15 +115,9 @@ void __thinkos_idle_init(void)
 	DCC_LOG1(LOG_TRACE, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
 #endif
 
-#if THINKOS_IDLE_STACK_CONST
-	DCC_LOG1(LOG_TRACE, "Const idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
-#endif
-
-#if !THINKOS_IDLE_STACK_CONST
 	idle_ctx->pc = (uint32_t)thinkos_idle_task;
 	idle_ctx->lr = (uint32_t)__thinkos_thread_exit;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-#endif /* THINKOS_IDLE_STACK_CONST */
 
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = idle_ctx;
 
@@ -153,5 +131,6 @@ void __thinkos_idle_init(void)
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
 #endif
 
+	return idle_ctx;
 }
 

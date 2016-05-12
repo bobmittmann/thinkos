@@ -283,16 +283,12 @@
 #define THINKOS_ENABLE_IDLE_WFI         1
 #endif
 
-#ifndef THINKOS_IDLE_STACK_CONST
-#define THINKOS_IDLE_STACK_CONST        0
-#endif
-
 #ifndef THINKOS_IDLE_STACK_BSS 
 #define THINKOS_IDLE_STACK_BSS          0
 #endif
 
 #ifndef THINKOS_IDLE_STACK_ALLOC
-  #if THINKOS_IDLE_STACK_CONST || THINKOS_IDLE_STACK_BSS 
+  #if THINKOS_IDLE_STACK_BSS 
     #define THINKOS_IDLE_STACK_ALLOC    0
   #else
     #define THINKOS_IDLE_STACK_ALLOC    1
@@ -874,11 +870,10 @@ struct thinkos_except {
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;
-
-	uint8_t ipsr;
-	int8_t thread_id;
-	uint8_t type;   /* exception type */
-	uint8_t unroll; /* unroll count */
+	uint8_t  ipsr;   /* IPSR */
+	int8_t   active; /* active thread at the time of the exception */
+	uint8_t  type;   /* exception type */
+	uint8_t  unroll; /* unroll count */
 };
 
 /* -------------------------------------------------------------------------- 
@@ -1177,7 +1172,7 @@ void __thinkos_memcpy32(void * __dst, const void * __src,
 
 void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
 
-void __thinkos_idle_init(void);
+struct thinkos_context * __thinkos_idle_init(void);
 
 void __thinkos_reset(void);
 

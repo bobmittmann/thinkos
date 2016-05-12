@@ -39,6 +39,7 @@ void dmon_print_exception(struct dmon_comm * comm,
 	uint32_t ufsr;
 #endif
 	uint32_t sp;
+	int ipsr;
 
 	switch (xcpt->type) {
 	case CM3_EXCEPT_HARD_FAULT:
@@ -64,54 +65,31 @@ void dmon_print_exception(struct dmon_comm * comm,
 #endif
 	}
 
-	if (xcpt->thread_id != -1) {
-		dmprintf(comm, "thread %d", xcpt->thread_id);
+	ipsr = xcpt->ctx.xpsr & 0x1ff;
+	if (ipsr == 0) {
+		dmprintf(comm, "thread %d", xcpt->active);
+	} else if (ipsr > 15) {
+		dmprintf(comm, "IRQ %d", ipsr - 16);
 	} else {
-		unsigned int xno;
-		xno = xcpt->ctx.xpsr & 0xff;
-		if (xno > 15) {
-			dmprintf(comm, "IRQ %d", xno - 16);
-		} else {
-			switch (xno) {
-			case CM3_EXCEPT_SVC:
-				dmprintf(comm, "SVCall");
-				break;
-			case CM3_EXCEPT_DEBUG_MONITOR:
-				dmprintf(comm, "Monitor");
-				break;
-			case CM3_EXCEPT_PENDSV:
-				dmprintf(comm, "PendSV");
-				break;
-			case CM3_EXCEPT_SYSTICK:
-				dmprintf(comm, "sysTick");
-				break;
-			}
-		}	
+		switch (ipsr) {
+		case CM3_EXCEPT_SVC:
+			dmprintf(comm, "SVCall");
+			break;
+		case CM3_EXCEPT_DEBUG_MONITOR:
+			dmprintf(comm, "Monitor");
+			break;
+		case CM3_EXCEPT_PENDSV:
+			dmprintf(comm, "PendSV");
+			break;
+		case CM3_EXCEPT_SYSTICK:
+			dmprintf(comm, "sysTick");
+			break;
+		}
 	}
 
+	dmprintf(comm, "\r\n");
+
 	sp = (xcpt->ret == CM3_EXC_RET_THREAD_PSP) ? xcpt->psp : xcpt->msp;
-#if 0
-	dmprintf(comm, "\r\n xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c T=%c "
-				"ICI/IT=%02x GE=%1x XCP=%d]\r\n", 
-				psr,
-				((psr >> 31) & 0x01) + '0',
-				((psr >> 30) & 0x01) + '0',
-				((psr >> 29) & 0x01) + '0',
-				((psr >> 28) & 0x01) + '0',
-				((psr >> 27) & 0x01) + '0',
-				((psr >> 24) & 0x01) + '0',
-				((psr >> 19) & 0xc0) | ((psr >> 10) & 0x3f),
-				((psr >> 16) & 0x0f),
-				psr & 0x1ff);
-	dmprintf(comm, "   r0=%08x   r4=%08x   r8=%08x  r12=%08x\r\n",
-				xcpt->ctx.r0, xcpt->ctx.r4, xcpt->ctx.r8, xcpt->ctx.r12);
-	dmprintf(comm, "   r1=%08x   r5=%08x   r9=%08x   sp=%08x\r\n", 
-				xcpt->ctx.r1, xcpt->ctx.r5, xcpt->ctx.r9, sp);
-	dmprintf(comm, "   r2=%08x   r6=%08x  r10=%08x   lr=%08x\r\n", 
-				xcpt->ctx.r2, xcpt->ctx.r6, xcpt->ctx.r10, xcpt->ctx.lr);
-	dmprintf(comm, "   r3=%08x   r7=%08x  r11=%08x   pc=%08x\r\n",  
-				xcpt->ctx.r3, xcpt->ctx.r7, xcpt->ctx.r11, xcpt->ctx.pc);
-#endif
 	dmon_print_context(comm, &xcpt->ctx, sp);
 
 	switch (xcpt->type) {
