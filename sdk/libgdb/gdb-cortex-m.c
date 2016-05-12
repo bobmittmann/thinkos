@@ -191,7 +191,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 	}
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.idle_ctx;
+		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
 		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
 	} else if (thread_id == THINKOS_THREAD_VOID) {
 		ctx = thinkos_rt.void_ctx;
@@ -291,7 +291,7 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 	}
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.idle_ctx;
+		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
 		DCC_LOG1(LOG_TRACE, "ThinkOS Idle thread, context=%08x!", ctx);
 		return 0;
 	} 

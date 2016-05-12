@@ -103,8 +103,6 @@ extern uint32_t _stack[];
 
 #define THINKOS_IDLE_STACK_SIZE sizeof(struct thinkos_context)
 
-uint32_t * const thinkos_idle_stack_ptr = THINKOS_IDLE_STACK_BASE;
-
 #if THINKOS_ENABLE_THREAD_INFO
 const struct thinkos_thread_inf thinkos_idle_inf = {
 	.tag = "IDLE",
@@ -114,6 +112,8 @@ const struct thinkos_thread_inf thinkos_idle_inf = {
 	.thread_id = THINKOS_THREAD_IDLE,
 	.paused = 0
 };
+#else
+uint32_t * const thinkos_idle_stack_ptr = THINKOS_IDLE_STACK_BASE;
 #endif
 
 /* initialize the idle thread */
@@ -141,7 +141,7 @@ void __thinkos_idle_init(void)
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 #endif /* THINKOS_IDLE_STACK_CONST */
 
-	thinkos_rt.idle_ctx = idle_ctx;
+	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = idle_ctx;
 
 #if (THINKOS_THREADS_MAX < 32) 
 	/* put the IDLE thread in the ready queue */

@@ -180,7 +180,6 @@ void __attribute__((naked)) __xcpt_unroll(struct thinkos_except * xcpt,
 #endif
 	}
 
-//	if ((irq = __xcpt_next_active_irq(ipsr - 16)) >= 0) {
 	if ((irq = __xcpt_active_irq()) >= 0) {
 		xpsr_n = 0x01000000 + irq + 16;
 		DCC_LOG1(LOG_TRACE, "IRQ %d", irq);

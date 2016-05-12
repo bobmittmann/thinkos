@@ -118,7 +118,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 	dmprintf(comm, " |\r\n");
 #endif
 
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
@@ -163,29 +163,6 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 			dmprintf(comm, "\r\n");
 		}
 	}
-
-
-	/* IDLE thread */
-	dmprintf(comm, "%3d", i + 1);
-#if THINKOS_ENABLE_THREAD_INFO
-	dmprintf(comm, " |  <IDLE>");
-	dmprintf(comm, " | %08x", (uint32_t)*thinkos_idle_stack_ptr); 
-#endif
-	dmprintf(comm, " | %08x", (uint32_t)rt->idle_ctx); 
-#if THINKOS_ENABLE_THREAD_STAT
-	dmprintf(comm, " | ... | ...");
-#endif
-#if THINKOS_ENABLE_TIMESHARE
-	//			dmprintf(comm, " | %4d | %4d", rt->sched_val[i], rt->sched_pri[i]); 
-#endif
-#if THINKOS_ENABLE_CLOCK
-	dmprintf(comm, " |        ..."); 
-#endif
-#if THINKOS_ENABLE_PROFILING
-	busy = (cycbuf[i] + cycdiv / 2) / cycdiv;
-	dmprintf(comm, " | %3d.%d", busy / 10, busy % 10);
-#endif
-	dmprintf(comm, " |\r\n");
 
 	for (j = 0; j < (rt->wq_end - rt->wq_lst); ++j) {
 		uint32_t wq;

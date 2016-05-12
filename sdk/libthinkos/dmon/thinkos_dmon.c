@@ -757,6 +757,8 @@ step_done:
 		dmon_on_reset(&thinkos_dmon_rt);
 	}
 
+	DCC_LOG1(LOG_WARNING, "VOID context=%08x!", thinkos_rt.void_ctx);
+
 	/* Process monitor events */
 	if ((sigset & sigmsk) != 0) {
 		DCC_LOG1(LOG_MSG, "<%08x>", sigset);
@@ -767,7 +769,7 @@ step_done:
 		return dmon_context_swap(&thinkos_dmon_rt.ctx); 
 	}
 
-	DCC_LOG1(LOG_JABBER, "Unhandled signal <%08x>", sigset);
+	DCC_LOG1(LOG_INFO, "Unhandled signal <%08x>", sigset);
 	return 0;
 }
 
@@ -782,7 +784,6 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 #endif
 		__dmon_irq_disable_all();
 		__dmon_irq_force_enable();
-
 		dmon_signal(DMON_THREAD_FAULT);
 	} else {
 #if THINKOS_ENABLE_DEBUG_STEP
@@ -796,9 +797,11 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.xcpt_ipsr = ipsr;
 		thinkos_rt.void_ctx = &xcpt->ctx;
 
+		DCC_LOG2(LOG_WARNING, "VOID context=%08x active=%d!", 
+				 thinkos_rt.void_ctx, thinkos_rt.active);
+
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 			dmon_soft_reset();
-
 			DCC_LOG(LOG_TRACE, "8. reset.");
 			dmon_signal(DMON_RESET);
 		} else 
@@ -806,6 +809,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		{
 			__dmon_irq_disable_all();
 			__dmon_irq_force_enable();
+			DCC_LOG(LOG_TRACE, "DMON_EXCEPT");
 			dmon_signal(DMON_EXCEPT);
 		}
 	}

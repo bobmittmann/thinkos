@@ -570,9 +570,8 @@ struct thinkos_rt {
 	   and their order and sizes must not be changed.
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
-	struct thinkos_context * ctx[THINKOS_THREADS_MAX]; 
 	/* Idle thread context pointer */
-	struct thinkos_context * idle_ctx; 
+	struct thinkos_context * ctx[THINKOS_THREADS_MAX + 1]; 
 #if THINKOS_ENABLE_THREAD_VOID 
 	/* void thread context pointer */
 	struct thinkos_context * void_ctx; 

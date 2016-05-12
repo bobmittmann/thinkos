@@ -1608,7 +1608,8 @@ void gdb_task(struct dmon_comm * comm)
 
 //	DCC_LOG(LOG_TRACE, "Comm connected..");
 
-	sigmask = (1 << DMON_THREAD_FAULT);
+	sigmask = (1 << DMON_EXCEPT);
+	sigmask |= (1 << DMON_THREAD_FAULT);
 	sigmask |= (1 << DMON_THREAD_STEP);
 	sigmask |= (1 << DMON_COMM_RCV);
 	sigmask |= (1 << DMON_COMM_CTL);
@@ -1627,6 +1628,12 @@ void gdb_task(struct dmon_comm * comm)
 		sigset = dmon_select(sigmask);
 
 		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
+
+		if (sigset & (1 << DMON_EXCEPT)) {
+			DCC_LOG(LOG_TRACE, "Exception.");
+			dmon_clear(DMON_EXCEPT);
+			rsp_on_fault(gdb, pkt);
+		}
 
 		if (sigset & (1 << DMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");

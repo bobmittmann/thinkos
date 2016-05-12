@@ -26,6 +26,7 @@
 #include <sys/stm32f.h>
 #include <sys/console.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <thinkos.h>
 
 #include "board.h"
@@ -69,6 +70,31 @@ void led_toggle(unsigned int id)
 	__led_toggle(led_io[id].gpio, led_io[id].pin);
 }
 
+void read_fault(void)
+{
+	volatile uint32_t * ptr = (uint32_t *)(0x0);
+	uint32_t x;
+	int i;
+
+	for (i = 0; i < (16 << 4); ++i) {
+		x = *ptr;
+		(void)x;
+		ptr += 0x10000000 / (2 << 4);
+	}
+}
+
+void write_fault(void)
+{
+	volatile uint32_t * ptr = (uint32_t *)(0x0);
+	uint32_t x = 0;
+	int i;
+
+	for (i = 0; i < (16 << 4); ++i) {
+		*ptr = x;
+		ptr += 0x10000000 / (2 << 4);
+	}
+}
+
 
 volatile uint32_t irq_count = 0 ;
 volatile int tmr_sem;
@@ -80,6 +106,9 @@ void stm32_tim3_isr(void)
 	tim->sr = 0;
 	irq_count++;
 	thinkos_sem_post_i(tmr_sem);
+
+	if (irq_count == 10)
+		read_fault();
 }
 
 void timer_init(uint32_t freq)
@@ -129,11 +158,27 @@ void stdio_init(void)
 	stdin = f;
 }
 
+int test_task(void * arg)
+{
+	for (;;) {
+		thinkos_sleep(10000);
+		write_fault();
+	}
+
+	return 0;
+}
+
+uint32_t test_stack[64];
+
 int main(int argc, char ** argv)
 {
 	int i;
 
 	stdio_init();
+
+	thinkos_thread_create(test_task, NULL,
+			test_stack, sizeof(test_stack));
+
 	tmr_sem = thinkos_sem_alloc(0);
 	timer_init(2);
 

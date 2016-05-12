@@ -325,7 +325,7 @@ void __tdump(void)
 	int i;
 
 	DCC_LOG1(LOG_TRACE, "Active=%d", thinkos_rt.active);
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (thinkos_rt.ctx[i] == NULL)
 			continue;
 #if THINKOS_ENABLE_THREAD_INFO
@@ -333,7 +333,7 @@ void __tdump(void)
 #if THINKOS_ENABLE_THREAD_STAT
 			DCC_LOG8(LOG_TRACE, "%7s (%2d %3d) SP=%08x PC=%08x LR=%08x %d/%d", 
 					 thinkos_rt.th_inf[i]->tag,
-					 i, thinkos_rt.th_stat[i] >> 1,
+					 i + 1, thinkos_rt.th_stat[i] >> 1,
 					 thinkos_rt.ctx[i], 
 					 thinkos_rt.ctx[i]->pc, 
 					 thinkos_rt.ctx[i]->lr,
@@ -343,7 +343,7 @@ void __tdump(void)
 #else
 			DCC_LOG7(LOG_TRACE, "%7s (%2d) SP=%08x PC=%08x LR=%08x %d/%d", 
 					 thinkos_rt.th_inf[i]->tag,
-					 i, 
+					 i + 1, 
 					 thinkos_rt.ctx[i], 
 					 thinkos_rt.ctx[i]->pc, 
 					 thinkos_rt.ctx[i]->lr,
@@ -355,24 +355,22 @@ void __tdump(void)
 #endif
 #if THINKOS_ENABLE_THREAD_STAT
 		DCC_LOG5(LOG_TRACE, "....... (%2d %3d) SP=%08x PC=%08x LR=%08x", 
-				 i, thinkos_rt.th_stat[i] >> 1,
+				 i + 1, thinkos_rt.th_stat[i] >> 1,
 				 thinkos_rt.ctx[i], 
 				 thinkos_rt.ctx[i]->pc, 
 				 thinkos_rt.ctx[i]->lr);
 #else
 		DCC_LOG4(LOG_TRACE, "....... (%2d) SP=%08x PC=%08x LR=%08x", 
-				 i, thinkos_rt.ctx[i], 
+				 i + 1, thinkos_rt.ctx[i], 
 				 thinkos_rt.ctx[i]->pc, 
 				 thinkos_rt.ctx[i]->lr);
 #endif
 
 
 	}
-	DCC_LOG2(LOG_TRACE, "<IDLE>  (%2d) SP=%08x", i, 
-			 thinkos_rt.idle_ctx);
 #if THINKOS_ENABLE_EXIT || THINKOS_ENABLE_JOIN
 	DCC_LOG2(LOG_TRACE, "<VOID>  (%2d) SP=%08x", i + 1, 
-			 thinkos_rt.idle_ctx);
+			 thinkos_rt.void_ctx);
 #endif
 	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", thinkos_rt.wq_ready);
 #if THINKOS_ENABLE_TIMESHARE

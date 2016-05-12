@@ -43,7 +43,7 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 	dmprintf(comm, " |   Free"); 
 	dmprintf(comm, "\r\n");
 
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
@@ -73,15 +73,6 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 			dmprintf(comm, "\r\n");
 		}
 	}
-
-	dmprintf(comm, "%3d", THINKOS_THREAD_IDLE + 1);
-	dmprintf(comm, " |  <IDLE>"); 
-	dmprintf(comm, " | %08x", (uint32_t)*thinkos_idle_stack_ptr); 
-	dmprintf(comm, " | %08x", (uint32_t)rt->idle_ctx); 
-	dmprintf(comm, " | %6d", THINKOS_EXCEPT_STACK_SIZE); 
-	dmprintf(comm, " | %6d", __scan_stack(thinkos_except_stack, 
-										  THINKOS_EXCEPT_STACK_SIZE));
-	dmprintf(comm, "\r\n");
 
 	dmprintf(comm, "%3d", -1);
 	dmprintf(comm, " |  <DMON>"); 
