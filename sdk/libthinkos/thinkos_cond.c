@@ -52,7 +52,11 @@ void thinkos_cond_free_svc(int32_t * arg)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (cond >= THINKOS_COND_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is conditional variable!", wq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
@@ -75,23 +79,29 @@ void thinkos_cond_wait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (cond >= THINKOS_COND_MAX) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", self, cwq);
-		arg[0] = THINKOS_EINVAL;
 #if THINKOS_ENABLE_MONITOR
-		__bkpt();
+		thinkos_throw(THINKOS_ERR_COND_INVALID);
+#else
+		arg[0] = THINKOS_EINVAL;
 #endif
 		return;
 	}
 	if (mutex >= THINKOS_MUTEX_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #if THINKOS_ENABLE_COND_ALLOC
 	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", self, cwq);
-		arg[0] = THINKOS_EINVAL;
 #if THINKOS_ENABLE_MONITOR
-		__bkpt();
+		thinkos_throw(THINKOS_ERR_COND_ALLOC);
+#else
+		arg[0] = THINKOS_EINVAL;
 #endif
 		return;
 	}
@@ -99,20 +109,30 @@ void thinkos_cond_wait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
 #endif
 
+#ifdef THINKOS_ENABLE_SANITY_CHECK
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
 	if (thinkos_rt.lock[mutex] != self) {
 		DCC_LOG3(LOG_WARNING, "<%d> mutex %d is locked by <%d>", 
 				 self, mwq, thinkos_rt.lock[mutex]);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_NOTMINE);
+#else
 		arg[0] = THINKOS_EPERM;
+#endif
 		return;
 	}
+#endif
 
 	/* insert into the cond wait queue */
 	__thinkos_wq_insert(cwq, self);
@@ -155,40 +175,62 @@ void thinkos_cond_timedwait_svc(int32_t * arg, int self)
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
-	if (mutex >= THINKOS_MUTEX_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
 	if (cond >= THINKOS_COND_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#if THINKOS_ENABLE_MUTEX_ALLOC
-	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
 #endif
+		return;
+	}
+	if (mutex >= THINKOS_MUTEX_MAX) {
+		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
+#else
+		arg[0] = THINKOS_EINVAL;
+#endif
+		return;
+	}
 #if THINKOS_ENABLE_COND_ALLOC
 	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_ALLOC);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
+		return;
+	}
+#endif
+#if THINKOS_ENABLE_MUTEX_ALLOC
+	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
+		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
+#else
+		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
 #endif
 
+#ifdef THINKOS_ENABLE_SANITY_CHECK
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
 	if (thinkos_rt.lock[mutex] != self) {
 		DCC_LOG3(LOG_WARNING, "<%d> mutex %d is locked by <%d>", 
 				 self, mwq, thinkos_rt.lock[mutex]);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_MUTEX_NOTMINE);
+#else
 		arg[0] = THINKOS_EPERM;
+#endif
 		return;
 	}
+#endif
 
 	/* insert into the cond wait queue */
 	__thinkos_tmdwq_insert(cwq, self, ms);
@@ -229,14 +271,22 @@ void thinkos_cond_signal_svc(int32_t * arg)
 
 	if (cond >= THINKOS_COND_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 
 #if THINKOS_ENABLE_COND_ALLOC
 	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_ALLOC);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
@@ -263,13 +313,21 @@ void thinkos_cond_broadcast_svc(int32_t * arg)
 
 	if (cond >= THINKOS_COND_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #if THINKOS_ENABLE_COND_ALLOC
 	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_COND_ALLOC);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif

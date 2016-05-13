@@ -1204,8 +1204,8 @@ static inline void __attribute__((always_inline)) __nop(void) {
 	asm volatile ("nop" : );
 }
 
-static inline void __attribute__((always_inline)) __bkpt(void) {
-	asm volatile ("bkpt" : );
+static inline void __attribute__((always_inline)) __bkpt(int no) {
+	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
 void cm3_udelay_calibrate(void);

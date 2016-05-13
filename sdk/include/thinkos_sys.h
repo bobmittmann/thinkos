@@ -877,6 +877,21 @@ struct thinkos_except {
 };
 
 /* -------------------------------------------------------------------------- 
+ * Internal errors
+ * --------------------------------------------------------------------------*/
+
+enum thinkos_exception {
+	THINKOS_ERR_COND_INVALID,
+	THINKOS_ERR_COND_ALLOC,
+	THINKOS_ERR_MUTEX_INVALID,
+	THINKOS_ERR_MUTEX_ALLOC,
+	THINKOS_ERR_MUTEX_NOTMINE,
+	THINKOS_ERR_MUTEX_LOCKED,
+	THINKOS_ERR_SEM_INVALID,
+	THINKOS_ERR_SEM_ALLOC,
+};
+
+/* -------------------------------------------------------------------------- 
  * Idle thread
  * --------------------------------------------------------------------------*/
 
@@ -913,6 +928,11 @@ void cm3_msp_init(uint64_t * stack_top);
 /* -------------------------------------------------------------------------- 
  * Support Functions
  * --------------------------------------------------------------------------*/
+
+static inline void __attribute__((always_inline)) thinkos_throw(int code)
+{
+	__bkpt(code);
+}
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 

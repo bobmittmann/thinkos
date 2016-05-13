@@ -128,7 +128,7 @@ void thinkos_ctl_svc(int32_t * arg)
 		__thinkos_pause_all();
 		__thinkos_defer_sched();
 #if THINKOS_ENABLE_MONITOR
-		__bkpt();
+		__bkpt(3);
 #endif
 		break;
 
