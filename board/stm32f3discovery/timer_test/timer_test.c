@@ -161,7 +161,7 @@ void stdio_init(void)
 int test_task(void * arg)
 {
 	for (;;) {
-		thinkos_sleep(10000);
+		thinkos_sleep(3000);
 		write_fault();
 	}
 

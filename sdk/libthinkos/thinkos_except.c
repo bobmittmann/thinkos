@@ -50,7 +50,7 @@ struct thinkos_except thinkos_except_buf __attribute__((section(".heap")));
 
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 
-void __xcpt_rettobase(struct thinkos_except * xcpt)
+static void __xcpt_rettobase(struct thinkos_except * xcpt)
 {
 	int ipsr;
 
@@ -101,7 +101,7 @@ void __xcpt_rettobase(struct thinkos_except * xcpt)
 	thinkos_exception_dsr(xcpt);
 }
 
-int __xcpt_active_irq(void)
+static int __xcpt_active_irq(void)
 {
 	int irqregs;
 	int irqbits;
@@ -121,8 +121,7 @@ int __xcpt_active_irq(void)
 	return -16;
 }
 
-void __attribute__((naked)) __xcpt_unroll(struct thinkos_except * xcpt, 
-										  uint32_t xpsr)
+static void __xcpt_unroll(struct thinkos_except * xcpt, uint32_t xpsr)
 {
 	struct cm3_except_context * sf;
 	uint32_t xpsr_n;

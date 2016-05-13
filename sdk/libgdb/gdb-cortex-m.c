@@ -484,9 +484,9 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		if (thinkos_rt.th_inf[thread_id] != NULL)
 			n = str2hex(cp, thinkos_rt.th_inf[thread_id]->tag);
 		else
-			n = int2str2hex(cp, thread_id);
+			n = int2str2hex(cp, thread_id + THREAD_ID_OFFS);
 #else
-		n = int2str2hex(cp, thread_id);
+		n = int2str2hex(cp, thread_id + THREAD_ID_OFFS);
 #endif
 		cp += n;
 	}
