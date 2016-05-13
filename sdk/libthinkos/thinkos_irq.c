@@ -69,7 +69,11 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_IRQ_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
@@ -107,7 +111,11 @@ void thinkos_irq_register_svc(int32_t * arg)
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_IRQ_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif
@@ -140,7 +148,19 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
+#if THINKOS_ENABLE_ARG_CHECK
+	int irq_max = ((uintptr_t)&__sizeof_rom_vectors / sizeof(void *)) - 16;
 
+	if (irq >= irq_max) {
+		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_IRQ_INVALID);
+#else
+		arg[0] = THINKOS_EINVAL;
+#endif
+		return;
+	}
+#endif
 	arg[0] = 0;
 	
 	switch (req) {

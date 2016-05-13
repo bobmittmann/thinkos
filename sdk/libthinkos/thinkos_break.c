@@ -40,7 +40,11 @@ void thinkos_break_svc(int32_t * arg)
 	int type;
 
 	if (wq >= THINKOS_WQ_LST_END) {
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_OBJECT_INVALID);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif 
@@ -52,7 +56,11 @@ void thinkos_break_svc(int32_t * arg)
 
 	if ((alloc != NULL) && __bit_mem_rd(alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
+#if THINKOS_ENABLE_MONITOR
+		thinkos_throw(THINKOS_ERR_OBJECT_ALLOC);
+#else
 		arg[0] = THINKOS_EINVAL;
+#endif
 		return;
 	}
 #endif 
