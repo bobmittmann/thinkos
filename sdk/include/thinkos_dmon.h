@@ -187,29 +187,29 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx);
 
 void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ));
 
-void dmon_reset(void);
+void dbgmon_reset(void);
 
-void __attribute__((noreturn)) dmon_exec(void (* task)(struct dmon_comm *));
+void __attribute__((noreturn)) dbgmon_exec(void (* task)(struct dmon_comm *));
 
-void dmon_unmask(int sig);
+void dbgmon_unmask(int sig);
 
-void dmon_mask(int sig);
+void dbgmon_mask(int sig);
 
-void dmon_clear(int sig);
+void dbgmon_clear(int sig);
 
-uint32_t dmon_select(uint32_t watch);
+uint32_t dbgmon_select(uint32_t watch);
 
-int dmon_wait(int sig);
+int dbgmon_wait(int sig);
 
-int dmon_expect(int sig);
+int dbgmon_expect(int sig);
 
-int dmon_sleep(unsigned int ms);
+int dbgmon_sleep(unsigned int ms);
 
-void dmon_alarm(unsigned int ms);
+void dbgmon_alarm(unsigned int ms);
 
-void dmon_alarm_stop(void);
+void dbgmon_alarm_stop(void);
 
-int dmon_wait_idle(void);
+int dbgmon_wait_idle(void);
 
 
 int dmon_thread_step(unsigned int id, bool block);
@@ -234,7 +234,7 @@ void dmon_console_io_task(struct dmon_comm * comm);
 
 int dmprintf(struct dmon_comm * comm, const char *fmt, ... );
 
-void dmon_print_thread(struct dmon_comm * comm, int id);
+void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id);
 
 void dmon_print_context(struct dmon_comm * comm, 
 						const struct thinkos_context * ctx, 
@@ -263,7 +263,7 @@ bool dmon_app_suspend(void);
 
 bool dmon_app_continue(void);
 
-void dmon_soft_reset(void);
+void dbgmon_soft_reset(void);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 

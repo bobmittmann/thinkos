@@ -205,7 +205,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
-	if (dmon_wait_idle() < 0) {
+	if (dbgmon_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}
 
@@ -228,7 +228,7 @@ static void monitor_pause_all(struct dmon_comm * comm)
 	dmputs("\r\nPausing all threads...\r\n", comm);
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
 	__thinkos_pause_all();
-	if (dmon_wait_idle() < 0) {
+	if (dbgmon_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}
 }
@@ -253,7 +253,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 								uint32_t addr, unsigned int size)
 {
 	dmputs("\r\nYMODEM receive (^X to cancel) ... ", comm);
-	dmon_soft_reset();
+	dbgmon_soft_reset();
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
 		dmputs("\r\n#ERROR: YMODEM failed!\r\n", comm); 
 		return;
@@ -267,7 +267,7 @@ static void monitor_app_erase(struct dmon_comm * comm,
 							  uint32_t addr, unsigned int size)
 {
 	dmputs("\r\nErasing application block ... ", comm);
-	dmon_soft_reset();
+	dbgmon_soft_reset();
 	if (dmon_app_erase(comm, addr, size))
 		dmputs("done.\r\n", comm);
 	else	
@@ -337,7 +337,7 @@ void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm)
 {
 	if (this_board.selftest)
 		this_board.selftest(comm);
-	dmon_exec(monitor_task);
+	dbgmon_exec(monitor_task);
 }
 #endif
 
@@ -346,7 +346,7 @@ void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm)
 {
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_task(comm);
-	dmon_exec(monitor_task);
+	dbgmon_exec(monitor_task);
 }
 #endif
 
@@ -361,32 +361,32 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 		switch (c) {
 #if (BOOT_ENABLE_GDB)
 		case '+':
-			dmon_exec(gdb_bootstrap);
+			dbgmon_exec(gdb_bootstrap);
 			break;
 #endif
 #if (MONITOR_APPTERM_ENABLE)
 		case CTRL_C:
 			dmputs("^C\r\n", comm);
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			break;
 #endif
 #if (MONITOR_SELFTEST_ENABLE)
 		case CTRL_E:
 			dmputs("^E\r\n", comm);
-			dmon_soft_reset();
-			dmon_exec(selftest_bootstrap);
+			dbgmon_soft_reset();
+			dbgmon_exec(selftest_bootstrap);
 			break;
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
 		case CTRL_K:
 			dmputs("^K\r\n", comm);
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			this_board.configure(comm);
 			break;
 #endif
 #if (MONITOR_UPGRADE_ENABLE)
 		case CTRL_L:
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			dmputs("^L\r\nConfirm (yes/no)? ", comm);
 			dmscanf(comm, "yes%n", &i);
 			if (i == 3) {
@@ -412,7 +412,7 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 			break;
 		case CTRL_Q:
 			dmputs("^Q\r\n", comm);
-			dmon_exec(monitor_task);
+			dbgmon_exec(monitor_task);
 			break;
 		case CTRL_R:
 			dmputs("^R\r\n", comm);
@@ -459,7 +459,7 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #if (MONITOR_APPRESTART_ENABLE)
 		case CTRL_Z:
 			dmputs("^Z\r\n", comm);
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			monitor_exec(comm, this_board.application.start_addr);
 			break;
 #endif
@@ -522,7 +522,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
 		sigmask |= (1 << DMON_ALARM);
-		dmon_alarm(125);
+		dbgmon_alarm(125);
 #if (MONITOR_THREADINFO_ENABLE)
 		monitor_thread_id = -1;
 	}
@@ -533,13 +533,13 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 
 	for(;;) {
-		sigset = dmon_select(sigmask);
+		sigset = dbgmon_select(sigmask);
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 #if THINKOS_ENABLE_CONSOLE
 		if (sigset & (1 << DMON_COMM_CTL)) {
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
-			dmon_clear(DMON_COMM_CTL);
+			dbgmon_clear(DMON_COMM_CTL);
 			connected = dmon_comm_isconnected(comm);
 		}
 #endif
@@ -582,7 +582,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			} else {
 				DCC_LOG(LOG_TRACE, "RX Pipe empty!!!");
 			}
-			dmon_clear(DMON_RX_PIPE);
+			dbgmon_clear(DMON_RX_PIPE);
 		}
 
 
@@ -597,20 +597,20 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 				__console_tx_pipe_commit(len); 
 			} else {
 				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
-				dmon_clear(DMON_TX_PIPE);
+				dbgmon_clear(DMON_TX_PIPE);
 			}
 		}
 #endif
 
 		if (sigset & (1 << DMON_ALARM)) {
-			dmon_clear(DMON_ALARM);
+			dbgmon_clear(DMON_ALARM);
 			if (this_board.autoboot(tick_cnt++) && 
 				dmon_app_exec(this_board.application.start_addr, false)) {
 				sigmask &= ~(1 << DMON_ALARM);
 				this_board.on_appload();
 			} else {
 				/* reastart the alarm timer */
-				dmon_alarm(125);
+				dbgmon_alarm(125);
 			}  
 		}
 
@@ -618,13 +618,13 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		if (sigset & (1 << DMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");
 			monitor_on_fault(comm);
-			dmon_clear(DMON_THREAD_FAULT);
+			dbgmon_clear(DMON_THREAD_FAULT);
 		}
 
 		if (sigset & (1 << DMON_EXCEPT)) {
 			DCC_LOG(LOG_TRACE, "System exception.");
 			monitor_on_fault(comm);
-			dmon_clear(DMON_EXCEPT);
+			dbgmon_clear(DMON_EXCEPT);
 		}
 #endif
 	}

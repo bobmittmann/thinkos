@@ -82,8 +82,7 @@ void dmon_thread_exec(void (* func)(void *), void * arg)
 
 bool dmon_app_suspend(void)
 {
-	__dmon_irq_pause_all();
-
+	__dmon_irq_pause_all(); 
 	__thinkos_pause_all();
 
 	if (thinkos_rt.active == THINKOS_THREADS_MAX) {
@@ -95,7 +94,7 @@ bool dmon_app_suspend(void)
 	/* Make sure the communication channel interrupts are enabled. */
 	__dmon_irq_force_enable();
 
-	dmon_wait_idle();
+	dbgmon_wait_idle();
 
 	return true;
 }

@@ -72,6 +72,30 @@ enum thinkos_thread_status {
  * Flattened thread state structure
  * --------------------------------------------------------------------------*/
 
+struct cortex_m_context {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+
+	uint32_t r4;
+	uint32_t r5;
+	uint32_t r6;
+	uint32_t r7;
+
+	uint32_t r8;
+	uint32_t r9;
+	uint32_t r10;
+	uint32_t r11;
+
+	uint32_t r12;
+	uint32_t sp;
+	uint32_t lr;
+	uint32_t pc;
+
+	uint32_t xpsr;
+};
+
 struct thinkos_thread {
 	uint32_t no: 6;
 	uint32_t tmw: 1;

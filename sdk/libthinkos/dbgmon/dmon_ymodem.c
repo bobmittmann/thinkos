@@ -78,7 +78,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 	for (;;) {
 
-		dmon_alarm(XMODEM_RCV_TMOUT_MS);
+		dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
 		DCC_LOG1(LOG_INFO, "SYN=%02x", rx->sync);
 		dmon_comm_send(comm, &rx->sync, 1);
 
@@ -121,7 +121,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 		/* receive the packet */
 		while (rem) {
-			dmon_alarm(500);
+			dbgmon_alarm(500);
 			ret = dmon_comm_recv(comm, cp, rem);
 			if (ret < 0)
 				goto timeout;
@@ -204,7 +204,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 		rx->pktno++;
 
-		dmon_alarm_stop();
+		dbgmon_alarm_stop();
 
 		return cnt;
 
@@ -229,7 +229,7 @@ timeout:
 
 	dmon_comm_send(comm, pkt, 2);
 
-	dmon_alarm_stop();
+	dbgmon_alarm_stop();
 	return ret;
 }
 

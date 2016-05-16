@@ -516,7 +516,7 @@ struct thinkos_context {
 		uint64_t d[16];
 	};
 #endif
-	/* saved context */
+	/* scheduler saved context */
 	uint32_t r4;
 	uint32_t r5;
 	uint32_t r6;
@@ -527,7 +527,7 @@ struct thinkos_context {
 	uint32_t r10;
 	uint32_t r11;
 
-	/* exception context */
+	/* automatic exception context */
 	uint32_t r0;
 	uint32_t r1;
 	uint32_t r2;
@@ -1174,10 +1174,6 @@ void __thinkos_kill_all(void);
 void __thinkos_pause_all(void);
 
 void __thinkos_resume_all(void);
-
-int __thinkos_thread_get(struct thinkos_rt * rt, 
-						 struct thinkos_thread * st, 
-						 unsigned int th);
 
 int __thinkos_thread_getnext(int th);
 

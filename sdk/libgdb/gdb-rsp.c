@@ -541,7 +541,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
 		if (gdb->active_app) {
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			gdb->active_app = false;
 		}
 		if (dmon_app_exec(this_board.application.start_addr, true)) {
@@ -1394,7 +1394,7 @@ static int rsp_memory_write_bin(struct gdb_rspd * gdb, char * pkt)
 		   writing over it may cause errors */
 		if (gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "active application!");
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			gdb->active_app = false;
 		}
 		return rsp_ok(gdb);
@@ -1519,7 +1519,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 	sum = 0;
 	pos = 0;
 
-	dmon_alarm(1000);
+	dbgmon_alarm(1000);
 
 	for (;;) {
 		cp = &pkt[pos];
@@ -1549,7 +1549,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 				cp[j++] = c;
 			} else if (state == RSP_SUM) {
 				cp[j++] = c;
-				dmon_alarm_stop();
+				dbgmon_alarm_stop();
 				/* FIXME: check the sum!!! */
 				pos += j;
 				pkt[pos] = '\0';
@@ -1574,7 +1574,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 		}
 	}
 
-	dmon_alarm_stop();
+	dbgmon_alarm_stop();
 	return ret;
 }
 
@@ -1625,31 +1625,31 @@ void gdb_task(struct dmon_comm * comm)
 		else
 			DCC_LOG1(LOG_TRACE, "<running> %02x", gdb->last_signal);
 #endif		
-		sigset = dmon_select(sigmask);
+		sigset = dbgmon_select(sigmask);
 
 		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
 
 		if (sigset & (1 << DMON_EXCEPT)) {
 			DCC_LOG(LOG_TRACE, "Exception.");
-			dmon_clear(DMON_EXCEPT);
+			dbgmon_clear(DMON_EXCEPT);
 			rsp_on_fault(gdb, pkt);
 		}
 
 		if (sigset & (1 << DMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");
-			dmon_clear(DMON_THREAD_FAULT);
+			dbgmon_clear(DMON_THREAD_FAULT);
 			rsp_on_fault(gdb, pkt);
 		}
 
 		if (sigset & (1 << DMON_THREAD_STEP)) {
 			DCC_LOG(LOG_INFO, "DMON_THREAD_STEP");
-			dmon_clear(DMON_THREAD_STEP);
+			dbgmon_clear(DMON_THREAD_STEP);
 			rsp_on_step(gdb, pkt);
 		}
 
 		if (sigset & (1 << DMON_BREAKPOINT)) {
 			DCC_LOG(LOG_INFO, "DMON_BREAKPOINT");
-			dmon_clear(DMON_BREAKPOINT);
+			dbgmon_clear(DMON_BREAKPOINT);
 			rsp_on_breakpoint(gdb, pkt);
 		}
 
@@ -1705,7 +1705,7 @@ void gdb_task(struct dmon_comm * comm)
 
 		if (sigset & (1 << DMON_COMM_CTL)) {
 			DCC_LOG(LOG_TRACE, "Comm Ctl.");
-			dmon_clear(DMON_COMM_CTL);
+			dbgmon_clear(DMON_COMM_CTL);
 			if (!dmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
 				return;
@@ -1716,7 +1716,7 @@ void gdb_task(struct dmon_comm * comm)
 		if (sigset & (1 << DMON_TX_PIPE)) {
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if (rsp_console_output(gdb, pkt) <= 0) {
-				dmon_clear(DMON_TX_PIPE);
+				dbgmon_clear(DMON_TX_PIPE);
 			}
 		}
 #endif

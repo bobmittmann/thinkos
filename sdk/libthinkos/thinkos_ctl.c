@@ -25,6 +25,7 @@ _Pragma ("GCC optimize (\"Os\")")
 #include <thinkos_sys.h>
 #include <thinkos.h>
 
+#include <sys/param.h>
 #include <sys/sysclk.h>
 
 #if THINKOS_ENABLE_CTL

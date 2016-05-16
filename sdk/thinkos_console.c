@@ -440,8 +440,8 @@ void __console_reset(void)
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
 	thinkos_console_rt.rx_pipe.tail = 0;
-	dmon_clear(DMON_TX_PIPE);
-	dmon_clear(DMON_RX_PIPE);
+	dbgmon_clear(DMON_TX_PIPE);
+	dbgmon_clear(DMON_RX_PIPE);
 }
 
 void thinkos_console_init(void)

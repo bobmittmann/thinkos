@@ -44,19 +44,124 @@ _Pragma ("GCC optimize (\"O2\")")
 #define THINKOS_DMON_STACK_SIZE (960 + 16)
 #endif
 
-void __dmon_irq_init(void);
-void __dmon_irq_force_enable(void);
-void __dmon_irq_disable_all(void);
-
 struct thinkos_dmon thinkos_dmon_rt;
 uint32_t thinkos_dmon_stack[THINKOS_DMON_STACK_SIZE / 4];
 const uint16_t thinkos_dmon_stack_size = sizeof(thinkos_dmon_stack);
+
+/**
+  * __dmon_irq_force_enable:
+  *
+  * Enable interrupts listed in the IRQ forced enable list.
+  */
+void __dmon_irq_force_enable(void)
+{
+	int cnt = 0;
+
+	while (cnt < 4) {
+		int irq;
+		int i;
+		int k;
+
+		/* get the next irq from the list */
+		irq = thinkos_dmon_rt.irq_en_lst[cnt++];
+		i = irq / 32;
+		k = irq % 32;
+
+		thinkos_dmon_rt.nvic_ie[i] |= (1 << k);
+		CM3_NVIC->iser[i] = (1 << k);
+	}
+}
+
+/**
+  * __dmon_irq_disable_all:
+  *
+  * Disable all interrupts by clearing the interrupt enable bit
+  * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
+  *
+  * Also the interrupt enable backup is cleared to avoid 
+  * interrupts being reenabled by calling __dmon_irq_restore_all().
+  *
+  * The systick interrupt is not disabled.
+  */
+static void __dmon_irq_disable_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		thinkos_dmon_rt.nvic_ie[i] = 0;
+		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
+	}
+}
+
+/**
+  * __dmon_irq_pause_all:
+  *
+  * Save the state of the interrupt enable registers and 
+  * disable all interrupts.
+  */
+void __dmon_irq_pause_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		/* save interrupt state */
+		thinkos_dmon_rt.nvic_ie[i] = CM3_NVIC->iser[i];
+		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
+	}
+}
+
+/**
+  * __dmon_irq_restore_all:
+  *
+  * Restore the state of the interrupt enable registers.
+  */
+void __dmon_irq_restore_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		/* restore interrupt state */
+		CM3_NVIC->iser[i] = thinkos_dmon_rt.nvic_ie[i];
+	}
+}
+
+#if (THINKOS_ENABLE_RESET_RAM_VECTORS)
+
+/**
+ * __reset_ram_vectors:
+ *
+ * Copy the default values for the IRQ vectors from the flash into RAM. 
+ * 
+ * When the a new application replaces the existing one through the GDB
+ * or Ymodem some interrupts can be fired due to wrong sequencig of
+ * interrupt programming in the application. To avoid potential system
+ * crashes the vectors should be initialized to a default value.
+ *
+ */
+
+void __reset_ram_vectors(void)
+{
+	/* XXX: 
+	   this function assumes the excpetion vectors defaults to be located 
+	   just after the .text section! */
+	extern unsigned int __text_end;
+	extern unsigned int __ram_vectors;
+	extern unsigned int __sizeof_ram_vectors;
+
+	unsigned int size = __sizeof_ram_vectors;
+	void * src = &__text_end;
+	void * dst = &__ram_vectors;
+
+	DCC_LOG3(LOG_TRACE, "dst=%08x src=%08x size=%d", dst, src, size); 
+	__thinkos_memcpy32(dst, src, size); 
+}
+#endif
 
 /* -------------------------------------------------------------------------
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-uint32_t dmon_select(uint32_t evmask)
+uint32_t dbgmon_select(uint32_t evmask)
 {
 	uint32_t evset;
 	
@@ -83,7 +188,7 @@ uint32_t dmon_select(uint32_t evmask)
 	return evset & evmask;
 }
 
-int dmon_wait(int ev)
+int dbgmon_wait(int ev)
 {
 	uint32_t evset;
 	uint32_t evmsk;
@@ -119,7 +224,7 @@ int dmon_wait(int ev)
 	return -1;
 }
 
-int dmon_expect(int ev)
+int dbgmon_expect(int ev)
 {
 	uint32_t evset;
 	uint32_t evmsk;
@@ -154,55 +259,55 @@ int dmon_expect(int ev)
 
 
 
-void dmon_unmask(int event)
+void dbgmon_unmask(int event)
 {
 	__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.mask, event, 1);  
 }
 
-void dmon_mask(int event)
+void dbgmon_mask(int event)
 {
 	__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.mask, event, 0);  
 }
 
-void dmon_clear(int event)
+void dbgmon_clear(int event)
 {
 	__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, event, 0);  
 }
 
-int dmon_sleep(unsigned int ms)
+int dbgmon_sleep(unsigned int ms)
 {
-	dmon_clear(DMON_ALARM);
+	dbgmon_clear(DMON_ALARM);
 #if THINKOS_ENABLE_DMCLOCK
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
 	/* wait for signal */
-	return dmon_wait(DMON_ALARM);
+	return dbgmon_wait(DMON_ALARM);
 }
 
-void dmon_alarm(unsigned int ms)
+void dbgmon_alarm(unsigned int ms)
 {
-	dmon_clear(DMON_ALARM);
-	dmon_unmask(DMON_ALARM);
+	dbgmon_clear(DMON_ALARM);
+	dbgmon_unmask(DMON_ALARM);
 #if THINKOS_ENABLE_DMCLOCK
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
 }
 
-void dmon_alarm_stop(void)
+void dbgmon_alarm_stop(void)
 {
 #if THINKOS_ENABLE_DMCLOCK
 	/* set the clock in the past so it won't generate a signal */
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 	/* make sure the signal is cleared */
-	dmon_clear(DMON_ALARM);
+	dbgmon_clear(DMON_ALARM);
 	/* mask the signal */
-	dmon_mask(DMON_ALARM);
+	dbgmon_mask(DMON_ALARM);
 }
 
-int dmon_wait_idle(void)
+int dbgmon_wait_idle(void)
 {
 	int ret;
 
@@ -210,7 +315,7 @@ int dmon_wait_idle(void)
 	CM3_DCB->demcr |= DCB_DEMCR_MON_REQ;
 
 	/* wait for signal */
-	if ((ret = dmon_wait(DMON_IDLE)) < 0)
+	if ((ret = dbgmon_wait(DMON_IDLE)) < 0)
 		return ret;
 
 	DCC_LOG(LOG_MSG, "[IDLE] zzz zzz zzz zzz");
@@ -218,17 +323,17 @@ int dmon_wait_idle(void)
 	return 0;
 }
 
-void dmon_reset(void)
+void dbgmon_reset(void)
 {
 	dmon_signal(DMON_RESET);
 	dmon_context_swap(&thinkos_dmon_rt.ctx); 
 }
 
-void __attribute__((naked)) dmon_exec(void (* task)(struct dmon_comm *))
+void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *))
 {
 	DCC_LOG1(LOG_MSG, "task=%p", task);
 	thinkos_dmon_rt.task = task;
-	dmon_reset();
+	dbgmon_reset();
 }
 
 
@@ -519,7 +624,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 
 	if (sync) {
 		DCC_LOG(LOG_INFO, "synchronous step, waiting for signal...");
-		if ((ret = dmon_wait(DMON_THREAD_STEP)) < 0)
+		if ((ret = dbgmon_wait(DMON_THREAD_STEP)) < 0)
 			return ret;
 	}
 
@@ -564,7 +669,7 @@ static void __attribute__((naked)) dmon_bootstrap(void)
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
-	dmon_reset();
+	dbgmon_reset();
 }
 
 static void dmon_on_reset(struct thinkos_dmon * dmon)
@@ -771,6 +876,9 @@ step_done:
 	return 0;
 }
 
+/* 
+ * ThinkOS exception handler hook
+ */
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
 	int ipsr;
@@ -800,7 +908,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 thinkos_rt.void_ctx, thinkos_rt.active);
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-			dmon_soft_reset();
+			dbgmon_soft_reset();
 			DCC_LOG(LOG_TRACE, "8. reset.");
 			dmon_signal(DMON_RESET);
 		} else 
@@ -814,8 +922,92 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 	}
 }
 
+
+/**
+ * dmon_soft_reset:
+ *
+ * Reinitialize the plataform by reseting all ThinkOS subsystems.
+ * 
+ */
+
+void dbgmon_soft_reset(void)
+{
+	DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
+	__dmon_irq_disable_all();
+
+	DCC_LOG(LOG_TRACE, "2. ThinkOS reset...");
+	__thinkos_reset();
+
+#if THINKOS_ENABLE_CONSOLE
+	DCC_LOG(LOG_TRACE, "3. console reset...");
+	__console_reset();
+#endif
+
+#if (THINKOS_ENABLE_EXCEPTIONS)
+	DCC_LOG(LOG_TRACE, "4. exception reset...");
+	__exception_reset();
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_STEP)
+	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
+	dmon_breakpoint_clear_all();
+#endif
+
+#if (THINKOS_ENABLE_RESET_RAM_VECTORS)
+	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
+	__reset_ram_vectors();
+#endif
+
+	DCC_LOG(LOG_TRACE, "7. reset this board...");
+	this_board.softreset();
+
+	DCC_LOG(LOG_TRACE, "8. enablig listed interrupts...");
+	__dmon_irq_force_enable();
+
+	DCC_LOG(LOG_TRACE, "9. done.");
+}
+
+/**
+  * __dmon_irq_init:
+  *
+  * Initialize the IRQ track subsystem
+  */
+static void __dmon_irq_init(void)
+{
+	int cnt;
+	int i;
+	
+	cnt = 0;
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		uint32_t mask;
+		int k;
+
+		mask = CM3_NVIC->iser[i];
+		/* save the current interrupts */
+		thinkos_dmon_rt.nvic_ie[i] = mask;
+		DCC_LOG1(LOG_INFO, "nvic.iser[i]=0x%08x.", mask);
+
+		/* probe interrupts */
+		while ((cnt < 4) && (mask != 0)) {
+			int irq;
+
+			k = __clz(__rbit(mask));
+			mask &= ~(1 << k);
+
+			irq = (i * 32) + k;
+			thinkos_dmon_rt.irq_en_lst[cnt++] = irq;
+
+			DCC_LOG1(LOG_TRACE, "IRQ %d always enabled.", irq);
+		}	
+	}
+
+	while (cnt < 4) {
+		thinkos_dmon_rt.irq_en_lst[cnt++] = 0xff;
+	}	
+}
+
 /* -------------------------------------------------------------------------
- * ThinkOS thread level API
+ * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
 void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ))

@@ -656,11 +656,11 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	while (rem) {
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
 			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!!");
-			dmon_wait(DMON_COMM_EOT);
+			dbgmon_wait(DMON_COMM_EOT);
 			return n;
 		}
 
-		if ((ret = dmon_wait(DMON_COMM_EOT)) < 0) {
+		if ((ret = dbgmon_wait(DMON_COMM_EOT)) < 0) {
 			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
 			return ret;
 		}
@@ -709,7 +709,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 					usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 				} 
 				if (cnt == 0)
-					dmon_clear(DMON_COMM_RCV); /* next call will block */
+					dbgmon_clear(DMON_COMM_RCV); /* next call will block */
 				dev->rx_cnt = cnt;
 			} 
 			dev->rx_pos = pos;
@@ -717,7 +717,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 		}
 
 		DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
-	} while ((ret = dmon_expect(DMON_COMM_RCV)) == 0);
+	} while ((ret = dbgmon_expect(DMON_COMM_RCV)) == 0);
 
 	return ret;
 }
@@ -732,7 +732,7 @@ int dmon_comm_connect(struct dmon_comm * comm)
 
 	while ((dev->acm_ctrl & CDC_DTE_PRESENT) == 0) {
 		DCC_LOG1(LOG_TRACE, "ctrl=%02x, waiting...", dev->acm_ctrl);
-		if ((ret = dmon_wait(DMON_COMM_CTL)) < 0) {
+		if ((ret = dbgmon_wait(DMON_COMM_CTL)) < 0) {
 			DCC_LOG1(LOG_WARNING, "ret=%d!!", ret);
 			return ret;
 		}
