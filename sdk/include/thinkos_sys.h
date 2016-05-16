@@ -540,24 +540,6 @@ struct thinkos_context {
 };
 
 /* -------------------------------------------------------------------------- 
- * Flattened thread state structure
- * --------------------------------------------------------------------------*/
-
-struct thinkos_thread {
-	uint8_t idx;
-	uint8_t tmw: 1;
-	uint8_t alloc: 1;
-	uint16_t wq;
-	int8_t sched_val;
-	uint8_t sched_pri;
-	int32_t timeout;
-	uint32_t cyccnt;
-	const struct thinkos_thread_inf * th_inf;
-	uint32_t sp;
-	struct thinkos_context ctx;
-};
-
-/* -------------------------------------------------------------------------- 
  * Run Time RTOS block
  * --------------------------------------------------------------------------*/
 

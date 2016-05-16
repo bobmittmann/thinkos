@@ -66,11 +66,12 @@ static void rt_snapshot(uint32_t * dst)
 
 
 #if THINKOS_ENABLE_PROFILING
-static int thinkos_cycnt_get(uint32_t cycnt[])
+static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 {
 	uint32_t cyccnt;
 	int32_t delta;
 	int self;
+	int cnt = MIN(max, THINKOS_THREADS_MAX + 1);
 
 	self = thinkos_rt.active;
 	cyccnt = CM3_DWT->cyccnt;
@@ -80,13 +81,11 @@ static int thinkos_cycnt_get(uint32_t cycnt[])
 	/* update thread's cycle counter */
 	thinkos_rt.cyccnt[self] += delta; 
 	/* copy cycle counters */
-	__thinkos_memcpy32(cycnt, thinkos_rt.cyccnt, 
-					   (THINKOS_THREADS_MAX + 1) * sizeof(uint32_t));
+	__thinkos_memcpy32(cycnt, thinkos_rt.cyccnt, cnt * sizeof(uint32_t));
 	/* reset cycle counters */
-	__thinkos_memset32(thinkos_rt.cyccnt, 0,
-					   (THINKOS_THREADS_MAX + 1) * sizeof(uint32_t));
+	__thinkos_memset32(thinkos_rt.cyccnt, 0, cnt * sizeof(uint32_t));
 
-	return THINKOS_THREADS_MAX + 1;
+	return cnt; 
 }
 #endif
 
@@ -152,7 +151,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 #if THINKOS_ENABLE_PROFILING
 	case THINKOS_CTL_CYCCNT:
-		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1]);
+		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
 		break;
 #endif
 

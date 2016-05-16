@@ -68,6 +68,22 @@ enum thinkos_thread_status {
 	THINKOS_THREAD_ABORTED  = 0x7fffffff
 };
 
+/* -------------------------------------------------------------------------- 
+ * Flattened thread state structure
+ * --------------------------------------------------------------------------*/
+
+struct thinkos_thread {
+	uint32_t no: 6;
+	uint32_t tmw: 1;
+	uint32_t alloc: 1;
+	uint16_t wq;
+	uint8_t  sched_val;
+	uint8_t  sched_pri;
+	uint32_t clock;
+	uint32_t cyccnt;
+	const struct thinkos_thread_inf * inf;
+};
+
 #define IRQ_PRIORITY_HIGHEST   (1 << 5)
 #define IRQ_PRIORITY_VERY_HIGH (2 << 5)
 #define IRQ_PRIORITY_HIGH      (3 << 5)
