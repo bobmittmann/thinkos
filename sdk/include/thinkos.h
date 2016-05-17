@@ -29,6 +29,8 @@
 #ifndef __THINKOS_H__
 #define __THINKOS_H__
 
+#include <stdint.h>
+
 enum thinkos_err {
 	THINKOS_OK        =  0, /**< No error */
 	THINKOS_ETIMEDOUT = -1, /**< System call timed out */
