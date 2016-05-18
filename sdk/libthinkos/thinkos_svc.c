@@ -164,10 +164,9 @@ void thinkos_escalate_svc(int32_t * arg)
 void thinkos_nosys(int32_t * arg)
 {
 #if THINKOS_ENABLE_MONITOR
-	thinkos_throw(THINKOS_ERR_SYSCAL_INVALID);
-#else
-	arg[0] = THINKOS_ENOSYS;
+	thinkos_throw(THINKOS_ERR_SYSCALL_INVALID);
 #endif
+	arg[0] = THINKOS_ENOSYS;
 }
 
 void thinkos_clock_svc(int32_t * arg)
@@ -195,12 +194,10 @@ void thinkos_critical_enter_svc(int32_t * arg)
 void thinkos_critical_exit_svc(int32_t * arg)
 {
 	if (thinkos_rt.critical_cnt == 0) {
-		/* FIXME, this is a fault and should rise an exception... */
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_CRITICAL_EXIT);
-#else
-		arg[0] = THINKOS_EFAULT;
 #endif
+		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__thinkos_defer_sched();
 	}

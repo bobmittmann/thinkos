@@ -107,7 +107,7 @@ void stm32_tim3_isr(void)
 	irq_count++;
 	thinkos_sem_post_i(tmr_sem);
 
-	if (irq_count == 10)
+	if (irq_count == 1000)
 		read_fault();
 }
 
@@ -162,7 +162,8 @@ int test_task(void * arg)
 {
 	for (;;) {
 		thinkos_sleep(3000);
-		write_fault();
+		thinkos_sem_post(2);
+//		write_fault();
 	}
 
 	return 0;

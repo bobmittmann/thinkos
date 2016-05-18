@@ -57,9 +57,8 @@ void thinkos_sem_free_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -78,9 +77,8 @@ void thinkos_sem_init_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_SEM_ALLOC
@@ -88,9 +86,8 @@ void thinkos_sem_init_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid semaphore %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -113,9 +110,8 @@ void thinkos_sem_trywait_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_SEM_ALLOC
@@ -123,9 +119,8 @@ void thinkos_sem_trywait_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid semaphore %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -157,9 +152,8 @@ void thinkos_sem_wait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_SEM_ALLOC
@@ -167,9 +161,8 @@ void thinkos_sem_wait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid semaphore %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -254,9 +247,8 @@ void thinkos_sem_timedwait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_SEM_ALLOC
@@ -264,9 +256,8 @@ void thinkos_sem_timedwait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid semaphore %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -374,9 +365,8 @@ void thinkos_sem_post_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_SEM_ALLOC
@@ -384,9 +374,8 @@ void thinkos_sem_post_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid semaphore %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_SEM_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif

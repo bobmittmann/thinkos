@@ -105,9 +105,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 	if (thread_id < 0) {
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #else
@@ -115,9 +114,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 	if (thread_id >= THINKOS_THREADS_MAX) {
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -129,9 +127,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 		DCC_LOG1(LOG_INFO, "stack too small. size=%d", init->opt.stack_size);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_SMALLSTACK);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif

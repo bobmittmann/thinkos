@@ -490,6 +490,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 #endif
 		cp += n;
 	}
+	cp += char2hex(cp, ':');
 	cp += char2hex(cp, ' ');
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
@@ -590,6 +591,9 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 					cp += str2hex(cp, " UNDEFINSTR");
 				cp += str2hex(cp, " ]");
 				break;
+			default:
+				cp += str2hex(cp, "error ");
+				cp += int2str2hex(cp, xcpt->type);
 			}
 		} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0

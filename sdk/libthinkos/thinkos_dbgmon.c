@@ -337,7 +337,7 @@ void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *))
 }
 
 
-#if (THINKOS_ENABLE_DEBUG_STEP)
+#if THINKOS_ENABLE_DEBUG_BKPT
 
 /* -------------------------------------------------------------------------
  * Debug Breakpoint
@@ -443,6 +443,12 @@ void dmon_breakpoint_clear_all(void)
 		fpb->comp[i] = 0;
 }
 
+#endif /* THINKOS_ENABLE_DEBUG_BKPT */
+
+
+
+
+#if THINKOS_ENABLE_DEBUG_WPT
 
 /* -------------------------------------------------------------------------
  * Debug Watchpoint
@@ -583,6 +589,14 @@ void dmon_watchpoint_clear_all(void)
 		dwt->wp[i].function = 0;
 }
 
+#endif /* THINKOS_ENABLE_DEBUG_WPT */
+
+
+
+
+
+#if THINKOS_ENABLE_DEBUG_STEP
+
 /* -------------------------------------------------------------------------
  * Thread stepping
  * ------------------------------------------------------------------------- */
@@ -632,6 +646,8 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 }
 
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
+
+
 
 /* -------------------------------------------------------------------------
  * Debug Monitor Core
@@ -694,7 +710,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 	uint32_t sigset = thinkos_dmon_rt.events;
 	uint32_t sigmsk = thinkos_dmon_rt.mask;
 
-#if (THINKOS_ENABLE_DEBUG_STEP)
+#if THINKOS_ENABLE_DEBUG_BKPT
 	uint32_t dfsr;
 
 	/* read SCB Debug Fault Status Register */
@@ -720,13 +736,52 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
 
 		if (dfsr & SCB_DFSR_BKPT) {
-			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
-				uint16_t insn;
-				uint16_t * pc = (uint16_t *)ctx->pc;
-				int ipsr;
+			unsigned int insn;
+			unsigned int code; 
+			uint16_t * pc;
+			int ipsr;
 
-				ipsr = ctx->xpsr & 0x1ff;
-				insn = pc[0];
+			ipsr = ctx->xpsr & 0x1ff;
+			pc = (uint16_t *)ctx->pc;
+			insn = pc[0];
+			code = insn & 0x00ff;
+			insn &= 0xff00;
+
+			/* this is a breakpoint intruction */
+			if ((insn == 0xbe00) && (code > THINKOS_BKPT_EXCEPT_OFF)) {
+				uint32_t * psp;
+
+				psp = (uint32_t *)cm3_psp_get();
+
+				DCC_LOG4(LOG_ERROR, "<<ERROR>>: "
+						 "code=%d pc=%08x thread=%d psp=%08x", 
+						 code, pc, thinkos_rt.active, psp);
+				/* Skip the breakpoint intruction */
+				ctx->pc += 2;
+
+				/* FIXME: a breakpoint is used to indicate a fault or wrong
+				   usage of a system call in thinkOS. */
+				sigset |= (1 << DMON_THREAD_FAULT);
+				sigmsk |= (1 << DMON_THREAD_FAULT);
+				thinkos_dmon_rt.events = sigset;
+				/* record the break thread id */
+				thinkos_rt.break_id = thinkos_rt.active;
+				thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
+				thinkos_rt.xcpt_ipsr = ipsr;
+				thinkos_except_buf.active = thinkos_rt.active;
+				thinkos_except_buf.type = code;
+#if THINKOS_ENABLE_DEBUG_FAULT
+				/* flag the thread as faulty */
+				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
+#endif
+				/* copy the thread exception context to the exception buffer. */
+				__thinkos_memcpy(&thinkos_except_buf.ctx.r0, psp,
+								sizeof(struct cm3_except_context)); 
+				/* suspend the current thread */
+				__thinkos_thread_pause(thinkos_rt.active);
+				thinkos_rt.active = THINKOS_THREAD_VOID;
+				__thinkos_defer_sched();
+			} else if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
 				DCC_LOG3(LOG_ERROR, "<<BREAKPOINT>>: "
 						 "except=%d pc=%08x insn=%04x", ipsr, pc, insn);
 				DCC_LOG(LOG_ERROR, "invalid breakpoint on exception!!!");
@@ -735,7 +790,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				thinkos_dmon_rt.events = sigset;
 				/* FIXME: add support for breakpoints on IRQ */
 
-				/* Id this is a breakpoint intruction. Skip it */
+				/* if this is a breakpoint intruction, skip it */
 				if (insn == 0xbe00) {
 					/* Skip thr breakpoint intruction */
 					ctx->pc += 2;
@@ -783,6 +838,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 			}
 		}
 
+#if THINKOS_ENABLE_DEBUG_WPT
 		if (dfsr & SCB_DFSR_DWTTRAP) {
 			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: exception=%d pc=%08x", 
@@ -818,7 +874,9 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				__thinkos_pause_all();
 			}
 		}
+#endif /* THINKOS_ENABLE_DEBUG_WPT */
 
+#if THINKOS_ENABLE_DEBUG_STEP
 		if (dfsr & SCB_DFSR_HALTED) {
 			if (demcr & DCB_DEMCR_MON_STEP) {
 				int thread_id = thinkos_rt.step_id;
@@ -855,8 +913,9 @@ step_done:
 				DCC_LOG(LOG_TRACE, "SCB_DFSR_HALTED !!!");
 			}
 		}
-	}
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
+	}
+#endif /* THINKOS_ENABLE_DEBUG_BKPT */
 
 	if (sigset & (1 << DMON_RESET)) {
 		dmon_on_reset(&thinkos_dmon_rt);
@@ -866,9 +925,11 @@ step_done:
 	if ((sigset & sigmsk) != 0) {
 		DCC_LOG1(LOG_MSG, "<%08x>", sigset);
 		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dmon_rt.ctx);
+#if DEBUG
 		if (thinkos_dmon_rt.ctx <  thinkos_dmon_stack) {
 			DCC_LOG(LOG_ERROR, "stack overflow!");
 		}
+#endif
 		return dmon_context_swap(&thinkos_dmon_rt.ctx); 
 	}
 
@@ -884,20 +945,20 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 	int ipsr;
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;
-#if THINKOS_ENABLE_DEBUG_STEP
+#if THINKOS_ENABLE_DEBUG_BKPT
 	thinkos_rt.xcpt_ipsr = ipsr;
 #endif
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
 				 xcpt->active);
-#if THINKOS_ENABLE_DEBUG_STEP
+#if THINKOS_ENABLE_DEBUG_BKPT
 		thinkos_rt.break_id = xcpt->active;
 #endif
 		__dmon_irq_disable_all();
 		__dmon_irq_force_enable();
 		dmon_signal(DMON_THREAD_FAULT);
 	} else {
-#if THINKOS_ENABLE_DEBUG_STEP
+#if THINKOS_ENABLE_DEBUG_BKPT
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
 				 ipsr - 16);
 		/* exceptions on IRQ */
@@ -948,7 +1009,7 @@ void dbgmon_soft_reset(void)
 	__exception_reset();
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_STEP)
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
 #endif

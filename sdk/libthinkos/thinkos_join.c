@@ -37,9 +37,8 @@ void thinkos_join_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a thread!", thread_id);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -47,9 +46,8 @@ void thinkos_join_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif

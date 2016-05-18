@@ -66,29 +66,6 @@ void monitor_exec(void)
 	thinkos_escalate((void *)monitor_exec_protected, comm);
 }
 
-void monitor_init(void)
-{
-	struct dmon_comm * comm;
-
-	DCC_LOG(LOG_TRACE, "1. usb_comm_init()");
-#if STM32_ENABLE_OTG_FS
-	comm = usb_comm_init(&stm32f_otg_fs_dev);
-#elif STM32_ENABLE_OTG_HS
-	comm = usb_comm_init(&stm32f_otg_hs_dev);
-#elif STM32_ENABLE_USB_DEV
-	comm = usb_comm_init(&stm32f_usb_fs_dev);
-#else
-#error "Undefined debug monitor comm port!"
-#endif
-
-#if THINKOS_ENABLE_CONSOLE
-	DCC_LOG(LOG_TRACE, "2. thinkos_console_init()");
-	thinkos_console_init();
-#endif
-
-	(void)comm;
-}
-
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
 #endif
@@ -102,7 +79,7 @@ int main(int argc, char ** argv)
 	{
 		int i;
 
-		for (i = 0; i < 8; ++i) {
+		for (i = 0; i < 32; ++i) {
 			DCC_LOG(LOG_TRACE, ".");
 		}
 	}
@@ -121,23 +98,34 @@ int main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 	this_board.init();
 
-	DCC_LOG(LOG_TRACE, "4. monitor_init()");
-	monitor_init();
-
-	monitor_exec();
-
-#if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "5. thinkos_mpu_init()");
-	thinkos_mpu_init(BOOT_MEM_RESERVED);
-
-	DCC_LOG(LOG_TRACE, "6. thinkos_userland()");
-	thinkos_userland();
-
-	DCC_LOG(LOG_TRACE, "7. thinkos_thread_abort()");
+	DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
+#if STM32_ENABLE_OTG_FS
+	usb_comm_init(&stm32f_otg_fs_dev);
+#elif STM32_ENABLE_OTG_HS
+	usb_comm_init(&stm32f_otg_hs_dev);
+#elif STM32_ENABLE_USB_DEV
+	usb_comm_init(&stm32f_usb_fs_dev);
 #else
-	DCC_LOG(LOG_TRACE, "5. thinkos_thread_abort()");
+#error "Undefined debug monitor comm port!"
 #endif
 
+#if THINKOS_ENABLE_CONSOLE
+	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
+	thinkos_console_init();
+#endif
+
+#if THINKOS_ENABLE_MPU
+	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
+	thinkos_mpu_init(BOOT_MEM_RESERVED);
+
+	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
+	thinkos_userland();
+#endif
+
+	DCC_LOG(LOG_TRACE, "8. monitor_exec()");
+	monitor_exec();
+
+	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");

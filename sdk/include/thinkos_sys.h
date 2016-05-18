@@ -235,6 +235,14 @@
 #define THINKOS_ENABLE_DEBUG_STEP       0
 #endif
 
+#ifndef THINKOS_ENABLE_DEBUG_BKPT
+#define THINKOS_ENABLE_DEBUG_BKPT       0
+#endif
+
+#ifndef THINKOS_ENABLE_DEBUG_WPT 
+#define THINKOS_ENABLE_DEBUG_WPT        0
+#endif
+
 #ifndef THINKOS_ENABLE_DEBUG_FAULT
 #define THINKOS_ENABLE_DEBUG_FAULT      0
 #endif
@@ -345,8 +353,20 @@
  #define THINKOS_ENABLE_CLOCK 1
 #endif
 
-/* dbug step depends on monitor */
-#if (THINKOS_ENABLE_DEBUG_STEP) & (!THINKOS_ENABLE_MONITOR)
+/* dbug step depends on debug breakpoint */
+#if (THINKOS_ENABLE_DEBUG_STEP) & (!THINKOS_ENABLE_DEBUG_BKPT)
+ #undef THINKOS_ENABLE_DEBUG_BKPT
+ #define THINKOS_ENABLE_DEBUG_BKPT 1
+#endif
+
+/* dbug watchpoint depends on debug breakpoint */
+#if (THINKOS_ENABLE_DEBUG_WPT) & (!THINKOS_ENABLE_DEBUG_BKPT)
+ #undef THINKOS_ENABLE_DEBUG_BKPT
+ #define THINKOS_ENABLE_DEBUG_BKPT 1
+#endif
+
+/* dbug breakpoint depends on monitor */
+#if (THINKOS_ENABLE_DEBUG_BKPT) & (!THINKOS_ENABLE_MONITOR)
  #undef THINKOS_ENABLE_MONITOR
  #define THINKOS_ENABLE_MONITOR 1
 #endif
@@ -417,65 +437,70 @@
 #endif
 
 /* -------------------------------------------------------------------------- 
- * ThinkOS RT structure offsets for assembler
+ * ThinkOS RT structure offsets (used in assembler code)
  * --------------------------------------------------------------------------*/
 
 #if THINKOS_ENABLE_THREAD_VOID
-  #define SIZEOF_VOID_CTX 4
+  #define SIZEOF_VOID_CTX  4
   #define SIZEOF_CTX ((THINKOS_THREADS_MAX + 2) * 4)
 #else
-  #define SIZEOF_VOID_CTX 0
-  #define SIZEOF_CTX ((THINKOS_THREADS_MAX + 1) * 4)
+  #define SIZEOF_VOID_CTX  0
+  #define SIZEOF_CTX       ((THINKOS_THREADS_MAX + 1) * 4)
 #endif
 
 #if THINKOS_ENABLE_PROFILING
   #if THINKOS_ENABLE_THREAD_VOID
-    #define SIZEOF_CYCCNT ((THINKOS_THREADS_MAX + 2) * 4)
+    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 2) * 4)
   #else
-    #define SIZEOF_CYCCNT ((THINKOS_THREADS_MAX + 1) * 4)
+    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 1) * 4)
   #endif
-  #define SIZEOF_CYCREF 4
+  #define SIZEOF_CYCREF    4
 #else
-  #define SIZEOF_CYCCNT 0
-  #define SIZEOF_CYCREF 0
+  #define SIZEOF_CYCCNT    0
+  #define SIZEOF_CYCREF    0
 #endif
 
 #if THINKOS_ENABLE_CRITICAL
-  #define SIZEOF_CRITCNT 4
+  #define SIZEOF_CRITCNT   4
 #else
-  #define SIZEOF_CRITCNT 0
+  #define SIZEOF_CRITCNT   0
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
-  #define SIZEOF_SCHED_LM 4
+  #define SIZEOF_SCHED_LM  4
 #else
-  #define SIZEOF_SCHED_LM 0
+  #define SIZEOF_SCHED_LM  0
 #endif
 
 #if THINKOS_ENABLE_CLOCK
-  #define SIZEOF_TICKS 4
+  #define SIZEOF_TICKS     4
   #if THINKOS_ENABLE_DMCLOCK
     #define SIZEOF_DMCLOCK 4
   #else
     #define SIZEOF_DMCLOCK 0
   #endif
 #else
-  #define SIZEOF_TICKS 0
-  #define SIZEOF_DMCLOCK 0
+  #define SIZEOF_TICKS     0
+  #define SIZEOF_DMCLOCK   0
 #endif
 
-#if THINKOS_ENABLE_DEBUG_STEP
+#if THINKOS_ENABLE_DEBUG_BKPT
   #define SIZEOF_XCPT_IPSR 2
-  #define SIZEOF_STEP_ID  1
-  #define SIZEOF_BREAK_ID 1
-  #define SIZEOF_STEP_REQ 4
-  #define SIZEOF_STEP_SVC 4
+  #define SIZEOF_STEP_ID   1
+  #define SIZEOF_BREAK_ID  1
+  #if THINKOS_ENABLE_DEBUG_STEP
+    #define SIZEOF_STEP_REQ  4
+    #define SIZEOF_STEP_SVC  4
+  #else
+    #define SIZEOF_STEP_REQ  0
+    #define SIZEOF_STEP_SVC  0
+  #endif
 #else
   #define SIZEOF_XCPT_IPSR 0
-  #define SIZEOF_STEP_ID  0
-  #define SIZEOF_BREAK_ID 0
-  #define SIZEOF_STEP_REQ 0
-  #define SIZEOF_STEP_SVC 0
+  #define SIZEOF_STEP_ID   0
+  #define SIZEOF_BREAK_ID  0
+  #define SIZEOF_STEP_REQ  0
+  #define SIZEOF_STEP_SVC  0
 #endif
 
 #define THINKOS_RT_IDLE_CTX_OFFS   (4 * THINKOS_THREADS_MAX)
@@ -569,12 +594,14 @@ struct thinkos_rt {
 							 thread preemption is disabled */
 #endif
 
-#if THINKOS_ENABLE_DEBUG_STEP
+#if THINKOS_ENABLE_DEBUG_BKPT
 	uint16_t xcpt_ipsr; /* Exception IPSR */
-	int8_t step_id;     /* current stepping thread id */
-	int8_t break_id;    /* thread stopped by a breakpoint or step request */
+	int8_t   step_id;   /* current stepping thread id */
+	int8_t   break_id;  /* thread stopped by a breakpoint or step request */
+#if THINKOS_ENABLE_DEBUG_STEP
 	uint32_t step_svc;  /* step at service call bitmap */
 	uint32_t step_req;  /* step request bitmap */
+#endif
 #endif
 
 #if THINKOS_ENABLE_PROFILING
@@ -863,7 +890,7 @@ struct thinkos_except {
  * --------------------------------------------------------------------------*/
 
 enum thinkos_exception {
-	THINKOS_ERR_COND_INVALID,
+	THINKOS_ERR_COND_INVALID = 1,
 	THINKOS_ERR_COND_ALLOC,
 	THINKOS_ERR_MUTEX_INVALID,
 	THINKOS_ERR_MUTEX_ALLOC,
@@ -888,9 +915,13 @@ enum thinkos_exception {
 	THINKOS_ERR_CONSOLE_REQINV,
 	THINKOS_ERR_CTL_REQINV,
 	THINKOS_ERR_COMM_REQINV,
-	THINKOS_ERR_SYSCAL_INVALID,
+	THINKOS_ERR_SYSCALL_INVALID,
 	THINKOS_ERR_CRITICAL_EXIT
 };
+
+/* Mark for brekpoint numbers. Breakpoints above this
+   number are considered errors. */
+#define THINKOS_BKPT_EXCEPT_OFF 128
 
 /* -------------------------------------------------------------------------- 
  * Idle thread
@@ -932,7 +963,7 @@ void cm3_msp_init(uint64_t * stack_top);
 
 static inline void __attribute__((always_inline)) thinkos_throw(int code)
 {
-	__bkpt(code);
+	__bkpt(THINKOS_BKPT_EXCEPT_OFF + code);
 }
 
 /* set a bit in a bit map atomically */

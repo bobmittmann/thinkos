@@ -53,9 +53,8 @@ void thinkos_mutex_free_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a mutex!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -73,9 +72,8 @@ void thinkos_mutex_lock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -83,9 +81,8 @@ void thinkos_mutex_lock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -104,9 +101,8 @@ void thinkos_mutex_lock_svc(int32_t * arg, int self)
 		DCC_LOG2(LOG_WARNING, "<%d> mutex %d, possible deadlock!", self, wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_LOCKED);
-#else
-		arg[0] = THINKOS_EDEADLK;
 #endif
+		arg[0] = THINKOS_EDEADLK;
 		return;
 	}
 #endif
@@ -132,9 +128,8 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -142,9 +137,8 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -160,9 +154,8 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 			DCC_LOG2(LOG_MSG, "<%d> mutex %d deadlock.", self, wq);
 #if THINKOS_ENABLE_MONITOR
 			thinkos_throw(THINKOS_ERR_MUTEX_LOCKED);
-#else
-			arg[0] = THINKOS_EDEADLK;
 #endif
+			arg[0] = THINKOS_EDEADLK;
 		} else
 #endif
 		{
@@ -184,9 +177,8 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -194,9 +186,8 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -214,9 +205,8 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 	if (thinkos_rt.lock[mutex] == self) {
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_LOCKED);
-#else
-		arg[0] = THINKOS_EDEADLK;
 #endif
+		arg[0] = THINKOS_EDEADLK;
 		return;
 	}
 #endif
@@ -248,9 +238,8 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -258,9 +247,8 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -274,9 +262,8 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 				 thinkos_rt.active, wq, thinkos_rt.lock[mutex]);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_MUTEX_NOTMINE);
-#else
-		arg[0] = THINKOS_EPERM;
 #endif
+		arg[0] = THINKOS_EPERM;
 		return;
 	}
 #endif

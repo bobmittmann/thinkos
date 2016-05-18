@@ -98,18 +98,16 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_INVALID);
-#else
-		ctx->r0 = THINKOS_EINVAL;
 #endif
+		ctx->r0 = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_THREAD_ALLOC);
-#else
-		ctx->r0 = THINKOS_EINVAL;
 #endif
+		ctx->r0 = THINKOS_EINVAL;
 		return;
 	}
 #endif

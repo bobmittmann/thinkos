@@ -24,7 +24,7 @@ SDK = ../../../sdk
 
 PROG = thinkos
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c
+CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c test.c
 
 LIBDIRS = $(SDK)/libcm3 $(SDK)/libstm32f $(SDK)/libutil \
 		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb

@@ -54,9 +54,8 @@ void thinkos_flag_free_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -84,9 +83,8 @@ void thinkos_flag_take_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -94,9 +92,8 @@ void thinkos_flag_take_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -171,9 +168,8 @@ void thinkos_flag_timedtake_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -181,9 +177,8 @@ void thinkos_flag_timedtake_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -317,9 +312,8 @@ void thinkos_flag_give_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -327,9 +321,8 @@ void thinkos_flag_give_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -358,9 +351,8 @@ void thinkos_flag_val_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -368,9 +360,8 @@ void thinkos_flag_val_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -397,9 +388,8 @@ void thinkos_flag_clr_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -407,9 +397,8 @@ void thinkos_flag_clr_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -429,9 +418,8 @@ void thinkos_flag_set_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -439,9 +427,8 @@ void thinkos_flag_set_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -476,9 +463,8 @@ void thinkos_flag_watch_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -486,9 +472,8 @@ void thinkos_flag_watch_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -521,9 +506,8 @@ void thinkos_flag_timedwatch_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_FLAG_ALLOC
@@ -531,9 +515,8 @@ void thinkos_flag_timedwatch_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid flag %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_FLAG_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif

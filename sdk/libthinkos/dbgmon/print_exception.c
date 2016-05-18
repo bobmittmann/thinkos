@@ -63,17 +63,19 @@ void dmon_print_exception(struct dmon_comm * comm,
 		dmprintf(comm, " Usage Fault at ");
 		break;
 #endif
+	default:
+		dmprintf(comm, " Error %d at ", xcpt->type);
 	}
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;
 	if (ipsr == 0) {
-		dmprintf(comm, "thread %d", xcpt->active);
+		dmprintf(comm, "thread %d", xcpt->active + 1);
 	} else if (ipsr > 15) {
 		dmprintf(comm, "IRQ %d", ipsr - 16);
 	} else {
 		switch (ipsr) {
 		case CM3_EXCEPT_SVC:
-			dmprintf(comm, "SVCall");
+			dmprintf(comm, "SVCall, thread %d", xcpt->active + 1);
 			break;
 		case CM3_EXCEPT_DEBUG_MONITOR:
 			dmprintf(comm, "Monitor");

@@ -55,9 +55,8 @@ void thinkos_gate_free_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -87,9 +86,8 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_GATE_ALLOC
@@ -97,9 +95,8 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -182,9 +179,8 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_GATE_ALLOC
@@ -192,9 +188,8 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -297,9 +292,8 @@ void thinkos_gate_exit_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_GATE_ALLOC
@@ -307,9 +301,8 @@ void thinkos_gate_exit_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -321,9 +314,8 @@ void thinkos_gate_exit_svc(int32_t * arg)
 				 thinkos_rt.active, wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_UNLOCKED);
-#else
-		arg[0] = THINKOS_EPERM;
 #endif
+		arg[0] = THINKOS_EPERM;
 		return;
 	}
 #endif
@@ -504,9 +496,8 @@ void thinkos_gate_open_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_GATE_ALLOC
@@ -514,9 +505,8 @@ void thinkos_gate_open_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -542,9 +532,8 @@ void thinkos_gate_close_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_INVALID);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_GATE_ALLOC
@@ -552,9 +541,8 @@ void thinkos_gate_close_svc(int32_t * arg)
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 #if THINKOS_ENABLE_MONITOR
 		thinkos_throw(THINKOS_ERR_GATE_ALLOC);
-#else
-		arg[0] = THINKOS_EINVAL;
 #endif
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
