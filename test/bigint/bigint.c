@@ -53,32 +53,31 @@ void u64mul(uint32_t z[], uint32_t x[], uint32_t y[])
    ---------------------------------------
     Z7   Z6   Z5   Z4   Z3   Z2   Z1   Z0
  */
-void u128mul(uint32_t z[], uint32_t x[], uint32_t y[])
+void __u128mul(uint32_t z[], const uint32_t x[], const uint32_t y[])
 {
 	uint64_t t;
-	uint32_t c;
 
-	t = u64m(x[0], y[0]);
+	t = (uint64_t)x[0] * (uint64_t)y[0];
 	z[0] = t;
-	c = t >> 32;
-	t = u64mac(c, x[0], y[1]);
-	t = u64mac(t, x[1], y[0]);
+	t >>= 32;
+	t += (uint64_t)x[0] * (uint64_t)y[1];
+	t -= 0x8000000000000000LL;
+	t += (uint64_t)x[1] * (uint64_t)y[0];
 	z[1] = t;
-	c = t >> 32;
-	t = u64mac(c, x[0], y[2]);
-	t = u64mac(t, x[1], y[1]);
-	t = u64mac(t, x[2], y[0]);
+	t >>= 32;
+	t += (uint64_t)x[0] * (uint64_t)y[2];
+	t += (uint64_t)x[1] * (uint64_t)y[1];
+	t += (uint64_t)x[2] * (uint64_t)y[0];
 	z[2] = t;
-	c = t >> 32;
-	t = u64mac(c, x[0], y[3]);
-	t = u64mac(t, x[1], y[2]);
-	t = u64mac(t, x[2], y[1]);
-	t = u64mac(t, x[3], y[0]);
-	z[3] = t >> 32;
+	t >>= 32;
+/*	t += x[0] * y[3];
+	t += x[1] * y[2];
+	t += x[2] * y[1];
+	t += x[3] * y[0]; */
+	z[3] = t; 
 }
 
-
-void u256mul(uint32_t z[], uint32_t x[], uint32_t y[])
+void __u256mul(uint32_t z[], uint32_t x[], uint32_t y[])
 {
 	uint64_t t;
 
@@ -100,11 +99,11 @@ void u256mul(uint32_t z[], uint32_t x[], uint32_t y[])
 }
 
 
-void u512mul(uint32_t z[], uint32_t x[], uint32_t y[])
+void __u512mul(uint32_t z[], uint32_t x[], uint32_t y[])
 {
 }
 
-void u1024mul(uint32_t z[], uint32_t x[], uint32_t y[])
+void __u1024mul(uint32_t z[], uint32_t x[], uint32_t y[])
 {
 }
 

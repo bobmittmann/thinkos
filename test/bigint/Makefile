@@ -22,6 +22,7 @@
 PROG = test
 
 CFILES = ../common/stdio.c test.c bigint.c 
+SFILES = u128mul.S u256mul.S u512mul.S u1024mul.S
 
 SDK = ../../sdk
 
@@ -32,7 +33,7 @@ LIBS = cm3 stm32f util c
 
 INCPATH = $(SDK)/include  
 
-CFLAGS = -g -O2
+CFLAGS = -g -Os
 
 JTAGTOOL_ADDR = 192.168.10.50
 MACH = stm32f407
