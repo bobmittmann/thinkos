@@ -36,7 +36,7 @@ _Pragma ("GCC optimize (\"O2\")")
 
 #if (THINKOS_ENABLE_MONITOR)
 
-#if (!THINKOS_ENABLE_THREAD_VOID)
+#if (THINKOS_ENABLE_DEBUG_BKPT && !THINKOS_ENABLE_THREAD_VOID)
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
@@ -142,7 +142,7 @@ void __dmon_irq_restore_all(void)
 void __reset_ram_vectors(void)
 {
 	/* XXX: 
-	   this function assumes the excpetion vectors defaults to be located 
+	   this function assumes the exception vectors defaults to be located 
 	   just after the .text section! */
 	extern unsigned int __text_end;
 	extern unsigned int __ram_vectors;
@@ -1004,17 +1004,17 @@ void dbgmon_soft_reset(void)
 	__console_reset();
 #endif
 
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if THINKOS_ENABLE_EXCEPTIONS
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	__exception_reset();
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if THINKOS_ENABLE_DEBUG_BKPT
 	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
 #endif
 
-#if (THINKOS_ENABLE_RESET_RAM_VECTORS)
+#if THINKOS_ENABLE_RESET_RAM_VECTORS
 	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif

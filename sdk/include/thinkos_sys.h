@@ -183,6 +183,10 @@
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #endif
 
+#ifndef THINKOS_ENABLE_ERROR_TRAP
+#define THINKOS_ENABLE_ERROR_TRAP       0
+#endif
+
 #ifndef THINKOS_SYSRST_ONFAULT
 #define THINKOS_SYSRST_ONFAULT          0
 #endif
@@ -961,9 +965,11 @@ void cm3_msp_init(uint64_t * stack_top);
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-static inline void __attribute__((always_inline)) thinkos_throw(int code)
+static inline void __attribute__((always_inline)) __thinkos_error(int code)
 {
+#if THINKOS_ENABLE_ERROR_TRAP
 	__bkpt(THINKOS_BKPT_EXCEPT_OFF + code);
+#endif
 }
 
 /* set a bit in a bit map atomically */

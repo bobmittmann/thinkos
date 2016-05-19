@@ -163,9 +163,7 @@ void thinkos_escalate_svc(int32_t * arg)
 
 void thinkos_nosys(int32_t * arg)
 {
-#if THINKOS_ENABLE_MONITOR
-	thinkos_throw(THINKOS_ERR_SYSCALL_INVALID);
-#endif
+	__thinkos_error(THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;
 }
 
@@ -194,9 +192,7 @@ void thinkos_critical_enter_svc(int32_t * arg)
 void thinkos_critical_exit_svc(int32_t * arg)
 {
 	if (thinkos_rt.critical_cnt == 0) {
-#if THINKOS_ENABLE_MONITOR
-		thinkos_throw(THINKOS_ERR_CRITICAL_EXIT);
-#endif
+		__thinkos_error(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__thinkos_defer_sched();

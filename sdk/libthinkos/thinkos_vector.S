@@ -26,13 +26,13 @@
 #define SCB_ICSR_OFFS 4
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
+	.syntax unified
+	.cpu cortex-m3
+
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
  * --------------------------------------------------------------------------*/
 #if THINKOS_ENABLE_EXCEPTIONS
-	.syntax unified
-	.cpu cortex-m3
-
 	.thumb
 	.text
 	.align	2
@@ -85,6 +85,7 @@ collect_xcpt_inf:
 
 	.size   collect_xcpt_inf, . - collect_xcpt_inf
 
+#if	THINKOS_ENABLE_BUSFAULT 
 	.thumb
 	.text
 	.align	2
@@ -102,7 +103,9 @@ cm3_bus_fault_isr:
 	bl     thinkos_xcpt_process
 	bx     r7
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
+#endif
 
+#if	THINKOS_ENABLE_USAGEFAULT 
 	.align	2
 	.global	cm3_usage_fault_isr
 	.thumb
@@ -118,7 +121,9 @@ cm3_usage_fault_isr:
 	bl     thinkos_xcpt_process
 	bx     r7
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
+#endif
 
+#if	THINKOS_ENABLE_MEMFAULT
 	.align	2
 	.global	cm3_mem_manage_isr
 	.thumb
@@ -134,7 +139,7 @@ cm3_mem_manage_isr:
 	bl     thinkos_xcpt_process
 	bx     r7
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
-
+#endif
 
 	.align	2
 	.global	cm3_hard_fault_isr
@@ -151,9 +156,9 @@ cm3_hard_fault_isr:
 	bl     thinkos_xcpt_process
 	bx     r7
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
-
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
+#if THINKOS_ENABLE_MONITOR
 	.align  2
 	.global cm3_debug_mon_isr
 	.thumb
@@ -187,6 +192,7 @@ cm3_debug_mon_isr:
 	.word   CM3_DCB_BASE /* Core Debug Base Address */
 #endif
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
+#endif /* THINKOS_ENABLE_MONITOR */
 
 	.align  2
 	.global cm3_svc_isr
@@ -218,17 +224,12 @@ cm3_svc_isr:
 	/* Read the SVC number from the instruction */
 	ldrb    r2, [r2, #-2]
 	b       thinkos_svc_isr
-
 	.align  2
 .L_thinkos_rt_1:
 	.word   thinkos_rt
 .L_cm3_scb_1:
 	.word   CM3_SCB_BASE
-
 	.size   cm3_svc_isr, . - cm3_svc_isr
-
-
-
 
 
 	.align  2

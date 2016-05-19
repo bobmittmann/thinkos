@@ -32,9 +32,9 @@
 	.syntax unified
 	.cpu cortex-m3
 
-	.thumb
 	.text
 	.align	4
+
 	.global cm3_pendsv_isr
 	.thumb
 	.thumb_func
@@ -221,8 +221,8 @@ thinkos_sched_step:
 .L_cm_dcb:
 	.word   CM3_DCB_BASE /* Core Debug Base Address */
 
-
 	.size   thinkos_sched_step, . - thinkos_sched_step
+#endif /* THINKOS_ENABLE_DEBUG_STEP */
 
 /* FIXME: this is a hack to force linking this file. 
  The linker then will override the weak alias for the cm3_hard_fault_isr() */
@@ -234,5 +234,4 @@ thinkos_sched_step:
 thinkos_sch_nm:
 	.ascii	"SCH\000"
 
-#endif
 

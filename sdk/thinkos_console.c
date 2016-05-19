@@ -423,11 +423,8 @@ wr_again:
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
-#if THINKOS_ENABLE_MONITOR
-		thinkos_throw(THINKOS_ERR_CONSOLE_REQINV);
-#else
+		__thinkos_error(THINKOS_ERR_CONSOLE_REQINV);
 		arg[0] = THINKOS_EINVAL;
-#endif
 		break;
 	}
 }
