@@ -61,7 +61,8 @@ void __thinkos_thread_abort(int thread_id)
 		/* discard current thread context */
 		thinkos_rt.active = THINKOS_THREAD_VOID;
 #else
-		DCC_LOG(LOG_PANIC, "abort current thread won't clear context!"); 
+		DCC_LOG(LOG_WARNING, "void thread not enabled!"); 
+		DCC_LOG(LOG_WARNING, "aborting current thread won't clear context!"); 
 #endif
 	} else {
 		DCC_LOG1(LOG_INFO, "active thread=%d", thinkos_rt.active); 

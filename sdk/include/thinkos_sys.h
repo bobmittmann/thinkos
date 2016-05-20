@@ -311,6 +311,10 @@
 #define THINKOS_ASM_SCHEDULER           0
 #endif
 
+#ifndef THINKOS_ENABLE_OFAST
+#define THINKOS_ENABLE_OFAST           1
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Sanity check
  * --------------------------------------------------------------------------*/

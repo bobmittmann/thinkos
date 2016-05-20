@@ -20,8 +20,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-_Pragma ("GCC optimize (\"O2\")")
-
 #include <sys/stm32f.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,7 +29,7 @@ _Pragma ("GCC optimize (\"O2\")")
 
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 
 #include <sys/dcclog.h>

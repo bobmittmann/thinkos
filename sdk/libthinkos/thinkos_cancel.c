@@ -21,6 +21,9 @@
 
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 #include <thinkos.h>
 #include <sys/delay.h>
 

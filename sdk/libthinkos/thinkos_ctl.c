@@ -19,12 +19,9 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Os\")")
-
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
 #include <thinkos.h>
-
 #include <sys/param.h>
 #include <sys/sysclk.h>
 

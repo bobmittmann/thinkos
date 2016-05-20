@@ -21,7 +21,7 @@
  */
 
 #include <stdarg.h>
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 #include <sys/param.h>
@@ -37,14 +37,6 @@
 #define FL_DEC	    0x20	/* decimal number		*/
 #define FL_HEX	    0x40	/* hexidecimal number		*/
 #define FL_MINUS    0x80	/* minus flag (field or value)	*/
-
-# define GETBYTE(flag, mask, pnt)	({	\
-									 unsigned char __c;				\
-									 __c = ((flag) & (mask))			\
-									 ? pgm_read_byte(pnt) : *pnt;		\
-									 pnt++;					\
-									 __c;					\
-									 })
 
 #define FILE_BUF_LEN 64
 

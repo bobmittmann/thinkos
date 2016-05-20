@@ -19,10 +19,11 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Ofast\")")
-
 #define __THINKOS_IRQ__
 #include <thinkos_irq.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 #include <thinkos.h>
 
 #include <stdio.h>

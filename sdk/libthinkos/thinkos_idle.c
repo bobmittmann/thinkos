@@ -21,7 +21,7 @@
 
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 
@@ -37,9 +37,24 @@
 #error "Invalid IDLE stack option!"
 #endif
 
+#if THINKOS_ENABLE_MONITOR
+static void thinkos_dbgmon_idle_signal(void)
+{
+	struct cm3_dcb * dcb = CM3_DCB;
+	uint32_t demcr;
+	/* Debug monitor request semaphore */
+	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
+		DCC_LOG(LOG_MSG, "<<< Idle >>>");
+		__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DBGMON_IDLE, 1);  
+		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
+		asm volatile ("isb\n" :  :  : );
+	}
+}
+#endif /* THINKOS_ENABLE_MONITOR */
+
 void thinkos_idle_svc(int32_t * arg)
 {
-#if (THINKOS_ENABLE_MONITOR)
+#if THINKOS_ENABLE_MONITOR
 	thinkos_dbgmon_idle_signal();
 #endif
 

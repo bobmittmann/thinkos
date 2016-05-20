@@ -19,11 +19,14 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Ofast\")")
-
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
-#define __THINKOS_DMON__
+
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
+
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 
@@ -263,7 +266,7 @@ void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 {
 	if (pipe_isfull(&thinkos_console_rt.tx_pipe)) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
-		dmon_signal(DMON_TX_PIPE);
+		dbgmon_signal(DBGMON_TX_PIPE);
 	} else {
 		DCC_LOG1(LOG_TRACE, "PC=%08x ...........", thinkos_rt.ctx[th]->pc); 
 	}
@@ -293,7 +296,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		len = arg[2];
 		DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
 		if ((n = pipe_read(&thinkos_console_rt.rx_pipe, buf, len)) > 0) {
-			dmon_signal(DMON_RX_PIPE);
+			dbgmon_signal(DBGMON_RX_PIPE);
 			arg[0] = n;
 			break;
 		}
@@ -314,7 +317,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		len = arg[2];
 		DCC_LOG1(LOG_INFO, "Console read: len=%d", len);
 		if ((n = pipe_read(&thinkos_console_rt.rx_pipe, buf, len)) > 0) {
-			dmon_signal(DMON_RX_PIPE);
+			dbgmon_signal(DBGMON_RX_PIPE);
 			arg[0] = n;
 			break;
 		}
@@ -335,7 +338,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 wr_again:
 		if ((n = pipe_write(&thinkos_console_rt.tx_pipe, buf, len)) > 0) {
 			DCC_LOG1(LOG_INFO, "pipe_write: n=%d", n);
-			dmon_signal(DMON_TX_PIPE);
+			dbgmon_signal(DBGMON_TX_PIPE);
 			arg[0] = n;
 		} else {
 			/* Set the return value to ZERO. The calling thread 
@@ -437,8 +440,8 @@ void __console_reset(void)
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
 	thinkos_console_rt.rx_pipe.tail = 0;
-	dbgmon_clear(DMON_TX_PIPE);
-	dbgmon_clear(DMON_RX_PIPE);
+	dbgmon_clear(DBGMON_TX_PIPE);
+	dbgmon_clear(DBGMON_RX_PIPE);
 }
 
 void thinkos_console_init(void)

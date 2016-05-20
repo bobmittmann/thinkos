@@ -19,13 +19,14 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Ofast\")")
-
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 #define __THINKOS_IRQ__
 #include <thinkos_irq.h>
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 #include <thinkos_except.h>
@@ -320,7 +321,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 #if THINKOS_ENABLE_DMCLOCK
 	if ((int32_t)(thinkos_rt.dmclock - ticks) == 0) {
-		dmon_signal(DMON_ALARM);
+		dbgmon_signal(DBGMON_ALARM);
 	}
 #endif
 

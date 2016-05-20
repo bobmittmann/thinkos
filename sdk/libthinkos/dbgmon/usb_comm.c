@@ -32,7 +32,7 @@
 
 #include <sys/dcclog.h>
 
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 
 #if (THINKOS_ENABLE_MONITOR)
@@ -433,13 +433,13 @@ void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
 
 	usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 	DCC_LOG(LOG_INFO, "COMM_RCV!");
-	dmon_signal(DMON_COMM_RCV);
+	dbgmon_signal(DBGMON_COMM_RCV);
 }
 
 void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
 	DCC_LOG(LOG_MSG, "COMM_EOT");
-	dmon_signal(DMON_COMM_EOT);
+	dbgmon_signal(DBGMON_COMM_EOT);
 }
 
 void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
@@ -577,7 +577,7 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
 
 		/* signal monitor */
-		dmon_signal(DMON_COMM_CTL);
+		dbgmon_signal(DBGMON_COMM_CTL);
 		break;
 
 	default:
@@ -641,22 +641,21 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	while (rem) {
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!!", dev->tx_pkt);
-			dbgmon_wait(DMON_COMM_EOT);
-			return n;
+			dbgmon_wait(DBGMON_COMM_EOT);
+			return len - rem;
 		}
 #if DEBUG
 		dev->tx_pkt++;
 #endif
-		if ((ret = dbgmon_wait(DMON_COMM_EOT)) < 0) {
-			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
-			return ret;
-		}
-
 		DCC_LOG1(LOG_MSG, "n=%d!!", n);
 
 		rem -= n;
 		ptr += n;
 
+		if ((ret = dbgmon_wait(DBGMON_COMM_EOT)) < 0) {
+			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
+			return len - rem;
+		}
 		DCC_LOG(LOG_MSG, "EOT");
 	}
 
@@ -696,7 +695,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 					usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 				} 
 				if (cnt == 0)
-					dbgmon_clear(DMON_COMM_RCV); /* next call will block */
+					dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
 				dev->rx_cnt = cnt;
 			} 
 			dev->rx_pos = pos;
@@ -704,7 +703,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 		}
 
 		DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
-	} while ((ret = dbgmon_expect(DMON_COMM_RCV)) == 0);
+	} while ((ret = dbgmon_expect(DBGMON_COMM_RCV)) == 0);
 
 	return ret;
 }
@@ -719,7 +718,7 @@ int dmon_comm_connect(struct dmon_comm * comm)
 
 	while ((dev->acm_ctrl & CDC_DTE_PRESENT) == 0) {
 		DCC_LOG1(LOG_TRACE, "ctrl=%02x, waiting...", dev->acm_ctrl);
-		if ((ret = dbgmon_wait(DMON_COMM_CTL)) < 0) {
+		if ((ret = dbgmon_wait(DBGMON_COMM_CTL)) < 0) {
 			DCC_LOG1(LOG_WARNING, "ret=%d!!", ret);
 			return ret;
 		}

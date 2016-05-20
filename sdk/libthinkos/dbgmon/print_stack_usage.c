@@ -20,7 +20,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
@@ -75,7 +75,7 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 	}
 
 	dmprintf(comm, "%3d", -1);
-	dmprintf(comm, " |  <DMON>"); 
+	dmprintf(comm, " |   <DBG>"); 
 	dmprintf(comm, " | %08x", (uint32_t)thinkos_dmon_stack); 
 	dmprintf(comm, " | %08x", (uint32_t)cm3_msp_get()); 
 	dmprintf(comm, " | %6d", thinkos_dmon_stack_size); 

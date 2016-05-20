@@ -19,13 +19,11 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Os\")")
-
 #define __THINKOS_SYS__
 #include <thinkos_sys.h>
 #define __THINKOS_IRQ__
 #include <thinkos_irq.h>
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 
 #include <thinkos_except.h>

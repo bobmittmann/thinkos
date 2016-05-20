@@ -20,10 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __THINKOS_DMON_H__
-#define __THINKOS_DMON_H__
+#ifndef __THINKOS_DBGMON_H__
+#define __THINKOS_DBGMON_H__
 
-#ifndef __THINKOS_DMON__
+#ifndef __THINKOS_DBGMON__
 #error "Never use <thinkos_dmon.h> directly; include <thinkos.h> instead."
 #endif 
 
@@ -43,21 +43,21 @@
 #include <sys/usb-dev.h>
 
 enum dbgmon_event {
-	DMON_COMM_RCV     = 0,
-	DMON_COMM_EOT     = 1,
-	DMON_COMM_CTL     = 2,
+	DBGMON_COMM_RCV     = 0,
+	DBGMON_COMM_EOT     = 1,
+	DBGMON_COMM_CTL     = 2,
 
-	DMON_RX_PIPE      = 3,
-	DMON_TX_PIPE      = 4,
-	DMON_ALARM        = 5,
+	DBGMON_RX_PIPE      = 3,
+	DBGMON_TX_PIPE      = 4,
+	DBGMON_ALARM        = 5,
 
-	DMON_THREAD_STEP  = 8,
-	DMON_THREAD_FAULT = 12,
-	DMON_BREAKPOINT   = 16,
-	DMON_IRQ_STEP     = 28,
-	DMON_IDLE         = 29,
-	DMON_EXCEPT       = 30,
-	DMON_RESET        = 31
+	DBGMON_THREAD_STEP  = 8,
+	DBGMON_THREAD_FAULT = 12,
+	DBGMON_BREAKPOINT   = 16,
+	DBGMON_IRQ_STEP     = 28,
+	DBGMON_IDLE         = 29,
+	DBGMON_EXCEPT       = 30,
+	DBGMON_RESET        = 31
 };
 
 struct dmon_comm;
@@ -76,7 +76,7 @@ struct thinkos_dmon {
 
 extern struct thinkos_dmon thinkos_dmon_rt;
 
-static inline void dmon_signal(int ev) {
+static inline void dbgmon_signal(int ev) {
 	struct cm3_dcb * dcb = CM3_DCB;
 	__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, ev, 1);  
 	dcb->demcr |= DCB_DEMCR_MON_PEND;
@@ -185,7 +185,7 @@ int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 
 int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx);
 
-void thinkos_dmon_init(void * comm, void (* task)(struct dmon_comm * ));
+void thinkos_dbgmon_init(void * comm, void (* task)(struct dmon_comm * ));
 
 void dbgmon_reset(void);
 
@@ -286,8 +286,6 @@ int dmgets(char * s, int size, struct dmon_comm * comm);
 
 int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
 
-void thinkos_dbgmon_idle_signal(void);
-
 int dmon_context_swap(void * ctx); 
 
 int dmon_context_swap_ext(void * ctx, int arg); 
@@ -296,5 +294,5 @@ int dmon_context_swap_ext(void * ctx, int arg);
 }
 #endif
 
-#endif /* __THINKOS_DMON_H__ */
+#endif /* __THINKOS_DBGMON_H__ */
 
