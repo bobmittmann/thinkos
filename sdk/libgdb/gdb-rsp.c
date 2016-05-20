@@ -29,7 +29,7 @@
 #include <sys/dcclog.h>
 #include <sys/stm32f.h>
 
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 #include <gdb.h>
@@ -1608,14 +1608,14 @@ void gdb_task(struct dmon_comm * comm)
 
 //	DCC_LOG(LOG_TRACE, "Comm connected..");
 
-	sigmask = (1 << DMON_EXCEPT);
-	sigmask |= (1 << DMON_THREAD_FAULT);
-	sigmask |= (1 << DMON_THREAD_STEP);
-	sigmask |= (1 << DMON_COMM_RCV);
-	sigmask |= (1 << DMON_COMM_CTL);
-	sigmask |= (1 << DMON_BREAKPOINT);
+	sigmask = (1 << DBGMON_EXCEPT);
+	sigmask |= (1 << DBGMON_THREAD_FAULT);
+	sigmask |= (1 << DBGMON_THREAD_STEP);
+	sigmask |= (1 << DBGMON_COMM_RCV);
+	sigmask |= (1 << DBGMON_COMM_CTL);
+	sigmask |= (1 << DBGMON_BREAKPOINT);
 #if (THINKOS_ENABLE_CONSOLE)
-	sigmask |= (1 << DMON_TX_PIPE);
+	sigmask |= (1 << DBGMON_TX_PIPE);
 #endif
 	for(;;) {
 
@@ -1629,31 +1629,31 @@ void gdb_task(struct dmon_comm * comm)
 
 		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
 
-		if (sigset & (1 << DMON_EXCEPT)) {
+		if (sigset & (1 << DBGMON_EXCEPT)) {
 			DCC_LOG(LOG_TRACE, "Exception.");
-			dbgmon_clear(DMON_EXCEPT);
+			dbgmon_clear(DBGMON_EXCEPT);
 			rsp_on_fault(gdb, pkt);
 		}
 
-		if (sigset & (1 << DMON_THREAD_FAULT)) {
+		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");
-			dbgmon_clear(DMON_THREAD_FAULT);
+			dbgmon_clear(DBGMON_THREAD_FAULT);
 			rsp_on_fault(gdb, pkt);
 		}
 
-		if (sigset & (1 << DMON_THREAD_STEP)) {
-			DCC_LOG(LOG_INFO, "DMON_THREAD_STEP");
-			dbgmon_clear(DMON_THREAD_STEP);
+		if (sigset & (1 << DBGMON_THREAD_STEP)) {
+			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
+			dbgmon_clear(DBGMON_THREAD_STEP);
 			rsp_on_step(gdb, pkt);
 		}
 
-		if (sigset & (1 << DMON_BREAKPOINT)) {
-			DCC_LOG(LOG_INFO, "DMON_BREAKPOINT");
-			dbgmon_clear(DMON_BREAKPOINT);
+		if (sigset & (1 << DBGMON_BREAKPOINT)) {
+			DCC_LOG(LOG_INFO, "DBGMON_BREAKPOINT");
+			dbgmon_clear(DBGMON_BREAKPOINT);
 			rsp_on_breakpoint(gdb, pkt);
 		}
 
-		if (sigset & (1 << DMON_COMM_RCV)) {
+		if (sigset & (1 << DBGMON_COMM_RCV)) {
 
 			if (dmon_comm_recv(comm, buf, 1) != 1) {
 				DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
@@ -1703,9 +1703,9 @@ void gdb_task(struct dmon_comm * comm)
 
 		}
 
-		if (sigset & (1 << DMON_COMM_CTL)) {
+		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			DCC_LOG(LOG_TRACE, "Comm Ctl.");
-			dbgmon_clear(DMON_COMM_CTL);
+			dbgmon_clear(DBGMON_COMM_CTL);
 			if (!dmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
 				return;
@@ -1713,10 +1713,10 @@ void gdb_task(struct dmon_comm * comm)
 		}
 
 #if (THINKOS_ENABLE_CONSOLE)
-		if (sigset & (1 << DMON_TX_PIPE)) {
+		if (sigset & (1 << DBGMON_TX_PIPE)) {
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if (rsp_console_output(gdb, pkt) <= 0) {
-				dbgmon_clear(DMON_TX_PIPE);
+				dbgmon_clear(DBGMON_TX_PIPE);
 			}
 		}
 #endif

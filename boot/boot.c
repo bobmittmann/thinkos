@@ -33,7 +33,7 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 
@@ -54,7 +54,7 @@ void monitor_task(struct dmon_comm * comm);
 
 void monitor_exec_protected(struct dmon_comm * comm)
 {
-	thinkos_dmon_init(comm, monitor_task);
+	thinkos_dbgmon_init(comm, monitor_task);
 }
 
 void monitor_exec(void)

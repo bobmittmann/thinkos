@@ -532,11 +532,11 @@
 #endif
 #endif
 
-#include <sys/dcclog.h>
 #include <arch/cortex-m3.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------- 
  * Thread context layout

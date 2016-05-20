@@ -19,27 +19,23 @@
  * http://www.gnu.org/
  */
 
-#include <stdint.h>
-
+#define __THINKOS_SYS__
+#include <thinkos_SYS.h>
+#if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
+#endif
 
-void __thinkos_memcpy(void * __dst, void * __src,  unsigned int __n)
+/*
+ * This memcpy is ment to be used to copy small blocks of data
+ * not aligned to 32bits boundaries.
+ * It won't be efficient for large amounts of data but it has very litle
+ * overhead so is good for small data sets (<64bytes). 
+ */
+
+void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n)
 {
 	register uint8_t * cpsrc = (uint8_t *)__src;
 	register uint8_t * cpdst = (uint8_t *)__dst;
-
-	if ((((uint32_t)__src | (uint32_t)__dst) & 0x3) == 0) {
-		register uint32_t * psrc = (uint32_t *)cpsrc;
-		register uint32_t * pdst = (uint32_t *)cpdst;
-
-		while (__n >= sizeof(uint32_t)) {
-			*pdst++ = *psrc++;
-			__n -= sizeof(uint32_t);
-		}
-
-		cpsrc = (uint8_t *)psrc;
-		cpdst = (uint8_t *)pdst;
-	}
 
 	while (__n) {
 		*cpdst++ = *cpsrc++;

@@ -19,9 +19,13 @@
  * http://www.gnu.org/
  */
 
-#include <stdint.h>
+#define __THINKOS_SYS__
+#include <thinkos_SYS.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 
-void __thinkos_memcpy32(void * __dst, void * __src,  unsigned int __len)
+void __thinkos_memcpy32(void * __dst, const void * __src, unsigned int __len)
 {
 	uint32_t * dst = (uint32_t *)__dst;
 	uint32_t * src = (uint32_t *)__src;

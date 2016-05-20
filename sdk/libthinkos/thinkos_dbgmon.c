@@ -30,7 +30,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/stm32f.h>
 #include <arch/cortex-m3.h>
 #include <sys/param.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include <sys/dcclog.h>
@@ -450,10 +449,8 @@ bool dmon_breakpoint_disable(uint32_t addr)
 void dmon_breakpoint_clear_all(void)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
-	int i;
 
-	for (i = 0; i < CM3_FP_NUM_CODE + CM3_FP_NUM_LIT; ++i)
-		fpb->comp[i] = 0;
+	__thinkos_memset32(fpb->comp, 0, (CM3_FP_NUM_CODE + CM3_FP_NUM_LIT) * 4);
 }
 
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
@@ -788,7 +785,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
 #endif
 				/* copy the thread exception context to the exception buffer. */
-				__thinkos_memcpy(&thinkos_except_buf.ctx.r0, psp,
+				__thinkos_memcpy32(&thinkos_except_buf.ctx.r0, psp,
 								sizeof(struct cm3_except_context)); 
 				/* suspend the current thread */
 				__thinkos_thread_pause(thinkos_rt.active);
@@ -817,7 +814,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 					thinkos_rt.break_id = THINKOS_THREAD_VOID;
 					thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
 					thinkos_rt.xcpt_ipsr = ipsr;
-					__thinkos_memcpy(&thinkos_except_buf.ctx.r0,
+					__thinkos_memcpy32(&thinkos_except_buf.ctx.r0,
 									 ctx, sizeof(struct cm3_except_context)); 
 					__thinkos_pause_all();
 					/* diasble all breakpoints */

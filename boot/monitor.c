@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define __THINKOS_DMON__
+#define __THINKOS_DBGMON__
 #include <thinkos_dmon.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
@@ -506,14 +506,14 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
-	sigmask |= (1 << DMON_THREAD_FAULT);
-	sigmask |= (1 << DMON_EXCEPT);
+	sigmask |= (1 << DBGMON_THREAD_FAULT);
+	sigmask |= (1 << DBGMON_EXCEPT);
 #endif
-	sigmask |= (1 << DMON_COMM_RCV);
+	sigmask |= (1 << DBGMON_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE
-	sigmask |= (1 << DMON_COMM_CTL);
-	sigmask |= (1 << DMON_TX_PIPE);
-	sigmask |= (1 << DMON_RX_PIPE);
+	sigmask |= (1 << DBGMON_COMM_CTL);
+	sigmask |= (1 << DBGMON_TX_PIPE);
+	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 
 #if (MONITOR_THREADINFO_ENABLE)
@@ -521,7 +521,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
-		sigmask |= (1 << DMON_ALARM);
+		sigmask |= (1 << DBGMON_ALARM);
 		dbgmon_alarm(125);
 #if (MONITOR_THREADINFO_ENABLE)
 		monitor_thread_id = -1;
@@ -537,14 +537,14 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DMON_COMM_CTL)) {
+		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
-			dbgmon_clear(DMON_COMM_CTL);
+			dbgmon_clear(DBGMON_COMM_CTL);
 			connected = dmon_comm_isconnected(comm);
 		}
 #endif
 
-		if (sigset & (1 << DMON_COMM_RCV)) {
+		if (sigset & (1 << DBGMON_COMM_RCV)) {
 #if THINKOS_ENABLE_CONSOLE
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_MSG, "Comm recv. rx_pipe.free=%d", cnt);
@@ -553,8 +553,8 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 					__console_rx_pipe_commit(len); 
 				} else {
 					DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed, "
-							"masking DMON_COMM_RCV!");
-					sigmask &= ~(1 << DMON_COMM_RCV);
+							"masking DBGMON_COMM_RCV!");
+					sigmask &= ~(1 << DBGMON_COMM_RCV);
 				}
 			} else {
 				DCC_LOG(LOG_TRACE, "Comm recv. rx pipe full!");
@@ -562,8 +562,8 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 					monitor_process_input(comm, buf, len);
 				} else {
 					DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed, "
-							"masking DMON_COMM_RCV!");
-					sigmask &= ~(1 << DMON_COMM_RCV);
+							"masking DBGMON_COMM_RCV!");
+					sigmask &= ~(1 << DBGMON_COMM_RCV);
 				}
 			}
 #else
@@ -574,19 +574,19 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		}
 
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DMON_RX_PIPE)) {
+		if (sigset & (1 << DBGMON_RX_PIPE)) {
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_TRACE, "RX Pipe. rx_pipe.free=%d. "
-						 "Unmaksing DMON_COMM_RCV!", cnt);
-				sigmask |= (1 << DMON_COMM_RCV);
+						 "Unmaksing DBGMON_COMM_RCV!", cnt);
+				sigmask |= (1 << DBGMON_COMM_RCV);
 			} else {
 				DCC_LOG(LOG_TRACE, "RX Pipe empty!!!");
 			}
-			dbgmon_clear(DMON_RX_PIPE);
+			dbgmon_clear(DBGMON_RX_PIPE);
 		}
 
 
-		if (sigset & (1 << DMON_TX_PIPE)) {
+		if (sigset & (1 << DBGMON_TX_PIPE)) {
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
@@ -597,16 +597,16 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 				__console_tx_pipe_commit(len); 
 			} else {
 				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
-				dbgmon_clear(DMON_TX_PIPE);
+				dbgmon_clear(DBGMON_TX_PIPE);
 			}
 		}
 #endif
 
-		if (sigset & (1 << DMON_ALARM)) {
-			dbgmon_clear(DMON_ALARM);
+		if (sigset & (1 << DBGMON_ALARM)) {
+			dbgmon_clear(DBGMON_ALARM);
 			if (this_board.autoboot(tick_cnt++) && 
 				dmon_app_exec(this_board.application.start_addr, false)) {
-				sigmask &= ~(1 << DMON_ALARM);
+				sigmask &= ~(1 << DBGMON_ALARM);
 				this_board.on_appload();
 			} else {
 				/* reastart the alarm timer */
@@ -615,16 +615,16 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		}
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
-		if (sigset & (1 << DMON_THREAD_FAULT)) {
+		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");
 			monitor_on_fault(comm);
-			dbgmon_clear(DMON_THREAD_FAULT);
+			dbgmon_clear(DBGMON_THREAD_FAULT);
 		}
 
-		if (sigset & (1 << DMON_EXCEPT)) {
+		if (sigset & (1 << DBGMON_EXCEPT)) {
 			DCC_LOG(LOG_TRACE, "System exception.");
 			monitor_on_fault(comm);
-			dbgmon_clear(DMON_EXCEPT);
+			dbgmon_clear(DBGMON_EXCEPT);
 		}
 #endif
 	}
