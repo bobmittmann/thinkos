@@ -27,8 +27,8 @@
 
 int __scan_stack(void * stack, unsigned int size);
 
-extern uint32_t thinkos_dmon_stack[];
-extern const uint16_t thinkos_dmon_stack_size;
+extern uint32_t thinkos_dbgmon_stack[];
+extern const uint16_t thinkos_dbgmon_stack_size;
 
 void dmon_print_stack_usage(struct dmon_comm * comm)
 {
@@ -76,11 +76,11 @@ void dmon_print_stack_usage(struct dmon_comm * comm)
 
 	dmprintf(comm, "%3d", -1);
 	dmprintf(comm, " |   <DBG>"); 
-	dmprintf(comm, " | %08x", (uint32_t)thinkos_dmon_stack); 
+	dmprintf(comm, " | %08x", (uint32_t)thinkos_dbgmon_stack); 
 	dmprintf(comm, " | %08x", (uint32_t)cm3_msp_get()); 
-	dmprintf(comm, " | %6d", thinkos_dmon_stack_size); 
-	dmprintf(comm, " | %6d", __scan_stack(thinkos_dmon_stack, 
-										thinkos_dmon_stack_size));
+	dmprintf(comm, " | %6d", thinkos_dbgmon_stack_size); 
+	dmprintf(comm, " | %6d", __scan_stack(thinkos_dbgmon_stack, 
+										thinkos_dbgmon_stack_size));
 	dmprintf(comm, "\r\n");
 }
 
