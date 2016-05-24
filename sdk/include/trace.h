@@ -18,7 +18,7 @@
  */
 
 /** 
- * @file trace.c
+ * @file trace.h
  * @brief Real-time trace
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 

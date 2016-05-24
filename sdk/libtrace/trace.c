@@ -247,7 +247,7 @@ void tracef(const struct trace_ref * ref, ... )
 #endif
 
 	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (cnt + 2)) {
+	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (unsigned int)(cnt + 2)) {
 		int i;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
