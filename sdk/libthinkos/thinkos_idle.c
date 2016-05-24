@@ -37,25 +37,10 @@
 #error "Invalid IDLE stack option!"
 #endif
 
-#if THINKOS_ENABLE_MONITOR
-static void thinkos_dbgmon_idle_signal(void)
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t demcr;
-	/* Debug monitor request semaphore */
-	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
-		DCC_LOG(LOG_MSG, "<<< Idle >>>");
-		__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, DBGMON_IDLE, 1);  
-		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
-		asm volatile ("isb\n" :  :  : );
-	}
-}
-#endif /* THINKOS_ENABLE_MONITOR */
-
 void thinkos_idle_svc(int32_t * arg)
 {
 #if THINKOS_ENABLE_MONITOR
-	thinkos_dbgmon_idle_signal();
+	dbgmon_signal_idle();
 #endif
 
 #if THINKOS_ENABLE_CRITICAL
@@ -76,7 +61,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
 	asm volatile ("nop\n"); 
 
-//	DCC_LOG(LOG_TRACE, "ThinkOS Idle started..."); 
+	DCC_LOG(LOG_TRACE, "ThinkOS Idle started..."); 
 
 	for (;;) {
 #if THINKOS_ENABLE_IDLE_WFI

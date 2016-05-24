@@ -36,6 +36,7 @@ extern const char thinkos_svc_nm[];
 extern const char thinkos_sch_nm[];
 extern const char thinkos_xcp_nm[];
 extern const char thinkos_vec_nm[];
+extern const char thinkos_irq_nm[];
 
 #if THINKOS_ENABLE_THREAD_INFO
 extern uint32_t _stack;
@@ -214,7 +215,6 @@ void __thinkos_reset(void)
 	systick->csr = SYSTICK_CSR_ENABLE;
 #endif
 
-	__thinkos_idle_init();
 	/* Set the initial thread as idle. */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
 }
@@ -355,6 +355,8 @@ int thinkos_init(uint32_t opt)
 
 	__thinkos_reset();
 
+	__thinkos_idle_init();
+
 #if THINKOS_ENABLE_EXCEPTIONS
 	thinkos_exception_init();
 #endif
@@ -405,4 +407,5 @@ const char * const thinkos_svc_link = thinkos_svc_nm;
 const char * const thinkos_xcp_link = thinkos_xcp_nm;
 const char * const thinkos_vec_link = thinkos_vec_nm;
 const char * const thinkos_sch_link = thinkos_sch_nm;
+const char * const thinkos_irq_link = thinkos_irq_nm;
 

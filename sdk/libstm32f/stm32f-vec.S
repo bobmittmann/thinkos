@@ -272,7 +272,7 @@ __ram_vectors_end:
 	.global __sizeof_ram_vectors
 __sizeof_ram_vectors:
 	.type __sizeof_ram_vectors, %object
-	.word	__ram_vectors_end - __ram_vectors
+	.short __ram_vectors_end - __ram_vectors
 	.size   __sizeof_ram_vectors, . - __sizeof_ram_vectors
 #endif
 
@@ -302,7 +302,6 @@ _fault:
 	 * Provide weak aliases for each Exception handler to _fault().
 	 * Any function with the same name will override these definitions.
 	 */
-
 	.weak       cm3_default_isr
 	.thumb_set  cm3_default_isr,_fault
 

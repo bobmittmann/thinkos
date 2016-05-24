@@ -43,7 +43,7 @@ int dmputc(int c, struct dmon_comm * comm)
 	return dmon_comm_send(comm, buf, sizeof(char));
 }
 
-int dmputs(char * s, struct dmon_comm * comm)
+int dmputs(const char * s, struct dmon_comm * comm)
 {
 	int n = 0;
 

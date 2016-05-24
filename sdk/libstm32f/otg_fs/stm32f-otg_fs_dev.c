@@ -206,14 +206,20 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	uint32_t xfrsiz;
 	uint32_t pktcnt;
 
+#if DEBUG
 	if ((unsigned int)ep_id >= OTG_EP_MAX) {
 		DCC_LOG(LOG_WARNING, "invalid EP");
 		return -1;
 	}
+#endif
 
 	deptsiz = otg_fs->inep[ep_id].dieptsiz;
+	/* XXX: check if this is really necessary... 
 	if ((!OTG_FS_XFRSIZ_GET(deptsiz)) && (OTG_FS_PKTCNT_GET(deptsiz))) {
-		DCC_LOG3(LOG_WARNING, "ep_id=%d len=%d %d outstanding packets in FIFO", 
+	*/
+	if (OTG_FS_PKTCNT_GET(deptsiz)) {
+		DCC_LOG(LOG_INFO, "outstanding packets in FIFO!");
+		DCC_LOG3(LOG_JABBER, "ep_id=%d len=%d %d outstanding packets in FIFO", 
 				 ep_id, len, OTG_FS_PKTCNT_GET(deptsiz));
 		return -1;
 	}
@@ -965,9 +971,10 @@ static void stm32f_otg_dev_reset(struct stm32f_otg_drv * drv)
 	stm32f_otg_fs_rxfifo_flush(otg_fs);
 
 	/* Reset global interrupts mask */
-	otg_fs->gintmsk =  OTG_FS_SRQIM | OTG_FS_OTGINT | OTG_FS_WUIM |
+	otg_fs->gintmsk =  OTG_FS_WUIM |
 			OTG_FS_USBRSTM | OTG_FS_ENUMDNEM |
 			OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+//OTG_FS_SRQIM | OTG_FS_OTGINT | 
 
 	/* Reset Device Address */
 	otg_fs->dcfg &= ~OTG_FS_DAD_MSK;
@@ -1311,23 +1318,6 @@ void stm32f_otg_fs_isr(void)
 		//	otg_fs->gintmsk |= OTG_FS_RXFLVLM;
 	}
 
-	if (gintsts & OTG_FS_SRQINT) {
-		/* Session request/new session detected interrupt */
-		DCC_LOG(LOG_MSG, "<SRQINT>  [POWERED]");
-		otg_fs->gintmsk |= OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM |
-			OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
-	}
-
-	if (gintsts & OTG_FS_OTGINT) {
-		uint32_t gotgint = otg_fs->gotgint;
-		DCC_LOG(LOG_MSG, "<OTGINT>");
-		if (gotgint & OTG_FS_OTGINT) {
-			DCC_LOG(LOG_MSG, "<SEDET>  [ATTACHED]");
-			otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT;
-		}
-		otg_fs->gotgint = gotgint;
-	}
-
 	if (gintsts & OTG_FS_ENUMDNE) {
 		/* Unmask global interrupts */
 		otg_fs->gintmsk |=  OTG_FS_IEPINTM | OTG_FS_OEPINTM |
@@ -1351,6 +1341,24 @@ void stm32f_otg_fs_isr(void)
 		stm32f_otg_dev_reset(drv);
 	}
 
+#if DEBUG
+	if (gintsts & OTG_FS_SRQINT) {
+		/* Session request/new session detected interrupt */
+		DCC_LOG(LOG_MSG, "<SRQINT>  [POWERED]");
+		otg_fs->gintmsk |= OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM |
+			OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+	}
+
+	if (gintsts & OTG_FS_OTGINT) {
+		uint32_t gotgint = otg_fs->gotgint;
+		DCC_LOG(LOG_MSG, "<OTGINT>");
+		if (gotgint & OTG_FS_OTGINT) {
+			DCC_LOG(LOG_MSG, "<SEDET>  [ATTACHED]");
+			otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT;
+		}
+		otg_fs->gotgint = gotgint;
+	}
+
 	if (gintsts & OTG_FS_ESUSP) {
 		uint32_t dsts = otg_fs->dsts;
 		(void)dsts;
@@ -1362,7 +1370,6 @@ void stm32f_otg_fs_isr(void)
 				 otg_fs->pcgcctl & OTG_FS_PHYSUSP ? "PHYSUSP" : "");
 	}
 
-#if DEBUG
 	if (gintsts & OTG_FS_GONAKEFF) {
 		DCC_LOG(LOG_MSG, "<GONAKEFF>");
 		otg_fs->gintmsk &= ~OTG_FS_GONAKEFFM;

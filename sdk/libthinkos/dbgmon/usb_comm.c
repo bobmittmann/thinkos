@@ -37,6 +37,10 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
+#ifndef THINKOS_DBGMON_ENABLE_FLOWCTL
+#define THINKOS_DBGMON_ENABLE_FLOWCTL 1 
+#endif
+
 #define EP0_ADDR 0
 #define EP0_MAX_PKT_SIZE 64
 
@@ -381,8 +385,10 @@ struct usb_cdc_acm_dev {
 #endif
 
 	volatile uint8_t acm_ctrl; /* modem control lines */
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 	uint8_t rx_flowctrl;
 	uint8_t rx_paused;
+#endif
 	volatile uint8_t rx_cnt; 
 	volatile uint8_t rx_pos; 
 	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE + 1];
@@ -406,11 +412,14 @@ void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
 	} else {
 		free = CDC_EP_IN_MAX_PKT_SIZE - cnt;
 		if (free < len) {
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 			if (dev->rx_flowctrl) {
 				dev->rx_paused = true;
 				DCC_LOG(LOG_INFO, "RX paused!");
 				return;
-			} else {
+			} else 
+#endif
+			{
 				DCC_LOG(LOG_WARNING, "overflow!");
 				cnt = 0;
 				dev->rx_pos = pos = 0;
@@ -472,7 +481,7 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
 	int value = req->value;
-	int index = req->index;
+//	int index = req->index;
 	int len = 0;
 	int desc;
 
@@ -531,7 +540,7 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 		DCC_LOG(LOG_INFO, "[CONFIGURED]");
 		break;
 	}
-
+#if 0
 	case STD_GET_CONFIGURATION:
 		DCC_LOG(LOG_INFO, "GetCfg");
 		break;
@@ -548,14 +557,12 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 		index &= 0x0f;
 		DCC_LOG1(LOG_INFO, "GetStEpt:%d", index);
 		break;
-
+#endif
 	case SET_LINE_CODING: 
 		{
 			struct cdc_line_coding * lc;
 			lc = (struct cdc_line_coding *)dev->ctl_buf;
 			(void)lc;
-			DCC_LOG3(LOG_INFO, "CDC SetLn: idx=%d val=%d len=%d",
-					 index, value, len);
 			DCC_LOG1(LOG_INFO, "dsDTERate=%d", lc->dwDTERate);
 			DCC_LOG1(LOG_INFO, "bCharFormat=%d", lc->bCharFormat);
 			DCC_LOG1(LOG_INFO, "bParityType=%d", lc->bParityType);
@@ -572,17 +579,16 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 
 	case SET_CONTROL_LINE_STATE:
 		dev->acm_ctrl = value;
-		DCC_LOG2(LOG_INFO, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
+		DCC_LOG2(LOG_TRACE, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
 				(value & CDC_DTE_PRESENT) ? 1 : 0,
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
-
 		/* signal monitor */
 		dbgmon_signal(DBGMON_COMM_CTL);
 		break;
 
 	default:
 		DCC_LOG5(LOG_INFO, "CDC t=%x r=%x v=%x i=%d l=%d",
-				req->type, req->request, value, index, len);
+				req->type, req->request, value, req->index, len);
 		break;
 	}
 
@@ -634,34 +640,34 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	int ret;
 	int n;
 
-	if (dev->acm_ctrl == 0)
-		return 0;
+	if (dev->acm_ctrl == 0) {
+		/* not connected, discard!! */
+		return len;
+	}
 
 	rem = len;
 	while (rem) {
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
-			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!!", dev->tx_pkt);
-			dbgmon_wait(DBGMON_COMM_EOT);
-			return len - rem;
-		}
+			DCC_LOG1(LOG_INFO, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
+					 dev->tx_pkt);
+		} else {
 #if DEBUG
-		dev->tx_pkt++;
+			dev->tx_pkt++;
 #endif
-		DCC_LOG1(LOG_MSG, "n=%d!!", n);
-
-		rem -= n;
-		ptr += n;
-
+			DCC_LOG1(LOG_MSG, "n=%d!!", n);
+			rem -= n;
+			ptr += n;
+		}
 		if ((ret = dbgmon_wait(DBGMON_COMM_EOT)) < 0) {
-			DCC_LOG1(LOG_WARNING, "dmon_wait() ret=%d!!", ret);
-			return len - rem;
+			DCC_LOG1(LOG_INFO, "dbgmon_wait() ret=%d!!", ret);
+			break;
 		}
 		DCC_LOG(LOG_MSG, "EOT");
 	}
 
-	DCC_LOG1(LOG_MSG, "return=%d.", len);
+	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
 
-	return len;
+	return len - rem;
 }
 
 int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
@@ -685,6 +691,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 				/* buffer is now empty */
 				pos = 0;
 				cnt = 0;
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 				if (dev->rx_paused) {
 					dev->rx_paused = false;
 					cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
@@ -695,6 +702,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 					usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 				} 
 				if (cnt == 0)
+#endif
 					dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
 				dev->rx_cnt = cnt;
 			} 
@@ -761,11 +769,13 @@ bool dmon_comm_isconnected(struct dmon_comm * comm)
 	return (dev->acm_ctrl & CDC_DTE_PRESENT) ? true : false;
 }
 
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool stop)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	dev->rx_flowctrl = stop;
 }
+#endif
 
 struct usb_cdc_acm_dev thinkos_usb_comm_cdc;
 
@@ -786,7 +796,10 @@ struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 
 	dev->rx_cnt = 0;
 	dev->rx_pos = 0;
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 	dev->rx_flowctrl = false;
+	dev->rx_paused = false;
+#endif
 
 	DCC_LOG(LOG_TRACE, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);

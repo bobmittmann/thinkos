@@ -62,28 +62,6 @@ enum dbgmon_event {
 
 struct dmon_comm;
 
-#define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
-
-struct thinkos_dmon {
-	struct dmon_comm * comm;
-	uint32_t * ctx;           /* monitor context */
-	volatile uint32_t mask;   /* events mask */
-	volatile uint32_t events; /* events bitmap */
-	uint8_t irq_en_lst[4]; /* list of interrupts forced enable */
-	uint32_t nvic_ie[NVIC_IRQ_REGS]; /* interrupt state */
-	void (* task)(struct dmon_comm * comm);
-};
-
-extern struct thinkos_dmon thinkos_dmon_rt;
-
-static inline void dbgmon_signal(int ev) {
-	struct cm3_dcb * dcb = CM3_DCB;
-	__bit_mem_wr((uint32_t *)&thinkos_dmon_rt.events, ev, 1);  
-	dcb->demcr |= DCB_DEMCR_MON_PEND;
-	asm volatile ("isb\n" :  :  : );
-}
-
-
 #define SZ_128   7
 #define SZ_256   8
 #define SZ_1K   10
@@ -197,6 +175,10 @@ void dbgmon_mask(int sig);
 
 void dbgmon_clear(int sig);
 
+void dbgmon_signal(int sig); 
+
+void dbgmon_signal_idle(void);
+
 uint32_t dbgmon_select(uint32_t watch);
 
 int dbgmon_wait(int sig);
@@ -280,7 +262,7 @@ void dmon_watchpoint_clear_all(void);
 
 int dmputc(int c, struct dmon_comm * comm);
 
-int dmputs(char * s, struct dmon_comm * comm);
+int dmputs(const char * s, struct dmon_comm * comm);
 
 int dmgets(char * s, int size, struct dmon_comm * comm);
 

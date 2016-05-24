@@ -32,7 +32,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 void __thinkos_irq_reset_all(void)
 {
 	int irq;
-
 	/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
 	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
 		cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
@@ -44,17 +43,27 @@ void __thinkos_irq_reset_all(void)
 #if THINKOS_IRQ_MAX > 0
 
 void cm3_default_isr(int irq) 
+//void cm3_default_isr(void) 
 {
+//	int irq;
 	int th;
+
+//	irq = cm3_ipsr_get() - 16;
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
 	th = thinkos_rt.irq_th[irq];
-	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 
+#if DEBUG
+	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th, irq);
 	/* TODO: create a wait queue for IRQ waiting. */
+	if (th >= THINKOS_THREAD_IDLE) {
+		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th, irq);
+		return;
+	}
+#endif
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  
@@ -189,6 +198,8 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 		break;
 	}
 }
+
+const char thinkos_irq_nm[] = "IRQ";
 
 #endif
 

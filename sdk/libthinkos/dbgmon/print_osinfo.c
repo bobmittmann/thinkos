@@ -25,7 +25,7 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_EXIT || THINKOS_ENABLE_JOIN
+#if THINKOS_ENABLE_THREAD_VOID
 #define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 2) /* extra slot for void thread */
 #else
 #define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)

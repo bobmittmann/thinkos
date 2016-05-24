@@ -38,22 +38,40 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #error "Need THINKOS_ENABLE_MONITOR!"
 #endif
 
-#define CONSOLE_PIPE_LEN 64
+#ifndef THINKOS_CONSOLE_FIFO_LEN
+#define THINKOS_CONSOLE_FIFO_LEN 64
+#endif
 
-struct console_pipe {
+#ifndef THINKOS_CONSOLE_RX_FIFO_LEN
+#define THINKOS_CONSOLE_RX_FIFO_LEN THINKOS_CONSOLE_FIFO_LEN
+#endif
+
+#ifndef THINKOS_CONSOLE_TX_FIFO_LEN
+#define THINKOS_CONSOLE_TX_FIFO_LEN THINKOS_CONSOLE_FIFO_LEN
+#endif
+
+#define CONSOLE_PIPE_LEN THINKOS_CONSOLE_FIFO_LEN
+
+struct console_rx_pipe {
 	volatile uint32_t head;
 	volatile uint32_t tail;
-	uint8_t buf[CONSOLE_PIPE_LEN];
+	uint8_t buf[THINKOS_CONSOLE_RX_FIFO_LEN];
+};
+
+struct console_tx_pipe {
+	volatile uint32_t head;
+	volatile uint32_t tail;
+	uint8_t buf[THINKOS_CONSOLE_TX_FIFO_LEN];
 };
 
 struct {
-	struct console_pipe tx_pipe;
-	struct console_pipe rx_pipe;
+	struct console_tx_pipe tx_pipe;
+	struct console_rx_pipe rx_pipe;
 } thinkos_console_rt;
 
-static int pipe_read(struct console_pipe * pipe, 
-					   uint8_t * buf, unsigned int len)
+static int rx_pipe_read(uint8_t * buf, unsigned int len)
 {
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
 	uint32_t tail;
 	int max;
 	int cnt;
@@ -70,14 +88,14 @@ static int pipe_read(struct console_pipe * pipe,
 	   it should be the minimum of max and len */
 	cnt = MIN(max, len);
 	/* get the tail position in the buffer */
-	pos = (tail % CONSOLE_PIPE_LEN);
+	pos = (tail % THINKOS_CONSOLE_RX_FIFO_LEN);
 	/* check whether to wrap around or on not */
-	if ((pos + cnt) > CONSOLE_PIPE_LEN) {
+	if ((pos + cnt) > THINKOS_CONSOLE_RX_FIFO_LEN) {
 		/* we need to perform two reads */
 		int n;
 		int m;
 		/* get the number of chars from tail pos until the end of buffer */
-		n = CONSOLE_PIPE_LEN - pos;
+		n = THINKOS_CONSOLE_RX_FIFO_LEN - pos;
 		/* the remaining chars are at the beginning of the buffer */
 		m = cnt - n;
 		__thinkos_memcpy(buf, &pipe->buf[pos], n);
@@ -91,9 +109,9 @@ static int pipe_read(struct console_pipe * pipe,
 	return cnt;
 }
 
-static int pipe_write(struct console_pipe * pipe, 
-					   const uint8_t * buf, unsigned int len)
+static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 {
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	uint8_t * cp = (uint8_t *)buf;
 	uint32_t head;
 	int max;
@@ -105,22 +123,22 @@ static int pipe_write(struct console_pipe * pipe,
 	   the beginning and write it back at the end. */
 	head = pipe->head;
 	/* get the maximum number of chars we can write into buffer */
-	if ((max = pipe->tail + CONSOLE_PIPE_LEN - head) == 0)
+	if ((max = pipe->tail + THINKOS_CONSOLE_TX_FIFO_LEN - head) == 0)
 		return 0;
 	/* cnt is the number of chars we will write to the buffer,
 	   it should be the minimum of max and len */
 	cnt = MIN(max, len);
 	/* get the tail position in the buffer */
-	pos = (head % CONSOLE_PIPE_LEN);
+	pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
 	DCC_LOG4(LOG_INFO, "head=%d tail=%d cnt=%d pos=%d", 
 			 head, pipe->tail, cnt, pos);
 	/* check whether to wrap around or on not */
-	if ((pos + cnt) > CONSOLE_PIPE_LEN) {
-		/* we need to perform two reads */
+	if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
+		/* we need to perform two writes */
 		int n;
 		int m;
 		/* get the number of chars from tail pos until the end of buffer */
-		n = CONSOLE_PIPE_LEN - pos;
+		n = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
 		/* the remaining chars are at the beginning of the buffer */
 		m = cnt - n;
 		__thinkos_memcpy(&pipe->buf[pos], cp, n);
@@ -134,32 +152,34 @@ static int pipe_write(struct console_pipe * pipe,
 	return cnt;
 }
 
-static bool pipe_isfull(struct console_pipe * pipe)
+static bool tx_pipe_isfull(void)
 {
-	return (pipe->tail + CONSOLE_PIPE_LEN) == pipe->head;
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
+	return (pipe->tail + THINKOS_CONSOLE_TX_FIFO_LEN) == pipe->head;
 }
 
-static bool pipe_isempty(struct console_pipe * pipe)
+static bool tx_pipe_isempty(void)
 {
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	return pipe->tail == pipe->head;
 }
 
 int __console_rx_pipe_ptr(uint8_t ** ptr) 
 {
-	struct console_pipe * pipe = &thinkos_console_rt.rx_pipe;
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
 	uint32_t head;
 	int cnt;
 	int pos;
 
 	/* get the head position in the buffer */
 	head = pipe->head;
-	pos = (head % CONSOLE_PIPE_LEN);
+	pos = (head % THINKOS_CONSOLE_RX_FIFO_LEN);
 	/* get the free space */
-	cnt = pipe->tail + CONSOLE_PIPE_LEN - head;
+	cnt = pipe->tail + THINKOS_CONSOLE_RX_FIFO_LEN - head;
 	/* check whether to wrap around or on not */
-	if ((pos + cnt) > CONSOLE_PIPE_LEN) {
+	if ((pos + cnt) > THINKOS_CONSOLE_RX_FIFO_LEN) {
 		/* get the number of chars from head pos until the end of buffer */
-		cnt = CONSOLE_PIPE_LEN - pos;
+		cnt = THINKOS_CONSOLE_RX_FIFO_LEN - pos;
 	}
 	*ptr = &pipe->buf[pos];
 
@@ -188,7 +208,7 @@ void __console_rx_pipe_commit(int cnt)
 	buf = (uint8_t *)thinkos_rt.ctx[th]->r1;
 	max = thinkos_rt.ctx[th]->r2;
 	/* read from the RX pipe into the thread's read buffer */
-	if ((n = pipe_read(&thinkos_console_rt.rx_pipe, buf, max)) == 0) {
+	if ((n = rx_pipe_read(buf, max)) == 0) {
 		DCC_LOG(LOG_INFO, "_pipe_read() == 0");
 		return;
 	}
@@ -203,20 +223,20 @@ void __console_rx_pipe_commit(int cnt)
    queue and return the number of available chars */ 
 int __console_tx_pipe_ptr(uint8_t ** ptr) 
 {
-	struct console_pipe * pipe = &thinkos_console_rt.tx_pipe;
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	uint32_t tail;
 	int cnt;
 	int pos;
 
 	/* get the tail position in the buffer */
 	tail = pipe->tail;
-	pos = (tail % CONSOLE_PIPE_LEN);
+	pos = (tail % THINKOS_CONSOLE_TX_FIFO_LEN);
 	/* get the used space */
 	cnt = pipe->head - tail;
 	/* check whether to wrap around or on not */
-	if ((pos + cnt) > CONSOLE_PIPE_LEN) {
+	if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
 		/* get the number of chars from tail pos until the end of buffer */
-		cnt = CONSOLE_PIPE_LEN - pos;
+		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
 	}
 	DCC_LOG4(LOG_INFO, "head=%d tail=%d cnt=%d pos=%d", 
 			 pipe->head, tail, cnt, pos);
@@ -231,7 +251,7 @@ void __console_tx_pipe_commit(int cnt)
 	int th;
 
 	if (cnt <= 0) {
-		DCC_LOG1(LOG_WARNING, "cnt=%d", cnt);
+		DCC_LOG1(LOG_INFO, "cnt=%d", cnt);
 		return;
 	}
 
@@ -264,7 +284,7 @@ void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 
 void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	if (pipe_isfull(&thinkos_console_rt.tx_pipe)) {
+	if (tx_pipe_isfull()) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
 		dbgmon_signal(DBGMON_TX_PIPE);
 	} else {
@@ -295,7 +315,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		buf = (uint8_t *)arg[1];
 		len = arg[2];
 		DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
-		if ((n = pipe_read(&thinkos_console_rt.rx_pipe, buf, len)) > 0) {
+		if ((n = rx_pipe_read(buf, len)) > 0) {
 			dbgmon_signal(DBGMON_RX_PIPE);
 			arg[0] = n;
 			break;
@@ -316,7 +336,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		buf = (uint8_t *)arg[1];
 		len = arg[2];
 		DCC_LOG1(LOG_INFO, "Console read: len=%d", len);
-		if ((n = pipe_read(&thinkos_console_rt.rx_pipe, buf, len)) > 0) {
+		if ((n = rx_pipe_read(buf, len)) > 0) {
 			dbgmon_signal(DBGMON_RX_PIPE);
 			arg[0] = n;
 			break;
@@ -336,8 +356,8 @@ void thinkos_console_svc(int32_t * arg, int self)
 		wq = THINKOS_WQ_CONSOLE_WR;
 		DCC_LOG1(LOG_MSG, "Console write: len=%d", len);
 wr_again:
-		if ((n = pipe_write(&thinkos_console_rt.tx_pipe, buf, len)) > 0) {
-			DCC_LOG1(LOG_INFO, "pipe_write: n=%d", n);
+		if ((n = tx_pipe_write(buf, len)) > 0) {
+			DCC_LOG1(LOG_INFO, "tx_pipe_write: n=%d", n);
 			dbgmon_signal(DBGMON_TX_PIPE);
 			arg[0] = n;
 		} else {
@@ -362,7 +382,7 @@ wr_again:
 			
 			/* The pipe may have been flushed while suspending (1).
 			   If this is the case roll back and restart. */
-			if (!pipe_isfull(&thinkos_console_rt.tx_pipe)) {
+			if (!tx_pipe_isfull()) {
 				/* roll back */
 #if THINKOS_ENABLE_THREAD_STAT
 				thinkos_rt.th_stat[self] = 0;
@@ -389,7 +409,7 @@ wr_again:
 			}
 
 			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_MSG, "<%d> waiting on console write %d...", 
+			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", 
 					 self, wq);
 			/* signal the scheduler ... */
 			__thinkos_defer_sched(); 
@@ -408,7 +428,7 @@ wr_again:
 
 	case CONSOLE_DRAIN:
 		DCC_LOG(LOG_MSG, "CONSOLE_DRAIN");
-		if (pipe_isempty(&thinkos_console_rt.tx_pipe)) {
+		if (tx_pipe_isempty()) {
 			DCC_LOG(LOG_INFO, "pipe empty.");
 			arg[0] = 0;
 			break;

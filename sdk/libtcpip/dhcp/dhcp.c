@@ -1262,7 +1262,8 @@ int dhcp_ipv4_bind(struct dhcp * __dhcp)
 			route = ipv4_route_lookup(INADDR_ANY);
 			if (route->rt_ifn == __dhcp->ifn) {
 				__dhcp->gw = route->rt_gateway;
-				DCC_LOG1(LOG_TRACE, "No GW, found previous GW: %I.", dhcp->gw);
+				DCC_LOG1(LOG_TRACE, "No GW, found previous GW: %I.", 
+						 __dhcp->gw);
 			}
 		}
 	}

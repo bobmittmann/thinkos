@@ -56,17 +56,16 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 	thinkos_rt.ctx[thread_id] = ctx;
 
-	DCC_LOG4(LOG_TRACE, "thread_id=%d sp=%08x lr=%08x pc=%08x", 
-			 thread_id, sp, ctx->lr, ctx->pc);
-	DCC_LOG4(LOG_MSG, "r0=%08x r1=%08x r2=%08x r3=%08x", 
-			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
-
 #if THINKOS_ENABLE_PAUSE
 	/* insert into the paused list */
 	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 1);  
 #endif
 
-	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
+	DCC_LOG4(LOG_TRACE, "thread_id=%d sp=%08x lr=%08x pc=%08x", 
+			 thread_id, sp, ctx->lr, ctx->pc);
+	DCC_LOG4(LOG_MSG, "r0=%08x r1=%08x r2=%08x r3=%08x", 
+			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
+	DCC_LOG3(LOG_MSG, "msp=%08x psp=%08x ctrl=%02x", 
 			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 }
 
