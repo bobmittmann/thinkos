@@ -65,7 +65,8 @@ struct mstp_lnk {
 						allocated from a resource pool */
 	volatile uint8_t state; 
 	bool sole_master;
-	uint8_t addr; /* this station address */
+	uint8_t this_station; /* this station address */
+	uint8_t next_station; /* Nest station address */
 	struct serial_dev * dev;
 	struct {
 		uint8_t buf[2][MSTP_LNK_MTU];
@@ -94,6 +95,7 @@ struct mstp_lnk {
 		uint32_t netmap[(MSTP_LNK_MAX_MASTERS + 31) / 32];
 		uint32_t active[MSTP_LNK_MAX_MASTERS];
 	} mgmt;
+
 	struct mstp_lnk_stat stat;
 };
 
