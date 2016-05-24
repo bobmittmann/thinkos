@@ -91,8 +91,9 @@ void thinkos_mpu_init(unsigned int size)
 	uint32_t bmp;
 	unsigned int n;
 
-	DCC_LOG(LOG_TRACE, "configuring MPU ...");
+	DCC_LOG(LOG_MSG, "configuring MPU ...");
 
+	/* how many reserved 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
 
 	bmp = 0xffffffff << n;
@@ -167,7 +168,7 @@ void thinkos_mpu_init(unsigned int size)
 	/* Control Register */
 //	mpu->ctrl = MPU_CTRL_PRIVDEFENA | MPU_CTRL_HFNMIENA | MPU_CTRL_ENABLE;
 
-	__mpudump();
+//	__mpudump();
 }
 
 void thinkos_userland(void)

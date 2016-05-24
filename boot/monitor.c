@@ -124,10 +124,19 @@ const void * heap_end = &__heap_end;
 extern int __heap_base;
 const void * heap_base = &__heap_base; 
 
+struct monitor {
+	struct dmon_comm * comm;
 #if (MONITOR_THREADINFO_ENABLE)
-#define MONITOR_STARTUP_MAGIC -111
-int8_t monitor_thread_id = MONITOR_STARTUP_MAGIC;
+	#define MONITOR_STARTUP_MAGIC -111
+	int8_t thread_id;
 #endif
+#if (MONITOR_DUMPMEM_ENABLE)
+	struct {
+		uint32_t addr;
+		unsigned int size;
+	} memdump;
+#endif
+};
 
 static const char monitor_menu[] = 
 #if (MONITOR_APPTERM_ENABLE)
@@ -275,7 +284,6 @@ static void monitor_app_erase(struct dmon_comm * comm,
 }
 #endif
 
-
 #if (MONITOR_DUMPMEM_ENABLE)
 int long2hex_le(char * s, unsigned long val);
 int char2hex(char * s, int c);
@@ -328,6 +336,22 @@ dump_line:
 		cmp = src;
 	}
 }
+
+void monitor_show_mem(struct monitor * mon)
+{
+	uint32_t addr = mon->memdump.addr;
+	unsigned int size = mon->memdump.size;
+
+	dmprintf(mon->comm, "Addr (0x%08x): ", addr);
+	dmscanf(mon->comm, "%x", &addr);
+	dmprintf(mon->comm, "Size (%d): ", size);
+	dmscanf(mon->comm, "%u", &size);
+
+	monitor_dump_mem(mon->comm, addr, size);
+	mon->memdump.addr = addr;
+	mon->memdump.size = size;
+}
+
 #endif
 
 void monitor_task(struct dmon_comm *);
@@ -350,8 +374,9 @@ void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm)
 }
 #endif
 
-int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
+int monitor_process_input(struct monitor * mon, char * buf, int len)
 {
+	struct dmon_comm * comm = mon->comm;
 	int i;
 	int j;
 	int c;
@@ -397,11 +422,11 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 		case CTRL_N:
-			monitor_thread_id = __thinkos_thread_getnext(monitor_thread_id);
-			if (monitor_thread_id == - 1)
-				monitor_thread_id = __thinkos_thread_getnext(monitor_thread_id);
-			dmprintf(comm, "Thread = %d\r\n", monitor_thread_id);
-			dmon_print_thread(comm, monitor_thread_id);
+			mon->thread_id = __thinkos_thread_getnext(mon->thread_id);
+			if (mon->thread_id == - 1)
+				mon->thread_id = __thinkos_thread_getnext(mon->thread_id);
+			dmprintf(comm, "Thread = %d\r\n", mon->thread_id);
+			dmon_print_thread(comm, mon->thread_id);
 			break;
 		case CTRL_O:
 			dmon_print_osinfo(comm);
@@ -422,13 +447,12 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 #if (MONITOR_DUMPMEM_ENABLE)
 		case CTRL_S:
 			dmputs("^S\r\n", comm);
-			monitor_dump_mem(comm, this_board.application.start_addr, 
-							 this_board.application.block_size);
+			monitor_show_mem(mon);
 			break;
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 		case CTRL_T:
-			dmon_print_thread(comm, monitor_thread_id);
+			dmon_print_thread(comm, mon->thread_id);
 			break;
 #endif
 #if (MONITOR_STACKUSAGE_ENABLE)
@@ -481,6 +505,7 @@ int monitor_process_input(struct dmon_comm * comm, char * buf, int len)
 
 void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 {
+	struct monitor monitor;
 	uint32_t sigmask = 0;
 	uint32_t sigset;
 #if THINKOS_ENABLE_CONSOLE
@@ -491,6 +516,16 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	int tick_cnt = 0;
 	char buf[64];
 	int len;
+	
+	monitor.comm = comm;
+#if (MONITOR_THREADINFO_ENABLE)
+	monitor.thread_id = MONITOR_STARTUP_MAGIC;
+#endif
+#if (MONITOR_DUMPMEM_ENABLE)
+	monitor.memdump.addr = this_board.application.start_addr;
+	monitor.memdump.size = this_board.application.block_size;
+#endif
+
 
 	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 //	dmon_comm_connect(comm);
@@ -517,14 +552,14 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 
 #if (MONITOR_THREADINFO_ENABLE)
-	if (monitor_thread_id == MONITOR_STARTUP_MAGIC) {
+	if (monitor.thread_id == MONITOR_STARTUP_MAGIC) {
 #endif
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
 		sigmask |= (1 << DBGMON_ALARM);
 		dbgmon_alarm(125);
 #if (MONITOR_THREADINFO_ENABLE)
-		monitor_thread_id = -1;
+		monitor.thread_id = -1;
 	}
 #endif
 
@@ -549,7 +584,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_MSG, "Comm recv. rx_pipe.free=%d", cnt);
 				if ((len = dmon_comm_recv(comm, ptr, cnt)) > 0) {
-					len = monitor_process_input(comm, (char *)ptr, len);
+					len = monitor_process_input(&monitor, (char *)ptr, len);
 					__console_rx_pipe_commit(len); 
 				} else {
 					DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed, "
@@ -559,7 +594,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			} else {
 				DCC_LOG(LOG_TRACE, "Comm recv. rx pipe full!");
 				if ((len = dmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-					monitor_process_input(comm, buf, len);
+					monitor_process_input(&monitor, buf, len);
 				} else {
 					DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed, "
 							"masking DBGMON_COMM_RCV!");
@@ -568,7 +603,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			}
 #else
 			if ((len = dmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-				monitor_process_input(comm, buf, len);
+				monitor_process_input(&moniotr, buf, len);
 			}
 #endif
 		}

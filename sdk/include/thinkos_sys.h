@@ -312,7 +312,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_OFAST
-#define THINKOS_ENABLE_OFAST           1
+#define THINKOS_ENABLE_OFAST            1
 #endif
 
 /* -------------------------------------------------------------------------- 

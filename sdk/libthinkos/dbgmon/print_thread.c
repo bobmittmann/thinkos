@@ -89,7 +89,7 @@ void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
 	dmprintf(comm, " - No: %d", thread_id + 1); 
 #if THINKOS_ENABLE_THREAD_INFO
 	if (rt->th_inf[thread_id])
-		dmprintf(comm, ", '%s'", rt->th_inf[thread_id]); 
+		dmprintf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
 	else
 #endif
 		dmprintf(comm, ", '...'"); 
@@ -110,4 +110,5 @@ void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
 
 	dmprintf(comm, "\r\n");
 }
+
 

@@ -61,7 +61,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
 	asm volatile ("nop\n"); 
 
-	DCC_LOG(LOG_TRACE, "ThinkOS Idle started..."); 
+	DCC_LOG(LOG_TRACE, "ThinkOS Idle reset."); 
 
 	for (;;) {
 #if THINKOS_ENABLE_IDLE_WFI
@@ -108,11 +108,11 @@ struct thinkos_context * __thinkos_idle_init(void)
 	idle_ctx = (struct thinkos_context *)THINKOS_IDLE_STACK_BASE;
 
 #if THINKOS_IDLE_STACK_BSS
-	DCC_LOG1(LOG_TRACE, "BSS idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+	DCC_LOG1(LOG_MSG, "BSS idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
 #endif
 
 #if THINKOS_IDLE_STACK_ALLOC
-	DCC_LOG1(LOG_TRACE, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+	DCC_LOG1(LOG_MSG, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
 #endif
 
 	idle_ctx->pc = (uint32_t)thinkos_idle_task;

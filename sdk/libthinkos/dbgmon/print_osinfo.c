@@ -118,7 +118,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 	dmprintf(comm, " |\r\n");
 #endif
 
-	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
+	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */

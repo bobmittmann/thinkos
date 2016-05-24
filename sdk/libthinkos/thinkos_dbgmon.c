@@ -49,6 +49,10 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define THINKOS_DBGMON_ENABLE_IRQ_MGMT 1 
 #endif
 
+#ifndef THINKOS_DBGMON_ENABLE_RST_VEC
+#define THINKOS_DBGMON_ENABLE_RST_VEC  1 
+#endif
+
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
@@ -171,7 +175,7 @@ void __dmon_irq_restore_all(void)
 }
 #endif
 
-#if (THINKOS_ENABLE_RESET_RAM_VECTORS)
+#if THINKOS_DBGMON_ENABLE_RST_VEC
 
 /**
  * __reset_ram_vectors:
@@ -198,7 +202,7 @@ void __reset_ram_vectors(void)
 	void * src = &__text_end;
 	void * dst = &__ram_vectors;
 
-	DCC_LOG3(LOG_TRACE, "dst=%08x src=%08x size=%d", dst, src, size); 
+	DCC_LOG3(LOG_MSG, "dst=%08x src=%08x size=%d", dst, src, size); 
 	__thinkos_memcpy32(dst, src, size); 
 }
 #endif
@@ -1076,7 +1080,7 @@ void dbgmon_soft_reset(void)
 	dmon_breakpoint_clear_all();
 #endif
 
-#if THINKOS_ENABLE_RESET_RAM_VECTORS
+#if THINKOS_DBGMON_ENABLE_RST_VEC
 	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif
