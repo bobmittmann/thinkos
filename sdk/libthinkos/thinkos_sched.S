@@ -19,8 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <arch/cortex-m3.h>
 
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */

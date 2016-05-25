@@ -19,12 +19,12 @@
  * http://www.gnu.org/
  */
 
-#ifndef __THINKOS_SYS_H__
-#define __THINKOS_SYS_H__
+#ifndef __THINKOS_KERNEL_H__
+#define __THINKOS_KERNEL_H__
 
 
-#ifndef __THINKOS_SYS__
-#error "Never use <thinkos_sys.h> directly; include <thinkos.h> instead."
+#ifndef __THINKOS_KERNEL__
+#error "Never use <thinkos/kernel.h> directly; include <thinkos.h> instead."
 #endif 
 
 #ifdef CONFIG_H
@@ -1289,5 +1289,5 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 
 #endif /* __ASSEMBLER__ */
 
-#endif /* __THINKOS_SYS_H__ */
+#endif /* __THINKOS_KERNEL_H__ */
 

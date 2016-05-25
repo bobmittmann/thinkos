@@ -21,7 +21,7 @@
  */
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
 #include <sys/dcclog.h>
 
 #define IN_BS      '\x8'

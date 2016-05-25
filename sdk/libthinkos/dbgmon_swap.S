@@ -19,8 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <arch/cortex-m3.h>
 
 /* --------------------------------------------------------------------------
@@ -32,17 +32,17 @@
 
 	.text
 	.align	2
-	.global	dmon_context_swap
-	.global	dmon_context_swap_ext
+	.global	dbgmon_context_swap
+	.global	dbgmon_context_swap_ext
 	.thumb
 	.thumb_func
-dmon_context_swap:
+dbgmon_context_swap:
 
 #if 0
 	mov    r1, #0
-	.type	dmon_context_swap, %function
-	.type	dmon_context_swap_ext, %function
-dmon_context_swap_ext:
+	.type	dbgmon_context_swap, %function
+	.type	dbgmon_context_swap_ext, %function
+dbgmon_context_swap_ext:
 #endif
 	push   {r4-r11,lr}
 	mrs    r3, APSR
@@ -58,5 +58,5 @@ dmon_context_swap_ext:
 	pop    {r4-r11,lr}
 	bx     lr
 
-	.size   dmon_context_swap, . - dmon_context_swap
+	.size   dbgmon_context_swap, . - dbgmon_context_swap
 

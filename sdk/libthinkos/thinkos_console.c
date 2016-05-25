@@ -19,15 +19,13 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
-
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
 #include <sys/param.h>

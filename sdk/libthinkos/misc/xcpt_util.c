@@ -22,8 +22,8 @@
 
 _Pragma ("GCC optimize (\"O2\")")
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <thinkos.h>
 
 const char __xcpt_name_lut[16][12] = {

@@ -21,7 +21,7 @@
  */
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -70,6 +70,8 @@ struct thinkos_dbgmon {
 struct thinkos_dbgmon thinkos_dbgmon_rt;
 uint32_t thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
 const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
+
+int dbgmon_context_swap(uint32_t ** pctx); 
 
 void dbgmon_signal(int sig) 
 {
@@ -228,7 +230,7 @@ uint32_t dbgmon_select(uint32_t evmask)
 
 	do {
 		DCC_LOG(LOG_MSG, "sleep...");
-		dmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
 		DCC_LOG1(LOG_MSG, "wakeup evset=%08x.", evset);
 	} while ((evset & evmask) == 0);
@@ -257,7 +259,7 @@ int dbgmon_wait(int ev)
 
 	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
 	do {
-		dmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
 		evmsk = thinkos_dbgmon_rt.mask;
 	} while ((evset & evmsk) == 0);
@@ -300,7 +302,7 @@ int dbgmon_expect(int ev)
 
 	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
 	do {
-		dmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
 		evmsk = thinkos_dbgmon_rt.mask;
 	} while ((evset & evmsk) == 0);
@@ -387,7 +389,7 @@ int dbgmon_wait_idle(void)
 void dbgmon_reset(void)
 {
 	dbgmon_signal(DBGMON_RESET);
-	dmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 }
 
 void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *))
@@ -990,7 +992,7 @@ step_done:
 			DCC_LOG(LOG_ERROR, "stack overflow!");
 		}
 #endif
-		return dmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
 
 	DCC_LOG1(LOG_INFO, "Unhandled signal <%08x>", sigset);
@@ -1086,7 +1088,8 @@ void dbgmon_soft_reset(void)
 #endif
 
 	DCC_LOG(LOG_TRACE, "7. reset this board...");
-	this_board.softreset();
+//	this_board.softreset();
+	dbgmon_signal(DBGMON_SOFTRST);
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 	DCC_LOG(LOG_TRACE, "8. enablig listed interrupts...");
@@ -1095,6 +1098,7 @@ void dbgmon_soft_reset(void)
 
 	DCC_LOG(LOG_TRACE, "9. done.");
 }
+
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 /**

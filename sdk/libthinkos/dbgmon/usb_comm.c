@@ -33,7 +33,7 @@
 #include <sys/dcclog.h>
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
 
 #if (THINKOS_ENABLE_MONITOR)
 

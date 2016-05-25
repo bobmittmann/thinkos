@@ -20,7 +20,7 @@
  */
 
 #define __THINKOS_IRQ__
-#include <thinkos_irq.h>
+#include <thinkos/irq.h>
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif

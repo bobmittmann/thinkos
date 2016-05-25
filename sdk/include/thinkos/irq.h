@@ -23,11 +23,11 @@
 #define __THINKOS_IRQ_H__
 
 #ifndef __THINKOS_IRQ__
-#error "Only use this file on privileged code "
+#error "Only use this file on privileged code"
 #endif 
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 #ifndef __ASSEMBLER__
 

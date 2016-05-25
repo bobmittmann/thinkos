@@ -140,7 +140,7 @@ struct thinkos_thread_inf {
 	char tag[8];
 };
 
-#include <thinkos_svc.h>
+#include <thinkos/syscalls.h>
 
 #ifdef __cplusplus
 extern "C" {
