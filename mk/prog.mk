@@ -128,6 +128,7 @@ ifdef PROG
   else
     PROG_BIN := $(OUTDIR)/$(PROG).bin
   endif
+  PROG_IHEX := $(OUTDIR)/$(PROG).hex
   PROG_SREC := $(OUTDIR)/$(PROG).srec
   PROG_MAP := $(OUTDIR)/$(PROG).map
   PROG_ELF := $(OUTDIR)/$(PROG).elf
@@ -264,6 +265,8 @@ bin: $(PROG_BIN)
 
 srec: $(PROG_SREC)
 
+ihex: $(PROG_IHEX)
+
 sym: $(PROG_SYM)
 
 lst: $(PROG_LST)
@@ -384,6 +387,14 @@ ifeq ($(HOST),Cygwin)
 	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
 	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $< $@
+endif
+
+%.hex: %.elf
+	$(ACTION) "IHEX: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+else
+	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $< $@
 endif
 
 #------------------------------------------------------------------------------ 
