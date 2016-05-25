@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
 #ifdef __cplusplus

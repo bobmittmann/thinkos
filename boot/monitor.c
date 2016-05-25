@@ -32,7 +32,9 @@
 #include <stdbool.h>
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
@@ -550,6 +552,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_TX_PIPE);
 	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
+	sigmask |= (1 << DBGMON_SOFTRST);
 
 #if (MONITOR_THREADINFO_ENABLE)
 	if (monitor.thread_id == MONITOR_STARTUP_MAGIC) {
@@ -570,6 +573,11 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+
+		if (sigset & (1 << DBGMON_SOFTRST)) {
+			this_board.softreset();
+			dbgmon_clear(DBGMON_SOFTRST);
+		}
 
 #if THINKOS_ENABLE_CONSOLE
 		if (sigset & (1 << DBGMON_COMM_CTL)) {

@@ -30,7 +30,9 @@
 #include <sys/stm32f.h>
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <gdb.h>
 
@@ -1617,8 +1619,9 @@ void gdb_task(struct dmon_comm * comm)
 #if (THINKOS_ENABLE_CONSOLE)
 	sigmask |= (1 << DBGMON_TX_PIPE);
 #endif
-	for(;;) {
+	sigmask |= (1 << DBGMON_SOFTRST);
 
+	for(;;) {
 #if 0
 		if (gdb->stopped)
 			DCC_LOG1(LOG_TRACE, "<suspended>%02x", gdb->last_signal);
@@ -1628,6 +1631,11 @@ void gdb_task(struct dmon_comm * comm)
 		sigset = dbgmon_select(sigmask);
 
 		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
+
+		if (sigset & (1 << DBGMON_SOFTRST)) {
+			this_board.softreset();
+			dbgmon_clear(DBGMON_SOFTRST);
+		}
 
 		if (sigset & (1 << DBGMON_EXCEPT)) {
 			DCC_LOG(LOG_TRACE, "Exception.");

@@ -31,7 +31,9 @@
 #include <sys/stm32f.h>
 
 #define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 
 #include <gdb.h>
