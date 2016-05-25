@@ -137,6 +137,8 @@ int dmputs(const char * s, struct dmon_comm * comm);
 
 int dmgets(char * s, int size, struct dmon_comm * comm);
 
+int dmgetc(struct dmon_comm * comm);
+
 int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
 
 #ifdef __cplusplus

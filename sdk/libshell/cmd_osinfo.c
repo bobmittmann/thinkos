@@ -29,8 +29,8 @@
 #include <string.h>
 #include <sys/shell.h>
 #include <thinkos.h>
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \

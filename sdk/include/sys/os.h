@@ -32,8 +32,6 @@
 
 #if ENABLE_THINKOS
 #include <thinkos.h>
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
 #endif
 
 #define __OS_PRIORITY_HIGHEST 0
