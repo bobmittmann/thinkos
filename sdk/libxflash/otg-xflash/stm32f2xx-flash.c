@@ -161,11 +161,12 @@ int flash_write(uint32_t offs, const void * buf, unsigned int len)
 //	uint32_t cr;
 //	uint32_t pri;
 
+#if 0
 	if (offs & 0x00000003) {
 		DCC_LOG(LOG_ERROR, "offset must be 32bits aligned!");
 		return -1;
 	}
-
+#endif
 	n = (len + 3) / 4;
 
 	ptr = (uint8_t *)buf;
@@ -195,7 +196,7 @@ int flash_write(uint32_t offs, const void * buf, unsigned int len)
 //		cm3_primask_set(pri);
 		if (sr & FLASH_ERR) {
 			DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
-			return -1;
+			return -sr;
 		}
 		ptr += 4;
 		addr++;

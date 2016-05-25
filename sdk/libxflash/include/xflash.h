@@ -38,6 +38,10 @@ struct magic {
 	struct magic_rec rec[];
 };
 
+#define XFLASH_OPT_RESET   (1 << 0)
+#define XFLASH_OPT_RET_ERR (1 << 1)
+#define XFLASH_OPT_BYPASS  (1 << 2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,10 +60,10 @@ int usb_recv(int ep_id, void * buf, unsigned int len, unsigned int msec);
 int usb_drain(int ep_id);
 
 int xflash(uint32_t blk_offs, unsigned int blk_size, 
-		   const struct magic * magic);
+		   const struct magic * magic, unsigned int opt);
 
 int yflash(uint32_t blk_offs, unsigned int blk_size, 
-		   const struct magic * magic);
+		   const struct magic * magic, unsigned int opt);
 
 #ifdef __cplusplus
 }

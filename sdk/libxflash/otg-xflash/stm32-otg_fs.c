@@ -60,7 +60,8 @@ int usb_send(int ep_id, void * buf, unsigned int len)
 			deptsiz = otg_fs->inep[ep_id].dieptsiz;
 			xfrsiz = OTG_FS_XFRSIZ_GET(deptsiz);
 			pktcnt = OTG_FS_PKTCNT_GET(deptsiz);
-		} while ((xfrsiz == 0) && (pktcnt));
+//		} while ((xfrsiz == 0) && (pktcnt));
+		} while (pktcnt);
 
 		depctl = otg_fs->inep[ep_id].diepctl;
 		if (ep_id == 0)
@@ -103,7 +104,6 @@ int usb_send(int ep_id, void * buf, unsigned int len)
 	return len;
 }
 
-#define CDC_TX_EP 2
 static void __ep_zlp_send(struct stm32f_otg_fs * otg_fs, int epnum)
 {
 	otg_fs->inep[epnum].dieptsiz = OTG_FS_PKTCNT_SET(1) | OTG_FS_XFRSIZ_SET(0);
