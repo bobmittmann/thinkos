@@ -73,27 +73,6 @@ const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
 
 int dbgmon_context_swap(uint32_t ** pctx); 
 
-void dbgmon_signal(int sig) 
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 1);  
-	dcb->demcr |= DCB_DEMCR_MON_PEND;
-	asm volatile ("isb\n" :  :  : );
-}
-
-void dbgmon_signal_idle(void)
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t demcr;
-	/* Debug monitor request semaphore */
-	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
-		DCC_LOG(LOG_MSG, "<<< Idle >>>");
-		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE, 1);  
-		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
-		asm volatile ("isb\n" :  :  : );
-	}
-}
-
 /**
   * __dmon_irq_force_enable:
   *
@@ -213,6 +192,46 @@ void __reset_ram_vectors(void)
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
+int dbgmon_signal(int sig) 
+{
+	struct cm3_dcb * dcb = CM3_DCB;
+	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 1);  
+	dcb->demcr |= DCB_DEMCR_MON_PEND;
+	asm volatile ("isb\n" :  :  : );
+	return sig;
+}
+
+void dbgmon_signal_idle(void)
+{
+	struct cm3_dcb * dcb = CM3_DCB;
+	uint32_t demcr;
+	/* Debug monitor request semaphore */
+	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
+		DCC_LOG(LOG_MSG, "<<< Idle >>>");
+		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE, 1);  
+		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
+		asm volatile ("isb\n" :  :  : );
+	}
+}
+
+int dbgmon_unmask(int sig)
+{
+	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, sig, 1);  
+	return sig;
+}
+
+int dbgmon_mask(int sig)
+{
+	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, sig, 0);  
+	return sig;
+}
+
+int dbgmon_clear(int sig)
+{
+	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 0);  
+	return sig;
+}
+
 uint32_t dbgmon_select(uint32_t evmask)
 {
 	uint32_t evset;
@@ -240,8 +259,47 @@ uint32_t dbgmon_select(uint32_t evmask)
 	return evset & evmask;
 }
 
-/* wait for an event but and clear the 
-   event and event mask */
+/* wait for an event but don't clear the 
+   event or event mask if previously set */
+int dbgmon_expect(int sig)
+{
+	uint32_t evset;
+	uint32_t evmsk;
+	uint32_t bitmask = (1 << sig);
+	uint32_t bitsave;
+	
+	evset = thinkos_dbgmon_rt.events;
+	if (evset & bitmask)
+		return sig;
+
+	/* save the state of the bit in the event mask */
+	evmsk = thinkos_dbgmon_rt.mask;
+	bitsave = evmsk ^ bitmask;
+	/* umask event */
+	thinkos_dbgmon_rt.mask = evmsk | bitmask;
+
+	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
+	do {
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		evset = thinkos_dbgmon_rt.events;
+		evmsk = thinkos_dbgmon_rt.mask;
+	} while ((evset & evmsk) == 0);
+	DCC_LOG(LOG_MSG, "wakeup...");
+
+	/* mask back the event if previously masked */
+	thinkos_dbgmon_rt.mask = evmsk ^ bitsave;
+	if (evset & bitmask)
+		return sig;
+
+	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", 
+			 evset & thinkos_dbgmon_rt.mask);
+
+	/* unexpected event received */
+	return -1;
+}
+
+#if 0
+/* wait for an event, clear the event and event mask */
 int dbgmon_wait(int ev)
 {
 	uint32_t evset;
@@ -280,61 +338,17 @@ int dbgmon_wait(int ev)
 	/* unexpected event received */
 	return -1;
 }
+#endif
 
-/* wait for an event but don't clear the 
-   event or event mask if previously set */
-int dbgmon_expect(int ev)
+/* wait for an event, clear the event,
+ return the event or -1 if another unmasked event 
+ is received. */
+int dbgmon_wait(int sig)
 {
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t bitmask = (1 << ev);
-	uint32_t bitsave;
-	
-	evset = thinkos_dbgmon_rt.events;
-	if (evset & bitmask)
-		return 0;
+	if ((sig = dbgmon_expect(sig)) < 0)
+		return sig;
 
-	/* save the state of the bit in the event mask */
-	evmsk = thinkos_dbgmon_rt.mask;
-	bitsave = evmsk ^ bitmask;
-	/* umask event */
-	thinkos_dbgmon_rt.mask = evmsk | bitmask;
-
-	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
-	do {
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		evmsk = thinkos_dbgmon_rt.mask;
-	} while ((evset & evmsk) == 0);
-	DCC_LOG(LOG_MSG, "wakeup...");
-
-	/* mask back the event if previously masked */
-	thinkos_dbgmon_rt.mask = evmsk ^ bitsave;
-	if (evset & bitmask)
-		return 0;
-
-	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", 
-			 evset & thinkos_dbgmon_rt.mask);
-
-	/* unexpected event received */
-	return -1;
-}
-
-
-
-void dbgmon_unmask(int event)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, event, 1);  
-}
-
-void dbgmon_mask(int event)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, event, 0);  
-}
-
-void dbgmon_clear(int event)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, event, 0);  
+	return dbgmon_clear(sig);
 }
 
 int dbgmon_sleep(unsigned int ms)
@@ -1087,14 +1101,13 @@ void dbgmon_soft_reset(void)
 	__reset_ram_vectors();
 #endif
 
-	DCC_LOG(LOG_TRACE, "7. reset this board...");
-//	this_board.softreset();
-	dbgmon_signal(DBGMON_SOFTRST);
-
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	DCC_LOG(LOG_TRACE, "8. enablig listed interrupts...");
+	DCC_LOG(LOG_TRACE, "7. enablig listed interrupts...");
 	__dmon_irq_force_enable();
 #endif
+
+	DCC_LOG(LOG_TRACE, "8. signalig ...");
+	dbgmon_signal(DBGMON_SOFTRST);
 
 	DCC_LOG(LOG_TRACE, "9. done.");
 }

@@ -27,7 +27,7 @@
 #error "Never use <thinkos/bootldr.h> directly; include <thinkos.h> instead."
 #endif 
 
-#define __THINKOS_SYS__
+#define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 
 #define SZ_128   7

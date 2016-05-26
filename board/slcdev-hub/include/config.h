@@ -75,7 +75,7 @@
 #define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
-#define THINKOS_ENABLE_BREAK            0
+#define THINKOS_ENABLE_BREAK            1
 
 #define THINKOS_ENABLE_ARG_CHECK        1
 #define THINKOS_ENABLE_DEADLOCK_CHECK   1
@@ -102,9 +102,13 @@
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          1
+#define THINKOS_ENABLE_DEBUG_FAULT      1
 #define THINKOS_STDERR_FAULT_DUMP       0
+#define THINKOS_ENABLE_DEBUG_BKPT       1
+#define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
 #define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1
@@ -115,6 +119,9 @@
 #define THINKOS_DMON_STACK_SIZE         1024
 
 #define THINKOS_ENABLE_STACK_INIT       1
+
+#define THINKOS_CONSOLE_RX_FIFO_LEN     64
+#define THINKOS_CONSOLE_TX_FIFO_LEN     128
 
 /* -------------------------------------------------------------------------
    USB 

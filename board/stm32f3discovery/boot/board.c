@@ -20,10 +20,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_DBGMON__
-#include <thinkos_dmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include "board.h"
 #include "version.h"
+
+#include <sys/dcclog.h>
 
 /* GPIO pin description */ 
 struct stm32f_io {
@@ -117,6 +119,8 @@ void board_softreset(void)
 	rcc->ahbenr = (1 << RCC_IOPA); 
 	rcc->apb1enr = (1 << RCC_USB);
 	rcc->apb2enr = 0;
+
+	DCC_LOG(LOG_TRACE, "^^^^ Soft Reset ^^^^");
 
 	/* reinitialize IO's */
 	io_init();

@@ -46,6 +46,10 @@
 #define MONITOR_DUMPMEM_ENABLE     1
 #endif
 
+#ifndef MONITOR_WATCHPOINT_ENABLE
+#define MONITOR_WATCHPOINT_ENABLE  1
+#endif
+
 #ifndef MONITOR_UPGRADE_ENABLE
 #define MONITOR_UPGRADE_ENABLE     1
 #endif
@@ -88,38 +92,38 @@
 
 /* ASCII Keyboard codes */
 
-#define _NULL_ 0x00 /* Null (Ctrl+@) */
-#define CTRL_A 0x01 /* SOH */
-#define CTRL_B 0x02 /* STX */
-#define CTRL_C 0x03 /* ETX */
-#define CTRL_D 0x04 /* EOT */
-#define CTRL_E 0x05 /* ENQ */
-#define CTRL_F 0x06 /* ACK */
-#define CTRL_G 0x07 /* BEL */
-#define CTRL_H 0x08 /* BS */
-#define CTRL_I 0x09 /* TAB */
-#define CTRL_J 0x0a /* LF */
-#define CTRL_K 0x0b /* VT */
-#define CTRL_L 0x0c /* FF */
-#define CTRL_M 0x0d /* CR */
-#define CTRL_N 0x0e /* SO */
-#define CTRL_O 0x0f /* SI */
-#define CTRL_P 0x10 /* DLE */
-#define CTRL_Q 0x11 /* DC1 */
-#define CTRL_R 0x12 /* DC2 */
-#define CTRL_S 0x13 /* DC3 */
-#define CTRL_T 0x14 /* DC4 */
-#define CTRL_U 0x15 /* NAK */
-#define CTRL_V 0x16 /* SYN */
-#define CTRL_W 0x17 /* ETB */
-#define CTRL_X 0x18 /* CAN */
-#define CTRL_Y 0x19 /* EM */
-#define CTRL_Z 0x1a /* SUB */
-#define _ESC_  0x1b /* ESC (Ctrl+[) */
-#define _FS_   0x1c /* FS  (Ctrl+\) */
-#define _GS_   0x1d /* GS  (Ctrl+]) */
-#define _RS_   0x1e /* RS  (Ctrl+^) */
-#define _US_   0x1f /* US  (Ctrl+_) */
+#define _NULL_  0x00 /* Null (Ctrl+@) */
+#define CTRL_A  0x01 /* SOH */
+#define CTRL_B  0x02 /* STX */
+#define CTRL_C  0x03 /* ETX */
+#define CTRL_D  0x04 /* EOT */
+#define CTRL_E  0x05 /* ENQ */
+#define CTRL_F  0x06 /* ACK */
+#define CTRL_G  0x07 /* BEL */
+#define CTRL_H  0x08 /* BS */
+#define CTRL_I  0x09 /* TAB */
+#define CTRL_J  0x0a /* LF */
+#define CTRL_K  0x0b /* VT */
+#define CTRL_L  0x0c /* FF */
+#define CTRL_M  0x0d /* CR */
+#define CTRL_N  0x0e /* SO */
+#define CTRL_O  0x0f /* SI */
+#define CTRL_P  0x10 /* DLE */
+#define CTRL_Q  0x11 /* DC1 */
+#define CTRL_R  0x12 /* DC2 */
+#define CTRL_S  0x13 /* DC3 */
+#define CTRL_T  0x14 /* DC4 */
+#define CTRL_U  0x15 /* NAK */
+#define CTRL_V  0x16 /* SYN */
+#define CTRL_W  0x17 /* ETB */
+#define CTRL_X  0x18 /* CAN */
+#define CTRL_Y  0x19 /* EM */
+#define CTRL_Z  0x1a /* SUB */
+#define _ESC_   0x1b /* ESC (Ctrl+[) */
+#define CTRL_FS 0x1c /* FS  (Ctrl+\) */
+#define CTRL_GS 0x1d /* GS  (Ctrl+]) */
+#define CTRL_RS 0x1e /* RS  (Ctrl+^) */
+#define CTRL_US 0x1f /* US  (Ctrl+_) */
 
 extern int __heap_end;
 const void * heap_end = &__heap_end; 
@@ -138,6 +142,11 @@ struct monitor {
 		unsigned int size;
 	} memdump;
 #endif
+#if (MONITOR_WATCHPOINT_ENABLE)
+	struct {
+		uint32_t addr;
+	} wp[4];
+#endif
 };
 
 static const char monitor_menu[] = 
@@ -149,9 +158,6 @@ static const char monitor_menu[] =
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
 " Ctrl+K - Configure Board\r\n"
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
-" Ctrl+L - Upload ThinkOS\r\n"
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 " Ctrl+N - Select Next Thread\r\n"
@@ -179,6 +185,12 @@ static const char monitor_menu[] =
 " Ctrl+Y - YMODEM app upload\r\n"
 #if (MONITOR_APPRESTART_ENABLE)
 " Ctrl+Z - Restart app\r\n"
+#endif
+#if (MONITOR_UPGRADE_ENABLE)
+" Ctrl+\\ - Upload ThinkOS\r\n"
+#endif
+#if (MONITOR_WATCHPOINT_ENABLE)
+" Ctrl+] - Set watchpoint\r\n"
 #endif
 ;
 
@@ -212,6 +224,31 @@ static void monitor_print_fault(struct dmon_comm * comm)
 
 static void monitor_on_fault(struct dmon_comm * comm)
 {
+	struct thinkos_except * xcpt = &thinkos_except_buf;
+
+	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
+
+	if (dbgmon_wait_idle() < 0) {
+		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
+	}
+
+	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+
+	if (dmon_comm_isconnected(comm)) {
+		DCC_LOG(LOG_TRACE, "comm is connected!");
+		dmprintf(comm, __hr__);
+		dmon_print_exception(comm, xcpt);
+		dmprintf(comm, __hr__);
+	} else {
+		DCC_LOG(LOG_TRACE, "comm NOT connected!");
+	}
+}
+#endif
+
+#if (MONITOR_WATCHPOINT_ENABLE)
+static void monitor_on_bkpt(struct monitor * mon)
+{
+	struct dmon_comm * comm = mon->comm;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
@@ -356,6 +393,24 @@ void monitor_show_mem(struct monitor * mon)
 
 #endif
 
+#if (MONITOR_WATCHPOINT_ENABLE)
+void monitor_watchpoint(struct monitor * mon)
+{
+	unsigned int no = 0;
+	uint32_t addr;
+
+	dmprintf(mon->comm, "No (0..3): ");
+	dmscanf(mon->comm, "%u", &no);
+	if (no > 3)
+		dmprintf(mon->comm, "Invalid!\r\n");
+	addr = mon->wp[no].addr;
+	dmprintf(mon->comm, "Addr (0x%08x): ", addr);
+	dmscanf(mon->comm, "%x", &addr);
+	mon->wp[no].addr = addr;
+	dmon_watchpoint_set(addr, 4, 0);
+}
+#endif
+
 void monitor_task(struct dmon_comm *);
 
 #if (MONITOR_SELFTEST_ENABLE)
@@ -412,13 +467,14 @@ int monitor_process_input(struct monitor * mon, char * buf, int len)
 			break;
 #endif
 #if (MONITOR_UPGRADE_ENABLE)
-		case CTRL_L:
+		case CTRL_FS:
 			dbgmon_soft_reset();
-			dmputs("^L\r\nConfirm (yes/no)? ", comm);
-			dmscanf(comm, "yes%n", &i);
-			if (i == 3) {
+			dmputs("^\\\r\nConfirm [y]? ", comm);
+			if (dmgetc(comm) == 'y') {
 				this_board.upgrade(comm);
 				dmputs("Failed !!!\r\n", comm);
+			} else {
+				dmputs("\r\n", comm);
 			}
 			break;
 #endif
@@ -489,6 +545,12 @@ int monitor_process_input(struct monitor * mon, char * buf, int len)
 			monitor_exec(comm, this_board.application.start_addr);
 			break;
 #endif
+#if (MONITOR_WATCHPOINT_ENABLE)
+		case CTRL_GS:
+			dmputs("^]\r\n", comm);
+			monitor_watchpoint(mon);
+			break;
+#endif
 		default:
 			continue;
 		}
@@ -553,6 +615,9 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 	sigmask |= (1 << DBGMON_SOFTRST);
+#if (MONITOR_WATCHPOINT_ENABLE)
+	sigmask |= (1 << DBGMON_BREAKPOINT);
+#endif
 
 #if (MONITOR_THREADINFO_ENABLE)
 	if (monitor.thread_id == MONITOR_STARTUP_MAGIC) {
@@ -668,6 +733,13 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			DCC_LOG(LOG_TRACE, "System exception.");
 			monitor_on_fault(comm);
 			dbgmon_clear(DBGMON_EXCEPT);
+		}
+#endif
+
+#if (MONITOR_WATCHPOINT_ENABLE)
+		if (sigset & (1 << DBGMON_BREAKPOINT)) {
+			monitor_on_bkpt(&monitor);
+			dbgmon_clear(DBGMON_BREAKPOINT);
 		}
 #endif
 	}

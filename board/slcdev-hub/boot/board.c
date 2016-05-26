@@ -23,8 +23,8 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <gdb.h>
 
 #include "board.h"

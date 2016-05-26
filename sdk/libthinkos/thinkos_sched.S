@@ -32,6 +32,8 @@
 	.syntax unified
 	.cpu cortex-m3
 
+#if THINKOS_ASM_SCHEDULER
+
 	.text
 	.align	4
 
@@ -48,7 +50,6 @@ cm3_pendsv_isr:
 #endif
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
-#if THINKOS_ASM_SCHEDULER
 	.thumb_func
 thinkos_scheduler:
 	.global thinkos_scheduler

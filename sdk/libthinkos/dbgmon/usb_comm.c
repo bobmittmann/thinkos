@@ -711,7 +711,7 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 		}
 
 		DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
-	} while ((ret = dbgmon_expect(DBGMON_COMM_RCV)) == 0);
+	} while ((ret = dbgmon_expect(DBGMON_COMM_RCV)) >= 0);
 
 	return ret;
 }

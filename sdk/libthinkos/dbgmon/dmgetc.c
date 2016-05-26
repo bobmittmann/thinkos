@@ -30,6 +30,8 @@ int dmgetc(struct dmon_comm * comm)
 	if (dmon_comm_recv(comm, buf, sizeof(char)) <= 0)
 		return -1;
 
+	dmon_comm_send(comm, buf, sizeof(char));
+
 	return	buf[0];
 }
 

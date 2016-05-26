@@ -162,8 +162,8 @@ int test_task(void * arg)
 {
 	for (;;) {
 		thinkos_sleep(3000);
-		thinkos_sem_post(2);
-//		write_fault();
+//		thinkos_sem_post(2);
+		write_fault();
 	}
 
 	return 0;

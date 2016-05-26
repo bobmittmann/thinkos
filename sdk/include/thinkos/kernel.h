@@ -236,19 +236,19 @@
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
-#define THINKOS_ENABLE_DEBUG_STEP       0
+#define THINKOS_ENABLE_DEBUG_STEP       1
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_BKPT
-#define THINKOS_ENABLE_DEBUG_BKPT       0
+#define THINKOS_ENABLE_DEBUG_BKPT       1
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_WPT 
-#define THINKOS_ENABLE_DEBUG_WPT        0
+#define THINKOS_ENABLE_DEBUG_WPT        1
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_FAULT
-#define THINKOS_ENABLE_DEBUG_FAULT      0
+#define THINKOS_ENABLE_DEBUG_FAULT      1
 #endif
 
 #ifndef THINKOS_ENABLE_EXCEPT_CLEAR
@@ -264,7 +264,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_CTL
-#define THINKOS_ENABLE_CTL              0
+#define THINKOS_ENABLE_CTL              1
 #endif
 
 #ifndef THINKOS_ENABLE_COMM
@@ -284,7 +284,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_CRITICAL
-#define THINKOS_ENABLE_CRITICAL         0
+#define THINKOS_ENABLE_CRITICAL         1
 #endif
 
 #ifndef THINKOS_ENABLE_ESCALATE
@@ -308,7 +308,7 @@
 #endif
 
 #ifndef THINKOS_ASM_SCHEDULER
-#define THINKOS_ASM_SCHEDULER           0
+#define THINKOS_ASM_SCHEDULER           1
 #endif
 
 #ifndef THINKOS_ENABLE_OFAST

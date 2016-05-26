@@ -81,7 +81,7 @@ static inline void __attribute__((always_inline)) __wait(void) {
  * Scheduler
  * --------------------------------------------------------------------------*/
 
-#if !THINKOS_ASM_SCHEDULER
+#if (!THINKOS_ASM_SCHEDULER)
 
 static inline struct thinkos_context * __attribute__((always_inline)) 
 __sched_entry(void) {
@@ -210,7 +210,7 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 			/* step the IDLE thread instead  */
 			thinkos_rt.active = THINKOS_THREAD_IDLE;
 			/* set the new context to the idle context */
-			new_ctx = thinkos_rt.idle_ctx;
+			new_ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
 			/* XXX: reset the IDLE task. There is a problem when stepping
 			   at a SVC call. The  __sched_exit_step() disable interrupts,
 			   but the idle thread next instruction could potentially be 
