@@ -126,8 +126,10 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 	unsigned char * cp;
 	int ret = 0;
 	int cnt = 0;
+#if XMODEM_SEQUENCE_CHECK
 	int nseq;
 	int seq;
+#endif
 	int rem;
 	int pos;
 	int i;
@@ -203,6 +205,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			cp += ret;
 		}
 
+#if XMODEM_SEQUENCE_CHECK
 		/* sequence */
 		seq = pkt[1];
 		/* inverse sequence */
@@ -211,7 +214,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 		if (seq != ((~nseq) & 0xff)) {
 			goto error;
 		}
-
+#endif
 		cp = &pkt[3];
 
 #if XMODEM_CHECKSUM
@@ -247,6 +250,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			}
 		}
 #endif
+#if XMODEM_SEQUENCE_CHECK
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
 			continue;
@@ -264,7 +268,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 				goto error;
 			}
 		}
-
+#endif
 		/* YModem first packet ... */
 		if (rx->pktno == 0) {
 			pkt[0] = ACK;
@@ -281,11 +285,13 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 
 		return cnt;
 
+#if XMODEM_SEQUENCE_CHECK || XMODEM_CRC_CHECK
 error:
 		/* flush */
 		while (usb_recv(CDC_RX_EP, pkt, 1024, 100) > 0);
 		ret = -1;
 		break;
+#endif
 
 timeout:
 		if ((--rx->retry) == 0) {
@@ -364,8 +370,12 @@ static const char s_ok[] = {'\r', '\n', 'O', 'K'};
 #define PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR))
 #endif
 
+#if 0
 int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
 		   const struct magic * magic, unsigned int opt)
+#endif
+int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
+		   const struct magic * magic)
 {
 	struct {
 		struct magic_hdr hdr;

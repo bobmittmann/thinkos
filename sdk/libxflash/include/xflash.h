@@ -60,10 +60,10 @@ int usb_recv(int ep_id, void * buf, unsigned int len, unsigned int msec);
 int usb_drain(int ep_id);
 
 int xflash(uint32_t blk_offs, unsigned int blk_size, 
-		   const struct magic * magic, unsigned int opt);
+		   const struct magic * magic);
 
 int yflash(uint32_t blk_offs, unsigned int blk_size, 
-		   const struct magic * magic, unsigned int opt);
+		   const struct magic * magic);
 
 #ifdef __cplusplus
 }

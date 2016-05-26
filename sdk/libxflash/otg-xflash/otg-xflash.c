@@ -24,11 +24,12 @@
 #include <stdbool.h>
 #include <arch/cortex-m3.h>
 #include "xflash.h"
-
-int __attribute__((section (".init"), naked)) usb_xflash(uint32_t blk_offs, 
-												  unsigned int blk_size, 
-												  const struct magic * magic,
-												  unsigned int opt)
+#if 0
+int __attribute__((section (".init"), naked, noreturn)) 
+	usb_xflash(uint32_t blk_offs, 
+			   unsigned int blk_size, 
+			   const struct magic * magic,
+			   unsigned int opt)
 {
 	asm volatile ("push {lr}\n" 
 				  "mov lr, sp\n"
@@ -41,5 +42,18 @@ int __attribute__((section (".init"), naked)) usb_xflash(uint32_t blk_offs,
 
 	asm volatile ("ldr sp, [sp]\n"
 				  "pop {pc}\n" : : );
+}
+#endif
+
+int __attribute__((section (".init"), naked, noreturn)) 
+	usb_xflash(uint32_t blk_offs, 
+			   unsigned int blk_size, 
+			   const struct magic * magic)
+{
+	asm volatile ("add r12, pc, %0\n" 
+				  "mov sp, r12\n" 
+				  : : "i" (3072));
+
+	yflash(blk_offs, blk_size, magic);
 }
 
