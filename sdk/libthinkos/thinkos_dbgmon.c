@@ -278,7 +278,7 @@ int dbgmon_expect(int sig)
 	/* umask event */
 	thinkos_dbgmon_rt.mask = evmsk | bitmask;
 
-	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
+	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", sig);
 	do {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
