@@ -65,7 +65,7 @@ extern const uint16_t thinkos_dbgmon_stack_size;
 
 void __xdump(struct thinkos_except * xcpt)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	uint32_t shcsr;
 	uint32_t icsr;
 	uint32_t ipsr;
@@ -153,7 +153,8 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
-	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", xcpt->active,
+	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
+			 xcpt->active,
 			 thinkos_rt.active); 
 
 #if (THINKOS_ENABLE_MONITOR)
@@ -169,7 +170,7 @@ void __xdump(struct thinkos_except * xcpt)
 
 void __idump(const char * s, uint32_t ipsr)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	uint32_t shcsr;
 	uint32_t icsr;
 	int irqregs;
@@ -229,7 +230,7 @@ void __idump(const char * s, uint32_t ipsr)
 
 void __mpudump(void)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	struct cm3_mpu * mpu = CM3_MPU;
 	uint32_t rbar;
 	uint32_t rasr;

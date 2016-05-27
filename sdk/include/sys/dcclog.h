@@ -28,28 +28,41 @@
 
 #include <stdio.h>
 
-#ifdef DEBUG
- #ifdef DEBUG_LEVEL
-  #define LOG_LEVEL DEBUG_LEVEL
- #elif DEBUG == 2
-  #define LOG_LEVEL LOG_PANIC
- #elif DEBUG == 3
-  #define LOG_LEVEL LOG_EXCEPT
- #elif DEBUG == 4
-  #define LOG_LEVEL LOG_ERROR
- #elif DEBUG == 5
-  #define LOG_LEVEL LOG_WARNING
- #elif DEBUG == 6
-  #define LOG_LEVEL LOG_TRACE
- #elif DEBUG == 7
-  #define LOG_LEVEL LOG_INFO
- #elif DEBUG == 8
-  #define LOG_LEVEL LOG_MSG
- #elif DEBUG == 9
-  #define LOG_LEVEL LOG_JABBER
- #else
-  #define LOG_LEVEL LOG_TRACE
+#if defined(DEBUG) 
+ #ifndef LOG_LEVEL
+  #ifdef DEBUG_LEVEL
+   #define LOG_LEVEL DEBUG_LEVEL
+  #elif DEBUG == 0
+   #define LOG_LEVEL LOG_NONE
+  #elif DEBUG == 2
+   #define LOG_LEVEL LOG_PANIC
+  #elif DEBUG == 3
+   #define LOG_LEVEL LOG_EXCEPT
+  #elif DEBUG == 4
+   #define LOG_LEVEL LOG_ERROR
+  #elif DEBUG == 5
+   #define LOG_LEVEL LOG_WARNING
+  #elif DEBUG == 6
+   #define LOG_LEVEL LOG_TRACE
+  #elif DEBUG == 7
+   #define LOG_LEVEL LOG_INFO
+  #elif DEBUG == 8
+   #define LOG_LEVEL LOG_MSG
+  #elif DEBUG == 9
+   #define LOG_LEVEL LOG_JABBER
+  #else
+   #define LOG_LEVEL LOG_TRACE
+  #endif
  #endif
+ #ifndef ENABLE_LOG
+  #define ENABLE_LOG
+ #endif
+#endif
+
+#ifdef ENABLE_LOG 
+#ifndef LOG_LEVEL
+ #define LOG_LEVEL LOG_TRACE
+#endif
 #endif
 
 struct dcc_trace_entry {
@@ -62,6 +75,7 @@ struct dcc_trace_entry {
 };
 
 enum log_level {
+	LOG_NONE    = 0,
 	LOG_PANIC   = 1,
 	LOG_EXCEPT  = 2,
 	LOG_ERROR   = 3,
@@ -71,18 +85,6 @@ enum log_level {
 	LOG_MSG     = 7,
 	LOG_JABBER  = 8
 };
-
-#ifdef LOG_LEVEL
-#ifndef ENABLE_LOG
-#define ENABLE_LOG
-#endif
-#endif
-
-#ifdef ENABLE_LOG 
-#ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_TRACE
-#endif
-#endif
 
 enum {
 	LOG_OPT_NONE = 0,
