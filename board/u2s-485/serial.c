@@ -32,7 +32,7 @@
 #include <sys/delay.h>
 
 #define __THINKOS_IRQ__
-#include <thinkos_irq.h>
+#include <thinkos/irq.h>
 
 #include <sys/dcclog.h>
 

@@ -36,7 +36,7 @@
 
 #include <thinkos.h>
 #define __THINKOS_IRQ__
-#include <thinkos_irq.h>
+#include <thinkos/irq.h>
 
 struct usb_cdc_acm {
 	/* modem bits */

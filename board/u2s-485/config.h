@@ -89,6 +89,9 @@
 #define THINKOS_SYSRST_ONFAULT        1
 #define THINKOS_ENABLE_RT_DEBUG       0
 #define THINKOS_ENABLE_PROFILING      0
+#define THINKOS_ENABLE_DEBUG_BKPT     0
+#define THINKOS_ENABLE_DEBUG_WPT      0
+#define THINKOS_ENABLE_MONITOR        0
 
 /* -------------------------------------------------------------------------
  * USB device and CDC-ACM 

@@ -29,8 +29,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <thinkos.h>
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <sys/stm32f.h>
 #include <arch/cortex-m3.h>
 
