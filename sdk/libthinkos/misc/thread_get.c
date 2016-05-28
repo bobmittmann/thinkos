@@ -41,13 +41,16 @@ int __thinkos_thread_get(unsigned int thread_id,
 	st->wq = rt->th_stat[thread_id] >> 1;
 	st->tmw = rt->th_stat[thread_id] & 1;
 #else
-	for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
-		if (rt->wq_lst[i] & (1 << thread_id))
-			break;
+	{
+		int i;
+		for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+			if (rt->wq_lst[i] & (1 << thread_id))
+				break;
+		}
+		if (i == THINKOS_WQ_LST_END)
+			return -1; /* not found */
+		st->wq = i;
 	}
-	if (i == THINKOS_WQ_LST_END)
-		return -1; /* not found */
-	st->wq = i;
  #if THINKOS_ENABLE_CLOCK
 	st->tmw = rt->wq_clock & (1 << thread_id) ? 1 : 0;
  #else

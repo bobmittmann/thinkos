@@ -165,13 +165,12 @@ void __attribute__((naked, aligned(16))) cm3_pendsv_isr(void)
 	uint32_t old_thread_id;
 	uint32_t new_thread_id;
 
-//	DCC_LOG(LOG_TRACE, "...");
-//	__wait();
-
 	/* save the context */
 	old_ctx = __sched_entry();
 	/* get the active (current) thread */	
 	old_thread_id = thinkos_rt.active;
+
+//	DCC_LOG(LOG_TRACE, "...");
 
 	/* get a thread from the ready bitmap */
 	new_thread_id = __clz(__rbit(thinkos_rt.wq_ready));

@@ -18,13 +18,13 @@
  */
 
 /** 
- * @file sdu.h
+ * @file damp.h
  * @brief
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __SDU_H__
-#define __SDU_H__
+#ifndef __DAMP_H__
+#define __DAMP_H__
 
 #include <stdlib.h>
 #include <string.h>
@@ -35,19 +35,12 @@
 extern "C" {
 #endif
 
-void RX(uint8_t * buf, unsigned int len);
-void TX(uint8_t * buf, unsigned int len);
-
-void sdu_trace_init(void);
-void sdu_decode(uint32_t ts, uint8_t * buf, unsigned int buf_len);
-
-void sdu_trace_show_supv(bool en);
-void sdu_trace_time_abs(bool en);
-void sdu_trace_show_pkt(bool en);
+void damp_trace_init(void);
+void damp_decode(uint32_t ts, uint8_t * rx_buf, unsigned int rx_len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __SDU_H__ */
+#endif /* __DAMP_H__ */
 

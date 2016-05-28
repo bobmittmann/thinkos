@@ -35,18 +35,6 @@
  * Set default configuration options
  * --------------------------------------------------------------------------*/
 
-#ifndef THINKOS_EXCEPT_STACK_SIZE
-#define THINKOS_EXCEPT_STACK_SIZE       320
-#endif
-
-#ifndef THINKOS_IRQ_MAX 
-#define THINKOS_IRQ_MAX                 80
-#endif
-
-#ifndef THINKOS_ENABLE_IRQ_CTL
-#define THINKOS_ENABLE_IRQ_CTL          0
-#endif
-
 #ifndef THINKOS_THREADS_MAX 
 #define THINKOS_THREADS_MAX             8
 #endif
@@ -81,6 +69,10 @@
 
 #ifndef THINKOS_ENABLE_TERMINATE
 #define THINKOS_ENABLE_TERMINATE        1
+#endif
+
+#ifndef THINKOS_ENABLE_BREAK
+#define THINKOS_ENABLE_BREAK            1
 #endif
 
 #ifndef THINKOS_ENABLE_TIMESHARE
@@ -163,8 +155,48 @@
 #define THINKOS_ENABLE_SLEEP            1
 #endif
 
-#ifndef THINKOS_ENABLE_BREAK
-#define THINKOS_ENABLE_BREAK            1
+#ifndef THINKOS_ENABLE_CTL
+#define THINKOS_ENABLE_CTL              1
+#endif
+
+#ifndef THINKOS_ENABLE_PREEMPTION
+#define THINKOS_ENABLE_PREEMPTION       1
+#endif
+
+#ifndef THINKOS_ENABLE_CRITICAL
+#define THINKOS_ENABLE_CRITICAL         1
+#endif
+
+#ifndef THINKOS_ENABLE_ESCALATE
+#define THINKOS_ENABLE_ESCALATE         0
+#endif
+
+#ifndef THINKOS_IRQ_MAX 
+#define THINKOS_IRQ_MAX                 80
+#endif
+
+#ifndef THINKOS_ENABLE_IRQ_CTL
+#define THINKOS_ENABLE_IRQ_CTL          0
+#endif
+
+#ifndef THINKOS_ENABLE_CONSOLE
+#define THINKOS_ENABLE_CONSOLE          0
+#endif
+
+#ifndef THINKOS_ENABLE_COMM
+#define THINKOS_ENABLE_COMM             0
+#endif
+
+#ifndef THINKOS_ENABLE_MPU 
+#define THINKOS_ENABLE_MPU              0
+#endif
+
+#ifndef THINKOS_ENABLE_FPU 
+#define THINKOS_ENABLE_FPU              0
+#endif
+
+#ifndef THINKOS_ENABLE_PROFILING
+#define THINKOS_ENABLE_PROFILING        0
 #endif
 
 #ifndef THINKOS_ENABLE_ARG_CHECK
@@ -183,12 +215,12 @@
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #endif
 
-#ifndef THINKOS_ENABLE_ERROR_TRAP
-#define THINKOS_ENABLE_ERROR_TRAP       0
+#ifndef THINKOS_UNROLL_EXCEPTIONS 
+#define THINKOS_UNROLL_EXCEPTIONS       0
 #endif
 
-#ifndef THINKOS_SYSRST_ONFAULT
-#define THINKOS_SYSRST_ONFAULT          0
+#ifndef THINKOS_ENABLE_EXCEPT_CLEAR
+#define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #endif
 
 #ifndef THINKOS_STDERR_FAULT_DUMP
@@ -211,20 +243,16 @@
 #define THINKOS_ENABLE_HARDFAULT        0
 #endif
 
-#ifndef THINKOS_UNROLL_EXCEPTIONS 
-#define THINKOS_UNROLL_EXCEPTIONS       0
+#ifndef THINKOS_ENABLE_ERROR_TRAP
+#define THINKOS_ENABLE_ERROR_TRAP       0
 #endif
 
-#ifndef THINKOS_ENABLE_SCHED_DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG      0
+#ifndef THINKOS_SYSRST_ONFAULT
+#define THINKOS_SYSRST_ONFAULT          0
 #endif
 
-#ifndef THINKOS_ENABLE_RT_DEBUG
-#define THINKOS_ENABLE_RT_DEBUG         0
-#endif
-
-#ifndef THINKOS_ENABLE_PROFILING
-#define THINKOS_ENABLE_PROFILING        0
+#ifndef THINKOS_EXCEPT_STACK_SIZE
+#define THINKOS_EXCEPT_STACK_SIZE       320
 #endif
 
 #ifndef THINKOS_ENABLE_MONITOR
@@ -251,44 +279,12 @@
 #define THINKOS_ENABLE_DEBUG_FAULT      0
 #endif
 
-#ifndef THINKOS_ENABLE_EXCEPT_CLEAR
-#define THINKOS_ENABLE_EXCEPT_CLEAR     1
-#endif
-
-#ifndef THINKOS_ENABLE_MPU 
-#define THINKOS_ENABLE_MPU              0
-#endif
-
-#ifndef THINKOS_ENABLE_FPU 
-#define THINKOS_ENABLE_FPU              0
-#endif
-
-#ifndef THINKOS_ENABLE_CTL
-#define THINKOS_ENABLE_CTL              1
-#endif
-
-#ifndef THINKOS_ENABLE_COMM
-#define THINKOS_ENABLE_COMM             0
-#endif
-
 #ifndef THINKOS_ENABLE_STACK_INIT
 #define THINKOS_ENABLE_STACK_INIT       1
 #endif
 
 #ifndef THINKOS_ENABLE_THREAD_VOID 
 #define THINKOS_ENABLE_THREAD_VOID      1
-#endif
-
-#ifndef THINKOS_ENABLE_PREEMPTION
-#define THINKOS_ENABLE_PREEMPTION       1
-#endif
-
-#ifndef THINKOS_ENABLE_CRITICAL
-#define THINKOS_ENABLE_CRITICAL         1
-#endif
-
-#ifndef THINKOS_ENABLE_ESCALATE
-#define THINKOS_ENABLE_ESCALATE         THINKOS_ENABLE_MPU
 #endif
 
 #ifndef THINKOS_ENABLE_IDLE_WFI
@@ -314,6 +310,15 @@
 #ifndef THINKOS_ENABLE_OFAST
 #define THINKOS_ENABLE_OFAST            1
 #endif
+
+#ifndef THINKOS_ENABLE_SCHED_DEBUG
+#define THINKOS_ENABLE_SCHED_DEBUG      0
+#endif
+
+#ifndef THINKOS_ENABLE_RT_DEBUG
+#define THINKOS_ENABLE_RT_DEBUG         0
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Sanity check

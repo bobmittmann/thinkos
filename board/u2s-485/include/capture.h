@@ -18,58 +18,46 @@
  */
 
 /** 
- * @file trace.h
+ * @file packet.h
  * @brief
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __TRACE_H__
-#define __TRACE_H__
+#ifndef __CAPTURE_H__
+#define __CAPTURE_H__
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include <sys/usb-cdc.h>
-#include "capture.h"
 
-#define TIME_ABS  1
-#define DUMP_PKT  2
-#define SHOW_SUPV 4
-#define SHOW_PKT  8
+#define PACKET_DATA_MAX 256
 
-extern struct usb_cdc_class * usb_cdc;
-extern uint8_t trace_opt;
-extern uint32_t trace_ts;
-extern uint32_t protocol_buf[];
+struct packet {
+	uint32_t clk;
+	uint16_t seq;
+	uint16_t cnt;
+	uint8_t data[PACKET_DATA_MAX];
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int tracef(uint32_t ts, const char *fmt, ... );
+struct packet * capture_pkt_recv(void);
 
-int trace_printf(const char *fmt, ... );
+void capture_start(void);
 
-int xxd(char * s, int max, uint8_t * buf, int len);
+void capture_stop(void);
 
-int xx_dump(uint32_t ts, uint8_t * buf, int len);
+void capture_init(void);
 
-int usb_printf(const char *fmt, ... );
+void capture_idletime_set(unsigned int bits);
 
-void raw_trace(uint32_t ts, uint8_t * rx_buf, unsigned int rx_len);
-
-void trace_time_abs(bool en);
-
-void trace_raw_pkt(struct packet * pkt);
-
-void trace_damp_pkt(struct packet * pkt);
-
-void trace_sdu_pkt(struct packet * pkt);
-
-void trace_mstp_pkt(struct packet * pkt);
+void capture_baudrate_set(unsigned int rate);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __TRACE_H__ */
+#endif /* __PACKET_H__ */
 
