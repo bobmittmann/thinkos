@@ -102,8 +102,6 @@ void __thinkos_reset(void)
 	   interrupts to call SVC, they should run at a lower priority
 	   then SVC.*/
 	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
-//	cm3_except_pri_set(CM3_EXCEPT_SVC, MONITOR_PRIORITY);
-
 	/* SysTick interrupt has to have a lower priority then SVC,
 	 to not preempt SVC */
 	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
@@ -233,14 +231,17 @@ static int __thinkos_init_main(uint32_t opt)
 	   thread numbers start form one ... */
 	int id = __ID(opt) - 1;
 
+	if (id < 0)
+		id = 0;
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
 	id = thinkos_alloc_lo(thinkos_rt.th_alloc, id);
 #else
-	/* initialize the main thread */ 
-	if ((id >= THINKOS_THREADS_MAX) || (id < 0))
-		return THINKOS_EINVAL;
+	if (id >= THINKOS_THREADS_MAX)
+		id = THINKOS_THREADS_MAX - 1;
 #endif
+
+	/* initialize the main thread */ 
 
 #if THINKOS_ENABLE_THREAD_INFO
 	thinkos_rt.th_inf[id] = (struct thinkos_thread_inf *)&thinkos_main_inf;
@@ -270,15 +271,20 @@ static int __thinkos_init_main(uint32_t opt)
 
 	/* set the active thread */
 	thinkos_rt.active = id;
-	__bit_mem_wr(&thinkos_rt.wq_ready, id, 1);
+#if (THINKOS_THREADS_MAX < 32) 
+	/* put the IDLE thread in the ready queue */
+	thinkos_rt.wq_ready = (1 << id) | (1 << THINKOS_THREADS_MAX);
+#else
+	thinkos_rt.wq_ready = 1 << id;
+#endif
 
-	DCC_LOG3(LOG_INFO, "<%d> threads_max=%d ready=%08x", 
+	DCC_LOG3(LOG_TRACE, "<%d> threads_max=%d ready=%08x", 
 			 id, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
 
 #if THINKOS_ENABLE_PAUSE
 	if (__PAUSED(opt)) {
 		/* insert into the paused list */
-		__bit_mem_wr(&thinkos_rt.wq_paused, id, 1);
+		thinkos_rt.wq_paused = 1 << id;
 	} 
 #endif
 
