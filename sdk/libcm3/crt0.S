@@ -31,6 +31,7 @@ _reset:
 	.global _reset
 	.type   _reset, %function
 
+#ifdef THINKAPP 
 	b       0f
 	.byte   '\r'
 	.byte   '\n'
@@ -40,7 +41,10 @@ _reset:
 	/* disable interrupts */
     mov     r8, r0
     mov     r9, r1
+    mov     r10, lr
+#else
 	bl		_init
+#endif
 
 	/* copy initialized variables .data section  (Copy from ROM to RAM) */
 	ldr     r2, .L_data_start
@@ -68,23 +72,31 @@ _reset:
 	/* call constructors */
 	ldr     r5, .L_ctors_start
 	ldr     r6, .L_ctors_end
-	.L_ctor_loop:
+.L_ctor_loop:
 	cmp     r5, r6
 	beq     .L_ctor_end
 	ldr     r4, [r5], #4
 	blx     r4
 	b       .L_ctor_loop
-	.L_ctor_end:
+.L_ctor_end:
 
+#ifdef THINKAPP 
     mov     fp, #0
 	mov     r7, #0
 	/* argc  */
 	mov     r0, r8
 	/* argv = NULL */
 	mov     r1, r9
+#endif
 	/* go to C main function */
 	bl      main
+
+#ifdef THINKAPP 
+	mov     lr, r10
+	bx      lr
+#else
 	b       abort
+#endif
 
 /* section of initialized data at ROM */
 .L_idata_start:
@@ -99,8 +111,6 @@ _reset:
 	.word	__bss_start
 .L_bss_end:
 	.word	__bss_end
-.L_heap_start:
-	.word	__heap_start
 .L_ctors_start:
 	.word   __ctors_start
 .L_ctors_end:
