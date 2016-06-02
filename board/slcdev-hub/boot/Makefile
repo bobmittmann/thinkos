@@ -24,7 +24,7 @@ PROG = thinkos
 
 CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
 		 board.c otg_xflash_pic.c lattice.c \
-		 ice40lp384.c
+		 ice40lp384.c erd-proxy.c
 
 SDK = ../../../sdk
 

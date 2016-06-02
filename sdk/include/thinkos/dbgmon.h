@@ -63,6 +63,11 @@ enum dbgmon_event {
 
 struct dmon_comm;
 
+#define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
+#define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
+#define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
+#define SIG_ZERO(SIGSET) SIGSET = 0
+
 
 #ifdef __cplusplus
 extern "C" {

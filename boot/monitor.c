@@ -86,6 +86,10 @@
 #define BOOT_ENABLE_GDB 0
 #endif
 
+#ifndef BOOT_ENABLE_DBG_PROXY
+#define BOOT_ENABLE_DBG_PROXY 0
+#endif
+
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif
@@ -431,6 +435,18 @@ void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm)
 }
 #endif
 
+#if (BOOT_ENABLE_DBG_PROXY)
+void dbg_prox_task(struct dmon_comm *);
+
+void __attribute__((naked)) dbg_proxy_bootstrap(struct dmon_comm * comm) 
+{
+	/* call the DBG proxy task */
+	dbg_prox_task(comm);
+	/* return to the monitor */
+	dbgmon_exec(monitor_task);
+}
+#endif
+
 int monitor_process_input(struct monitor * mon, char * buf, int len)
 {
 	struct dmon_comm * comm = mon->comm;
@@ -444,6 +460,11 @@ int monitor_process_input(struct monitor * mon, char * buf, int len)
 #if (BOOT_ENABLE_GDB)
 		case '+':
 			dbgmon_exec(gdb_bootstrap);
+			break;
+#endif
+#if (BOOT_ENABLE_DBG_PROXY)
+		case '~':
+			dbgmon_exec(dbg_proxy_bootstrap);
 			break;
 #endif
 #if (MONITOR_APPTERM_ENABLE)
