@@ -70,7 +70,7 @@ const char type_nm[8][4] = {
 
 void sdu_decode(uint32_t ts, uint8_t * buf, unsigned int buf_len)
 {
-	struct sdu_link * lnk = (struct sdu_link *)protocol_buf;
+	struct sdu_link * dev = (struct sdu_link *)&protocol_buf;
 	uint8_t * cp;
 	uint8_t * msg;
 	uint8_t sum;
@@ -91,61 +91,61 @@ void sdu_decode(uint32_t ts, uint8_t * buf, unsigned int buf_len)
 	
 		c = buf[i];
 
-		DCC_LOG2(LOG_INFO, "1. i=%d  pos=%d", i, lnk->rx.pos);
+		DCC_LOG2(LOG_INFO, "1. i=%d  pos=%d", i, dev->rx.pos);
 
 		/* first char */
-		if (lnk->rx.pos == 0) {
+		if (dev->rx.pos == 0) {
 			if (c != SDU_SYNC) {
 				tracef(ts, "sync expected, got: %02x!", c);
 				continue;
 			}
-		} else if (lnk->rx.pos == 1) {
+		} else if (dev->rx.pos == 1) {
 			if (c == SDU_SYNC) {
 				tracef(ts, "unexpected sync!");
-				lnk->rx.pos = 0;
+				dev->rx.pos = 0;
 				continue;
 			}
 		} else {
 			/* Byte destuffing (remove any syncs from the stream) */
-			if ((c == SDU_SYNC) && (!lnk->rx.stuff)) {
-				lnk->rx.stuff = true;
+			if ((c == SDU_SYNC) && (!dev->rx.stuff)) {
+				dev->rx.stuff = true;
 				DCC_LOG(LOG_INFO, "byte stuffing");
 				continue;
 			}
 		}
 
-		lnk->rx.stuff = false;
+		dev->rx.stuff = false;
 
-		if (lnk->rx.pos == 3) {
+		if (dev->rx.pos == 3) {
 			/* Get the total packet lenght */
-			lnk->rx.tot_len = lnk->rx.pos + c + 3;
+			dev->rx.tot_len = dev->rx.pos + c + 3;
 
-			if (lnk->rx.tot_len > SDU_PKT_LEN_MAX) {
+			if (dev->rx.tot_len > SDU_PKT_LEN_MAX) {
 				/* Packet is too large */
 				tracef(ts, "too long!");
-				lnk->rx.pos = 0;
+				dev->rx.pos = 0;
 				continue;
 			}
 		}
 
-		lnk->rx.buf[lnk->rx.pos++] = c;
+		dev->rx.buf[dev->rx.pos++] = c;
 
-		if (lnk->rx.pos < 4) 
+		if (dev->rx.pos < 4) 
 			continue;
 
-		if (lnk->rx.pos < lnk->rx.tot_len)
+		if (dev->rx.pos < dev->rx.tot_len)
 			continue;
 
 		/* restart the position index */
-		lnk->rx.pos = 0;
+		dev->rx.pos = 0;
 
-		route = lnk->rx.buf[1];
+		route = dev->rx.buf[1];
 		sum = route;
-		ctrl = lnk->rx.buf[2];
+		ctrl = dev->rx.buf[2];
 		sum += ctrl;
-		len = lnk->rx.buf[3];
+		len = dev->rx.buf[3];
 		sum += len;
-		cp = &lnk->rx.buf[4];
+		cp = &dev->rx.buf[4];
 
 		msg = cp; 
 		for (j = 0; j < len; j++) {
@@ -240,13 +240,17 @@ void sdu_trace_show_pkt(bool en)
 
 void sdu_trace_init(void)
 {
-	struct sdu_link * lnk = (struct sdu_link *)protocol_buf;
-
+	struct sdu_link * lnk = (struct sdu_link *)&protocol_buf;
 	lnk->rx.timeout = false;
 	lnk->rx.stuff = 0;
 	lnk->rx.pos = 0;
 	lnk->rx.tot_len = 0;
 	lnk->rx.addr = 0;
 	tracef(profclk_get(), "--- SDU trace ---------"); 
+}
+
+void trace_sdu_pkt(struct packet * pkt)
+{
+	sdu_decode(pkt->clk, pkt->data, pkt->cnt);
 }
 

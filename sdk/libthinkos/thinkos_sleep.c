@@ -19,20 +19,19 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
-
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#endif
 #include <thinkos.h>
 #include <sys/delay.h>
 
 #if THINKOS_ENABLE_SLEEP
-void thinkos_sleep_svc(int32_t * arg)
+void thinkos_sleep_svc(int32_t * arg, int self)
 {
 	uint32_t ms = (uint32_t)arg[0];
 #if THINKOS_ENABLE_CLOCK
-	int self = thinkos_rt.active;
-
 	/* set the clock */
 	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
 	/* insert into the clock wait queue */
@@ -57,10 +56,9 @@ void thinkos_sleep_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_ALARM
-void thinkos_alarm_svc(int32_t * arg)
+void thinkos_alarm_svc(int32_t * arg, int self)
 {
 	uint32_t ms = (uint32_t)arg[0];
-	int self = thinkos_rt.active;
 
 	/* set the clock */
 	thinkos_rt.clock[self] = ms;

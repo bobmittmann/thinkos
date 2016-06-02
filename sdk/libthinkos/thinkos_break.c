@@ -19,10 +19,11 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
-
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#endif
 #include <thinkos.h>
 
 #if THINKOS_ENABLE_BREAK
@@ -40,6 +41,7 @@ void thinkos_break_svc(int32_t * arg)
 	int type;
 
 	if (wq >= THINKOS_WQ_LST_END) {
+		__thinkos_error(THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -52,6 +54,7 @@ void thinkos_break_svc(int32_t * arg)
 
 	if ((alloc != NULL) && __bit_mem_rd(alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
+		__thinkos_error(THINKOS_ERR_OBJECT_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

@@ -34,8 +34,8 @@ void io_init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 
-	stm32_gpio_clock_en(STM32_GPIOA);
-	stm32_gpio_clock_en(STM32_GPIOB);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 
 	/* Enable Alternate Functions IO clock */
 	rcc->apb2enr |= RCC_AFIOEN;
@@ -57,3 +57,9 @@ void io_init(void)
 
 }
 
+/* Reset on exception */
+void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
+{
+	__tdump();
+	cm3_sysrst();
+}

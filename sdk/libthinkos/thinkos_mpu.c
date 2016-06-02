@@ -19,16 +19,8 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Os\")")
-
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
-#define __THINKOS_IRQ__
-#include <thinkos_irq.h>
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
-
-#include <thinkos_except.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -93,8 +85,9 @@ void thinkos_mpu_init(unsigned int size)
 	uint32_t bmp;
 	unsigned int n;
 
-	DCC_LOG(LOG_TRACE, "configuring MPU ...");
+	DCC_LOG(LOG_MSG, "configuring MPU ...");
 
+	/* how many reserved 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
 
 	bmp = 0xffffffff << n;
@@ -169,7 +162,7 @@ void thinkos_mpu_init(unsigned int size)
 	/* Control Register */
 //	mpu->ctrl = MPU_CTRL_PRIVDEFENA | MPU_CTRL_HFNMIENA | MPU_CTRL_ENABLE;
 
-	__mpudump();
+//	__mpudump();
 }
 
 void thinkos_userland(void)

@@ -19,23 +19,23 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Os\")")
-
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
-#include <thinkos_irq.h>
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
-
-#include <thinkos_except.h>
+#include <thinkos/irq.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
+#include <thinkos/except.h>
 #include <thinkos.h>
 
 #include <stdio.h>
 #include <string.h>
 
 extern const char thinkos_svc_nm[];
+extern const char thinkos_sch_nm[];
 extern const char thinkos_xcp_nm[];
+extern const char thinkos_vec_nm[];
+extern const char thinkos_irq_nm[];
 
 #if THINKOS_ENABLE_THREAD_INFO
 extern uint32_t _stack;
@@ -102,8 +102,6 @@ void __thinkos_reset(void)
 	   interrupts to call SVC, they should run at a lower priority
 	   then SVC.*/
 	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
-//	cm3_except_pri_set(CM3_EXCEPT_SVC, MONITOR_PRIORITY);
-
 	/* SysTick interrupt has to have a lower priority then SVC,
 	 to not preempt SVC */
 	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
@@ -214,7 +212,6 @@ void __thinkos_reset(void)
 	systick->csr = SYSTICK_CSR_ENABLE;
 #endif
 
-	__thinkos_idle_init();
 	/* Set the initial thread as idle. */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
 }
@@ -230,22 +227,24 @@ static int __thinkos_init_main(uint32_t opt)
 #if THINKOS_ENABLE_TIMESHARE
 	int priority = __PRIORITY(opt);
 #endif
-	int id = __ID(opt);
-	int self;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	int id = __ID(opt) - 1;
 
-	/* initialize the main thread */ 
-	if (id >= THINKOS_THREADS_MAX)
-		id = THINKOS_THREADS_MAX - 1;
-
+	if (id < 0)
+		id = 0;
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
-	self = thinkos_alloc_lo(thinkos_rt.th_alloc, id);
+	id = thinkos_alloc_lo(thinkos_rt.th_alloc, id);
 #else
-	self = id;
+	if (id >= THINKOS_THREADS_MAX)
+		id = THINKOS_THREADS_MAX - 1;
 #endif
 
+	/* initialize the main thread */ 
+
 #if THINKOS_ENABLE_THREAD_INFO
-	thinkos_rt.th_inf[self] = (struct thinkos_thread_inf *)&thinkos_main_inf;
+	thinkos_rt.th_inf[id] = (struct thinkos_thread_inf *)&thinkos_main_inf;
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
@@ -261,8 +260,8 @@ static int __thinkos_init_main(uint32_t opt)
 	if (priority > THINKOS_SCHED_LIMIT_MAX)
 		priority = THINKOS_SCHED_LIMIT_MAX;
 
-	thinkos_rt.sched_pri[self] = priority;
-	thinkos_rt.sched_val[self] = priority / 2;
+	thinkos_rt.sched_pri[id] = priority;
+	thinkos_rt.sched_val[id] = priority / 2;
 
 	/* set the initial schedule limit */
 	thinkos_rt.sched_limit = priority;
@@ -271,29 +270,36 @@ static int __thinkos_init_main(uint32_t opt)
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 	/* set the active thread */
-	thinkos_rt.active = self;
-	__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);
+	thinkos_rt.active = id;
+#if (THINKOS_THREADS_MAX < 32) 
+	/* put the IDLE thread in the ready queue */
+	thinkos_rt.wq_ready = (1 << id) | (1 << THINKOS_THREADS_MAX);
+#else
+	thinkos_rt.wq_ready = 1 << id;
+#endif
 
-	DCC_LOG3(LOG_INFO, "<%d> threads_max=%d ready=%08x", 
-			 self, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
+	DCC_LOG3(LOG_TRACE, "<%d> threads_max=%d ready=%08x", 
+			 id, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
 
 #if THINKOS_ENABLE_PAUSE
 	if (__PAUSED(opt)) {
 		/* insert into the paused list */
-		__bit_mem_wr(&thinkos_rt.wq_paused, self, 1);
+		thinkos_rt.wq_paused = 1 << id;
 	} 
 #endif
 
+#if 0
 	/* Invoke the scheduler */
 	__thinkos_defer_sched();
+#endif
 
-	return self;
+	return id;
 }
 
 int thinkos_init(uint32_t opt)
 {
 	uint32_t msp;
-	int self;
+	int thread_id;
 
 #if (THINKOS_MUTEX_MAX > 0)
 	DCC_LOG3(LOG_INFO, "    mutex: %2d (%2d .. %2d)", THINKOS_MUTEX_MAX,
@@ -355,10 +361,14 @@ int thinkos_init(uint32_t opt)
 
 	__thinkos_reset();
 
+	__thinkos_idle_init();
+
 #if THINKOS_ENABLE_EXCEPTIONS
 	thinkos_exception_init();
 #endif
-	self = __thinkos_init_main(opt);
+
+	if ((thread_id = __thinkos_init_main(opt)) < 0)
+		return thread_id;
 
 	/* Cortex-M configuration */
 
@@ -396,11 +406,14 @@ int thinkos_init(uint32_t opt)
 	cm3_cpsie_i();
 
 	DCC_LOG4(LOG_TRACE, "<%d> msp=%08x psp=%08x ctrl=%02x", 
-			 self, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
+			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 
-	return self;
+	return thread_id + 1;
 }
 
 const char * const thinkos_svc_link = thinkos_svc_nm;
 const char * const thinkos_xcp_link = thinkos_xcp_nm;
+const char * const thinkos_vec_link = thinkos_vec_nm;
+const char * const thinkos_sch_link = thinkos_sch_nm;
+const char * const thinkos_irq_link = thinkos_irq_nm;
 

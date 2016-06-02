@@ -19,7 +19,11 @@
  * http://www.gnu.org/
  */
 
-#include <stdint.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 
 void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len)
 {

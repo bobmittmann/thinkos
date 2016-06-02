@@ -35,7 +35,8 @@ enum trace_level {
 	TRACE_LVL_ERR = 1,
 	TRACE_LVL_WARN = 2,
 	TRACE_LVL_INF = 3,
-	TRACE_LVL_DBG = 4
+	TRACE_LVL_DBG = 4,
+	TRACE_LVL_YAP = 5
 };
 
 struct trace_ref {
@@ -53,27 +54,26 @@ struct trace_entry {
 	uint32_t idx;
 };
 
-#ifdef DEBUG
- #define ENABLE_TRACE
- #ifdef DEBUG_LEVEL
-  #define TRACE_LEVEL DEBUG_LEVEL
- #elif DEBUG == 2
-  #define TRACE_LEVEL 2
- #elif DEBUG == 3
-  #define TRACE_LEVEL 3
- #elif DEBUG == 4
-  #define TRACE_LEVEL 4
- #elif DEBUG == 5
-  #define TRACE_LEVEL 5
- #elif DEBUG == 6
-  #define TRACE_LEVEL 6
- #elif DEBUG == 7
-  #define TRACE_LEVEL 7
- #endif
-#endif
 
 #ifndef TRACE_LEVEL
- #define TRACE_LEVEL TRACE_LVL_DBG
+ #ifdef DEBUG
+  #define ENABLE_TRACE
+  #ifdef DEBUG_LEVEL
+   #define TRACE_LEVEL DEBUG_LEVEL
+  #elif DEBUG == 0
+   #define TRACE_LEVEL TRACE_LVL_NONE
+  #elif DEBUG == 2
+   #define TRACE_LEVEL TRACE_LVL_ERR
+  #elif DEBUG == 3
+   #define TRACE_LEVEL TRACE_LVL_WARN
+  #elif DEBUG == 4
+   #define TRACE_LEVEL TRACE_LVL_INF
+  #elif DEBUG == 5
+   #define TRACE_LEVEL TRACE_LVL_DBG
+  #else
+   #define TRACE_LEVEL TRACE_LVL_YAP
+  #endif
+ #endif
 #else
  #ifndef ENABLE_TRACE
   #define ENABLE_TRACE
@@ -89,6 +89,12 @@ struct trace_entry {
 #define TRACE_FUNC      (1 << 5)
 
 #ifdef ENABLE_TRACE
+
+#define YAP(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
 
 #define DBG(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
@@ -115,6 +121,12 @@ struct trace_entry {
 		}} else (void) 0
 
 
+#define YAP_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __FMT}; \
+		tracef_i(&__ref, ## __VA_ARGS__); \
+		}} else (void) 0
+
 #define DBG_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __FMT}; \
@@ -140,6 +152,12 @@ struct trace_entry {
 		}} else (void) 0
 
 
+#define YAPS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace(&__ref); \
+		}} else (void) 0
+
 #define DBGS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __STR}; \
@@ -164,6 +182,11 @@ struct trace_entry {
 		trace(&__ref); \
 		}} else (void) 0
 
+#define YAPS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		static const struct trace_ref __ref = \
+		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __STR}; \
+		trace_I(&__ref); \
+		}} else (void) 0
 
 #define DBGS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
@@ -195,21 +218,25 @@ struct trace_entry {
 #define INF(__FMT, ...)
 #define WARN(__FMT, ...)
 #define ERR(__FMT, ...)
+#define YAP(__FMT, ...)
 
 #define DBG_I(__FMT, ...)
 #define INF_I(__FMT, ...)
 #define WARN_I(__FMT, ...)
 #define ERR_I(__FMT, ...)
+#define YAP_I(__FMT, ...)
 
 #define DBGS(__STR)
 #define INFS(__STR)
 #define WARNS(__STR)
 #define ERRS(__STR)
+#define YAPS(__STR)
 
 #define DBGS_I(__STR)
 #define INFS_I(__STR)
 #define WARNS_I(__STR)
 #define ERRS_I(__STR)
+#define YAPS_I(__STR)
 
 #endif
 

@@ -42,7 +42,7 @@
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
-#define THINKOS_THREADS_MAX             16
+#define THINKOS_THREADS_MAX             32
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 
 #define THINKOS_ENABLE_JOIN             1
@@ -103,8 +103,11 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          0
 #define THINKOS_STDERR_FAULT_DUMP       0
+#define THINKOS_ENABLE_DEBUG_BKPT       1
+#define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
 #define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1
@@ -115,6 +118,16 @@
 #define THINKOS_DMON_STACK_SIZE         (1024 + 128)
 
 #define THINKOS_ENABLE_STACK_INIT       1
+
+#define THINKOS_ASM_SCHEDULER           1
+#define THINKOS_ENABLE_OFAST            1
+
+#define THINKOS_ENABLE_RESET_RAM_VECTORS 1
+#define THINKOS_DBGMON_ENABLE_FLOWCTL    1 
+#define THINKOS_DBGMON_ENABLE_IRQ_MGMT   1 
+#define THINKOS_CONSOLE_RX_FIFO_LEN     64
+#define THINKOS_CONSOLE_TX_FIFO_LEN    128
+
 
 /* -------------------------------------------------------------------------
    USB 

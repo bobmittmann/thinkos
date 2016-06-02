@@ -30,13 +30,23 @@
 #include <sys/dcclog.h>
 
 #ifndef XFLASH_VERBOSE
-#define XFLASH_VERBOSE 0
+#define XFLASH_VERBOSE      0
+#endif
+
+#ifndef XMODEM_CHECKSUM
+#define XMODEM_CHECKSUM     0
+#endif
+
+#ifndef XMODEM_FALLBACK
+#define XMODEM_FALLBACK     0
+#endif
+
+#ifndef XMODEM_CRC_CHECK
+#define XMODEM_CRC_CHECK    0
 #endif
 
 #define CDC_TX_EP 2
 #define CDC_RX_EP 1
-
-#define FLASH_WR_BLK_SIZE 128
 
 void __attribute__((noreturn)) reset(void);
 void delay(unsigned int msec);
@@ -63,8 +73,12 @@ struct ymodem_rcv {
 	unsigned int fsize;
 	unsigned int count;
 
-	unsigned char crc_mode;
-	unsigned char xmodem;
+#if XMODEM_CHECKSUM
+	bool crc_mode;
+#endif
+#if XMODEM_FALLBACK
+	bool xmodem;
+#endif
 	unsigned char sync;
 	unsigned char retry;
 
@@ -75,13 +89,18 @@ struct ymodem_rcv {
 	} pkt;
 };
 
-static int ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
+static int ymodem_rcv_init(struct ymodem_rcv * rx)
 {
 	rx->pktno = 0;
-	rx->crc_mode = crc_mode;
-	rx->xmodem = xmodem;
+#if XMODEM_CHECKSUM
+	rx->crc_mode = true;
 	rx->sync = rx->crc_mode ? 'C' : NAK;
-	rx->xmodem = 0;
+#else
+	rx->sync = 'C';
+#endif
+#if XMODEM_FALLBACK
+	rx->xmodem = false;
+#endif
 	rx->retry = 30;
 	rx->fsize = 1024 * 1024;
 	rx->count = 0;
@@ -107,8 +126,10 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 	unsigned char * cp;
 	int ret = 0;
 	int cnt = 0;
+#if XMODEM_SEQUENCE_CHECK
 	int nseq;
 	int seq;
+#endif
 	int rem;
 	int pos;
 	int i;
@@ -154,7 +175,11 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 
 			if (c == EOT) {
 				/* end of transmission */
+#if XMODEM_CHECKSUM
 				rx->sync = rx->crc_mode ? 'C' : NAK;
+#else
+				rx->sync = 'C';
+#endif
 				rx->pktno = 0;
 				pkt[0] = ACK;
 				usb_send(CDC_TX_EP, pkt, 1);
@@ -167,7 +192,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			cp[i] = pkt[pos + i];
 		cp += rem;
 
-		rem = cnt + ((rx->crc_mode) ? 4 : 3) - rem;
+		rem = cnt + 4 - rem;
 
 		/* receive the packet */
 		while (rem) {
@@ -180,6 +205,7 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			cp += ret;
 		}
 
+#if XMODEM_SEQUENCE_CHECK
 		/* sequence */
 		seq = pkt[1];
 		/* inverse sequence */
@@ -188,10 +214,14 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 		if (seq != ((~nseq) & 0xff)) {
 			goto error;
 		}
-
+#endif
 		cp = &pkt[3];
 
-		if (rx->crc_mode) {
+#if XMODEM_CHECKSUM
+		if (rx->crc_mode) 
+#endif
+#if XMODEM_CRC_CHECK
+		{
 			unsigned short crc = 0;
 			unsigned short cmp;
 			int i;
@@ -205,7 +235,10 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 				goto error;
 			}
 
-		} else {
+		} 
+#endif
+#if XMODEM_CHECKSUM
+		else {
 			unsigned char cks = 0;
 			int i;
 
@@ -216,22 +249,26 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 				goto error;
 			}
 		}
-
+#endif
+#if XMODEM_SEQUENCE_CHECK
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
 			continue;
 		}
 
 		if (seq != (rx->pktno & 0xff)) {
+#if XMODEM_FALLBACK
 			if ((rx->pktno == 0) && (seq == 1)) {
 				rx->pktno++;
 				/* Fallback to XMODEM */
-				rx->xmodem = 1;
-			} else {
+				rx->xmodem = true;
+			} else 
+#endif
+			{
 				goto error;
 			}
 		}
-
+#endif
 		/* YModem first packet ... */
 		if (rx->pktno == 0) {
 			pkt[0] = ACK;
@@ -248,11 +285,13 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 
 		return cnt;
 
+#if XMODEM_SEQUENCE_CHECK || XMODEM_CRC_CHECK
 error:
 		/* flush */
 		while (usb_recv(CDC_RX_EP, pkt, 1024, 100) > 0);
 		ret = -1;
 		break;
+#endif
 
 timeout:
 		if ((--rx->retry) == 0) {
@@ -317,18 +356,26 @@ static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 	return true;
 }
 
-static const char s_xmodem[] = "\r\nYmodem (^X to cancel)... ";
-
 #if XFLASH_VERBOSE
 static const char s_invalid[] = "\r\nInvalid file!";
 static const char s_erase[] = "\r\nFlash erase error!";
 static const char s_program[] = "\r\nFlash program error!";
+static const char s_ymodem[] = "\r\nYmodem (^X to cancel)... ";
+static const char s_ok[] = "\r\nOK.";
+#define PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR) - 1)
+#else
+static const char s_ymodem[] = {'\r', '\n', 'Y', 'm', 'o', 'd', 'e', 'm', 
+	'.', '.', '.' };
+static const char s_ok[] = {'\r', '\n', 'O', 'K'};
+#define PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR))
 #endif
 
-#define USB_PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR) - 1)
-
+#if 0
 int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
-									 const struct magic * magic)
+		   const struct magic * magic, unsigned int opt)
+#endif
+int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
+		   const struct magic * magic)
 {
 	struct {
 		struct magic_hdr hdr;
@@ -358,10 +405,16 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 
 	LOG_CODE(0);
 	LOG_STATE(0);
-
+#if 0
+	if (opt & XFLASH_OPT_BYPASS) {
+		PUTS(s_ok);
+		usb_drain(CDC_TX_EP);
+		return 55;
+	}
+#endif
 	do {
-		USB_PUTS(s_xmodem);
-		ymodem_rcv_init(&ry, true, false);
+		PUTS(s_ymodem);
+		ymodem_rcv_init(&ry);
 		ry.fsize = blk_size;
 		offs = blk_offs;
 		cnt = 0;
@@ -371,12 +424,12 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 		while ((ret = usb_ymodem_rcv_pkt(&ry)) >= 0) {
 
 			DCC_LOG1(LOG_TRACE, "usb_ymodem_rcv_pkt() ret=%d)", ret);
-
+#if XMODEM_FALLBACK
 			if ((ret == 0) && (ry.xmodem)) {
 				LOG_CODE(1);
 				break;
 			}
-
+#endif
 			int len = ret;
 			if (ry.pktno == 1) {
 				char * cp;
@@ -399,10 +452,10 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 #if XFLASH_VERBOSE
 						usb_ymodem_rcv_cancel(&ry);
 						delay(1000);
-						USB_PUTS(s_invalid);
+						PUTS(s_invalid);
 #endif
 						LOG_CODE(3);
-						ret = -1;
+						ret = -3;
 						break;
 					}
 //					flash_erase(offs, ry->fsize);
@@ -410,15 +463,16 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 
 				DCC_LOG2(LOG_TRACE, "flash_erase(offs=0x%06x, len=%d)", 
 						 offs, len);
+
 				if ((ret = flash_erase(offs, len)) < 0) {
 					DCC_LOG(LOG_WARNING, "flash_erase() failed!");
 #if XFLASH_VERBOSE
 					usb_ymodem_rcv_cancel(&ry);
 					delay(1000);
-					USB_PUTS(s_erase);
+					PUTS(s_erase);
 #endif
 					LOG_CODE(4 + (-ret * 0x10000));
-					ret = -1;
+					ret = -4;
 					break;
 				}
 	
@@ -428,10 +482,10 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 #if XFLASH_VERBOSE
 					usb_ymodem_rcv_cancel(&ry);
 					delay(1000);
-					USB_PUTS(s_program);
+					PUTS(s_program);
 #endif
 					LOG_CODE(5);
-					ret = -1;
+					ret = -5;
 					break;
 				}
 				offs += len;
@@ -441,15 +495,21 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 			}
 		}
 
+//		if (opt & XFLASH_OPT_RET_ERR) { 
+//			return ret;
+//		}
 	} while ((ret < 0) || (cnt == 0));
 
-	usb_send(CDC_TX_EP, "\r\nDone.\r\n", 9);
+	PUTS(s_ok);
 
 	usb_drain(CDC_TX_EP);
 
-	delay(3000);
+//	if (opt & XFLASH_OPT_RESET) { 
+		delay(3000);
+		reset();
+//	}
 
-	reset();
+//	return 0;
 }
 
 

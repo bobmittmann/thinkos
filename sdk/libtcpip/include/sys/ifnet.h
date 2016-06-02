@@ -53,9 +53,6 @@
 #include <netinet/ip.h>
 #include <tcpip/in.h>
 
-#define __THINKOS_IRQ__
-#include <thinkos_irq.h>
-
 #ifndef ENABLE_NETIF_STAT
 #define ENABLE_NETIF_STAT 0
 #endif

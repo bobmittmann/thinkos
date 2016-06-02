@@ -38,6 +38,10 @@ struct magic {
 	struct magic_rec rec[];
 };
 
+#define XFLASH_OPT_RESET   (1 << 0)
+#define XFLASH_OPT_RET_ERR (1 << 1)
+#define XFLASH_OPT_BYPASS  (1 << 2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

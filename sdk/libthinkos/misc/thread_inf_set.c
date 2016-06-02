@@ -20,8 +20,8 @@
  */
 
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 void __thinkos_thread_inf_set(unsigned int thread_id, 
 							  const struct thinkos_thread_inf * inf)

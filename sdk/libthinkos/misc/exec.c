@@ -20,8 +20,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 /* -------------------------------------------------------------------------
  * Application execution

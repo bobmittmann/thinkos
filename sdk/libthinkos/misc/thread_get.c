@@ -19,77 +19,98 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#include <thinkos.h>
 
-int __thinkos_thread_get(struct thinkos_rt * rt, struct thinkos_thread * st, 
-						 unsigned int th)
+int __thinkos_thread_get(unsigned int thread_id, 
+						 struct thinkos_thread * st, 
+						 struct cortex_m_context * ctx)
 {
-	uint32_t * src;
-	uint32_t * dst;
-	int i;
+	struct thinkos_rt * rt = &thinkos_rt;
 
-	if ((th >= THINKOS_THREADS_MAX) || (rt->ctx[th] == NULL)) {
+	if ((thread_id >= THINKOS_THREADS_MAX) || (rt->ctx[thread_id] == NULL)) {
 		return -1;
 	}
 
-	st->idx = th;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	st->no = thread_id + 1;
 
 #if THINKOS_ENABLE_THREAD_STAT
-	st->wq = rt->th_stat[th] >> 1;
-	st->tmw = rt->th_stat[th] & 1;
+	st->wq = rt->th_stat[thread_id] >> 1;
+	st->tmw = rt->th_stat[thread_id] & 1;
 #else
-	for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
-		if (rt->wq_lst[i] & (1 << th))
-			break;
+	{
+		int i;
+		for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+			if (rt->wq_lst[i] & (1 << thread_id))
+				break;
+		}
+		if (i == THINKOS_WQ_LST_END)
+			return -1; /* not found */
+		st->wq = i;
 	}
-	if (i == THINKOS_WQ_LST_END)
-		return -1; /* not found */
-	st->wq = i;
  #if THINKOS_ENABLE_CLOCK
-	st->tmw = rt->wq_clock & (1 << th) ? 1 : 0;
+	st->tmw = rt->wq_clock & (1 << thread_id) ? 1 : 0;
  #else
 	st->tmw = 0;
  #endif
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
-	st->alloc = rt->th_alloc[0] & (1 << th) ? 1 : 0;
+	st->alloc = rt->th_alloc[0] & (1 << thread_id) ? 1 : 0;
 #else
 	st->alloc = 0;
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
-	st->sched_val = rt->sched_val[th];
-	st->sched_pri = rt->sched_pri[th]; 
+	st->sched_val = rt->sched_val[thread_id];
+	st->sched_pri = rt->sched_pri[thread_id]; 
 #else
 	st->sched_val = 0;
 	st->sched_pri = 0;
 #endif
 
 #if THINKOS_ENABLE_CLOCK
-	st->timeout = (int32_t)(rt->clock[th] - rt->ticks); 
+	st->clock = (int32_t)(rt->clock[thread_id] - rt->ticks); 
 #else
-	st->timeout = -1;
+	st->clock = -1;
 #endif
 
 #if THINKOS_ENABLE_PROFILING
-	st->cyccnt = rt->cyccnt[th];
+	st->cyccnt = rt->cyccnt[thread_id];
 #else
 	st->cyccnt = 0;
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
-	st->th_inf = rt->th_inf[th];
+	st->inf = rt->th_inf[thread_id];
 #else
-	st->th_inf = NULL;
+	st->inf = NULL;
 #endif
 
-	st->sp = (uint32_t)rt->ctx[th];
-	src = (uint32_t *)rt->ctx[th];
-	dst = (uint32_t *)&st->ctx;
-	for (i = 0; i < 16; ++i)
-		dst[i] = src[i];
+	if (ctx != NULL) {
+		struct thinkos_context * src = rt->ctx[thread_id];
+
+		ctx->r0 = src->r0;
+		ctx->r1 = src->r1;
+		ctx->r2 = src->r2;
+		ctx->r3 = src->r3;
+		ctx->r4 = src->r4;
+		ctx->r5 = src->r5;
+		ctx->r6 = src->r6;
+		ctx->r7 = src->r7;
+		ctx->r8 = src->r8;
+		ctx->r9 = src->r9;
+		ctx->r10 = src->r10;
+		ctx->r11 = src->r11;
+		ctx->r12 = src->r12;
+		ctx->sp = (uint32_t)src;
+		ctx->lr = src->lr;
+		ctx->pc = src->pc;
+		ctx->xpsr = src->xpsr;
+	}
 
 	return 0;
 }

@@ -30,8 +30,10 @@
 #include <sys/dcclog.h>
 #include <sys/stm32f.h>
 
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 
 #include <gdb.h>
@@ -65,7 +67,7 @@ int uint2hex2hex(char * pkt, unsigned int val);
  * Threads auxiliarly functions
  * ------------------------------------------------------------------------- */
 
-#define THREAD_ID_OFFS 64
+#define THREAD_ID_OFFS 1
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
 #define THREAD_ID_NONE -2
@@ -191,13 +193,13 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 	}
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.idle_ctx;
+		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
 		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = thinkos_rt.void_ctx;
+		ctx = &thinkos_except_buf.ctx;
 		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.thread_id != thread_id) {
+		if (thinkos_except_buf.active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
@@ -291,13 +293,13 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 	}
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.idle_ctx;
+		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
 		DCC_LOG1(LOG_TRACE, "ThinkOS Idle thread, context=%08x!", ctx);
 		return 0;
 	} 
 
 	if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.thread_id != thread_id) {
+		if (thinkos_except_buf.active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
@@ -386,7 +388,7 @@ int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 	if (thread_id >= THINKOS_THREADS_MAX)
 		return -1;
 
-	if (thinkos_except_buf.thread_id == thread_id) {
+	if (thinkos_except_buf.active == thread_id) {
 		ctx = &thinkos_except_buf.ctx;
 	} else {
 		ctx = thinkos_rt.ctx[thread_id];
@@ -416,7 +418,7 @@ int thread_step_req(unsigned int gdb_thread_id)
 	if (thread_id >= THINKOS_THREADS_MAX)
 		return -1;
 
-	if (thinkos_except_buf.thread_id == thread_id) {
+	if (thinkos_except_buf.active == thread_id) {
 		ctx = &thinkos_except_buf.ctx;
 	} else {
 		ctx = thinkos_rt.ctx[thread_id];
@@ -461,7 +463,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 	} else if (thread_id == THINKOS_THREAD_VOID) {
 		DCC_LOG(LOG_INFO, "ThinkOS Void thread");
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (xcpt->thread_id != thread_id) {
+		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
@@ -484,12 +486,13 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		if (thinkos_rt.th_inf[thread_id] != NULL)
 			n = str2hex(cp, thinkos_rt.th_inf[thread_id]->tag);
 		else
-			n = int2str2hex(cp, thread_id);
+			n = int2str2hex(cp, thread_id + THREAD_ID_OFFS);
 #else
-		n = int2str2hex(cp, thread_id);
+		n = int2str2hex(cp, thread_id + THREAD_ID_OFFS);
 #endif
 		cp += n;
 	}
+	cp += char2hex(cp, ':');
 	cp += char2hex(cp, ' ');
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
@@ -590,6 +593,9 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 					cp += str2hex(cp, " UNDEFINSTR");
 				cp += str2hex(cp, " ]");
 				break;
+			default:
+				cp += str2hex(cp, "error ");
+				cp += int2str2hex(cp, xcpt->type);
 			}
 		} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0

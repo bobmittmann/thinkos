@@ -19,8 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <thinkos.h>
 
 void __thinkos_thread_abort(int thread_id)
@@ -58,10 +58,11 @@ void __thinkos_thread_abort(int thread_id)
 	if (thread_id == thinkos_rt.active) {
 #if THINKOS_ENABLE_THREAD_VOID 
 		DCC_LOG(LOG_INFO, "set active thread to void!"); 
-		/* pretend we are somebody else */
+		/* discard current thread context */
 		thinkos_rt.active = THINKOS_THREAD_VOID;
 #else
-		DCC_LOG(LOG_PANIC, "abort current thread won't clear context!"); 
+		DCC_LOG(LOG_WARNING, "void thread not enabled!"); 
+		DCC_LOG(LOG_WARNING, "aborting current thread won't clear context!"); 
 #endif
 	} else {
 		DCC_LOG1(LOG_INFO, "active thread=%d", thinkos_rt.active); 
@@ -80,21 +81,29 @@ void __thinkos_thread_abort(int thread_id)
 
 #if THINKOS_ENABLE_TERMINATE
 /* Terminate the target thread */
-void thinkos_terminate_svc(struct cm3_except_context * ctx)
+void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 {
-	int thread_id = ctx->r1;
-	int code = ctx->r0;
+	unsigned int thread = (unsigned int)ctx->r0;
+	int code = ctx->r1;
+	unsigned int thread_id;
+
+	if (thread == 0)
+		thread_id = self;
+	else
+		thread_id = thread - 1;
 
 	(void)code;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
+		__thinkos_error(THINKOS_ERR_THREAD_INVALID);
 		ctx->r0 = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
+		__thinkos_error(THINKOS_ERR_THREAD_ALLOC);
 		ctx->r0 = THINKOS_EINVAL;
 		return;
 	}
@@ -156,22 +165,18 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx)
 
 void __attribute__((noreturn)) __thinkos_thread_exit(int code)
 {
-	int self = thinkos_rt.active;
-
-	thinkos_terminate(code, self);
+	thinkos_terminate(0, code);
 
 	for(;;);
 }
 
 #if THINKOS_ENABLE_EXIT
-void thinkos_exit_svc(struct cm3_except_context * ctx)
+void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
 	DCC_LOG2(LOG_MSG, "<%d> exit with code %d!", 
 			 thinkos_rt.active, ctx->r0); 
 
 #if THINKOS_ENABLE_JOIN
-	int self = thinkos_rt.active;
-
 	if (thinkos_rt.wq_join[self] == 0) {
 		DCC_LOG1(LOG_MSG, "<%d> canceled...", self); 
 		/* insert into the canceled wait queue and wait for a join call */ 

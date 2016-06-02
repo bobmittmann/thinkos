@@ -20,10 +20,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include "board.h"
 #include "version.h"
+
+#include <sys/dcclog.h>
 
 /* GPIO pin description */ 
 struct stm32f_io {
@@ -118,6 +120,8 @@ void board_softreset(void)
 	rcc->apb1enr = (1 << RCC_USB);
 	rcc->apb2enr = 0;
 
+	DCC_LOG(LOG_TRACE, "^^^^ Soft Reset ^^^^");
+
 	/* reinitialize IO's */
 	io_init();
 
@@ -126,8 +130,18 @@ void board_softreset(void)
 	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 }
 
+void test_app(void * arg);
+
 bool board_autoboot(uint32_t tick)
 {
+#if DEBUG
+	if (tick > 40) {
+		if (tick == 42)
+			dmon_thread_exec(test_app, NULL);
+		return false;
+	}
+#endif
+
 	led_off(~(tick - 1) & 0x7);
 	led_on(~tick & 0x7);
 
@@ -143,11 +157,8 @@ void board_on_appload(void)
 		led_off(i);
 }
 
-void _thinkos_sched(void);
-
 void board_upgrade(struct dmon_comm * comm)
 {
-	_thinkos_sched();
 }
 
 bool board_configure(struct dmon_comm * comm)
@@ -161,8 +172,11 @@ void monitor_dump_mem(struct dmon_comm * comm,
 void board_selftest(struct dmon_comm * comm)
 {
 	dmprintf(comm, "\r\nSelftest.\r\n");
+#if DEBUG
+	dmon_thread_exec(test_app, NULL);
+#endif
 	/* Dump */
-	monitor_dump_mem(comm, 0x20000000, 0x1000);
+//	monitor_dump_mem(comm, 0x20000000, 0x1000);
 }
 
 

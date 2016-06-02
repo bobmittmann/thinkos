@@ -19,10 +19,11 @@
  * http://www.gnu.org/
  */
 
-_Pragma ("GCC optimize (\"Ofast\")")
-
 #define __THINKOS_IRQ__
-#include <thinkos_irq.h>
+#include <thinkos/irq.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 #include <thinkos.h>
 
 #include <stdio.h>
@@ -31,7 +32,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 void __thinkos_irq_reset_all(void)
 {
 	int irq;
-
 	/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
 	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
 		cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
@@ -43,17 +43,27 @@ void __thinkos_irq_reset_all(void)
 #if THINKOS_IRQ_MAX > 0
 
 void cm3_default_isr(int irq) 
+//void cm3_default_isr(void) 
 {
+//	int irq;
 	int th;
+
+//	irq = cm3_ipsr_get() - 16;
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
 	th = thinkos_rt.irq_th[irq];
-	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 
+#if DEBUG
+	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th, irq);
 	/* TODO: create a wait queue for IRQ waiting. */
+	if (th >= THINKOS_THREAD_IDLE) {
+		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th, irq);
+		return;
+	}
+#endif
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  
@@ -62,14 +72,14 @@ void cm3_default_isr(int irq)
 	__thinkos_preempt();
 }
 
-void thinkos_irq_wait_svc(int32_t * arg)
+void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
-	int32_t self = thinkos_rt.active;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -108,6 +118,7 @@ void thinkos_irq_register_svc(int32_t * arg)
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -141,7 +152,16 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
+#if THINKOS_ENABLE_ARG_CHECK
+	int irq_max = ((uintptr_t)&__sizeof_rom_vectors / sizeof(void *)) - 16;
 
+	if (irq >= irq_max) {
+		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
+		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
+#endif
 	arg[0] = 0;
 	
 	switch (req) {
@@ -178,6 +198,8 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 		break;
 	}
 }
+
+const char thinkos_irq_nm[] = "IRQ";
 
 #endif
 

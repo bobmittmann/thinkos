@@ -22,8 +22,8 @@
 
 _Pragma ("GCC optimize (\"O2\")")
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #include <thinkos.h>
 
 const char __xcpt_name_lut[16][12] = {
@@ -59,13 +59,13 @@ int __scan_stack(void * stack, unsigned int size)
 }
 
 int __scan_stack(void * stack, unsigned int size);
-extern uint32_t thinkos_dmon_stack[];
-extern const uint16_t thinkos_dmon_stack_size;
+extern uint32_t thinkos_dbgmon_stack[];
+extern const uint16_t thinkos_dbgmon_stack_size;
 
 
 void __xdump(struct thinkos_except * xcpt)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	uint32_t shcsr;
 	uint32_t icsr;
 	uint32_t ipsr;
@@ -153,14 +153,15 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
-	DCC_LOG2(LOG_ERROR, "thread_id=%d active=%d", xcpt->thread_id,
+	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
+			 xcpt->active,
 			 thinkos_rt.active); 
 
 #if (THINKOS_ENABLE_MONITOR)
 	if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 		DCC_LOG2(LOG_ERROR, "DMON stack free: %d/%6d", 
-				 __scan_stack(thinkos_dmon_stack, thinkos_dmon_stack_size),
-				 thinkos_dmon_stack_size); 
+				 __scan_stack(thinkos_dbgmon_stack, thinkos_dbgmon_stack_size),
+				 thinkos_dbgmon_stack_size); 
 	}
 #endif
 
@@ -169,7 +170,7 @@ void __xdump(struct thinkos_except * xcpt)
 
 void __idump(const char * s, uint32_t ipsr)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	uint32_t shcsr;
 	uint32_t icsr;
 	int irqregs;
@@ -229,7 +230,7 @@ void __idump(const char * s, uint32_t ipsr)
 
 void __mpudump(void)
 {
-#ifdef DEBUG
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 	struct cm3_mpu * mpu = CM3_MPU;
 	uint32_t rbar;
 	uint32_t rasr;
@@ -325,7 +326,7 @@ void __tdump(void)
 	int i;
 
 	DCC_LOG1(LOG_TRACE, "Active=%d", thinkos_rt.active);
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (thinkos_rt.ctx[i] == NULL)
 			continue;
 #if THINKOS_ENABLE_THREAD_INFO
@@ -333,7 +334,7 @@ void __tdump(void)
 #if THINKOS_ENABLE_THREAD_STAT
 			DCC_LOG8(LOG_TRACE, "%7s (%2d %3d) SP=%08x PC=%08x LR=%08x %d/%d", 
 					 thinkos_rt.th_inf[i]->tag,
-					 i, thinkos_rt.th_stat[i] >> 1,
+					 i + 1, thinkos_rt.th_stat[i] >> 1,
 					 thinkos_rt.ctx[i], 
 					 thinkos_rt.ctx[i]->pc, 
 					 thinkos_rt.ctx[i]->lr,
@@ -343,7 +344,7 @@ void __tdump(void)
 #else
 			DCC_LOG7(LOG_TRACE, "%7s (%2d) SP=%08x PC=%08x LR=%08x %d/%d", 
 					 thinkos_rt.th_inf[i]->tag,
-					 i, 
+					 i + 1, 
 					 thinkos_rt.ctx[i], 
 					 thinkos_rt.ctx[i]->pc, 
 					 thinkos_rt.ctx[i]->lr,
@@ -355,24 +356,22 @@ void __tdump(void)
 #endif
 #if THINKOS_ENABLE_THREAD_STAT
 		DCC_LOG5(LOG_TRACE, "....... (%2d %3d) SP=%08x PC=%08x LR=%08x", 
-				 i, thinkos_rt.th_stat[i] >> 1,
+				 i + 1, thinkos_rt.th_stat[i] >> 1,
 				 thinkos_rt.ctx[i], 
 				 thinkos_rt.ctx[i]->pc, 
 				 thinkos_rt.ctx[i]->lr);
 #else
 		DCC_LOG4(LOG_TRACE, "....... (%2d) SP=%08x PC=%08x LR=%08x", 
-				 i, thinkos_rt.ctx[i], 
+				 i + 1, thinkos_rt.ctx[i], 
 				 thinkos_rt.ctx[i]->pc, 
 				 thinkos_rt.ctx[i]->lr);
 #endif
 
 
 	}
-	DCC_LOG2(LOG_TRACE, "<IDLE>  (%2d) SP=%08x", i, 
-			 thinkos_rt.idle_ctx);
 #if THINKOS_ENABLE_EXIT || THINKOS_ENABLE_JOIN
 	DCC_LOG2(LOG_TRACE, "<VOID>  (%2d) SP=%08x", i + 1, 
-			 thinkos_rt.idle_ctx);
+			 thinkos_rt.void_ctx);
 #endif
 	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", thinkos_rt.wq_ready);
 #if THINKOS_ENABLE_TIMESHARE

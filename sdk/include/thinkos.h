@@ -29,6 +29,8 @@
 #ifndef __THINKOS_H__
 #define __THINKOS_H__
 
+#include <stdint.h>
+
 enum thinkos_err {
 	THINKOS_OK        =  0, /**< No error */
 	THINKOS_ETIMEDOUT = -1, /**< System call timed out */
@@ -68,6 +70,46 @@ enum thinkos_thread_status {
 	THINKOS_THREAD_ABORTED  = 0x7fffffff
 };
 
+/* -------------------------------------------------------------------------- 
+ * Flattened thread state structure
+ * --------------------------------------------------------------------------*/
+
+struct cortex_m_context {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+
+	uint32_t r4;
+	uint32_t r5;
+	uint32_t r6;
+	uint32_t r7;
+
+	uint32_t r8;
+	uint32_t r9;
+	uint32_t r10;
+	uint32_t r11;
+
+	uint32_t r12;
+	uint32_t sp;
+	uint32_t lr;
+	uint32_t pc;
+
+	uint32_t xpsr;
+};
+
+struct thinkos_thread {
+	uint32_t no: 6;
+	uint32_t tmw: 1;
+	uint32_t alloc: 1;
+	uint16_t wq;
+	uint8_t  sched_val;
+	uint8_t  sched_pri;
+	uint32_t clock;
+	uint32_t cyccnt;
+	const struct thinkos_thread_inf * inf;
+};
+
 #define IRQ_PRIORITY_HIGHEST   (1 << 5)
 #define IRQ_PRIORITY_VERY_HIGH (2 << 5)
 #define IRQ_PRIORITY_HIGH      (3 << 5)
@@ -98,7 +140,7 @@ struct thinkos_thread_inf {
 	char tag[8];
 };
 
-#include <thinkos_svc.h>
+#include <thinkos/syscalls.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -719,6 +761,8 @@ int thinkos_critical_enter(void);
 int thinkos_critical_exit(void);
 
 int thinkos_escalate(int (* call)(void *), void * arg);
+
+int thinkos_thread_abort(unsigned int thread);
 
 /**@}*/
 

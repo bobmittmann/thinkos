@@ -1124,7 +1124,7 @@ static inline uint32_t __attribute__((always_inline)) cm3_sp_get(void) {
 }
 
 static inline void __attribute__((always_inline)) cm3_sp_set(uint32_t sp) {
-	asm volatile ("mov sp, %0\n" : "=r" (sp));
+	asm volatile ("mov sp, %0\n" : : "r" (sp));
 }
 
 static inline uint32_t __attribute__((always_inline)) cm3_lr_get(void) {
@@ -1134,7 +1134,7 @@ static inline uint32_t __attribute__((always_inline)) cm3_lr_get(void) {
 }
 
 static inline void __attribute__((always_inline)) cm3_lr_set(uint32_t lr) {
-	asm volatile ("mov lr, %0\n" : "=r" (lr));
+	asm volatile ("mov lr, %0\n" : : "r" (lr));
 }
 
 static inline uint32_t __attribute__((always_inline)) __clz(uint32_t val) {
@@ -1204,8 +1204,8 @@ static inline void __attribute__((always_inline)) __nop(void) {
 	asm volatile ("nop" : );
 }
 
-static inline void __attribute__((always_inline)) __bkpt(void) {
-	asm volatile ("bkpt" : );
+static inline void __attribute__((always_inline)) __bkpt(int no) {
+	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
 void cm3_udelay_calibrate(void);

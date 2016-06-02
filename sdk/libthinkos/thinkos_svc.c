@@ -19,53 +19,44 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 #include <thinkos.h>
-#include <thinkos_svc.h>
 
 void thinkos_thread_create_svc(int32_t * arg);
 
-void thinkos_pause_svc(int32_t * arg);
+void thinkos_pause_svc(int32_t * arg, int self);
 
 void thinkos_resume_svc(int32_t * arg);
 
-void thinkos_join_svc(int32_t * arg);
+void thinkos_join_svc(int32_t * arg, int self);
 
-void thinkos_cancel_svc(int32_t * arg);
+void thinkos_cancel_svc(int32_t * arg, int self);
 
-void thinkos_exit_svc(int32_t * arg);
+void thinkos_exit_svc(int32_t * arg, int self);
 
-void thinkos_terminate_svc(int32_t * arg);
+void thinkos_terminate_svc(int32_t * arg, int self);
 
-void thinkos_sleep_svc(int32_t * arg);
 
-void thinkos_alarm_svc(int32_t * arg);
+void thinkos_sleep_svc(int32_t * arg, int self);
+
+void thinkos_alarm_svc(int32_t * arg, int self);
+
 
 void thinkos_mutex_alloc_svc(int32_t * arg);
 
 void thinkos_mutex_free_svc(int32_t * arg);
 
-void thinkos_mutex_lock_svc(int32_t * arg);
+void thinkos_mutex_lock_svc(int32_t * arg, int self);
 
-void thinkos_mutex_trylock_svc(int32_t * arg);
+void thinkos_mutex_trylock_svc(int32_t * arg, int self);
 
-void thinkos_mutex_timedlock_svc(int32_t * arg);
+void thinkos_mutex_timedlock_svc(int32_t * arg, int self);
 
-void thinkos_mutex_unlock_svc(int32_t * arg);
-
-
-void thinkos_cond_alloc_svc(int32_t * arg);
-
-void thinkos_cond_free_svc(int32_t * arg);
-
-void thinkos_cond_wait_svc(int32_t * arg);
-
-void thinkos_cond_timedwait_svc(int32_t * arg);
-
-void thinkos_cond_signal_svc(int32_t * arg);
-
-void thinkos_cond_broadcast_svc(int32_t * arg);
+void thinkos_mutex_unlock_svc(int32_t * arg, int self);
 
 
 void thinkos_sem_alloc_svc(int32_t * arg);
@@ -74,22 +65,35 @@ void thinkos_sem_free_svc(int32_t * arg);
 
 void thinkos_sem_init_svc(int32_t * arg);
 
-void thinkos_sem_wait_svc(int32_t * arg);
+void thinkos_sem_wait_svc(int32_t * arg, int self);
 
 void thinkos_sem_trywait_svc(int32_t * arg);
 
-void thinkos_sem_timedwait_svc(int32_t * arg);
+void thinkos_sem_timedwait_svc(int32_t * arg, int self);
 
 void thinkos_sem_post_svc(int32_t * arg);
+
+
+void thinkos_cond_alloc_svc(int32_t * arg);
+
+void thinkos_cond_free_svc(int32_t * arg);
+
+void thinkos_cond_wait_svc(int32_t * arg, int self);
+
+void thinkos_cond_timedwait_svc(int32_t * arg, int self);
+
+void thinkos_cond_signal_svc(int32_t * arg);
+
+void thinkos_cond_broadcast_svc(int32_t * arg);
 
 
 void thinkos_ev_alloc_svc(int32_t * arg);
 
 void thinkos_ev_free_svc(int32_t * arg);
 
-void thinkos_ev_wait_svc(int32_t * arg);
+void thinkos_ev_wait_svc(int32_t * arg, int self);
 
-void thinkos_ev_timedwait_svc(int32_t * arg);
+void thinkos_ev_timedwait_svc(int32_t * arg, int self);
 
 void thinkos_ev_raise_svc(int32_t * arg);
 
@@ -102,29 +106,26 @@ void thinkos_flag_alloc_svc(int32_t * arg);
 
 void thinkos_flag_free_svc(int32_t * arg);
 
-
 void thinkos_flag_val_svc(int32_t * arg);
 
 void thinkos_flag_set_svc(int32_t * arg);
 
 void thinkos_flag_clr_svc(int32_t * arg);
 
-void thinkos_flag_watch_svc(int32_t * arg);
+void thinkos_flag_watch_svc(int32_t * arg, int self);
 
-void thinkos_flag_timedwatch_svc(int32_t * arg);
-
+void thinkos_flag_timedwatch_svc(int32_t * arg, int self);
 
 void thinkos_flag_give_svc(int32_t * arg);
 
-void thinkos_flag_take_svc(int32_t * arg);
+void thinkos_flag_take_svc(int32_t * arg, int self);
 
-void thinkos_flag_timedtake_svc(int32_t * arg);
+void thinkos_flag_timedtake_svc(int32_t * arg, int self);
 
 
 void thinkos_gate_alloc_svc(int32_t * arg);
 
 void thinkos_gate_free_svc(int32_t * arg);
-
 
 void thinkos_gate_open_svc(int32_t * arg);
 
@@ -132,22 +133,24 @@ void thinkos_gate_close_svc(int32_t * arg);
 
 void thinkos_gate_exit_svc(int32_t * arg);
 
-void thinkos_gate_wait_svc(int32_t * arg);
+void thinkos_gate_wait_svc(int32_t * arg, int self);
 
-void thinkos_gate_timedwait_svc(int32_t * arg);
+void thinkos_gate_timedwait_svc(int32_t * arg, int self);
 
 
-void thinkos_irq_wait_svc(int32_t * arg);
+void thinkos_irq_wait_svc(int32_t * arg, int self);
 
 void thinkos_irq_register_svc(int32_t * arg);
 
 void thinkos_irq_ctl_svc(int32_t * arg);
 
-void thinkos_console_svc(int32_t * arg);
+
+void thinkos_console_svc(int32_t * arg, int self);
 
 void thinkos_ctl_svc(int32_t * arg);
 
 void thinkos_comm_svc(int32_t * arg);
+
 
 void thinkos_idle_svc(int32_t * arg);
 
@@ -155,20 +158,14 @@ void thinkos_idle_svc(int32_t * arg);
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg)
 {
-	int32_t ( * call)(int32_t) = (void *)arg[0];
-	arg[0] = call(arg[1]);
+	int32_t ( * call)(int32_t, int32_t, int32_t) = (void *)arg[0];
+	arg[0] = call(arg[1], arg[2], arg[3]);
 }
 #endif
 
 void thinkos_nosys(int32_t * arg)
 {
-#if DEBUG
-	/* get PC value */
-	uint8_t * pc = (uint8_t *)arg[6];
-	/* get the immediate data from instruction */
-	int svc = pc[-2];
-	DCC_LOG1(LOG_INFO, "svc=%d!!!", svc);
-#endif
+	__thinkos_error(THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;
 }
 
@@ -177,9 +174,11 @@ void thinkos_clock_svc(int32_t * arg)
 	arg[0] = thinkos_rt.ticks;
 }
 
-void thinkos_thread_self_svc(int32_t * arg)
+void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {
-	arg[0] = thinkos_rt.active;
+	/* Internal thread ids start form 0 whereas user
+	   thread numbers start form one ... */
+	arg[0] = self + 1;
 }
 
 #if THINKOS_ENABLE_CRITICAL
@@ -195,7 +194,7 @@ void thinkos_critical_enter_svc(int32_t * arg)
 void thinkos_critical_exit_svc(int32_t * arg)
 {
 	if (thinkos_rt.critical_cnt == 0) {
-		/* FIXME, this is a fault and should rise an exception... */
+		__thinkos_error(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__thinkos_defer_sched();
@@ -203,32 +202,11 @@ void thinkos_critical_exit_svc(int32_t * arg)
 }
 #endif
 
-void cm3_svc_isr(void)
+void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 {
-	int32_t * arg;
-	uint8_t * pc;
-	int svc;
-
-#if THINKOS_ENABLE_DEBUG_STEP
-	if ((1 << thinkos_rt.active) & thinkos_rt.step_svc) {
-		DCC_LOG(LOG_TRACE, "SVC call step");
-		__thinkos_defer_sched();
-	}
-#endif
-
-	/* get a pointer to the caller's stack */
-	arg = (int32_t * )cm3_psp_get();
-
-	/* get PC value */
-	pc = (uint8_t *)arg[6];
-	/* get the immediate data from instruction */
-	svc = pc[-2];
-
-	DCC_LOG2(LOG_MSG, "pc=0x%08x svc=%d", pc, svc);
-
 	switch (svc) {
 	case THINKOS_THREAD_SELF:
-		thinkos_thread_self_svc(arg);
+		thinkos_thread_self_svc(arg, self);
 		break;
 
 	case THINKOS_THREAD_CREATE:
@@ -249,7 +227,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_ALARM:
 #if THINKOS_ENABLE_ALARM
-		thinkos_alarm_svc(arg);
+		thinkos_alarm_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -257,7 +235,7 @@ void cm3_svc_isr(void)
 		
 	case THINKOS_SLEEP:
 #if THINKOS_ENABLE_SLEEP
-		thinkos_sleep_svc(arg);
+		thinkos_sleep_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -269,7 +247,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_MUTEX_LOCK:
 #if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_lock_svc(arg);
+		thinkos_mutex_lock_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -277,7 +255,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_MUTEX_TRYLOCK:
 #if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_trylock_svc(arg);
+		thinkos_mutex_trylock_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -286,9 +264,9 @@ void cm3_svc_isr(void)
 	case THINKOS_MUTEX_TIMEDLOCK:
 #if (THINKOS_MUTEX_MAX > 0)
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_mutex_timedlock_svc(arg);
+		thinkos_mutex_timedlock_svc(arg, self);
   #else
-		thinkos_mutex_lock_svc(arg);
+		thinkos_mutex_lock_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -297,7 +275,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_MUTEX_UNLOCK:
 #if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_unlock_svc(arg);
+		thinkos_mutex_unlock_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -317,7 +295,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_SEM_WAIT:
 #if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_wait_svc(arg);
+		thinkos_sem_wait_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -334,9 +312,9 @@ void cm3_svc_isr(void)
 	case THINKOS_SEM_TIMEDWAIT:
 #if (THINKOS_SEMAPHORE_MAX > 0)
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_sem_timedwait_svc(arg);
+		thinkos_sem_timedwait_svc(arg, self);
   #else
-		thinkos_sem_wait_svc(arg);
+		thinkos_sem_wait_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -358,7 +336,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_COND_WAIT:
 #if (THINKOS_COND_MAX > 0)
-		thinkos_cond_wait_svc(arg);
+		thinkos_cond_wait_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -367,9 +345,9 @@ void cm3_svc_isr(void)
 	case THINKOS_COND_TIMEDWAIT:
 #if (THINKOS_COND_MAX > 0)
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_cond_timedwait_svc(arg);
+		thinkos_cond_timedwait_svc(arg, self);
   #else
-		thinkos_cond_wait_svc(arg);
+		thinkos_cond_wait_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -398,7 +376,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_FLAG_TAKE:
 #if (THINKOS_FLAG_MAX > 0)
-		thinkos_flag_take_svc(arg);
+		thinkos_flag_take_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -407,9 +385,9 @@ void cm3_svc_isr(void)
 	case THINKOS_FLAG_TIMEDTAKE:
 #if (THINKOS_FLAG_MAX > 0)
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedtake_svc(arg);
+		thinkos_flag_timedtake_svc(arg, self);
   #else
-		thinkos_flag_take_svc(arg);
+		thinkos_flag_take_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -419,50 +397,6 @@ void cm3_svc_isr(void)
 	case THINKOS_FLAG_GIVE:
 #if (THINKOS_FLAG_MAX > 0)
 		thinkos_flag_give_svc(arg);
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_GATE_WAIT:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_wait_svc(arg);
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_GATE_TIMEDWAIT:
-#if (THINKOS_GATE_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_gate_timedwait_svc(arg);
-  #else
-		thinkos_gate_wait_svc(arg);
-  #endif
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_GATE_EXIT:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_exit_svc(arg);
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_GATE_OPEN:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_open_svc(arg);
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_GATE_CLOSE:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_close_svc(arg);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -494,7 +428,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_FLAG_WATCH:
 #if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_watch_svc(arg);
+		thinkos_flag_watch_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -503,9 +437,9 @@ void cm3_svc_isr(void)
 	case THINKOS_FLAG_TIMEDWATCH:
 #if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedwatch_svc(arg);
+		thinkos_flag_timedwatch_svc(arg, self);
   #else
-		thinkos_flag_watch_svc(arg);
+		thinkos_flag_watch_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -513,12 +447,61 @@ void cm3_svc_isr(void)
 		break;
 
 /* ----------------------------------------------
+ * Gates (locked flags)
+ * --------------------------------------------- */
+
+	case THINKOS_GATE_WAIT:
+#if (THINKOS_GATE_MAX > 0) 
+		thinkos_gate_wait_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_GATE_TIMEDWAIT:
+#if (THINKOS_GATE_MAX > 0)
+  #if THINKOS_ENABLE_TIMED_CALLS
+		thinkos_gate_timedwait_svc(arg, self);
+  #else
+		thinkos_gate_wait_svc(arg, self);
+  #endif
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_GATE_EXIT:
+#if (THINKOS_GATE_MAX > 0) 
+		thinkos_gate_exit_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_GATE_OPEN:
+#if (THINKOS_GATE_MAX > 0) 
+		thinkos_gate_open_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_GATE_CLOSE:
+#if (THINKOS_GATE_MAX > 0) 
+		thinkos_gate_close_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+
+/* ----------------------------------------------
  * Event sets (multiple flags)
  * --------------------------------------------- */
 
 	case THINKOS_EVENT_WAIT:
 #if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_wait_svc(arg);
+		thinkos_ev_wait_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -527,9 +510,9 @@ void cm3_svc_isr(void)
 	case THINKOS_EVENT_TIMEDWAIT:
 #if (THINKOS_EVENT_MAX > 0)
   #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_ev_timedwait_svc(arg);
+		thinkos_ev_timedwait_svc(arg, self);
   #else
-		thinkos_ev_wait_svc(arg);
+		thinkos_ev_wait_svc(arg, self);
   #endif
 #else
 		thinkos_nosys(arg);
@@ -566,7 +549,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_CONSOLE:
 #if THINKOS_ENABLE_CONSOLE
-		thinkos_console_svc(arg);
+		thinkos_console_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -578,7 +561,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_IRQ_WAIT:
 #if THINKOS_IRQ_MAX > 0
-		thinkos_irq_wait_svc(arg);
+		thinkos_irq_wait_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif /* THINKOS_IRQ_MAX > 0 */
@@ -679,7 +662,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_JOIN:
 #if THINKOS_ENABLE_JOIN
-		thinkos_join_svc(arg);
+		thinkos_join_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -687,7 +670,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_PAUSE:
 #if THINKOS_ENABLE_PAUSE
-		thinkos_pause_svc(arg);
+		thinkos_pause_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -703,7 +686,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_CANCEL:
 #if THINKOS_ENABLE_CANCEL
-		thinkos_cancel_svc(arg);
+		thinkos_cancel_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -711,7 +694,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_EXIT:
 #if THINKOS_ENABLE_EXIT
-		thinkos_exit_svc(arg);
+		thinkos_exit_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -719,7 +702,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_TERMINATE:
 #if THINKOS_ENABLE_TERMINATE
-		thinkos_terminate_svc(arg);
+		thinkos_terminate_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
@@ -764,7 +747,7 @@ void cm3_svc_isr(void)
 
 	case THINKOS_COMM:
 #if THINKOS_ENABLE_COMM
-		thinkos_comm_svc(arg);
+		thinkos_comm_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif

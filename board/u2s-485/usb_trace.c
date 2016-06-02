@@ -36,18 +36,23 @@
 
 #include "profclk.h"
 #include "trace.h"
+#include "capture.h"
+#include "damp.h"
+#include "sdu.h"
 
 uint32_t trace_ts;
-uint32_t trace_opt;
+uint8_t trace_opt;
 struct usb_cdc_class * usb_cdc;
-uint32_t protocol_buf[512];
 
 #define TIME_ABS  1
 #define DUMP_PKT  2
 #define SHOW_SUPV 4
 #define SHOW_PKT  8
 
-char trace_buf[129];
+uint32_t protocol_buf[(20 + 512) / sizeof(uint32_t)];
+
+#define TRACE_MAX 92
+char trace_buf[TRACE_MAX + 1];
 
 int tracef(uint32_t ts, const char *fmt, ... )
 {
@@ -131,8 +136,41 @@ int xxd(char * s, int max, uint8_t * buf, int len)
 	return n;
 }
 
-int xx_dump(uint32_t ts, uint8_t * buf, int len)
+int trace_printf(const char *fmt, ... )
 {
+	char * s = trace_buf;
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = vsnprintf(s, TRACE_MAX + 1, fmt, ap);
+	va_end(ap);
+
+	n = MIN(n, TRACE_MAX);
+
+	return usb_cdc_write(usb_cdc, s, n);
+}
+
+int usb_printf(const char *fmt, ... )
+{
+	char * s = trace_buf;
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = vsnprintf(s, TRACE_MAX + 1, fmt, ap);
+	va_end(ap);
+
+	n = MIN(n, TRACE_MAX);
+
+	return  usb_cdc_write(usb_cdc, s, n);
+}
+
+void trace_raw_pkt(struct packet * pkt)
+{
+	uint32_t ts = pkt->clk;
+	uint8_t * data = pkt->data;
+	unsigned int len = pkt->cnt;
 	char * s = trace_buf;
 	char * cp = s;
 	int32_t dt;
@@ -163,7 +201,7 @@ int xx_dump(uint32_t ts, uint8_t * buf, int len)
 	cnt = MIN(len, rem / 3);
 
 	for (i = 0; i < cnt; ++i) {
-		n = sprintf(cp, " %02x", buf[i]);
+		n = sprintf(cp, " %02x", data[i]);
 		cp += n;
 		rem -= n;
 		if (rem == 0)
@@ -172,7 +210,7 @@ int xx_dump(uint32_t ts, uint8_t * buf, int len)
 
 	if (i < cnt) {
 		if ((i - cnt) == 1)
-			n = sprintf(cp, " %02x", buf[i]);
+			n = sprintf(cp, " %02x", data[i]);
 		else
 			n = sprintf(cp, " ...");
 		cp += n;
@@ -182,46 +220,13 @@ int xx_dump(uint32_t ts, uint8_t * buf, int len)
 	*cp++ = '\r';
 	*cp++ = '\n';
 
-	return usb_cdc_write(usb_cdc, s, cp - s);
+	usb_cdc_write(usb_cdc, s, cp - s);
 }
 
-int trace_printf(const char *fmt, ... )
+void trace_time_abs(bool en)
 {
-	char * s = trace_buf;
-	va_list ap;
-	int n;
-
-	va_start(ap, fmt);
-	n = vsnprintf(s, 129, fmt, ap);
-	va_end(ap);
-
-	n = MIN(n, 128);
-
-	return usb_cdc_write(usb_cdc, s, n);
-}
-
-int usb_printf(usb_cdc_class_t * cdc, const char *fmt, ... )
-{
-	char * s = trace_buf;
-	va_list ap;
-	int ret;
-	int n;
-
-	va_start(ap, fmt);
-	n = vsnprintf(s, 129, fmt, ap);
-	va_end(ap);
-
-	n = MIN(n, 128);
-
-	ret = usb_cdc_write(cdc, s, n);
-	DCC_LOG1(LOG_MSG, "ret=%d", ret);
-
-	return ret;
-}
-
-void usb_trace_init(struct usb_cdc_class * cdc)
-{
-	usb_cdc = cdc;
-	profclk_init();
+	uint32_t opt = trace_opt & ~TIME_ABS;
+	
+	trace_opt = opt | (en ? TIME_ABS : 0);
 }
 

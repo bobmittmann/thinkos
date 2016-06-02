@@ -19,8 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 #if THINKOS_ENABLE_JOIN || THINKOS_ENABLE_DEBUG_FAULT
 bool __thinkos_thread_isalive(unsigned int th)
