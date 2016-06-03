@@ -103,7 +103,7 @@ void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
 				 tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
 	}
 
-	dmprintf(comm, " - Scheduler: val=%3d pri=%3d - ", 
+	dmprintf(comm, " - sched: val=%3d pri=%3d - ", 
 			 sched_val, sched_pri); 
 	dmprintf(comm, " timeout=%8d ms", timeout); 
 	dmprintf(comm, " - cycles=%u\r\n", cyccnt); 

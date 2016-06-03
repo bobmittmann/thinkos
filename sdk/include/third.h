@@ -17,15 +17,14 @@
  * http://www.gnu.org/
  */
 
-
 /** 
- * @file gdb.h
- * @brief ThinkOS libgdb
+ * @file erd.h
+ * @brief ThinkOS liberd
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __GDB_H__
-#define __GDB_H__
+#ifndef __ERD_H__
+#define __ERD_H__
 
 #include <stdint.h>
 
@@ -37,11 +36,11 @@
 extern "C" {
 #endif
 
-void gdb_stub_task(struct dmon_comm * comm);
+void erd_stub_task(struct dmon_comm * comm);
 
 #ifdef __cplusplus
 }
 #endif	
 
-#endif /* __GDB_H__ */
+#endif /* __ERD_H__ */
 

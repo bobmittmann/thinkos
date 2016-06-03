@@ -1582,7 +1582,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 
 struct gdb_rspd gdb_rspd;
 
-void gdb_task(struct dmon_comm * comm)
+void gdb_stub_task(struct dmon_comm * comm)
 {
 	struct gdb_rspd * gdb = &gdb_rspd;
 	char pkt[RSP_BUFFER_LEN];

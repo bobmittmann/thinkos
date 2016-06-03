@@ -59,18 +59,16 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 //	__thinkos_memcpy32(rt, &thinkos_rt, sizeof(struct thinkos_rt));
 
-	dmprintf(comm, "\r\n------------------------------------------------"
-			 "---------------------\r\n");
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	dmprintf(comm, "[ Current = %d ]", rt->active + 1);
+	dmprintf(comm, " Current: %d", rt->active + 1);
 
 #if THINKOS_ENABLE_CLOCK
-	dmprintf(comm, "[ %d ticks ]", rt->ticks);
+	dmprintf(comm, ", Clock: %u", rt->ticks);
 #endif
 
 #if THINKOS_ENABLE_PROFILING
-	dmprintf(comm, "[ cyccnt = %u ]\r\n", cyccnt);
+	dmprintf(comm, ", CycCnt: %u\r\n", cyccnt);
 	{
 		uint32_t cycsum = 0;
 		uint32_t cycbusy;
@@ -85,7 +83,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 		cycdiv = (cycsum + 500) / 1000;
 		busy = (cycbusy + cycdiv / 2) / cycdiv;
 		idle = 1000 - busy;
-		dmprintf(comm, "[ %u cycles | %d.%d%% busy | %d.%d%% idle ]", 
+		dmprintf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
 				cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
 	}
 
@@ -93,7 +91,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 	dmprintf(comm, "\r\n");
 
-	dmprintf(comm, " Th"); 
+	dmprintf(comm, "  #"); 
 #if THINKOS_ENABLE_THREAD_INFO
 	dmprintf(comm, " |     Tag"); 
 	dmprintf(comm, " |    Stack"); 
