@@ -290,6 +290,8 @@ const char * const trace_lvl_nm[] = {
 		" WARN",
 		" INFO",
 		"DEBUG",
-		"  XTR"
+		"  YAP",
+		" !!!!",
+		" ????"
 };
 

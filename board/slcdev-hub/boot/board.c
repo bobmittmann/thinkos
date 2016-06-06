@@ -224,7 +224,7 @@ void board_selftest(struct dmon_comm * comm)
 {
 	dmprintf(comm, "\r\nSelftest.\r\n");
 	/* Dump configuration */
-	monitor_dump_mem(comm, 0xc000, 0x4000);
+//	monitor_dump_mem(comm, 0xc000, 0x4000);
 }
 
 

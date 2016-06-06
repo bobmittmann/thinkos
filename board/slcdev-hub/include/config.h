@@ -141,12 +141,14 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_ENABLE_GDB             1
+#define BOOT_ENABLE_THIRD           1
 #define MONITOR_CONFIGURE_ENABLE    1
-#define MONITOR_DUMPMEM_ENABLE      1
+#define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      1
 #define MONITOR_STACKUSAGE_ENABLE   1
 #define MONITOR_THREADINFO_ENABLE   1
 #define MONITOR_APPWIPE_ENABLE      1
+#define MONITOR_WATCHPOINT_ENABLE   0
 
 /* -------------------------------------------------------------------------
  * TCP/IP

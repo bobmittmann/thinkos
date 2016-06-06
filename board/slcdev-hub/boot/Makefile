@@ -24,14 +24,15 @@ PROG = thinkos
 
 CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
 		 board.c otg_xflash_pic.c lattice.c \
-		 ice40lp384.c erd-proxy.c
+		 ice40lp384.c
 
 SDK = ../../../sdk
 
 LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb
+		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb \
+		  $(SDK)/libthird
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
+LIBS = cm3 stm32f util thinkos ice-comm gdb third gcc 
 
 INCPATH = $(SDK)/include ../include
 

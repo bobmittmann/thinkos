@@ -264,7 +264,7 @@ void __console_tx_pipe_commit(int cnt)
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
 	   from an interrupt handler), let the thread to
-	   wakes up and retry. */
+	   wake up and retry. */
 	/* wakeup from the console wait queue */
 	__thinkos_wakeup(wq, th);
 	/* signal the scheduler ... */
@@ -458,6 +458,7 @@ void __console_reset(void)
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
 	thinkos_console_rt.rx_pipe.tail = 0;
+//	__thinkos_memset32(&thinkos_console_rt, 0, sizeof(thinkos_console_rt));
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
 }

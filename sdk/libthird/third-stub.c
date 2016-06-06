@@ -39,33 +39,9 @@
 
 struct third_stub {
 	struct dmon_comm * comm;
+	uint32_t session;
+	uint32_t sequence;
 };
-
-
-/*
-   ThirdLnk pakcet layout
- */
-
-enum thirdrpc_op {
-	THIRDRPC_SUSPEND       = 1,
-	THIRDRPC_RESUME        = 2,
-	THIRDRPC_EXEC          = 3,
-	THIRDRPC_REBOOT        = 4,
-	THIRDRPC_KERNELINFO    = 5,
-	THIRDRPC_MEM_LOCK      = 6,
-	THIRDRPC_MEM_UNLOCK    = 7,
-	THIRDRPC_MEM_ERASE     = 8,
-	THIRDRPC_MEM_READ      = 9,
-	THIRDRPC_MEM_WRITE     = 10,
-	THIRDRPC_MEM_SEEK      = 11,
-	THIRDRPC_MEM_CRC32     = 12,
-	THIRDRPC_EXCEPTINFO    = 13,
-	THIRDRPC_THREADINFO    = 14,
-	THIRDRPC_HELLO         = 72,
-	THIRDRPC_SESSION = 65,
-};
-
-#define THIRDLNK_MTU (512 + 4)
 
 
 #define THIRD_STUB_PKTBUF_LEN 512
@@ -127,13 +103,77 @@ static int third_on_breakpoint(struct third_stub * stub, uint32_t * pkt)
 
 static int third_greeting(struct third_stub * stub, uint32_t * pkt)
 {
-	__thinkos_memcpy(pkt, "TRDP", 4);
-	dmon_comm_send(stub->comm, pkt, 4);
+	__thinkos_memcpy(pkt, "\r\nTRDPLE\0\0\0\0", 12);
+	dmon_comm_send(stub->comm, pkt, 12);
 	return 0;
+}
+
+int third_pkt_recv(struct third_stub * stub, uint32_t * pkt)
+{
+	struct dmon_comm * comm = stub->comm;
+	unsigned int rem;
+	uint32_t sigmask;
+	uint32_t sigset;
+	uint8_t * cp;
+	int hdr;
+	int ret;
+
+	SIG_ZERO(sigmask);
+	SIG_SET(sigmask, DBGMON_COMM_RCV);
+	SIG_SET(sigmask, DBGMON_COMM_CTL);
+	SIG_SET(sigmask, DBGMON_ALARM);
+	dbgmon_alarm(100);
+
+	/* get the packet header */
+	ret = dmon_comm_recv(comm, pkt, 2);
+	if (ret == 1) {
+		sigset = dbgmon_select(sigmask);
+		if (SIG_ISSET(sigset, DBGMON_COMM_RCV)) {
+			ret = dmon_comm_recv(comm, &pkt[1], 1);
+		} else if (SIG_ISSET(sigset, DBGMON_ALARM)) {
+			dbgmon_clear(DBGMON_ALARM);
+			DCC_LOG(LOG_WARNING, "timeout!");
+			ret = -1;
+		} else {
+			DCC_LOG(LOG_WARNING, "unexpected signal!");
+			ret = -1;
+		}
+	}
+
+	if (ret <= 0)
+		return -1;
+
+	hdr = (pkt[1] << 1) | pkt[0];
+
+	/* get the packet payload */
+	rem = hdr & 0x1ff;
+	cp = (uint8_t *)pkt;
+	while (rem) {
+		int n;
+		sigset = dbgmon_select(sigmask);
+		if (SIG_ISSET(sigset, DBGMON_COMM_RCV)) {
+			if ((n = dmon_comm_recv(comm, cp, rem)) <= 0) {
+				DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
+				return -1;
+			}
+			cp += n;
+			rem -= n;
+		} else if (SIG_ISSET(sigset, DBGMON_ALARM)) {
+			dbgmon_clear(DBGMON_ALARM);
+			DCC_LOG(LOG_WARNING, "timeout!");
+			return -1;
+		} else {
+			DCC_LOG(LOG_WARNING, "unexpected signal!");
+			return -1;
+		}
+	}
+
+	return hdr;
 }
 
 static bool third_authenticate(struct third_stub * stub, uint32_t * pkt)
 {
+	struct trdp_auth_init  * init;
 	return true;
 }
 
@@ -142,11 +182,19 @@ void third_stub_task(struct dmon_comm * comm)
 	struct third_stub third_stub;
 	struct third_stub * stub = &third_stub;
 	uint32_t pkt[THIRD_STUB_PKTBUF_LEN / 4];
-	uint32_t hdr;
 	uint32_t sigmask;
 	uint32_t sigset;
 
 	stub->comm = comm;
+	stub->session = 0;
+	stub->sequence = 0;
+
+	/* Send a greeting packet */
+	third_greeting(stub, pkt);
+	
+	/* Authenticate the debug session */
+	if (!third_authenticate(stub, pkt))
+		return;
 
 	dmon_breakpoint_clear_all();
 	dmon_watchpoint_clear_all();
@@ -162,13 +210,6 @@ void third_stub_task(struct dmon_comm * comm)
 	SIG_SET(sigmask, DBGMON_TX_PIPE);
 #endif
 	SIG_SET(sigmask, DBGMON_SOFTRST);
-
-	/* Send a greeting packet */
-	third_greeting(stub, pkt);
-	
-	/* Authenticate the debug session */
-	if (!third_authenticate(stub, pkt))
-		return;
 
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
@@ -224,34 +265,19 @@ void third_stub_task(struct dmon_comm * comm)
 		}
 
 		if (SIG_ISSET(sigset, DBGMON_COMM_RCV)) {
+			int hdr;
 			unsigned int op;
 			unsigned int len;
 
-			/* get the packet header */
-			if (dmon_comm_recv(comm, &hdr, THIRD_STUB_PKTBUF_LEN) != 4) {
-				DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
+			/* get the packet */
+			if ((hdr = third_pkt_recv(stub, pkt)) < 0) {
+				DCC_LOG(LOG_WARNING, "third_pkt_recv() failed!");
 				return;
 			}
 
 			op = hdr & 0x7f;
 			len = (hdr >> 7) & 0x1ff;
-			
-			if (len > 0) {
-				/* get the packet payload */
-				unsigned int rem = len;
-				uint8_t * cp = (uint8_t *)pkt;
-
-				while (rem) {
-					int n;
-
-					if ((n = dmon_comm_recv(comm, cp, rem)) <= 0) {
-						DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
-						return;
-					}
-					cp += n;
-					rem -= n;
-				}
-			}
+			(void)len;
 
 			switch (op) {
 			case THIRDRPC_SUSPEND:
