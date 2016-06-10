@@ -32,6 +32,7 @@
 #include <stm32f/stm32f-pwr.h>
 #include <stm32f/stm32f-syscfg.h>
 #include <stm32f/stm32-crc.h>
+#include <stm32f/stm32-rng.h>
 #include <stm32f/stm32f-rcc.h>
 #include <stm32f/stm32f-usart.h>
 #include <stm32f/stm32f-gpio.h>
@@ -51,7 +52,7 @@
 
 #define STM32F_BASE_UID		0x1fff7a10
 #define STM32F_BASE_FSMC    0xa0000000
-#define STM32F_BASE_RNG     0x50060800
+#define STM32_BASE_RNG      0x50060800
 #define STM32F_BASE_HASH    0x50060400
 #define STM32F_BASE_CRYP    0x50060000
 #define STM32F_BASE_DCMI    0x50050000

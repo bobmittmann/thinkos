@@ -705,10 +705,10 @@
 #define STM32F_RCC_AHB2ENR 0x34
 
 #define RCC_OTGFS 7
-#define RCC_RNG 6
-#define RCC_HASH 5
-#define RCC_CRYP 4
-#define RCC_DCMI 0
+#define RCC_RNG   6
+#define RCC_HASH  5
+#define RCC_CRYP  4
+#define RCC_DCMI  0
 
 /* Bit 7 - USB OTG FS clock enable */
 #define RCC_OTGFSEN (1 << 7)

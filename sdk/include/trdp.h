@@ -33,7 +33,7 @@
    ThirdLnk pakcet layout
  */
 
-enum thirdrpc_op {
+enum trdrpc_op {
 	TRDRPC_SUSPEND       = 1,
 	TRDRPC_RESUME        = 2,
 	TRDRPC_EXEC          = 3,
@@ -49,9 +49,15 @@ enum thirdrpc_op {
 	TRDRPC_EXCEPTINFO    = 13,
 	TRDRPC_THREADINFO    = 14,
 	TRDRPC_AUTH_INIT     = 65,
-	TRDRPC_AUTH_DESC     = 67,
 	TRDRPC_AUTH_REQ      = 69,
-	TRDRPC_AUTH_RSA1024  = 71,
+	TRDRPC_AUTH_DESC     = 67,
+};
+
+enum trdrpc_auth_method {
+	TRDP_AUTH_NONE       = 0,
+	TRDP_AUTH_PLAIN      = 1,
+	TRDP_AUTH_PASSWORD   = 2,
+	TRDP_AUTH_RSA1024    = 3
 };
 
 #define TRDLNK_MTU (512 + 4)
@@ -60,14 +66,12 @@ struct trdp_credentials {
 };
 
 struct trdp_auth_init {
-	uint32_t session;
 	uint32_t agent;
 	int64_t time;
 };
 
 struct trdp_auth_desc {
 	uint32_t session;
-	uint32_t agent;
 	uint8_t method[4];
 };
 
