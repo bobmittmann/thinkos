@@ -265,34 +265,37 @@ int dbgmon_expect(int sig)
 {
 	uint32_t evset;
 	uint32_t evmsk;
-	uint32_t bitmask = (1 << sig);
-	uint32_t bitsave;
+	uint32_t stmsk;
 	
 	evset = thinkos_dbgmon_rt.events;
-	if (evset & bitmask)
+	if (evset & (1 << sig))
 		return sig;
 
 	/* save the state of the bit in the event mask */
 	evmsk = thinkos_dbgmon_rt.mask;
-	bitsave = evmsk ^ bitmask;
+	stmsk = (evmsk & (1 << sig)) ^ (1 << sig);
 	/* umask event */
-	thinkos_dbgmon_rt.mask = evmsk | bitmask;
+	evmsk |= (1 << sig);
+	thinkos_dbgmon_rt.mask = evmsk;
 
-	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", sig);
+	DCC_LOG2(LOG_INFO, "waiting for %d (evmsk=%08x) sleeping...", sig, evmsk);
 	do {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
 		evmsk = thinkos_dbgmon_rt.mask;
+		DCC_LOG2(LOG_INFO, "swap evset=%08x evmsk=%08x", evset, evmsk);
 	} while ((evset & evmsk) == 0);
-	DCC_LOG(LOG_MSG, "wakeup...");
+	DCC_LOG1(LOG_INFO, "wakeup... evset=%08x", evset);
 
 	/* mask back the event if previously masked */
-	thinkos_dbgmon_rt.mask = evmsk ^ bitsave;
-	if (evset & bitmask)
+	evmsk ^= stmsk;
+	DCC_LOG2(LOG_INFO, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
+	thinkos_dbgmon_rt.mask = evmsk;
+
+	if (evset & (1 << sig))
 		return sig;
 
-	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", 
-			 evset & thinkos_dbgmon_rt.mask);
+	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", evset & evmsk);
 
 	/* unexpected event received */
 	return -1;

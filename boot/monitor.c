@@ -542,9 +542,13 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 	case CTRL_Y:
-		dmprintf(comm, "^Y\r\n");
-		monitor_ymodem_recv(comm, this_board.application.start_addr, 
-							this_board.application.block_size);
+		dmprintf(comm, "^\\\r\nConfirm [y]? ");
+		if (dmgetc(comm) == 'y') {
+			monitor_ymodem_recv(comm, this_board.application.start_addr, 
+								this_board.application.block_size);
+		} else {
+			dmprintf(comm, "\r\n");
+		}
 		break;
 #if (MONITOR_APPWIPE_ENABLE)
 	case CTRL_W:
