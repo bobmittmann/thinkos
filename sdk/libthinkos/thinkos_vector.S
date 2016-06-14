@@ -113,7 +113,7 @@ cm3_bus_fault_isr:
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
 	mov    r0, lr
-	movs   r1, #CM3_EXCEPT_BUS_FAULT
+	movs   r1, #CM3_EXCEPT_USAGE_FAULT
 	bl     collect_xcpt_inf
 	mov    r0, r6
 	bl     thinkos_usage_fault
@@ -131,7 +131,7 @@ cm3_usage_fault_isr:
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
 	mov    r0, lr
-	movs   r1, #CM3_EXCEPT_BUS_FAULT
+	movs   r1, #CM3_EXCEPT_MEM_MANAGE
 	bl     collect_xcpt_inf
 	mov    r0, r6
 	bl     thinkos_mem_manage
@@ -148,7 +148,7 @@ cm3_mem_manage_isr:
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
 	mov    r0, lr
-	movs   r1, #CM3_EXCEPT_BUS_FAULT
+	movs   r1, #CM3_EXCEPT_HARD_FAULT
 	bl     collect_xcpt_inf
 	mov    r0, r6
 	bl     thinkos_hard_fault

@@ -430,8 +430,11 @@ void thinkos_hard_fault(struct thinkos_except * xcpt)
 	}
 #endif
 
-	if (xcpt->type) {
+	if (xcpt->unroll) {
 		DCC_LOG(LOG_ERROR, "unhandled exception ...");
+#if THINKOS_SYSRST_ONFAULT
+		cm3_sysrst();
+#endif
 		for(;;);
 	}
 

@@ -149,7 +149,7 @@ void thinkos_console_svc(int32_t * arg, int self);
 
 void thinkos_ctl_svc(int32_t * arg);
 
-void thinkos_comm_svc(int32_t * arg);
+void thinkos_comm_svc(int32_t * arg, int self);
 
 
 void thinkos_idle_svc(int32_t * arg);
