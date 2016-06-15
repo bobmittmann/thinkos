@@ -43,10 +43,10 @@
 	/* r0: return (lr) */
 	/* r1: except number */
 collect_xcpt_inf:
-	ldr    r3, .L_xcpt_buf
-	stmia  r3, {r4-r11}
-	add    r2, r3, #32
-	tst    r0, #4 
+	ldr    r0, .L_xcpt_buf
+	stmia  r0, {r4-r11}
+	add    r2, r0, #32
+	tst    r3, #4 
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
@@ -56,25 +56,25 @@ collect_xcpt_inf:
 	mrs    r5, MSP 
 	sub    r5, r5, #32
 	mrs    r6, PSP 
-	tst    r0, #4 
+	tst    r3, #4 
 	it     ne 
 	subne  r6, r6, #32
 	ldr    r7, .L_cm3_scb
 	ldr    r7, [r7, #SCB_ICSR_OFFS]
-	str    r0, [r3, #64]
-	str    r5, [r3, #68]
-	str    r6, [r3, #72]
-	str    r7, [r3, #76]
+	str    r3, [r0, #64]
+	str    r5, [r0, #68]
+	str    r6, [r0, #72]
+	str    r7, [r0, #76]
 	mrs    r5, IPSR
 	ldr    r2, .L_thinkos_rt
 	ldr    r2, [r2, #THINKOS_RT_ACTIVE_OFFS]
-	strb   r5, [r3, #80]
-	strb   r2, [r3, #81]
-	strb   r1, [r3, #82]
+	strb   r5, [r0, #80]
+	strb   r2, [r0, #81]
+	strb   r1, [r0, #82]
 
-	mov    r7, r0
-	mov    r6, r3
-	bx     lr
+	mov    r7, lr
+	mov    lr, r3
+	bx     r7
 	.align  2
 .L_xcpt_buf:
 	.word	thinkos_except_buf
@@ -94,14 +94,10 @@ collect_xcpt_inf:
 	.thumb_func
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
-	mov    r0, lr
+	mov    r3, lr
 	movs   r1, #CM3_EXCEPT_BUS_FAULT
 	bl     collect_xcpt_inf
-	mov    r0, r6
-	bl     thinkos_bus_fault
-	mov    r0, r6
-	bl     thinkos_xcpt_process
-	bx     r7
+	b      thinkos_bus_fault
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
@@ -112,14 +108,10 @@ cm3_bus_fault_isr:
 	.thumb_func
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
-	mov    r0, lr
+	mov    r3, lr
 	movs   r1, #CM3_EXCEPT_USAGE_FAULT
 	bl     collect_xcpt_inf
-	mov    r0, r6
-	bl     thinkos_usage_fault
-	mov    r0, r6
-	bl     thinkos_xcpt_process
-	bx     r7
+	b      thinkos_usage_fault
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif
 
@@ -130,14 +122,10 @@ cm3_usage_fault_isr:
 	.thumb_func
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
-	mov    r0, lr
+	mov    r3, lr
 	movs   r1, #CM3_EXCEPT_MEM_MANAGE
 	bl     collect_xcpt_inf
-	mov    r0, r6
-	bl     thinkos_mem_manage
-	mov    r0, r6
-	bl     thinkos_xcpt_process
-	bx     r7
+	b      thinkos_mem_manage
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
 
@@ -147,14 +135,10 @@ cm3_mem_manage_isr:
 	.thumb_func
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
-	mov    r0, lr
+	mov    r3, lr
 	movs   r1, #CM3_EXCEPT_HARD_FAULT
 	bl     collect_xcpt_inf
-	mov    r0, r6
-	bl     thinkos_hard_fault
-	mov    r0, r6
-	bl     thinkos_xcpt_process
-	bx     r7
+	b      thinkos_hard_fault
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 

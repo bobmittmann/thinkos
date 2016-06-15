@@ -119,7 +119,8 @@ static int __xcpt_active_irq(void)
 	return -16;
 }
 
-static void __xcpt_unroll(struct thinkos_except * xcpt, uint32_t xpsr)
+static void __attribute__((noreturn)) __xcpt_unroll(struct thinkos_except * xcpt,
+												  uint32_t xpsr)
 {
 	struct cm3_except_context * sf;
 	uint32_t xpsr_n;
@@ -232,6 +233,7 @@ static void __xcpt_unroll(struct thinkos_except * xcpt, uint32_t xpsr)
 
 	/* return */
 	asm volatile ("bx   %0\n" : : "r" (ret)); 
+	for(;;);
 }
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 
@@ -346,26 +348,29 @@ static void __dump_ufsr(void)
    Fault handlers 
    ------------------------------------------------------------------------- */
 
-void __attribute__((naked, noreturn)) thinkos_xcpt_process(void)
+void __attribute__((noreturn)) thinkos_xcpt_process(struct thinkos_except * 
+													xcpt)
 {
 	DCC_LOG(LOG_TRACE, "...");
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 	/* Disable Iterrutps */
 	cm3_cpsid_i();
 	/* Unroll exception chain */
-	__xcpt_unroll(&thinkos_except_buf, thinkos_except_buf.ctx.xpsr);
+	__xcpt_unroll(xcpt, xcpt->ctx.xpsr);
 #else /* THINKOS_UNROLL_EXCEPTIONS */
-	thinkos_exception_dsr(&thinkos_except_buf);
- #if THINKOS_SYSRST_ONFAULT
+	/* increment reentry counter */
+	xcpt->unroll++;
+	/* call exception handler */
+	thinkos_exception_dsr(xcpt);
+#if THINKOS_SYSRST_ONFAULT
 	cm3_sysrst();
- #else
+#else
 	for(;;);
- #endif
+#endif
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 }
 
-
-void thinkos_hard_fault(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	struct cm3_scb * scb = CM3_SCB;
@@ -430,16 +435,6 @@ void thinkos_hard_fault(struct thinkos_except * xcpt)
 	}
 #endif
 
-	if (xcpt->unroll) {
-		DCC_LOG(LOG_ERROR, "unhandled exception ...");
-#if THINKOS_SYSRST_ONFAULT
-		cm3_sysrst();
-#endif
-		for(;;);
-	}
-
-	xcpt->type = CM3_EXCEPT_HARD_FAULT;
-
 #if THINKOS_STDERR_FAULT_DUMP
 	fprintf(stderr, "\n---\n");
 	fprintf(stderr, "Hard fault:");
@@ -468,15 +463,19 @@ void thinkos_hard_fault(struct thinkos_except * xcpt)
 	fflush(stderr);
 #endif
 
+	if (xcpt->unroll) {
+		DCC_LOG(LOG_ERROR, "unhandled exception ...");
 #if THINKOS_SYSRST_ONFAULT
-	cm3_sysrst();
-#else
-	for(;;);
+		cm3_sysrst();
 #endif
+		for(;;);
+	}
+
+	thinkos_xcpt_process(xcpt);
 }
 
 #if	THINKOS_ENABLE_BUSFAULT 
-void thinkos_bus_fault(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) thinkos_bus_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	struct cm3_scb * scb = CM3_SCB;
@@ -494,7 +493,6 @@ void thinkos_bus_fault(struct thinkos_except * xcpt)
 				 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
 	}
 #endif
-	xcpt->type = CM3_EXCEPT_BUS_FAULT;
 	DCC_EXCEPT_DUMP(xcpt);
 
 #if THINKOS_STDERR_FAULT_DUMP
@@ -507,11 +505,13 @@ void thinkos_bus_fault(struct thinkos_except * xcpt)
 	fprintf(stderr, "\n");
 	fflush(stderr);
 #endif
+
+	thinkos_xcpt_process(xcpt);
 }
 #endif /* THINKOS_ENABLE_BUSFAULT  */
 
 #if	THINKOS_ENABLE_USAGEFAULT 
-void thinkos_usage_fault(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) thinkos_usage_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	struct cm3_scb * scb = CM3_SCB;
@@ -530,8 +530,6 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 	}
 #endif
 
-	xcpt->type = CM3_EXCEPT_USAGE_FAULT;
-
 	DCC_EXCEPT_DUMP(xcpt);
 
 #if THINKOS_STDERR_FAULT_DUMP
@@ -544,11 +542,13 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 	fprintf(stderr, "\n");
 	fflush(stderr);
 #endif
+
+	thinkos_xcpt_process(xcpt);
 }
 #endif /* THINKOS_ENABLE_USAGEFAULT  */
 
 #if THINKOS_ENABLE_MEMFAULT
-void thinkos_mem_manage(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) thinkos_mem_manage(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	struct cm3_scb * scb = CM3_SCB;
@@ -565,7 +565,7 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 				 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
 	}
 #endif
-	xcpt->type = CM3_EXCEPT_MEM_MANAGE;
+
 	DCC_EXCEPT_DUMP(xcpt);
 
 #if THINKOS_STDERR_FAULT_DUMP
@@ -575,6 +575,8 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 	fprintf(stderr, "\n");
 	fflush(stderr);
 #endif
+
+	thinkos_xcpt_process(xcpt);
 }
 #endif
 
