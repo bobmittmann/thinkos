@@ -34,6 +34,8 @@
 #define STM32_RCC ((struct stm32_rcc *)STM32_BASE_RCC)
 #define STM32_FLASH ((struct stm32_flash *)STM32_BASE_FLASH)
 
+#define STM32_RNG       ((struct stm32_rng *)STM32_BASE_RNG)
+
 #define STM32F_RTC ((struct stm32f_rtc *)STM32F_BASE_RTC)
 #define STM32F_ETH ((struct stm32f_eth *)STM32F_BASE_EMAC)
 #define STM32F_OTG_FS ((struct stm32f_otg_fs *)STM32F_BASE_OTG_FS)
