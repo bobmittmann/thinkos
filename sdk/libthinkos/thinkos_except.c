@@ -141,9 +141,9 @@ static void __attribute__((noreturn)) __xcpt_unroll(struct thinkos_except * xcpt
 		DCC_LOG(LOG_ERROR, "too many reentries...");
 #if THINKOS_SYSRST_ONFAULT
 		cm3_sysrst();
-#else
-		for(;;);
 #endif
+		DCC_LOG(LOG_ERROR, "system halt!!");
+		for(;;);
 	}
 
 	if ((irq = __xcpt_active_irq()) >= 0) {
@@ -362,11 +362,12 @@ void __attribute__((noreturn)) thinkos_xcpt_process(struct thinkos_except *
 	xcpt->unroll++;
 	/* call exception handler */
 	thinkos_exception_dsr(xcpt);
-#if THINKOS_SYSRST_ONFAULT
+  #if THINKOS_SYSRST_ONFAULT
+	DCC_LOG(LOG_WARNING, "system reset...");
 	cm3_sysrst();
-#else
+  #endif
+	DCC_LOG(LOG_ERROR, "system halt!!");
 	for(;;);
-#endif
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 }
 
@@ -468,6 +469,7 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 #if THINKOS_SYSRST_ONFAULT
 		cm3_sysrst();
 #endif
+		DCC_LOG(LOG_ERROR, "system halt!!");
 		for(;;);
 	}
 
