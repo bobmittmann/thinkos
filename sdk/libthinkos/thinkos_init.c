@@ -214,6 +214,10 @@ void __thinkos_reset(void)
 
 	/* Set the initial thread as idle. */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
+#if (THINKOS_THREADS_MAX < 32) 
+	/* Make sure th IDLE thread is in the ready queue */
+	thinkos_rt.wq_ready = (1 << THINKOS_THREADS_MAX);
+#endif
 }
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
