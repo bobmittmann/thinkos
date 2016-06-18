@@ -212,7 +212,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 			return -1;
 		}
 	} else {
-		DCC_LOG(LOG_ERROR, "Invalid thread state!");
+		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 

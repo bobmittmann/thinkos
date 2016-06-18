@@ -141,7 +141,6 @@ const void * heap_base = &__heap_base;
 struct monitor {
 	struct dmon_comm * comm;
 #if (MONITOR_THREADINFO_ENABLE)
-	#define MONITOR_STARTUP_MAGIC -111
 	int8_t thread_id;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
@@ -595,7 +594,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
-	monitor.thread_id = MONITOR_STARTUP_MAGIC;
+	monitor.thread_id = -1;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
 	monitor.memdump.addr = this_board.application.start_addr;
@@ -620,23 +619,20 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
 
-#if (MONITOR_THREADINFO_ENABLE)
-	if (monitor.thread_id == MONITOR_STARTUP_MAGIC) {
-#endif
+	if (!__thinkos_active()) {
+		DCC_LOG1(LOG_TRACE, "first call...", cm3_sp_get());
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
 		sigmask |= (1 << DBGMON_ALARM);
 		dbgmon_alarm(125);
-#if (MONITOR_THREADINFO_ENABLE)
-		monitor.thread_id = -1;
 	}
-#endif
 
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
+			DCC_LOG(LOG_TRACE, "Soft reset.");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 		}

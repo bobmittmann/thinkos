@@ -702,7 +702,8 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 		}
 
 		if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
-			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", thread_id);
+			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", 
+					 thread_id);
 			return -1;
 		}
 
