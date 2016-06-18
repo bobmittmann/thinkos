@@ -122,16 +122,13 @@ struct ifnet {
 
 	/* interface index for reverse lookup */
 	uint8_t if_idx;
-
 	/* irq number */
 	uint8_t if_irq_no;
-
 	/* interface id */
 	uint8_t if_id;
 
 	/* flags (IFF_*) */
 	uint16_t if_flags;
-
 	/* maximum transmission unit */
 	uint16_t if_mtu;
 
@@ -162,8 +159,11 @@ struct ifnet {
 #endif
 
 struct ifnet_system {
-	int evset;
 	struct ifnet ifn[IFNET_INTERFACES_MAX];
+	int evset;
+	struct {
+		uint32_t err;
+	} stats;
 };
 
 extern  const uint8_t ifnet_max;

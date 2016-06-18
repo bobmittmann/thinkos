@@ -95,8 +95,12 @@ void __attribute__((noreturn)) ifnet_input_task(void * arg)
 
 			tcpip_net_unlock();
 
-			if (ret <= 0)
+			if (ret <= 0) {
 				ifn_pkt_free(ifn, pkt);
+			} else {
+				__ifnet__.stats.err++;
+				WARN("IFNET: not releasing packet: %d", pkt);
+			}
 		}
 	}
 }

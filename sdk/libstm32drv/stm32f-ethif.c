@@ -126,6 +126,26 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 	/* wait for buffer availability */
 	thinkos_sem_wait(drv->tx.sem);
 
+	{
+		void * pktbuf;
+		uint32_t tail;
+
+	//	eth->dmaomr &= ~ETH_ST;
+		tail = drv->tx.tail;
+		while (tail != drv->tx.head) {
+			txdesc = &drv->tx.desc[tail % STM32F_ETH_TX_NDESC];
+			if (txdesc->own) {
+				DCC_LOG(LOG_INFO, "DMA own flag set!");
+				break;
+			}
+			pktbuf = txdesc->tbap1;
+			DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
+			pktbuf_free(pktbuf);
+			tail++;
+		}
+		drv->tx.tail = tail;
+	}
+
 	head = drv->tx.head;
 	if ((head - drv->tx.tail) == STM32F_ETH_TX_NDESC) {
 		DCC_LOG(LOG_PANIC, "queue full!..");
@@ -570,6 +590,7 @@ void stm32f_eth_isr(void)
 
 	if (dmasr & ETH_TS) {
 		DCC_LOG(LOG_INFO, "TS");
+#if 0
 		struct txdma_enh_desc * txdesc;
 		void * pktbuf;
 		uint32_t tail;
@@ -584,12 +605,13 @@ void stm32f_eth_isr(void)
 			}
 			pktbuf = txdesc->tbap1;
 			DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
-			pktbuf_free(pktbuf);
+			pktbuf_free_i(pktbuf);
 			tail++;
 			thinkos_sem_post_i(drv->tx.sem);
 		}
 		drv->tx.tail = tail;
-//		thinkos_flag_give_i(drv->tx.flag);
+#endif
+		thinkos_sem_post_i(drv->tx.sem);
 	}
 
 	if (dmasr & ETH_TBUS) {

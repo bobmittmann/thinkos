@@ -32,6 +32,8 @@
 #include <stdint.h>
 #include <sys/pktbuf.h>
 #include <sys/dcclog.h>
+#include <assert.h>
+#include <thinkos.h>
 
 /* ----------------------------------------------------------------------
  * packet buffer pool
@@ -47,11 +49,11 @@
 #endif
 
 #ifndef PKTBUF_ENABLE_STAT
-#define PKTBUF_ENABLE_STAT 0
+#define PKTBUF_ENABLE_STAT 1
 #endif
 
 #ifndef PKTBUF_ENABLE_PARAM_CHECK
-#define PKTBUF_ENABLE_PARAM_CHECK 0
+#define PKTBUF_ENABLE_PARAM_CHECK 1
 #endif
 
 struct pktbuf {
@@ -81,11 +83,17 @@ const uint16_t pktbuf_len = (((PKTBUF_LEN) + 3) / 4) * 4;
 void * pktbuf_alloc(void)
 {
 	struct pktbuf * p;
-	uint32_t primask;
+#if !THINKOS_ENABLE_CRITICAL
+	unsigned int pri;
+#endif
 
 	/* critical section enter */
-	primask = cm3_primask_get();
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_enter();
+#else
+	pri = cm3_primask_get();
 	cm3_primask_set(1);
+#endif
 
 	if ((p = __pktbuf__.free.first) != NULL) {
 		if ((__pktbuf__.free.first = p->next) == NULL)
@@ -101,12 +109,16 @@ void * pktbuf_alloc(void)
 #endif
 	}
 	/* critical section exit */
-	cm3_primask_set(primask);
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_exit();
+#else
+	cm3_primask_set(pri);
+#endif
 
 	return (void *)p;
 }
 
-#if 0
+#if PKTBUF_ENABLE_PARAM_CHECK
 static inline int __is_pktbuf(void * __p) {
 	return ((uintptr_t)(__p) - (uintptr_t)__pktbuf__.pool) < 
 		PKTBUF_POOL_SIZE * sizeof(struct pktbuf);
@@ -117,18 +129,21 @@ void pktbuf_free(void * ptr)
 {
 	struct pktbuf * p = (struct pktbuf *)ptr;
 	struct pktbuf * q;
-	uint32_t primask;
+#if !THINKOS_ENABLE_CRITICAL
+	unsigned int pri;
+#endif
 
 #if PKTBUF_ENABLE_PARAM_CHECK
-	if (ptr == NULL) {
-		DCC_LOG(LOG_ERROR, "NULL pointer!");
-		return;
-	}
+	assert(__is_pktbuf(p));
 #endif
 
 	/* critical section enter */
-	primask = cm3_primask_get();
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_enter();
+#else
+	pri = cm3_primask_get();
 	cm3_primask_set(1);
+#endif
 
 	p->next = NULL;
 	q = __pktbuf__.free.last;
@@ -142,8 +157,14 @@ void pktbuf_free(void * ptr)
 			 __pktbuf__.stat.alloc_cnt - __pktbuf__.stat.free_cnt);
 #endif
 
+
 	/* critical section exit */
-	cm3_primask_set(primask);
+#if THINKOS_ENABLE_CRITICAL
+	thinkos_critical_exit();
+#else
+	cm3_primask_set(pri);
+#endif
+
 }
 
 void pktbuf_pool_init(void)
