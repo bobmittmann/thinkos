@@ -719,8 +719,11 @@ int op_call(struct microjs_sdt * microjs)
 
 	if (call.argcnt < call.argmin)
 		return -ERR_ARG_MISSING;
-	if (call.argcnt > call.argmax)
+	if (call.argcnt > call.argmax) {
+		DCC_LOG2(LOG_WARNING, " call.argcnt(%d) > call.argmax(%d)",
+				 call.argcnt, call.argmax);
 		return -ERR_TOO_MANY_ARGS;
+	}
 
 #if MICROJS_OPTIMIZATION_ENABLED
 	microjs->spc = microjs->pc; /* save code pointer */
