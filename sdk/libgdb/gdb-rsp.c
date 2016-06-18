@@ -1084,14 +1084,16 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	} else if (gdb->nonstop_mode) {
 		DCC_LOG(LOG_WARNING, "nonstop mode!!!");
 	} else {
-		*cp++ = 'O';
 #if (THINKOS_ENABLE_CONSOLE)
 		uint8_t * buf;
+
 		if ((n = __console_tx_pipe_ptr(&buf)) > 0) {
+			*cp++ = 'O';
 			cp += bin2hex(cp, buf, n);
 			__console_tx_pipe_commit(n);
-		}
+		} else
 #endif
+			return 0;
 	}
 
 	n = cp - pkt;
@@ -1305,21 +1307,16 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
 				gdb->last_signal = sig;
 				break;
 			case 's':
-				DCC_LOG1(LOG_TRACE, "Step %d", thread_id);
-				/* XXX: if there is no active application run  */
-				if (!gdb->active_app) {
-					DCC_LOG(LOG_WARNING, "no active application, "
-							"calling dmon_app_exec()!");
-					if (!dmon_app_exec(this_board.application.start_addr, 
-									   true)) {
-						return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
-					}
-					gdb->active_app = true;
+				DCC_LOG1(LOG_TRACE, "vCont step %d", thread_id);
+				if (!thread_isalive(thread_id)) {
+					DCC_LOG(LOG_WARNING, "thread is dead!");
+					return rsp_error(gdb, GDB_ERR_THREAD_IS_DEAD);
 				}
 				if (thread_step_req(thread_id) < 0) {
 					DCC_LOG(LOG_WARNING, "thread_step_req() failed!");
 					return rsp_error(gdb, GDB_ERR_STEP_REQUEST_FAIL);
 				}
+				gdb->stopped = false;
 				break;
 			case 'S':
 				DCC_LOG2(LOG_TRACE, "Step %d sig=%d", thread_id, sig);
@@ -1633,6 +1630,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
+			DCC_LOG(LOG_TRACE, "Soft reset.");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 		}
@@ -1650,13 +1648,13 @@ void gdb_stub_task(struct dmon_comm * comm)
 		}
 
 		if (sigset & (1 << DBGMON_THREAD_STEP)) {
-			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
+			DCC_LOG(LOG_TRACE, "DBGMON_THREAD_STEP");
 			dbgmon_clear(DBGMON_THREAD_STEP);
 			rsp_on_step(gdb, pkt);
 		}
 
 		if (sigset & (1 << DBGMON_BREAKPOINT)) {
-			DCC_LOG(LOG_INFO, "DBGMON_BREAKPOINT");
+			DCC_LOG(LOG_TRACE, "DBGMON_BREAKPOINT");
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			rsp_on_breakpoint(gdb, pkt);
 		}
