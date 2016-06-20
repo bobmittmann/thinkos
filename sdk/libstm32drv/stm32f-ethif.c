@@ -120,37 +120,36 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 	struct txdma_enh_desc * txdesc;
 	struct eth_hdr * hdr;
 	uint32_t head;
+	void * pktbuf;
+	uint32_t tail;
 
 	DCC_LOG2(LOG_INFO, "mem=%p len=%d", __buf, __len);
 
 	/* wait for buffer availability */
-	thinkos_sem_wait(drv->tx.sem);
+	thinkos_gate_wait(drv->tx.gate);
 
-	{
-		void * pktbuf;
-		uint32_t tail;
-
-	//	eth->dmaomr &= ~ETH_ST;
-		tail = drv->tx.tail;
-		while (tail != drv->tx.head) {
-			txdesc = &drv->tx.desc[tail % STM32F_ETH_TX_NDESC];
-			if (txdesc->own) {
-				DCC_LOG(LOG_INFO, "DMA own flag set!");
-				break;
-			}
-			pktbuf = txdesc->tbap1;
-			DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
-			pktbuf_free(pktbuf);
-			tail++;
-		}
-		drv->tx.tail = tail;
-	}
-
+	/* release used DMA buffers */
+	tail = drv->tx.tail;
 	head = drv->tx.head;
-	if ((head - drv->tx.tail) == STM32F_ETH_TX_NDESC) {
+
+	while (tail != head) {
+		txdesc = &drv->tx.desc[tail % STM32F_ETH_TX_NDESC];
+		if (txdesc->own) {
+			DCC_LOG(LOG_INFO, "DMA own flag set!");
+			break;
+		}
+		pktbuf = txdesc->tbap1;
+		DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
+		pktbuf_free(pktbuf);
+		tail++;
+		}
+
+	if ((head - tail) == STM32F_ETH_TX_NDESC) {
 		DCC_LOG(LOG_PANIC, "queue full!..");
 		abort();
 	}
+
+	drv->tx.tail = tail;
 
 	txdesc = &drv->tx.desc[head % STM32F_ETH_TX_NDESC];
 #ifdef DEBUG
@@ -210,13 +209,15 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 	/* set the DMA descriptor ownership */
 	txdesc->own = 1;
 	/* update queue head */
-	drv->tx.head = head + 1;
+	head++;
+	drv->tx.head = head;
 
 	DCC_LOG(LOG_INFO, " DMA start transmit...");
-//	eth->dmaomr |= ETH_ST;
-
 	/* Transmit Poll Demand command */
 	eth->dmatpdr = 1;
+
+	/* exit the gate and leave it open if there are buffers available */
+	thinkos_gate_exit(drv->tx.gate, ((head - tail) != STM32F_ETH_TX_NDESC));
 
 	return 0;
 }
@@ -382,7 +383,7 @@ int stm32f_ethif_init(struct ifnet * __if)
 	/* set the broadcast flag */
 	__if->if_flags |= IFF_BROADCAST;
 
-	drv->event = __if->if_idx;
+	drv->rx.event = __if->if_idx;
 
 	DCC_LOG1(LOG_INFO, "mtu=%d", mtu);
 	INF("STM32ETH: MTU=%d", mtu);
@@ -468,8 +469,9 @@ int stm32f_ethif_init(struct ifnet * __if)
 	drv->tx.head = 0;
 	drv->tx.tail = 0;
 
-	drv->tx.sem = thinkos_sem_alloc(STM32F_ETH_TX_NDESC); 
-	DCC_LOG1(LOG_INFO, "tx.sem=%d", drv->tx.sem);
+	drv->tx.gate = thinkos_gate_alloc();
+	DCC_LOG1(LOG_INFO, "tx.gate=%d", drv->tx.gate);
+	thinkos_gate_open(drv->tx.gate);
 
 #ifdef THINKAPP
 	/* configure and Enable interrupt */
@@ -585,7 +587,7 @@ void stm32f_eth_isr(void)
 		DCC_LOG(LOG_INFO, "DMA RS");
 		/* disable DMA receive interrupts */
 		eth->dmaier &= ~ETH_RIE;
-		ifn_signal_i(drv->event);
+		ifn_signal_i(drv->rx.event);
 	}
 
 	if (dmasr & ETH_TS) {
@@ -611,7 +613,7 @@ void stm32f_eth_isr(void)
 		}
 		drv->tx.tail = tail;
 #endif
-		thinkos_sem_post_i(drv->tx.sem);
+		thinkos_gate_open_i(drv->tx.gate);
 	}
 
 	if (dmasr & ETH_TBUS) {

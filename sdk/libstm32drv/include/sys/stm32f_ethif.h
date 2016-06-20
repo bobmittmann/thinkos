@@ -69,18 +69,18 @@
 struct stm32f_eth_drv {
 	struct ifnet * ifn;
 	struct stm32f_eth * eth;
-	int event;
 	unsigned int phy_addr;
 	struct {
 		struct rxdma_enh_desc desc[STM32F_ETH_RX_NDESC];
 		uint32_t head;
 		uint32_t tail;
+		int event;
 	} rx;
 	struct {
 		struct txdma_enh_desc desc[STM32F_ETH_TX_NDESC];
 		volatile uint32_t head;
 		volatile uint32_t tail;
-		int sem;
+		int gate;
 	} tx;
 } __attribute__ ((aligned (8)));
 
