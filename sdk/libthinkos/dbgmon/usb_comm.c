@@ -678,40 +678,49 @@ int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 	int ret;
 	int n;
 
-	do {
-		pos = dev->rx_pos;
-		cnt = dev->rx_cnt;
-		if ((n = cnt - pos) > 0) {
-			/* get data from the rx buffer if not empty */
-			n = MIN(n, len);
-			DCC_LOG3(LOG_INFO, "1. pos=%d cnt=%d n=%d .......", pos, cnt, n);
-			__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
-			pos += n;
-			if (cnt == pos) {
-				/* buffer is now empty */
-				pos = 0;
-				cnt = 0;
+	pos = dev->rx_pos;
+	cnt = dev->rx_cnt;
+	if ((n = cnt - pos) > 0) {
+recv:
+		/* get data from the rx buffer if not empty */
+		n = MIN(n, len);
+		DCC_LOG3(LOG_INFO, "1. pos=%d cnt=%d n=%d .......", pos, cnt, n);
+		__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
+		pos += n;
+		if (cnt == pos) {
+			/* buffer is now empty */
+			pos = 0;
+			cnt = 0;
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
-				if (dev->rx_paused) {
-					dev->rx_paused = false;
-					cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-											  dev->rx_buf, 
-											  CDC_EP_IN_MAX_PKT_SIZE);
-					DCC_LOG2(LOG_INFO, "2. pos=%d cnt=%d unpaused!!!", 
-							 pos, cnt);
-					usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-				} 
-				if (cnt == 0)
-#endif
-					dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
-				dev->rx_cnt = cnt;
+			if (dev->rx_paused) {
+				dev->rx_paused = false;
+				cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+										  dev->rx_buf, 
+										  CDC_EP_IN_MAX_PKT_SIZE);
+				DCC_LOG2(LOG_INFO, "2. pos=%d cnt=%d unpaused!!!", 
+						 pos, cnt);
+				usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 			} 
-			dev->rx_pos = pos;
-			return n;
-		}
+			if (cnt == 0)
+#endif
+				dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
+			dev->rx_cnt = cnt;
+		} 
+		dev->rx_pos = pos;
+		return n;
+	}
 
-		DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
-	} while ((ret = dbgmon_expect(DBGMON_COMM_RCV)) >= 0);
+	DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
+	if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0)
+		return ret;
+
+	pos = dev->rx_pos;
+	cnt = dev->rx_cnt;
+	if ((n = cnt - pos) > 0)
+		goto recv;
+
+	DCC_LOG(LOG_WARNING, "Pending COMM_RCV signal!");
+	dbgmon_clear(DBGMON_COMM_RCV); 
 
 	return ret;
 }
