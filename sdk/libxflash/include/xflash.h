@@ -23,14 +23,14 @@
 #ifndef __XFLASH_H__
 #define __XFLASH_H__
 
-struct magic_rec {
-	uint32_t mask;
-	uint32_t comp;
-};
-
 struct magic_hdr {
 	uint16_t pos;
 	uint16_t cnt;
+};
+
+struct magic_rec {
+	uint32_t mask;
+	uint32_t comp;
 };
 
 struct magic {
@@ -55,6 +55,8 @@ void uart_drain(void * uart);
 int uart_send(void * uart, const void * buf, unsigned int len);
 int uart_recv(void * uart, void * buf, unsigned int len, unsigned int msec);
 
+void usb_send_hex(int ep_id, unsigned int val);
+int usb_hex_dump(int ep_id, const void * ptr, unsigned int len);
 int usb_send(int ep_id, const void * buf, unsigned int len);
 int usb_recv(int ep_id, void * buf, unsigned int len, unsigned int msec);
 int usb_drain(int ep_id);

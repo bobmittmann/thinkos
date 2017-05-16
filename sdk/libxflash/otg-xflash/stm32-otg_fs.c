@@ -248,8 +248,6 @@ void usb_drain(int ep_id)
 	while (!(otg_fs->inep[ep_id].diepint & OTG_FS_XFRC));
 }
 
-#if 0
-
 int uint2hex(char * s, unsigned int val)
 {
 	int n;
@@ -295,5 +293,36 @@ void usb_send_hex(int ep_id, unsigned int val)
 	usb_send(ep_id, buf, n);
 }
 
-#endif
+int usb_hex_dump(int ep_id, const void * ptr, unsigned int len)
+{
+	uint8_t * p = (uint8_t *)ptr;
+	char buf[20];
+	int i;
+	int j;
+
+	j = 0;
+	for (i = 0; i < len; ++i) {
+		int c;
+
+		if ((i % 20) == 0) {
+			buf[j++] = '\r';
+			buf[j++] = '\n';
+		} else
+			buf[j++] = ' ';
+		c = p[i] >> 4;
+		buf[j++] = c < 10 ? c + '0' : c + ('a' - 10);
+		c = p[i] & 0x0f;
+		buf[j++] = c < 10 ? c + '0' : c + ('a' - 10);
+		if (j >= 16) {
+			usb_send(ep_id, buf, j);
+			j = 0;
+		}
+	}
+
+	buf[j++] = '\r';
+	buf[j++] = '\n';
+	usb_send(ep_id, buf, j);
+
+	return len;
+}
 

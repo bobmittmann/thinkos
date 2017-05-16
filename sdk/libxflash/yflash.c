@@ -29,10 +29,6 @@
 
 #include <sys/dcclog.h>
 
-#ifndef XFLASH_VERBOSE
-#define XFLASH_VERBOSE      0
-#endif
-
 #ifndef XMODEM_CHECKSUM
 #define XMODEM_CHECKSUM     0
 #endif
@@ -43,6 +39,22 @@
 
 #ifndef XMODEM_CRC_CHECK
 #define XMODEM_CRC_CHECK    0
+#endif
+
+#ifndef XMODEM_SEQUENCE_CHECK
+#define XMODEM_SEQUENCE_CHECK 0
+#endif
+
+#ifndef XFLASH_MAGIC
+#define XFLASH_MAGIC        1
+#endif
+
+#ifndef XFLASH_VERBOSE
+#define XFLASH_VERBOSE      0
+#endif
+
+#ifndef XFLASH_DEBUG        
+#define XFLASH_DEBUG        0
 #endif
 
 #define CDC_TX_EP 2
@@ -59,14 +71,6 @@ void delay(unsigned int msec);
 #define CAN  0x18
 
 #define XMODEM_RCV_TMOUT_MS 2000
-
-#if 0
-#define LOG_CODE(CODE) ((uint32_t *)(0x20000000))[0] = (CODE)
-#define LOG_STATE(CODE) ((uint32_t *)(0x20000000))[1] = (CODE)
-#else
-#define LOG_CODE(CODE)
-#define LOG_STATE(CODE)
-#endif
 
 struct ymodem_rcv {
 	unsigned int pktno;
@@ -126,9 +130,9 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 	unsigned char * cp;
 	int ret = 0;
 	int cnt = 0;
+	int seq;
 #if XMODEM_SEQUENCE_CHECK
 	int nseq;
-	int seq;
 #endif
 	int rem;
 	int pos;
@@ -205,9 +209,9 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			cp += ret;
 		}
 
-#if XMODEM_SEQUENCE_CHECK
 		/* sequence */
 		seq = pkt[1];
+#if XMODEM_SEQUENCE_CHECK
 		/* inverse sequence */
 		nseq = pkt[2];
 
@@ -250,12 +254,16 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 			}
 		}
 #endif
-#if XMODEM_SEQUENCE_CHECK
+
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
+			DCC_LOG(LOG_WARNING, "retransmission!");
 			continue;
 		}
 
+		DCC_LOG2(LOG_TRACE, "seq=%d pktno=%d", seq, rx->pktno);
+
+#if XMODEM_SEQUENCE_CHECK
 		if (seq != (rx->pktno & 0xff)) {
 #if XMODEM_FALLBACK
 			if ((rx->pktno == 0) && (seq == 1)) {
@@ -323,9 +331,10 @@ unsigned long dec2int(const char * __s)
 	return val;
 }
 
+#if XFLASH_MAGIC
 #define MAGIC_REC_MAX 16
 
-static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
+static int magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 {
 	int sz = magic->hdr.cnt * sizeof(struct magic_rec);
 	int k;
@@ -333,11 +342,13 @@ static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 
 	/* check whether the magic record is in this
 	   data block */
-	if (magic->hdr.pos < pos)
-		return false;
+	if (magic->hdr.pos < pos) {
+		return -1;
+	}
 
-	if ((magic->hdr.pos + sz) > (pos + len))
-		return false;
+	if ((magic->hdr.pos + sz) > (pos + len)) {
+		return -2;
+	}
 
 	k = magic->hdr.pos - pos;
 	for (j = 0; j < magic->hdr.cnt; ++j) {
@@ -347,16 +358,18 @@ static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 			(buf[k + 2] << 16) + (buf[k + 3] << 24);
 
 		if ((data & magic->rec[j].mask) != magic->rec[j].comp) {
-			return false;
+			return -(3 + j);
 		}
 
 		k += sizeof(uint32_t);
 	}	
 
-	return true;
+	return 0;
 }
+#endif
 
 #if XFLASH_VERBOSE
+static const char s_err[] = "\r\nErr: ";
 static const char s_invalid[] = "\r\nInvalid file!";
 static const char s_erase[] = "\r\nFlash erase error!";
 static const char s_program[] = "\r\nFlash program error!";
@@ -370,6 +383,11 @@ static const char s_ok[] = {'\r', '\n', 'O', 'K'};
 #define PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR))
 #endif
 
+static const char err_code[] = { '0', '1', '2', '3', '4', '5', '6' };
+
+#define ERROR(ERR) usb_send(CDC_TX_EP, s_err, sizeof(s_err) - 1); \
+	usb_send(CDC_TX_EP, &err_code[ERR], 1);
+
 #if 0
 int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
 		   const struct magic * magic, unsigned int opt)
@@ -377,22 +395,35 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size, 
 		   const struct magic * magic)
 {
+#if XFLASH_MAGIC
 	struct {
 		struct magic_hdr hdr;
 		struct magic_rec rec[MAGIC_REC_MAX];
 	} magic_buf;
-	struct ymodem_rcv ry;
+	int i;
+#endif
 	unsigned int cnt;
+	struct ymodem_rcv ry;
 	uint32_t offs;
 	int ret;
-	int i;
 
+#if XFLASH_DEBUG
+	usb_send(CDC_TX_EP, "\r\noffs ", 7);
+	usb_send_hex(CDC_TX_EP, blk_offs);
+	usb_send(CDC_TX_EP, "size ", 7);
+	usb_send_hex(CDC_TX_EP, blk_size);
+#endif
+
+#if XFLASH_MAGIC
 	if (magic != 0) {
 		/* copy magic check block */
 		cnt = magic->hdr.cnt > MAGIC_REC_MAX ? MAGIC_REC_MAX : magic->hdr.cnt;
 		for (i = 0; i < cnt; ++i) {
-//			usb_send(CDC_TX_EP, "\r\nmagic.", 8);
 			magic_buf.rec[i] = magic->rec[i];
+#if XFLASH_DEBUG
+			usb_send(CDC_TX_EP, "magic ", 8);
+			usb_send_hex(CDC_TX_EP, magic_buf.rec[i].comp);
+#endif
 		}	
 		magic_buf.hdr.cnt = cnt;
 		magic_buf.hdr.pos = magic->hdr.pos;
@@ -400,11 +431,14 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 		magic_buf.hdr.cnt = 0;
 		magic_buf.hdr.pos = 0;
 	}
+#endif
+
+#if XFLASH_DEBUG
+	usb_send(CDC_TX_EP, "\r\n", 2);
+	usb_drain(CDC_TX_EP);
+#endif
 
 	DCC_LOG(LOG_TRACE, "flash_unlock()");
-
-	LOG_CODE(0);
-	LOG_STATE(0);
 #if 0
 	if (opt & XFLASH_OPT_BYPASS) {
 		PUTS(s_ok);
@@ -422,6 +456,7 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 		flash_unlock();
 
 		while ((ret = usb_ymodem_rcv_pkt(&ry)) >= 0) {
+			int len;
 
 			DCC_LOG1(LOG_TRACE, "usb_ymodem_rcv_pkt() ret=%d)", ret);
 #if XMODEM_FALLBACK
@@ -430,7 +465,8 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 				break;
 			}
 #endif
-			int len = ret;
+			len = ret;
+
 			if (ry.pktno == 1) {
 				char * cp;
 				int fsize;
@@ -440,26 +476,32 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 				cp++; /* skip null */
 				fsize = dec2int(cp);
 				if (fsize == 0) {
-					LOG_CODE(2);
+					DCC_LOG(LOG_WARNING, "empty file!");
 					break;
 				}
 				ry.fsize = fsize;
+
+				DCC_LOG1(LOG_TRACE, "file size=%d", fsize);
+
 			} else {
+#if XFLASH_MAGIC
 				if (ry.pktno == 2) {
-					if (!magic_match((struct magic *)&magic_buf, 
-									 cnt, ry.pkt.data, len)) {
+					if ((ret = magic_match((struct magic *)&magic_buf, 
+									 cnt, ry.pkt.data, len)) < 0) {
 						DCC_LOG(LOG_WARNING, "invalid file magic!");
 #if XFLASH_VERBOSE
 						usb_ymodem_rcv_cancel(&ry);
 						delay(1000);
 						PUTS(s_invalid);
+#if XFLASH_DEBUG
+						ERROR(-ret);
+						usb_hex_dump(CDC_TX_EP, ry.pkt.data, len);
 #endif
-						LOG_CODE(3);
-						ret = -3;
+#endif
 						break;
 					}
-//					flash_erase(offs, ry->fsize);
 				}
+#endif 
 
 				DCC_LOG2(LOG_TRACE, "flash_erase(offs=0x%06x, len=%d)", 
 						 offs, len);
@@ -471,8 +513,6 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 					delay(1000);
 					PUTS(s_erase);
 #endif
-					LOG_CODE(4 + (-ret * 0x10000));
-					ret = -4;
 					break;
 				}
 	
@@ -484,14 +524,10 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 					delay(1000);
 					PUTS(s_program);
 #endif
-					LOG_CODE(5);
-					ret = -5;
 					break;
 				}
 				offs += len;
 				cnt += len;
-
-				LOG_STATE(cnt);
 			}
 		}
 
