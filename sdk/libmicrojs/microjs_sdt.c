@@ -39,7 +39,7 @@
 #define SIGNEXT4BIT(_X) ({ struct { int32_t x: 4; } s; \
 						  s.x = (_X); (int32_t)s.x; })
 
-static int tgt_alloc32(struct microjs_sdt * microjs)
+static int data_alloc32(struct microjs_sdt * microjs)
 {
 	unsigned int addr;
 
@@ -55,6 +55,24 @@ static int tgt_alloc32(struct microjs_sdt * microjs)
 
 	return addr;
 }
+
+static int stack_alloc32(struct microjs_sdt * microjs)
+{
+	unsigned int addr;
+
+	/* ensure memory alignment */
+	addr = (microjs->stack_pos + SIZEOF_WORD - 1) & ~(SIZEOF_WORD - 1);
+
+	microjs->stack_pos = addr + SIZEOF_WORD;
+	DCC_LOG1(LOG_TRACE, "stack_pos=%d", microjs->stack_pos);
+
+	if (microjs->stack_pos > microjs->tab->rt.stack_sz) {
+		microjs->tab->rt.stack_sz = microjs->stack_pos;
+	}
+
+	return addr;
+}
+
 
 static int tgt_stack_push(struct microjs_sdt * microjs)
 {
@@ -256,8 +274,8 @@ int op_var_decl(struct microjs_sdt * microjs)
 	}
 #endif
 
-	if ((addr = tgt_alloc32(microjs)) < 0) {
-		DCC_LOG(LOG_INFO, "tgt_alloc32() failed!");
+	if ((addr = data_alloc32(microjs)) < 0) {
+		DCC_LOG(LOG_INFO, "data_alloc32() failed!");
 		return addr;
 	}
 
