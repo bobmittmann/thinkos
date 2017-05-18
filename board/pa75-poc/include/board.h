@@ -48,35 +48,11 @@
 #define RS485_USART_AF    GPIO_AF7
 
 /* -------------------------------------------------------------------------
- * Serial Ports
- * ------------------------------------------------------------------------- */
-
-#define IO_UART2_TX       STM32_GPIOD, 5
-#define IO_UART2_RX       STM32_GPIOD, 6
-#define UART2_AF          GPIO_AF7
-
-#define IO_UART3_TX       STM32_GPIOD, 8
-#define IO_UART3_RX       STM32_GPIOD, 9
-#define UART3_AF          GPIO_AF7
-
-#define IO_UART4_TX       STM32_GPIOC, 10
-#define IO_UART4_RX       STM32_GPIOC, 11
-#define UART4_AF          GPIO_AF8
-
-#define IO_UART5_TX       STM32_GPIOC, 12
-#define IO_UART5_RX       STM32_GPIOD, 2
-#define UART5_AF          GPIO_AF8
-
-#define IO_UART6_TX       STM32_GPIOC, 6
-#define IO_UART6_RX       STM32_GPIOC, 7
-#define UART6_AF          GPIO_AF8
-
-/* -------------------------------------------------------------------------
  * LEDs 
  * ------------------------------------------------------------------------- */
 
-#define IO_LED1           STM32_GPIOD, 14
-#define IO_LED2           STM32_GPIOD, 15
+#define IO_LED1           STM32_GPIOE, 15
+#define IO_LED2           STM32_GPIOC, 8
 
 /* -------------------------------------------------------------------------
  * Address switch
@@ -88,13 +64,10 @@
 #define IO_ADDR3          STM32_GPIOE, 10
 
 /* -------------------------------------------------------------------------
- * Mode switch
+ * Switch
  * ------------------------------------------------------------------------- */
 
-#define IO_MODE0          STM32_GPIOD, 10
-#define IO_MODE1          STM32_GPIOD, 11
-#define IO_MODE2          STM32_GPIOD, 12
-#define IO_MODE3          STM32_GPIOD, 13
+#define IO_SWITCH         STM32_GPIOC, 9
 
 /* -------------------------------------------------------------------------
  * Serial Flash  connections
@@ -125,9 +98,47 @@
 #endif
 
 /* -------------------------------------------------------------------------
- * Speaker
+ * DACs
  * ------------------------------------------------------------------------- */
+#define IO_DAC1           STM32_GPIOA, 4
 #define IO_DAC2           STM32_GPIOA, 5
+
+/* -------------------------------------------------------------------------
+ * ADCs
+ * ------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------
+ * Relays
+ * ------------------------------------------------------------------------- */
+#define IO_RELAY1         STM32_GPIOD, 14
+#define IO_RELAY2         STM32_GPIOD, 15
+
+/* -------------------------------------------------------------------------
+ * CODEC 
+ * ------------------------------------------------------------------------- */
+#define IO_CODEC_DEM0     STM32_GPIOD, 10
+#define IO_CODEC_DEM1     STM32_GPIOD, 11
+#define IO_CODEC_RST      STM32_GPIOD, 12
+
+#define IO_CODEC_I2S_DIN  STM32_GPIOC, 11
+#define IO_CODEC_I2S_DOUT STM32_GPIOC, 12
+#define IO_CODEC_I2S_SCLK STM32_GPIOC, 10
+#define IO_CODEC_I2S_FS   STM32_GPIOA, 15
+#define IO_CODEC_I2S_MCLK STM32_GPIOC, 7
+
+/* -------------------------------------------------------------------------
+ * Amplifier 
+ * ------------------------------------------------------------------------- */
+#define IO_AMP_POL        STM32_GPIOD, 13
+#define IO_AMP_LSPV       STM32_GPIOA, 8
+#define IO_AMP_ASPV       STM32_GPIOA, 6
+
+/* -------------------------------------------------------------------------
+ * 112V Booster
+ * ------------------------------------------------------------------------- */
+#define IO_BOOST_OCF      STM32_GPIOC, 6
+#define IO_BOOST_ON       STM32_GPIOD, 9
+#define IO_BOOST_TRIG     STM32_GPIOD, 8
 
 /* -------------------------------------------------------------------------
  * Ethernet 

@@ -175,11 +175,8 @@ static void io_init(void)
 	stm32_gpio_mode(IO_ADDR2, INPUT, PULL_UP);
 	stm32_gpio_mode(IO_ADDR3, INPUT, PULL_UP);
 
-	/* - Mode switch ---------------------------------------------------*/
-	stm32_gpio_mode(IO_MODE0, INPUT, PULL_UP);
-	stm32_gpio_mode(IO_MODE1, INPUT, PULL_UP);
-	stm32_gpio_mode(IO_MODE2, INPUT, PULL_UP);
-	stm32_gpio_mode(IO_MODE3, INPUT, PULL_UP);
+	/* - Switch ---------------------------------------------------*/
+	stm32_gpio_mode(IO_SWITCH, INPUT, PULL_UP);
 
 	/* - RS485 ---------------------------------------------------------*/
 	stm32_gpio_mode(IO_RS485_RX, ALT_FUNC, PULL_UP);
@@ -192,36 +189,6 @@ static void io_init(void)
 	stm32_gpio_set(IO_RS485_MODE);
 
 	stm32_gpio_mode(IO_RS485_DBG, INPUT, PULL_UP);
-
-	/* - UART 2 ---------------------------------------------------------*/
-	stm32_gpio_mode(IO_UART2_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_af(IO_UART2_TX, UART2_AF);
-	stm32_gpio_mode(IO_UART2_RX, ALT_FUNC, 0);
-	stm32_gpio_af(IO_UART2_RX, UART2_AF);
-
-	/* - UART 3 ---------------------------------------------------------*/
-	stm32_gpio_mode(IO_UART3_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_af(IO_UART3_TX, UART3_AF);
-	stm32_gpio_mode(IO_UART3_RX, ALT_FUNC, 0);
-	stm32_gpio_af(IO_UART3_RX, UART3_AF);
-
-	/* - UART 4 ---------------------------------------------------------*/
-	stm32_gpio_mode(IO_UART4_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_af(IO_UART4_TX, UART4_AF);
-	stm32_gpio_mode(IO_UART4_RX, ALT_FUNC, 0);
-	stm32_gpio_af(IO_UART4_RX, UART4_AF);
-
-	/* - UART 5 ---------------------------------------------------------*/
-	stm32_gpio_mode(IO_UART5_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_af(IO_UART5_TX, UART5_AF);
-	stm32_gpio_mode(IO_UART5_RX, ALT_FUNC, 0);
-	stm32_gpio_af(IO_UART5_RX, UART5_AF);
-
-	/* - UART 6 ---------------------------------------------------------*/
-	stm32_gpio_mode(IO_UART6_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_af(IO_UART6_TX, UART6_AF);
-	stm32_gpio_mode(IO_UART6_RX, ALT_FUNC, 0);
-	stm32_gpio_af(IO_UART6_RX, UART6_AF);
 
 	/* - Serial Flash ----------------------------------------------------*/
 	stm32_gpio_mode(IO_SFLASH_CS, OUTPUT, SPEED_HIGH);
@@ -236,8 +203,47 @@ static void io_init(void)
 	stm32_gpio_mode(IO_SFLASH_MOSI, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_af(IO_SFLASH_MOSI, AF_SPI_SFLASH);
 
-	/* - Speaker ----------------------------------------------------*/
+	/* - DACs ----------------------------------------------------*/
+	stm32_gpio_mode(IO_DAC1, ANALOG, 0);
 	stm32_gpio_mode(IO_DAC2, ANALOG, 0);
+
+	/* - Relays ----------------------------------------------------*/
+	stm32_gpio_mode(IO_RELAY1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_RELAY2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_RELAY1);
+	stm32_gpio_clr(IO_RELAY2);
+
+    /* - CODEC * ------------------------------------------------------ */
+	stm32_gpio_mode(IO_CODEC_DEM0, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_CODEC_DEM1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_CODEC_RST, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_CODEC_DEM0);
+	stm32_gpio_clr(IO_CODEC_DEM1);
+	stm32_gpio_clr(IO_CODEC_RST);
+
+	stm32_gpio_mode(IO_CODEC_I2S_DIN, ALT_FUNC, SPEED_HIGH);
+	stm32_gpio_mode(IO_CODEC_I2S_DOUT, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_CODEC_I2S_SCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	/* Warning: this pin is shared with the JTAG TDI signal !!! */
+//	stm32_gpio_mode(IO_CODEC_I2S_FS, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_CODEC_I2S_MCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+
+	/* - Amplifier ----------------------------------------------------*/
+	stm32_gpio_mode(IO_AMP_ASPV, ANALOG, 0);
+	stm32_gpio_mode(IO_AMP_POL, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_AMP_LSPV, INPUT, PULL_UP);
+
+/* -------------------------------------------------------------------------
+ * 112V Booster
+ * ------------------------------------------------------------------------- */
+	stm32_gpio_mode(IO_BOOST_OCF, INPUT, PULL_UP);
+	stm32_gpio_mode(IO_BOOST_ON, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_mode(IO_BOOST_TRIG, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_BOOST_ON);
+	stm32_gpio_clr(IO_BOOST_TRIG);
+	stm32_gpio_set(IO_BOOST_TRIG);
+	udelay(100);
+	stm32_gpio_clr(IO_BOOST_TRIG);
 
 	/* - Ethernet ----------------------------------------------------*/
 	stm32_gpio_af(IO_ETH_MII_TX_CLK, GPIO_AF11);
@@ -375,16 +381,6 @@ void app_default(void * arg);
 
 bool board_autoboot(uint32_t tick)
 {
-	int mode = 0;
-
-	/* get the mode selection from the rotary switch (SW4) */
-	mode |= stm32_gpio_stat(IO_MODE0) ? 0 : (1 << 0);
-	mode |= stm32_gpio_stat(IO_MODE2) ? 0 : (1 << 1);
-	mode |= stm32_gpio_stat(IO_MODE1) ? 0 : (1 << 2);
-	mode |= stm32_gpio_stat(IO_MODE3) ? 0 : (1 << 3);
-
-	DCC_LOG1(LOG_MSG, "mode=%d", mode);
-
 	if (tick & 1) {
 		__led_off(IO_LED2);
 		__led_on(IO_LED1);
@@ -392,26 +388,6 @@ bool board_autoboot(uint32_t tick)
 		__led_off(IO_LED1);
 		__led_on(IO_LED2);
 	}
-
-#if 0
-	if (tick == 0)
-		wave_play();
-
-	if (tick == 1)
-		wave_pause();
-#endif
-
-	if (mode == 0) /* Production mode */
-		return (tick == 4) ? true : false;
-
-	if (mode == 8) { /* test mode */
-		if (tick == 1)
-			__thinkos_exec(0, app_default, NULL, false);
-		return false;
-	}
-
-	if (mode == 9) /* No autoboot mode */
-		return false;
 
 	/* Time window autoboot */
 	return (tick == 40) ? true : false;
@@ -598,7 +574,7 @@ const struct mem_desc flash_desc = {
 }; 
 
 const struct thinkos_board this_board = {
-	.name = "CRAB-HUB",
+	.name = "PA75-POC",
 	.hw_ver = {
 		.major = 0,
 		.minor = 1,

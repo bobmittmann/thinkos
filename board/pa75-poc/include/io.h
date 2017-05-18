@@ -35,16 +35,8 @@ enum rate {
 };
 
 enum led {
-	LED_X1 = 0,
-	LED_X2
-};
-
-enum key {
-	KEY_DOWN = 1,
-	KEY_RIGHT = 2,
-	KEY_ENTER = 3,
-	KEY_UP = 4,
-	KEY_LEFT = 5
+	LED_BLUE = 0,
+	LED_YELLOW
 };
 
 #ifdef __cplusplus

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="copyright" content="Copyright (c) Bob Mittmann 2017"/>
+<link rel="shortcut icon" href="thinkos16x16..png"/>
+<link rel="stylesheet" href="style.css" type="text/css" media="screen"/>
+
+<title>PA75 Status Monitor</title>
+
+<script src="zepto.min.js"></script>
+
+<script>
+	function show_status(data) {
+		$('#line_supv').val(data.line.supv);	
+		$('#dc_offset').val(data.line.offs);	
+	}
+
+	function update_status(data) {
+		$('#line_supv').val(data.line.supv);	
+	}
+
+	function pa75_get_status(callback) {
+		$.ajax({
+			type: 'GET',
+			url: 'pa75_get_status.cgi',
+			dataType: 'json',			
+			timeout: 250,
+			context: $('body'),
+			success: function(data) {
+				if (data.hasOwnProperty('error')) {
+				} else {
+					callback(data);
+				}		
+			},
+			error: function(xhr, type) {				
+			}
+		});
+	}
+	
+
+	function pa75_poll_status() {
+		pa75_get_status(update_status);
+	}
+
+ 	function pa75_set_dc_offset() {		
+ 		var offset = $('#dc_offset').val();
+		$.ajax({
+			type: 'GET',
+			url: 'pa75_set_dc_offset.cgi',
+			data: { 
+				offset: offset
+			},
+			dataType: 'json',			
+			timeout: 250,
+			context: $('body'),
+			success: function(data) {
+				if (data.hasOwnProperty('error')) {					
+				} else {
+				}		
+			},
+			error: function(xhr, type) {				
+			}
+		});
+	}   
+	
+	$(function() { 
+		pa75_get_status(show_status);
+  		pollTmr = setInterval(pa75_poll_status, 1000);
+		$('#dc_offset').on('change', pa75_set_dc_offset); 						
+  /*      $('#btn_suspend').on('click', sim_thinkos_suspend);
+        $('#btn_resume').on('click', sim_thinkos_resume);
+        $('#btn_reset').on('click', sim_reset);
+        $('#btn_safe').on('click', sim_safe_mode); */
+    });
+
+</script>
+
+</head>
+
+<body>
+	<h1>PA75 Status Monitor</h1>
+	<section>
+	<table>
+	<tr>
+	<td style="text-align: right;">Line Supervision::</td>
+	<td><input type="text" id="line_supv" value="0" readonly></td>
+	</tr>
+	<tr>
+	<td style="text-align: right;">DC Offset::</td>
+	<td><input type="number" id="dc_offset" value="0" min="-2048.0" max="2048.0"></td>
+	</tr>
+	</table>
+	</section>
+
+	<hr>
+	<a href="https://https://github.com/bobmittmann/thinkos">
+	<img src="thinkos47x20.png" alt=ThinkOS></a>Cortex-M Operating System<br>
+	&copy; Copyright 2013-2017, Bob Mittmann<br>
+</body>
+</html>
+
