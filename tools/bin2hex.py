@@ -30,6 +30,7 @@ import os
 import re
 import gzip
 import codecs
+import io
 
 __version__ = '0.2'
 
@@ -187,7 +188,11 @@ if __name__ == '__main__':
   fin.close()
 
   if options.compress:
-  	data = gzip.compress(data);
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode='wb') as f:
+      f.write(data)
+    data = buf.getvalue();
+#  	data = gzip.compress(data);
 
   size = len(data);
   bin2hex(fout, name, data, size)
