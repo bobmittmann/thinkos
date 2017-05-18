@@ -58,6 +58,8 @@
 
 #endif
 
+#define PLLR 2
+
 #if defined(STM32F2X) || defined(STM32F4X)
 
 #if (HCLK_HZ == 168000000)
@@ -234,7 +236,7 @@ void __attribute__((section(".init"))) _init(void)
 
 	}
 
-	pll = RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | RCC_PLLP(PLLP) | 
+	pll = RCC_PLLR(PLLR) | RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | RCC_PLLP(PLLP) | 
 		RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
 
 	rcc->pllcfgr = pll;

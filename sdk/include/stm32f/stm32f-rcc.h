@@ -34,6 +34,20 @@
 /* RCC clock control register */ 
 #define STM32F_RCC_CR 0x00
 
+
+/* PLLSAI clock ready flag */
+#define RCC_PLLSAIRDY (1 << 29)
+/* Set by hardware to indicate that the PLLI2S is locked.
+   0: PLLSAI unlocked
+   1: PLLSAI locked */
+
+/* PLLSAI enable */
+#define RCC_PLLSAION (1 << 28)
+/* Set and cleared by software to enable PLLSAI.
+   Cleared by hardware when entering Stop or Standby mode.
+   0: PLLSAI OFF
+   1: PLLSAI ON */
+
 /* PLLI2S clock ready flag */
 #define RCC_PLLI2SRDY (1 << 27)
 /* Set by hardware to indicate that the PLLI2S is locked.
@@ -127,14 +141,23 @@
    0: HSI oscillator OFF
    1: HSI oscillator ON */
 
-
-
-
 #if defined(STM32F2X) || defined(STM32F4X)
-
 /* ------------------------------------------------------------------------- */
 /* RCC PLL configuration register */
 #define STM32F_RCC_PLLCFGR 0x04
+
+#define RCC_PLLR_MASK (0x7 << 28)
+#define RCC_PLLR(Q) (((Q) & 0x7) << 28)
+/* Main PLL division factor for I2Ss, SAIs, SYSTEM and SPDIF-Rx clocks
+   Set and cleared by software to control the frequency of the clock. These 
+   bits should be written only if PLL is disabled.
+   Clock frequency = VCO frequency / PLLR with 2 ≤ PLLR ≤ 7
+   000: PLLR = 0, wrong configuration
+   001: PLLR = 1, wrong configuration
+   010: PLLR = 2
+   011: PLLR = 3
+   ...
+   111: PLLR = 7 */
 
 #define RCC_PLLQ_MASK (0xf << 24)
 #define RCC_PLLQ(Q) (((Q) & 0xf) << 24)
@@ -182,8 +205,8 @@
    10: PLLP = 6
    11: PLLP = 8 */
 
-#define RCC_PLLN_MASK (0xff << 6)
-#define RCC_PLLN(N) (((N) & 0xff) << 6)
+#define RCC_PLLN_MASK (0x1ff << 6)
+#define RCC_PLLN(N) (((N) & 0x1ff) << 6)
 /* Main PLL (PLL) multiplication factor for VCO Set and cleared by software 
    to control the multiplication factor of the VCO. These bits can be 
    written only when PLL is disabled. Only half-word and word accesses are 
