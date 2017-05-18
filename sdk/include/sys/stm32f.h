@@ -63,6 +63,10 @@
 #include <arch/stm32l151.h>
 #endif
 
+#if defined(STM32F446XC) || defined(STM32F446XE)
+#include <arch/stm32f446.h>
+#endif
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>

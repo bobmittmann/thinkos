@@ -19,12 +19,12 @@
  * http://www.gnu.org/
  */
 
-_stack_top = ORIGIN(ccm) + LENGTH(ccm);
+_stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50 - !DEFINED(thinkos_idle_ctx) * 0x40;
-_stack_limit = ORIGIN(ccm);
+_stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 thinkos_idle_stack = _stack * DEFINED(thinkos_idle_ctx);
-__heap_end = ORIGIN(sram3) + LENGTH(sram3);
+/* __heap_end = ORIGIN(sram3) + LENGTH(sram3); */
 
 EXTERN(_stack)
 EXTERN(_reset)

@@ -49,21 +49,29 @@ struct third_stub {
 
 static void trdp_rand_init(void)
 {
+#ifdef STM32_RNG
 	struct stm32_rng  * rng = STM32_RNG;
 
 	/* Enable RNG clock */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_RNG);
 	/* Enable the random number generator */
 	rng->cr = RNG_RNGEN;
+#else
+	/* FIXME: implement software random number generator */
+#endif
 }
 
 static uint32_t trdp_rand32(void)
 {
+#ifdef STM32_RNG
 	struct stm32_rng  * rng = STM32_RNG;
 
 	while ((rng->sr & RNG_DRDY) == 0);
 
 	return rng->dr;
+#else
+	return 0;
+#endif
 }
 
 
