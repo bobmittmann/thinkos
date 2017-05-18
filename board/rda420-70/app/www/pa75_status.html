@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="copyright" content="Copyright (c) Mircom Group of Companies 2016"/>
+<link rel="shortcut icon" href="img/crab-icon.png"/>
+<link rel="stylesheet" href="layout.css" type="text/css" media="screen"/>
+<link rel="stylesheet" href="style.css" type="text/css" media="screen"/>
+
+<title>CRAB Simulator Debug</title>
+
+<script src="zepto.min.js"></script>
+<script src="simlib.js"></script>
+
+<script>
+	const SIM_DBG_SUSPEND = 1;
+	const SIM_DBG_RESUME = 2;
+	const SIM_DBG_RESET = 3;
+	const SIM_DBG_SAFE_MODE = 4;
+
+	function hex32(x) {
+	   return (0x100000000 + x).toString(16).substr(-8).toUpperCase();
+	}
+	
+	function thread_error() {
+		var tab = $('#context')[0];
+
+		for (var j = 1; j <= 5; ++j)
+			for (var i = 0; i < 17; ++i)
+				tab.rows[i  + 1].cells[j].innerHTML = 'xxxxxxxx';
+	}
+
+	function thread_update(tab, col, reg) {
+		var j = col + 1;
+		
+		for (var i = 0; i < 17; ++i)
+			tab.rows[i  + 1].cells[j].innerHTML = hex32(reg[i]);	
+	}
+
+	function thread_update_all(data) {
+		var tab = $('#context')[0];
+		
+		thread_update(tab, 0, data.except.ctx);
+		for (var i = 0; i < data.threads.length; ++i) {
+			thread_update(tab, data.threads[i].id, data.threads[i].ctx);	
+		}
+	}
+
+	function get_os_state(port) {
+		$.ajax({
+			type: 'GET',
+			url: 'sim_get_os_state.cgi',
+			data: { 
+				port: port
+			},
+			dataType: 'json',			
+			timeout: 250,
+			context: $('body'),
+			success: function(data) {
+				if (data.hasOwnProperty('error')) {
+					thread_error();
+				} else {
+					thread_update_all(data);
+				}		
+			},
+			error: function(xhr, type) {				
+			}
+		});
+	}
+	
+	function poll_os_state() {
+		var port = $('#selport').val();
+		get_os_state(port);
+	}
+
+	function poll_os_state() {
+		var port = $('#selport').val();
+		get_os_state(port);
+	}
+	
+	
+	function sim_debug_cmd(port, cmd) {
+		$.ajax({
+			type: 'GET',
+			url: 'sim_debug_cmd.cgi',
+			data: { 
+				port: port,
+				cmd: cmd
+			},
+			dataType: 'json',			
+			timeout: 250,
+			context: $('body'),
+			success: function(data) {
+				if (data.hasOwnProperty('error')) {					
+				} else {
+				}		
+			},
+			error: function(xhr, type) {				
+			}
+		});
+	}
+	
+	function sim_safe_mode() {
+		var port = $('#selport').val();
+		sim_debug_cmd(port, SIM_DBG_SAFE_MODE);
+	}
+	
+	function sim_reset() {
+		var port = $('#selport').val();
+		sim_debug_cmd(port, SIM_DBG_RESET);
+	}
+	
+	function sim_thinkos_suspend() {
+		var port = $('#selport').val();
+		sim_debug_cmd(port, SIM_DBG_SUSPEND);
+	}
+	
+	function sim_thinkos_resume() {
+		var port = $('#selport').val();
+		sim_debug_cmd(port, SIM_DBG_RESUME);
+	}
+	
+ 	function sim_refresh() {		
+ 		clearInterval(pollTmr);
+ 		 		
+ 		var refrate = $('#sel_refresh').val();
+ 		 		
+		pollTmr = setInterval(poll_os_state, refrate);
+		poll_os_state();		
+	}   
+
+	
+	$(function() { 
+  		pollTmr = setInterval(poll_os_state, 1000);
+		poll_os_state(); 
+		$('#sel_refresh').on('change', sim_refresh); 						
+        $('#btn_suspend').on('click', sim_thinkos_suspend);
+        $('#btn_resume').on('click', sim_thinkos_resume);
+        $('#btn_reset').on('click', sim_reset);
+        $('#btn_safe').on('click', sim_safe_mode);
+    });
+
+</script>
+
+</head>
+
+<body>
+</script>
+"<section><table><tr>"
+	"<td style=\"text-align: right;\">Line Spv::</td>"
+	"<td><input type=\"text\" id=\"line_spv\" value=\"0\" readonly></td>"
+	"</tr></table>"
+	"</section>";
+
+<div class="wrapper">	
+	<section>
+		<h2>Threads Status</h2><br>
+		<table id="context" class="zebra">
+			<thead>
+				<tr>
+				<th style="border-top-style: hidden; border-left-style: hidden; background: #fff"></th>
+				<th>Except</th>
+				<th>Simulator</th>
+				<th>IO</th>
+				<th>SimLnk</th>		
+				<th>MicroJS</th>
+				</tr>
+			</thead>
+			<tbody style="font-family: monospace; font-size: 125%;">
+			<tr>
+				<th>R0</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R1</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R2</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R3</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R4</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R5</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R6</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R7</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R8</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R9</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R10</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R11</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>R12</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>SP</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>LR</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>PC</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>
+			<tr>
+				<th>XPSR</th>		
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>
+				<td>00000000</td>						
+			</tr>						
+			</tbody>
+		</table>
+	</section>
+
+	<section>			
+		<table class="formgrid">
+			<tr>
+				<td style="text-align: right;">Simulator:</td>
+				<td>
+					<select id="selport">
+						<option value="1">Port 1</option>
+						<option value="2">Port 2</option>
+						<option value="3">Port 3</option>
+						<option value="4">Port 4</option>
+						<option value="5">Port 5</option>
+					</select>		
+				</td>
+				<td>
+				</td>
+				<td>
+					<input id="btn_suspend" type="button" class="button" value="Suspend" />
+				</td>		
+				<td>
+					<input id="btn_resume" type="button" class="button" value="Resume" />
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align: right;">Refresh rate:</td>
+				<td>
+					<select id="sel_refresh">
+						<option value="125">125 ms</option>
+						<option value="250">250 ms</option>
+						<option value="500">500 ms</option>
+						<option value="1000" selected>1 second</option>
+						<option value="2000">2 seconds</option>
+						<option value="4000">4 seconds</option>
+					</select>		
+				</td>				
+				<td>
+				</td>
+				<td>
+					<input id="btn_reset" class="button" type="button" value="Reset" />
+				</td>		
+				<td>
+					<input id="btn_safe" type="button" class="button" value="Safe" />
+				</td>	
+			</tr>
+		</table>			
+	</section>
+</div>
+	
+	<header>
+	<div class="logo">
+	<a href="https://www.mircom.com"><img src="img/crab-logo-26.png" alt=CRAB></a>
+	</div>
+	<div class="title">
+	<h1>Simulator Debug</h1>
+	</div>
+</header>
+
+
+<nav>
+	<div class="top"></div>
+	<div class="tabs"><ul>
+		<li><a class="top" href="index.html">Home</a></li>			
+		<li><a href="sim_database.html">Database</a></li>
+		<li><a href="sim_config.html">Config</a></li>
+		<li><a href="sim_monitor.html">Monitor</a></li>
+		<li><a href="sim_diag.html">Diagnostics</a></li>
+		<li><a href="sim_script.html">Scripts</a></li>
+		<li><a href="sim_firmware.html">Firmware</a></li>
+		<li><a href="setup.html">Setup</a></li>
+		<li><a class="active" href="#">Debug</a></li>
+	</ul>
+	</div><div class="bot"></div>
+</nav>
+
+<footer>
+	<div class="left">
+	<a href="https://github.com/bobmittmann/thinkos"><img src="img/thinkos57x24.png" alt=ThinkOS></a>
+	</div>
+	<div class="status">
+	<p><b>CRAB Simulator Debug</b></p>
+	</div>
+</footer>
