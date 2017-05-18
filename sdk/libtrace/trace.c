@@ -316,3 +316,36 @@ void trace_i(const struct trace_ref * ref)
 	cm3_primask_set(pri);
 }
 
+void tracef_i(const struct trace_ref * ref, ... )
+{
+	uint32_t buf[TRACE_ARG_MAX];
+	unsigned int head;
+	unsigned int pri;
+	uint32_t now;
+	va_list ap;
+	int cnt;
+
+	now = __timer_ts();
+
+	va_start(ap, ref);
+	cnt = vtracef(buf, ref, ap);
+	va_end(ap);
+
+	if (cnt < 0)
+		return;
+
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+
+	head = trace_ring.head;
+	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (unsigned int)(cnt + 2)) {
+		int i;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
+		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
+		for (i = 0; i < cnt; ++i)
+			trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = buf[i];
+		trace_ring.head = head;
+	}
+
+	cm3_primask_set(pri);
+}
