@@ -50,9 +50,13 @@ int __attribute__((section (".init"), naked, noreturn))
 			   unsigned int blk_size, 
 			   const struct magic * magic)
 {
+	/* This applet should run in RAM. 
+	   Initialize the stack just above the program code. */
+
 	asm volatile ("add r12, pc, %0\n" 
+				  "bic r12, r12, #0x03\n" 
 				  "mov sp, r12\n" 
-				  : : "i" (3072));
+				  : : "i" (4092));
 
 	yflash(blk_offs, blk_size, magic);
 }

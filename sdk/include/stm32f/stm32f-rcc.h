@@ -746,6 +746,7 @@
 #define STM32F_RCC_AHB3ENR 0x38
 
 #define RCC_FSMC 0
+#define RCC_QSPI 1
 
 /* Bit 0 - Flexible static memory controller module clock enable */
 #define RCC_FSMCEN (1 << 0)
@@ -753,36 +754,43 @@
    0: FSMC module clock disabled
    1: FSMC module clock enabled */
 
+/* Bit 1 - QuadSPI memory controller module clock enable */
+#define RCC_QSPIEN (1 << 0)
+/* Set and cleared by software.
+   0: QSPI module clock disabled
+   1: QSPI module clock enabled */
 
 /* ------------------------------------------------------------------------- */
 /* RCC APB1 peripheral clock enable register */
 #define STM32F_RCC_APB1ENR 0x40
 
-#define RCC_UART8  31
-#define RCC_UART7  30
-#define RCC_DAC    29
-#define RCC_PWR    28
-#define RCC_CAN2   26
-#define RCC_CAN1   25
-#define RCC_I2C3   23
-#define RCC_I2C2   22
-#define RCC_I2C1   21
-#define RCC_UART5  20
-#define RCC_UART4  19
-#define RCC_USART3 18
-#define RCC_USART2 17
-#define RCC_SPI3   15
-#define RCC_SPI2   14
-#define RCC_WWDG   11
-#define RCC_TIM14   8
-#define RCC_TIM13   7
-#define RCC_TIM12   6
-#define RCC_TIM7    5
-#define RCC_TIM6    4
-#define RCC_TIM5    3
-#define RCC_TIM4    2
-#define RCC_TIM3    1
-#define RCC_TIM2    0
+#define RCC_UART8   31
+#define RCC_UART7   30
+#define RCC_DAC     29
+#define RCC_PWR     28
+#define RCC_CEC     27
+#define RCC_CAN2    26
+#define RCC_CAN1    25
+#define RCC_FMPI2C1 24
+#define RCC_I2C3    23
+#define RCC_I2C2    22
+#define RCC_I2C1    21
+#define RCC_UART5   20
+#define RCC_UART4   19
+#define RCC_USART3  18
+#define RCC_USART2  17
+#define RCC_SPI3    15
+#define RCC_SPI2    14
+#define RCC_WWDG    11
+#define RCC_TIM14    8
+#define RCC_TIM13    7
+#define RCC_TIM12    6
+#define RCC_TIM7     5
+#define RCC_TIM6     4
+#define RCC_TIM5     3
+#define RCC_TIM4     2
+#define RCC_TIM3     1
+#define RCC_TIM2     0
 
 /* Bit 29 - DAC interface clock enable */
 #define RCC_DACEN (1 << 29)
@@ -796,6 +804,12 @@
    0: Power interface clock disabled
    1: Power interface clock enable */
 
+/* Bit 27 - CEC interface clock enable */
+#define RCC_CECEN (1 << 27)
+/* Set and cleared by software.
+   0: CEC interface clock disabled
+   1: CEC interface clock enable */
+
 /* Bit 26 - CAN 2 clock enable */
 #define RCC_CAN2EN (1 << 26)
 /* Set and cleared by software.
@@ -807,6 +821,12 @@
 /* Set and cleared by software.
    0: CAN 1 clock disabled
    1: CAN 1 clock enabled */
+
+/* Bit 24 - FMPI2C1 clock enable */
+#define RCC_FMPI2C1EN (1 << 24)
+/* Set and cleared by software.
+   0: FMPI2C1 1 clock disabled
+   1: FMPI2C1 1 clock enabled */
 
 /* Bit 23 - I2C3 clock enable */
 #define RCC_I2C3EN (1 << 23)
@@ -928,6 +948,7 @@
 #define STM32F_RCC_APB2ENR 0x44
 
 #define RCC_LTDC   26
+#define RCC_SAI2   23
 #define RCC_SAI1   22
 #define RCC_SPI6   21
 #define RCC_SPI5   20
@@ -946,6 +967,17 @@
 #define RCC_TIM8    1
 #define RCC_TIM1    0
 
+/* Bit 23 - SAI2 clock enable */
+#define RCC_SAI2EN (1 << 23)
+/* Set and cleared by software.
+   0: SAI2 clock disabled
+   1: SAI2 clock enabled */
+
+/* Bit 22 - SAI1 clock enable */
+#define RCC_SAI1EN (1 << 22)
+/* Set and cleared by software.
+   0: SAI1 clock disabled
+   1: SAI1 clock enabled */
 
 /* Bit 18 - TIM11 clock enable */
 #define RCC_TIM11EN (1 << 18)
@@ -1207,6 +1239,12 @@
 /* Set and cleared by software.
    0: FSMC module clock disabled during Sleep mode
    1: FSMC module clock enabled during Sleep mode */
+
+/* Bit 1 - QuadSPI memory controller module clock enable during Sleep mode */
+#define RCC_QSPILPEN (1 << 0)
+/* Set and cleared by software.
+   0: QSPI module clock disabled during Sleep mode
+   1: QSPI module clock enabled during Sleep mode */
 
 /* ------------------------------------------------------------------------- */
 /* RCC APB1 peripheral clock enable in low power mode register */
@@ -2581,14 +2619,18 @@ again in case of a new switch is required)
 #define STM32_CLK_CRYP      STM32_AHB2, RCC_CRYP
 #define STM32_CLK_DCMI      STM32_AHB2, RCC_DCMI
 
+#define STM32_CLK_QSPI      STM32_AHB3, RCC_QSPI
 #define STM32_CLK_FSMC      STM32_AHB3, RCC_FSMC
 
 #define STM32_CLK_UART8     STM32_APB1, RCC_UART8
 #define STM32_CLK_UART7     STM32_APB1, RCC_UART7
 #define STM32_CLK_DAC       STM32_APB1, RCC_DAC
 #define STM32_CLK_PWR       STM32_APB1, RCC_PWR
+#define STM32_CLK_CEC       STM32_APB1, RCC_CEC
 #define STM32_CLK_CAN2      STM32_APB1, RCC_CAN2
 #define STM32_CLK_CAN1      STM32_APB1, RCC_CAN1
+#define STM32_CLK_FMPI2C1   STM32_APB1, RCC_FMPI2C1
+
 #define STM32_CLK_I2C3      STM32_APB1, RCC_I2C3
 #define STM32_CLK_I2C2      STM32_APB1, RCC_I2C2
 #define STM32_CLK_I2C1      STM32_APB1, RCC_I2C1
@@ -2610,6 +2652,7 @@ again in case of a new switch is required)
 #define STM32_CLK_TIM2      STM32_APB1, RCC_TIM2
 
 #define STM32_CLK_LTDC      STM32_APB2, RCC_LTDC
+#define STM32_CLK_SAI2      STM32_APB2, RCC_SAI2
 #define STM32_CLK_SAI1      STM32_APB2, RCC_SAI1
 #define STM32_CLK_SPI6      STM32_APB2, RCC_SPI6
 #define STM32_CLK_SPI5      STM32_APB2, RCC_SPI5

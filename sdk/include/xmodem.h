@@ -80,20 +80,38 @@ struct xmodem_snd {
 	} pkt;
 };
 
+struct ymodem_rcv {
+	const struct comm_dev * comm;
+
+	unsigned int pktno;
+	unsigned int fsize;
+	unsigned int count;
+
+	char crc_mode;
+	char xmodem;
+	unsigned char sync;
+	unsigned char retry;
+
+	unsigned short data_len;
+	unsigned short data_pos;
+	struct { 
+		unsigned char hdr[3];
+		unsigned char data[1024];
+		unsigned char fcs[2];
+	} pkt;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int xmodem_rcv_init(struct xmodem_rcv * xp, const struct comm_dev * comm, 
+int xmodem_rcv_init(struct xmodem_rcv * rx, 
+					const struct comm_dev * comm, 
 					int mode);
 
 int xmodem_rcv_loop(struct xmodem_rcv * rx, void * data, int len);
 
 int xmodem_rcv_cancel(struct xmodem_rcv * rx);
-
-
-int xmodem_rcv(struct xmodem_rcv * xp, int * cp);
-
 
 
 int xmodem_snd_init(struct xmodem_snd * sx, const struct comm_dev * comm, 
@@ -104,6 +122,17 @@ int xmodem_snd_loop(struct xmodem_snd * sx, const void * data, int len);
 int xmodem_snd_cancel(struct xmodem_snd * sx);
 
 int xmodem_snd_eot(struct xmodem_snd * sx);
+
+
+
+int ymodem_rcv_init(struct ymodem_rcv * ry, 
+					const struct comm_dev * comm, 
+					unsigned int mode);
+
+int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len);
+
+int ymodem_rcv_cancel(struct ymodem_rcv * ry);
+
 
 
 #ifdef __cplusplus

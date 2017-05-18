@@ -25,7 +25,7 @@ include ../../mk/config.mk
 
 LIB_STATIC = xmodem
 
-CFILES = xmodem_rcv.c xmodem_snd.c
+CFILES = xmodem_rcv.c xmodem_snd.c ymodem_rcv.c
 
 include ../../mk/lib.mk
 

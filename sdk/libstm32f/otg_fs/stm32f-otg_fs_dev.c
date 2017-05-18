@@ -51,7 +51,11 @@
 #define STM32_OTG_FS_VBUS_ENABLE 1
 #endif
 
-#if defined(STM32F_OTG_FS) &&  (STM32_ENABLE_OTG_FS)
+#ifndef STM32_OTG_FS_IRQ_ENABLE
+#define STM32_OTG_FS_IRQ_ENABLE 0
+#endif
+
+#if defined(STM32F_OTG_FS) && (STM32_ENABLE_OTG_FS)
 
 #define OTG_EP_MAX          STM32_OTG_FS_EP_MAX 
 #define OTG_VBUS_ENABLE     STM32_OTG_FS_VBUS_ENABLE
@@ -679,8 +683,8 @@ void otg_power_on(struct stm32f_otg_fs * otg_fs)
 	otg_vbus_connect(true);
 
 	/* Enable Cortex interrupt */
-#if 0
-	cm3_irq_enable(STM32F_IRQ_OTG_HS);
+#if STM32_OTG_FS_IRQ_ENABLE
+	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 #endif
 }
 
@@ -697,8 +701,9 @@ void otg_power_off(struct stm32f_otg_fs * otg_fs)
 int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		const usb_class_events_t * ev)
 {
-	struct stm32f_otg_fs * otg_fs = drv->otg_fs;
+	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
 
+	drv->otg_fs = otg_fs;
 	drv->cl = cl;
 	drv->ev = ev;
 
@@ -735,7 +740,7 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		OTG_FS_MMISM;
 
 	/* Enable Cortex interrupt */
-#if 0
+#if STM32_OTG_FS_IRQ_ENABLE
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 #endif
 
@@ -1025,9 +1030,7 @@ static void stm32f_otg_dev_reset(struct stm32f_otg_drv * drv)
 }
 
 /* Private USB device driver data */
-struct stm32f_otg_drv stm32f_otg_fs_drv0 = {
-	.otg_fs = STM32F_OTG_FS
-};
+struct stm32f_otg_drv stm32f_otg_fs_drv0;
 
 void stm32f_otg_fs_isr(void)
 {
@@ -1424,3 +1427,4 @@ const struct usb_dev stm32f_otg_fs_dev = {
 };
 
 #endif /* STM32_ENABLE_OTG_FS && STM32F_OTG_FS */
+
