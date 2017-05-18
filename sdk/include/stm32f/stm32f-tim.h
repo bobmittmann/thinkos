@@ -219,8 +219,8 @@
 
 /* Bits [11..8] - External trigger filter */
 #define TIM_ETF_MSK (((1 << (11 - 8 + 1)) - 1) << 8)
-#define TIM_ETF_SET(VAL) (((VAL) << 8) & ETF_MSK)
-#define TIM_ETF_GET(REG) (((REG) & ETF_MSK) >> 8)
+#define TIM_ETF_SET(VAL) (((VAL) << 8) & TIM_ETF_MSK)
+#define TIM_ETF_GET(REG) (((REG) & TIM_ETF_MSK) >> 8)
 /* This bit-field then defines the frequency used to sample ETRP signal and 
    the length of the digital filter applied to ETRP. The digital filter is 
    made of an event counter in which N events are needed to validate a 
@@ -252,6 +252,9 @@
 
 /* Bits [6..4] - Trigger selection */
 #define TIM_TS ((6 - 4) << 4)
+#define TIM_TS_MSK (((1 << (6 - 4 + 1)) - 1) << 4)
+#define TIM_TS_SET(VAL) (((VAL) << 4) & TIM_TS_MSK)
+#define TIM_TS_GET(REG) (((REG) & TIM_TS_MSK) >> 4)
 /* This bit-field selects the trigger input to be used to synchronize 
    the counter.
    000: Internal Trigger 0 (ITR0).
@@ -266,11 +269,15 @@
    on ITRx meaning for each Timer.
    Note: These bits must be changed only when they are not used (e.g. 
    when SMS=000) to avoid wrong edge detections at the transition. */
+   
 
 /* Bit 3 Reserved, always read as 0. */
 
 /* Bits [2..0] - Slave mode selection */
 #define TIM_SMS ((2 - 0) << 0)
+#define TIM_SMS_MSK (((1 << (2 - 0 + 1)) - 1) << 0)
+#define TIM_SMS_SET(VAL) (((VAL) << 0) & TIM_SMS_MSK)
+#define TIM_SMS_GET(REG) (((REG) & TIM_SMS_MSK) >> 0)
 /* When external signals are selected the active edge of the trigger signal 
    (TRGI) is linked to the polarity selected on the external input (see 
    Input Control register and Control Register description.
@@ -551,8 +558,8 @@
 #define TIM_CC2S_SET(VAL) (((VAL) << 8) & CC2S_MSK)
 #define TIM_CC2S_GET(REG) (((REG) & CC2S_MSK) >> 8)
 #define TIM_CC2S_OUT (0x0 << 8)
-#define TIM_CC2S_TI1 (0x1 << 8)
-#define TIM_CC2S_TI2 (0x2 << 8)
+#define TIM_CC2S_TI2 (0x1 << 8)
+#define TIM_CC2S_TI1 (0x2 << 8)
 #define TIM_CC2S_TRC (0x3 << 8)
 /* This bit-field defines the direction of the channel (input/output) as 
    well as the used input.
@@ -654,15 +661,18 @@
    mode is working only if an internal trigger input is selected through 
    TS bit (TIMx_SMCR register)
    Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 
-   in TIMx_CCER). Input capture mode */
+   in TIMx_CCER). */
+
+
+/* Input capture mode */
 
 /* Bits [15..12] - Input capture 2 filter */
 #define TIM_IC2F ((15 - 12) << 12)
 
 /* Bits [11..10] - Input capture 2 prescaler */
 #define TIM_IC2PSC_MSK (((1 << (1 + 1)) - 1) << 10)
-#define TIM_IC2PSC_SET(VAL) (((VAL) << 10) & IC2PSC_MSK)
-#define TIM_IC2PSC_GET(REG) (((REG) & IC2PSC_MSK) >> 10)
+#define TIM_IC2PSC_SET(VAL) (((VAL) << 10) & TIM_IC2PSC_MSK)
+#define TIM_IC2PSC_GET(REG) (((REG) & TIM_IC2PSC_MSK) >> 10)
 
 /* Bits [9..8] - Capture/compare 2 selection */
 #define TIM_CC2S ((9 - 8) << 8)
@@ -679,6 +689,9 @@
 
 /* Bits [7..4] - Input capture 1 filter */
 #define TIM_IC1F ((7 - 4) << 4)
+#define TIM_IC1F_MSK (((1 << (7 - 4 + 1)) - 1) << 4)
+#define TIM_IC1F_SET(VAL) (((VAL) << 4) & TIM_IC1F_MSK)
+#define TIM_IC1F_GET(REG) (((REG) & TIM_IC1F_MSK) >> 4)
 /* This bit-field defines the frequency used to sample TI1 input and the 
    length of the digital filter applied to TI1. The digital filter is 
    made of an event counter in which N events are needed to validate 
@@ -701,6 +714,11 @@
    0111: fSAMPLING=fDTS/4, N=8
    Note: In current silicon revision, fDTS is replaced in the 
    formula by CK_INT when ICxF[3:0]= 1, 2 or 3. */
+#define TIM_IC1F_2 (0x1 << 4)
+#define TIM_IC1F_4 (0x2 << 4)
+#define TIM_IC1F_5 (0xa << 4)
+#define TIM_IC1F_6 (0xb << 4)
+#define TIM_IC1F_8 (0x3 << 4)
 
 /* Bits [3..2] - Input capture 1 prescaler */
 #define TIM_IC1PSC ((3 - 2) << 2)
