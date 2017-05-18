@@ -53,8 +53,12 @@
 
 #define STM32F_BASE_UID		0x1fff7a10
 #define STM32F_BASE_FSMC    0xa0000000
+<<<<<<< origin/master
+#define STM32_BASE_RNG      0x50060800
+=======
 #define STM32F_BASE_QSPI    0xa0001000
 #define STM32F_BASE_RNG     0x50060800
+>>>>>>> local
 #define STM32F_BASE_HASH    0x50060400
 #define STM32F_BASE_CRYP    0x50060000
 #define STM32F_BASE_DCMI    0x50050000
