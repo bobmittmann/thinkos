@@ -27,19 +27,6 @@
 
 int atoi(const char * s)
 {
-	int c;
-	int n = 0;
-
-	if (s == NULL)
-		return 0;
-
-	for (;;) {
-		c = *s++;
-
-		if ((c < '0') || (c > '9'))
-			return n;
-
-		n = (((n << 2) + n) << 1) + (c - '0');
-	};
+	return (int) strtol (s, NULL, 10);
 }
 
