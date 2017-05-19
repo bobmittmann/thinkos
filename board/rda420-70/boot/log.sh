@@ -1,7 +1,7 @@
 #!/bin/sh
 
-JTAGTOOL_ADDR=192.168.10.50
-BUILD_NAME=thinkos
+JTAGTOOL_ADDR=192.168.10.51
+BUILD_NAME=rda420-thinkos-0.1
 TOOLS_DIR=../../../tools
 
 ${TOOLS_DIR}/tftp_reset.py -q -h ${JTAGTOOL_ADDR} 

@@ -30,7 +30,7 @@
    ThinkOS configuration
    -------------------------------------------------------------------------- */
 
-#define THINKOS_IRQ_MAX                 90
+#define THINKOS_IRQ_MAX                 98
 #define THINKOS_ENABLE_IRQ_CTL          1
 
 #define THINKOS_ENABLE_CLOCK            1
@@ -109,7 +109,7 @@
 
 #define THINKOS_ENABLE_CTL              1
 
-#define THINKOS_ENABLE_IDLE_WFI         1
+#define THINKOS_ENABLE_IDLE_WFI         0
 
 #define THINKOS_ENABLE_PREEMPTION       1
 #define THINKOS_ENABLE_CRITICAL         1
@@ -144,78 +144,10 @@
 #define MONITOR_CONFIGURE_ENABLE   0
 
 /* -------------------------------------------------------------------------
- * TCP/IP
- * ------------------------------------------------------------------------- */
-
-#define ENABLE_NETWORK 1
-#define ENABLE_NET_TCP 1
-#define ENABLE_NET_UDP 1
-#define ENABLE_NET_RAW 1
-
-#define ENABLE_TCPDUMP 0
-
-#define IFNET_INTERFACES_MAX         2
-
-#define MBUF_POOL_SIZE               128
-
-#define TCP_FAST_TMR_MS              100
-#define TCP_ENABLE_TIMEWAIT          1
-#define TCP_ENABLE_HEADER_PREDICTION 1
-#define NET_TCP_PCB_ACTIVE_MAX       64
-#define NET_UDP_PCB_ACTIVE_MAX       1
-
-#define TCP_DEFAULT_MSL_SEC          1
-#define TCP_IDLE_DET_SEC             10
-#define TCP_KEEP_ALIVE_PROBE_SEC     20
-#define TCP_MAX_IDLE_SEC             60
-#define TCP_MAX_SND_QUEUE            (1460 * 4)
-
-/* use hardware checksum */
-#define ENABLE_NET_TCP_CHECKSUM 0
-#define ENABLE_NET_UDP_CHECKSUM 0
-
-/* -------------------------------------------------------------------------
- * Ethernet Driver
- * ------------------------------------------------------------------------- */
-
-#define ETH_PHY_RST_GPIO         STM32_GPIOE, 5
-
-/* Number of reception DMA descriptors for the Ethernet driver */
-#define STM32F_ETH_RX_NDESC      4
-/* Number of transmision DMA descriptors for the Ethernet driver */
-#define STM32F_ETH_TX_NDESC      4
-
-/* -------------------------------------------------------------------------
- * Packet Buffer
- * ------------------------------------------------------------------------- */
-
-/* Size of packet buffer */
-#define PKTBUF_LEN              (1500 + 16) 
-/* Number of packet in the buffer pool */
-#define PKTBUF_POOL_SIZE        10 
-
-/* -------------------------------------------------------------------------
  * Serial
  * ------------------------------------------------------------------------- */
 
 #define SERIAL_RX_FIFO_LEN  1024
-
-/* -------------------------------------------------------------------------
- * delay
- * ------------------------------------------------------------------------- */
-
-#define UDELAY_FACTOR      2687
-
-/* -------------------------------------------------------------------------
- * Web server
- * ------------------------------------------------------------------------- */
-
-#define HTTPD_SERVER_NAME "ThinkOS Web Server"
-
-#define HTTP_URI_MAX_LEN    560
-#define HTTP_RCVBUF_LEN     (560 + 16)
-#define HTTP_QUERY_LST_MAX  16
-#define HTTP_CTL_POOL_SIZE  5
 
 #endif /* __CONFIG_H__ */
 

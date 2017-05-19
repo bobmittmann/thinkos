@@ -58,7 +58,11 @@
 
 #endif
 
-#define PLLR 2
+#if defined(STM32F446)
+  #define PLLR 2
+#else
+  #define PLLR 0
+#endif
 
 #if defined(STM32F2X) || defined(STM32F4X)
 
@@ -219,6 +223,15 @@ void __attribute__((section(".init"))) _init(void)
 
 	/* Make sure we are using the internal oscillator */
 	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_HSI;
+
+#if defined(STM32F446)
+	rcc->sscgr = 0;
+	rcc->plli2scfgr = 0;
+	rcc->pllsaicfgr = 0;
+	rcc->dckcfgr = 0;
+	rcc->ckgatenr = 0;
+	rcc->dckcfgr2 = 0;
+#endif
 
 	/* Enable external oscillator */
 	cr = rcc->cr;

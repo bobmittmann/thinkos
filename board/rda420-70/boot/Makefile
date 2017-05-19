@@ -31,10 +31,9 @@ CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
 SDK = ../../../sdk
 
 LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb \
-		  $(SDK)/libthird
+		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb third gcc 
+LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
 
 INCPATH = $(SDK)/include ../include
 
@@ -46,5 +45,6 @@ LDFLAGS = -Wl,--gc-sections
 
 JTAGTOOL_ADDR = 192.168.10.51
 MACH = stm32f446xe
+HSE_HZ = 12000000
 include ../../../mk/stm32f446x.mk
 

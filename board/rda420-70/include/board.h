@@ -37,7 +37,7 @@
 #define IO_LED2A           STM32_GPIOE, 9
 #define IO_LED2B           STM32_GPIOE, 10
 #define IO_LED2C           STM32_GPIOE, 11
-#define IO_LED2D           STM32_GPIOD, 12
+#define IO_LED2D           STM32_GPIOE, 12
 
 #define IO_LED3A           STM32_GPIOD, 14
 #define IO_LED3B           STM32_GPIOD, 15

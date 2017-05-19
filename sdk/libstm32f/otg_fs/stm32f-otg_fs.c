@@ -316,13 +316,12 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	   â€“ Early suspend
 	   â€“ USB suspend
 	   â€“ SOF */
-	otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT;
-
-//	otg_fs->gintmsk = OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
-//		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
-//	otg_fs->gintmsk |=  OTG_FS_IEPINTM | OTG_FS_OEPINTM | 
-//		OTG_FS_IISOIXFRM | OTG_FS_IISOOXFRM | OTG_FS_RXFLVLM | OTG_FS_SOFM;
-
+/*	otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT;
+	otg_fs->gintmsk |= OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
+		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+	otg_fs->gintmsk |=  OTG_FS_IEPINTM | OTG_FS_OEPINTM | 
+		OTG_FS_IISOIXFRM | OTG_FS_IISOOXFRM | OTG_FS_RXFLVLM | OTG_FS_SOFM;
+*/
 
 	/* 3. Program the VBUSBSEN bit in the OTG_FS_GCCFG register to enable VBUS 
 	   sensing in â€œBâ€� device mode and supply the 5 volts across the pull-up 

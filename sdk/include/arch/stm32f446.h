@@ -28,6 +28,10 @@
 
 #include <arch/stm32f4xx.h>
 
+#ifndef STM32F446
+#define STM32F446
+#endif
+
 #ifndef __ASSEMBLER__
 
 #define STM32_PWR ((struct stm32_pwr *)STM32F_BASE_PWR)

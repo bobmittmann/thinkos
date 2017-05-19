@@ -541,18 +541,20 @@
 #define RCC_SWS_HSI (0x0 << 2)
 #define RCC_SWS_HSE (0x1 << 2)
 #define RCC_SWS_PLL (0x2 << 2)
+#define RCC_SWS_PLLR (0x3 << 2)
 /* Set and cleared by hardware to indicate which 
    clock source is used as the system clock.
    00: HSI oscillator used as the system clock
    01: HSE oscillator used as the system clock
    10: PLL used as the system clock
-   11: not applicable */
+   11: PLL_R used as the system clock */
 
 /* System clock switch */
 #define RCC_SW (0x3 << 0)
 #define RCC_SW_HSI (0x0 << 0)
 #define RCC_SW_HSE (0x1 << 0)
 #define RCC_SW_PLL (0x2 << 0)
+#define RCC_SW_PLLR (0x3 << 0)
 /* Set and cleared by software to select the system clock source.
    Set by hardware to force the HSI selection when leaving the Stop or 
    Standby mode or in case of failure of the HSE oscillator used directly or 
@@ -560,7 +562,7 @@
    00: HSI oscillator selected as system clock
    01: HSE oscillator selected as system clock
    10: PLL selected as system clock
-   11: not allowed */
+   11: PLL_R selected as system clock */
 
 
 
@@ -1712,8 +1714,41 @@
 
 /* [5..0] Reserved, always read as 0. */
 
+/* ------------------------------------------------------------------------- */
+/* RCC DCKCFGR2 dedicated clocks configuration register 2 */ 
 
-#endif /* STM32F2X */
+#define STM32F_RCC_DCKCFGR2 0x94
+
+/* Bit 29 - SPDIF-Rx clock selection */
+#define RCC_SPDIFRXSEL (1 < 29)
+/* 1: f(PLLI2S_P)
+   0: f(PLL_R) */
+
+/* Bit 28 - SDIO clock selection */
+#define RCC_SDIOSEL (1 << 28)
+/* 1: Clock System
+   0: Clock 48 MHz */
+
+/* Bit 27 - SDIO/USBFS/HS clock selection */
+#define RCC_CK48MSEL (1 << 27)
+/* 1: f(PLLSAI_P)
+   0: f(PLL_Q) */
+
+/* Bit 26 - HDMI CEC clock source selection */
+#define RCC_CECSEL (1 << 26)
+/* 1: LSE
+   0: HSI/488 */
+
+/* Bits [23..22] - I2C4 kernel clock source selection */
+#define RCC_FMPI2C1SEL(VAL) (((VAL) & 0x03) << 22)
+/* 00: APB clock selected as FMPI2C1 clock
+   01: System clock selected as FMPI2C1 clock
+   10: HSI clock selected as FMPI2C1 clock
+   11: APB clock selected as FMPI2C1 clock (same as “00”)
+*/
+
+#endif /* STM32F2X || STM32F4X */
+
 /* ------------------------------------------------------------------------- */
 
 
@@ -2874,6 +2909,11 @@ struct stm32_rcc {
 
 	volatile uint32_t sscgr;
 	volatile uint32_t plli2scfgr;
+	volatile uint32_t pllsaicfgr;
+	volatile uint32_t dckcfgr;
+
+	volatile uint32_t ckgatenr;
+	volatile uint32_t dckcfgr2;
 };
 
 #endif /* STM32F2X || STM32F4X  */

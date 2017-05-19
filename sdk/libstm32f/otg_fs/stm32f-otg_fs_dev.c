@@ -625,25 +625,23 @@ static void otg_io_init(void)
 {
 	DCC_LOG(LOG_MSG, "Configuring GPIO pins...");
 
-	if (vbus_gpio(OTG_FS_VBUS) == STM32_GPIOB)
-		stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
-
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 
 	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
 	stm32_gpio_af(OTG_FS_DM, GPIO_AF10);
-	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
-#if 0
-	stm32_gpio_af(OTG_FS_ID, GPIO_AF10);
-#endif
 	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+
 #ifdef OTG_VBUS_ENABLE
+	if (vbus_gpio(OTG_FS_VBUS) == STM32_GPIOB)
+		stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
+
+	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
 	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
-#else
-	stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
 #endif
+
 #if 0
+	stm32_gpio_af(OTG_FS_ID, GPIO_AF10);
 	stm32_gpio_mode(OTG_FS_ID, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 #endif
 }
@@ -713,9 +711,12 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 	DCC_LOG(LOG_INFO, "Enabling USB FS clock...");
 	stm32_clk_enable(STM32_RCC, STM32_CLK_OTGFS);
 	
+//	otg_fs->gintmsk = 0;
+
 	/* Initialize as a device */
 	stm32f_otg_fs_device_init(otg_fs);
 
+#if 0
 	/* Reset global interrupts mask */
 	otg_fs->gintmsk = OTG_FS_WUIM |
 		OTG_FS_SRQIM |
@@ -734,7 +735,33 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		OTG_FS_ESUSPM |
 		OTG_FS_GONAKEFFM |
 		OTG_FS_GINAKEFFM |
-//		OTG_HS_NPTXFEM |
+/*		OTG_FS_PTXFEM |
+		OTG_FS_NPTXFEM | */
+		OTG_FS_RXFLVLM |
+		OTG_FS_SOFM |
+		OTG_FS_MMISM;
+#endif
+	/* Reset global interrupts mask */
+	otg_fs->gintmsk |= 
+		OTG_FS_WUIM |
+		OTG_FS_SRQIM |
+		OTG_FS_DISCINT |
+//		OTG_FS_CIDSCHGM |
+		OTG_FS_IISOOXFRM |
+		OTG_FS_IISOIXFRM |
+		OTG_FS_OEPINTM |
+		OTG_FS_IEPINTM |
+		OTG_FS_EPMISM |
+		OTG_FS_EOPFM |
+		OTG_FS_ISOODRPM |
+		OTG_FS_ENUMDNEM |
+		OTG_FS_USBRSTM |
+		OTG_FS_USBSUSPM |
+		OTG_FS_ESUSPM |
+		OTG_FS_GONAKEFFM |
+		OTG_FS_GINAKEFFM |
+//		OTG_FS_PTXFEM |
+//		OTG_FS_NPTXFEM |
 		OTG_FS_RXFLVLM |
 		OTG_FS_SOFM |
 		OTG_FS_MMISM;
@@ -1384,6 +1411,12 @@ void stm32f_otg_fs_isr(void)
 
 	if (gintsts & OTG_FS_PTXFE) {
 		DCC_LOG(LOG_MSG, "<PTXFE>");
+		otg_fs->gintmsk &= ~OTG_FS_PTXFEM;
+	}
+
+	if (gintsts & OTG_FS_NPTXFE) {
+		DCC_LOG(LOG_MSG, "<NPTXFE>");
+		otg_fs->gintmsk &= ~OTG_FS_NPTXFEM;
 	}
 
 	if (gintsts & OTG_FS_WKUPINT) {

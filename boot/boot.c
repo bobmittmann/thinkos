@@ -116,6 +116,9 @@ int main(int argc, char ** argv)
 	thinkos_console_init();
 #endif
 
+	DCC_LOG(LOG_TRACE, "3. board_init().");
+	this_board.softreset();
+
 #if THINKOS_ENABLE_MPU
 	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
 	thinkos_mpu_init(BOOT_MEM_RESERVED);

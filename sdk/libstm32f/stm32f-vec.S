@@ -229,6 +229,15 @@
 	.word   stm32f_dma2d_isr          /* 90 DMA2D */
 #endif
 
+#if defined(STM32F446X)
+	.word   stm32f_sai2_isr           /* 91 SAI2 */
+	.word   stm32f_qspi_isr           /* 92 QuadSPI */
+	.word   stm32f_cec_isr            /* 93 HDMI-CEC */
+	.word   stm32f_spdif_rx_isr       /* 94 SPDIF-Rx */
+	.word   stm32f_fmpi2c1_isr        /* 95 FMPI2C1 event */
+	.word   stm32f_fmpi2c1_err_isr    /* 96 FMPI2C1 error */
+#endif
+
 .endm
 
 
@@ -681,5 +690,25 @@ _fault:
 
 	.weak       stm32f_dma2d_isr
 	.thumb_set  stm32f_dma2d_isr,_isr
+
+#if defined(STM32F446X)
+	.weak       stm32f_sai2_isr
+	.thumb_set  stm32f_sai2_isr,_isr
+
+	.weak       stm32f_qspi_isr
+	.thumb_set  stm32f_qspi_isr,_isr
+
+	.weak       stm32f_cec_isr
+	.thumb_set  stm32f_cec_isr,_isr
+
+	.weak       stm32f_spdif_rx_isr
+	.thumb_set  stm32f_spdif_rx_isr,_isr
+
+	.weak       stm32f_fmpi2c1_isr
+	.thumb_set  stm32f_fmpi2c1_isr,_isr
+
+	.weak       stm32f_fmpi2c1_err_isr
+	.thumb_set  stm32f_fmpi2c1_err_isr,_isr
+#endif
 
 	.end
