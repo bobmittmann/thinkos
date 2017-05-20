@@ -90,127 +90,127 @@ struct trace_entry {
 
 #ifdef ENABLE_TRACE
 
-#define YAP(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+#define YAP(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define DBG(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+#define DBG(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define INF(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+#define INF(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define WARN(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+#define WARN(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define ERR(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+#define ERR(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
 
-#define YAP_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+#define YAP_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define DBG_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+#define DBG_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define INF_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+#define INF_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define WARN_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+#define WARN_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
-#define ERR_I(__FMT, ...) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+#define ERR_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} else (void) 0
+		}} while (0)
 
 
-#define YAPS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+#define YAPS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define DBGS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+#define DBGS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define INFS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+#define INFS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define WARNS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+#define WARNS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define ERRS(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+#define ERRS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define YAPS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+#define YAPS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_YAP, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace_I(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define DBGS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+#define DBGS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_DBG, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace_I(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define INFS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+#define INFS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_INF, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace_i(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define WARNS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+#define WARNS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_WARN, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace_i(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
-#define ERRS_I(__STR) if (1) { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+#define ERRS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		static const struct trace_ref __ref = \
 		{ TRACE_LVL_ERR, 0, __LINE__, __FUNCTION__, __STR}; \
 		trace_i(&__ref); \
-		}} else (void) 0
+		}} while (0)
 
 #else
 

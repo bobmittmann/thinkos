@@ -197,12 +197,23 @@ void app_default(void * arg);
 
 bool board_autoboot(uint32_t tick)
 {
-	if (tick & 1) {
-		__led_off(IO_LED1B);
-		__led_on(IO_LED1A);
-	} else {
-		__led_off(IO_LED1A);
-		__led_on(IO_LED1B);
+	switch (tick & 3) {
+	case 0:
+		__led_off(IO_LED2D);
+		__led_on(IO_LED2A);
+		break;
+	case 1:
+		__led_off(IO_LED2A);
+		__led_on(IO_LED2B);
+		break;
+	case 2:
+		__led_off(IO_LED2B);
+		__led_on(IO_LED2C);
+		break;
+	case 3:
+		__led_off(IO_LED2C);
+		__led_on(IO_LED2D);
+		break;
 	}
 
 	/* Time window autoboot */
@@ -211,11 +222,7 @@ bool board_autoboot(uint32_t tick)
 
 void board_on_appload(void)
 {
-#if 0
-	wave_pause();
-#endif
-	__led_off(IO_LED1A);
-	__led_off(IO_LED1B);
+	DCC_LOG(LOG_TRACE, "........");
 }
 
 struct board_cfg {
@@ -405,6 +412,8 @@ void board_test(void * arg)
 		thinkos_sleep(67);
 
 		__led_off(IO_LED1B);
+
+		DCC_LOG(LOG_TRACE, "tick");
 	}	
 }
 

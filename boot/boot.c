@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 
-#ifdef DEBUG
+#if 0
 	{
 		int i;
 
@@ -116,21 +116,23 @@ int main(int argc, char ** argv)
 	thinkos_console_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "3. board_init().");
+	DCC_LOG(LOG_TRACE, "6. board_softreset().");
 	this_board.softreset();
 
 #if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
+	DCC_LOG(LOG_TRACE, "7. thinkos_mpu_init()");
 	thinkos_mpu_init(BOOT_MEM_RESERVED);
 
-	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
+	DCC_LOG(LOG_TRACE, "8. thinkos_userland()");
 	thinkos_userland();
 #endif
 
-	DCC_LOG(LOG_TRACE, "8. monitor_exec()");
+	DCC_LOG(LOG_TRACE, "9. monitor_exec()");
 	monitor_exec();
 
-	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
+	thinkos_sleep(1000);
+
+	DCC_LOG(LOG_TRACE, "10. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");

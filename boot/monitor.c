@@ -620,7 +620,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 
 	if (!__thinkos_active()) {
-		DCC_LOG1(LOG_TRACE, "first call...", cm3_sp_get());
+		DCC_LOG1(LOG_TRACE, "first call (SP=0x%08x)...", cm3_sp_get());
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
 		sigmask |= (1 << DBGMON_ALARM);

@@ -28,6 +28,8 @@
 
 void ice_trace_init(void)
 {
+	struct ice_comm_blk * comm = ICE_COMM_BLK;
+
 	static const char __f[] 
 		__attribute__ ((section(".dccdata"))) = __FILE__;
 	static const char _m[] 
@@ -43,6 +45,8 @@ void ice_trace_init(void)
 			_m
 		};
 
+	comm->ro = 0;
+	comm->wo = 0;
 	ice_comm_sync();
 	ice_comm_w32((uint32_t)&log_entry);
 }

@@ -32,13 +32,14 @@ void ice_trace0(const struct dcc_trace_entry * __entry)
 	unsigned int head;
 	
 	cm3_cpsid_f(); /* disable interrupts and faults */
-	if (comm->dbg != DBG_CONNECTED) {
-		if (comm->dbg == DBG_SYNC)
-			comm->dev = DEV_CONNECTED;
-		goto ret;
-	}
 	head = comm->tx_head;
-	while ((16 - ((head - comm->tx_tail) & 0xffff)) < 1);
+	do {
+		if (comm->dbg != DBG_CONNECTED) {
+			if (comm->dbg == DBG_SYNC)
+				comm->dev = DEV_CONNECTED;
+			goto ret;
+		}
+	} while ((16 - ((head - comm->tx_tail) & 0xffff)) < 1);
 	comm->tx_buf.u32[head++ & 0xf] = (uint32_t)__entry;
 	comm->tx_head = head;
 ret:

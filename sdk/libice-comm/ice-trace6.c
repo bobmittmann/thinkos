@@ -30,17 +30,18 @@ void ice_trace6(const struct dcc_trace_entry * __entry, int __a,
 				int __f)
 {
 	struct ice_comm_blk * comm = ICE_COMM_BLK;
+	uint32_t fm = cm3_faultmask_get(); /* save fault mask */
 	unsigned int head;
-	int fm = cm3_faultmask_get(); /* save fault mask */
 	
 	cm3_cpsid_f(); /* disable interrupts and faults */
-	if (comm->dbg != DBG_CONNECTED) {
-		if (comm->dbg == DBG_SYNC)
-			comm->dev = DEV_CONNECTED;
-		goto ret;
-	}
 	head = comm->tx_head;
-	while ((16 - ((head - comm->tx_tail) & 0xffff)) < 7);
+	do {
+		if (comm->dbg != DBG_CONNECTED) {
+			if (comm->dbg == DBG_SYNC)
+				comm->dev = DEV_CONNECTED;
+			goto ret;
+		}
+	} while ((16 - ((head - comm->tx_tail) & 0xffff)) < 7);
 	comm->tx_buf.u32[head++ & 0xf] = (int)__entry;
 	comm->tx_buf.u32[head++ & 0xf] = __a;
 	comm->tx_buf.u32[head++ & 0xf] = __b;

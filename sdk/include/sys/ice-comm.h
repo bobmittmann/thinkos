@@ -37,13 +37,23 @@
 
 struct ice_comm_blk {
 	/* device write only */
-	volatile uint16_t tx_head;
-	volatile uint8_t rx_tail;
-	volatile uint8_t dev;
+	union {
+		struct {
+			volatile uint16_t tx_head;
+			volatile uint8_t rx_tail;
+			volatile uint8_t dev;
+		};
+		uint32_t wo;
+	};
 	/* host write only */
-	volatile uint16_t tx_tail;
-	volatile uint8_t rx_head;
-	volatile uint8_t dbg; /* debugger attached flag */
+	union {
+		struct {
+			volatile uint16_t tx_tail;
+			volatile uint8_t rx_head;
+			volatile uint8_t dbg; /* debugger attached flag */
+		};
+		uint32_t ro;
+	};
 	/* device's transmitt buffer */
 	union {
 		uint8_t u8[64];
@@ -61,6 +71,9 @@ extern struct ice_comm_blk ice_comm_blk;
 extern const struct file ice_comm_file;
 
 #define ICE_COMM_BLK (*(struct ice_comm_blk **)(0x08000000 + 4 * 8))
+
+#define COMM_TX_TAIL(RO) ((RO) >> 16)
+#define COMM_DBG(RO) ((RO) & 0xff)
 
 #ifdef __cplusplus
 extern "C" {
