@@ -25,7 +25,7 @@ VERSION_MINOR = "1"
 
 PROG = rda420-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
+CFILES = ../../../bootldr/boot.c ../../../bootldr/monitor.c \
 		 board.c otg_xflash_pic.c 
 
 SDK = ../../../sdk

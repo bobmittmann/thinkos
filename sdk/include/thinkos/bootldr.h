@@ -94,7 +94,7 @@ struct thinkos_board {
 		uint32_t block_size;
 	} application;
 
-	bool (* init)(void);
+	int (* init)(void);
 	void (* softreset)(void);
 	bool (* autoboot)(unsigned int tick);
 	bool (* configure)(struct dmon_comm *);
@@ -122,6 +122,18 @@ struct ymodem_rcv {
 		unsigned char fcs[2];
 	} pkt;
 };
+
+/* Boot options */
+/* Enble the debug monitor comm port initialization, Ex. USB */
+#define BOOT_OPT_DBGCOM     (1 << 0)
+/* Enable console over COMM port */
+#define BOOT_OPT_CONSOLE    (1 << 1)
+/* Enable loading the debug monitor process */
+#define BOOT_OPT_MONITOR    (1 << 2)
+/* Call the board configuration function */
+#define BOOT_OPT_CONFIG     (1 << 3)
+/* Call the board selftest function */
+#define BOOT_OPT_SELFTEST   (1 << 4)
 
 #ifdef __cplusplus
 extern "C" {
