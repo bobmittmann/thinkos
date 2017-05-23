@@ -162,8 +162,10 @@ static void io_init(void)
 	stm32_gpio_mode(IO_FAULT4, INPUT, SPEED_LOW);
 }
 
-bool board_init(void)
+int board_init(void)
 {
+	int opt = 0;
+
 	DCC_LOG1(LOG_TRACE, "clk[AHB]=%d", stm32f_ahb_hz);
 	DCC_LOG1(LOG_TRACE, "clk[APB1]=%d", stm32f_apb1_hz);
 	DCC_LOG1(LOG_TRACE, "clk[TIM1]=%d", stm32f_tim1_hz);
@@ -172,7 +174,8 @@ bool board_init(void)
 
 	DCC_LOG(LOG_MSG, "io_init()");
 	io_init();
-#if 0
+
+#if 1
 	DCC_LOG(LOG_TRACE, "leds_on()");
 	__led_on(IO_LED1A);
 	__led_on(IO_LED2A);
@@ -221,16 +224,62 @@ bool board_init(void)
 	__led_off(IO_LED2D);
 	__led_off(IO_LED3D);
 	__led_off(IO_LED4D);
+
+	udelay(250000);
 #endif
+
+	if (stm32_gpio_stat(IO_JTMS) == 0) {
+		/* Force loading monitor, don't boot */
+		opt |= BOOT_OPT_DBGCOMM;
+		opt |= BOOT_OPT_CONSOLE;
+		opt |= BOOT_OPT_MONITOR;
+
+		__led_on(IO_LED1D);
+		__led_on(IO_LED2D);
+		__led_on(IO_LED3D);
+		__led_on(IO_LED4D);
+		udelay(250000);
+		__led_off(IO_LED1D);
+		__led_off(IO_LED2D);
+		__led_off(IO_LED3D);
+		__led_off(IO_LED4D);
+		udelay(250000);
+		__led_on(IO_LED1D);
+		__led_on(IO_LED2D);
+		__led_on(IO_LED3D);
+		__led_on(IO_LED4D);
+		udelay(250000);
+		__led_off(IO_LED1D);
+		__led_off(IO_LED2D);
+		__led_off(IO_LED3D);
+		__led_off(IO_LED4D);
+		udelay(250000);
+		__led_on(IO_LED1D);
+		__led_on(IO_LED2D);
+		__led_on(IO_LED3D);
+		__led_on(IO_LED4D);
+		udelay(250000);
+		__led_off(IO_LED1D);
+		__led_off(IO_LED2D);
+		__led_off(IO_LED3D);
+		__led_off(IO_LED4D);
+		udelay(250000);
+	} else {
+		opt |= BOOT_OPT_APPRUN;
+	}
+
+	return opt;
+}
+
+void board_on_comm_init(void)
+{
 	/* set the interrupt priority */
 	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
-
-	return true;
 }
 
-void board_softreset(void)
+void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 
@@ -263,82 +312,89 @@ void board_softreset(void)
 
 	/* reinitialize IO's */
 	io_init();
-
 }
 
 void app_default(void * arg);
 
 bool board_autoboot(uint32_t tick)
 {
-	switch (tick & 0xf) {
-	case 0:
-		__led_off(IO_LED4D);
-		__led_on(IO_LED1A);
-		break;
-	case 1:
-		__led_off(IO_LED1A);
-		__led_on(IO_LED1B);
-		break;
-	case 2:
-		__led_off(IO_LED1B);
-		__led_on(IO_LED1C);
-		break;
-	case 3:
-		__led_off(IO_LED1C);
-		__led_on(IO_LED1D);
-		break;
-	case 4:
-		__led_off(IO_LED1D);
-		__led_on(IO_LED2A);
-		break;
-	case 5:
-		__led_off(IO_LED2A);
-		__led_on(IO_LED2B);
-		break;
-	case 6:
-		__led_off(IO_LED2B);
-		__led_on(IO_LED2C);
-		break;
-	case 7:
-		__led_off(IO_LED2C);
-		__led_on(IO_LED2D);
-		break;
-	case 8:
-		__led_off(IO_LED2D);
-		__led_on(IO_LED3A);
-		break;
-	case 9:
-		__led_off(IO_LED3A);
-		__led_on(IO_LED3B);
-		break;
-	case 10:
-		__led_off(IO_LED3B);
-		__led_on(IO_LED3C);
-		break;
-	case 11:
-		__led_off(IO_LED3C);
-		__led_on(IO_LED3D);
-		break;
-	case 12:
-		__led_off(IO_LED3D);
-		__led_on(IO_LED4A);
-		break;
-	case 13:
-		__led_off(IO_LED4A);
-		__led_on(IO_LED4B);
-		break;
-	case 14:
-		__led_off(IO_LED4B);
-		__led_on(IO_LED4C);
-		break;
-	case 15:
-		__led_off(IO_LED4C);
-		__led_on(IO_LED4D);
-		break;
-	}
-
 	/* Time window autoboot */
 	return (tick == 40) ? true : false;
+}
+
+void board_on_error(int code)
+{
+	uint32_t tick;
+
+	for (tick = 0;; ++tick) {
+		thinkos_sleep(125);
+		switch (tick & 0xf) {
+		case 0:
+			__led_off(IO_LED4D);
+			__led_on(IO_LED1A);
+			break;
+		case 1:
+			__led_off(IO_LED1A);
+			__led_on(IO_LED1B);
+			break;
+		case 2:
+			__led_off(IO_LED1B);
+			__led_on(IO_LED1C);
+			break;
+		case 3:
+			__led_off(IO_LED1C);
+			__led_on(IO_LED1D);
+			break;
+		case 4:
+			__led_off(IO_LED1D);
+			__led_on(IO_LED2A);
+			break;
+		case 5:
+			__led_off(IO_LED2A);
+			__led_on(IO_LED2B);
+			break;
+		case 6:
+			__led_off(IO_LED2B);
+			__led_on(IO_LED2C);
+			break;
+		case 7:
+			__led_off(IO_LED2C);
+			__led_on(IO_LED2D);
+			break;
+		case 8:
+			__led_off(IO_LED2D);
+			__led_on(IO_LED3A);
+			break;
+		case 9:
+			__led_off(IO_LED3A);
+			__led_on(IO_LED3B);
+			break;
+		case 10:
+			__led_off(IO_LED3B);
+			__led_on(IO_LED3C);
+			break;
+		case 11:
+			__led_off(IO_LED3C);
+			__led_on(IO_LED3D);
+			break;
+		case 12:
+			__led_off(IO_LED3D);
+			__led_on(IO_LED4A);
+			break;
+		case 13:
+			__led_off(IO_LED4A);
+			__led_on(IO_LED4B);
+			break;
+		case 14:
+			__led_off(IO_LED4B);
+			__led_on(IO_LED4C);
+			break;
+		case 15:
+			__led_off(IO_LED4C);
+			__led_on(IO_LED4D);
+			break;
+		}
+	}
 }
 
 void board_on_appload(void)
@@ -367,18 +423,7 @@ const int * heap_base_ = &__heap_base;
 extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
 
-struct magic {
-	struct {
-		uint16_t pos;
-		uint16_t cnt;
-	} hdr;
-	struct {
-	    uint32_t mask;
-		uint32_t comp;
-	} rec[];
-};
-
-const struct magic thinkos_magic = {
+const struct magic_blk bootldr_magic = {
 	.hdr = {
 		.pos = 0,
 		.cnt = 10
@@ -399,36 +444,29 @@ const struct magic thinkos_magic = {
 	}
 };
 
-/*
- c0 ff 00 10
- 49 00 00 08
- a5 1a 00 08
- bd 23 00 08
-
- 49 23 00 08
- 61 22 00 08
- d5 22 00 08
- ed 5c 00 08
-
- 00 00 01 10
- 19 60 00 08
- b1 65 00 08
- 21 51 00 08
- 89 31 00 08
- d5 6f 00 08
- 91 4f 00 08 
- 61 50 00 08
-*/
+const struct magic_blk thinkos_10_app_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 5 
+	},
+	.rec = {
+		{ 0xffffffff, 0x0a0de004 },
+		{ 0xffffffff, 0x6e696854 },
+		{ 0xffffffff, 0x00534f6b },
+		{ 0x00000000, 0x00000000 },
+		{ 0x00000000, 0x00000000 }
+	}
+};
 
 void board_upgrade(struct dmon_comm * comm)
 {
 	uint32_t * xflash_code = (uint32_t *)(0x20001000);
-	int (* xflash_ram)(uint32_t, uint32_t, const struct magic *) = 
+	int (* xflash_ram)(uint32_t, uint32_t, const struct magic_blk *) = 
 		((void *)xflash_code) + 1;
 
 	cm3_cpsid_f();
 	__thinkos_memcpy(xflash_code, otg_xflash_pic, sizeof_otg_xflash_pic);
-	xflash_ram(0, 65536, &thinkos_magic);
+	xflash_ram(0, 65536, &bootldr_magic);
 }
 
 #ifndef ENABLE_PRIPHERAL_MEM
@@ -483,15 +521,18 @@ const struct thinkos_board this_board = {
 	},
 	.application = {
 		.start_addr = 0x08020000,
-		.block_size = (3 * 128) * 1024
+		.block_size = (3 * 128) * 1024,
+		.magic = &thinkos_10_app_magic 
 	},
 	.init = board_init,
-	.softreset = board_softreset,
+	.softreset = board_on_softreset,
 	.autoboot = board_autoboot,
 	.configure = board_configure,
 	.upgrade = board_upgrade,
 	.selftest = board_selftest,
-	.on_appload = board_on_appload
+	.on_appload = board_on_appload,
+	.on_error = board_on_error,
+	.on_comm_init = board_on_comm_init
 };
 
 #if 0

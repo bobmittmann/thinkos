@@ -68,6 +68,33 @@ struct dmon_comm;
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
 
+/* File identification magic block 
+
+   This block is used to guess the type of a memory block or file
+   based on a pattarn located somewhere inside the file.
+ 
+ */
+struct magic_blk {
+	struct {
+		uint16_t pos; /* Position of the pattern in bytes */
+		uint16_t cnt; /* Number of record entries */
+	} hdr;
+	/* Pattern records */
+	struct {
+	    uint32_t mask; /* Bitmask */
+		uint32_t comp; /* Compare value */
+	} rec[];
+};
+
+/* application block descriptor */
+struct dbgmon_app_desc {
+	uint32_t start_addr; /* Application memory block start address */
+	uint32_t block_size; /* Size of the memory block in bytes */
+	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
+	uint16_t filesize_offs;  /* Position of file size in the memory block */
+	const struct magic_blk * magic; /* File identification descriptor */
+};
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,6 +131,8 @@ void dbgmon_alarm_stop(void);
 int dbgmon_wait_idle(void);
 
 void dbgmon_soft_reset(void);
+
+bool dbgmon_app_exec(struct dbgmon_app_desc * desc);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 

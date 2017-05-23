@@ -68,6 +68,26 @@ void monitor_exec(void)
 	thinkos_escalate((void *)monitor_exec_protected, comm);
 }
 
+int app_exec(void)
+{
+	return thinkos_escalate((void *)dbgmon_app_exec, 
+							(void *)&this_board.application);
+}
+
+void comm_init(void)
+{
+#if STM32_ENABLE_OTG_FS
+	usb_comm_init(&stm32f_otg_fs_dev);
+#elif STM32_ENABLE_OTG_HS
+	usb_comm_init(&stm32f_otg_hs_dev);
+#elif STM32_ENABLE_USB_DEV
+	usb_comm_init(&stm32f_usb_fs_dev);
+#else
+#error "Undefined debug monitor comm port!"
+#endif
+	this_board.on_comm_init();
+}
+
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
 #endif
@@ -89,42 +109,55 @@ int main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
 	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
 
-	DCC_LOG(LOG_TRACE, "3. board_init().");
+#if THINKOS_ENABLE_CONSOLE
+	DCC_LOG(LOG_TRACE, "3. thinkos_console_init()");
+	thinkos_console_init();
+#endif
+
+	DCC_LOG(LOG_TRACE, "4. board_init().");
 	opt = this_board.init();
 
-	if (opt & BOOT_OPT_CONSOLE) {
-		DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
-#if STM32_ENABLE_OTG_FS
-		usb_comm_init(&stm32f_otg_fs_dev);
-#elif STM32_ENABLE_OTG_HS
-		usb_comm_init(&stm32f_otg_hs_dev);
-#elif STM32_ENABLE_USB_DEV
-		usb_comm_init(&stm32f_usb_fs_dev);
-#else
-#error "Undefined debug monitor comm port!"
-#endif
-
-#if THINKOS_ENABLE_CONSOLE
-		DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
-		thinkos_console_init();
-#endif
+	if (opt & BOOT_OPT_DBGCOMM) {
+		DCC_LOG(LOG_TRACE, "5. usb_comm_init()");
+		comm_init();
 	}
 
-	DCC_LOG(LOG_TRACE, "6. board_softreset().");
-	this_board.softreset();
-
 #if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "7. thinkos_mpu_init()");
+	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
 	thinkos_mpu_init(BOOT_MEM_RESERVED);
 
-	DCC_LOG(LOG_TRACE, "8. thinkos_userland()");
+	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
 	thinkos_userland();
 #endif
 
 	if (opt & BOOT_OPT_MONITOR) {
-		DCC_LOG(LOG_TRACE, "9. monitor_exec()");
+		DCC_LOG(LOG_TRACE, "8. monitor_exec()");
 		monitor_exec();
 	}
+
+	if (opt & BOOT_OPT_APPRUN) {
+		DCC_LOG(LOG_TRACE, "9. app_exec()");
+		app_exec();
+	}
+
+#if 0	
+		DCC_LOG(LOG_TRACE, "6. board_softreset().");
+		this_board.softreset();
+#endif
+
+	/* app exec failed, initializes comm and monitor if not yet done. */
+	if ((opt & BOOT_OPT_DBGCOMM) == 0) {
+		DCC_LOG(LOG_TRACE, "comm_init()");
+		thinkos_escalate((void *)comm_init, (void *)NULL);
+	}
+
+	if ((opt & BOOT_OPT_MONITOR) == 0) {
+		DCC_LOG(LOG_TRACE, "monitor_exec()");
+		monitor_exec();
+	}
+
+	DCC_LOG(LOG_TRACE, "board.on_error()");
+	this_board.on_error(0);
 
 	DCC_LOG(LOG_TRACE, "10. thinkos_thread_abort()");
 	thinkos_thread_abort(0);

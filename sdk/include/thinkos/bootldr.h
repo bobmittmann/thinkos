@@ -58,6 +58,7 @@
 #define BLK_RW  (0 << 7)
 #define BLK_RO  (1 << 7)
 
+/* Memory block descriptor */
 struct blk_desc {
 	uint32_t ref;
 	uint8_t  opt;
@@ -70,6 +71,7 @@ struct mem_desc {
 	struct blk_desc blk[];
 };
 
+/* Board description */
 struct thinkos_board {
 	char name[18];
 
@@ -89,10 +91,7 @@ struct thinkos_board {
 		const struct mem_desc * flash;
 	} memory;
 
-	struct {
-		uint32_t start_addr;
-		uint32_t block_size;
-	} application;
+	struct dbgmon_app_desc application;
 
 	int (* init)(void);
 	void (* softreset)(void);
@@ -101,11 +100,30 @@ struct thinkos_board {
 	void (* upgrade)(struct dmon_comm *);
 	void (* selftest)(struct dmon_comm *);
 	void (* on_appload)(void);
-//	void (* comm_irqen)(void);
+	void (* on_error)(int code);
+	void (* on_comm_init)(void);
 };
 
+/* Board description instance */
 extern const struct thinkos_board this_board;
 
+/* Boot options */
+/* Enble the debug monitor comm port initialization, Ex. USB */
+#define BOOT_OPT_DBGCOMM    (1 << 0)
+/* Enable console over COMM port */
+#define BOOT_OPT_CONSOLE    (1 << 1)
+/* Enable loading the debug monitor process */
+#define BOOT_OPT_MONITOR    (1 << 2)
+/* Call the board configuration function */
+#define BOOT_OPT_CONFIG     (1 << 3)
+/* Call the board selftest function */
+#define BOOT_OPT_SELFTEST   (1 << 4)
+/* Try to run the application */
+#define BOOT_OPT_APPRUN     (1 << 5)
+
+
+
+/* FIXME: Not quite sure why this is here!!!! */
 struct ymodem_rcv {
 	unsigned int pktno;
 	unsigned int fsize;
@@ -122,18 +140,6 @@ struct ymodem_rcv {
 		unsigned char fcs[2];
 	} pkt;
 };
-
-/* Boot options */
-/* Enble the debug monitor comm port initialization, Ex. USB */
-#define BOOT_OPT_DBGCOM     (1 << 0)
-/* Enable console over COMM port */
-#define BOOT_OPT_CONSOLE    (1 << 1)
-/* Enable loading the debug monitor process */
-#define BOOT_OPT_MONITOR    (1 << 2)
-/* Call the board configuration function */
-#define BOOT_OPT_CONFIG     (1 << 3)
-/* Call the board selftest function */
-#define BOOT_OPT_SELFTEST   (1 << 4)
 
 #ifdef __cplusplus
 extern "C" {

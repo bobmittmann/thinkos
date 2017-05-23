@@ -458,7 +458,6 @@ void __console_reset(void)
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
 	thinkos_console_rt.rx_pipe.tail = 0;
-//	__thinkos_memset32(&thinkos_console_rt, 0, sizeof(thinkos_console_rt));
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
 }

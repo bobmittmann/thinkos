@@ -142,6 +142,12 @@
 #define IO_FAULT4         STM32_GPIOB, 6
 
 
+#define IO_JTMS           STM32_GPIOA, 13
+#define IO_JTDI           STM32_GPIOA, 15
+#define IO_JTDO           STM32_GPIOB, 3
+#define IO_JTCK           STM32_GPIOA, 14
+
+
 /* high level led on/off functions */
 static inline void __led_on(struct stm32_gpio *__gpio, int __pin) {
 	stm32_gpio_set(__gpio, __pin);

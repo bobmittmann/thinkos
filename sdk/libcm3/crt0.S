@@ -35,7 +35,37 @@ _reset:
 	b       0f
 	.byte   '\r'
 	.byte   '\n'
-	.string "ThinkOS"
+	.string "ThinkOS 1.0 App"
+/* Name */
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+/* Version */
+	.byte   0xff
+	.byte   0xff
+	.short  0xffff
+/* file Size */
+	.word   0xffffffff
+/* CRC32 */
+	.word   0xffffffff
+/* Cipher block */
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
+	.word   0xffffffff
 0:
 	/* jump to hardware initialization code */
 	/* disable interrupts */
