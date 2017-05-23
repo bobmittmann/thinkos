@@ -24,20 +24,21 @@
  */ 
 
 
-#ifndef __SYS_USB_CDC_H__
-#define __SYS_USB_CDC_H__
+#ifndef __SYS_USB_AUDIO_H__
+#define __SYS_USB_AUDIO_H__
 
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/cdc.h>
 #include <sys/usb-dev.h>
 #include <sys/serial.h>
+#include <sys/usb-cdc.h>
 
-#define USB_CDC_EINVAL 1
-#define USB_CDC_EINTR 2
-#define USB_CDC_ETIMEDOUT 3
+#define USB_AUDIO_EINVAL 1
+#define USB_AUDIO_EINTR 2
+#define USB_AUDIO_ETIMEDOUT 3
 
-struct usb_cdc_state {
+struct usbaudio_state {
 	union {
 		struct {
 			uint32_t reserved: 1;
@@ -53,66 +54,66 @@ struct usb_cdc_state {
     struct serial_error err;
 };
 
-typedef struct usb_cdc_state usb_cdc_state_t;
+typedef struct usbaudio_state usbaudio_state_t;
 
-struct usb_cdc_class;
+struct usbaudio_class;
 
-typedef struct usb_cdc_class usb_cdc_class_t;
+typedef struct usbaudio_class usbaudio_class_t;
 
-extern const uint8_t * const cdc_acm_def_str[];
-extern const uint8_t cdc_acm_def_strcnt;
+extern const uint8_t * const usbaudio_def_str[];
+extern const uint8_t usbaudio_def_strcnt;
 
-extern const struct serial_dev cdc_acm_serial_dev;
+extern const struct serial_dev usbaudio_serial_dev;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-usb_cdc_class_t * usb_cdc_init(const usb_dev_t * usb, 
+usbaudio_class_t * usbaudio_init(const usb_dev_t * usb, 
 							   const uint8_t * const str[], 
 							   unsigned int strcnt);
 
-int usb_cdc_write(usb_cdc_class_t * cdc,
+int usbaudio_write(usbaudio_class_t * cdc,
 				  const void * buf, unsigned int len);
 
-int usb_cdc_read(usb_cdc_class_t * cdc, void * buf,
+int usbaudio_read(usbaudio_class_t * cdc, void * buf,
 				 unsigned int len, unsigned int msec);
 
-void usb_connect(usb_cdc_class_t * cdc);
+void usbaudio_connect(usbaudio_class_t * cdc);
 
-void usb_disconnect(usb_cdc_class_t * cdc);
+void usbaudio_disconnect(usbaudio_class_t * cdc);
 
-void usb_enumaration_wait(usb_cdc_class_t * cdc);
+void usbaudio_enumaration_wait(usbaudio_class_t * cdc);
 
-void usb_reset_wait(usb_cdc_class_t * cdc);
+void usbaudio_reset_wait(usbaudio_class_t * cdc);
 
-void usb_ctrl_event_wait(usb_cdc_class_t * cdc);
+void usbaudio_ctrl_event_wait(usbaudio_class_t * cdc);
 
-void usb_device_init(usb_cdc_class_t * cdc);
+void usbaudio_device_init(usbaudio_class_t * cdc);
 
-int usb_cdc_flush(usb_cdc_class_t * cdc);
+int usbaudio_flush(usbaudio_class_t * cdc);
 
-int usb_cdc_release(usb_cdc_class_t * cdc);
+int usbaudio_release(usbaudio_class_t * cdc);
 
-int usb_cdc_state_get(usb_cdc_class_t * cdc, usb_cdc_state_t * state);
+int usbaudio_state_get(usbaudio_class_t * cdc, usbaudio_state_t * state);
 
-int usb_cdc_status_set(usb_cdc_class_t * cl, struct serial_status * stat);
+int usbaudio_status_set(usbaudio_class_t * cl, struct serial_status * stat);
 
-int usb_cdc_ctl_wait(usb_cdc_class_t * cdc, unsigned int msec);
+int usbaudio_ctl_wait(usbaudio_class_t * cdc, unsigned int msec);
 
-void usb_cdc_sn_set(uint64_t sn);
+void usbaudio_sn_set(uint64_t sn);
 
-void usb_cdc_product_set(const char * s);
+void usbaudio_product_set(const char * s);
 
-struct file * usb_cdc_fopen(usb_cdc_class_t * cdc);
+struct file * usbaudio_fopen(usbaudio_class_t * cdc);
 
-bool usb_cdc_is_usb_file(FILE * f);
+bool usbaudio_is_usb_file(FILE * f);
 
-int usb_cdc_acm_lc_wait(usb_cdc_class_t * cl);
+int usbaudio_lc_wait(usbaudio_class_t * cl);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __SYS_USB_CDC_H__ */
+#endif /* __SYS_USB_AUDIO_H__ */
 
