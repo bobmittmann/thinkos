@@ -229,7 +229,7 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->plli2scfgr = 0;
 	rcc->pllsaicfgr = 0;
 	rcc->dckcfgr = 0;
-	rcc->ckgatenr = 0;
+	rcc->ckgatenr = 0xffffffff;
 	rcc->dckcfgr2 = 0;
 #endif
 

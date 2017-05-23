@@ -32,6 +32,14 @@
 #define STM32F446
 #endif
 
+#ifndef STM32F446X
+#define STM32F446X
+#endif
+
+#ifndef STM32F446XX
+#define STM32F446XX
+#endif
+
 #ifndef __ASSEMBLER__
 
 #define STM32_PWR ((struct stm32_pwr *)STM32F_BASE_PWR)

@@ -26,28 +26,36 @@
 #include <sys/stm32f.h>
 
 /* -------------------------------------------------------------------------
+ * USB 
+ * ------------------------------------------------------------------------- */
+
+#define OTG_FS_DP   STM32_GPIOA, 12
+#define OTG_FS_DM   STM32_GPIOA, 11
+#define OTG_FS_VBUS STM32_GPIOA, 9
+
+/* -------------------------------------------------------------------------
  * LEDs 
  * ------------------------------------------------------------------------- */
 
-#define IO_LED1A           STM32_GPIOE, 13
-#define IO_LED1B           STM32_GPIOE, 14
-#define IO_LED1C           STM32_GPIOE, 15
-#define IO_LED1D           STM32_GPIOD, 9
+#define IO_LED2A           STM32_GPIOE, 13
+#define IO_LED2B           STM32_GPIOE, 14
+#define IO_LED2C           STM32_GPIOE, 15
+#define IO_LED2D           STM32_GPIOD, 9
 
-#define IO_LED2A           STM32_GPIOE, 9
-#define IO_LED2B           STM32_GPIOE, 10
-#define IO_LED2C           STM32_GPIOE, 11
-#define IO_LED2D           STM32_GPIOE, 12
+#define IO_LED1A           STM32_GPIOE, 9
+#define IO_LED1B           STM32_GPIOE, 10
+#define IO_LED1C           STM32_GPIOE, 11
+#define IO_LED1D           STM32_GPIOE, 12
 
-#define IO_LED3A           STM32_GPIOD, 14
-#define IO_LED3B           STM32_GPIOD, 15
-#define IO_LED3C           STM32_GPIOC, 8
-#define IO_LED3D           STM32_GPIOC, 9
+#define IO_LED4A           STM32_GPIOD, 14
+#define IO_LED4B           STM32_GPIOD, 15
+#define IO_LED4C           STM32_GPIOC, 8
+#define IO_LED4D           STM32_GPIOC, 9
 
-#define IO_LED4A           STM32_GPIOD, 10
-#define IO_LED4B           STM32_GPIOD, 11
-#define IO_LED4C           STM32_GPIOD, 12
-#define IO_LED4D           STM32_GPIOD, 13
+#define IO_LED3A           STM32_GPIOD, 10
+#define IO_LED3B           STM32_GPIOD, 11
+#define IO_LED3C           STM32_GPIOD, 12
+#define IO_LED3D           STM32_GPIOD, 13
 
 /* -------------------------------------------------------------------------
  * Serial Flash  connections
@@ -90,8 +98,16 @@
 /* -------------------------------------------------------------------------
  * Relays
  * ------------------------------------------------------------------------- */
-#define IO_RELAY1         STM32_GPIOD, 14
-#define IO_RELAY2         STM32_GPIOD, 15
+
+#define IO_BKP1           STM32_GPIOA, 5
+#define IO_BKP2           STM32_GPIOA, 6
+#define IO_BKP3           STM32_GPIOA, 7
+#define IO_BKP4           STM32_GPIOA, 8
+
+#define IO_LINB1          STM32_GPIOC, 2
+#define IO_LINB2          STM32_GPIOC, 3
+#define IO_LINB3          STM32_GPIOC, 14
+#define IO_LINB4          STM32_GPIOC, 15
 
 /* -------------------------------------------------------------------------
  * CODEC 
@@ -113,12 +129,17 @@
 #define IO_AMP_LSPV       STM32_GPIOA, 8
 #define IO_AMP_ASPV       STM32_GPIOA, 6
 
-/* -------------------------------------------------------------------------
- * 112V Booster
- * ------------------------------------------------------------------------- */
-#define IO_BOOST_OCF      STM32_GPIOC, 6
-#define IO_BOOST_ON       STM32_GPIOD, 9
-#define IO_BOOST_TRIG     STM32_GPIOD, 8
+#define IO_PWR1           STM32_GPIOB, 7
+#define IO_PWR2           STM32_GPIOB, 8
+#define IO_PWR3           STM32_GPIOB, 9
+#define IO_PWR4           STM32_GPIOB, 10
+
+#define IO_TRIG           STM32_GPIOB, 14
+
+#define IO_FAULT1         STM32_GPIOB, 2
+#define IO_FAULT2         STM32_GPIOB, 4
+#define IO_FAULT3         STM32_GPIOB, 5
+#define IO_FAULT4         STM32_GPIOB, 6
 
 
 /* high level led on/off functions */

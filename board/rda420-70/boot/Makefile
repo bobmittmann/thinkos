@@ -31,9 +31,10 @@ CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
 SDK = ../../../sdk
 
 LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb
+		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libusbaudio \
+		  $(SDK)/libgdb
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
+LIBS = cm3 stm32f util thinkos ice-comm usbaudio gdb gcc 
 
 INCPATH = $(SDK)/include ../include
 

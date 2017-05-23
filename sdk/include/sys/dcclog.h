@@ -49,6 +49,8 @@
   #elif DEBUG == 8
    #define LOG_LEVEL LOG_MSG
   #elif DEBUG == 9
+   #define LOG_LEVEL LOG_YAP
+  #elif DEBUG == 10
    #define LOG_LEVEL LOG_JABBER
   #else
    #define LOG_LEVEL LOG_TRACE
@@ -83,7 +85,8 @@ enum log_level {
 	LOG_TRACE   = 5,
 	LOG_INFO    = 6,
 	LOG_MSG     = 7,
-	LOG_JABBER  = 8
+	LOG_YAP     = 8,
+	LOG_JABBER  = 9
 };
 
 enum {

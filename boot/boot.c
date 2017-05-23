@@ -77,16 +77,6 @@ int main(int argc, char ** argv)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 
-#if 0
-	{
-		int i;
-
-		for (i = 0; i < 32; ++i) {
-			DCC_LOG(LOG_TRACE, ".");
-		}
-	}
-#endif
-
 #ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");
 	cm3_udelay_calibrate();

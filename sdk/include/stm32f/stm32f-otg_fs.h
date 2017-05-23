@@ -30,6 +30,12 @@
  * OTG_FS control and status register */
 #define STM32F_OTG_FS_GOTGCTL 0x000
 
+/* Bit 20 OTGVER: OTG version */
+/* Selects the OTG revision.
+0:OTG Version 1.3. In this version the core supports Data line pulsing and VBUS pulsing for
+SRP.
+1:OTG Version 2.0. In this version the core supports only Data line pulsing for SRP. */
+
 /* Bit 19 - B-session valid */
 #define OTG_FS_BSVLD (1 << 19)
 /* Indicates the device mode transceiver status.
@@ -96,7 +102,25 @@
 	1: Host negotiation success
 	Note: Only accessible in device mode. */
 
-/* [7..2] Reserved */
+/* Bit 7 BVALOVAL: B-peripheral session valid override value */
+#define OTG_FS_BVALOVAL (1 << 7)
+/* This bit is used to set override value for Bvalid signal when 
+   BVALOEN bit is set.
+   0: Bvalid value is '0' when BVALOEN = 1
+   1: Bvalid value is '1' when BVALOEN = 1
+   Note: Only accessible in device mode. */
+
+/* Bit 6 BVALOEN: B-peripheral session valid override enable */
+#define OTG_FS_BVALOEN (1 << 6)
+/* This bit is used to enable/disable the software to override the 
+   Bvalid signal using the BVALOVAL bit.
+   0: Override is disabled and Bvalid signal from the respective PHY 
+   selected is used internally by the core
+   1: Internally Bvalid received from the PHY is overridden with 
+   BVALOVAL bit value
+   Note: Only accessible in device mode. */
+
+/* [5..2] Reserved */
 
 /* Bit 1 - Session request */
 #define OTG_FS_SRQ (1 << 1)
@@ -127,7 +151,12 @@
  */
 #define STM32F_OTG_FS_GOTGINT 0x004
 
-/* [31..20] Reserved. */
+/* [31..21] Reserved. */
+
+/* Bit 20 IDCHNG: */
+#define OTG_FS_IDCHNG (1 << 20)
+/* This bit when set indicates that there is a change in the value 
+   of the ID input pin. */
 
 /* Bit 19 - Debounce done */
 #define OTG_FS_DBCDNE (1 << 19)
@@ -687,7 +716,11 @@
    1: Unmasked interrupt
    Note: Accessible in both host and device modes. */
 
-/* Bit 27 Reserved */
+/* Bit 27 - LPM interrupt mask */
+#define OTG_FS_LPMINTM (1 << 27)
+/* 0: Masked interrupt
+   1: Unmasked interrupt
+   Note: Accessible in both host and device modes. */
 
 /* Bit 26 - Periodic TxFIFO empty mask */
 #define OTG_FS_PTXFEM (1 << 26)
@@ -707,7 +740,11 @@
    1: Unmasked interrupt
    Note: Only accessible in host mode. */
 
-/* [23..22] Reserved */
+/* Bit 23 - Reset detected interrupt mask */
+#define OTG_FS_RSTDETM (1 << 23)
+/* 0: Masked interrupt
+   1: Unmasked interrupt
+   Note: Only accessible in device mode. */
 
 /* Bit 21 - Incomplete periodic transfer mask */
 #define OTG_FS_IPXFRM (1 << 21)
@@ -1021,6 +1058,11 @@
 
 /* [31..22] Reserved */
 
+
+#define OTG_FS_VBDEN (1 << 21)
+/* Enables VBUS sensing comparators to detect VBUS valid levels on the VBUS PAD for USB host and device operation. If HNP and/or SRP support is enabled, VBUS comparators are automatically enabled independently of VBDEN value.
+0 = VBUS Detection Disabled
+1 = VBUS Detection Enabled */
 
 /* Bit 21 - VBUS sensing disable option */
 #define OTG_FS_NOVBUSSENS (1 << 21)
@@ -2897,8 +2939,6 @@ extern const uint8_t stm32f_otg_fs_ep0_mpsiz_lut[];
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void stm32f_otg_fs_core_reset(struct stm32f_otg_fs * otg_fs);
 
 void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs);
 

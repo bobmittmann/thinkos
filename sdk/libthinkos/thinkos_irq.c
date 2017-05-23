@@ -103,9 +103,10 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 
 #endif
 
+extern int __sizeof_rom_vectors;
+
 #ifdef CM3_RAM_VECTORS
 extern void * __ram_vectors[];
-extern int __sizeof_rom_vectors;
 
 void thinkos_irq_register_svc(int32_t * arg)
 {

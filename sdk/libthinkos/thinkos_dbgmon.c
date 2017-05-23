@@ -50,7 +50,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #ifndef THINKOS_DBGMON_ENABLE_RST_VEC
-#define THINKOS_DBGMON_ENABLE_RST_VEC  1 
+#define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
 #endif
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)

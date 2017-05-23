@@ -131,6 +131,12 @@ EXTERN(stm32f_sai1_isr)
 EXTERN(stm32f_lcd_isr)
 EXTERN(stm32f_lcd_err_isr)
 EXTERN(stm32f_dma2d_isr)
+EXTERN(stm32f_sai2_isr)
+EXTERN(stm32f_qspi_isr)
+EXTERN(stm32f_cec_isr)
+EXTERN(stm32f_spdif_rx_isr)
+EXTERN(stm32f_fmpi2c1_isr)
+EXTERN(stm32f_fmpi2c1_err_isr)
 
 SECTIONS
 {

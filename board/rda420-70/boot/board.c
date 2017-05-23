@@ -40,6 +40,15 @@ static void io_init(void)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
+	/* - USB ----------------------------------------------------*/
+	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_DM, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
+
+	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
+
 	/* - LEDs ---------------------------------------------------------*/
 	stm32_gpio_clr(IO_LED1A);
 	stm32_gpio_mode(IO_LED1A, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -107,6 +116,50 @@ static void io_init(void)
 	stm32_gpio_mode(IO_AMP_POL, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_AMP_LSPV, INPUT, PULL_UP);
 #endif
+
+	stm32_gpio_mode(IO_BKP1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_BKP1);
+
+	stm32_gpio_mode(IO_BKP2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_BKP2);
+
+	stm32_gpio_mode(IO_BKP3, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_BKP3);
+
+	stm32_gpio_mode(IO_BKP4, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_BKP4);
+
+	stm32_gpio_mode(IO_LINB1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_LINB1);
+
+	stm32_gpio_mode(IO_LINB2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_LINB2);
+
+	stm32_gpio_mode(IO_LINB3, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_LINB3);
+
+	stm32_gpio_mode(IO_LINB4, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_LINB4);
+
+	stm32_gpio_mode(IO_PWR1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_PWR1);
+
+	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_PWR2);
+
+	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_PWR2);
+
+	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_PWR2);
+
+	stm32_gpio_mode(IO_TRIG, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_TRIG);
+
+	stm32_gpio_mode(IO_FAULT1, INPUT, SPEED_LOW);
+//	stm32_gpio_mode(IO_FAULT2, INPUT, SPEED_LOW);
+	stm32_gpio_mode(IO_FAULT3, INPUT, SPEED_LOW);
+	stm32_gpio_mode(IO_FAULT4, INPUT, SPEED_LOW);
 }
 
 bool board_init(void)
@@ -119,36 +172,56 @@ bool board_init(void)
 
 	DCC_LOG(LOG_MSG, "io_init()");
 	io_init();
-
+#if 0
 	DCC_LOG(LOG_TRACE, "leds_on()");
 	__led_on(IO_LED1A);
 	__led_on(IO_LED2A);
 	__led_on(IO_LED3A);
 	__led_on(IO_LED4A);
 
-	udelay(100000);
+	udelay(250000);
+
+	__led_off(IO_LED1A);
+	__led_off(IO_LED2A);
+	__led_off(IO_LED3A);
+	__led_off(IO_LED4A);
 
 	__led_on(IO_LED1B);
 	__led_on(IO_LED2B);
 	__led_on(IO_LED3B);
 	__led_on(IO_LED4B);
 
-	udelay(100000);
+	udelay(250000);
+
+	__led_off(IO_LED1B);
+	__led_off(IO_LED2B);
+	__led_off(IO_LED3B);
+	__led_off(IO_LED4B);
 
 	__led_on(IO_LED1C);
 	__led_on(IO_LED2C);
 	__led_on(IO_LED3C);
 	__led_on(IO_LED4C);
 
-	udelay(100000);
+	udelay(250000);
+
+	__led_off(IO_LED1C);
+	__led_off(IO_LED2C);
+	__led_off(IO_LED3C);
+	__led_off(IO_LED4C);
 
 	__led_on(IO_LED1D);
 	__led_on(IO_LED2D);
 	__led_on(IO_LED3D);
 	__led_on(IO_LED4D);
 
-	udelay(100000);
+	udelay(250000);
 
+	__led_off(IO_LED1D);
+	__led_off(IO_LED2D);
+	__led_off(IO_LED3D);
+	__led_off(IO_LED4D);
+#endif
 	/* set the interrupt priority */
 	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
 	/* Enable USB OTG FS interrupts */
@@ -197,22 +270,70 @@ void app_default(void * arg);
 
 bool board_autoboot(uint32_t tick)
 {
-	switch (tick & 3) {
+	switch (tick & 0xf) {
 	case 0:
-		__led_off(IO_LED2D);
-		__led_on(IO_LED2A);
+		__led_off(IO_LED4D);
+		__led_on(IO_LED1A);
 		break;
 	case 1:
+		__led_off(IO_LED1A);
+		__led_on(IO_LED1B);
+		break;
+	case 2:
+		__led_off(IO_LED1B);
+		__led_on(IO_LED1C);
+		break;
+	case 3:
+		__led_off(IO_LED1C);
+		__led_on(IO_LED1D);
+		break;
+	case 4:
+		__led_off(IO_LED1D);
+		__led_on(IO_LED2A);
+		break;
+	case 5:
 		__led_off(IO_LED2A);
 		__led_on(IO_LED2B);
 		break;
-	case 2:
+	case 6:
 		__led_off(IO_LED2B);
 		__led_on(IO_LED2C);
 		break;
-	case 3:
+	case 7:
 		__led_off(IO_LED2C);
 		__led_on(IO_LED2D);
+		break;
+	case 8:
+		__led_off(IO_LED2D);
+		__led_on(IO_LED3A);
+		break;
+	case 9:
+		__led_off(IO_LED3A);
+		__led_on(IO_LED3B);
+		break;
+	case 10:
+		__led_off(IO_LED3B);
+		__led_on(IO_LED3C);
+		break;
+	case 11:
+		__led_off(IO_LED3C);
+		__led_on(IO_LED3D);
+		break;
+	case 12:
+		__led_off(IO_LED3D);
+		__led_on(IO_LED4A);
+		break;
+	case 13:
+		__led_off(IO_LED4A);
+		__led_on(IO_LED4B);
+		break;
+	case 14:
+		__led_off(IO_LED4B);
+		__led_on(IO_LED4C);
+		break;
+	case 15:
+		__led_off(IO_LED4C);
+		__led_on(IO_LED4D);
 		break;
 	}
 

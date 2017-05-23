@@ -661,6 +661,7 @@ _fault:
 	.weak       stm32f_hash_rng_isr
 	.thumb_set  stm32f_hash_rng_isr,_isr
 
+#if defined(STM32F4X)
 	.weak       stm32f_fpu_isr
 	.thumb_set  stm32f_fpu_isr,_isr
 
@@ -690,6 +691,7 @@ _fault:
 
 	.weak       stm32f_dma2d_isr
 	.thumb_set  stm32f_dma2d_isr,_isr
+#endif
 
 #if defined(STM32F446X)
 	.weak       stm32f_sai2_isr
