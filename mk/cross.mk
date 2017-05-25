@@ -79,5 +79,6 @@ endif
 #INCPATH += $(OUTDIR)
 SFLAGS := $(OPTIONS) -Wall $(SFLAGS) $(addprefix -D,$(CDEFS))
 CFLAGS := $(OPTIONS) -Wall $(CFLAGS) $(addprefix -D,$(CDEFS))
-LDFLAGS := $(OPTIONS) $(LDFLAGS)
+LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space)--defsym=,$(SYMDEFS))
+
 

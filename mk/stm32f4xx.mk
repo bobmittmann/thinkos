@@ -43,8 +43,13 @@ endif
 OPTIONS	= -mcpu=$(CPU) -mthumb -mthumb-interwork 
 CROSS_COMPILE = arm-none-eabi-
 
+ifndef APPADDR
+APPADDR := 0x08010000
+endif
+
 ifdef THINKAPP
 CDEFS += "THINKAPP" 
+SYMDEFS += thinkapp=$(APPADDR)
 endif
 
 ifdef LDSCRIPT
@@ -54,6 +59,10 @@ LDFLAGS += -nostdlib -T $(MACH).ld
 endif
 
 include $(THISDIR)/prog.mk
+
+ifndef LOAD_ADDR
+LOAD_ADDR := $(APPADDR)
+endif
 
 include $(THISDIR)/jtag.mk
 

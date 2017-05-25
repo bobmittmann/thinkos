@@ -38,6 +38,10 @@ ifndef CFLAGS
   CFLAGS := -g -O1
 endif
 
+ifndef CFLAGS
+  CFLAGS := -g -O1
+endif
+
 include $(SCRPTDIR)/cross.mk
 
 #------------------------------------------------------------------------------ 
