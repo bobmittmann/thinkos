@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PYTHON=python
-JTAGTOOL_ADDR=192.168.0.51
+JTAGTOOL_ADDR=192.168.10.51
 BUILD_NAME=usbamp
 TOOLS_DIR=../../../tools
 

@@ -32,13 +32,34 @@
 #include "board.h"
 #include "version.h"
 
-static void io_init(void)
+void io_init(void)
 {
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
+
+	/* - Amplifier power --------------------------------------------------*/
+	stm32_gpio_clr(IO_TRIG);
+	stm32_gpio_mode(IO_TRIG, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(IO_PWR1);
+	stm32_gpio_mode(IO_PWR1, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(IO_PWR2);
+	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(IO_PWR3);
+	stm32_gpio_mode(IO_PWR3, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(IO_PWR4);
+	stm32_gpio_mode(IO_PWR4, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	/* Pulse trigger to force power down */
+	stm32_gpio_set(IO_TRIG);
+	udelay(10);
+	stm32_gpio_clr(IO_TRIG);
 
 	/* - USB ----------------------------------------------------*/
 	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
@@ -54,6 +75,7 @@ static void io_init(void)
 	stm32_gpio_mode(IO_LED1A, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED1B);
 	stm32_gpio_mode(IO_LED1B, OUTPUT, PUSH_PULL | SPEED_LOW);
+	/*Trouble LED */
 	stm32_gpio_clr(IO_LED1C);
 	stm32_gpio_mode(IO_LED1C, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED1D);
@@ -63,6 +85,7 @@ static void io_init(void)
 	stm32_gpio_mode(IO_LED2A, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED2B);
 	stm32_gpio_mode(IO_LED2B, OUTPUT, PUSH_PULL | SPEED_LOW);
+	/*Trouble LED */
 	stm32_gpio_clr(IO_LED2C);
 	stm32_gpio_mode(IO_LED2C, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED2D);
@@ -72,6 +95,7 @@ static void io_init(void)
 	stm32_gpio_mode(IO_LED3A, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED3B);
 	stm32_gpio_mode(IO_LED3B, OUTPUT, PUSH_PULL | SPEED_LOW);
+	/*Trouble LED */
 	stm32_gpio_clr(IO_LED3C);
 	stm32_gpio_mode(IO_LED3C, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED3D);
@@ -79,44 +103,15 @@ static void io_init(void)
 
 	stm32_gpio_clr(IO_LED4A);
 	stm32_gpio_mode(IO_LED4A, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_LED4B);
+	/*Trouble LED */
+	stm32_gpio_set(IO_LED4B);
 	stm32_gpio_mode(IO_LED4B, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED4C);
 	stm32_gpio_mode(IO_LED4C, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_clr(IO_LED4D);
 	stm32_gpio_mode(IO_LED4D, OUTPUT, PUSH_PULL | SPEED_LOW);
-#if 0
-	/* - DACs ----------------------------------------------------*/
-	stm32_gpio_mode(IO_DAC1, ANALOG, 0);
-	stm32_gpio_mode(IO_DAC2, ANALOG, 0);
 
-	/* - Relays ----------------------------------------------------*/
-	stm32_gpio_mode(IO_RELAY1, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_mode(IO_RELAY2, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_RELAY1);
-	stm32_gpio_clr(IO_RELAY2);
-
-    /* - CODEC * ------------------------------------------------------ */
-	stm32_gpio_mode(IO_CODEC_DEM0, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_mode(IO_CODEC_DEM1, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_mode(IO_CODEC_RST, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_CODEC_DEM0);
-	stm32_gpio_clr(IO_CODEC_DEM1);
-	stm32_gpio_clr(IO_CODEC_RST);
-
-	stm32_gpio_mode(IO_CODEC_I2S_DIN, ALT_FUNC, SPEED_HIGH);
-	stm32_gpio_mode(IO_CODEC_I2S_DOUT, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_mode(IO_CODEC_I2S_SCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	/* Warning: this pin is shared with the JTAG TDI signal !!! */
-//	stm32_gpio_mode(IO_CODEC_I2S_FS, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_mode(IO_CODEC_I2S_MCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-
-	/* - Amplifier ----------------------------------------------------*/
-	stm32_gpio_mode(IO_AMP_ASPV, ANALOG, 0);
-	stm32_gpio_mode(IO_AMP_POL, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_mode(IO_AMP_LSPV, INPUT, PULL_UP);
-#endif
-
+	/* - Relays ---------------------------------------------------------*/
 	stm32_gpio_mode(IO_BKP1, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_set(IO_BKP1);
 
@@ -141,25 +136,38 @@ static void io_init(void)
 	stm32_gpio_mode(IO_LINB4, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_set(IO_LINB4);
 
-	stm32_gpio_mode(IO_PWR1, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_PWR1);
+	/* - I2S ---------------------------------------------------------*/
+	stm32_gpio_af(IO_I2S2_SD, GPIO_AF5);
+	stm32_gpio_af(IO_I2S2_SCLK, GPIO_AF5);
+	stm32_gpio_af(IO_I2S2_FS, GPIO_AF5);
+	stm32_gpio_af(IO_I2S2_MCLK, GPIO_AF5);
+	stm32_gpio_mode(IO_I2S2_SD, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S2_SCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S2_FS, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S2_MCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_PWR2);
+	stm32_gpio_af(IO_I2S3_SD, GPIO_AF6);
+	stm32_gpio_af(IO_I2S3_SCLK, GPIO_AF6);
+	stm32_gpio_af(IO_I2S3_FS, GPIO_AF6);
+	stm32_gpio_af(IO_I2S3_MCLK, GPIO_AF6);
+	stm32_gpio_mode(IO_I2S3_SD, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S3_SCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S3_FS, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_I2S3_MCLK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_PWR2);
+	/* - Fault ---------------------------------------------------------*/
+	/* Waits before programming the fault lines as fault 2 is connected
+	   to the JTRST preventing the JTAG to work */
 
-	stm32_gpio_mode(IO_PWR2, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_PWR2);
-
-	stm32_gpio_mode(IO_TRIG, OUTPUT, PUSH_PULL | SPEED_LOW);
-	stm32_gpio_clr(IO_TRIG);
-
+	thinkos_sleep(250);
 	stm32_gpio_mode(IO_FAULT1, INPUT, SPEED_LOW);
+#ifndef DEBUG
+	DCC_LOG(LOG_WARNIGN, "Skiping FAULT2 pin config!");
 //	stm32_gpio_mode(IO_FAULT2, INPUT, SPEED_LOW);
+#endif
 	stm32_gpio_mode(IO_FAULT3, INPUT, SPEED_LOW);
 	stm32_gpio_mode(IO_FAULT4, INPUT, SPEED_LOW);
+
 }
 
 int board_init(void)
@@ -175,7 +183,7 @@ int board_init(void)
 	DCC_LOG(LOG_MSG, "io_init()");
 	io_init();
 
-#if 1
+#if 0
 	DCC_LOG(LOG_TRACE, "leds_on()");
 	__led_on(IO_LED1A);
 	__led_on(IO_LED2A);
@@ -229,46 +237,108 @@ int board_init(void)
 #endif
 
 	if (stm32_gpio_stat(IO_JTMS) == 0) {
-		/* Force loading monitor, don't boot */
+		/* Force loading monitor */
 		opt |= BOOT_OPT_DBGCOMM;
 		opt |= BOOT_OPT_CONSOLE;
 		opt |= BOOT_OPT_MONITOR;
 
+		/* Flash all RED leds */
 		__led_on(IO_LED1D);
 		__led_on(IO_LED2D);
 		__led_on(IO_LED3D);
 		__led_on(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 		__led_off(IO_LED1D);
 		__led_off(IO_LED2D);
 		__led_off(IO_LED3D);
 		__led_off(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 		__led_on(IO_LED1D);
 		__led_on(IO_LED2D);
 		__led_on(IO_LED3D);
 		__led_on(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 		__led_off(IO_LED1D);
 		__led_off(IO_LED2D);
 		__led_off(IO_LED3D);
 		__led_off(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 		__led_on(IO_LED1D);
 		__led_on(IO_LED2D);
 		__led_on(IO_LED3D);
 		__led_on(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 		__led_off(IO_LED1D);
 		__led_off(IO_LED2D);
 		__led_off(IO_LED3D);
 		__led_off(IO_LED4D);
-		udelay(250000);
+		thinkos_sleep(250000);
 	} else {
 		opt |= BOOT_OPT_APPRUN;
 	}
 
 	return opt;
+}
+
+void board_softreset(void)
+{
+	struct stm32_rcc * rcc = STM32_RCC;
+
+	DCC_LOG1(LOG_TRACE, "AHB1ENR=0x%08x", rcc->ahb1enr);
+	DCC_LOG1(LOG_TRACE, "AHB2ENR=0x%08x", rcc->ahb2enr);
+	DCC_LOG1(LOG_TRACE, "AHB3ENR=0x%08x", rcc->ahb3enr);
+	DCC_LOG1(LOG_TRACE, "APB1ENR=0x%08x", rcc->apb1enr);
+	DCC_LOG1(LOG_TRACE, "APB2ENR=0x%08x", rcc->apb2enr);
+
+	/* Reset all peripherals except USB_OTG and GPIOA */
+	rcc->ahb1rstr = ~(1 << RCC_GPIOA); 
+	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
+	rcc->ahb3rstr = ~(0);
+	rcc->apb1rstr = ~(0);
+	rcc->apb2rstr = ~(0);
+
+
+	rcc->ahb1rstr = 0;
+	rcc->ahb2rstr = 0;
+	rcc->ahb3rstr = 0;
+	rcc->apb1rstr = 0;
+	rcc->apb2rstr = 0;
+
+	/* disable all peripherals clock sources except USB_OTG and GPIOA */
+	rcc->ahb1enr = (1 << RCC_GPIOA); 
+	rcc->ahb2enr = (1 << RCC_OTGFS);
+	rcc->ahb3enr = 0;
+	rcc->apb1enr = 0;
+	rcc->apb2enr = 0;
+
+	/* reinitialize IO's */
+	io_init();
+
+}
+
+bool board_autoboot(uint32_t tick)
+{
+	switch (tick & 0x3) {
+	case 0:
+		__led_off(IO_LED4A);
+		__led_on(IO_LED1A);
+		break;
+	case 1:
+		__led_off(IO_LED1A);
+		__led_on(IO_LED2A);
+		break;
+	case 2:
+		__led_off(IO_LED2A);
+		__led_on(IO_LED3A);
+		break;
+	case 3:
+		__led_off(IO_LED3A);
+		__led_on(IO_LED4A);
+		break;
+	}
+
+	/* Time window autoboot */
+	return (tick == 40) ? true : false;
 }
 
 void board_on_comm_init(void)
@@ -316,18 +386,25 @@ void board_on_softreset(void)
 
 void app_default(void * arg);
 
-bool board_autoboot(uint32_t tick)
-{
-	/* Time window autoboot */
-	return (tick == 40) ? true : false;
-}
-
 void board_on_error(int code)
 {
 	uint32_t tick;
 
 	for (tick = 0;; ++tick) {
 		thinkos_sleep(125);
+		if (tick & 1) {
+			__led_on(IO_LED1D);
+			__led_on(IO_LED2D);
+			__led_off(IO_LED3D);
+			__led_off(IO_LED4D);
+		} else {
+			__led_on(IO_LED3D);
+			__led_on(IO_LED4D);
+			__led_off(IO_LED1D);
+			__led_off(IO_LED2D);
+		}
+
+#if 0
 		switch (tick & 0xf) {
 		case 0:
 			__led_off(IO_LED4D);
@@ -394,6 +471,7 @@ void board_on_error(int code)
 			__led_on(IO_LED4D);
 			break;
 		}
+#endif
 	}
 }
 

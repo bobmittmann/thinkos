@@ -1672,7 +1672,7 @@
 
 
 /* Bits [30..28] - PLLI2S division factor for I2S clocks */
-#define RCC_PLLI2SR ((30 - 28) << 28)
+#define RCC_PLLI2SR(R) (((R) & 0x7) << 28)
 /* Set and cleared by software to control the I2S clock frequency. These bits 
    should be written only if the PLLI2S is disabled. The factor must be 
    chosen in accordance with the prescaler values inside the I2S peripherals, 
@@ -1688,10 +1688,12 @@
    ...
    111: PLLR = 7 */
 
-/* [27..15] Reserved, always read as 0. */
+#define RCC_PLLI2SQ(Q) (((Q) & 0xf) << 24)
+
+#define RCC_PLLI2SP(P) (((P) & 0x3) << 16)
 
 /* Bits [14..6] - PLLI2S multiplication factor for VCO */
-#define RCC_PLLI2SN ((14 - 6) << 6)
+#define RCC_PLLI2SN(N) (((N) & 0x3ff) << 6)
 /* Set and cleared by software to control the multiplication factor 
    of the VCO. These bits can be written only when the PLLI2S is 
    disabled. Only half-word and word accesses are allowed to write 
@@ -1712,7 +1714,40 @@
    ...
    111111111: PLLI2SN = 511, wrong configuration */
 
-/* [5..0] Reserved, always read as 0. */
+#define RCC_PLLI2SM(M) (((M) & 0x3f) << 0)
+
+/* ------------------------------------------------------------------------- */
+/* RCC DCKCFGR dedicated clocks configuration register */ 
+
+#define STM32F_RCC_DCKCFGR 0x8c
+
+/* Bits 28:27 I2S2SRC: I2S APB2 clock source selection */
+
+#define I2S2SRC_PLLI2S_R (0 << 27)
+#define I2S2SRC_I2S_CKIN (1 << 27)
+#define I2S2SRC_PLL_R    (2 << 27)
+#define I2S2SRC_HSI_HSE  (3 << 27)
+/* Set and reset by software to control the frequency of the APB2 I2S clock.
+These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
+00: I2S2 clock frequency = f(PLLI2S_R)
+01: I2S2 clock frequency = I2S_CKIN Alternate function input frequency
+10: I2S2 clock frequency = f(PLL_R)
+11: I2S2 clock frequency = HSI/HSE depends on PLLSRC bit (PLLCFGR[22]) */
+
+
+/* Bits 26:25 I2S1SRC: I2S APB1 clock source selection */
+#define I2S1SRC_PLLI2S_R (0 << 25)
+#define I2S1SRC_I2S_CKIN (1 << 25)
+#define I2S1SRC_PLL_R    (2 << 25)
+#define I2S1SRC_HSI_HSE  (3 << 25)
+/* Set and reset by software to control the frequency of the APB1 I2S clock.
+These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
+00: I2S1 clock frequency = f(PLLI2S_R)
+01: I2S1 clock frequency = I2S_CKIN Alternate function input frequency
+10: I2S1 clock frequency = f(PLL_R)
+11: I2S1 clock frequency = HSI/HSE depends on PLLSRC bit (PLLCFGR[22])
+*/
+
 
 /* ------------------------------------------------------------------------- */
 /* RCC DCKCFGR2 dedicated clocks configuration register 2 */ 
@@ -2729,6 +2764,86 @@ again in case of a new switch is required)
 #define STM32_CLK_TIM8      STM32_APB2, RCC_TIM8
 #define STM32_CLK_TIM1      STM32_APB2, RCC_TIM1
 
+
+#define STM32_RST_OTGHSULPI STM32_AHB1, RCC_OTGHSULPI
+#define STM32_RST_OTGHS     STM32_AHB1, RCC_OTGHS
+#define STM32_RST_ETHMACPTP STM32_AHB1, RCC_ETHMACPTP
+#define STM32_RST_ETHMACRX  STM32_AHB1, RCC_ETHMACRX
+#define STM32_RST_ETHMACTX  STM32_AHB1, RCC_ETHMACTX
+#define STM32_RST_ETHMAC    STM32_AHB1, RCC_ETHMAC
+#define STM32_RST_DMA2      STM32_AHB1, RCC_DMA2
+#define STM32_RST_DMA1      STM32_AHB1, RCC_DMA1
+#define STM32_RST_BKPSRAM   STM32_AHB1, RCC_BKPSRAM
+#define STM32_RST_CRC       STM32_AHB1, RCC_CRC
+#define STM32_RST_GPIOJ     STM32_AHB1, RCC_GPIOJ
+#define STM32_RST_GPIOI     STM32_AHB1, RCC_GPIOI
+#define STM32_RST_GPIOH     STM32_AHB1, RCC_GPIOH
+#define STM32_RST_GPIOG     STM32_AHB1, RCC_GPIOG
+#define STM32_RST_GPIOF     STM32_AHB1, RCC_GPIOF
+#define STM32_RST_GPIOE     STM32_AHB1, RCC_GPIOE
+#define STM32_RST_GPIOD     STM32_AHB1, RCC_GPIOD
+#define STM32_RST_GPIOC     STM32_AHB1, RCC_GPIOC
+#define STM32_RST_GPIOB     STM32_AHB1, RCC_GPIOB
+#define STM32_RST_GPIOA     STM32_AHB1, RCC_GPIOA
+
+#define STM32_RST_OTGFS     STM32_AHB2, RCC_OTGFS
+#define STM32_RST_RNG       STM32_AHB2, RCC_RNG
+#define STM32_RST_HASH      STM32_AHB2, RCC_HASH
+#define STM32_RST_CRYP      STM32_AHB2, RCC_CRYP
+#define STM32_RST_DCMI      STM32_AHB2, RCC_DCMI
+
+#define STM32_RST_QSPI      STM32_AHB3, RCC_QSPI
+#define STM32_RST_FSMC      STM32_AHB3, RCC_FSMC
+
+#define STM32_RST_UART8     STM32_APB1, RCC_UART8
+#define STM32_RST_UART7     STM32_APB1, RCC_UART7
+#define STM32_RST_DAC       STM32_APB1, RCC_DAC
+#define STM32_RST_PWR       STM32_APB1, RCC_PWR
+#define STM32_RST_CEC       STM32_APB1, RCC_CEC
+#define STM32_RST_CAN2      STM32_APB1, RCC_CAN2
+#define STM32_RST_CAN1      STM32_APB1, RCC_CAN1
+#define STM32_RST_FMPI2C1   STM32_APB1, RCC_FMPI2C1
+
+#define STM32_RST_I2C3      STM32_APB1, RCC_I2C3
+#define STM32_RST_I2C2      STM32_APB1, RCC_I2C2
+#define STM32_RST_I2C1      STM32_APB1, RCC_I2C1
+#define STM32_RST_UART5     STM32_APB1, RCC_UART5
+#define STM32_RST_UART4     STM32_APB1, RCC_UART4
+#define STM32_RST_USART3    STM32_APB1, RCC_USART3
+#define STM32_RST_USART2    STM32_APB1, RCC_USART2
+#define STM32_RST_SPI3      STM32_APB1, RCC_SPI3
+#define STM32_RST_SPI2      STM32_APB1, RCC_SPI2
+#define STM32_RST_WWDG      STM32_APB1, RCC_WWDG
+#define STM32_RST_TIM14     STM32_APB1, RCC_TIM14
+#define STM32_RST_TIM13     STM32_APB1, RCC_TIM13
+#define STM32_RST_TIM12     STM32_APB1, RCC_TIM12
+#define STM32_RST_TIM7      STM32_APB1, RCC_TIM7
+#define STM32_RST_TIM6      STM32_APB1, RCC_TIM6
+#define STM32_RST_TIM5      STM32_APB1, RCC_TIM5
+#define STM32_RST_TIM4      STM32_APB1, RCC_TIM4
+#define STM32_RST_TIM3      STM32_APB1, RCC_TIM3
+#define STM32_RST_TIM2      STM32_APB1, RCC_TIM2
+
+#define STM32_RST_LTDC      STM32_APB2, RCC_LTDC
+#define STM32_RST_SAI2      STM32_APB2, RCC_SAI2
+#define STM32_RST_SAI1      STM32_APB2, RCC_SAI1
+#define STM32_RST_SPI6      STM32_APB2, RCC_SPI6
+#define STM32_RST_SPI5      STM32_APB2, RCC_SPI5
+#define STM32_RST_TIM11     STM32_APB2, RCC_TIM11
+#define STM32_RST_TIM10     STM32_APB2, RCC_TIM10
+#define STM32_RST_TIM9      STM32_APB2, RCC_TIM9
+#define STM32_RST_SYSCFG    STM32_APB2, RCC_SYSCFG
+#define STM32_RST_SPI4      STM32_APB2, RCC_SPI4
+#define STM32_RST_SPI1      STM32_APB2, RCC_SPI1
+#define STM32_RST_SDIO      STM32_APB2, RCC_SDIO
+#define STM32_RST_ADC3      STM32_APB2, RCC_ADC3
+#define STM32_RST_ADC2      STM32_APB2, RCC_ADC2
+#define STM32_RST_ADC1      STM32_APB2, RCC_ADC1
+#define STM32_RST_USART6    STM32_APB2, RCC_USART6
+#define STM32_RST_USART1    STM32_APB2, RCC_USART1
+#define STM32_RST_TIM8      STM32_APB2, RCC_TIM8
+#define STM32_RST_TIM1      STM32_APB2, RCC_TIM1
+
 #endif /* STM32F2X || STM32F4X  */
 
 
@@ -2951,6 +3066,7 @@ extern const uint32_t stm32f_ahb_hz;
 extern const uint32_t stm32f_tim2_hz;
 extern const uint32_t stm32f_tim1_hz;
 extern const uint32_t stm32f_hsi_hz;
+extern const uint32_t stm32f_i2s_hz;
 
 #ifdef __cplusplus
 extern "C" {
@@ -2973,6 +3089,32 @@ static inline void stm32_clk_enable(struct stm32_rcc * rcc,
 	else
 		rcc->ahb1enr |= 1 << bit;
 #endif
+	asm volatile ("dsb" : );
+}
+
+static inline void stm32_reset(struct stm32_rcc * rcc, 
+									int bus, int bit) {
+	uint32_t volatile * rstr;
+
+	if (bus == STM32_APB2)
+		rstr = &rcc->apb2rstr;
+	else if (bus == STM32_APB1)
+		rstr = &rcc->apb1rstr;
+#if defined(STM32F1X) || defined(STM32F3X)
+	else
+		rstr = &rcc->ahbrstr;
+#else
+	else if (bus == STM32_AHB2)
+		rstr = &rcc->ahb2rstr;
+	else if (bus == STM32_AHB3)
+		rstr = &rcc->ahb3rstr;
+	else
+		rstr = &rcc->ahb1rstr;
+#endif
+
+	*rstr |= 1 << bit;
+	asm volatile ("dsb" : );
+	*rstr &= ~(1 << bit);
 	asm volatile ("dsb" : );
 }
 

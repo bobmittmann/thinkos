@@ -94,6 +94,13 @@
   #define PLLP 2
   #define PLLN 112
   #define PLLM 4
+    /* F_VCO = 389454513
+	   F_I2S = 129818171 */
+  #define PLLI2SR 1
+  #define PLLI2SN 127
+  #define PLLI2SM 9
+  #define PLLI2SQ 8
+  #define PLLI2SP 2
 #elif (HSE_HZ == 8000000)
 	/* F_HSE = 8 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
@@ -126,6 +133,7 @@
   #define PLLP 2
   #define PLLN 240
   #define PLLM 12
+  /* Target I2S frequecny = 44100 * 32 * X */
 #else
 #error "HSE_HZ invalid!"
 #endif
@@ -160,6 +168,7 @@
 
 #endif
 
+  /* Target I2S frequecny = 44100 * 32 * X */
 #define VCO_HZ ((HCLK_HZ) * (PLLP))
 #define USB_HZ 48000000
 
@@ -188,14 +197,36 @@
 #error "invalid PLLM!"
 #endif
 
+#if (PLLI2SN < 50)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SN > 432)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SM > 63)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SM < 2)
+#error "invalid PLLI2SM!"
+#endif
+
 #define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)
 #define __HCLK_HZ (__VCO_HZ / PLLP)
+#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
+#define __I2s_HZ (__VCOI2S_HZ / PLLI2SR)
 
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
 const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
 const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_tim2_hz = __HCLK_HZ;
+
+#if defined(STM32F446)
+const uint32_t stm32f_i2s_hz = __I2s_HZ;
+#endif
 
 #ifndef THINKAPP
 
@@ -226,9 +257,7 @@ void __attribute__((section(".init"))) _init(void)
 
 #if defined(STM32F446)
 	rcc->sscgr = 0;
-	rcc->plli2scfgr = 0;
 	rcc->pllsaicfgr = 0;
-	rcc->dckcfgr = 0;
 	rcc->ckgatenr = 0xffffffff;
 	rcc->dckcfgr2 = 0;
 #endif
@@ -305,6 +334,29 @@ void __attribute__((section(".init"))) _init(void)
 	/* Remap the VECTOR table to SRAM 0x20000000  */
 	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
 #endif
+
+#if defined(STM32F446)
+	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
+		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
+
+	/* enable I2SPLL */
+	cr |= RCC_PLLI2SON;
+	rcc->cr = cr;;
+
+	for (again = 8192; ; again--) {
+		cr = rcc->cr;
+		if (cr & RCC_PLLI2SRDY)
+			break;
+		if (again == 0) {
+			/* PLL lock fail */
+			return;
+		}
+	}
+
+	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+
+#endif
+
 }
 
 #endif /* THINKAPP */

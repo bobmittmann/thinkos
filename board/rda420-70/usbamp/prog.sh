@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PYTHON=python
-JTAGTOOL_ADDR=192.168.0.51
-BUILD_NAME=rda420-thinkos-0.1
+JTAGTOOL_ADDR=192.168.10.51
+BUILD_NAME=usbamp
 TOOLS_DIR=../../../tools
 
 ${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r  -a 0x08000000 \

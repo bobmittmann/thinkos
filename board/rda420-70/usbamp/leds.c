@@ -25,13 +25,9 @@
 #include <sys/dcclog.h>
 #include <assert.h>
 #include <thinkos.h>
+#include "io.h"
 
 /* Hardware dependent (Low level) io assignemnts */ 
-
-struct gpio_pin {
-	struct stm32_gpio * gpio;
-	int pin;
-};
 
 const struct gpio_pin led_gpio[] = {
 	{IO_LED1A},
@@ -110,11 +106,6 @@ static bool led_io_get(unsigned int id)
 {
 	return false;
 }
-
-struct io_obj_op {
-	void (* set)(unsigned int, bool);
-	bool (* get)(unsigned int);
-};
 
 const struct io_obj_op led_obj_op = {
 	.set = led_io_set,

@@ -327,6 +327,11 @@ struct serial_dev * stm32f_uart6_serial_dma_init(unsigned int baudrate,
 struct serial_dev * stm32f_uart7_serial_dma_init(unsigned int baudrate,
 												 unsigned int flags);
 
+struct i2s_dev * stm32_spi2_i2s_init(unsigned int samplerate, 
+									 unsigned int flags);
+
+struct i2s_dev * stm32_spi3_i2s_init(unsigned int samplerate, 
+									 unsigned int flags);
 #endif /* __ASSEMBLER__ */
 
 #endif /* __SYS_STM32F_H__ */

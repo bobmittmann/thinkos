@@ -53,6 +53,13 @@ const struct rate_def rate_def_off = {
 	.length = 0
 };
 
+const struct rate_def rate_def_on = {
+	.name = "ON",
+	.length = 1,
+	.pattern = { 100 }
+};
+
+
 const struct rate_def rate_def_20bpm = {
 	.name = "20BPM",
 	.length = 2,
@@ -82,6 +89,7 @@ const struct rate_def rate_def_pulse1 = {
 /* Standard rates */
 const struct rate_def * rate_def_std[RATE_STD_MAX] = {
 	[RATE_OFF] = &rate_def_off,
+	[RATE_ON] = &rate_def_on,
 	[RATE_20BPM] = &rate_def_20bpm,
 	[RATE_120BPM] = &rate_def_120bpm,
 	[RATE_TEMPORAL3] = &rate_def_temporal3,
@@ -169,7 +177,7 @@ const struct thinkos_thread_inf rates_thread_inf = {
 	.stack_ptr = rates_stack, 
 	.stack_size = sizeof(rates_stack), 
 	.priority = 32,
-	.thread_id = 8, 
+	.thread_id = 30, 
 	.paused = 0,
 	.tag = "RATEGEN"
 };
@@ -180,10 +188,18 @@ struct {
 
 void io_set_rate(unsigned int io, unsigned int rate)
 {
-	unsigned int old = 0;
+	struct io_obj_def * obj;
+	int i;
 
-	iodrv.rategen[old].io_bmp &= ~(1 << io);
+	assert(rate < RATE_MAX);
+
+	for (i = 0; i < RATE_MAX; ++i) 
+		iodrv.rategen[i].io_bmp &= ~(1 << io);
+
 	iodrv.rategen[rate].io_bmp |= (1 << io);
+
+	obj = (struct io_obj_def *)&io_obj_tab[io];
+	obj->op->set(obj->id, false);
 }
 
 void iodrv_init(void)

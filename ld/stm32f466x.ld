@@ -24,7 +24,7 @@ _stack = _stack_top - DEFINED(ice_trace_init) * 0x50 - !DEFINED(thinkos_idle_ctx
 _stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 thinkos_idle_stack = _stack * DEFINED(thinkos_idle_ctx);
-__heap_end = ORIGIN(sram3) + LENGTH(sram3);
+__heap_end = _stack;
 
 EXTERN(_stack)
 EXTERN(_reset)

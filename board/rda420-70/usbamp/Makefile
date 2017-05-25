@@ -25,14 +25,15 @@ VERSION_MINOR = "1"
 
 PROG = usbamp
 
-CFILES = usbamp.c board.c leds.c io.c
+CFILES = usbamp.c board.c pcm.c leds.c io.c
 
 SDK = ../../../sdk
 
 LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libusbaudio
+		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libusbaudio \
+		  $(SDK)/libstm32drv $(SDK)/libc
 
-LIBS = cm3 stm32f util thinkos ice-comm usbaudio gcc 
+LIBS = cm3 stm32f util thinkos ice-comm usbaudio stm32drv c m gcc 
 
 INCPATH = $(SDK)/include ../include
 

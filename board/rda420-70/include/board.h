@@ -116,11 +116,15 @@
 #define IO_CODEC_DEM1     STM32_GPIOD, 11
 #define IO_CODEC_RST      STM32_GPIOD, 12
 
-#define IO_CODEC_I2S_DIN  STM32_GPIOC, 11
-#define IO_CODEC_I2S_DOUT STM32_GPIOC, 12
-#define IO_CODEC_I2S_SCLK STM32_GPIOC, 10
-#define IO_CODEC_I2S_FS   STM32_GPIOA, 15
-#define IO_CODEC_I2S_MCLK STM32_GPIOC, 7
+#define IO_I2S2_SD        STM32_GPIOB, 15
+#define IO_I2S2_SCLK      STM32_GPIOB, 13
+#define IO_I2S2_FS        STM32_GPIOB, 12
+#define IO_I2S2_MCLK      STM32_GPIOC, 6
+
+#define IO_I2S3_SD        STM32_GPIOC, 12
+#define IO_I2S3_SCLK      STM32_GPIOC, 10
+#define IO_I2S3_FS        STM32_GPIOA, 4
+#define IO_I2S3_MCLK      STM32_GPIOC, 7
 
 /* -------------------------------------------------------------------------
  * Amplifier 

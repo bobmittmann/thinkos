@@ -48,13 +48,19 @@ struct rate_def {
 	uint16_t pattern[];
 };
 
+struct gpio_pin {
+	struct stm32_gpio * gpio;
+	int pin;
+};
+
 /* Standard rate ids */
 #define RATE_OFF        0
-#define RATE_20BPM      1
-#define RATE_120BPM     2
-#define RATE_TEMPORAL3  3
-#define RATE_PULSE1     4
-#define RATE_STD_MAX    5
+#define RATE_ON         1
+#define RATE_20BPM      2
+#define RATE_120BPM     3
+#define RATE_TEMPORAL3  4
+#define RATE_PULSE1     5
+#define RATE_STD_MAX    6
 
 #define LED1A           0
 #define LED1B           1

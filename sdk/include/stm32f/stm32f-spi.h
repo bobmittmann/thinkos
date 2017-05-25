@@ -402,7 +402,7 @@ Note: Not used for the I2S mode. */
 	Not used in SPI mode */
 
 /* Bits [2..1] - Data length to be transferred */
-#define SPI_DATLEN ((2 - 1) << 1)
+#define SPI_DATLEN_MSK  (0x3 << 1)
 #define SPI_DATLEN_16 (0 << 1)
 #define SPI_DATLEN_24 (1 << 1)
 #define SPI_DATLEN_32 (2 << 1)
@@ -450,6 +450,10 @@ Note: Not used for the I2S mode. */
 
 /* Bits [7..0] - I2S Linear prescaler */
 #define SPI_I2SDIV ((7 - 0) << 0)
+
+#define SPI_I2SDIV_MSK (0xff)
+#define SPI_I2SDIV_SET(VAL) (((VAL) << 0) & SPI_I2SDIV_MSK)
+#define SPI_I2SDIV_GET(REG) (((REG) & SPI_I2SDIV_MSK) >> 0)
 /* I2SDIV [7:0] = 0 or I2SDIV [7:0] = 1 are forbidden values.
    Refer to Section 25.4.3 on page 684. Not used in SPI mode.
 	Note: These bits should be configured when the I2S is disabled. It is 
@@ -472,6 +476,19 @@ struct stm32f_spi {
 
 	volatile uint32_t i2spr;
 };
+
+extern const struct stm32f_spi * const stm32f_spi_lut[];
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int stm32f_spi_lookup(struct stm32f_spi * spi);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #endif /* __ASSEMBLER__ */
 

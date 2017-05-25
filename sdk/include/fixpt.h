@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+#define Q15_MAX 32767
+#define Q15_MIN -32768
+
 /* Conversion form float to fixed point Q1.15 */
 #define Q15(F) ((int32_t)((F) * 32768))
 
@@ -20,7 +23,7 @@
 #define Q15_DIV(X, Y) (((X) << 15) / (Y))
 
 /* Q15 Saturation */
-#define Q15_SAT(X) ((X) < -32768) ? -32768 : (((X) > 32767) ? 32767 : (X))
+#define Q15_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
 
 /* Conversion form float to fixed point Q1.15 */

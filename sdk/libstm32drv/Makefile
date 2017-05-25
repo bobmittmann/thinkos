@@ -35,9 +35,12 @@ SERIAL_CFILES = stm32f-serial.c stm32f-serial_dma.c \
 				stm32f-uart7_dma.c stm32f-uart8_dma.c \
 				serial-file.c
 
+I2S_CFILES = stm32-i2s-core.c stm32-i2s2.c stm32-i2s3.c
+
 CFILES = stm32f-ethif.c stm32f-dac.c stm32f-adc.c \
 		 stm32f-bkp_sram.c stm32f-rtc.c \
-		 $(addprefix serial/,$(SERIAL_CFILES))
+		 $(addprefix serial/,$(SERIAL_CFILES)) \
+		 $(addprefix i2s/,$(I2S_CFILES))
 
 override INCPATH += ./include ../libtcpip/include
 
