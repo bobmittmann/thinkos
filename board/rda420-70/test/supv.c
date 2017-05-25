@@ -178,15 +178,13 @@ const struct thinkos_thread_inf supervisor_inf = {
 	.stack_ptr = supervisor_stack,
 	.stack_size = sizeof(supervisor_stack),
 	.priority = 32,
-	.thread_id = 25,
+	.thread_id = 31,
 	.paused = false,
 	.tag = "SUPV"
 };
 
 void supervisor_init(void)
 {
-	trace_init();
-
 	thinkos_thread_create_inf((void *)supervisor_task, (void *)NULL,
 							  &supervisor_inf);
 }

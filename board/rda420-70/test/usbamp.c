@@ -39,13 +39,14 @@
 #include <thinkos.h>
 #include <math.h>
 #include <assert.h>
+#include <trace.h>
 
 #include "io.h"
 #include "pcm.h"
 #include "amp.h"
 
-#define SAMPLERATE 44100
-//#define SAMPLERATE 22050
+//#define SAMPLERATE 44100
+#define SAMPLERATE 22050
 
 void supervisor_init(void);
 void io_init(void);
@@ -317,19 +318,22 @@ int main(int argc, char ** argv)
 
 	stdio_init();
 
-	printf("1. NVRAM environment init... \n");
-	stm32f_nvram_env_init();
+	printf("1. Initializing debug tracing ... \n");
+	trace_init();
 
-	printf("2. Starting supervisor...\n");
-	supervisor_init();
-
-//	printf("3. Starting IO... \n");
+	printf("2. Initializing IO... \n");
 //	io_init();
 
-	DCC_LOG(LOG_TRACE, "3. iodrv_init()");
+	printf("3. Starting IO driver... \n");
 	iodrv_init();
 
-	printf("4. Initializing audio subsystem ... \n");
+	printf("4. Starting amplifier ...\n");
+	amp_init();
+
+	printf("5. Starting supervisor...\n");
+	supervisor_init();
+
+	printf("6. Initializing audio subsystem ... \n");
 //	line_supv_init();
 
 	printf("7. Starting shell... \n");
@@ -350,18 +354,20 @@ int main(int argc, char ** argv)
 	io_set_rate(LED3B, RATE_TEMPORAL3);
 	io_set_rate(LED4B, RATE_TEMPORAL3); */
 
+	printf("7. Blink some leds ... \n");
 	io_set_rate(LED1A, RATE_120BPM);
 	io_set_rate(LED2A, RATE_120BPM);
 	io_set_rate(LED3A, RATE_120BPM);
 	io_set_rate(LED4A, RATE_120BPM);
 
+	printf("7. Wait a bit ... \n");
 	DCC_LOG(LOG_TRACE, "wait a bit...");
 	thinkos_sleep(2000);
 
 	DCC_LOG(LOG_TRACE, "5. i2s_init()");
+#if 0
 	i2s_init();
 
-#if 0
 	thinkos_sleep(2000);
 	amp_offset(1, 2000);
 	thinkos_sleep(2000);
@@ -374,6 +380,7 @@ int main(int argc, char ** argv)
 #endif
 
 	thinkos_sleep(2000);
+	printf("7. power up amp ... \n");
 	amp_power(1, true);
 /*	thinkos_sleep(2000);
 	amp_power(2, true);

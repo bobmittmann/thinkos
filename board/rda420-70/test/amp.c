@@ -121,7 +121,7 @@ void amp_supv(void)
 {
 	int i;
 
-	for (i = 0; i <= AMP_CKTS; ++i) {
+	for (i = 0; i < AMP_CKTS; ++i) {
 		const struct amp_ckt_def * def;
 		const struct gpio_pin * p;
 		struct amp_ckt_obj * obj;

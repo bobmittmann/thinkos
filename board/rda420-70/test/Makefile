@@ -43,12 +43,12 @@ DEBUG_DIR := Debug
 LIBPATH = ../sdklibs/Debug
 #LIBPATH = ../sdklibs/Release
 
-JTAGTOOL_ADDR= 192.168.10.50
+JTAGTOOL_ADDR= 192.168.10.51
 
 MACH = stm32f446xe
 HSE_HZ = 12000000
 THINKAPP = 1
 LDSCRIPT = test.ld
-APPADDR = 0x08010000
+APPADDR = 0x08020000
 include ../../../mk/stm32f446x.mk
 

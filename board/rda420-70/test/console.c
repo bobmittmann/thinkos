@@ -306,7 +306,7 @@ const struct shell_cmd shell_cmd_tab[] = {
 
 const char * shell_prompt(void)
 {
-	return "[PA75]$ ";
+	return "[RDA420]$ ";
 }
 
 void shell_greeting(FILE * f) 

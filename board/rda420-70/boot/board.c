@@ -159,7 +159,6 @@ void io_init(void)
 	/* Waits before programming the fault lines as fault 2 is connected
 	   to the JTRST preventing the JTAG to work */
 
-	thinkos_sleep(250);
 	stm32_gpio_mode(IO_FAULT1, INPUT, SPEED_LOW);
 #ifndef DEBUG
 	DCC_LOG(LOG_WARNIGN, "Skiping FAULT2 pin config!");
@@ -277,43 +276,13 @@ int board_init(void)
 		opt |= BOOT_OPT_APPRUN;
 	}
 
-	return opt;
-}
+	/* set the interrupt priority */
+	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
+	/* Enable USB OTG FS interrupts */
+	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 
-void board_softreset(void)
-{
-	struct stm32_rcc * rcc = STM32_RCC;
-
-	DCC_LOG1(LOG_TRACE, "AHB1ENR=0x%08x", rcc->ahb1enr);
-	DCC_LOG1(LOG_TRACE, "AHB2ENR=0x%08x", rcc->ahb2enr);
-	DCC_LOG1(LOG_TRACE, "AHB3ENR=0x%08x", rcc->ahb3enr);
-	DCC_LOG1(LOG_TRACE, "APB1ENR=0x%08x", rcc->apb1enr);
-	DCC_LOG1(LOG_TRACE, "APB2ENR=0x%08x", rcc->apb2enr);
-
-	/* Reset all peripherals except USB_OTG and GPIOA */
-	rcc->ahb1rstr = ~(1 << RCC_GPIOA); 
-	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
-	rcc->ahb3rstr = ~(0);
-	rcc->apb1rstr = ~(0);
-	rcc->apb2rstr = ~(0);
-
-
-	rcc->ahb1rstr = 0;
-	rcc->ahb2rstr = 0;
-	rcc->ahb3rstr = 0;
-	rcc->apb1rstr = 0;
-	rcc->apb2rstr = 0;
-
-	/* disable all peripherals clock sources except USB_OTG and GPIOA */
-	rcc->ahb1enr = (1 << RCC_GPIOA); 
-	rcc->ahb2enr = (1 << RCC_OTGFS);
-	rcc->ahb3enr = 0;
-	rcc->apb1enr = 0;
-	rcc->apb2enr = 0;
-
-	/* reinitialize IO's */
-	io_init();
-
+	(void)opt;
+	return 1;
 }
 
 bool board_autoboot(uint32_t tick)
@@ -525,7 +494,7 @@ const struct magic_blk bootldr_magic = {
 const struct magic_blk thinkos_10_app_magic = {
 	.hdr = {
 		.pos = 0,
-		.cnt = 5 
+		.cnt = 3 
 	},
 	.rec = {
 		{ 0xffffffff, 0x0a0de004 },

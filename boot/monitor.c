@@ -314,7 +314,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 static void monitor_app_erase(struct dmon_comm * comm, 
 							  uint32_t addr, unsigned int size)
 {
-	dmprintf(comm, "\r\nErasing application block ... ");
+	dmprintf(comm, "\r\nErasing application block (%08x)... ", addr);
 	dbgmon_soft_reset();
 	if (dmon_app_erase(comm, addr, size))
 		dmprintf(comm, "done.\r\n");

@@ -35,7 +35,8 @@ _reset:
 	b       0f
 	.byte   '\r'
 	.byte   '\n'
-	.string "ThinkOS 1.0 App"
+#ifdef THINKAPP_10
+	.string "ThinkOS 1.0"
 /* Name */
 	.word   0xffffffff
 	.word   0xffffffff
@@ -66,6 +67,9 @@ _reset:
 	.word   0xffffffff
 	.word   0xffffffff
 	.word   0xffffffff
+#else
+	.string "ThinkOS"
+#endif
 0:
 	/* jump to hardware initialization code */
 	/* disable interrupts */
