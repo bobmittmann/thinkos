@@ -39,6 +39,7 @@
 #include <thinkos.h>
 #include <math.h>
 #include <assert.h>
+#include <fixpt.h>
 
 #include "io.h"
 #include "pcm.h"
@@ -46,8 +47,8 @@
 
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
-//#define SAMPLERATE 44100
-#define SAMPLERATE 22050
+#define SAMPLERATE 44100
+//#define SAMPLERATE 22050
 
 void supervisor_init(void);
 void io_init(void);
@@ -119,7 +120,6 @@ struct pcm16 * tonegen(unsigned int samplerate, float freq, float ampl)
 {
 	struct pcm16 * pcm;
 	uint32_t nsamples;
-	int i;
 
 	/* number of samples */
 	nsamples = calc_num_samples(freq, samplerate);
@@ -131,15 +131,15 @@ struct pcm16 * tonegen(unsigned int samplerate, float freq, float ampl)
 	DCC_LOG1(LOG_TRACE, "nsamples=%d", nsamples);
 
 	/* create a PCM buffer */
-	pcm = pcm16_create(nsamples * 2, samplerate);
+	pcm = pcm16_create(nsamples, samplerate);
 
 	DCC_LOG1(LOG_TRACE, "pcm=%p", pcm);
 
 	/* generate a sine wave */
 	pcm16_sin(pcm, freq, ampl);
 
+#if 0
 	/* Expand to left/rigth */
-
 	for (i = nsamples - 1; i >= 0; --i) {
 		int16_t dat;
 
@@ -148,18 +148,10 @@ struct pcm16 * tonegen(unsigned int samplerate, float freq, float ampl)
 		pcm->sample[i * 2] = dat;
 		pcm->sample[i * 2 + 1] = dat;
 	}
+#endif
 
 	return pcm;
 }
-
-#define AUDIO_FRAME_SIZE 512
-
-struct i2splayer {
-	struct i2s_dev * i2s;
-	struct pcm16 * pcm;
-	int16_t offs[2];
-	int16_t buf[2][AUDIO_FRAME_SIZE];
-};
 
 #if 0
 void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
@@ -189,15 +181,71 @@ void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
 }
 #endif
 
+struct iir4 {
+    float a[5];
+    float b[5];
+    float y[5]; /* output samples */
+    float x[5]; /* input samples */
+};
+
+struct iir4_coef {
+    float a[5];
+    float b[5];
+};
+
+void iir4_init(struct iir4 * filt, const struct iir4_coef * coef) 
+{
+	int i;
+
+	for (i = 0; i < 5; ++i) {
+       filt->a[i] = coef->a[i];
+       filt->b[i] = coef->b[i];
+	}
+}
+
+static inline float iir4_filt(struct iir4 * filt, float x) 
+{
+    int i;
+
+    /* shift the old samples */
+    for (i = 4; i > 0; --i) {
+       filt->x[i] = filt->x[i - 1];
+       filt->y[i] = filt->y[i - 1];
+    }
+
+    /* Calculate the new output */
+    filt->x[0] = x;
+    filt->y[0] = filt->a[0] * filt->x[0];
+
+    for(i = 1; i <= 4; ++i)
+        filt->y[0] += filt->a[i] * filt->x[i] - filt->b[i] * filt->y[i];
+    
+    return filt->y[0];
+}
+
+
+#define AUDIO_FRAME_SIZE 512
+
+struct i2splayer {
+	struct i2s_dev * i2s;
+	struct pcm16 * pcm;
+	int16_t offs[2];
+	int16_t buf[2][AUDIO_FRAME_SIZE * 2];
+	struct iir4 filt[2];
+};
+
 void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
 {
 	struct i2s_dev * i2s = p->i2s;
 	struct pcm16 * pcm = p->pcm;
+//	struct iir4 * filt[2];
 	int16_t * buf;
 	int16_t * dat;
 	unsigned int rem;
 	unsigned int cnt;
 
+//	filt[0] = &p->filt[0];
+//	filt[1] = &p->filt[1];
 	rem = pcm->len;
 	dat = pcm->sample;
 	for (; ;) {
@@ -210,10 +258,30 @@ void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
 
 		while (cnt > 0) {
 			n = MIN(rem, cnt);
-			for (i = 0; i < n; ++i)
-				buf[i] = dat[i];
 
-			buf += n;
+			/* left channel */
+			for (i = 0; i < n; ++i) {
+/*				float x;
+				float y;
+
+				x = Q15F(dat[i]);
+				y = iir4_filt(filt[0], x); 
+				buf[i * 2] = Q15(y); */
+				buf[i * 2] = dat[i];
+			}
+
+			/* right channel */
+			for (i = 0; i < n; ++i) {
+/*				float x;
+				float y;
+
+				x = Q15F(dat[i]);
+				y = iir4_filt(filt[1], x); 
+				buf[i * 2 + 1] = Q15(y); */
+				buf[i * 2 + 1] = dat[i];
+			}
+
+			buf += n * 2;
 			dat += n;
 			rem -= n;
 			cnt -= n;
@@ -252,12 +320,54 @@ const struct thinkos_thread_inf i2s2_thread_inf = {
 	.tag = "I2S2"
 };
 
+
+/*
+Filter type: High Pass
+Filter model: Butterworth
+Filter order: 4
+Sampling Frequency: 44 KHz
+Cut Frequency: 0.200000 KHz
+Coefficents Quantization: float
+
+Z domain Zeros
+z = 1.000000 + j 0.000000
+z = 1.000000 + j 0.000000
+z = 1.000000 + j 0.000000
+z = 1.000000 + j 0.000000
+
+Z domain Poles
+z = 0.973953 + j -0.010622
+z = 0.973953 + j 0.010622
+z = 0.988817 + j -0.026042
+z = 0.988817 + j 0.026042
+***************************************************************/
+const struct iir4_coef iir_hp200 = {
+    .a = {
+        0.96353492152938180000,
+        -3.85413968611752720000,
+        5.78120952917629080000,
+        -3.85413968611752720000,
+        0.96353492152938180000
+    },
+
+    .b  = {
+        1.00000000000000000000,
+        -3.92553975070105480000,
+        5.77937889715614440000,
+        -3.78207900848596790000,
+        0.92824049740994874000
+    }
+};
+
 struct i2splayer player[2];
 
 void i2s_init(void)
 {
 	struct i2s_dev * i2s1;
 	struct i2s_dev * i2s2;
+	struct pcm16 * tone;
+
+	tone = tonegen(SAMPLERATE, 1000, 0.90);
 
 	i2s1 = stm32_spi2_i2s_init(SAMPLERATE, 
 							   I2S_TX_EN | I2S_MCK_EN | I2S_16BITS);
@@ -265,16 +375,24 @@ void i2s_init(void)
 							   I2S_TX_EN | I2S_MCK_EN | I2S_16BITS);
 
 	player[0].i2s = i2s1;
-	player[0].pcm = tonegen(SAMPLERATE, 1000, 0.90);
+	player[0].pcm = tone;
 	player[0].offs[0] = 0;
 	player[0].offs[1] = 0;
-	i2s_setbuf(i2s1, player[0].buf[0], player[0].buf[1], AUDIO_FRAME_SIZE);
+	i2s_setbuf(i2s1, player[0].buf[0], player[0].buf[1], 
+			   AUDIO_FRAME_SIZE * 2);
+
+	iir4_init(&player[0].filt[0], &iir_hp200);
+	iir4_init(&player[0].filt[1], &iir_hp200);
 
 	player[1].i2s = i2s2;
-	player[1].pcm = tonegen(SAMPLERATE, 1000, 0.90);
+	player[1].pcm = tone;
 	player[1].offs[0] = 0;
 	player[1].offs[1] = 0;
-	i2s_setbuf(i2s2, player[1].buf[0], player[1].buf[1], AUDIO_FRAME_SIZE);
+	i2s_setbuf(i2s2, player[1].buf[0], player[1].buf[1], 
+			   AUDIO_FRAME_SIZE * 2);
+
+	iir4_init(&player[1].filt[0], &iir_hp200);
+	iir4_init(&player[1].filt[1], &iir_hp200);
 
 	thinkos_thread_create_inf((void *)i2s_task, (void *)&player[0], 
 							  &i2s1_thread_inf);

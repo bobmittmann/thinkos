@@ -167,6 +167,8 @@ void io_init(void)
 	stm32_gpio_mode(IO_FAULT3, INPUT, SPEED_LOW);
 	stm32_gpio_mode(IO_FAULT4, INPUT, SPEED_LOW);
 
+	/* Enble FPU */
+	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
 }
 
 int board_init(void)
