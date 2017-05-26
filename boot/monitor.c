@@ -545,6 +545,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		if (dmgetc(comm) == 'y') {
 			monitor_ymodem_recv(comm, this_board.application.start_addr, 
 								this_board.application.block_size);
+			dmprintf(comm, "\r\nOK\r\n");
 		} else {
 			dmprintf(comm, "\r\n");
 		}

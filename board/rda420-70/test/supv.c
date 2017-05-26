@@ -25,7 +25,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <trace.h>
 #include <thinkos.h>
 #include <assert.h>
 #include <io.h>
@@ -33,9 +32,11 @@
 #include "board.h"
 #include "amp.h"
 
-#define IO_POLL_PERIOD_MS 200
+#define IO_POLL_PERIOD_MS 250
 #define CLOCK_SYNC_INTERVAL_MS 15000
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
 
 /* -------------------------------------------------------------------------
  * System Supervision
@@ -88,7 +89,7 @@ void __attribute__((noreturn)) supervisor_task(void)
 		char msg[80];
 
 		/* 8Hz periodic task */
-		clk += IO_POLL_PERIOD_MS / 2;
+		clk += IO_POLL_PERIOD_MS;
 		thinkos_alarm(clk);
 		count++;
 
@@ -98,6 +99,7 @@ void __attribute__((noreturn)) supervisor_task(void)
 			INF("sync...");
 		}
 
+//		printf("!");
 		amp_supv();
 
 		if ((f = (FILE *)trace_spv.file) != NULL) {

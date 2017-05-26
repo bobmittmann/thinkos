@@ -78,6 +78,7 @@ struct i2s_dev * stm32_spi3_i2s_init(unsigned int samplerate,
 	stm32_spi_i2s_init(drv, samplerate, flags, 0);
 
 	/* configure and Enable interrupts */
+#if 0
 #ifdef THINKAPP
 	thinkos_irq_register(STM32F_IRQ_SPI3, I2S_IRQ_PRIORITY, 
 						 stm32f_spi3_isr);
@@ -97,7 +98,7 @@ struct i2s_dev * stm32_spi3_i2s_init(unsigned int samplerate,
 	cm3_irq_pri_set(STM32F_IRQ_DMA1_STREAM7, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_DMA1_STREAM7);
 #endif
-
+#endif
 	DCC_LOG(LOG_TRACE, "done!");
 
 	return (struct i2s_dev *)&spi3_i2s_dev;

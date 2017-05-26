@@ -97,6 +97,20 @@ void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
 		dmprintf(comm, ", '...'"); 
 
 	if (THINKOS_OBJ_READY == type) {
+#if THINKOS_IRQ_MAX > 0
+		if (thread_id != THINKOS_THREAD_IDLE) {
+			int irq;
+			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+				if (thinkos_rt.irq_th[irq] == thread_id) {
+					break;
+				}
+			}
+			if (irq < THINKOS_IRQ_MAX) {
+				dmprintf(comm, " wait on IRQ[%d]\r\n", irq);
+			} else
+				dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+		} else
+#endif
 		dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 	} else {
 		dmprintf(comm, " %swait on %s(%3d)\r\n", 

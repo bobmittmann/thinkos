@@ -1,4 +1,4 @@
-PATTERN = 'Release\*.bin'
+PATTERN = 'Release\usbamp.bin'
 
 findfirst dh PATTERN FNAME
 
@@ -25,14 +25,10 @@ else
   send 24 ; Ctrl+X
 endif
 
-wait 'cancel'
+wait 'cancel) ...'
 ymodemsend IMAGE
 
 if result=1 then
   wait 'OK'
-  disconnect
-  mpause 3500
-  connect ''
-  sendln 
 endif
 

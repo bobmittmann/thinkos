@@ -97,6 +97,7 @@ struct i2s_op {
 	int (* ioctl)(void *, int, uintptr_t, uintptr_t);
 	int (* enable)(void *);
 	int (* setbuf)(void *, int16_t *, int16_t *, unsigned int);
+	int16_t * (* getbuf)(void *);
 };
 
 struct i2s_dev {
@@ -200,6 +201,12 @@ static inline int i2s_setbuf(struct i2s_dev * dev,
 {
 	return dev->op->setbuf(dev->drv, buf1, buf2, len);
 }
+
+static inline int16_t * i2s_getbuf(struct i2s_dev * dev)
+{
+	return dev->op->getbuf(dev->drv);
+}
+
 
 #ifdef __cplusplus
 extern "C" {

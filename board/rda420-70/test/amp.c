@@ -25,12 +25,14 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <trace.h>
 #include <thinkos.h>
 #include <assert.h>
 #include <io.h>
 
 #include "board.h"
+
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
 
 /* Hardware dependent (Low level) io assignemnts */ 
 
@@ -134,13 +136,13 @@ void amp_supv(void)
 			if (!obj->pwr_fault) {
 				io_set_rate(def->tbl_led, RATE_120BPM);
 				obj->pwr_fault = true;
-				WARN("/!\ CKT %d power fault!\n", i + 1);
+				WARN("/!\\ CKT %d power fault!", i + 1);
 			}
 		} else {
 			if (obj->pwr_fault) {
 				io_set_rate(def->tbl_led, RATE_OFF);
 				obj->pwr_fault = false;
-				WARN("CKT %d power fault restored.\n", i + 1);
+				WARN("CKT %d power fault restored.", i + 1);
 			}
 		}
 	}

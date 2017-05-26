@@ -27,6 +27,9 @@
 #include "stm32-i2s-i.h"
 #include <errno.h>
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
+
 void stm32_spi_i2s_isr(struct stm32_spi_i2s_drv * drv)
 {
 	struct stm32f_spi * spi = drv->spi;
@@ -200,19 +203,7 @@ void stm32_i2s_dma_tx_isr(struct stm32_spi_i2s_drv * drv)
 void stm32_i2s_dma_tx_isr(struct stm32_spi_i2s_drv * drv)
 {
 	if (drv->tx.dmactl.isr[TCIF_BIT]) {
-//		DCC_LOG(LOG_TRACE, "TCIF");
-		/* clear the TX DMA transfer complete flag */
 		drv->tx.dmactl.ifcr[TCIF_BIT] = 1;
-		drv->tx.head++;
-//		if (drv->tx.dmactl.strm->cr & DMA_CT) {
-//			drv->tx.dmactl.strm->m0ar = drv->tx.buf[0];
-//			drv->tx.idx = 1;
-//			DCC_LOG(LOG_MSG, "1.");
-//		} else {
-//			drv->tx.dmactl.strm->m1ar = drv->tx.buf[1];
-//			drv->tx.idx = 0;
-//			DCC_LOG(LOG_MSG, "0.");
-//		}
 		thinkos_flag_give_i(drv->tx_done);
 	}
 	if (drv->tx.dmactl.isr[TEIF_BIT]) {
@@ -225,7 +216,7 @@ void stm32_i2s_dma_tx_isr(struct stm32_spi_i2s_drv * drv)
 
 	if (drv->tx.dmactl.isr[FEIF_BIT]) {
 		DCC_LOG(LOG_TRACE, "FEIF");
-		/* FIXME: DMA transfer error handling... */
+		/* FIXME: DMA fifo error handling... */
 		drv->tx.dmactl.ifcr[FEIF_BIT] = 1;
 	}
 }
@@ -303,9 +294,47 @@ int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
 	/* enable DMA */
 	drv->tx.dmactl.strm->cr |= DMA_EN;
 
+	thinkos_irq_disable(drv->tx.dmactl.irqno);
+
 	return 0;
 }
 
+int16_t * stm32_i2s_getbuf(struct stm32_spi_i2s_drv * drv)
+{
+	int16_t * ptr;
+
+#if 0	
+	/* wait for the transfer to complete */
+	thinkos_flag_take(drv->tx_done);
+#endif
+
+	do {
+		YAP("IRQ: %d", drv->tx.dmactl.irqno);
+		thinkos_irq_wait(drv->tx.dmactl.irqno);
+		if (drv->tx.dmactl.isr[TEIF_BIT]) {
+			/* FIXME: DMA transfer error handling... */
+			drv->tx.dmactl.ifcr[TEIF_BIT] = 1;
+			/* Disable DMA stream */
+			drv->tx.dmactl.strm->cr &= ~DMA_EN;
+			break;
+		}
+		if (drv->tx.dmactl.isr[FEIF_BIT]) {
+			WARNS("I2S FEIF");
+			/* FIXME: DMA fifo error handling... */
+			drv->tx.dmactl.ifcr[FEIF_BIT] = 1;
+		}
+	} while (!drv->tx.dmactl.isr[TCIF_BIT]);
+	drv->tx.dmactl.ifcr[TCIF_BIT] = 1;
+
+	if (drv->tx.dmactl.strm->cr & DMA_CT)
+		ptr = (int16_t *)drv->tx.dmactl.strm->m0ar;
+	else
+		ptr = (int16_t *)drv->tx.dmactl.strm->m1ar;
+
+	YAP("DMA buf: %08x", ptr);
+	
+	return ptr;
+}
 
 int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv, 
 						   unsigned int samplerate, unsigned int flags,
@@ -532,5 +561,6 @@ const struct i2s_op stm32_spi_i2s_op = {
 	.ioctl = (void *)stm32_i2s_dma_ioctl,
 	.enable = (void *)stm32_i2s_enable,
 	.setbuf = (void *)stm32_i2s_setbuf,
+	.getbuf = (void *)stm32_i2s_getbuf
 };
 

@@ -26,6 +26,8 @@ CFILES = usbamp.c io.c leds.c pcm.c amp.c supv.c console.c version.c
 
 SDK = ../../../sdk
 
+LIBDIRS = $(SDK)/libstm32drv
+
 LIBS = gcc m cm3 stm32f util stm32drv c console tty shell trace crc
 
 INCPATH = $(SDK)/include ../include .

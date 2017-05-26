@@ -39,12 +39,13 @@
 #include <thinkos.h>
 #include <math.h>
 #include <assert.h>
-#include <trace.h>
 
 #include "io.h"
 #include "pcm.h"
 #include "amp.h"
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
 //#define SAMPLERATE 44100
 #define SAMPLERATE 22050
 
@@ -151,26 +152,27 @@ struct pcm16 * tonegen(unsigned int samplerate, float freq, float ampl)
 	return pcm;
 }
 
+#define AUDIO_FRAME_SIZE 512
 
 struct i2splayer {
 	struct i2s_dev * i2s;
 	struct pcm16 * pcm;
 	int16_t offs[2];
+	int16_t buf[2][AUDIO_FRAME_SIZE];
 };
 
+#if 0
 void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
 {
 	struct i2s_dev * i2s = p->i2s;
 	struct pcm16 * pcm = p->pcm;
 	unsigned int i;
 
-//	i2s_setbuf(i2s, dat, dat, len);
-	i2s_enable(i2s);
-
 	for (i = 0; ; ++i) {
 		int16_t * dat = pcm->sample;
 		unsigned int rem = pcm->len;
 
+		INFS("I2s send");
 		while (rem) {
 			unsigned int n;
 
@@ -185,14 +187,56 @@ void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
 //		thinkos_sleep(1000);
 	}
 }
+#endif
+
+void __attribute__((noreturn)) i2s_task(struct i2splayer * p)
+{
+	struct i2s_dev * i2s = p->i2s;
+	struct pcm16 * pcm = p->pcm;
+	int16_t * buf;
+	int16_t * dat;
+	unsigned int rem;
+	unsigned int cnt;
+
+	rem = pcm->len;
+	dat = pcm->sample;
+	for (; ;) {
+		unsigned int n;
+		unsigned int i;
+
+		//INFS("i2s_getbuf()");
+		buf = i2s_getbuf(i2s);
+		cnt = AUDIO_FRAME_SIZE;
+
+		while (cnt > 0) {
+			n = MIN(rem, cnt);
+			for (i = 0; i < n; ++i)
+				buf[i] = dat[i];
+
+			buf += n;
+			dat += n;
+			rem -= n;
+			cnt -= n;
+
+			if (rem == 0) {
+//				INFS("I2s send");
+				rem = pcm->len;
+				dat = pcm->sample;
+			}
+		}
+
+//		DCC_LOG1(LOG_TRACE, "%d", i);
+//		thinkos_sleep(1000);
+	}
+}
 
 uint32_t i2s1_stack[1024];
 
 const struct thinkos_thread_inf i2s1_thread_inf = {
 	.stack_ptr = i2s1_stack, 
 	.stack_size = sizeof(i2s1_stack), 
-	.priority = 1,
-	.thread_id = 2, 
+	.priority = 8,
+	.thread_id = 8, 
 	.paused = 0,
 	.tag = "I2S1"
 };
@@ -202,8 +246,8 @@ uint32_t i2s2_stack[1024];
 const struct thinkos_thread_inf i2s2_thread_inf = {
 	.stack_ptr = i2s2_stack, 
 	.stack_size = sizeof(i2s2_stack), 
-	.priority = 1,
-	.thread_id = 1, 
+	.priority = 8,
+	.thread_id = 9, 
 	.paused = 0,
 	.tag = "I2S2"
 };
@@ -213,7 +257,7 @@ struct i2splayer player[2];
 void i2s_init(void)
 {
 	struct i2s_dev * i2s1;
-	struct i2s_dev * i2s2 = NULL;
+	struct i2s_dev * i2s2;
 
 	i2s1 = stm32_spi2_i2s_init(SAMPLERATE, 
 							   I2S_TX_EN | I2S_MCK_EN | I2S_16BITS);
@@ -224,17 +268,22 @@ void i2s_init(void)
 	player[0].pcm = tonegen(SAMPLERATE, 1000, 0.90);
 	player[0].offs[0] = 0;
 	player[0].offs[1] = 0;
+	i2s_setbuf(i2s1, player[0].buf[0], player[0].buf[1], AUDIO_FRAME_SIZE);
 
 	player[1].i2s = i2s2;
 	player[1].pcm = tonegen(SAMPLERATE, 1000, 0.90);
 	player[1].offs[0] = 0;
 	player[1].offs[1] = 0;
+	i2s_setbuf(i2s2, player[1].buf[0], player[1].buf[1], AUDIO_FRAME_SIZE);
 
 	thinkos_thread_create_inf((void *)i2s_task, (void *)&player[0], 
 							  &i2s1_thread_inf);
 
 	thinkos_thread_create_inf((void *)i2s_task, (void *)&player[1], 
 							  &i2s2_thread_inf);
+
+	i2s_enable(i2s1);
+	i2s_enable(i2s2);
 }
 
 void amp_offset(unsigned int ckt, int offs)
@@ -282,8 +331,8 @@ uint32_t stdio_shell_stack[512];
 const struct thinkos_thread_inf stdio_shell_inf = {
 	.stack_ptr = stdio_shell_stack,
 	.stack_size = sizeof(stdio_shell_stack),
-	.priority = 32,
-	.thread_id = 31,
+	.priority = 1,
+	.thread_id = 1,
 	.paused = false,
 	.tag = "SHELL"
 };
@@ -362,11 +411,11 @@ int main(int argc, char ** argv)
 
 	printf("7. Wait a bit ... \n");
 	DCC_LOG(LOG_TRACE, "wait a bit...");
-	thinkos_sleep(2000);
+	thinkos_sleep(1000);
 
 	DCC_LOG(LOG_TRACE, "5. i2s_init()");
-#if 0
 	i2s_init();
+#if 0
 
 	thinkos_sleep(2000);
 	amp_offset(1, 2000);
