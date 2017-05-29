@@ -630,7 +630,7 @@ static inline struct stm32_gpio * vbus_gpio(struct stm32_gpio *__gpio,
 static void otg_io_init(void)
 {
 #if STM32_OTG_FS_IO_INIT
-	DCC_LOG(LOG_MSG, "Configuring GPIO pins...");
+	DCC_LOG(LOG_TRACE, "Configuring GPIO pins...");
 
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 
@@ -646,6 +646,7 @@ static void otg_io_init(void)
 	stm32_gpio_set(OTG_FS_DM);
 
 #ifdef OTG_VBUS_ENABLE
+	DCC_LOG(LOG_TRACE, "Configuring VBUS GPIO ...");
 	if (vbus_gpio(OTG_FS_VBUS) == STM32_GPIOB)
 		stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 
@@ -758,15 +759,14 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		OTG_FS_MMISM;
 #endif
 
-	/* Enable Cortex interrupt */
-#if STM32_OTG_FS_IRQ_ENABLE
-	cm3_irq_enable(STM32F_IRQ_OTG_FS);
-#endif
-
 	otg_fs->gintmsk = OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
 		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
 
 	otg_connect(otg_fs);
+	/* Enable Cortex interrupt */
+#if STM32_OTG_FS_IRQ_ENABLE
+	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+#endif
 
 	DCC_LOG(LOG_TRACE, "done ----------------------------------------");
 

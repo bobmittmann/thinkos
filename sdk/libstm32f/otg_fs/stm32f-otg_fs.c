@@ -279,12 +279,12 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	DCC_LOG(LOG_INFO, "2.");
 
 #ifdef STM32F446X
-#if STM32_VBUS_SENS_ENABLED
+  #if STM32_VBUS_SENS_ENABLED
 	otg_fs->gccfg = OTG_FS_VBDEN | OTG_FS_PWRDWN;
-#else
+  #else
 	otg_fs->gccfg = OTG_FS_PWRDWN;
 	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
-#endif
+  #endif
 #else
 	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
 #endif 
@@ -294,8 +294,8 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 //	otg_fs->pcgcctl = OTG_FS_GATEHCLK;
 
 	/* Device mode Configuration */
-//	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
-	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
+	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
+//	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
 
 #if 0
 	/* Flush the FIFOs */

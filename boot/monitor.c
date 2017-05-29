@@ -301,7 +301,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 								uint32_t addr, unsigned int size)
 {
 	dmprintf(comm, "\r\nYMODEM receive (^X to cancel) ... ");
-//	dbgmon_soft_reset();
+	dbgmon_soft_reset();
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
 		dmprintf(comm, "\r\n#ERROR: YMODEM failed!\r\n"); 
 		return;

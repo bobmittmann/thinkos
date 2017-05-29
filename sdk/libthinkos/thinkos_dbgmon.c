@@ -815,13 +815,13 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 
 			/* this is a breakpoint intruction */
 			if ((insn == 0xbe00) && (code > THINKOS_BKPT_EXCEPT_OFF)) {
+				int err = code - THINKOS_BKPT_EXCEPT_OFF;
 				uint32_t * psp;
 
 				psp = (uint32_t *)cm3_psp_get();
 
-				DCC_LOG4(LOG_ERROR, "<<ERROR>>: "
-						 "code=%d pc=%08x thread=%d psp=%08x", 
-						 code, pc, thinkos_rt.active, psp);
+				DCC_LOG4(LOG_ERROR, "<<ERROR %s>>: pc=%08x thread=%d psp=%08x", 
+						 err, pc, thinkos_rt.active, psp);
 				/* Skip the breakpoint intruction */
 				ctx->pc += 2;
 
@@ -835,7 +835,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
 				thinkos_rt.xcpt_ipsr = ipsr;
 				thinkos_except_buf.active = thinkos_rt.active;
-				thinkos_except_buf.type = code;
+				thinkos_except_buf.type = err;
 #if THINKOS_ENABLE_DEBUG_FAULT
 				/* flag the thread as faulty */
 				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
