@@ -62,7 +62,6 @@
 #if defined(STM32F_OTG_FS) && (STM32_ENABLE_OTG_FS)
 
 #define OTG_EP_MAX          STM32_OTG_FS_EP_MAX 
-#define OTG_VBUS_ENABLE     STM32_OTG_FS_VBUS_ENABLE
 #define OTG_RX_FIFO_SIZE    512
 
 /* Endpoint state */
@@ -639,13 +638,7 @@ static void otg_io_init(void)
 	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-	stm32_gpio_mode(OTG_FS_DP, OUTPUT, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_set(OTG_FS_DP);
-
-	stm32_gpio_mode(OTG_FS_DM, OUTPUT, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_set(OTG_FS_DM);
-
-#ifdef OTG_VBUS_ENABLE
+#if STM32_OTG_FS_VBUS_ENABLE
 	DCC_LOG(LOG_TRACE, "Configuring VBUS GPIO ...");
 	if (vbus_gpio(OTG_FS_VBUS) == STM32_GPIOB)
 		stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
@@ -664,7 +657,7 @@ static void otg_io_init(void)
 
 static void otg_vbus_connect(bool connect)
 {
-#ifdef OTG_VBUS_ENABLE
+#if STM32_OTG_FS_VBUS_ENABLE
 	if (connect)
 		stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
 	else
@@ -717,9 +710,6 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 {
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
 
-#if 0
-	drv->otg_fs = otg_fs;
-#endif
 	drv->cl = cl;
 	drv->ev = ev;
 
@@ -732,8 +722,9 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 	/* Initialize as a device */
 	stm32f_otg_fs_device_init(otg_fs);
 
+	/* Reset global interrupts mask */
 #if 0
-	otg_fs->gintmsk |= 
+	otg_fs->gintmsk = 
 		OTG_FS_WUIM |
 		OTG_FS_SRQIM |
 		OTG_FS_DISCINT |
@@ -753,6 +744,7 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		OTG_FS_ESUSPM |
 		OTG_FS_GONAKEFFM |
 		OTG_FS_GINAKEFFM |
+		OTG_HS_NPTXFEM |
 		OTG_FS_RXFLVLM |
 		OTG_FS_SOFM |
 		OTG_FS_OTGINT |
@@ -760,9 +752,10 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 #endif
 
 	otg_fs->gintmsk = OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
-		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+				OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
 
 	otg_connect(otg_fs);
+
 	/* Enable Cortex interrupt */
 #if STM32_OTG_FS_IRQ_ENABLE
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
