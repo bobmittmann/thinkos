@@ -11,11 +11,12 @@ endif
 findclose dh
 getdir BASEDIR
 strconcat BASEDIR 'Release\'
-makepath IMAGE BASEDIR FNAME
+;makepath IMAGE BASEDIR FNAME
+;changedir BASEDIR
 
-#messagebox IMAGE "Firmware!"
+;messagebox IMAGE "Firmware!"
+;sendln
 
-#sendln
 send 25 ; Ctrl+Y
 wait '[y]?' 'CC'
 
@@ -27,7 +28,11 @@ endif
 
 wait 'cancel) ...'
 mpause 500
-ymodemsend IMAGE
+
+;ymodemsend FNAME
+;xmodemsend 'release\usbamp.bin' 3
+;xmodemsend 'release\usbamp.bin' 3
+ymodemsend 'release\test.bin'
 
 if result=1 then
   wait 'OK'

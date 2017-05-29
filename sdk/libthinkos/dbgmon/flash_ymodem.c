@@ -77,24 +77,39 @@ int dmon_ymodem_flash(struct dmon_comm * comm,
 		if ((ret == 0) && (ry->xmodem) )
 			break;
 		int len = ret;
+		int i;
 		if (ry->pktno == 1) {
 			char * cp;
 			int fsize;
 
+//			DCC_LOG1(LOG_INFO, "YMODEM pkt, len=%d...", len);
+			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
+
 			cp = (char *)ry->pkt.data;
-			DCC_LOGSTR(LOG_INFO, "fname='%s'", cp);
-			while (*cp != '\0')
-				cp++;
-			/* skip null */
-			cp++;
-			fsize = dec2int(cp);
-			if (fsize == 0) {
+			if (*cp == '\0') {
+				DCC_LOG(LOG_WARNING, "file name is empty!");
 				ret = 0;
 				break;
 			}
-			DCC_LOG1(LOG_INFO, "fsize='%d'", fsize);
-			ry->fsize = fsize;
+
+			DCC_LOGSTR(LOG_INFO, "fname='%s'", cp);
+			for (i = 0; (cp[i] != '\0') & (i < len); ++i);
+			for (; (cp[i] == '\0') & (i < len); ++i);
+			if (i < len) {
+				fsize = dec2int(&cp[i]);
+				if (fsize == 0) {
+					DCC_LOG(LOG_WARNING, "file size is zero!");
+					ret = 0;
+					break;
+				} else {
+					DCC_LOG1(LOG_INFO, "fsize='%d'", fsize);
+					ry->fsize = fsize;
+				}
+			} else {
+				DCC_LOG(LOG_WARNING, "no file size info!");
+			}
 			DCC_LOG(LOG_INFO, "YMODEM first packet...");
+			/* skip null */
 		} else {
 			if (ry->pktno == 2) {
 				stm32_flash_erase(offs, ry->fsize);

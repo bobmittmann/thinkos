@@ -197,6 +197,8 @@
 #error "invalid PLLM!"
 #endif
 
+
+#if defined(STM32F446)
 #if (PLLI2SN < 50)
 #error "invalid PLLI2SN!"
 #endif
@@ -212,11 +214,12 @@
 #if (PLLI2SM < 2)
 #error "invalid PLLI2SM!"
 #endif
+#endif
 
 #define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)
 #define __HCLK_HZ (__VCO_HZ / PLLP)
 #define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
-#define __I2s_HZ (__VCOI2S_HZ / PLLI2SR)
+#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
 
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
 const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
@@ -225,7 +228,7 @@ const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_tim2_hz = __HCLK_HZ;
 
 #if defined(STM32F446)
-const uint32_t stm32f_i2s_hz = __I2s_HZ;
+const uint32_t stm32f_i2s_hz = __I2S_HZ;
 #endif
 
 #ifndef THINKAPP

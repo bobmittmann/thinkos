@@ -173,8 +173,14 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
-			DCC_LOG(LOG_INFO, "rxmit ...");
-			continue;
+/*			if ((seq == 0) & (rx->xmodem == 0)) {
+				DCC_LOG(LOG_WARNING, "Ymodem restart...");
+				rx->pktno = 0;
+			} else */ {
+				DCC_LOG2(LOG_INFO, "pktno=%d count=%d rxmit ...", 
+						 rx->pktno, rx->count);
+				continue;
+			}
 		}
 
 		if (seq != (rx->pktno & 0xff)) {

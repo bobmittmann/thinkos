@@ -294,8 +294,8 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 //	otg_fs->pcgcctl = OTG_FS_GATEHCLK;
 
 	/* Device mode Configuration */
-	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
-//	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
+//	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
+	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
 
 #if 0
 	/* Flush the FIFOs */

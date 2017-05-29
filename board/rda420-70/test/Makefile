@@ -20,9 +20,9 @@
 # 
 
 
-PROG = usbamp
+PROG = test
 
-CFILES = usbamp.c io.c leds.c pcm.c amp.c supv.c console.c version.c
+CFILES = test.c io.c leds.c pcm.c amp.c supv.c console.c version.c
 
 SDK = ../../../sdk
 

@@ -301,7 +301,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 								uint32_t addr, unsigned int size)
 {
 	dmprintf(comm, "\r\nYMODEM receive (^X to cancel) ... ");
-	dbgmon_soft_reset();
+//	dbgmon_soft_reset();
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
 		dmprintf(comm, "\r\n#ERROR: YMODEM failed!\r\n"); 
 		return;
@@ -723,6 +723,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			dbgmon_clear(DBGMON_ALARM);
 			if (this_board.autoboot(tick_cnt++) && 
 				dmon_app_exec(this_board.application.start_addr, false)) {
+				DCC_LOG(LOG_TRACE, "autoboot app_exec()...");
 				sigmask &= ~(1 << DBGMON_ALARM);
 				this_board.on_appload();
 			} else {

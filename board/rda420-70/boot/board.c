@@ -283,6 +283,8 @@ int board_init(void)
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 
+	DCC_XXD(LOG_TRACE, "vectors", (void *)0, 32);
+
 	(void)opt;
 	return 1;
 }

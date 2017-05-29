@@ -26,7 +26,8 @@ LIB_STATIC = ice-comm
 CFILES = ice-comm.c ice-io.c ice-comm_wr32.c \
 		 ice-trace_init.c ice-trace0.c ice-trace1.c \
 		 ice-trace2.c ice-trace3.c ice-trace4.c ice-trace5.c ice-trace6.c \
-		 ice-trace7.c ice-trace8.c ice-trace9.c ice-trace10.c ice-tracestr.c 
+		 ice-trace7.c ice-trace8.c ice-trace9.c ice-trace10.c ice-tracestr.c \
+		 ice-tracebin.c 
 
 include ../../mk/lib.mk
 

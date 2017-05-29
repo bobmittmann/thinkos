@@ -47,8 +47,8 @@
 
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
-#define SAMPLERATE 44100
-//#define SAMPLERATE 22050
+//#define SAMPLERATE 44100
+#define SAMPLERATE 22050
 
 void supervisor_init(void);
 void io_init(void);

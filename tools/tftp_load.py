@@ -144,7 +144,7 @@ def script_error(msg, script):
 	print("{0}: error: {1}".format(progname, msg))
 	print("")
 	print("\"{:s}\"".format(script))
-	sys.exit(2)
+	sys.exit(1)
 
 def main():
 	global progname 

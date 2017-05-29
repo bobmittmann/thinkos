@@ -26,7 +26,9 @@ else
 endif
 
 wait 'cancel'
-ymodemsend IMAGE
+
+;ymodemsend IMAGE
+;xmodemsend IMAGE
 
 if result=1 then
   wait 'OK'

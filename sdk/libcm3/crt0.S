@@ -72,11 +72,10 @@ _reset:
 #endif
 0:
 	/* jump to hardware initialization code */
-	/* disable interrupts */
     mov     r8, r0
     mov     r9, r1
     mov     r10, lr
-#else
+#else /* THINKAPP */
 	bl		_init
 #endif
 

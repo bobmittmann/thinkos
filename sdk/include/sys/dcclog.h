@@ -91,7 +91,8 @@ enum log_level {
 
 enum {
 	LOG_OPT_NONE = 0,
-	LOG_OPT_STR  = 1
+	LOG_OPT_STR  = 1,
+	LOG_OPT_XXD  = 2
 };
 
 #ifdef ENABLE_LOG
@@ -221,6 +222,14 @@ enum {
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__EXPR)); \
 	_halt(); }
 
+#define DCC_XXD(__LVL, __STR, __PTR, __LEN) \
+	do { if (__LVL <= LOG_LEVEL)  { ice_tracebin( ({ \
+	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
+	static const char _m[] __attribute__ ((section(".dccdata"))) = (__STR);\
+	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
+	log_entry = { _f, __LINE__, __LVL, LOG_OPT_XXD, __FUNCTION__, _m }; \
+	(struct dcc_trace_entry *)&log_entry; }), (__PTR), (__LEN)); }} while (0)
+
 #define __STRING(x)	#x
 #undef	assert
 #define assert(EXPR) do { if (!(EXPR)) DCC_ASSERT_FAIL(__STRING(EXPR)) } while (0)
@@ -242,6 +251,8 @@ enum {
 #define DCC_LOG10(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, \
 				  __H, __I, __J)
 #define DCC_LOGSTR(__LVL, __FMT, __STR)
+
+#define DCC_XXD(__LVL, __STR, __PTR, __LEN) 
 
 #endif
 
@@ -313,6 +324,9 @@ void ice_trace10(const struct dcc_trace_entry * __entry, int __a, int __b,
 			 int __i, int __j);
 
 void ice_tracestr(const struct dcc_trace_entry * __entry, const char * __s);
+
+void ice_tracebin(const struct dcc_trace_entry * __entry, 
+				  const void * __ptr, unsigned int __len);
 
 #ifdef __cplusplus
 }

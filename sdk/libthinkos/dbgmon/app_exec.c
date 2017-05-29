@@ -60,6 +60,7 @@ bool dmon_app_exec(uint32_t addr, bool paused)
 		(app[1] != 0x6e696854) ||
 		(app[2] != 0x00534f6b)) {
 		DCC_LOG1(LOG_WARNING, "invalid signature at %p!", app);
+		DCC_XXD(LOG_WARNING, "app", app, 32);
 		return false;
 	}
 

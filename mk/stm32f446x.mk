@@ -49,7 +49,7 @@ APPADDR := 0x08010000
 endif
 
 ifdef THINKAPP
-CDEFS += "THINKAPP" 
+CDEFS += THINKAPP
 SYMDEFS += __thinkapp=$(APPADDR)
 endif
 
