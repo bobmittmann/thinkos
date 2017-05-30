@@ -754,7 +754,9 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 	otg_fs->gintmsk = OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
 				OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
 
+#ifdef STM32F446X
 	otg_connect(otg_fs);
+#endif
 
 	/* Enable Cortex interrupt */
 #if STM32_OTG_FS_IRQ_ENABLE
@@ -1357,7 +1359,7 @@ void stm32f_otg_fs_isr(void)
 
 	if (gintsts & OTG_FS_USBRST ) {
 		/* end of bus reset */
-		DCC_LOG(LOG_MSG, "<USBRST> --------------- [DEFAULT]");
+		DCC_LOG(LOG_TRACE, "<USBRST> --------------- [DEFAULT]");
 		stm32f_otg_dev_reset(drv);
 	}
 
