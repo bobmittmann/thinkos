@@ -351,7 +351,7 @@ int etharp_input(struct ifnet * __if, struct etharp * __arp, int __len)
 
 	/* is a valid destination ? */
 	if (daddr != __if->if_ipv4_addr) {
-		DCC_LOG2(LOG_TRACE, "%I:%I, not for me!", saddr, daddr);
+		DCC_LOG2(LOG_INFO, "%I:%I, not for me!", saddr, daddr);
 		ETHARP_PROTO_STAT_ADD(rx_drop, 1);
 		return -1;
 	}
