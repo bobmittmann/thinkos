@@ -308,7 +308,7 @@ static bool __ep_tx_push(struct stm32f_otg_drv * drv, int ep_id)
 
 	if (xfrsiz < mpsiz) {
 		if (free < xfrsiz) {
-			DCC_LOG(LOG_PANIC, "free < xfrsiz !!!");
+			DCC_LOG(LOG_ERROR, "free < xfrsiz !!!");
 			otg_fs->diepempmsk &= ~(1 << ep_id);
 			return false;
 		}
@@ -316,7 +316,7 @@ static bool __ep_tx_push(struct stm32f_otg_drv * drv, int ep_id)
 		cnt = xfrsiz;
 	} else {
 		if (free < mpsiz) {
-			DCC_LOG(LOG_PANIC, "free < mpsiz !!!");
+			DCC_LOG(LOG_ERROR, "free < mpsiz !!!");
 			otg_fs->diepempmsk &= ~(1 << ep_id);
 			return false;
 		}
@@ -722,8 +722,15 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 	/* Initialize as a device */
 	stm32f_otg_fs_device_init(otg_fs);
 
-	/* Reset global interrupts mask */
-#if 0
+	/* 2. Program the OTG_FS_GINTMSK register to unmask the 
+	   following interrupts:
+	   â€“ Wakeup 
+	   â€“ USB reset
+	   â€“ Enumeration done
+	   â€“ Early suspend
+	   â€“ USB suspend
+	   â€“ SOF */
+#if DEBUG
 	otg_fs->gintmsk = 
 		OTG_FS_WUIM |
 		OTG_FS_SRQIM |
@@ -744,15 +751,15 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv, usb_class_t * cl,
 		OTG_FS_ESUSPM |
 		OTG_FS_GONAKEFFM |
 		OTG_FS_GINAKEFFM |
-		OTG_HS_NPTXFEM |
+		OTG_FS_NPTXFEM |
 		OTG_FS_RXFLVLM |
 		OTG_FS_SOFM |
 		OTG_FS_OTGINT |
 		OTG_FS_MMISM;
-#endif
-
+#else
 	otg_fs->gintmsk = OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
-				OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
+#endif
 
 #ifdef STM32F446X
 	otg_connect(otg_fs);
@@ -1355,7 +1362,6 @@ void stm32f_otg_fs_isr(void)
 	   At this point, the device is ready to accept SOF packets and perform 
 	   control transfers on control endpoint 0. */
 	}
-
 
 	if (gintsts & OTG_FS_USBRST ) {
 		/* end of bus reset */

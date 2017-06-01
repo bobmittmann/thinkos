@@ -295,6 +295,10 @@ enum {
 #define STM32F_FSMC_NE1 ((uint32_t *)0x60000000)
 #define STM32_FLASH_MEM ((uint8_t *)0x08000000)
 
+#define STM32_MEM_FLASH  (void *)(0x08000000)
+#define STM32_MEM_EEPROM (void *)(0x08080000)
+#define STM32_MEM_SRAM   (void *)(0x20000000)
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* __STM32F4XX_H__ */

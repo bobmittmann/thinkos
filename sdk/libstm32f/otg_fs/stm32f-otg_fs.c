@@ -257,47 +257,10 @@ static void stm32f_otg_fs_core_reset(struct stm32f_otg_fs * otg_fs)
 	udelay(3);
 }
 
-void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
+void stm32f_otg_fs_clear(struct stm32f_otg_fs * otg_fs)
 {
-//	uint32_t depctl;
-//	int i;
-
-	DCC_LOG(LOG_INFO, "1.");
-
-	/* Disable global interrupts */
-//	otg_fs->gahbcfg = 0; 
-
-	/* - Force device mode 
-	   - Full Speed serial transceiver select */
-	otg_fs->gusbcfg = OTG_FS_FDMOD | OTG_FS_TRDT_SET(5) | 
-		OTG_FS_PHYSEL | OTG_FS_TOCAL_SET(1);
-//		OTG_FS_PHYSEL | OTG_FS_SRPCAP | OTG_FS_TOCAL_SET(1);
-
-	/* Reset after a PHY select and set Device mode */
-	stm32f_otg_fs_core_reset(otg_fs);
-
-	DCC_LOG(LOG_INFO, "2.");
-
-#ifdef STM32F446X
-  #if STM32_VBUS_SENS_ENABLED
-	otg_fs->gccfg = OTG_FS_VBDEN | OTG_FS_PWRDWN;
-  #else
-	otg_fs->gccfg = OTG_FS_PWRDWN;
-	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
-  #endif
-#else
-	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
-#endif 
-
-	/* Restart the Phy Clock */
-	otg_fs->pcgcctl = 0;
-//	otg_fs->pcgcctl = OTG_FS_GATEHCLK;
-
-	/* Device mode Configuration */
-	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
-//	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
-
-#if 0
+	uint32_t depctl;
+	int i;
 	/* Flush the FIFOs */
 	stm32f_otg_fs_txfifo_flush(otg_fs, 0x10);
 	stm32f_otg_fs_rxfifo_flush(otg_fs);
@@ -321,12 +284,43 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 		otg_fs->outep[i].doeptsiz = 0;
 		otg_fs->outep[i].doepint = 0xff;
 	}
+}
+
+void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
+{
+	DCC_LOG(LOG_INFO, "1.");
+
+	/* Disable global interrupts */
+	otg_fs->gahbcfg = 0; 
+
+	/* - Force device mode 
+	   - Full Speed serial transceiver select */
+	otg_fs->gusbcfg = OTG_FS_FDMOD | OTG_FS_TRDT_SET(5) | 
+		OTG_FS_PHYSEL | OTG_FS_SRPCAP | OTG_FS_TOCAL_SET(1);
+
+	/* Reset after a PHY select and set Device mode */
+	stm32f_otg_fs_core_reset(otg_fs);
+
+	DCC_LOG(LOG_INFO, "2.");
+
+	/* Restart the Phy Clock */
+	otg_fs->pcgcctl = 0;
+//	otg_fs->pcgcctl = OTG_FS_GATEHCLK;
+
+#if 0
+	stm32f_otg_fs_clear(otg_fs);
 #endif
+
 	/* The application must perform the following steps to initialize the 
 	   core as a device on power-up or after a mode change from host to device.
 	1. Program the following fields in the OTG_FS_DCFG register:
 	â€“ Device speed
 	- Non-zero-length status OUT handshake */
+#ifdef STM32F446X
+	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_NZLSOHSK | OTG_FS_DSPD_FULL;
+#else
+	otg_fs->dcfg = OTG_FS_PFIVL_80 | OTG_FS_DSPD_FULL;
+#endif 
 
 	/* 2. Program the OTG_FS_GINTMSK register to unmask the 
 	   following interrupts:
@@ -337,16 +331,22 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	   â€“ USB suspend
 	   â€“ SOF */
 
-/*	XXX: Interrupts are enabled on other level
-	otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT; 
-	otg_fs->gintmsk |= OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM | 
-		OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
-	otg_fs->gintmsk |=  OTG_FS_IEPINTM | OTG_FS_OEPINTM | 
-		OTG_FS_IISOIXFRM | OTG_FS_IISOOXFRM | OTG_FS_RXFLVLM | OTG_FS_SOFM; */
+/*	XXX: Interrupts are enabled in the device level */
 
 	/* 3. Program the VBUSBSEN bit in the OTG_FS_GCCFG register to enable VBUS 
 	   sensing in â€œBâ€� device mode and supply the 5 volts across the pull-up 
 	   resistor on the DP line. */
+
+#ifdef STM32F446X
+  #if STM32_VBUS_SENS_ENABLED
+	otg_fs->gccfg = OTG_FS_VBDEN | OTG_FS_PWRDWN;
+  #else
+	otg_fs->gccfg = OTG_FS_PWRDWN;
+	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
+  #endif
+#else
+	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
+#endif 
 
 	/* 4. Wait for the USBRST interrupt in OTG_FS_GINTSTS. It indicates that 
 	   a reset has been detected on the USB that lasts for about 10 ms on 
@@ -359,15 +359,13 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	   At this point, the device is ready to accept SOF packets and perform 
 	   control transfers on control endpoint 0. */
 
-
-	DCC_LOG1(LOG_TRACE, "PCGCCTL=0x%08X", otg_fs->pcgcctl);
-	DCC_LOG1(LOG_TRACE, "GOTGCTL=0x%08x", otg_fs->gotgctl);
-
 	/* AHB configuration */
 	/* Enable global interrupts */
 	otg_fs->gahbcfg = OTG_FS_PTXFELVL | OTG_FS_TXFELVL | OTG_FS_GINTMSK; 
 
-	DCC_LOG(LOG_INFO, "3.");
+	DCC_LOG1(LOG_INFO, "PCGCCTL=0x%08X", otg_fs->pcgcctl);
+	DCC_LOG1(LOG_INFO, "GOTGCTL=0x%08x", otg_fs->gotgctl);
+
 }
 
 #ifdef DEBUG
