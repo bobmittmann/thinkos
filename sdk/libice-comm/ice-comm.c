@@ -35,12 +35,19 @@ void ice_comm_sync(void)
 {
 	struct ice_comm_blk * comm = ICE_COMM_BLK;
 	uint32_t fm = cm3_faultmask_get(); /* save fault mask */
+	uint32_t ro;
+	uint32_t wo;
 
 	cm3_cpsid_f(); /* disable interrupts and faults */
 
-	comm->dev = DEV_SYNC;
-	comm->tx_head = 0;
-	comm->tx_tail = 0;
+	ro = COMM_RO(0, 0, 0);
+	wo = COMM_WO(0, 0, DEV_SYNC);
+
+	comm->ro = ro;
+	comm->wo = wo;
+
+	/* Update the Debug Core Register Data Register */
+	CM3_DCB->dcrdr = wo; 
 
 	cm3_faultmask_set(fm);  /* restore fault mask */
 }
@@ -49,12 +56,20 @@ void ice_comm_connect(void)
 {
 	struct ice_comm_blk * comm = ICE_COMM_BLK;
 	uint32_t fm = cm3_faultmask_get(); /* save fault mask */
+	uint32_t wo;
 
 	cm3_cpsid_f(); /* disable interrupts and faults */
 	comm->dev = DEV_SYNC;
+	
+	wo = comm->wo;
+	wo = COMM_DEV_SET(wo, DEV_SYNC);
+	comm->wo = wo;
+	CM3_DCB->dcrdr = wo; 
 	while (comm->dbg != DBG_CONNECTED) {
 		if (comm->dbg == DBG_SYNC) {
-			comm->dev = DEV_CONNECTED;
+			wo = COMM_DEV_SET(wo, DEV_CONNECTED);
+			comm->wo = wo;
+			CM3_DCB->dcrdr = wo; 
 		}
 	}
 	cm3_faultmask_set(fm);  /* restore fault mask */
