@@ -56,6 +56,7 @@ SFILES = stm32f-vec.S
 CFILES = stm32f2x-init.c stm32f1x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c  stm32f-exti.c stm32f-mco.c\
 		 stm32f-dma.c stm32f2x-flash.c stm32f1x-flash.c stm32f-rtc.c\
+		 stm32-crc.c\
 		 $(addprefix usart/,$(USART_CFILES))\
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
 		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
