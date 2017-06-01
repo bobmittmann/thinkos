@@ -339,6 +339,7 @@ void __attribute__((section(".init"))) _init(void)
 #endif
 
 #if defined(STM32F446)
+	/* configure IS2 PLL */
 	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
 		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
 
@@ -357,7 +358,6 @@ void __attribute__((section(".init"))) _init(void)
 	}
 
 	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
-
 #endif
 
 }
@@ -365,5 +365,4 @@ void __attribute__((section(".init"))) _init(void)
 #endif /* THINKAPP */
 
 #endif /* defined(STM32F2X) || defined(STM32F4X) */
-
 

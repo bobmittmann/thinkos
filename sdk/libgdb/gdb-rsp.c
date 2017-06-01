@@ -942,7 +942,7 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 	if (size > max)
 		size = max;
 
-	if ((ret = target_mem_read(addr, buf, size)) < 0) {
+	if ((ret = target_mem_read(addr, buf, size)) <= 0) {
 		DCC_LOG3(LOG_INFO, "%d addr=%08x size=%d", ret, addr, size);
 		return rsp_error(gdb, GDB_ERR_MEMORY_READ_FAIL);
 	}

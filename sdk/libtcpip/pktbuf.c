@@ -100,8 +100,7 @@ void * pktbuf_alloc(void)
 			__pktbuf__.free.last = (struct pktbuf *)&__pktbuf__.free.first;
 #if PKTBUF_ENABLE_STAT
 		__pktbuf__.stat.alloc_cnt++;
-//		DCC_LOG1(LOG_TRACE, "alloc=%d", __pktbuf__.stat.alloc_cnt);
-		DCC_LOG1(LOG_TRACE, "rem=%d", 
+		DCC_LOG1(LOG_MSG, "rem=%d", 
 				 __pktbuf__.stat.alloc_cnt - __pktbuf__.stat.free_cnt);
 	} else {
 		__pktbuf__.stat.error_cnt++;
@@ -152,8 +151,7 @@ void pktbuf_free(void * ptr)
 
 #if PKTBUF_ENABLE_STAT
 	__pktbuf__.stat.free_cnt++;
-//	DCC_LOG1(LOG_TRACE, "free=%d", __pktbuf__.stat.free_cnt);
-	DCC_LOG1(LOG_TRACE, "rem=%d", 
+	DCC_LOG1(LOG_MSG, "rem=%d", 
 			 __pktbuf__.stat.alloc_cnt - __pktbuf__.stat.free_cnt);
 #endif
 
