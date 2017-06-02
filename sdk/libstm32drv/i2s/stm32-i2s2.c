@@ -47,10 +47,12 @@ void stm32f_spi2_isr(void)
 	stm32_spi_i2s_isr(&stm32_spi2_i2s_drv);
 }
 
+#if 0
 void stm32f_dma1_stream3_isr(void)
 {
 	stm32_i2s_dma_rx_isr(&stm32_spi2_i2s_drv);
 }
+#endif
 
 void stm32f_dma1_stream4_isr(void)
 {
@@ -70,8 +72,9 @@ struct i2s_dev * stm32_spi2_i2s_init(unsigned int samplerate,
 	struct stm32_spi_i2s_drv * drv = &stm32_spi2_i2s_drv;
 
 	DCC_LOG(LOG_TRACE, "...");
-
+#if 0
 	stm32_dmactl_init(&drv->rx.dmactl, STM32F_DMA1, 3); 
+#endif
 	stm32_dmactl_init(&drv->tx.dmactl, STM32F_DMA1, 4); 
 
 	stm32_reset(STM32_RCC, STM32_RST_SPI2);

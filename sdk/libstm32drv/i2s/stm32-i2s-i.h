@@ -53,61 +53,19 @@
 
 #include <sys/dcclog.h>
 
-#ifndef I2S_ENABLE_TX_MUTEX
-#define I2S_ENABLE_TX_MUTEX 0
-#endif
-
-#ifndef I2S_TX_FIFO_LEN
-#define I2S_TX_FIFO_LEN  64
-#endif
-
-#ifndef I2S_RX_FIFO_LEN
-#define I2S_RX_FIFO_LEN  64
-#endif
-
-#ifndef I2S_RX_TRIG_LVL
-#define I2S_RX_TRIG_LVL (I2S_RX_FIFO_LEN / 2)
-#endif
-
 #ifndef I2S_IRQ_PRIORITY 
 #define I2S_IRQ_PRIORITY IRQ_PRIORITY_REGULAR
 #endif
 
-#ifndef I2S_ENABLE_STATS
-#define I2S_ENABLE_STATS 1
-#endif
-
-#define I2S_FRAME_MAX (512)
-
 struct stm32_spi_i2s_drv {
 	struct stm32f_spi * spi;
-	uint8_t rx_idle;
-	uint8_t tx_done;
-#if I2S_ENABLE_TX_MUTEX
-	uint8_t tx_mutex;
-#endif
+	int tx_done;
 	struct {
 		struct stm32_dmactl dmactl;
 		volatile uint32_t head;
 		uint32_t tail;
 		uint32_t pos;
-		int16_t buf[2][I2S_FRAME_MAX] __attribute__((aligned(16)));
 	} tx;
-	struct {
-		struct stm32_dmactl dmactl;
-		void * buf_ptr;
-		unsigned int buf_len;
-	} rx;
-#if I2S_ENABLE_STATS
-	struct {
-		uint32_t err_ovr;
-		uint32_t rx_brk;
-		uint32_t rx_idle;
-		uint32_t rx_cnt;
-		uint32_t rx_dmatc;
-		uint32_t rx_dmate;
-	} stats;
-#endif
 };
 
 extern const struct i2s_op stm32_spi_i2s_op;

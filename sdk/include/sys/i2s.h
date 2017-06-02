@@ -45,34 +45,6 @@ struct i2s_stats {
 	uint32_t err_cnt;
 };
 
-/* character encoding and baud rate */
-struct i2s_config {
-};
-
-/* modem control bits */
-struct i2s_control {
-	uint8_t dtr :1;
-	uint8_t rts :1;
-	/* sending line break */
-	uint8_t brk :1;
-};
-
-struct i2s_status {
-	/* modem status bits */
-	uint8_t dsr :1;
-	uint8_t ri :1;
-	uint8_t dcd :1;
-	uint8_t cts :1;
-	/* receiving line break */
-	uint8_t brk :1;
-};
-
-struct i2s_error {
-	uint8_t ovr :1;
-	uint8_t par :1;
-	uint8_t frm :1;
-};
-
 struct i2s_dev;
 
 enum {
@@ -80,19 +52,12 @@ enum {
 	I2S_IOCTL_DISABLE,
 	I2S_IOCTL_DRAIN,
 	I2S_IOCTL_RESET,
-	I2S_IOCTL_FLUSH,
-	I2S_IOCTL_FLOWCTRL_SET,
 	I2S_IOCTL_STATS_GET,
-	I2S_IOCTL_DMA_PREPARE,
 	I2S_IOCTL_CONF_SET,
-	I2S_IOCTL_CONF_GET,
-	I2S_IOCTL_RX_TRIG_SET
+	I2S_IOCTL_CONF_GET
 };
 
 struct i2s_op {
-	int (* send)(void *, const void *, unsigned int);
-	int (* recv)(void *, void *, unsigned int, unsigned int);
-	int (* drain)(void *);
 	int (* close)(void *);
 	int (* ioctl)(void *, int, uintptr_t, uintptr_t);
 	int (* enable)(void *);
@@ -105,20 +70,6 @@ struct i2s_dev {
 	const struct i2s_op * op;
 };
 
-static inline int i2s_send(struct i2s_dev * dev, const void * buf,
-							  unsigned int len) {
-	return dev->op->send(dev->drv, buf, len);
-}
-
-static inline int i2s_recv(struct i2s_dev * dev, void * buf,
-							  unsigned int len, unsigned int msec) {
-	return dev->op->recv(dev->drv, buf, len, msec);
-}
-
-static inline int i2s_drain(struct i2s_dev * dev) {
-	return dev->op->drain(dev->drv);
-}
-
 static inline int i2s_close(struct i2s_dev * dev){
 	return dev->op->close(dev->drv);
 }
@@ -127,17 +78,6 @@ static inline int i2s_ioctl(struct i2s_dev * dev,
 							   int opt, uintptr_t arg1, uintptr_t arg2) {
 	return dev->op->ioctl(dev->drv, opt, arg1, arg2);
 }
-
-#if 0
-static inline int i2s_drain(struct i2s_dev * dev) {
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_DRAIN, 0);
-}
-#endif
-
-static inline int i2s_flush(struct i2s_dev * dev) {
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_FLUSH, 0, 0);
-}
-
 
 static inline int i2s_reset(struct i2s_dev * dev) {
 	return dev->op->ioctl(dev->drv, I2S_IOCTL_RESET, 0, 0);
@@ -149,51 +89,12 @@ static inline int i2s_stats_get(struct i2s_dev * dev,
 						  (uintptr_t)stats, 0);
 }
 
-static inline int i2s_rx_enable(struct i2s_dev * dev) {
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_ENABLE, 
-						  I2S_RX_EN, 0);
-}
-
-static inline int i2s_rx_disable(struct i2s_dev * dev) {
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_DISABLE, 
-						  I2S_RX_EN, 0);
-}
-
-static inline int i2s_flowctrl_set(struct i2s_dev * dev,
-									  unsigned int flowctrl) {
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_FLOWCTRL_SET, 
-						  flowctrl, 0);
-}
-
-static inline int i2s_config_get(struct i2s_dev * dev,
-									struct i2s_config * cfg)
-{
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_CONF_GET, 
-						  (uintptr_t)cfg, 0);
-}
-
-static inline int i2s_config_set(struct i2s_dev * dev,
-									const struct i2s_config * cfg)
-{
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_CONF_SET, 
-						  (uintptr_t)cfg, 0);
-}
-
-static inline int i2s_rx_trig_set(struct i2s_dev * dev, 
-							  unsigned int lvl)
-{
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_RX_TRIG_SET, lvl, 0);
-}
-
-static inline int i2s_dma_prepare(struct i2s_dev * dev, 
-							  void * buf, unsigned int len)
-{
-	return dev->op->ioctl(dev->drv, I2S_IOCTL_DMA_PREPARE, 
-						  (uintptr_t)buf, len);
-}
-
 static inline int i2s_enable(struct i2s_dev * dev) {
-	return dev->op->enable(dev->drv);
+	return dev->op->ioctl(dev->drv, I2S_IOCTL_ENABLE, 1, 0);
+}
+
+static inline int i2s_disable(struct i2s_dev * dev) {
+	return dev->op->ioctl(dev->drv, I2S_IOCTL_ENABLE, 0, 0);
 }
 
 static inline int i2s_setbuf(struct i2s_dev * dev, 
@@ -212,42 +113,17 @@ static inline int16_t * i2s_getbuf(struct i2s_dev * dev)
 extern "C" {
 #endif
 
-int i2s_send(struct i2s_dev * dev, const void * buf, 
-				unsigned int len);
-
-int i2s_recv(struct i2s_dev * dev, void * buf, 
-				unsigned int len, unsigned int msec);
-
-int i2s_drain(struct i2s_dev * dev);
-
 int i2s_close(struct i2s_dev * dev);
-
-int i2s_config_get(struct i2s_dev * dev, struct i2s_config * cfg);
-
-int i2s_config_set(struct i2s_dev * dev, 
-					  const struct i2s_config * cfg);
 
 int i2s_ioctl(struct i2s_dev * dev, int opt, 
 				 uintptr_t arg1, uintptr_t arg2);
 
 int i2s_stats_get(struct i2s_dev * dev, struct i2s_stats * stats);
 
+int i2s_enable(struct i2s_dev * dev);
+
 int i2s_disable(struct i2s_dev * dev);
 
-int i2s_rx_disable(struct i2s_dev * dev);
-
-int i2s_rx_enable(struct i2s_dev * dev);
-
-
-struct file * i2s_fopen(struct i2s_dev * dev);
-
-bool is_i2s(struct file * f); 
-
-/*
-int i2s_control_get(struct i2s_dev * dev, struct i2s_control * ctrl);
-
-int i2s_status_set(struct i2s_dev * dev, struct i2s_status * stat);
-*/
 
 #ifdef __cplusplus
 }

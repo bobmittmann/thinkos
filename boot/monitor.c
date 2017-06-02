@@ -42,6 +42,11 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
+/* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
+   dbgmon library */
+
+void gdb_stub_task(struct dmon_comm * comm);
+
 #ifndef MONITOR_CONFIGURE_ENABLE
 #define MONITOR_CONFIGURE_ENABLE   1
 #endif
