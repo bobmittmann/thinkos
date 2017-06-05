@@ -37,7 +37,7 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	struct thinkos_context * ctx;
 	uint32_t pc;
 
-	pc = (uint32_t)task;
+	pc = (uint32_t)task & 0xfffffffe;
 	sp &= 0xfffffff8; /* 64bits alignemnt */
 
 

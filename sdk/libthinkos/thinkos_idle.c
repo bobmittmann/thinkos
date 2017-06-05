@@ -112,10 +112,10 @@ struct thinkos_context * __thinkos_idle_init(void)
 #endif
 
 #if THINKOS_IDLE_STACK_ALLOC
-	DCC_LOG1(LOG_MSG, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+	DCC_LOG1(LOG_TRACE, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
 #endif
 
-	idle_ctx->pc = (uint32_t)thinkos_idle_task;
+	idle_ctx->pc = (uint32_t)thinkos_idle_task & ~1;
 	idle_ctx->lr = (uint32_t)__thinkos_thread_exit;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
