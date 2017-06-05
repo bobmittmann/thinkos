@@ -31,12 +31,6 @@ int strcasecmp(const char * s1, const char * s2)
 	int c1;
 	int c2;
 
-	if (s1 == '\0')
-		return 0;
-
-	if (s2 == '\0')
-		return 0;
-
 	do {
 		c1 = toupper(*s1++);
 		c2 = toupper(*s2++);

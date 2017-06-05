@@ -30,9 +30,6 @@ char * strcat(char * dst, const char * src)
 {
 	register char *cp = dst;
 
-	if ((!cp) || (!src))
-		return NULL;
-
 	while (*cp)
     	cp++;
 

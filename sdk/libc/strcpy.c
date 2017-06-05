@@ -30,9 +30,6 @@ char * strcpy(char * dst, const char * src)
 {
 	register char *cp = dst;
 
-	if ((!cp) || (!src))
-		return NULL;
-
 	while ((*cp++ = *src++));
 
 	return dst;

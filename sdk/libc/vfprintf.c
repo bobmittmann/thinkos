@@ -129,9 +129,6 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 #endif
 	} val;
 
-	assert(f != NULL);
-	assert(fmt != NULL);
-
 	n = 0;
 	w = 0;
 	cnt = 0;

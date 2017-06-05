@@ -31,9 +31,6 @@ char * strstr(const char * haystack, const char * needle)
 	char * n_begin;	/* where needle probably begins in haystack. */
 	size_t n_len;	/* needle lengh. */
 
-	if (!haystack || !needle)
-		return NULL;
-
 	if (!(*needle))
 		return (char *) haystack;
 	/* no non-empty needle can be found on empy haystack. */
