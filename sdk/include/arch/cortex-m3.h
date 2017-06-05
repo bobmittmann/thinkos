@@ -1208,6 +1208,13 @@ static inline void __attribute__((always_inline)) __bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
+#define __SSAT(ARG1,ARG2) \
+	({                          \
+	 uint32_t __RES, __ARG1 = (ARG1); \
+	 asm volatile ("ssat %0, %1, %2" : "=r" (__RES) :  "I" (ARG2), "r" (__ARG1) ); \
+	 __RES; \
+	 })
+
 void cm3_udelay_calibrate(void);
 
 void __attribute__((noreturn)) cm3_sysrst(void);

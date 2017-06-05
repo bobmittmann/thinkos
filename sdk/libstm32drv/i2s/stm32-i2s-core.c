@@ -209,11 +209,10 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 	DCC_LOG2(LOG_TRACE, "SPI%d samplerate=%d", 
 			 stm32f_spi_lookup(drv->spi) + 1, samplerate);
 
-	drv->tx_done = thinkos_flag_alloc();
-	DCC_LOG2(LOG_TRACE, "rx_idle=%d tx_done=%d", drv->rx_idle, 
-			 drv->tx_done);
-
 #if I2S_TX_MUTEX
+	drv->tx_done = thinkos_flag_alloc();
+	DCC_LOG2(LOG_TRACE, "rx_idle=%d", drv->tx_done);
+
 	drv->tx_mutex = thinkos_mutex_alloc(); 
 	DCC_LOG1(LOG_TRACE, "tx_mutex=%d", drv->tx_mutex);
 #endif

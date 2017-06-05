@@ -619,10 +619,11 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size)
 
 	for (i = 0; i < CM3_DWT_NUMCOMP; ++i) {
 		if (((dwt->wp[i].function & DWT_FUNCTION) != 0) && 
-			dwt->wp[i].comp == addr) 
+			dwt->wp[i].comp == addr) { 
 			dwt->wp[i].function = 0;
 			dwt->wp[i].comp = 0;
 			return true;
+		}
 	}
 
 	DCC_LOG1(LOG_WARNING, "watchpoint 0x%08x not found!", addr);
@@ -820,10 +821,15 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 
 				psp = (uint32_t *)cm3_psp_get();
 
-				DCC_LOG4(LOG_ERROR, "<<ERROR %s>>: pc=%08x thread=%d psp=%08x", 
+				DCC_LOG4(LOG_ERROR, "<<ERROR %d>>: pc=%08x thread=%d psp=%08x", 
 						 err, pc, thinkos_rt.active, psp);
 				/* Skip the breakpoint intruction */
 				ctx->pc += 2;
+
+				DCC_LOG4(LOG_ERROR, "r0=%08x r1=%08x, r2=%08x r3=%08x", 
+						 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
+				DCC_LOG4(LOG_ERROR, "r12=%08x lr=%08x, pc=%08x xpsr=%08x", 
+						 ctx->r12, ctx->lr, ctx->pc, ctx->xpsr);
 
 				/* FIXME: a breakpoint is used to indicate a fault or wrong
 				   usage of a system call in thinkOS. */

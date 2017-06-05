@@ -75,7 +75,9 @@ void monitor_exec(void)
 int main(int argc, char ** argv)
 {
 	DCC_LOG_INIT();
+#if 0
 	DCC_LOG_CONNECT();
+#endif
 
 #ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");

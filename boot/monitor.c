@@ -250,6 +250,8 @@ static void monitor_on_fault(struct dmon_comm * comm)
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, s_hr);
 	}
+
+	DCC_LOG(LOG_TRACE, "done.");
 }
 #endif
 
@@ -296,7 +298,7 @@ static void monitor_resume_all(struct dmon_comm * comm)
 
 static void monitor_exec(struct dmon_comm * comm, unsigned int addr)
 {
-	if (dmon_app_exec(addr, false) < 0) {
+	if (!dmon_app_exec(addr, false)) {
 		dmprintf(comm, "\r\n#ERROR: Invalid app!\r\n");
 		return;
 	}
@@ -638,7 +640,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
-			DCC_LOG(LOG_TRACE, "Soft reset.");
+			DCC_LOG(LOG_WARNING, "/!\\ Soft reset /!\\");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 		}

@@ -8,7 +8,7 @@
 #define Q15_MIN -32768
 
 /* Conversion form float to fixed point Q1.15 */
-#define Q15(F) ((int32_t)((F) * 32768))
+#define Q15(F) ((int32_t)((F) * 32768.0))
 
 /* Convert from fractional Q1.15 to float point */
 #define Q15F(Q) ((float)(((float)(Q)) / 32768.0))
