@@ -95,8 +95,8 @@
   #define PLLN 112
   #define PLLM 4
     /* F_VCO = 389454513
-	   F_I2S = 129818171 */
-  #define PLLI2SR 1
+	   F_I2S = 169333333 */
+  #define PLLI2SR 3
   #define PLLI2SN 127
   #define PLLI2SM 9
   #define PLLI2SQ 8
@@ -214,6 +214,11 @@
 #if (PLLI2SM < 2)
 #error "invalid PLLI2SM!"
 #endif
+
+#if (PLLI2SR < 2)
+#error "invalid PLLI2SR!"
+#endif
+
 #endif
 
 #define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)

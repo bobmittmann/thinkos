@@ -57,15 +57,32 @@
 #define I2S_IRQ_PRIORITY IRQ_PRIORITY_REGULAR
 #endif
 
+#ifndef STM32F_I2S_SPI_ISR
+#define STM32F_I2S_SPI_ISR 0
+#endif
+
+#ifndef STM32F_I2S_DMA_RX_ISR
+#define STM32F_I2S_DMA_RX_ISR 0
+#endif
+
+#ifndef STM32F_I2S_DMA_TX_ISR
+#define STM32F_I2S_DMA_TX_ISR 0
+#endif
+
 struct stm32_spi_i2s_drv {
 	struct stm32f_spi * spi;
-	int tx_done;
 	struct {
 		struct stm32_dmactl dmactl;
 		volatile uint32_t head;
 		uint32_t tail;
 		uint32_t pos;
 	} tx;
+	struct {
+		struct stm32_dmactl dmactl;
+		volatile uint32_t head;
+		uint32_t tail;
+		uint32_t pos;
+	} rx;
 };
 
 extern const struct i2s_op stm32_spi_i2s_op;

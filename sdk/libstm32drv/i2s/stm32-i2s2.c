@@ -42,29 +42,31 @@ struct stm32_spi_i2s_drv stm32_spi2_i2s_drv = {
 	.spi = STM32F_SPI2,
 };
 
+#if STM32F_I2S_SPI_ISR
 void stm32f_spi2_isr(void)
 {
 	stm32_spi_i2s_isr(&stm32_spi2_i2s_drv);
 }
+#endif
 
-#if 0
+#if STM32F_I2S_DMA_RX_ISR
 void stm32f_dma1_stream3_isr(void)
 {
 	stm32_i2s_dma_rx_isr(&stm32_spi2_i2s_drv);
 }
 #endif
 
+#if STM32F_I2S_DMA_TX_ISR
 void stm32f_dma1_stream4_isr(void)
 {
 	stm32_i2s_dma_tx_isr(&stm32_spi2_i2s_drv);
 }
-
+#endif
 
 const struct i2s_dev spi2_i2s_dev = {
 	.drv = &stm32_spi2_i2s_drv,
 	.op = &stm32_spi_i2s_op
 };
-
 
 struct i2s_dev * stm32_spi2_i2s_init(unsigned int samplerate, 
 									 unsigned int flags)
@@ -72,10 +74,12 @@ struct i2s_dev * stm32_spi2_i2s_init(unsigned int samplerate,
 	struct stm32_spi_i2s_drv * drv = &stm32_spi2_i2s_drv;
 
 	DCC_LOG(LOG_TRACE, "...");
-#if 0
-	stm32_dmactl_init(&drv->rx.dmactl, STM32F_DMA1, 3); 
-#endif
-	stm32_dmactl_init(&drv->tx.dmactl, STM32F_DMA1, 4); 
+
+	if (flags & I2S_RX_EN) 
+		stm32_dmactl_init(&drv->rx.dmactl, STM32F_DMA1, 3); 
+
+	if (flags & I2S_TX_EN) 
+		stm32_dmactl_init(&drv->tx.dmactl, STM32F_DMA1, 4); 
 
 	stm32_reset(STM32_RCC, STM32_RST_SPI2);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_SPI2);
@@ -83,27 +87,36 @@ struct i2s_dev * stm32_spi2_i2s_init(unsigned int samplerate,
 	stm32_spi_i2s_init(drv, samplerate, flags, 0);
 
 	/* configure and Enable interrupts */
-#if 0
+#if STM32F_I2S_SPI_ISR
 #ifdef THINKAPP
 	thinkos_irq_register(STM32F_IRQ_SPI2, I2S_IRQ_PRIORITY, 
 						 stm32f_spi2_isr);
-
-	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM3, I2S_IRQ_PRIORITY, 
-						 stm32f_dma1_stream3_isr);
-
-	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM4, I2S_IRQ_PRIORITY, 
-						 stm32f_dma1_stream4_isr);
 #else
 	cm3_irq_pri_set(STM32F_IRQ_SPI2, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_SPI2);
+#endif
+#endif
 
+#if STM32F_I2S_DMA_RX_ISR
+#ifdef THINKAPP
+	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM3, I2S_IRQ_PRIORITY, 
+						 stm32f_dma1_stream3_isr);
+#else
 	cm3_irq_pri_set(STM32F_IRQ_DMA1_STREAM3, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_DMA1_STREAM3);
+#endif
+#endif
 
+#if STM32F_I2S_DMA_TX_ISR
+#ifdef THINKAPP
+	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM4, I2S_IRQ_PRIORITY, 
+						 stm32f_dma1_stream4_isr);
+#else
 	cm3_irq_pri_set(STM32F_IRQ_DMA1_STREAM4, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_DMA1_STREAM4);
 #endif
 #endif
+
 	DCC_LOG(LOG_TRACE, "done!");
 
 	return (struct i2s_dev *)&spi2_i2s_dev;

@@ -16,7 +16,7 @@ m = 2
 while m < 64:
 	n = 50
 	while n < 433:
-		r = 1
+		r = 2
 		while r < 8:
 			fvco = (hse * n) / m 
 			i2sclk = fvco / r

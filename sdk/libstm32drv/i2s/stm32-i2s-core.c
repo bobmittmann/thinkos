@@ -30,6 +30,79 @@
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
+
+#define PLLI2SR 3
+#define PLLI2SN 127
+#define PLLI2SM 9
+#define PLLI2SQ 8
+#define PLLI2SP 2
+
+#if defined(STM32F446)
+#if (PLLI2SN < 50)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SN > 432)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SM > 63)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SM < 2)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SR < 2)
+#error "invalid PLLI2SR!"
+#endif
+#endif
+
+#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
+#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
+
+void i2s_pll_init(void)
+{
+	struct stm32_rcc * rcc = STM32_RCC;
+	uint32_t cr;
+	int again;
+
+#if defined(STM32F446)
+	rcc->dckcfgr2 = 0;
+	rcc->pllsaicfgr = 0;
+
+	cr = rcc->cr;
+	/* disable I2SPLL */
+	cr &= ~RCC_PLLI2SON;
+
+	/* configure IS2 PLL */
+	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
+		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
+
+	/* enable I2SPLL */
+	cr |= RCC_PLLI2SON;
+	rcc->cr = cr;;
+
+	for (again = 8192; ; again--) {
+		cr = rcc->cr;
+		if (cr & RCC_PLLI2SRDY)
+			break;
+		if (again == 0) {
+			/* PLL lock fail */
+			return;
+		}
+	}
+
+	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+#endif
+
+}
+
+#if defined(STM32F446)
+const uint32_t __stm32f_i2s_hz = __I2S_HZ;
+#endif
+
 void stm32_spi_i2s_isr(struct stm32_spi_i2s_drv * drv)
 {
 	struct stm32f_spi * spi = drv->spi;
@@ -134,14 +207,23 @@ int stm32_i2s_dma_send(struct stm32_spi_i2s_drv * drv,
 int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
 					 int16_t * buf1, int16_t * buf2, unsigned int len)
 {
+	bool enabled;
 	uint32_t ccr;
+	uint32_t cfgr;
 
-	/* disable I2S */
-	drv->spi->i2scfgr &= ~SPI_I2SE;
+	cfgr = drv->spi->i2scfgr;
+	
+	if (cfgr & SPI_I2SE) {
+		enabled = true;
+		/* Disable I2S */
+		drv->spi->i2scfgr = cfgr & ~SPI_I2SE;
+	}
+
 	/* Disable DMA */
 	while ((ccr = drv->tx.dmactl.strm->cr) & DMA_EN)
 		drv->tx.dmactl.strm->cr = ccr & ~DMA_EN; 
 
+	/* Configure buffers */
 	drv->tx.dmactl.strm->m0ar = buf1;
 	drv->tx.dmactl.strm->m1ar = buf2;
 	drv->tx.dmactl.strm->ndtr = len;
@@ -155,7 +237,11 @@ int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
 	/* enable DMA */
 	drv->tx.dmactl.strm->cr |= DMA_EN;
 
-	thinkos_irq_disable(drv->tx.dmactl.irqno);
+	if (enabled & SPI_I2SE) {
+		enabled = true;
+		/* Reenable I2S */
+		drv->spi->i2scfgr = cfgr;
+	}
 
 	return 0;
 }
@@ -164,14 +250,11 @@ int16_t * stm32_i2s_getbuf(struct stm32_spi_i2s_drv * drv)
 {
 	int16_t * ptr;
 
-#if 0	
-	/* wait for the transfer to complete */
-	thinkos_flag_take(drv->tx_done);
-#endif
-
 	do {
 		YAP("IRQ: %d", drv->tx.dmactl.irqno);
+		/* wait for the transfer to complete */
 		thinkos_irq_wait(drv->tx.dmactl.irqno);
+		/* cleck for errors */
 		if (drv->tx.dmactl.isr[TEIF_BIT]) {
 			/* FIXME: DMA transfer error handling... */
 			drv->tx.dmactl.ifcr[TEIF_BIT] = 1;
@@ -185,8 +268,11 @@ int16_t * stm32_i2s_getbuf(struct stm32_spi_i2s_drv * drv)
 			drv->tx.dmactl.ifcr[FEIF_BIT] = 1;
 		}
 	} while (!drv->tx.dmactl.isr[TCIF_BIT]);
+
+	/* Acknowledge transfer */
 	drv->tx.dmactl.ifcr[TCIF_BIT] = 1;
 
+	/* Return empty buffer */
 	if (drv->tx.dmactl.strm->cr & DMA_CT)
 		ptr = (int16_t *)drv->tx.dmactl.strm->m0ar;
 	else
@@ -209,12 +295,14 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 	DCC_LOG2(LOG_TRACE, "SPI%d samplerate=%d", 
 			 stm32f_spi_lookup(drv->spi) + 1, samplerate);
 
-#if I2S_TX_MUTEX
+#if STM32F_I2S_DMA_TX_ISR
 	drv->tx_done = thinkos_flag_alloc();
-	DCC_LOG2(LOG_TRACE, "rx_idle=%d", drv->tx_done);
+	DCC_LOG2(LOG_TRACE, "tx_done=%d", drv->tx_done);
+#endif
 
-	drv->tx_mutex = thinkos_mutex_alloc(); 
-	DCC_LOG1(LOG_TRACE, "tx_mutex=%d", drv->tx_mutex);
+#if STM32F_I2S_DMA_RX_ISR
+	drv->rx_idle = thinkos_flag_alloc();
+	DCC_LOG2(LOG_TRACE, "rx_idle=%d", drv->rx_idle);
 #endif
 
 	drv->tx.head = 0;
@@ -239,6 +327,7 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 		drv->tx.dmactl.strm->m0ar = 0;
 		drv->tx.dmactl.strm->m1ar = 0;
 		drv->tx.dmactl.strm->ndtr = 0;
+		/* cofigure FIFO */
 		drv->tx.dmactl.strm->fcr = DMA_FEIE | DMA_DMDIS | DMA_FTH_FULL;
 
 		/* ------------------------------------------------------- 
@@ -246,7 +335,7 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 	
 		DCC_LOG(LOG_TRACE, "TX enabled");
 	}
-#if 0
+
 	if (flags & I2S_RX_EN) {
 		/* -------------------------------------------------------
 		   Configure RX DMA stream
@@ -257,58 +346,53 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 		while (drv->rx.dmactl.strm->cr & DMA_EN); 
 		/* peripheral address */
 		drv->rx.dmactl.strm->par = &drv->spi->dr;
-		/* cofigure FIFO */
-		//	drv->rx.dmactl.strm->fcr = DMA_FEIE | DMA_DMDIS | DMA_FTH_FULL;
 		/* configure DMA */
 		drv->rx.dmactl.strm->cr = DMA_CHSEL_SET(dma_chan_id) | 
 			DMA_MSIZE_16 | DMA_PSIZE_16 | DMA_MINC |
 			DMA_DIR_PTM | DMA_TCIE | DMA_TEIE;
+		/* cofigure FIFO */
+		drv->rx.dmactl.strm->fcr = DMA_FEIE | DMA_DMDIS | DMA_FTH_FULL;
 		/* ------------------------------------------------------- 
 		 */
 	}
-#endif
 
 	/* CR1 is not used in I2S mode */
 	drv->spi->cr1 = 0;
+	/* Clear configuration */
+	drv->spi->cr2 = 0;
 	/* Clear pending interrupts */
 	drv->spi->sr = 0;
 
-	drv->spi->cr2 = 0;
-	if (flags & I2S_TX_EN)
-		drv->spi->cr2 |= SPI_TXDMAEN;
-	if (flags & I2S_RX_EN)
-		drv->spi->cr2 |= SPI_RXDMAEN;
-
+	/* Configure clock */
 	mclk_hz = samplerate * 256;
-
-#ifdef STM32F446X
 	/* get the total divisior */
-	div = (stm32f_i2s_hz + (mclk_hz / 2)) / mclk_hz;
+#ifdef STM32F446X
+	div = (__stm32f_i2s_hz + (mclk_hz / 2)) / mclk_hz;
 #else
 	div = (stm32f_apb1_hz + (mclk_hz / 2)) / mclk_hz;
 #endif
-
+	/* adjust the odd bit and divisor */
 	odd = div & 1;
 	div /= 2;
-
-	DCC_LOG1(LOG_TRACE, "I2SCLK=%d Hz, ", stm32f_i2s_hz);
-	DCC_LOG1(LOG_TRACE, "div=%d, ", div);
-
 	drv->spi->i2spr = SPI_I2SDIV_SET(div) | (odd ? SPI_ODD : 0);
-	
+
 	if (flags & I2S_MCK_EN) {
 		DCC_LOG(LOG_TRACE, "MCKO enabled");
 		drv->spi->i2spr |= SPI_MCKOE;
 		fs = stm32f_i2s_hz / ((32*2)*((2*div)+odd)*4);
-		DCC_LOG1(LOG_TRACE, "MCLK=%d Hz, ", fs * 256);
+		INF("MCLK=%d Hz, ", fs * 256);
 	} else
 		fs = stm32f_i2s_hz / ((32*2)*((2*div)+odd));
 
 	(void)fs;
-	DCC_LOG1(LOG_TRACE, "Fs=%d Hz, ", fs);
+	INF("Fs=%d Hz, ", fs);
+	INF("I2SCLK=%d Hz, ", __stm32f_i2s_hz);
+	INF("div=%d odd=%d, ", div, odd);
 
+	/* Configure I2S */
 	drv->spi->i2scfgr = SPI_I2SMOD | SPI_I2SSTD_PHILIPS;
 
+	/* Adjust the word length */
 	if (flags & I2S_24BITS)
 		drv->spi->i2scfgr |= SPI_DATLEN_24;
 	else if (flags & I2S_32BITS)
@@ -319,22 +403,33 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 		drv->spi->i2scfgr |= SPI_CHLEN;
 	}
 
-
+	/* Select the transfer direction */
 	if (flags & I2S_TX_EN)
 		drv->spi->i2scfgr |= SPI_I2SCFG_MST_XMT;
 	else if (flags & I2S_RX_EN)
 		drv->spi->i2scfgr |= SPI_I2SCFG_MST_RCV;
 
-//	drv->spi->cr2 |= SPI_TXEIE | SPI_RXNEIE | SPI_ERRIE;
+	/* Set the DMA transfer enable bits ac*/
+	if (flags & I2S_TX_EN)
+		drv->spi->cr2 |= SPI_TXDMAEN;
+	if (flags & I2S_RX_EN)
+		drv->spi->cr2 |= SPI_RXDMAEN;
+
+#if STM32F_I2S_SPI_ISR
 	drv->spi->cr2 |= SPI_ERRIE;
+#endif
 
 	/* enable DMA */
+#if STM32F_I2S_DMA_TX_ISR
 	if (flags & I2S_TX_EN)
 		drv->tx.dmactl.strm->cr |= DMA_EN;
-#if 0
+#endif
+
+#if STM32F_I2S_DMA_RX_ISR
 	if (flags & I2S_RX_EN)
 		drv->rx.dmactl.strm->cr |= DMA_EN;
 #endif
+
 	return 0;
 }
 

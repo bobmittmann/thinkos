@@ -26,53 +26,55 @@
 #define __STM32_I2S_I__
 #include "stm32-i2s-i.h"
 
-/*
-           | DMA | Channel | Stream | 
+/*         | DMA | Channel | Stream | 
    SPI3_RX |   1 |       0 |      0 |
    SPI3_RX |   1 |       0 |      2 |
    SPI3_TX |   1 |       0 |      5 |
-   SPI3_TX |   1 |       0 |      7 |
- */
-
+   SPI3_TX |   1 |       0 |      7 | */
 
 struct stm32_spi_i2s_drv stm32_spi3_i2s_drv = {
 	.spi = STM32F_SPI3,
 };
 
+#if STM32F_I2S_SPI_ISR
 void stm32f_spi3_isr(void)
 {
 	stm32_spi_i2s_isr(&stm32_spi3_i2s_drv);
 }
+#endif
 
-#if 0
+#if STM32F_I2S_DMA_RX_ISR
 void stm32f_dma1_stream2_isr(void)
 {
 	stm32_i2s_dma_rx_isr(&stm32_spi3_i2s_drv);
 }
 #endif
 
+#if STM32F_I2S_DMA_TX_ISR
 void stm32f_dma1_stream7_isr(void)
 {
 	stm32_i2s_dma_tx_isr(&stm32_spi3_i2s_drv);
 }
-
+#endif
 
 const struct i2s_dev spi3_i2s_dev = {
 	.drv = &stm32_spi3_i2s_drv,
 	.op = &stm32_spi_i2s_op
 };
 
-
 struct i2s_dev * stm32_spi3_i2s_init(unsigned int samplerate, 
 									 unsigned int flags)
 {
 	struct stm32_spi_i2s_drv * drv = &stm32_spi3_i2s_drv;
 
-	DCC_LOG(LOG_TRACE, "...");
+	stm32_reset(STM32_RCC, STM32_RST_SPI3);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_SPI3);
 
-//	stm32_dmactl_init(&drv->rx.dmactl, STM32F_DMA1, 2); 
-	stm32_dmactl_init(&drv->tx.dmactl, STM32F_DMA1, 7); 
+	if (flags & I2S_RX_EN) 
+		stm32_dmactl_init(&drv->rx.dmactl, STM32F_DMA1, 2); 
 
+	if (flags & I2S_TX_EN) 
+		stm32_dmactl_init(&drv->tx.dmactl, STM32F_DMA1, 7); 
 
 	stm32_reset(STM32_RCC, STM32_RST_SPI3);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_SPI3);
@@ -80,28 +82,36 @@ struct i2s_dev * stm32_spi3_i2s_init(unsigned int samplerate,
 	stm32_spi_i2s_init(drv, samplerate, flags, 0);
 
 	/* configure and Enable interrupts */
-#if 0
+#if STM32F_I2S_SPI_ISR
 #ifdef THINKAPP
 	thinkos_irq_register(STM32F_IRQ_SPI3, I2S_IRQ_PRIORITY, 
 						 stm32f_spi3_isr);
-
-	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM2, I2S_IRQ_PRIORITY, 
-						 stm32f_dma1_stream2_isr);
-
-	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM7, I2S_IRQ_PRIORITY, 
-						 stm32f_dma1_stream7_isr);
 #else
 	cm3_irq_pri_set(STM32F_IRQ_SPI3, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_SPI3);
+#endif
+#endif
 
+#if STM32F_I2S_DMA_RX_ISR
+#ifdef THINKAPP
+	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM2, I2S_IRQ_PRIORITY, 
+						 stm32f_dma1_stream2_isr);
+
+#else
 	cm3_irq_pri_set(STM32F_IRQ_DMA1_STREAM2, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_DMA1_STREAM2);
+#endif
+#endif
 
+#if STM32F_I2S_DMA_TX_ISR
+#ifdef THINKAPP
+	thinkos_irq_register(STM32F_IRQ_DMA1_STREAM7, I2S_IRQ_PRIORITY, 
+						 stm32f_dma1_stream7_isr);
+#else
 	cm3_irq_pri_set(STM32F_IRQ_DMA1_STREAM7, I2S_IRQ_PRIORITY);
 	cm3_irq_enable(STM32F_IRQ_DMA1_STREAM7);
 #endif
 #endif
-	DCC_LOG(LOG_TRACE, "done!");
 
 	return (struct i2s_dev *)&spi3_i2s_dev;
 }
