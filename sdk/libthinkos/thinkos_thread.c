@@ -40,7 +40,6 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	pc = (uint32_t)task & 0xfffffffe;
 	sp &= 0xfffffff8; /* 64bits alignemnt */
 
-
 	sp -= sizeof(struct thinkos_context);
 	ctx = (struct thinkos_context *)sp;
 

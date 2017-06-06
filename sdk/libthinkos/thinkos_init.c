@@ -122,7 +122,15 @@ void __thinkos_reset(void)
 	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, MONITOR_PRIORITY);
 #endif
 
+	/* Configure FPU */
 #if THINKOS_ENABLE_FPU 
+	DCC_LOG1(LOG_TRACE, "fpccr --> %08x", &CM3_SCB->fpccr); 
+	/* Clear FP context automatic save */
+//	CM3_SCB->fpccr &= ~SCB_FPCCR_ASPEN;
+	CM3_SCB->fpccr |= SCB_FPCCR_ASPEN;
+	/* Enable FP lazy context save */
+	CM3_SCB->fpccr |= SCB_FPCCR_LSPEN;
+	/* Enable FPU access */
 	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
 #endif
 

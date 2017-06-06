@@ -426,11 +426,7 @@
  #define THINKOS_UNROLL_EXCEPTIONS 1
 #endif
 
-#if THINKOS_ENABLE_FPU 
-  #define CTX_R0 (8 + 32)
-#else
-  #define CTX_R0 8
-#endif
+#define CTX_R0 8
 
 /* -------------------------------------------------------------------------- 
  * Static trhead references
@@ -548,12 +544,6 @@
  * --------------------------------------------------------------------------*/
 
 struct thinkos_context {
-#if THINKOS_ENABLE_FPU 
-	union {
-		uint32_t s[32];
-		uint64_t d[16];
-	};
-#endif
 	/* scheduler saved context */
 	uint32_t r4;
 	uint32_t r5;
@@ -575,6 +565,12 @@ struct thinkos_context {
 	uint32_t lr;
 	uint32_t pc;
 	uint32_t xpsr;
+
+#if THINKOS_ENABLE_FPU 
+	float    s[16];
+	uint32_t fpscr;
+	uint32_t res;
+#endif
 };
 
 /* -------------------------------------------------------------------------- 

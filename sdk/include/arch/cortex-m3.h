@@ -180,6 +180,17 @@
 #define CP11_SET(X) ((X) << 22)
 #define CP10_SET(X) ((X) << 20)
 
+/* SCB Floating Point Context Control Register, FPCCR */
+#define SCB_FPCCR_ASPEN  (1 << 31)
+#define SCB_FPCCR_LSPEN  (1 << 30)
+#define SCB_FPCCR_MONRDY (1 << 8)
+#define SCB_FPCCR_BFRDY  (1 << 6)
+#define SCB_FPCCR_MMRDY  (1 << 5)
+#define SCB_FPCCR_HFRDY  (1 << 4)
+#define SCB_FPCCR_THREAD (1 << 3)
+#define SCB_FPCCR_USER   (1 << 1)
+#define SCB_FPCCR_LSPACT (1 << 0)
+
 /****************************************************************************
   CM3 DCB (Debug Control Block)
  ****************************************************************************/
@@ -579,6 +590,7 @@
 #define CM3_NVIC_BASE    (CM3_SCS_BASE + 0x0100)
 #define CM3_SCB_BASE     (CM3_SCS_BASE + 0x0d00)
 #define CM3_MPU_BASE     (CM3_SCS_BASE + 0x0d90) 
+#define CM4_FPU_BASE     (CM3_SCS_BASE + 0x0f34) 
 
 /****************************************************************************
   CM3 ROM Table
@@ -659,6 +671,32 @@ struct cm3_except_context {
 	uint32_t xpsr;
 };
 
+struct v7m_basic_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
+};
+
+struct v7m_extended_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
+	float    s[16];
+	uint32_t fpscr;
+	uint32_t res;
+};
+
+
 #define CM_APSR_N (1 << 31)
 #define CM_APSR_Z (1 << 30)
 #define CM_APSR_C (1 << 29)
@@ -700,7 +738,7 @@ struct cm3_scb {
 	volatile uint32_t isar[5]; /* ISA Feature              (0xd60) */
 	volatile uint32_t reserved0[5]; /*                     (0xd74) */
 	volatile uint32_t cpacr; /* Coprocessor Access Control (0xd88) */
-	volatile uint32_t reserved1[4 * 7 + 1]; /* (0xd8c) */
+	volatile uint32_t reserved1[0x5d]; /* (0xd8c) */
 	volatile uint32_t reserved2[0x34 / 4];  /* (0xf00) */
 	volatile uint32_t fpccr; /* Floating Point Context Control (0xf34) */
 	volatile uint32_t fpcar; /* Floating Point Context Address */ 
@@ -951,6 +989,8 @@ struct cm4_fpu {
 	uint32_t fpdscr;
 };
 
+#define CM4_FPU ((struct cm4_fpu *) CM4_FPU_BASE) 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1029,8 +1069,13 @@ static inline void __attribute__((always_inline)) __bit_mem_wr(void * ptr, int32
 #define CONTROL_THREAD_MSP (0 << 1)
 #define CONTROL_THREAD_PSP (1 << 1)
 
+#define CONTROL_nPRIV      (1 << 0)
+#define CONTROL_SPSEL      (1 << 1)
+#define CONTROL_FPCA       (1 << 2)
+
 static inline void __attribute__((always_inline)) cm3_control_set(uint32_t val) {
-	asm volatile ("msr CONTROL, %0\n" : : "r" (val));
+	asm volatile ("msr CONTROL, %0\n"
+				  "isb\n" : : "r" (val));
 }
 
 static inline uint32_t __attribute__((always_inline)) cm3_control_get(void) {

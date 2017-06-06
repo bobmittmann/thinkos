@@ -40,7 +40,7 @@
 
 
 /* Conversion form float to fixed point Q1.15 */
-#define Q16(F) ((int32_t)((F) * (1 << 16)))
+#define Q16(F) ((int32_t)((float)(F) * (float)65536.0))
 
 /* Convert from fractional Q8.16 to float point */
 #define Q16F(Q) ((float)(((float)(Q)) / (1.0 * (1 << 16))))

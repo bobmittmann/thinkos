@@ -93,9 +93,6 @@ __sched_entry(void) {
 #endif				  
 				  "mrs   %0, PSP\n" 
 				  "stmdb %0!, {r4-r11}\n"
-#if THINKOS_ENABLE_FPU 
-				  "vstmdb.64 %0!, {d0-d15}\n"
-#endif
 				  : "=r" (ctx));
 	return ctx;
 }
@@ -108,14 +105,8 @@ __sched_exit(struct thinkos_context * __ctx) {
 				  "add    sp, #16\n"
 				  "pop    {lr}\n"
 #endif				  
-#if THINKOS_ENABLE_FPU 
-				  "add    r3, %0, #40 * 4\n"
-				  "msr    PSP, r3\n"
-				  "vldmia.64 %0!, {d0-d15}\n"
-#else
 				  "add    r3, %0, #8 * 4\n"
 				  "msr    PSP, r3\n"
-#endif
 				  "ldmia  %0, {r4-r11}\n"
 				  "bx     lr\n"
 				  : : "r" (r0) : "r3"); 
@@ -135,14 +126,8 @@ __sched_exit_step(struct thinkos_context * ctx, unsigned int thread_id)
 				  "add    sp, #16\n"
 				  "pop    {lr}\n"
 #endif				  
-#if THINKOS_ENABLE_FPU 
-				  "add    r2, %0, #40 * 4\n"
-				  "msr    PSP, r2\n"
-				  "vldmia.64 %0!, {d0-d15}\n"
-#else
 				  "add    r2, %0, #8 * 4\n"
 				  "msr    PSP, r2\n"
-#endif
 				  "ldmia  %0, {r4-r11}\n"
 				  : : "r" (r0), "r" (r1) : "r2"); 
 	/* CM3_DCB->demcr |= DCB_DEMCR_MON_STEP */

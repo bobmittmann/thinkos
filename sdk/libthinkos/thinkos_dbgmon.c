@@ -119,6 +119,14 @@ static void __dmon_irq_disable_all(void)
 		thinkos_dbgmon_rt.nvic_ie[i] = 0;
 #endif
 		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
+
+		/* FIXME: clearing the pending interrupt may have a side effect 
+		   on the comms irq used by the debug monitor. An alternative 
+		   would be to use the force enable list to avoid clearing those
+		   in the list. */
+#if 0
+		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
+#endif
 	}
 }
 

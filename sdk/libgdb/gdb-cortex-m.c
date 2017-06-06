@@ -269,8 +269,8 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 		x = ctx->xpsr;
 		break;
 #if THINKOS_ENABLE_FPU
-	case 17 ... 33 :
-		x = ctx->s[reg - 17];
+	case 26 ... 33 :
+		x = ctx->s[reg - 26];
 		break;
 #endif
 	default:
@@ -369,8 +369,9 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 		ctx->xpsr = (ctx->xpsr & ~CM_APSR_MASK) | (val & CM_APSR_MASK);
 		break;
 #if THINKOS_ENABLE_FPU
-	case 17 ... 33 :
-		ctx->s[reg - 17] = val;
+	/* FIXME: check the correct register numbers */
+	case 26 ... 33 :
+		ctx->s[reg - 26] = val;
 		break;
 #endif
 	default:

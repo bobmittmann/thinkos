@@ -45,9 +45,11 @@ cm3_pendsv_isr:
 
 	mrs     r0, PSP
 	stmdb   r0!, {r4-r11}
+/*
 #if THINKOS_ENABLE_FPU 
 	vstmdb.64 r0!, {d0-d15}
 #endif
+*/
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 	.thumb_func
@@ -115,11 +117,14 @@ thinkos_scheduler:
 
 .L_context_restore:
 	/* Restore the context and return */
+/*
 #if THINKOS_ENABLE_FPU 
 	add     r3, r0, #40 * 4
 	msr     PSP, r3
 	vldmia.64 r0!, {d0-d15}
 #else
+*/
+#if 1
 	add     r3, r0, #8 * 4
 	msr     PSP, r3
 #endif
@@ -201,11 +206,14 @@ thinkos_sched_step:
 	strb    r3, [r7, #THINKOS_RT_STEP_ID_OFFS]
 	mov     r2, #(1 << 5)
 	msr	    BASEPRI, r2
+/*
 #if THINKOS_ENABLE_FPU 
 	add     r3, r0, #40 * 4
 	msr     PSP, r3
 	vldmia.64 r0!, {d0-d15}
 #else
+*/
+#if 1
 	add     r3, r0, #8 * 4
 	msr     PSP, r3
 #endif

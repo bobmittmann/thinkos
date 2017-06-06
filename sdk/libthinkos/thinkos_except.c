@@ -119,8 +119,8 @@ static int __xcpt_active_irq(void)
 	return -16;
 }
 
-static void __attribute__((noreturn)) __xcpt_unroll(struct thinkos_except * xcpt,
-												  uint32_t xpsr)
+static void __attribute__((noreturn)) 
+	__xcpt_unroll(struct thinkos_except * xcpt, uint32_t xpsr)
 {
 	struct cm3_except_context * sf;
 	uint32_t xpsr_n;
@@ -147,6 +147,7 @@ static void __attribute__((noreturn)) __xcpt_unroll(struct thinkos_except * xcpt
 	}
 
 	if ((irq = __xcpt_active_irq()) >= 0) {
+		/* Return to the next active IRQ */
 		xpsr_n = CM_EPSR_T + irq + 16;
 		DCC_LOG1(LOG_TRACE, "IRQ %d", irq);
 	} else if ((shcsr = CM3_SCB->shcsr) & (SCB_SHCSR_SYSTICKACT | 
