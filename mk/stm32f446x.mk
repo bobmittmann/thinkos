@@ -39,9 +39,9 @@ endif
 ifdef HSE_HZ
 CDEFS += "HSE_HZ=$(HSE_HZ)" 
 endif
-#OPTIONS	= -mcpu=$(CPU) -mfpu=vfp -mthumb -mthumb-interwork 
 OPTIONS	= -mcpu=$(CPU) -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -mthumb-interwork 
-#OPTIONS	= -mcpu=$(CPU) -mthumb -mthumb-interwork 
+#OPTIONS	= -mcpu=$(CPU) -mfpu=vfp -mthumb -mthumb-interwork 
+#OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
 CROSS_COMPILE = arm-none-eabi-
 
 ifndef APPADDR

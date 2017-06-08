@@ -46,7 +46,8 @@
   #define DCC_EXCEPT_DUMP(XCPT)
 #endif
 
-struct thinkos_except thinkos_except_buf __attribute__((section(".heap")));
+struct thinkos_except thinkos_except_buf 
+	__attribute__((section(".heap"), aligned(8)));
 
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 

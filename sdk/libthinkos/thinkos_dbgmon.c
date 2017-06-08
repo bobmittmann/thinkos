@@ -120,7 +120,6 @@ static void __dmon_irq_disable_all(void)
 		thinkos_dbgmon_rt.nvic_ie[i] = 0;
 #endif
 		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
-
 		/* FIXME: clearing the pending interrupt may have a side effect 
 		   on the comms irq used by the debug monitor. An alternative 
 		   would be to use the force enable list to avoid clearing those
@@ -817,6 +816,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				 CM3_SCB->fpccr, CM3_SCB->fpcar, 
 				 cm3_control_get()); 
 		if (CM3_SCB->fpccr & SCB_FPCCR_LSPACT) {
+			/* Save FP context if lazy flag is enabled. */
 			uint32_t fpacr = CM3_SCB->fpcar;
 			uint32_t fpscr;
 			asm volatile ("vstmia %1!, {s0-s15}\n"
@@ -824,7 +824,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 						  "str  %0, [%1]\n"
 						  : "=r" (fpscr) : "r" (fpacr));
 			DCC_LOG1(LOG_TRACE, "FPSCR=%08x", fpscr);
-			/* Clear LSEN flag, preserving the FP lazy context save */
+			/* Clear LSEN flag, preserving the FP lazy save flag */
 			CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
 		}
 #endif
