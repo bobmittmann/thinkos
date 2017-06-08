@@ -62,13 +62,13 @@
 #define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
 #define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
 
+#if defined(STM32F446)
 void i2s_pll_init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	uint32_t cr;
 	int again;
 
-#if defined(STM32F446)
 	rcc->dckcfgr2 = 0;
 	rcc->pllsaicfgr = 0;
 
@@ -95,9 +95,9 @@ void i2s_pll_init(void)
 	}
 
 	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+}
 #endif
 
-}
 
 #if defined(STM32F446)
 const uint32_t __stm32f_i2s_hz = __I2S_HZ;
@@ -386,7 +386,7 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 
 	(void)fs;
 	INF("Fs=%d Hz, ", fs);
-	INF("I2SCLK=%d Hz, ", __stm32f_i2s_hz);
+	INF("I2SCLK=%d Hz, ", stm32f_i2s_hz);
 	INF("div=%d odd=%d, ", div, odd);
 
 	/* Configure I2S */

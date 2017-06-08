@@ -35,9 +35,11 @@ struct gdb_comm_op {
 	int (* flush)(void *);
 	int (* drain)(void *);
 	int (* settmo)(void *, unsigned int);
+	int (* init)(void *);
 };
 
 struct gdb_target_op {
+	int (* init)(void *);
 	int (* mem_write)(void * arg, uint32_t addr, 
 					  const void * ptr, unsigned int len);
 	int (* mem_read)(void * arg, uint32_t addr, void * ptr, unsigned int len);
