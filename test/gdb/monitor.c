@@ -283,7 +283,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 
 	for(;;) {
 		
-		sigset = dmon_select(sigmask);
+		sigset = dbgmon_select(sigmask);
 
 		if (sigset & (1 << DMON_THREAD_FAULT)) {
 			DCC_LOG(LOG_TRACE, "Thread fault.");

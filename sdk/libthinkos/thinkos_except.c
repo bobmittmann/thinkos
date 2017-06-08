@@ -31,6 +31,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
 
 #include <sys/dcclog.h>
 
@@ -59,7 +61,7 @@ static void __xcpt_rettobase(struct thinkos_except * xcpt)
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
-		if (xcpt->active <= THINKOS_THREADS_MAX) {
+		if ((xcpt->active > 0) && (xcpt->active <= THINKOS_THREADS_MAX)) {
 #if THINKOS_ENABLE_DEBUG_FAULT
 			/* flag the thread as faulty */
 			__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
@@ -214,10 +216,14 @@ static void __attribute__((noreturn))
 		idle_ctx = __thinkos_idle_init();
 		sf = (struct cm3_except_context *)&idle_ctx->r0;
 		cm3_psp_set((uint32_t)sf);
+		cm3_msp_set((uint32_t)sp);
 		/* The interrupts where disabled on exception entry.
 		   Reenable interrupts */
 		cm3_cpsie_i();
 		ret = CM3_EXC_RET_THREAD_PSP;
+		/* return */
+		asm volatile ("bx   %0\n" : : "r" (ret)); 
+		for(;;);
 	} else {
 		DCC_LOG(LOG_TRACE, "return to exception...");
 		/* Make room for the exception frame */
@@ -227,14 +233,13 @@ static void __attribute__((noreturn))
 		sf->r1 = (uint32_t)xpsr_n;
 		sf->xpsr = xpsr;
 		sf->pc = (uint32_t)__xcpt_unroll;
+		cm3_msp_set((uint32_t)sp);
 		ret = CM3_EXC_RET_HANDLER;
+		/* return */
+		asm volatile ("bx   %0\n" : : "r" (ret)); 
+		for(;;);
 	} 
 
-	cm3_msp_set((uint32_t)sp);
-
-	/* return */
-	asm volatile ("bx   %0\n" : : "r" (ret)); 
-	for(;;);
 }
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 
@@ -601,7 +606,7 @@ struct thinkos_except * __thinkos_except_buf(void)
 
 void __exception_reset(void)
 {
-	DCC_LOG(LOG_MSG, "!!!!");
+	DCC_LOG(LOG_INFO, "clearing exception buffer!");
 #if THINKOS_ENABLE_EXCEPT_CLEAR
 	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
 					   sizeof(struct thinkos_except));
@@ -610,6 +615,7 @@ void __exception_reset(void)
 	thinkos_except_buf.type = 0;
 	thinkos_except_buf.unroll = 0;
 #endif
+	DCC_LOG(LOG_INFO, "/!\\ clearing active thread in exception buffer!");
 	thinkos_except_buf.active = -1;
 }
 

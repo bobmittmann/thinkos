@@ -40,19 +40,29 @@
 	.thumb
 	.thumb_func
 	.type	collect_xcpt_inf, %function
-	/* r0: return (lr) */
-	/* r1: except number */
+	/* Arguments:
+	     r1: except number
+	     r3: return (lr) 
+	   Return:
+	     r0: exception buffer */
 collect_xcpt_inf:
 	ldr    r0, .L_xcpt_buf
-	stmia  r0, {r4-r11}
-	add    r2, r0, #32
+	mov    r2, r0
+#if THINKOS_ENABLE_FPU 
+	vstmia r2!, {s16-s31}
+#endif
+	stmia  r2!, {r4-r11} /* r4, r11 */
 	tst    r3, #4 
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
-	ldmia  r4, {r5-r12}
-	stmia  r2, {r5-r12}
-
+	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+	stmia  r2!, {r5-r12}
+#if THINKOS_ENABLE_FPU 
+	vstmia r2!, {s0-s15}
+	vmrs   r4, FPSCR
+	stmia  r2!, {r4-r5}
+#endif
 	mrs    r5, MSP 
 	sub    r5, r5, #32
 	mrs    r6, PSP 
@@ -61,16 +71,16 @@ collect_xcpt_inf:
 	subne  r6, r6, #32
 	ldr    r7, .L_cm3_scb
 	ldr    r7, [r7, #SCB_ICSR_OFFS]
-	str    r3, [r0, #64]
-	str    r5, [r0, #68]
-	str    r6, [r0, #72]
-	str    r7, [r0, #76]
+	str    r3, [r2, #0] /* ret */
+	str    r5, [r2, #4] /* msp */
+	str    r6, [r2, #8] /* psp */
+	str    r7, [r2, #12] /* icsr */
 	mrs    r5, IPSR
-	ldr    r2, .L_thinkos_rt
-	ldr    r2, [r2, #THINKOS_RT_ACTIVE_OFFS]
-	strb   r5, [r0, #80]
-	strb   r2, [r0, #81]
-	strb   r1, [r0, #82]
+	ldr    r4, .L_thinkos_rt
+	ldr    r4, [r4, #THINKOS_RT_ACTIVE_OFFS]
+	strb   r5, [r2, #16] /* ipsr */
+	strb   r4, [r2, #17] /* active */
+	strb   r1, [r2, #18] /* type */
 
 	mov    r7, lr
 	mov    lr, r3

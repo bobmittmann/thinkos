@@ -191,8 +191,14 @@
 #define THINKOS_ENABLE_MPU              0
 #endif
 
+/* Enable FPU (Floating Point Unit) */
 #ifndef THINKOS_ENABLE_FPU 
 #define THINKOS_ENABLE_FPU              0
+#endif
+
+/* Enable FP lazy context save */
+#ifndef THINKOS_ENABLE_FPU_LS 
+#define THINKOS_ENABLE_FPU_LS           0
 #endif
 
 #ifndef THINKOS_ENABLE_PROFILING
@@ -415,7 +421,7 @@
  #define THINKOS_ENABLE_CRITICAL 0
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if THINKOS_ENABLE_DEBUG_FAULT
  #undef THINKOS_ENABLE_MEMFAULT
  #define THINKOS_ENABLE_MEMFAULT   1
  #undef THINKOS_ENABLE_BUSFAULT
@@ -424,6 +430,11 @@
  #define THINKOS_ENABLE_USAGEFAULT 1
  #undef THINKOS_UNROLL_EXCEPTIONS 
  #define THINKOS_UNROLL_EXCEPTIONS 1
+#endif
+
+#if THINKOS_ENABLE_FPU_LS 
+ #undef THINKOS_ENABLE_FPU
+ #define THINKOS_ENABLE_FPU 1
 #endif
 
 #define CTX_R0 8
@@ -544,6 +555,10 @@
  * --------------------------------------------------------------------------*/
 
 struct thinkos_context {
+#if THINKOS_ENABLE_FPU 
+	/* scheduler saved FP context { S16..S31 }*/
+	uint32_t s1[16];
+#endif
 	/* scheduler saved context */
 	uint32_t r4;
 	uint32_t r5;
@@ -567,7 +582,8 @@ struct thinkos_context {
 	uint32_t xpsr;
 
 #if THINKOS_ENABLE_FPU 
-	float    s[16];
+	/* automatic reserved FP context { S0..S15 } */
+	uint32_t s[16];
 	uint32_t fpscr;
 	uint32_t res;
 #endif
@@ -592,9 +608,9 @@ struct thinkos_rt {
 #if THINKOS_ENABLE_PROFILING
 	/* Per thread cycle count */
 #if THINKOS_ENABLE_THREAD_VOID 
-	uint32_t cyccnt[(THINKOS_THREADS_MAX) + 2]; /* extra slot for void thread */
+	uint32_t cyccnt[THINKOS_THREADS_MAX + 2]; /* extra slot for void thread */
 #else
-	uint32_t cyccnt[(THINKOS_THREADS_MAX) + 1];
+	uint32_t cyccnt[THINKOS_THREADS_MAX + 1];
 #endif
 #endif
 
@@ -879,22 +895,6 @@ struct thinkos_thread_init {
 };
 
 /* -------------------------------------------------------------------------- 
- * Exception state
- * --------------------------------------------------------------------------*/
-
-struct thinkos_except {
-	struct thinkos_context ctx;
-	uint32_t ret;
-	uint32_t msp;
-	uint32_t psp;
-	uint32_t icsr;
-	uint8_t  ipsr;   /* IPSR */
-	int8_t   active; /* active thread at the time of the exception */
-	uint8_t  type;   /* exception type */
-	uint8_t  unroll; /* unroll count */
-};
-
-/* -------------------------------------------------------------------------- 
  * Internal errors
  * --------------------------------------------------------------------------*/
 
@@ -938,12 +938,6 @@ enum thinkos_exception {
 
 extern struct thinkos_rt thinkos_rt;
 
-extern struct thinkos_except thinkos_except_buf;
-
-extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
-
-extern uint32_t * const thinkos_idle_stack_ptr;
-
 extern uint32_t * const thinkos_obj_alloc_lut[];
 
 extern const uint16_t thinkos_wq_base_lut[];
@@ -951,6 +945,13 @@ extern const uint16_t thinkos_wq_base_lut[];
 extern const char thinkos_type_name_lut[][6];
 
 extern const char __xcpt_name_lut[16][12];
+
+#if THINKOS_ENABLE_THREAD_INFO
+extern const struct thinkos_thread_inf thinkos_idle_inf;
+extern const struct thinkos_thread_inf thinkos_main_inf;
+#endif
+
+extern uint32_t * const thinkos_main_stack;
 
 #ifdef __cplusplus
 extern "C" {
@@ -1187,10 +1188,6 @@ void __thinkos_bmp_init(uint32_t bmp[], int bits);
 
 int __thinkos_bmp_alloc(uint32_t bmp[], int bits);
 
-void thinkos_exception_init(void);
-
-void thinkos_exception_dsr(struct thinkos_except * xcpt);
-
 void thinkos_console_init(void);
 
 void __thinkos_thread_init(unsigned int thread_id, uint32_t sp, 
@@ -1237,31 +1234,11 @@ void __thinkos_reset(void);
 
 void __console_reset(void);
 
-void __exception_reset(void);
-
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 void __console_rx_pipe_commit(int cnt); 
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
-
-/* -------------------------------------------------------------------------
- * Exception handling utility functions
- * ------------------------------------------------------------------------- */
-
-void __xdump(struct thinkos_except * xcpt);
-
-void __idump(const char * s, uint32_t ipsr);
-
-void __tdump(void);
-
-void __mpudump(void);
-
-int __xcpt_next_active_irq(int this_irq);
-
-void __xcpt_systick_int_disable(void);
-
-void __xcpt_systick_int_enable(void);
 
 void __thinkos_flag_give(uint32_t wq);
 void __thinkos_flag_clr(uint32_t wq);
@@ -1274,8 +1251,6 @@ void __thinkos_ev_raise(uint32_t wq, int ev);
 void __thinkos_gate_open(uint32_t wq);
 
 void __thinkos_ev_info(unsigned int wq);
-
-struct thinkos_except * __thinkos_except_buf(void);
 
 /* -------------------------------------------------------------------------
  * Main thread exec

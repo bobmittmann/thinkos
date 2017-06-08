@@ -31,6 +31,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
 
 #ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
   #ifdef CM3_RAM_VECTORS

@@ -54,7 +54,7 @@ void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
 	sigmask |= (1 << DMON_RX_PIPE);
 	for(;;) {
 		
-		sigset = dmon_select(sigmask);
+		sigset = dbgmon_select(sigmask);
 		DCC_LOG1(LOG_MSG, "sigset=%08x.", sigset);
 
 		if (sigset & (1 << DMON_THREAD_FAULT)) {

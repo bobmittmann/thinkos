@@ -75,7 +75,7 @@ void monitor_exec(void)
 int main(int argc, char ** argv)
 {
 	DCC_LOG_INIT();
-#if 0
+#if 1
 	DCC_LOG_CONNECT();
 #endif
 

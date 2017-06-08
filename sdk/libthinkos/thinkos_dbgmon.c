@@ -22,6 +22,7 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -756,13 +757,15 @@ static void dbgmon_null_task(struct dmon_comm * comm)
 		}
 	}
 #else
-	for (;;);
+	for (;;) {
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+	}
 #endif
 }
 
 static void __attribute__((naked)) dbgmon_bootstrap(void)
 {
-	void (* dmon_task)(struct dmon_comm *) = thinkos_dbgmon_rt.task; 
+	void (* dbgmon_task)(struct dmon_comm *) = thinkos_dbgmon_rt.task; 
 	struct dmon_comm * comm = thinkos_dbgmon_rt.comm; 
 
 	thinkos_dbgmon_rt.task = dbgmon_null_task;
@@ -773,7 +776,7 @@ static void __attribute__((naked)) dbgmon_bootstrap(void)
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 
-	dmon_task(comm);
+	dbgmon_task(comm);
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
@@ -809,6 +812,22 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				 demcr & DCB_DEMCR_MON_REQ ? '1' : '0',
 				 demcr & DCB_DEMCR_MON_PEND ? '1' : '0',
 				 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
+#if THINKOS_ENABLE_FPU_LS 
+		DCC_LOG3(LOG_TRACE, "FPCCR=%08x FPCAR=%08x CTRL=%01x",
+				 CM3_SCB->fpccr, CM3_SCB->fpcar, 
+				 cm3_control_get()); 
+		if (CM3_SCB->fpccr & SCB_FPCCR_LSPACT) {
+			uint32_t fpacr = CM3_SCB->fpcar;
+			uint32_t fpscr;
+			asm volatile ("vstmia %1!, {s0-s15}\n"
+						  "vmrs %0, FPSCR\n"
+						  "str  %0, [%1]\n"
+						  : "=r" (fpscr) : "r" (fpacr));
+			DCC_LOG1(LOG_TRACE, "FPSCR=%08x", fpscr);
+			/* Clear LSEN flag, preserving the FP lazy context save */
+			CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
+		}
+#endif
 
 		if (dfsr & SCB_DFSR_BKPT) {
 			unsigned int insn;
@@ -965,10 +984,9 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 
 				if ((unsigned int)thread_id < THINKOS_THREADS_MAX) {
 					int ipsr = (ctx->xpsr & 0x1ff);
-
-					DCC_LOG3(LOG_TRACE, "<<STEP>> thread_id=%d pc=%08x" 
-							 " ipsr=%d ------", thread_id, ctx->pc, ipsr);
-
+					DCC_LOG4(LOG_TRACE, "<<STEP>> thread_id=%d PC=%08x" 
+							 " SP=%08x IPSR=%d", thread_id, ctx->pc, 
+							 cm3_psp_get(), ipsr);
 					if (ipsr != 0) {
 						DCC_LOG(LOG_ERROR, "invalid step on exception !!!");
 						goto step_done;
@@ -990,7 +1008,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 step_done:
 				CM3_DCB->demcr = demcr & ~DCB_DEMCR_MON_STEP;
 			} else {
-				DCC_LOG(LOG_TRACE, "SCB_DFSR_HALTED !!!");
+				DCC_LOG(LOG_WARNING, "/!\\ SCB_DFSR_HALTED /!\\");
 			}
 		}
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
@@ -1031,6 +1049,23 @@ step_done:
 	return 0;
 }
 
+void __attribute__((noinline, noreturn)) 
+	dbgmon_panic(struct thinkos_except * xcpt)
+{
+	asm volatile ("ldmia %0!, {r4-r11}\n"
+				  "add   %0, %0, #16\n"
+				  "mov   r12, sp\n"
+				  "msr   PSP, r12\n"
+				  "ldr   r12, [%0]\n"
+				  "ldr   r13, [%0, #4]\n"
+				  "ldr   r14, [%0, #8]\n"
+				  "sub   %0, %0, #16\n"
+				  "ldmia %0, {r0-r4}\n"
+				  : : "r" (xcpt));
+	for(;;);
+}
+
+
 /* 
  * ThinkOS exception handler hook
  */
@@ -1063,9 +1098,13 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 thinkos_rt.void_ctx, thinkos_rt.active);
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
+/* FIXME: this is a dare situation, probably the only resource left
+   is to restart the system. */
+#if 0
 			dbgmon_soft_reset();
-			DCC_LOG(LOG_TRACE, "8. reset.");
 			dbgmon_signal(DBGMON_RESET);
+#endif
+			dbgmon_panic(xcpt);
 		} else 
 #endif
 		{

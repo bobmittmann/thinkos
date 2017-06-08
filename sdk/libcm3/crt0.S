@@ -120,6 +120,9 @@ _reset:
 	mov     r0, r8
 	/* argv = NULL */
 	mov     r1, r9
+#else
+	ldr     r0, .L_main_stack
+	ldr     sp, [r0]
 #endif
 	/* go to C main function */
 	bl      main
@@ -148,6 +151,10 @@ _reset:
 	.word   __ctors_start
 .L_ctors_end:
 	.word   __ctors_end
+#ifndef THINKAPP 
+.L_main_stack:
+	.word   thinkos_main_stack
+#endif
 
 	.size   _reset, . - _reset
 

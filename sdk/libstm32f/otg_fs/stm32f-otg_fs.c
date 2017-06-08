@@ -20,13 +20,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/stm32f.h>
-
-#include <stdio.h>
-#include <sys/param.h>
-
 #include <sys/dcclog.h>
+
+#include <sys/stm32f.h>
 #include <sys/delay.h>
+#include <sys/param.h>
+#include <stdio.h>
 
 #ifndef STM32_VBUS_SENS_ENABLED
 #define STM32_VBUS_SENS_ENABLED 1
@@ -37,8 +36,6 @@
 void stm32f_otg_fs_txfifo_flush(struct stm32f_otg_fs * otg_fs, 
 								unsigned int num)
 {
-	DCC_LOG1(LOG_INFO, "%02x", num);
-
 	otg_fs->grstctl = OTG_FS_TXFFLSH | OTG_FS_TXFIFO_SET(num);
 	do {
 	} while (otg_fs->grstctl & OTG_FS_TXFFLSH);
@@ -48,8 +45,6 @@ void stm32f_otg_fs_txfifo_flush(struct stm32f_otg_fs * otg_fs,
 
 void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
 {
-	DCC_LOG(LOG_INFO, "...");
-
 	otg_fs->grstctl = OTG_FS_RXFFLSH;
 	do {
 	} while (otg_fs->grstctl & OTG_FS_RXFFLSH);
@@ -59,8 +54,6 @@ void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
 
 void stm32f_otg_fs_addr_set(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 {
-	DCC_LOG1(LOG_INFO, "addr=0x%02x", addr);
-
 	uint32_t dcfg;
 	/*  Endpoint initialization on SetAddress command */
 
@@ -80,8 +73,6 @@ void stm32f_otg_fs_ep_disable(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 {
 	int ep_id = addr & 0x7f;
 	int input = addr & 0x80;
-
-	DCC_LOG2(LOG_INFO, "ep_id=%d %s", ep_id, input ? "IN" : "OUT");
 
 	/* Diable endpoint interrupt */
 	otg_fs->daintmsk &= ~OTG_FS_IEPM(ep_id);
@@ -203,14 +194,14 @@ int stm32f_otg_fs_txf_push(struct stm32f_otg_fs * otg_fs, unsigned int ep_id,
 
 	if (xfrsiz < mpsiz) {
 		if (free < xfrsiz) {
-			DCC_LOG(LOG_PANIC, "free < xfrsiz !!!");
+			DCC_LOG(LOG_ERROR, "free < xfrsiz !!!");
 			return -1;
 		}
 		/* Transfer the last partial packet */
 		cnt = xfrsiz;
 	} else {
 		if (free < mpsiz) {
-			DCC_LOG(LOG_PANIC, "free < mpsiz !!!");
+			DCC_LOG(LOG_ERROR, "free < mpsiz !!!");
 			return -1;
 		}
 		if (free < xfrsiz) {
@@ -240,8 +231,6 @@ int stm32f_otg_fs_txf_push(struct stm32f_otg_fs * otg_fs, unsigned int ep_id,
 
 static void stm32f_otg_fs_core_reset(struct stm32f_otg_fs * otg_fs)
 {
-	DCC_LOG(LOG_INFO, "...");
-
 	/* Wait for AHB master IDLE state. */
 	while (!(otg_fs->grstctl & OTG_FS_AHBIDL)) {
 		udelay(3);

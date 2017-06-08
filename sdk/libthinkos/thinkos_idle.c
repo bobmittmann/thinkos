@@ -79,13 +79,24 @@ struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx;
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)&thinkos_idle_ctx
 #endif
 
+extern int _stack;
+
 #if THINKOS_IDLE_STACK_ALLOC
-extern uint32_t _stack[];
-/* IDLE stack pre allocated on main stack */
-#define THINKOS_IDLE_STACK_BASE (uint32_t *)&_stack[0]
+  /* IDLE stack pre allocated on main stack */
+  #define THINKOS_IDLE_STACK_BASE ((uint32_t *)&_stack - \
+                                   sizeof(struct thinkos_context))
+  #define THINKOS_MAIN_STACK_TOP THINKOS_IDLE_STACK_BASE
+#else
+  #define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
 #endif
 
 #define THINKOS_IDLE_STACK_SIZE sizeof(struct thinkos_context)
+
+#ifndef THINKOS_MAIN_STACK_SIZE
+  #define THINKOS_MAIN_STACK_SIZE 4096
+#endif
+
+uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
 
 #if THINKOS_ENABLE_THREAD_INFO
 const struct thinkos_thread_inf thinkos_idle_inf = {
@@ -96,8 +107,17 @@ const struct thinkos_thread_inf thinkos_idle_inf = {
 	.thread_id = THINKOS_THREAD_IDLE,
 	.paused = 0
 };
-#else
-uint32_t * const thinkos_idle_stack_ptr = THINKOS_IDLE_STACK_BASE;
+
+/* FIXME: move this definition elsewere, or allow it 
+   to be configured by the user ... */
+const struct thinkos_thread_inf thinkos_main_inf = {
+	.tag = "MAIN",
+	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
+	.stack_size = THINKOS_MAIN_STACK_SIZE,
+	.priority = 0,
+	.thread_id = 0,
+	.paused = 0
+};
 #endif
 
 /* initialize the idle thread */
@@ -112,7 +132,7 @@ struct thinkos_context * __thinkos_idle_init(void)
 #endif
 
 #if THINKOS_IDLE_STACK_ALLOC
-	DCC_LOG1(LOG_TRACE, "Alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+	DCC_LOG1(LOG_TRACE, "alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
 #endif
 
 	idle_ctx->pc = (uint32_t)thinkos_idle_task & ~1;

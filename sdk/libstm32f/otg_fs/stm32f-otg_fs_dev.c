@@ -64,6 +64,10 @@
 #define OTG_EP_MAX          STM32_OTG_FS_EP_MAX 
 #define OTG_RX_FIFO_SIZE    512
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 /* Endpoint state */
 enum ep_state {
 	EP_UNCONFIGURED = 0,
@@ -82,6 +86,7 @@ enum ep_state {
 /* Endpoint control */
 struct stm32f_otg_ep {
 	uint8_t state;
+	uint8_t res;
 	uint16_t xfr_max;
 	uint16_t xfr_rem;
 	uint16_t xfr_buf_len;
@@ -100,9 +105,6 @@ struct stm32f_otg_ep {
 
 /* USB Device runtime driver data */
 struct stm32f_otg_drv {
-#if 0
-	struct stm32f_otg_fs * otg_fs;
-#endif
 	struct stm32f_otg_ep ep[OTG_EP_MAX];
 	usb_class_t * cl;
 	const struct usb_class_events * ev;
@@ -284,7 +286,6 @@ static bool __ep_tx_push(struct stm32f_otg_drv * drv, int ep_id)
 	uint32_t deptsiz;
 	uint32_t mpsiz;
 	uint32_t xfrsiz;
-	uint32_t pktcnt;
 	uint32_t free;
 	uint32_t data;
 	void * buf = ep->xfr_ptr;
@@ -300,11 +301,15 @@ static bool __ep_tx_push(struct stm32f_otg_drv * drv, int ep_id)
 	else
 		mpsiz = OTG_FS_MPSIZ_GET(depctl);
 	xfrsiz = OTG_FS_XFRSIZ_GET(deptsiz);
+
+#if DEBUG
+	uint32_t pktcnt;
 	pktcnt = OTG_FS_PKTCNT_GET(deptsiz);
 	(void)pktcnt;
 
 	DCC_LOG5(LOG_INFO, "ep_id=%d mpsiz=%d pktcnt=%d xfrsiz=%d free=%d", 
 			 ep_id, mpsiz, pktcnt, xfrsiz, free);
+#endif
 
 	if (xfrsiz < mpsiz) {
 		if (free < xfrsiz) {
@@ -1252,7 +1257,6 @@ void stm32f_otg_fs_isr(void)
 		uint32_t grxsts;
 		int epnum;
 		int len;
-		int stat;
 
 		/* 1. On catching an RXFLVL interrupt (OTG_FS_GINTSTS register),
 		   the application must read the Receive status pop
@@ -1261,19 +1265,23 @@ void stm32f_otg_fs_isr(void)
 
 		epnum = OTG_FS_EPNUM_GET(grxsts);
 		len = OTG_FS_BCNT_GET(grxsts);
-		(void)len;
-		stat = OTG_FS_PKTSTS_GET(grxsts);
-		(void)stat;
 
-		DCC_LOG3(LOG_MSG, "[%d] <RXFLVL> len=%d status=%d", 
-				 epnum, len, stat);
+#if DEBUG
+		{
+			int stat;
+			stat = OTG_FS_PKTSTS_GET(grxsts);
+			(void)stat;
+
+			DCC_LOG3(LOG_MSG, "[%d] <RXFLVL> len=%d status=%d", 
+					 epnum, len, stat);
+		}
+#endif
 
 		if (epnum == 0) {
-
 			/* 3. If the received packet’s byte count is not 0, the byte count
-			   amount of data is popped from the receive Data FIFO and stored in
-			   memory. If the received packet byte count is 0, no data is popped
-			   from the receive data FIFO. */
+			   amount of data is popped from the receive Data FIFO and stored 
+			   in memory. If the received packet byte count is 0, no data is 
+			   popped from the receive data FIFO. */
 			switch (grxsts & OTG_FS_PKTSTS_MSK) {
 			case OTG_FS_PKTSTS_GOUT_NACK:
 				/* Global OUT NAK (triggers an interrupt) */

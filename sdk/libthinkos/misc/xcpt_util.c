@@ -24,6 +24,8 @@ _Pragma ("GCC optimize (\"O2\")")
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
 #include <thinkos.h>
 
 const char __xcpt_name_lut[16][12] = {
@@ -62,7 +64,7 @@ int __scan_stack(void * stack, unsigned int size);
 extern uint32_t thinkos_dbgmon_stack[];
 extern const uint16_t thinkos_dbgmon_stack_size;
 
-
+/* Exception state dump */
 void __xdump(struct thinkos_except * xcpt)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
@@ -70,6 +72,7 @@ void __xdump(struct thinkos_except * xcpt)
 	uint32_t icsr;
 	uint32_t ipsr;
 	uint32_t xpsr;
+	uint32_t ctrl;
 	uint32_t sp;
 	int irqregs;
 	int irqbits;
@@ -132,6 +135,35 @@ void __xdump(struct thinkos_except * xcpt)
 				 ((xpsr >> 16) & 0x0f),
 				 ipsr, ipsr - 16);
 	}
+
+#if THINKOS_ENABLE_FPU 
+	DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
+			xcpt->ctx.s[0], xcpt->ctx.s[1], xcpt->ctx.s[2], xcpt->ctx.s[3]);
+	DCC_LOG4(LOG_ERROR, "   S4=%08x  S5=%08x  S6=%08x  S7=%08x", 
+			xcpt->ctx.s[4], xcpt->ctx.s[5], xcpt->ctx.s[6], xcpt->ctx.s[7]);
+	DCC_LOG4(LOG_ERROR, "   S8=%08x  S9=%08x S10=%08x S11=%08x", 
+			xcpt->ctx.s[8], xcpt->ctx.s[9], xcpt->ctx.s[10], xcpt->ctx.s[11]);
+	DCC_LOG4(LOG_ERROR, "  S12=%08x S13=%08x S14=%08x S15=%08x", 
+			xcpt->ctx.s[12], xcpt->ctx.s[13], xcpt->ctx.s[14], xcpt->ctx.s[15]);
+	DCC_LOG4(LOG_ERROR, "  S16=%08x S17=%08x S18=%08x S19=%08x", 
+			xcpt->ctx.s1[0], xcpt->ctx.s1[1], xcpt->ctx.s1[2], xcpt->ctx.s1[3]);
+	DCC_LOG4(LOG_ERROR, "  S20=%08x S21=%08x S22=%08x S23=%08x", 
+			xcpt->ctx.s1[4], xcpt->ctx.s1[5], xcpt->ctx.s1[6], xcpt->ctx.s1[7]);
+	DCC_LOG4(LOG_ERROR, "  S24=%08x S25=%08x S26=%08x S27=%08x", 
+			xcpt->ctx.s1[8], xcpt->ctx.s1[9], 
+			xcpt->ctx.s1[10], xcpt->ctx.s1[11]);
+	DCC_LOG4(LOG_ERROR, "  S28=%08x S29=%08x S30=%08x S31=%08x", 
+			xcpt->ctx.s1[12], xcpt->ctx.s1[13], 
+			xcpt->ctx.s1[14], xcpt->ctx.s1[15]);
+	DCC_LOG1(LOG_ERROR, "FPSCR=%08x", xcpt->ctx.fpscr);
+#endif
+
+	ctrl = cm3_control_get();
+	DCC_LOG3(LOG_TRACE, " CTRL={%s%s%s }",
+			 ctrl & CONTROL_FPCA? " FPCA" : "",
+			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
+			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
+
 	shcsr = CM3_SCB->shcsr;
 	DCC_LOG7(LOG_ERROR, "SHCSR={%s%s%s%s%s%s%s }", 
 				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
@@ -154,8 +186,8 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
-			 xcpt->active,
-			 thinkos_rt.active); 
+			 xcpt->active + 1,
+			 thinkos_rt.active + 1); 
 
 #if (THINKOS_ENABLE_MONITOR)
 	if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
@@ -168,6 +200,7 @@ void __xdump(struct thinkos_except * xcpt)
 #endif
 }
 
+/* Interrupts state dump */
 void __idump(const char * s, uint32_t ipsr)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
@@ -228,6 +261,7 @@ void __idump(const char * s, uint32_t ipsr)
 #endif
 }
 
+/* MPU state dump */
 void __mpudump(void)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
@@ -325,7 +359,7 @@ void __tdump(void)
 
 	int i;
 
-	DCC_LOG1(LOG_TRACE, "Active=%d", thinkos_rt.active);
+	DCC_LOG1(LOG_TRACE, "active thread: %d", thinkos_rt.active + 1);
 	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (thinkos_rt.ctx[i] == NULL)
 			continue;
@@ -334,7 +368,8 @@ void __tdump(void)
 #if THINKOS_ENABLE_THREAD_STAT
 			DCC_LOG8(LOG_TRACE, "%7s (%2d %3d) SP=%08x PC=%08x LR=%08x %d/%d", 
 					 thinkos_rt.th_inf[i]->tag,
-					 i + 1, thinkos_rt.th_stat[i] >> 1,
+					 i + 1, i == THINKOS_THREAD_IDLE ? 0 : 
+					 thinkos_rt.th_stat[i] >> 1,
 					 thinkos_rt.ctx[i], 
 					 thinkos_rt.ctx[i]->pc, 
 					 thinkos_rt.ctx[i]->lr,

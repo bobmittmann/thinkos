@@ -28,6 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <thinkos/irq.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
 

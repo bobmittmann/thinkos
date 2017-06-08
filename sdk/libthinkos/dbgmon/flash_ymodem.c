@@ -49,9 +49,6 @@ static unsigned long dec2int(const char * __s)
 	return val;
 }
 
-
-extern uint32_t _stack;
-
 /* Receive a file and write it into the flash using the YMODEM preotocol */
 int dmon_ymodem_flash(struct dmon_comm * comm,
 					  uint32_t addr, unsigned int size)
@@ -62,7 +59,7 @@ int dmon_ymodem_flash(struct dmon_comm * comm,
 	/* The YMODEM state machine is allocated at the top of 
 	   the stack, make sure there is no app running before 
 	   calling the dmon_ymodem_flash()! */
-	struct ymodem_rcv * ry = ((struct ymodem_rcv *)&_stack) - 1;
+	struct ymodem_rcv * ry = ((struct ymodem_rcv *)thinkos_main_stack) - 1;
 	uint32_t base = (uint32_t)STM32_FLASH_MEM;
 	uint32_t offs = addr - base;
 	int ret;

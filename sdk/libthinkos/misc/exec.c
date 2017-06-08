@@ -27,9 +27,7 @@
  * Application execution
  * ------------------------------------------------------------------------- */
 
-extern uint32_t _stack;
 extern const struct thinkos_thread_inf thinkos_main_inf;
-
 
 void __thinkos_exec(int thread_id, void (* func)(void *), 
 					void * arg, bool paused)
@@ -43,7 +41,7 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 #endif
 
 	DCC_LOG2(LOG_MSG, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, func, arg);
+	__thinkos_thread_init(thread_id, (uint32_t)thinkos_main_stack, func, arg);
 
 #if THINKOS_ENABLE_THREAD_INFO
 	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");

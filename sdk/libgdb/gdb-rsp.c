@@ -58,6 +58,7 @@ int bin2hex(char * pkt, const void * buf, int len);
 int int2str2hex(char * pkt, unsigned int val);
 int uint2hex(char * s, unsigned int val);
 int long2hex_be(char * pkt, unsigned long val);
+int longlong2hex_be(char * s, unsigned long long val);
 int hex2char(char * hex);
 extern const char __hextab[];
 
@@ -69,10 +70,14 @@ int thread_any(void);
 bool thread_isalive(int thread_id);
 int thread_register_get(int thread_id, int reg, uint32_t * val);
 int thread_register_set(unsigned int thread_id, int reg, uint32_t val);
+int thread_fpu_register_get(int thread_id, int reg, uint64_t * val);
+int thread_fpu_register_set(unsigned int thread_id, int reg, uint64_t val);
 int thread_goto(unsigned int thread_id, uint32_t addr);
 int thread_step_req(unsigned int thread_id);
 int thread_continue(unsigned int thread_id);
 int thread_info(unsigned int gdb_thread_id, char * buf);
+
+int target_mem_erase(uint32_t addr, unsigned int len);
 
 int target_mem_write(uint32_t addr, const void * ptr, unsigned int len);
 
@@ -86,7 +91,11 @@ void target_continue(void);
 int target_goto(uint32_t addr, int opt);
 
 #ifndef RSP_BUFFER_LEN
+#if THINKOS_ENABLE_FPU
+#define RSP_BUFFER_LEN (512 + 0)
+#else
 #define RSP_BUFFER_LEN 512
+#endif
 #endif
 
 #ifndef GDB_ENABLE_NOACK_MODE
@@ -99,6 +108,10 @@ int target_goto(uint32_t addr, int opt);
 
 #ifndef GDB_ENABLE_VCONT
 #define GDB_ENABLE_VCONT 1
+#endif
+
+#ifndef GDB_ENABLE_VFLASH
+#define GDB_ENABLE_VFLASH 0
 #endif
 
 #ifndef GDB_ENABLE_MULTIPROCESS
@@ -812,22 +825,22 @@ static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 	cp += long2hex_be(cp, val);
 	DCC_LOG2(LOG_TRACE, "thread_id=%d PC=%08x", thread_id, val);
 
-#if 0
-	/* all fp registers */
-	for (r = 0; r < 8; r++) {
-		*cp++ = '0' + r;
-		*cp++ = '*';
-		*cp++ = ' ' + 20;
-	}
-	/* fps */
-	*cp++ = '0';
-	*cp++ = '*';
-	*cp++ = ' ' + 4;
-#endif
-
 	/* xpsr */
 	thread_register_get(thread_id, 25, &val);
 	cp += long2hex_be(cp, val);
+
+#if THINKOS_ENABLE_FPU
+	/* all fp registers */
+	for (r = 26; r < 42; r++) {
+		uint64_t llval;
+		thread_fpu_register_get(thread_id, r, &llval);
+		cp += longlong2hex_be(cp, llval);
+	}
+	/* fpscr */
+	thread_register_get(thread_id, 42, &val);
+	cp += long2hex_be(cp, val);
+	DCC_LOG1(LOG_TRACE, "FPSCR=%08x", val);
+#endif
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
@@ -1241,7 +1254,7 @@ static int rsp_continue_with_sig(struct gdb_rspd * gdb, char * pkt)
 }
 
 
-static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
+static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 {
 #if GDB_ENABLE_VCONT
 	unsigned int sig = 0;
@@ -1333,13 +1346,41 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt)
 		return rsp_stop_reply(gdb, pkt);
 	}
 
-	/* signal that we are now running */
+#endif
+
+#if GDB_ENABLE_VFLASH
+	if (prefix(pkt, "vFlashErase:")) {
+		uint32_t addr;
+		uint32_t size;
+		if (gdb->active_app) {
+			DCC_LOG(LOG_WARNING, "active application!");
+			dbgmon_soft_reset();
+			gdb->active_app = false;
+		}
+		cp = &pkt[12];
+		addr = hex2int(cp, &cp);
+		cp++;
+		size = hex2int(cp, &cp);
+		target_mem_erase(addr, size);
+		return rsp_ok(gdb);
+	}
+
+	if (prefix(pkt, "vFlashWrite:")) {
+		uint32_t addr;
+		cp = &pkt[12];
+		addr = hex2int(cp, &cp);
+		cp++;
+		target_mem_write(addr, cp, len - 21);
+		return rsp_ok(gdb);
+	}
+
+	if (prefix(pkt, "vFlashDone")) {
+		return rsp_ok(gdb);
+	}
+#endif
+
 	DCC_LOG(LOG_WARNING, "v???");
 	return rsp_empty(gdb);
-#else
-	DCC_LOG(LOG_WARNING, "vCont unsupported!");
-	return rsp_empty(gdb);
-#endif
 }
 
 #define GDB_RSP_QUIT -0x80000000
@@ -1474,7 +1515,7 @@ static int rsp_pkt_input(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 		ret = rsp_continue_with_sig(gdb, pkt);
 		break;
 	case 'v':
-		ret = rsp_v_packet(gdb, pkt);
+		ret = rsp_v_packet(gdb, pkt, len);
 		break;
 	case 'D':
 		ret = rsp_detach(gdb);

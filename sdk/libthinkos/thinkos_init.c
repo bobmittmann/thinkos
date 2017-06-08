@@ -25,6 +25,7 @@
 #include <thinkos/irq.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
 
@@ -36,25 +37,6 @@ extern const char thinkos_sch_nm[];
 extern const char thinkos_xcp_nm[];
 extern const char thinkos_vec_nm[];
 extern const char thinkos_irq_nm[];
-
-#if THINKOS_ENABLE_THREAD_INFO
-extern uint32_t _stack;
-
-#ifndef THINKOS_MAIN_STACK_SIZE
-#define THINKOS_MAIN_STACK_SIZE 4096
-#endif
-
-/* FIXME: move this definition elsewere, or allow it 
-   to be configured by the user ... */
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = (void *)((uintptr_t)&_stack - THINKOS_MAIN_STACK_SIZE),
-	.stack_size = THINKOS_MAIN_STACK_SIZE,
-	.priority = 0,
-	.thread_id = 0,
-	.paused = 0
-};
-#endif
 
 void __thinkos_kill_all(void) 
 {
@@ -124,12 +106,13 @@ void __thinkos_reset(void)
 
 	/* Configure FPU */
 #if THINKOS_ENABLE_FPU 
-	DCC_LOG1(LOG_TRACE, "fpccr --> %08x", &CM3_SCB->fpccr); 
-	/* Clear FP context automatic save */
-//	CM3_SCB->fpccr &= ~SCB_FPCCR_ASPEN;
-	CM3_SCB->fpccr |= SCB_FPCCR_ASPEN;
+  #if THINKOS_ENABLE_FPU_LS 
 	/* Enable FP lazy context save */
-	CM3_SCB->fpccr |= SCB_FPCCR_LSPEN;
+	CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
+  #else
+	/* Enable automatic FP context save */
+	CM3_SCB->fpccr = SCB_FPCCR_ASPEN;
+  #endif
 	/* Enable FPU access */
 	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
 #endif
@@ -381,11 +364,26 @@ int thinkos_init(uint32_t opt)
 		return thread_id;
 
 	/* Cortex-M configuration */
+	DCC_LOG(LOG_TRACE, "Cortex-M configuration:"); 
 
+#ifdef DEBUG
+	{
+		uint32_t ctrl = cm3_control_get();
+
+		DCC_LOG4(LOG_TRACE, "CTRL=%02x { nPRIV=%d SPSEL=%d FPCA=%d }",
+				 ctrl, 
+				 ctrl & CONTROL_nPRIV ? 1 : 0,
+				 ctrl & CONTROL_SPSEL? 1 : 0,
+				 ctrl & CONTROL_FPCA? 1 : 0);
+	}
+#endif
+
+	DCC_LOG(LOG_TRACE, "1. SCB->SCR"); 
 	/* System Control Register
 	   The SCR controls features of entry to and exit from low power state. */
 	CM3_SCB->scr = 0; 
 
+	DCC_LOG(LOG_TRACE, "2. SCB->CCR"); 
 	/* Configuration and Control Register
 		The CCR controls entry to Thread mode and enables:
 		- the handlers for NMI, hard fault and faults escalated by FAULTMASK 
@@ -403,19 +401,23 @@ int thinkos_init(uint32_t opt)
 		control of an
 		EXC_RETURN value, see Exception return on page 2-28. */
 
+	DCC_LOG(LOG_TRACE, "3. PSP"); 
 	/* configure the thread stack */
 	cm3_psp_set(cm3_sp_get());
+
+	DCC_LOG(LOG_TRACE, "4. MSP"); 
 	/* configure the main stack */
 	msp = (uint32_t)thinkos_except_stack + sizeof(thinkos_except_stack);
 	cm3_msp_set(msp);
 
+	DCC_LOG(LOG_TRACE, "5. CONTROL"); 
 	/* configure the use of PSP in thread mode */
 	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV);
 
-	DCC_LOG(LOG_TRACE, "enabling interrupts!");
+	DCC_LOG(LOG_TRACE, "6. enabling interrupts!");
 	cm3_cpsie_i();
 
-	DCC_LOG4(LOG_TRACE, "<%d> msp=%08x psp=%08x ctrl=%02x", 
+	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 
 	return thread_id + 1;
