@@ -639,6 +639,8 @@ void thinkos_exception_init(void)
 	__exception_reset();
 }
 
+const char thinkos_xcp_nm[] = "XCP";
+
 #else /* THINKOS_ENABLE_EXCEPTIONS */
 
 #if THINKOS_SYSRST_ONFAULT
