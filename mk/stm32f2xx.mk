@@ -39,11 +39,16 @@ endif
 ifdef HSE_HZ
 CDEFS += "HSE_HZ=$(HSE_HZ)" 
 endif
-OPTIONS	= -mcpu=$(CPU) -mthumb -mthumb-interwork 
+
 CROSS_COMPILE = arm-none-eabi-
 
+OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
+
 ifdef THINKAPP
-CDEFS += "THINKAPP" 
+CDEFS += THINKAPP
+SYMDEFS += __thinkapp=$(APPADDR)
+else
+OPTIONS += -mno-unaligned-access
 endif
 
 ifdef LDSCRIPT
