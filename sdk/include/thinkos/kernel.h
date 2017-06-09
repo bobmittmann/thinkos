@@ -325,6 +325,9 @@
 #define THINKOS_ENABLE_RT_DEBUG         0
 #endif
 
+#ifndef THINKOS_ENABLE_ALIGN
+#define THINKOS_ENABLE_ALIGN            1
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Sanity check

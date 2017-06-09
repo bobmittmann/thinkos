@@ -39,24 +39,28 @@ endif
 ifdef HSE_HZ
 CDEFS += "HSE_HZ=$(HSE_HZ)" 
 endif
-OPTIONS	= -mcpu=$(CPU) -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -mthumb-interwork 
-#OPTIONS	= -mcpu=$(CPU) -mfpu=vfp -mthumb -mthumb-interwork 
-#OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
+
 CROSS_COMPILE = arm-none-eabi-
 
-ifndef APPADDR
-APPADDR := 0x08010000
-endif
+OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
+OPTIONS	+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
+#OPTIONS += -mfpu=vfp
 
 ifdef THINKAPP
 CDEFS += THINKAPP
 SYMDEFS += __thinkapp=$(APPADDR)
+else
+OPTIONS += -mno-unaligned-access
 endif
 
 ifdef LDSCRIPT
 LDFLAGS += -nostdlib -T $(LDSCRIPT)
 else
 LDFLAGS += -nostdlib -T $(MACH).ld
+endif
+
+ifndef APPADDR
+APPADDR := 0x08010000
 endif
 
 include $(THISDIR)/prog.mk

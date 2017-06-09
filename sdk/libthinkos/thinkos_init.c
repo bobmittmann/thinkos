@@ -381,8 +381,12 @@ int thinkos_init(uint32_t opt)
 		- trapping of divide by zero and unaligned accesses
 		- access to the STIR by unprivileged software.
 		*/
+#if THINKOS_ENABLE_ALIGN
 	CM3_SCB->ccr = SCB_CCR_USERSETMPEND | SCB_CCR_STKALIGN | \
 				   SCB_CCR_UNALIGN_TRP;
+#else
+	CM3_SCB->ccr = SCB_CCR_USERSETMPEND;
+#endif
 //		| SCB_CCR_NONBASETHRDENA;
 	/*  NONBASETHRDENA
 		Indicates how the processor enters Thread mode:
