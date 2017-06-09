@@ -849,7 +849,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				psp = (uint32_t *)cm3_psp_get();
 
 				DCC_LOG4(LOG_ERROR, "<<ERROR %d>>: pc=%08x thread=%d psp=%08x", 
-						 err, pc, thinkos_rt.active, psp);
+						 err, pc, thinkos_rt.active + 1, psp);
 				/* Skip the breakpoint intruction */
 				ctx->pc += 2;
 
@@ -914,7 +914,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
 				DCC_LOG2(LOG_TRACE, "<<BREAKPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active, ctx->pc);
+						 thinkos_rt.active + 1, ctx->pc);
 				/* suspend the current thread */
 				__thinkos_thread_pause(thinkos_rt.active);
 				/* record the break thread id */
@@ -924,7 +924,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				dmon_breakpoint_disable(ctx->pc);
 			} else {
 				DCC_LOG2(LOG_ERROR, "<<BREAKPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active, ctx->pc);
+						 thinkos_rt.active + 1, ctx->pc);
 				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
 				sigset |= (1 << DBGMON_BREAKPOINT);
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
@@ -955,7 +955,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
 				DCC_LOG2(LOG_TRACE, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active, ctx->pc);
+						 thinkos_rt.active + 1, ctx->pc);
 				/* suspend the current thread */
 				__thinkos_thread_pause(thinkos_rt.active);
 				/* record the break thread id */
@@ -963,7 +963,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				__thinkos_defer_sched();
 			} else {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active, ctx->pc);
+						 thinkos_rt.active + 1, ctx->pc);
 				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
 				sigset |= (1 << DBGMON_BREAKPOINT);
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
@@ -1079,7 +1079,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 #endif
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
-				 xcpt->active);
+				 xcpt->active + 1);
 #if THINKOS_ENABLE_DEBUG_BKPT
 		thinkos_rt.break_id = xcpt->active;
 #endif
@@ -1095,7 +1095,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.void_ctx = &xcpt->ctx;
 
 		DCC_LOG2(LOG_WARNING, "VOID context=%08x active=%d!", 
-				 thinkos_rt.void_ctx, thinkos_rt.active);
+				 thinkos_rt.void_ctx, thinkos_rt.active + 1);
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 /* FIXME: this is a dare situation, probably the only resource left
