@@ -21,6 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_NRT__
+#include <thinkos/nrt.h>
 #include <thinkos.h>
 #include <sys/delay.h>
 
@@ -106,7 +108,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	}
 #else
 	thread_id = target_id;
-	if (thread_id >= THINKOS_THREADS_MAX) {
+	if (thread_id >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
 		__thinkos_error(THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -133,6 +135,15 @@ void thinkos_thread_create_svc(int32_t * arg)
 	thinkos_rt.th_inf[thread_id] = init->inf;
 #endif
 
+#if THINKOS_NRT_THREADS_MAX > 0
+	if (thread_id >= (THINKOS_THREADS_MAX)){
+		arg[0] = __thinkos_nrt_thread_init(thread_id);
+		return;
+	}
+#endif
+
+	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
+
 #if THINKOS_ENABLE_TIMESHARE
 	thinkos_rt.sched_pri[thread_id] = init->opt.priority;
 	if (thinkos_rt.sched_pri[thread_id] > THINKOS_SCHED_LIMIT_MAX)
@@ -144,8 +155,6 @@ void thinkos_thread_create_svc(int32_t * arg)
 	}
 	thinkos_rt.sched_val[thread_id] = thinkos_rt.sched_limit / 2;
 #endif
-
-	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
 
 #if THINKOS_ENABLE_PAUSE
 	if (!init->opt.paused)

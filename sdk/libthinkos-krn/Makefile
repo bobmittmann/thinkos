@@ -21,14 +21,7 @@
 
 include ../../mk/config.mk
 
-LIB_STATIC = thinkos
-
-DBGMON_CFILES = usb_comm.c \
-			  print_osinfo.c print_alloc.c print_thread.c \
-			  print_context.c print_stack_usage.c \
-			  app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
-			  print_exception.c dmgetc.c dmgets.c dmprintf.c dmscanf.c  
-
+LIB_STATIC = thinkos-krn
 
 MISC_CFILES = thinkos_type.c obj_type_get.c \
 			  alloc_bmp_get.c bmp_alloc.c \
@@ -37,20 +30,17 @@ MISC_CFILES = thinkos_type.c obj_type_get.c \
 			  thread_isfaulty.c thread_ispaused.c exec.c\
 			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c
 
-CONSOLE_CFILES = bypass.c 
-
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
 		 thinkos_semaphore.c thinkos_event.c thinkos_irq.c \
-		 thinkos_flag.c thinkos_except.c thinkos_debug.c \
-		 thinkos_sleep.c thinkos_break.c thinkos_pause.c \
+		 thinkos_flag.c thinkos_except.c thinkos_sleep.c \
+		 thinkos_break.c thinkos_pause.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
-		 thinkos_dbgmon.c thinkos_console.c \
-		 $(addprefix misc/,$(MISC_CFILES)) \
-		 $(addprefix dbgmon/,$(DBGMON_CFILES))
+		 thinkos_console.c \
+		 $(addprefix misc/,$(MISC_CFILES))
 
-SFILES = thinkos_sched.S thinkos_vector.S dbgmon_swap.S
+SFILES = thinkos_sched.S thinkos_vector.S 
 
 include ../../mk/lib.mk
 

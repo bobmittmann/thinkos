@@ -276,7 +276,7 @@ static int __thinkos_init_main(uint32_t opt)
 	return id;
 }
 
-int thinkos_init(uint32_t opt)
+int thinkos_krn_init(uint32_t opt)
 {
 	uint32_t msp;
 	int thread_id;

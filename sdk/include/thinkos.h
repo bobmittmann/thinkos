@@ -146,13 +146,20 @@ struct thinkos_thread_inf {
 extern "C" {
 #endif
 
-/** @brief Initializes the @b ThinkOS library.
+/** @brief Initializes the @b ThinkOS kernel.
  *
  * On return the current program execution thread turns into the first 
  * thread of the system.
  * @return THINKOS_OK
  */
-int thinkos_init(unsigned int opt);
+int thinkos_krn_init(unsigned int opt);
+
+/** @brief Initializes the @b ThinkOS non-real-time extension.
+ *
+ * Sratrts the NRT scheduler and return it's thread id.
+ * @return THINKOS_OK
+ */
+int	thinkos_nrt_init(void);
 
 /** @brief Initializes the Cortex-M MPU.
  *

@@ -39,6 +39,10 @@
 #define THINKOS_THREADS_MAX             8
 #endif
 
+#ifndef THINKOS_NRT_THREADS_MAX
+#define THINKOS_NRT_THREADS_MAX         0
+#endif
+
 #ifndef THINKOS_ENABLE_THREAD_ALLOC
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 #endif
@@ -450,6 +454,9 @@
 #define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
 #if THINKOS_ENABLE_THREAD_VOID 
 #define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + 1)
+#define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 2)
+#else
+#define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 1)
 #endif
 
 #if 0
@@ -459,23 +466,29 @@
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
 #endif
 
+
+
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
  * --------------------------------------------------------------------------*/
 
 #if THINKOS_ENABLE_THREAD_VOID
   #define SIZEOF_VOID_CTX  4
-  #define SIZEOF_CTX ((THINKOS_THREADS_MAX + 2) * 4)
+  #define SIZEOF_CTX (((THINKOS_THREADS_MAX) + 2) * 4)
 #else
   #define SIZEOF_VOID_CTX  0
-  #define SIZEOF_CTX       ((THINKOS_THREADS_MAX + 1) * 4)
+  #define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
 #endif
+
+#define SIZEOF_NRT_CTX     ((THINKOS_NRT_THREADS_MAX) * 4)
 
 #if THINKOS_ENABLE_PROFILING
   #if THINKOS_ENABLE_THREAD_VOID
-    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 2) * 4)
+    #define SIZEOF_CYCCNT  (((THINKOS_THREADS_MAX) + \
+							 (THINKOS_NRT_THREADS_MAX) + 2) * 4)
   #else
-    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 1) * 4)
+    #define SIZEOF_CYCCNT  (((THINKOS_THREADS_MAX) + \
+							 (THINKOS_NRT_THREADS_MAX) + 1) * 4)
   #endif
   #define SIZEOF_CYCREF    4
 #else
@@ -526,9 +539,12 @@
   #define SIZEOF_STEP_SVC  0
 #endif
 
-#define THINKOS_RT_IDLE_CTX_OFFS   (4 * THINKOS_THREADS_MAX)
+#define THINKOS_RT_IDLE_CTX_OFFS   (4 * (THINKOS_THREADS_MAX))
 #define THINKOS_RT_VOID_CTX_OFFS   (THINKOS_RT_IDLE_CTX_OFFS + 4)
-#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
+
+#define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
+
+#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
 #define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
 #define THINKOS_RT_XCPT_IPSR_OFFS  (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
 #define THINKOS_RT_STEP_ID_OFFS    (THINKOS_RT_XCPT_IPSR_OFFS + SIZEOF_XCPT_IPSR)
@@ -602,19 +618,24 @@ struct thinkos_rt {
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
 	/* Idle thread context pointer */
-	struct thinkos_context * ctx[THINKOS_THREADS_MAX + 1]; 
+	struct thinkos_context * ctx[(THINKOS_THREADS_MAX) + 1]; 
 #if THINKOS_ENABLE_THREAD_VOID 
 	/* void thread context pointer */
 	struct thinkos_context * void_ctx; 
 #endif
 
+#if THINKOS_NRT_THREADS_MAX > 0
+	struct thinkos_context * nrt_ctx[THINKOS_NRT_THREADS_MAX]; 
+#endif
+
 #if THINKOS_ENABLE_PROFILING
 	/* Per thread cycle count */
-#if THINKOS_ENABLE_THREAD_VOID 
-	uint32_t cyccnt[THINKOS_THREADS_MAX + 2]; /* extra slot for void thread */
-#else
-	uint32_t cyccnt[THINKOS_THREADS_MAX + 1];
-#endif
+  #if THINKOS_ENABLE_THREAD_VOID 
+	/* extra slot for void thread */
+	uint32_t cyccnt[(THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX) + 2]; 
+  #else
+	uint32_t cyccnt[(THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX) + 1];
+  #endif
 #endif
 
 #if THINKOS_ENABLE_CRITICAL
@@ -626,10 +647,10 @@ struct thinkos_rt {
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
 	int8_t   break_id;  /* thread stopped by a breakpoint or step request */
-#if THINKOS_ENABLE_DEBUG_STEP
+  #if THINKOS_ENABLE_DEBUG_STEP
 	uint32_t step_svc;  /* step at service call bitmap */
 	uint32_t step_req;  /* step request bitmap */
-#endif
+  #endif
 #endif
 
 #if THINKOS_ENABLE_PROFILING
@@ -789,7 +810,13 @@ struct thinkos_rt {
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
-	const struct thinkos_thread_inf * th_inf[THINKOS_THREADS_MAX + 1]; 
+  #if THINKOS_ENABLE_THREAD_VOID 
+	/* extra slot for void thread */
+	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX) + 
+		(THINKOS_NRT_THREADS_MAX) + 2]; 
+  #else
+	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX)];
+  #endif
 #endif
 };
 
