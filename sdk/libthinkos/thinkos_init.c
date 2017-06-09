@@ -104,19 +104,6 @@ void __thinkos_reset(void)
 	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, MONITOR_PRIORITY);
 #endif
 
-	/* Configure FPU */
-#if THINKOS_ENABLE_FPU 
-  #if THINKOS_ENABLE_FPU_LS 
-	/* Enable FP lazy context save */
-	CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
-  #else
-	/* Enable automatic FP context save */
-	CM3_SCB->fpccr = SCB_FPCCR_ASPEN;
-  #endif
-	/* Enable FPU access */
-	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
-#endif
-
 	/* clear the ThinkOS runtime structure */
 	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
 
@@ -360,6 +347,9 @@ int thinkos_init(uint32_t opt)
 	thinkos_exception_init();
 #endif
 
+	DCC_LOG1(LOG_TRACE, "thinkos_rt=@%08x", &thinkos_rt);
+
+
 	if ((thread_id = __thinkos_init_main(opt)) < 0)
 		return thread_id;
 
@@ -391,8 +381,8 @@ int thinkos_init(uint32_t opt)
 		- trapping of divide by zero and unaligned accesses
 		- access to the STIR by unprivileged software.
 		*/
-	CM3_SCB->ccr = SCB_CCR_USERSETMPEND;
-// SCB_CCR_UNALIGN_TRP | 
+	CM3_SCB->ccr = SCB_CCR_USERSETMPEND | SCB_CCR_STKALIGN | \
+				   SCB_CCR_UNALIGN_TRP;
 //		| SCB_CCR_NONBASETHRDENA;
 	/*  NONBASETHRDENA
 		Indicates how the processor enters Thread mode:
@@ -400,6 +390,20 @@ int thinkos_init(uint32_t opt)
 		1 = processor can enter Thread mode from any level under the 
 		control of an
 		EXC_RETURN value, see Exception return on page 2-28. */
+
+	/* Configure FPU */
+#if THINKOS_ENABLE_FPU 
+	DCC_LOG(LOG_TRACE, ".. FPU"); 
+  #if THINKOS_ENABLE_FPU_LS 
+	/* Enable FP lazy context save */
+	CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
+  #else
+	/* Enable automatic FP context save */
+	CM3_SCB->fpccr = SCB_FPCCR_ASPEN;
+  #endif
+	/* Enable FPU access */
+	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
+#endif
 
 	DCC_LOG(LOG_TRACE, "3. PSP"); 
 	/* configure the thread stack */
@@ -414,7 +418,7 @@ int thinkos_init(uint32_t opt)
 	/* configure the use of PSP in thread mode */
 	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV);
 
-	DCC_LOG(LOG_TRACE, "6. enabling interrupts!");
+	DCC_LOG(LOG_TRACE, "7. enabling interrupts!");
 	cm3_cpsie_i();
 
 	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
