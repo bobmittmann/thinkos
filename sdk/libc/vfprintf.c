@@ -62,11 +62,17 @@
 #define PRINTF_ENABLE_ARG_WIDTH 1
 #endif
 
+#ifndef PRINTF_ENABLE_FLOAT
+#define PRINTF_ENABLE_FLOAT 0
+#endif
+
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
 
 int ull2dec(char * s, unsigned long long val);
 int ull2hex(char * s, unsigned long long val);
+
+int float2str(char * s, float val, unsigned int dec);
 
 #if PRINTF_ENABLE_LONG
 #define BUF_LEN 22
@@ -122,6 +128,7 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 	union {
 		void * ptr;
 		unsigned int n;
+		float f;
 		int i;
 #if (PRINTF_ENABLE_LONG)
 		unsigned long long ull;
@@ -274,6 +281,15 @@ hexadecimal:
 				val.n = va_arg(ap, unsigned int);
 				n = uint2dec(cp, val.n);
 			}
+			goto print_buf;
+		}
+#endif
+
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == 'f') {
+			cp = buf;
+			val.f = (float)va_arg(ap, double);
+			n = float2str(cp, val.n, w);
 			goto print_buf;
 		}
 #endif
