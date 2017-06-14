@@ -46,6 +46,10 @@ OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork
 OPTIONS	+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
 #OPTIONS += -mfpu=vfp
 
+ifndef APPADDR
+APPADDR := 0x08010000
+endif
+
 ifdef THINKAPP
 CDEFS += THINKAPP
 SYMDEFS += __thinkapp=$(APPADDR)
@@ -57,10 +61,6 @@ ifdef LDSCRIPT
 LDFLAGS += -nostdlib -T $(LDSCRIPT)
 else
 LDFLAGS += -nostdlib -T $(MACH).ld
-endif
-
-ifndef APPADDR
-APPADDR := 0x08010000
 endif
 
 include $(THISDIR)/prog.mk

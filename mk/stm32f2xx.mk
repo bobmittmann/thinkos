@@ -44,6 +44,10 @@ CROSS_COMPILE = arm-none-eabi-
 
 OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
 
+ifndef APPADDR
+APPADDR := 0x08020000
+endif
+
 ifdef THINKAPP
 CDEFS += THINKAPP
 SYMDEFS += __thinkapp=$(APPADDR)
@@ -55,6 +59,10 @@ ifdef LDSCRIPT
 LDFLAGS += -nostdlib -T $(LDSCRIPT)
 else
 LDFLAGS += -nostdlib -T $(MACH).ld
+endif
+
+ifndef LOAD_ADDR
+LOAD_ADDR := $(APPADDR)
 endif
 
 include $(THISDIR)/prog.mk
