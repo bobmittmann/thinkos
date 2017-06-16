@@ -27,7 +27,9 @@ const struct stm32_usart * const stm32_usart_lut[] = {
 	STM32_USART2,
 	STM32_USART3,
 	STM32_UART4,
+#ifdef STM32_UART5
 	STM32_UART5,
+#endif
 #ifdef STM32_USART6
 	STM32_USART6,
 #endif
@@ -46,7 +48,7 @@ const uint8_t stm32_usart_irq_lut[] = {
 #ifdef STM32_IRQ_UART4
 	STM32_IRQ_UART4,
 #endif
-#ifdef STM32_IRQ_UART4
+#ifdef STM32_IRQ_UART5
 	STM32_IRQ_UART5,
 #endif
 #ifdef STM32_IRQ_USART6

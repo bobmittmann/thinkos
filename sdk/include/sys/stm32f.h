@@ -67,6 +67,10 @@
 #include <arch/stm32f446.h>
 #endif
 
+#if defined(STM32L433XC) || defined(STM32L433XB)
+#include <arch/stm32l433.h>
+#endif
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
@@ -123,7 +127,8 @@ static inline uint32_t * dma_ifcr_bitband(struct stm32f_dma * dma,
 
 #endif
 
-#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)
+#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X) \
+	|| defined(STM32L4X)
 
 struct stm32_dmactl {
 	/* DMA Stream ID */
@@ -243,7 +248,7 @@ extern const struct file stm32_usart5_file;
 
 void stm32f_usb_io_init(void);
 
-void stm32f_usb_vbus_connect(bool connect);
+void stm32f_usb_pullup(struct stm32f_usb * usb, bool connect);
 
 void stm32f_usb_power_on(struct stm32f_usb * usb);
 

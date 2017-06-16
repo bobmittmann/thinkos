@@ -922,7 +922,8 @@ struct stm32f_dma {
 };
 #endif
 
-#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)
+#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)\
+	|| defined(STM32L4X)
 
 /* Fake Channel selection */
 #define DMA_CHSEL_SET(VAL) 0

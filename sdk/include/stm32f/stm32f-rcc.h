@@ -2682,6 +2682,7 @@ again in case of a new switch is required)
 #define STM32_APB2 2
 #define STM32_AHB2 3
 #define STM32_AHB3 4
+#define STM32_APB1B 5
 
 #if defined(STM32F2X) || defined(STM32F4X)
 
@@ -2977,6 +2978,32 @@ again in case of a new switch is required)
 
 #endif /* STM32F3X */
 
+#if defined(STM32L4X)
+
+
+#define STM32_CLK_I2C3    STM32_APB1, RCC_I2C3
+#define STM32_CLK_DAC     STM32_APB1, RCC_DAC1
+#define STM32_CLK_PWR     STM32_APB1, RCC_PWR
+#define STM32_CLK_BKP     STM32_APB1, RCC_DAC2
+#define STM32_CLK_CAN     STM32_APB1, RCC_CAN
+#define STM32_CLK_USB     STM32_APB1, RCC_USB
+#define STM32_CLK_I2C2    STM32_APB1, RCC_I2C2
+#define STM32_CLK_I2C1    STM32_APB1, RCC_I2C1
+#define STM32_CLK_UART5   STM32_APB1, RCC_UART5
+#define STM32_CLK_UART4   STM32_APB1, RCC_UART4
+#define STM32_CLK_USART3  STM32_APB1, RCC_USART3
+#define STM32_CLK_USART2  STM32_APB1, RCC_USART2
+#define STM32_CLK_SPI3    STM32_APB1, RCC_SPI3
+#define STM32_CLK_SPI2    STM32_APB1, RCC_SPI2
+#define STM32_CLK_WWDG    STM32_APB1, RCC_WWDG
+#define STM32_CLK_TIM7    STM32_APB1, RCC_TIM7
+#define STM32_CLK_TIM6    STM32_APB1, RCC_TIM6
+#define STM32_CLK_TIM4    STM32_APB1, RCC_TIM4
+#define STM32_CLK_TIM3    STM32_APB1, RCC_TIM3
+#define STM32_CLK_TIM2    STM32_APB1, RCC_TIM2
+
+#endif /* STM32L4X */
+
 #define CLK_BUS(_BUS, _BIT) _BUS
 #define CLK_BIT(_BUS, _BIT) _BIT
 
@@ -3055,6 +3082,7 @@ struct stm32_rcc {
 };
 #endif /* STM32F1X || STM32F3X */
 
+
 struct stm32_clk {
 	uint8_t bus:3;
 	uint8_t bit:5;
@@ -3074,21 +3102,61 @@ extern "C" {
 
 static inline void stm32_clk_enable(struct stm32_rcc * rcc, 
 									int bus, int bit) {
+	uint32_t volatile * enr;
+
 	if (bus == STM32_APB2)
-		rcc->apb2enr |= 1 << bit;
+		enr = &rcc->apb2enr;
+#if defined(STM32L4X)
 	else if (bus == STM32_APB1)
-		rcc->apb1enr |= 1 << bit;
+		enr = &rcc->apb1enr1;
+	else if (bus == STM32_APB1B)
+		enr = &rcc->apb1enr2;
+#else
+	else if (bus == STM32_APB1)
+		enr = &rcc->apb1enr;
+#endif
 #if defined(STM32F1X) || defined(STM32F3X)
 	else
-		rcc->ahbenr |= 1 << bit;
+		enr = &rcc->ahbenr;
 #else
 	else if (bus == STM32_AHB2)
-		rcc->ahb2enr |= 1 << bit;
+		enr = &rcc->ahb2enr;
 	else if (bus == STM32_AHB3)
-		rcc->ahb3enr |= 1 << bit;
+		enr = &rcc->ahb3enr;
 	else
-		rcc->ahb1enr |= 1 << bit;
+		enr = &rcc->ahb1enr;
 #endif
+	*enr |= 1 << bit;
+	asm volatile ("dsb" : );
+}
+
+static inline void stm32_clk_disable(struct stm32_rcc * rcc, 
+									 int bus, int bit) {
+	uint32_t volatile * enr;
+
+	if (bus == STM32_APB2)
+		enr = &rcc->apb2enr;
+#if defined(STM32L4X)
+	else if (bus == STM32_APB1)
+		enr = &rcc->apb1enr1;
+	else if (bus == STM32_APB1B)
+		enr = &rcc->apb1enr2;
+#else
+	else if (bus == STM32_APB1)
+		enr = &rcc->apb1enr;
+#endif
+#if defined(STM32F1X) || defined(STM32F3X)
+	else
+		enr = &rcc->ahbenr;
+#else
+	else if (bus == STM32_AHB2)
+		enr = &rcc->ahb2enr;
+	else if (bus == STM32_AHB3)
+		enr = &rcc->ahb3enr;
+	else
+		enr = &rcc->ahb1enr;
+#endif
+	*enr &= ~(1 << bit);
 	asm volatile ("dsb" : );
 }
 
@@ -3098,8 +3166,13 @@ static inline void stm32_reset(struct stm32_rcc * rcc,
 
 	if (bus == STM32_APB2)
 		rstr = &rcc->apb2rstr;
+#if defined(STM32L4X)
+	else if (bus == STM32_APB1)
+		rstr = &rcc->apb1rstr1;
+#else
 	else if (bus == STM32_APB1)
 		rstr = &rcc->apb1rstr;
+#endif
 #if defined(STM32F1X) || defined(STM32F3X)
 	else
 		rstr = &rcc->ahbrstr;
@@ -3116,25 +3189,6 @@ static inline void stm32_reset(struct stm32_rcc * rcc,
 	asm volatile ("dsb" : );
 	*rstr &= ~(1 << bit);
 	asm volatile ("dsb" : );
-}
-
-static inline void stm32_clk_disable(struct stm32_rcc * rcc, 
-									 int bus, int bit) {
-	if (bus == STM32_APB2)
-		rcc->apb2enr &= ~(1 << bit);
-	else if (bus == STM32_APB1)
-		rcc->apb1enr &= ~(1 << bit);
-#if defined(STM32F1X) || defined(STM32F3X)
-	else
-		rcc->ahbenr &= ~(1 << bit);
-#else
-	else if (bus == STM32_AHB2)
-		rcc->ahb2enr &= ~(1 << bit);
-	else if (bus == STM32_AHB3)
-		rcc->ahb3enr &= ~(1 << bit);
-	else
-		rcc->ahb1enr &= ~(1 << bit);
-#endif
 }
 
 static inline uint32_t stm32_clk_hz(int bus, int bit) {

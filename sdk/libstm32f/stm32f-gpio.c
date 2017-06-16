@@ -33,7 +33,9 @@ const struct stm32_gpio * const stm32_gpio_lut[] = {
 	STM32_GPIOC,
 	STM32_GPIOD,
 	STM32_GPIOE,
+#ifdef STM32_GPIOF
 	STM32_GPIOF,
+#endif
 #ifdef STM32F_GPIOG
 	STM32_GPIOG,
 #endif
@@ -56,6 +58,10 @@ void stm32_gpio_clk_en(struct stm32_gpio * gpio)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 
+#if defined(STM32L4X)
+	rcc->ahb2enr |= 1 << stm32_gpio_id(gpio);
+#endif
+
 #if defined(STM32F2X) || defined(STM32F4X)
 	rcc->ahb1enr |= 1 << stm32_gpio_id(gpio);
 #endif
@@ -75,7 +81,7 @@ void stm32_gpio_mode(struct stm32_gpio * gpio,
 					  unsigned int pin, unsigned int mode, unsigned int opt)
 {
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X)
+	defined(STM32L1X) || defined(STM32L4X)
 
 	uint32_t tmp;
 	uint32_t moder; 
@@ -179,7 +185,7 @@ void stm32_gpio_mode(struct stm32_gpio * gpio,
 }
 
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X)
+	defined(STM32L1X) || defined(STM32L4X)
 void stm32_gpio_af(struct stm32_gpio * gpio, int pin, int af)
 {
 	uint32_t tmp;

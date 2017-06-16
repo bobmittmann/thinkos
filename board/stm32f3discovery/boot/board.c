@@ -85,7 +85,7 @@ static void io_init(void)
 	stm32_gpio_mode(SW_B1_IO, INPUT, SPEED_LOW);
 }
 
-bool board_init(void)
+int board_init(void)
 {
 	io_init();
 
@@ -99,7 +99,7 @@ bool board_init(void)
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
 
-	return true;
+	return 0;
 }
 
 void board_softreset(void)

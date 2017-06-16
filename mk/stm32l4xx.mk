@@ -23,16 +23,16 @@ THISDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(THISDIR)/config.mk
 
 ifndef MACH 
-MACH = stm32f446xe
+MACH = stm32l433xc
 endif
 
-ifeq ($(findstring $(MACH), stm32f446xc stm32f446xe),)
+ifeq ($(findstring $(MACH), stm32l433xc stm32l433xb),)
   $(error "Unsupported machine type: MACH=$(MACH)")
 endif
 
 ARCH = cm3
 CPU = cortex-m4
-STM32 = stm32f
+STM32 = stm32l4
 
 export STM32
 
@@ -48,7 +48,6 @@ CROSS_COMPILE = arm-none-eabi-
 
 OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
 OPTIONS	+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
-#OPTIONS += -mfpu=vfp
 
 ifndef APPADDR
 APPADDR := 0x08010000

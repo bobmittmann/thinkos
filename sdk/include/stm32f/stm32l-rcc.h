@@ -434,8 +434,12 @@ is cleared, LSIRDY goes low after 3 LSI oscillator clock cycles.
 
 
 #define STM32_AHB  0
+#define STM32_AHB1 0
 #define STM32_APB1 1
 #define STM32_APB2 2
+#define STM32_AHB2 3
+#define STM32_AHB3 4
+#define STM32_APB1B 5
 
 #define STM32_CLK_FSMC   STM32_AHB, RCC_FSMC
 #define STM32_CLK_AES    STM32_AHB, RCC_AES
@@ -486,6 +490,7 @@ is cleared, LSIRDY goes low after 3 LSI oscillator clock cycles.
 
 #include <stdint.h>
 
+#if defined(STM32L1X)
 struct stm32_rcc {
 	volatile uint32_t cr;
 	volatile uint32_t icscr; 
@@ -505,6 +510,62 @@ struct stm32_rcc {
 	volatile uint32_t apb1lpenr;
 	volatile uint32_t csr;
 };
+#endif /* STM32L1X */
+
+#if defined(STM32L4X)
+struct stm32_rcc {
+	volatile uint32_t cr; /* Control Register */
+	volatile uint32_t icscr; 
+	volatile uint32_t cfgr; 
+	volatile uint32_t pllcfgr; 
+
+	volatile uint32_t pllsaicfgr;
+	uint32_t res1; 
+	volatile uint32_t cier; 
+	volatile uint32_t cifr; 
+
+	volatile uint32_t cicr; 
+	uint32_t res2; 
+	volatile uint32_t ahb1rstr;
+	volatile uint32_t ahb2rstr;
+
+	volatile uint32_t ahb3rstr;
+	uint32_t res3; 
+	volatile uint32_t apb1rstr1;
+	volatile uint32_t apb1rstr2;
+
+	volatile uint32_t apb2rstr;
+	uint32_t res4; 
+	volatile uint32_t ahb1enr;
+	volatile uint32_t ahb2enr;
+
+	volatile uint32_t ahb3enr;
+	uint32_t res5; 
+	volatile uint32_t apb1enr1;
+	volatile uint32_t apb1enr2;
+
+	volatile uint32_t apb2enr;
+	uint32_t res6; 
+	volatile uint32_t ahb1smenr;
+	volatile uint32_t ahb2smenr; 
+
+	volatile uint32_t ahb3smenr;
+	uint32_t res7; 
+	volatile uint32_t apb1smenr1;
+	volatile uint32_t apb1smenr2;
+
+	volatile uint32_t apb2smenr2;
+	uint32_t res8; 
+	volatile uint32_t ccipr;
+	uint32_t res9; 
+
+	volatile uint32_t bdcr;
+	volatile uint32_t csr;
+	volatile uint32_t crrcr;
+	volatile uint32_t ccipr2;
+
+};
+#endif /* STM32L4X */
 
 struct stm32_clk {
 	uint8_t bus:3;
@@ -523,22 +584,86 @@ extern "C" {
 
 static inline void stm32_clk_enable(struct stm32_rcc * rcc, 
 									int bus, int bit) {
+	uint32_t volatile * enr;
+
 	if (bus == STM32_APB2)
-		rcc->apb2enr |= 1 << bit;
+		enr = &rcc->apb2enr;
+#if defined(STM32L4X)
 	else if (bus == STM32_APB1)
-		rcc->apb1enr |= 1 << bit;
+		enr = &rcc->apb1enr1;
+	else if (bus == STM32_APB1B)
+		enr = &rcc->apb1enr2;
+	else if (bus == STM32_AHB2)
+		enr = &rcc->ahb2enr;
+	else if (bus == STM32_AHB3)
+		enr = &rcc->ahb3enr;
 	else
-		rcc->ahbenr |= 1 << bit;
+		enr = &rcc->ahb1enr;
+#else
+	else if (bus == STM32_APB1)
+		enr = &rcc->apb1enr;
+	else
+		enr = &rcc->ahbenr;
+#endif
+	*enr |= 1 << bit;
+	asm volatile ("dsb" : );
 }
 
 static inline void stm32_clk_disable(struct stm32_rcc * rcc, 
 									 int bus, int bit) {
+	uint32_t volatile * enr;
+
 	if (bus == STM32_APB2)
-		rcc->apb2enr &= ~(1 << bit);
+		enr = &rcc->apb2enr;
+#if defined(STM32L4X)
 	else if (bus == STM32_APB1)
-		rcc->apb1enr &= ~(1 << bit);
+		enr = &rcc->apb1enr1;
+	else if (bus == STM32_APB1B)
+		enr = &rcc->apb1enr2;
+	else if (bus == STM32_AHB2)
+		enr = &rcc->ahb2enr;
+	else if (bus == STM32_AHB3)
+		enr = &rcc->ahb3enr;
 	else
-		rcc->ahbenr &= ~(1 << bit);
+		enr = &rcc->ahb1enr;
+#else
+	else if (bus == STM32_APB1)
+		enr = &rcc->apb1enr;
+	else
+		enr = &rcc->ahbenr;
+#endif
+	*enr &= ~(1 << bit);
+	asm volatile ("dsb" : );
+}
+
+static inline void stm32_reset(struct stm32_rcc * rcc, 
+									int bus, int bit) {
+	uint32_t volatile * rstr;
+
+	if (bus == STM32_APB2)
+		rstr = &rcc->apb2rstr;
+#if defined(STM32L4X)
+	else if (bus == STM32_APB1)
+		rstr = &rcc->apb1rstr1;
+	else if (bus == STM32_APB1B)
+		rstr = &rcc->apb1rstr2;
+	else if (bus == STM32_AHB2)
+		rstr = &rcc->ahb2rstr;
+	else if (bus == STM32_AHB3)
+		rstr = &rcc->ahb3rstr;
+	else
+		rstr = &rcc->ahb1rstr;
+#else
+	else if (bus == STM32_APB1)
+		rstr = &rcc->apb1rstr;
+	else
+		rstr = &rcc->ahbrstr;
+#endif
+
+	*rstr |= 1 << bit;
+	asm volatile ("dsb" : );
+	*rstr &= ~(1 << bit);
+	asm volatile ("dsb" : );
 }
 
 static inline uint32_t stm32_clk_hz(int bus, int bit) {
@@ -549,10 +674,10 @@ static inline uint32_t stm32_clk_hz(int bus, int bit) {
 	return stm32f_ahb_hz;
 }
 
+
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* __ASSEMBLER__ */
 

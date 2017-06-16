@@ -30,19 +30,16 @@
    ThinkOS configuration
    -------------------------------------------------------------------------- */
 
-#define THINKOS_IRQ_MAX                 62
+#define THINKOS_IRQ_MAX                 84
 #define THINKOS_ENABLE_IRQ_CTL          1
 
-#define THINKOS_ENABLE_IDLE_WFI         1
-#define THINKOS_IDLE_STACK_CONST        0
-#define THINKOS_IDLE_STACK_BSS          0
-#define THINKOS_IDLE_STACK_ALLOC        1
+#define THINKOS_ENABLE_CLOCK            1
 
-#define THINKOS_ENABLE_TIMESHARE        1
+#define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
-#define THINKOS_THREADS_MAX             32
+#define THINKOS_THREADS_MAX             8
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 
 #define THINKOS_ENABLE_JOIN             1
@@ -50,58 +47,52 @@
 #define THINKOS_ENABLE_CANCEL           1
 #define THINKOS_ENABLE_EXIT             1
 
-#define THINKOS_MUTEX_MAX               16
+#define THINKOS_MUTEX_MAX               8
 #define THINKOS_ENABLE_MUTEX_ALLOC      1
 
-#define THINKOS_COND_MAX                16
-#define THINKOS_ENABLE_COND_ALLOC       1
+#define THINKOS_COND_MAX                0
+#define THINKOS_ENABLE_COND_ALLOC       0
 
-#define THINKOS_SEMAPHORE_MAX           16
+#define THINKOS_SEMAPHORE_MAX           8
 #define THINKOS_ENABLE_SEM_ALLOC        1
 
-#define THINKOS_EVENT_MAX               8
+#define THINKOS_EVENT_MAX               1
 #define THINKOS_ENABLE_EVENT_ALLOC      1
 
-#define THINKOS_FLAG_MAX                16
+#define THINKOS_FLAG_MAX                8
 #define THINKOS_ENABLE_FLAG_ALLOC       1
 #define THINKOS_ENABLE_FLAG_WATCH       1
 
-#define THINKOS_GATE_MAX                16
+#define THINKOS_GATE_MAX                8
 #define THINKOS_ENABLE_GATE_ALLOC       1
 
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
-#define THINKOS_ENABLE_ALARM            1
-#define THINKOS_ENABLE_SLEEP            1
-#define THINKOS_ENABLE_BREAK            1
-
-#define THINKOS_ENABLE_ARG_CHECK        1
-#define THINKOS_ENABLE_DEADLOCK_CHECK   1
-#define THINKOS_ENABLE_SANITY_CHECK     1
-
-#define THINKOS_ENABLE_CTL              1
+#define THINKOS_ENABLE_ARG_CHECK        0
+#define THINKOS_ENABLE_DEADLOCK_CHECK   0
+#define THINKOS_ENABLE_SANITY_CHECK     0
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
+
 #define THINKOS_ENABLE_RT_DEBUG         0
+
+#define THINKOS_ENABLE_BREAK            1
 
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1
-#define THINKOS_ENABLE_DMCLOCK          1
-
 #define THINKOS_ENABLE_CONSOLE          1
 
-#define THINKOS_EXCEPT_STACK_SIZE       384
+#define THINKOS_EXCEPT_STACK_SIZE       332
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_UNROLL_EXCEPTIONS       1
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
-#define THINKOS_ENABLE_HARDFAULT        0
+#define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_SYSRST_ONFAULT          0
+#define THINKOS_SYSRST_ONFAULT          1
 #define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
@@ -114,53 +105,59 @@
 #define THINKOS_ENABLE_FPU              0
 
 #define THINKOS_ENABLE_THREAD_VOID      1
+#define THINKOS_ENABLE_DMCLOCK          1
 
-#define THINKOS_DMON_STACK_SIZE         (1024 + 128)
+#define THINKOS_ENABLE_CTL              1
 
-#define THINKOS_ENABLE_STACK_INIT       1
+#define THINKOS_ENABLE_IDLE_WFI         0
+
+#define THINKOS_ENABLE_PREEMPTION       1
+#define THINKOS_ENABLE_CRITICAL         0
 
 #define THINKOS_ASM_SCHEDULER           1
-#define THINKOS_ENABLE_OFAST            1
 
-#define THINKOS_ENABLE_RESET_RAM_VECTORS 1
-#define THINKOS_DBGMON_ENABLE_FLOWCTL    1 
-#define THINKOS_DBGMON_ENABLE_IRQ_MGMT   1 
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
-#define THINKOS_CONSOLE_TX_FIFO_LEN    128
+#define THINKOS_CONSOLE_TX_FIFO_LEN     64
 
+/* -------------------------------------------------------------------------
+   RCC 
+   -------------------------------------------------------------------------- */
+#define STM32_ENABLE_HSE        1
+#define STM32_ENABLE_HSI        0
+#define STM32_ENABLE_PLL        1
 
 /* -------------------------------------------------------------------------
    USB 
    -------------------------------------------------------------------------- */
 
-#define STM32_ENABLE_USB_FS     1
-#define STM32_USB_FS_EP_MAX     4
+#define STM32_ENABLE_USB_DEV    1
 #define STM32_USB_FS_VBUS_CTRL  0
-#define STM32_USB_FS_SUSPEND    0
-#define STM32_USB_FS_IRQ_ENABLE 0
+#define STM32_USB_FS_EP_MAX     4
 #define STM32_USB_FS_IO_INIT    0
+#define STM32_USB_FS_IRQ_ENABLE 0
 
 /* -------------------------------------------------------------------------
    GDB
    -------------------------------------------------------------------------- */
 
-#define GDB_ENABLE_MEM_MAP       0
+#define GDB_ENABLE_MEM_MAP 1
 
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
 
-#define BOOT_ENABLE_GDB             1
-#define BOOT_MEM_RESERVED           0x1000
-#define MONITOR_CONFIGURE_ENABLE    0
-#define MONITOR_DUMPMEM_ENABLE      1
-#define MONITOR_UPGRADE_ENABLE      0
-#define MONITOR_STACKUSAGE_ENABLE   1
-#define MONITOR_THREADINFO_ENABLE   1
-#define MONITOR_APPWIPE_ENABLE      1
-#define MONITOR_APPTERM_ENABLE      1
-#define MONITOR_APPRESTART_ENABLE   1
-#define MONITOR_SELFTEST_ENABLE     1
+#define BOOT_ENABLE_GDB            1
+#define BOOT_ENABLE_THIRD          0
+#define MONITOR_DUMPMEM_ENABLE     0
+#define MONITOR_WATCHPOINT_ENABLE  0
+#define MONITOR_SELFTEST_ENABLE    0
+#define MONITOR_CONFIGURE_ENABLE   0
+
+/* -------------------------------------------------------------------------
+ * Serial
+ * ------------------------------------------------------------------------- */
+
+#define SERIAL_RX_FIFO_LEN  1024
 
 #endif /* __CONFIG_H__ */
 

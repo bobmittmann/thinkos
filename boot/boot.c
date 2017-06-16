@@ -97,7 +97,7 @@ int main(int argc, char ** argv)
 	usb_comm_init(&stm32f_otg_fs_dev);
 #elif STM32_ENABLE_OTG_HS
 	usb_comm_init(&stm32f_otg_hs_dev);
-#elif STM32_ENABLE_USB_DEV
+#elif STM32_ENABLE_USB_FS
 	usb_comm_init(&stm32f_usb_fs_dev);
 #else
 #error "Undefined debug monitor comm port!"

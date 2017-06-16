@@ -70,6 +70,7 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 		/* invalid SPI ??? */
 		return id;
 	}
+
 #if 0
 	gpio_io_t io;
 

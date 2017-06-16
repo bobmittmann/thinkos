@@ -1,5 +1,5 @@
 /* 
- * stm32f207.ld
+ * stm324xx.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,9 +19,9 @@
  * http://www.gnu.org/
  */
 
-_stack_top = ORIGIN(sram2) + LENGTH(sram2);
+_stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(sram2);
+_stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = _stack;
 
@@ -38,87 +38,98 @@ EXTERN(cm3_svc_isr)
 EXTERN(cm3_debug_mon_isr)
 EXTERN(cm3_pendsv_isr)
 EXTERN(cm3_systick_isr)
-EXTERN(stm32f_wwdg_isr)
-EXTERN(stm32f_pvd_isr)
-EXTERN(stm32f_tamp_stamp_isr)
-EXTERN(stm32f_rtc_wkup_isr)
-EXTERN(stm32f_flash_isr)
-EXTERN(stm32f_rcc_isr)
-EXTERN(stm32f_exti0_isr)
-EXTERN(stm32f_exti1_isr)
-EXTERN(stm32f_exti2_isr)
-EXTERN(stm32f_exti3_isr)
-EXTERN(stm32f_exti4_isr)
-EXTERN(stm32f_dma1_stream0_isr)
-EXTERN(stm32f_dma1_stream1_isr)
-EXTERN(stm32f_dma1_stream2_isr)
-EXTERN(stm32f_dma1_stream3_isr)
-EXTERN(stm32f_dma1_stream4_isr)
-EXTERN(stm32f_dma1_stream5_isr)
-EXTERN(stm32f_dma1_stream6_isr)
-EXTERN(stm32f_adc_isr)
-EXTERN(stm32f_can1_tx_isr)
-EXTERN(stm32f_can1_rx0_isr)
-EXTERN(stm32f_can1_rx1_isr)
-EXTERN(stm32f_can1_sce_isr)
-EXTERN(stm32f_exti9_5_isr)
-EXTERN(stm32f_tim1_brk_tim9_isr)
-EXTERN(stm32f_tim1_up_tim10_isr)
-EXTERN(stm32f_tim1_trg_com_tim11_isr)
-EXTERN(stm32f_tim1_cc_isr)
-EXTERN(stm32f_tim2_isr)
-EXTERN(stm32f_tim3_isr)
-EXTERN(stm32f_tim4_isr)
-EXTERN(stm32f_i2c1_ev_isr)
-EXTERN(stm32f_i2c1_er_isr)
-EXTERN(stm32f_i2c2_ev_isr)
-EXTERN(stm32f_i2c2_er_isr)
-EXTERN(stm32f_spi1_isr)
-EXTERN(stm32f_spi2_isr)
-EXTERN(stm32f_usart1_isr)
-EXTERN(stm32f_usart2_isr)
-EXTERN(stm32f_usart3_isr)
-EXTERN(stm32f_exti15_10_isr)
-EXTERN(stm32f_rtc_alarm_isr)
-EXTERN(stm32f_otg_fs_wkup_isr)
-EXTERN(stm32f_tim8_brk_tim12_isr)
-EXTERN(stm32f_tim8_up_tim13_isr)
-EXTERN(stm32f_tim8_trg_com_tim14_isr)
-EXTERN(stm32f_tim8_cc_isr)
-EXTERN(stm32f_dma1_stream7_isr)
-EXTERN(stm32f_fsmc_isr)
-EXTERN(stm32f_sdio_isr)
-EXTERN(stm32f_tim5_isr)
-EXTERN(stm32f_spi3_isr)
-EXTERN(stm32f_uart4_isr)
-EXTERN(stm32f_uart5_isr)
-EXTERN(stm32f_tim6_dac_isr)
-EXTERN(stm32f_tim7_isr)
-EXTERN(stm32f_dma2_stream0_isr)
-EXTERN(stm32f_dma2_stream1_isr)
-EXTERN(stm32f_dma2_stream2_isr)
-EXTERN(stm32f_dma2_stream3_isr)
-EXTERN(stm32f_dma2_stream4_isr)
-EXTERN(stm32f_eth_isr)
-EXTERN(stm32f_eth_wkup_isr)
-EXTERN(stm32f_can2_tx_isr)
-EXTERN(stm32f_can2_rx0_isr)
-EXTERN(stm32f_can2_rx1_isr)
-EXTERN(stm32f_can2_sce_isr)
-EXTERN(stm32f_otg_fs_isr)
-EXTERN(stm32f_dma2_stream5_isr)
-EXTERN(stm32f_dma2_stream6_isr)
-EXTERN(stm32f_dma2_stream7_isr)
-EXTERN(stm32f_usart6_isr)
-EXTERN(stm32f_i2c3_ev_isr)
-EXTERN(stm32f_i2c3_er_isr)
-EXTERN(stm32f_otg_hs_ep1_out_isr)
-EXTERN(stm32f_otg_hs_ep1_in_isr)
-EXTERN(stm32f_otg_hs_wkup_isr)
-EXTERN(stm32f_otg_hs_isr)
-EXTERN(stm32f_dcmi_isr)
-EXTERN(stm32f_cryp_isr)
-EXTERN(stm32f_hash_rng_isr)
+
+EXTERN(stm32_wwdg_isr)
+EXTERN(stm32_pvd_isr)
+EXTERN(stm32_tamp_stamp_isr)
+EXTERN(stm32_rtc_wkup_isr)
+EXTERN(stm32_flash_isr)
+EXTERN(stm32_rcc_isr)
+EXTERN(stm32_exti0_isr)
+EXTERN(stm32_exti1_isr)
+EXTERN(stm32_exti2_isr)
+EXTERN(stm32_exti3_isr)
+EXTERN(stm32_exti4_isr)
+
+EXTERN(stm32_dma1_channel1_isr)
+EXTERN(stm32_dma1_channel2_isr)
+EXTERN(stm32_dma1_channel3_isr)
+EXTERN(stm32_dma1_channel4_isr)
+EXTERN(stm32_dma1_channel5_isr)
+
+EXTERN(stm32_dma1_channel6_isr)
+EXTERN(stm32_dma1_channel7_isr)
+
+
+EXTERN(stm32_adc1_isr)
+EXTERN(stm32_can1_tx_isr)
+EXTERN(stm32_can1_rx0_isr)
+EXTERN(stm32_can1_rx1_isr)
+EXTERN(stm32_can1_sce_isr)
+EXTERN(stm32_exti9_5_isr)
+
+EXTERN(stm32_tim1_brk_tim15_isr)
+EXTERN(stm32_tim1_up_tim16_isr)
+EXTERN(stm32_tim1_trg_com_isr)
+EXTERN(stm32_tim1_cc_isr)
+EXTERN(stm32_tim2_isr)
+EXTERN(stm32_tim3_isr)
+
+EXTERN(stm32_i2c1_ev_isr)
+EXTERN(stm32_i2c1_er_isr)
+EXTERN(stm32_i2c2_ev_isr)
+EXTERN(stm32_i2c2_er_isr)
+
+EXTERN(stm32_spi1_isr)
+EXTERN(stm32_spi2_isr)
+EXTERN(stm32_usart1_isr)
+EXTERN(stm32_usart2_isr)
+EXTERN(stm32_usart3_isr)
+EXTERN(stm32_exti15_10_isr)
+EXTERN(stm32_rtc_alarm_isr)
+
+EXTERN(stm32_sdmcc1_isr)
+
+EXTERN(stm32_spi3_isr)
+
+EXTERN(stm32_spi3_isr)
+EXTERN(stm32_uart4_isr)
+
+EXTERN(stm32_tim6_dac_isr)
+EXTERN(stm32_tim7_isr)
+EXTERN(stm32_dma2_channel1_isr)
+EXTERN(stm32_dma2_channel2_isr)
+EXTERN(stm32_dma2_channel3_isr)
+EXTERN(stm32_dma2_channel4_isr)
+EXTERN(stm32_dma2_channel5_isr)
+EXTERN(stm32_dfsdm1_flt0_isr)
+EXTERN(stm32_dfsdm1_flt1_isr)
+
+EXTERN(stm32_comp_isr)
+
+EXTERN(stm32_lptim1_isr)
+EXTERN(stm32_lptim2_isr)
+EXTERN(stm32_usb_fs_isr)
+
+EXTERN(stm32_dma1_channel6_isr)
+EXTERN(stm32_dma1_channel7_isr)
+
+EXTERN(stm32_lpuart1_isr)
+EXTERN(stm32_quadspi_isr)
+
+EXTERN(stm32_i2c3_ev_isr)
+EXTERN(stm32_i2c3_er_isr)
+
+EXTERN(stm32_sai1r_isr)
+
+EXTERN(stm32_tsc_isr)
+EXTERN(stm32_lcd_isr)
+EXTERN(stm32_aes_isr)
+EXTERN(stm32_rng_isr)
+EXTERN(stm32_fpu_isr)
+EXTERN(stm32_crs_isr)
+EXTERN(stm32_i2c4_ev_isr)
+EXTERN(stm32_i2c4_er_isr)
 
 SECTIONS
 {
@@ -206,15 +217,14 @@ SECTIONS
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
 
-	/* advance location counter to the next 32-bit boundary */
 	.heap :
 	{
 		PROVIDE (__heap_start = . );
 		/* all .heap sections  */
 		*(.heap .heap*)
-		/* advance location counter to the next 32-bit boundary */
 	} >"DATA"
 
+	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
 }

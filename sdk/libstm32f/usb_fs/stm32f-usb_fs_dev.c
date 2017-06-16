@@ -39,17 +39,34 @@
 
 #include <sys/dcclog.h>
 
-#ifndef STM32_ENABLE_USB_DEV 
-#define STM32_ENABLE_USB_DEV 0
+#ifndef STM32_ENABLE_USB_FS
+#define STM32_ENABLE_USB_FS 1
 #endif 
 
-#ifndef STM32_USB_DEV_EP_MAX 
-#define STM32_USB_DEV_EP_MAX 8
+#ifndef STM32_USB_FS_SUSPEND
+#define STM32_USB_FS_SUSPEND     1
 #endif
+
+#ifndef STM32_USB_FS_EP_MAX 
+#define STM32_USB_FS_EP_MAX      8
+#endif
+
+#ifndef STM32_USB_FS_IRQ_ENABLE
+#define STM32_USB_FS_IRQ_ENABLE  1
+#endif
+
+#ifndef STM32_USB_FS_IO_INIT
+#define STM32_USB_FS_IO_INIT     0
+#endif
+
+#ifndef STM32_USB_FS_VBUS_ENABLE
+#define STM32_USB_FS_VBUS_ENABLE 1
+#endif
+
 
 #ifdef STM32F_USB
 
-#if STM32_ENABLE_USB_DEV
+#if STM32_ENABLE_USB_FS
 
 /* Endpoint state */
 enum ep_state {
@@ -90,7 +107,7 @@ struct stm32f_usb_ep {
 
 /* USB Driver */
 struct stm32f_usb_drv {
-	struct stm32f_usb_ep ep[STM32_USB_DEV_EP_MAX];
+	struct stm32f_usb_ep ep[STM32_USB_FS_EP_MAX];
 	usb_class_t * cl;
 	const struct usb_class_events * ev;
 	struct usb_request req;
@@ -193,7 +210,7 @@ static void __ep_zlp_send(struct stm32f_usb * usb, int ep_id)
 
 /* ------------------------------------------------------------------------- */
 
-#if (STM32_USB_DEV_SUSPEND) 
+#if (STM32_USB_FS_SUSPEND) 
 static void stm32f_usb_dev_suspend(struct stm32f_usb_drv * drv)
 {
 	struct stm32f_usb * usb = STM32F_USB;
@@ -257,8 +274,8 @@ static void stm32f_usb_dev_reset(struct stm32f_usb_drv * drv)
 	usb->daddr = USB_EF + 0;
 
 	/* Enable Correct transfer interrupts */
-//	usb->cntr |= | USB_ERRM | 6SB_ESOFM | USB_CTRM | USB_SUSPM;
-#if (STM32_USB_DEV_SUSPEND) 
+//	usb->cntr |= USB_ERRM | USB_ESOFM | USB_CTRM | USB_SUSPM;
+#if (STM32_USB_FS_SUSPEND) 
 	usb->cntr |= USB_CTRM | USB_SUSPM;
 #else
 	usb->cntr |= USB_CTRM;
@@ -744,6 +761,18 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 	struct stm32f_usb * usb = STM32F_USB;
 	int i;
 
+#if defined(STM32L4X)
+	{
+		struct stm32_pwr * pwr = STM32_PWR;
+
+		DCC_LOG(LOG_TRACE, "USB power supply valid ...");
+		DCC_LOG1(LOG_TRACE, "PWR_CR2=0x%08x", &pwr->cr2);
+		stm32_clk_enable(STM32_RCC, STM32_CLK_PWR);
+		pwr->cr2 |= PWR_USV; 
+	}
+#endif
+
+
 	drv->cl = cl;
 	drv->ev = ev;
 
@@ -752,32 +781,55 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 
 	DCC_LOG1(LOG_INFO, "ev=0x%08x", drv->ev);
 
+#if (STM32_USB_FS_VBUS_ENABLE)
+	/* Pull up connect */
+	stm32f_usb_pullup(usb, false);
+#endif
+
 	stm32f_usb_power_off(usb);
 
 	udelay(1000);
 
+#if (STM32_USB_FS_IO_INIT)
 	/* Initialize IO pins */
 	stm32f_usb_io_init();
+#endif
 
 	stm32f_usb_power_on(usb);
 
-	for (i = 0;  i < STM32_USB_DEV_EP_MAX; ++i) {
+#if (STM32_USB_FS_VBUS_ENABLE)
+	stm32f_usb_pullup(usb, true);
+#endif
+
+	for (i = 0;  i < STM32_USB_FS_EP_MAX; ++i) {
 		drv->ep[i].state = EP_DISABLED;
 	}
 
+	DCC_LOG(LOG_INFO, "[ATTACHED]");
+
+#if (STM32_USB_FS_IRQ_ENABLE)
 	/* enable Cortex interrupts */
+#ifdef STM32F_IRQ_USB_LP
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
+#endif
+#ifdef STM32F_IRQ_USB_HP
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
-#if (STM32_USB_DEV_SUSPEND) 
+#endif
+#ifdef STM32_IRQ_USB_FS
+	cm3_irq_enable(STM32_IRQ_USB_FS);
+#endif
+#if (STM32F_IRQ_USB_WKUP) && (STM32_USB_FS_SUSPEND) 
 	cm3_irq_enable(STM32F_IRQ_USB_WKUP);
+#endif
+#endif
+
+#if (STM32_USB_FS_SUSPEND) 
 	/* Enable Reset, SOF  and Wakeup interrupts */
 	usb->cntr = USB_WKUPM | USB_RESETM;
 #else
 	/* Enable Reset interrupt */
 	usb->cntr = USB_RESETM;
 #endif
-
-	DCC_LOG(LOG_INFO, "[ATTACHED]");
 
 	return 0;
 }
@@ -786,6 +838,7 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 /* Private USB device driver data */
 struct stm32f_usb_drv stm32f_usb_drv0;
 
+#ifdef STM32F_IRQ_USB_HP
 /* USB high priority ISR */
 void stm32f_can1_tx_usb_hp_isr(void)
 {
@@ -817,7 +870,7 @@ void stm32f_can1_tx_usb_hp_isr(void)
 
 		/* select the descriptor according to the data toggle bit */
 		rx_pktbuf = &pktbuf[ep_id].dbrx[(epr & USB_SWBUF_RX) ? 1: 0];
-#if 0
+#if DEBUG
 		if (((epr & USB_DTOG_RX) ? 1: 0) == ((epr & USB_SWBUF_RX) ? 1: 0)) {
 			DCC_LOG3(LOG_INFO, "RX dblbuf DOTG=%d SW_BUF=%d cnt=%d", 
 					 (epr & USB_DTOG_RX) ? 1: 0, (epr & USB_SWBUF_RX) ? 1: 0, 
@@ -918,9 +971,17 @@ void stm32f_can1_tx_usb_hp_isr(void)
 	}
 #endif
 }
+#endif
 
+#ifdef STM32_IRQ_USB_FS
+/* Single interrupt handler */
+void stm32_usb_fs_isr(void)
+#endif
+
+#ifdef STM32F_IRQ_USB_LP
 /* USB low priority ISR */
 void stm32f_can1_rx0_usb_lp_isr(void)
+#endif
 {
 	struct stm32f_usb_drv * drv = &stm32f_usb_drv0;
 	struct stm32f_usb * usb = STM32F_USB;
@@ -950,7 +1011,6 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		 to the same endpoint following immediately the one which 
 		 triggered the CTR interrupt.
 		 */
-
 
 		/* clear interrupt */
 		usb->istr = sr & ~USB_CTR;
@@ -1018,7 +1078,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		}
 	}
 
-#if (STM32_USB_DEV_SUSPEND) 
+#if (STM32_USB_FS_SUSPEND) 
 	if (sr & USB_SUSP) {
 		/* clear interrupts */
 		usb->istr = ~USB_SUSP;
@@ -1067,7 +1127,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 #endif
 }
 
-#if (STM32_USB_DEV_SUSPEND) 
+#if (STM32_USB_FS_SUSPEND) 
 void stm32f_usb_wkup_isr(void) 
 {
 	struct stm32f_usb_drv * drv = &stm32f_usb_drv0;
@@ -1097,7 +1157,7 @@ const struct usb_dev stm32f_usb_fs_dev = {
 	.op = &stm32f_usb_ops
 };
 
-#endif /* STM32_ENABLE_USB_DEV */
+#endif /* STM32_ENABLE_USB_FS */
 
 #endif /* STM32F_USB */
 
