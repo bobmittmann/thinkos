@@ -52,13 +52,13 @@
 #include <stm32f/stm32f-dma.h>
 #include <stm32f/stm32f-exti.h>
 
-#define STM32_BASE_UID         0x1ffff7ac
+#define STM32_BASE_UID          0x1ffff7ac
 
-#define STM32_BASE_RNG         0x50060800
+#define STM32_BASE_RNG          0x50060800
 
-#define STM32_BASE_AES         0x50060000
+#define STM32_BASE_AES          0x50060000
 
-#define STM32_BASE_ADC         0x50040000
+#define STM32_BASE_ADC          0x50040000
 
 #define STM32_BASE_GPIOH        0x48001c00
 #define STM32_BASE_GPIOE        0x48001000
@@ -67,70 +67,70 @@
 #define STM32_BASE_GPIOB        0x48000400
 #define STM32_BASE_GPIOA        0x48000000
 
-#define STM32_BASE_TSC         0x40024000
+#define STM32_BASE_TSC          0x40024000
 
-#define STM32_BASE_CRC         0x40023000
+#define STM32_BASE_CRC          0x40023000
 
 #define STM32_BASE_FLASH        0x40022000
 
 #define STM32_BASE_RCC          0x40021000
 
-#define STM32_BASE_DMA2        0x40020400
-#define STM32_BASE_DMA1        0x40020000
+#define STM32_BASE_DMA2         0x40020400
+#define STM32_BASE_DMA1         0x40020000
 
-#define STM32_BASE_DFSDM1      0x40016000
+#define STM32_BASE_DFSDM1       0x40016000
 
-#define STM32_BASE_SAI1        0x40015400
+#define STM32_BASE_SAI1         0x40015400
 
-#define STM32_BASE_TIM16       0x40014400
-#define STM32_BASE_TIM15       0x40014000
+#define STM32_BASE_TIM16        0x40014400
+#define STM32_BASE_TIM15        0x40014000
 
 #define STM32_BASE_USART1       0x40013800
 
-#define STM32_BASE_SPI1        0x40013000
-#define STM32_BASE_TIM1        0x40012c00
-#define STM32_BASE_SDMCC       0x40012800
+#define STM32_BASE_SPI1         0x40013000
+#define STM32_BASE_TIM1         0x40012c00
+#define STM32_BASE_SDMCC        0x40012800
 
-#define STM32_BASE_FIREWALL    0x40011c00
+#define STM32_BASE_FIREWALL     0x40011c00
 
-#define STM32_BASE_EXTI        0x40010400
-#define STM32_BASE_COMP        0x4001001c
-#define STM32_BASE_VREFBUF     0x40010030
-#define STM32_BASE_SYSCFG      0x40010000
+#define STM32_BASE_EXTI         0x40010400
+#define STM32_BASE_COMP         0x4001001c
+#define STM32_BASE_VREFBUF      0x40010030
+#define STM32_BASE_SYSCFG       0x40010000
 
-#define STM32_BASE_LPTIM2      0x40009400
+#define STM32_BASE_LPTIM2       0x40009400
 
-#define STM32_BASE_SWPMI1      0x40008800
-#define STM32_BASE_I2C4        0x40008400
-#define STM32_BASE_LPUART1     0x40008000
-#define STM32_BASE_LPTIM1      0x40007c00
-#define STM32_BASE_OPAMP       0x40007800
-#define STM32_BASE_DAC1        0x40007400
+#define STM32_BASE_SWPMI1       0x40008800
+#define STM32_BASE_I2C4         0x40008400
+#define STM32_BASE_LPUART1      0x40008000
+#define STM32_BASE_LPTIM1       0x40007c00
+#define STM32_BASE_OPAMP        0x40007800
+#define STM32_BASE_DAC1         0x40007400
 #define STM32_BASE_PWR          0x40007000
-#define STM32_BASE_USB_SRAM    0x40006c00
-#define STM32_BASE_USB         0x40006800
+#define STM32_BASE_USB_SRAM     0x40006c00
+#define STM32_BASE_USB          0x40006800
 
-#define STM32_BASE_CAN1        0x40006400
-#define STM32_BASE_CRS         0x40006000
-#define STM32_BASE_I2C3        0x40005c00
-#define STM32_BASE_I2C2        0x40005800
-#define STM32_BASE_I2C1        0x40005400
+#define STM32_BASE_CAN1         0x40006400
+#define STM32_BASE_CRS          0x40006000
+#define STM32_BASE_I2C3         0x40005c00
+#define STM32_BASE_I2C2         0x40005800
+#define STM32_BASE_I2C1         0x40005400
 
 #define STM32_BASE_UART4        0x40004c00
 #define STM32_BASE_USART3       0x40004800
 #define STM32_BASE_USART2       0x40004400
 
-#define STM32_BASE_SPI3        0x40003c00
-#define STM32_BASE_SPI2        0x40003800
+#define STM32_BASE_SPI3         0x40003c00
+#define STM32_BASE_SPI2         0x40003800
 
-#define STM32_BASE_IWDG        0x40003000
-#define STM32_BASE_WWDG        0x40002c00
-#define STM32_BASE_RTC         0x40002800
-#define STM32_BASE_LCD         0x40002400
+#define STM32_BASE_IWDG         0x40003000
+#define STM32_BASE_WWDG         0x40002c00
+#define STM32_BASE_RTC          0x40002800
+#define STM32_BASE_LCD          0x40002400
 
-#define STM32_BASE_TIM7        0x40001400
-#define STM32_BASE_TIM6        0x40001000
-#define STM32_BASE_TIM3        0x40000400
+#define STM32_BASE_TIM7         0x40001400
+#define STM32_BASE_TIM6         0x40001000
+#define STM32_BASE_TIM3         0x40000400
 #define STM32_BASE_TIM2   	    0x40000000
 
 #define STM32_IRQ_WWDG          0 /* Window WatchDog Interrupt */
@@ -253,7 +253,7 @@ enum {
 };
 
 #define STM32F_USB_PKTBUF_ADDR  STM32_BASE_USB_SRAM
-#define STM32F_USB_PKTBUF_SIZE  512
+#define STM32F_USB_PKTBUF_SIZE  1024
 
 #define STM32_FSMC_NE1 ((uint32_t *)0x60000000)
 #define STM32_FLASH_MEM ((uint8_t *)0x08000000)

@@ -80,6 +80,18 @@ int board_init(void)
 	/* Enable USB interrupts */
 	cm3_irq_enable(STM32_IRQ_USB_FS);
 
+	DCC_LOG1(LOG_TRACE, "clk[AHB]=%d", stm32f_ahb_hz);
+	DCC_LOG1(LOG_TRACE, "clk[APB1]=%d", stm32f_apb1_hz);
+	DCC_LOG1(LOG_TRACE, "clk[TIM1]=%d", stm32f_tim1_hz);
+	DCC_LOG1(LOG_TRACE, "clk[APB2]=%d", stm32f_apb2_hz);
+	DCC_LOG1(LOG_TRACE, "clk[TIM2]=%d", stm32f_tim2_hz);
+#if 0
+	int i;
+	for (i = 0; i < 10; ++i) {
+		DCC_LOG1(LOG_TRACE, "clk=%d", i);
+		thinkos_sleep(1000);
+	}
+#endif
 	return true;
 }
 
@@ -199,7 +211,7 @@ const struct thinkos_board this_board = {
 	},
 	.application = {
 		.start_addr = 0x0800c000,
-		.block_size = (104 * 4) * 1024,
+		.block_size = (104 * 2) * 1024,
 		.magic = &thinkos_10_app_magic 
 	},
 	.init = board_init,

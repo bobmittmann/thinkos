@@ -641,6 +641,46 @@ struct stm32f_usb {
 	volatile uint32_t bcdr;
 };
 
+
+#if defined(STM32L4X)
+
+/* This family allows 8 or 16 bits access only to the
+   packet buffer */
+
+/* TX packet buffer descriptor */
+struct stm32f_usb_tx_pktbuf {
+	uint16_t addr;
+	uint16_t count;
+};
+
+/* RX packet buffer descriptor */
+struct stm32f_usb_rx_pktbuf {
+	uint16_t addr;
+	volatile uint16_t count: 10;
+	uint16_t num_block: 5;
+	uint16_t blsize: 1;
+};
+
+/* Generic packet buffer descriptor */
+struct stm32f_usb_pktbuf {
+	union {
+		struct {
+			/* single buffer entry */
+			struct stm32f_usb_tx_pktbuf tx;
+			struct stm32f_usb_rx_pktbuf rx;
+		};
+		/* double buffer TX */
+		struct stm32f_usb_tx_pktbuf dbtx[2];
+		/* double buffer RX */
+		struct stm32f_usb_rx_pktbuf dbrx[2];
+	};
+};
+
+#else
+
+/* This family maps the packet buffer 16bits addresseds to 32bits 
+   APB address */
+
 /* TX packet buffer descriptor */
 struct stm32f_usb_tx_pktbuf {
 	uint32_t addr;
@@ -670,7 +710,7 @@ struct stm32f_usb_pktbuf {
 		struct stm32f_usb_rx_pktbuf dbrx[2];
 	};
 };
-
+#endif
 
 /* EndPoint no toggle MASK (no toggle fields) */
 #define USB_EPREG_MASK (USB_CTR_RX | USB_SETUP | USB_EP_TYPE_MSK | \

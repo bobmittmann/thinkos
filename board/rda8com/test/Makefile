@@ -19,32 +19,38 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-VERSION_DATE = "2017-05-18"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "1"
 
-PROG = rda8c0m-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = test
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c
+CFILES = test.c
 
 SDK = ../../../sdk
 
-LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libusbaudio \
-		  $(SDK)/libgdb
+LIBDIRS = $(SDK)/libcm3 $(SDK)/libstm32f \
+		  $(SDK)/libconsole $(SDK)/libtty $(SDK)/libutil $(SDK)/libc
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
+LIBS = gcc m cm3 stm32f util c console tty 
 
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDK)/include ../include .
 
-CDEFS = CONFIG_H CM3_RAM_VECTORS
+VERSION_DATE = "2017-02-20"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "1"
 
-#CFLAGS = -g -O2 -Wall
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections
+CDEFS = CONFIG_H
+CFLAGS = -g -O3 -Wall -ffunction-sections -fdata-sections
+LDFLAGS = -Wl,--gc-sections 
+
+RELEASE_DIR := Release
+DEBUG_DIR := Debug
+LIBPATH = ../sdklibs/Debug
+#LIBPATH = ../sdklibs/Release
 
 MACH = stm32l433xc
 HSE_HZ = 11289600
 HCLK_HZ = 80000000
+THINKAPP = 1
+LDSCRIPT = test.ld
+APPADDR = 0x0800c000
 include ../../../mk/stm32l4xx.mk
 

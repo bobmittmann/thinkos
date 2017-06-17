@@ -307,7 +307,7 @@ is used.
 1110: system clock divided by 256
 1111: system clock divided by 512 */
 
-#define RCC_SWS (0x3 << 2)
+#define RCC_SWS_MASK (0x3 << 2)
 #define RCC_SWS_MSI (0x0 << 2)
 #define RCC_SWS_HSI (0x1 << 2)
 #define RCC_SWS_HSE (0x2 << 2)

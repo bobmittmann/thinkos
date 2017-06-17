@@ -97,7 +97,7 @@
 #endif
 
 #if (HCLK_HZ == 80000000)
-#if (HSE_HZ == 112896000)
+#if (HSE_HZ == 11289600)
 	/* F_HSE = 11.2896 MHz
 	   F_VCO = 321.7535 MHz
 	   F_MAIN = 80.4384 MHz */
@@ -116,7 +116,7 @@
 #endif
 
 #define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)
-#define __HCLK_HZ (__VCO_HZ / PLLP)
+#define __HCLK_HZ (__VCO_HZ / PLLR)
 
 //#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
 //#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
@@ -148,10 +148,12 @@ void __attribute__((section(".init"))) _init(void)
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;
 	uint32_t rcc_cr;
+	uint32_t cfg;
 	int again;
 #if STM32_ENABLE_PLL
 	uint32_t pll;
 #endif
+	uint32_t ws;
 
 	rcc->cr = rcc_cr = RCC_MSION;
 	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_MSI;
@@ -216,30 +218,46 @@ void __attribute__((section(".init"))) _init(void)
 	}
 #endif /* STM32_ENABLE_PLL */
 
+	cfg = RCC_MCOPRE_1 | RCC_MCO_PLL | 
+		RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_MSI;
+	rcc->cfgr = cfg; 
+
 	/*******************************************************************
 	 * Configure flash access and wait states 
 	 *******************************************************************/
 	
-#if STM32_ENABLE_PLL
-	flash->acr = FLASH_PRFTEN | FLASH_LATENCY(4);
-#else
-	flash->acr = FLASH_PRFTEN | FLASH_LATENCY(1);
-#endif
+	for (again = 4096; ; again--) {
+		if ((flash->sr & FLASH_BSY) == 0)
+			break;
+		if (again == 0)
+			halt(); /* flash not ready! */
+	}
+
+	ws = __HCLK_HZ / 30000000;
+	/* adjust flash wait states and enable caches */
+	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | FLASH_LATENCY(ws);
+
+
+	if (flash->cr & FLASH_LOCK) {
+		/* unlock flash write */
+		flash->keyr = FLASH_KEY1;
+		flash->keyr = FLASH_KEY2;
+	}
 
 #if STM32_ENABLE_PLL
-	/* switch to PLL oscillator */
-	rcc->cfgr = RCC_MCOPRE_1 | RCC_MCO_PLL | 
-		RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_PLL;
-	rcc->cr = rcc_cr & ~RCC_MSION;
+	/* switch to pll oscillator */
+	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_PLL;
+	while ((rcc->cfgr & RCC_SWS_MASK) != RCC_SWS_PLL);
 #elif STM32_ENABLE_HSI
 	/* select HSI as system clock */
-	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_HSI;
-	rcc->cr = rcc_cr & ~RCC_MSION;
+	rcc->cfgr = (cfg & ~RCC_SW_MASK) | RCC_SW_HSI;
 #elif STM32_ENABLE_HSE
 	/* select HSE as system clock */
-	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_HSE;
-	rcc->cr = rcc_cr & ~RCC_MSION;
+	rcc->cfgr = (cfg & ~RCC_SW_MASK) | RCC_SW_HSE;
 #endif
+
+	rcc->cr = rcc_cr & ~RCC_MSION;
+
 
 	/*******************************************************************
 	 * Configure USB and SAI clocks

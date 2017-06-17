@@ -71,6 +71,10 @@ void gdb_stub_task(struct dmon_comm * comm);
 #define MONITOR_THREADINFO_ENABLE  1
 #endif
 
+#ifndef MONITOR_OSINFO_ENABLE  
+#define MONITOR_OSINFO_ENABLE      1
+#endif
+
 #ifndef MONITOR_APPWIPE_ENABLE
 #define MONITOR_APPWIPE_ENABLE     1
 #endif
@@ -173,7 +177,11 @@ static const char monitor_menu[] =
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 " Ctrl+N - Select Next Thread\r\n"
+#endif
+#if (MONITOR_OSINFO_ENABLE)
 " Ctrl+O - ThinkOS info\r\n"
+#endif
+#if (MONITOR_THREADINFO_ENABLE)
 " Ctrl+P - Pause all threads\r\n"
 " Ctrl+Q - Restart monitor\r\n"
 " Ctrl+R - Resume all threads\r\n"
@@ -505,11 +513,15 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmprintf(comm, "Thread = %d\r\n", mon->thread_id);
 		dmon_print_thread(comm, mon->thread_id);
 		break;
+#endif
+#if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		dmprintf(comm, "^O\r\n");
 		dmprintf(comm, s_hr);
 		dmon_print_osinfo(comm);
 		break;
+#endif
+#if (MONITOR_THREADINFO_ENABLE)
 	case CTRL_P:
 		dmprintf(comm, "^P\r\n");
 		monitor_pause_all(comm);

@@ -91,6 +91,7 @@ uint32_t __attribute__((section (".data#"), noinline))
 int stm32_flash_erase(unsigned int offs, unsigned int len)
 {
 	struct stm32_flash * flash = STM32_FLASH;
+	unsigned int size;
 	unsigned int cnt;
 	uint32_t pri;
 	uint32_t cr;
@@ -98,12 +99,13 @@ int stm32_flash_erase(unsigned int offs, unsigned int len)
 
 	pri = cm3_primask_get();
 
+	DCC_LOG2(LOG_TRACE, "offs=0x%08x len=%d", offs, len);
 	stm32_flash_unlock();
 
 	cnt = 0;
+	size = 2048;
 	while (cnt < len) {
 		unsigned int page;
-		unsigned int size;
 
 		page = offs >> 11;
 		if ((page << 11) != (offs)) {
@@ -111,7 +113,7 @@ int stm32_flash_erase(unsigned int offs, unsigned int len)
 			return -2;
 		};
 
-		size = 2048;
+		DCC_LOG2(LOG_TRACE, "page=%d size=%d", page, size);
 
 		/* Clear errors */
 		flash->sr = FLASH_ERR;
@@ -169,8 +171,6 @@ int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 		return -1;
 	}
 
-	n = (len + 3) / 4;
-
 	ptr = (uint8_t *)buf;
 	addr = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
 
@@ -179,10 +179,11 @@ int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
 
 	pri = cm3_primask_get();
-	for (i = 0; i < n; i++) {
+	n = len / 8;
+	for (i = 0; i < n; ++i) {
 		data0 = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
 		data1 = ptr[4] | (ptr[5] << 8) | (ptr[6] << 16) | (ptr[7] << 24);
-		DCC_LOG3(LOG_MSG, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
+		DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
 		cm3_primask_set(1);
 		sr = stm32l4x_flash_wr64(flash, addr, data0, data1);
 		cm3_primask_set(pri);
@@ -193,8 +194,11 @@ int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 		ptr += 8;
 		addr += 2;
 	}
+	n = len % 8;
+	DCC_LOG1(LOG_TRACE, "residual: %d bytes", n);
+	for (i = 0; i < n; ++i) {
+	}
 	
 	return n * 8;
 }
-
 

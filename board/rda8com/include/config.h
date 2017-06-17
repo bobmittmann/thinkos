@@ -130,7 +130,7 @@
    USB 
    -------------------------------------------------------------------------- */
 
-#define STM32_ENABLE_USB_DEV    1
+#define STM32_ENABLE_USB_FS     1
 #define STM32_USB_FS_VBUS_CTRL  0
 #define STM32_USB_FS_EP_MAX     4
 #define STM32_USB_FS_IO_INIT    0
@@ -140,18 +140,24 @@
    GDB
    -------------------------------------------------------------------------- */
 
-#define GDB_ENABLE_MEM_MAP 1
+#define GDB_ENABLE_MEM_MAP         0
 
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
 
+#define BOOT_MEM_RESERVED          0x0c00
 #define BOOT_ENABLE_GDB            1
 #define BOOT_ENABLE_THIRD          0
 #define MONITOR_DUMPMEM_ENABLE     0
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_SELFTEST_ENABLE    0
 #define MONITOR_CONFIGURE_ENABLE   0
+#define MONITOR_UPGRADE_ENABLE     0
+#define MONITOR_THREADINFO_ENABLE  0
+#define MONITOR_OSINFO_ENABLE      1
+#define MONITOR_STACKUSAGE_ENABLE  0
+#define MONITOR_APPTERM_ENABLE     0
 
 /* -------------------------------------------------------------------------
  * Serial
