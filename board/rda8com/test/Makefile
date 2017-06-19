@@ -22,7 +22,7 @@
 
 PROG = test
 
-CFILES = test.c
+CFILES = test.c lattice.c ice40hx1k.c
 
 SDK = ../../../sdk
 
@@ -38,7 +38,7 @@ VERSION_MAJOR = "0"
 VERSION_MINOR = "1"
 
 CDEFS = CONFIG_H
-CFLAGS = -g -O3 -Wall -ffunction-sections -fdata-sections
+CFLAGS = -g -O1 -Wall -ffunction-sections -fdata-sections
 LDFLAGS = -Wl,--gc-sections 
 
 RELEASE_DIR := Release

@@ -43,6 +43,7 @@ int stm32f_spi_lookup(struct stm32f_spi * spi)
 	return id;
 }
 
+#if 0
 /* SPI - alternate function and clock configuration table */
 static const struct {
 	uint8_t	af; /* Alternate function */
@@ -57,13 +58,11 @@ static const struct {
 	{ .af = GPIO_AF5, .ckbit = 13, .apb2 = 1}
 #endif
 };
+#endif
 
 int stm32f_spi_init(struct stm32f_spi * spi, 
 					unsigned int freq, unsigned int opt)
 {
-	struct stm32_rcc * rcc = STM32_RCC;
-	uint32_t div;
-	int br;
 	int id;
 
 	if ((id = stm32f_spi_lookup(spi)) < 0) {
@@ -72,6 +71,11 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 	}
 
 #if 0
+	uint32_t div;
+	int br;
+
+
+	struct stm32_rcc * rcc = STM32_RCC;
 	gpio_io_t io;
 
 	/* Configure IO pins */
@@ -92,7 +96,6 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 	stm32_gpio_mode(STM32_GPIO(io.port), io.pin, ALT_FUNC, 
 					 PUSH_PULL | SPEED_MED);
 	stm32_gpio_af(STM32_GPIO(io.port), io.pin, spi_cfg[id].af);
-#endif
 
 	/* Enable peripheral clock */
 	if (spi_cfg[id].apb2) {
@@ -119,6 +122,7 @@ int stm32f_spi_init(struct stm32f_spi * spi,
 #if 0
 	spi->cr1 = SPI_SPE | SPI_MSTR | SPI_SSM | SPI_SSI | \
 			   SPI_BR_SET(br) | SPI_LSBFIRST;
+#endif
 #endif
 
 	return id;

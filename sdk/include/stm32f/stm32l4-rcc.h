@@ -26,6 +26,21 @@
 #ifndef __STM32L4_RCC_H__
 #define __STM32L4_RCC_H__
 
+#ifndef ILOG2
+#define ILOG2(X) (((X)&(0xffff0000))?(((X)&(0xff000000))?\
+(((X)&(0xf0000000))?(((X)&(0xc0000000))?((X)&(0x80000000)?31:30):\
+((X)&(0x20000000)?29:28)):(((X)&(0x0c000000))?((X)&(0x08000000)?27:26):\
+((X)&(0x02000000)?25:24))):(((X)&(0x00f00000))?(((X)&(0x00c00000))?\
+((X)&(0x00800000)?23:22):((X)&(0x00200000)?21:20)):\
+(((X)&(0x000c0000))?((X)&(0x00080000)?19:18):((X)&(0x00020000)?17:16)))):\
+(((X)&(0x0000ff00))?(((X)&(0x0000f000))?(((X)&(0x0000c000))?\
+((X)&(0x00008000)?15:14):((X)&(0x00002000)?13:12)):\
+(((X)&(0x00000c00))?((X)&(0x00000800)?11:10):((X)&(0x00000200)?9:8))):\
+(((X)&(0x000000f0))?(((X)&(0x000000c0))?((X)&(0x00000080)?7:6):\
+((X)&(0x00000020)?5:4)):(((X)&(0x0000000c))?((X)&(0x00000008)?3:2):\
+((X)&(0x00000002)?1:0)))))
+#endif
+
 /*-------------------------------------------------------------------------
   Reset and clock control (RCC)
   ------------------------------------------------------------------------- */
@@ -199,15 +214,13 @@ ready (MSION=1 and MSIRDY=0)
    MSI is used as system clock.
  */
 
-
-
 /* ------------------------------------------------------------------------- */
 /* RCC clock configuration register */
 
 /* STM32F10x RCC clock configuration register */
 #define STM32_RCC_CFGR 0x08
 
-#define RCC_MCOPRE    (0x7 << 28)
+#define RCC_MCOPRE(N) (ILOG2(N) << 28)
 #define RCC_MCOPRE_1  (0x0 << 28)
 #define RCC_MCOPRE_2  (0x1 << 28)
 #define RCC_MCOPRE_4  (0x2 << 28)
@@ -257,14 +270,14 @@ Set and cleared by software.
 	1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
 */
 
-#define RCC_PPRE2    (0x7 << 11)
+/* APB high-speed prescaler (APB2) */
+#define RCC_PPRE2(N) ((ILOG2(N) + 3) << 11)
 #define RCC_PPRE2_1  (0x0 << 11)
 #define RCC_PPRE2_2  (0x4 << 11)
 #define RCC_PPRE2_4  (0x5 << 11)
 #define RCC_PPRE2_8  (0x6 << 11)
 #define RCC_PPRE2_16 (0x7 << 11)
-/* APB high-speed prescaler (APB2) 
-   These bits are set and cleared by software to control the division 
+/* These bits are set and cleared by software to control the division 
    factor of the APB high- speed clock (PCLK2).
 0xx: HCLK not divided
 100: HCLK divided by 2
@@ -272,31 +285,30 @@ Set and cleared by software.
 110: HCLK divided by 8
 111: HCLK divided by 16 */
 
-#define RCC_PPRE1    (0x7 << 8)
+/* APB low-speed prescaler (APB1) */
+#define RCC_PPRE1(N) (ILOG2(N) << 8)
 #define RCC_PPRE1_1  (0x0 << 8)
 #define RCC_PPRE1_2  (0x4 << 8)
 #define RCC_PPRE1_4  (0x5 << 8)
 #define RCC_PPRE1_8  (0x6 << 8)
 #define RCC_PPRE1_16 (0x7 << 8)
-/* APB low-speed prescaler (APB1) 
- */
 
-#define RCC_HPRE (0xf << 4)
-#define RCC_HPRE_1 (0x0 << 4)
-#define RCC_HPRE_2 (0x8 << 4)
-#define RCC_HPRE_4 (0x9 << 4)
-#define RCC_HPRE_8 (0xa << 4)
-#define RCC_HPRE_16 (0xb << 4)
-#define RCC_HPRE_64 (0xc << 4)
+/* AHB prescaler */
+#define RCC_HPRE(N)  ((ILOG2(N) + (((N) > 64)?6:7)) << 4)
+#define RCC_HPRE_1   (0x0 << 4)
+#define RCC_HPRE_2   (0x8 << 4)
+#define RCC_HPRE_4   (0x9 << 4)
+#define RCC_HPRE_8   (0xa << 4)
+#define RCC_HPRE_16  (0xb << 4)
+#define RCC_HPRE_64  (0xc << 4)
 #define RCC_HPRE_128 (0xd << 4)
 #define RCC_HPRE_256 (0xe << 4)
 #define RCC_HPRE_512 (0xf << 4)
-/* AHB prescaler
-   Set and cleared by software to control AHB clock division factor.
+/* Set and cleared by software to control AHB clock division factor.
 Caution: The clocks are divided with the new prescaler factor from 
-1 to 16 AHB cycles after HPRE write.
+   1 to 16 AHB cycles after HPRE write.
 Caution: The AHB clock frequency must be at least 25 MHz when the Ethernet 
-is used.
+   is used.
 0xxx: system clock not divided
 1000: system clock divided by 2
 1001: system clock divided by 4
@@ -973,11 +985,33 @@ struct stm32_clk {
 	uint8_t bit:5;
 } __attribute__((packed))__;
 
+#if 0
+enum {
+	STM32_CLK_AHB  = 0,
+	STM32_CLK_APB1 = 1,
+	STM32_CLK_APB2 = 2,
+	STM32_CLK_TIM1 = 3,
+	STM32_CLK_TIM2 = 4,
+	STM32_CLK_HSI  = 5,
+	STM32_CLK_HSE  = 6,
+	STM32_CLK_LSI  = 7,
+	STM32_CLK_LSE  = 8,
+	STM32_CLK_MSI  = 9,
+	STM32_CLK_MCO  = 10,
+	STM32_CLK_SAI  = 11,
+	STM32_CLK_I2S  = 12
+};
+
+extern const uint32_t stm32_clk_hz[];
+#endif
+
 extern const uint32_t stm32f_apb1_hz;
 extern const uint32_t stm32f_apb2_hz;
 extern const uint32_t stm32f_ahb_hz;
-extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_mco_hz;
 extern const uint32_t stm32f_tim1_hz;
+extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_sai_hz;
 
 #ifdef __cplusplus
 extern "C" {
@@ -1051,7 +1085,7 @@ static inline void stm32_reset(struct stm32_rcc * rcc,
 static inline uint32_t stm32_clk_hz(int bus, int bit) {
 	if (bus == STM32_APB2)
 		return stm32f_apb2_hz;
-	if (bus == STM32_APB1)
+	else if ((bus == STM32_APB1) || (bus == STM32_APB1B))
 		return stm32f_apb2_hz;
 	return stm32f_ahb_hz;
 }

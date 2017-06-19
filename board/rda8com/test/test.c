@@ -23,6 +23,8 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
+#include <fixpt.h>
+
 #include "board.h"
 
 #include <string.h>
@@ -32,6 +34,7 @@
 #include <sys/console.h>
 #include <thinkos.h>
 #include <stdio.h>
+#include "lattice.h"
 
 void stdio_init(void)
 {
@@ -106,6 +109,21 @@ void test(void)
 	}
 }
 
+void ilog_test(void)
+{
+	uint32_t i;
+	uint32_t n;
+
+	for (i = 0; i < 0xffffffff; ++i) {
+		n = ILOG2(i);
+		if (ilog2(i) != n)
+			printf("ilog2(%d): %d != %d\n", i, n, ilog2(i));
+	}
+}
+
+extern const unsigned int sizeof_ice40hx1k_bin;
+extern const uint8_t ice40hx1k_bin[];
+
 int main(int argc, char ** argv)
 {
 	uint32_t clk;
@@ -114,6 +132,11 @@ int main(int argc, char ** argv)
 	stdio_init();
 
 	printf("1. Initializing ... \n");
+
+	printf("2. Configuring FPGA ...\n");
+	lattice_ice40_configure(ice40hx1k_bin, sizeof_ice40hx1k_bin);
+
+	ilog_test();
 
 	printf("2. test start 1 billion instrucions... \n");
 	clk = thinkos_clock();

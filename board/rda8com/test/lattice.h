@@ -1,6 +1,6 @@
 /* 
- * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
- *
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
  * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,41 +18,25 @@
  */
 
 /** 
- * @file sys/sysclk.h
- * @brief
+ * @file lattice.h
+ * @brief YARD-ICE
  * @author Robinson Mittmann <bobmittmann@gmail.com>
- */ 
+ */
 
-#include <arch/cortex-m3.h>
+#ifndef __LATTICE_H__
+#define __LATTICE_H__
 
-#ifndef __SYS_SYSCLK_H__
-#define __SYS_SYSCLK_H__
-
-enum {
-	SYSCLK_STM32_AHB  = 0,
-	SYSCLK_STM32_APB1 = 1,
-	SYSCLK_STM32_APB2 = 2,
-	SYSCLK_STM32_TIM1 = 3,
-	SYSCLK_STM32_TIM2 = 4,
-	SYSCLK_STM32_HSI  = 5,
-	SYSCLK_STM32_HSE  = 6,
-	SYSCLK_STM32_LSI  = 7,
-	SYSCLK_STM32_LSE  = 8,
-	SYSCLK_STM32_MSI  = 9,
-	SYSCLK_STM32_MCO  = 10,
-	SYSCLK_STM32_SAI  = 11,
-	SYSCLK_STM32_I2S  = 12
-};
-
-extern const uint32_t sysclk_hz[];
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int lattice_ice40_configure(const uint8_t * buf, unsigned int max);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __SYS_SYSCLK_H__ */
+#endif /* __LATTICE_H__ */
 

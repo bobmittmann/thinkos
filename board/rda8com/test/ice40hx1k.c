@@ -4,7 +4,6 @@
 
 #include <stdint.h>
 
-
 #define SIZEOF_ICE40HX1K_BIN 7413
 
 const uint8_t ice40hx1k_bin[7413] = {
@@ -628,5 +627,5 @@ const uint8_t ice40hx1k_bin[7413] = {
 	0x00, 0x00, 0x00, 0x22, 0x21, 0x93, 0x01, 0x06, 0x00
 };
 
-const unsigned int sizeof_ice40lp384_bin = sizeof(ice40lp384_bin);
+const unsigned int sizeof_ice40hx1k_bin = sizeof(ice40hx1k_bin);
 

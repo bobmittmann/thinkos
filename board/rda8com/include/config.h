@@ -157,7 +157,7 @@
 #define MONITOR_THREADINFO_ENABLE  0
 #define MONITOR_OSINFO_ENABLE      1
 #define MONITOR_STACKUSAGE_ENABLE  0
-#define MONITOR_APPTERM_ENABLE     0
+#define MONITOR_APPTERM_ENABLE     1
 
 /* -------------------------------------------------------------------------
  * Serial

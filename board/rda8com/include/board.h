@@ -40,6 +40,21 @@
 #define IO_JTDO           STM32_GPIOB, 3
 #define IO_JTCK           STM32_GPIOA, 14
 
+/**************************************************************************
+ * Lattice FPGA (iCE40LP384) connections
+ **************************************************************************/
+
+#define IO_ICE40_SPI_SCK  STM32_GPIOA, 1
+#define IO_ICE40_SPI_SDO  STM32_GPIOB, 4
+#define IO_ICE40_SPI_SDI  STM32_GPIOB, 5
+#define IO_ICE40_SPI_SS   STM32_GPIOB, 8
+#define ICE40_SPI         STM32F_SPI1
+#define ICE40_CLK_SPI     STM32_CLK_SPI1
+#define ICE4_SPI_AF       GPIO_AF5
+
+#define IO_ICE40_CRESET   STM32_GPIOB, 9
+#define IO_ICE40_CDONE    STM32_GPIOB, 7
+
 /* -------------------------------------------------------------------------
  * FPGA
  * ------------------------------------------------------------------------- */

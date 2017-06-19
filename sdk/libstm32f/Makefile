@@ -53,7 +53,7 @@ ifeq ($(STM32), stm32l4)
 SFILES = stm32l4-vec.S
 
 CFILES = stm32l4-init.c stm32l4-flash.c stm32f-gpio.c \
-		 stm32f-dma.c \
+		 stm32f-dma.c stm32f-spi.c \
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
 		 $(addprefix usart/,$(USART_CFILES))
 endif

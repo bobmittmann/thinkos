@@ -27,6 +27,16 @@
 #include "config.h"
 #endif
 
+/* -------------------------------------------------------------------- 
+   Default clock frequencies
+*/
+#define HCLK_HZ 80000000
+#define HSI_HZ  16000000
+#define MSI_HZ   4000000
+
+/* -------------------------------------------------------------------- 
+   Default options 
+*/
 #ifndef STM32_ENABLE_HSI
 #define STM32_ENABLE_HSI 1
 #endif
@@ -39,73 +49,53 @@
 #define STM32_ENABLE_PLL 1
 #endif
 
-#if defined(STM32L4X)
-
-#ifndef HSE_HZ
-  #define HSE_HZ 8000000
+#ifndef STM32_HCLK_HZ 
+#define STM32_HCLK_HZ    80000000
 #endif
 
-#ifndef HSI_HZ
-  #define HSI_HZ 16000000
+#ifndef STM32_HSE_HZ 
+#define STM32_HSE_HZ     11289600
 #endif
 
-#ifndef PLL_HZ
-  #define PLL_HZ 32000000
+#ifndef STM32_MSI_HZ 
+#define STM32_MSI_HZ      4000000
 #endif
 
-#ifndef HCLK_HZ
-  #if STM32_ENABLE_PLL
-    #define HCLK_HZ PLL_HZ
-  #elif STM32_ENABLE_HSI
-    #define HCLK_HZ HSI_HZ
-  #elif STM32_ENABLE_HSE
-    #define HCLK_HZ HSE_HZ
-  #else
-	#error "HCLK_HZ undefined!"
-  #endif
+#define STM32_HSI_HZ     16000000
+
+#ifndef STM32_APB1_PRE
+#define STM32_APB1_PRE   1
 #endif
 
-
-#ifndef STM32_APB1_HZ
-  #if STM32_ENABLE_PLL
-    #define STM32_APB1_HZ (HCLK_HZ / 2)
-  #else 
-    #define STM32_APB1_HZ HCLK_HZ
-  #endif
+#ifndef STM32_APB2_PRE
+#define STM32_APB2_PRE   1
 #endif
 
-#ifndef STM32_APB2_HZ
-  #if STM32_ENABLE_PLL
-    #define STM32_APB2_HZ (HCLK_HZ / 2)
-  #else 
-    #define STM32_APB2_HZ HCLK_HZ
-  #endif
+#ifndef STM32_AHB_PRE
+#define STM32_AHB_PRE    1
 #endif
 
-#if STM32_APB1_HZ == HCLK_HZ
-#define STM32_TIM1_HZ STM32_APB1_HZ
-#else
-#define STM32_TIM1_HZ (2 * STM32_APB1_HZ)
+#ifndef STM32_MCO_PRE
+#define STM32_MCO_PRE    1
 #endif
 
-#if STM32_APB2_HZ == HCLK_HZ
-#define STM32_TIM2_HZ STM32_APB2_HZ
-#else
-#define STM32_TIM2_HZ (2 * STM32_APB2_HZ)
-#endif
+/* -------------------------------------------------------------------- 
+   Precalculated PLL configuartion
+*/
 
-#endif
-
-#if (HCLK_HZ == 80000000)
-#if (HSE_HZ == 11289600)
-	/* F_HSE = 11.2896 MHz
-	   F_VCO = 321.7535 MHz
-	   F_MAIN = 80.4384 MHz */
+#if (STM32_HCLK_HZ == 80000000)
+#if (STM32_HSE_HZ == 11289600)
+	/* F_HSE  =  11.2896 MHz
+	   F_VCO  = 321.7535 MHz
+	   F_HCLK =  80.4384 MHz */
   #define PLLN 57
   #define PLLM 2
   #define PLLR 4
   #define PLLP 4
   #define PLLQ 8
+  #define PLLSAIN 57
+  #define PLLSAIM 2
+  #define PLLSAIR 4
 #elif (HSE_HZ == 16000000)
 #elif (HSE_HZ == 12000000)
 #elif (HSE_HZ == 8000000)
@@ -115,77 +105,101 @@
 
 #endif
 
-#define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)
-#define __HCLK_HZ (__VCO_HZ / PLLR)
+/* -------------------------------------------------------------------- 
+   The real clock frequencies based on PLL configuration
+*/
 
-//#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
-//#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
+#if STM32_ENABLE_PLL
+  #define __VCO_HZ (((uint64_t)(STM32_HSE_HZ) * PLLN) / PLLM)
+  #define __HCLK_HZ (__VCO_HZ / PLLR)
+#else
+  #define __HCLK_HZ (STM32_HCLK_HZ)
+#endif
 
-const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
-const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
-const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
-const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
-const uint32_t stm32f_tim2_hz = __HCLK_HZ;
+#define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLSAIM)
+#define __SAI_HZ (__VCOSAI_HZ / PLLSAIR)
 
-//const uint32_t stm32f_sai_hz = __I2S_HZ;
+#define __APB1_HZ   (__HCLK_HZ) / (STM32_APB1_PRE)
+#define __APB2_HZ   (__HCLK_HZ) / (STM32_APB2_PRE)
+#define __AHB_HZ 	(__HCLK_HZ) / (STM32_AHB_PRE)
+#define __MCO_HZ 	(__HCLK_HZ) / (STM32_MCO_PRE)
+/* The timer clock frequencies are automatically defined by hardware. There 
+   are two cases:
+   1. If the APB prescaler equals 1, the timer clock frequencies are 
+   set to the same frequency as that of the APB domain.
+   2. Otherwise, they are set to twice (×2) the frequency of the APB domain. */
+#if (STM32_APB1_PRE == 1)
+  #define __TIM1_HZ  (__APB1_HZ)
+#else
+  #define __TIM1_HZ  ((__APB1_HZ) * 2)
+#endif
+
+#if (STM32_APB2_PRE == 1)
+  #define __TIM2_HZ  (__APB2_HZ)
+#else
+  #define __TIM2_HZ  ((__APB2_HZ) * 2)
+#endif
+
+/* -------------------------------------------------------------------- 
+   Constants to be used by the libraries 
+*/
+
+const uint32_t stm32f_apb1_hz = __APB1_HZ;
+const uint32_t stm32f_apb2_hz = __APB2_HZ;
+const uint32_t stm32f_ahb_hz  = __AHB_HZ;
+const uint32_t stm32f_mco_hz  = __MCO_HZ;
+const uint32_t stm32f_tim1_hz = __TIM1_HZ;
+const uint32_t stm32f_tim2_hz = __TIM2_HZ;
+const uint32_t stm32f_sai_hz = __SAI_HZ;
 
 #ifndef THINKAPP
 
-/* This constant is used to calibrate the systick timer */
-const uint32_t cm3_systick_load_1ms = ((__HCLK_HZ / 8) / 1000) - 1;
-
 const uint32_t sysclk_hz[] = {
-	[SYSCLK_STM32_AHB] = __HCLK_HZ,
-	[SYSCLK_STM32_APB1] = __HCLK_HZ / 4,
-	[SYSCLK_STM32_APB2] = __HCLK_HZ / 2,
-	[SYSCLK_STM32_TIM1] = __HCLK_HZ / 2,
-	[SYSCLK_STM32_TIM2] = __HCLK_HZ,
+	[SYSCLK_STM32_AHB] = __AHB_HZ,
+	[SYSCLK_STM32_APB1] = __APB1_HZ,
+	[SYSCLK_STM32_APB2] = __APB2_HZ,
+	[SYSCLK_STM32_TIM1] = __TIM1_HZ,
+	[SYSCLK_STM32_TIM2] = __TIM2_HZ,
+	[SYSCLK_STM32_MCO] = __MCO_HZ,
+	[SYSCLK_STM32_SAI] = __SAI_HZ,
+//	[SYSCLK_STM32_I2S] = __I2S_HZ
 };
 
+/* This constant is used to calibrate the systick timer */
+const uint32_t cm3_systick_load_1ms = ((__HCLK_HZ / 8) / 1000) - 1;
 
 void __attribute__((section(".init"))) _init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;
-	uint32_t rcc_cr;
+	uint32_t cr;
 	uint32_t cfg;
-	int again;
 #if STM32_ENABLE_PLL
 	uint32_t pll;
 #endif
-	uint32_t ws;
 
-	rcc->cr = rcc_cr = RCC_MSION;
+	cr = RCC_MSION;
+#if DEBUG
+	rcc->cr = cr;
 	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_MSI;
+#endif
 
 #if STM32_ENABLE_HSI
 	/*******************************************************************
 	 * Enable internal oscillator 
 	 *******************************************************************/
-	rcc_cr |= RCC_HSION;
-	rcc->cr = rcc_cr;
-
-	for (again = 8192; ; again--) {
-		if ((rcc_cr = rcc->cr) & RCC_HSIRDY)
-			break;
-		if (again == 0)
-			halt(); /* internal clock startup failed! */
-	}
+	cr |= RCC_HSION;
+	rcc->cr = cr;
+	while (((cr = rcc->cr) & RCC_HSIRDY) == 0);
 #endif
 
 #if STM32_ENABLE_HSE
 	/*******************************************************************
 	 * Enable external oscillator 
 	 *******************************************************************/
-	rcc_cr |= RCC_HSEON;
-	rcc->cr = rcc_cr;
-
-	for (again = 8192; ; again--) {
-		if ((rcc_cr = rcc->cr) & RCC_HSERDY)
-			break;
-		if (again == 0)
-			halt(); /* external clock startup failed! */
-	}
+	cr |= RCC_HSEON;
+	rcc->cr = cr;
+	while (((cr = rcc->cr) & RCC_HSERDY) == 0);
 #endif
 
 
@@ -193,7 +207,6 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure PLL
 	 *******************************************************************/
-
 	pll = RCC_PLLPDIV(PLLP) | 
 		RCC_PLLR(PLLR) | RCC_PLLREN | 
 		RCC_PLLQ(PLLQ) | RCC_PLLQEN |
@@ -203,40 +216,29 @@ void __attribute__((section(".init"))) _init(void)
 #else
 	pll |= RCC_PLLSRC_HSE;
 #endif
-
 	rcc->pllcfgr = pll;
-
 	/* enable PLL */
-	rcc_cr |= RCC_PLLON;
-	rcc->cr = rcc_cr;;
-
-	for (again = 8192; ; again--) {
-		if ((rcc_cr = rcc->cr) & RCC_PLLRDY)
-			break;
-		if (again == 0)
-			halt(); /* PLL lock failed! */
-	}
+	cr |= RCC_PLLON;
+	rcc->cr = cr;;
+	while (((cr = rcc->cr) & RCC_PLLRDY) == 0);
 #endif /* STM32_ENABLE_PLL */
 
-	cfg = RCC_MCOPRE_1 | RCC_MCO_PLL | 
-		RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_MSI;
+	/* Configure MCO, APB and AHB clocks source and prescalers */
+	cfg = RCC_MCOPRE(STM32_MCO_PRE) | RCC_MCO_PLL | 
+		RCC_PPRE2(STM32_APB2_PRE) | 
+		RCC_PPRE1(STM32_APB1_PRE) | 
+		RCC_HPRE(STM32_AHB_PRE) | RCC_SW_MSI;
 	rcc->cfgr = cfg; 
 
 	/*******************************************************************
 	 * Configure flash access and wait states 
 	 *******************************************************************/
-	
-	for (again = 4096; ; again--) {
-		if ((flash->sr & FLASH_BSY) == 0)
-			break;
-		if (again == 0)
-			halt(); /* flash not ready! */
-	}
-
-	ws = __HCLK_HZ / 30000000;
+#if DEBUG	
+	while ((flash->sr & FLASH_BSY) != 0);
+#endif
 	/* adjust flash wait states and enable caches */
-	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | FLASH_LATENCY(ws);
-
+	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | 
+		FLASH_LATENCY(__HCLK_HZ / 30000000);
 
 	if (flash->cr & FLASH_LOCK) {
 		/* unlock flash write */
@@ -247,16 +249,19 @@ void __attribute__((section(".init"))) _init(void)
 #if STM32_ENABLE_PLL
 	/* switch to pll oscillator */
 	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_PLL;
+#if DEBUG
 	while ((rcc->cfgr & RCC_SWS_MASK) != RCC_SWS_PLL);
+#endif
+	rcc->cr = cr & ~RCC_MSION;
 #elif STM32_ENABLE_HSI
 	/* select HSI as system clock */
 	rcc->cfgr = (cfg & ~RCC_SW_MASK) | RCC_SW_HSI;
+	rcc->cr = cr & ~RCC_MSION;
 #elif STM32_ENABLE_HSE
 	/* select HSE as system clock */
 	rcc->cfgr = (cfg & ~RCC_SW_MASK) | RCC_SW_HSE;
+	rcc->cr = cr & ~RCC_MSION;
 #endif
-
-	rcc->cr = rcc_cr & ~RCC_MSION;
 
 
 	/*******************************************************************
@@ -265,13 +270,7 @@ void __attribute__((section(".init"))) _init(void)
 
 	/* Enable HSI48 internal oscillator  */
 	rcc->crrcr |= RCC_HSI48ON;
-	for (again = 8192; ; again--) {
-		if (rcc->crrcr & RCC_HSI48RDY)
-			break;
-		if (again == 0)
-			halt(); /* HSI48 internal clock startup failed! */
-	}
-
+	while ((rcc->crrcr & RCC_HSI48RDY) == 0)
     /* HSI48 clock selected as 48 MHz clock */
 	rcc->ccipr = RCC_CLK48SEL_HSI48;
 
