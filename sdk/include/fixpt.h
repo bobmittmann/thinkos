@@ -51,6 +51,26 @@
 /* Q16 Divide */
 #define Q16_DIV(X, Y) (((int64_t)(X) << 16) / (Y))
 
+/* FLoor(log2(n)) for 32 bits 
+   Use this macro only with constant values as the generated
+   code can be very inneficient. The function ilog2() is better suited for 
+   general usage.
+ */
+#ifndef ILOG2
+  #define ILOG2(X) (((X)&(0xffff0000))?(((X)&(0xff000000))?\
+  (((X)&(0xf0000000))?(((X)&(0xc0000000))?((X)&(0x80000000)?31:30):\
+   ((X)&(0x20000000)?29:28)):(((X)&(0x0c000000))?((X)&(0x08000000)?27:26):\
+   ((X)&(0x02000000)?25:24))):(((X)&(0x00f00000))?(((X)&(0x00c00000))?\
+   ((X)&(0x00800000)?23:22):((X)&(0x00200000)?21:20)):\
+  (((X)&(0x000c0000))?((X)&(0x00080000)?19:18):((X)&(0x00020000)?17:16)))):\
+  (((X)&(0x0000ff00))?(((X)&(0x0000f000))?(((X)&(0x0000c000))?\
+   ((X)&(0x00008000)?15:14):((X)&(0x00002000)?13:12)):\
+  (((X)&(0x00000c00))?((X)&(0x00000800)?11:10):((X)&(0x00000200)?9:8))):\
+  (((X)&(0x000000f0))?(((X)&(0x000000c0))?((X)&(0x00000080)?7:6):\
+   ((X)&(0x00000020)?5:4)):(((X)&(0x0000000c))?((X)&(0x00000008)?3:2):\
+   ((X)&(0x00000002)?1:0)))))
+#endif
+
 typedef struct {
 	int16_t re;  
 	int16_t im;  
@@ -58,6 +78,7 @@ typedef struct {
 
 #define Q15_ABS
 
+int32_t ilog2(int32_t v);
 int32_t isqrt(uint32_t x);
 
 static inline uint16_t cplx16_abs(cplx16_t z) {
