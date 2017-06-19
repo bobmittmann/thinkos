@@ -20,19 +20,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/stm32f.h>
-#include <sys/halt.h>
-
 #ifdef CONFIG_H
 #include "config.h"
 #endif
 
-/* -------------------------------------------------------------------- 
-   Default clock frequencies
-*/
-#define HCLK_HZ 80000000
-#define HSI_HZ  16000000
-#define MSI_HZ   4000000
+#include <sys/stm32f.h>
+#include <sys/halt.h>
 
 /* -------------------------------------------------------------------- 
    Default options 
@@ -96,9 +89,9 @@
   #define PLLSAIN 57
   #define PLLSAIM 2
   #define PLLSAIR 4
-#elif (HSE_HZ == 16000000)
-#elif (HSE_HZ == 12000000)
-#elif (HSE_HZ == 8000000)
+#elif (STM32_HSE_HZ == 16000000)
+#elif (STM32_HSE_HZ == 12000000)
+#elif (STM32_HSE_HZ == 8000000)
 #else
 #error "HSE_HZ invalid!"
 #endif

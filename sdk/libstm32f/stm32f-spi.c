@@ -152,3 +152,16 @@ int stm32f_spi_getc(struct stm32f_spi * spi)
 	return -1;
 }
 
+int stm32f_spi_drain(struct stm32f_spi * spi)
+{
+	unsigned int sr;
+
+	while ((sr = spi->sr) & SPI_BSY) {
+		if (sr & SPI_MODF) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+

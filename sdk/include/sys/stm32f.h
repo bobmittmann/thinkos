@@ -217,6 +217,7 @@ int stm32f_spi_init(struct stm32f_spi * spi, unsigned int freq,
 		             unsigned int opt);
 int stm32f_spi_putc(struct stm32f_spi * spi, int c);
 int stm32f_spi_getc(struct stm32f_spi * spi);
+int stm32f_spi_drain(struct stm32f_spi * spi);
 
 #ifdef STM32F_ETH 
 /*---------------------------------------------------------------------
