@@ -124,6 +124,9 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 	int w;
 	int n;
 	int r;
+#if (PRINTF_ENABLE_FLOAT)
+	int p;
+#endif
 	char * cp;
 	union {
 		void * ptr;
@@ -138,6 +141,9 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 
 	n = 0;
 	w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+	p = -1;
+#endif
 	cnt = 0;
 #if (PRINTF_ENABLE_FAST)
 	cp = (char *)fmt;
@@ -146,6 +152,10 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 		if (flags == 0) {
 			if (c == '%') {
 				w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+				w = 0;
+				p = -1;
+#endif
 				flags = PERCENT;
 #if (PRINTF_ENABLE_FAST)
 				if (n) {
@@ -179,6 +189,12 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 			w = (((w << 2) + w) << 1) + (c - '0');
 			continue;
 		}
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == '.') {
+			p = w;
+			w = 0;
+		}
+#endif
 
 #if (PRINTF_ENABLE_LEFT_ALIGN)
 		if (c == '-') {
@@ -289,7 +305,12 @@ hexadecimal:
 		if (c == 'f') {
 			cp = buf;
 			val.f = (float)va_arg(ap, double);
-			n = float2str(cp, val.n, w);
+			if (p != -1) {
+				int tmp = p;
+				p = w;
+				w = tmp;
+			}
+			n = float2str(cp, val.n, p);
 			goto print_buf;
 		}
 #endif
