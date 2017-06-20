@@ -25,7 +25,6 @@
 #endif
 
 #include <sys/stm32f.h>
-#include <sys/halt.h>
 
 /* -------------------------------------------------------------------- 
    Default options 
