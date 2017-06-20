@@ -21,6 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 #include <sys/param.h>
 #include <sys/sysclk.h>
@@ -113,15 +115,6 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_ABORT:
 		DCC_LOG(LOG_WARNING, "Abort!");
-#if 0
-		{
-			volatile int * ptr = (int *)(0x30000000);
-			int i;
-
-			i = ptr[0];
-			(void)i;
-		}
-#endif
 		__thinkos_pause_all();
 		__thinkos_defer_sched();
 #if THINKOS_ENABLE_MONITOR
@@ -140,16 +133,27 @@ void thinkos_ctl_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
-	case THINKOS_CTL_THREAD_INF:
+	case THINKOS_CTL_THREAD_INF: {
+		unsigned int cnt;
+
+		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
 		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * THINKOS_THREADS_MAX + 1); 
-		arg[0] = THINKOS_THREADS_MAX + 1;
+						   sizeof(void *) * cnt); 
+		arg[0] = cnt;
+		}
 		break;
 #endif
 
 #if THINKOS_ENABLE_PROFILING
 	case THINKOS_CTL_CYCCNT:
 		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
+		break;
+#endif
+
+#if THINKOS_ENABLE_MONITOR
+	case THINKOS_CTL_DBGMON:
+		arg[0] = thinkos_dbgmon_svc((void (*)(struct dmon_comm *))arg[1],
+									(struct dmon_comm *)arg[2]);
 		break;
 #endif
 

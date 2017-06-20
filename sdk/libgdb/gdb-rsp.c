@@ -42,6 +42,10 @@
 #define GDB_DEBUG_PACKET 1
 #endif
 
+#ifndef GDB_ENABLE_MEMWRITE
+#define GDB_ENABLE_MEMWRITE 0
+#endif
+
 #define THREAD_ID_OFFS 100
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
@@ -971,11 +975,14 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 	return rsp_pkt_send(gdb, pkt, n);
 }
 
+#if GDB_ENABLE_MEMWRITE
 static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 {
 	unsigned int addr;
+	unsigned int size;
+	unsigned int i;
 	char * cp;
-	int size;
+	uint8_t * buf;
 
 	cp = &pkt[1];
 	addr = hex2int(cp, &cp);
@@ -986,10 +993,38 @@ static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 	(void)addr;
 	(void)size;
 
-	DCC_LOG2(LOG_WARNING, "addr=0x%08x size=%d, not implemented!", addr, size);
+	if (size == 0) {
+		DCC_LOG(LOG_TRACE, "write probe!");
+		/* XXX: if there is an active application, even if it is suspended,
+		   writing over it may cause errors */
+		if (gdb->active_app) {
+			DCC_LOG(LOG_WARNING, "active application!");
+			dbgmon_soft_reset();
+			gdb->active_app = false;
+		}
+		return rsp_ok(gdb);
+	}
+	if (gdb->active_app) {
+		DCC_LOG(LOG_WARNING, "active application!");
+	}
+
+	DCC_LOG3(LOG_TRACE, "addr=%08x size=%d cp=%08x", addr, size, cp);
+
+	buf = (uint8_t *)pkt;
+	for (i = 0; i < size; ++i) {
+		buf[i] = hex2char(cp);
+		cp += 2;
+	}
+
+	if (target_mem_write(addr, buf, size) < 0) {
+		/* XXX: silently ignore writing errors ...
+		return rsp_error(gdb, 1);
+		*/
+	}
+
 	return rsp_ok(gdb);
 }
-
+#endif
 
 static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 {
@@ -1483,9 +1518,11 @@ static int rsp_pkt_input(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	case 'm':
 		ret = rsp_memory_read(gdb, pkt);
 		break;
+#if GDB_ENABLE_MEMWRITE
 	case 'M':
 		ret = rsp_memory_write(gdb, pkt);
 		break;
+#endif
 	case 'T':
 		ret = rsp_thread_isalive(gdb, pkt);
 		break;

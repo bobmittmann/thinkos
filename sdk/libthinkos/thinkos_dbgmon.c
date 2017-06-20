@@ -399,7 +399,7 @@ int dbgmon_wait_idle(void)
 {
 	int ret;
 
-	/* DEbug monitor request semaphore */
+	/* Debug monitor request semaphore */
 	CM3_DCB->demcr |= DCB_DEMCR_MON_REQ;
 
 	/* wait for signal */
@@ -1215,7 +1215,8 @@ static void __dmon_irq_init(void)
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
-void thinkos_dbgmon_init(void * comm, void (* task)(struct dmon_comm * ))
+int thinkos_dbgmon_svc(void (* task)(struct dmon_comm * ), 
+					   struct dmon_comm * comm)
 {
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
@@ -1248,8 +1249,9 @@ void thinkos_dbgmon_init(void * comm, void (* task)(struct dmon_comm * ))
 	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 
 	dcb->demcr = demcr;
-}
 
+	return 0;
+}
 
 #endif /* THINKOS_ENABLE_MONITOR */
 

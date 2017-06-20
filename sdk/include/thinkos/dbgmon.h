@@ -102,7 +102,8 @@ struct dbgmon_app_desc {
 extern "C" {
 #endif
 
-void thinkos_dbgmon_init(void * comm, void (* task)(struct dmon_comm * ));
+int thinkos_dbgmon_svc(void (* task)(struct dmon_comm * ), 
+					   struct dmon_comm * comm);
 
 void dbgmon_reset(void);
 

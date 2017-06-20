@@ -54,26 +54,14 @@ const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
 
 void monitor_task(struct dmon_comm * comm);
 
-void monitor_exec_protected(struct dmon_comm * comm)
-{
-	thinkos_dbgmon_init(comm, monitor_task);
-}
-
-void monitor_exec(void)
-{
-	struct dmon_comm * comm;
-
-	comm = usb_comm_getinstance();
-
-	thinkos_escalate((void *)monitor_exec_protected, comm);
-}
-
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
 #endif
 
 int main(int argc, char ** argv)
 {
+	struct dmon_comm * comm;
+
 	DCC_LOG_INIT();
 #if 1
 	DCC_LOG_CONNECT();
@@ -94,11 +82,11 @@ int main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
 #if STM32_ENABLE_OTG_FS
-	usb_comm_init(&stm32f_otg_fs_dev);
+	comm = usb_comm_init(&stm32f_otg_fs_dev);
 #elif STM32_ENABLE_OTG_HS
-	usb_comm_init(&stm32f_otg_hs_dev);
+	comm = usb_comm_init(&stm32f_otg_hs_dev);
 #elif STM32_ENABLE_USB_FS
-	usb_comm_init(&stm32f_usb_fs_dev);
+	comm = usb_comm_init(&stm32f_usb_fs_dev);
 #else
 #error "Undefined debug monitor comm port!"
 #endif
@@ -119,10 +107,16 @@ int main(int argc, char ** argv)
 	thinkos_userland();
 #endif
 
-	DCC_LOG(LOG_TRACE, "9. monitor_exec()");
-	monitor_exec();
+#if 1
+	thinkos_sleep(2000);
+#endif
 
-	thinkos_sleep(1000);
+	DCC_LOG(LOG_TRACE, "9. thinkos_dbgmon()");
+	thinkos_dbgmon(monitor_task, comm);
+
+#if 1
+	thinkos_sleep(2000);
+#endif
 
 	DCC_LOG(LOG_TRACE, "10. thinkos_thread_abort()");
 	thinkos_thread_abort(0);

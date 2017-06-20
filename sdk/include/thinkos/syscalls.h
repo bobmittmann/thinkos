@@ -134,6 +134,7 @@
 #define THINKOS_CTL_TRACE           4
 #define THINKOS_CTL_THREAD_INF      5
 #define THINKOS_CTL_CYCCNT          6
+#define THINKOS_CTL_DBGMON          7
 
 #define THINKOS_IRQ_DISABLE       0
 #define THINKOS_IRQ_ENABLE        1
@@ -552,6 +553,7 @@ static inline int __attribute__((always_inline))
 	return THINKOS_SYSCALLS3(THINKOS_IRQ_CTL, 
 						THINKOS_IRQ_PRIORITY_SET, irq, pri);
 }
+
 /* ---------------------------------------------------------------------------
    Console
    ---------------------------------------------------------------------------*/
@@ -618,14 +620,23 @@ static inline int __attribute__((always_inline))
 	}
 
 static inline int __attribute__((always_inline)) 
-	thinkos_thread_inf(const struct thinkos_thread_inf * inf[]) {
-		return THINKOS_SYSCALLS2(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf);
+	thinkos_thread_inf(const struct thinkos_thread_inf * inf[], 
+					   unsigned int max) {
+		return THINKOS_SYSCALLS3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf, max);
 	}
 
 static inline int __attribute__((always_inline)) 
-	thinkos_cyccnt(uint32_t cyccnt[]) {
-		return THINKOS_SYSCALLS2(THINKOS_CTL, THINKOS_CTL_CYCCNT, cyccnt);
+	thinkos_cyccnt(uint32_t cyccnt[], unsigned int max) {
+		return THINKOS_SYSCALLS3(THINKOS_CTL, THINKOS_CTL_CYCCNT, cyccnt, max);
 	}
+
+struct dmon_comm;
+
+static inline int __attribute__((always_inline)) 
+	thinkos_dbgmon(void (* task)(struct dmon_comm * ), 
+				   struct dmon_comm * comm) {
+	return THINKOS_SYSCALLS3(THINKOS_CTL, THINKOS_CTL_DBGMON, task, comm);
+}
 
 static inline int __attribute__((always_inline)) 
 	thinkos_critical_enter(void) {

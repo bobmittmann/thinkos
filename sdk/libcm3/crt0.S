@@ -71,11 +71,12 @@ _reset:
 	.string "ThinkOS"
 #endif
 0:
-	/* jump to hardware initialization code */
+	/* save lr, arv, and argc */
     mov     r8, r0
     mov     r9, r1
     mov     r10, lr
 #else /* THINKAPP */
+	/* jump to hardware initialization code */
 	bl		_init
 #endif
 
@@ -118,7 +119,7 @@ _reset:
 	mov     r7, #0
 	/* argc  */
 	mov     r0, r8
-	/* argv = NULL */
+	/* argv */
 	mov     r1, r9
 #else
 	ldr     r0, .L_main_stack
