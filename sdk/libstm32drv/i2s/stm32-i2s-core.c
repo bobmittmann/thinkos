@@ -59,7 +59,7 @@
 #endif
 #endif
 
-#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
+#define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
 #define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
 
 #if defined(STM32F446)

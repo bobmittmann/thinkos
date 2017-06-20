@@ -47,9 +47,27 @@ dbgmon_context_swap_ext:
 	push   {r4-r11,lr}
 	mrs    r3, APSR
 	push   {r3}
+
+/*	Cortex M4, 
+	ARM ID number 752419 as Cat 2
+	Description
+	An interrupt occurring during the data-phase of a single word load to 
+	the stack pointer (SP/R13) can cause an erroneous behavior of the device. 
+	In addition, returning from the interrupt results in the load instruction 
+	being executed with an additional time.
+	For all the instructions performing an update of the base register, 
+	the base register is erroneously updated on each execution, resulting 
+	in the stack pointer being loaded from an incorrect memory location.
+		The instructions affected by this limitation are the following:
+		• LDR SP, [Rn],#imm
+		• LDR SP, [Rn,#imm]!
+		• LDR SP, [Rn,#imm]
+		• LDR SP, [Rn]
+		• LDR SP, [Rn,Rm] */
 	mov    r3, sp
-	ldr    sp, [r0] /* restore context */
+	ldr    r2, [r0] /* restore context */
 	str    r3, [r0] /* save context */
+	mov    sp, r2
 #if 0
 	mov    r0, r1 /* optional return value */
 #endif
