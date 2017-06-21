@@ -111,7 +111,7 @@
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1
-#define THINKOS_ENABLE_FPU              0
+#define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
@@ -128,6 +128,12 @@
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
 #define THINKOS_CONSOLE_TX_FIFO_LEN    128
 
+/* -------------------------------------------------------------------------
+   STM32
+   -------------------------------------------------------------------------- */
+
+#define STM32_HSE_HZ          8000000
+#define STM32_HCLK_HZ        72000000
 
 /* -------------------------------------------------------------------------
    USB 

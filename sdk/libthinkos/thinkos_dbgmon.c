@@ -69,7 +69,7 @@ struct thinkos_dbgmon {
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
-uint32_t thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
+uint32_t __attribute__((aligned(8))) thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
 const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
 
 int dbgmon_context_swap(uint32_t ** pctx); 

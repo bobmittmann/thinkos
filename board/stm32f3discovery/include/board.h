@@ -52,6 +52,8 @@
 #define L3GD20_INT2 STM32_GPIOE, 1
 #define L3GD20_INT1 STM32_GPIOE, 0
 
+#define USB_FS_DP STM32_GPIOA,   12
+#define USB_FS_DM STM32_GPIOA,   11
 
 /* low level led on/off functions */
 static inline void __led_on(struct stm32_gpio *__gpio, int __pin) {

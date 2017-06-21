@@ -52,7 +52,7 @@
 #endif
 
 #ifndef STM32_USB_FS_IRQ_ENABLE
-#define STM32_USB_FS_IRQ_ENABLE  1
+#define STM32_USB_FS_IRQ_ENABLE  0
 #endif
 
 #ifndef STM32_USB_FS_IO_INIT
@@ -60,11 +60,11 @@
 #endif
 
 #ifndef STM32_USB_FS_VBUS_ENABLE
-#define STM32_USB_FS_VBUS_ENABLE 1
+#define STM32_USB_FS_VBUS_ENABLE 0
 #endif
 
 #ifndef ENABLE_PEDANTIC_CHECK
-#define ENABLE_PEDANTIC_CHECK 1
+#define ENABLE_PEDANTIC_CHECK 0
 #endif
 
 #ifdef STM32F_USB

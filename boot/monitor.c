@@ -702,6 +702,8 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 						ptr[0] = c;
 						/* commit the fifo head */
 						__console_rx_pipe_commit(1);
+					} else {
+						/* discard */
 					}
 				}
 			}

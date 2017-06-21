@@ -19,21 +19,21 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-SDK = ../../../sdk
+THINKOSDIR = ../../..
+SDKDIR = $(THINKOSDIR)/sdk
 
-LIBDIRS =  $(SDK)/libcm3 $(SDK)/libstm32f $(SDK)/libstm32drv \
-		   $(SDK)/libutil $(SDK)/libc $(SDK)/libconsole \
-		   $(SDK)/libtty $(SDK)/libshell $(SDK)/libtrace \
-		   $(SDK)/libcrc 
+LIBDIRS =  $(SDKDIR)/libcm3 $(SDKDIR)/libstm32f $(SDKDIR)/libstm32drv \
+		   $(SDKDIR)/libutil $(SDKDIR)/libc $(SDKDIR)/libconsole \
+		   $(SDKDIR)/libtty $(SDKDIR)/libshell $(SDKDIR)/libtrace \
+		   $(SDKDIR)/libcrc 
 
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDKDIR)/include ../include
 
-CDEFS = CONFIG_H
+CDEFS = CONFIG_H CM3_RAM_VECTORS
 CFLAGS = -g -O1 -Wall
 O := Debug
 
 THINKAPP = 1
 MACH = stm32f303xc
-HSE_HZ = 8000000
-include ../../../mk/stm32f3xx.mk
+include $(THINKOSDIR)/mk/stm32.mk
 

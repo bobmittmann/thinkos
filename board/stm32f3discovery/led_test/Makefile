@@ -19,25 +19,23 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+THINKOSDIR = ../../..
+SDKDIR = $(THINKOSDIR)/sdk
 
 PROG = led_test
 
 CFILES = led_test.c
 
-SDK = ../../../sdk
+LIBS = cm3 stm32f util c console
 
-LIBS = cm3 stm32f 
-
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDKDIR)/include ../include
 
 LIBPATH = ../sdklibs/Debug
 
-CDEFS =
+CDEFS = CONFIG_H CM3_RAM_VECTORS
+CFLAGS = -g -O0 -Wall
 
-CFLAGS = -g -O1 -Wall
-
-MACH = stm32f303xb
-HSE_HZ = 8000000
-THINKAPP = 1
-include ../../../mk/stm32f3xx.mk
-
+LDSCRIPT = ../stm32f303xc.ld
+THINKAPP = 0x0800c000
+MACH = stm32f303xc
+include $(THINKOSDIR)/mk/stm32.mk

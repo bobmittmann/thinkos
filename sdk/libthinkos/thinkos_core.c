@@ -48,7 +48,7 @@ struct thinkos_rt thinkos_rt;
    xpsr, pc, lr, r12. The other registers are not used at any time. We 
    claim the space avalilable for this registers as part of the exception 
    stack. */
-uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
+uint32_t __attribute__((aligned(8))) thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 
 #if THINKOS_ENABLE_SCHED_DEBUG
 static inline void __attribute__((always_inline)) 

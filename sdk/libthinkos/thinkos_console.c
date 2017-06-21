@@ -304,7 +304,17 @@ void thinkos_console_svc(int32_t * arg, int self)
 	int n;
 	
 	switch (req) {
+
 	case CONSOLE_OPEN:
+		arg[0] = 0;
+		break;
+
+	case CONSOLE_CLOSE:
+		arg[0] = 0;
+		break;
+
+	case CONSOLE_IOCTL:
+		DCC_LOG(LOG_TRACE, "CONSOLE_IOCTL");
 		arg[0] = 0;
 		break;
 
@@ -413,15 +423,6 @@ wr_again:
 			__thinkos_defer_sched(); 
 
 		}
-		break;
-
-	case CONSOLE_CLOSE:
-		arg[0] = 0;
-		break;
-
-	case CONSOLE_IOCTL:
-		DCC_LOG(LOG_TRACE, "CONSOLE_IOCTL");
-		arg[0] = 0;
 		break;
 
 	case CONSOLE_DRAIN:

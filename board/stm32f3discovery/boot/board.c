@@ -73,6 +73,12 @@ static void io_init(void)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
+	stm32_gpio_af(USB_FS_DP, GPIO_AF14);
+	stm32_gpio_af(USB_FS_DM, GPIO_AF14);
+
+	stm32_gpio_mode(USB_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(USB_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+
 	stm32_gpio_mode(LED3_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(LED4_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(LED5_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -83,6 +89,11 @@ static void io_init(void)
 	stm32_gpio_mode(LED10_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 
 	stm32_gpio_mode(SW_B1_IO, INPUT, SPEED_LOW);
+
+	/* Adjust USB interrupts priority */
+	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
+	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
+
 }
 
 int board_init(void)
@@ -90,10 +101,6 @@ int board_init(void)
 	io_init();
 
 	led_on(0);
-
-	/* Adjust USB interrupts priority */
-	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
-	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 
 	/* Enable USB interrupts */
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
@@ -124,10 +131,6 @@ void board_softreset(void)
 
 	/* reinitialize IO's */
 	io_init();
-
-	/* restore USB interrupt priority */
-	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
-	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 }
 
 void test_app(void * arg);
