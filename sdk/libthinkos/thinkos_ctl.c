@@ -150,13 +150,6 @@ void thinkos_ctl_svc(int32_t * arg)
 		break;
 #endif
 
-#if THINKOS_ENABLE_MONITOR
-	case THINKOS_CTL_DBGMON:
-		arg[0] = thinkos_dbgmon_svc((void (*)(struct dmon_comm *))arg[1],
-									(struct dmon_comm *)arg[2]);
-		break;
-#endif
-
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
 		__thinkos_error(THINKOS_ERR_CTL_REQINV);
@@ -165,5 +158,5 @@ void thinkos_ctl_svc(int32_t * arg)
 	}
 }
 
-#endif /* THINKOS_ENABLE_SYSINFO */
+#endif /* THINKOS_ENABLE_CTL */
 

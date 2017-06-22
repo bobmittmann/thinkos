@@ -116,6 +116,8 @@
 
 #define THINKOS_CRITICAL_EXIT	63
 
+#define THINKOS_DBGMON          64
+
 #define CONSOLE_WRITE             0
 #define CONSOLE_READ              1
 #define CONSOLE_TIMEDREAD         2
@@ -134,7 +136,6 @@
 #define THINKOS_CTL_TRACE           4
 #define THINKOS_CTL_THREAD_INF      5
 #define THINKOS_CTL_CYCCNT          6
-#define THINKOS_CTL_DBGMON          7
 
 #define THINKOS_IRQ_DISABLE       0
 #define THINKOS_IRQ_ENABLE        1
@@ -635,7 +636,7 @@ struct dmon_comm;
 static inline int __attribute__((always_inline)) 
 	thinkos_dbgmon(void (* task)(struct dmon_comm * ), 
 				   struct dmon_comm * comm) {
-	return THINKOS_SYSCALLS3(THINKOS_CTL, THINKOS_CTL_DBGMON, task, comm);
+	return THINKOS_SYSCALLS2(THINKOS_DBGMON, task, comm);
 }
 
 static inline int __attribute__((always_inline)) 

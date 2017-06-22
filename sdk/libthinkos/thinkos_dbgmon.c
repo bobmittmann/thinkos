@@ -1215,9 +1215,10 @@ static void __dmon_irq_init(void)
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
-int thinkos_dbgmon_svc(void (* task)(struct dmon_comm * ), 
-					   struct dmon_comm * comm)
+void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
+	void (* task)(struct dmon_comm * ) = (void *)arg[0] ;
+	struct dmon_comm * comm = (void *)arg[1];
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 	
@@ -1249,8 +1250,6 @@ int thinkos_dbgmon_svc(void (* task)(struct dmon_comm * ),
 	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 
 	dcb->demcr = demcr;
-
-	return 0;
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */

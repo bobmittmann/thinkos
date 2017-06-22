@@ -151,6 +151,7 @@ void thinkos_ctl_svc(int32_t * arg);
 
 void thinkos_comm_svc(int32_t * arg, int self);
 
+void thinkos_dbgmon_svc(int32_t * arg, int self);
 
 void thinkos_idle_svc(int32_t * arg);
 
@@ -756,6 +757,14 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 	case THINKOS_ON_IDLE:
 #if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
 		thinkos_idle_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_DBGMON:
+#if THINKOS_ENABLE_MONITOR
+		thinkos_dbgmon_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif
