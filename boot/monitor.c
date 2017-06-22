@@ -602,6 +602,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 
 void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 {
+	static bool trigger_DBGMON_ALARM = true;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 	uint32_t sigset;
@@ -639,12 +640,13 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
 
-	if (!__thinkos_active()) {
+	if (__thinkos_active() && trigger_DBGMON_ALARM) {
 		DCC_LOG1(LOG_TRACE, "first call (SP=0x%08x)...", cm3_sp_get());
 		/* first time we run the monitor, start a timer to call the 
 		   board_tick() periodically */
 		sigmask |= (1 << DBGMON_ALARM);
 		dbgmon_alarm(125);
+		trigger_DBGMON_ALARM = false;
 	}
 
 	for(;;) {
