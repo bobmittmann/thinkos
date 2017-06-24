@@ -56,11 +56,12 @@ enum dbgmon_event {
 	DBGMON_THREAD_STEP  = 8,
 	DBGMON_THREAD_FAULT = 12,
 	DBGMON_BREAKPOINT   = 16,
-	DBGMON_SOFTRST      = 27,
-	DBGMON_IRQ_STEP     = 28,
-	DBGMON_IDLE         = 29,
-	DBGMON_EXCEPT       = 30,
-	DBGMON_RESET        = 31
+	DBGMON_SOFTRST      = 26,
+	DBGMON_IRQ_STEP     = 27,
+	DBGMON_IDLE         = 28,
+	DBGMON_EXCEPT       = 29,
+	DBGMON_RESET        = 30,
+	DBGMON_STARTUP      = 31
 };
 
 struct dmon_comm;

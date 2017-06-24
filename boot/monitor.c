@@ -602,7 +602,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 
 void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 {
-	static bool trigger_DBGMON_ALARM = true;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 	uint32_t sigset;
@@ -636,22 +635,24 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 	sigmask |= (1 << DBGMON_SOFTRST);
+	sigmask |= (1 << DBGMON_STARTUP);
 #if (MONITOR_WATCHPOINT_ENABLE)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
 
-	if (__thinkos_active() && trigger_DBGMON_ALARM) {
-		DCC_LOG1(LOG_TRACE, "first call (SP=0x%08x)...", cm3_sp_get());
-		/* first time we run the monitor, start a timer to call the 
-		   board_tick() periodically */
-		sigmask |= (1 << DBGMON_ALARM);
-		dbgmon_alarm(125);
-		trigger_DBGMON_ALARM = false;
-	}
-
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
+
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+
+		if (sigset & (1 << DBGMON_STARTUP)) {
+			DCC_LOG1(LOG_TRACE, "first call (SP=0x%08x)...", cm3_sp_get());
+			/* first time we run the monitor, start a timer to call the 
+			   board_tick() periodically */
+			sigmask |= (1 << DBGMON_ALARM);
+			dbgmon_alarm(125);
+			dbgmon_clear(DBGMON_STARTUP);
+		}
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
 			DCC_LOG(LOG_WARNING, "/!\\ Soft reset /!\\");

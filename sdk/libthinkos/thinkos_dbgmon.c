@@ -69,6 +69,7 @@ struct thinkos_dbgmon {
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
+
 uint32_t __attribute__((aligned(8))) thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
 const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
 
@@ -161,6 +162,9 @@ void __dmon_irq_restore_all(void)
 		/* restore interrupt state */
 		CM3_NVIC->iser[i] = thinkos_dbgmon_rt.nvic_ie[i];
 	}
+
+	DCC_LOG(LOG_TRACE, "....");
+
 }
 #endif
 
@@ -866,9 +870,10 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				/* record the break thread id */
 				thinkos_rt.break_id = thinkos_rt.active;
 				thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
-				thinkos_rt.xcpt_ipsr = ipsr;
+				/* clear IPSR to indicate a thread error */
+				thinkos_rt.xcpt_ipsr = 0;
 				thinkos_except_buf.active = thinkos_rt.active;
-				thinkos_except_buf.type = err;
+				thinkos_except_buf.type = THINKOS_ERR_OFF + err;
 #if THINKOS_ENABLE_DEBUG_FAULT
 				/* flag the thread as faulty */
 				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
@@ -1038,7 +1043,10 @@ step_done:
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dbgmon_rt.ctx);
 #if DEBUG
-		if (thinkos_dbgmon_rt.ctx <  thinkos_dbgmon_stack) {
+		/* TODO: this stack check is very usefull... 
+		   Some sort of error to the developer should be raised or
+		 force a fault */
+		if (thinkos_dbgmon_rt.ctx < thinkos_dbgmon_stack) {
 			DCC_LOG(LOG_ERROR, "stack overflow!");
 		}
 #endif
@@ -1222,12 +1230,20 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 	
-	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
+	demcr = dcb->demcr;
 
-	thinkos_dbgmon_rt.events = (1 << DBGMON_RESET);
-	thinkos_dbgmon_rt.mask = (1 << DBGMON_RESET);
+	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
+	
+	thinkos_dbgmon_rt.events = ((demcr & DCB_DEMCR_MON_EN) == 0) ? 
+		(1 << DBGMON_STARTUP) : 0;
+	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
+	thinkos_dbgmon_rt.mask = (1 << DBGMON_RESET) | (1 << DBGMON_STARTUP);
 	thinkos_dbgmon_rt.comm = comm;
 	thinkos_dbgmon_rt.task = task;
+
+	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
+		DCC_LOG(LOG_WARNING, "/!\\ startup!!!");
+	}
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 	__dmon_irq_init();
@@ -1237,8 +1253,6 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
 					   sizeof(thinkos_dbgmon_stack));
 #endif
-
-	demcr = dcb->demcr;
 
 #if THINKOS_ENABLE_DEBUG_STEP
 	/* clear the step request */
