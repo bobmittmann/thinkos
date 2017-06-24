@@ -440,7 +440,16 @@
  #define THINKOS_ENABLE_FPU 1
 #endif
 
-#define CTX_R0 8
+
+#ifdef THINKOS_ENABLE_FPU
+  /* Position of register R0 in the context */
+  #define CTX_R0 (16 + 8)
+  /* Position of register PC in the context */
+  #define CTX_PC (16 + 14)
+#else
+  #define CTX_R0 8
+  #define CTX_PC 14
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Static trhead references
@@ -931,9 +940,11 @@ enum thinkos_exception {
 	THINKOS_ERR_CRITICAL_EXIT
 };
 
-/* Mark for brekpoint numbers. Breakpoints above this
+/* Mark for breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
+
+#define THINKOS_ERR_OFF 16
 
 /* -------------------------------------------------------------------------- 
  * Idle thread

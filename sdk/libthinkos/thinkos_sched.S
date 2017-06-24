@@ -120,7 +120,7 @@ thinkos_scheduler:
 #if THINKOS_ENABLE_FPU 
 	vldmia  r0!, {s16-s31}
 #endif
-	add     r3, r0, #8 * 4
+	add     r3, r0, #(8 * 4)
 	msr     PSP, r3
 	ldmia   r0, {r4-r11}
 	bx      lr
@@ -175,13 +175,13 @@ thinkos_sched_step:
 	movs    r4, #THINKOS_THREAD_IDLE
 	str     r4, [r7, #THINKOS_RT_ACTIVE_OFFS]
 	/* set the PC */
-	str     r2, [r0, #56]
+	str     r2, [r0, #(CTX_PC * 4)]
 	/* step the IDLE thread instead  */
 	b       .L_restore_and_step
 
 .L_normal_step:
 	/* get the PC value */
-	ldr     r5, [r0, #56]
+	ldr     r5, [r0, #(CTX_PC * 4)]
 	/* load the next instruction */
 	ldrb    r5, [r5, #1]
 	/* if the thread is running, and it is about to invoke 
@@ -200,17 +200,12 @@ thinkos_sched_step:
 	strb    r3, [r7, #THINKOS_RT_STEP_ID_OFFS]
 	mov     r2, #(1 << 5)
 	msr	    BASEPRI, r2
-/*
+
 #if THINKOS_ENABLE_FPU 
-	add     r3, r0, #40 * 4
-	msr     PSP, r3
-	vldmia.64 r0!, {d0-d15}
-#else
-*/
-#if 1
-	add     r3, r0, #8 * 4
-	msr     PSP, r3
+	vldmia  r0!, {s16-s31}
 #endif
+	add     r3, r0, #(8 * 4)
+	msr     PSP, r3
 	ldmia   r0, {r4-r11}
 	ldr.n   r3, .L_cm_dcb
 	ldr     r1, [r3, #DCB_DEMCR_OFFS]

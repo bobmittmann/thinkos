@@ -198,12 +198,6 @@ cm3_svc_isr:
 	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if THINKOS_ENABLE_DEBUG_STEP
 	ldr     r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
-#if 0
-	movs    r0, #1
-	lsls    r0, r1
-	tst     r2, r0
-	beq     1f
-#endif
 	adds    r0, r1, #1
 	lsrs    r2, r0
 	bcc     1f
@@ -214,7 +208,7 @@ cm3_svc_isr:
 #endif
 	mrs     r0, PSP
 	/* Get PC from the stack */
-	ldr     r2, [r0, #(6 *4)] 
+	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
 	ldrb    r2, [r2, #-2]
 	b       thinkos_svc_isr
