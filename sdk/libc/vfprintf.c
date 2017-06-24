@@ -32,7 +32,7 @@
 #include <string.h>
 #include <sys/file.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <stdint.h>
 
 #ifndef PRINTF_ENABLE_LEFT_ALIGN
 #define PRINTF_ENABLE_LEFT_ALIGN 1
@@ -72,7 +72,20 @@ int uint2hex(char * s, unsigned int val);
 int ull2dec(char * s, unsigned long long val);
 int ull2hex(char * s, unsigned long long val);
 
-int float2str(char * s, float val, unsigned int dec);
+#if (PRINTF_ENABLE_FLOAT)
+
+int u32f2str(char * buf, uint32_t x, int precision); 
+
+/* Double to uint64_t binary copy */
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
+/* Convert from double to an uint32_t encoded floating point */
+static inline uint32_t __double2u32(double val) {
+	uint64_t x = DOUBLE2UINT64(val);
+	return ((uint32_t)(x >> 32) & 0x80000000) | 
+		((((int32_t)((uint32_t)(x >> 52) & 0x7ff) - 896) & 0xff) << 23) |
+		(((uint32_t)(x >> 29)) & 0x007fffff);
+}
+#endif
 
 #if PRINTF_ENABLE_LONG
 #define BUF_LEN 22
@@ -87,6 +100,7 @@ int float2str(char * s, float val, unsigned int dec);
 #define SIGN 0x10
 #define LONG 0x20
 #define LONG2 0x40
+#define PRECISION 0x80
 
 
 #if (PRINTF_ENABLE_LONG)
@@ -118,6 +132,7 @@ const char __blanks[] = {
 int vfprintf(struct file * f, const char * fmt, va_list ap)
 {
 	char buf[BUF_LEN];
+	char * cp;
 	int flags;
 	int cnt;
 	int c;
@@ -127,11 +142,9 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 #if (PRINTF_ENABLE_FLOAT)
 	int p;
 #endif
-	char * cp;
 	union {
 		void * ptr;
 		unsigned int n;
-		float f;
 		int i;
 #if (PRINTF_ENABLE_LONG)
 		unsigned long long ull;
@@ -153,7 +166,6 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 			if (c == '%') {
 				w = 0;
 #if (PRINTF_ENABLE_FLOAT)
-				w = 0;
 				p = -1;
 #endif
 				flags = PERCENT;
@@ -185,14 +197,21 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 					continue;
 				}
 			}
+#if (PRINTF_ENABLE_FLOAT)
+			if (flags & PRECISION)
+				p = (((p << 2) + p) << 1) + (c - '0');
+			else
+#endif
 			/* w = w * 10 + c - '0' */
 			w = (((w << 2) + w) << 1) + (c - '0');
 			continue;
 		}
+
 #if (PRINTF_ENABLE_FLOAT)
 		if (c == '.') {
-			p = w;
-			w = 0;
+			flags |= PRECISION;
+			p = 0;
+			continue;
 		}
 #endif
 
@@ -304,13 +323,8 @@ hexadecimal:
 #if (PRINTF_ENABLE_FLOAT)
 		if (c == 'f') {
 			cp = buf;
-			val.f = (float)va_arg(ap, double);
-			if (p != -1) {
-				int tmp = p;
-				p = w;
-				w = tmp;
-			}
-			n = float2str(cp, val.n, p);
+			val.n = __double2u32(va_arg(ap, double));
+			n = u32f2str(cp, val.n, p);
 			goto print_buf;
 		}
 #endif

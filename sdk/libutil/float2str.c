@@ -83,12 +83,10 @@ static const uint64_t __fmul_tab[25] = {
 	59604644775390625
 };
 
-#define FLOAT2UINT32(F) ({ union { float f; uint32_t u; } a; \
-						 a.f = f; a.u;})
-	
-int float2str(char * buf, float f, int precision) 
+/* Convert a IEE754 single precision float encoded as uint32_t into 
+   a string */
+int u32f2str(char * buf, uint32_t x, int precision) 
 {
-	uint32_t x = FLOAT2UINT32(f);
 	char * cp = buf;
 	uint32_t frac;
 	uint64_t y;
@@ -187,7 +185,7 @@ zero:
 				*cp++ = c + '0';
 				n++;
 			}
-			if (trim & n)
+			if (trim & (y == 0))
 				break;
 			i = 8;
 		};
@@ -197,5 +195,14 @@ zero:
 
 	return cp - buf;
 
+}
+
+#define FLOAT2UINT32(F) ({ union { float f; uint32_t u; } a; a.f = (F); a.u;})
+	
+int float2str(char * buf, float f, int precision) 
+{
+	uint32_t x = FLOAT2UINT32(f);
+
+	return u32f2str(buf, x, precision);
 }
 
