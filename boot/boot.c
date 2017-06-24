@@ -43,15 +43,6 @@
 
 #include "board.h"
 
-#if 0
-#define VERSION_NUM "0.2"
-#define VERSION_DATE "Jul, 2015"
-
-const char * const version_str = "ThinkOS Boot Loader " \
-							VERSION_NUM " - " VERSION_DATE;
-const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
-#endif
-
 void monitor_task(struct dmon_comm * comm);
 
 #ifndef BOOT_MEM_RESERVED 
@@ -96,29 +87,18 @@ int main(int argc, char ** argv)
 	thinkos_console_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "6. board_softreset().");
-	this_board.softreset();
-
 #if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "7. thinkos_mpu_init()");
+	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
 	thinkos_mpu_init(BOOT_MEM_RESERVED);
 
-	DCC_LOG(LOG_TRACE, "8. thinkos_userland()");
+	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
 	thinkos_userland();
 #endif
 
-#if 1
-	thinkos_sleep(2000);
-#endif
-
-	DCC_LOG(LOG_TRACE, "9. thinkos_dbgmon()");
+	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");
 	thinkos_dbgmon(monitor_task, comm);
 
-#if 1
-	thinkos_sleep(2000);
-#endif
-
-	DCC_LOG(LOG_TRACE, "10. thinkos_thread_abort()");
+	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
