@@ -53,6 +53,7 @@
 #define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
 
 int uint2dec(char * s, unsigned int val);
+unsigned long long hex2ll_be(const char * __s, char ** __endp);
 unsigned long hex2int(const char * __s, char ** __endp);
 bool prefix(const char * __s, const char * __prefix);
 int char2hex(char * pkt, int c);
@@ -72,10 +73,8 @@ int thread_step_id(void);
 int thread_break_id(void);
 int thread_any(void);
 bool thread_isalive(int thread_id);
-int thread_register_get(int thread_id, int reg, uint32_t * val);
-int thread_register_set(unsigned int thread_id, int reg, uint32_t val);
-int thread_fpu_register_get(int thread_id, int reg, uint64_t * val);
-int thread_fpu_register_set(unsigned int thread_id, int reg, uint64_t val);
+int thread_register_set(unsigned int thread_id, int reg, uint64_t val);
+int thread_register_get(int gdb_thread_id, int reg, uint64_t * val);
 int thread_goto(unsigned int thread_id, uint32_t addr);
 int thread_step_req(unsigned int thread_id);
 int thread_continue(unsigned int thread_id);
@@ -807,7 +806,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 
 static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 {
-	uint32_t val = 0;
+	uint64_t val = 0;
 	int thread_id;
 	char * cp;
 	int n;
@@ -815,36 +814,31 @@ static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 
 	thread_id = rsp_get_g_thread(gdb);
 
+	DCC_LOG1(LOG_TRACE, "thread_id=%d", thread_id); 
+
 	cp = pkt;
 	*cp++ = '$';
 
 	/* all integer registers */
-	for (r = 0; r < 15; r++) {
+	for (r = 0; r < 16; r++) {
 		thread_register_get(thread_id, r, &val);
 		DCC_LOG2(LOG_MSG, "R%d = 0x%08x", r, val);
 		cp += long2hex_be(cp, val);
 	}
 
-	thread_register_get(thread_id, 15, &val);
-	cp += long2hex_be(cp, val);
-	DCC_LOG2(LOG_TRACE, "thread_id=%d PC=%08x", thread_id, val);
-
 	/* xpsr */
 	thread_register_get(thread_id, 25, &val);
 	cp += long2hex_be(cp, val);
 
-#if THINKOS_ENABLE_FPU
-	/* all fp registers */
 	for (r = 26; r < 42; r++) {
-		uint64_t llval;
-		thread_fpu_register_get(thread_id, r, &llval);
-		cp += longlong2hex_be(cp, llval);
+		if (thread_register_get(thread_id, r, &val) < 0)
+			break;
+		cp += longlong2hex_be(cp, val);
 	}
 	/* fpscr */
-	thread_register_get(thread_id, 42, &val);
-	cp += long2hex_be(cp, val);
-	DCC_LOG1(LOG_TRACE, "FPSCR=%08x", val);
-#endif
+	if (thread_register_get(thread_id, 42, &val) >= 0) {
+		cp += long2hex_be(cp, val);
+	}
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
@@ -859,7 +853,7 @@ static int rsp_all_registers_set(struct gdb_rspd * gdb, char * pkt)
 
 static int rsp_register_get(struct gdb_rspd * gdb, char * pkt)
 {
-	unsigned int val;
+	uint64_t val;
 	int thread_id;
 	char * cp;
 	int reg;
@@ -872,25 +866,22 @@ static int rsp_register_get(struct gdb_rspd * gdb, char * pkt)
 	*cp++ = '$';
 
 	thread_register_get(thread_id, reg, &val);
-	cp += long2hex_be(cp, val);
+	if (reg >= 26 && reg <= 41)
+		cp += longlong2hex_be(cp, val);
+	else
+		cp += long2hex_be(cp, val);
+
+	DCC_LOG4(LOG_TRACE, "thread_id=%d reg=%d val=0x%08x %08x", 
+			 thread_id, reg, val, val >> 32);
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
 }
 
-#ifndef NTOHL
-#define NTOHL(x) \
-	((uint32_t)((((uint32_t)(x) & 0x000000ffU) << 24) | \
-	(((uint32_t)(x) & 0x0000ff00U) <<  8) | \
-	(((uint32_t)(x) & 0x00ff0000U) >>  8) | \
-	(((uint32_t)(x) & 0xff000000U) >> 24)))
-#endif
-
 static int rsp_register_set(struct gdb_rspd * gdb, char * pkt)
 {
 	uint32_t reg;
-	uint32_t tmp;
-	uint32_t val;
+	uint64_t val;
 	int thread_id;
 	char * cp;
 
@@ -904,28 +895,10 @@ static int rsp_register_set(struct gdb_rspd * gdb, char * pkt)
 	cp = &pkt[1];
 	reg = hex2int(cp, &cp);
 	cp++;
-	tmp = hex2int(cp, &cp);
-	val = NTOHL(tmp);
+	val = hex2ll_be(cp, &cp);
 
-	/* FIXME: the register enumaration and details 
-	   must be in the ICE driver not here! */
-	/* cpsr */
-	if (reg > 25) {
-		DCC_LOG1(LOG_WARNING, "reg=%d (unsupported)", reg);
-		return rsp_empty(gdb);
-	}
-
-	/* cpsr */
-	if (reg == 25) {
-		DCC_LOG(LOG_TRACE, "xPSR");
-		reg = 16;
-	}
-
-	if (reg > 16) {
-		return rsp_error(gdb, GDB_ERR_REGISTER_NOT_KNOWN);
-	}
-
-	DCC_LOG3(LOG_TRACE, "thread_id=%d reg=%d val=0x%08x", thread_id, reg, val);
+	DCC_LOG4(LOG_TRACE, "thread_id=%d reg=%d val=0x%08x %08x", 
+			 thread_id, reg, val, val >> 32);
 
 	if (thread_register_set(thread_id, reg, val) < 0) {
 		DCC_LOG(LOG_WARNING, "thread_register_set() failed!");
@@ -1122,6 +1095,8 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	char * cp;
 	int n;
 
+	DCC_LOG2(LOG_TRACE, "sp=%p pkt=%p", cm3_sp_get(), pkt);
+
 	cp = pkt;
 	*cp++ = '$';
 
@@ -1134,6 +1109,8 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	} else {
 #if (THINKOS_ENABLE_CONSOLE)
 		uint8_t * buf;
+		
+		DCC_LOG(LOG_TRACE, "4!");
 
 		if ((n = __console_tx_pipe_ptr(&buf)) > 0) {
 			*cp++ = 'O';
@@ -1337,6 +1314,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					}
 					target_continue();
 					gdb->stopped = false;
+					DCC_LOG(LOG_TRACE, "Continue all done 2!");
 				} else {
 					DCC_LOG1(LOG_TRACE, "Continue %d", thread_id);
 					thread_continue(thread_id);
@@ -1364,6 +1342,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					DCC_LOG(LOG_WARNING, "thread_step_req() failed!");
 					return rsp_error(gdb, GDB_ERR_STEP_REQUEST_FAIL);
 				}
+
 				gdb->stopped = false;
 				break;
 			case 'S':
@@ -1377,6 +1356,8 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 				return rsp_empty(gdb);
 			}
 		}
+
+		DCC_LOG(LOG_TRACE, "3!");
 
 		return rsp_stop_reply(gdb, pkt);
 	}
@@ -1699,13 +1680,13 @@ void gdb_stub_task(struct dmon_comm * comm)
 	for(;;) {
 #if 0
 		if (gdb->stopped)
-			DCC_LOG1(LOG_TRACE, "<suspended>%02x", gdb->last_signal);
+			DCC_LOG1(LOG_MSG, "<suspended>%02x", gdb->last_signal);
 		else
-			DCC_LOG1(LOG_TRACE, "<running> %02x", gdb->last_signal);
+			DCC_LOG1(LOG_MSG, "<running> %02x", gdb->last_signal);
 #endif		
 		sigset = dbgmon_select(sigmask);
 
-		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
+		DCC_LOG1(LOG_INFO, "sig=%08x", sigset);
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
 			DCC_LOG(LOG_TRACE, "Soft reset.");

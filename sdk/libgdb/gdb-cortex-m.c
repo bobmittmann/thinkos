@@ -181,11 +181,11 @@ bool thread_isalive(int gdb_thread_id)
 	return __thinkos_thread_isalive(thread_id);
 }
 
-int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
+int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_context * ctx;
-	uint32_t x;
+	uint64_t x;
 
 	if (thread_id > THINKOS_THREAD_VOID) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
@@ -269,6 +269,16 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 		x = ctx->xpsr;
 		break;
 #if THINKOS_ENABLE_FPU
+	case 26 ... 33:
+		x = ctx->s[(reg - 26) * 2];
+		x = x | ((uint64_t)(ctx->s[(reg - 26) * 2 + 1]) << 32);
+		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
+		break;
+	case 34 ... 41:
+		x = ctx->s1[(reg - 34) * 2];
+		x = x | ((uint64_t)(ctx->s1[(reg - 34) * 2 + 1]) << 32);
+		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
+		break;
 	case 42:
 		x = ctx->fpscr;
 		break;
@@ -282,117 +292,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint32_t * val)
 	return 0;
 }
 
-int thread_fpu_register_get(int gdb_thread_id, int reg, uint64_t * val)
-{
-#if THINKOS_ENABLE_FPU
-	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_context * ctx;
-	uint32_t x;
-
-	if (thread_id > THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_ERROR, "Invalid thread!");
-		return -1;
-	}
-
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
-	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = &thinkos_except_buf.ctx;
-		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
-	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
-			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
-			return -1;
-		}
-		ctx = &thinkos_except_buf.ctx;
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		DCC_LOG2(LOG_INFO, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
-	} else {
-		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
-		return -1;
-	}
-
-	switch (reg) {
-	case 26 ... 33:
-		x = ctx->s[(reg - 26) * 2];
-		x = x | ((uint64_t)(ctx->s[(reg - 26) * 2 + 1]) << 32);
-		break;
-	case 34 ... 41:
-		x = ctx->s1[(reg - 34) * 2];
-		x = x | ((uint64_t)(ctx->s1[(reg - 34) * 2 + 1]) << 32);
-		break;
-	default:
-		return -1;
-	}
-
-	*val = x;
-	return 0;
-#else
-	return -1;
-#endif
-}
-
-int thread_fpu_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
-{
-#if THINKOS_ENABLE_FPU
-	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_context * ctx;
-
-	if (thread_id > THINKOS_THREADS_MAX) {
-		DCC_LOG(LOG_ERROR, "Invalid thread!");
-		return -1;
-	}
-
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		DCC_LOG1(LOG_TRACE, "ThinkOS Idle thread, context=%08x!", ctx);
-		return 0;
-	} 
-
-	if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
-			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
-			return -1;
-		}
-		ctx = &thinkos_except_buf.ctx;
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
-	} else {
-		DCC_LOG(LOG_ERROR, "Invalid thread state!");
-		return -1;
-	}
-
-	switch (reg) {
-	case 26 ... 33:
-		ctx->s[(reg - 26) * 2] = val;
-		ctx->s[(reg - 26) * 2 + 1] = val >> 32;
-		break;
-	case 34 ... 41:
-		ctx->s1[(reg - 34) * 2] = val;
-		ctx->s1[(reg - 34) * 2 + 1] = val >> 32;
-		break;
-	default:
-		return -1;
-	}
-
-	return 0;
-#else
-	return -1;
-#endif
-}
-
-int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
+int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_context * ctx;
@@ -416,7 +316,7 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 		ctx = &thinkos_except_buf.ctx;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
 		ctx = thinkos_rt.ctx[thread_id];
-		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
+		DCC_LOG2(LOG_MSG, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG(LOG_ERROR, "Invalid context!");
 			return -1;
@@ -467,7 +367,7 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 		ctx->r12 = val;
 		break;
 	case 13:
-		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)val;
+		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)(uintptr_t)val;
 		break;
 	case 14:
 		ctx->lr = val;
@@ -479,8 +379,17 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint32_t val)
 		ctx->xpsr = (ctx->xpsr & ~CM_APSR_MASK) | (val & CM_APSR_MASK);
 		break;
 #if THINKOS_ENABLE_FPU
-	case 42:
-		ctx->fpscr = val;
+	case 26 ... 33:
+		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
+				 reg, (uint32_t)val, val >> 32);
+		ctx->s[(reg - 26) * 2] = val;
+		ctx->s[(reg - 26) * 2 + 1] = val >> 32;
+		break;
+	case 34 ... 41:
+		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
+				 reg, (uint32_t)val, val >> 32);
+		ctx->s1[(reg - 34) * 2] = val;
+		ctx->s1[(reg - 34) * 2 + 1] = val >> 32;
 		break;
 #endif
 	default:
@@ -705,7 +614,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				break;
 			default:
 				cp += str2hex(cp, "error ");
-				cp += int2str2hex(cp, xcpt->type);
+				cp += int2str2hex(cp, xcpt->type - THINKOS_ERR_OFF);
 			}
 		} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0
@@ -961,25 +870,23 @@ const char target_xml[] =
 "</feature>\n"
 #if THINKOS_ENABLE_FPU
 "<feature name=\"org.gnu.gdb.arm.vfp\">\n"
-"<reg name=\"d0\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d1\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d2\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d3\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d4\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d5\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d6\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d7\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d8\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d9\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d10\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d11\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d12\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d13\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d14\" bitsize=\"64\" type=\"float\"/>\n"
-"<reg name=\"d15\" bitsize=\"64\" type=\"float\"/>\n"
-//"<reg name=\"fpsid\" bitsize=\"32\" type=\"int\" group=\"float\"/>\n"
+"<reg name=\"d0\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d1\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d2\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d3\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d4\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d5\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d6\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d7\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d8\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d9\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d10\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d11\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d12\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d13\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d14\" bitsize=\"64\" type=\"ieee_double\"/>\n"
+"<reg name=\"d15\" bitsize=\"64\" type=\"ieee_double\"/>\n"
 "<reg name=\"fpscr\" bitsize=\"32\" type=\"int\" group=\"float\"/>\n"
-//"<reg name=\"fpexc\" bitsize=\"32\" type=\"int\" group=\"float\"/>\n"
 "</feature>\n"
 #endif
 "</target>";

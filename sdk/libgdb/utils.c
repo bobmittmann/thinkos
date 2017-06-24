@@ -54,9 +54,7 @@ unsigned long hex2int(const char * __s, char ** __endp)
 
 	for (; ((c = *cp) == ' '); cp++);
 
-	while ((c = *cp) != '\0') {
-		if ((c = hex_digit(c)) < 0)
-			break;
+	while ((c = hex_digit(*cp)) >= 0) {
 		val = val << 4;
 		val += c;
 		cp++;
@@ -67,6 +65,28 @@ unsigned long hex2int(const char * __s, char ** __endp)
 
 	return val;
 }
+
+unsigned long long hex2ll_be(const char * __s, char ** __endp)
+{
+	unsigned long long val = 0;
+	char * cp = (char *)__s;
+	int i = 0;
+	int c1;
+	int c2;
+
+	while ((c1 = hex_digit(cp[0])) >= 0 && 
+		   (c2 = hex_digit(cp[1])) >= 0) {
+		val += (unsigned long long)((c1 << 4) + c2) << i;
+		i += 8;
+		cp += 2;
+	}
+
+	if (__endp)
+		*__endp = cp;
+
+	return val;
+}
+
 
 bool prefix(const char * __s, const char * __prefix)
 {
