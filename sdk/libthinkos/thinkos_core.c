@@ -50,6 +50,8 @@ struct thinkos_rt thinkos_rt;
    stack. */
 uint32_t __attribute__((aligned(8))) thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 
+const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
+
 #if THINKOS_ENABLE_SCHED_DEBUG
 static inline void __attribute__((always_inline)) 
 __dump_context(struct thinkos_context * __ctx) {

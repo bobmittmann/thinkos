@@ -63,6 +63,7 @@ int __scan_stack(void * stack, unsigned int size)
 int __scan_stack(void * stack, unsigned int size);
 extern uint32_t thinkos_dbgmon_stack[];
 extern const uint16_t thinkos_dbgmon_stack_size;
+extern const uint16_t thinkos_except_stack_size;
 
 /* Exception state dump */
 void __xdump(struct thinkos_except * xcpt)
@@ -190,11 +191,12 @@ void __xdump(struct thinkos_except * xcpt)
 			 thinkos_rt.active + 1); 
 
 #if (THINKOS_ENABLE_MONITOR)
-	if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-		DCC_LOG2(LOG_ERROR, "DMON stack free: %d/%6d", 
-				 __scan_stack(thinkos_dbgmon_stack, thinkos_dbgmon_stack_size),
-				 thinkos_dbgmon_stack_size); 
-	}
+	DCC_LOG2(LOG_ERROR, "DMON stack free: %d/%6d", 
+			 __scan_stack(thinkos_dbgmon_stack, thinkos_dbgmon_stack_size),
+			 thinkos_dbgmon_stack_size); 
+	DCC_LOG2(LOG_ERROR, "EXCEPT stack free: %d/%6d", 
+			 __scan_stack(thinkos_except_stack, thinkos_except_stack_size),
+			 thinkos_except_stack_size); 
 #endif
 
 #endif

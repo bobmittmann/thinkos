@@ -72,7 +72,7 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
 	
 	rbar = MPU_RBAR_ADDR(addr) | MPU_RBAR_VALID | MPU_RBAR_REGION(region);
 	rasr = attr; 
-	DCC_LOG3(LOG_TRACE, "region=%d rbar=%08x rasr=%08x", region, rbar, rasr);
+	DCC_LOG3(LOG_INFO, "region=%d rbar=%08x rasr=%08x", region, rbar, rasr);
 	/* Region Base Address Register */
 	mpu->rbar = rbar;
 	/* Region Attribute and Size Register */
