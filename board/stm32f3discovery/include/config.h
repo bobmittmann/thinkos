@@ -115,7 +115,7 @@
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DMON_STACK_SIZE         (1024 + 128)
+#define THINKOS_DBGMON_STACK_SIZE      (1024 + 128)
 
 #define THINKOS_ENABLE_STACK_INIT       1
 
@@ -159,14 +159,21 @@
 #define BOOT_ENABLE_GDB             1
 #define BOOT_MEM_RESERVED           0x1000
 #define MONITOR_CONFIGURE_ENABLE    0
-#define MONITOR_DUMPMEM_ENABLE      1
+#define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      0
 #define MONITOR_STACKUSAGE_ENABLE   1
-#define MONITOR_THREADINFO_ENABLE   1
+#define MONITOR_OSINFO_ENABLE       1
+#define MONITOR_THREADINFO_ENABLE   0
 #define MONITOR_APPWIPE_ENABLE      1
 #define MONITOR_APPTERM_ENABLE      1
 #define MONITOR_APPRESTART_ENABLE   1
-#define MONITOR_SELFTEST_ENABLE     1
+#define MONITOR_SELFTEST_ENABLE     0
+
+/* -------------------------------------------------------------------------
+ * LibC
+ * ------------------------------------------------------------------------- */
+
+#define PRINTF_ENABLE_FLOAT     1
 
 #endif /* __CONFIG_H__ */
 
