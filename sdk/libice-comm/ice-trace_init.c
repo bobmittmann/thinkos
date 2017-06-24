@@ -48,7 +48,7 @@ void ice_trace_init(void)
 	comm->ro = 0;
 	comm->wo = 0;
 	ice_comm_sync();
-	ice_comm_w32((uint32_t)&log_entry);
+	ice_trace0(&log_entry);
 }
 
 void dcclog_init(const struct dcc_trace_entry * __entry) 
