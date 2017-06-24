@@ -33,10 +33,11 @@ INCPATH = $(SDKDIR)/include ../include
 LIBPATH = ../sdklibs/Debug
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -O0 -Wall
+CFLAGS = -g -O0 -Wall -Wdouble-promotion
+OPTIONS = -mno-unaligned-access 
 
 LDSCRIPT = ../stm32f303xc.ld
-THINKAPP = 0x0800c000
+THINKAPP = 0x08010000
 MACH = stm32f303xc
 include $(THINKOSDIR)/mk/stm32.mk
 

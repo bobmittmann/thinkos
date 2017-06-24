@@ -133,11 +133,9 @@ void board_softreset(void)
 	io_init();
 }
 
-void test_app(void * arg);
-
 bool board_autoboot(uint32_t tick)
 {
-#if DEBUG
+#if 0
 	if (tick > 40) {
 		if (tick == 42)
 			dmon_thread_exec(test_app, NULL);
@@ -149,15 +147,11 @@ bool board_autoboot(uint32_t tick)
 	led_on(~tick & 0x7);
 
 	/* Time window autoboot */
-	return (tick < 40) ? false : true;
+	return (tick != 40) ? false : true;
 }
 
 void board_on_appload(void)
 {
-	int i;
-
-	for (i = 0; i < LED_COUNT; ++i) 
-		led_off(i);
 }
 
 void board_upgrade(struct dmon_comm * comm)
@@ -169,17 +163,8 @@ bool board_configure(struct dmon_comm * comm)
 	return true;
 }
 
-void monitor_dump_mem(struct dmon_comm * comm, 
-					  uint32_t addr, unsigned int size);
-
 void board_selftest(struct dmon_comm * comm)
 {
-	dmprintf(comm, "\r\nSelftest.\r\n");
-#if DEBUG
-	dmon_thread_exec(test_app, NULL);
-#endif
-	/* Dump */
-//	monitor_dump_mem(comm, 0x20000000, 0x1000);
 }
 
 
@@ -196,8 +181,8 @@ const struct mem_desc sram_desc = {
 const struct mem_desc flash_desc = {
 	.name = "FLASH",
 	.blk = {
-		{ 0x08000000, BLK_RO, SZ_2K,  24 }, /* Bootloader: 48 KiB */
-		{ 0x0800c000, BLK_RW, SZ_2K, 104 }, /* Application:  */
+		{ 0x08000000, BLK_RO, SZ_2K,  32 }, /* Bootloader: 64KiB */
+		{ 0x08010000, BLK_RW, SZ_2K,  96 }, /* Application: 192KiB */
 		{ 0x00000000, 0, 0, 0 }
 	}
 }; 
@@ -218,8 +203,8 @@ const struct thinkos_board this_board = {
 		.flash = &flash_desc
 	},
 	.application = {
-		.start_addr = 0x0800c000,
-		.block_size = 2048 * 104
+		.start_addr = 0x08010000,
+		.block_size = 2048 * 96 
 	},
 
 	.init = board_init,

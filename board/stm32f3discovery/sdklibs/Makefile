@@ -30,7 +30,9 @@ LIBDIRS =  $(SDKDIR)/libcm3 $(SDKDIR)/libstm32f $(SDKDIR)/libstm32drv \
 INCPATH = $(SDKDIR)/include ../include
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -O1 -Wall
+CFLAGS = -g -O1 -Wall -Wdouble-promotion
+OPTIONS = -mno-unaligned-access
+
 O := Debug
 
 THINKAPP = 1
