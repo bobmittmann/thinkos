@@ -66,7 +66,7 @@ void dmon_print_exception(struct dmon_comm * comm,
 		break;
 #endif
 	default:
-		dmprintf(comm, " Error %d at ", xcpt->type);
+		dmprintf(comm, " Error %d at ", xcpt->type - THINKOS_ERR_OFF);
 	}
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;

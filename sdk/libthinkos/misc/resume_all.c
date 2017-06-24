@@ -31,6 +31,9 @@ void __thinkos_resume_all(void)
 			__thinkos_thread_resume(th);
 		}
 	}
+
+	DCC_LOG(LOG_TRACE, "....");
+	
 	__thinkos_defer_sched();
 }
 
