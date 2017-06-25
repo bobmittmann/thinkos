@@ -29,7 +29,12 @@
    
    For 32-bit values sign has 1 bit, exponent has 8 bits, 
    fraction has 23 bits, and bias has value 127; 
-   exponent + bias is saved as an unsigned number. */
+
+   For 64-bit values sign has 1 bit, exponent has 11 bits, 
+   fraction has 52 bits, and bias has value 10123; 
+
+   exponent + bias is saved as an unsigned number.
+*/
 
 static const uint64_t __fdiv_tab[21] = {
 	0LL, 
@@ -83,12 +88,12 @@ static const uint64_t __fmul_tab[25] = {
 	59604644775390625
 };
 
-/* Convert a IEE754 single precision float encoded as uint32_t into 
+/* Convert a IEE754 double precision float encoded as uint64_t into 
    a string */
-int u32f2str(char * buf, uint32_t x, int precision) 
+int u64d2str(char * buf, uint64_t x, int precision) 
 {
 	char * cp = buf;
-	uint32_t frac;
+	uint64_t frac;
 	uint64_t y;
 	int sign;
 	int exp;
@@ -97,13 +102,14 @@ int u32f2str(char * buf, uint32_t x, int precision)
 	if (precision > 22)
 		precision = 22;
 
-	sign = (x & 0x80000000);
-	x &= 0x7fffffff;
-	exp = (x >> 23) - 127; 	
-	x &= 0x007fffff;
-	frac = x;
+	y = x;
+	sign = (y & 0x8000000000000000);
+	y &= 0x7fffffffffffffff;
+	exp = (y >> 52) - 1023; 	
+	y &= 0x000fffffffffffff;
+	frac = y;
 
-	if (exp == 128) {
+	if (exp == 1024) {
 		if (frac == 0) {
 			if (sign)
 				*cp++ = '-';
@@ -116,7 +122,7 @@ inf:
 			*cp++ = 'a';
 			*cp++ = 'N';
 		}
-	} else if (exp == -127) {
+	} else if (exp == -1023) {
 		if (frac != 0) {
 			/* Subnormal number */
 		}
@@ -135,7 +141,7 @@ zero:
 		int n;
 		int c;
 
-		x += (1 << 23);
+		y += (1LL << 52);
 
 		/* normal number */
 		if (sign)
@@ -143,12 +149,13 @@ zero:
 
 		if (precision < 0) {
 			trim = 1;
-			precision = (((22 - exp) + 3) * 621) >> 11;
+			/* FIXME: this needs to be recaluculated */
+			precision = (((51 - exp) + 3) * 621) >> 26;
 		}
 
-		y = (uint64_t)x * __fmul_tab[precision];
+		y = y * __fmul_tab[precision];
 
-		exp = exp - 22 + precision;
+		exp = exp - 51 + precision;
 
 		if (exp < 1) {
 			if (exp < -40)
@@ -167,8 +174,6 @@ zero:
 		c = 0;
 		i = 1;
 		for (pos = 20; pos; --pos) {	
-			if (trim && (pos < precision) && (y == 0))
-				break;
 			if (pos == precision) {
 				if (n == 0)
 					*cp++ = c + '0';
@@ -188,6 +193,8 @@ zero:
 				*cp++ = c + '0';
 				n++;
 			}
+			if (trim & (y == 0))
+				break;
 			i = 8;
 		};
 	}
@@ -199,11 +206,12 @@ zero:
 }
 
 #define FLOAT2UINT32(F) ({ union { float f; uint32_t u; } a; a.f = (F); a.u;})
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
 	
-int float2str(char * buf, float f, int precision) 
+int double2str(char * buf, double d, int precision) 
 {
-	uint32_t x = FLOAT2UINT32(f);
+	uint64_t x = DOUBLE2UINT64(d);
 
-	return u32f2str(buf, x, precision);
+	return u64d2str(buf, x, precision);
 }
 

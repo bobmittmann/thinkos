@@ -25,7 +25,8 @@ LIB_STATIC = util
 
 CFILES = udelay.c mdelay.c delay.c ilog2.c isqrt.c bswap_16.c bswap_32.c \
 		 int2dec.c uint2dec.c ll2dec.c ull2dec.c uint2hex.c ull2hex.c \
-		 long2hex.c short2hex.c char2hex.c float2str.c double2float.c
+		 long2hex.c short2hex.c char2hex.c float2str.c double2float.c \
+		 double2str.c
 
 include ../../mk/lib.mk
 

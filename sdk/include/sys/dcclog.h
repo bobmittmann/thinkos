@@ -282,6 +282,10 @@ enum {
 
 #define LOGSTR(__LVL, __FMT, __STR) DCC_LOGSTR(__LVL, __FMT, __STR)
 
+/* To avoid integer conversion, float point numbers should be wrapped
+   by this macro */
+#define LOGFLOAT(F)	({ union { float f; uint32_t u; } a; a.f = (F); a.u;})
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -22,11 +22,11 @@
 THINKOSDIR = ../../..
 SDKDIR = $(THINKOSDIR)/sdk
 
-PROG = compass
+PROG = float_test
 
-CFILES = i2c-master.c lsm303dlhc.c compass.c
+CFILES = float_test.c
 
-LIBS = cm3 stm32f util c console
+LIBS = cm3 util c console m gcc
 
 INCPATH = $(SDKDIR)/include ../include
 

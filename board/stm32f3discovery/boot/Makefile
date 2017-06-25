@@ -38,7 +38,7 @@ LIBS = cm3 stm32f util thinkos ice-comm gdb gcc
 INCPATH = $(SDKDIR)/include ../include
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -Os -Wall -Wdouble-promotion
+CFLAGS = -g -Os -Wall -Wdouble-promotion 
 OPTIONS = -mno-unaligned-access 
 
 MACH = stm32f303xc

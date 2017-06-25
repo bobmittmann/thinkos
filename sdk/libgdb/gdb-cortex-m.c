@@ -892,11 +892,11 @@ const char target_xml[] =
 "</target>";
 
 
-#ifndef GDB_ENABLE_MEM_MAP
-#define GDB_ENABLE_MEM_MAP 0
+#ifndef GDB_ENABLE_QXFER_MEMORY_MAP
+#define GDB_ENABLE_QXFER_MEMORY_MAP 0
 #endif
 
-#if (GDB_ENABLE_MEM_MAP) 
+#if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 const char memory_map_xml[] = 
 "<memory-map>"
 "<memory type=\"flash\" start=\"0x8000000\" length=\"0x100000\">"
@@ -922,7 +922,7 @@ int target_file_read(const char * name, char * dst,
 		src = (char *)target_xml;
 		len = sizeof(target_xml) - 1;
 		DCC_LOG(LOG_TRACE, "target.xml");
-#if (GDB_ENABLE_MEM_MAP) 
+#if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 	} else if (prefix(name, "memmap.xml")) {
 		src = (char *)memory_map_xml;
 		len = sizeof(memory_map_xml) - 1;
