@@ -103,3 +103,35 @@ void thinkos_trace_rt(struct thinkos_rt * rt)
 
 }
 
+void __thinkos_sched_debug(struct thinkos_context * __ctx, 
+						   unsigned int __thread_id) 
+{
+	DCC_LOG4(LOG_TRACE, "th=%d sp=%08x pc=%08x rdy=%08x", 
+			 __thread_id + 1, __ctx, __ctx->pc, thinkos_rt.wq_ready);
+	DCC_LOG4(LOG_INFO, "  r0=%08x  r1=%08x  r2=%08x  r3=%08x", 
+			__ctx->r0, __ctx->r1, __ctx->r2, __ctx->r3);
+	DCC_LOG4(LOG_INFO, "  r4=%08x  r5=%08x  r6=%08x  r7=%08x", 
+			__ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
+	DCC_LOG4(LOG_INFO, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
+			__ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
+	DCC_LOG4(LOG_INFO, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
+			__ctx->r12, __ctx, __ctx->lr, __ctx->pc);
+	DCC_LOG1(LOG_INFO, "xpsr=%08x", __ctx->xpsr);
+}
+
+void __thinkos_sched_step_debug(struct thinkos_context * __ctx, 
+								unsigned int __thread_id) 
+{
+	DCC_LOG3(LOG_TRACE, "thread=%d ctx=%08x pc=%08x", __thread_id + 1, 
+			 (uint32_t)__ctx, __ctx->pc);
+	DCC_LOG4(LOG_INFO, "  r0=%08x  r1=%08x  r2=%08x  r3=%08x", 
+			__ctx->r0, __ctx->r1, __ctx->r2, __ctx->r3);
+	DCC_LOG4(LOG_INFO, "  r4=%08x  r5=%08x  r6=%08x  r7=%08x", 
+			__ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
+	DCC_LOG4(LOG_INFO, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
+			__ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
+	DCC_LOG4(LOG_INFO, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
+			__ctx->r12, __ctx, __ctx->lr, __ctx->pc);
+	DCC_LOG1(LOG_INFO, "xpsr=%08x", __ctx->xpsr);
+}
+
