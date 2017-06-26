@@ -79,7 +79,8 @@ int main(int argc, char ** argv)
 #elif STM32_ENABLE_USB_FS
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 #else
-#error "Undefined debug monitor comm port!"
+    /* Undefined debug monitor comm port! */
+	comm = NULL;
 #endif
 
 #if THINKOS_ENABLE_CONSOLE

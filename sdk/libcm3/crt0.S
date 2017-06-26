@@ -122,8 +122,9 @@ _reset:
 	/* argv */
 	mov     r1, r9
 #else
-	ldr     r0, .L_main_stack
-	ldr     sp, [r0]
+	ldr     r1, .L_main_stack
+	ldr     r0, [r1]
+	mov     sp, r0
 #endif
 	/* go to C main function */
 	bl      main
