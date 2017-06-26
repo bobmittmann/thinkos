@@ -639,6 +639,34 @@
 /* Return to thread mode and on return use the process stack */
 #define CM3_EXC_RET_THREAD_PSP 0xfffffffd
 
+/* Table B1-8 EXC_RETURN definition of exception return behavior, no FP 
+   extension
+   EXC_RETURN | Return to    | Return stack
+   0xFFFFFFF1 | Handler mode | Main
+   0xFFFFFFF9 | Thread mode  | Main
+   0xFFFFFFFD | Thread mode  | Process
+ */
+
+/* Table B1-9 EXC_RETURN definition of exception return behavior, with FP 
+   extension 
+   EXC_RETURN | Return to    | Return stack | Frame type
+   0xFFFFFFE1 | Handler mode | Main         | Extended
+   0xFFFFFFE9 | Thread mode  | Main         | Extended
+   0xFFFFFFED | Thread mode  | Process      | Extended
+   0xFFFFFFF1 | Handler mode | Main         | Basic
+   0xFFFFFFF9 | Thread mode  | Main         | Basic
+   0xFFFFFFFD | Thread mode  | Process      | Basic
+*/
+
+/* Return to handler mode extended frame */
+#define CM3_EXC_RET_HANDLER_EXT    0xffffffe1
+/* Return to thread mode and on return use the main stack extended frame */
+#define CM3_EXC_RET_THREAD_MSP_EXT 0xffffffe9
+/* Return to thread mode and on return use the process stack extended frame */
+#define CM3_EXC_RET_THREAD_PSP_EXT 0xffffffed
+
+#define CM3_EXEC_RET_SPSEL (1 << 2)
+
 #ifndef __ASSEMBLER__
 
 /****************************************************************************

@@ -218,10 +218,14 @@ static void __attribute__((noreturn))
 		sf = (struct cm3_except_context *)&idle_ctx->r0;
 		cm3_psp_set((uint32_t)sf);
 		cm3_msp_set((uint32_t)sp);
+#if THINKOS_ENABLE_FPU 
+		ret = CM3_EXC_RET_THREAD_PSP_EXT;
+#else
+		ret = CM3_EXC_RET_THREAD_PSP;
+#endif
 		/* The interrupts where disabled on exception entry.
 		   Reenable interrupts */
 		cm3_cpsie_i();
-		ret = CM3_EXC_RET_THREAD_PSP;
 		/* return */
 		asm volatile ("bx   %0\n" : : "r" (ret)); 
 		for(;;);
@@ -268,7 +272,7 @@ static void __show_xpsr(uint32_t psr)
 
 void print_except_context(struct thinkos_except * xcpt)
 {
-	uint32_t sp = (xcpt->ret == CM3_EXC_RET_THREAD_PSP) ? xcpt->psp : xcpt->msp;
+	uint32_t sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 
 	__show_xpsr(xcpt->ctx.xpsr);
 
@@ -298,12 +302,11 @@ void print_except_context(struct thinkos_except * xcpt)
 	fprintf(stderr, "   pc=%08x\n",  xcpt->ctx.pc);
 }
 
-static void __dump_bfsr(void)
+static void __dump_bfsr(uint32_t cfsr)
 {
-	struct cm3_scb * scb = CM3_SCB;
 	uint32_t bfsr;
 
-	bfsr = SCB_CFSR_BFSR_GET(scb->cfsr);
+	bfsr = SCB_CFSR_BFSR_GET(cfsr);
 
 	fprintf(stderr, "BFSR=0X%08x", bfsr);
 
@@ -327,12 +330,11 @@ static void __dump_bfsr(void)
 	}
 }
 
-static void __dump_ufsr(void)
+static void __dump_ufsr(uint32_t cfsr)
 {
-	struct cm3_scb * scb = CM3_SCB;
 	uint32_t ufsr;
 
-	ufsr = SCB_CFSR_UFSR_GET(scb->cfsr);
+	ufsr = SCB_CFSR_UFSR_GET(cfsr);
 
 	fprintf(stderr, "UFSR=0x%08x", ufsr);
 
@@ -392,18 +394,18 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 			 (hfsr & SCB_HFSR_VECTTBL) ? " VECTTBL" : "");
 	DCC_EXCEPT_DUMP(xcpt);
 	DCC_LOG1(LOG_ERROR, " HFSR=%08x", scb->hfsr);
-	DCC_LOG1(LOG_ERROR, " CFSR=%08x", scb->cfsr);
-	DCC_LOG1(LOG_ERROR, " BFAR=%08x", scb->bfar);
-	DCC_LOG1(LOG_ERROR, "MMFAR=%08x", scb->mmfar);
+	DCC_LOG1(LOG_ERROR, " CFSR=%08x", xcpt->cfsr);
+	DCC_LOG1(LOG_ERROR, " BFAR=%08x", xcpt->bfar);
+	DCC_LOG1(LOG_ERROR, "MMFAR=%08x", xcpt->mmfar);
 
 	if (hfsr & SCB_HFSR_FORCED) {
 		uint32_t mmfsr;
 		uint32_t bfsr;
 		uint32_t ufsr;
 
-		bfsr = SCB_CFSR_BFSR_GET(scb->cfsr);
-		ufsr = SCB_CFSR_UFSR_GET(scb->cfsr);
-		mmfsr = SCB_CFSR_MMFSR_GET(scb->cfsr);
+		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
+		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
+		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 		(void)bfsr;
 		(void)ufsr;
 		(void)mmfsr ;
@@ -460,7 +462,7 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 	fprintf(stderr, "\n");
 
 	if (hfsr & SCB_HFSR_FORCED) {
-		__dump_bfsr();
+		__dump_bfsr(xcpt->cfsr);
 		fprintf(stderr, "\n");
 		__dump_ufsr();
 		fprintf(stderr, "\n");
@@ -487,10 +489,9 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 void __attribute__((noreturn)) thinkos_bus_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
-	struct cm3_scb * scb = CM3_SCB;
-	uint32_t bfsr = SCB_CFSR_BFSR_GET(scb->cfsr);
+	uint32_t bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
 	DCC_LOG(LOG_ERROR, "!!! Bus fault !!!");
-	DCC_LOG2(LOG_ERROR, "BFSR=%08X BFAR=%08x", bfsr, scb->bfar);
+	DCC_LOG2(LOG_ERROR, "BFSR=%08X BFAR=%08x", bfsr, xcpt->bfar);
 	if (bfsr) {
 		DCC_LOG7(LOG_ERROR, "BFSR={%s%s%s%s%s%s%s }", 
 				 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
@@ -508,7 +509,7 @@ void __attribute__((noreturn)) thinkos_bus_fault(struct thinkos_except * xcpt)
 	fprintf(stderr, "\n---\n");
 	fprintf(stderr, "Bus fault:");
 
-	__dump_bfsr();
+	__dump_bfsr(xcpt->cfsr);
 
 	print_except_context(xcpt);
 	fprintf(stderr, "\n");
@@ -523,8 +524,7 @@ void __attribute__((noreturn)) thinkos_bus_fault(struct thinkos_except * xcpt)
 void __attribute__((noreturn)) thinkos_usage_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
-	struct cm3_scb * scb = CM3_SCB;
-	uint32_t ufsr = SCB_CFSR_UFSR_GET(scb->cfsr);
+	uint32_t ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 
 	DCC_LOG(LOG_ERROR, "!!! Usage fault !!!");
 	DCC_LOG1(LOG_ERROR, "UFSR=%08X", ufsr);
@@ -560,10 +560,9 @@ void __attribute__((noreturn)) thinkos_usage_fault(struct thinkos_except * xcpt)
 void __attribute__((noreturn)) thinkos_mem_manage(struct thinkos_except * xcpt)
 {
 #if DEBUG
-	struct cm3_scb * scb = CM3_SCB;
-	uint32_t mmfsr = SCB_CFSR_MMFSR_GET(scb->cfsr);
+	uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 	DCC_LOG(LOG_ERROR, "!!! Mem Management !!!");
-	DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, scb->mmfar);
+	DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, xcpt->mmfar);
 	if (mmfsr) {
 		DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
 				 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
