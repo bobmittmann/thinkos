@@ -97,7 +97,9 @@ void __xdump(struct thinkos_except * xcpt)
 		}
 	}
 
-	sp = (xcpt->ret == CM3_EXC_RET_THREAD_PSP) ? xcpt->psp : xcpt->msp;
+	DCC_LOG1(LOG_INFO, "ret=%08x", xcpt->ret); 
+
+	sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
 			xcpt->ctx.r0, xcpt->ctx.r1, xcpt->ctx.r2, xcpt->ctx.r3);

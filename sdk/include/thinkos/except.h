@@ -41,6 +41,9 @@ struct thinkos_except {
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;
+	uint32_t cfsr;
+	uint32_t mmfar;
+	uint32_t bfar;
 	uint8_t  ipsr;   /* IPSR */
 	int8_t   active; /* active thread at the time of the exception */
 	uint8_t  type;   /* exception type */

@@ -57,7 +57,8 @@ endif
 ifneq ($(findstring $(STM32), stm32f2, stm32f4),)
   CFILES = stm32f-dac.c stm32f-adc.c stm32f-rtc.c \
 		   stm32f-ethif.c stm32f-bkp_sram.c \
-		   $(addprefix serial/,$(SERIAL_CFILES))
+		   $(addprefix serial/,$(SERIAL_CFILES)) \
+		   $(addprefix i2s/,$(I2S_CFILES))
 endif
 
 

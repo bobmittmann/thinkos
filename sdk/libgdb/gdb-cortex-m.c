@@ -184,7 +184,9 @@ bool thread_isalive(int gdb_thread_id)
 int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	uint32_t sp;
 	uint64_t x;
 
 	if (thread_id > THINKOS_THREAD_VOID) {
@@ -194,9 +196,11 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
 		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &xcpt->ctx;
+		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
 		if (thinkos_except_buf.active != thread_id) {
@@ -204,8 +208,11 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 			return -1;
 		}
 		ctx = &thinkos_except_buf.ctx;
+		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+		DCC_LOG1(LOG_INFO, "ThinkOS exception, context=%08x!", ctx);
 	} else if (__thinkos_thread_ispaused(thread_id)) {
 		ctx = thinkos_rt.ctx[thread_id];
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
 		DCC_LOG2(LOG_INFO, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG(LOG_ERROR, "Invalid context!");
@@ -257,7 +264,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 		x = ctx->r12;
 		break;
 	case 13:
-		x = (uint32_t)ctx + sizeof(struct thinkos_context);
+		x = sp;
 		break;
 	case 14:
 		x = ctx->lr;
@@ -272,12 +279,12 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 	case 26 ... 33:
 		x = ctx->s[(reg - 26) * 2];
 		x = x | ((uint64_t)(ctx->s[(reg - 26) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
+		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
 		break;
 	case 34 ... 41:
 		x = ctx->s1[(reg - 34) * 2];
 		x = x | ((uint64_t)(ctx->s1[(reg - 34) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
+		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
 		break;
 	case 42:
 		x = ctx->fpscr;
@@ -550,7 +557,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				break;
 			case CM3_EXCEPT_MEM_MANAGE:
 				cp += str2hex(cp, "Memory Fault ");
-				mmfsr = SCB_CFSR_MMFSR_GET(CM3_SCB->cfsr);
+				mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, "MMFSR=[");
 				if (mmfsr & MMFSR_MMARVALID)
 					cp += str2hex(cp, " MMARVALID");
@@ -567,12 +574,12 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				cp += str2hex(cp, " ] ");
 				if (mmfsr & MMFSR_MMARVALID) {
 					cp += str2hex(cp, " MMFAR=");
-					cp += uint2hex2hex(cp, (uint32_t)CM3_SCB->mmfar);
+					cp += uint2hex2hex(cp, xcpt->mmfar);
 				}
 				break;
 			case CM3_EXCEPT_BUS_FAULT:
 				cp += str2hex(cp, " Bus Fault ");
-				bfsr = SCB_CFSR_BFSR_GET(CM3_SCB->cfsr);
+				bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, " BFSR=[");
 				if (bfsr & BFSR_BFARVALID)  
 					cp += str2hex(cp, " BFARVALID");
@@ -591,12 +598,12 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				cp += str2hex(cp, " ]");
 				if (bfsr & BFSR_BFARVALID) {
 					cp += str2hex(cp, " BFAR=");
-					cp += uint2hex2hex(cp, (uint32_t)CM3_SCB->bfar);
+					cp += uint2hex2hex(cp, xcpt->bfar);
 				}
 				break;
 			case CM3_EXCEPT_USAGE_FAULT: 
 				cp += str2hex(cp, " Usage Fault ");
-				ufsr = SCB_CFSR_UFSR_GET(CM3_SCB->cfsr);
+				ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, " UFSR=[");
 				if (ufsr & UFSR_DIVBYZERO)  
 					cp += str2hex(cp, " DIVBYZERO");

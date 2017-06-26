@@ -93,13 +93,13 @@ void dmon_print_exception(struct dmon_comm * comm,
 
 	dmprintf(comm, "\r\n");
 
-	sp = (xcpt->ret == CM3_EXC_RET_THREAD_PSP) ? xcpt->psp : xcpt->msp;
+	sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 	dmon_print_context(comm, &xcpt->ctx, sp);
 
 	switch (xcpt->type) {
 #if THINKOS_ENABLE_MPU 
 	case CM3_EXCEPT_MEM_MANAGE:
-		mmfsr = SCB_CFSR_MMFSR_GET(CM3_SCB->cfsr);
+		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 		dmprintf(comm, "mmfsr=%02x [", mmfsr);
 		if (mmfsr & MMFSR_MMARVALID)
 			dmprintf(comm, " MMARVALID");
@@ -115,14 +115,13 @@ void dmon_print_exception(struct dmon_comm * comm,
 			dmprintf(comm, " IACCVIOL");
 		dmprintf(comm, " ]\r\n");
 		if (mmfsr & MMFSR_MMARVALID) 
-			dmprintf(comm, " Fault address --> %08x\r\n", 
-					 (uint32_t)CM3_SCB->mmfar);
+			dmprintf(comm, " Fault address --> %08x\r\n", xcpt->mmfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_BUSFAULT
 	case CM3_EXCEPT_BUS_FAULT:
-		bfsr = SCB_CFSR_BFSR_GET(CM3_SCB->cfsr);
+		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
 		dmprintf(comm, " bfsr=%02x [", bfsr);
 		if (bfsr & BFSR_BFARVALID)  
 			dmprintf(comm, " BFARVALID");
@@ -140,14 +139,13 @@ void dmon_print_exception(struct dmon_comm * comm,
 			dmprintf(comm, " IBUSERR");
 		dmprintf(comm, " ]\r\n");
 		if (bfsr & BFSR_BFARVALID) 
-			dmprintf(comm, " Fault address --> %08x\r\n", 
-					 (uint32_t)CM3_SCB->bfar);
+			dmprintf(comm, " Fault address --> %08x\r\n", xcpt->bfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_USAGEFAULT 
 	case CM3_EXCEPT_USAGE_FAULT: 
-		ufsr = SCB_CFSR_UFSR_GET(CM3_SCB->cfsr);
+		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 		dmprintf(comm, " ufsr=%04x [", ufsr);
 		if (ufsr & UFSR_DIVBYZERO)  
 			dmprintf(comm, " DIVBYZERO");
