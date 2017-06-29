@@ -26,6 +26,7 @@
 #define Q15_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
 
+
 /* Conversion form float to fixed point Q1.15 */
 #define Q24(F) ((int32_t)((F) * (1 << 24)))
 
@@ -39,6 +40,7 @@
 #define Q24_DIV(X, Y) (((int64_t)(X) << 24) / (Y))
 
 
+
 /* Conversion form float to fixed point Q1.15 */
 #define Q16(F) ((int32_t)((float)(F) * (float)65536.0))
 
@@ -50,6 +52,26 @@
 
 /* Q16 Divide */
 #define Q16_DIV(X, Y) (((int64_t)(X) << 16) / (Y))
+
+
+
+/* Conversion form float to fixed point Q1.31 */
+#define Q31(F) ((int32_t)(double)(F) * (double)(1LL << 32))
+
+/* Convert from fractional Q1.31 to float point */
+#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(1LL << 32))))
+
+/* Q31 Signed Multiply */
+#define Q31_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 30)) >> 31)
+
+/* Q31 Unsigned Multiply */
+#define Q31_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 30)) >> 31)
+
+/* Q31 Divide */
+#define Q31_DIV(X, Y) (((int64_t)(X) << 31) / (Y))
+
+/* Q15 Saturation */
+#define Q31_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
 /* FLoor(log2(n)) for 32 bits 
    Use this macro only with constant values as the generated
