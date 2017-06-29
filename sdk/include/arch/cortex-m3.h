@@ -1281,6 +1281,51 @@ static inline void __attribute__((always_inline)) __bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
+__attribute__( ( always_inline ) ) 
+static inline int64_t __smlal(int64_t acc, int32_t op1, int32_t op2)
+{
+	union {
+		int32_t w32[2];
+		int64_t w64;
+	} llr;
+
+	llr.w64 = acc;
+
+#ifndef __ARMEB__   /* Little endian */
+	asm volatile ("smlal %0, %1, %2, %3" : 
+				  "=r" (llr.w32[0]), "=r" (llr.w32[1]) : 
+				  "r" (op1), "r" (op2), 
+				  "0" (llr.w32[0]), "1" (llr.w32[1]));
+#else               /* Big endian */
+	asm volatile ("smlal %0, %1, %2, %3" : 
+				  "=r" (llr.w32[1]), "=r" (llr.w32[0]) : 
+				  "r" (op1), "r" (op2) , "0" (llr.w32[1]), "1" (llr.w32[0]) );
+#endif
+
+	return(llr.w64);
+}
+
+__attribute__( ( always_inline ) ) 
+static inline int64_t __smull(int32_t op1, int32_t op2)
+{
+	union {
+		int32_t w32[2];
+		int64_t w64;
+	} llr;
+
+#ifndef __ARMEB__   /* Little endian */
+	asm volatile ("smull %0, %1, %2, %3" : 
+				  "=r" (llr.w32[0]), "=r" (llr.w32[1]) : 
+				  "r" (op1), "r" (op2));
+#else               /* Big endian */
+	asm volatile ("smull %0, %1, %2, %3" : 
+				  "=r" (llr.w32[1]), "=r" (llr.w32[0]) : 
+				  "r" (op1), "r" (op2));
+#endif
+
+	return(llr.w64);
+}
+
 #define __SSAT(ARG1,ARG2) \
 	({                          \
 	 uint32_t __RES, __ARG1 = (ARG1); \

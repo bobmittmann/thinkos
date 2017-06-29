@@ -20,7 +20,7 @@
 #define Q15_UMUL(X1, X2) ((((uint32_t)(X1) * (uint32_t)(X2)) + (1 << 14)) >> 15)
 
 /* Q15 Divide */
-#define Q15_DIV(X, Y) (((X) << 15) / (Y))
+#define Q15_DIV(X, Y) (((X) * 32768) / (Y))
 
 /* Q15 Saturation */
 #define Q15_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
