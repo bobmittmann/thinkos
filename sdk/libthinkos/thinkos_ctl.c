@@ -26,6 +26,7 @@
 #include <thinkos.h>
 #include <sys/param.h>
 #include <sys/sysclk.h>
+#include <sys/delay.h>
 
 #if THINKOS_ENABLE_CTL
 
@@ -124,6 +125,12 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_TRACE:
 		DCC_LOGSTR(LOG_MSG, "%s", (char *)arg[1]);
+		break;
+
+	case THINKOS_CTL_REBOOT:
+		DCC_LOG(LOG_WARNING, "Reboot!");
+		udelay(32768);
+		cm3_sysrst();
 		break;
 
 #if THINKOS_ENABLE_RT_DEBUG

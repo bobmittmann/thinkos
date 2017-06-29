@@ -136,6 +136,7 @@
 #define THINKOS_CTL_TRACE           4
 #define THINKOS_CTL_THREAD_INF      5
 #define THINKOS_CTL_CYCCNT          6
+#define THINKOS_CTL_REBOOT          7
 
 #define THINKOS_IRQ_DISABLE       0
 #define THINKOS_IRQ_ENABLE        1
@@ -613,6 +614,11 @@ static inline void __attribute__((always_inline, noreturn))
 static inline int __attribute__((always_inline))
 	thinkos_trace(const char * msg) {
 		return THINKOS_SYSCALLS2(THINKOS_CTL, THINKOS_CTL_TRACE, msg);
+	}
+
+static inline int __attribute__((always_inline))
+	thinkos_reboot(uint32_t key) {
+		return THINKOS_SYSCALLS2(THINKOS_CTL, THINKOS_CTL_REBOOT, key);
 	}
 
 static inline int __attribute__((always_inline)) 
