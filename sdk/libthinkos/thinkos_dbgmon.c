@@ -1242,7 +1242,7 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	thinkos_dbgmon_rt.task = task;
 
 	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
-		DCC_LOG(LOG_WARNING, "/!\\ startup!!!");
+		DCC_LOG(LOG_INFO, "system startup!!!");
 	}
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT

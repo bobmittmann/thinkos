@@ -51,17 +51,32 @@ enum dbgmon_event {
 
 	DBGMON_RX_PIPE      = 3,
 	DBGMON_TX_PIPE      = 4,
+	/* Timer expiry indication */
 	DBGMON_ALARM        = 5,
 
-	DBGMON_THREAD_STEP  = 8,
-	DBGMON_THREAD_FAULT = 12,
-	DBGMON_BREAKPOINT   = 16,
-	DBGMON_SOFTRST      = 26,
-	DBGMON_IRQ_STEP     = 27,
-	DBGMON_IDLE         = 28,
-	DBGMON_EXCEPT       = 29,
-	DBGMON_RESET        = 30,
-	DBGMON_STARTUP      = 31
+	DBGMON_EXCEPT       = 8,
+	DBGMON_THREAD_STEP  = 9,
+	DBGMON_THREAD_FAULT = 10,
+	DBGMON_BREAKPOINT   = 11,
+	DBGMON_IRQ_STEP     = 12,
+
+	/* Board reset request */
+	DBGMON_SOFTRST      = 24,
+	/* ThinkOS application stop request */
+	DBGMON_APP_STOP     = 25,
+	/* ThinkOS application erase request */
+	DBGMON_APP_ERASE    = 26,
+	/* ThinkOS application upload request */
+	DBGMON_APP_UPLOAD   = 27,
+	/* ThinkOS application exec request */
+	DBGMON_APP_EXEC     = 28,
+
+	/* ThinkOS startup indication */
+	DBGMON_STARTUP      = 29,
+	/* ThinkOS idle indication */
+	DBGMON_IDLE         = 30,
+	/* Debug monitor internal reset */
+	DBGMON_RESET        = 31
 };
 
 struct dmon_comm;
