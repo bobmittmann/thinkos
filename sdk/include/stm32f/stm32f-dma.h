@@ -626,8 +626,8 @@
 #endif
 
 
-
-#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)
+#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X) || \
+	defined(STM32L4X)
 
 /* DMA interrupt status register */
 #define STM32F_DMA_ISR 0x000

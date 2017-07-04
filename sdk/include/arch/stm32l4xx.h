@@ -42,7 +42,7 @@
 #include <stm32f/stm32f-gpio.h>
 #include <stm32f/stm32l4-flash.h>
 #include <stm32f/stm32f-dac.h>
-#include <stm32f/stm32f-adc.h>
+#include <stm32f/stm32l4-adc.h>
 #include <stm32f/stm32f-rtc.h>
 #include <stm32f/stm32f-spi.h>
 #include <stm32f/stm32f-i2c.h>
@@ -58,7 +58,7 @@
 
 #define STM32_BASE_AES          0x50060000
 
-#define STM32_BASE_ADC          0x50040000
+#define STM32_BASE_ADC1         0x50040000
 
 #define STM32_BASE_GPIOH        0x48001c00
 #define STM32_BASE_GPIOE        0x48001000
