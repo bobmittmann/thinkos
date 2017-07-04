@@ -130,7 +130,16 @@
 #define _BG_CYAN_		ESC "[46m"
 #define _BG_WHITE_		ESC "[47m"
 
-#define _SET_SCROLL_	ESC "[%d;%dr"
+/* Scrolling */
+#define _SET_SCROLL_        ESC "[%d;%dr"
+#define _SET_SCROLL_ALL_    ESC "[r"
+#define _SCROLL_DOWN_       ESC "[D"
+#define _SCROLL_UP_         ESC "[M"
+
+/* Terminal Setup */
+#define VT100_RESET         ESC "c"
+#define VT100_LINE_WRAP_EN  ESC "7h"
+#define VT100_LINE_WRAP_DIS  ESC "7l"
 
 #endif /* __VT100_H__ */
 
