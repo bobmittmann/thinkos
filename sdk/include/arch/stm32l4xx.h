@@ -58,6 +58,7 @@
 
 #define STM32_BASE_AES          0x50060000
 
+#define STM32_BASE_ADCC         0x50040300
 #define STM32_BASE_ADC1         0x50040000
 
 #define STM32_BASE_GPIOH        0x48001c00

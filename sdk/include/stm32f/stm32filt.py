@@ -71,6 +71,8 @@ def log(level, s):
     print(u'?????', file=sys.stderr)
   sys.stderr.flush()
 
+# -------------------------------------------------------------------------
+
 class Comment(object):
   def __init__(self):
     self.line = ''
@@ -164,7 +166,7 @@ class Field(object):
       else:
         s = u'/* Bits [{:d}..{:d}] - '.format(begin, end) + self.desc + ' */\n'
         mask = (1 << (end - begin + 1)) - 1
-        s = s + '#define ' + sym + '(0x{:x}'.format(mask)
+        s = s + '#define ' + sym + ' (0x{:x}'.format(mask)
         s = s + ' << ' + shift + ')\n'
         s = s + '#define ' + sym + '_SET(VAL) (((VAL) << ' + shift + ') & '
         s = s + sym + ')\n'
@@ -241,7 +243,8 @@ class Register(object):
       return
 
     # reserved multiple bits 
-    m = re.match(r'Bit[s]* ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])[ ]*[\n]*(Reserved.*)', s)
+    m = re.match(r'Bit[s]* ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])' + 
+      r'[ ]*[\n]*(Reserved.*)', s)
     if (m):
       x = m.groups()
       begin = x[1]
@@ -264,8 +267,8 @@ class Register(object):
 
     # multiple bits field
     m = re.match(r'Bit[s]* ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])[ ]*' +
-     r'([A-Z_][A-Za-z_0-9]*)\[([1-3]{,1}[0-9])[:.]+' + 
-     r'([1-3]{,1}[0-9])\]:[ ]+(.*)', s)
+      r'([A-Z_][A-Za-z_0-9]*)\[([1-3]{,1}[0-9])[:.]+' + 
+      r'([1-3]{,1}[0-9])\]:[ ]+(.*)', s)
     if (m):
       x = m.groups()
       name = x[2]
@@ -277,7 +280,8 @@ class Register(object):
       return 
 
     # multiple bits field
-    m = re.match(r'Bit[s]* ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])[ ]+([A-Z_][A-Za-z_0-9]*):[ ]+(.*)', s)
+    m = re.match(r'Bit[s]* ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])' + 
+      r'[ ]+([A-Z_][A-Za-z_0-9]*):[ ]+(.*)', s)
     if (m):
       x = m.groups()
       name = x[2]
@@ -289,7 +293,8 @@ class Register(object):
       return 
 
     # single bit field
-    m = re.match('Bit[s]* ([1-3]{,1}[0-9])[ ]+([A-Z_][A-Za-z_0-9]*):[ ]+(.*)', s)
+    m = re.match('Bit[s]* ([1-3]{,1}[0-9])[ ]+' + 
+      r'([A-Z_][A-Za-z_0-9]*):[ ]+(.*)', s)
     if (m):
       x = m.groups()
       name = x[1]
@@ -365,9 +370,6 @@ class Peripheral(object):
         r'[ ]*(.*)', s)
       if (m):
         x = m.groups()
-#   s = s + ' ' + lines[i][0]
-#        num = lines[i][1]
-#        i = i + 1;
         try:
           desc = x[1]
           mod = x[2]
