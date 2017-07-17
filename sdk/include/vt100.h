@@ -141,5 +141,16 @@
 #define VT100_LINE_WRAP_EN  ESC "7h"
 #define VT100_LINE_WRAP_DIS  ESC "7l"
 
+#define VT100_CLRSCR        ESC "[2J"
+#define VT100_GOTO ESC "[%d;%df"
+#define VT100_CLRSCR ESC "[2J"
+#define VT100_CLREOL ESC "[K"
+#define VT100_CURSOR_SHOW ESC "[?25h"
+#define VT100_CURSOR_HIDE ESC "[?25l"
+#define VT100_CURSOR_SAVE ESC "[s"
+#define VT100_CURSOR_UNSAVE ESC "[u"
+#define VT100_ATTR_SAVE ESC "[7"
+#define VT100_ATTR_RESTORE ESC "[8"
+
 #endif /* __VT100_H__ */
 
