@@ -632,6 +632,7 @@
    conversions using the DMA
    Note: Software is allowed to write this bit only when ADSTART=0 and
    JADSTART=0 (which ensures that no conversion is ongoing). */
+#define ADC_DMACFG_CIRC (1 << 1)
 
 /* Bit 0 - Direct memory access enable */
 #define ADC_DMAEN (1 << 0)

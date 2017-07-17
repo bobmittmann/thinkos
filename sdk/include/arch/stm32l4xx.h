@@ -51,6 +51,7 @@
 #include <stm32f/stm32f-tim.h>
 #include <stm32f/stm32f-dma.h>
 #include <stm32f/stm32f-exti.h>
+#include <stm32f/stm32l4-sai.h>
 
 #define STM32_BASE_UID          0x1ffff7ac
 

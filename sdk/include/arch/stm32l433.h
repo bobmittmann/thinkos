@@ -45,6 +45,8 @@
 #define STM32_ADC1   ((struct stm32_adc *)STM32_BASE_ADC1)
 #define STM32_ADCC   ((struct stm32_adcc *)STM32_BASE_ADCC)
 
+#define STM32_SAI1   ((struct stm32_sai *)STM32_BASE_SAI1)
+
 #define STM32F_SYSCFG ((struct stm32f_syscfg *)STM32_BASE_SYSCFG)
 #define STM32F_EXTI  ((struct stm32f_exti *)STM32_BASE_EXTI)
 

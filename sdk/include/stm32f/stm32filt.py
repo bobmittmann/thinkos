@@ -63,7 +63,7 @@ __info = '''
 '''
 
 def log(level, s):
-  if (level > 1):
+  if (level > 5):
     return
   try:
     print(s, file=sys.stderr)
@@ -166,11 +166,11 @@ class Field(object):
       else:
         s = u'/* Bits [{:d}..{:d}] - '.format(begin, end) + self.desc + ' */\n'
         mask = (1 << (end - begin + 1)) - 1
-        s = s + '#define ' + sym + ' (0x{:x}'.format(mask)
+        s = s + '#define ' + sym + '_MSK (0x{:x}'.format(mask)
         s = s + ' << ' + shift + ')\n'
         s = s + '#define ' + sym + '_SET(VAL) (((VAL) << ' + shift + ') & '
-        s = s + sym + ')\n'
-        s = s + '#define ' + sym + '_GET(REG) (((REG) & ' + sym + ') >> '
+        s = s + sym + '_MSK)\n'
+        s = s + '#define ' + sym + '_GET(REG) (((REG) & ' + sym + '_MSK) >> '
         s = s + shift + ')\n'
       # append the comment
       s = s + self.comment.text()
@@ -182,24 +182,52 @@ class Field(object):
 class Register(object):
   def __init__(self, mod, name, desc = ''):
     self.mod = mod.upper() 
-    self.name = name.upper()
-    self.offs = 0 
+    self.name = name
+    self.offs = [] 
     self.desc = desc
     self.reset = ''
     self.access = ''
     self.fields = []
     self.comment = Comment()
-    log(1, u'Register: {:s}_{:s} - {:s}'.format(self.mod, self.name, self.desc))
+    if (name == []):
+      log(0, 'Empty name list')
+      raise 'hello'
+    log(1, u'Register: {:s}_{:s} - {:s}'.format(self.mod, self.name[0], self.desc))
 
   def format(self, mod):
       mod = self.mod
       name = self.name
       desc = self.desc
-      offs = self.offs
+      if len(self.name) != len(self.offs):
+        log(0, 'len(name({:d}) != offs({:d}))'.format(len(self.name), len(self.offs)))
+        for n in self.name:
+          log(0, '  name= "' + n + '"')
+        for o in self.offs:
+          log(0, '  offs= {:d}'.format(o))
+        raise Exception('Offsets != names')
       s = u'/* --------------------------------------'
       s = s + '----------------------------------- */\n'
-      s = s + '/* ' + desc + ' - ' + name + ' */\n'
-      s = s + '#define STM32_' + mod + '_' + name + ' 0x{:04x}\n\n'.format(offs)
+      if (len(self.name) == 1):
+        offs = self.offs[0]
+        s = s + '/* ' + desc + ' - ' + name[0] + ' */\n'
+        s = s + '#define STM32_' + mod + '_' + name[0]
+        s = s + ' 0x{:04x}\n\n'.format(offs)
+      else:
+        try:
+          i = 0
+          for offs in self.offs:
+            s = s + '/* ' + desc + ' - ' + name[i] + ' */\n'
+            s = s + '#define STM32_' + mod + '_' + name[i]
+            s = s + ' 0x{:04x}\n\n'.format(offs)
+            i = i + 1
+        except:
+          log(0, '!! Error !!!')
+          for name in self.name:
+    		print('=====', file=sys.stderr)
+    		print(self.name, file=sys.stderr)
+#          log(0, 'name=' + ' '.join(self.name))
+#          log(0, 'offs=' + ' '.join(self.offs))
+          raise
       # append the comment if any 
       # s = s + self.comment.text()
       for f in self.fields:
@@ -209,21 +237,23 @@ class Register(object):
   def append(self, s, num):
 
     # address offset
-    m = re.match(r'[Aa]ddress[ a-zA-Z]*:[ ]*0x([0-9A-F]+)', s)
+    m = re.search(r'[Aa]ddress[ a-zA-Z]*:[ ]*0x([0-9A-F]+)', s)
     if (m):
       x = m.groups()
-      self.offs = int(x[0], 16)
-      log(2, u'    Offs: {:s} 0x{:x}'.format(self.name, self.offs))
+      offs = int(x[0], 16)
+      self.offs.append(offs)
+      log(2, u'    Offs: {:s} 0x{:x}'.format(self.name[0], offs))
       return
 
     # address offset alternate form
-    m = re.match(r'[Aa]ddress[ a-zA-Z]*:' + 
+    m = re.search(r'[Aa]ddress[ a-zA-Z]*:' + 
         r'[ ]*([0-9A-Za-z][0-9A-Za-z _-]+):' +
         r'[ ]*0x([0-9A-F]+)', s)
     if (m):
       x = m.groups()
-      self.offs = int(x[1], 16)
-      log(2, u'    Offs: {:s} 0x{:x}'.format(self.name, self.offs))
+      offs = int(x[1], 16)
+      self.offs.append(offs)
+      log(2, u'    Offs(Alt): {:s} 0x{:x}'.format(self.name[0], offs))
       return
 
     # reset value
@@ -363,24 +393,41 @@ class Peripheral(object):
       num = lines[i][1]
       i = i + 1
 
+      # append to the next line in case the register section was split in 
+      # two lines
+      if (i < n):
+        ss = s + ' ' + lines[i][0]
+      	if ((i + 1) < n):
+       	 ss = ss + ' ' + lines[i + 1][0]
+      else:
+        ss = s
+      log(6, u'{:d}: "{:s}"'.format(num, ss))
+
       # Find register entries
-      m = re.match(r'([0-9.]*)[ ]*([A-Z][A-Za-z0-9_ /-]+[A-Za-z0-9])' +
-        r'[ ]+\(([A-Za-z0-9]+)_([A-Za-z0-9_]+)' +
-        r'([ /]+([A-Za-z0-9]+)_([A-Za-z0-9_]+))*\)' +
-        r'[ ]*(.*)', s)
+      m = re.match(r'^([0-9.]*)[ ]*' +
+        r'([A-Z][A-Za-z0-9_ /-]+[A-Za-z0-9])' +
+        r'[ ]?\(([A-Z][A-Za-z0-9]+)_([A-Za-z0-9_]+)' +
+        r'([ /]+(([A-Z][A-Za-z0-9]+)_([A-Za-z0-9_]+)))*\)[ ]' +
+        r'.*[Aa]ddress[ a-zA-Z:]*:[ ]+0x[0-9A-F]+', ss)
       if (m):
         x = m.groups()
         try:
           desc = x[1]
           mod = x[2]
-          name = x[3]
+          name = []
+          j = 3
+          while (j < len(x)):
+            sym = x[j]
+            if (sym != None):
+               name.append(sym)
+            j = j + 4
           reg = Register(mod, name, desc)
           self.regs.append(reg)
         except:
           log(1, '\nParse error at line: {:d}\n'.format(num))
           log(1, '  "' + s + '"\n')
           raise
-      elif (reg):
+      if (reg):
         # add line to the current register
         reg.append(s, num)
       else:
@@ -392,23 +439,24 @@ class Peripheral(object):
     offs = 0
     res = 0
     for r in self.regs:
-      if (r.offs > offs):
-        cnt = (r.offs - offs) / 4
+      if (r.offs[0] > offs):
+        cnt = (r.offs[0] - offs) / 4
         s = s + '\tuint32_t res{:d}[{:d}];\n'.format(res, cnt)
         res = res + 1
 
-      if (r.offs < offs):
-      # FIXME: multiple modules 
+      sym = r.name[0].lower()
+
+      if (r.offs[0] < offs):
         res = 0
         s = s + '};\n\n'
         s = s + 'struct stm32_' + self.name.lower() + '_XYZ {\n'
         s = s + '\tvolatile uint32_t '
-        s = s + r.name.lower() + '; /* 0x{:02x} */\n'.format(r.offs)
+        s = s + sym + '; /* 0x{:02x} */\n'.format(r.offs[0])
       else:
         s = s + '\tvolatile uint32_t '
-        s = s + r.name.lower() + '; /* 0x{:02x} */\n'.format(r.offs)
+        s = s + sym + '; /* 0x{:02x} */\n'.format(r.offs[0])
 
-      offs = r.offs + 4
+      offs = r.offs[0] + 4
 
     s = s + '};\n\n'
     return s
@@ -460,7 +508,7 @@ def extract(f):
     r'([A-Za-z][A-Za-z0-9 _/-]+[A-Za-z0-9])[ ]+' + 
     r'\(([A-Za-z][A-Za-z0-9_]+)([/]([A-Za-z][A-Za-z0-9_]+))*\)')
   # Regular expression to mach a 'registers' subsection
-  regsub_re = re.compile(r'[1-9][0-9.]+[ ]+([A-Z][A-Za-z0-9_/]*)' + 
+  regsub_re = re.compile(r'([1-9][0-9.]+)[ ]+([A-Z][A-Za-z0-9_/]*)' + 
     r'[ ]+[Rr]egisters')
   # Regular expression to mach a 'register map' subsection
   mapsub_re = re.compile(r'Table [1-9][0-9.]*[ ]+' + 
@@ -477,6 +525,8 @@ def extract(f):
     # find section
     for line in f:
       if (line == '\14'):
+        continue
+      if (line == '\13'):
         continue
       num = num + 1
       m = section_re.match(line)
@@ -507,8 +557,9 @@ def extract(f):
         # find 'registers' subsection
         m = regsub_re.search(line)
         if (m):
+          x = m.groups()
           lst.append(mod)
-          log(3, 'Registers: ' + mod.name)
+          log(3, '{:d}: ({:s}) {:s} registers'.format(num, x[0], mod.name))
           break
       else:
         log(8, '{:d}: "'.format(num) + line + '"')

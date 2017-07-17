@@ -3,9 +3,6 @@ from math import *
 
 target_freq = 80000000
 hse = 11289600
-r = 3
-n = 357
-m = 11
 
 err_min = 1000000
 m_min = 1
@@ -21,7 +18,7 @@ while m < 9:
 			mainclk = fvco / r
 			fvco_in_valid = ((hse / m) >= 4000000) and ((hse / m) <= 16000000) 
 			fvco_out_valid = (fvco >= 64000000) and (fvco <= 344000000) 
-			fsys_valid = (mainclk <= 80500000)
+			fsys_valid = (mainclk <= 80000000)
 			if fvco_in_valid and fvco_out_valid and fsys_valid:
 				err = mainclk - target_freq
 				if err < 0:
@@ -57,3 +54,17 @@ print(" M = %d" % m)
 print(" R = %d" % r)
 
 print(" ----------------------")
+
+print("  #define STM32_HCLK_HZ %d" % mainclk)
+print("  #define STM32_HSE_HZ %d" % hse)
+print("")
+
+print("#if (STM32_HCLK_HZ == %d) && (STM32_HSE_HZ == %d)" %(mainclk,hse))
+print("  /* VCO = %.6f MHz */" % (fvco/1000000.0))
+print("  #define PLLN %d" % n)
+print("  #define PLLM %d" % m)
+print("  #define PLLR %d" % r)
+print("#endif")
+print("")
+
+
