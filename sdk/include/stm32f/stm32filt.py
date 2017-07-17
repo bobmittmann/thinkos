@@ -127,17 +127,24 @@ class Comment(object):
 # -------------------------------------------------------------------------
 
 class Field(object):
-  def __init__(self, name, begin, end, desc = ''):
+  def __init__(self, name, mod, begin, end, desc = ''):
+    self.mod = mod.upper()
     self.name = name.upper()
     self.begin = int(begin)
     self.end = int(end) 
     if (self.begin > self.end):
-      log(5, '{:s}: begin({:d}) > end({:d})'.format(self.name, self.begin, self.end))
+      log(10, '{:s}: begin({:d}) > end({:d})'.format(self.name, 
+        self.begin, self.end))
       self.begin = int(end)
       self.end = int(begin)
     self.desc = desc
     self.comment = Comment()
-    log(4, u'    {:s} {:d} {:d}'.format(self.name, self.begin, self.end))
+    if (self.begin == self.end):
+      log(4, u'     - {:s}_{:s} Bit {:d}'.format(self.mod, 
+        self.name, self.begin))
+    else:
+      log(4, u'     - {:s}_{:s} Bits {:d}..{:d}'.format(self.mod,
+        self.name, self.begin, self.end))
 
   def append(self, s):
     self.comment.append(s)
@@ -192,18 +199,20 @@ class Register(object):
     if (name == []):
       log(0, 'Empty name list')
       raise 'hello'
-    log(1, u'Register: {:s}_{:s} - {:s}'.format(self.mod, self.name[0], self.desc))
+    log(1, u'Register: {:s}_{:s} - {:s}'.format(self.mod, 
+      self.name[0], self.desc))
 
   def format(self, mod):
       mod = self.mod
       name = self.name
       desc = self.desc
       if len(self.name) != len(self.offs):
-        log(0, 'len(name({:d}) != offs({:d}))'.format(len(self.name), len(self.offs)))
+        log(0, 'len(name({:d}) != offs({:d}))'.format(len(self.name), 
+          len(self.offs)))
         for n in self.name:
           log(0, '  name= "' + n + '"')
         for o in self.offs:
-          log(0, '  offs= {:d}'.format(o))
+          log(0, '  offs= 0x{:x}'.format(o))
         raise Exception('Offsets != names')
       s = u'/* --------------------------------------'
       s = s + '----------------------------------- */\n'
@@ -223,8 +232,8 @@ class Register(object):
         except:
           log(0, '!! Error !!!')
           for name in self.name:
-    		print('=====', file=sys.stderr)
-    		print(self.name, file=sys.stderr)
+            print('=====', file=sys.stderr)
+            print(self.name, file=sys.stderr)
 #          log(0, 'name=' + ' '.join(self.name))
 #          log(0, 'offs=' + ' '.join(self.offs))
           raise
@@ -242,7 +251,8 @@ class Register(object):
       x = m.groups()
       offs = int(x[0], 16)
       self.offs.append(offs)
-      log(2, u'    Offs: {:s} 0x{:x}'.format(self.name[0], offs))
+      name = self.name[0]
+      log(2, u'   * Offs: {:s}_{:s} 0x{:x}'.format(self.mod, name, offs))
       return
 
     # address offset alternate form
@@ -253,7 +263,9 @@ class Register(object):
       x = m.groups()
       offs = int(x[1], 16)
       self.offs.append(offs)
-      log(2, u'    Offs(Alt): {:s} 0x{:x}'.format(self.name[0], offs))
+#     i = len(self.offs) - 1
+      name = self.name[0]
+      log(2, u'   * Offs(Alt): {:s}_{:s} 0x{:x}'.format(self.mod, name, offs))
       return
 
     # reset value
@@ -261,7 +273,7 @@ class Register(object):
     if (m):
       x = m.groups()
       self.reset = x[0] + ' ' + x[1]
-      log(2, u'    Reset: {:s}'.format(self.reset))
+      log(2, u'   * Reset: {:s}'.format(self.reset))
       return
 
     # access
@@ -269,7 +281,7 @@ class Register(object):
     if (m):
       x = m.groups()
       self.access = x[0]
-      log(2, u'    Access: ' + self.access)
+      log(2, u'   * Access: ' + self.access)
       return
 
     # reserved multiple bits 
@@ -280,7 +292,7 @@ class Register(object):
       begin = x[1]
       end = x[0]
       desc = x[2]
-      field = Field('', begin, end, desc)
+      field = Field('', '', begin, end, desc)
       self.fields.append(field)
       return
 
@@ -291,7 +303,7 @@ class Register(object):
       begin = x[0]
       end = x[0]
       desc = x[1]
-      field = Field('', begin, end, desc)
+      field = Field('', '', begin, end, desc)
       self.fields.append(field)
       return 
 
@@ -305,7 +317,7 @@ class Register(object):
       begin = x[1]
       end = x[0]
       desc = x[5]
-      field = Field(name, begin, end, desc)
+      field = Field(name, self.mod, begin, end, desc)
       self.fields.append(field)
       return 
 
@@ -318,7 +330,7 @@ class Register(object):
       begin = x[1]
       end = x[0]
       desc = x[3]
-      field = Field(name, begin, end, desc)
+      field = Field(name, self.mod, begin, end, desc)
       self.fields.append(field)
       return 
 
@@ -331,7 +343,7 @@ class Register(object):
       begin = x[0]
       end = x[0]
       desc = x[2]
-      field = Field(name, begin, end, desc)
+      field = Field(name, self.mod, begin, end, desc)
       self.fields.append(field)
       return 
 
@@ -397,15 +409,15 @@ class Peripheral(object):
       # two lines
       if (i < n):
         ss = s + ' ' + lines[i][0]
-      	if ((i + 1) < n):
-       	 ss = ss + ' ' + lines[i + 1][0]
+        if ((i + 1) < n):
+          ss = ss + ' ' + lines[i + 1][0]
       else:
         ss = s
       log(6, u'{:d}: "{:s}"'.format(num, ss))
 
       # Find register entries
       m = re.match(r'^([0-9.]*)[ ]*' +
-        r'([A-Z][A-Za-z0-9_ /-]+[A-Za-z0-9])' +
+        r'([A-Z][A-Za-z0-9_ /&-]+[A-Za-z0-9])' +
         r'[ ]?\(([A-Z][A-Za-z0-9]+)_([A-Za-z0-9_]+)' +
         r'([ /]+(([A-Z][A-Za-z0-9]+)_([A-Za-z0-9_]+)))*\)[ ]' +
         r'.*[Aa]ddress[ a-zA-Z:]*:[ ]+0x[0-9A-F]+', ss)
@@ -427,6 +439,24 @@ class Peripheral(object):
           log(1, '\nParse error at line: {:d}\n'.format(num))
           log(1, '  "' + s + '"\n')
           raise
+      else:
+        m = re.match(r'^([0-9.]*)[ ]*' +
+          r'([A-Z][A-Za-z0-9_ /&-]+[A-Za-z0-9])' +
+          r'[ ]+\(([A-Z][A-Z0-9]+)\)' +
+          r'.*[Aa]ddress[ a-zA-Z:]*:[ ]+0x[0-9A-F]+', ss)
+        if (m):
+          x = m.groups()
+          try:
+            desc = x[1]
+            mod = self.name
+            name = [x[2]]
+            reg = Register(mod, name, desc)
+            self.regs.append(reg)
+          except:
+            log(1, '\nParse error at line: {:d}\n'.format(num))
+            log(1, '  "' + s + '"\n')
+            raise
+
       if (reg):
         # add line to the current register
         reg.append(s, num)

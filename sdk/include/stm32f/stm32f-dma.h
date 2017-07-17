@@ -906,9 +906,9 @@ This bit is set and cleared by software.
 /* Bits [28..31] - Reserved, must be kept at reset value. */
 
 /* Bits [24..27] - DMA channel 7 selection */
-#define DMA1_C7S (0xf << 24)
-#define DMA1_C7S_SET(VAL) (((VAL) << 24) & DMA1_C7S)
-#define DMA1_C7S_GET(REG) (((REG) & DMA1_C7S) >> 24)
+#define DMA1_C7S_MSK (0xf << 24)
+#define DMA1_C7S_SET(VAL) (((VAL) << 24) & DMA1_C7S_MSK)
+#define DMA1_C7S_GET(REG) (((REG) & DMA1_C7S_MSK) >> 24)
 /* 0000: Reserved
    0001: Reserved
    0010: Channel 7 mapped on USART2_TX
@@ -919,9 +919,9 @@ This bit is set and cleared by software.
    0111: Channel 7 mapped on TIM1_CH3 */
 
 /* Bits [20..23] - DMA channel 6 selection */
-#define DMA1_C6S (0xf << 20)
-#define DMA1_C6S_SET(VAL) (((VAL) << 20) & DMA1_C6S)
-#define DMA1_C6S_GET(REG) (((REG) & DMA1_C6S) >> 20)
+#define DMA1_C6S_MSK (0xf << 20)
+#define DMA1_C6S_SET(VAL) (((VAL) << 20) & DMA1_C6S_MSK)
+#define DMA1_C6S_GET(REG) (((REG) & DMA1_C6S_MSK) >> 20)
 /* 0000: Reserved
    0001: Reserved
    0010: Channel 6 mapped on USART2_RX
@@ -934,9 +934,9 @@ This bit is set and cleared by software.
    others: Reserved */
 
 /* Bits [16..19] - DMA channel 5 selection */
-#define DMA1_C5S (0xf << 16)
-#define DMA1_C5S_SET(VAL) (((VAL) << 16) & DMA1_C5S)
-#define DMA1_C5S_GET(REG) (((REG) & DMA1_C5S) >> 16)
+#define DMA1_C5S_MSK (0xf << 16)
+#define DMA1_C5S_SET(VAL) (((VAL) << 16) & DMA1_C5S_MSK)
+#define DMA1_C5S_GET(REG) (((REG) & DMA1_C5S_MSK) >> 16)
 /* 0000: Reserved
    0001: Channel 5 mapped on SPI2_TX
    0010: Channel 5 mapped on USART1_RX
@@ -948,9 +948,9 @@ This bit is set and cleared by software.
    others: Reserved */
 
 /* Bits [12..15] - DMA channel 4 selection */
-#define DMA1_C4S (0xf << 12)
-#define DMA1_C4S_SET(VAL) (((VAL) << 12) & DMA1_C4S)
-#define DMA1_C4S_GET(REG) (((REG) & DMA1_C4S) >> 12)
+#define DMA1_C4S_MSK (0xf << 12)
+#define DMA1_C4S_SET(VAL) (((VAL) << 12) & DMA1_C4S_MSK)
+#define DMA1_C4S_GET(REG) (((REG) & DMA1_C4S_MSK) >> 12)
 /* 0000: Reserved
    0001: Channel 4 mapped on SPI2_RX
    0010: Channel 4 mapped on USART1_TX
@@ -964,9 +964,9 @@ This bit is set and cleared by software.
 #define DMA1_C4S_TIM7_UP_DAC2 (0x5 << 12)
 
 /* Bits [8..11] - DMA channel 3 selection */
-#define DMA1_C3S (0xf << 8)
-#define DMA1_C3S_SET(VAL) (((VAL) << 8) & DMA1_C3S)
-#define DMA1_C3S_GET(REG) (((REG) & DMA1_C3S) >> 8)
+#define DMA1_C3S_MSK (0xf << 8)
+#define DMA1_C3S_SET(VAL) (((VAL) << 8) & DMA1_C3S_MSK)
+#define DMA1_C3S_GET(REG) (((REG) & DMA1_C3S_MSK) >> 8)
 /* 0000: Reserved
    0001: Channel 3 mapped on SPI1_TX
    0010: Channel 3 mapped on USART3_RX
@@ -978,11 +978,12 @@ This bit is set and cleared by software.
    0111: Channel 3 mapped on TIM1_CH2
    others: Reserved */
 #define DMA1_C3S_TIM6_UP_DAC1 (0x6 << 8)
+#define DMA1_C3S_USART3_RX (0x2 << 8)
 
 /* Bits [4..7] - DMA channel 2 selection */
-#define DMA1_C2S (0xf << 4)
-#define DMA1_C2S_SET(VAL) (((VAL) << 4) & DMA1_C2S)
-#define DMA1_C2S_GET(REG) (((REG) & DMA1_C2S) >> 4)
+#define DMA1_C2S_MSK (0xf << 4)
+#define DMA1_C2S_SET(VAL) (((VAL) << 4) & DMA1_C2S_MSK)
+#define DMA1_C2S_GET(REG) (((REG) & DMA1_C2S_MSK) >> 4)
 /* 0000: Reserved
    0001: Channel 2 mapped on SPI1_RX
    0010: Channel 2 mapped on USART3_TX
@@ -993,11 +994,12 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Channel 2 mapped on TIM1_CH1
    others: Reserved */
+#define DMA1_C2S_USART3_TX (0x2 << 4)
 
 /* Bits [0..3] - DMA channel 1 selection */
-#define DMA1_C1S (0xf << 0)
-#define DMA1_C1S_SET(VAL) (((VAL) << 0) & DMA1_C1S)
-#define DMA1_C1S_GET(REG) (((REG) & DMA1_C1S) >> 0)
+#define DMA1_C1S_MSK (0xf << 0)
+#define DMA1_C1S_SET(VAL) (((VAL) << 0) & DMA1_C1S_MSK)
+#define DMA1_C1S_GET(REG) (((REG) & DMA1_C1S_MSK) >> 0)
 /* 0000: Channel 1 mapped on ADC1
    0001: Reserved
    0010: Reserved
@@ -1007,7 +1009,6 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Reserved
    others: Reserved */
-
 #define DMA1_C1S_ADC1 (0x0 << 0)
 
 /* ------------------------------------------------------------------------- */
@@ -1017,9 +1018,9 @@ This bit is set and cleared by software.
 /* Bits [28..31] - Reserved, must be kept at reset value. */
 
 /* Bits [24..27] - DMA channel 7 selection */
-#define DMA2_C7S (0xf << 24)
-#define DMA2_C7S_SET(VAL) (((VAL) << 24) & DMA2_C7S)
-#define DMA2_C7S_GET(REG) (((REG) & DMA2_C7S) >> 24)
+#define DMA2_C7S_MSK (0xf << 24)
+#define DMA2_C7S_SET(VAL) (((VAL) << 24) & DMA2_C7S_MSK)
+#define DMA2_C7S_GET(REG) (((REG) & DMA2_C7S_MSK) >> 24)
 /* 0000: Reserved
    0001: Channel 7 mapped on SAI1_B
    0010: Channel 7 mapped on USART1_RX
@@ -1027,11 +1028,12 @@ This bit is set and cleared by software.
    0100: Channel 7 mapped on LPUART1_RX
    0101: Channel 7 mapped on I2C1_TX
    others: Reserved */
+#define DMA2_C7S_USART1_RX (0x2 << 24)
 
 /* Bits [20..23] - DMA channel 6 selection */
-#define DMA2_C6S (0xf << 20)
-#define DMA2_C6S_SET(VAL) (((VAL) << 20) & DMA2_C6S)
-#define DMA2_C6S_GET(REG) (((REG) & DMA2_C6S) >> 20)
+#define DMA2_C6S_MSK (0xf << 20)
+#define DMA2_C6S_SET(VAL) (((VAL) << 20) & DMA2_C6S_MSK)
+#define DMA2_C6S_GET(REG) (((REG) & DMA2_C6S_MSK) >> 20)
 /* 0000: Reserved
    0001: Channel 6 mapped on SAI1_A
    0010: Channel 6 mapped on USART1_TX
@@ -1039,11 +1041,12 @@ This bit is set and cleared by software.
    0100: Channel 6 mapped on LPUART1_TX
    0101: Channel 6 mapped on I2C1_RX
    others: Reserved */
+#define DMA2_C6S_USART1_TX (0x2 << 20)
 
 /* Bits [16..19] - DMA channel 5 selection */
-#define DMA2_C5S (0xf << 16)
-#define DMA2_C5S_SET(VAL) (((VAL) << 16) & DMA2_C5S)
-#define DMA2_C5S_GET(REG) (((REG) & DMA2_C5S) >> 16)
+#define DMA2_C5S_MSK (0xf << 16)
+#define DMA2_C5S_SET(VAL) (((VAL) << 16) & DMA2_C5S_MSK)
+#define DMA2_C5S_GET(REG) (((REG) & DMA2_C5S_MSK) >> 16)
 /* 0000: Reserved
    0001: Reserved
    0010: Channel 5 mapped on UART4_RX. Available on STM32L45xxx and
@@ -1058,9 +1061,9 @@ This bit is set and cleared by software.
    others: Reserved */
 
 /* Bits [12..15] - DMA channel 4 selection */
-#define DMA2_C4S (0xf << 12)
-#define DMA2_C4S_SET(VAL) (((VAL) << 12) & DMA2_C4S)
-#define DMA2_C4S_GET(REG) (((REG) & DMA2_C4S) >> 12)
+#define DMA2_C4S_MSK (0xf << 12)
+#define DMA2_C4S_SET(VAL) (((VAL) << 12) & DMA2_C4S_MSK)
+#define DMA2_C4S_GET(REG) (((REG) & DMA2_C4S_MSK) >> 12)
 /* 0000: Reserved
    0001: Reserved
    0010: Reserved
@@ -1072,9 +1075,9 @@ This bit is set and cleared by software.
    others: Reserved */
 
 /* Bits [8..11] - DMA channel 3 selection */
-#define DMA2_C3S (0xf << 8)
-#define DMA2_C3S_SET(VAL) (((VAL) << 8) & DMA2_C3S)
-#define DMA2_C3S_GET(REG) (((REG) & DMA2_C3S) >> 8)
+#define DMA2_C3S_MSK (0xf << 8)
+#define DMA2_C3S_SET(VAL) (((VAL) << 8) & DMA2_C3S_MSK)
+#define DMA2_C3S_GET(REG) (((REG) & DMA2_C3S_MSK) >> 8)
 /* 0000: Channel 3 mapped on ADC1
    0001: Reserved
    0010: Channel 3 mapped on UART4_TX. Available on STM32L45xxx and
@@ -1088,9 +1091,9 @@ This bit is set and cleared by software.
    others: Reserved */
 
 /* Bits [4..7] - DMA channel 2 selection */
-#define DMA2_C2S (0xf << 4)
-#define DMA2_C2S_SET(VAL) (((VAL) << 4) & DMA2_C2S)
-#define DMA2_C2S_GET(REG) (((REG) & DMA2_C2S) >> 4)
+#define DMA2_C2S_MSK (0xf << 4)
+#define DMA2_C2S_SET(VAL) (((VAL) << 4) & DMA2_C2S_MSK)
+#define DMA2_C2S_GET(REG) (((REG) & DMA2_C2S_MSK) >> 4)
 /* 0000: Channel 2 mapped on I2C4_TX. Available on STM32L45xxx and STM32L46xxx
    devices only.
    0001: Channel 2 mapped on SAI1_B
