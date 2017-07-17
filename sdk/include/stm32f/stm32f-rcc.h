@@ -1634,92 +1634,383 @@
    0: LSI RC oscillator OFF
    1: LSI RC oscillator ON */
 
-
 /* ------------------------------------------------------------------------- */
-/* RCC spread spectrum clock generation register */
-#define STM32F_RCC_SSCGR 0x80
-
+/* RCC spread spectrum clock generation register - SSCGR */
+#define STM32_RCC_SSCGR 0x0080
 
 /* Bit 31 - Spread spectrum modulation enable */
 #define RCC_SSCGEN (1 << 31)
-/* Set and cleared by software.
-   0: Spread spectrum modulation DISABLE. (To write after 
-   clearing CR[24]=PLLON bit)
-   1: Spread spectrum modulation ENABLE. (To write before 
-   setting CR[24]=PLLON bit) */
+/* This bit is set and cleared by software.
+   0: Spread spectrum modulation DISABLE. (To write after clearing
+   CR[24]=PLLON bit)
+   1: Spread spectrum modulation ENABLE. (To write before setting CR[24]=PLLON
+   bit) */
 
 /* Bit 30 - Spread Select */
 #define RCC_SPREADSEL (1 << 30)
-/* Set and cleared by software.
+/* This bit is set and cleared by software.
    To write before to set CR[24]=PLLON bit.
    0: Center spread
    1: Down spread */
 
-/* Bits [27..13] - Incrementation step */
-#define RCC_INCSTEP ((27 - 13) << 13)
-/* Set and cleared by software. To write before setting CR[24]=PLLON bit.
+/* Bits [28..29] - Reserved, must be kept at reset value. */
+
+/* Bits [13..27] - Incrementation step */
+#define RCC_INCSTEP_MSK (0x7fff << 13)
+#define RCC_INCSTEP_SET(VAL) (((VAL) << 13) & RCC_INCSTEP_MSK)
+#define RCC_INCSTEP_GET(REG) (((REG) & RCC_INCSTEP_MSK) >> 13)
+/* These bits are set and cleared by software. To write before setting
+   CR[24]=PLLON bit.
    Configuration input for modulation profile amplitude. */
 
-/* Bits [12..0] - Modulation period */
-#define RCC_MODPER ((12 - 0) << 0)
-/* Set and cleared by software. To write before setting CR[24]=PLLON bit.
+/* Bits [0..12] - Modulation period */
+#define RCC_MODPER_MSK (0x1fff << 0)
+#define RCC_MODPER_SET(VAL) (((VAL) << 0) & RCC_MODPER_MSK)
+#define RCC_MODPER_GET(REG) (((REG) & RCC_MODPER_MSK) >> 0)
+/* These bits are set and cleared by software. To write before setting
+   CR[24]=PLLON bit.
    Configuration input for modulation profile period. */
 
-
 /* ------------------------------------------------------------------------- */
-/* RCC PLLI2S configuration register */
-#define STM32F_RCC_PLLI2SCFGR 0x84
+/* RCC PLLI2S configuration register - PLLI2SCFGR */
+#define STM32_RCC_PLLI2SCFGR 0x0084
 
+/* Bit 31 - Reserved, must be kept at reset value. */
 
-/* Bits [30..28] - PLLI2S division factor for I2S clocks */
-#define RCC_PLLI2SR(R) (((R) & 0x7) << 28)
-/* Set and cleared by software to control the I2S clock frequency. These bits 
-   should be written only if the PLLI2S is disabled. The factor must be 
-   chosen in accordance with the prescaler values inside the I2S peripherals, 
-   to reach 0.3% error when using standard crystals and 0% error with audio 
-   crystals. For more information about I2S clock frequency and precision, 
-   refer to Section 25.4.3: Clock generator in the I2S chapter.
-   Caution: The I2Ss requires a frequency lower than or equal to 192 MHz 
-   to work correctly.
+/* Bits [28..30] - PLLI2S division factor for I2S clocks */
+#define RCC_PLLI2SR_MSK (0x7 << 28)
+#define RCC_PLLI2SR_SET(VAL) (((VAL) << 28) & RCC_PLLI2SR_MSK)
+#define RCC_PLLI2SR_GET(REG) (((REG) & RCC_PLLI2SR_MSK) >> 28)
+/* These bits are set and cleared by software to control the I2S clock
+   frequency. These bits should be written only if the PLLI2S is disabled. The
+   factor must be chosen in accordance with the prescaler values inside the
+   I2S peripherals, to reach 0.3% error when using standard crystals and 0%
+   error with audio crystals. For more information about I2S clock frequency
+   and precision, refer to Section 26.6.3: Clock generator in the I2S chapter.
+   Caution: The I2Ss requires a frequency lower than or equal to 192 MHz to
+   work correctly.
    I2S clock frequency = VCO frequency / PLLR with 2 ≤ PLLR ≤ 7
    000: PLLR = 0, wrong configuration
    001: PLLR = 1, wrong configuration
-   010: PLLR = 2
-   ...
+   010: PLLR = 2 ...
    111: PLLR = 7 */
+#define RCC_PLLI2SR(R) (((R) & 0x7) << 28)
 
+/* Bits [24..27] - PLLI2S division factor for SAI1 clock */
+#define RCC_PLLI2SQ_MSK (0xf << 24)
+#define RCC_PLLI2SQ_SET(VAL) (((VAL) << 24) & RCC_PLLI2SQ_MSK)
+#define RCC_PLLI2SQ_GET(REG) (((REG) & RCC_PLLI2SQ_MSK) >> 24)
+/* These bits are set and cleared by software to control the SAI1 clock
+   frequency.
+   They should be written when the PLLI2S is disabled.
+   SAI1 clock frequency = VCO frequency / PLLI2SQ with 2 ≤ PLLI2SIQ ≤ 15
+   0000: PLLI2SQ = 0, wrong configuration
+   0001: PLLI2SQ = 1, wrong configuration
+   0010: PLLI2SQ = 2
+   0011: PLLI2SQ = 3
+   0100: PLLI2SQ = 4
+   0101: PLLI2SQ = 5 ...
+   1111: PLLI2SQ = 15 */
 #define RCC_PLLI2SQ(Q) (((Q) & 0xf) << 24)
 
-#define RCC_PLLI2SP(P) (((P) & 0x3) << 16)
+/* Bits [18..23] - Reserved, must be kept at reset value. */
 
-/* Bits [14..6] - PLLI2S multiplication factor for VCO */
-#define RCC_PLLI2SN(N) (((N) & 0x3ff) << 6)
-/* Set and cleared by software to control the multiplication factor 
-   of the VCO. These bits can be written only when the PLLI2S is 
-   disabled. Only half-word and word accesses are allowed to write 
-   these bits.
-   Caution: The software has to set these bits correctly to ensure that 
-   the VCO output frequency is between 192 and 432 MHz.
-   VCO output frequency = VCO input frequency × PLLI2SN with 
-   192 ≤ PLLI2SN ≤ 432
+/* Bits [16..17] - PLLI2S division factor for SPDIF-Rx clock */
+#define RCC_PLLI2SP_MSK (0x3 << 16)
+#define RCC_PLLI2SP_SET(VAL) (((VAL) << 16) & RCC_PLLI2SP_MSK)
+#define RCC_PLLI2SP_GET(REG) (((REG) & RCC_PLLI2SP_MSK) >> 16)
+/* These bits are set and cleared by software to control the SPDIF-Rx clock
+   frequency.
+   They should be written when the PLLI2S is disabled.
+   Caution: The software has to set these bits correctly to ensure that the
+   output frequency doesn’t exceed 120 MHz on this output.
+   PLL output clock frequency = VCO frequency / PLLI2SP with PLLI2SIP = 2, 4,
+   6 or 8
+   00: PLLI2SP = 2
+   01: PLLI2SP = 4
+   10: PLLI2SP = 6
+   11: PLLI2SP = 8 */
+#define RCC_PLLI2SP(P) (((((P) >> 1) - 1) & 0x3) << 16)
+
+/* Bit 15 - Reserved, must be kept at reset value. */
+
+/* Bits [6..14] - PLLI2S multiplication factor for VCO */
+#define RCC_PLLI2SN_MSK (0x1ff << 6)
+#define RCC_PLLI2SN_SET(VAL) (((VAL) << 6) & RCC_PLLI2SN_MSK)
+#define RCC_PLLI2SN_GET(REG) (((REG) & RCC_PLLI2SN_MSK) >> 6)
+/* These bits are set and cleared by software to control the multiplication
+   factor of the VCO.
+   These bits can be written only when the PLLI2S is disabled. Only half-word
+   and word accesses are allowed to write these bits.
+   Caution: The software has to set these bits correctly to ensure that the
+   VCO output frequency is between 100 and 432 MHz.
+   VCO output frequency = VCO input frequency × PLLI2SN with 50 ≤ PLLI2SN ≤
+   432
    000000000: PLLI2SN = 0, wrong configuration
-   000000001: PLLI2SN = 1, wrong configuration
-   ...
-   011000000: PLLI2SN = 192
-   011000001: PLLI2SN = 193
-   011000010: PLLI2SN = 194
-   ...
+   000000001: PLLI2SN = 1, wrong configuration ...
+   001100010: PLLI2SN = 50 ...
+   001100011: PLLI2SN = 99
+   001100100: PLLI2SN = 100
+   001100101: PLLI2SN = 101
+   001100110: PLLI2SN = 102 ...
    110110000: PLLI2SN = 432
-   110110000: PLLI2SN = 433, wrong configuration
-   ...
-   111111111: PLLI2SN = 511, wrong configuration */
+   110110000: PLLI2SN = 433, wrong configuration ...
+   111111111: PLLI2SN = 511, wrong configuration
+   Note: Between 50 and 99 multiplication factors are possible for VCO input
+   frequency higher than 1 MHz. However care must be taken to fulfill the
+   minimum VCO output frequency as specified above. */
+#define RCC_PLLI2SN(N) (((N) & 0x3ff) << 6)
 
+/* Bits [0..5] - Division factor for audio PLL (PLLI2S) input clock */
+#define RCC_PLLI2SM_MSK (0x3f << 0)
+#define RCC_PLLI2SM_SET(VAL) (((VAL) << 0) & RCC_PLLI2SM_MSK)
+#define RCC_PLLI2SM_GET(REG) (((REG) & RCC_PLLI2SM_MSK) >> 0)
+/* Set and cleared by software to divide PLLI2S input clock before the VCO.
+   These bits can be written only when PLLI2S is disabled.
+   Caution: The software has to set these bits correctly to ensure that the
+   VCO input frequency ranges from 1 to 2 MHz. It is recommended to select a
+   frequency of 2 MHz to limit PLL jitter.
+   VCO input frequency = PLL input clock frequency / PLLI2S with 2 ≤ PLLI2SM ≤
+   63
+   000000: PLLI2SM = 0, wrong configuration
+   000001: PLLI2SM = 1, wrong configuration
+   000010: PLLI2SM = 2
+   000011: PLLI2SM = 3
+   000100: PLLI2SM = 4 ...
+   111110: PLLI2SM = 62
+   111111: PLLI2SM = 63 */
 #define RCC_PLLI2SM(M) (((M) & 0x3f) << 0)
 
-/* ------------------------------------------------------------------------- */
-/* RCC DCKCFGR dedicated clocks configuration register */ 
+/* RCC PLL configuration register - PLLSAICFGR */
+#define STM32_RCC_PLLSAICFGR 0x0088
 
-#define STM32F_RCC_DCKCFGR 0x8c
+/* Bits [28..31] - Reserved, must be kept at reset value. */
+
+/* Bits [24..27] - PLLSAI division factor for SAIs clock */
+#define RCC_PLLSAIQ_MSK (0xf << 24)
+#define RCC_PLLSAIQ_SET(VAL) (((VAL) << 24) & RCC_PLLSAIQ_MSK)
+#define RCC_PLLSAIQ_GET(REG) (((REG) & RCC_PLLSAIQ_MSK) >> 24)
+/* Set and reset by software to control the frequency of SAIs clock.
+   These bits should be written when the PLLSAI is disabled.
+   SAI1 clock frequency = VCO frequency / PLLSAIQ with 2 ≤ PLLSAIQ ≤ 15
+   0000: PLLSAIQ = 0, wrong configuration
+   0001: PLLSAIQ = 1, wrong configuration ...
+   0010: PLLSAIQ = 2
+   0011: PLLSAIQ = 3
+   0100: PLLSAIQ = 4
+   0101: PLLSAIQ = 5 ...
+   1111: PLLSAIQ = 15 */
+#define RCC_PLLSAIQ(VAL) (((VAL) << 24) & RCC_PLLSAIQ_MSK)
+
+/* Bits [18..23] - Reserved, must be kept at reset value. */
+
+/* Bits [16..17] - PLLSAI division factor for 48 MHz clock */
+#define RCC_PLLSAIP_MSK (0x3 << 16)
+#define RCC_PLLSAIP_SET(VAL) (((VAL) << 16) & RCC_PLLSAIP_MSK)
+#define RCC_PLLSAIP_GET(REG) (((REG) & RCC_PLLSAIP_MSK) >> 16)
+/* These bits are set and cleared by software to control the output clock
+   frequency.
+   They should be written when the PLLSAI is disabled.
+   Caution: The software has to set these bits correctly to ensure that the
+   output frequency not exceed 120 MHz on this output PLL output clock
+   frequency = VCO frequency / PLLSAIP with PLLSAIP = 2, 4, 6 or 8
+   00: PLLSAIP =2
+   01: PLLSAIP = 4
+   10: PLLSAIP = 6
+   11: PLLSAIP = 8 */
+#define RCC_PLLSAIP(P) (((((P) >> 1) - 1) & 0x3) << 16)
+
+/* Bit 15 - Reserved, must be kept at reset value. */
+
+/* Bits [6..14] - PLLSAI division factor for VCO */
+#define RCC_PLLSAIN_MSK (0x1ff << 6)
+#define RCC_PLLSAIN_SET(VAL) (((VAL) << 6) & RCC_PLLSAIN_MSK)
+#define RCC_PLLSAIN_GET(REG) (((REG) & RCC_PLLSAIN_MSK) >> 6)
+/* Set and reset by software to control the multiplication factor of the VCO.
+   These bits should be written when the PLLSAI is disabled. Only half-word
+   and word accesses are allowed to write these bits.
+   Caution: The software has to set these bits correctly to ensure that the
+   VCO output frequency is between 100 and 432 MHz.
+   VCO output frequency = VCO input frequency x PLLSAIN with 50 ≤ PLLSAIN ≤
+   432
+   000000000: PLLSAIN = 0, wrong configuration
+   000000001: PLLSAIN = 1, wrong configuration ...
+   001100010: PLLSAIN = 50 ...
+   001100011: PLLSAIN = 99
+   001100100: PLLSAIN = 100
+   001100101: PLLSAIN = 101
+   001100110: PLLSAIN = 102 ...
+   110110000: PLLSAIN = 432
+   110110000: PLLSAIN = 433, wrong configuration ...
+   111111111: PLLSAIN = 511, wrong configuration
+   Note: Between 50 and 99 multiplication factors are possible for VCO input
+   frequency higher than 1 MHz. However care must be taken to fulfill the
+   minimum VCO output frequency as specified above. */
+#define RCC_PLLSAIN(VAL) (((VAL) << 6) & RCC_PLLSAIN_MSK)
+
+/* Bits [0..5] - Division factor for audio PLLSAI input clock */
+#define RCC_PLLSAIM_MSK (0x3f << 0)
+#define RCC_PLLSAIM_SET(VAL) (((VAL) << 0) & RCC_PLLSAIM_MSK)
+#define RCC_PLLSAIM_GET(REG) (((REG) & RCC_PLLSAIM_MSK) >> 0)
+/* Set and cleared by software to divide PLLSAI input clock before the VCO.
+   These bits can be written only when PLLSAI is disabled.
+   Caution: The software has to set these bits correctly to ensure that the
+   VCO input frequency ranges from 1 to 2 MHz. It is recommended to select a
+   frequency of 2 MHz to limit PLL jitter.
+   VCO input frequency = PLL input clock frequency / PLLSAI with 2 <= PLLSAIM
+   <= 63
+   000000: PLLSAIM = 0, wrong configuration
+   000001: PLLSAIM = 1, wrong configuration
+   000010: PLLSAIM = 2
+   000011: PLLSAIM = 3
+   000100: PLLSAIM = 4 ...
+   111110: PLLSAIM = 62
+   111111: PLLSAIM = 63 */
+#define RCC_PLLSAIM(VAL) (((VAL) << 0) & RCC_PLLSAIM_MSK)
+
+/* ------------------------------------------------------------------------- */
+/* RCC Dedicated Clock Configuration Register - DCKCFGR */
+#define STM32_RCC_DCKCFGR 0x008c
+
+/* Bits [29..31] - Reserved, must be kept at reset value. */
+
+/* Bits [27..28] - I2S APB2 clock source selection */
+#define RCC_I2S2SRC_MSK (0x3 << 27)
+#define RCC_I2S2SRC_SET(VAL) (((VAL) << 27) & RCC_I2S2SRC_MSK)
+#define RCC_I2S2SRC_GET(REG) (((REG) & RCC_I2S2SRC_MSK) >> 27)
+/* Set and reset by software to control the frequency of the APB2 I2S clock.
+   These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
+   00: I2S2 clock frequency = f(PLLI2S_R)
+   01: I2S2 clock frequency = I2S_CKIN Alternate function input frequency
+   10: I2S2 clock frequency = f(PLL_R)
+   11: I2S2 clock frequency = HSI/HSE depends on PLLSRC bit (PLLCFGR[22]) */
+
+/* Bits [25..26] - I2S APB1 clock source selection */
+#define RCC_I2S1SRC_MSK (0x3 << 25)
+#define RCC_I2S1SRC_SET(VAL) (((VAL) << 25) & RCC_I2S1SRC_MSK)
+#define RCC_I2S1SRC_GET(REG) (((REG) & RCC_I2S1SRC_MSK) >> 25)
+/* Set and reset by software to control the frequency of the APB1 I2S clock.
+   These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
+   00: I2S1 clock frequency = f(PLLI2S_R)
+   01: I2S1 clock frequency = I2S_CKIN Alternate function input frequency
+   10: I2S1 clock frequency = f(PLL_R)
+   11: I2S1 clock frequency = HSI/HSE depends on PLLSRC bit (PLLCFGR[22]) */
+
+/* Bit 24 - Timers clocks prescalers selection */
+#define RCC_TIMPRE (1 << 24)
+/* This bit is set and reset by software to control the clock frequency of all
+   the timers connected to APB1 and APB2 domain.
+   0: If the APB prescaler (PPRE1, PPRE2 in the RCC_CFGR register) is
+   configured to a division factor of 1, TIMxCLK = PCLKx. Otherwise, the timer
+   clock frequencies are set to twice to the frequency of the APB domain to
+   which the timers are connected: TIMxCLK = 2xPCLKx.
+   1:If the APB prescaler (PPRE1, PPRE2 in the RCC_CFGR register) is
+   configured to a division factor of 1, 2 or 4, TIMxCLK = HCLK. Otherwise,
+   the timer clock frequencies are set to four times to the frequency of the
+   APB domain to which the timers are connected: TIMxCLK = 4xPCLKx. */
+
+/* Bits [22..23] - SAI2 clock source selection */
+#define RCC_SAI2SRC_MSK (0x3 << 22)
+#define RCC_SAI2SRC_SET(VAL) (((VAL) << 22) & RCC_SAI2SRC_MSK)
+#define RCC_SAI2SRC_GET(REG) (((REG) & RCC_SAI2SRC_MSK) >> 22)
+/* These bits are set and cleared by software to control the SAI2 clock
+   frequency.
+   They should be written when the PLL, PLLSAI and PLLI2S are disabled.
+   00: SAI2 clock frequency = f(PLLSAI_Q) / PLLSAIDIVQ
+   01: SAI2 clock frequency = f(PLLI2S_Q) / PLLI2SDIVQ
+   10: SAI2 clock frequency = f(PLL_R)
+   11: SAI2 clock frequency = HSI/HSE depends on PLLSRC (PLLCFGR[22]) */
+
+/* Bits [20..21] - SAI1 clock source selection */
+#define RCC_SAI1SRC_MSK (0x3 << 20)
+#define RCC_SAI1SRC_SET(VAL) (((VAL) << 20) & RCC_SAI1SRC_MSK)
+#define RCC_SAI1SRC_GET(REG) (((REG) & RCC_SAI1SRC_MSK) >> 20)
+/* These bits are set and cleared by software to control the SAI1-A clock
+   frequency.
+   They should be written when the PLLSAI and PLLI2S are disabled.
+   00: SAI1 clock frequency = f(PLLSAI_Q) / PLLSAIDIVQ
+   01: SAI1 clock frequency = f(PLLI2S_Q) / PLLI2SDIVQ
+   10: SAI1 clock frequency = f(PLL_R)
+   11: I2S_CKIN Alternate function input frequency */
+
+/* Bits [13..19] - Reserved, must be kept at reset value. */
+
+/* Bits [8..12] - PLLSAI division factor for SAIs clock */
+#define RCC_PLLSAIDIVQ_MSK (0x1f << 8)
+#define RCC_PLLSAIDIVQ_SET(VAL) (((VAL) << 8) & RCC_PLLSAIDIVQ_MSK)
+#define RCC_PLLSAIDIVQ_GET(REG) (((REG) & RCC_PLLSAIDIVQ_MSK) >> 8)
+/* These bits are set and reset by software to control the SAIs clock
+   frequency.
+   They should be written only if PLLSAI is disabled.
+   SAI1 clock frequency = f(PLLSAI_Q) / PLLSAIDIVQ with 1 ≤ PLLSAIDIVQ ≤ 31
+   00000: PLLSAIDIVQ = /1
+   00001: PLLSAIDIVQ = /2
+   00010: PLLSAIDIVQ = /3
+   00011: PLLSAIDIVQ = /4
+   00100: PLLSAIDIVQ = /5 ...
+   11111: PLLSAIDIVQ = /32 */
+
+/* Bits [5..7] - Reserved, must be kept at reset value. */
+
+/* Bits [0..4] - PLLI2S division factor for SAIs clock */
+#define RCC_PLLI2SDIVQ_MSK (0x1f << 0)
+#define RCC_PLLI2SDIVQ_SET(VAL) (((VAL) << 0) & RCC_PLLI2SDIVQ_MSK)
+#define RCC_PLLI2SDIVQ_GET(REG) (((REG) & RCC_PLLI2SDIVQ_MSK) >> 0)
+/* These bits are set and reset by software to control the SAIs clock
+   frequency.
+   They should be written only if PLLI2S is disabled.
+   SAI1 clock frequency = f(PLLI2S_Q) / PLLI2SDIVQ with 1 ≤ PLLI2SDIVQ ≤ 31
+   00000: PLLI2SDIVQ = /1
+   00001: PLLI2SDIVQ = /2
+   00010: PLLI2SDIVQ = /3
+   00011: PLLI2SDIVQ = /4
+   00100: PLLI2SDIVQ = /5 ...
+   11111: PLLI2SDIVQ = /32 */
+
+/* ------------------------------------------------------------------------- */
+/* RCC clocks gated enable register - CKGATENR */
+#define STM32_RCC_CKGATENR 0x0090
+
+/* Bits [7..31] - Reserved, must be kept at reset value. */
+
+/* Bit 6 - RCC clock enable */
+#define RCC_RCC_CKEN (1 << 6)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* Bit 5 - Flash Interface clock enable */
+#define RCC_FLITF_CKEN (1 << 5)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled.
+   6.3.27         Bit 4 SRAM_CKEN: SRQAM controller clock enable
+   0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* Bit 3 - Spare clock enable */
+#define RCC_SPARE_CKEN (1 << 3)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* Bit 2 - Cortex M4 ETM clock enable */
+#define RCC_CM4DBG_CKEN (1 << 2)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* Bit 1 - AHB to APB2 Bridge clock enable */
+#define RCC_AHB2APB2_CKEN (1 << 1)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* Bit 0 - AHB to APB1 Bridge clock enable */
+#define RCC_AHB2APB1_CKEN (1 << 0)
+/* 0: the clock gating is enabled
+   1: the clock gating is disabled, the clock is always enabled. */
+
+/* ------------------------------------------------------------------------- */
+/* RCC dedicated clocks configuration register 2 - DCKCFGR2 */
+#define STM32_RCC_DCKCFGR2 0x0094
+
+/* Bits [30..31] - Reserved, must be kept at reset value. */
 
 /* Bits 28:27 I2S2SRC: I2S APB2 clock source selection */
 
@@ -1750,12 +2041,9 @@ These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
 
 
 /* ------------------------------------------------------------------------- */
-/* RCC DCKCFGR2 dedicated clocks configuration register 2 */ 
-
-#define STM32F_RCC_DCKCFGR2 0x94
 
 /* Bit 29 - SPDIF-Rx clock selection */
-#define RCC_SPDIFRXSEL (1 < 29)
+#define RCC_SPDIFRXSEL (1 << 29)
 /* 1: f(PLLI2S_P)
    0: f(PLL_R) */
 
@@ -1774,13 +2062,17 @@ These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
 /* 1: LSE
    0: HSI/488 */
 
-/* Bits [23..22] - I2C4 kernel clock source selection */
-#define RCC_FMPI2C1SEL(VAL) (((VAL) & 0x03) << 22)
+/* Bits [24..25] - Reserved, must be kept at reset value. */
+
+/* Bits [22..23] - I2C4 kernel clock source selection */
+#define RCC_FMPI2C1SEL_MSK (0x3 << 22)
+#define RCC_FMPI2C1SEL_SET(VAL) (((VAL) << 22) & RCC_FMPI2C1SEL_MSK)
+#define RCC_FMPI2C1SEL_GET(REG) (((REG) & RCC_FMPI2C1SEL_MSK) >> 22)
 /* 00: APB clock selected as FMPI2C1 clock
    01: System clock selected as FMPI2C1 clock
    10: HSI clock selected as FMPI2C1 clock
-   11: APB clock selected as FMPI2C1 clock (same as “00”)
-*/
+   11: APB clock selected as FMPI2C1 clock (same as “00”) */
+#define RCC_FMPI2C1SEL(VAL) (((VAL) & 0x03) << 22)
 
 #endif /* STM32F2X || STM32F4X */
 
@@ -2978,32 +3270,6 @@ again in case of a new switch is required)
 
 #endif /* STM32F3X */
 
-#if defined(STM32L4X)
-
-
-#define STM32_CLK_I2C3    STM32_APB1, RCC_I2C3
-#define STM32_CLK_DAC     STM32_APB1, RCC_DAC1
-#define STM32_CLK_PWR     STM32_APB1, RCC_PWR
-#define STM32_CLK_BKP     STM32_APB1, RCC_DAC2
-#define STM32_CLK_CAN     STM32_APB1, RCC_CAN
-#define STM32_CLK_USB     STM32_APB1, RCC_USB
-#define STM32_CLK_I2C2    STM32_APB1, RCC_I2C2
-#define STM32_CLK_I2C1    STM32_APB1, RCC_I2C1
-#define STM32_CLK_UART5   STM32_APB1, RCC_UART5
-#define STM32_CLK_UART4   STM32_APB1, RCC_UART4
-#define STM32_CLK_USART3  STM32_APB1, RCC_USART3
-#define STM32_CLK_USART2  STM32_APB1, RCC_USART2
-#define STM32_CLK_SPI3    STM32_APB1, RCC_SPI3
-#define STM32_CLK_SPI2    STM32_APB1, RCC_SPI2
-#define STM32_CLK_WWDG    STM32_APB1, RCC_WWDG
-#define STM32_CLK_TIM7    STM32_APB1, RCC_TIM7
-#define STM32_CLK_TIM6    STM32_APB1, RCC_TIM6
-#define STM32_CLK_TIM4    STM32_APB1, RCC_TIM4
-#define STM32_CLK_TIM3    STM32_APB1, RCC_TIM3
-#define STM32_CLK_TIM2    STM32_APB1, RCC_TIM2
-
-#endif /* STM32L4X */
-
 #define CLK_BUS(_BUS, _BIT) _BUS
 #define CLK_BIT(_BUS, _BIT) _BIT
 
@@ -3013,49 +3279,40 @@ again in case of a new switch is required)
 
 #if defined(STM32F2X) || defined(STM32F4X)
 struct stm32_rcc {
-	volatile uint32_t cr; /* Control Register */
-	volatile uint32_t pllcfgr; 
-	volatile uint32_t cfgr; 
-	volatile uint32_t cir; 
-
-	volatile uint32_t ahb1rstr;
-	volatile uint32_t ahb2rstr;
-	volatile uint32_t ahb3rstr;
-	uint32_t res0; 
-
-	volatile uint32_t apb1rstr;
-	volatile uint32_t apb2rstr;
-	uint32_t res1[2]; 
-
-	volatile uint32_t ahb1enr;
-	volatile uint32_t ahb2enr;
-	volatile uint32_t ahb3enr;
-	uint32_t res2; 
-
-	volatile uint32_t apb1enr;
-	volatile uint32_t apb2enr;
-	uint32_t res3[2]; 
-
-	volatile uint32_t ahb1lpenr;
-	volatile uint32_t ahb2lpenr; 
-	volatile uint32_t ahb3lpenr;
-	uint32_t res4; 
-
-	volatile uint32_t apb1lpenr;
-	volatile uint32_t apb2lpenr;
-	uint32_t res5[2]; 
-
-	volatile uint32_t bdcr;
-	volatile uint32_t csr;
-	uint32_t res6[2]; 
-
-	volatile uint32_t sscgr;
-	volatile uint32_t plli2scfgr;
-	volatile uint32_t pllsaicfgr;
-	volatile uint32_t dckcfgr;
-
-	volatile uint32_t ckgatenr;
-	volatile uint32_t dckcfgr2;
+	volatile uint32_t cr; /* 0x00 */
+	volatile uint32_t pllcfgr; /* 0x04 */
+	volatile uint32_t cfgr; /* 0x08 */
+	volatile uint32_t cir; /* 0x0c */
+	volatile uint32_t ahb1rstr; /* 0x10 */
+	volatile uint32_t ahb2rstr; /* 0x14 */
+	volatile uint32_t ahb3rstr; /* 0x18 */
+	uint32_t res0[1];
+	volatile uint32_t apb1rstr; /* 0x20 */
+	volatile uint32_t apb2rstr; /* 0x24 */
+	uint32_t res1[2];
+	volatile uint32_t ahb1enr; /* 0x30 */
+	volatile uint32_t ahb2enr; /* 0x34 */
+	volatile uint32_t ahb3enr; /* 0x38 */
+	uint32_t res2[1];
+	volatile uint32_t apb1enr; /* 0x40 */
+	volatile uint32_t apb2enr; /* 0x44 */
+	uint32_t res3[2];
+	volatile uint32_t ahb1lpenr; /* 0x50 */
+	volatile uint32_t ahb2lpenr; /* 0x54 */
+	volatile uint32_t ahb3lpenr; /* 0x58 */
+	uint32_t res4[1];
+	volatile uint32_t apb1lpenr; /* 0x60 */
+	volatile uint32_t apb2lpenr; /* 0x64 */
+	uint32_t res5[2];
+	volatile uint32_t bdcr; /* 0x70 */
+	volatile uint32_t csr; /* 0x74 */
+	uint32_t res6[2];
+	volatile uint32_t sscgr; /* 0x80 */
+	volatile uint32_t plli2scfgr; /* 0x84 */
+	volatile uint32_t pllsaicfgr; /* 0x88 */
+	volatile uint32_t dckcfgr; /* 0x8c */
+	volatile uint32_t ckgatenr; /* 0x90 */
+	volatile uint32_t dckcfgr2; /* 0x94 */
 };
 
 #endif /* STM32F2X || STM32F4X  */
@@ -3095,6 +3352,7 @@ extern const uint32_t stm32f_tim2_hz;
 extern const uint32_t stm32f_tim1_hz;
 extern const uint32_t stm32f_hsi_hz;
 extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_sai_hz;
 
 #ifdef __cplusplus
 extern "C" {

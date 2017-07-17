@@ -77,6 +77,9 @@
 
 #define STM32F_SPI4 ((struct stm32f_spi *)STM32F_BASE_SPI4)
 
+#define STM32_SAI1 ((struct stm32_sai *)STM32F_BASE_SAI1)
+#define STM32_SAI2 ((struct stm32_sai *)STM32F_BASE_SAI2)
+
 #define STM32F_I2C1 ((struct stm32f_i2c *)STM32F_BASE_I2C1)
 #define STM32F_I2C2 ((struct stm32f_i2c *)STM32F_BASE_I2C2)
 #define STM32F_I2C3 ((struct stm32f_i2c *)STM32F_BASE_I2C3)

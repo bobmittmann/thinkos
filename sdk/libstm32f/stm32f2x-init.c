@@ -41,6 +41,10 @@
 #define STM32_ENABLE_PLL 1
 #endif
 
+#ifndef STM32_ENABLE_PLLSAI
+#define STM32_ENABLE_PLLSAI 1
+#endif
+
 #ifndef STM32_HCLK_HZ 
   #if defined(STM32F4X)
     #define STM32_HCLK_HZ    168000000
@@ -122,6 +126,12 @@
   #define PLLI2SM 9
   #define PLLI2SQ 8
   #define PLLI2SP 2
+   /* F_VCO = 389454513
+      F_I2S = 169333333 */
+  #define PLLSAIN 127
+  #define PLLSAIM 9
+  #define PLLSAIQ 3
+  #define PLLSAIP 2
 #elif (STM32_HSE_HZ == 8000000)
 	/* F_HSE = 8 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
@@ -244,14 +254,36 @@
 
 #define __VCO_HZ (((uint64_t)STM32_HSE_HZ * PLLN) / PLLM)
 #define __HCLK_HZ (__VCO_HZ / PLLP)
+
 #define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
 #define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
+
+#if STM32_ENABLE_PLLSAI
+  /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
+  #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLSAIM)
+  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIQ)
+#else
+  #if STM32_ENABLE_PLL
+    /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
+    #define __SAI_HZ (__VCO_HZ / PLLPDIV)
+  #else
+    #define __SAI_HZ STM32_HSI_HZ
+  #endif
+#endif
 
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
 const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
 const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_tim2_hz = __HCLK_HZ;
+const uint32_t stm32f_sai_hz = __SAI_HZ;
+const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
+#if STM32_ENABLE_PLL
+const uint32_t stm32f_vco_hz = __VCO_HZ;
+#endif
+#if STM32_ENABLE_PLLSAI
+const uint32_t stm32f_vcosai_hz = __VCOSAI_HZ;
+#endif
 
 #if defined(STM32F446)
 const uint32_t stm32f_i2s_hz = __I2S_HZ;
@@ -381,7 +413,25 @@ void __attribute__((section(".init"))) _init(void)
 		}
 	}
 
-	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+	/* configure SAI PLL */
+	rcc->pllsaicfgr =  RCC_PLLSAIQ(PLLSAIQ) | RCC_PLLSAIP(PLLSAIP) |
+		RCC_PLLSAIN(PLLSAIN) | RCC_PLLSAIM(PLLSAIM);
+
+	/* enable SAISPLL */
+	cr |= RCC_PLLSAION;
+	rcc->cr = cr;;
+
+	for (again = 8192; ; again--) {
+		cr = rcc->cr;
+		if (cr & RCC_PLLSAIRDY)
+			break;
+		if (again == 0) {
+			/* PLL lock fail */
+			return;
+		}
+	}
+
+//	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
 #endif
 
 }
