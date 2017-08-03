@@ -1,8 +1,20 @@
 #!python
 from math import *
+import sys
 
-target_freq = 80000000
-hse = 11289600
+if len(sys.argv) > 1:
+        target_freq = int(sys.argv[1])
+else:
+        target_freq = 80000000
+
+if len(sys.argv) > 2:
+        hse = int(sys.argv[2])
+else:
+        hse = 11289600
+
+print "Target Freq:", target_freq
+print "hse:", hse
+
 
 err_min = 1000000
 m_min = 1
