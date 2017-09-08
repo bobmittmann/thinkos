@@ -31,7 +31,7 @@
  VT100 definitions
 ******************************************************************************/
 
-#define ESC		"\033"		// octal 033 = hexadecimal 01B = <ESC>
+#define ESC		"\033"		/* octal 033 = hexadecimal 01B = <ESC> */
 
 /******************************************************************************
  VT100 Set Display Attributes definitions
@@ -131,26 +131,60 @@
 #define _BG_WHITE_		ESC "[47m"
 
 /* Scrolling */
-#define _SET_SCROLL_        ESC "[%d;%dr"
-#define _SET_SCROLL_ALL_    ESC "[r"
-#define _SCROLL_DOWN_       ESC "[D"
-#define _SCROLL_UP_         ESC "[M"
+#define VT100_SET_SCROLL        ESC "[%d;%dr"
+#define VT100_SET_SCROLL_ALL    ESC "[r"
+#define VT100_SCROLL_DOWN       ESC "[D"
+#define VT100_SCROLL_UP         ESC "[M"
 
 /* Terminal Setup */
-#define VT100_RESET         ESC "c"
-#define VT100_LINE_WRAP_EN  ESC "7h"
-#define VT100_LINE_WRAP_DIS  ESC "7l"
+#define VT100_RESET             ESC "c"
+#define VT100_LINE_WRAP_EN      ESC "7h"
+#define VT100_LINE_WRAP_DIS     ESC "7l"
 
-#define VT100_CLRSCR        ESC "[2J"
-#define VT100_GOTO ESC "[%d;%df"
-#define VT100_CLRSCR ESC "[2J"
-#define VT100_CLREOL ESC "[K"
-#define VT100_CURSOR_SHOW ESC "[?25h"
-#define VT100_CURSOR_HIDE ESC "[?25l"
-#define VT100_CURSOR_SAVE ESC "[s"
-#define VT100_CURSOR_UNSAVE ESC "[u"
-#define VT100_ATTR_SAVE ESC "[7"
-#define VT100_ATTR_RESTORE ESC "[8"
+#define VT100_CLRSCR            ESC "[2J"
+#define VT100_GOTO              ESC "[%d;%df"
+#define VT100_CLREOL            ESC "[K"
+#define VT100_CURSOR_SHOW       ESC "[?25h"
+#define VT100_CURSOR_HIDE       ESC "[?25l"
+#define VT100_CURSOR_SAVE       ESC "[s"
+#define VT100_CURSOR_UNSAVE     ESC "[u"
+#define VT100_ATTR_SAVE         ESC "[7"
+#define VT100_ATTR_RESTORE      ESC "[8"
+/* Save Cursor & Attrs */
+#define VT100_SAVE              ESC "7"
+/* Restore Cursor & Attrs */
+#define VT100_RESTORE           ESC "8"
+
+/* Font mode */
+#define VT100_ATTR_NORMAL       ESC "[0m"
+#define VT100_ATTR_BRIGHT       ESC "[1m"
+#define VT100_ATTR_DIM          ESC "[2m"
+#define VT100_ATTR_UNDERLINE    ESC "[3m"
+#define VT100_ATTR_BLINK        ESC "[4m"
+#define VT100_ATTR_REVERSE      ESC "[5m"
+#define VT100_ATTR_HIDDEN       ESC "[6m"
+
+/* Foreground colors */
+#define VT100_ATTR_FG_BLACK     ESC "[30m"
+#define VT100_ATTR_FG_RED       ESC "[31m"
+#define VT100_ATTR_FG_GREEN     ESC "[32m"
+#define VT100_ATTR_FG_YELLOW    ESC "[33m"
+#define VT100_ATTR_FG_BLUE      ESC "[34m"
+#define VT100_ATTR_FG_MAGENTA   ESC "[35m"
+#define VT100_ATTR_FG_CYAN      ESC "[36m"
+#define VT100_ATTR_FG_WHITE     ESC "[37m"
+
+/* Background colors */
+#define VT100_ATTR_BG_BLACK     ESC "[40m"
+#define VT100_ATTR_BG_RED       ESC "[41m"
+#define VT100_ATTR_BG_GREEN     ESC "[42m"
+#define VT100_ATTR_BG_YELLOW    ESC "[43m"
+#define VT100_ATTR_BG_BLUE      ESC "[44m"
+#define VT100_ATTR_BG_MAGENTA   ESC "[45m"
+#define VT100_ATTR_BG_CYAN      ESC "[46m"
+#define VT100_ATTR_BG_WHITE     ESC "[47m"
+
+#define VT100_CURSOR_HOME       ESC "[H"
 
 #endif /* __VT100_H__ */
 

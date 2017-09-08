@@ -544,6 +544,9 @@
    must take care that the same bit can have a different meaning for the 
    input stage and for the output stage. */
 
+#ifdef STM32L4XX 
+#define TIM_OC1M3 (1 << 16)
+#endif
 
 /* Bit 15 - Output compare 2 clear enable */
 #define TIM_OC2CE (1 << 15)
