@@ -103,6 +103,18 @@ void gdb_stub_task(struct dmon_comm * comm);
 #define BOOT_ENABLE_THIRD 0
 #endif
 
+#ifndef MONITOR_OS_PAUSE
+#define MONITOR_OS_PAUSE 0
+#endif
+
+#ifndef MONITOR_OS_RESUME
+#define MONITOR_OS_RESUME 0
+#endif
+
+#ifndef MONITOR_RESTART_MONITOR
+#define MONITOR_RESTART_MONITOR 0
+#endif
+
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif
@@ -181,9 +193,13 @@ static const char monitor_menu[] =
 #if (MONITOR_OSINFO_ENABLE)
 " Ctrl+O - ThinkOS info\r\n"
 #endif
-#if (MONITOR_THREADINFO_ENABLE)
+#if (MONITOR_OS_PAUSE)
 " Ctrl+P - Pause all threads\r\n"
+#endif
+#if (MONITOR_RESTART_MONITOR)
 " Ctrl+Q - Restart monitor\r\n"
+#endif
+#if (MONITOR_OS_RESUME)
 " Ctrl+R - Resume all threads\r\n"
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
@@ -285,7 +301,7 @@ static void monitor_on_bkpt(struct monitor * mon)
 }
 #endif
 
-#if (MONITOR_THREADINFO_ENABLE)
+#if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(struct dmon_comm * comm)
 {
 	dmprintf(comm, "\r\nPausing all threads...\r\n");
@@ -295,7 +311,9 @@ static void monitor_pause_all(struct dmon_comm * comm)
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}
 }
+#endif
 
+#if (MONITOR_OS_RESUME)
 static void monitor_resume_all(struct dmon_comm * comm)
 {
 	dmprintf(comm, "\r\nResuming all threads...\r\n");
@@ -510,18 +528,22 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmon_print_osinfo(comm);
 		break;
 #endif
-#if (MONITOR_THREADINFO_ENABLE)
+#if (MONITOR_OS_PAUSE)
 	case CTRL_P:
 		dmprintf(comm, "^P\r\n");
 		monitor_pause_all(comm);
 		break;
-	case CTRL_Q:
-		dmprintf(comm, "^Q\r\n");
-		dbgmon_exec(monitor_task);
-		break;
+#endif
+#if (MONITOR_OS_RESUME)
 	case CTRL_R:
 		dmprintf(comm, "^R\r\n");
 		monitor_resume_all(comm);
+		break;
+#endif
+#if (MONITOR_RESTART_MONITOR)
+	case CTRL_Q:
+		dmprintf(comm, "^Q\r\n");
+		dbgmon_exec(monitor_task);
 		break;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
