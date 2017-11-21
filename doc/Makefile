@@ -3,7 +3,8 @@ include ../mk/config.mk
 PATH := $(PATH);C:\Program Files\MiKTeX 2.9\miktex\bin\x64
 export PATH
 
-TEXFILES = thinkos-user.tex thinkos-internals.tex
+TEXFILES = thinkos-user.tex 
+#thinkos-internals.tex
 
 T2TFILES = $(wildcard *.t2t)
 

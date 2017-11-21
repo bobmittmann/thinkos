@@ -1,0 +1,789 @@
+{\includegraphics{images/image1.png}}{~ }
+
+{ThinkOS demo on Windows}
+
+\begin{itemize}
+\item
+  \hypertarget{h.gjdgxs}{}
+
+  {For embedded developers on a budget.}
+\item
+  {All open source and free of}{~}{charge}{~}{tools.}
+\end{itemize}
+
+\section{\texorpdfstring{{Quick Guide}}{Quick Guide}}\label{quick-guide}
+
+{This guide will help you to install the necessary tools to compile and
+run a }{ThinkOS}{~demo application on a development board.}
+
+\subsection{\texorpdfstring{{Windows
+Tools}}{Windows Tools}}\label{windows-tools}
+
+{These are the basic steps to follow in order to install the tools: }
+
+\begin{enumerate}
+\tightlist
+\item
+  {Install }{\protect\hyperlink{h.30j0zll}{GNU Toolchain for ARM
+  Processros}}{\protect\hyperlink{h.30j0zll}{~}}{for Windows hosts.}
+\item
+  {Install }{\protect\hyperlink{h.1fob9te}{GNU
+  Make}}{\protect\hyperlink{h.1fob9te}{~}}{for Windows.}
+\item
+  {Install }{\protect\hyperlink{h.3znysh7}{GNU
+  CoreUtils}}{\protect\hyperlink{h.3znysh7}{~}}{for Windows.}
+\item
+  {Install the }{\protect\hyperlink{h.2et92p0}{Java
+  JRE}}{\protect\hyperlink{h.2et92p0}{~}}{from Oracle.}
+\item
+  {Install the }{\protect\hyperlink{h.tyjcwt}{Eclipse for C++
+  Developers}}{\protect\hyperlink{h.tyjcwt}{~}}{IDE.}
+\item
+  {Install the }{\protect\hyperlink{h.3dy6vkm}{GNU ARM Eclipse
+  Plug-ins}}{\protect\hyperlink{h.3dy6vkm}{.}}
+\item
+  {Install the }{\protect\hyperlink{h.1t3h5sf}{C/C++ GDB Hardware
+  Debugging Plug-in}}{\protect\hyperlink{h.1t3h5sf}{.}}
+\item
+  {Install the }{\protect\hyperlink{h.4d34og8}{STM32 ST-LINK
+  Utility}}{\protect\hyperlink{h.4d34og8}{~}}{from STMicroelectronics.}
+\end{enumerate}
+
+{Detailed instructions for each one of the steps can be found in the
+next sections of this document. }
+
+\subsection{\texorpdfstring{{Demo
+Application}}{Demo Application}}\label{demo-application}
+
+{There are some demo applications using ThinkOS in the source tree. This
+is a guide on how to compile and run }{ThinkOS}{~programs in the
+}{\protect\hyperlink{h.35nkun2}{STM32F3Discovery}}{\protect\hyperlink{h.35nkun2}{~}}{board.
+}
+
+\begin{enumerate}
+\tightlist
+\item
+  {Get the }{\protect\hyperlink{h.2s8eyo1}{ThinkOS Source
+  Code}}{\protect\hyperlink{h.2s8eyo1}{~}}{from GitHub.}
+\item
+  {\protect\hyperlink{h.17dp8vu}{Import the Eclipse
+  projects}}{\protect\hyperlink{h.17dp8vu}{~}}{for the target board into
+  your workspace.}
+\item
+  {\protect\hyperlink{h.3rdcrjn}{Compile the ThikOS
+  BootLoader}}{\protect\hyperlink{h.3rdcrjn}{~}}{project using Eclipse
+  IDE.}
+\item
+  {Load the }{\protect\hyperlink{h.1ksv4uv}{ThinkOS
+  BootLoader}}{\protect\hyperlink{h.1ksv4uv}{~}}{on the board using the
+  }{STM32 ST-LINK Utility}{.}
+\item
+  {Install the }{\protect\hyperlink{h.44sinio}{Virtual COM
+  Driver}}{\protect\hyperlink{h.44sinio}{~}}{on the PC to access the
+  }{ThinkOS Debug-Monitor}{.}
+\item
+  {\protect\hyperlink{h.26in1rg}{Compile the SDK
+  Libraries}}{\protect\hyperlink{h.26in1rg}{~}}{(sdklib) for the target
+  board using Eclipse.}
+\item
+  {\protect\hyperlink{h.lnxbz9}{Compile the demo
+  application}}{\protect\hyperlink{h.lnxbz9}{~}}{project using Eclipse.}
+\item
+  {Run the application with }{\protect\hyperlink{h.2jxsxqh}{GDB Remote
+  Debugging}}{\protect\hyperlink{h.2jxsxqh}{.}}
+\end{enumerate}
+
+\hypertarget{h.30j0zll}{\section{\texorpdfstring{{GNU Toolchain for ARM
+Processors}}{GNU Toolchain for ARM Processors}}\label{h.30j0zll}}
+
+{The GNU toolchain is a broad collection of programming tools produced
+by the GNU Project. These tools form a toolchain (a suite of tools used
+in a serial manner) used for developing software applications and
+operating systems.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download and install the }{GNU Toolchain for ARM Processros}{~from
+  the site:
+  }{\href{https://www.google.com/url?q=https://launchpad.net/gcc-arm-embedded\&sa=D\&ust=1511275046369000\&usg=AFQjCNGxWGT_YonUxM4BFF9geho0LfeKww}{https://launchpad.net/gcc-arm-embedded}}{.
+  At the time of writing this document the latest version was
+  4.9-2015-q2, which can be downloaded directly from:
+  }{\href{https://www.google.com/url?q=https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q2-update/\%2Bdownload/gcc-arm-none-eabi-4_9-2015q2-20150609-win32.exe\&sa=D\&ust=1511275046369000\&usg=AFQjCNHgw7yb_djkKsPe-rUggiSx6ZpV-Q}{https://launchpad.net/gcc-arm-embedded/4.9/4.9-2015-q2-update/+download/gcc-arm-none-eabi-4\_9-2015q2-20150609-win32.exe}}
+\item
+  {Run the downloaded file
+  (gcc-arm-none-eabi-4\_9-2015q2-20150609-win32.exe) to start the
+  installation.}
+\end{itemize}
+
+{\includegraphics{images/image3.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {In the next steps use the default values suggested by the wizard
+  installer.}
+\item
+  {In the last screen, after the files were copied, select the ``Add
+  path to environment variable'' option. }
+\end{itemize}
+
+{\includegraphics{images/image5.png}}
+
+\hypertarget{h.1fob9te}{\section{\texorpdfstring{{GNU Make for
+Windows}}{GNU Make for Windows}}\label{h.1fob9te}}
+
+{Make is a tool which controls the generation of executables and other
+non-source files of a program from the program's source files. Make gets
+its knowledge of how to build your program from a file called the
+makefile, which lists each of the non-source files and how to compute it
+from other files. When you write a program, you should write a makefile
+for it, so that it is possible to use Make to build and install the
+program.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download the GNU Make package:
+  http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download}
+\item
+  {Run the downloaded program ``make-3.81.exe'' and follow the
+  installation steps. }
+\end{itemize}
+
+{\includegraphics{images/image4.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {Install on the same folder as the GCC Toolchain ~so you won't need to
+  modify your path. During the installation in the ``Select Destination
+  Location:'' page select: ``C:\textbackslash{}Program Files
+  (x86)\textbackslash{}GNU Tools ARM Embedded\textbackslash{}4.9
+  2015q2'' in the text box.}
+\end{itemize}
+
+{\includegraphics{images/image7.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {Also there is no point of creating a ``Start Menu'' folder. Disable
+  this option by checking the ``Don't create a Start Menu folder'' in
+  the page: ``Select Start Menu Folder''. }
+\end{itemize}
+
+\hypertarget{h.3znysh7}{\section{\texorpdfstring{{GNU CoreUtils for
+Windows}}{GNU CoreUtils for Windows}}\label{h.3znysh7}}
+
+{The GNU Core Utilities are the basic file, shell and text manipulation
+utilities of the GNU operating system. These are the core utilities
+which are expected to exist on every operating system.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download the GnuCore Utils package from:
+  }{\href{https://www.google.com/url?q=http://sourceforge.net/projects/gnuwin32/files/coreutils/5.3.0/coreutils-5.3.0.exe/download\&sa=D\&ust=1511275046372000\&usg=AFQjCNEiYiOPmJnrJ9jTIPo2YGpR3Yz9wg}{http://sourceforge.net/projects/gnuwin32/files/coreutils/5.3.0/coreutils-5.3.0.exe/download}}
+\item
+  {Run the downloaded program ``coreutils-5.3.0.exe'' and follow the
+  installation steps.}
+\item
+  {Please refer to the }{GNU Make for Windows}{~installation procedure.}
+\end{itemize}
+
+\hypertarget{h.2et92p0}{\section{\texorpdfstring{{Java Runtime
+Environment (JRE)}}{Java Runtime Environment (JRE)}}\label{h.2et92p0}}
+
+{Eclipse depends on a Java so a Java Runtime Environment must be
+installed in your system.}
+
+\subsection{\texorpdfstring{{Do I have Java in my
+system?}}{Do I have Java in my system?}}\label{do-i-have-java-in-my-system}
+
+{The easy way to check whether you have the JRE installed in your system
+is to type call the java interpreter from a windows console.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Run the command shell: ``Start''--\textgreater{}``All
+  Programs''--\textgreater{}``Accessories''--\textgreater{}``Command
+  Prompt''}
+\item
+  {Type: ``java -version''}
+\item
+  {The output should be something similar to this:}
+\end{itemize}
+
+{java version ``1.8.0\_40''}
+
+{Java(TM) SE Runtime Environment (build 1.8.0\_40-b26)}
+
+{Java HotSpot(TM) 64-Bit Server VM (build 25.40-b25, mixed mode)}
+
+\subsection{\texorpdfstring{{Installing the
+JRE}}{Installing the JRE}}\label{installing-the-jre}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download the JRE from:
+  }{\href{https://www.google.com/url?q=http://www.oracle.com/technetwork/java/javase/downloads/index.html\&sa=D\&ust=1511275046373000\&usg=AFQjCNFFJIGcAOFgmFHQHLk6g_3Ml19LyA}{http://www.oracle.com/technetwork/java/javase/downloads/index.html}}{.}
+\item
+  {Select the correct version for your platform. Most probably the Java
+  version you want is the 64 bits version for ~Windows hosts: "}{Windows
+  x64}{" --\textgreater{} "}{jre-8u60-windows-x64.exe}{"}
+\end{itemize}
+
+\hypertarget{h.tyjcwt}{\section{\texorpdfstring{{Eclipse IDE for C/C++
+Developers}}{Eclipse IDE for C/C++ Developers}}\label{h.tyjcwt}}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download the }{Eclipse IDE for C/C++ Developers}{~from
+  }{\href{https://www.google.com/url?q=https://eclipse.org/downloads/\&sa=D\&ust=1511275046374000\&usg=AFQjCNGku66E543IPyqaPfqFKQo3pd2L3A}{https://eclipse.org/downloads/}}{.
+  At the time of this writing the latest version is }{Mars}{~wich can be
+  downloaded directly from:
+  }{\href{https://www.google.com/url?q=http://www.eclipse.org/downloads/download.php?file\%3D/technology/epp/downloads/release/mars/R/eclipse-cpp-mars-R-win32-x86_64.zip\&sa=D\&ust=1511275046375000\&usg=AFQjCNGpm_xGDGG0CV-OUsVfXgLuVmq5zw}{http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/mars/R/eclipse-cpp-mars-R-win32-x86\_64.zip}}
+\item
+  {Unzip the downloaded file into a directory of your choice. ~For
+  example }{C:/eclipse}
+\end{itemize}
+
+\hypertarget{h.3dy6vkm}{\section{\texorpdfstring{{GNU ARM Eclipse
+Plug-ins}}{GNU ARM Eclipse Plug-ins}}\label{h.3dy6vkm}}
+
+{To install these plug-ins use the Eclipse standard install/update
+mechanism}
+
+\begin{itemize}
+\tightlist
+\item
+  {run the Eclipse IDE by selecting the }{eclipse.exe}{~from the
+  installation directory. Ex: ~}{C:/eclipse/eclipse.exe}
+\item
+  {select the suggested default workspace (just click in the
+  }{OK}{~button). We will select another workspace to compile the demo
+  application later.}
+\item
+  {in the Eclipse menu select }{Help--\textgreater{}Install New
+  Software\ldots{}}
+\item
+  {in the }{Install}{~window, click the }{Add\ldots{}}{~button}
+\item
+  {in the }{Add Repository}{~dialog box fill in the fields:}
+\end{itemize}
+
+\begin{itemize}
+\tightlist
+\item
+  {Name: }{GNU ARM Eclipse Plug-ins}
+\item
+  {Location: }{http://gnuarmeclipse.sourceforge.net/updates}
+\end{itemize}
+
+{\includegraphics{images/image6.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {click the OK button}
+\item
+  {the main window should list a group named CDT GNU Cross Development
+  Tools; expand it}
+\item
+  {select the ``GNU ARM C/C++ Cross Compile'' plug-in}
+\end{itemize}
+
+{\includegraphics{images/image9.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {click the Next button and follow the usual installation procedure}
+\end{itemize}
+
+\hypertarget{h.1t3h5sf}{\section{\texorpdfstring{{C/C++ GDB Hardware
+Debugging
+Plug-in}}{C/C++ GDB Hardware Debugging Plug-in}}\label{h.1t3h5sf}}
+
+\begin{itemize}
+\tightlist
+\item
+  {In the Eclipse menu select Help --\textgreater{}Install New
+  Software\ldots{}}
+\item
+  {in the Work with drop down select Mars -
+  http://download.eclipse.org/releases/mars (if your Eclipse version is
+  not the Mars, you should find a similar entry with the corresponding
+  version).}
+\item
+  {the main window should list a group named Mobile and Device
+  Development; expand it}
+\item
+  {select the C/C++ GDB Hardware Debugging plug-in}
+\end{itemize}
+
+{\includegraphics{images/image8.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {click the Next button and follow the usual installation procedure}
+\end{itemize}
+
+\hypertarget{h.4d34og8}{\section{\texorpdfstring{{STM32 ST-LINK
+Utility}}{STM32 ST-LINK Utility}}\label{h.4d34og8}}
+
+{The STM32 ST-LINK Utility software facilitates fast in-system
+programming of the STM32 microcontroller families in development
+environments via the tools, ST-LINK and ST-LINK/V2. It will be used to
+load the }{ThinkOS Bootloader}{~on the target board.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Download }{STSW-LINK004}{~(STM32 ST-LINK utility), the downloaded
+  file is called }{stsw-link004.zip}{. The link:
+  }{\href{https://www.google.com/url?q=http://www.st.com/web/catalog/tools/FM147/SC1887/PF258168\&sa=D\&ust=1511275046378000\&usg=AFQjCNG92HuOtBhSNJxbtqHYuxedmOi_CA}{http://www.st.com/web/catalog/tools/FM147/SC1887/PF258168}}{~was
+  pointing to the file at the time of this writing. Alternatively you
+  can search for: }{STM32 ST-LINK utility}{~in the STMicroelectronics
+  website:
+  }{\href{https://www.google.com/url?q=http://www.st.com\&sa=D\&ust=1511275046378000\&usg=AFQjCNFcwsIyrxx1y2iQSZFPc5tU-A4JIQ}{http://www.st.com}}
+\item
+  {Decompress the }{stsw-link004.zip}{~file in a temporary folder and
+  execute the installer: }{STM32 ST-LINK Utility\_v3.7.0.exe}
+\end{itemize}
+
+\hypertarget{h.2s8eyo1}{\section{\texorpdfstring{{ThinkOS Source
+Code}}{ThinkOS Source Code}}\label{h.2s8eyo1}}
+
+\begin{itemize}
+\tightlist
+\item
+  {Get the }{ThinkOS}{~source code from GitHub }{YARD-ICE}{~project:
+  }{\href{https://www.google.com/url?q=https://github.com/bobmittmann/yard-ice/archive/0.24.zip\&sa=D\&ust=1511275046379000\&usg=AFQjCNH4WK30jeFdsIOws19RGCXF5Ekb5Q}{https://github.com/bobmittmann/yard-ice/archive/0.24.zip}}
+\item
+  {Extract the source code into a local directory, ex.:
+  }{C:\textbackslash{}devel}
+\end{itemize}
+
+\subsection{\texorpdfstring{{Cloning the Git
+repository}}{Cloning the Git repository}}\label{cloning-the-git-repository}
+
+{Alternatively you can clone the Git repository from:
+}{\href{https://www.google.com/url?q=https://github.com/bobmittmann/yard-ice\&sa=D\&ust=1511275046380000\&usg=AFQjCNFusJgGgAORHVsXadKiiwWkzF5HBQ}{https://github.com/bobmittmann/yard-ice}}
+
+\hypertarget{h.17dp8vu}{\section{\texorpdfstring{{Importing Eclipse
+Projects}}{Importing Eclipse Projects}}\label{h.17dp8vu}}
+
+{To compile the }{ThinkOS BootLoader}{~and the demo application you must
+import the Eclipse projects existing in the ThinkOS source code tree
+into your Eclipse workspace.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Select }{board/stm32f3discovery }{as your Eclipse workspace:
+  `}{C:\textbackslash{}devel\textbackslash{}yard-ice\textbackslash{}src\textbackslash{}board\textbackslash{}stm32f3discovery}{'}
+\item
+  {In the Eclipse menu select }{File--\textgreater{}Import\ldots{}}
+\item
+  {in the }{Import}{~window, expand the }{General}{~group}
+\item
+  {Select }{Existing Projects into Workspace}{~and click }{Next
+  \textgreater{}}
+\end{itemize}
+
+{\includegraphics{images/image11.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {check `}{Select root directory}{'}
+\item
+  {select the current workspace directory: Ex.:
+  `}{C:\textbackslash{}devel\textbackslash{}yard-ice\textbackslash{}src\textbackslash{}board\textbackslash{}stm32f3discovery}{'}
+\end{itemize}
+
+{\includegraphics{images/image10.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {click the ``Finish'' button }
+\end{itemize}
+
+\hypertarget{h.3rdcrjn}{\section{\texorpdfstring{{Compiling the ThinkOS
+Bootloader}}{Compiling the ThinkOS Bootloader}}\label{h.3rdcrjn}}
+
+\begin{itemize}
+\tightlist
+\item
+  {In the }{Project Explorer}{~tab select the }{boot}{~project. If the
+  Project Explorer tab/window is not visible select }{Window}{→}{Show
+  View}{→}{Project Explorer}{~from the menu.}
+\item
+  {Press the build button (Hammer) or select
+  }{Project--\textgreater{}Build Project}
+\end{itemize}
+
+{\includegraphics{images/image14.png}}
+
+\subsection{\texorpdfstring{{Using the Command
+Shell}}{Using the Command Shell}}\label{using-the-command-shell}
+
+{It is not necessary to have the Eclipse environment to compile the
+projects in the source tree, you could use the windows Command Prompt or
+a MinGW/MSYS terminal directly.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Open a windows shell: Start}{→}{All
+  Programs}{→}{Accessories}{→}{Command Prompt}
+\item
+  {Change to the directory
+  src\textbackslash{}board\textbackslash{}stm32f3discovery\textbackslash{}boot
+  in the yard-ice source tree.}
+\item
+  {Type: }{make}
+\end{itemize}
+
+{\includegraphics{images/image12.png}}
+
+{}
+
+\hypertarget{h.26in1rg}{\section{\texorpdfstring{{Compiling the board
+SDK libraries}}{Compiling the board SDK libraries}}\label{h.26in1rg}}
+
+\begin{itemize}
+\tightlist
+\item
+  {In the }{Project Explorer}{~tab select the }{sdklibs}{~project.}
+\item
+  {Press the build button (Hammer) or select
+  }{Project--\textgreater{}Build Project}
+\end{itemize}
+
+\hypertarget{h.lnxbz9}{\section{\texorpdfstring{{Compiling the demo
+application}}{Compiling the demo application}}\label{h.lnxbz9}}
+
+\begin{itemize}
+\tightlist
+\item
+  {In the }{Project Explorer}{~tab select the }{led\_test}{~project}
+\item
+  {Press the build button (Hammer) or select
+  }{Project--\textgreater{}Build Project}
+\end{itemize}
+
+\hypertarget{h.35nkun2}{\section{\texorpdfstring{{STM32F3Discovery
+board}}{STM32F3Discovery board}}\label{h.35nkun2}}
+
+{The }{STM32F3Discovery}{~is a low cost development board for the STM32
+F3 series Cortex-M4 mixed-signals. It includes everything required for
+beginners and experienced users to get started quickly. Based on the
+}{STM32F303VCT6}{, it includes an ST-LINK/V2 embedded debug tool,
+accelerometer, gyroscope and e-compass ST MEMS, USB connection, LEDs and
+pushbuttons.}
+
+{\includegraphics{images/image13.jpg}}
+
+{The Stm32f3Discovery board has 2 USB connectors:}
+
+\begin{itemize}
+\tightlist
+\item
+  {One at the center of the board marked as }{USB ST-LINK}{~which is
+  connected to an auxiliary chip who in turn connects to the JTAG/SWD
+  interface of STM303 MPU. We will use this interface to program the
+  Boot-Loader once.}
+\item
+  {The second one, located at the side of the board, marked as }{USB
+  USER}{, is attached directly to the STM32F303 MPU. The ThinkOS
+  Debug-Monitor will make use of this port as a console for user
+  interface and for remote debugging through GDB.}
+\end{itemize}
+
+\hypertarget{h.1ksv4uv}{\section{\texorpdfstring{{ThinkOS on
+STM32F3Discovery}}{ThinkOS on STM32F3Discovery}}\label{h.1ksv4uv}}
+
+{The ThinkOS can be configured to run as a Boot-Loader and
+Debug-Monitor, this way the OS will be resident in the board adding the
+support for Application (Firmware) updates as well as debug support.}
+
+{To install or upgrade the ThinkOS in your Stm32f3Discovery board follow
+these instructions:}
+
+\begin{itemize}
+\tightlist
+\item
+  {Compile the }{boot}{~project }
+\item
+  {Install the STM32 ST-LINK Utility}
+\item
+  {Connect a USB cable to the USB ST-LINK connector in the board and
+  into your PC, this will power the board.}
+\item
+  {Run the STM32 ST-LINK Utility}
+\item
+  {Connect the program to the board by clicking the connect button or by
+  selecting }{Target}{→}{Connect}{~from the menu.}
+\item
+  {Open the }{thinkos.bin}{~file compiled at step 1, located at
+  src\textbackslash{}board\textbackslash{}stm32f3discovery\textbackslash{}boot\textbackslash{}release.
+  Use the }{File}{→}{Open file\ldots{}}{~menu.}
+\item
+  {Program the board by selecting }{Target}{→}{Program\ldots{}}{~and
+  pressing the }{Start}{~button on the }{Download {[} thinkos.bin
+  {]}}{~dialog box.}
+\end{itemize}
+
+{\includegraphics{images/image15.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {After the programming completed the LEDs on the circular pattern in
+  the board will light up in a spinning pattern.}
+\end{itemize}
+
+\hypertarget{h.44sinio}{\subsubsection{\texorpdfstring{{USB Virtual COM
+Port}}{USB Virtual COM Port}}\label{h.44sinio}}
+
+{You can now remove the mini USB from the central connector (}{USB
+ST-LINK}{) and insert it into the adjacent connector at the side of the
+board (}{USB USER}{). At this point a virtual serial port driver will be
+installed in your system. If the driver fails to install automatically
+you need to install it manually. }
+
+\begin{itemize}
+\tightlist
+\item
+  {Download the STSW-STM32102STM32 Virtual COM Port Driver from the
+  STMicroelectonics website:
+  }{\href{https://www.google.com/url?q=http://www.st.com/web/en/catalog/tools/PF257938\&sa=D\&ust=1511275046387000\&usg=AFQjCNHybx7g4II_reWXNPTvvvAeYlCa4Q}{http://www.st.com/web/en/catalog/tools/PF257938}}{.
+  The file should be `stsw-stm32102.zip'}
+\item
+  {Decompress the file into a temporary folder and run the installation
+  program: }{VCP\_V1.4.0\_Setup.exe}{.}
+\end{itemize}
+
+{If the driver is installed the Devices and Printers list will show it:
+Start}{→Devices and Printers. The device will be displayed in the
+}{Unspecified}{~section and is called `}{STMicroelectronics Virtual COM
+Port}{'. If you select the device in the list, more details will be
+displayed at the bottom. The Model should read: `}{ThinkOS Debug
+Monitor}{'.}
+
+{\includegraphics{images/image16.png}}
+
+\hypertarget{h.2jxsxqh}{\section{\texorpdfstring{{ThinkOS
+Eclipse/GDB}}{ThinkOS Eclipse/GDB}}\label{h.2jxsxqh}}
+
+{The }{ThinkOS Debug-Monitor}{~is very high priority application
+embedded in the }{ThinkOS BootLoader }{which provides a link between the
+host GDB debugger and the ThinkOS Kernel, allowing any front end capable
+of using GDB for debugging to load and debug Application (Firmware) on
+the target board.}
+
+{The }{ThinkOS Debug-Monitor}{~emulates a serial port over the USB to
+communicate with the GDB (debugger) running in the PC, you need to make
+sure }{ST USB VCOM Port driver}{~is correctly installed in your system
+in order to debug }{ThinkOS}{~programs on the Stm32f3Discovery board.}
+
+{This section describes how to setup a remote GDB session using Eclipse
+CDT and a }{Stm32f3Discovery}{~board running }{ThinkOS}{.}
+
+\begin{itemize}
+\tightlist
+\item
+  {Make sure the }{Stm32f3Discovery}{~board is attached to the }{USB
+  USER}{~interface.}
+\item
+  {Check the }{Virtual COM Port}{~number. Go to }{Start}{→}{Devices and
+  Printers}{~and locate the `}{STMicroelectronics Virtual COM Port}{'.
+  The COM port number will be displayed just under the device.}
+\item
+  {Open the Eclipse project named }{led\_test}{~in the stm32f3discovery
+  workspace.}
+\item
+  {Build the project.}
+\item
+  {Open the Debug Configurations window selecting }{Run}{→}{Debug
+  Configurations\ldots{}}{~from the menu.}
+\item
+  {Double click the item }{GDB Hardware Debugging}{~or press the `New'
+  button.}
+\item
+  {Select the Debugger tab and fill in the information accordingly:}
+\end{itemize}
+
+\begin{itemize}
+\tightlist
+\item
+  {GDB Command: `arm-none-eabi-gdb -b 38400' (please notice the space
+  between the --b and the 38400)}
+\item
+  {JTAG Device: select Generic Serial}
+\item
+  {GDB Connection String:
+  `\textbackslash{}\textbackslash{}.\textbackslash{}COM14'. ~Use here
+  the COM port reported in the }{Devices and Printers}{~list.}
+\end{itemize}
+
+{\includegraphics{images/image17.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {Click the `Apply' button}
+\item
+  {Click the `Debug' button}
+\item
+  {The Eclipse will change the perspective to Debug and the Debug
+  toolbar should appear.}
+\item
+  {Press the Resume (F8) button (yellow green arrow) to run the
+  program.}
+\item
+  {The LEDs should flash in sequence.}
+\item
+  {Stop the program by clicking in the pause button. This will list the
+  threads of the system and the source code window will indicate the
+  current execution line.}
+\item
+  {At this point you can perform step-by-step execution, insert
+  breakpoints, inspect variables, expression registers etc.}
+\item
+  {When you finish debugging you can close the debug session by pressing
+  the Disconnect button (red zigzag). Before starting a new section
+  always disconnect the previous one or the GDB will complain it can't
+  open the serial/USB port.}
+\end{itemize}
+
+{\includegraphics{images/image18.png}}
+
+\section{\texorpdfstring{{Summary of Packages and
+Files}}{Summary of Packages and Files}}\label{summary-of-packages-and-files}
+
+\protect\hypertarget{t.36dcbdc507fe00169c271aaebe6543bb601998bb}{}{}\protect\hypertarget{t.0}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{File}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{Content}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{stsw-link009.zip }\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ST-LINK USB driver ~ ~ ~ ~ ~ ~ ~ }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{stsw-link004.zip}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{STM32 ST-LINK utility}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{stlinkupgrade.zip }\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ST-LINK firmware upgrade}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{eclipse-cpp-mars-R-win32-x86\_64.zip}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{Eclipse IDE for C/C++ Developers}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{jre-8u60-windows-x64.exe}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{Java Runtime Environement (JRE)}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gcc-arm-none-eabi-4\_9-2015q2-20150609-win32.exe}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{GNU Toolchain for ARM Processros}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{make-3.81.exe}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{GNU Make for Windows}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{coreutils-5.3.0.exe}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{GNU CoreUtils for Windows}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{yard-ice-0.23.zip}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ThinkOS Source Code}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{stsw-stm32102.zip}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{STSW-STM32102STM32 Virtual COM Port Driver}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\section{\texorpdfstring{{References}}{References}}\label{references}
+
+\subsubsection{\texorpdfstring{{Gnu Tools for
+Window}}{Gnu Tools for Window}}\label{gnu-tools-for-window}
+
+{More information on the GNU Make and CoreUtils package can be found at:
+}
+
+\begin{itemize}
+\tightlist
+\item
+  {\href{https://www.google.com/url?q=http://gnuwin32.sourceforge.net/packages/make.htm\&sa=D\&ust=1511275046397000\&usg=AFQjCNHQhDY13EJKv3bQUa54ST0nRARnLg}{http://gnuwin32.sourceforge.net/packages/make.htm}}
+\item
+  {\href{https://www.google.com/url?q=http://gnuwin32.sourceforge.net/packages/coreutils.htm\&sa=D\&ust=1511275046397000\&usg=AFQjCNHzCBMuNsNxheAyqUiqalsOFlTK9g}{http://gnuwin32.sourceforge.net/packages/coreutils.htm}}
+\end{itemize}
+
+\subsubsection{\texorpdfstring{{GNU ARM Eclipse
+Plug-Ins}}{GNU ARM Eclipse Plug-Ins}}\label{gnu-arm-eclipse-plug-ins}
+
+{Quick info on GNU ARM Eclipse Plug-Ins:}
+
+\begin{itemize}
+\tightlist
+\item
+  {Name: `}{GNU ARM Eclipse Plug-ins}{'}
+\item
+  {Location:
+  }{\href{https://www.google.com/url?q=http://gnuarmeclipse.sourceforge.net/updates\&sa=D\&ust=1511275046399000\&usg=AFQjCNEdmX4d-t5pswZkr32N4e9t7J324Q}{http://gnuarmeclipse.sourceforge.net/updates}}
+\item
+  {Website:
+  }{\href{https://www.google.com/url?q=http://gnuarmeclipse.livius.net/blog\&sa=D\&ust=1511275046399000\&usg=AFQjCNHwOOZ7pOFg21RgjhMN2SMiP27Adw}{http://gnuarmeclipse.livius.net/blog}}
+\end{itemize}
+
+\subsubsection{\texorpdfstring{{ThinkOS}}{ThinkOS}}\label{h.ajl6qmj6j511}
+
+{The ThinkOS source is part of the YARD-ICE project.}
+
+{\includegraphics{images/image2.png}}
+
+\begin{itemize}
+\tightlist
+\item
+  {YARD-ICE Project Location:
+  }{\href{https://www.google.com/url?q=https://github.com/bobmittmann/yard-ice\&sa=D\&ust=1511275046400000\&usg=AFQjCNGufoXP2wfG8botuTmr2t7ckLYnvQ}{https://github.com/bobmittmann/yard-ice}}
+\item
+  {Latest Release:
+  }{\href{https://www.google.com/url?q=https://github.com/bobmittmann/yard-ice/archive/0.24.zip\&sa=D\&ust=1511275046401000\&usg=AFQjCNF-nzx-oGprzrbxGIY-uiZXVNkATg}{https://github.com/bobmittmann/yard-ice/archive/0.24.zip}}
+\item
+  {Git Repository (HTTPS)}{:
+  }{https://github.com/bobmittmann/yard-ice.git}
+\item
+  {Git Repository (SSH): }{git@github.com:bobmittmann/yard-ice.git}
+\end{itemize}
+
+{}

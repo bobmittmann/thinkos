@@ -23,11 +23,23 @@
 % The hyperref package gives us a pdf with properly built
 % internal navigation ('pdf bookmarks' for the table of contents,
 % internal cross-reference links, web links for URLs, etc.)
-\usepackage{hyperref}
-% Colors for the hyperref package
-\definecolor{urlcolor}{rgb}{0,.145,.698}
-\definecolor{linkcolor}{rgb}{.71,0.21,0.01}
-\definecolor{citecolor}{rgb}{.12,.54,.11}
+\usepackage[]{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+	colorlinks=true,% hyperlinks will be coloured
+	linkcolor=black,% hyperlink text will be green
+	linkbordercolor=red,% hyperlink border will be red
+    citecolor=blue,
+    urlcolor=blue,
+	urlbordercolor={blue}
+}
+\makeatletter
+\Hy@AtBeginDocument{%
+  \def\@pdfborder{0 0 1}% Overrides border definition set with colorlinks=true
+  \def\@pdfborderstyle{/S/U/W 1}% Overrides border style set with colorlinks=true
+                                % Hyperlink border style will be underline of width 1pt
+}
+\makeatother
 
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -46,7 +58,9 @@
 	morekeywords = {int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t},
 }
 
-\usepackage{inconsolata}
+%\usepackage{inconsolata}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 
 \lstset{
 	basicstyle=\footnotesize\ttfamily, 

@@ -61,9 +61,92 @@ The main bottleneck for performance is usually the scheduler. The ThinkOS runnin
 
 There are some tests and calculations that need to be done to determine the latency of other elements of the system...
 
+\subsubsection{Coding Style}
+
+\ThinkOS source uses the \href{https://www.kernel.org/doc/html/v4.10/process/coding-style.html}{Linux kernel coding style} and I encourage all developers to follow it. This is just little more than a matter of preference, please read the style guide to know the rational behind the rules before despising it ...
+
+----------------------------------------------------------
+== Introduction ==
+ThinkOS is a Real Time Operating System designed for the ARM Cortex-M core. It takes advantage of some unique features of this processor to enable for very low task switch latency.
+== Modes of usage ==
+There are basically two ways of using the ThinkOS:
+1. As a library linked against your application. (Need a term to decribe this like embedded mode...). 
+In this type of usage there is usually no bootloader, the application boots and configure itself. In this scenario the firmware is the application. The advatnages of this mode are:
+	- Small footprint...
+	- Kernel calls and services are tailored for the application.
+2. As part of the bootloader separated from the application. This mode will be called "standalone" mode, or "bootloader" mode.
+In this case the application will be a separated entity (file, binary) and run in a separated memory space. The bootloader will be residing on the platform at all times and will be responsible to initialize the platform and to load the application. It's possible then to upload/upgrade/change the application without changing the bootlader and consequently the operating system. Advantages:
+	- No need to configure the OS (need to elaborate...) to match the application. At least initially.
+	- In field firmware upgrades are safer as the bootloader is the responsible for the upgrade.
+	- The Debug Monitor features can be used for development.
+
+One feature that distinguishes the \ThinkOS from most of other Operating Systems is the way the control structures for the several types of objects are held by kernel.
+
+The usual approach for holding this information is to allocate a structure specific for a certain object and pass a pointer to the kernel. The kernel then stores this in a list or array. 
+\ThinkOS in other hand holds the core data structure in a  Structure of Arrays (SOA) representation. The cost of this representation is the readability of the code, (it may look a little obscure at the beginning). 
+The idea here is simplify the race condition avoidance in the kernel and speed-up the scheduler. Threads
+
+
+\ThinkOS is a preemptive time-sharing kernel. Each thread has its own stack and a timer. This timer is used to block the thread's execution for a certain period of time as in \lstinline{thinkos_sleep()}.
+
+\subsubsection{System Calls}
+
+\subsection{Scheduler}
+ThinkOS scheduler was designed to reduce the context switch time to a minimum. The most important piece on the Kernel is the Scheduler....
+
+\subsection{Time Sharing}
+All threads with priority higher than 0 go into a round-robin time sharing scheduling policy, when this feature is enabled. Their execution time will be inversely proportional to their priority.
+
+\subsection{Interrupt Model}
+There are two types of interrupt handlers with ThinkOS:
+
+\paragraph{Implicit ISR}{Thread interrupt handlers that executes as normal threads. This is a simple call to \lstinline{thinkos_irq_wait(IRQ)} inside a regular task or function. The thread will block until this interrupt is raised. This mechanism provides a convenient and powerful tool to design drivers. Devices that benefit most of this type of ISR are simplex I/O channels like I2C or SPI, hardware accelerators like cryptographic ...}
+
+\paragraph{Native ISR}{Normal interrupt handlers that shares a common stack. These handlers are subject to to some constraints regarding API calls. It is recommended to use this type of interrupt handler when low latency is a must. But bear in mind that if the handler is too complex the actual latency due to loading registers and housekeeping may be equivalent to a context switch in which case it will be equivalent of a threaded handler in terms of performance. Another case will be a high priority interrupt you want to make sure it will won't be preempted...}
+
+\subsection{Configuration}
+
+
+
 \section {Quick Start}
 
-\section{ThinkOS Basics}
+This guide will help you to install the necessary tools to compile and run a ThinkOS demo application on a development board.
+
+\subsection{Windows Tools}
+
+These are the basic steps to follow in order to install the tools: 
+
+\begin{itemize}
+\item Install GNU Toolchain for ARM Processros for Windows hosts.
+\item Install GNU Make for Windows.
+\item Install GNU CoreUtils for Windows.
+\item Install the Java JRE from Oracle.
+\item Install the Eclipse for C++ Developers IDE.
+\item Install the GNU ARM Eclipse Plug-ins.
+\item Install the C/C++ GDB Hardware Debugging Plug-in.
+\item Install the STM32 ST-LINK Utility from STMicroelectronics.
+\end{itemize}
+
+Detailed instructions for each one of the steps can be found in the next sections of this document. 
+
+\subsection{Demo Application}
+There are some demo applications using \ThinkOS in the source tree. This is a guide on how to compile and run ThinkOS programs in the STM32F3Discovery board. 
+
+
+\begin{itemize}
+\item Get the \ThinkOS Source Code from GitHub.
+\item Import the Eclipse projects for the target board into your workspace.
+\item Compile the \ThinkOS BootLoader project using Eclipse IDE.
+\item Load the \ThinkOS BootLoader on the board using the STM32 ST-LINK Utility.
+\item Install the Virtual COM Driver on the PC to access the ThinkOS Debug-Monitor.
+\item Compile the SDK Libraries (sdklib) for the target board using Eclipse.
+\item Compile the demo application project using Eclipse.
+\item Run the application with GDB Remote Debugging.
+\end{itemize}
+
+
+
+\subsection{ThinkOS Basics}
 
 \lstset {language=C99}
 
@@ -238,7 +321,42 @@ Open a windows shell: Start->All Programs->Accessories->Command Prompt
 Change to the directory  in the ThinkOS source tree.
 Type: make
 
+\section{Modules}
+ Overview of the different modules.
+ - Kernel
+ - Debug Monitor
+ - GDB server
+ - Console
+
+\subsection{Configuring}
+ Description on how to configure ThinkOS.
+ - bootloader mode
+ - embedded mode
+
+\subsection{Compiling }
+ How and what is need in order to compile the ThinkOS.
+ - Download the source code
+ - Tools
+ - Configure / or chose and example
+ - Compile
+ - Load and run
+
 \section{API}
+
+The ThinkOS API can be separated according to the type of object the operation is performed ...
+Core - initialization configuration and debug
+\subsection{Threads}
+functions related to threads
+\subsection{Mutexes}
+\subsection{Conditional Variables}
+\subsection{Semaphores}
+\subsection{Events}
+\subsection{Interrupts}
+\subsection{Time}
+\subsection{Kernel Objects}
+
+ - system calls
+ - library functions
 
 The ThinkOS API can be separated according to the type of object the operation is performed ...
 
@@ -274,8 +392,21 @@ It is not recommended to change the values directly in \lstinline{thinkos_sys.h}
 
 Note: if you are using the \ThinkOS as part of the YARD-ICE there is a \lstinline{config.h} file located at the source root.
 
+\section{How the kernel works}
+ - Data structures.
+ - Design decisions.
+
+\subsection{Exception Priorities}
+
+\section {Demo Using Windows}
+
+%\input{thinkos-demo-win.tex}
+
 
 \section {API}
+
+\input{thinkos-api.tex}
+
 
 \section {Tools}
 % = SECTION ===================================================================
@@ -320,7 +451,7 @@ In the last screen, after the files were copied, select the "Add path to environ
 
 Alternatively a compressed (.zip) file can be downloaded (\textit{gcc-arm-none-eabi-6-2017-q2-update-win32.zip}) and extracted in a directory of choice...
 
-\subsubsection{GNU Make for Windows}
+\subsubsection{GNU Make}
 
 \subsubsection{GNU Core Utils for Windows}
 
@@ -328,28 +459,135 @@ Alternatively a compressed (.zip) file can be downloaded (\textit{gcc-arm-none-e
 \subsection{Python}
 
 % == SUB-SECTION =========================================
+\subsection{Julia}
+
+
+% == SUB-SECTION =========================================
 \subsection{Eclipse}
 
 % == SUB-SECTION =========================================
 \subsection{Tera-Term}
 
-% == SUB-SECTION =========================================
-\subsection{YARD-ICE}
-
-The YARD-ICE project is a community based, open source platform for a standalone remote debugger.
-
-\begin{flushleft}
-Repository: [\href{https://github.com/bobmittmann/yard-ice}{https://github.com/bobmittmann/yard-ice}]\\
-Git HTTPS: [\href{https://github.com/bobmittmann/yard-ice.git}{https://github.com/bobmittmann/yard-ice}]
-\end{flushleft}
 
 % == SUB-SECTION =========================================
 \subsubsection{DCCLog}
 
 \section{Apendix}
 
+\section{Efficient Developer}
+
+\subsection{Master your tools}
+
+\subsection{Automated Code Generation}
+
+Embedded systems ...
+In some circumstances there are some pieces of code can be ...
+better performance comprises of a repetition of code that is tedious to type and error prone. Also in some contexts a generic solution that can be computed at runtime can be too expensive in terms of CPU usage to be computed in real-time. Or may require too much memory. A common solution for these problems is to use lookup tables and to interpolate intermidiate values, store coefficients in FLASH.
+Even if you could afford to calculate a complex dataset some systems require a very fast boot-up response, so storing pre computed values is a sure way of impproving things.
+We present here two typical scenarios where an automated generated code is benneficial for embedded systems.
+
+\subsubsection{Fixed-point sine function}
+
+Example sine function using Python.
+
+
+\subsubsection{IIR filter}
+
+In this example we use a Julia script to calculate and automatically generate a very efficient C code for a low pass filter. By automating the code generation its easy to change the filter parameters, like cur off frequency, filter order without having to worry about synchronizing the design specs with your embedded code.
+
+\subsubsection{Embedded HTML pages}
+
+Here HTML pages, or any pages for that matter, are automatically compressed, converted into C arrays. Makefile rules take care of the dependency of your code and the web pages, so the code is regenerated and compiled whenever a page is modified.
+
+
+\subsubsection{Autogenerated Code Comments}
+
+Always add a comment in the code indicating that it is automatically generated and a summary of instructions on how to regenerate it.
+
+Example:
+
+\subsection{Makefiles}
+
+\subsection{Text Editor}
+
+\subsubsection{Multiple editor windows}
+
+\subsection{Git - Revision Control}
+
 \section {References}
 
+\subsection {Gnu Tools for Window}
+
+More information on the GNU Make and CoreUtils for Windows package can be found at:
+
+\begin{itemize}
+\tightlist
+\item
+  {\href{http://gnuwin32.sourceforge.net/packages/make.html}{http://gnuwin32.sourceforge.net/packages/make.htm}}
+\item
+  {\href{http://gnuwin32.sourceforge.net/packages/coreutils.htm}{http://gnuwin32.sourceforge.net/packages/coreutils.htm}}
+\end{itemize}
+
+\subsection{GNU ARM Eclipse Plug-Ins}
+
+{Quick info on GNU ARM Eclipse Plug-Ins:}
+
+\begin{itemize}
+\tightlist
+\item
+  {Name: }{`\emph{GNU ARM Eclipse Plug-ins}'}
+\item
+  {Location:
+  }{\href{http://gnuarmeclipse.sourceforge.net/updates}{http://gnuarmeclipse.sourceforge.net/updates}}
+\item
+  {Website:
+  }{\href{http://gnuarmeclipse.livius.net/blog}{http://gnuarmeclipse.livius.net/blog}}
+\end{itemize}
+
+
+\subsection{GNU MCU Eclipse plug-ins}
+
+These plug-ins provide Eclipse CDT (C/C++ Development Tooling) extensions for GNU embedded toolchains like the GNU Tools for ARM Embedded Processors used as reference in this document.
+
+\begin{itemize}
+\tightlist
+\item
+	{Eclipse update site:
+	}{\href{http://gnu-mcu-eclipse.netlify.com/v4-neon-updates}{http://gnu-mcu-eclipse.netlify.com/v4-neon-updates}}
+\item
+	{Website:
+	}{\href{https://gnu-mcu-eclipse.github.io}{https://gnu-mcu-eclipse.github.io}}
+\end{itemize}
+
+\subsection{Git Extensions}
+
+From the project's website: \quote{Git Extensions is a toolkit aimed at making working with Git under Windows more intuitive (note that Git Extensions is also available on Linux and Macintosh OS X using Mono). The shell extension will integrate in Windows Explorer and presents a context menu on files and directories.}\\
+
+
+\paragraph{Website: }\href{http://git-extensions-documentation.readthedocs.io/en/latest/git_extensions.html}{Git Extensions}
+
+
+% == SUB-SECTION =========================================
+\subsection{YARD-ICE}
+
+The YARD-ICE project is a community based, open source hardware and software platform for a standalone remote debugger. The embedded platform uses \ThinkOS as bootloader and real-time operating system.
+
+\begin{itemize}
+\tightlist
+\item
+  {YARD-ICE Project Location:
+  }{\href{https://github.com/bobmittmann/yard-ice}{https://github.com/bobmittmann/yard-ice}}
+\item
+  {Latest Release:
+  }{\href{https://github.com/bobmittmann/yard-ice/archive/0.24.zip}{https://github.com/bobmittmann/yard-ice/archive/0.24.zip}}
+\item
+  {Git Repository (HTTPS):}
+  {\href{https://github.com/bobmittmann/yard-ice.git}{https://github.com/bobmittmann/yard-ice.git}}
+\item
+  {Git Repository (SSH):}{\href{git@github.com:bobmittmann/yard-ice.git}{git@github.com:bobmittmann/yard-ice.git}}
+\end{itemize}
+
+\subsection{Useful Web References}
 
 \begin{flushleft}
 \href{https://en.wikipedia.org/wiki/Real-time_operating_system}{Real-time operating system} - Wikipedia - March, 2017
@@ -366,6 +604,15 @@ Git HTTPS: [\href{https://github.com/bobmittmann/yard-ice.git}{https://github.co
 \begin{flushleft}
 \href{https://github.com/msys2/msys2/wiki}{MSYS2}\\
 \end{flushleft}
+
+\begin{flushleft}
+\href{https://git-scm.com/downloads}{Git}\\
+\end{flushleft}
+
+\begin{flushleft}
+\href{https://www.kernel.org/doc/html/v4.10/process/coding-style.html}{Linux kernel coding style}\\
+\end{flushleft}
+
 
 \end{document}
 
