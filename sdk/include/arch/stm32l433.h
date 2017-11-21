@@ -41,10 +41,11 @@
 #define STM32F_USB   ((struct stm32f_usb *)STM32_BASE_USB)
 #define STM32_FLASH  ((struct stm32_flash *)STM32_BASE_FLASH)
 #define STM32F_FSMC  ((struct stm32f_fsmc *)STM32_BASE_FSMC)
-#define STM32F_DAC   ((struct stm32f_dac *)STM32_BASE_DAC)
-#define STM32F_ADC1  ((struct stm32f_adc *)STM32_BASE_ADC1)
-#define STM32F_ADC2  ((struct stm32f_adc *)STM32_BASE_ADC2)
-#define STM32F_ADC3  ((struct stm32f_adc *)STM32_BASE_ADC3)
+#define STM32F_DAC1  ((struct stm32f_dac *)STM32_BASE_DAC1)
+#define STM32_ADC1   ((struct stm32_adc *)STM32_BASE_ADC1)
+#define STM32_ADCC   ((struct stm32_adcc *)STM32_BASE_ADCC)
+
+#define STM32_SAI1   ((struct stm32_sai *)STM32_BASE_SAI1)
 
 #define STM32F_SYSCFG ((struct stm32f_syscfg *)STM32_BASE_SYSCFG)
 #define STM32F_EXTI  ((struct stm32f_exti *)STM32_BASE_EXTI)

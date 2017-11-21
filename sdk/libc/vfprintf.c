@@ -66,11 +66,17 @@
 #define PRINTF_ENABLE_FLOAT 0
 #endif
 
+#ifndef PRINTF_ENABLE_HEXUP
+#define PRINTF_ENABLE_HEXUP 1
+#endif
+
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
+int uint2hexup(char * s, unsigned int val);
 
 int ull2dec(char * s, unsigned long long val);
 int ull2hex(char * s, unsigned long long val);
+int ull2hexup(char * s, unsigned long long val);
 
 #if (PRINTF_ENABLE_FLOAT)
 
@@ -292,6 +298,23 @@ hexadecimal:
 			}
 			goto print_buf;
 		}
+
+#if PRINTF_ENABLE_HEXUP
+		if (c == 'X') {
+			cp = buf;
+#if PRINTF_ENABLE_LONG
+			if (flags & LONG2) {
+				val.ull = va_arg(ap, unsigned long long);
+				n = ull2hexup(cp, val.ull);
+			} else
+#endif
+			{
+				val.n = va_arg(ap, unsigned int);
+				n = uint2hexup(cp, val.n);
+			}
+			goto print_buf;
+		}
+#endif
 
 		if (c == 's') {
 			cp = va_arg(ap, char *);

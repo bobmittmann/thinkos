@@ -626,8 +626,8 @@
 #endif
 
 
-
-#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)
+#if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X) || \
+	defined(STM32L4X)
 
 /* DMA interrupt status register */
 #define STM32F_DMA_ISR 0x000
@@ -898,6 +898,233 @@ This bit is set and cleared by software.
 
 #endif
 
+#if defined(STM32L4X)
+/* ------------------------------------------------------------------------- */
+/* DMA1 channel selection register - CSELR */
+#define STM32_DMA1_CSELR 0x00a8
+
+/* Bits [28..31] - Reserved, must be kept at reset value. */
+
+/* Bits [24..27] - DMA channel 7 selection */
+#define DMA1_C7S_MSK (0xf << 24)
+#define DMA1_C7S_SET(VAL) (((VAL) << 24) & DMA1_C7S_MSK)
+#define DMA1_C7S_GET(REG) (((REG) & DMA1_C7S_MSK) >> 24)
+/* 0000: Reserved
+   0001: Reserved
+   0010: Channel 7 mapped on USART2_TX
+   0011: Channel 7 mapped on I2C1_RX
+   0100: Channel 7 mapped on TIM2_CH2/TIM2_CH4
+   0101: Reserved
+   0110: Reserved
+   0111: Channel 7 mapped on TIM1_CH3 */
+
+/* Bits [20..23] - DMA channel 6 selection */
+#define DMA1_C6S_MSK (0xf << 20)
+#define DMA1_C6S_SET(VAL) (((VAL) << 20) & DMA1_C6S_MSK)
+#define DMA1_C6S_GET(REG) (((REG) & DMA1_C6S_MSK) >> 20)
+/* 0000: Reserved
+   0001: Reserved
+   0010: Channel 6 mapped on USART2_RX
+   0011: Channel 6 mapped on I2C1_TX
+   0100: Channel 6 mapped on TIM16_CH1/TIM16_UP
+   0101: Channel 6 mapped on TIM3_CH1/TIM3_TRIG. Available on STM32L45xxx and
+   STM32L46xxx devices only.
+   0110: Reserved
+   0111: Channel 6 mapped on TIM1_UP
+   others: Reserved */
+
+/* Bits [16..19] - DMA channel 5 selection */
+#define DMA1_C5S_MSK (0xf << 16)
+#define DMA1_C5S_SET(VAL) (((VAL) << 16) & DMA1_C5S_MSK)
+#define DMA1_C5S_GET(REG) (((REG) & DMA1_C5S_MSK) >> 16)
+/* 0000: Reserved
+   0001: Channel 5 mapped on SPI2_TX
+   0010: Channel 5 mapped on USART1_RX
+   0011: Channel 5 mapped on I2C2_RX
+   0100: Channel 5 mapped on TIM2_CH1
+   0101: Channel 5 mapped on QUADSPI
+   0110: Reserved
+   0111: Channel 5 mapped on TIM15_CH1/TIM15_UP/TIM15_TRIG/TIM15_COM
+   others: Reserved */
+
+/* Bits [12..15] - DMA channel 4 selection */
+#define DMA1_C4S_MSK (0xf << 12)
+#define DMA1_C4S_SET(VAL) (((VAL) << 12) & DMA1_C4S_MSK)
+#define DMA1_C4S_GET(REG) (((REG) & DMA1_C4S_MSK) >> 12)
+/* 0000: Reserved
+   0001: Channel 4 mapped on SPI2_RX
+   0010: Channel 4 mapped on USART1_TX
+   0011: Channel 4 mapped on I2C2_TX
+   0100: Reserved
+   0101: Channel 4 mapped on TIM7_UP/DAC2. Available on STM32L43xxx and
+   STM32L44xxx devices only.
+   0110: Reserved
+   0111: Channel 4 mapped on TIM1_CH4/TIM1_TRIG/TIM1_COM
+   others: Reserved */
+#define DMA1_C4S_TIM7_UP_DAC2 (0x5 << 12)
+
+/* Bits [8..11] - DMA channel 3 selection */
+#define DMA1_C3S_MSK (0xf << 8)
+#define DMA1_C3S_SET(VAL) (((VAL) << 8) & DMA1_C3S_MSK)
+#define DMA1_C3S_GET(REG) (((REG) & DMA1_C3S_MSK) >> 8)
+/* 0000: Reserved
+   0001: Channel 3 mapped on SPI1_TX
+   0010: Channel 3 mapped on USART3_RX
+   0011: Channel 3 mapped on I2C3_RX
+   0100: Channel 3 mapped on TIM16_CH1/TIM16_UP
+   0101: Channel 3 mapped on TIM3_CH4/TIM3_UP. Available on STM32L45xxx and
+   STM32L46xxx devices only.
+   0110: Channel 3 mapped on TIM6_UP/DAC1
+   0111: Channel 3 mapped on TIM1_CH2
+   others: Reserved */
+#define DMA1_C3S_TIM6_UP_DAC1 (0x6 << 8)
+#define DMA1_C3S_USART3_RX (0x2 << 8)
+
+/* Bits [4..7] - DMA channel 2 selection */
+#define DMA1_C2S_MSK (0xf << 4)
+#define DMA1_C2S_SET(VAL) (((VAL) << 4) & DMA1_C2S_MSK)
+#define DMA1_C2S_GET(REG) (((REG) & DMA1_C2S_MSK) >> 4)
+/* 0000: Reserved
+   0001: Channel 2 mapped on SPI1_RX
+   0010: Channel 2 mapped on USART3_TX
+   0011: Channel 2 mapped on I2C3_TX
+   0100: Channel 2 mapped on TIM2_UP
+   0101: Channel 2 mapped on TIM3_CH3. Available on STM32L45xxx and
+   STM32L46xxx devices only.
+   0110: Reserved
+   0111: Channel 2 mapped on TIM1_CH1
+   others: Reserved */
+#define DMA1_C2S_USART3_TX (0x2 << 4)
+
+/* Bits [0..3] - DMA channel 1 selection */
+#define DMA1_C1S_MSK (0xf << 0)
+#define DMA1_C1S_SET(VAL) (((VAL) << 0) & DMA1_C1S_MSK)
+#define DMA1_C1S_GET(REG) (((REG) & DMA1_C1S_MSK) >> 0)
+/* 0000: Channel 1 mapped on ADC1
+   0001: Reserved
+   0010: Reserved
+   0011: Reserved
+   0100: Channel 1 mapped on TIM2_CH3
+   0101: Reserved
+   0110: Reserved
+   0111: Reserved
+   others: Reserved */
+#define DMA1_C1S_ADC1 (0x0 << 0)
+
+/* ------------------------------------------------------------------------- */
+/* DMA2 channel selection register - CSELR */
+#define STM32_DMA2_CSELR 0x00a8
+
+/* Bits [28..31] - Reserved, must be kept at reset value. */
+
+/* Bits [24..27] - DMA channel 7 selection */
+#define DMA2_C7S_MSK (0xf << 24)
+#define DMA2_C7S_SET(VAL) (((VAL) << 24) & DMA2_C7S_MSK)
+#define DMA2_C7S_GET(REG) (((REG) & DMA2_C7S_MSK) >> 24)
+/* 0000: Reserved
+   0001: Channel 7 mapped on SAI1_B
+   0010: Channel 7 mapped on USART1_RX
+   0011: Channel 7 mapped on QUADSPI
+   0100: Channel 7 mapped on LPUART1_RX
+   0101: Channel 7 mapped on I2C1_TX
+   others: Reserved */
+#define DMA2_C7S_USART1_RX (0x2 << 24)
+
+/* Bits [20..23] - DMA channel 6 selection */
+#define DMA2_C6S_MSK (0xf << 20)
+#define DMA2_C6S_SET(VAL) (((VAL) << 20) & DMA2_C6S_MSK)
+#define DMA2_C6S_GET(REG) (((REG) & DMA2_C6S_MSK) >> 20)
+/* 0000: Reserved
+   0001: Channel 6 mapped on SAI1_A
+   0010: Channel 6 mapped on USART1_TX
+   0011: Reserved
+   0100: Channel 6 mapped on LPUART1_TX
+   0101: Channel 6 mapped on I2C1_RX
+   others: Reserved */
+#define DMA2_C6S_USART1_TX (0x2 << 20)
+
+/* Bits [16..19] - DMA channel 5 selection */
+#define DMA2_C5S_MSK (0xf << 16)
+#define DMA2_C5S_SET(VAL) (((VAL) << 16) & DMA2_C5S_MSK)
+#define DMA2_C5S_GET(REG) (((REG) & DMA2_C5S_MSK) >> 16)
+/* 0000: Reserved
+   0001: Reserved
+   0010: Channel 5 mapped on UART4_RX. Available on STM32L45xxx and
+   STM32L46xxx devices only.
+   0011: Channel 5 mapped on TIM7_UP/DAC2. Available on STM32L43xxx and
+   STM32L44xxx devices only.
+   0100: Reserved
+   0101: Reserved
+   0110: Channel 5 mapped on AES_IN. Available on STM32L44xxx and STM32L46xxx
+   devices only.
+   0111: Channel 5 mapped on SDMMC1
+   others: Reserved */
+
+/* Bits [12..15] - DMA channel 4 selection */
+#define DMA2_C4S_MSK (0xf << 12)
+#define DMA2_C4S_SET(VAL) (((VAL) << 12) & DMA2_C4S_MSK)
+#define DMA2_C4S_GET(REG) (((REG) & DMA2_C4S_MSK) >> 12)
+/* 0000: Reserved
+   0001: Reserved
+   0010: Reserved
+   0011: Channel 4 mapped on TIM6_UP/DAC1
+   0100: Channel 4 mapped on SPI1_TX
+   0101: Reserved
+   0110: Reserved
+   0111: Channel 4 mapped on SDMMC1
+   others: Reserved */
+
+/* Bits [8..11] - DMA channel 3 selection */
+#define DMA2_C3S_MSK (0xf << 8)
+#define DMA2_C3S_SET(VAL) (((VAL) << 8) & DMA2_C3S_MSK)
+#define DMA2_C3S_GET(REG) (((REG) & DMA2_C3S_MSK) >> 8)
+/* 0000: Channel 3 mapped on ADC1
+   0001: Reserved
+   0010: Channel 3 mapped on UART4_TX. Available on STM32L45xxx and
+   STM32L46xxx devices only.
+   0011: Reserved
+   0100: Channel 3 mapped on SPI1_RX
+   0101: Reserved
+   0110: Channel 3 mapped on AES_OUT. Available on STM32L44xxx and STM32L46xxx
+   devices only.
+   0111: Reserved
+   others: Reserved */
+
+/* Bits [4..7] - DMA channel 2 selection */
+#define DMA2_C2S_MSK (0xf << 4)
+#define DMA2_C2S_SET(VAL) (((VAL) << 4) & DMA2_C2S_MSK)
+#define DMA2_C2S_GET(REG) (((REG) & DMA2_C2S_MSK) >> 4)
+/* 0000: Channel 2 mapped on I2C4_TX. Available on STM32L45xxx and STM32L46xxx
+   devices only.
+   0001: Channel 2 mapped on SAI1_B
+   0010: Reserved
+   0011: Channel 2 mapped on SPI3_TX
+   0100: Channel 2 mapped on SWPMI1_TX. Available on STM32L43xxx and
+   STM32L44xxx devices only.
+   0101: Reserved
+   0110: Channel 2 mapped on AES_OUT. Available on STM32L44xxx and STM32L46xxx
+   devices only.
+   others: Reserved */
+
+/* Bits [0..3] - DMA channel 1 selection */
+#define DMA2_C1S_MSK (0xf << 0)
+#define DMA2_C1S_SET(VAL) (((VAL) << 0) & DMA2_C1S_MSK)
+#define DMA2_C1S_GET(REG) (((REG) & DMA2_C1S_MSK) >> 0)
+/* 0000: Channel 1 mapped on I2C4_RX. Available on STM32L45xxx and STM32L46xxx
+   devices only.
+   0001: Channel 1 mapped on SAI1_A
+   0010: Reserved
+   0011: Channel 1 mapped on SPI3_RX
+   0100: Channel 1 mapped on SWPMI1_RX. Available on STM32L43xxx and
+   STM32L44xxx devices only.
+   0101: Reserved
+   0110: Channel 1 mapped on AES_IN. Available on STM32L44xxx and STM32L46xxx
+   devices only.
+   others: Reserved 0x38 0x24 0x10 0x3C 0x28 0x14 0x2C 0x18 DMA_CPAR3
+   DMA_CPAR2 DMA_CPAR1 Reset value Reset value DMA_CMAR3 DMA_CMAR2 DMA_CMAR1 */
+#define DMA2_C1S_SAI1_A (0x1 << 0)
+
+#endif
 
 #ifndef __ASSEMBLER__
 
@@ -953,6 +1180,7 @@ struct stm32f_dma {
 		struct stm32f_dma_channel ch[8];
 		struct stm32f_dma_stream s[8];
 	};
+	volatile uint32_t cselr; /* 0xa8 */
 };
 #endif
 

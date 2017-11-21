@@ -1,5 +1,5 @@
 /* 
- * File:	stm32f-init.c
+ * File:	stm32l4-init.c
  * Author:  Robinson Mittmann (bobmittmann@gmail.com)
  * Target:  jtagtool3
  * Comment: 
@@ -41,6 +41,10 @@
 #define STM32_ENABLE_PLL 1
 #endif
 
+#ifndef STM32_ENABLE_PLLSAI
+#define STM32_ENABLE_PLLSAI 1
+#endif
+
 #ifndef STM32_HCLK_HZ 
 #define STM32_HCLK_HZ    80000000
 #endif
@@ -75,26 +79,34 @@
    Precalculated PLL configuartion
 */
 
-#if (STM32_HCLK_HZ == 80000000)
-#if (STM32_HSE_HZ == 11289600)
-	/* F_HSE  =  11.2896 MHz
-	   F_VCO  = 321.7535 MHz
-	   F_HCLK =  80.4384 MHz */
-  #define PLLN 57
-  #define PLLM 2
-  #define PLLR 4
-  #define PLLP 4
-  #define PLLQ 8
-  #define PLLSAIN 57
-  #define PLLSAIM 2
-  #define PLLSAIR 4
-#elif (STM32_HSE_HZ == 16000000)
-#elif (STM32_HSE_HZ == 12000000)
-#elif (STM32_HSE_HZ == 8000000)
-#else
-#error "HSE_HZ invalid!"
+#if (STM32_HCLK_HZ == 79027200) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 158.054400 MHz */
+  #define PLLM         1
+  #define PLLN        14
+  #define PLLR         2 /*     PLLCLK ->  79.027200 MHz */
+  #define PLLQ         3 /* PLL48M1CLK ->  52.684800 MHz */
+  #define PLLPDIV      7 /* PLLSAI2CLK ->  22.579200 MHz */
+
+  /* PLLSAIVCO = 90.316800 MHz */
+  #define PLLSAIN      8
+  #define PLLSAIPDIV   4 /* PLLSAI2CLK ->  22.579200 MHz */
+  #define PLLSAIQ      2 /* PLL48M2CLK ->  45.158400 MHz */
+  #define PLLSAIR      4 /*  PLLADCCLK ->  22.579200 MHz */
 #endif
 
+#if (STM32_HCLK_HZ == 64915200) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 259.660800 MHz */
+  #define PLLM         1
+  #define PLLN        23
+  #define PLLR         4 /*     PLLCLK ->  64.915200 MHz */
+  #define PLLQ         5 /* PLL48M1CLK ->  51.932160 MHz */
+  #define PLLPDIV     11 /* PLLSAI2CLK ->  23.605527 MHz */
+
+  /* PLLSAIVCO = 90.316800 MHz */
+  #define PLLSAIN      8
+  #define PLLSAIPDIV   4 /* PLLSAI2CLK ->  22.579200 MHz */
+  #define PLLSAIQ      2 /* PLL48M2CLK ->  45.158400 MHz */
+  #define PLLSAIR      4 /*  PLLADCCLK ->  22.579200 MHz */
 #endif
 
 /* -------------------------------------------------------------------- 
@@ -108,8 +120,18 @@
   #define __HCLK_HZ (STM32_HCLK_HZ)
 #endif
 
-#define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLSAIM)
-#define __SAI_HZ (__VCOSAI_HZ / PLLSAIR)
+#if STM32_ENABLE_PLLSAI
+  /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
+  #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLM)
+  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIPDIV)
+#else
+  #if STM32_ENABLE_PLL
+    /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
+    #define __SAI_HZ (__VCO_HZ / PLLPDIV)
+  #else
+    #define __SAI_HZ STM32_HSI_HZ
+  #endif
+#endif
 
 #define __APB1_HZ   (__HCLK_HZ) / (STM32_APB1_PRE)
 #define __APB2_HZ   (__HCLK_HZ) / (STM32_APB2_PRE)
@@ -143,6 +165,13 @@ const uint32_t stm32f_mco_hz  = __MCO_HZ;
 const uint32_t stm32f_tim1_hz = __TIM1_HZ;
 const uint32_t stm32f_tim2_hz = __TIM2_HZ;
 const uint32_t stm32f_sai_hz = __SAI_HZ;
+const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
+#if STM32_ENABLE_PLL
+const uint32_t stm32f_vco_hz = __VCO_HZ;
+#endif
+#if STM32_ENABLE_PLLSAI
+const uint32_t stm32f_vcosai_hz = __VCOSAI_HZ;
+#endif
 
 #ifndef THINKAPP
 
@@ -164,6 +193,7 @@ void __attribute__((section(".init"))) _init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;
+	uint32_t ccipr;
 	uint32_t cr;
 	uint32_t cfg;
 #if STM32_ENABLE_PLL
@@ -199,10 +229,15 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure PLL
 	 *******************************************************************/
-	pll = RCC_PLLPDIV(PLLP) | 
+	pll = RCC_PLLPDIV(PLLPDIV) | 
 		RCC_PLLR(PLLR) | RCC_PLLREN | 
 		RCC_PLLQ(PLLQ) | RCC_PLLQEN |
 		RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
+#if !STM32_ENABLE_PLLSAI
+	/* Enable the PLLSAI2CLK if the SAI PLL is not enabled */
+	pll |= RCC_PLLPEN;
+#endif
+
 #if STM32_ENABLE_HSI
 	pll |= RCC_PLLSRC_HSI;
 #else
@@ -240,9 +275,9 @@ void __attribute__((section(".init"))) _init(void)
 
 #if STM32_ENABLE_PLL
 	/* switch to pll oscillator */
-	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_PLL;
+	rcc->cfgr = (cfg & ~RCC_SW_MSK) | RCC_SW_PLL;
 #if DEBUG
-	while ((rcc->cfgr & RCC_SWS_MASK) != RCC_SWS_PLL);
+	while ((rcc->cfgr & RCC_SWS_MSK) != RCC_SWS_PLL);
 #endif
 	rcc->cr = cr & ~RCC_MSION;
 #elif STM32_ENABLE_HSI
@@ -255,15 +290,34 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->cr = cr & ~RCC_MSION;
 #endif
 
+#if STM32_ENABLE_PLLSAI
 	/*******************************************************************
-	 * Configure USB and SAI clocks
+	 * Configure SAI PLL
 	 *******************************************************************/
+	rcc->pllsai1cfgr = RCC_PLLSAI1DIV(PLLSAIPDIV) | 
+		RCC_PLLSAI1PEN | 
+		RCC_PLLSAI1N(PLLSAIN);
 
+	/* enable SAI1 PLL */
+	cr |= RCC_PLLSAI1ON;
+	rcc->cr = cr;;
+	while (((cr = rcc->cr) & RCC_PLLSAI1RDY) == 0);
+	ccipr = RCC_SAI1SEL_PLLSAI1;
+#else
+	ccipr = RCC_SAI1SEL_PLL;
+#endif
+
+	/*******************************************************************
+	 * Configure USB clock
+	 *******************************************************************/
 	/* Enable HSI48 internal oscillator  */
 	rcc->crrcr |= RCC_HSI48ON;
 	while ((rcc->crrcr & RCC_HSI48RDY) == 0)
     /* HSI48 clock selected as 48 MHz clock */
-	rcc->ccipr = RCC_CLK48SEL_HSI48;
+	ccipr |= RCC_CLK48SEL_HSI48;
+
+    /* Peripheral clock source selection */
+	rcc->ccipr = ccipr; 
 
 #ifdef CM3_RAM_VECTORS
 	/* Remap the VECTOR table to SRAM 0x20000000  */

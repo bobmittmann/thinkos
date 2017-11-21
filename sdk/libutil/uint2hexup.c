@@ -1,6 +1,6 @@
 /* 
- * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
- * 
+ * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
+ *
  * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,22 +18,39 @@
  */
 
 /** 
- * @file sys/param.h
- * @brief YARD-ICE 
+ * @file uint2hexup.c
+ * @brief YARD-ICE libc
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __SYS_PARAM_H__
-#define __SYS_PARAM_H__
+const char __hexuptab[] = {
+	'0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-#define MIN(_A, _B) ({ \
-	__typeof__ (_A) __A = (_A); \
-	__typeof__ (_B) __B = (_B); \
-	__A < __B ? __A : __B; })
+int uint2hexup(char * s, unsigned int val)
+{
+	int n;
+	int c;
+	int i;
 
-#define MAX(_A, _B) ({ \
-	__typeof__ (_A) __A = (_A); \
-	__typeof__ (_B) __B = (_B); \
-	__A > __B ? __A : __B; })
+	/* value is zero ? */
+	if (!val) {
+		*s++ = '0';
+		*s = '\0';
+		return 1;
+	}
 
-#endif	/*__SYS_PARAM_H__ */
+	n = 0;
+	for (i = 0; i < (sizeof(unsigned int) * 2); i++) {
+		c = val >> ((sizeof(unsigned int) * 8) - 4);
+		val <<= 4;
+		if ((c != 0) || (n != 0)) {
+			s[n++] = __hexuptab[c];
+		}
+	}
+
+	s[n] = '\0';
+
+	return n;
+}
+

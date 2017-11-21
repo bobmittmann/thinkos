@@ -9,47 +9,15 @@
 
 
 /* ------------------------------------------------------------------------- */
-/* Global configuration register - GCR */
-#define STM32_SAI_GCR 0x0000
-
-/* Bits [6..31] - Reserved, always read as 0. */
-
-/* Bits [4..5] - Synchronization outputs */
-#define SAI_SYNCOUT_MSK (0x3 << 4)
-#define SAI_SYNCOUT_SET(VAL) (((VAL) << 4) & SAI_SYNCOUT_MSK)
-#define SAI_SYNCOUT_GET(REG) (((REG) & SAI_SYNCOUT_MSK) >> 4)
-/* These bits are set and cleared by software.
-   00: No synchronization output signals. SYNCOUT[1:0] should be configured as
-   No synchronization output signals when audio block is configured as SPDIF
-   01: Block A used for further synchronization for others SAI
-   10: Block B used for further synchronization for others SAI
-   11: Reserved. These bits must be set when both audio block (A and B) are
-   disabled. */
-
-/* Bits [2..3] - Reserved, always read as 0. */
-
-/* Bits [0..1] - Synchronization inputs */
-#define SAI_SYNCIN_MSK (0x3 << 0)
-#define SAI_SYNCIN_SET(VAL) (((VAL) << 0) & SAI_SYNCIN_MSK)
-#define SAI_SYNCIN_GET(REG) (((REG) & SAI_SYNCIN_MSK) >> 0)
-/* These bits are set and cleared by software.
-   Please refer to Table 168: External Synchronization Selection for
-   information on how to program this field.
-   These bits must be set when both audio blocks (A and B) are disabled.
-   They are meaningful if one of the two audio block is defined to operate in
-   synchronous mode with an external SAI (SYNCEN[1:0] = 01 in SAI_ACR1 or in
-   SAI_BCR1 registers). */
-
-/* ------------------------------------------------------------------------- */
 /* Configuration register 1 - ACR1 */
 #define STM32_SAI_ACR1 0x0004
 
 /* Configuration register 1 - BCR1 */
 #define STM32_SAI_BCR1 0x0024
 
-/* Bits [24..31] - Reserved, always read as 0. */
+/* Bits [24..31] - Reserved, must be kept at reset value */
 
-/* Bits [20..23] - Master clock divider. */
+/* Bits [20..23] - Master clock divider */
 #define SAI_MCKDIV_MSK (0xf << 20)
 #define SAI_MCKDIV_SET(VAL) (((VAL) << 20) & SAI_MCKDIV_MSK)
 #define SAI_MCKDIV_GET(REG) (((REG) & SAI_MCKDIV_MSK) >> 20)
@@ -60,16 +28,16 @@
    Others: the master clock frequency is calculated accordingly to the
    following formula: F_SCK = F_SAICLK / (MCKDIV * 2) */
 
-/* Bit 19 - No divider. */
+/* Bit 19 - No divider */
 #define SAI_NODIV (1 << 19)
 /* This bit is set and cleared by software.
    0: Master clock generator is enabled
    1: No divider used in the clock generator (in this case Master Clock
    Divider bit has no effect) */
 
-/* Bit 18 - Reserved, always read as 0. */
+/* Bit 18 - Reserved, must be kept at reset value */
 
-/* Bit 17 - DMA enable. */
+/* Bit 17 - DMA enable */
 #define SAI_DMAEN (1 << 17)
 /* This bit is set and cleared by software.
    0: DMA disabled
@@ -78,24 +46,25 @@
    reset, the MODE[1:0] bits must be configured before setting DMAEN to avoid
    a DMA request in receiver mode. */
 
-/* Bit 16 - Audio block enable where x is A or B. */
+/* Bit 16 - Audio block enable where x is A or B */
 #define SAI_SAIXEN (1 << 16)
 /* This bit is set by software.
    To switch off the audio block, the application software must program this
    bit to 0 and poll the bit till it reads back 0, meaning that the block is
    completely disabled. Before setting this bit to 1, check that it is set to
    0, otherwise the enable command will not be taken into account.
-   This bit allows to control the state of SAIx audio block. If it is disabled
-   when an audio frame transfer is ongoing, the ongoing transfer completes and
-   the cell is fully disabled at the end of this audio frame transfer.
+   This bit allows controlling the state of SAIx audio block. If it is
+   disabled when an audio frame transfer is ongoing, the ongoing transfer
+   completes and the cell is fully disabled at the end of this audio frame
+   transfer.
    0: SAIx audio block disabled
    1: SAIx audio block enabled.
-   Note: When SAIx block is configured in master mode, the kernel clock must
-   be present on the input of SAIx before setting SAIXEN bit. */
+   Note: When SAIx block is configured in master mode, the clock must be
+   present on the input of SAIx before setting SAIXEN bit. */
 
-/* Bits [14..15] - Reserved, always read as 0. */
+/* Bits [14..15] - Reserved, must be kept at reset value */
 
-/* Bit 13 - Output drive. */
+/* Bit 13 - Output drive */
 #define SAI_OUTDRIV (1 << 13)
 /* This bit is set and cleared by software.
    0: Audio block output driven when SAIXEN is set
@@ -103,7 +72,7 @@
    Note: This bit has to be set before enabling the audio block and after the
    audio block configuration. */
 
-/* Bit 12 - Mono mode. */
+/* Bit 12 - Mono mode */
 #define SAI_MONO (1 << 12)
 /* This bit is set and cleared by software. It is meaningful only when the
    number of slots is equal to 2.
@@ -114,7 +83,7 @@
    0: Stereo mode
    1: Mono mode. */
 
-/* Bits [10..11] - Synchronization enable. */
+/* Bits [10..11] - Synchronization enable */
 #define SAI_SYNCEN_MSK (0x3 << 10)
 #define SAI_SYNCEN_SET(VAL) (((VAL) << 10) & SAI_SYNCEN_MSK)
 #define SAI_SYNCEN_GET(REG) (((REG) & SAI_SYNCEN_MSK) >> 10)
@@ -123,14 +92,12 @@
    00: audio sub-block in asynchronous mode.
    01: audio sub-block is synchronous with the other internal audio sub-block.
    In this case, the audio sub-block must be configured in slave mode
-   10: audio sub-block is synchronous with an external SAI embedded
-   peripheral. In this case the audio sub-block should be configured in Slave
-   mode.
+   10: Reserved.
    11: Reserved
    Note: The audio sub-block should be configured as asynchronous when SPDIF
    mode is enabled. */
 
-/* Bit 9 - Clock strobing edge. */
+/* Bit 9 - Clock strobing edge */
 #define SAI_CKSTR (1 << 9)
 /* This bit is set and cleared by software. It must be configured when the
    audio block is disabled. This bit has no meaning in SPDIF audio protocol.
@@ -141,7 +108,7 @@
 #define SAI_CKSTR_RISE (0 << 9)
 #define SAI_CKSTR_FALL (1 << 9)
 
-/* Bit 8 - Least significant bit first. */
+/* Bit 8 - Least significant bit first */
 #define SAI_LSBFIRST (1 << 8)
 /* This bit is set and cleared by software. It must be configured when the
    audio block is disabled. This bit has no meaning in AC’97 audio protocol
@@ -151,7 +118,7 @@
    0: Data are transferred with MSB first
    1: Data are transferred with LSB first */
 
-/* Bits [5..7] - Data size. */
+/* Bits [5..7] - Data size */
 #define SAI_DS_MSK (0x7 << 5)
 #define SAI_DS_SET(VAL) (((VAL) << 5) & SAI_DS_MSK)
 #define SAI_DS_GET(REG) (((REG) & SAI_DS_MSK) >> 5)
@@ -176,9 +143,9 @@
 #define SAI_DS_24 (0x6 << 5)
 #define SAI_DS_32 (0x7 << 5)
 
-/* Bit 4 - Reserved, always read as 0. */
+/* Bit 4 - Reserved, must be kept at reset value */
 
-/* Bits [2..3] - Protocol configuration. */
+/* Bits [2..3] - Protocol configuration */
 #define SAI_PRTCFG_MSK (0x3 << 2)
 #define SAI_PRTCFG_SET(VAL) (((VAL) << 2) & SAI_PRTCFG_MSK)
 #define SAI_PRTCFG_GET(REG) (((REG) & SAI_PRTCFG_MSK) >> 2)
@@ -195,7 +162,7 @@
 #define SAI_PRTCFG_SPDIF (0x1 << 2)
 #define SAI_PRTCFG_AC97E (0x2 << 2)
 
-/* Bits [0..1] - SAIx audio block mode. */
+/* Bits [0..1] - SAIx audio block mode */
 #define SAI_MODE_MSK (0x3 << 0)
 #define SAI_MODE_SET(VAL) (((VAL) << 0) & SAI_MODE_MSK)
 #define SAI_MODE_GET(REG) (((REG) & SAI_MODE_MSK) >> 0)
@@ -220,7 +187,7 @@
 /* Configuration register 2 - BCR2 */
 #define STM32_SAI_BCR2 0x0028
 
-/* Bits [16..31] - Reserved, always read as 0 */
+/* Bits [16..31] - Reserved, must be kept at reset value */
 
 /* Bits [14..15] - Companding mode. */
 #define SAI_COMP_MSK (0x3 << 14)
@@ -316,7 +283,7 @@
    1: FIFO flush. Programming this bit to 1 triggers the FIFO Flush. All the
    internal FIFO pointers (read and write) are cleared. In this case data
    still present in the FIFO are lost (no more transmission or received data
-   lost). Before flushing SAI, DMA stream/interruption must be disabled */
+   lost). Before flushing, SAI DMA stream/interruption must be disabled */
 
 /* Bits [0..2] - FIFO threshold. */
 #define SAI_FTH_MSK (0x7 << 0)
@@ -342,7 +309,7 @@
 /* Frame configuration register - BFRCR */
 #define STM32_SAI_BFRCR 0x002c
 
-/* Bits [19..31] - Reserved, always read as 0. */
+/* Bits [19..31] - Reserved, must be kept at reset value */
 
 /* Bit 18 - Frame synchronization offset. */
 #define SAI_FSOFF (1 << 18)
@@ -375,7 +342,7 @@
    This bit is meaningless and is not used in AC’97 or SPDIF audio block
    configuration. It must be configured when the audio block is disabled. */
 
-/* Bit 15 - Reserved, always read as 0. */
+/* Bit 15 - Reserved, must be kept at reset value */
 
 /* Bits [8..14] - Frame synchronization active level length. */
 #define SAI_FSALL_MSK (0x7f << 8)
@@ -426,7 +393,7 @@
    The slot must be enabled when the audio block is disabled.
    They are ignored in AC’97 or SPDIF mode. */
 
-/* Bits [12..15] - Reserved, always read as 0. */
+/* Bits [12..15] - Reserved, must be kept at reset value */
 
 /* Bits [8..11] - Number of slots in an audio frame. */
 #define SAI_NBSLOT_MSK (0xf << 8)
@@ -462,7 +429,7 @@
 #define SAI_SLOTSZ_16 (0x1 << 6)
 #define SAI_SLOTSZ_32 (0x2 << 6)
 
-/* Bit 1 - Reserved, always read as 0. */
+/* Bit 1 - Reserved, must be kept at reset value */
 
 /* Bits [0..4] - First bit offset */
 #define SAI_FBOFF_MSK (0x1f << 0)
@@ -483,7 +450,7 @@
 /* Interrupt mask register 2 - BIM */
 #define STM32_SAI_BIM 0x0034
 
-/* Bits [7..31] - Reserved, always read as 0. */
+/* Bits [7..31] - Reserved, must be kept at reset value */
 
 /* Bit 6 - Late frame synchronization detection interrupt enable. */
 #define SAI_LFSDETIE (1 << 6)
@@ -557,12 +524,12 @@
 /* Status register - BSR */
 #define STM32_SAI_BSR 0x0038
 
-/* Bits [19..31] - Reserved, always read as 0. */
+/* Bits [19..31] - Reserved, must be kept at reset value */
 
 /* Bits [16..18] - FIFO level threshold. */
-#define SAI_FLTH_MSK (0x7 << 16)
-#define SAI_FLTH_SET(VAL) (((VAL) << 16) & SAI_FLTH_MSK)
-#define SAI_FLTH_GET(REG) (((REG) & SAI_FLTH_MSK) >> 16)
+#define SAI_FLVL_MSK (0x7 << 16)
+#define SAI_FLVL_SET(VAL) (((VAL) << 16) & SAI_FLVL_MSK)
+#define SAI_FLVL_GET(REG) (((REG) & SAI_FLVL_MSK) >> 16)
 /* This bit is read only. The FIFO level threshold flag is managed only by
    hardware and its setting depends on SAI block configuration (transmitter or
    receiver mode).
@@ -580,7 +547,7 @@
    100: ¾ =< FIFO but not full
    101: FIFO full */
 
-/* Bits [7..15] - Reserved, always read as 0. */
+/* Bits [7..15] - Reserved, must be kept at reset value */
 
 /* Bit 6 - Late frame synchronization detection. */
 #define SAI_LFSDET (1 << 6)
@@ -600,7 +567,7 @@
    0: No error.
    1: Frame synchronization signal is detected earlier than expected.
    This flag can be set only if the audio block is configured in slave mode.
-   It is not used in AC’97or SPDIF mode.
+   It is not used in AC’97 or SPDIF mode.
    It can generate an interrupt if AFSDETIE bit is set in SAI_xIM register.
    This flag is cleared when the software sets CAFSDET bit in SAI_xCLRFR
    register. */
@@ -634,7 +601,7 @@
 /* This bit is read only.
    0: Clock configuration is correct
    1: Clock configuration does not respect the rule concerning the frame
-   length specification defined in Section 28.3.5: Frame synchronization
+   length specification defined in Section 39.4.6: Frame synchronization
    (configuration of FRL[7:0] bit in the SAI_xFRCR register) This bit is used
    only when the audio block operates in master mode (MODE[1] = 0) and NODIV =
    0.
@@ -672,18 +639,18 @@
 /* Clear flag register - BCLRFR */
 #define STM32_SAI_BCLRFR 0x003c
 
-/* Bits [7..31] - Reserved, always read as 0. */
+/* Bits [7..31] - Reserved, must be kept at reset value */
 
 /* Bit 6 - Clear late frame synchronization detection flag. */
 #define SAI_CLFSDET (1 << 6)
 /* This bit is write only.
    Programming this bit to 1 clears the LFSDET flag in the SAI_xSR register.
-   This bit is not used in AC’97or SPDIF mode Reading this bit always returns
+   This bit is not used in AC’97 or SPDIF mode Reading this bit always returns
    the value 0.
    Bit 5 .CAFSDET: Clear anticipated frame synchronization detection flag.
    This bit is write only.
    Programming this bit to 1 clears the AFSDET flag in the SAI_xSR register.
-   It is not used in AC’97or SPDIF mode.
+   It is not used in AC’97 or SPDIF mode.
    Reading this bit always returns the value 0. */
 
 /* Bit 4 - Clear Codec not ready flag. */
@@ -694,7 +661,7 @@
    SAI_xCR1 register.
    Reading this bit always returns the value 0. */
 
-/* Bit 3 - Reserved, always read as 0. */
+/* Bit 3 - Reserved, must be kept at reset value */
 
 /* Bit 2 - Clear wrong clock configuration flag. */
 #define SAI_CWCKCFG (1 << 2)
@@ -714,17 +681,22 @@
 #define SAI_COVRUDR (1 << 0)
 /* This bit is write only.
    Programming this bit to 1 clears the OVRUDR flag in the SAI_xSR register.
-   Reading this bit always returns the value 0.
-   0x002C 0x0028 or A write to this register loads the FIFO provided the FIFO
-   is not full.
-   0x0024 A read from this register empties the FIFO if the FIFO is not empty. */
+   Reading this bit always returns the value 0. */
 
 /* ------------------------------------------------------------------------- */
-/* SAI_xFRCR                       SAI_xCR2                                  SAI_xCR1     Reset value          SAI_GCR         Register                                                    SAI register map                                                                                                           rw rw rw rw rw                                   rw rw rw rw rw                                                                             Data register - ADR */
+/* Data register - ADR */
 #define STM32_SAI_ADR 0x0020
 
-/* SAI_xFRCR                       SAI_xCR2                                  SAI_xCR1     Reset value          SAI_GCR         Register                                                    SAI register map                                                                                                           rw rw rw rw rw                                   rw rw rw rw rw                                                                             Data register - BDR */
+/* Data register - BDR */
 #define STM32_SAI_BDR 0x0040
+
+/* Bits [0..31] - Data */
+#define SAI_DATA_MSK (0xffffffff << 0)
+#define SAI_DATA_SET(VAL) (((VAL) << 0) & SAI_DATA_MSK)
+#define SAI_DATA_GET(REG) (((REG) & SAI_DATA_MSK) >> 0)
+/* A write to this register loads the FIFO provided the FIFO is not full.
+   A read from this register empties the FIFO if the FIFO is not empty.
+   39.6.9 SAI register map The following table summarizes the SAI registers. */
 
 
 
@@ -733,7 +705,7 @@
 #include <stdint.h>
 
 struct stm32_sai {
-	volatile uint32_t gcr; /* 0x00 */
+	uint32_t res0[1];
 	volatile uint32_t acr1; /* 0x04 */
 	volatile uint32_t acr2; /* 0x08 */
 	volatile uint32_t afrcr; /* 0x0c */
