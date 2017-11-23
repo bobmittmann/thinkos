@@ -73,6 +73,8 @@ struct trace_entry {
   #else
    #define TRACE_LEVEL TRACE_LVL_YAP
   #endif
+ #else
+  #define TRACE_LEVEL TRACE_LVL_NONE
  #endif
 #else
  #ifndef ENABLE_TRACE
