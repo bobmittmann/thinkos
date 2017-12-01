@@ -63,6 +63,8 @@ struct i2s_op {
 	int (* enable)(void *);
 	int (* setbuf)(void *, int16_t *, int16_t *, unsigned int);
 	int16_t * (* getbuf)(void *);
+	uint32_t (* get_dma_tx_cnt)(void *);
+	uint32_t (* get_dma_rx_cnt)(void *);
 };
 
 struct i2s_dev {
@@ -108,6 +110,15 @@ static inline int16_t * i2s_getbuf(struct i2s_dev * dev)
 	return dev->op->getbuf(dev->drv);
 }
 
+static inline uint32_t i2s_get_dma_tx_cnt(struct i2s_dev * dev)
+{
+	return dev->op->get_dma_tx_cnt(dev->drv);
+}
+
+static inline uint32_t i2s_get_dma_rx_cnt(struct i2s_dev * dev)
+{
+	return dev->op->get_dma_rx_cnt(dev->drv);
+}
 
 #ifdef __cplusplus
 extern "C" {

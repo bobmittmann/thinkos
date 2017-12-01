@@ -204,6 +204,16 @@ int stm32_i2s_dma_send(struct stm32_spi_i2s_drv * drv,
 }
 #endif
 
+unsigned int stm32_i2s_get_dma_tx_count(struct stm32_spi_i2s_drv * drv)
+{
+	return drv->tx.dmactl.strm->ndtr;
+}
+
+unsigned int stm32_i2s_get_dma_rx_count(struct stm32_spi_i2s_drv * drv)
+{
+	return drv->rx.dmactl.strm->ndtr;
+}
+
 int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
 					 int16_t * buf1, int16_t * buf2, unsigned int len)
 {
@@ -465,6 +475,8 @@ const struct i2s_op stm32_spi_i2s_op = {
 	.close = (void *)stm32_i2s_close,
 	.ioctl = (void *)stm32_i2s_ioctl,
 	.setbuf = (void *)stm32_i2s_setbuf,
-	.getbuf = (void *)stm32_i2s_getbuf
+	.getbuf = (void *)stm32_i2s_getbuf,
+	.get_dma_tx_cnt = (void *)stm32_i2s_get_dma_tx_count,
+	.get_dma_rx_cnt = (void *)stm32_i2s_get_dma_rx_count
 };
 
