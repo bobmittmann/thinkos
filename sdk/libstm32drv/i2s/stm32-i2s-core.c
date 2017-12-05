@@ -32,7 +32,7 @@
 
 
 #define PLLI2SR 3
-#define PLLI2SN 127
+#define PLLI2SN 254
 #define PLLI2SM 9
 #define PLLI2SQ 8
 #define PLLI2SP 2
