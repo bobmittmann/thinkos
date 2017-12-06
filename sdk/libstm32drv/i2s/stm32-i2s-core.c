@@ -31,8 +31,13 @@
 #include <trace.h>
 
 
-#define PLLI2SR 3
-#define PLLI2SN 254
+/* for 11025 freq @ 8 oversample rate */
+//#define PLLI2SR 3
+//#define PLLI2SN 254
+/* for 11025 freq @ 16 oversample rate */
+#define PLLI2SR 2
+#define PLLI2SN 271
+
 #define PLLI2SM 9
 #define PLLI2SQ 8
 #define PLLI2SP 2
