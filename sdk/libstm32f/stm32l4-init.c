@@ -79,26 +79,34 @@
    Precalculated PLL configuartion
 */
 
-#if (STM32_HCLK_HZ == 80000000)
-#if (STM32_HSE_HZ == 11289600)
-	/* F_HSE  =  11.2896 MHz
-	   F_VCO  =  316.1088 MHz
-	   F_HCLK =  79.0272 MHz */
-  #define PLLN 56
-  #define PLLM 2
-  #define PLLR 4
-  #define PLLQ 8
-  #define PLLPDIV 7
+#if (STM32_HCLK_HZ == 79027200) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 158.054400 MHz */
+  #define PLLM         1
+  #define PLLN        14
+  #define PLLR         2 /*     PLLCLK ->  79.027200 MHz */
+  #define PLLQ         3 /* PLL48M1CLK ->  52.684800 MHz */
+  #define PLLPDIV      7 /* PLLSAI2CLK ->  22.579200 MHz */
 
-  #define PLLSAIN 32
-  #define PLLSAIDIV 8
-#elif (STM32_HSE_HZ == 16000000)
-#elif (STM32_HSE_HZ == 12000000)
-#elif (STM32_HSE_HZ == 8000000)
-#else
-#error "HSE_HZ invalid!"
+  /* PLLSAIVCO = 90.316800 MHz */
+  #define PLLSAIN      8
+  #define PLLSAIPDIV   4 /* PLLSAI2CLK ->  22.579200 MHz */
+  #define PLLSAIQ      2 /* PLL48M2CLK ->  45.158400 MHz */
+  #define PLLSAIR      4 /*  PLLADCCLK ->  22.579200 MHz */
 #endif
 
+#if (STM32_HCLK_HZ == 64915200) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 259.660800 MHz */
+  #define PLLM         1
+  #define PLLN        23
+  #define PLLR         4 /*     PLLCLK ->  64.915200 MHz */
+  #define PLLQ         5 /* PLL48M1CLK ->  51.932160 MHz */
+  #define PLLPDIV     11 /* PLLSAI2CLK ->  23.605527 MHz */
+
+  /* PLLSAIVCO = 90.316800 MHz */
+  #define PLLSAIN      8
+  #define PLLSAIPDIV   4 /* PLLSAI2CLK ->  22.579200 MHz */
+  #define PLLSAIQ      2 /* PLL48M2CLK ->  45.158400 MHz */
+  #define PLLSAIR      4 /*  PLLADCCLK ->  22.579200 MHz */
 #endif
 
 /* -------------------------------------------------------------------- 
@@ -115,7 +123,7 @@
 #if STM32_ENABLE_PLLSAI
   /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
   #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLM)
-  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIDIV)
+  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIPDIV)
 #else
   #if STM32_ENABLE_PLL
     /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
@@ -286,7 +294,7 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure SAI PLL
 	 *******************************************************************/
-	rcc->pllsai1cfgr = RCC_PLLSAI1DIV(PLLSAIDIV) | 
+	rcc->pllsai1cfgr = RCC_PLLSAI1DIV(PLLSAIPDIV) | 
 		RCC_PLLSAI1PEN | 
 		RCC_PLLSAI1N(PLLSAIN);
 

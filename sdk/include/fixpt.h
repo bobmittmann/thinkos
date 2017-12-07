@@ -11,7 +11,7 @@
 #define Q15(F) ((int32_t)((float)(F) * (float)32768.0))
 
 /* Convert from fractional Q1.15 to float point */
-#define Q15F(Q) ((float)(((float)(Q)) / (float)32768.0))
+#define Q15F(Q) ((float)((float)(Q) / (float)32768.0))
 
 /* Q15 Multiply */
 #define Q15_MUL(X1, X2) (((int32_t)(X1) * (int32_t)(X2) + (1 << 14)) >> 15)
@@ -41,25 +41,38 @@
 
 
 
-/* Conversion form float to fixed point Q1.15 */
+/* Conversion form float to fixed point Q16.16 */
 #define Q16(F) ((int32_t)((float)(F) * (float)65536.0))
 
-/* Convert from fractional Q8.16 to float point */
+/* Convert from fractional Q16.16 to float point */
 #define Q16F(Q) ((float)(((float)(Q)) / (1.0 * (1 << 16))))
 
-/* Q16 Multiply */
+/* Q16.16 Multiply */
 #define Q16_MUL(X1, X2) (((int64_t)(X1) * (int64_t)(X2) + (1 << 15)) >> 16)
 
-/* Q16 Divide */
+/* Q16.16 Divide */
 #define Q16_DIV(X, Y) (((int64_t)(X) << 16) / (Y))
 
+/* Q16.16 Floor */
+#define Q16_FLOOR(X) ((int32_t)((X) % (1 << 16)))
 
+/* Q16.16 Int */
+#define Q16_INT(X) ((int32_t)((X) >> 16))
+
+#define Q31_MAX ((uint32_t)(1 << 31) - 1)
+#define Q31_MIN ((int32_t)-1)
+
+/* Q31 Saturation */
+#define Q31_SAT(X) ((int64_t)(X) < (int64_t)Q31_MIN) ? Q31_MIN : \
+	(((int64_t)(X) > (int64_t)Q31_MAX) ? Q31_MAX: (X))
 
 /* Conversion form float to fixed point Q1.31 */
-#define Q31(F) ((int32_t)(double)(F) * (double)(1LL << 32))
+#define Q31(F) Q31_SAT((int64_t)((double)(F) * (double)(1LL << 31)))
+
+//#define Q31(F) ((int64_t)(double)(F) * (double)(1LL << 31))
 
 /* Convert from fractional Q1.31 to float point */
-#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(1LL << 32))))
+#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(1LL << 31))))
 
 /* Q31 Signed Multiply */
 #define Q31_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 30)) >> 31)
@@ -69,9 +82,6 @@
 
 /* Q31 Divide */
 #define Q31_DIV(X, Y) (((int64_t)(X) << 31) / (Y))
-
-/* Q15 Saturation */
-#define Q31_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
 /* FLoor(log2(n)) for 32 bits 
    Use this macro only with constant values as the generated
@@ -122,6 +132,10 @@ extern const int8_t q15_db2pwr_min;
 const uint16_t q15_db2amp(int amp);
 
 const uint16_t q15_db2pwr(int pwr);
+
+/* Normalized fixed point sine:
+ x = Q31(0.0) .. (1.0) -> 0 .. pi */
+int32_t q31sin(int32_t x);
 
 #endif // __FIXPT_H__
 

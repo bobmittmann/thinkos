@@ -98,19 +98,19 @@
    110: External line9
    111: Software trigger Note: Only used if bit TEN2 = 1 (DAC channel2
    trigger enabled). */
-#define DAC_TSEL2_TIMER6 (0 << 19)
+#define DAC_TSEL2_TIM6 (0 << 19)
 
 #if defined(STM32FX2)
-#define DAC_TSEL2_TIMER8 (1 << 19)
+#define DAC_TSEL2_TIM8 (1 << 19)
 #elif defined(STM32FX1)
-#define DAC_TSEL2_TIMER3 (1 << 19)
-#define DAC_TSEL2_TIMER15 (3 << 19)
+#define DAC_TSEL2_TIM3 (1 << 19)
+#define DAC_TSEL2_TIM15 (3 << 19)
 #endif
 
-#define DAC_TSEL2_TIMER7 (2 << 19)
-#define DAC_TSEL2_TIMER5 (3 << 19)
-#define DAC_TSEL2_TIMER2 (4 << 19)
-#define DAC_TSEL2_TIMER4 (5 << 19)
+#define DAC_TSEL2_TIM7 (2 << 19)
+#define DAC_TSEL2_TIM5 (3 << 19)
+#define DAC_TSEL2_TIM2 (4 << 19)
+#define DAC_TSEL2_TIM4 (5 << 19)
 #define DAC_TSEL2_EXT9   (6 << 19)
 #define DAC_TSEL2_SOFT   (7 << 19)
 
@@ -193,19 +193,19 @@
    Timer 5 TRGO event 100: Timer 2 TRGO event 101: Timer 4 TRGO event 110:
    External line9 111: Software trigger Note: Only used if bit TEN1 = 1 (DAC
    channel1 trigger enabled). */
-#define DAC_TSEL1_TIMER6 (0 << 3)
+#define DAC_TSEL1_TIM6 (0 << 3)
 
 #if defined(STM32FX2)
-#define DAC_TSEL1_TIMER8 (1 << 3)
+#define DAC_TSEL1_TIM8 (1 << 3)
 #elif defined(STM32FX1)
-#define DAC_TSEL1_TIMER3 (1 << 3)
-#define DAC_TSEL1_TIMER15 (3 << 3)
+#define DAC_TSEL1_TIM3 (1 << 3)
+#define DAC_TSEL1_TIM15 (3 << 3)
 #endif
 
-#define DAC_TSEL1_TIMER7 (2 << 3)
-#define DAC_TSEL1_TIMER5 (3 << 3)
-#define DAC_TSEL1_TIMER2 (4 << 3)
-#define DAC_TSEL1_TIMER4 (5 << 3)
+#define DAC_TSEL1_TIM7 (2 << 3)
+#define DAC_TSEL1_TIM5 (3 << 3)
+#define DAC_TSEL1_TIM2 (4 << 3)
+#define DAC_TSEL1_TIM4 (5 << 3)
 #define DAC_TSEL1_EXT9   (6 << 3)
 #define DAC_TSEL1_SOFT   (7 << 3)
 

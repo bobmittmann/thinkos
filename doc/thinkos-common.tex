@@ -1,0 +1,141 @@
+\documentclass[11pt]{article} % required
+\usepackage{geometry}
+\geometry{letterpaper, portrait, margin=1in, headheight=110pt}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\usepackage{color}
+%\usepackage[T1]{fontenc}
+\usepackage{droid}
+\renewcommand*\familydefault{\sfdefault} %% Only if the base font of the document is to be sans serif
+
+\usepackage{csquotes}
+\usepackage{varwidth}
+\usepackage{capt-of}
+\usepackage{booktabs}
+\usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+\graphicspath{{img/pdf/}{img/png/}{img/pdf_tex/}}
+% The hyperref package gives us a pdf with properly built
+% internal navigation ('pdf bookmarks' for the table of contents,
+% internal cross-reference links, web links for URLs, etc.)
+\usepackage[]{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+	colorlinks=true,% hyperlinks will be coloured
+	linkcolor=black,% hyperlink text will be green
+	linkbordercolor=red,% hyperlink border will be red
+    citecolor=blue,
+    urlcolor=blue,
+	urlbordercolor={blue}
+}
+\makeatletter
+\Hy@AtBeginDocument{%
+  \def\@pdfborder{0 0 1}% Overrides border definition set with colorlinks=true
+  \def\@pdfborderstyle{/S/U/W 1}% Overrides border style set with colorlinks=true
+                                % Hyperlink border style will be underline of width 1pt
+}
+\makeatother
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{textgreek}
+\usepackage{mathtools} % for \ceil and \floor
+
+\usepackage{listings}
+
+\lstdefinelanguage{uJS} {
+	language = C,
+	morekeywords = {var, const, function, true, false, try, throw, catch},
+}
+
+\lstdefinelanguage{C99} {
+	language = C,
+	morekeywords = {int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t},
+}
+
+%\usepackage{inconsolata}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\lstset{
+	basicstyle=\footnotesize\ttfamily, 
+	keywordstyle=\color{blue}\bfseries\ttfamily,
+	stringstyle=\color{red}\ttfamily,
+	commentstyle=\color{magenta}\ttfamily,
+	identifierstyle=\color{black}\ttfamily,          
+%		 morecomment=[l][\color{magenta}]{\#},
+	numberstyle=\tiny,          
+	numbersep=5pt,             
+	tabsize=4,                
+	extendedchars=true,      
+	breaklines=true,        
+	showspaces=false,      
+	showtabs=false,       
+	xleftmargin=17pt,
+	framexleftmargin=17pt,
+	framexrightmargin=5pt,
+	framexbottommargin=4pt,
+	showstringspaces=false
+}
+
+\lstloadlanguages{
+	C, C99, uJS 
+}
+
+% Definition of \maketitle
+\makeatletter         
+\def\@maketitle{
+	\raggedright
+	\vfill
+	\begin{center}
+	{\Huge \bfseries \sffamily \@title }\\[4ex] 
+	{\Large \sffamily \@author}\\ 
+	{\sffamily \textit{\email}}\\[8ex]
+	{\sffamily \@date}\\[8ex]
+	{\sffamily \bfseries Revision \therevision}
+	\vfill
+	\includegraphics[height=60pt]{img/pdf/thinkos_embedded.pdf}
+	\vfill
+	\end{center}
+	\noindent\rule{\linewidth}{1pt}\\
+	\quad
+}
+\makeatother
+
+\begingroup
+\catcode`_=13
+\gdef\var{%
+	\begingroup
+	\catcode`_=13
+	\def_{\_}%
+	\dovar
+}
+\gdef\dovar#1{%
+	\mathtt{#1}%
+\endgroup
+}
+\endgroup
+
+\fancyhead[R]{\thepage}
+\rhead{\includegraphics[height=20pt]{img/pdf/thinkos_logo.pdf}}
+\lhead{\thetitle}
+\rfoot{Page \thepage}
+\cfoot{}
+
+\usepackage{lettrine}
+
+\newcommand{\dg}{$^\circ$ }
+
+\newcommand{\ThinkOS}{\textbf{ThinkOS} }
+
+\usepackage[nounderscore]{syntax}
+
+\usepackage{vhistory}
+
+%\lettrine[findent=2pt]{\textbf{T}}{his}
+

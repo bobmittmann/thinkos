@@ -269,7 +269,14 @@
    on ITRx meaning for each Timer.
    Note: These bits must be changed only when they are not used (e.g. 
    when SMS=000) to avoid wrong edge detections at the transition. */
-   
+#define TIM_TS_ITR0     (0 << 0)
+#define TIM_TS_ITR1     (1 << 0)
+#define TIM_TS_ITR2     (2 << 0)
+#define TIM_TS_ITR3     (3 << 0)
+#define TIM_TS_TI1F_ED  (4 << 0)
+#define TIM_TS_TI1FP1   (5 << 0)
+#define TIM_TS_TI2FP2   (6 << 0)
+#define TIM_TS_ETRF     (7 << 0)
 
 /* Bit 3 Reserved, always read as 0. */
 
@@ -302,7 +309,14 @@
    trigger input (TS=100).
    Indeed, TI1F_ED outputs 1 pulse for each transition on TI1F, whereas the 
    gated mode checks the level of the trigger signal. */
-
+#define TIM_SMS_DISABLED      (0 << 0)
+#define TIM_SMS_ENCODER_MODE1 (1 << 0)
+#define TIM_SMS_ENCODER_MODE2 (2 << 0)
+#define TIM_SMS_ENCODER_MODE3 (3 << 0)
+#define TIM_SMS_RESET_MODE    (4 << 0)
+#define TIM_SMS_GATED_MODE    (5 << 0)
+#define TIM_SMS_TRIGGER_MODE  (6 << 0)
+#define TIM_SMS_EXTCLK1_MODE  (7 << 0)
 
 /*-------------------------------------------------------------------------
  * TIMx DMA/Interrupt enable register */
@@ -530,6 +544,9 @@
    must take care that the same bit can have a different meaning for the 
    input stage and for the output stage. */
 
+#ifdef STM32L4XX 
+#define TIM_OC1M3 (1 << 16)
+#endif
 
 /* Bit 15 - Output compare 2 clear enable */
 #define TIM_OC2CE (1 << 15)
@@ -686,6 +703,10 @@
    bit (TIMx_SMCR register)
    Note: CC2S bits are writable only when the channel is OFF 
    (CC2E = 0 in TIMx_CCER). */
+#define TIM_CC2S_OUT (0x0 << 8)
+#define TIM_CC2S_TI2 (0x1 << 8)
+#define TIM_CC2S_TI1 (0x2 << 8)
+#define TIM_CC2S_TRC (0x3 << 8)
 
 /* Bits [7..4] - Input capture 1 filter */
 #define TIM_IC1F ((7 - 4) << 4)
