@@ -95,6 +95,10 @@ void gdb_stub_task(struct dmon_comm * comm);
 #define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
 #endif
 
+#ifndef MONITOR_EXCEPTION_ENABLE
+#define MONITOR_EXCEPTION_ENABLE   THINKOS_ENABLE_EXCEPTIONS
+#endif
+
 #ifndef BOOT_ENABLE_GDB
 #define BOOT_ENABLE_GDB 0
 #endif
@@ -215,7 +219,7 @@ static const char monitor_menu[] =
 #if (MONITOR_APPWIPE_ENABLE)
 " Ctrl+W - Wipe application\r\n"
 #endif
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 " Ctrl+X - Exception info\r\n"
 #endif
 " Ctrl+Y - YMODEM app upload\r\n"
@@ -244,7 +248,7 @@ static void monitor_show_help(struct dmon_comm * comm)
 	dmprintf(comm, s_hr);
 }
 
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(struct dmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
@@ -270,6 +274,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
 	if (dmon_comm_isconnected(comm)) {
+		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dmprintf(comm, s_hr);
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, s_hr);
@@ -646,7 +651,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 
 	sigmask |= (1 << DBGMON_SOFTRST);
 	sigmask |= (1 << DBGMON_STARTUP);
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
 	sigmask |= (1 << DBGMON_EXCEPT);
 #endif
@@ -722,7 +727,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		}
 #endif
 
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
