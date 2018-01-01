@@ -13,10 +13,11 @@
 /* Convert from fractional Q1.15 to float point */
 #define Q15F(Q) ((float)((float)(Q) / (float)32768.0))
 
-/* Q15 Multiply */
+/* Q15 Signed Multiply with rounding. Ties are rouded up. */
 #define Q15_MUL(X1, X2) (((int32_t)(X1) * (int32_t)(X2) + (1 << 14)) >> 15)
-//#define Q15_MUL(X1, X2) (((int32_t)(X1) * (int32_t)(X2)) >> 15)
-
+/* Q15 Signed Multiply non rounding (faster) */
+#define Q15_MUL_FLOOR(X1, X2) (((int32_t)(X1) * (int32_t)(X2)) >> 15)
+/* Q15 Unsigned Multiply with rounding */
 #define Q15_UMUL(X1, X2) ((((uint32_t)(X1) * (uint32_t)(X2)) + (1 << 14)) >> 15)
 
 /* Q15 Divide */
@@ -59,20 +60,63 @@
 /* Q16.16 Int */
 #define Q16_INT(X) ((int32_t)((X) >> 16))
 
-#define Q31_MAX ((uint32_t)(1 << 31) - 1)
-#define Q31_MIN ((int32_t)-1)
+/* -------------------------------------------------------------------------
+ Q2.30 format: -2.0 ... 1.9999999
+ */
+ 
+#define Q30_MAX ((int32_t)2147483647)
+#define Q30_MIN ((int32_t)-2147483648)
+
+/* Q30 Saturation */
+#define Q30_SAT(X) ((int64_t)(X) < (int64_t)Q30_MIN) ? Q30_MIN : \
+	(((int64_t)(X) > (int64_t)Q30_MAX) ? Q30_MAX: (X))
+
+/* Saturate to -1..0.9999 instead of the min..max (-2..1.99999) */
+#define Q30_SAT_ONE(X) ((int32_t)(X) < -1073741824) ? -1073741824: \
+	(((int32_t)(X) > 1073741823) ? 1073741823: (X))
+
+/* Conversion form float to fixed point Q1.30 */
+#define Q30(F) Q30_SAT((int64_t)((double)(F) * (double)(1073741824.)))
+/* Convert from float point to fixed point Q1.30 */
+#define FLOAT_Q30(X)     ((int32_t)((X) * 1073741824.))
+
+/* Convert from fractional Q1.30 to float point */
+#define Q30F(Q) ((double)((double)(Q) * (1.0 / (double)(1073741824.))))
+/* Convert from fixed point Q1.30 to float point */
+#define Q30_FLOAT(X)     ((float)(X) / 1073741824.)
+
+/* Q30 Signed Multiply */
+#define Q30_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 29)) >> 30)
+
+/* Q30 Unsigned Multiply */
+#define Q30_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 29)) >> 30)
+
+/* Q30 Divide */
+#define Q30_DIV(X, Y) (((int64_t)(X) << 30) / (int32_t)(Y))
+/* Q30 Unsigned Divide */
+#define Q30_UDIV(X, Y) (((uint64_t)(X) << 30) / (uint32_t)(Y))
+
+
+/* -------------------------------------------------------------------------
+ Q1.31 format: -1.0 ... .9999999
+ */
+ 
+#define Q31_MAX ((int32_t)2147483647)
+#define Q31_MIN ((int32_t)-2147483648)
 
 /* Q31 Saturation */
 #define Q31_SAT(X) ((int64_t)(X) < (int64_t)Q31_MIN) ? Q31_MIN : \
 	(((int64_t)(X) > (int64_t)Q31_MAX) ? Q31_MAX: (X))
 
 /* Conversion form float to fixed point Q1.31 */
-#define Q31(F) Q31_SAT((int64_t)((double)(F) * (double)(1LL << 31)))
-
-//#define Q31(F) ((int64_t)(double)(F) * (double)(1LL << 31))
+#define Q31(F) Q31_SAT((int64_t)((double)(F) * (double)(2147483648.)))
+/* Convert from float point to fixed point Q1.31 */
+#define FLOAT_Q31(X)     ((int32_t)((X) * 2147483648.))
 
 /* Convert from fractional Q1.31 to float point */
-#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(1LL << 31))))
+#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(2147483648.))))
+/* Convert from fixed point Q1.31 to float point */
+#define Q31_FLOAT(X)     ((float)(X) / 2147483648.)
 
 /* Q31 Signed Multiply */
 #define Q31_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 30)) >> 31)
@@ -81,7 +125,10 @@
 #define Q31_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 30)) >> 31)
 
 /* Q31 Divide */
-#define Q31_DIV(X, Y) (((int64_t)(X) << 31) / (Y))
+#define Q31_DIV(X, Y) (((int64_t)(X) << 31) / (int32_t)(Y))
+/* Q31 Unsigned Divide */
+#define Q31_UDIV(X, Y) (((uint64_t)(X) << 31) / (uint32_t)(Y))
+
 
 /* FLoor(log2(n)) for 32 bits 
    Use this macro only with constant values as the generated
@@ -136,6 +183,10 @@ const uint16_t q15_db2pwr(int pwr);
 /* Normalized fixed point sine:
  x = Q31(0.0) .. (1.0) -> 0 .. pi */
 int32_t q31sin(int32_t x);
+
+/* Normalized fixed point cosine:
+ x = Q31(0.0) .. (1.0) -> 0 .. pi */
+int32_t q31cos(int32_t x);
 
 #endif // __FIXPT_H__
 
