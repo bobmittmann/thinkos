@@ -561,6 +561,7 @@ void __attribute__((noreturn)) thinkos_mem_manage(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
+	uint32_t mmfar = xcpt->mmfar;
 	DCC_LOG(LOG_ERROR, "!!! Mem Management !!!");
 	DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, xcpt->mmfar);
 	if (mmfsr) {
@@ -572,6 +573,8 @@ void __attribute__((noreturn)) thinkos_mem_manage(struct thinkos_except * xcpt)
 				 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
 				 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
 	}
+	if ((mmfsr & MMFSR_MMARVALID) && (mmfar == 0))
+		DCC_LOG(LOG_ERROR, "Null pointer!!!");
 #endif
 
 	DCC_EXCEPT_DUMP(xcpt);
