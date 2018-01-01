@@ -24,8 +24,87 @@
  */ 
 
 
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stm32f.h>
 
 const uint32_t stm32f_apb1_hz;
 const uint32_t stm32f_apb2_hz;
 const uint32_t stm32f_ahb_hz;
+
+/* for 11025 freq @ 8 oversample rate */
+//#define PLLI2SR 3
+//#define PLLI2SN 254
+/* for 11025 freq @ 16 oversample rate */
+#define PLLI2SR 2
+#define PLLI2SN 271
+
+#define PLLI2SM 9
+#define PLLI2SQ 8
+#define PLLI2SP 2
+
+#if defined(STM32F446)
+#if (PLLI2SN < 50)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SN > 432)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SM > 63)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SM < 2)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SR < 2)
+#error "invalid PLLI2SR!"
+#endif
+#endif
+
+#define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
+#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
+
+#if defined(STM32F446)
+const uint32_t stm32f_i2s_hz = __I2S_HZ;
+
+void stm32_rcc_i2s_pll_init(void)
+{
+	struct stm32_rcc * rcc = STM32_RCC;
+	uint32_t cr;
+	int again;
+
+	rcc->dckcfgr2 = 0;
+	rcc->pllsaicfgr = 0;
+
+	cr = rcc->cr;
+	/* disable I2SPLL */
+	cr &= ~RCC_PLLI2SON;
+
+	/* configure IS2 PLL */
+	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
+		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
+
+	/* enable I2SPLL */
+	cr |= RCC_PLLI2SON;
+	rcc->cr = cr;;
+
+	for (again = 8192; ; again--) {
+		cr = rcc->cr;
+		if (cr & RCC_PLLI2SRDY)
+			break;
+		if (again == 0) {
+			/* PLL lock fail */
+			return;
+		}
+	}
+
+	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+}
+#endif
+
