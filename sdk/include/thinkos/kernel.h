@@ -441,7 +441,7 @@
 #endif
 
 
-#ifdef THINKOS_ENABLE_FPU
+#if THINKOS_ENABLE_FPU
   /* Position of register R0 in the context */
   #define CTX_R0 (16 + 8)
   /* Position of register PC in the context */
