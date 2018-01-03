@@ -39,19 +39,21 @@ enum trace_level {
 	TRACE_LVL_YAP = 5
 };
 
+/* Trace reference */
 struct trace_ref {
-	unsigned char lvl;
-	unsigned char opt;
-	unsigned short line;
-	const char * func;
-	const char * fmt;
+	unsigned char lvl;   /* Trace level */
+	unsigned char opt;   /* Options (unused) */
+	unsigned short line; /* Source file line number */
+	const char * func;   /* Function name */
+	const char * fmt;    /* Formatting string */
 };
 
+/* Trace entry */
 struct trace_entry {
-	const struct trace_ref * ref;
-	uint32_t dt;
-	uint64_t tm;
-	uint32_t idx;
+	const struct trace_ref * ref; /* Pointer to a trace entry reference */
+	uint32_t dt; /* Time elapsed since last trance in the buffer [microsseconds] */
+	uint64_t tm; /* Absolute time of this trace entry */
+	uint32_t idx; /* Trace entry sequential number */
 };
 
 
