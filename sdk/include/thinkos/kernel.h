@@ -1254,10 +1254,6 @@ void __console_rx_pipe_commit(int cnt);
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
 
-void __thinkos_flag_give(uint32_t wq);
-void __thinkos_flag_clr(uint32_t wq);
-void __thinkos_flag_set(uint32_t wq);
-
 void __thinkos_sem_post(uint32_t wq);
 
 void __thinkos_ev_raise(uint32_t wq, int ev);

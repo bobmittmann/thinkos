@@ -720,23 +720,17 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 			return -1;
 		}
 
-		DCC_LOG(LOG_TRACE, "setting the step_req bit");
+		DCC_LOG(LOG_MSG, "setting the step_req bit");
 		/* request stepping the thread  */
 		__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
-
-
-		DCC_LOG(LOG_TRACE, "resuming the thread");
 		/* resume the thread */
 		__thinkos_thread_resume(thread_id);
-
-
-		DCC_LOG(LOG_TRACE, "scheduling the scheduler :)");
 		/* make sure to run the scheduler */
 		__thinkos_defer_sched();
 	}
 
 	if (sync) {
-		DCC_LOG(LOG_TRACE, "synchronous step, waiting for signal...");
+		DCC_LOG(LOG_MSG, "synchronous step, waiting for signal...");
 		if ((ret = dbgmon_wait(DBGMON_THREAD_STEP)) < 0)
 			return ret;
 	}

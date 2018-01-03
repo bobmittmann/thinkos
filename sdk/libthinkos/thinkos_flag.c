@@ -352,7 +352,7 @@ void thinkos_flag_val_svc(int32_t * arg)
 	arg[0] = __bit_mem_rd(thinkos_rt.flag, idx);
 }
 
-void __thinkos_flag_clr(uint32_t wq)
+static void __thinkos_flag_clr(uint32_t wq)
 {
 	unsigned int flag = wq - THINKOS_FLAG_BASE;
 

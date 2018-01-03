@@ -101,7 +101,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	arg[0] = 0;
 	
-	DCC_LOG(LOG_TRACE, ".........................");
+	DCC_LOG(LOG_MSG, ".........................");
 
 	switch (req) {
 	case THINKOS_CTL_CLOCKS:

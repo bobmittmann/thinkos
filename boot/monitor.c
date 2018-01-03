@@ -119,6 +119,10 @@ void gdb_stub_task(struct dmon_comm * comm);
 #define MONITOR_RESTART_MONITOR 0
 #endif
 
+#ifndef MONITOR_THREAD_STEP_ENABLE
+#define MONITOR_THREAD_STEP_ENABLE 1
+#endif
+
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif
@@ -207,7 +211,10 @@ static const char monitor_menu[] =
 " Ctrl+R - Resume all threads\r\n"
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-" Ctrl+S - Show memory\r\n"
+" Ctrl+D - Dump memory\r\n"
+#endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+" Ctrl+S - Thread step\r\n"
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 " Ctrl+T - Thread info\r\n"
@@ -305,6 +312,29 @@ static void monitor_on_bkpt(struct monitor * mon)
 	}
 }
 #endif
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+static void monitor_on_step(struct monitor * mon)
+{
+	struct dmon_comm * comm = mon->comm;
+	struct thinkos_except * xcpt = &thinkos_except_buf;
+
+	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
+
+	if (dbgmon_wait_idle() < 0) {
+		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
+	}
+
+	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+
+	if (dmon_comm_isconnected(comm)) {
+		dmprintf(comm, s_hr);
+		dmon_print_exception(comm, xcpt);
+		dmprintf(comm, s_hr);
+	}
+}
+#endif
+
 
 #if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(struct dmon_comm * comm)
@@ -526,6 +556,13 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmon_print_thread(comm, mon->thread_id);
 		break;
 #endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+	case CTRL_S:
+		dmprintf(comm, "^S\r\n");
+		dmprintf(comm, s_hr);
+		dmon_thread_step(mon->thread_id, false);
+		break;
+#endif
 #if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		dmprintf(comm, "^O\r\n");
@@ -668,6 +705,9 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #if (MONITOR_WATCHPOINT_ENABLE)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+	sigmask |= (1 << DBGMON_THREAD_STEP);
+#endif
 
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
@@ -746,6 +786,15 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			monitor_on_bkpt(&monitor);
 		}
+#endif
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+		if (sigset & (1 << DBGMON_THREAD_STEP)) {
+			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
+			dbgmon_clear(DBGMON_THREAD_STEP);
+			monitor_on_step(&monitor);
+		}
+
 #endif
 
 		if (sigset & (1 << DBGMON_COMM_RCV)) {
