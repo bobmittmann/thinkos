@@ -18,20 +18,19 @@
  */
 
 /** 
- * @file fgetc.c
+ * @file ftmgetc.c
  * @brief YARD-ICE libc
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
 #include <stdio.h>
 #include <sys/file.h>
-#include <stdint.h>
 
-int fgetc(FILE * f)
+int ftmgetc(FILE * f, unsigned int tmo)
 {
 	char c;
 
-	if (f->op->read(f->data, (void *)&c, sizeof(char), INT32_MAX) <= 0) {
+	if (f->op->read(f->data, (void *)&c, sizeof(char), tmo) <= 0) {
 		return EOF;
 	}
 

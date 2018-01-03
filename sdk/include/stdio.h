@@ -101,6 +101,11 @@ int vsscanf(const char * str, const char * fmt, va_list ap);
 
 int vfscanf(FILE * f, const char * fmt, va_list ap);
 
+/* Extensions */
+
+/* Timed getC */
+int ftmgetc(FILE * f, unsigned int tmo);
+
 #ifdef __cplusplus
 }
 #endif
