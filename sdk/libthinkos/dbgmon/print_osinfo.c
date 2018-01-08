@@ -98,7 +98,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 #endif
 	dmprintf(comm, " |  Context"); 
 #if THINKOS_ENABLE_THREAD_STAT
-	dmprintf(comm, " |  WQ | TmW"); 
+	dmprintf(comm, " | Status"); 
 #endif
 #if THINKOS_ENABLE_TIMESHARE
 //	dmprintf(comm, " |  Val |  Pri"); 
@@ -118,6 +118,10 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
+			int oid;
+			int type;
+			bool tmw;
+
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			dmprintf(comm, "%3d", i + 1);
@@ -131,13 +135,58 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 			}
 #endif
 			dmprintf(comm, " | %08x", (uint32_t)rt->ctx[i]); 
+
 #if THINKOS_ENABLE_THREAD_STAT
-			dmprintf(comm, " | %3d | %s", rt->th_stat[i] >> 1, 
-					rt->th_stat[i] & 1 ? "Yes" : " No"); 
+			oid = thinkos_rt.th_stat[i] >> 1;
+			tmw = thinkos_rt.th_stat[i] & 1;
+#else
+			oid = THINKOS_WQ_READY; /* FIXME */
+			tmw = (thinkos_rt.wq_clock & (1 << i)) ? true : false;
 #endif
+			if (oid == THINKOS_WQ_FAULT) {
+				struct thinkos_except * xcpt = &thinkos_except_buf;
+				switch (xcpt->type) {
+				case CM3_EXCEPT_HARD_FAULT:
+					dmprintf(comm, " | !HARD ");
+					break;
+				case CM3_EXCEPT_MEM_MANAGE:
+					dmprintf(comm, " | !MEM  ");
+					break;
+				case CM3_EXCEPT_BUS_FAULT:
+					dmprintf(comm, " | !BUS  ");
+					break;
+				case CM3_EXCEPT_USAGE_FAULT: 
+					dmprintf(comm, " | !USAGE");
+					break;
+				default:
+					dmprintf(comm, " | ERR %2d", xcpt->type - THINKOS_ERR_OFF);
+				}
+			} else if (oid == THINKOS_WQ_READY) {
+#if THINKOS_IRQ_MAX > 0
+				if (i != THINKOS_THREAD_IDLE) {
+					int irq;
+					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+						if (thinkos_rt.irq_th[irq] == i) {
+							break;
+						}
+					}
+					if (irq < THINKOS_IRQ_MAX) {
+						dmprintf(comm, " | IRQ %2d", irq);
+					} else
+						dmprintf(comm, " | * ???  ");
+				} else
+#endif
+					dmprintf(comm, " | * READY");
 #if THINKOS_ENABLE_TIMESHARE
-//			dmprintf(comm, " | %4d | %4d", rt->sched_val[i], rt->sched_pri[i]); 
+				/* FIXME: implement some info ...*/
 #endif
+			} else {
+				type = thinkos_obj_type_get(oid);
+				dmprintf(comm, " | %c%c %3d", 
+						 tmw ? 'T' : ' ',
+						 thinkos_type_prefix_lut[type], 
+						 oid);
+			}
 #if THINKOS_ENABLE_CLOCK
 			{
 				int32_t dt = (int32_t)(rt->clock[i] - rt->ticks);

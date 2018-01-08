@@ -459,11 +459,13 @@ void thinkos_resume_svc(int32_t * arg)
 #endif
 #endif
 
+#if THINKOS_ENABLE_SANITY_CHECK
 	if (thinkos_rt.ctx[thread_id] == NULL) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+#endif
 
 	arg[0] = 0;
 
