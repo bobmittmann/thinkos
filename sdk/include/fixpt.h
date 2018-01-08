@@ -68,15 +68,15 @@
 #define Q30_MIN ((int32_t)-2147483648)
 
 /* Q30 Saturation */
-#define Q30_SAT(X) ((int64_t)(X) < (int64_t)Q30_MIN) ? Q30_MIN : \
-	(((int64_t)(X) > (int64_t)Q30_MAX) ? Q30_MAX: (X))
+#define Q30_SAT(X) (((int64_t)(X) < (int64_t)Q30_MIN) ? Q30_MIN : \
+	(((int64_t)(X) > (int64_t)Q30_MAX) ? Q30_MAX: (X)))
 
 /* Saturate to -1..0.9999 instead of the min..max (-2..1.99999) */
-#define Q30_SAT_ONE(X) ((int32_t)(X) < -1073741824) ? -1073741824: \
-	(((int32_t)(X) > 1073741823) ? 1073741823: (X))
+#define Q30_SAT_ONE(X) (((int32_t)(X) < -1073741824) ? -1073741824: \
+	(((int32_t)(X) > 1073741823) ? 1073741823: (X)))
 
 /* Conversion form float to fixed point Q1.30 */
-#define Q30(F) Q30_SAT((int64_t)((double)(F) * (double)(1073741824.)))
+#define Q30(F)           ((int64_t)((double)(F) * (double)(1073741824.)))
 /* Convert from float point to fixed point Q1.30 */
 #define FLOAT_Q30(X)     ((int32_t)((X) * 1073741824.))
 
@@ -86,15 +86,15 @@
 #define Q30_FLOAT(X)     ((float)(X) / 1073741824.)
 
 /* Q30 Signed Multiply */
-#define Q30_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 29)) >> 30)
+#define Q30_MUL(X1, X2)  (((int64_t)(X1) * (int32_t)(X2) + (1 << 29)) >> 30)
 
 /* Q30 Unsigned Multiply */
 #define Q30_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 29)) >> 30)
 
 /* Q30 Divide */
-#define Q30_DIV(X, Y) (((int64_t)(X) << 30) / (int32_t)(Y))
+#define Q30_DIV(X, Y)    (((int64_t)(X) << 30) / (int32_t)(Y))
 /* Q30 Unsigned Divide */
-#define Q30_UDIV(X, Y) (((uint64_t)(X) << 30) / (uint32_t)(Y))
+#define Q30_UDIV(X, Y)   (((uint64_t)(X) << 30) / (uint32_t)(Y))
 
 
 /* -------------------------------------------------------------------------
@@ -109,7 +109,7 @@
 	(((int64_t)(X) > (int64_t)Q31_MAX) ? Q31_MAX: (X))
 
 /* Conversion form float to fixed point Q1.31 */
-#define Q31(F) Q31_SAT((int64_t)((double)(F) * (double)(2147483648.)))
+#define Q31(F)           ((int64_t)((double)(F) * (double)(2147483648.)))
 /* Convert from float point to fixed point Q1.31 */
 #define FLOAT_Q31(X)     ((int32_t)((X) * 2147483648.))
 
