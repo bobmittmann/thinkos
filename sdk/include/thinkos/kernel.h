@@ -179,6 +179,14 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 #endif
 
+/* With this option calling thinkos_irq_wait() will return a thread id 
+   if there is a thread already waiting on this interrupt. After 
+   receiving the interrupt a thread can restore the previously 
+   waiting thread by calling thinkos_irq_restore()...  */
+#ifndef THINKOS_ENABLE_IRQ_RESTORE
+#define THINKOS_ENABLE_IRQ_RESTORE      0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
@@ -449,6 +457,12 @@
 #else
   #define CTX_R0 8
   #define CTX_PC 14
+#endif
+
+#if THINKOS_ENABLE_IRQ_RESTORE
+/* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
+#undef THINKOS_ENABLE_IRQ_CTL
+#define THINKOS_ENABLE_IRQ_CTL 1
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -957,6 +971,8 @@ extern uint32_t * const thinkos_obj_alloc_lut[];
 extern const uint16_t thinkos_wq_base_lut[];
 
 extern const char thinkos_type_name_lut[][6];
+
+extern const char thinkos_type_prefix_lut[];
 
 extern const char __xcpt_name_lut[16][12];
 

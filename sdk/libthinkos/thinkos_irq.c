@@ -43,12 +43,8 @@ void __thinkos_irq_reset_all(void)
 #if THINKOS_IRQ_MAX > 0
 
 void cm3_default_isr(int irq) 
-//void cm3_default_isr(void) 
 {
-//	int irq;
 	int th;
-
-//	irq = cm3_ipsr_get() - 16;
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
@@ -57,10 +53,10 @@ void cm3_default_isr(int irq)
 
 #if DEBUG
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
-	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th, irq);
+	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th + 1, irq);
 	/* TODO: create a wait queue for IRQ waiting. */
 	if (th >= THINKOS_THREAD_IDLE) {
-		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th, irq);
+		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th + 1, irq);
 		return;
 	}
 #endif
@@ -91,7 +87,12 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* wait for event */
 	__thinkos_suspend(self);
 
-	/* store the thread info */
+#if THINKOS_ENABLE_IRQ_RESTORE
+	/* Get the currently assigned thread */
+	arg[0] = thinkos_rt.irq_th[irq] + 1;
+#endif 
+
+	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;
 
 	/* signal the scheduler ... */
@@ -153,6 +154,7 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
+
 #if THINKOS_ENABLE_ARG_CHECK
 	int irq_max = ((uintptr_t)&__sizeof_rom_vectors / sizeof(void *)) - 16;
 
@@ -174,6 +176,42 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 
 	case THINKOS_IRQ_DISABLE:
 		cm3_irq_disable(irq);
+		break;
+
+#if THINKOS_ENABLE_IRQ_RESTORE
+	case THINKOS_IRQ_RESTORE:
+		{
+			unsigned int thread_id = arg[2] - 1;
+
+#if THINKOS_ENABLE_ARG_CHECK
+			if (thread_id >= THINKOS_THREADS_MAX) {
+				DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
+				__thinkos_error(THINKOS_ERR_THREAD_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+#if THINKOS_ENABLE_THREAD_ALLOC
+			if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
+				DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
+				__thinkos_error(THINKOS_ERR_THREAD_ALLOC);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+#endif
+#endif
+
+#if THINKOS_ENABLE_SANITY_CHECK
+			if (thinkos_rt.ctx[thread_id] == NULL) {
+				DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+#endif
+			/* Get the currently assigned thread */
+			arg[0] = thread_id;
+			cm3_irq_enable(irq);
+#endif 
+		}
 		break;
 
 	case THINKOS_IRQ_PRIORITY_SET:
