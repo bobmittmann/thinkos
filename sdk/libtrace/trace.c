@@ -370,3 +370,4 @@ void tracef_i(const struct trace_ref * ref, ... )
 
 	cm3_primask_set(pri);
 }
+

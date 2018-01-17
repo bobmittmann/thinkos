@@ -173,10 +173,10 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 					if (irq < THINKOS_IRQ_MAX) {
 						dmprintf(comm, " | IRQ %2d", irq);
 					} else
-						dmprintf(comm, " | * ???  ");
+						dmprintf(comm, " | READY ");
 				} else
 #endif
-					dmprintf(comm, " | * READY");
+					dmprintf(comm, " | READY ");
 #if THINKOS_ENABLE_TIMESHARE
 				/* FIXME: implement some info ...*/
 #endif
