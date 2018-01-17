@@ -139,8 +139,6 @@ char * fmt_clk_us(char * s, int64_t ts)
 	return s;
 }
 
-
-
 char * fmt_q31_3(char * s, int32_t x)
 {
 	bool neg = false;
@@ -155,9 +153,9 @@ char * fmt_q31_3(char * s, int32_t x)
 	y = ((int64_t)x * 2000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "0.%03d", y);
-	else
 		sprintf(s, "-0.%03d", y);
+	else
+		sprintf(s, "0.%03d", y);
 
 	return s;
 }
@@ -176,9 +174,9 @@ char * fmt_q31_6(char * s, int32_t x)
 	y = ((int64_t)x * 2000000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "0.%06d", y);
-	else
 		sprintf(s, "-0.%06d", y);
+	else
+		sprintf(s, "0.%06d", y);
 
 	return s;
 }
@@ -197,9 +195,9 @@ char * fmt_q31_9(char * s, int32_t x)
 	y = ((int64_t)x * 2000000000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "0.%09d", y);
-	else
 		sprintf(s, "-0.%09d", y);
+	else
+		sprintf(s, "0.%09d", y);
 
 	return s;
 }
@@ -223,9 +221,9 @@ char * fmt_clk_3(char * s, int64_t x)
 	frac = ((uint64_t)x * 1000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "%d.%03d", dec, frac);
-	else
 		sprintf(s, "-%d.%03d", dec, frac);
+	else
+		sprintf(s, "%d.%03d", dec, frac);
 
 	return s;
 }
@@ -248,9 +246,9 @@ char * fmt_clk_6(char * s, int64_t x)
 	frac = ((uint64_t)x * 1000000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "%d.%06d", dec, frac);
-	else
 		sprintf(s, "-%d.%06d", dec, frac);
+	else
+		sprintf(s, "%d.%06d", dec, frac);
 
 	return s;
 }
@@ -273,9 +271,9 @@ char * fmt_clk_9(char * s, int64_t x)
 	frac = ((uint64_t)x * 1000000000LL + (1LL << 31)) >> 32;
 
 	if (neg)
-		sprintf(s, "%d.%09d", dec, frac);
-	else
 		sprintf(s, "-%d.%09d", dec, frac);
+	else
+		sprintf(s, "%d.%09d", dec, frac);
 
 	return s;
 }

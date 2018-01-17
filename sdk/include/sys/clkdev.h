@@ -87,6 +87,11 @@
 /* Q31.32 division */
 #define CLK_DIV(NUM, DEN) (((int64_t)(NUM) << 32) / (int32_t)(DEN))
 
+/* Pack the cycle and phase into a 64bits value. Phase can
+ have a negative value, in wich case it will be subtracted 
+ from the cycle count. */
+#define CLK(CYCLE, PHASE) (((int64_t)(CYCLE) << 32) + (PHASE))
+
 /* Convert from fixed point Q1.31 to clock interval */
 #define Q31_CLK(X)       ((int64_t)((X) * 2))
 /* Convert from clock interval to fixed point Q1.31 */
