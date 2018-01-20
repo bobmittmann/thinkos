@@ -59,6 +59,9 @@ int shell(FILE * f, const char * (* prompt)(void),
 	char * st;
 	int ret = 0;
 
+	memset(line, 0, sizeof(line));
+	memset(hist_buf, 0, sizeof(hist_buf));
+
 	DCC_LOG(LOG_TRACE, "history_init()");
 	history = history_init(hist_buf, sizeof(hist_buf), SHELL_LINE_MAX);
 
