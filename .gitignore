@@ -14,3 +14,14 @@ RemoteSystemsTempFiles/
 *.lst
 *~
 language.settings.xml
+
+# Don't tract LaTeX build files
+doc/*.aux
+doc/*.fdb_latexmk
+doc/*.fls
+doc/*.hst
+doc/*.lof
+doc/*.lot
+doc/*.out
+doc/*.toc
+doc/*.ver
