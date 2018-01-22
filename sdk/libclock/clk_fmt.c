@@ -38,7 +38,7 @@ char * fmt_clk(char * s, int64_t ts)
 	int32_t days;
 
 	if (ts < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		ts = -ts;
 	}
@@ -84,7 +84,7 @@ char * fmt_clk_ms(char * s, int64_t ts)
 	int days;
 
 	if (ts < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		ts = -ts;
 	}
@@ -117,7 +117,7 @@ char * fmt_clk_us(char * s, int64_t ts)
 	int days;
 
 	if (ts < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		ts = -ts;
 	}
@@ -145,17 +145,25 @@ char * fmt_q31_3(char * s, int32_t x)
 	int32_t y;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
 
 	y = ((int64_t)x * 2000LL + (1LL << 31)) >> 32;
 
-	if (neg)
-		sprintf(s, "-0.%03d", y);
-	else
-		sprintf(s, "0.%03d", y);
+	if (y >= 1000) {
+		y -= 1000;
+		if (neg)
+			sprintf(s, "-1.%03d", y);
+		else
+			sprintf(s, "1.%03d", y);
+	} else {
+		if (neg)
+			sprintf(s, "-0.%03d", y);
+		else
+			sprintf(s, "0.%03d", y);
+	}
 
 	return s;
 }
@@ -166,17 +174,25 @@ char * fmt_q31_6(char * s, int32_t x)
 	int32_t y;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
 
 	y = ((int64_t)x * 2000000LL + (1LL << 31)) >> 32;
 
-	if (neg)
-		sprintf(s, "-0.%06d", y);
-	else
-		sprintf(s, "0.%06d", y);
+	if (y >= 1000000) {
+		y -= 1000000;
+		if (neg)
+			sprintf(s, "-1.%06d", y);
+		else
+			sprintf(s, "1.%06d", y);
+	} else {
+		if (neg)
+			sprintf(s, "-0.%06d", y);
+		else
+			sprintf(s, "0.%06d", y);
+	}
 
 	return s;
 }
@@ -187,21 +203,28 @@ char * fmt_q31_9(char * s, int32_t x)
 	int32_t y;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
 
 	y = ((int64_t)x * 2000000000LL + (1LL << 31)) >> 32;
 
-	if (neg)
-		sprintf(s, "-0.%09d", y);
-	else
-		sprintf(s, "0.%09d", y);
+	if (y >= 1000000000) {
+		y -= 1000000000;
+		if (neg)
+			sprintf(s, "-1.%09d", y);
+		else
+			sprintf(s, "1.%09d", y);
+	} else {
+		if (neg)
+			sprintf(s, "-0.%09d", y);
+		else
+			sprintf(s, "0.%09d", y);
+	}
 
 	return s;
 }
-
 
 char * fmt_clk_3(char * s, int64_t x)
 {
@@ -210,7 +233,7 @@ char * fmt_clk_3(char * s, int64_t x)
 	uint32_t frac;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
@@ -235,7 +258,7 @@ char * fmt_clk_6(char * s, int64_t x)
 	uint32_t frac;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
@@ -260,7 +283,7 @@ char * fmt_clk_9(char * s, int64_t x)
 	uint32_t frac;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the tsignal */
+		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}

@@ -87,11 +87,8 @@
 /* Q31.32 division */
 #define CLK_DIV(NUM, DEN) (((int64_t)(NUM) << 32) / (int32_t)(DEN))
 
-/* Pack the cycle and phase into a 64bits value. Phase can
- have a negative value, in wich case it will be subtracted 
- from the cycle count. */
-#define CLK(CYCLE, PHASE) (((int64_t)(CYCLE) << 32) + (PHASE))
-
+/* Return the clock interval from Y to X in fixed point Q1.31 */
+#define CLK_ITV(X, Y)   (((int64_t)(X) - (int64_t)(Y) + 1) / 2)
 /* Convert from fixed point Q1.31 to clock interval */
 #define Q31_CLK(X)       ((int64_t)((X) * 2))
 /* Convert from clock interval to fixed point Q1.31 */
@@ -187,7 +184,7 @@ char * fmt_q31_3(char * s, int32_t x);
 
 /* Format a Q31 number using 6 decimal places */
 char * fmt_q31_6(char * s, int32_t x);
-#define FMT_Q31_6(X) fmt_q31_3(({char __s[12]; __s;}), (int32_t)(X))
+#define FMT_Q31_6(X) fmt_q31_6(({char __s[12]; __s;}), (int32_t)(X))
 
 /* Format a Q31 number using 9 decimal places */
 char * fmt_q31_9(char * s, int32_t x);
