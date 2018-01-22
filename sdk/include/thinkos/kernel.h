@@ -187,6 +187,20 @@
 #define THINKOS_ENABLE_IRQ_RESTORE      0
 #endif
 
+/* This option cause thinkos_irq_wait() to return the value
+   of the CPU cycle count at the moment the interrupt was
+   detected. */
+#ifndef THINKOS_ENABLE_IRQ_CYCCNT_RET
+#define THINKOS_ENABLE_IRQ_CYCCNT_RET   0
+#endif
+
+/* Allow IRQs with priority 0 for low latency.
+   Be carefull if real ISRs are used as this option can impair 
+   the debug monitor operation */
+#ifndef THINKOS_ENABLE_IRQ_PRIORITY_0
+#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
@@ -460,9 +474,19 @@
 #endif
 
 #if THINKOS_ENABLE_IRQ_RESTORE
-/* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
-#undef THINKOS_ENABLE_IRQ_CTL
-#define THINKOS_ENABLE_IRQ_CTL 1
+  /* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
+  #undef THINKOS_ENABLE_IRQ_CTL
+  #define THINKOS_ENABLE_IRQ_CTL 1
+#endif
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET  
+   /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
+   #undef THINKOS_ENABLE_IRQ_CTL
+   #define THINKOS_ENABLE_IRQ_CTL 1
+   #if THINKOS_ENABLE_IRQ_RESTORE
+      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT_RET "\
+		  "& THINKOS_ENABLE_IRQ_RESTORE"
+   #endif  
 #endif
 
 /* -------------------------------------------------------------------------- 

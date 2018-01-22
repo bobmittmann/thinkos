@@ -152,10 +152,15 @@ void thinkos_ctl_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_PROFILING
-	case THINKOS_CTL_CYCCNT:
+	case THINKOS_CTL_THREAD_CYCCNT:
 		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
 		break;
 #endif
+
+	case THINKOS_CTL_CYCCNT:
+		/* Return the current value of the CPU cycle counter */
+		arg[0] = CM3_DWT->cyccnt;
+		break;
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);

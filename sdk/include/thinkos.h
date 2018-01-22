@@ -723,7 +723,7 @@ int thinkos_irq_wait(int irq);
  * @param isr 
  * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
-int	thinkos_irq_register(int irq, int pri, void (* isr)(void));
+int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
 /**@}*/
 
 

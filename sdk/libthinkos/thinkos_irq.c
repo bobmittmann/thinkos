@@ -42,27 +42,35 @@ void __thinkos_irq_reset_all(void)
 
 #if THINKOS_IRQ_MAX > 0
 
-void cm3_default_isr(int irq) 
+void cm3_default_isr(unsigned int irq) 
 {
-	int th;
+	unsigned int thread_id;
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* set the thread's return value to cyle count */
+	uint32_t cyccnt = CM3_DWT->cyccnt;
+#endif
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
-	th = thinkos_rt.irq_th[irq];
-
-#if DEBUG
+	thread_id = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
-	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", th + 1, irq);
+#if DEBUG
+	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", thread_id + 1, irq);
 	/* TODO: create a wait queue for IRQ waiting. */
-	if (th >= THINKOS_THREAD_IDLE) {
-		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th + 1, irq);
+	if (thread_id >= THINKOS_THREAD_IDLE) {
+		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", thread_id + 1, irq);
 		return;
 	}
 #endif
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);  
+	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* set the thread's return value to cyle count */
+	thinkos_rt.ctx[thread_id]->r0 = cyccnt;
+#endif
 
 	/* signal the scheduler ... */
 	__thinkos_preempt();
@@ -131,8 +139,10 @@ void thinkos_irq_register_svc(int32_t * arg)
 
 	if (priority > IRQ_PRIORITY_VERY_LOW)
 		priority = IRQ_PRIORITY_VERY_LOW;
+#if !THINKOS_ENABLE_IRQ_PRIORITY_0
 	else if (priority < IRQ_PRIORITY_VERY_HIGH)
 		priority = IRQ_PRIORITY_VERY_HIGH;
+#endif
 
 	/* set the interrupt priority */
 	cm3_irq_pri_set(irq, priority);
@@ -210,9 +220,9 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 			/* Get the currently assigned thread */
 			arg[0] = thread_id;
 			cm3_irq_enable(irq);
-#endif 
 		}
 		break;
+#endif 
 
 	case THINKOS_IRQ_PRIORITY_SET:
 		{
@@ -220,9 +230,10 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 
 			if (priority > IRQ_PRIORITY_VERY_LOW)
 				priority = IRQ_PRIORITY_VERY_LOW;
+#if !THINKOS_ENABLE_IRQ_PRIORITY_0
 			else if (priority < IRQ_PRIORITY_VERY_HIGH)
 				priority = IRQ_PRIORITY_VERY_HIGH;
-
+#endif
 			/* set the interrupt priority */
 			cm3_irq_pri_set(irq, priority);
 		}
