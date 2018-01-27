@@ -88,7 +88,7 @@ void gdb_stub_task(struct dmon_comm * comm);
 #endif
 
 #ifndef MONITOR_SELFTEST_ENABLE
-#define MONITOR_SELFTEST_ENABLE    1
+#define MONITOR_SELFTEST_ENABLE    0
 #endif
 
 #ifndef MONITOR_FAULT_ENABLE
@@ -589,8 +589,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-	case CTRL_S:
-		dmprintf(comm, "^S\r\n");
+	case CTRL_D:
+		dmprintf(comm, "^D\r\n");
 		monitor_show_mem(mon);
 		break;
 #endif

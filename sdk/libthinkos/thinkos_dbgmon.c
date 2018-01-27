@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-cdc.c
+ * File:	 thinkos-dbgmon.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
