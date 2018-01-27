@@ -71,7 +71,7 @@
 
 
 /* Convert from float point to clock interval */
-#define FLOAT_CLK(X)     ((int64_t)((X) * 4294967296.))
+#define FLOAT_CLK(X)     ((int64_t)((X) * (float)4294967296.))
 /* Convert from clock interval to float point */
 #define CLK_FLOAT(X)     ((float)(int64_t)(X) / 4294967296.)
 /* Convert from clock interval to double float point */
@@ -179,16 +179,16 @@ char * fmt_clk_us(char * s, int64_t ts);
 #define FMT_CLK_US(TS) fmt_clk_us(({char __s[20]; __s;}), (int64_t)(TS))
 
 /* Format a Q31 number using 3 decimal places */
-char * fmt_q31_3(char * s, int32_t x);
-#define FMT_Q31_3(X) fmt_q31_3(({char __s[8]; __s;}), (int32_t)(X))
+char * fmt_q31_3(char * s, int64_t x);
+#define FMT_Q31_3(X) fmt_q31_3(({char __s[16]; __s;}), (int64_t)(X))
 
 /* Format a Q31 number using 6 decimal places */
-char * fmt_q31_6(char * s, int32_t x);
-#define FMT_Q31_6(X) fmt_q31_6(({char __s[12]; __s;}), (int32_t)(X))
+char * fmt_q31_6(char * s, int64_t x);
+#define FMT_Q31_6(X) fmt_q31_6(({char __s[16]; __s;}), (int64_t)(X))
 
 /* Format a Q31 number using 9 decimal places */
-char * fmt_q31_9(char * s, int32_t x);
-#define FMT_Q31_9(X) fmt_q31_9(({char __s[12]; __s;}), (int32_t)(X))
+char * fmt_q31_9(char * s, int64_t x);
+#define FMT_Q31_9(X) fmt_q31_9(({char __s[16]; __s;}), (int64_t)(X))
 
 /* Format a clock timetamp into a string with 3 fractional decimal digits.
    The string has to be at least 16 characters long */

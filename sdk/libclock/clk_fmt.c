@@ -139,10 +139,12 @@ char * fmt_clk_us(char * s, int64_t ts)
 	return s;
 }
 
-char * fmt_q31_3(char * s, int32_t x)
+char * fmt_q31_3(char * s, int64_t x)
 {
 	bool neg = false;
-	int32_t y;
+	int64_t y;
+	int32_t d;
+	int32_t q;
 
 	if (x < 0) {
 		/* negative timestamp. Get the absolute value and store the signal */
@@ -150,79 +152,59 @@ char * fmt_q31_3(char * s, int32_t x)
 		x = -x;
 	}
 
-	y = ((int64_t)x * 2000LL + (1LL << 31)) >> 32;
-
-	if (y >= 1000) {
-		y -= 1000;
-		if (neg)
-			sprintf(s, "-1.%03d", y);
-		else
-			sprintf(s, "1.%03d", y);
-	} else {
-		if (neg)
-			sprintf(s, "-0.%03d", y);
-		else
-			sprintf(s, "0.%03d", y);
-	}
+	y = ((uint64_t)x * 1000LL + (1LL << 30) - 1) >> 31;
+	q = y % 1000;
+	d = y / 1000;
+	if (neg)
+		sprintf(s, "-%d.%03d", d, q);
+	else
+		sprintf(s, "%d.%03d", d, q);
 
 	return s;
 }
 
-char * fmt_q31_6(char * s, int32_t x)
+char * fmt_q31_6(char * s, int64_t x)
 {
 	bool neg = false;
-	int32_t y;
+	int64_t y;
+	int32_t d;
+	int32_t q;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
-	}
+	} 
 
-	y = ((int64_t)x * 2000000LL + (1LL << 31)) >> 32;
-
-	if (y >= 1000000) {
-		y -= 1000000;
-		if (neg)
-			sprintf(s, "-1.%06d", y);
-		else
-			sprintf(s, "1.%06d", y);
-	} else {
-		if (neg)
-			sprintf(s, "-0.%06d", y);
-		else
-			sprintf(s, "0.%06d", y);
-	}
+	y = ((int64_t)x * 1000000LL + (1LL << 30) - 1) >> 31;
+	q = y % 1000000;
+	d = y / 1000000;
+	if (neg)
+		sprintf(s, "-%d.%06d", d, q);
+	else
+		sprintf(s, "%d.%06d", d, q);
 
 	return s;
 }
 
-char * fmt_q31_9(char * s, int32_t x)
+char * fmt_q31_9(char * s, int64_t x)
 {
 	bool neg = false;
-	int32_t y;
+	int64_t y;
+	int32_t d;
+	int32_t q;
 
 	if (x < 0) {
-		/* negative timestamp. Get the absolute value and store the signal */
 		neg = true;
 		x = -x;
 	}
 
-	y = ((int64_t)x * 2000000000LL + (1LL << 31)) >> 32;
-
-	if (y >= 1000000000) {
-		y -= 1000000000;
-		if (neg)
-			sprintf(s, "-1.%09d", y);
-		else
-			sprintf(s, "1.%09d", y);
-	} else {
-		if (neg)
-			sprintf(s, "-0.%09d", y);
-		else
-			sprintf(s, "0.%09d", y);
-	}
-
+	y = ((int64_t)x * 1000000000LL + (1LL << (30)) - 1) >> 31;
+	q = y % 1000000000;
+	d = y / 1000000000;
+	if (neg)
+		sprintf(s, "-%d.%09d", d, q);
+	else
+		sprintf(s, "%d.%09d", d, q);
 	return s;
 }
 
