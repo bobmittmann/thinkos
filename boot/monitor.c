@@ -123,6 +123,19 @@ void gdb_stub_task(struct dmon_comm * comm);
 #define MONITOR_THREAD_STEP_ENABLE 1
 #endif
 
+/* ---------------------------------------------------------------------------
+ * Configuration options sanity check
+ */
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+  #undef MONITOR_THREADINFO_ENABLE
+  #define MONITOR_THREADINFO_ENABLE  1
+#endif
+
+/* ---------------------------------------------------------------------------
+ * 
+ */
+
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif

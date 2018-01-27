@@ -88,10 +88,15 @@ int shell(FILE * f, const char * (* prompt)(void),
 			}
 
 			ret = cmd_exec(f, cmd, st);
-
-			if ((ret < 0) && (ret !=  SHELL_ABORT)) {
-				fprintf(f, "Error: %d\n", -ret);
-				break;
+			if (ret < 0) {
+				if(SHELL_ERR_ARG_MISSING == ret) {
+					fprintf(f, "  %s, %s - %s\n", cmd->name, cmd->alias, cmd->desc);
+					fprintf(f, "  usage: %s %s\n\n", cmd->alias, cmd->usage);
+				}
+				else if (ret !=  SHELL_ABORT) {
+					fprintf(f, "Error: %d\n", -ret);
+					break;
+				}
 			}
 			
 		}
