@@ -90,7 +90,7 @@ int target_file_read(const char * name, char * dst,
 					  unsigned int offs, unsigned int size);
 
 void target_halt(void);
-void target_continue(void);
+bool target_continue(void);
 int target_goto(uint32_t addr, int opt);
 
 #ifndef RSP_BUFFER_LEN
@@ -267,7 +267,7 @@ enum gdb_error_code {
 	GDB_ERR_BREAKPOINT_SET_FAIL = 5,
 	GDB_ERR_WATCHPOINT_SET_FAIL = 6,
 	GDB_ERR_STEP_REQUEST_FAIL = 7,
-	GDB_ERR_APP_EXEC_FAIL = 8,
+	GDB_ERR_APP_EXEC_FAIL = 8
 };
 
 static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
@@ -1236,8 +1236,9 @@ static int rsp_continue(struct gdb_rspd * gdb, char * pkt)
 		thread_goto(thread_id, addr);
 	}
 
-	target_continue();
-	gdb->stopped = false;
+	if (target_continue()) {
+		gdb->stopped = false;
+	}
 
 	return rsp_stop_reply(gdb, pkt);
 }
@@ -1259,8 +1260,9 @@ static int rsp_continue_with_sig(struct gdb_rspd * gdb, char * pkt)
 		target_goto(addr, 0);
 	}
 
-	target_continue();
-	gdb->stopped = false;
+	if (target_continue()) {
+		gdb->stopped = false;
+	}
 
 	return rsp_stop_reply(gdb, pkt);
 }
@@ -1312,8 +1314,9 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 						}
 						gdb->active_app = true;
 					}
-					target_continue();
-					gdb->stopped = false;
+					if (target_continue()) {
+						gdb->stopped = false;
+					}
 					DCC_LOG(LOG_INFO, "Continue all done 2!");
 				} else {
 					DCC_LOG1(LOG_INFO, "Continue %d", thread_id);
@@ -1324,8 +1327,9 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 				DCC_LOG2(LOG_INFO, "Continue %d sig=%d", thread_id, sig);
 				if (thread_id == THREAD_ID_ALL) {
 					DCC_LOG(LOG_INFO, "Continue all!");
-					target_continue();
-					gdb->stopped = false;
+					if (target_continue()) {
+						gdb->stopped = false;
+					}
 				} else {
 					DCC_LOG1(LOG_INFO, "Continue %d", thread_id);
 					thread_continue(thread_id);

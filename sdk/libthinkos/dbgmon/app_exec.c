@@ -136,12 +136,17 @@ bool dmon_app_suspend(void)
 
 bool dmon_app_continue(void)
 {
-	DCC_LOG(LOG_TRACE, "....");
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 
-	__thinkos_resume_all();
+	if (xcpt->type == 0) {
+		DCC_LOG(LOG_TRACE, "....");
+		__thinkos_resume_all();
+		__dmon_irq_restore_all();
+		return true;
+	}
 
-	__dmon_irq_restore_all();
+	DCC_LOG(LOG_WARNING, "Can't continue with a fault...");
 
-	return true;
+	return false;
 }
 
