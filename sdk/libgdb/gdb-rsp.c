@@ -39,7 +39,11 @@
 #include "signals.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 1
+#define GDB_DEBUG_PACKET 0
+#endif
+
+#ifndef GDB_ENABLE_MEMWRITE
+#define GDB_ENABLE_MEMWRITE 0
 #endif
 
 #define THREAD_ID_OFFS 100
@@ -49,6 +53,7 @@
 #define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
 
 int uint2dec(char * s, unsigned int val);
+unsigned long long hex2ll_be(const char * __s, char ** __endp);
 unsigned long hex2int(const char * __s, char ** __endp);
 bool prefix(const char * __s, const char * __prefix);
 int char2hex(char * pkt, int c);
@@ -68,10 +73,8 @@ int thread_step_id(void);
 int thread_break_id(void);
 int thread_any(void);
 bool thread_isalive(int thread_id);
-int thread_register_get(int thread_id, int reg, uint32_t * val);
-int thread_register_set(unsigned int thread_id, int reg, uint32_t val);
-int thread_fpu_register_get(int thread_id, int reg, uint64_t * val);
-int thread_fpu_register_set(unsigned int thread_id, int reg, uint64_t val);
+int thread_register_set(unsigned int thread_id, int reg, uint64_t val);
+int thread_register_get(int gdb_thread_id, int reg, uint64_t * val);
 int thread_goto(unsigned int thread_id, uint32_t addr);
 int thread_step_req(unsigned int thread_id);
 int thread_continue(unsigned int thread_id);
@@ -87,7 +90,7 @@ int target_file_read(const char * name, char * dst,
 					  unsigned int offs, unsigned int size);
 
 void target_halt(void);
-void target_continue(void);
+bool target_continue(void);
 int target_goto(uint32_t addr, int opt);
 
 #ifndef RSP_BUFFER_LEN
@@ -184,10 +187,10 @@ static int rsp_get_g_thread(struct gdb_rspd * gdb)
 	int thread_id;
 
 	if (gdb->thread_id.g == THREAD_ID_ALL) {
-		DCC_LOG(LOG_TRACE, "g thread set to ALL!!!");
+		DCC_LOG(LOG_INFO, "g thread set to ALL!!!");
 		thread_id = thread_any();
 	} else if (gdb->thread_id.g == THREAD_ID_ANY) {
-		DCC_LOG(LOG_TRACE, "g thread set to ANY");
+		DCC_LOG(LOG_INFO, "g thread set to ANY");
 		thread_id = thread_any();
 	} else {
 		thread_id = gdb->thread_id.g;
@@ -204,10 +207,10 @@ static int rsp_get_c_thread(struct gdb_rspd * gdb)
 	int thread_id;
 
 	if (gdb->thread_id.c == THREAD_ID_ALL) {
-		DCC_LOG(LOG_TRACE, "c thread set to ALL!!!");
+		DCC_LOG(LOG_INFO, "c thread set to ALL!!!");
 		thread_id = thread_any();
 	} else if (gdb->thread_id.c == THREAD_ID_ANY) {
-		DCC_LOG(LOG_TRACE, "c thread set to ANY");
+		DCC_LOG(LOG_INFO, "c thread set to ANY");
 		thread_id = thread_any();
 	} else {
 		thread_id = gdb->thread_id.c;
@@ -264,7 +267,7 @@ enum gdb_error_code {
 	GDB_ERR_BREAKPOINT_SET_FAIL = 5,
 	GDB_ERR_WATCHPOINT_SET_FAIL = 6,
 	GDB_ERR_STEP_REQUEST_FAIL = 7,
-	GDB_ERR_APP_EXEC_FAIL = 8,
+	GDB_ERR_APP_EXEC_FAIL = 8
 };
 
 static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
@@ -332,7 +335,7 @@ int decode_thread_id(char * s)
 	if (cp[0] == 'p') {
 		cp++;
 		pid = hex2int(cp, &cp);
-		DCC_LOG1(LOG_TRACE, "pid=%d", pid);
+		DCC_LOG1(LOG_INFO, "pid=%d", pid);
 		cp++;
 	}
 #endif
@@ -378,9 +381,9 @@ static int rsp_h_packet(struct gdb_rspd * gdb, char * pkt)
 	switch (pkt[1]) {
 	case 'c':
 		if (thread_id == THREAD_ID_ALL)
-			DCC_LOG(LOG_TRACE, "continue all threads");
+			DCC_LOG(LOG_INFO, "continue all threads");
 		else if (thread_id == THREAD_ID_ANY)
-			DCC_LOG(LOG_TRACE, "continue any thread");
+			DCC_LOG(LOG_INFO, "continue any thread");
 		else
 			DCC_LOG1(LOG_INFO, "continue thread %d", thread_id);
 		gdb->thread_id.c = thread_id;
@@ -389,9 +392,9 @@ static int rsp_h_packet(struct gdb_rspd * gdb, char * pkt)
 
 	case 'g':
 		if (thread_id == THREAD_ID_ALL)
-			DCC_LOG(LOG_TRACE, "get all threads");
+			DCC_LOG(LOG_INFO, "get all threads");
 		else if (thread_id == THREAD_ID_ANY)
-			DCC_LOG(LOG_TRACE, "get any thread");
+			DCC_LOG(LOG_INFO, "get any thread");
 		else
 			DCC_LOG1(LOG_INFO, "get thread %d", thread_id);
 		gdb->thread_id.g = thread_id;
@@ -552,7 +555,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 	}
 	s[i] = '\0';
 
-	DCC_LOGSTR(LOG_TRACE, "cmd=\"%s\"", s);
+	DCC_LOGSTR(LOG_INFO, "cmd=\"%s\"", s);
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
 		if (gdb->active_app) {
@@ -628,12 +631,12 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	int n;
 
 	if (prefix(pkt, "qRcmd,")) {
-		DCC_LOG(LOG_TRACE, "qRcmd");
+		DCC_LOG(LOG_INFO, "qRcmd");
 		return rsp_cmd(gdb, pkt);
 	}
 
 	if (prefix(pkt, "qCRC:")) {
-		DCC_LOG(LOG_TRACE, "qCRC (not implemented!)");
+		DCC_LOG(LOG_INFO, "qCRC (not implemented!)");
 		return rsp_empty(gdb);
 	}
 
@@ -678,14 +681,14 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	}
 
 	if (prefix(pkt, "qSymbol")) {
-		DCC_LOG(LOG_TRACE, "qSymbol (not implemented!)");
+		DCC_LOG(LOG_INFO, "qSymbol (not implemented!)");
 		return rsp_empty(gdb);
 	}
 
 	if (prefix(pkt, "qSupported")) {
 		if (pkt[10] == ':') {
 		} 
-		DCC_LOG(LOG_TRACE, "qSupported");
+		DCC_LOG(LOG_INFO, "qSupported");
 		cp = pkt + str2str(pkt, "$PacketSize=");
 		cp += uint2hex(cp, RSP_BUFFER_LEN - 1);
 		cp += str2str(cp, 
@@ -746,21 +749,21 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 
 #if GDB_ENABLE_QXFER_FEATURES
 	if (prefix(pkt, "qXfer:features:read:")) {
-		DCC_LOG(LOG_TRACE, "qXfer:features:read:");
+		DCC_LOG(LOG_INFO, "qXfer:features:read:");
 		return rsp_features_read(gdb, pkt);
 	}
 #endif
 
 #if GDB_ENABLE_QXFER_MEMORY_MAP
 	if (prefix(pkt, "qXfer:memory-map:read:")) {
-		DCC_LOG(LOG_TRACE, "qXfer:memory-map:read:");
+		DCC_LOG(LOG_INFO, "qXfer:memory-map:read:");
 		return rsp_memory_map_read(gdb, pkt);
 	}
 #endif
 
 	if (prefix(pkt, "QNonStop:")) {
 		gdb->nonstop_mode = pkt[9] - '0';
-		DCC_LOG1(LOG_TRACE, "Nonstop=%d +++++++++++++++", gdb->nonstop_mode);
+		DCC_LOG1(LOG_INFO, "Nonstop=%d +++++++++++++++", gdb->nonstop_mode);
 		if (!gdb->nonstop_mode && !gdb->stopped) {
 			target_halt();
 			gdb->stopped = true;
@@ -770,7 +773,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	}
 
 	if (prefix(pkt, "QStartNoAckMode")) {
-		DCC_LOG(LOG_TRACE, "QStartNoAckMode");
+		DCC_LOG(LOG_INFO, "QStartNoAckMode");
 		gdb->noack_mode = 1;
 		return rsp_ok(gdb);
 	}
@@ -778,7 +781,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 #if 0
 	if (prefix(pkt, "qTStatus")) {
 		/* Ask the stub if there is a trace experiment running right now. */
-		DCC_LOG(LOG_TRACE, "qTStatus");
+		DCC_LOG(LOG_INFO, "qTStatus");
 		return rsp_empty(gdb);
 	}
 
@@ -788,13 +791,13 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		do {
 			cp++;
 			sig = hex2int(cp, &cp);
-			DCC_LOG1(LOG_TRACE, "sig=%d", sig);
+			DCC_LOG1(LOG_INFO, "sig=%d", sig);
 		} while (*cp == ';');
 		return rsp_ok(gdb);
 	}
 #endif
 
-	DCC_LOGSTR(LOG_TRACE, "unsupported: \"%s\"", pkt);
+	DCC_LOGSTR(LOG_INFO, "unsupported: \"%s\"", pkt);
 
 	return rsp_empty(gdb);
 
@@ -803,7 +806,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 
 static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 {
-	uint32_t val = 0;
+	uint64_t val = 0;
 	int thread_id;
 	char * cp;
 	int n;
@@ -811,36 +814,31 @@ static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 
 	thread_id = rsp_get_g_thread(gdb);
 
+	DCC_LOG1(LOG_INFO, "thread_id=%d", thread_id); 
+
 	cp = pkt;
 	*cp++ = '$';
 
 	/* all integer registers */
-	for (r = 0; r < 15; r++) {
+	for (r = 0; r < 16; r++) {
 		thread_register_get(thread_id, r, &val);
 		DCC_LOG2(LOG_MSG, "R%d = 0x%08x", r, val);
 		cp += long2hex_be(cp, val);
 	}
 
-	thread_register_get(thread_id, 15, &val);
-	cp += long2hex_be(cp, val);
-	DCC_LOG2(LOG_TRACE, "thread_id=%d PC=%08x", thread_id, val);
-
 	/* xpsr */
 	thread_register_get(thread_id, 25, &val);
 	cp += long2hex_be(cp, val);
 
-#if THINKOS_ENABLE_FPU
-	/* all fp registers */
 	for (r = 26; r < 42; r++) {
-		uint64_t llval;
-		thread_fpu_register_get(thread_id, r, &llval);
-		cp += longlong2hex_be(cp, llval);
+		if (thread_register_get(thread_id, r, &val) < 0)
+			break;
+		cp += longlong2hex_be(cp, val);
 	}
 	/* fpscr */
-	thread_register_get(thread_id, 42, &val);
-	cp += long2hex_be(cp, val);
-	DCC_LOG1(LOG_TRACE, "FPSCR=%08x", val);
-#endif
+	if (thread_register_get(thread_id, 42, &val) >= 0) {
+		cp += long2hex_be(cp, val);
+	}
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
@@ -855,7 +853,7 @@ static int rsp_all_registers_set(struct gdb_rspd * gdb, char * pkt)
 
 static int rsp_register_get(struct gdb_rspd * gdb, char * pkt)
 {
-	unsigned int val;
+	uint64_t val;
 	int thread_id;
 	char * cp;
 	int reg;
@@ -868,25 +866,22 @@ static int rsp_register_get(struct gdb_rspd * gdb, char * pkt)
 	*cp++ = '$';
 
 	thread_register_get(thread_id, reg, &val);
-	cp += long2hex_be(cp, val);
+	if (reg >= 26 && reg <= 41)
+		cp += longlong2hex_be(cp, val);
+	else
+		cp += long2hex_be(cp, val);
+
+	DCC_LOG4(LOG_INFO, "thread_id=%d reg=%d val=0x%08x %08x", 
+			 thread_id, reg, val, val >> 32);
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
 }
 
-#ifndef NTOHL
-#define NTOHL(x) \
-	((uint32_t)((((uint32_t)(x) & 0x000000ffU) << 24) | \
-	(((uint32_t)(x) & 0x0000ff00U) <<  8) | \
-	(((uint32_t)(x) & 0x00ff0000U) >>  8) | \
-	(((uint32_t)(x) & 0xff000000U) >> 24)))
-#endif
-
 static int rsp_register_set(struct gdb_rspd * gdb, char * pkt)
 {
 	uint32_t reg;
-	uint32_t tmp;
-	uint32_t val;
+	uint64_t val;
 	int thread_id;
 	char * cp;
 
@@ -900,28 +895,10 @@ static int rsp_register_set(struct gdb_rspd * gdb, char * pkt)
 	cp = &pkt[1];
 	reg = hex2int(cp, &cp);
 	cp++;
-	tmp = hex2int(cp, &cp);
-	val = NTOHL(tmp);
+	val = hex2ll_be(cp, &cp);
 
-	/* FIXME: the register enumaration and details 
-	   must be in the ICE driver not here! */
-	/* cpsr */
-	if (reg > 25) {
-		DCC_LOG1(LOG_WARNING, "reg=%d (unsupported)", reg);
-		return rsp_empty(gdb);
-	}
-
-	/* cpsr */
-	if (reg == 25) {
-		DCC_LOG(LOG_TRACE, "xPSR");
-		reg = 16;
-	}
-
-	if (reg > 16) {
-		return rsp_error(gdb, GDB_ERR_REGISTER_NOT_KNOWN);
-	}
-
-	DCC_LOG3(LOG_TRACE, "thread_id=%d reg=%d val=0x%08x", thread_id, reg, val);
+	DCC_LOG4(LOG_INFO, "thread_id=%d reg=%d val=0x%08x %08x", 
+			 thread_id, reg, val, val >> 32);
 
 	if (thread_register_set(thread_id, reg, val) < 0) {
 		DCC_LOG(LOG_WARNING, "thread_register_set() failed!");
@@ -971,11 +948,14 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 	return rsp_pkt_send(gdb, pkt, n);
 }
 
+#if GDB_ENABLE_MEMWRITE
 static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 {
 	unsigned int addr;
+	unsigned int size;
+	unsigned int i;
 	char * cp;
-	int size;
+	uint8_t * buf;
 
 	cp = &pkt[1];
 	addr = hex2int(cp, &cp);
@@ -986,10 +966,38 @@ static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 	(void)addr;
 	(void)size;
 
-	DCC_LOG2(LOG_WARNING, "addr=0x%08x size=%d, not implemented!", addr, size);
+	if (size == 0) {
+		DCC_LOG(LOG_INFO, "write probe!");
+		/* XXX: if there is an active application, even if it is suspended,
+		   writing over it may cause errors */
+		if (gdb->active_app) {
+			DCC_LOG(LOG_WARNING, "active application!");
+			dbgmon_soft_reset();
+			gdb->active_app = false;
+		}
+		return rsp_ok(gdb);
+	}
+	if (gdb->active_app) {
+		DCC_LOG(LOG_WARNING, "active application!");
+	}
+
+	DCC_LOG3(LOG_INFO, "addr=%08x size=%d cp=%08x", addr, size, cp);
+
+	buf = (uint8_t *)pkt;
+	for (i = 0; i < size; ++i) {
+		buf[i] = hex2char(cp);
+		cp += 2;
+	}
+
+	if (target_mem_write(addr, buf, size) < 0) {
+		/* XXX: silently ignore writing errors ...
+		return rsp_error(gdb, 1);
+		*/
+	}
+
 	return rsp_ok(gdb);
 }
-
+#endif
 
 static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 {
@@ -1003,7 +1011,7 @@ static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 	addr = hex2int(cp, &cp);
 	cp++;
 	size = hex2int(cp, NULL);
-	DCC_LOG3(LOG_TRACE, "type=%d addr=0x%08x size=%d", type, addr, size);
+	DCC_LOG3(LOG_INFO, "type=%d addr=0x%08x size=%d", type, addr, size);
 	if ((type == 0) || (type == 1)) {
 		/* 0 - software-breakpoint */
 		/* 1 - hardware-breakpoint */
@@ -1030,7 +1038,7 @@ static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 
-	DCC_LOG1(LOG_TRACE, "unsupported breakpoint type %d", type);
+	DCC_LOG1(LOG_INFO, "unsupported breakpoint type %d", type);
 
 	return rsp_empty(gdb);
 }
@@ -1047,7 +1055,7 @@ static int rsp_breakpoint_remove(struct gdb_rspd * gdb, char * pkt)
 	addr = hex2int(cp, &cp);
 	cp++;
 	size = hex2int(cp, NULL);
-	DCC_LOG3(LOG_TRACE, "type=%d addr=0x%08x size=%d", type, addr, size);
+	DCC_LOG3(LOG_INFO, "type=%d addr=0x%08x size=%d", type, addr, size);
 	switch (type) {
 	case 0:
 	case 1:
@@ -1073,11 +1081,11 @@ static int rsp_step(struct gdb_rspd * gdb, char * pkt)
 	/* step */
 	if (pkt[1] != '#') {
 		addr = hex2int(&pkt[1], 0);
-		DCC_LOG1(LOG_TRACE, "Addr=%08x", addr);
+		DCC_LOG1(LOG_INFO, "Addr=%08x", addr);
 		thread_goto(thread_id, addr);
 	}
 
-	DCC_LOG1(LOG_TRACE, "gdb_thread_id=%d.", thread_id);
+	DCC_LOG1(LOG_INFO, "gdb_thread_id=%d.", thread_id);
 
 	return thread_step_req(thread_id);
 }
@@ -1087,11 +1095,13 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	char * cp;
 	int n;
 
+	DCC_LOG2(LOG_INFO, "sp=%p pkt=%p", cm3_sp_get(), pkt);
+
 	cp = pkt;
 	*cp++ = '$';
 
 	if (gdb->stopped) {
-		DCC_LOG1(LOG_TRACE, "last_signal=%d", gdb->last_signal);
+		DCC_LOG1(LOG_INFO, "last_signal=%d", gdb->last_signal);
 		*cp++ = 'S';
 		cp += char2hex(cp, gdb->last_signal);
 	} else if (gdb->nonstop_mode) {
@@ -1099,6 +1109,8 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	} else {
 #if (THINKOS_ENABLE_CONSOLE)
 		uint8_t * buf;
+		
+		DCC_LOG(LOG_INFO, "4!");
 
 		if ((n = __console_tx_pipe_ptr(&buf)) > 0) {
 			*cp++ = 'O';
@@ -1140,7 +1152,7 @@ static int rsp_on_step(struct gdb_rspd * gdb, char * pkt)
 		return 0;
 	}
 
-	DCC_LOG(LOG_TRACE, "on step, suspending... ... ...");
+	DCC_LOG(LOG_INFO, "on step, suspending... ... ...");
 
 	thread_id = thread_break_id();
 	gdb->thread_id.g = thread_id; 
@@ -1160,7 +1172,7 @@ static int rsp_on_breakpoint(struct gdb_rspd * gdb, char * pkt)
 		return 0;
 	}
 
-	DCC_LOG(LOG_TRACE, "on breakpoint, suspending... ... ...");
+	DCC_LOG(LOG_INFO, "on breakpoint, suspending... ... ...");
 
 	thread_id = thread_break_id();
 	gdb->thread_id.g = thread_id; 
@@ -1183,7 +1195,7 @@ static int rsp_on_fault(struct gdb_rspd * gdb, char * pkt)
 	thread_id = thread_break_id();
 	gdb->thread_id.g = thread_id; 
 
-	DCC_LOG1(LOG_TRACE, "suspending (current=%d) ... ...", thread_id);
+	DCC_LOG1(LOG_INFO, "suspending (current=%d) ... ...", thread_id);
 
 	target_halt();
 	gdb->stopped = true;
@@ -1196,7 +1208,7 @@ static int rsp_on_break(struct gdb_rspd * gdb, char * pkt)
 {
 	int thread_id;
 
-	DCC_LOG(LOG_TRACE, "on break, suspending... ... ...");
+	DCC_LOG(LOG_INFO, "on break, suspending... ... ...");
 
 	//gdb->thread_id.g = thread_active();
 
@@ -1215,7 +1227,7 @@ static int rsp_continue(struct gdb_rspd * gdb, char * pkt)
 	unsigned int addr;
 	int thread_id;
 
-	DCC_LOG(LOG_TRACE, "...");
+	DCC_LOG(LOG_INFO, "...");
 
 	thread_id = rsp_get_c_thread(gdb);
 
@@ -1224,8 +1236,9 @@ static int rsp_continue(struct gdb_rspd * gdb, char * pkt)
 		thread_goto(thread_id, addr);
 	}
 
-	target_continue();
-	gdb->stopped = false;
+	if (target_continue()) {
+		gdb->stopped = false;
+	}
 
 	return rsp_stop_reply(gdb, pkt);
 }
@@ -1239,16 +1252,17 @@ static int rsp_continue_with_sig(struct gdb_rspd * gdb, char * pkt)
 
 	sig = hex2int(&pkt[1], &cp);
 	(void)sig;
-	DCC_LOG1(LOG_TRACE, "sig=%d", sig);
+	DCC_LOG1(LOG_INFO, "sig=%d", sig);
 	if (*cp == ':') {
 		cp++;
 		addr = hex2int(cp, &cp);
-		DCC_LOG1(LOG_TRACE, "addr=%08x", addr);
+		DCC_LOG1(LOG_INFO, "addr=%08x", addr);
 		target_goto(addr, 0);
 	}
 
-	target_continue();
-	gdb->stopped = false;
+	if (target_continue()) {
+		gdb->stopped = false;
+	}
 
 	return rsp_stop_reply(gdb, pkt);
 }
@@ -1289,7 +1303,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 			switch (action) {
 			case 'c':
 				if (thread_id == THREAD_ID_ALL) {
-					DCC_LOG(LOG_TRACE, "Continue all!");
+					DCC_LOG(LOG_INFO, "Continue all!");
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
 						DCC_LOG(LOG_WARNING, "no active application, "
@@ -1300,27 +1314,30 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 						}
 						gdb->active_app = true;
 					}
-					target_continue();
-					gdb->stopped = false;
+					if (target_continue()) {
+						gdb->stopped = false;
+					}
+					DCC_LOG(LOG_INFO, "Continue all done 2!");
 				} else {
-					DCC_LOG1(LOG_TRACE, "Continue %d", thread_id);
+					DCC_LOG1(LOG_INFO, "Continue %d", thread_id);
 					thread_continue(thread_id);
 				}
 				break;
 			case 'C':
-				DCC_LOG2(LOG_TRACE, "Continue %d sig=%d", thread_id, sig);
+				DCC_LOG2(LOG_INFO, "Continue %d sig=%d", thread_id, sig);
 				if (thread_id == THREAD_ID_ALL) {
-					DCC_LOG(LOG_TRACE, "Continue all!");
-					target_continue();
-					gdb->stopped = false;
+					DCC_LOG(LOG_INFO, "Continue all!");
+					if (target_continue()) {
+						gdb->stopped = false;
+					}
 				} else {
-					DCC_LOG1(LOG_TRACE, "Continue %d", thread_id);
+					DCC_LOG1(LOG_INFO, "Continue %d", thread_id);
 					thread_continue(thread_id);
 				}
 				gdb->last_signal = sig;
 				break;
 			case 's':
-				DCC_LOG1(LOG_TRACE, "vCont step %d", thread_id);
+				DCC_LOG1(LOG_INFO, "vCont step %d", thread_id);
 				if (!thread_isalive(thread_id)) {
 					DCC_LOG(LOG_WARNING, "thread is dead!");
 					return rsp_error(gdb, GDB_ERR_THREAD_IS_DEAD);
@@ -1329,19 +1346,22 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					DCC_LOG(LOG_WARNING, "thread_step_req() failed!");
 					return rsp_error(gdb, GDB_ERR_STEP_REQUEST_FAIL);
 				}
+
 				gdb->stopped = false;
 				break;
 			case 'S':
-				DCC_LOG2(LOG_TRACE, "Step %d sig=%d", thread_id, sig);
+				DCC_LOG2(LOG_INFO, "Step %d sig=%d", thread_id, sig);
 				break;
 			case 't':
-				DCC_LOG1(LOG_TRACE, "Stop %d", thread_id);
+				DCC_LOG1(LOG_INFO, "Stop %d", thread_id);
 				break;
 			default:
-				DCC_LOG(LOG_TRACE, "Unsupported!");
+				DCC_LOG(LOG_INFO, "Unsupported!");
 				return rsp_empty(gdb);
 			}
 		}
+
+		DCC_LOG(LOG_INFO, "3!");
 
 		return rsp_stop_reply(gdb, pkt);
 	}
@@ -1387,7 +1407,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 
 static int rsp_detach(struct gdb_rspd * gdb)
 {
-	DCC_LOG(LOG_TRACE, "[DETACH]");
+	DCC_LOG(LOG_INFO, "[DETACH]");
 
 #if 0
 	if (gdb->stopped)
@@ -1402,7 +1422,7 @@ static int rsp_detach(struct gdb_rspd * gdb)
 
 static int rsp_kill(struct gdb_rspd * gdb)
 {
-	DCC_LOG(LOG_TRACE, "[KILL]");
+	DCC_LOG(LOG_INFO, "[KILL]");
 
 #if 0
 	if (gdb->stopped)
@@ -1429,7 +1449,7 @@ static int rsp_memory_write_bin(struct gdb_rspd * gdb, char * pkt)
 	cp++;
 
 	if (size == 0) {
-		DCC_LOG(LOG_TRACE, "write probe!");
+		DCC_LOG(LOG_INFO, "write probe!");
 		/* XXX: if there is an active application, even if it is suspended,
 		   writing over it may cause errors */
 		if (gdb->active_app) {
@@ -1483,9 +1503,11 @@ static int rsp_pkt_input(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	case 'm':
 		ret = rsp_memory_read(gdb, pkt);
 		break;
+#if GDB_ENABLE_MEMWRITE
 	case 'M':
 		ret = rsp_memory_write(gdb, pkt);
 		break;
+#endif
 	case 'T':
 		ret = rsp_thread_isalive(gdb, pkt);
 		break;
@@ -1637,7 +1659,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 	gdb->active_app = __thinkos_active();
 	gdb->last_signal = TARGET_SIGNAL_0;
 
-	DCC_LOG2(LOG_TRACE, "GDB [stopped=%s active_app=%s] =====================", 
+	DCC_LOG2(LOG_INFO, "GDB [stopped=%s active_app=%s] =====================", 
 		gdb->stopped ? "true" : "false",
 		gdb->active_app ? "true" : "false");
 
@@ -1646,7 +1668,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 
 //	dmon_comm_connect(comm);
 
-//	DCC_LOG(LOG_TRACE, "Comm connected..");
+//	DCC_LOG(LOG_INFO, "Comm connected..");
 
 	sigmask = (1 << DBGMON_EXCEPT);
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
@@ -1662,40 +1684,40 @@ void gdb_stub_task(struct dmon_comm * comm)
 	for(;;) {
 #if 0
 		if (gdb->stopped)
-			DCC_LOG1(LOG_TRACE, "<suspended>%02x", gdb->last_signal);
+			DCC_LOG1(LOG_MSG, "<suspended>%02x", gdb->last_signal);
 		else
-			DCC_LOG1(LOG_TRACE, "<running> %02x", gdb->last_signal);
+			DCC_LOG1(LOG_MSG, "<running> %02x", gdb->last_signal);
 #endif		
 		sigset = dbgmon_select(sigmask);
 
-		DCC_LOG1(LOG_MSG, "sig=%08x", sigset);
+		DCC_LOG1(LOG_INFO, "sig=%08x", sigset);
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
-			DCC_LOG(LOG_TRACE, "Soft reset.");
+			DCC_LOG(LOG_INFO, "Soft reset.");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 		}
 
 		if (sigset & (1 << DBGMON_EXCEPT)) {
-			DCC_LOG(LOG_TRACE, "Exception.");
+			DCC_LOG(LOG_INFO, "Exception.");
 			dbgmon_clear(DBGMON_EXCEPT);
 			rsp_on_fault(gdb, pkt);
 		}
 
 		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
-			DCC_LOG(LOG_TRACE, "Thread fault.");
+			DCC_LOG(LOG_INFO, "Thread fault.");
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			rsp_on_fault(gdb, pkt);
 		}
 
 		if (sigset & (1 << DBGMON_THREAD_STEP)) {
-			DCC_LOG(LOG_TRACE, "DBGMON_THREAD_STEP");
+			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
 			dbgmon_clear(DBGMON_THREAD_STEP);
 			rsp_on_step(gdb, pkt);
 		}
 
 		if (sigset & (1 << DBGMON_BREAKPOINT)) {
-			DCC_LOG(LOG_TRACE, "DBGMON_BREAKPOINT");
+			DCC_LOG(LOG_INFO, "DBGMON_BREAKPOINT");
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			rsp_on_breakpoint(gdb, pkt);
 		}
@@ -1738,7 +1760,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 				break;
 
 			case CTRL_C:
-				DCC_LOG(LOG_TRACE, "[BREAK]");
+				DCC_LOG(LOG_INFO, "[BREAK]");
 				rsp_on_break(gdb, pkt);
 				break;
 
@@ -1751,7 +1773,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 		}
 
 		if (sigset & (1 << DBGMON_COMM_CTL)) {
-			DCC_LOG(LOG_TRACE, "Comm Ctl.");
+			DCC_LOG(LOG_INFO, "Comm Ctl.");
 			dbgmon_clear(DBGMON_COMM_CTL);
 			if (!dmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");

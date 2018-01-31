@@ -41,6 +41,9 @@ struct thinkos_except {
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;
+	uint32_t cfsr;
+	uint32_t mmfar;
+	uint32_t bfar;
 	uint8_t  ipsr;   /* IPSR */
 	int8_t   active; /* active thread at the time of the exception */
 	uint8_t  type;   /* exception type */
@@ -50,6 +53,8 @@ struct thinkos_except {
 extern struct thinkos_except thinkos_except_buf;
 
 extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
+
+extern const uint16_t thinkos_except_stack_size;
 
 extern const char thinkos_except_nm[];
 

@@ -1,0 +1,3373 @@
+
+\section{\texorpdfstring{{Module
+Index}}{Module Index}}\label{module-index}
+
+\subsection{\texorpdfstring{{Modules}}{Modules}}\label{modules}
+
+{Here is a list of all modules}
+
+{Threads~~~~~~~~}
+
+{Time related calls~~~~~~~~}
+
+{Mutexes~~~~~~~~}
+
+{Conditional Variables~~~~~~~~}
+
+{Semaphores~~~~~~~~}
+
+{Event sets~~~~~~~~}
+
+{Flags~~~~~~~~}
+
+{Gates~~~~~~~~}
+
+{Interrupt Requests~~~~~~~~}
+
+{OS Monitor and Control.~~~~~~~~}
+
+{}
+
+\section{\texorpdfstring{{Data Structure
+Index}}{Data Structure Index}}\label{data-structure-index}
+
+\subsection{\texorpdfstring{{Data
+Structures}}{Data Structures}}\label{data-structures}
+
+{Here are the data structures with brief descriptions:}
+
+{\protect\hyperlink{h.2iq8gzs}{thinkos\_thread\_inf}}{\protect\hyperlink{h.2iq8gzs}{~}}{~~~~~~~~~}
+
+\section{\texorpdfstring{{Modules
+Summary}}{Modules Summary}}\label{modules-summary}
+
+\subsection{\texorpdfstring{{Threads}}{Threads}}\label{threads}
+
+{int
+}{\protect\hyperlink{h.1fob9te}{thinkos\_thread\_create}}{\protect\hyperlink{h.1fob9te}{~}}{(int(*task\_ptr)(void
+*), void *task\_arg, void *stack\_ptr, unsigned int opt)}
+
+{create a new thread }
+
+{int
+}{\protect\hyperlink{h.3znysh7}{thinkos\_thread\_create\_inf}}{\protect\hyperlink{h.3znysh7}{~}}{(int(*task\_ptr)(void
+*), void *task\_arg, const struct
+}{\protect\hyperlink{h.2iq8gzs}{thinkos\_thread\_inf}}{\protect\hyperlink{h.2iq8gzs}{~}}{*inf)}
+
+{create a new thread with extend information }
+
+{int const
+}{\protect\hyperlink{h.2et92p0}{thinkos\_thread\_self}}{\protect\hyperlink{h.2et92p0}{~}}{(void)}
+
+{obtaind a handler for the calling thread }
+
+{int
+}{\protect\hyperlink{h.tyjcwt}{thinkos\_cancel}}{\protect\hyperlink{h.tyjcwt}{~}}{(unsigned
+int thread\_id, int code)}
+
+{request a thread to terminate }
+
+{int
+}{\protect\hyperlink{h.3dy6vkm}{thinkos\_exit}}{\protect\hyperlink{h.3dy6vkm}{~}}{(int
+code)}
+
+{cause the thread to terminate }
+
+{int
+}{\protect\hyperlink{h.1t3h5sf}{thinkos\_join}}{\protect\hyperlink{h.1t3h5sf}{~}}{(unsigned
+int thread\_id)}
+
+{join with a terminated thread }
+
+{int
+}{\protect\hyperlink{h.4d34og8}{thinkos\_pause}}{\protect\hyperlink{h.4d34og8}{~}}{(unsigned
+int thread\_id)}
+
+{pause the thread execution }
+
+{int
+}{\protect\hyperlink{h.2s8eyo1}{thinkos\_resume}}{\protect\hyperlink{h.2s8eyo1}{~}}{(unsigned
+int thread\_id)}
+
+{resume a thread operation }
+
+{void
+}{\protect\hyperlink{h.17dp8vu}{thinkos\_yield}}{\protect\hyperlink{h.17dp8vu}{~}}{(void)}
+
+{causes the calling thread to relinquish the CPU. The thread is moved to
+the end of the queue for its static priority and a new thread gets to
+run. }
+
+\subsection{\texorpdfstring{{Time related
+calls}}{Time related calls}}\label{h.fj4n6rp8qwm7}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.iqcme3p75udy}
+
+{int
+}{\protect\hyperlink{h.26in1rg}{thinkos\_sleep}}{\protect\hyperlink{h.26in1rg}{~}}{(unsigned
+int ms)}
+
+{pause for a specified amount of time }
+
+{uint32\_t
+}{\protect\hyperlink{h.lnxbz9}{thinkos\_clock}}{\protect\hyperlink{h.lnxbz9}{~}}{(void)}
+
+{retrieve the ThikOS clock time }
+
+{int
+}{\protect\hyperlink{h.35nkun2}{thinkos\_alarm}}{\protect\hyperlink{h.35nkun2}{~}}{(uint32\_t
+clock)}
+
+{pause until a specified alarm time }
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation}
+
+\paragraph{\texorpdfstring{{int thinkos\_thread\_create (int(*)(void *)
+~task\_ptr, void * ~task\_arg, void * ~stack\_ptr, unsigned int
+~opt)}}{int thinkos\_thread\_create (int(*)(void *) ~task\_ptr, void * ~task\_arg, void * ~stack\_ptr, unsigned int ~opt)}}\label{int-thinkos_thread_create-intvoid-task_ptr-void-task_arg-void-stack_ptr-unsigned-int-opt}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{create a new thread }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters}
+
+\protect\hypertarget{t.f5730ae642f88aa6ce2571176ce1f624cbde4ea6}{}{}\protect\hypertarget{t.0}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{task\_ptr}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{task\_arg}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{stack\_ptr}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{opt}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_thread\_create\_inf
+(int(*)(void *) ~task\_ptr, void * ~task\_arg, const struct
+}{\protect\hyperlink{h.2iq8gzs}{thinkos\_thread\_inf}}{\protect\hyperlink{h.2iq8gzs}{~}}{*
+~inf)}}{int thinkos\_thread\_create\_inf (int(*)(void *) ~task\_ptr, void * ~task\_arg, const struct thinkos\_thread\_inf~* ~inf)}}\label{int-thinkos_thread_create_inf-intvoid-task_ptr-void-task_arg-const-struct-thinkos_thread_inf-inf}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{create a new thread with extend information }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-1}
+
+\protect\hypertarget{t.4f5f8686134758035dc5df693ca2b3c02acdada7}{}{}\protect\hypertarget{t.1}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{task\_ptr}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{task\_arg}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{inf}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-1}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int const thinkos\_thread\_self (void
+)}}{int const thinkos\_thread\_self (void )}}\label{int-const-thinkos_thread_self-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{obtaind a handler for the calling thread }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-2}
+
+{This function always succeeds, returning the calling thread's ID. }
+
+\paragraph{}
+
+{\lstinline{int thinkos\_cancel (unsigned int ~thread\_id, int ~code)}\\
+
+{\lstinline{\#include thinkos.h}}\\
+
+\subparagraph{request a thread to terminate }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-2}
+
+\protect\hypertarget{t.92b92c82f7d931014629a9c6b6ef3d6c02d24480}{}{}\protect\hypertarget{t.2}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread\_id}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{code}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{return code }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-3}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_exit (int
+~code)}}{int thinkos\_exit (int ~code)}}\label{int-thinkos_exit-int-code}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{cause the thread to terminate }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-3}
+
+\protect\hypertarget{t.bc406d26b6ef312038598e48649c4000f5d76cf9}{}{}\protect\hypertarget{t.3}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{code}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{return code }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-4}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_join (unsigned int
+~thread\_id)}}{int thinkos\_join (unsigned int ~thread\_id)}}\label{int-thinkos_join-unsigned-int-thread_id}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{join with a terminated thread }
+
+{The
+}{\protect\hyperlink{h.1t3h5sf}{thinkos\_join()}}{\protect\hyperlink{h.1t3h5sf}{~}}{function
+waits for the thread specified by }{thread\_id}{~ to terminate. If that
+thread has already terminated, then
+}{\protect\hyperlink{h.1t3h5sf}{thinkos\_join()}}{\protect\hyperlink{h.1t3h5sf}{~}}{returns
+immediately.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-4}
+
+\protect\hypertarget{t.d782c80b316c585f37cfeff504ed527240d62369}{}{}\protect\hypertarget{t.4}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread\_id}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-5}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_pause (unsigned int
+~thread\_id)}}{int thinkos\_pause (unsigned int ~thread\_id)}}\label{int-thinkos_pause-unsigned-int-thread_id}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{pause the thread execution }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-5}
+
+\protect\hypertarget{t.d782c80b316c585f37cfeff504ed527240d62369}{}{}\protect\hypertarget{t.5}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread\_id}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-6}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_resume (unsigned int
+~thread\_id)}}{int thinkos\_resume (unsigned int ~thread\_id)}}\label{int-thinkos_resume-unsigned-int-thread_id}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{resume a thread operation }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-6}
+
+\protect\hypertarget{t.d782c80b316c585f37cfeff504ed527240d62369}{}{}\protect\hypertarget{t.6}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread\_id}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{thread handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-7}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void thinkos\_yield (void
+)}}{void thinkos\_yield (void )}}\label{void-thinkos_yield-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{causes the calling thread to relinquish the CPU. The thread is moved to
+the end of the queue for its static priority and a new thread gets to
+run. }
+
+\paragraph{\texorpdfstring{{}}{}}\label{section}
+
+\subsection{\texorpdfstring{{Time related
+calls}}{Time related calls}}\label{time-related-calls}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.3rdcrjn}
+
+{int
+}{\protect\hyperlink{h.26in1rg}{thinkos\_sleep}}{\protect\hyperlink{h.26in1rg}{~}}{(unsigned
+int ms)}
+
+{pause for a specified amount of time }
+
+{uint32\_t
+}{\protect\hyperlink{h.lnxbz9}{thinkos\_clock}}{\protect\hyperlink{h.lnxbz9}{~}}{(void)}
+
+{retrieve the ThikOS clock time }
+
+{int
+}{\protect\hyperlink{h.35nkun2}{thinkos\_alarm}}{\protect\hyperlink{h.35nkun2}{~}}{(uint32\_t
+clock)}
+
+{pause until a specified alarm time }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-1}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-1}
+
+\paragraph{\texorpdfstring{{int thinkos\_sleep (unsigned int
+~ms)}}{int thinkos\_sleep (unsigned int ~ms)}}\label{int-thinkos_sleep-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{pause for a specified amount of time }
+
+{The
+}{\protect\hyperlink{h.26in1rg}{thinkos\_sleep()}}{\protect\hyperlink{h.26in1rg}{~}}{function
+suspends execution of the calling thread for (at least) ms milliseconds.
+The sleep may be lengthened slightly by any system activity or by the
+time spent processing the call or by the granularity of system timer.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-7}
+
+\protect\hypertarget{t.e4727bf18c12225c1cdcee7b27c6f0d762fa7610}{}{}\protect\hypertarget{t.7}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{waiting time in milliseconds }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-8}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{uint32\_t thinkos\_clock (void
+)}}{uint32\_t thinkos\_clock (void )}}\label{uint32_t-thinkos_clock-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{retrieve the ThikOS clock time }
+
+{The ThikOS clock is a tick counter with a resolution of 1 milisecond,
+which cannot be set and is allways running. It represents monotonic time
+since the system power up.}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-9}
+
+{the ThinkOS monotonic clock. }
+
+\paragraph{\texorpdfstring{{int thinkos\_alarm (uint32\_t
+~clock)}}{int thinkos\_alarm (uint32\_t ~clock)}}\label{int-thinkos_alarm-uint32_t-clock}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{pause until a specified alarm time }
+
+{This function should be used in conjucntion with
+}{\protect\hyperlink{h.lnxbz9}{thinkos\_clock()}}{\protect\hyperlink{h.lnxbz9}{.}}{~\ldots{}}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-8}
+
+\protect\hypertarget{t.281362b1a9b4665596996d7811a599a33fd3578c}{}{}\protect\hypertarget{t.8}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{clock}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{time for the thread to be waked up. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-10}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-1}
+
+\subsection{\texorpdfstring{{Mutexes}}{Mutexes}}\label{mutexes}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.1ksv4uv}
+
+{int
+}{\protect\hyperlink{h.44sinio}{thinkos\_mutex\_alloc}}{\protect\hyperlink{h.44sinio}{~}}{(void)}
+
+{alloc a mutex }
+
+{int
+}{\protect\hyperlink{h.2jxsxqh}{thinkos\_mutex\_free}}{\protect\hyperlink{h.2jxsxqh}{~}}{(int
+mutex)}
+
+{release a mutex }
+
+{int
+}{\protect\hyperlink{h.z337ya}{thinkos\_mutex\_lock}}{\protect\hyperlink{h.z337ya}{~}}{(int
+mutex)}
+
+{lock a mutex, blocking if already locked. }
+
+{int
+}{\protect\hyperlink{h.3j2qqm3}{thinkos\_mutex\_trylock}}{\protect\hyperlink{h.3j2qqm3}{~}}{(int
+mutex)}
+
+{try to lock a mutex, non blocking. }
+
+{int
+}{\protect\hyperlink{h.1y810tw}{thinkos\_mutex\_timedlock}}{\protect\hyperlink{h.1y810tw}{~}}{(int
+mutex, unsigned int ms)}
+
+{lock a mutex, blocking for limited time. }
+
+{int
+}{\protect\hyperlink{h.4i7ojhp}{thinkos\_mutex\_unlock}}{\protect\hyperlink{h.4i7ojhp}{~}}{(int
+mutex)}
+
+{unlock the mutex }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-2}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-2}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_alloc (void
+)}}{int thinkos\_mutex\_alloc (void )}}\label{int-thinkos_mutex_alloc-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{alloc a mutex }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-11}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_free (int
+~mutex)}}{int thinkos\_mutex\_free (int ~mutex)}}\label{int-thinkos_mutex_free-int-mutex}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{release a mutex }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-9}
+
+\protect\hypertarget{t.b0b883f74d2462ca881bd7f4d0508cf144bbde9b}{}{}\protect\hypertarget{t.9}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutual exclusion handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-12}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_lock (int
+~mutex)}}{int thinkos\_mutex\_lock (int ~mutex)}}\label{int-thinkos_mutex_lock-int-mutex}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{lock a mutex, blocking if already locked. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-10}
+
+\protect\hypertarget{t.b0b883f74d2462ca881bd7f4d0508cf144bbde9b}{}{}\protect\hypertarget{t.10}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutual exclusion handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-13}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_trylock (int
+~mutex)}}{int thinkos\_mutex\_trylock (int ~mutex)}}\label{int-thinkos_mutex_trylock-int-mutex}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{try to lock a mutex, non blocking. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-11}
+
+\protect\hypertarget{t.b0b883f74d2462ca881bd7f4d0508cf144bbde9b}{}{}\protect\hypertarget{t.11}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutual exclusion handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-14}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_timedlock (int ~mutex,
+unsigned int
+~ms)}}{int thinkos\_mutex\_timedlock (int ~mutex, unsigned int ~ms)}}\label{int-thinkos_mutex_timedlock-int-mutex-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{lock a mutex, blocking for limited time. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-12}
+
+\protect\hypertarget{t.de941ac38142c0150a822438d9a2a2aec068d18f}{}{}\protect\hypertarget{t.12}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutual exclusion handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{waiting time in milliseconds }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-15}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_mutex\_unlock (int
+~mutex)}}{int thinkos\_mutex\_unlock (int ~mutex)}}\label{int-thinkos_mutex_unlock-int-mutex}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{unlock the mutex }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-13}
+
+\protect\hypertarget{t.b0b883f74d2462ca881bd7f4d0508cf144bbde9b}{}{}\protect\hypertarget{t.13}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutual exclusion handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-16}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-2}
+
+\subsection{\texorpdfstring{{Conditional
+Variables}}{Conditional Variables}}\label{conditional-variables}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.2xcytpi}
+
+{int
+}{\protect\hyperlink{h.1ci93xb}{thinkos\_cond\_alloc}}{\protect\hyperlink{h.1ci93xb}{~}}{(void)}
+
+{alloc a conditional variable }
+
+{int
+}{\protect\hyperlink{h.3whwml4}{thinkos\_cond\_free}}{\protect\hyperlink{h.3whwml4}{~}}{(int
+cond)}
+
+{release a conditional variable }
+
+{int
+}{\protect\hyperlink{h.2bn6wsx}{thinkos\_cond\_wait}}{\protect\hyperlink{h.2bn6wsx}{~}}{(int
+cond, int mutex)}
+
+{wait for a conditional variable }
+
+{int
+}{\protect\hyperlink{h.qsh70q}{thinkos\_cond\_timedwait}}{\protect\hyperlink{h.qsh70q}{~}}{(int
+cond, int mutex, unsigned int ms)}
+
+{wait for a conditional variable or timeout }
+
+{int
+}{\protect\hyperlink{h.3as4poj}{thinkos\_cond\_signal}}{\protect\hyperlink{h.3as4poj}{~}}{(int
+cond)}
+
+{signal a conditional variable wake a single thread }
+
+{int
+}{\protect\hyperlink{h.1pxezwc}{thinkos\_cond\_broadcast}}{\protect\hyperlink{h.1pxezwc}{~}}{(int
+cond)}
+
+{signal a conditional variable wake all waiting threads }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-3}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-3}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_alloc (void
+)}}{int thinkos\_cond\_alloc (void )}}\label{int-thinkos_cond_alloc-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{alloc a conditional variable }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-17}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_free (int
+~cond)}}{int thinkos\_cond\_free (int ~cond)}}\label{int-thinkos_cond_free-int-cond}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{release a conditional variable }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-14}
+
+\protect\hypertarget{t.5f6a6301995a69995f1253a58a8df876856672ec}{}{}\protect\hypertarget{t.14}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{cond}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{conditional variable handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-18}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_wait (int ~cond, int
+~mutex)}}{int thinkos\_cond\_wait (int ~cond, int ~mutex)}}\label{int-thinkos_cond_wait-int-cond-int-mutex}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for a conditional variable }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-15}
+
+\protect\hypertarget{t.abe173c86a250b55a35b20a1a938b3e0ed603c37}{}{}\protect\hypertarget{t.15}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{cond}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{conditional variable handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-19}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_timedwait (int ~cond, int
+~mutex, unsigned int
+~ms)}}{int thinkos\_cond\_timedwait (int ~cond, int ~mutex, unsigned int ~ms)}}\label{int-thinkos_cond_timedwait-int-cond-int-mutex-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for a conditional variable or timeout }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-16}
+
+\protect\hypertarget{t.858b18386d0696f6efe16a7a32d5dcded6652bc5}{}{}\protect\hypertarget{t.16}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{cond}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{conditional variable handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mutex handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{waiting time in milliseconds }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-20}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_signal (int
+~cond)}}{int thinkos\_cond\_signal (int ~cond)}}\label{int-thinkos_cond_signal-int-cond}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a conditional variable wake a single thread }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-17}
+
+\protect\hypertarget{t.5f6a6301995a69995f1253a58a8df876856672ec}{}{}\protect\hypertarget{t.17}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{cond}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{conditional variable handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-21}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_cond\_broadcast (int
+~cond)}}{int thinkos\_cond\_broadcast (int ~cond)}}\label{int-thinkos_cond_broadcast-int-cond}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a conditional variable wake all waiting threads }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-18}
+
+\protect\hypertarget{t.5f6a6301995a69995f1253a58a8df876856672ec}{}{}\protect\hypertarget{t.18}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{cond}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{conditional variable handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-22}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-3}
+
+\subsection{\texorpdfstring{{Semaphores}}{Semaphores}}\label{semaphores}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.49x2ik5}
+
+{int
+}{\protect\hyperlink{h.2p2csry}{thinkos\_sem\_alloc}}{\protect\hyperlink{h.2p2csry}{~}}{(unsigned
+int val)}
+
+{alloc a semaphore }
+
+{int
+}{\protect\hyperlink{h.147n2zr}{thinkos\_sem\_free}}{\protect\hyperlink{h.147n2zr}{~}}{(int
+sem)}
+
+{release a semaphore }
+
+{int
+}{\protect\hyperlink{h.3o7alnk}{thinkos\_sem\_init}}{\protect\hyperlink{h.3o7alnk}{~}}{(int
+sem, unsigned int val)}
+
+{set the initial value of a semaphore }
+
+{int
+}{\protect\hyperlink{h.23ckvvd}{thinkos\_sem\_wait}}{\protect\hyperlink{h.23ckvvd}{~}}{(int
+sem)}
+
+{wait for a semaphore to be signaled }
+
+{int
+}{\protect\hyperlink{h.ihv636}{thinkos\_sem\_timedwait}}{\protect\hyperlink{h.ihv636}{~}}{(int
+sem, unsigned int ms)}
+
+{wait for a semaphore to be signaled or timeout }
+
+{int
+}{\protect\hyperlink{h.32hioqz}{thinkos\_sem\_post}}{\protect\hyperlink{h.32hioqz}{~}}{(int
+sem)}
+
+{signal a semaphore }
+
+{void
+}{\protect\hyperlink{h.1hmsyys}{thinkos\_sem\_post\_i}}{\protect\hyperlink{h.1hmsyys}{~}}{(int
+sem)}
+
+{signal a semaphore inside an interrupt handler }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-4}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-4}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_alloc (unsigned int
+~val)}}{int thinkos\_sem\_alloc (unsigned int ~val)}}\label{int-thinkos_sem_alloc-unsigned-int-val}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{alloc a semaphore }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-19}
+
+\protect\hypertarget{t.b02b07ec80924b1785f96fcda4f10f7c9466fa7b}{}{}\protect\hypertarget{t.19}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{val}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{initial semaphore value }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-23}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_free (int
+~sem)}}{int thinkos\_sem\_free (int ~sem)}}\label{int-thinkos_sem_free-int-sem}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{release a semaphore }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-20}
+
+\protect\hypertarget{t.42f0ad63e27678006eae2b4c683934157041a4d7}{}{}\protect\hypertarget{t.20}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-24}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_init (int ~sem, unsigned
+int
+~val)}}{int thinkos\_sem\_init (int ~sem, unsigned int ~val)}}\label{int-thinkos_sem_init-int-sem-unsigned-int-val}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{set the initial value of a semaphore }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-21}
+
+\protect\hypertarget{t.4fd8384b48c431f3cad5f382b558ebd8eed50495}{}{}\protect\hypertarget{t.21}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{val}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-25}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_wait (int
+~sem)}}{int thinkos\_sem\_wait (int ~sem)}}\label{int-thinkos_sem_wait-int-sem}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for a semaphore to be signaled }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-22}
+
+\protect\hypertarget{t.42f0ad63e27678006eae2b4c683934157041a4d7}{}{}\protect\hypertarget{t.22}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-26}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_timedwait (int ~sem,
+unsigned int
+~ms)}}{int thinkos\_sem\_timedwait (int ~sem, unsigned int ~ms)}}\label{int-thinkos_sem_timedwait-int-sem-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for a semaphore to be signaled or timeout }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-23}
+
+\protect\hypertarget{t.33a353b3a299d454126b7888c7a887c8e8d7a8ee}{}{}\protect\hypertarget{t.23}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-27}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_sem\_post (int
+~sem)}}{int thinkos\_sem\_post (int ~sem)}}\label{int-thinkos_sem_post-int-sem}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a semaphore }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-24}
+
+\protect\hypertarget{t.42f0ad63e27678006eae2b4c683934157041a4d7}{}{}\protect\hypertarget{t.24}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-28}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void thinkos\_sem\_post\_i (int
+~sem)}}{void thinkos\_sem\_post\_i (int ~sem)}}\label{void-thinkos_sem_post_i-int-sem}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a semaphore inside an interrupt handler }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-25}
+
+\protect\hypertarget{t.42f0ad63e27678006eae2b4c683934157041a4d7}{}{}\protect\hypertarget{t.25}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{sem}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{semaphore handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-4}
+
+\subsection{\texorpdfstring{{Event sets}}{Event sets}}\label{event-sets}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.41mghml}
+
+{int
+}{\protect\hyperlink{h.2grqrue}{thinkos\_ev\_alloc}}{\protect\hyperlink{h.2grqrue}{~}}{(void)}
+
+{alloc an event set }
+
+{int
+}{\protect\hyperlink{h.vx1227}{thinkos\_ev\_free}}{\protect\hyperlink{h.vx1227}{~}}{(int
+set)}
+
+{release an event set }
+
+{int
+}{\protect\hyperlink{h.3fwokq0}{thinkos\_ev\_wait}}{\protect\hyperlink{h.3fwokq0}{~}}{(int
+set)}
+
+{wait for an event }
+
+{int
+}{\protect\hyperlink{h.1v1yuxt}{thinkos\_ev\_timedwait}}{\protect\hyperlink{h.1v1yuxt}{~}}{(int
+set, unsigned int ms)}
+
+{wait for an event or timeout }
+
+{int
+}{\protect\hyperlink{h.4f1mdlm}{thinkos\_ev\_raise}}{\protect\hyperlink{h.4f1mdlm}{~}}{(int
+set, int ev)}
+
+{signal an event }
+
+{void
+}{\protect\hyperlink{h.2u6wntf}{thinkos\_ev\_raise\_i}}{\protect\hyperlink{h.2u6wntf}{~}}{(int
+set, int ev)}
+
+{signal an event from inside an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.19c6y18}{thinkos\_ev\_mask}}{\protect\hyperlink{h.19c6y18}{~}}{(int
+set, int ev, int val)}
+
+{mask/unmask an event }
+
+{int
+}{\protect\hyperlink{h.3tbugp1}{thinkos\_ev\_clear}}{\protect\hyperlink{h.3tbugp1}{~}}{(int
+set, int ev)}
+
+{clear an event }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-5}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-5}
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_alloc (void
+)}}{int thinkos\_ev\_alloc (void )}}\label{int-thinkos_ev_alloc-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{alloc an event set }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-29}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_free (int
+~set)}}{int thinkos\_ev\_free (int ~set)}}\label{int-thinkos_ev_free-int-set}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{release an event set }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-26}
+
+\protect\hypertarget{t.fa7a662ba3715d766286afd3239f3de6307c79a3}{}{}\protect\hypertarget{t.26}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-30}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_wait (int
+~set)}}{int thinkos\_ev\_wait (int ~set)}}\label{int-thinkos_ev_wait-int-set}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for an event }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-27}
+
+\protect\hypertarget{t.fa7a662ba3715d766286afd3239f3de6307c79a3}{}{}\protect\hypertarget{t.27}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-31}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented, an event otherwise. }
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_timedwait (int ~set,
+unsigned int
+~ms)}}{int thinkos\_ev\_timedwait (int ~set, unsigned int ~ms)}}\label{int-thinkos_ev_timedwait-int-set-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for an event or timeout }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-28}
+
+\protect\hypertarget{t.798629b4d033e81359313f6211f814d0e4c1651b}{}{}\protect\hypertarget{t.28}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{time to wait in milliseconds }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-32}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented, an event otherwise. }
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_raise (int ~set, int
+~ev)}}{int thinkos\_ev\_raise (int ~set, int ~ev)}}\label{int-thinkos_ev_raise-int-set-int-ev}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal an event }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-29}
+
+\protect\hypertarget{t.edc44c26eda9f56c94bb61cc6c572ae53f165af7}{}{}\protect\hypertarget{t.29}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ev}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event identifier }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-33}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void thinkos\_ev\_raise\_i (int ~set, int
+~ev)}}{void thinkos\_ev\_raise\_i (int ~set, int ~ev)}}\label{void-thinkos_ev_raise_i-int-set-int-ev}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal an event from inside an interrupt handler }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-30}
+
+\protect\hypertarget{t.edc44c26eda9f56c94bb61cc6c572ae53f165af7}{}{}\protect\hypertarget{t.30}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ev}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event identifier }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_mask (int ~set, int ~ev,
+int
+~val)}}{int thinkos\_ev\_mask (int ~set, int ~ev, int ~val)}}\label{int-thinkos_ev_mask-int-set-int-ev-int-val}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{mask/unmask an event }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-31}
+
+\protect\hypertarget{t.067f774366820f43dbfd2abca19aca2a5f35fd2e}{}{}\protect\hypertarget{t.31}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ev}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event identifier }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{val}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{mask value. 1 enable the event, 0 disable the event. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-34}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_ev\_clear (int ~set, int
+~ev)}}{int thinkos\_ev\_clear (int ~set, int ~ev)}}\label{int-thinkos_ev_clear-int-set-int-ev}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{clear an event }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-32}
+
+\protect\hypertarget{t.edc44c26eda9f56c94bb61cc6c572ae53f165af7}{}{}\protect\hypertarget{t.32}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{set}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event set handler }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ev}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{event identifier }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-35}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-5}
+
+\subsection{\texorpdfstring{{Flags}}{Flags}}\label{flags}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.28h4qwu}
+
+{int
+}{\protect\hyperlink{h.nmf14n}{thinkos\_flag\_alloc}}{\protect\hyperlink{h.nmf14n}{~}}{(void)}
+
+{alloc a flag }
+
+{int
+}{\protect\hyperlink{h.37m2jsg}{thinkos\_flag\_free}}{\protect\hyperlink{h.37m2jsg}{~}}{(int
+flag)}
+
+{release a flag }
+
+{int
+}{\protect\hyperlink{h.1mrcu09}{thinkos\_flag\_val}}{\protect\hyperlink{h.1mrcu09}{~}}{(int
+flag)}
+
+{return the flag value }
+
+{int
+}{\protect\hyperlink{h.46r0co2}{thinkos\_flag\_set}}{\protect\hyperlink{h.46r0co2}{~}}{(int
+flag)}
+
+{set a flag }
+
+{int
+}{\protect\hyperlink{h.2lwamvv}{thinkos\_flag\_clr}}{\protect\hyperlink{h.2lwamvv}{~}}{(int
+flag)}
+
+{clear a flag }
+
+{int
+}{\protect\hyperlink{h.111kx3o}{thinkos\_flag\_give}}{\protect\hyperlink{h.111kx3o}{~}}{(int
+flag)}
+
+{signal a flag }
+
+{void
+}{\protect\hyperlink{h.3l18frh}{thinkos\_flag\_give\_i}}{\protect\hyperlink{h.3l18frh}{~}}{(int
+flag)}
+
+{signal a flag form inside an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.206ipza}{thinkos\_flag\_take}}{\protect\hyperlink{h.206ipza}{~}}{(int
+flag)}
+
+{wait for flag to be signaled }
+
+{int
+}{\protect\hyperlink{h.4k668n3}{thinkos\_flag\_timedtake}}{\protect\hyperlink{h.4k668n3}{~}}{(int
+flag, unsigned int ms)}
+
+{wait for flag or timeout }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-6}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-6}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_alloc (void
+)}}{int thinkos\_flag\_alloc (void )}}\label{int-thinkos_flag_alloc-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{alloc a flag }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-36}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_free (int
+~flag)}}{int thinkos\_flag\_free (int ~flag)}}\label{int-thinkos_flag_free-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{release a flag }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-33}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.33}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-37}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_val (int
+~flag)}}{int thinkos\_flag\_val (int ~flag)}}\label{int-thinkos_flag_val-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{return the flag value }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-34}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.34}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-38}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_set (int
+~flag)}}{int thinkos\_flag\_set (int ~flag)}}\label{int-thinkos_flag_set-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{set a flag }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-35}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.35}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-39}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_clr (int
+~flag)}}{int thinkos\_flag\_clr (int ~flag)}}\label{int-thinkos_flag_clr-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{clear a flag }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-36}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.36}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-40}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_give (int
+~flag)}}{int thinkos\_flag\_give (int ~flag)}}\label{int-thinkos_flag_give-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a flag }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-37}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.37}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-41}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void thinkos\_flag\_give\_i (int
+~flag)}}{void thinkos\_flag\_give\_i (int ~flag)}}\label{void-thinkos_flag_give_i-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{signal a flag form inside an interrupt handler }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-38}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.38}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_take (int
+~flag)}}{int thinkos\_flag\_take (int ~flag)}}\label{int-thinkos_flag_take-int-flag}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for flag to be signaled }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-39}
+
+\protect\hypertarget{t.383f7e723be615a1ab251cbb171dc44f8c48c9f4}{}{}\protect\hypertarget{t.39}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\paragraph{\texorpdfstring{{int thinkos\_flag\_timedtake (int ~flag,
+unsigned int
+~ms)}}{int thinkos\_flag\_timedtake (int ~flag, unsigned int ~ms)}}\label{int-thinkos_flag_timedtake-int-flag-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for flag or timeout }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-40}
+
+\protect\hypertarget{t.aed66b1bf3dc3447b75e535bc6b7a8c236003a69}{}{}\protect\hypertarget{t.40}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{flag}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-42}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-6}
+
+\subsection{\texorpdfstring{{Gates}}{Gates}}\label{gates}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.2zbgiuw}
+
+{int
+}{\protect\hyperlink{h.1egqt2p}{thinkos\_gate\_alloc}}{\protect\hyperlink{h.1egqt2p}{~}}{(void)}
+
+{Alloc a gate synchronization object. }
+
+{int
+}{\protect\hyperlink{h.3ygebqi}{thinkos\_gate\_free}}{\protect\hyperlink{h.3ygebqi}{~}}{(int
+gate)}
+
+{Frees the gate synchronization object. }
+
+{int
+}{\protect\hyperlink{h.2dlolyb}{thinkos\_gate\_wait}}{\protect\hyperlink{h.2dlolyb}{~}}{(int
+gate)}
+
+{Wait for a gate to open. }
+
+{int
+}{\protect\hyperlink{h.sqyw64}{thinkos\_gate\_timedwait}}{\protect\hyperlink{h.sqyw64}{~}}{(int
+gate, unsigned int ms)}
+
+{Wait for a gate to open or a timeout. }
+
+{int
+}{\protect\hyperlink{h.3cqmetx}{thinkos\_gate\_open}}{\protect\hyperlink{h.3cqmetx}{~}}{(int
+gate)}
+
+{Open or signal the gate. }
+
+{void
+}{\protect\hyperlink{h.1rvwp1q}{thinkos\_gate\_open\_i}}{\protect\hyperlink{h.1rvwp1q}{~}}{(int
+gate)}
+
+{Open or signal the gate from inside an interrupt handler. }
+
+{int
+}{\protect\hyperlink{h.4bvk7pj}{thinkos\_gate\_close}}{\protect\hyperlink{h.4bvk7pj}{~}}{(int
+gate)}
+
+{Close the gate if the gate is }{OPEN}{~ or remove pending signaling it
+the gate is @ LOCKED. }
+
+{int
+}{\protect\hyperlink{h.2r0uhxc}{thinkos\_gate\_exit}}{\protect\hyperlink{h.2r0uhxc}{~}}{(int
+gate, unsigned int open)}
+
+{Exit the gate, leaving the gate, optionally leaving it open or closed.
+}
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-7}
+
+{Gates are syncronization objects which provide a convenient way of
+creating mutual exclusion acess to code blocks signaled by interrupt
+handlers\ldots{}}
+
+{A gate have a lock flag and a signal flag. A gate can be in one of the
+following states:}
+
+{CLOSED:}{~ no threads crossed the gate yet.}
+
+{LOCKED:}{~ a thread entered the gate, closed and locked it.}
+
+{OPENED:}{~ no threads are waiting in the gate, the first thread to call
+}{\protect\hyperlink{h.2dlolyb}{thinkos\_gate\_wait()}}{\protect\hyperlink{h.2dlolyb}{~}}{~will
+cross the gate.}
+
+{SIGNALED:}{~ a thread crossed the gate and locked it, but the gate
+received a signal to open. When the thread exits the gate the gate will
+stay open. }
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-7}
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_alloc (void
+)}}{int thinkos\_gate\_alloc (void )}}\label{int-thinkos_gate_alloc-void}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Alloc a gate synchronization object. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-43}
+
+{return a handler for a new gate object, or a negative value if an error
+ocurred.}
+
+{Errors:}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+the system call is not enabled.}
+
+{\protect\hyperlink{h.meukdy}{THINKOS\_ENOMEM}}{\protect\hyperlink{h.meukdy}{~}}{no
+gates left in the gate pool. }
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_free (int
+~gate)}}{int thinkos\_gate\_free (int ~gate)}}\label{int-thinkos_gate_free-int-gate}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Frees the gate synchronization object. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-41}
+
+\protect\hypertarget{t.732390f47e0bc9de7bbae841837625969c4e7db0}{}{}\protect\hypertarget{t.41}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{handler for a gate object which must have been returned by a previous
+call to
+}{\protect\hyperlink{h.1egqt2p}{thinkos\_gate\_alloc()}}{\protect\hyperlink{h.1egqt2p}{~}}{.
+}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-44}
+
+{returns
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{on
+sucess. On error a negative code value is returned. an error ocurred.}
+
+{Errors:}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{~}}{gate}{~
+is not a valid gate handler.}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{not
+implemented. }
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_wait (int
+~gate)}}{int thinkos\_gate\_wait (int ~gate)}}\label{int-thinkos_gate_wait-int-gate}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Wait for a gate to open. }
+
+{If the gate is open this function return imediatelly, otherwise it will
+block the calling thread.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-42}
+
+\protect\hypertarget{t.63aac5addc95ec2809d3272ba50ab5f93508edb0}{}{}\protect\hypertarget{t.42}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-45}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{~}}{if
+}{gate}{~ is invalid,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_timedwait (int ~gate,
+unsigned int
+~ms)}}{int thinkos\_gate\_timedwait (int ~gate, unsigned int ~ms)}}\label{int-thinkos_gate_timedwait-int-gate-unsigned-int-ms}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Wait for a gate to open or a timeout. }
+
+{If the gate is open this function return imediatelly, otherwise it will
+block the calling thread.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-43}
+
+\protect\hypertarget{t.acc072d2f3bb4c2c47837e0a954ea1c3c6ac8b37}{}{}\protect\hypertarget{t.43}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor. }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{ms}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{Timeout ins milliseconds. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-46}
+
+{}
+
+{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{is
+returned on sucess. On error a negative code value is returned.}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{:}}{~}{gate}{~
+is not a valid handler.}
+
+{\protect\hyperlink{h.upglbi}{THINKOS\_ETIMEDOUT}}{\protect\hyperlink{h.upglbi}{:}}{~timer
+expired before the }{gate}{~ opens.}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{:}}{~syscall
+not implemented. }
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_open (int
+~gate)}}{int thinkos\_gate\_open (int ~gate)}}\label{int-thinkos_gate_open-int-gate}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Open or signal the gate. }
+
+{The resulting gate's state will depend on the current gate state and
+whether there are threads waiting at the gate. There are four possible
+scenarios \ldots{} :}
+
+{1.~~~~~~~~the gate is open already, then this function does nothing.}
+
+{2.~~~~~~~~the gate is closed and no threads are waiting it will open
+the gate, allowing the next thread to call }{gate\_open()}{~ to enter
+the gate.}
+
+{3.~~~~~~~~the gate is closed and at least one thread is waiting it will
+allow the thread to cross the gate, in this case the gate will be
+locked.}
+
+{4.~~~~~~~~a thread crossed the gate (gate state is }{LOCKED}{~), then
+the gate will be signaled to open when the gate is unlocked.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-44}
+
+\protect\hypertarget{t.63aac5addc95ec2809d3272ba50ab5f93508edb0}{}{}\protect\hypertarget{t.44}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-47}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{~}}{if
+}{gate}{~ is invalid,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void thinkos\_gate\_open\_i (int
+~gate)}}{void thinkos\_gate\_open\_i (int ~gate)}}\label{void-thinkos_gate_open_i-int-gate}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Open or signal the gate from inside an interrupt handler. }
+
+{This call is similar to the
+}{\protect\hyperlink{h.3cqmetx}{thinkos\_gate\_open()}}{\protect\hyperlink{h.3cqmetx}{~}}{~except
+that it is safe to ba called from inside an interrupt handler.}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-45}
+
+\protect\hypertarget{t.5f99e327007a50c0bedc6d95e651021a3e43c836}{}{}\protect\hypertarget{t.45}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor.}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+{Warning:}{~ no argument validation is performed. }
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_close (int
+~gate)}}{int thinkos\_gate\_close (int ~gate)}}\label{int-thinkos_gate_close-int-gate}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Close the gate if the gate is }{OPEN}{~ or remove pending signaling it
+the gate is @ LOCKED. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-46}
+
+\protect\hypertarget{t.63aac5addc95ec2809d3272ba50ab5f93508edb0}{}{}\protect\hypertarget{t.46}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-48}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{~}}{if
+}{gate}{~ is invalid,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_gate\_exit (int ~gate, unsigned
+int
+~open)}}{int thinkos\_gate\_exit (int ~gate, unsigned int ~open)}}\label{int-thinkos_gate_exit-int-gate-unsigned-int-open}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{Exit the gate, leaving the gate, optionally leaving it open or closed.
+}
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-47}
+
+\protect\hypertarget{t.ed499f740a0883130710bbb983d50c5a5eccdc42}{}{}\protect\hypertarget{t.47}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{gate}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{The gate descriptor. }\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{open}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{Indicate the state of the gate on exit.}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+{open}{~ \textgreater{} 0, the gate will be left open, allowing for
+another thread to enter the gate.}
+
+{open}{~ == 0, the gate will stay closed if not signaled, in wich case
+it will open accordingly. }
+
+\protect\hypertarget{t.1aebe24dda1b56316fca09844ec7bf63e4290b0d}{}{}\protect\hypertarget{t.48}{}{}
+
+\begin{longtable}[]{@{}l@{}}
+\toprule
+\begin{minipage}[t]{0.97\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-49}
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{\protect\hyperlink{h.1tuee74}{~}}{if
+}{gate}{~ is invalid,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-7}
+
+\subsection{\texorpdfstring{{Interrupt
+Requests}}{Interrupt Requests}}\label{interrupt-requests}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.1664s55}
+
+{int
+}{\protect\hyperlink{h.3q5sasy}{thinkos\_irq\_wait}}{\protect\hyperlink{h.3q5sasy}{~}}{(int
+irq)}
+
+{wait for interrupt }
+
+{int
+}{\protect\hyperlink{h.25b2l0r}{thinkos\_irq\_register}}{\protect\hyperlink{h.25b2l0r}{~}}{(int
+irq, int pri, void(*isr)(void))}
+
+{reqister an interrupt handler }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-8}
+
+{}
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-8}
+
+\paragraph{\texorpdfstring{{int thinkos\_irq\_wait (int
+~irq)}}{int thinkos\_irq\_wait (int ~irq)}}\label{int-thinkos_irq_wait-int-irq}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{wait for interrupt }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-48}
+
+\protect\hypertarget{t.c2957ce4f831c006182672b15100a2a6a33851a6}{}{}\protect\hypertarget{t.49}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{irq}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-50}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_irq\_register (int ~irq, int
+~pri, void(*)(void)
+~isr)}}{int thinkos\_irq\_register (int ~irq, int ~pri, void(*)(void) ~isr)}}\label{int-thinkos_irq_register-int-irq-int-pri-voidvoid-isr}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{reqister an interrupt handler }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-49}
+
+\protect\hypertarget{t.bfce7faafba4041e0a1d16655da9fc068af23510}{}{}\protect\hypertarget{t.50}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{irq}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{pri}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{isr}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{}\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-51}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{}}{}}\label{section-8}
+
+\subsection{\texorpdfstring{{OS Monitor and
+Cotrol.}}{OS Monitor and Cotrol.}}\label{os-monitor-and-cotrol.}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{h.kgcv8k}
+
+{int
+}{\protect\hyperlink{h.34g0dwd}{thinkos\_clocks}}{\protect\hyperlink{h.34g0dwd}{~}}{(uint32\_t
+*clk{[}{]})}
+
+{get hardware clocks frequencies }
+
+{int
+}{\protect\hyperlink{h.1jlao46}{thinkos\_udelay\_factor}}{\protect\hyperlink{h.1jlao46}{~}}{(int32\_t
+*factor)}
+
+{get udelay calibration factor }
+
+{void
+}{\protect\hyperlink{h.43ky6rz}{\_\_attribute\_\_}}{\protect\hyperlink{h.43ky6rz}{~}}{((noreturn))
+thinkos\_abort(void)}
+
+{abort the operating system. }
+
+{}
+
+\subsubsection{\texorpdfstring{{Detailed
+Description}}{Detailed Description}}\label{detailed-description-9}
+
+{These calls return information about the ThinkOS configuratiion and
+operational parameters. }
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-9}
+
+\paragraph{\texorpdfstring{{int thinkos\_clocks (uint32\_t *
+~clk{[}{]})}}{int thinkos\_clocks (uint32\_t * ~clk{[}{]})}}\label{int-thinkos_clocks-uint32_t-clk}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{get hardware clocks frequencies }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-50}
+
+\protect\hypertarget{t.866b9b535e5516e27514680fa2775da750ad842a}{}{}\protect\hypertarget{t.51}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{clk{[}{]}}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{pointer to an array to receive the clocks frequency list. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-52}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{int thinkos\_udelay\_factor (int32\_t *
+~factor)}}{int thinkos\_udelay\_factor (int32\_t * ~factor)}}\label{int-thinkos_udelay_factor-int32_t-factor}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{get udelay calibration factor }
+
+{}
+
+\subparagraph{\texorpdfstring{{Parameters:}}{Parameters:}}\label{parameters-51}
+
+\protect\hypertarget{t.ba04b86e0085018617d8457d329191a496a93af3}{}{}\protect\hypertarget{t.52}{}{}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+\begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{factor}{~}\strut
+\end{minipage} & \begin{minipage}[t]{0.47\columnwidth}\raggedright\strut
+{pointer to an integer. }\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-53}
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{\protect\hyperlink{h.3s49zyc}{~}}{if
+call is not implemented,
+}{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{\protect\hyperlink{h.2fk6b3p}{~}}{otherwise.
+}
+
+\paragraph{\texorpdfstring{{void \_\_attribute\_\_ ((noreturn)
+)}}{void \_\_attribute\_\_ ((noreturn) )}}\label{void-__attribute__-noreturn}
+
+{}
+
+{\#include
+\textless{}}{\protect\hyperlink{h.pkwqa1}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{\protect\hyperlink{h.pkwqa1}{\textgreater{}}}
+
+{abort the operating system. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-54}
+
+{This function does not return. }
+
+{}
+
+\section{\texorpdfstring{{Data Structure
+Documentation}}{Data Structure Documentation}}\label{data-structure-documentation}
+
+\subsection{\texorpdfstring{{thinkos\_thread\_inf Struct
+Reference}}{thinkos\_thread\_inf Struct Reference}}\label{thinkos_thread_inf-struct-reference}
+
+{}
+
+{\#include \textless{}thinkos.h\textgreater{}}
+
+\subsubsection{\texorpdfstring{{Data
+Fields}}{Data Fields}}\label{data-fields}
+
+{void * }{\protect\hyperlink{h.xvir7l}{stack\_ptr}}
+
+{union \{}
+
+{~ uint32\_t }{\protect\hyperlink{h.3hv69ve}{opt}}
+
+{~ struct \{}
+
+{~ ~ uint16\_t }{\protect\hyperlink{h.1x0gk37}{stack\_size}}
+
+{~ ~ uint8\_t }{\protect\hyperlink{h.4h042r0}{priority}}
+
+{~ ~ uint8\_t
+}{\protect\hyperlink{h.2w5ecyt}{thread\_id}}{\protect\hyperlink{h.2w5ecyt}{:}}{~7}
+
+{~ ~ uint8\_t
+}{\protect\hyperlink{h.1baon6m}{paused}}{\protect\hyperlink{h.1baon6m}{:}}{~1}
+
+{~ \} }
+
+{\}; }
+
+{char
+}{\protect\hyperlink{h.2afmg28}{tag}}{\protect\hyperlink{h.2afmg28}{~}}{{[}8{]}}
+
+{}
+
+\subsubsection{\texorpdfstring{{Field
+Documentation}}{Field Documentation}}\label{field-documentation}
+
+\paragraph{\texorpdfstring{{void*
+thinkos\_thread\_inf::stack\_ptr}}{void* thinkos\_thread\_inf::stack\_ptr}}\label{void-thinkos_thread_infstack_ptr}
+
+\hypertarget{h.xvir7l}{\paragraph{\texorpdfstring{{uint32\_t
+thinkos\_thread\_inf::opt}}{uint32\_t thinkos\_thread\_inf::opt}}\label{h.xvir7l}}
+
+\hypertarget{h.3hv69ve}{\paragraph{\texorpdfstring{{uint16\_t
+thinkos\_thread\_inf::stack\_size}}{uint16\_t thinkos\_thread\_inf::stack\_size}}\label{h.3hv69ve}}
+
+\hypertarget{h.1x0gk37}{\paragraph{\texorpdfstring{{uint8\_t
+thinkos\_thread\_inf::priority}}{uint8\_t thinkos\_thread\_inf::priority}}\label{h.1x0gk37}}
+
+\hypertarget{h.4h042r0}{\paragraph{\texorpdfstring{{uint8\_t
+thinkos\_thread\_inf::thread\_id}}{uint8\_t thinkos\_thread\_inf::thread\_id}}\label{h.4h042r0}}
+
+\hypertarget{h.2w5ecyt}{\paragraph{\texorpdfstring{{uint8\_t
+thinkos\_thread\_inf::paused}}{uint8\_t thinkos\_thread\_inf::paused}}\label{h.2w5ecyt}}
+
+\hypertarget{h.1baon6m}{\paragraph{\texorpdfstring{{union \{ \ldots{} \}
+}}{union \{ \ldots{} \} }}\label{h.1baon6m}}
+
+\paragraph{\texorpdfstring{{char
+thinkos\_thread\_inf::tag{[}8{]}}}{char thinkos\_thread\_inf::tag{[}8{]}}}\label{h.3vac5uf}
+
+{}
+
+\section{\texorpdfstring{{File
+Documentation}}{File Documentation}}\label{file-documentation}
+
+\subsection{\texorpdfstring{{C:/devel/yard-ice/src/sdk/include/thinkos.h}}{C:/devel/yard-ice/src/sdk/include/thinkos.h}}\label{cdevelyard-icesrcsdkincludethinkos.h}
+
+{}
+
+{ThinkOS API. }
+
+{\#include \textless{}stdint.h\textgreater{}}
+
+{\#include \textless{}thinkos\_svc.h\textgreater{}}
+
+\subsubsection{\texorpdfstring{{Data
+Structures}}{Data Structures}}\label{data-structures-1}
+
+{struct }{\protect\hyperlink{h.2iq8gzs}{thinkos\_thread\_inf}}
+
+\subsubsection{\texorpdfstring{{Macros}}{Macros}}\label{macros}
+
+{\#define
+}{\protect\hyperlink{h.39kk8xu}{IRQ\_PRIORITY\_HIGHEST}}{\protect\hyperlink{h.39kk8xu}{~}}{~(1
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.1opuj5n}{IRQ\_PRIORITY\_VERY\_HIGH}}{\protect\hyperlink{h.1opuj5n}{~}}{~(2
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.48pi1tg}{IRQ\_PRIORITY\_HIGH}}{\protect\hyperlink{h.48pi1tg}{~}}{~(3
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.2nusc19}{IRQ\_PRIORITY\_REGULAR}}{\protect\hyperlink{h.2nusc19}{~}}{~(4
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.1302m92}{IRQ\_PRIORITY\_LOW}}{\protect\hyperlink{h.1302m92}{~}}{~(5
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.3mzq4wv}{IRQ\_PRIORITY\_VERY\_LOW}}{\protect\hyperlink{h.3mzq4wv}{~}}{~(6
+\textless{}\textless{} 5)}
+
+{\#define
+}{\protect\hyperlink{h.2250f4o}{THINKOS\_OPT\_PRIORITY}}{\protect\hyperlink{h.2250f4o}{(}}{VAL)~
+(((VAL) \& 0xff) \textless{}\textless{} 16)}
+
+{\#define
+}{\protect\hyperlink{h.haapch}{THINKOS\_OPT\_ID}}{\protect\hyperlink{h.haapch}{(}}{VAL)~
+(((VAL) \& 0x07f) \textless{}\textless{} 24)}
+
+{\#define
+}{\protect\hyperlink{h.319y80a}{THINKOS\_OPT\_PAUSED}}{\protect\hyperlink{h.319y80a}{~}}{~(1
+\textless{}\textless{} 31) /* don't run at startup */}
+
+{\#define
+}{\protect\hyperlink{h.1gf8i83}{THINKOS\_OPT\_STACK\_SIZE}}{\protect\hyperlink{h.1gf8i83}{(}}{VAL)~
+((VAL) \& 0xffff)}
+
+\subsubsection{\texorpdfstring{{Enumerations}}{Enumerations}}\label{enumerations}
+
+{enum }{\protect\hyperlink{h.40ew0vw}{thinkos\_err}}{\{ }
+
+{\protect\hyperlink{h.2fk6b3p}{THINKOS\_OK}}{= 0, }
+
+{\protect\hyperlink{h.upglbi}{THINKOS\_ETIMEDOUT}}{= -1, }
+
+{\protect\hyperlink{h.3ep43zb}{THINKOS\_EINTR}}{= -2, }
+
+{\protect\hyperlink{h.1tuee74}{THINKOS\_EINVAL}}{= -3, }
+
+{\protect\hyperlink{h.4du1wux}{THINKOS\_EAGAIN}}{= -4, }
+
+{\protect\hyperlink{h.2szc72q}{THINKOS\_EDEADLK}}{= -5, }
+
+{\protect\hyperlink{h.184mhaj}{THINKOS\_EPERM}}{= -6, }
+
+{\protect\hyperlink{h.3s49zyc}{THINKOS\_ENOSYS}}{= -7, }
+
+{\protect\hyperlink{h.279ka65}{THINKOS\_EFAULT}}{= -8, }
+
+{\protect\hyperlink{h.meukdy}{THINKOS\_ENOMEM}}{= -9 }
+
+{\}}
+
+{enum
+}{\protect\hyperlink{h.36ei31r}{thinkos\_obj\_kind}}{\protect\hyperlink{h.36ei31r}{~}}{\{
+}
+
+{\protect\hyperlink{h.1ljsd9k}{THINKOS\_OBJ\_READY}}{\protect\hyperlink{h.1ljsd9k}{~}}{=
+0, }
+
+{\protect\hyperlink{h.45jfvxd}{THINKOS\_OBJ\_TMSHARE}}{\protect\hyperlink{h.45jfvxd}{,}}{~}
+
+{\protect\hyperlink{h.2koq656}{THINKOS\_OBJ\_CLOCK}}{\protect\hyperlink{h.2koq656}{,}}{~}
+
+{\protect\hyperlink{h.zu0gcz}{THINKOS\_OBJ\_MUTEX}}{\protect\hyperlink{h.zu0gcz}{,}}{~}
+
+{\protect\hyperlink{h.3jtnz0s}{THINKOS\_OBJ\_COND}}{\protect\hyperlink{h.3jtnz0s}{,}}{~}
+
+{\protect\hyperlink{h.1yyy98l}{THINKOS\_OBJ\_SEMAPHORE}}{\protect\hyperlink{h.1yyy98l}{,}}{~}
+
+{\protect\hyperlink{h.4iylrwe}{THINKOS\_OBJ\_EVENT}}{\protect\hyperlink{h.4iylrwe}{,}}{~}
+
+{\protect\hyperlink{h.2y3w247}{THINKOS\_OBJ\_FLAG}}{\protect\hyperlink{h.2y3w247}{,}}{~}
+
+{\protect\hyperlink{h.1d96cc0}{THINKOS\_OBJ\_GATE}}{\protect\hyperlink{h.1d96cc0}{,}}{~}
+
+{\protect\hyperlink{h.3x8tuzt}{THINKOS\_OBJ\_JOIN}}{\protect\hyperlink{h.3x8tuzt}{,}}{~}
+
+{\protect\hyperlink{h.2ce457m}{THINKOS\_OBJ\_CONREAD}}{\protect\hyperlink{h.2ce457m}{,}}{~}
+
+{\protect\hyperlink{h.rjefff}{THINKOS\_OBJ\_CONWRITE}}{\protect\hyperlink{h.rjefff}{,}}{~}
+
+{\protect\hyperlink{h.3bj1y38}{THINKOS\_OBJ\_PAUSED}}{\protect\hyperlink{h.3bj1y38}{,}}{~}
+
+{\protect\hyperlink{h.1qoc8b1}{THINKOS\_OBJ\_CANCELED}}{\protect\hyperlink{h.1qoc8b1}{,}}{~}
+
+{\protect\hyperlink{h.4anzqyu}{THINKOS\_OBJ\_FAULT}}{\protect\hyperlink{h.4anzqyu}{,}}{~}
+
+{\protect\hyperlink{h.2pta16n}{THINKOS\_OBJ\_INVALID}}{\protect\hyperlink{h.2pta16n}{~}}
+
+{\}}
+
+\subsubsection{\texorpdfstring{{Functions}}{Functions}}\label{functions}
+
+{int
+}{\protect\hyperlink{h.14ykbeg}{thinkos\_init}}{\protect\hyperlink{h.14ykbeg}{~}}{(unsigned
+int opt)}
+
+{Initializes the }{ThinkOS}{~ library. }
+
+{int
+}{\protect\hyperlink{h.1fob9te}{thinkos\_thread\_create}}{(int(*task\_ptr)(void
+*), void *task\_arg, void *stack\_ptr, unsigned int opt)}
+
+{create a new thread }
+
+{int
+}{\protect\hyperlink{h.3znysh7}{thinkos\_thread\_create\_inf}}{(int(*task\_ptr)(void
+*), void *task\_arg, const struct
+}{\protect\hyperlink{h.2iq8gzs}{thinkos\_thread\_inf}}{\protect\hyperlink{h.2iq8gzs}{~}}{*inf)}
+
+{create a new thread with extend information }
+
+{int const
+}{\protect\hyperlink{h.2et92p0}{thinkos\_thread\_self}}{(void)}
+
+{obtaind a handler for the calling thread }
+
+{int
+}{\protect\hyperlink{h.tyjcwt}{thinkos\_cancel}}{\protect\hyperlink{h.tyjcwt}{~}}{(unsigned
+int thread\_id, int code)}
+
+{request a thread to terminate }
+
+{int
+}{\protect\hyperlink{h.3dy6vkm}{thinkos\_exit}}{\protect\hyperlink{h.3dy6vkm}{~}}{(int
+code)}
+
+{cause the thread to terminate }
+
+{int
+}{\protect\hyperlink{h.1t3h5sf}{thinkos\_join}}{\protect\hyperlink{h.1t3h5sf}{~}}{(unsigned
+int thread\_id)}
+
+{join with a terminated thread }
+
+{int
+}{\protect\hyperlink{h.4d34og8}{thinkos\_pause}}{\protect\hyperlink{h.4d34og8}{~}}{(unsigned
+int thread\_id)}
+
+{pause the thread execution }
+
+{int
+}{\protect\hyperlink{h.2s8eyo1}{thinkos\_resume}}{\protect\hyperlink{h.2s8eyo1}{~}}{(unsigned
+int thread\_id)}
+
+{resume a thread operation }
+
+{void
+}{\protect\hyperlink{h.17dp8vu}{thinkos\_yield}}{\protect\hyperlink{h.17dp8vu}{~}}{(void)}
+
+{causes the calling thread to relinquish the CPU. The thread is moved to
+the end of the queue for its static priority and a new thread gets to
+run. }
+
+{int
+}{\protect\hyperlink{h.26in1rg}{thinkos\_sleep}}{\protect\hyperlink{h.26in1rg}{~}}{(unsigned
+int ms)}
+
+{pause for a specified amount of time }
+
+{uint32\_t
+}{\protect\hyperlink{h.lnxbz9}{thinkos\_clock}}{\protect\hyperlink{h.lnxbz9}{~}}{(void)}
+
+{retrieve the ThikOS clock time }
+
+{int
+}{\protect\hyperlink{h.35nkun2}{thinkos\_alarm}}{\protect\hyperlink{h.35nkun2}{~}}{(uint32\_t
+clock)}
+
+{pause until a specified alarm time }
+
+{int
+}{\protect\hyperlink{h.44sinio}{thinkos\_mutex\_alloc}}{\protect\hyperlink{h.44sinio}{~}}{(void)}
+
+{alloc a mutex }
+
+{int
+}{\protect\hyperlink{h.2jxsxqh}{thinkos\_mutex\_free}}{\protect\hyperlink{h.2jxsxqh}{~}}{(int
+mutex)}
+
+{release a mutex }
+
+{int
+}{\protect\hyperlink{h.z337ya}{thinkos\_mutex\_lock}}{\protect\hyperlink{h.z337ya}{~}}{(int
+mutex)}
+
+{lock a mutex, blocking if already locked. }
+
+{int
+}{\protect\hyperlink{h.3j2qqm3}{thinkos\_mutex\_trylock}}{\protect\hyperlink{h.3j2qqm3}{~}}{(int
+mutex)}
+
+{try to lock a mutex, non blocking. }
+
+{int
+}{\protect\hyperlink{h.1y810tw}{thinkos\_mutex\_timedlock}}{\protect\hyperlink{h.1y810tw}{~}}{(int
+mutex, unsigned int ms)}
+
+{lock a mutex, blocking for limited time. }
+
+{int
+}{\protect\hyperlink{h.4i7ojhp}{thinkos\_mutex\_unlock}}{\protect\hyperlink{h.4i7ojhp}{~}}{(int
+mutex)}
+
+{unlock the mutex }
+
+{int
+}{\protect\hyperlink{h.1ci93xb}{thinkos\_cond\_alloc}}{\protect\hyperlink{h.1ci93xb}{~}}{(void)}
+
+{alloc a conditional variable }
+
+{int
+}{\protect\hyperlink{h.3whwml4}{thinkos\_cond\_free}}{\protect\hyperlink{h.3whwml4}{~}}{(int
+cond)}
+
+{release a conditional variable }
+
+{int
+}{\protect\hyperlink{h.2bn6wsx}{thinkos\_cond\_wait}}{\protect\hyperlink{h.2bn6wsx}{~}}{(int
+cond, int mutex)}
+
+{wait for a conditional variable }
+
+{int
+}{\protect\hyperlink{h.qsh70q}{thinkos\_cond\_timedwait}}{\protect\hyperlink{h.qsh70q}{~}}{(int
+cond, int mutex, unsigned int ms)}
+
+{wait for a conditional variable or timeout }
+
+{int
+}{\protect\hyperlink{h.3as4poj}{thinkos\_cond\_signal}}{\protect\hyperlink{h.3as4poj}{~}}{(int
+cond)}
+
+{signal a conditional variable wake a single thread }
+
+{int
+}{\protect\hyperlink{h.1pxezwc}{thinkos\_cond\_broadcast}}{\protect\hyperlink{h.1pxezwc}{~}}{(int
+cond)}
+
+{signal a conditional variable wake all waiting threads }
+
+{int
+}{\protect\hyperlink{h.2p2csry}{thinkos\_sem\_alloc}}{\protect\hyperlink{h.2p2csry}{~}}{(unsigned
+int val)}
+
+{alloc a semaphore }
+
+{int
+}{\protect\hyperlink{h.147n2zr}{thinkos\_sem\_free}}{\protect\hyperlink{h.147n2zr}{~}}{(int
+sem)}
+
+{release a semaphore }
+
+{int
+}{\protect\hyperlink{h.3o7alnk}{thinkos\_sem\_init}}{\protect\hyperlink{h.3o7alnk}{~}}{(int
+sem, unsigned int val)}
+
+{set the initial value of a semaphore }
+
+{int
+}{\protect\hyperlink{h.23ckvvd}{thinkos\_sem\_wait}}{\protect\hyperlink{h.23ckvvd}{~}}{(int
+sem)}
+
+{wait for a semaphore to be signaled }
+
+{int
+}{\protect\hyperlink{h.ihv636}{thinkos\_sem\_timedwait}}{\protect\hyperlink{h.ihv636}{~}}{(int
+sem, unsigned int ms)}
+
+{wait for a semaphore to be signaled or timeout }
+
+{int
+}{\protect\hyperlink{h.32hioqz}{thinkos\_sem\_post}}{\protect\hyperlink{h.32hioqz}{~}}{(int
+sem)}
+
+{signal a semaphore }
+
+{void
+}{\protect\hyperlink{h.1hmsyys}{thinkos\_sem\_post\_i}}{\protect\hyperlink{h.1hmsyys}{~}}{(int
+sem)}
+
+{signal a semaphore inside an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.2grqrue}{thinkos\_ev\_alloc}}{\protect\hyperlink{h.2grqrue}{~}}{(void)}
+
+{alloc an event set }
+
+{int
+}{\protect\hyperlink{h.vx1227}{thinkos\_ev\_free}}{\protect\hyperlink{h.vx1227}{~}}{(int
+set)}
+
+{release an event set }
+
+{int
+}{\protect\hyperlink{h.3fwokq0}{thinkos\_ev\_wait}}{\protect\hyperlink{h.3fwokq0}{~}}{(int
+set)}
+
+{wait for an event }
+
+{int
+}{\protect\hyperlink{h.1v1yuxt}{thinkos\_ev\_timedwait}}{\protect\hyperlink{h.1v1yuxt}{~}}{(int
+set, unsigned int ms)}
+
+{wait for an event or timeout }
+
+{int
+}{\protect\hyperlink{h.4f1mdlm}{thinkos\_ev\_raise}}{\protect\hyperlink{h.4f1mdlm}{~}}{(int
+set, int ev)}
+
+{signal an event }
+
+{void
+}{\protect\hyperlink{h.2u6wntf}{thinkos\_ev\_raise\_i}}{\protect\hyperlink{h.2u6wntf}{~}}{(int
+set, int ev)}
+
+{signal an event from inside an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.19c6y18}{thinkos\_ev\_mask}}{\protect\hyperlink{h.19c6y18}{~}}{(int
+set, int ev, int val)}
+
+{mask/unmask an event }
+
+{int
+}{\protect\hyperlink{h.3tbugp1}{thinkos\_ev\_clear}}{\protect\hyperlink{h.3tbugp1}{~}}{(int
+set, int ev)}
+
+{clear an event }
+
+{int
+}{\protect\hyperlink{h.nmf14n}{thinkos\_flag\_alloc}}{\protect\hyperlink{h.nmf14n}{~}}{(void)}
+
+{alloc a flag }
+
+{int
+}{\protect\hyperlink{h.37m2jsg}{thinkos\_flag\_free}}{\protect\hyperlink{h.37m2jsg}{~}}{(int
+flag)}
+
+{release a flag }
+
+{int
+}{\protect\hyperlink{h.1mrcu09}{thinkos\_flag\_val}}{\protect\hyperlink{h.1mrcu09}{~}}{(int
+flag)}
+
+{return the flag value }
+
+{int
+}{\protect\hyperlink{h.46r0co2}{thinkos\_flag\_set}}{\protect\hyperlink{h.46r0co2}{~}}{(int
+flag)}
+
+{set a flag }
+
+{int
+}{\protect\hyperlink{h.2lwamvv}{thinkos\_flag\_clr}}{\protect\hyperlink{h.2lwamvv}{~}}{(int
+flag)}
+
+{clear a flag }
+
+{int
+}{\protect\hyperlink{h.111kx3o}{thinkos\_flag\_give}}{\protect\hyperlink{h.111kx3o}{~}}{(int
+flag)}
+
+{signal a flag }
+
+{void
+}{\protect\hyperlink{h.3l18frh}{thinkos\_flag\_give\_i}}{\protect\hyperlink{h.3l18frh}{~}}{(int
+flag)}
+
+{signal a flag form inside an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.206ipza}{thinkos\_flag\_take}}{\protect\hyperlink{h.206ipza}{~}}{(int
+flag)}
+
+{wait for flag to be signaled }
+
+{int
+}{\protect\hyperlink{h.4k668n3}{thinkos\_flag\_timedtake}}{\protect\hyperlink{h.4k668n3}{~}}{(int
+flag, unsigned int ms)}
+
+{wait for flag or timeout }
+
+{int
+}{\protect\hyperlink{h.1egqt2p}{thinkos\_gate\_alloc}}{\protect\hyperlink{h.1egqt2p}{~}}{(void)}
+
+{Alloc a gate synchronization object. }
+
+{int
+}{\protect\hyperlink{h.3ygebqi}{thinkos\_gate\_free}}{\protect\hyperlink{h.3ygebqi}{~}}{(int
+gate)}
+
+{Frees the gate synchronization object. }
+
+{int
+}{\protect\hyperlink{h.2dlolyb}{thinkos\_gate\_wait}}{\protect\hyperlink{h.2dlolyb}{~}}{(int
+gate)}
+
+{Wait for a gate to open. }
+
+{int
+}{\protect\hyperlink{h.sqyw64}{thinkos\_gate\_timedwait}}{\protect\hyperlink{h.sqyw64}{~}}{(int
+gate, unsigned int ms)}
+
+{Wait for a gate to open or a timeout. }
+
+{int
+}{\protect\hyperlink{h.3cqmetx}{thinkos\_gate\_open}}{\protect\hyperlink{h.3cqmetx}{~}}{(int
+gate)}
+
+{Open or signal the gate. }
+
+{void
+}{\protect\hyperlink{h.1rvwp1q}{thinkos\_gate\_open\_i}}{\protect\hyperlink{h.1rvwp1q}{~}}{(int
+gate)}
+
+{Open or signal the gate from inside an interrupt handler. }
+
+{int
+}{\protect\hyperlink{h.4bvk7pj}{thinkos\_gate\_close}}{\protect\hyperlink{h.4bvk7pj}{~}}{(int
+gate)}
+
+{Close the gate if the gate is }{OPEN}{~ or remove pending signaling it
+the gate is @ LOCKED. }
+
+{int
+}{\protect\hyperlink{h.2r0uhxc}{thinkos\_gate\_exit}}{\protect\hyperlink{h.2r0uhxc}{~}}{(int
+gate, unsigned int open)}
+
+{Exit the gate, leaving the gate, optionally leaving it open or closed.
+}
+
+{int
+}{\protect\hyperlink{h.3q5sasy}{thinkos\_irq\_wait}}{\protect\hyperlink{h.3q5sasy}{~}}{(int
+irq)}
+
+{wait for interrupt }
+
+{int
+}{\protect\hyperlink{h.25b2l0r}{thinkos\_irq\_register}}{\protect\hyperlink{h.25b2l0r}{~}}{(int
+irq, int pri, void(*isr)(void))}
+
+{reqister an interrupt handler }
+
+{int
+}{\protect\hyperlink{h.34g0dwd}{thinkos\_clocks}}{\protect\hyperlink{h.34g0dwd}{~}}{(uint32\_t
+*clk{[}{]})}
+
+{get hardware clocks frequencies }
+
+{int
+}{\protect\hyperlink{h.1jlao46}{thinkos\_udelay\_factor}}{\protect\hyperlink{h.1jlao46}{~}}{(int32\_t
+*factor)}
+
+{get udelay calibration factor }
+
+{void
+}{\protect\hyperlink{h.43ky6rz}{\_\_attribute\_\_}}{\protect\hyperlink{h.43ky6rz}{~}}{((noreturn))
+thinkos\_abort(void)}
+
+{abort the operating system. }
+
+{}
+
+\subparagraph{\texorpdfstring{{Author:}}{Author:}}\label{author}
+
+{Robinson Mittmann
+}{\href{mailto:bobmittmann@gmail.com}{\nolinkurl{bobmittmann@gmail.com}}}{~}
+
+{}
+
+\subsubsection{\texorpdfstring{{Macro Definition
+Documentation}}{Macro Definition Documentation}}\label{macro-definition-documentation}
+
+\paragraph{\texorpdfstring{{\#define IRQ\_PRIORITY\_HIGHEST~ (1
+\textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_HIGHEST~ (1 \textless{}\textless{} 5)}}\label{define-irq_priority_highest-1-5}
+
+\hypertarget{h.39kk8xu}{\paragraph{\texorpdfstring{{\#define
+IRQ\_PRIORITY\_VERY\_HIGH~ (2 \textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_VERY\_HIGH~ (2 \textless{}\textless{} 5)}}\label{h.39kk8xu}}
+
+\hypertarget{h.1opuj5n}{\paragraph{\texorpdfstring{{\#define
+IRQ\_PRIORITY\_HIGH~ (3 \textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_HIGH~ (3 \textless{}\textless{} 5)}}\label{h.1opuj5n}}
+
+\hypertarget{h.48pi1tg}{\paragraph{\texorpdfstring{{\#define
+IRQ\_PRIORITY\_REGULAR~ (4 \textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_REGULAR~ (4 \textless{}\textless{} 5)}}\label{h.48pi1tg}}
+
+\hypertarget{h.2nusc19}{\paragraph{\texorpdfstring{{\#define
+IRQ\_PRIORITY\_LOW~ (5 \textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_LOW~ (5 \textless{}\textless{} 5)}}\label{h.2nusc19}}
+
+\hypertarget{h.1302m92}{\paragraph{\texorpdfstring{{\#define
+IRQ\_PRIORITY\_VERY\_LOW~ (6 \textless{}\textless{}
+5)}}{\#define IRQ\_PRIORITY\_VERY\_LOW~ (6 \textless{}\textless{} 5)}}\label{h.1302m92}}
+
+\hypertarget{h.3mzq4wv}{\paragraph{\texorpdfstring{{\#define
+THINKOS\_OPT\_PRIORITY( VAL)~ (((VAL) \& 0xff) \textless{}\textless{}
+16)}}{\#define THINKOS\_OPT\_PRIORITY( VAL)~ (((VAL) \& 0xff) \textless{}\textless{} 16)}}\label{h.3mzq4wv}}
+
+\hypertarget{h.2250f4o}{\paragraph{\texorpdfstring{{\#define
+THINKOS\_OPT\_ID( VAL)~ (((VAL) \& 0x07f) \textless{}\textless{}
+24)}}{\#define THINKOS\_OPT\_ID( VAL)~ (((VAL) \& 0x07f) \textless{}\textless{} 24)}}\label{h.2250f4o}}
+
+\hypertarget{h.haapch}{\paragraph{\texorpdfstring{{\#define
+THINKOS\_OPT\_PAUSED~ (1 \textless{}\textless{} 31) /* don't run at
+startup
+*/}}{\#define THINKOS\_OPT\_PAUSED~ (1 \textless{}\textless{} 31) /* don't run at startup */}}\label{h.haapch}}
+
+\hypertarget{h.319y80a}{\paragraph{\texorpdfstring{{\#define
+THINKOS\_OPT\_STACK\_SIZE( VAL)~ ((VAL) \&
+0xffff)}}{\#define THINKOS\_OPT\_STACK\_SIZE( VAL)~ ((VAL) \& 0xffff)}}\label{h.319y80a}}
+
+{}
+
+\subsubsection{\texorpdfstring{{Enumeration Type
+Documentation}}{Enumeration Type Documentation}}\label{enumeration-type-documentation}
+
+\paragraph{\texorpdfstring{{enum
+}{\protect\hyperlink{h.40ew0vw}{thinkos\_err}}}{enum thinkos\_err}}\label{enum-thinkos_err}
+
+{\protect\hyperlink{AAAAAAAAAM}{}}
+
+{Enumerator}
+
+{THINKOS\_OK}{~ No error }
+
+{THINKOS\_ETIMEDOUT}{~ System call timed out }
+
+{THINKOS\_EINTR}{~ System call interrupted out }
+
+{THINKOS\_EINVAL}{~ Invalid argument }
+
+{THINKOS\_EAGAIN}{~ Non blocking call failed }
+
+{THINKOS\_EDEADLK}{~ Deadlock condition detected }
+
+{THINKOS\_EPERM}{~ }
+
+{THINKOS\_ENOSYS}{~ Invalid system call }
+
+{THINKOS\_EFAULT}{~ }
+
+{THINKOS\_ENOMEM}{~ Resource pool exausted }
+
+\paragraph{\texorpdfstring{{enum
+}{\protect\hyperlink{h.36ei31r}{thinkos\_obj\_kind}}}{enum thinkos\_obj\_kind}}\label{enum-thinkos_obj_kind}
+
+{\protect\hyperlink{AAAAAAAAAX}{}}
+
+{Enumerator}
+
+{THINKOS\_OBJ\_READY}{~ }
+
+{THINKOS\_OBJ\_TMSHARE}{~ }
+
+{THINKOS\_OBJ\_CLOCK}{~ }
+
+{THINKOS\_OBJ\_MUTEX}{~ }
+
+{THINKOS\_OBJ\_COND}{~ }
+
+{THINKOS\_OBJ\_SEMAPHORE}{~ }
+
+{THINKOS\_OBJ\_EVENT}{~ }
+
+{THINKOS\_OBJ\_FLAG}{~ }
+
+{THINKOS\_OBJ\_GATE}{~ }
+
+{THINKOS\_OBJ\_JOIN}{~ }
+
+{THINKOS\_OBJ\_CONREAD}{~ }
+
+{THINKOS\_OBJ\_CONWRITE}{~ }
+
+{THINKOS\_OBJ\_PAUSED}{~ }
+
+{THINKOS\_OBJ\_CANCELED}{~ }
+
+{THINKOS\_OBJ\_FAULT}{~ }
+
+{THINKOS\_OBJ\_INVALID}{~ }
+
+{}
+
+\subsubsection{\texorpdfstring{{Function
+Documentation}}{Function Documentation}}\label{function-documentation-10}
+
+\paragraph{\texorpdfstring{{int thinkos\_init (unsigned int
+~opt)}}{int thinkos\_init (unsigned int ~opt)}}\label{int-thinkos_init-unsigned-int-opt}
+
+{}
+
+{Initializes the }{ThinkOS}{~ library. }
+
+{On return the current program execution thread turns into the first
+thread of the system. }
+
+\subparagraph{\texorpdfstring{{Returns:}}{Returns:}}\label{returns-55}
+
+{THINKOS\_OK µ}
+
+{}

@@ -30,79 +30,6 @@
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
-
-#define PLLI2SR 3
-#define PLLI2SN 127
-#define PLLI2SM 9
-#define PLLI2SQ 8
-#define PLLI2SP 2
-
-#if defined(STM32F446)
-#if (PLLI2SN < 50)
-#error "invalid PLLI2SN!"
-#endif
-
-#if (PLLI2SN > 432)
-#error "invalid PLLI2SN!"
-#endif
-
-#if (PLLI2SM > 63)
-#error "invalid PLLI2SM!"
-#endif
-
-#if (PLLI2SM < 2)
-#error "invalid PLLI2SM!"
-#endif
-
-#if (PLLI2SR < 2)
-#error "invalid PLLI2SR!"
-#endif
-#endif
-
-#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
-#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
-
-#if defined(STM32F446)
-void i2s_pll_init(void)
-{
-	struct stm32_rcc * rcc = STM32_RCC;
-	uint32_t cr;
-	int again;
-
-	rcc->dckcfgr2 = 0;
-	rcc->pllsaicfgr = 0;
-
-	cr = rcc->cr;
-	/* disable I2SPLL */
-	cr &= ~RCC_PLLI2SON;
-
-	/* configure IS2 PLL */
-	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
-		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
-
-	/* enable I2SPLL */
-	cr |= RCC_PLLI2SON;
-	rcc->cr = cr;;
-
-	for (again = 8192; ; again--) {
-		cr = rcc->cr;
-		if (cr & RCC_PLLI2SRDY)
-			break;
-		if (again == 0) {
-			/* PLL lock fail */
-			return;
-		}
-	}
-
-	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
-}
-#endif
-
-
-#if defined(STM32F446)
-const uint32_t __stm32f_i2s_hz = __I2S_HZ;
-#endif
-
 void stm32_spi_i2s_isr(struct stm32_spi_i2s_drv * drv)
 {
 	struct stm32f_spi * spi = drv->spi;
@@ -203,6 +130,16 @@ int stm32_i2s_dma_send(struct stm32_spi_i2s_drv * drv,
 	return cnt;
 }
 #endif
+
+unsigned int stm32_i2s_get_dma_tx_count(struct stm32_spi_i2s_drv * drv)
+{
+	return drv->tx.dmactl.strm->ndtr;
+}
+
+unsigned int stm32_i2s_get_dma_rx_count(struct stm32_spi_i2s_drv * drv)
+{
+	return drv->rx.dmactl.strm->ndtr;
+}
 
 int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
 					 int16_t * buf1, int16_t * buf2, unsigned int len)
@@ -367,7 +304,7 @@ int stm32_spi_i2s_init(struct stm32_spi_i2s_drv * drv,
 	mclk_hz = samplerate * 256;
 	/* get the total divisior */
 #ifdef STM32F446X
-	div = (__stm32f_i2s_hz + (mclk_hz / 2)) / mclk_hz;
+	div = (stm32f_i2s_hz + (mclk_hz / 2)) / mclk_hz;
 #else
 	div = (stm32f_apb1_hz + (mclk_hz / 2)) / mclk_hz;
 #endif
@@ -465,6 +402,8 @@ const struct i2s_op stm32_spi_i2s_op = {
 	.close = (void *)stm32_i2s_close,
 	.ioctl = (void *)stm32_i2s_ioctl,
 	.setbuf = (void *)stm32_i2s_setbuf,
-	.getbuf = (void *)stm32_i2s_getbuf
+	.getbuf = (void *)stm32_i2s_getbuf,
+	.get_dma_tx_cnt = (void *)stm32_i2s_get_dma_tx_count,
+	.get_dma_rx_cnt = (void *)stm32_i2s_get_dma_rx_count
 };
 

@@ -32,41 +32,48 @@ endif
 
 ARCH = cm3
 CPU = cortex-m4
+STM32 = stm32f
+
+export STM32
+
 CDEFS += $(call uc,$(MACH))
-ifdef HCLK_HZ
-CDEFS += "HCLK_HZ=$(HCLK_HZ)" 
+  ifdef HCLK_HZ
+CDEFS += "STM32_HCLK_HZ=$(HCLK_HZ)" 
 endif
+
 ifdef HSE_HZ
-CDEFS += "HSE_HZ=$(HSE_HZ)" 
+  CDEFS += "STM32_HSE_HZ=$(HSE_HZ)" 
 endif
 
 CROSS_COMPILE = arm-none-eabi-
 
 OPTIONS	+= -mcpu=$(CPU) -mthumb -mthumb-interwork 
 OPTIONS	+= -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
-#OPTIONS += -mfpu=vfp
 
 ifdef THINKAPP
-CDEFS += THINKAPP
-SYMDEFS += __thinkapp=$(APPADDR)
+  CDEFS += THINKAPP
+  SYMDEFS += __thinkapp=$(THINKAPP)
+  ifndef APPADDR
+    APPADDR := THINKAPP
+  endif
 else
-OPTIONS += -mno-unaligned-access
-endif
-
-ifdef LDSCRIPT
-LDFLAGS += -nostdlib -T $(LDSCRIPT)
-else
-LDFLAGS += -nostdlib -T $(MACH).ld
+  OPTIONS += -mno-unaligned-access
 endif
 
 ifndef APPADDR
-APPADDR := 0x08010000
+  APPADDR := 0x08010000
+endif
+
+ifdef LDSCRIPT
+  LDFLAGS += -nostdlib -T $(LDSCRIPT)
+else
+  LDFLAGS += -nostdlib -T $(MACH).ld
 endif
 
 include $(THISDIR)/prog.mk
 
 ifndef LOAD_ADDR
-LOAD_ADDR := $(APPADDR)
+  LOAD_ADDR := $(APPADDR)
 endif
 
 include $(THISDIR)/jtag.mk

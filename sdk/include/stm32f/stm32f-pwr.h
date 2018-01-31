@@ -181,3 +181,4 @@ struct stm32_pwr {
 
 
 #endif /* __STM32F_PWR_H__ */
+

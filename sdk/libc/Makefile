@@ -27,7 +27,7 @@ LIB_STATIC = c
 
 INET_CFILES = inet_addr.c inet_aton.c inet_ntoa.c inet_ntop.c 
 
-CFILES = atoi.c environ.c fclose.c fflush.c fgetc.c\
+CFILES = atoi.c environ.c fclose.c fflush.c fgetc.c ftmgetc.c\
 		 fgets.c fprintf.c fputc.c fputs.c fread.c fwrite.c\
 		 fopen.c fscanf.c vfscanf.c sscanf.c vsscanf.c file.c \
 		 getchar.c putchar.c ctype.c div.c\

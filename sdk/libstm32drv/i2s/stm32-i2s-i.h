@@ -107,6 +107,10 @@ int stm32_i2s_dma_init(struct stm32_spi_i2s_drv * drv,
 					   unsigned int samplerate, unsigned int flags,
 					   int dma_chan_id);
 
+uint32_t stm32_i2s_get_dma_tx_count(struct stm32_spi_i2s_drv * drv);
+
+uint32_t stm32_i2s_get_dma_rx_count(struct stm32_spi_i2s_drv * drv);
+
 #ifdef __cplusplus
 }
 #endif

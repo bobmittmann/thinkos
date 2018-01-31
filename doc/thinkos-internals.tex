@@ -1,0 +1,141 @@
+\documentclass[11pt]{article} % required
+\usepackage{geometry}
+\geometry{letterpaper, portrait, margin=1in, headheight=110pt}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\begingroup
+\catcode`_=13
+\gdef\var{%
+	\begingroup
+	\catcode`_=13
+	\def_{\_}%
+	\dovar
+}
+\gdef\dovar#1{%
+	\mathtt{#1}%
+\endgroup
+}
+\endgroup
+
+\usepackage{color}
+\usepackage[T1]{fontenc}
+\usepackage{csquotes}
+\usepackage{varwidth}
+\usepackage{varwidth}
+\usepackage{capt-of}
+\usepackage{booktabs}
+\usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+\graphicspath{{img/pdf/}{img/png/}{img/pdf_tex/}}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{textgreek}
+\usepackage{mathtools} % for \ceil and \floor
+
+\usepackage{courier}
+\usepackage{listings}
+
+\lstdefinelanguage{C99} {
+	language = C,
+	morekeywords = {int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t},
+}
+
+\lstset{
+	basicstyle=\footnotesize\ttfamily, 
+	keywordstyle=\color{blue}\bfseries\ttfamily,
+	stringstyle=\color{red}\ttfamily,
+	commentstyle=\color{magenta}\ttfamily,
+	identifierstyle=\color{black}\ttfamily,          
+%		 morecomment=[l][\color{magenta}]{\#},
+	numberstyle=\tiny,          
+	numbersep=5pt,             
+	tabsize=4,                
+	extendedchars=true,      
+	breaklines=true,        
+	showspaces=false,      
+	showtabs=false,       
+	xleftmargin=17pt,
+	framexleftmargin=17pt,
+	framexrightmargin=5pt,
+	framexbottommargin=4pt,
+	showstringspaces=false
+}
+
+\lstloadlanguages{
+	Verilog, C
+}
+
+% Definition of \maketitle
+\makeatletter         
+\def\@maketitle{
+	\raggedright
+	\vfill
+	\begin{center}
+	{\Huge \bfseries \sffamily \@title }\\[4ex] 
+	{\Large \sffamily \@author}\\[4ex] 
+	{\sffamily \@date}\\[8ex]
+	{\sffamily \bfseries Revision \therevision}
+	\vfill
+	\includegraphics[height=40pt]{img/pdf/microjs-logo.pdf}
+	\vfill
+	\end{center}
+	\noindent\rule{\linewidth}{1pt}\\
+	\smallskip
+	\includegraphics[height=24pt]{img/pdf/thinkos-logo.pdf}
+	\quad
+}
+\makeatother
+
+% Define Title Author Date and Revision
+\makeatletter         
+\title{MicroJS - User Guide}
+\author{Bob Mittmann <\textit{bobmittmann@gmail.com}>}
+\date{October 2017}
+\def\therevision{0.1} % revision number variable
+\let\thetitle\@title % title variable
+\makeatother
+
+\fancyhead[R]{\thepage}
+\rhead{\includegraphics[height=20pt]{img/pdf/microjs-logo.pdf}}
+\lhead{\thetitle}
+\rfoot{Page \thepage}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+\pagenumbering{Roman}
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+\section{Code conventions}
+
+Commonly, small embedded RTOS kernels are linked against the user application, and consequently sharing the same address and name spaces.
+
+Internal global functions, used by the several thinkos modules, are prefixed by \var(__thinkos_). There is no convention for static functions inside a single compilation unit.
+
+Service definitions have the suffix \var(_svc).
+
+Thread level user calls, either service or library, are be prefixed by \var(thinkos_) 
+
+Interrupt level user calls, are be prefixed by \var(thinkos_) and suffixed by \var(_i)
+
+\section{Apendix}
+
+
+\end{document}
+

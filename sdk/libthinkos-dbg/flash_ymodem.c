@@ -80,7 +80,7 @@ int dmon_ymodem_flash(struct dmon_comm * comm,
 			int fsize;
 
 //			DCC_LOG1(LOG_INFO, "YMODEM pkt, len=%d...", len);
-			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
+//			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
 
 			cp = (char *)ry->pkt.data;
 			if (*cp == '\0') {

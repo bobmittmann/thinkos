@@ -665,8 +665,8 @@ int thinkos_gate_timedwait(int gate, unsigned int ms);
  * scenarios ... :
  * -# the gate is open already, then this function does nothing.
  * -# the gate is closed and no threads are waiting it will open the gate,
- * allowing the next thread to call @c gate_open() to enter the gate.
- * -# the gate is closed and at least one thread is waiting it will allow 
+ * allowing for the next thread calling @c gate_open() to enter the gate.
+ * -# the gate is closed and at least one thread is waiting then it will allow 
  * the thread to cross the gate, in this case the gate will be locked.
  * -# a thread crossed the gate (gate state is @b LOCKED), then the gate
  * will be signaled to open when the gate is unlocked.
@@ -696,8 +696,7 @@ void thinkos_gate_open_i(int gate);
  */
 int thinkos_gate_close(int gate);
 
-/** @brief Exit the gate, leaving the gate, optionally leaving it open 
- * or closed.
+/** @brief Exit the gate, optionally leaving it open or closed.
  *
  * @param gate The gate descriptor.
  * @param open Indicate the state of the gate on exit. 
@@ -731,7 +730,7 @@ int thinkos_irq_wait(int irq);
  * @param isr 
  * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
-int	thinkos_irq_register(int irq, int pri, void (* isr)(void));
+int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
 /**@}*/
 
 
@@ -770,6 +769,35 @@ int thinkos_critical_exit(void);
 int thinkos_escalate(int (* call)(void *), void * arg);
 
 int thinkos_thread_abort(unsigned int thread);
+
+/**@}*/
+
+/** @defgroup trace Real-time trace kernel support
+ *
+ * ...
+ *
+ * An user library -- libtrace -- is needed to take advantage of
+ * the kernel trace ring.
+ *
+ * @{
+ */
+
+struct trace_entry;
+struct trace_ref;
+
+int thinkos_trace(const struct trace_ref * ref);
+
+int thinkos_trace_open(void);
+
+int thinkos_trace_close(int id);
+
+int thinkos_trace_read(int id, uint32_t * buf, unsigned int len);
+
+int thinkos_trace_flush(int id);
+
+int thinkos_trace_getfirst(int id, struct trace_entry * entry);
+
+int thinkos_trace_getnext(int id, struct trace_entry * entry);
 
 /**@}*/
 

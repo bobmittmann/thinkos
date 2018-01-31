@@ -37,10 +37,30 @@ SERIAL_CFILES = stm32f-serial.c stm32f-serial_dma.c \
 
 I2S_CFILES = stm32-i2s-core.c stm32-i2s2.c stm32-i2s3.c
 
-CFILES = stm32f-ethif.c stm32f-dac.c stm32f-adc.c \
-		 stm32f-bkp_sram.c stm32f-rtc.c \
-		 $(addprefix serial/,$(SERIAL_CFILES)) \
-		 $(addprefix i2s/,$(I2S_CFILES))
+ifeq ($(STM32), stm32f3)
+  CFILES = stm32f-dac.c stm32f-adc.c stm32f-rtc.c \
+			 $(addprefix serial/,$(SERIAL_CFILES))
+endif
+
+ifeq ($(STM32), stm32l4)
+  CFILES = stm32f-dac.c stm32f-adc.c stm32f-rtc.c \
+		   $(addprefix serial/,$(SERIAL_CFILES)) \
+		   $(addprefix i2s/,$(I2S_CFILES))
+endif
+
+ifeq ($(STM32), stm32l1)
+  CFILES = stm32f-dac.c stm32f-adc.c \
+		   stm32f-rtc.c \
+		   $(addprefix serial/,$(SERIAL_CFILES))
+endif
+
+ifneq ($(findstring $(STM32), stm32f2, stm32f4),)
+  CFILES = stm32f-dac.c stm32f-adc.c stm32f-rtc.c \
+		   stm32f-ethif.c stm32f-bkp_sram.c \
+		   $(addprefix serial/,$(SERIAL_CFILES)) \
+		   $(addprefix i2s/,$(I2S_CFILES))
+endif
+
 
 override INCPATH += ./include ../libtcpip/include
 

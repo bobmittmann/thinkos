@@ -42,30 +42,44 @@ OTG_FS_CFILES = stm32f-otg_fs.c stm32f-otg_fs_dev.c
 OTG_HS_CFILES = stm32f-otg_hs.c stm32f-otg_hs_dev.c
 
 ifeq ($(STM32), stm32l)
-
 SFILES = stm32l-vec.S
 
 CFILES = stm32l-init.c stm32l-flash.c stm32f-gpio.c stm32l-eeprom.c \
 		 stm32f-dma.c \
 		 $(addprefix usart/,$(USART_CFILES))
+endif
 
-else
+ifeq ($(STM32), stm32l4)
+SFILES = stm32l4-vec.S
 
+CFILES = stm32l4-init.c stm32l4-flash.c stm32f-gpio.c \
+		 stm32f-dma.c stm32f-spi.c \
+		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
+		 $(addprefix usart/,$(USART_CFILES))
+endif
+
+ifeq ($(STM32), stm32f3)
+SFILES = stm32f-vec.S
+
+CFILES = stm32f1x-init.c stm32f-gpio.c \
+		 stm32f-spi.c stm32f-exti.c stm32f-mco.c\
+		 stm32f-dma.c stm32f1x-flash.c stm32f-rtc.c\
+		 stm32-crc.c\
+		 $(addprefix usart/,$(USART_CFILES))\
+		 $(addprefix usb_fs/,$(USB_FS_CFILES))
+endif
+
+ifneq ($(findstring $(STM32), stm32f2, stm32f4),)
 SFILES = stm32f-vec.S
 
 CFILES = stm32f2x-init.c stm32f1x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c  stm32f-exti.c stm32f-mco.c\
 		 stm32f-dma.c stm32f2x-flash.c stm32f1x-flash.c stm32f-rtc.c\
-		 stm32-crc.c\
+		 stm32-crc.c stm32f-rcc.c\
 		 $(addprefix usart/,$(USART_CFILES))\
-		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
 		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
-
 endif
-
-
-
 
 include ../../mk/lib.mk
 

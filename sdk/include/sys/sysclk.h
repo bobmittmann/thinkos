@@ -37,7 +37,11 @@ enum {
 	SYSCLK_STM32_HSI  = 5,
 	SYSCLK_STM32_HSE  = 6,
 	SYSCLK_STM32_LSI  = 7,
-	SYSCLK_STM32_LSE  = 8
+	SYSCLK_STM32_LSE  = 8,
+	SYSCLK_STM32_MSI  = 9,
+	SYSCLK_STM32_MCO  = 10,
+	SYSCLK_STM32_SAI  = 11,
+	SYSCLK_STM32_I2S  = 12
 };
 
 extern const uint32_t sysclk_hz[];

@@ -111,11 +111,11 @@
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1
-#define THINKOS_ENABLE_FPU              0
+#define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DMON_STACK_SIZE         (1024 + 128)
+#define THINKOS_DBGMON_STACK_SIZE      (1024 + 128)
 
 #define THINKOS_ENABLE_STACK_INIT       1
 
@@ -128,21 +128,29 @@
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
 #define THINKOS_CONSOLE_TX_FIFO_LEN    128
 
+/* -------------------------------------------------------------------------
+   STM32
+   -------------------------------------------------------------------------- */
+
+#define STM32_HSE_HZ          8000000
+#define STM32_HCLK_HZ        72000000
 
 /* -------------------------------------------------------------------------
    USB 
    -------------------------------------------------------------------------- */
 
-#define STM32_ENABLE_USB_DEV     1
-#define STM32_USB_DEV_EP_MAX     4
-#define STM32_USB_DEV_VBUS_CTRL  0
-#define STM32_USB_DEV_SUSPEND    0
+#define STM32_ENABLE_USB_FS     1
+#define STM32_USB_FS_EP_MAX     4
+#define STM32_USB_FS_VBUS_CTRL  0
+#define STM32_USB_FS_SUSPEND    0
+#define STM32_USB_FS_IRQ_ENABLE 0
+#define STM32_USB_FS_IO_INIT    0
 
 /* -------------------------------------------------------------------------
    GDB
    -------------------------------------------------------------------------- */
 
-#define GDB_ENABLE_MEM_MAP       0
+#define GDB_ENABLE_QXFER_MEMORY_MAP 0
 
 /* -------------------------------------------------------------------------
    Bootloader 
@@ -151,14 +159,21 @@
 #define BOOT_ENABLE_GDB             1
 #define BOOT_MEM_RESERVED           0x1000
 #define MONITOR_CONFIGURE_ENABLE    0
-#define MONITOR_DUMPMEM_ENABLE      1
+#define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      0
 #define MONITOR_STACKUSAGE_ENABLE   1
-#define MONITOR_THREADINFO_ENABLE   1
+#define MONITOR_OSINFO_ENABLE       1
+#define MONITOR_THREADINFO_ENABLE   0
 #define MONITOR_APPWIPE_ENABLE      1
 #define MONITOR_APPTERM_ENABLE      1
 #define MONITOR_APPRESTART_ENABLE   1
-#define MONITOR_SELFTEST_ENABLE     1
+#define MONITOR_SELFTEST_ENABLE     0
+
+/* -------------------------------------------------------------------------
+ * LibC
+ * ------------------------------------------------------------------------- */
+
+#define PRINTF_ENABLE_FLOAT     1
 
 #endif /* __CONFIG_H__ */
 

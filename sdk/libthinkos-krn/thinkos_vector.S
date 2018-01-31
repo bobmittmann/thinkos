@@ -24,7 +24,13 @@
 #include <arch/cortex-m3.h>
 
 #define SCB_ICSR_OFFS 4
+#define SCB_CFSR_OFFS 0x28
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
+#define SCB_MMFAR_OFFS   0x34
+#define SCB_BFAR_OFFS    0x38
+
+#define CFSR_BFARVALID (1 << (7 + 8))
+#define CFSR_MMARVALID (1 << 7)
 
 	.syntax unified
 	.cpu cortex-m3
@@ -52,7 +58,7 @@ collect_xcpt_inf:
 	vstmia r2!, {s16-s31}
 #endif
 	stmia  r2!, {r4-r11} /* r4, r11 */
-	tst    r3, #4 
+	tst    r3, #CM3_EXEC_RET_SPSEL
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
@@ -66,21 +72,33 @@ collect_xcpt_inf:
 	mrs    r5, MSP 
 	sub    r5, r5, #32
 	mrs    r6, PSP 
-	tst    r3, #4 
+	tst    r3, #CM3_EXEC_RET_SPSEL
 	it     ne 
 	subne  r6, r6, #32
-	ldr    r7, .L_cm3_scb
-	ldr    r7, [r7, #SCB_ICSR_OFFS]
 	str    r3, [r2, #0] /* ret */
 	str    r5, [r2, #4] /* msp */
 	str    r6, [r2, #8] /* psp */
-	str    r7, [r2, #12] /* icsr */
+	ldr    r7, .L_cm3_scb
+	ldr    r5, [r7, #SCB_ICSR_OFFS]
+	ldr    r6, [r7, #SCB_CFSR_OFFS]
+	str    r5, [r2, #12] /* icsr */
+	str    r6, [r2, #16] /* cfsr */
+	tst    r6, #CFSR_MMARVALID
+	itt    ne 
+	ldrne  r5, [r7, #SCB_MMFAR_OFFS]
+	strne  r5, [r2, #20] /* mmfar */
+	tst    r6, #CFSR_BFARVALID
+	itt    ne 
+	ldrne  r5, [r7, #SCB_BFAR_OFFS]
+	strne  r5, [r2, #24] /* bfar */
+	/* clear fault status */
+	str    r6, [r7, #SCB_CFSR_OFFS]
 	mrs    r5, IPSR
 	ldr    r4, .L_thinkos_rt
 	ldr    r4, [r4, #THINKOS_RT_ACTIVE_OFFS]
-	strb   r5, [r2, #16] /* ipsr */
-	strb   r4, [r2, #17] /* active */
-	strb   r1, [r2, #18] /* type */
+	strb   r5, [r2, #28] /* ipsr */
+	strb   r4, [r2, #29] /* active */
+	strb   r1, [r2, #30] /* type */
 
 	mov    r7, lr
 	mov    lr, r3
@@ -209,7 +227,7 @@ cm3_svc_isr:
 	/* Get a pointer to the parameters store on the stack */
 	mrs     r0, PSP
 	/* Get PC from the stack */
-	ldr     r2, [r0, #(6 *4)] 
+	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
 	ldrb    r2, [r2, #-2]
 #if THINKOS_NRT_THREADS_MAX

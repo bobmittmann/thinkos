@@ -95,7 +95,7 @@ void magnetometer_task(struct mag_dev * mag)
 	}
 }
 
-uint32_t magnetometer_stack[64];
+uint32_t magnetometer_stack[96];
 
 const struct thinkos_thread_inf magnetometer_inf = {
     .stack_ptr = magnetometer_stack,
@@ -152,7 +152,7 @@ void lsm303_mag_init(void)
 
     magdev.sem = thinkos_sem_alloc(0);
     magdev.mutex = thinkos_mutex_alloc();
-
+	
     thinkos_thread_create_inf((void *)magnetometer_task, (void *)&magdev,
                               &magnetometer_inf);
 }

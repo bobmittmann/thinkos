@@ -810,7 +810,7 @@ struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->rx_paused = false;
 #endif
 
-	DCC_LOG(LOG_TRACE, "usb_dev_init()");
+	DCC_LOG(LOG_MSG, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
 
 	return (struct dmon_comm *)dev;

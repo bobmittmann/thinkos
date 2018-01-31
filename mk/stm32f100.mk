@@ -32,6 +32,10 @@ endif
 
 ARCH = cm3
 CPU = cortex-m3
+STM32 = stm32f
+
+export STM32
+
 CDEFS += $(call uc,$(MACH))
 ifdef HCLK_HZ
 CDEFS += "HCLK_HZ=$(HCLK_HZ)" 

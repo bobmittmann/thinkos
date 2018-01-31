@@ -142,7 +142,7 @@ void __attribute__((noreturn)) supervisor_task(void)
 				thinkos_critical_enter();
 
 				thinkos_thread_inf(infbuf);
-				n = thinkos_cyccnt(cycbuf);
+				n = thinkos_thread_cyccnt(cycbuf);
 
 				thinkos_critical_exit();
 

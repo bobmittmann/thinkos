@@ -13,4 +13,4 @@ RemoteSystemsTempFiles/
 *.elf
 *.lst
 *~
-
+language.settings.xml

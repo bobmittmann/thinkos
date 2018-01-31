@@ -26,6 +26,7 @@
 #ifndef __STM32F_USB_H__
 #define __STM32F_USB_H__
 
+/* ------------------------------------------------------------------------- */
 /* USB control register */
 #define STM32F_USB_CNTR 0x40
 
@@ -331,6 +332,93 @@
 
 /* [2..0] Reserved, forced by hardware to 0. */
 
+
+/* ------------------------------------------------------------------------- */
+/* LPM control and status register (USB_LPMCSR) */
+#define STM32F_USB_LPMCSR 0x54
+
+/*	Bits 15:8 Reserved.
+	Bits 7:4 BESL[3:0]: BESL value
+	These bits contain the BESL value received with last ACKed LPM Token
+	Bit 3 REMWAKE: bRemoteWake value
+	This bit contains the bRemoteWake value received with last ACKed LPM Token
+	Bit 2 Reserved
+	Bit 1 LPMACK: LPM Token acknowledge enable
+	0: the valid LPM Token will be NYET.
+	1: the valid LPM Token will be ACK.
+	The NYET/ACK will be returned only on a successful LPM transaction:
+	No errors in both the EXT token and the LPM token (else ERROR)
+	A valid bLinkState = 0001B (L1) is received (else STALL)
+	Bit 0 LPMEN: LPM support enable
+	This bit is set by the software to enable the LPM support within the USB device. If this bit is
+	at ‘0 no LPM transactions are handled.
+*/
+
+/* ------------------------------------------------------------------------- */
+/* Battery charging detector  */
+#define STM32F_USB_BCDR 0x58
+
+/* Bit 15 DPPU: DP pull-up control */
+#define USB_DPPU (1 << 15)
+/* This bit is set by software to enable the embedded pull-up on the DP 
+   line. Clearing it to ‘0’ can be used to signalize disconnect to the 
+   host when needed by the user software. */
+
+/* Bits 14:8 Reserved. */
+
+/* Bit 7 PS2DET: DM pull-up detection status */
+#define USB_PS2DET (1 << 7)
+/* This bit is active only during PD and gives the result of comparison 
+   between DM voltage level and VLGC threshold. In normal situation, the DM 
+   level should be below this threshold. If it is above, it means that the 
+   DM is externally pulled high. This can be caused by connection to a 
+   PS2 port (which pulls-up both DP and DM lines) or to some proprietary 
+   charger not following the BCD specification.
+0: Normal port detected (connected to SDP, ACA, CDP or DCP).
+1: PS2 port or proprietary charger detected. */
+
+/* Bit 6 SDET: Secondary detection (SD) status */
+#define USB_SDET (1 << 6)
+/* This bit gives the result of SD.
+0: CDP detected.
+1: DCP detected. */
+
+/* Bit 5 PDET: Primary detection (PD) status */
+#define USB_PDET (1 << 5)
+/* This bit gives the result of PD.
+0: no BCD support detected (connected to SDP or proprietary device).
+1: BCD support detected (connected to ACA, CDP or DCP). */
+
+/* Bit 4 DCDET: Data contact detection (DCD) status */
+#define USB_DCDET (1 << 4)
+/* This bit gives the result of DCD.
+0: data lines contact not detected.
+1: data lines contact detected. */
+
+/* Bit 3 SDEN: Secondary detection (SD) mode enable */
+#define USB_SDEN (1 << 3)
+/* This bit is set by the software to put the BCD into SD mode. Only one detection mode (DCD, PD, SD or OFF) should be selected to work correctly. */
+
+/* Bit 2 PDEN: Primary detection (PD) mode enable */
+#define USB_PDEN (1 << 2)
+/* This bit is set by the software to put the BCD into PD mode. Only one 
+   detection mode (DCD, PD, SD or OFF) should be selected to work correctly. */ 
+
+/* Bit 1 DCDEN: Data contact detection (DCD) mode enable */
+#define USB_DCDEN (1 << 1)
+/* This bit is set by the software to put the BCD into DCD mode. Only one 
+   detection mode (DCD, PD, SD or OFF) should be selected to work correctly. */
+
+/* Bit 0 BCDEN: Battery charging detector (BCD) enable */
+#define USB_BCDEN (1 << 0)
+/* This bit is set by the software to enable the BCD support within the USB 
+   device. When enabled, the USB PHY is fully controlled by BCD and cannot be 
+   used for normal communication. Once the BCD discovery is finished, the 
+   BCD should be placed in OFF mode by clearing this bit to ‘0 in order 
+   to allow the normal USB operation. */
+
+
+/* ------------------------------------------------------------------------- */
 /* USB endpoint n register */
 #define STM32F_USB_EPNR 0x00
 
@@ -538,18 +626,60 @@
 #include <stdint.h>
 
 struct stm32f_usb {
-       /* 0x000 */
+	/* 0x000 */
 	volatile uint32_t epr[8];
-       /* 0x020 */
+	/* 0x020 */
 	uint32_t res1[(0x040 - 0x020) / 4];
-       /* 0x040 */
+	/* 0x040 */
 	volatile uint32_t cntr;
 	volatile uint32_t istr;
 	volatile uint32_t fnr;
 	volatile uint32_t daddr;
-       /* 0x050 */
+	/* 0x050 */
 	volatile uint32_t * btable;
+	volatile uint32_t lpmcsr;
+	volatile uint32_t bcdr;
 };
+
+
+#if defined(STM32L4X)
+
+/* This family allows 8 or 16 bits access only to the
+   packet buffer */
+
+/* TX packet buffer descriptor */
+struct stm32f_usb_tx_pktbuf {
+	uint16_t addr;
+	uint16_t count;
+};
+
+/* RX packet buffer descriptor */
+struct stm32f_usb_rx_pktbuf {
+	uint16_t addr;
+	volatile uint16_t count: 10;
+	uint16_t num_block: 5;
+	uint16_t blsize: 1;
+};
+
+/* Generic packet buffer descriptor */
+struct stm32f_usb_pktbuf {
+	union {
+		struct {
+			/* single buffer entry */
+			struct stm32f_usb_tx_pktbuf tx;
+			struct stm32f_usb_rx_pktbuf rx;
+		};
+		/* double buffer TX */
+		struct stm32f_usb_tx_pktbuf dbtx[2];
+		/* double buffer RX */
+		struct stm32f_usb_rx_pktbuf dbrx[2];
+	};
+};
+
+#else
+
+/* This family maps the packet buffer 16bits addresseds to 32bits 
+   APB address */
 
 /* TX packet buffer descriptor */
 struct stm32f_usb_tx_pktbuf {
@@ -580,7 +710,7 @@ struct stm32f_usb_pktbuf {
 		struct stm32f_usb_rx_pktbuf dbrx[2];
 	};
 };
-
+#endif
 
 /* EndPoint no toggle MASK (no toggle fields) */
 #define USB_EPREG_MASK (USB_CTR_RX | USB_SETUP | USB_EP_TYPE_MSK | \

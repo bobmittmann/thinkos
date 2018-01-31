@@ -1,7 +1,10 @@
 #!python
 from math import *
 
-target_fs = 44100
+target_freq = 11025
+oversample = 8
+
+target_fs = (target_freq * oversample)
 i2sclk = 192000000
 hse = 12000000
 r = 3

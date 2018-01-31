@@ -63,23 +63,23 @@ thinkos_scheduler:
 	 XXX: this double reading assumes the order of
 	 the active and wq_ready fields. */	
 	/* r2: active, 
-	   r3: wq_ready */
-	ldrd    r2, r3, [r7, #THINKOS_RT_ACTIVE_OFFS]
+	   r1: wq_ready */
+	ldrd    r2, r1, [r7, #THINKOS_RT_ACTIVE_OFFS]
 	/* store the old context pointer into the context vector */
 	/* r0: thread stack
-	   r2: old active thread */
+	   r2: current active thread */
 	str.w	r0, [r7, r2, lsl #2]
 	/* get a thread from the ready bitmap by counting the
 	 leading zeros on the bitmap */
-	rbit    r3, r3
- 	clz     r3, r3
-	/* r3: new active thread */
-	str     r3, [r7, #THINKOS_RT_ACTIVE_OFFS]
+	rbit    r1, r1
+ 	clz     r1, r1
+	/* r1: new active thread */
+	str     r1, [r7, #THINKOS_RT_ACTIVE_OFFS]
 #if THINKOS_ENABLE_PROFILING
 	/* DWT.SYCCNT */
-	ldr.n   r1, .L_cm_dwt
-	/* r1: cyccnt = CM3_DWT->cyccnt */
-	ldr     r1, [r1, #4]
+	ldr.n   r3, .L_cm_dwt
+	/* r3: cyccnt = CM3_DWT->cyccnt */
+	ldr     r3, [r3, #4]
 #if THINKOS_ENABLE_DEBUG_STEP
 	/* r4: step_req */
 	/* r5: cycref */
@@ -90,14 +90,14 @@ thinkos_scheduler:
 #endif
 	/* update the reference */
 	/* thinkos_rt.cycref = cyccnt */
-	str     r1, [r7, #THINKOS_RT_CYCREF_OFFS]
-	/* r1: delta =  cyccnt - cycref */	
-	subs    r1, r1, r5
+	str     r3, [r7, #THINKOS_RT_CYCREF_OFFS]
+	/* r3: delta =  cyccnt - cycref */	
+	subs    r3, r3, r5
     /* update thread's cycle counter */
     adds    r2, #(SIZEOF_CTX / 4)
 	ldr     r5, [r7, r2, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
-	adds    r5, r1
+	adds    r5, r3
 	str     r5, [r7, r2, lsl #2]
 #else
 #if THINKOS_ENABLE_DEBUG_STEP
@@ -106,12 +106,14 @@ thinkos_scheduler:
 #endif
 #endif
 
-	ldr.w	r0, [r7, r3, lsl #2]
+	ldr.w	r0, [r7, r1, lsl #2]
 
 #if THINKOS_ENABLE_DEBUG_STEP
-	movs	r1, #1
-	lsls	r1, r3
-	tst     r1, r4
+	/* check whether the step request bit is set for
+	   this thread */
+	movs	r3, #1
+	lsls	r3, r1
+	tst     r3, r4
 	bne.n   thinkos_sched_step
 #endif
 
@@ -120,10 +122,18 @@ thinkos_scheduler:
 #if THINKOS_ENABLE_FPU 
 	vldmia  r0!, {s16-s31}
 #endif
-	add     r3, r0, #8 * 4
-	msr     PSP, r3
-	ldmia   r0, {r4-r11}
+	ldmia   r0!, {r4-r11}
+	msr     PSP, r0
+#if THINKOS_ENABLE_SCHED_DEBUG
+  #if THINKOS_ENABLE_FPU 
+	sub     r0, r0, #(24 * 4)
+  #else
+	sub     r0, r0, #(8 * 4)
+  #endif
+	b       thinkos_sched_dbg
+#else
 	bx      lr
+#endif
 
 	.align  0
 .L_thinkos_rt:
@@ -142,12 +152,13 @@ thinkos_sched_step:
 	.type   thinkos_sched_step , %function
 
 	/* r0: thread context pointer */
-	/* r1: (1 << new_thread_id) */
-	/* r3: new thread id */
+	/* r1: new thread id */
+	/* r2: old thread id */
+	/* r3: (1 << new_thread_id) */
 	/* r7: thinkos_rt */
-	ldr     r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]	
-	/* r2: step_svc */
-	tst     r1, r2
+	ldr     r6, [r7, #THINKOS_RT_STEP_SVC_OFFS]	
+	/* r6: step_svc */
+	tst     r3, r6
 	beq.n   .L_normal_step
 	/* this thread got a step request when calling a service.
 	   We allowed for the system call to go through as if it
@@ -159,11 +170,11 @@ thinkos_sched_step:
 	   the idle thread instead. */
 
 	/* XXX: reset the IDLE task. There is a problem when stepping
-	   at a SVC call. The  L_restore_and_step code disable interrupts,
+	   at a SVC call. The ".L_restore_and_step" code disable interrupts,
 	   but the idle thread next instruction could potentially be
 	   SVC, which generate a soft IRQ. The fact that the interrupts
 	   are disabled causes a hard fault to the system.
-	   We force the ide thread to start from the beginning where
+	   We force the idle thread to start from the beginning where
 	   at least one NOP instruction will be executed before
 	   a SVC call.
 	 */
@@ -171,17 +182,17 @@ thinkos_sched_step:
 	/* set the new context to the idle context */
 	/* Get the idle contex t*/
 	ldr     r0, [r7, #THINKOS_RT_IDLE_CTX_OFFS]
-	ldr     r2, .L_idle_task
+	ldr     r6, .L_idle_task
 	movs    r4, #THINKOS_THREAD_IDLE
 	str     r4, [r7, #THINKOS_RT_ACTIVE_OFFS]
 	/* set the PC */
-	str     r2, [r0, #56]
+	str     r6, [r0, #(CTX_PC * 4)]
 	/* step the IDLE thread instead  */
 	b       .L_restore_and_step
 
 .L_normal_step:
 	/* get the PC value */
-	ldr     r5, [r0, #56]
+	ldr     r5, [r0, #(CTX_PC * 4)]
 	/* load the next instruction */
 	ldrb    r5, [r5, #1]
 	/* if the thread is running, and it is about to invoke 
@@ -191,32 +202,38 @@ thinkos_sched_step:
 	cmp     r5, #0xdf
 	bne.n   .L_restore_and_step
     /* the thread is stepping into a system call */
-	orrs    r2, r1
-	str     r2, [r7, #THINKOS_RT_STEP_SVC_OFFS]
+	orrs    r6, r3
+	str     r6, [r7, #THINKOS_RT_STEP_SVC_OFFS]
 	b       .L_context_restore
 
 .L_restore_and_step:
 	/* Return and step */
-	strb    r3, [r7, #THINKOS_RT_STEP_ID_OFFS]
+	strb    r1, [r7, #THINKOS_RT_STEP_ID_OFFS]
+	ldr.n   r6, .L_cm_dcb
+	/* Disable all exceptions. They wil be automatically restored
+	 when returning from this handler. */
+	cpsid   f
+	ldr     r5, [r6, #DCB_DEMCR_OFFS]
+	orr     r5, r5, #DCB_DEMCR_MON_STEP
+	str     r5, [r6, #DCB_DEMCR_OFFS]
+	/* Mask low priority interrupts except debug monitor */
 	mov     r2, #(1 << 5)
 	msr	    BASEPRI, r2
-/*
 #if THINKOS_ENABLE_FPU 
-	add     r3, r0, #40 * 4
-	msr     PSP, r3
-	vldmia.64 r0!, {d0-d15}
-#else
-*/
-#if 1
-	add     r3, r0, #8 * 4
-	msr     PSP, r3
+	vldmia  r0!, {s16-s31}
 #endif
-	ldmia   r0, {r4-r11}
-	ldr.n   r3, .L_cm_dcb
-	ldr     r1, [r3, #DCB_DEMCR_OFFS]
-	orr     r1, r1, #DCB_DEMCR_MON_STEP
-	str     r1, [r3, #DCB_DEMCR_OFFS]
+	ldmia   r0!, {r4-r11}
+	msr     PSP, r0
+#if THINKOS_ENABLE_SCHED_DEBUG
+  #if THINKOS_ENABLE_FPU 
+	sub     r0, r0, #(24 * 4)
+  #else
+	sub     r0, r0, #(8 * 4)
+  #endif
+	b       thinkos_sched_step_dbg
+#else
 	bx      lr
+#endif
 
 	.align  2
 .L_idle_task:

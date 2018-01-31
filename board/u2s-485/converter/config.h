@@ -131,8 +131,8 @@
  * USB device and CDC-ACM 
  * ------------------------------------------------------------------------- */
 
-#define STM32_ENABLE_USB_DEV    1
-#define STM32F_USB_DEV_EP_MAX   4
+#define STM32_ENABLE_USB_FS    1
+#define STM32F_USB_FS_EP_MAX   4
 
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
 #define CDC_EP_IN_MAX_PKT_SIZE  64

@@ -51,6 +51,7 @@
 
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
+int u32f2str(char * buf, uint32_t x, int precision); 
 
 #define PERCENT 0x01
 #define WIDTH 0x02
@@ -70,6 +71,9 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 	int w;
 	int n;
 	int r;
+#if (PRINTF_ENABLE_FLOAT)
+	int p; /* precision */
+#endif
 	int i;
 	union {
 		void * ptr;
@@ -83,12 +87,18 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 
 	n = 0;
 	w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+	p = -1;
+#endif
 	cnt = 0;
 	cp = (char *)fmt;
 	for (flags = 0; (c = *fmt++); ) {
 		if (flags == 0) {
 			if (c == '%') {
 				w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+				p = -1;
+#endif
 				flags = PERCENT;
 				if (n) {
 					if ((cnt + n) > max)
@@ -116,6 +126,14 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 			w = (((w << 2) + w) << 1) + (c - '0');
 			continue;
 		}
+
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == '.') {
+			p = w;
+			w = 0;
+			continue;
+		}
+#endif
 
 #if (PRINTF_ENABLE_LEFT_ALIGN)
 		if (c == '-') {
@@ -210,6 +228,21 @@ hexadecimal:
 		}
 #endif
 
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == 'f') {
+			cp = buf;
+			val.u32 = (uint32_t)trace_ring.buf[tail++ & 
+				(TRACE_RING_SIZE - 1)].val;
+			if (p != -1) {
+				int tmp = p;
+				p = w;
+				w = tmp;
+			}
+			n = u32f2str(cp, val.n, p);
+			goto print_buf;
+		}
+#endif
+
 #if (PRINTF_ENABLE_POINTER)
 		if (c == 'p') {
 			val.ptr = (void *)trace_ring.buf[tail++ & 
@@ -248,7 +281,6 @@ print_buf:
 				for (i = 0; (i < r) && (cnt < max); ++i, ++cnt)
 					s[cnt] = ' ';
 			}
-//			cnt += r;
 		}
 
 		if (flags & SIGN) {

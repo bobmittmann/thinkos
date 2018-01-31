@@ -236,6 +236,7 @@ int __console_tx_pipe_ptr(uint8_t ** ptr)
 		/* get the number of chars from tail pos until the end of buffer */
 		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
 	}
+
 	DCC_LOG4(LOG_INFO, "head=%d tail=%d cnt=%d pos=%d", 
 			 pipe->head, tail, cnt, pos);
 	*ptr = &pipe->buf[pos];
@@ -304,7 +305,17 @@ void thinkos_console_svc(int32_t * arg, int self)
 	int n;
 	
 	switch (req) {
+
 	case CONSOLE_OPEN:
+		arg[0] = 0;
+		break;
+
+	case CONSOLE_CLOSE:
+		arg[0] = 0;
+		break;
+
+	case CONSOLE_IOCTL:
+		DCC_LOG(LOG_TRACE, "CONSOLE_IOCTL");
 		arg[0] = 0;
 		break;
 
@@ -415,15 +426,6 @@ wr_again:
 		}
 		break;
 
-	case CONSOLE_CLOSE:
-		arg[0] = 0;
-		break;
-
-	case CONSOLE_IOCTL:
-		DCC_LOG(LOG_TRACE, "CONSOLE_IOCTL");
-		arg[0] = 0;
-		break;
-
 	case CONSOLE_DRAIN:
 		DCC_LOG(LOG_MSG, "CONSOLE_DRAIN");
 		if (tx_pipe_isempty()) {
@@ -444,7 +446,7 @@ wr_again:
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
-		__thinkos_error(THINKOS_ERR_CONSOLE_REQINV);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}

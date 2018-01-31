@@ -32,7 +32,7 @@
 #include <string.h>
 #include <sys/file.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <stdint.h>
 
 #ifndef PRINTF_ENABLE_LEFT_ALIGN
 #define PRINTF_ENABLE_LEFT_ALIGN 1
@@ -66,13 +66,35 @@
 #define PRINTF_ENABLE_FLOAT 0
 #endif
 
+#ifndef PRINTF_ENABLE_HEXUP
+#define PRINTF_ENABLE_HEXUP 1
+#endif
+
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
+int uint2hexup(char * s, unsigned int val);
 
 int ull2dec(char * s, unsigned long long val);
 int ull2hex(char * s, unsigned long long val);
+int ull2hexup(char * s, unsigned long long val);
 
-int float2str(char * s, float val, unsigned int dec);
+#if (PRINTF_ENABLE_FLOAT)
+
+int u32f2str(char * buf, uint32_t x, int precision); 
+int u64d2str(char * buf, uint64_t x, int precision); 
+
+/* Double to uint64_t binary copy */
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; \
+						  a.d = (D); a.u;})
+/* Convert from double to an uint32_t encoded floating point. */
+static inline uint32_t __double2u32(double val) {
+	uint64_t x = DOUBLE2UINT64(val);
+	return ((uint32_t)(x >> 32) & 0x80000000) + 
+		(((uint32_t)((x >> 52) & 0x7f) + 
+		  (uint32_t)((x >> 55) & 0x80)) << 23) +
+		(((((uint32_t)(x >> 20)) & 0xffffffff) + 0x7f) >> 9);
+}
+#endif
 
 #if PRINTF_ENABLE_LONG
 #define BUF_LEN 22
@@ -87,6 +109,7 @@ int float2str(char * s, float val, unsigned int dec);
 #define SIGN 0x10
 #define LONG 0x20
 #define LONG2 0x40
+#define PRECISION 0x80
 
 
 #if (PRINTF_ENABLE_LONG)
@@ -118,18 +141,21 @@ const char __blanks[] = {
 int vfprintf(struct file * f, const char * fmt, va_list ap)
 {
 	char buf[BUF_LEN];
+	char * cp;
 	int flags;
 	int cnt;
 	int c;
 	int w;
 	int n;
 	int r;
-	char * cp;
+#if (PRINTF_ENABLE_FLOAT)
+	int p;
+#endif
 	union {
 		void * ptr;
 		unsigned int n;
-		float f;
 		int i;
+		float f;
 #if (PRINTF_ENABLE_LONG)
 		unsigned long long ull;
 		long long ll;
@@ -138,6 +164,9 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 
 	n = 0;
 	w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+	p = -1;
+#endif
 	cnt = 0;
 #if (PRINTF_ENABLE_FAST)
 	cp = (char *)fmt;
@@ -146,6 +175,9 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 		if (flags == 0) {
 			if (c == '%') {
 				w = 0;
+#if (PRINTF_ENABLE_FLOAT)
+				p = -1;
+#endif
 				flags = PERCENT;
 #if (PRINTF_ENABLE_FAST)
 				if (n) {
@@ -175,10 +207,23 @@ int vfprintf(struct file * f, const char * fmt, va_list ap)
 					continue;
 				}
 			}
+#if (PRINTF_ENABLE_FLOAT)
+			if (flags & PRECISION)
+				p = (((p << 2) + p) << 1) + (c - '0');
+			else
+#endif
 			/* w = w * 10 + c - '0' */
 			w = (((w << 2) + w) << 1) + (c - '0');
 			continue;
 		}
+
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == '.') {
+			flags |= PRECISION;
+			p = 0;
+			continue;
+		}
+#endif
 
 #if (PRINTF_ENABLE_LEFT_ALIGN)
 		if (c == '-') {
@@ -256,6 +301,23 @@ hexadecimal:
 			goto print_buf;
 		}
 
+#if PRINTF_ENABLE_HEXUP
+		if (c == 'X') {
+			cp = buf;
+#if PRINTF_ENABLE_LONG
+			if (flags & LONG2) {
+				val.ull = va_arg(ap, unsigned long long);
+				n = ull2hexup(cp, val.ull);
+			} else
+#endif
+			{
+				val.n = va_arg(ap, unsigned int);
+				n = uint2hexup(cp, val.n);
+			}
+			goto print_buf;
+		}
+#endif
+
 		if (c == 's') {
 			cp = va_arg(ap, char *);
 			n = 0;
@@ -288,8 +350,9 @@ hexadecimal:
 #if (PRINTF_ENABLE_FLOAT)
 		if (c == 'f') {
 			cp = buf;
-			val.f = (float)va_arg(ap, double);
-			n = float2str(cp, val.n, w);
+			val.n = __double2u32(va_arg(ap, double));
+			n = u32f2str(cp, val.n, p);
+//			n = u64d2str(cp, DOUBLE2UINT64(va_arg(ap, double)), p);
 			goto print_buf;
 		}
 #endif

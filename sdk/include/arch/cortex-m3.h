@@ -639,6 +639,34 @@
 /* Return to thread mode and on return use the process stack */
 #define CM3_EXC_RET_THREAD_PSP 0xfffffffd
 
+/* Table B1-8 EXC_RETURN definition of exception return behavior, no FP 
+   extension
+   EXC_RETURN | Return to    | Return stack
+   0xFFFFFFF1 | Handler mode | Main
+   0xFFFFFFF9 | Thread mode  | Main
+   0xFFFFFFFD | Thread mode  | Process
+ */
+
+/* Table B1-9 EXC_RETURN definition of exception return behavior, with FP 
+   extension 
+   EXC_RETURN | Return to    | Return stack | Frame type
+   0xFFFFFFE1 | Handler mode | Main         | Extended
+   0xFFFFFFE9 | Thread mode  | Main         | Extended
+   0xFFFFFFED | Thread mode  | Process      | Extended
+   0xFFFFFFF1 | Handler mode | Main         | Basic
+   0xFFFFFFF9 | Thread mode  | Main         | Basic
+   0xFFFFFFFD | Thread mode  | Process      | Basic
+*/
+
+/* Return to handler mode extended frame */
+#define CM3_EXC_RET_HANDLER_EXT    0xffffffe1
+/* Return to thread mode and on return use the main stack extended frame */
+#define CM3_EXC_RET_THREAD_MSP_EXT 0xffffffe9
+/* Return to thread mode and on return use the process stack extended frame */
+#define CM3_EXC_RET_THREAD_PSP_EXT 0xffffffed
+
+#define CM3_EXEC_RET_SPSEL (1 << 2)
+
 #ifndef __ASSEMBLER__
 
 /****************************************************************************
@@ -1253,9 +1281,54 @@ static inline void __attribute__((always_inline)) __bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
+__attribute__( ( always_inline ) ) 
+static inline int64_t __smlal(int64_t acc, int32_t op1, int32_t op2)
+{
+	union {
+		int32_t w32[2];
+		int64_t w64;
+	} llr;
+
+	llr.w64 = acc;
+
+#ifndef __ARMEB__   /* Little endian */
+	asm volatile ("smlal %0, %1, %2, %3" : 
+				  "=r" (llr.w32[0]), "=r" (llr.w32[1]) : 
+				  "r" (op1), "r" (op2), 
+				  "0" (llr.w32[0]), "1" (llr.w32[1]));
+#else               /* Big endian */
+	asm volatile ("smlal %0, %1, %2, %3" : 
+				  "=r" (llr.w32[1]), "=r" (llr.w32[0]) : 
+				  "r" (op1), "r" (op2) , "0" (llr.w32[1]), "1" (llr.w32[0]) );
+#endif
+
+	return(llr.w64);
+}
+
+__attribute__( ( always_inline ) ) 
+static inline int64_t __smull(int32_t op1, int32_t op2)
+{
+	union {
+		int32_t w32[2];
+		int64_t w64;
+	} llr;
+
+#ifndef __ARMEB__   /* Little endian */
+	asm volatile ("smull %0, %1, %2, %3" : 
+				  "=r" (llr.w32[0]), "=r" (llr.w32[1]) : 
+				  "r" (op1), "r" (op2));
+#else               /* Big endian */
+	asm volatile ("smull %0, %1, %2, %3" : 
+				  "=r" (llr.w32[1]), "=r" (llr.w32[0]) : 
+				  "r" (op1), "r" (op2));
+#endif
+
+	return(llr.w64);
+}
+
 #define __SSAT(ARG1,ARG2) \
 	({                          \
-	 uint32_t __RES, __ARG1 = (ARG1); \
+	 int32_t __RES, __ARG1 = (ARG1); \
 	 asm volatile ("ssat %0, %1, %2" : "=r" (__RES) :  "I" (ARG2), "r" (__ARG1) ); \
 	 __RES; \
 	 })

@@ -183,6 +183,28 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 #endif
 
+/* With this option calling thinkos_irq_wait() will return a thread id 
+   if there is a thread already waiting on this interrupt. After 
+   receiving the interrupt a thread can restore the previously 
+   waiting thread by calling thinkos_irq_restore()...  */
+#ifndef THINKOS_ENABLE_IRQ_RESTORE
+#define THINKOS_ENABLE_IRQ_RESTORE      0
+#endif
+
+/* This option cause thinkos_irq_wait() to return the value
+   of the CPU cycle count at the moment the interrupt was
+   detected. */
+#ifndef THINKOS_ENABLE_IRQ_CYCCNT_RET
+#define THINKOS_ENABLE_IRQ_CYCCNT_RET   0
+#endif
+
+/* Allow IRQs with priority 0 for low latency.
+   Be carefull if real ISRs are used as this option can impair 
+   the debug monitor operation */
+#ifndef THINKOS_ENABLE_IRQ_PRIORITY_0
+#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
@@ -333,6 +355,13 @@
 #define THINKOS_ENABLE_ALIGN            1
 #endif
 
+/* Enable kernel support for real time trace. The kernel hold the trace
+   ring in a protected memory and mediate its access by the application 
+   and debug monitor services. */
+#ifndef THINKOS_ENABLE_TRACE    
+#define THINKOS_ENABLE_TRACE            0 
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Sanity check
  * --------------------------------------------------------------------------*/
@@ -444,7 +473,32 @@
  #define THINKOS_ENABLE_FPU 1
 #endif
 
-#define CTX_R0 8
+
+#if THINKOS_ENABLE_FPU
+  /* Position of register R0 in the context */
+  #define CTX_R0 (16 + 8)
+  /* Position of register PC in the context */
+  #define CTX_PC (16 + 14)
+#else
+  #define CTX_R0 8
+  #define CTX_PC 14
+#endif
+
+#if THINKOS_ENABLE_IRQ_RESTORE
+  /* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
+  #undef THINKOS_ENABLE_IRQ_CTL
+  #define THINKOS_ENABLE_IRQ_CTL 1
+#endif
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET  
+   /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
+   #undef THINKOS_ENABLE_IRQ_CTL
+   #define THINKOS_ENABLE_IRQ_CTL 1
+   #if THINKOS_ENABLE_IRQ_RESTORE
+      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT_RET "\
+		  "& THINKOS_ENABLE_IRQ_RESTORE"
+   #endif  
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Static trhead references
@@ -929,38 +983,41 @@ struct thinkos_thread_init {
  * --------------------------------------------------------------------------*/
 
 enum thinkos_exception {
-	THINKOS_ERR_COND_INVALID = 1,
-	THINKOS_ERR_COND_ALLOC,
-	THINKOS_ERR_MUTEX_INVALID,
-	THINKOS_ERR_MUTEX_ALLOC,
-	THINKOS_ERR_MUTEX_NOTMINE,
-	THINKOS_ERR_MUTEX_LOCKED,
-	THINKOS_ERR_SEM_INVALID,
-	THINKOS_ERR_SEM_ALLOC,
-	THINKOS_ERR_THREAD_INVALID,
-	THINKOS_ERR_THREAD_ALLOC,
-	THINKOS_ERR_THREAD_SMALLSTACK,
-	THINKOS_ERR_IRQ_INVALID,
-	THINKOS_ERR_OBJECT_INVALID,
-	THINKOS_ERR_OBJECT_ALLOC,
-	THINKOS_ERR_GATE_INVALID,
-	THINKOS_ERR_GATE_ALLOC,
-	THINKOS_ERR_GATE_UNLOCKED,
-	THINKOS_ERR_FLAG_INVALID,
-	THINKOS_ERR_FLAG_ALLOC,
-	THINKOS_ERR_EVSET_INVALID,
-	THINKOS_ERR_EVSET_ALLOC,
-	THINKOS_ERR_EVENT_OUTOFRANGE,
-	THINKOS_ERR_CONSOLE_REQINV,
-	THINKOS_ERR_CTL_REQINV,
-	THINKOS_ERR_COMM_REQINV,
-	THINKOS_ERR_SYSCALL_INVALID,
-	THINKOS_ERR_CRITICAL_EXIT
+	THINKOS_ERR_COND_INVALID      = 1,
+	THINKOS_ERR_COND_ALLOC        = 2,
+	THINKOS_ERR_MUTEX_INVALID     = 3,
+	THINKOS_ERR_MUTEX_ALLOC       = 4,
+	THINKOS_ERR_MUTEX_NOTMINE     = 5,
+	THINKOS_ERR_MUTEX_LOCKED      = 6,
+	THINKOS_ERR_SEM_INVALID       = 7,
+	THINKOS_ERR_SEM_ALLOC         = 8,
+	THINKOS_ERR_THREAD_INVALID    = 9,
+	THINKOS_ERR_THREAD_ALLOC      = 10,
+	THINKOS_ERR_THREAD_SMALLSTACK = 11,
+	THINKOS_ERR_IRQ_INVALID       = 12,
+	THINKOS_ERR_OBJECT_INVALID    = 13,
+	THINKOS_ERR_OBJECT_ALLOC      = 14,
+	THINKOS_ERR_GATE_INVALID      = 15,
+	THINKOS_ERR_GATE_ALLOC        = 16,
+	THINKOS_ERR_GATE_UNLOCKED     = 17,
+	THINKOS_ERR_FLAG_INVALID      = 18,
+	THINKOS_ERR_FLAG_ALLOC        = 19,
+	THINKOS_ERR_EVSET_INVALID     = 20,
+	THINKOS_ERR_EVSET_ALLOC       = 21,
+	THINKOS_ERR_EVENT_OUTOFRANGE  = 22,
+	THINKOS_ERR_CONSOLE_REQINV    = 23,
+	THINKOS_ERR_CTL_REQINV        = 24,
+	THINKOS_ERR_COMM_REQINV       = 25,
+	THINKOS_ERR_SYSCALL_INVALID   = 26,
+	THINKOS_ERR_CRITICAL_EXIT     = 27,
+	THINKOS_ERR_TRACE_ENTRY_NULL  = 28
 };
 
-/* Mark for brekpoint numbers. Breakpoints above this
+/* Mark for breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
+
+#define THINKOS_ERR_OFF 16
 
 /* -------------------------------------------------------------------------- 
  * Idle thread
@@ -973,6 +1030,8 @@ extern uint32_t * const thinkos_obj_alloc_lut[];
 extern const uint16_t thinkos_wq_base_lut[];
 
 extern const char thinkos_type_name_lut[][6];
+
+extern const char thinkos_type_prefix_lut[];
 
 extern const char __xcpt_name_lut[16][12];
 
@@ -1001,12 +1060,12 @@ void cm3_msp_init(uint64_t * stack_top);
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-static inline void __attribute__((always_inline)) __thinkos_error(int code)
-{
 #if THINKOS_ENABLE_ERROR_TRAP
-	__bkpt(THINKOS_BKPT_EXCEPT_OFF + code);
+  #define __THINKOS_ERROR(__CODE) \
+	  asm volatile ("bkpt %0" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
+#else
+  #define __THINKOS_ERROR(__CODE)
 #endif
-}
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
@@ -1269,10 +1328,6 @@ void __console_rx_pipe_commit(int cnt);
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
-
-void __thinkos_flag_give(uint32_t wq);
-void __thinkos_flag_clr(uint32_t wq);
-void __thinkos_flag_set(uint32_t wq);
 
 void __thinkos_sem_post(uint32_t wq);
 

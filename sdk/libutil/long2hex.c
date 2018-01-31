@@ -59,19 +59,22 @@ int longlong2hex_be(char * s, unsigned long long val)
 	s[1] = __hextab[(val & 0xf)];
 	s[2] = __hextab[((val >> 12) & 0xf)];
 	s[3] = __hextab[((val >> 8) & 0xf)];
+
 	s[4] = __hextab[((val >> 20) & 0xf)];
 	s[5] = __hextab[((val >> 16) & 0xf)];
 	s[6] = __hextab[((val >> 28) & 0xf)];
 	s[7] = __hextab[((val >> 24) & 0xf)];
+
 	s[8] = __hextab[((val >> 36) & 0xf)];
 	s[9] = __hextab[((val >> 32) & 0xf)];
 	s[10] = __hextab[((val >> 44) & 0xf)];
 	s[11] = __hextab[((val >> 40) & 0xf)];
+
 	s[12] = __hextab[((val >> 52) & 0xf)];
 	s[13] = __hextab[((val >> 48) & 0xf)];
 	s[14] = __hextab[((val >> 60) & 0xf)];
 	s[15] = __hextab[((val >> 56) & 0xf)];
 
-	return 8;
+	return 16;
 }
 

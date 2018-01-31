@@ -59,6 +59,9 @@ int shell(FILE * f, const char * (* prompt)(void),
 	char * st;
 	int ret = 0;
 
+	memset(line, 0, sizeof(line));
+	memset(hist_buf, 0, sizeof(hist_buf));
+
 	DCC_LOG(LOG_TRACE, "history_init()");
 	history = history_init(hist_buf, sizeof(hist_buf), SHELL_LINE_MAX);
 
@@ -85,10 +88,15 @@ int shell(FILE * f, const char * (* prompt)(void),
 			}
 
 			ret = cmd_exec(f, cmd, st);
-
-			if ((ret < 0) && (ret !=  SHELL_ABORT)) {
-				fprintf(f, "Error: %d\n", -ret);
-				break;
+			if (ret < 0) {
+				if(SHELL_ERR_ARG_MISSING == ret) {
+					fprintf(f, "  %s, %s - %s\n", cmd->name, cmd->alias, cmd->desc);
+					fprintf(f, "  usage: %s %s\n\n", cmd->alias, cmd->usage);
+				}
+				else if (ret !=  SHELL_ABORT) {
+					fprintf(f, "Error: %d\n", -ret);
+					break;
+				}
 			}
 			
 		}

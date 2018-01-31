@@ -26,6 +26,8 @@
 #include "trace-i.h"
 #include <stdarg.h>
 
+float doble2float(double val);
+
 struct trace_ring trace_ring;
 
 /*---------------------------------------------------------------------------
@@ -146,11 +148,23 @@ void trace_init(void)
 
 #define TRACE_ARG_MAX 20
 
+/* Double to uint64_t binary copy */
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; \
+						  a.d = (D); a.u;})
+/* Convert from double to an uint32_t encoded floating point. */
+static inline uint32_t __double2u32(double val) {
+	uint64_t x = DOUBLE2UINT64(val);
+	return ((uint32_t)(x >> 32) & 0x80000000) + 
+		(((uint32_t)((x >> 52) & 0x7f) + 
+		  (uint32_t)((x >> 55) & 0x80)) << 23) +
+		(((((uint32_t)(x >> 20)) & 0xffffffff) + 0x7f) >> 9);
+}
+
 int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 {
 	const char * fmt = ref->fmt;
-	int cnt = 0;
 	uint32_t val;
+	int cnt = 0;
 	char * cp;
 	int flags;
 	int c;
@@ -179,7 +193,16 @@ int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 				buf[cnt++] = val;
 				flags = 0;
 				break;
-
+#if (PRINTF_ENABLE_FLOAT)
+			case 'f': {
+				val = __double2u32(va_arg(ap, double));
+				if (cnt >= TRACE_ARG_MAX)
+					return -1;
+				buf[cnt++] = val;
+				flags = 0;
+			}
+				break;
+#endif
 			case 's':
 				cp = va_arg(ap, char *);
 				i = 0;
@@ -349,3 +372,4 @@ void tracef_i(const struct trace_ref * ref, ... )
 
 	cm3_primask_set(pri);
 }
+

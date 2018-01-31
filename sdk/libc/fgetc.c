@@ -25,12 +25,13 @@
 
 #include <stdio.h>
 #include <sys/file.h>
+#include <stdint.h>
 
 int fgetc(FILE * f)
 {
 	char c;
 
-	if (f->op->read(f->data, (void *)&c, sizeof(char)) <= 0) {
+	if (f->op->read(f->data, (void *)&c, sizeof(char), INT32_MAX) <= 0) {
 		return EOF;
 	}
 

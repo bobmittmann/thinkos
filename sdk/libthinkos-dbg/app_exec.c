@@ -60,7 +60,7 @@ bool dmon_app_exec(uint32_t addr, bool paused)
 		(app[1] != 0x6e696854) ||
 		(app[2] != 0x00534f6b)) {
 		DCC_LOG1(LOG_WARNING, "invalid signature at %p!", app);
-		DCC_XXD(LOG_WARNING, "app", app, 32);
+		DCC_XXD(LOG_MSG, "app", app, 32);
 		return false;
 	}
 
@@ -136,12 +136,17 @@ bool dmon_app_suspend(void)
 
 bool dmon_app_continue(void)
 {
-	DCC_LOG(LOG_TRACE, "....");
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 
-	__thinkos_resume_all();
+	if (xcpt->type == 0) {
+		DCC_LOG(LOG_TRACE, "....");
+		__thinkos_resume_all();
+		__dmon_irq_restore_all();
+		return true;
+	}
 
-	__dmon_irq_restore_all();
+	DCC_LOG(LOG_WARNING, "Can't continue with a fault...");
 
-	return true;
+	return false;
 }
 

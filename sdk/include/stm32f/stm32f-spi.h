@@ -69,6 +69,13 @@
 	This bit should be kept cleared when the transfers are managed by DMA.
 	Not used in I2S mode */
 
+#ifdef STM32L4X 
+/* Bit 11 - CRC length */
+#define SPI_CRCL (1 << 11)
+/* This bit is set and cleared by software to select the CRC length.
+   0: 8-bit CRC length
+   1: 16-bit CRC length */
+#else
 /* Bit 11 - Data frame format */
 #define SPI_DFF (1 << 11)
 /*	0: 8-bit data frame format is selected for transmission/reception
@@ -76,6 +83,7 @@
 	Note: This bit should be written only when SPI is disabled (SPE = ‘0’) 
 	for correct operation
 	Not used in I2S mode */
+#endif
 
 /* Bit 10 - Receive only */
 #define SPI_RXONLY (1 << 10)
@@ -155,7 +163,57 @@
 /* SPI control register 2 */
 #define SPI_CR2 0x04
 
+#ifdef STM32L4X 
+/*
+   Bit 14 LDMA_TX: Last DMA transfer for transmission
+   This bit is used in data packing mode, to define if the total number of data to transmit by DMA
+   is odd or even. It has significance only if the TXDMAEN bit in the SPIx_CR2 register is set and
+   if packing mode is used (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It
+   has to be written when the SPI is disabled (SPE = 0 in the SPIx_CR1 register).
+   0: Number of data to transfer is even
+   1: Number of data to transfer is odd
+   Note: Refer to Procedure for disabling the SPI on page 1204 if the CRCEN bit is set.
+   Bit 13 LDMA_RX: Last DMA transfer for reception
+   This bit is used in data packing mode, to define if the total number of data to receive by DMA is
+   odd or even. It has significance only if the RXDMAEN bit in the SPIx_CR2 register is set and if
+   packing mode is used (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It has
+   to be written when the SPI is disabled (SPE = 0 in the SPIx_CR1 register).
+   0: Number of data to transfer is even
+   1: Number of data to transfer is odd
+   Note: Refer to Procedure for disabling the SPI on page 1204 if the CRCEN bit is set.
+   Bit 12 FRXTH: FIFO reception threshold
+   This bit is used to set the threshold of the RXFIFO that triggers an RXNE event
+   0: RXNE event is generated if the FIFO level is greater than or equal to 1/2 (16-bit)
+   1: RXNE event is generated if the FIFO level is greater than or equal to 1/4 (8-bit) */
+
+/* Bits 11:8 DS [3:0]: Data size */
+#define SPI_DS(N) ((((N) - 1) & 0xf) << 8)
+/*   These bits configure the data length for SPI transfers:
+   0000: Not used
+   0001: Not used
+   0010: Not used
+   0011: 4-bit
+   0100: 5-bit
+   0101: 6-bit
+   0110: 7-bit
+   0111: 8-bit
+   1000: 9-bit
+   1001: 10-bit
+   1010: 11-bit
+   1011: 12-bit
+   1100: 13-bit
+   1101: 14-bit
+   1110: 15-bit
+   1111: 16-bit
+   If software attempts to write one of the “Not used” values, they are forced to the value “0111”(8-
+   bit).
+*/
+
+
+#else
 /* [15..8] Reserved. Forced to 0 by hardware. */
+#define SPI_DS(N) (0)
+#endif
 
 /* Bit 7 - Tx buffer empty interrupt enable */
 #define SPI_TXEIE (1 << 7)
@@ -206,7 +264,26 @@ Note: Not used in I2S mode and SPI TI mode */
 /* SPI status register */
 #define SPI_SR 0x08
 
+#ifdef STM32L4X 
+/* Bits 12:11 FTLVL[1:0]: FIFO Transmission Level */
+/* These bits are set and cleared by hardware.
+00: FIFO empty
+01: 1/4 FIFO
+10: 1/2 FIFO
+11: FIFO full (considered as FULL when the FIFO threshold is greater than 1/2) */
+
+/* Bits 10:9 FRLVL[1:0]: FIFO reception level */
+/* These bits are set and cleared by hardware.
+00: FIFO empty
+01: 1/4 FIFO
+10: 1/2 FIFO
+11: FIFO full
+Note: These bits are not used in SPI receive-only mode while CRC calculation is enabled.
+*/
+
+#else
 /* [15..9] Reserved. Forced to 0 by hardware. */
+#endif
 
 /* Bit 8 - frame format error */
 #define SPI_FRE (1 << 8)

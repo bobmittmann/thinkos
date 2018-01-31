@@ -347,20 +347,20 @@ int thinkos_krn_init(uint32_t opt)
 	thinkos_exception_init();
 #endif
 
-	DCC_LOG1(LOG_TRACE, "thinkos_rt=@%08x", &thinkos_rt);
+	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", &thinkos_rt);
 
 
 	if ((thread_id = __thinkos_init_main(opt)) < 0)
 		return thread_id;
 
 	/* Cortex-M configuration */
-	DCC_LOG(LOG_TRACE, "Cortex-M configuration:"); 
+	DCC_LOG(LOG_INFO, "Cortex-M configuration:"); 
 
 #ifdef DEBUG
 	{
 		uint32_t ctrl = cm3_control_get();
 
-		DCC_LOG4(LOG_TRACE, "CTRL=%02x { nPRIV=%d SPSEL=%d FPCA=%d }",
+		DCC_LOG4(LOG_INFO, "CTRL=%02x { nPRIV=%d SPSEL=%d FPCA=%d }",
 				 ctrl, 
 				 ctrl & CONTROL_nPRIV ? 1 : 0,
 				 ctrl & CONTROL_SPSEL? 1 : 0,
@@ -373,7 +373,7 @@ int thinkos_krn_init(uint32_t opt)
 	   The SCR controls features of entry to and exit from low power state. */
 	CM3_SCB->scr = 0; 
 
-	DCC_LOG(LOG_TRACE, "2. SCB->CCR"); 
+	DCC_LOG(LOG_INFO, "2. SCB->CCR"); 
 	/* Configuration and Control Register
 		The CCR controls entry to Thread mode and enables:
 		- the handlers for NMI, hard fault and faults escalated by FAULTMASK 
@@ -397,7 +397,7 @@ int thinkos_krn_init(uint32_t opt)
 
 	/* Configure FPU */
 #if THINKOS_ENABLE_FPU 
-	DCC_LOG(LOG_TRACE, ".. FPU"); 
+	DCC_LOG(LOG_INFO, ".. FPU"); 
   #if THINKOS_ENABLE_FPU_LS 
 	/* Enable FP lazy context save */
 	CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
@@ -409,23 +409,23 @@ int thinkos_krn_init(uint32_t opt)
 	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
 #endif
 
-	DCC_LOG(LOG_TRACE, "3. PSP"); 
+	DCC_LOG(LOG_INFO, "3. PSP"); 
 	/* configure the thread stack */
 	cm3_psp_set(cm3_sp_get());
 
-	DCC_LOG(LOG_TRACE, "4. MSP"); 
+	DCC_LOG(LOG_INFO, "4. MSP"); 
 	/* configure the main stack */
 	msp = (uint32_t)thinkos_except_stack + sizeof(thinkos_except_stack);
 	cm3_msp_set(msp);
 
-	DCC_LOG(LOG_TRACE, "5. CONTROL"); 
+	DCC_LOG(LOG_INFO, "5. CONTROL"); 
 	/* configure the use of PSP in thread mode */
 	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV);
 
-	DCC_LOG(LOG_TRACE, "7. enabling interrupts!");
+	DCC_LOG(LOG_INFO, "7. enabling interrupts!");
 	cm3_cpsie_i();
 
-	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
+	DCC_LOG4(LOG_INFO, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 
 	return thread_id + 1;

@@ -151,6 +151,11 @@ void thinkos_ctl_svc(int32_t * arg);
 
 void thinkos_comm_svc(int32_t * arg, int self);
 
+void thinkos_dbgmon_svc(int32_t * arg, int self);
+
+void thinkos_trace_svc(int32_t * arg, int self);
+
+void thinkos_trace_ctl_svc(int32_t * arg, int self);
 
 void thinkos_idle_svc(int32_t * arg);
 
@@ -163,18 +168,18 @@ void thinkos_escalate_svc(int32_t * arg)
 }
 #endif
 
-void thinkos_nosys(int32_t * arg)
+static void thinkos_nosys(int32_t * arg)
 {
-	__thinkos_error(THINKOS_ERR_SYSCALL_INVALID);
+	__THINKOS_ERROR(THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;
 }
 
-void thinkos_clock_svc(int32_t * arg)
+static void thinkos_clock_svc(int32_t * arg)
 {
 	arg[0] = thinkos_rt.ticks;
 }
 
-void thinkos_thread_self_svc(int32_t * arg, int32_t self)
+static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -194,7 +199,7 @@ void thinkos_critical_enter_svc(int32_t * arg)
 void thinkos_critical_exit_svc(int32_t * arg)
 {
 	if (thinkos_rt.critical_cnt == 0) {
-		__thinkos_error(THINKOS_ERR_CRITICAL_EXIT);
+		__THINKOS_ERROR(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__thinkos_defer_sched();
@@ -756,6 +761,30 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 	case THINKOS_ON_IDLE:
 #if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
 		thinkos_idle_svc(arg);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_DBGMON:
+#if THINKOS_ENABLE_MONITOR
+		thinkos_dbgmon_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_TRACE:
+#if THINKOS_ENABLE_TRACE    
+		thinkos_trace_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_TRACE_CTL:
+#if THINKOS_ENABLE_TRACE    
+		thinkos_trace_ctl_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif

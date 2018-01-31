@@ -23,8 +23,6 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__thinkos = 0x08000000;
-
 MEMORY
 {
 	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
@@ -38,8 +36,8 @@ REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram);
 REGION_ALIAS("STACK", ccm);
 
-__code_init = ORIGIN(flash) + (DEFINED(__thinkos) ? 0x0000c000 : 0) ;
-__data_init = ORIGIN(sram) + (DEFINED(__thinkos) ? 0x01000 : 0) ;
+__code_init = ORIGIN(flash) + 0x00010000;
+__data_init = ORIGIN(sram) + 0x01000;
 
 SECTIONS
 {

@@ -23,6 +23,10 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stm32f.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,10 +36,10 @@
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 
-#if defined(STM32F103) || defined(STM32F30X)
+#if defined(STM32F103) || defined(STM32F30X) || defined(STM32L4X)
 
-#ifndef STM32_USB_DEV_VBUS_CTRL
-#define STM32_USB_DEV_VBUS_CTRL 1
+#ifndef STM32_USB_FS_VBUS_CTRL
+#define STM32_USB_FS_VBUS_CTRL   0
 #endif
 
 #define USB_FS_DP STM32_GPIOA,   12
@@ -44,8 +48,10 @@
 
 void stm32f_usb_io_init(void)
 {
+	DCC_LOG(LOG_INFO, "Configuring USB IO pins ...");
+
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
-#if (STM32_USB_DEV_VBUS_CTRL)
+#if (STM32_USB_FS_VBUS_CTRL)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 #endif
 
@@ -57,16 +63,38 @@ void stm32f_usb_io_init(void)
 	stm32_gpio_mode(USB_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_mode(USB_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-#if (STM32_USB_DEV_VBUS_CTRL)
+#if STM32_USB_FS_VBUS_ENABLE
+	stm32_gpio_af(USB_FS_VBUS, GPIO_AF14);
+	stm32_gpio_mode(USB_FS_VBUS, ALT_FUNC, SPEED_LOW);
+#endif
+
+#if (STM32_USB_FS_VBUS_CTRL)
 	/* PB12: External Pull-up */
 	stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
 	stm32_gpio_set(USB_FS_VBUS);
 #endif
 }
 
-void stm32f_usb_vbus_connect(bool connect)
+void stm32f_usb_io_deinit(void)
 {
-#if (STM32_USB_DEV_VBUS_CTRL)
+	/* disabling IO pins */
+	stm32_gpio_mode(USB_FS_DP, INPUT, 0);
+	stm32_gpio_mode(USB_FS_DM, INPUT, 0);
+}
+
+void stm32f_usb_pullup(struct stm32f_usb * usb, bool connect)
+{
+#if defined(STM32L4X)
+	/* Connect the internal pull up */
+	if (connect) {
+		DCC_LOG(LOG_TRACE, "Connecting Pull Up");
+		usb->bcdr |= USB_DPPU;
+	} else {
+		DCC_LOG(LOG_TRACE, "Disconnecting Pull Up");
+		usb->bcdr &= ~USB_DPPU;
+	}
+#endif
+#if (STM32_USB_FS_VBUS_CTRL)
 	if (connect)
 		stm32_gpio_mode(USB_FS_VBUS, OUTPUT, PUSH_PULL | SPEED_LOW);
 	else
@@ -77,10 +105,6 @@ void stm32f_usb_vbus_connect(bool connect)
 void stm32f_usb_power_on(struct stm32f_usb * usb)
 {
 	DCC_LOG(LOG_INFO, "Enabling USB device clock...");
-
-#if (STM32_USB_DEV_VBUS_CTRL)
-	stm32f_usb_vbus_connect(true);
-#endif
 
 	stm32_clk_enable(STM32_RCC, STM32_CLK_USB);
 
@@ -94,6 +118,7 @@ void stm32f_usb_power_on(struct stm32f_usb * usb)
 
 	/* Removing any spurious pending interrupts */
 	usb->istr = 0;
+
 }
 
 void stm32f_usb_power_off(struct stm32f_usb * usb)
@@ -102,18 +127,10 @@ void stm32f_usb_power_off(struct stm32f_usb * usb)
 	/* Removing any spurious pending interrupts */
 	usb->istr = 0;
 
-#if (STM32_USB_DEV_VBUS_CTRL)
-	stm32f_usb_vbus_connect(false);
-#endif
-
 	usb->cntr = USB_FRES | USB_PDWN;
 
 	DCC_LOG(LOG_INFO, "Disabling USB device clock...");
 	stm32_clk_disable(STM32_RCC, STM32_CLK_USB);
-
-	/* disabling IO pins */
-	stm32_gpio_mode(USB_FS_DP, INPUT, 0);
-	stm32_gpio_mode(USB_FS_DM, INPUT, 0);
 }
 
 #endif /* STM32F103 || STM32F30X */

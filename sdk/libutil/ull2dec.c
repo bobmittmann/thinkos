@@ -63,7 +63,7 @@ int ull2dec(char * s, unsigned long long val)
 	dvp = (unsigned long long *)__lldiv_tab;
 	n = 0;
 	c = 0;
-	i = 4;
+	i = 1;
 	while ((dv = *dvp++)) {	
 		c = 0;
 		for (; (i); i >>= 1) {

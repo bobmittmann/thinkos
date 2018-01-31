@@ -73,6 +73,12 @@ static void io_init(void)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
+	stm32_gpio_af(USB_FS_DP, GPIO_AF14);
+	stm32_gpio_af(USB_FS_DM, GPIO_AF14);
+
+	stm32_gpio_mode(USB_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(USB_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+
 	stm32_gpio_mode(LED3_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(LED4_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(LED5_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -83,23 +89,24 @@ static void io_init(void)
 	stm32_gpio_mode(LED10_IO, OUTPUT, PUSH_PULL | SPEED_LOW);
 
 	stm32_gpio_mode(SW_B1_IO, INPUT, SPEED_LOW);
-}
-
-bool board_init(void)
-{
-	io_init();
-
-	led_on(0);
 
 	/* Adjust USB interrupts priority */
 	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
 	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 
+}
+
+int board_init(void)
+{
+	io_init();
+
+	led_on(0);
+
 	/* Enable USB interrupts */
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
 
-	return true;
+	return 0;
 }
 
 void board_softreset(void)
@@ -124,17 +131,11 @@ void board_softreset(void)
 
 	/* reinitialize IO's */
 	io_init();
-
-	/* restore USB interrupt priority */
-	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
-	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
 }
-
-void test_app(void * arg);
 
 bool board_autoboot(uint32_t tick)
 {
-#if DEBUG
+#if 0
 	if (tick > 40) {
 		if (tick == 42)
 			dmon_thread_exec(test_app, NULL);
@@ -146,15 +147,11 @@ bool board_autoboot(uint32_t tick)
 	led_on(~tick & 0x7);
 
 	/* Time window autoboot */
-	return (tick < 40) ? false : true;
+	return (tick != 40) ? false : true;
 }
 
 void board_on_appload(void)
 {
-	int i;
-
-	for (i = 0; i < LED_COUNT; ++i) 
-		led_off(i);
 }
 
 void board_upgrade(struct dmon_comm * comm)
@@ -166,17 +163,8 @@ bool board_configure(struct dmon_comm * comm)
 	return true;
 }
 
-void monitor_dump_mem(struct dmon_comm * comm, 
-					  uint32_t addr, unsigned int size);
-
 void board_selftest(struct dmon_comm * comm)
 {
-	dmprintf(comm, "\r\nSelftest.\r\n");
-#if DEBUG
-	dmon_thread_exec(test_app, NULL);
-#endif
-	/* Dump */
-//	monitor_dump_mem(comm, 0x20000000, 0x1000);
 }
 
 
@@ -193,8 +181,8 @@ const struct mem_desc sram_desc = {
 const struct mem_desc flash_desc = {
 	.name = "FLASH",
 	.blk = {
-		{ 0x08000000, BLK_RO, SZ_2K,  24 }, /* Bootloader: 48 KiB */
-		{ 0x0800c000, BLK_RW, SZ_2K, 104 }, /* Application:  */
+		{ 0x08000000, BLK_RO, SZ_2K,  32 }, /* Bootloader: 64KiB */
+		{ 0x08010000, BLK_RW, SZ_2K,  96 }, /* Application: 192KiB */
 		{ 0x00000000, 0, 0, 0 }
 	}
 }; 
@@ -215,8 +203,8 @@ const struct thinkos_board this_board = {
 		.flash = &flash_desc
 	},
 	.application = {
-		.start_addr = 0x0800c000,
-		.block_size = 2048 * 104
+		.start_addr = 0x08010000,
+		.block_size = 2048 * 96 
 	},
 
 	.init = board_init,

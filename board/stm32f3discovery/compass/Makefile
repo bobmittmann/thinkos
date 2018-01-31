@@ -19,20 +19,25 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+THINKOSDIR = ../../..
+SDKDIR = $(THINKOSDIR)/sdk
+
 PROG = compass
 
 CFILES = i2c-master.c lsm303dlhc.c compass.c
 
 LIBS = cm3 stm32f util c console
 
-INCPATH = ../../../sdk/include ../include
+INCPATH = $(SDKDIR)/include ../include
 
 LIBPATH = ../sdklibs/Debug
 
-CFLAGS = -g -O1 -Wall
+CDEFS = CONFIG_H CM3_RAM_VECTORS
+CFLAGS = -g -O0 -Wall -Wdouble-promotion
+OPTIONS = -mno-unaligned-access 
 
-MACH = stm32f303xb
-HSE_HZ = 8000000
-THINKAPP = 1
-include ../../../mk/stm32f3xx.mk
+LDSCRIPT = ../stm32f303xc.ld
+THINKAPP = 0x08010000
+MACH = stm32f303xc
+include $(THINKOSDIR)/mk/stm32.mk
 

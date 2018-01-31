@@ -19,29 +19,28 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+VERSION_DATE = "2016-02-13"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "38"
 
-SDK = ../../../sdk
+THINKOSDIR = ../../..
+SDKDIR = $(THINKOSDIR)/sdk
 
 PROG = thinkos
 
 CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c test.c
 
-LIBDIRS = $(SDK)/libcm3 $(SDK)/libstm32f $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb
+LIBDIRS = $(SDKDIR)/libcm3 $(SDKDIR)/libstm32f $(SDKDIR)/libutil \
+		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libgdb
 
 LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
 
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDKDIR)/include ../include
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections #--save-temps
-LDFLAGS = -Wl,--gc-sections 
-
-VERSION_DATE = "2016-02-13"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "38"
+CFLAGS = -g -Os -Wall -Wdouble-promotion 
+OPTIONS = -mno-unaligned-access 
 
 MACH = stm32f303xc
-HSE_HZ = 8000000
-include ../../../mk/stm32f3xx.mk
+include $(THINKOSDIR)/mk/stm32.mk
 

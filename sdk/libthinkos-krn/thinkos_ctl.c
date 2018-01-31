@@ -21,9 +21,12 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 #include <sys/param.h>
 #include <sys/sysclk.h>
+#include <sys/delay.h>
 
 #if THINKOS_ENABLE_CTL
 
@@ -98,7 +101,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	arg[0] = 0;
 	
-	DCC_LOG(LOG_TRACE, ".........................");
+	DCC_LOG(LOG_MSG, ".........................");
 
 	switch (req) {
 	case THINKOS_CTL_CLOCKS:
@@ -113,24 +116,24 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_ABORT:
 		DCC_LOG(LOG_WARNING, "Abort!");
-#if 0
-		{
-			volatile int * ptr = (int *)(0x30000000);
-			int i;
-
-			i = ptr[0];
-			(void)i;
-		}
-#endif
 		__thinkos_pause_all();
 		__thinkos_defer_sched();
 #if THINKOS_ENABLE_MONITOR
-		__bkpt(3);
+		/* FIXME: hardcoded number */
+	  	asm volatile ("bkpt %0" : : "I" (3));
 #endif
 		break;
 
+/* XXX: Deprecated
 	case THINKOS_CTL_TRACE:
 		DCC_LOGSTR(LOG_MSG, "%s", (char *)arg[1]);
+		break;
+*/
+
+	case THINKOS_CTL_REBOOT:
+		DCC_LOG(LOG_WARNING, "Reboot!");
+		udelay(32768);
+		cm3_sysrst();
 		break;
 
 #if THINKOS_ENABLE_RT_DEBUG
@@ -140,26 +143,35 @@ void thinkos_ctl_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
-	case THINKOS_CTL_THREAD_INF:
+	case THINKOS_CTL_THREAD_INF: {
+		unsigned int cnt;
+
+		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
 		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * THINKOS_THREADS_MAX + 1); 
-		arg[0] = THINKOS_THREADS_MAX + 1;
+						   sizeof(void *) * cnt); 
+		arg[0] = cnt;
+		}
 		break;
 #endif
 
 #if THINKOS_ENABLE_PROFILING
-	case THINKOS_CTL_CYCCNT:
+	case THINKOS_CTL_THREAD_CYCCNT:
 		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
 		break;
 #endif
 
+	case THINKOS_CTL_CYCCNT:
+		/* Return the current value of the CPU cycle counter */
+		arg[0] = CM3_DWT->cyccnt;
+		break;
+
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
-		__thinkos_error(THINKOS_ERR_CTL_REQINV);
+		__THINKOS_ERROR(THINKOS_ERR_CTL_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}
 }
 
-#endif /* THINKOS_ENABLE_SYSINFO */
+#endif /* THINKOS_ENABLE_CTL */
 

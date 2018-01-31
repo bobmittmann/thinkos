@@ -20,42 +20,73 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stm32f.h>
 
-/* Set default values for system clocks */
+/* -------------------------------------------------------------------- 
+   Default options 
+*/
+#ifndef STM32_ENABLE_HSI
+#define STM32_ENABLE_HSI 1
+#endif
 
-#if defined(STM32F429)
+#ifndef STM32_ENABLE_HSE
+#define STM32_ENABLE_HSE 0
+#endif
 
-  #ifndef HSE_HZ
-    #define HSE_HZ 25000000
+#ifndef STM32_ENABLE_PLL
+#define STM32_ENABLE_PLL 1
+#endif
+
+#ifndef STM32_ENABLE_PLLSAI
+#define STM32_ENABLE_PLLSAI 1
+#endif
+
+#ifndef STM32_ENABLE_PLLI2S
+#define STM32_ENABLE_PLLI2S 0
+#endif
+
+#ifndef STM32_HCLK_HZ 
+  #if defined(STM32F4X)
+    #define STM32_HCLK_HZ    168000000
+  #else
+    #define STM32_HCLK_HZ    120000000
   #endif
+#endif
 
-  #ifndef HCLK_HZ
-    #define HCLK_HZ 168000000
+#ifndef STM32_HSE_HZ 
+  #if defined(STM32F4X)
+    #define STM32_HSE_HZ     25000000
+  #elif defined(STM32F2X)
+    #define STM32_HSE_HZ     24000000
+  #else
+    #define STM32_HSE_HZ     12000000
   #endif
+#endif
 
-#elif defined(STM32F4X)
+#ifndef STM32_MSI_HZ 
+#define STM32_MSI_HZ          4000000
+#endif
 
-  #ifndef HSE_HZ
-    #define HSE_HZ 12000000
-  #endif
+#define STM32_HSI_HZ         16000000
 
-  #ifndef HCLK_HZ
-    #define HCLK_HZ 168000000
-  #endif
+#ifndef STM32_APB1_PRE
+#define STM32_APB1_PRE   1
+#endif
 
-#elif defined(STM32F2X)
+#ifndef STM32_APB2_PRE
+#define STM32_APB2_PRE   1
+#endif
 
-  #ifndef HSE_HZ
-    #define HSE_HZ 24000000
-  #endif
+#ifndef STM32_AHB_PRE
+#define STM32_AHB_PRE    1
+#endif
 
-  #ifndef HCLK_HZ
-    #define HCLK_HZ 120000000
-  #endif
-
-#else
-
+#ifndef STM32_MCO_PRE
+#define STM32_MCO_PRE    1
 #endif
 
 #if defined(STM32F446)
@@ -64,10 +95,8 @@
   #define PLLR 0
 #endif
 
-#if defined(STM32F2X) || defined(STM32F4X)
-
-#if (HCLK_HZ == 168000000)
-#if (HSE_HZ == 25000000)
+#if (STM32_HCLK_HZ == 168000000)
+#if (STM32_HSE_HZ == 25000000)
 	/* F_HSE = 25 MHz
 	   F_VCO = 335.9375 MHz (F_HSE * 215 / 16)
 	   F_MAIN = 167.96875 MHz (F_VCO / 2)
@@ -76,7 +105,7 @@
   #define PLLP 2
   #define PLLN 215
   #define PLLM 16
-#elif (HSE_HZ == 16000000)
+#elif (STM32_HSE_HZ == 16000000)
 	/* F_HSE = 16 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -85,7 +114,7 @@
   #define PLLP 2
   #define PLLN 168
   #define PLLM 8
-#elif (HSE_HZ == 12000000)
+#elif (STM32_HSE_HZ == 12000000)
 	/* F_HSE = 12 MHz
 	   F_VCO = 336 MHz (F_HSE * 28)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -101,7 +130,13 @@
   #define PLLI2SM 9
   #define PLLI2SQ 8
   #define PLLI2SP 2
-#elif (HSE_HZ == 8000000)
+   /* F_VCO = 389454513
+      F_I2S = 169333333 */
+  #define PLLSAIN 127
+  #define PLLSAIM 9
+  #define PLLSAIQ 3
+  #define PLLSAIP 2
+#elif (STM32_HSE_HZ == 8000000)
 	/* F_HSE = 8 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -111,11 +146,11 @@
   #define PLLN 168
   #define PLLM 4
 #else
-#error "HSE_HZ invalid!"
+#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (HCLK_HZ == 120000000)
-#if (HSE_HZ == 24000000)
+#elif (STM32_HCLK_HZ == 120000000)
+#if (STM32_HSE_HZ == 24000000)
 	/* F_HSE = 24 MHz
 	   F_VCO = 240 MHz
 	   F_MAIN = 120 MHz
@@ -124,7 +159,7 @@
   #define PLLP 2
   #define PLLN 120
   #define PLLM 12
-#elif (HSE_HZ == 12000000)
+#elif (STM32_HSE_HZ == 12000000)
 	/* F_HSE = 24 MHz
 	   F_VCO = 240 MHz
 	   F_MAIN = 120 MHz
@@ -135,11 +170,11 @@
   #define PLLM 12
   /* Target I2S frequecny = 44100 * 32 * X */
 #else
-#error "HSE_HZ invalid!"
+#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (HCLK_HZ == 192000000)
-#if (HSE_HZ == 25000000)
+#elif (STM32_HCLK_HZ == 192000000)
+#if (STM32_HSE_HZ == 25000000)
 	/* F_HSE = 25 MHz
 	   F_VCO = 383.9286 MHz (F_HSE * 215 / 14)
 	   F_MAIN = 191.964 MHz (F_VCO / 2)
@@ -149,11 +184,11 @@
   #define PLLN 215
   #define PLLM 14
 #else
-#error "HSE_HZ invalid!"
+#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (HCLK_HZ == 180000000)
-#if (HSE_HZ == 25000000)
+#elif (STM32_HCLK_HZ == 180000000)
+#if (STM32_HSE_HZ == 25000000)
 	/* F_HSE = 25 MHz
 	   F_VCO = 360 MHz (F_HSE * 216 / 15)
 	   F_MAIN = 180 MHz (F_VCO / 2)
@@ -163,21 +198,21 @@
   #define PLLN 216
   #define PLLM 15
 #else
-#error "HSE_HZ invalid!"
+#error "STM32_HSE_HZ invalid!"
 #endif
 
 #endif
 
   /* Target I2S frequecny = 44100 * 32 * X */
-#define VCO_HZ ((HCLK_HZ) * (PLLP))
+#define VCO_HZ ((STM32_HCLK_HZ) * (PLLP))
 #define USB_HZ 48000000
 
 /* Validate the PLL configuration */
-#if ((HSE_HZ * PLLN) / PLLM) > ((VCO_HZ) + (VCO_HZ) / 1000)
+#if ((STM32_HSE_HZ * PLLN) / PLLM) > ((VCO_HZ) + (VCO_HZ) / 1000)
 #error "invalid PLL configuration (err > 0.1 %)!"
 #endif
 
-#if ((HSE_HZ * PLLN) / PLLM) < ((VCO_HZ) - (VCO_HZ) / 1000)
+#if ((STM32_HSE_HZ * PLLN) / PLLM) < ((VCO_HZ) - (VCO_HZ) / 1000)
 #error "invalid PLL configuration (err < -0.1 %)!"
 #endif
 
@@ -221,18 +256,42 @@
 
 #endif
 
-#define __VCO_HZ (((uint64_t)HSE_HZ * PLLN) / PLLM)
+#define __VCO_HZ (((uint64_t)STM32_HSE_HZ * PLLN) / PLLM)
 #define __HCLK_HZ (__VCO_HZ / PLLP)
-#define __VCOI2S_HZ (((uint64_t)HSE_HZ * PLLI2SN) / PLLI2SM)
+
+#if STM32_ENABLE_PLLSAI
+  /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
+  #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLSAIM)
+  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIQ)
+#else
+  #if STM32_ENABLE_PLL
+    /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
+    #define __SAI_HZ (__VCO_HZ / PLLPDIV)
+  #else
+    #define __SAI_HZ STM32_HSI_HZ
+  #endif
+#endif
+
+#if STM32_ENABLE_PLLI2S
+#define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
 #define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
+#endif
 
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
 const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
 const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_tim2_hz = __HCLK_HZ;
+const uint32_t stm32f_sai_hz = __SAI_HZ;
+const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
+#if STM32_ENABLE_PLL
+const uint32_t stm32f_vco_hz = __VCO_HZ;
+#endif
+#if STM32_ENABLE_PLLSAI
+const uint32_t stm32f_vcosai_hz = __VCOSAI_HZ;
+#endif
 
-#if defined(STM32F446)
+#if STM32_ENABLE_PLLI2S
 const uint32_t stm32f_i2s_hz = __I2S_HZ;
 #endif
 
@@ -257,7 +316,6 @@ void __attribute__((section(".init"))) _init(void)
 	uint32_t cr;
 	uint32_t pll;
 	uint32_t cfg;
-	uint32_t ws;
 	int again;
 
 	/* Make sure we are using the internal oscillator */
@@ -324,10 +382,9 @@ void __attribute__((section(".init"))) _init(void)
 		}
 	}
 
-	ws = HCLK_HZ / 30000000;
-
 	/* adjust flash wait states and enable caches */
-	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | FLASH_LATENCY(ws);
+	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | 
+		FLASH_LATENCY(STM32_HCLK_HZ / 30000000);
 
 	if (flash->cr & FLASH_LOCK) {
 		/* unlock flash write */
@@ -343,7 +400,7 @@ void __attribute__((section(".init"))) _init(void)
 	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
 #endif
 
-#if defined(STM32F446)
+#if STM32_ENABLE_PLLI2S
 	/* configure IS2 PLL */
 	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
 		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
@@ -362,12 +419,28 @@ void __attribute__((section(".init"))) _init(void)
 		}
 	}
 
+	/* configure SAI PLL */
+	rcc->pllsaicfgr =  RCC_PLLSAIQ(PLLSAIQ) | RCC_PLLSAIP(PLLSAIP) |
+		RCC_PLLSAIN(PLLSAIN) | RCC_PLLSAIM(PLLSAIM);
+
+	/* enable SAISPLL */
+	cr |= RCC_PLLSAION;
+	rcc->cr = cr;;
+
+	for (again = 8192; ; again--) {
+		cr = rcc->cr;
+		if (cr & RCC_PLLSAIRDY)
+			break;
+		if (again == 0) {
+			/* PLL lock fail */
+			return;
+		}
+	}
+
 	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
 #endif
 
 }
 
 #endif /* THINKAPP */
-
-#endif /* defined(STM32F2X) || defined(STM32F4X) */
 

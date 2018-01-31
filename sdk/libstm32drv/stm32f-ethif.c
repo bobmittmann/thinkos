@@ -109,7 +109,8 @@ void * stm32f_ethif_mmap(struct ifnet * __if, size_t __len)
 
 	DCC_LOG1(LOG_INFO, "pktbuf=%p ++", pktbuf);
 
-	return pktbuf + 14;
+//	return pktbuf + 14;
+	return pktbuf + 16;
 }
 
 int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst, 
@@ -120,7 +121,7 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 	struct txdma_enh_desc * txdesc;
 	struct eth_hdr * hdr;
 	uint32_t head;
-	void * pktbuf;
+	uint8_t * pktbuf;
 	uint32_t tail;
 
 	DCC_LOG2(LOG_INFO, "mem=%p len=%d", __buf, __len);
@@ -138,7 +139,7 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 			DCC_LOG(LOG_INFO, "DMA own flag set!");
 			break;
 		}
-		pktbuf = txdesc->tbap1;
+		pktbuf = ((uint8_t *)txdesc->tbap1) - 2;
 		DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
 		pktbuf_free(pktbuf);
 		tail++;
@@ -224,7 +225,7 @@ int stm32f_ethif_send(struct ifnet * __if, const uint8_t * __dst,
 
 int stm32f_ethif_pkt_free(struct ifnet * __if, uint8_t * __pkt)
 {
-	uint8_t * pktbuf = (uint8_t *)((uintptr_t)__pkt - 14);
+	uint8_t * pktbuf = (uint8_t *)((uintptr_t)__pkt - 16);
 	
 	DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
 	pktbuf_free(pktbuf);
@@ -233,7 +234,7 @@ int stm32f_ethif_pkt_free(struct ifnet * __if, uint8_t * __pkt)
 
 int stm32f_ethif_munmap(struct ifnet * __if, void * __mem)
 {
-	uint8_t * pktbuf = (uint8_t *)((uintptr_t)__mem - 14);
+	uint8_t * pktbuf = (uint8_t *)((uintptr_t)__mem - 16);
 	
 	DCC_LOG1(LOG_INFO, "pktbuf=%p --", pktbuf);
 	pktbuf_free(pktbuf);
@@ -249,6 +250,7 @@ int stm32f_ethif_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 	struct rxdma_st st;
 	struct rxdma_enh_desc * rxdesc;
 	struct eth_hdr * hdr;
+	uint8_t * ptr;
 	int len;
 	
 	rxdesc = &drv->rx.desc[drv->rx.tail & (STM32F_ETH_RX_NDESC - 1)];
@@ -307,10 +309,11 @@ int stm32f_ethif_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 	DCC_LOG1(LOG_INFO, "pktbuf=%p", hdr);
 
 	/* alloc a new buffer */
-	if ((rxdesc->rbap1 = pktbuf_alloc()) == NULL) {
+	if ((ptr = pktbuf_alloc()) == NULL) {
 		DCC_LOG(LOG_ERROR, "pktbuf_alloc() failed!");
 		abort();
 	}
+	rxdesc->rbap1 = (void *)(ptr + 2); 
 	DCC_LOG1(LOG_INFO, "pktbuf=%p ++", rxdesc->rbap1);
 
 	/* set the DMA descriptor ownership */
@@ -373,9 +376,9 @@ int stm32f_ethif_init(struct ifnet * __if)
 	drv->eth = eth;
 
 //	mtu = STM32F_ETH_PAYLOAD_MAX;
-	mtu = pktbuf_len - 16;
-	rx_buf_size = pktbuf_len;
+	rx_buf_size = pktbuf_len - 2;
 	tx_buf_size = pktbuf_len;
+	mtu = rx_buf_size - 16;
 	(void)tx_buf_size;
 
 	__if->if_mtu = mtu;
@@ -411,6 +414,7 @@ int stm32f_ethif_init(struct ifnet * __if)
 
 	DCC_LOG(LOG_INFO, "DMA RX descriptors ...");
 	for (i = 0; i < STM32F_ETH_RX_NDESC; ++i) {
+		uint8_t * ptr;
 		/* configure recevie descriptors */
 		rxdesc = &drv->rx.desc[i];
 		rxdesc->rdes0 = ETH_RXDMA_OWN;
@@ -423,10 +427,11 @@ int stm32f_ethif_init(struct ifnet * __if)
 		/* Second address chained */
 		rxdesc->rch = 1;
 //		rxdesc->rbap1 = drv->rx.buf[i];
-		if ((rxdesc->rbap1 = pktbuf_alloc()) == NULL) {
+		if ((ptr = pktbuf_alloc()) == NULL) {
 			DCC_LOG(LOG_ERROR, "pktbuf_alloc() failed!");
 			abort();
 		}
+		rxdesc->rbap1 = (void *)(ptr + 2); 
 		DCC_LOG1(LOG_INFO, "pktbuf=%p ++", rxdesc->rbap1);
 		/* link to the next descriptor */
 		rxdesc->rbap2 = (void *)&drv->rx.desc[i + 1];

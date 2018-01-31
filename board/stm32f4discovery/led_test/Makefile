@@ -29,11 +29,11 @@ SDK = ../../../sdk
 LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
 		  $(SDK)/libthinkos 
 
-LIBS = cm3 stm32f thinkos
+LIBS = cm3 stm32f thinkos util
 
 INCPATH = $(SDK)/include ../include
 
-#LIBPATH = ../sdklibs/Debug
+LIBPATH = ../sdklibs/Debug
 
 CDEFS =
 

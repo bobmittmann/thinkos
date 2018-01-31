@@ -77,7 +77,7 @@ char * fgets(char * s, int size, FILE * f)
 
 #endif
 
-	if ((len = f->op->read(f->data, s, size - 1)) <= 0) {
+	if ((len = f->op->read(f->data, s, size - 1, -1)) <= 0) {
 		return NULL;
 	}
 
