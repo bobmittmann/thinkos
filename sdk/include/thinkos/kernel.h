@@ -1025,12 +1025,12 @@ void cm3_msp_init(uint64_t * stack_top);
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-static inline void __attribute__((always_inline)) __thinkos_error(int code)
-{
 #if THINKOS_ENABLE_ERROR_TRAP
-	__bkpt(THINKOS_BKPT_EXCEPT_OFF + code);
+  #define __THINKOS_ERROR(__CODE) \
+	  asm volatile ("bkpt %0" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
+#else
+  #define __THINKOS_ERROR(__CODE)
 #endif
-}
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
