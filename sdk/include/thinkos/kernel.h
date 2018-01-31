@@ -351,6 +351,13 @@
 #define THINKOS_ENABLE_ALIGN            1
 #endif
 
+/* Enable kernel support for real time trace. The kernel hold the trace
+   ring in a protected memory and mediate its access by the application 
+   and debug monitor services. */
+#ifndef THINKOS_ENABLE_TRACE    
+#define THINKOS_ENABLE_TRACE            0 
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Sanity check
  * --------------------------------------------------------------------------*/
@@ -975,7 +982,8 @@ enum thinkos_exception {
 	THINKOS_ERR_CTL_REQINV        = 24,
 	THINKOS_ERR_COMM_REQINV       = 25,
 	THINKOS_ERR_SYSCALL_INVALID   = 26,
-	THINKOS_ERR_CRITICAL_EXIT     = 27
+	THINKOS_ERR_CRITICAL_EXIT     = 27,
+	THINKOS_ERR_TRACE_ENTRY_NULL  = 28
 };
 
 /* Mark for breakpoint numbers. Breakpoints above this

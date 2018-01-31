@@ -41,9 +41,9 @@ enum trace_level {
 
 /* Trace reference */
 struct trace_ref {
+	unsigned short line; /* Source file line number */
 	unsigned char lvl;   /* Trace level */
 	unsigned char opt;   /* Options (unused) */
-	unsigned short line; /* Source file line number */
 	const char * func;   /* Function name */
 	const char * fmt;    /* Formatting string */
 };

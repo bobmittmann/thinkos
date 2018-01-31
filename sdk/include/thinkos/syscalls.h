@@ -118,6 +118,9 @@
 
 #define THINKOS_DBGMON          64
 
+#define THINKOS_TRACE           65
+#define THINKOS_TRACE_CTL       66
+
 #define CONSOLE_WRITE             0
 #define CONSOLE_READ              1
 #define CONSOLE_TIMEDREAD         2
@@ -144,6 +147,13 @@
 #define THINKOS_IRQ_PRIORITY_SET    2
 #define THINKOS_IRQ_SYSCALLS_SET    3
 #define THINKOS_IRQ_RESTORE         4
+
+#define THINKOS_TRACE_CLOSE         0
+#define THINKOS_TRACE_OPEN          1
+#define THINKOS_TRACE_READ          2
+#define THINKOS_TRACE_FLUSH         3
+#define THINKOS_TRACE_GETFIRST      4
+#define THINKOS_TRACE_GETNEXT       5
 
 #ifndef __ASSEMBLER__
 
@@ -623,10 +633,12 @@ static inline void __attribute__((always_inline, noreturn))
 		}
 	}
 
+/* XXX: Deprecated 
 static inline int __attribute__((always_inline))
 	thinkos_trace(const char * msg) {
 		return THINKOS_SYSCALLS2(THINKOS_CTL, THINKOS_CTL_TRACE, msg);
 	}
+ */
 
 static inline int __attribute__((always_inline))
 	thinkos_reboot(uint32_t key) {
@@ -683,6 +695,54 @@ thinkos_comm_send(uint32_t hdr, const void * buf, unsigned int len) {
 static inline int __attribute__((always_inline)) 
 thinkos_comm_recv(uint32_t * hdr, void * buf, unsigned int len) {
 	return THINKOS_SYSCALLS4(THINKOS_COMM, COMM_RECV, hdr, buf, len);
+}
+
+/* ---------------------------------------------------------------------------
+   In Kernel Trace Buffer
+   ---------------------------------------------------------------------------*/
+
+struct trace_ref;
+struct trace_entry;
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace(const struct trace_ref * ref) {
+	return THINKOS_SYSCALLS1(THINKOS_TRACE, ref);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_open(void) {
+	return THINKOS_SYSCALLS1(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_OPEN);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_close(int id) {
+	return THINKOS_SYSCALLS2(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_CLOSE, id);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_read(int id, uint32_t * buf, unsigned int len) {
+	return THINKOS_SYSCALLS4(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_READ, id, buf, len);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_flush(int id) {
+	return THINKOS_SYSCALLS2(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_FLUSH, id);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_getfirst(int id, struct trace_entry * entry) {
+	return THINKOS_SYSCALLS3(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_GETFIRST, id, entry);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_trace_getnext(int id, struct trace_entry * entry) {
+	return THINKOS_SYSCALLS3(THINKOS_TRACE_CTL, 
+							 THINKOS_TRACE_GETNEXT, id, entry);
 }
 
 /* ---------------------------------------------------------------------------

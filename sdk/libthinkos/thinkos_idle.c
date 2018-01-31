@@ -23,6 +23,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_TRACE__
+#include <thinkos/trace.h>
 #include <thinkos.h>
 
 /* -------------------------------------------------------------------------- 
@@ -43,17 +45,34 @@ void thinkos_idle_svc(int32_t * arg)
 	dbgmon_signal_idle();
 #endif
 
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_TRACE)
+	do {
+		/* Chek for threads in the ready queue. */
+  #if ((THINKOS_THREADS_MAX) < 32) 
+		if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX))) {
+  #else
+		if (thinkos_rt.wq_ready != 0) {
+  #endif
+  #if THINKOS_ENABLE_CRITICAL
+			__thinkos_defer_sched();
+			break;
+  #endif
+		}
+		/* Try to send one trace entry to a remote host... */
+	} while (__thinkos_trace_try_send() >= 0);
+#else
+  #if THINKOS_ENABLE_CRITICAL
 	/* Force the scheduler to run if there are 
 	   threads in the ready queue. */
- #if ((THINKOS_THREADS_MAX) < 32) 
+   #if ((THINKOS_THREADS_MAX) < 32) 
 	if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
- #else
+   #else
 	if (thinkos_rt.wq_ready != 0) 
- #endif
+   #endif
 	{
 		__thinkos_defer_sched();
 	}
+  #endif
 #endif
 }
 

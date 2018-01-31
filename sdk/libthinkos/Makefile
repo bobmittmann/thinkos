@@ -46,7 +46,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_sleep.c thinkos_break.c thinkos_pause.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
-		 thinkos_dbgmon.c thinkos_console.c \
+		 thinkos_dbgmon.c thinkos_console.c thinkos_trace.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 		 $(addprefix dbgmon/,$(DBGMON_CFILES))
 

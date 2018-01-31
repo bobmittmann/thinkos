@@ -765,6 +765,35 @@ int thinkos_thread_abort(unsigned int thread);
 
 /**@}*/
 
+/** @defgroup trace Real-time trace kernel support
+ *
+ * ...
+ *
+ * An user library -- libtrace -- is needed to take advantage of
+ * the kernel trace ring.
+ *
+ * @{
+ */
+
+struct trace_entry;
+struct trace_ref;
+
+int thinkos_trace(const struct trace_ref * ref);
+
+int thinkos_trace_open(void);
+
+int thinkos_trace_close(int id);
+
+int thinkos_trace_read(int id, uint32_t * buf, unsigned int len);
+
+int thinkos_trace_flush(int id);
+
+int thinkos_trace_getfirst(int id, struct trace_entry * entry);
+
+int thinkos_trace_getnext(int id, struct trace_entry * entry);
+
+/**@}*/
+
 #ifdef __cplusplus
 }
 #endif

@@ -123,9 +123,11 @@ void thinkos_ctl_svc(int32_t * arg)
 #endif
 		break;
 
+/* XXX: Deprecated
 	case THINKOS_CTL_TRACE:
 		DCC_LOGSTR(LOG_MSG, "%s", (char *)arg[1]);
 		break;
+*/
 
 	case THINKOS_CTL_REBOOT:
 		DCC_LOG(LOG_WARNING, "Reboot!");

@@ -153,6 +153,10 @@ void thinkos_comm_svc(int32_t * arg, int self);
 
 void thinkos_dbgmon_svc(int32_t * arg, int self);
 
+void thinkos_trace_svc(int32_t * arg, int self);
+
+void thinkos_trace_ctl_svc(int32_t * arg, int self);
+
 void thinkos_idle_svc(int32_t * arg);
 
 #if THINKOS_ENABLE_ESCALATE
@@ -765,6 +769,22 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 	case THINKOS_DBGMON:
 #if THINKOS_ENABLE_MONITOR
 		thinkos_dbgmon_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_TRACE:
+#if THINKOS_ENABLE_TRACE    
+		thinkos_trace_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+	case THINKOS_TRACE_CTL:
+#if THINKOS_ENABLE_TRACE    
+		thinkos_trace_ctl_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif

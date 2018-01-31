@@ -1265,6 +1265,13 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	/* enable monitor and send the reset event */
 	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 
+	/* XXX: enabling all vector catch? Not sure if this is
+	   really necessary. At least the breakpoint somehow depends
+	   on this on certain Cortex-M4 processors !!!!... */
+//	demcr |= DCB_DEMCR_VC_HARDERR | DCB_DEMCR_VC_INTERR | DCB_DEMCR_VC_BUSERR |
+//		DCB_DEMCR_VC_STATERR | DCB_DEMCR_VC_CHKERR | DCB_DEMCR_VC_NOCPERR |
+//		DCB_DEMCR_VC_MMERR | DCB_DEMCR_VC_CORERESET;
+
 	dcb->demcr = demcr;
 }
 
