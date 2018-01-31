@@ -346,12 +346,12 @@ void thinkos_trace_svc(int32_t * arg, int self)
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (ref == NULL) {
-		__thinkos_error(THINKOS_ERR_TRACE_ENTRY_NULL);
+		__THINKOS_ERROR(THINKOS_ERR_TRACE_ENTRY_NULL);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 	if (buf == NULL) {
-		__thinkos_error(THINKOS_ERR_TRACE_ENTRY_NULL);
+		__THINKOS_ERROR(THINKOS_ERR_TRACE_ENTRY_NULL);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

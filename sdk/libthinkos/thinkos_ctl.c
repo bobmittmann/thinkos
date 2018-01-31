@@ -119,7 +119,8 @@ void thinkos_ctl_svc(int32_t * arg)
 		__thinkos_pause_all();
 		__thinkos_defer_sched();
 #if THINKOS_ENABLE_MONITOR
-		__bkpt(3);
+		/* FIXME: hardcoded number */
+	  	asm volatile ("bkpt %0" : : "I" (3));
 #endif
 		break;
 
@@ -166,7 +167,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
-		__thinkos_error(THINKOS_ERR_CTL_REQINV);
+		__THINKOS_ERROR(THINKOS_ERR_CTL_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}

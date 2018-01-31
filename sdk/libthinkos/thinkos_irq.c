@@ -83,7 +83,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -128,7 +128,7 @@ void thinkos_irq_register_svc(int32_t * arg)
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -170,7 +170,7 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__thinkos_error(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -196,14 +196,14 @@ void thinkos_irq_ctl_svc(int32_t * arg)
 #if THINKOS_ENABLE_ARG_CHECK
 			if (thread_id >= THINKOS_THREADS_MAX) {
 				DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-				__thinkos_error(THINKOS_ERR_THREAD_INVALID);
+				__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
 				arg[0] = THINKOS_EINVAL;
 				return;
 			}
 #if THINKOS_ENABLE_THREAD_ALLOC
 			if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
 				DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-				__thinkos_error(THINKOS_ERR_THREAD_ALLOC);
+				__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
 				arg[0] = THINKOS_EINVAL;
 				return;
 			}
