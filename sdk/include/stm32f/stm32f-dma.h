@@ -1145,7 +1145,7 @@ struct stm32f_dma {
 	volatile uint32_t hisr;
 	volatile uint32_t lifcr;
 	volatile uint32_t hifcr;
-	struct stm32f_dma_stream s[8];
+	volatile struct stm32f_dma_stream s[8];
 };
 #endif
 
@@ -1177,8 +1177,8 @@ struct stm32f_dma {
 	volatile uint32_t isr;
 	volatile uint32_t ifcr;
 	union {
-		struct stm32f_dma_channel ch[8];
-		struct stm32f_dma_stream s[8];
+		volatile struct stm32f_dma_channel ch[8];
+		volatile struct stm32f_dma_stream s[8];
 	};
 	volatile uint32_t cselr; /* 0xa8 */
 };
