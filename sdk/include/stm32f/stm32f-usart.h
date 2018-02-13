@@ -174,7 +174,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 /* 0: oversampling by 16
    1: oversampling by 8
    Note: Oversampling by 8 is not available in the Smartcard, IrDA and 
-   LIN modes: when SCEN=1,IREN=1 or LINEN=1 then OVER8 is forced to ‘0 by 
+   LIN modes: when SCEN=1,IREN=1 or LINEN=1 then OVER8 is forced to ‘0 by
    hardware. */
 
 #if defined(STM32F3X)
@@ -296,7 +296,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 /* This bit enables the transmitter. It is set and cleared by software.
 	0: Transmitter is disabled
 	1: Transmitter is enabled
-	Note: 1: During transmission, a “0” pulse on the TE 
+	Note: 1: During transmission, a “0” pulse on the TE
 	bit (“0” followed by “1”) sends a preamble
 	(idle line) after the current word, except in smartcard mode.
 	2: When TE is set there is a 1 bit-time delay before the 
@@ -569,7 +569,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 #include <stdint.h>
 
 struct stm32_usart {
-#if defined(STM32F3X)
+#if defined(STM32F3X)||defined(STM32L4XX)
 	volatile uint32_t cr1;
 	volatile uint32_t cr2;
 	volatile uint32_t cr3;
