@@ -26,13 +26,14 @@
 /* Q15 Saturation */
 #define Q15_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
-
+/* Conversion form float to fixed point Q1.15 with saturation */
+#define Q15S(F) Q15_SAT(Q15(F))
 
 /* Conversion form float to fixed point Q7.24 */
-#define Q24(F) ((int32_t)((F) * (1 << 24)))
+#define Q24(F) ((int32_t)((F) * 16777216))
 
 /* Convert from fractional Q8.24 to float point */
-#define Q24F(Q) ((float)(((float)(Q)) / (1.0 * (1 << 24))))
+#define Q24F(Q) ((float)(((float)(Q)) / (float)16777216.0))
 
 /* Q24 Multiply */
 #define Q24_MUL(X1, X2) (((int64_t)(X1) * (int64_t)(X2) + (1 << 23)) >> 24)
