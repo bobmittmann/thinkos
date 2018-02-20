@@ -161,7 +161,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 
 /* ------------------------------------------------------------------------- */
 /* USART Control register 1 */
-#if defined(STM32F3X)
+#if defined(STM32F3X) || defined(STM32L4XX)
 #define STM32F_USART_CR1 0x00
 #else
 #define STM32F_USART_CR1 0x0C
@@ -177,7 +177,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
    LIN modes: when SCEN=1,IREN=1 or LINEN=1 then OVER8 is forced to ‘0 by
    hardware. */
 
-#if defined(STM32F3X)
+#if defined(STM32F3X) || defined(STM32L4XX)
 
 /* Bit 14 - Character match interrupt enable */
 #define USART_CMIE (1 << 14) 
@@ -520,7 +520,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 	2: This bit is not available for UART4 & UART5. */
 
 
-#if defined(STM32F3X)
+#if defined(STM32F3X) || defined(STM32L4XX)
 
 /* Interrupt flag clear register (USARTx_ICR) */
 #define STM32F_USART_ICR 0x20
@@ -569,7 +569,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 #include <stdint.h>
 
 struct stm32_usart {
-#if defined(STM32F3X)||defined(STM32L4XX)
+#if defined(STM32F3X) || defined(STM32L4XX)
 	volatile uint32_t cr1;
 	volatile uint32_t cr2;
 	volatile uint32_t cr3;

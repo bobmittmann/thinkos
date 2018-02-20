@@ -2007,6 +2007,16 @@
 
 /* Bits [8..9] - Reserved, must be kept at reset value. */
 
+/* Bits [4..5] - USART3 clock source selection */
+#define RCC_USART3SEL_MSK (0x3 << 4)
+#define RCC_USART3SEL_SET(VAL) (((VAL) << 4) & RCC_USART3SEL_MSK)
+#define RCC_USART3SEL_GET(REG) (((REG) & RCC_USART3SEL_MSK) >> 4)
+/* This bit is set and cleared by software to select the USART3 clock source.
+   00: PCLK selected as USART3 clock
+   01: System clock (SYSCLK) selected as USART3 clock
+   10: HSI16 clock selected as USART3 clock
+   11: LSE clock selected as USART3 clock */
+
 /* Bits [2..3] - USART2 clock source selection */
 #define RCC_USART2SEL_MSK (0x3 << 2)
 #define RCC_USART2SEL_SET(VAL) (((VAL) << 2) & RCC_USART2SEL_MSK)
