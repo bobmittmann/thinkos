@@ -84,16 +84,21 @@
 /* Convert from float point to fixed point Q1.30 */
 #define FLOAT_Q23(X)     ((int32_t)((X) * (1 << 23)))
 
-/* Convert from fractional Q1.30 to float point */
+/* Convert from fractional Q8.23 to float point */
 #define Q23F(Q) ((double)((double)(Q) * (1.0 / (double)(1 << 23))))
-/* Convert from fixed point Q1.30 to float point */
+/* Convert from fixed point Q8.23 to float point */
 #define Q23_FLOAT(X)     ((float)(X) / (1 << 23))
 
+/* Conversion form float to fixed point Q1.15 with saturation */
+#define Q23S(F) Q23_SAT(Q23(F))
+
 /* Q23 Signed Multiply */
-#define Q23_MUL(X1, X2)  (((int64_t)(X1) * (int32_t)(X2) + (1 << 22)) >> 23)
+#define Q23_MUL(X1, X2)  ((int64_t)((int64_t)(X1) * (int32_t)(X2) + \
+									(1 << 22)) >> 23)
 
 /* Q23 Unsigned Multiply */
-#define Q23_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 22)) >> 23)
+#define Q23_UMUL(X1, X2) ((uint64_t)(((uint64_t)(X1) * (uint32_t)(X2)) \
+									 + (1 << 22)) >> 23)
 
 /* Q23 Divide */
 #define Q23_DIV(X, Y)    (((int64_t)(X) << 23) / (int32_t)(Y))

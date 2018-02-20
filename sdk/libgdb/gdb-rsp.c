@@ -568,7 +568,35 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 	} else if (prefix(s, "os")) {
 	} else if (prefix(s, "si")) {
 		print_stack_usage(gdb, pkt);
+	} 
+#if THINKOS_ENABLE_CONSOLE
+	/* insert into the console pipe */
+	else if (prefix(s, "wr")) {
+		uint8_t * buf;
+		int n;
+		int i;
+
+		s += 2;
+		/* skip spaces */
+		while (*s && *s == ' ')
+			s++;
+		/* get a pointer to the head of the pipe.
+		   __console_rx_pipe_ptr() will return the number of 
+		   consecutive spaces in the buffer. */
+		if ((n = __console_rx_pipe_ptr(&buf)) > 0) {
+			/* copy the character into the RX fifo */
+			for (i = 0; (i < n) && (*s != '\0'); ++i)
+				buf[i] = *s++;
+			/* append CR */
+			if (i < n) 
+				buf[i++] = '\r';
+			/* commit the fifo head */
+			__console_rx_pipe_commit(i);
+		} else {
+			/* discard */
+		}
 	}
+#endif
 
 	return rsp_ok(gdb);
 }
