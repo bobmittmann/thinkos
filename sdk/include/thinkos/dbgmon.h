@@ -61,20 +61,27 @@ enum dbgmon_event {
 	DBGMON_IRQ_STEP     = 12,
 
 	/* Board reset request */
-	DBGMON_SOFTRST      = 24,
+	DBGMON_SOFTRST      = 23,
 	/* ThinkOS application stop request */
-	DBGMON_APP_STOP     = 25,
+	DBGMON_APP_STOP     = 24,
 	/* ThinkOS application erase request */
-	DBGMON_APP_ERASE    = 26,
+	DBGMON_APP_ERASE    = 25,
 	/* ThinkOS application upload request */
-	DBGMON_APP_UPLOAD   = 27,
+	DBGMON_APP_UPLOAD   = 26,
 	/* ThinkOS application exec request */
-	DBGMON_APP_EXEC     = 28,
+	DBGMON_APP_EXEC     = 27,
 
+	/* ThinkOS idle indication: response from DBGMON_IDLE_REQ.
+	   ! This flag position must be lower than the DBGMON_IDLE_REQ. !
+	 */
+	DBGMON_OS_IDLE      = 28,
+	/* Request the IDLE thread to notify when it is running.
+	   The IDLE thread should respond by setting the 
+	   DBGMON_OS_IDLE flag. This mechanism is used to flush
+	   the current running thread state. */
+	DBGMON_IDLE_REQ     = 29,
 	/* ThinkOS startup indication */
-	DBGMON_STARTUP      = 29,
-	/* ThinkOS idle indication */
-	DBGMON_IDLE         = 30,
+	DBGMON_STARTUP      = 30,
 	/* Debug monitor internal reset */
 	DBGMON_RESET        = 31
 };

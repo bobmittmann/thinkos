@@ -216,12 +216,14 @@ int dbgmon_signal(int sig)
 void dbgmon_signal_idle(void)
 {
 	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t demcr;
+
 	/* Debug monitor request semaphore */
-	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
+	if ((thinkos_dbgmon_rt.events) & DBGMON_IDLE_REQ) {
 		DCC_LOG(LOG_MSG, "<<< Idle >>>");
-		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE, 1);  
-		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
+		/* REspond with system idle */
+		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, 
+					 DBGMON_OS_IDLE, 1);  
+		dcb->demcr |= DCB_DEMCR_MON_PEND;
 		asm volatile ("isb\n" :  :  : );
 	}
 }
@@ -403,11 +405,11 @@ int dbgmon_wait_idle(void)
 {
 	int ret;
 
-	/* Debug monitor request semaphore */
-	CM3_DCB->demcr |= DCB_DEMCR_MON_REQ;
+	/* Debug monitor IDLE request semaphore */
+	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE_REQ, 1);  
 
 	/* wait for signal */
-	if ((ret = dbgmon_wait(DBGMON_IDLE)) < 0)
+	if ((ret = dbgmon_wait(DBGMON_OS_IDLE)) < 0)
 		return ret;
 
 	DCC_LOG(LOG_MSG, "[IDLE] zzz zzz zzz zzz");

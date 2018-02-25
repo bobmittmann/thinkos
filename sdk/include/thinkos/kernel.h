@@ -982,7 +982,7 @@ struct thinkos_thread_init {
  * Internal errors
  * --------------------------------------------------------------------------*/
 
-enum thinkos_exception {
+enum thinkos_error {
 	THINKOS_ERR_COND_INVALID      = 1,
 	THINKOS_ERR_COND_ALLOC        = 2,
 	THINKOS_ERR_MUTEX_INVALID     = 3,
@@ -1016,8 +1016,8 @@ enum thinkos_exception {
 /* Mark for breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
-
-#define THINKOS_ERR_OFF 16
+/* Offset in the error assignment to allow for system exceptions */
+#define THINKOS_ERR_OFF    16
 
 /* -------------------------------------------------------------------------- 
  * Idle thread
