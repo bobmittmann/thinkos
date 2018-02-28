@@ -336,6 +336,13 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 
 /* [31..15] Reserved, forced by hardware to 0. */
 
+#define USART_SWAP (1 << 15) /* Bit 15 - Swap TX/RX pins */
+/* This bit is set and cleared by software.
+  0: TX/RX pins are used as defined in standard pinout
+  1: The TX and RX pins functions are swapped.
+     This allows to work in the case of a cross-wired connection to another USART.
+     This bit field can only be written when the USART is disabled(UE=0) */
+
 #define USART_LINEN (1 << 14) /* Bit 14 - LIN mode enable */
 /* This bit is set and cleared by software.
 	0: LIN mode disabled

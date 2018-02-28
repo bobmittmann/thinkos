@@ -932,6 +932,7 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Channel 6 mapped on TIM1_UP
    others: Reserved */
+#define DMA1_C6S_USART2_RX (DMA1_C6S_SET(0x2))
 
 /* Bits [16..19] - DMA channel 5 selection */
 #define DMA1_C5S_MSK (0xf << 16)
@@ -978,7 +979,7 @@ This bit is set and cleared by software.
    0111: Channel 3 mapped on TIM1_CH2
    others: Reserved */
 #define DMA1_C3S_TIM6_UP_DAC1 (0x6 << 8)
-#define DMA1_C3S_USART3_RX (0x2 << 8)
+#define DMA1_C3S_USART3_RX (DMA1_C3S_SET(0x2))
 
 /* Bits [4..7] - DMA channel 2 selection */
 #define DMA1_C2S_MSK (0xf << 4)
