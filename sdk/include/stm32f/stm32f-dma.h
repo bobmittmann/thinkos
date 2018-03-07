@@ -252,6 +252,15 @@
 	0: No effect
 	1: Clears the corresponding CFEIFx flag in the DMA_HISR register */
 
+#define STM32_DMA_STREAM0 0
+#define STM32_DMA_STREAM1 1
+#define STM32_DMA_STREAM2 2
+#define STM32_DMA_STREAM3 3
+#define STM32_DMA_STREAM4 4
+#define STM32_DMA_STREAM5 5
+#define STM32_DMA_STREAM6 6
+#define STM32_DMA_STREAM7 7
+
 /*	DMA stream x configuration register */
 #define STM32F_DMA_S0CR (0x010 + 0x018 * 0)
 #define STM32F_DMA_S1CR (0x010 + 0x018 * 1)
@@ -339,6 +348,16 @@
 #define DMA_PL_MSK (((1 << (1 + 1)) - 1) << 16)
 #define DMA_PL_SET(VAL) (((VAL) << 16) & DMA_PL_MSK)
 #define DMA_PL_GET(REG) (((REG) & DMA_PL_MSK) >> 16)
+/*These bits are set and cleared by software.
+00: Low
+01: Medium
+10: High
+11: Very high */
+#define DMA_PL_LOW       (DMA_PL_SET(0))
+#define DMA_PL_MEDIUM    (DMA_PL_SET(1))
+#define DMA_PL_HIGH      (DMA_PL_SET(2))
+#define DMA_PL_VERY_HIGH (DMA_PL_SET(3))
+
 /* These bits are set and cleared by software.
 	00: Low
 	01: Medium
