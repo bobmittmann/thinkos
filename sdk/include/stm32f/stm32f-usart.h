@@ -108,7 +108,7 @@
 0: No noise is detected
 1: Noise is detected
 Note: This bit does not generate interrupt as it appears at the same time as the RXNE bit which itself generates an interrupting interrupt is generated on NF flag in case of Multi Buffer communication if the EIE bit is set.
-Note: When the line is noise-free, the NF flag can be disabled by programming the ONEBIT bit to 1 to increase the USART tolerance to deviations (Refer to Section 24.3.5: USART receiverâ€™s tolerance to clock deviation on page 621). */
+Note: When the line is noise-free, the NF flag can be disabled by programming the ONEBIT bit to 1 to increase the USART tolerance to deviations (Refer to Section 24.3.5: USART receiver's tolerance to clock deviation on page 621). */
 
 #define USART_FE (1 << 1) /* Bit 1 - Framing error */
 /* This bit is set by hardware when a de-synchronization, excessive noise or a break character is detected. It is cleared by a software sequence (an read to the USART_SR register followed by a read to the USART_DR register).
@@ -143,7 +143,11 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
    on the data length) has no effect because it is replaced by the parity. */
 
 /* Baud rate register */
+#if defined(STM32F3X) || defined(STM32L4XX)
+#define STM32F_USART_BRR 0x0C
+#else
 #define STM32F_USART_BRR 0x08
+#endif
 /* Note: The baud counters stop counting if the TE or RE bits 
    are disabled respectively. */
 
@@ -174,7 +178,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 /* 0: oversampling by 16
    1: oversampling by 8
    Note: Oversampling by 8 is not available in the Smartcard, IrDA and 
-   LIN modes: when SCEN=1,IREN=1 or LINEN=1 then OVER8 is forced to â€˜0 by
+   LIN modes: when SCEN=1,IREN=1 or LINEN=1 then OVER8 is forced to '0 by
    hardware. */
 
 #if defined(STM32F3X) || defined(STM32L4XX)
@@ -207,7 +211,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
    Note: 1: It is recommended to set the UESM bit just before entering 
    Stop mode and clear it on exit from Stop mode.
    2: If the USART does not support the wakeup from Stop feature, 
-   this bit is reserved and forced by hardware to â€˜0â€™. */
+   this bit is reserved and forced by hardware to '0'. */
 
 /* Bit 0 - USART enable */
 #define USART_UE (1 << 0) 
@@ -296,8 +300,8 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 /* This bit enables the transmitter. It is set and cleared by software.
 	0: Transmitter is disabled
 	1: Transmitter is enabled
-	Note: 1: During transmission, a â€œ0â€ pulse on the TE
-	bit (â€œ0â€ followed by â€œ1â€) sends a preamble
+	Note: 1: During transmission, a "0" pulse on the TE
+	bit ("0" followed by "1") sends a preamble
 	(idle line) after the current word, except in smartcard mode.
 	2: When TE is set there is a 1 bit-time delay before the 
 	transmission starts. */
@@ -481,7 +485,11 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 
 
 /* Guard time and prescaler register */
+#if defined(STM32F3X) || defined(STM32L4XX)
+#define STM32F_USART_GTPR 0x10
+#else
 #define STM32F_USART_GTPR 0x18 
+#endif
 
 
 /* Bits [15..8] - Guard time value */
@@ -497,7 +505,7 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 #define USART_PSC_MSK (((1 << (7 + 1)) - 1) << 0) 
 #define USART_PSC_SET(VAL) (((VAL) << 0) & PSC_MSK)
 #define USART_PSC_GET(REG) (((REG) & PSC_MSK) >> 0)
-/* â€“ In IrDA Low-power mode:
+/* - In IrDA Low-power mode:
  	PSC[7:0] = IrDA Low-Power Baud Rate
 
 	Used for programming the prescaler for dividing the system clock to achieve 
@@ -509,8 +517,8 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 	00000010: divides the source clock by 2
 	...
 
-  â€“ In normal IrDA mode: PSC must be set to 00000001.
-  â€“ In smartcard mode:
+  - In normal IrDA mode: PSC must be set to 00000001.
+  - In smartcard mode:
 	PSC[4:0]: Prescaler value
 	Used for programming the prescaler for dividing the system clock 
 	to provide the smartcard clock.
@@ -529,32 +537,64 @@ An interrupt is generated if PEIE = 1 in the USART_CR1 register.
 
 #if defined(STM32F3X) || defined(STM32L4XX)
 
+/* Request register (USART_RQR) */
+#define STM32F_USART_RQR 0x18
+
+#define USART_TXFRQ (1 << 4) /* Transmit data flush request */
+	/* Writing 1 to this bit sets the TXE flag.
+	 * This allows to discard the transmit data. This bit must be used only in Smartcard mode,
+	 * when data has not been sent due to errors (NACK) and the FE flag is active in the
+	 * USART_ISR register.
+	 * If the USART does not support Smartcard mode, this bit is reserved and forced by hardware
+	 * to â€˜0â€™. Please refer to Section 36.4: USART implementation on page 1085.
+	 */
+#define USART_RXFRQ (1 << 3) /* Receive data flush request */
+	/* Writing 1 to this bit clears the RXNE flag.
+	 * This allows to discard the received data without reading it, and avoid an overrun condition
+	 */
+#define USART_MMRQ (1 << 2) /* Mute mode request */
+	/* Writing 1 to this bit puts the USART in mute mode and sets the RWU flag */
+#define USART_SBKRQ (1 << 1) /* Send break request */
+	/* Writing 1 to this bit sets the SBKF flag and request to send a BREAK on the line, as soon as
+	 * the transmit machine is available.
+	 * Note: In the case the application needs to send the break character following all previously
+	 * inserted data, including the ones not yet transmitted, the software should wait for the
+	 * TXE flag assertion before setting the SBKRQ bit.
+	 */
+#define USART_ABRRQ (1 << 0) /* Auto baud rate request */
+	/* Writing 1 to this bit resets the ABRF flag in the USART_ISR and request an automatic baud
+	 * rate measurement on the next received data frame.
+	 * Note: If the USART does not support the auto baud rate feature, this bit is reserved and
+	 * forced by hardware to â€˜0â€™. Please refer to Section 36.4: USART implementation on
+	 * page 1085.
+	 */
+
 /* Interrupt flag clear register (USARTx_ICR) */
 #define STM32F_USART_ICR 0x20
 
 #define USART_WUCF (1 << 20) /* Wakeup from Stop mode clear flag */
 	/* Writing 1 to this bit clears the WUF flag in the USARTx_ISR register.
 	Note: If the USART does not support the wakeup from Stop feature, this bit is reserved and
-	forced by hardware to ‘0’. */
+	forced by hardware to '0'. */
 #define USART_CMCF (1 << 17) /* Character match clear flag */
 	/* Writing 1 to this bit clears the CMF flag in the USARTx_ISR register.
 	Bit 16:13 Reserved, must be kept at reset value. */
 #define USART_EOBCF (1 << 12) /* End of block clear flag */
 	/* Writing 1 to this bit clears the EOBF flag in the USARTx_ISR register.
 	Note: If the USART does not support Smartcard mode, this bit is reserved and forced by
-	hardware to ‘0’. Please refer to Section 29.4: USART implementation on page 893. */
+	hardware to '0'. Please refer to Section 29.4: USART implementation on page 893. */
 #define USART_RTOCF (1 << 11) /* Receiver timeout clear flag */
 	/* Writing 1 to this bit clears the RTOF flag in the USARTx_ISR register.
 	Note: If the USART does not support the Receiver timeout feature, this bit is reserved and
-	forced by hardware to ‘0’. Please refer to Section 29.4: USART implementation on
+	forced by hardware to '0'. Please refer to Section 29.4: USART implementation on
 	page 893. */
 #define USART_CTSCF (1 << 9) /* CTS clear flag */
 	/* Writing 1 to this bit clears the CTSIF flag in the USARTx_ISR register.
 	Note: If the hardware flow control feature is not supported, this bit is reserved and forced by
-	hardware to  ‘0’. Please refer to Section 29.4: USART implementation on page 893. */
+	hardware to  '0'. Please refer to Section 29.4: USART implementation on page 893. */
 #define USART_LBDCF (1 << 8) /* LIN break detection clear flag */
 	/* Writing 1 to this bit clears the LBDF flag in the USARTx_ISR register.
-	Note: If LIN mode is not supported, this bit is reserved and forced by hardware to ‘0’. Please
+	Note: If LIN mode is not supported, this bit is reserved and forced by hardware to '0'. Please
 	refer to Section 29.4: USART implementation on page 893. */
 #define USART_TCCF (1 << 6) /* Transmission complete clear flag */
 	/* Writing 1 to this bit clears the TC flag in the USARTx_ISR register. */
