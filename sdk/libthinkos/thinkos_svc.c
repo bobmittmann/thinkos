@@ -140,7 +140,9 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self);
 
 void thinkos_irq_wait_svc(int32_t * arg, int self);
 
-void thinkos_irq_register_svc(int32_t * arg);
+void thinkos_irq_timedwait_svc(int32_t * arg, int self);
+
+void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self);
 
 void thinkos_irq_ctl_svc(int32_t * arg);
 
@@ -568,12 +570,24 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 #endif /* THINKOS_IRQ_MAX > 0 */
 		break;
 
-	case THINKOS_IRQ_REGISTER:
-#if CM3_RAM_VECTORS
-		thinkos_irq_register_svc(arg);
+	case THINKOS_IRQ_TIMEDWAIT:
+#if THINKOS_IRQ_MAX > 0
+  #if THINKOS_ENABLE_TIMED_CALLS
+		thinkos_irq_timedwait_svc(arg, self);
+  #else
+		thinkos_ev_wait_svc(arg, self);
+  #endif
 #else
 		thinkos_nosys(arg);
-#endif /* CM3_RAM_VECTORS */
+#endif /* THINKOS_IRQ_MAX > 0 */
+		break;
+
+	case THINKOS_IRQ_TIMEDWAIT_CLEANUP:
+#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
+		thinkos_irq_timedwait_cleanup_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif /* THINKOS_IRQ_MAX > 0 */
 		break;
 
 	case THINKOS_IRQ_CTL:

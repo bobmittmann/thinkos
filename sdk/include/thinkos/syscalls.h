@@ -27,123 +27,125 @@
  * Service numbers
  * --------------------------------------------------------------------------*/
 
-#define THINKOS_THREAD_SELF      0
-#define THINKOS_THREAD_CREATE    1
+#define THINKOS_THREAD_SELF            0
+#define THINKOS_THREAD_CREATE          1
 
-#define THINKOS_CLOCK            2
-#define THINKOS_ALARM            3
-#define THINKOS_SLEEP            4
+#define THINKOS_CLOCK                  2
+#define THINKOS_ALARM                  3
+#define THINKOS_SLEEP                  4
 
-#define THINKOS_MUTEX_LOCK       5
-#define THINKOS_MUTEX_TRYLOCK    6
-#define THINKOS_MUTEX_TIMEDLOCK  7
-#define THINKOS_MUTEX_UNLOCK     8
+#define THINKOS_MUTEX_LOCK             5
+#define THINKOS_MUTEX_TRYLOCK          6
+#define THINKOS_MUTEX_TIMEDLOCK        7
+#define THINKOS_MUTEX_UNLOCK           8
 
-#define THINKOS_SEM_INIT         9
-#define THINKOS_SEM_WAIT        10
-#define THINKOS_SEM_TRYWAIT     11
-#define THINKOS_SEM_TIMEDWAIT   12
-#define THINKOS_SEM_POST        13
+#define THINKOS_SEM_INIT               9
+#define THINKOS_SEM_WAIT              10
+#define THINKOS_SEM_TRYWAIT           11
+#define THINKOS_SEM_TIMEDWAIT         12
+#define THINKOS_SEM_POST              13
 
-#define THINKOS_COND_WAIT       14
-#define THINKOS_COND_TIMEDWAIT  15
-#define THINKOS_COND_SIGNAL     16
-#define THINKOS_COND_BROADCAST  17
+#define THINKOS_COND_WAIT             14
+#define THINKOS_COND_TIMEDWAIT        15
+#define THINKOS_COND_SIGNAL           16
+#define THINKOS_COND_BROADCAST        17
 
-#define THINKOS_FLAG_TAKE       18
-#define THINKOS_FLAG_TIMEDTAKE  19
-#define THINKOS_FLAG_GIVE       20
+#define THINKOS_FLAG_TAKE             18
+#define THINKOS_FLAG_TIMEDTAKE        19
+#define THINKOS_FLAG_GIVE             20
 
-#define THINKOS_FLAG_VAL        21
-#define THINKOS_FLAG_CLR        22
-#define THINKOS_FLAG_SET        23
-#define THINKOS_FLAG_WATCH      24
-#define THINKOS_FLAG_TIMEDWATCH 25
+#define THINKOS_FLAG_VAL              21
+#define THINKOS_FLAG_CLR              22
+#define THINKOS_FLAG_SET              23
+#define THINKOS_FLAG_WATCH            24
+#define THINKOS_FLAG_TIMEDWATCH       25
 
-#define THINKOS_GATE_WAIT       26
-#define THINKOS_GATE_TIMEDWAIT  27
-#define THINKOS_GATE_EXIT       28
-#define THINKOS_GATE_OPEN       29
-#define THINKOS_GATE_CLOSE      30
+#define THINKOS_GATE_WAIT             26
+#define THINKOS_GATE_TIMEDWAIT        27
+#define THINKOS_GATE_EXIT             28
+#define THINKOS_GATE_OPEN             29
+#define THINKOS_GATE_CLOSE            30
 
-#define THINKOS_EVENT_WAIT      31
-#define THINKOS_EVENT_TIMEDWAIT 32
-#define THINKOS_EVENT_RAISE     33
-#define THINKOS_EVENT_MASK      34
-#define THINKOS_EVENT_CLEAR     35
+#define THINKOS_EVENT_WAIT            31
+#define THINKOS_EVENT_TIMEDWAIT       32
+#define THINKOS_EVENT_RAISE           33
+#define THINKOS_EVENT_MASK            34
+#define THINKOS_EVENT_CLEAR           35
 
-#define THINKOS_CONSOLE         36
+#define THINKOS_CONSOLE               36
 
-#define THINKOS_IRQ_WAIT        37
-#define THINKOS_IRQ_REGISTER    38
-#define THINKOS_IRQ_CTL         39
+#define THINKOS_IRQ_WAIT              37
+#define THINKOS_IRQ_TIMEDWAIT         38
+#define THINKOS_IRQ_CTL               39
 
-#define THINKOS_MUTEX_ALLOC     40
-#define THINKOS_MUTEX_FREE      41
+#define THINKOS_MUTEX_ALLOC           40
+#define THINKOS_MUTEX_FREE            41
 
-#define THINKOS_SEM_ALLOC       42
-#define THINKOS_SEM_FREE        43
+#define THINKOS_SEM_ALLOC             42
+#define THINKOS_SEM_FREE              43
 
-#define THINKOS_COND_ALLOC      44
-#define THINKOS_COND_FREE       45
+#define THINKOS_COND_ALLOC            44
+#define THINKOS_COND_FREE             45
 
-#define THINKOS_FLAG_ALLOC      46
-#define THINKOS_FLAG_FREE       47
+#define THINKOS_FLAG_ALLOC            46
+#define THINKOS_FLAG_FREE             47
 
-#define THINKOS_EVENT_ALLOC     48
-#define THINKOS_EVENT_FREE      49
+#define THINKOS_EVENT_ALLOC           48
+#define THINKOS_EVENT_FREE            49
 
-#define THINKOS_GATE_ALLOC      50
-#define THINKOS_GATE_FREE       51
+#define THINKOS_GATE_ALLOC            50
+#define THINKOS_GATE_FREE             51
 
-#define THINKOS_JOIN            52
-#define THINKOS_PAUSE           53
-#define THINKOS_RESUME          54
+#define THINKOS_JOIN                  52
+#define THINKOS_PAUSE                 53
+#define THINKOS_RESUME                54
 
-#define THINKOS_CANCEL          55
-#define THINKOS_EXIT            56
-#define THINKOS_TERMINATE       57
+#define THINKOS_CANCEL                55
+#define THINKOS_EXIT                  56
+#define THINKOS_TERMINATE             57
 
-#define THINKOS_CTL             58
+#define THINKOS_CTL                   58
 
-#define THINKOS_COMM            59
+#define THINKOS_COMM                  59
 
-#define THINKOS_ON_IDLE         60
+#define THINKOS_ON_IDLE               60
 
-#define THINKOS_ESCALATE        61
+#define THINKOS_ESCALATE              61
 
-#define THINKOS_CRITICAL_ENTER	62
+#define THINKOS_CRITICAL_ENTER        62
 
-#define THINKOS_CRITICAL_EXIT	63
+#define THINKOS_CRITICAL_EXIT         63
 
-#define THINKOS_DBGMON          64
+#define THINKOS_DBGMON                64
 
-#define CONSOLE_WRITE             0
-#define CONSOLE_READ              1
-#define CONSOLE_TIMEDREAD         2
-#define CONSOLE_OPEN              3
-#define CONSOLE_CLOSE             4
-#define CONSOLE_DRAIN             5
-#define CONSOLE_IOCTL             6
+#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 65
 
-#define COMM_SEND                 0
-#define COMM_RECV                 1
+#define CONSOLE_WRITE                  0
+#define CONSOLE_READ                   1
+#define CONSOLE_TIMEDREAD              2
+#define CONSOLE_OPEN                   3
+#define CONSOLE_CLOSE                  4
+#define CONSOLE_DRAIN                  5
+#define CONSOLE_IOCTL                  6
 
-#define THINKOS_CTL_ABORT           0
-#define THINKOS_CTL_UDELAY_FACTOR   1
-#define THINKOS_CTL_CLOCKS          2
-#define THINKOS_CTL_SNAPSHOT        3
-#define THINKOS_CTL_TRACE           4
-#define THINKOS_CTL_THREAD_INF      5
-#define THINKOS_CTL_THREAD_CYCCNT   6
-#define THINKOS_CTL_REBOOT          7
-#define THINKOS_CTL_CYCCNT          8
+#define COMM_SEND                      0
+#define COMM_RECV                      1
 
-#define THINKOS_IRQ_DISABLE         0
-#define THINKOS_IRQ_ENABLE          1
-#define THINKOS_IRQ_PRIORITY_SET    2
-#define THINKOS_IRQ_SYSCALLS_SET    3
-#define THINKOS_IRQ_RESTORE         4
+#define THINKOS_CTL_ABORT              0
+#define THINKOS_CTL_UDELAY_FACTOR      1
+#define THINKOS_CTL_CLOCKS             2
+#define THINKOS_CTL_SNAPSHOT           3
+#define THINKOS_CTL_TRACE              4
+#define THINKOS_CTL_THREAD_INF         5
+#define THINKOS_CTL_THREAD_CYCCNT      6
+#define THINKOS_CTL_REBOOT             7
+#define THINKOS_CTL_CYCCNT             8
+
+#define THINKOS_IRQ_DISABLE            0
+#define THINKOS_IRQ_ENABLE             1
+#define THINKOS_IRQ_PRIORITY_SET       2
+#define THINKOS_IRQ_SYSCALLS_SET       3
+#define THINKOS_IRQ_REGISTER           4
 
 #ifndef __ASSEMBLER__
 
@@ -532,6 +534,10 @@ thinkos_gate_open_i(int gate) {
 IRQ
 ---------------------------------------------------------------------------*/
 
+static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, unsigned int ms) {
+	return THINKOS_SYSCALLS2(THINKOS_IRQ_TIMEDWAIT_CLEANUP, irq, THINKOS_SYSCALLS2(THINKOS_IRQ_TIMEDWAIT, irq, ms));
+}
+
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
 	return THINKOS_SYSCALLS1(THINKOS_IRQ_WAIT, irq);
 }
@@ -539,7 +545,7 @@ static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
 static inline int __attribute__((always_inline)) 
 thinkos_irq_register(int irq, 
 					 unsigned int pri, void (* isr)(void)) {
-	return THINKOS_SYSCALLS3(THINKOS_IRQ_REGISTER, irq, pri, isr);
+	return THINKOS_SYSCALLS4(THINKOS_IRQ_CTL, THINKOS_IRQ_REGISTER, irq, pri, isr);
 }
 
 static inline int __attribute__((always_inline)) 
@@ -556,12 +562,6 @@ static inline int __attribute__((always_inline))
 thinkos_irq_priority_set(int irq, unsigned int pri) {
 	return THINKOS_SYSCALLS3(THINKOS_IRQ_CTL, 
 							 THINKOS_IRQ_PRIORITY_SET, irq, pri);
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_irq_restore(int irq, unsigned int thread) {
-	return THINKOS_SYSCALLS3(THINKOS_IRQ_CTL, 
-							 THINKOS_IRQ_RESTORE, irq, thread);
 }
 
 #include <arch/cortex-m3.h>

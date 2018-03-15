@@ -35,6 +35,14 @@
 
 /* [31..10] Reserved, forced by hardware to 0. */
 
+#define USART_SBKF ( 1 << 18) /* Send break flag */
+/* This bit indicates that a send break character was requested. It is set by software, by writing
+ * 1 to the SBKRQ bit in the USART_RQR register. It is automatically reset by hardware during
+ * the stop bit of break transmission.
+ * 0: No break character is transmitted
+ * 1: Break character will be transmitted
+ */
+
 #define USART_CTS (1 << 9) /* Bit 9 - CTS flag */
 /* This bit is set by hardware when the nCTS input toggles, if the CTSE bit 
    is set. It is cleared by software (by writing it to 0). An interrupt is 
