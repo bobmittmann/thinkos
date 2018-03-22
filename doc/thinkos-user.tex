@@ -6,7 +6,7 @@
 \author{Bob Mittmann}
 \date{January 2017}
 \def\email{bobmittmann@gmail.com} % revision number variable
-\def\therevision{0.1} % revision number variable
+\def\therevision{0.2} % revision number variable
 \let\thetitle\@title % title variable
 \makeatother
 
@@ -26,6 +26,7 @@
 % Start of the revision history table
 \begin{versionhistory}
   \vhEntry{0.1}{21.01.17}{BM}{created}
+  \vhEntry{0.2}{22.03.18}{BM}{patially fixed redundant sections}
 \end{versionhistory}
 
 \newpage
@@ -48,6 +49,15 @@ ThinkOS is a Real Time Operating System designed for the ARM Cortex-M core. It t
 
 The real answer for this question perhaps is simply: ``Just because I can''. But as most people won't be satisfied with this shallow reply here are some justifications:
 
+\subsection{Why Cortex-M}
+
+The ARM Cortex-M family of microprocessors is the standard 32 bits CPU for most of the microcontrollers in the market today.
+
+\subsection{Can it be ported to another processor?}
+
+In theory yes. But probably its not worth the effort...
+
+
 \subsection{Where do I can get ThinkOS from?}
 
 \begin{flushleft}
@@ -55,41 +65,77 @@ Repository: [\href{https://github.com/bobmittmann/thinkos}{https://github.com/bo
 Git HTTPS: [\href{https://github.com/bobmittmann/thinkos.git}{https://github.com/bobmittmann/thinkos.git}]
 \end{flushleft}
 
+\subsection{How to use it?}
+ How and what is need in order to compile \ThinkOS ....
+\begin{itemize}
+\item Download the source code
+\item Install the Tools
+\item Configure / or chose and example
+\item Compile
+\item Load and run
+\end{itemize}
+
+
 \subsection{Performance}
 
 The main bottleneck for performance is usually the scheduler. The ThinkOS running in a 120MHz Cortex-M3 (STM32F270) have a measured latency time of 0.5 microseconds.
 
 There are some tests and calculations that need to be done to determine the latency of other elements of the system...
 
-\subsubsection{Coding Style}
 
-\ThinkOS source uses the \href{https://www.kernel.org/doc/html/v4.10/process/coding-style.html}{Linux kernel coding style} and I encourage all developers to follow it. This is just little more than a matter of preference, please read the style guide to know the rational behind the rules before despising it ...
-
-----------------------------------------------------------
-== Introduction ==
-ThinkOS is a Real Time Operating System designed for the ARM Cortex-M core. It takes advantage of some unique features of this processor to enable for very low task switch latency.
-== Modes of usage ==
-There are basically two ways of using the ThinkOS:
-1. As a library linked against your application. (Need a term to decribe this like embedded mode...). 
-In this type of usage there is usually no bootloader, the application boots and configure itself. In this scenario the firmware is the application. The advatnages of this mode are:
-	- Small footprint...
-	- Kernel calls and services are tailored for the application.
-2. As part of the bootloader separated from the application. This mode will be called "standalone" mode, or "bootloader" mode.
-In this case the application will be a separated entity (file, binary) and run in a separated memory space. The bootloader will be residing on the platform at all times and will be responsible to initialize the platform and to load the application. It's possible then to upload/upgrade/change the application without changing the bootlader and consequently the operating system. Advantages:
-	- No need to configure the OS (need to elaborate...) to match the application. At least initially.
-	- In field firmware upgrades are safer as the bootloader is the responsible for the upgrade.
-	- The Debug Monitor features can be used for development.
+\subsection {Source Code}
 
 One feature that distinguishes the \ThinkOS from most of other Operating Systems is the way the control structures for the several types of objects are held by kernel.
 
 The usual approach for holding this information is to allocate a structure specific for a certain object and pass a pointer to the kernel. The kernel then stores this in a list or array. 
-\ThinkOS in other hand holds the core data structure in a  Structure of Arrays (SOA) representation. The cost of this representation is the readability of the code, (it may look a little obscure at the beginning). 
-The idea here is simplify the race condition avoidance in the kernel and speed-up the scheduler. Threads
 
+\ThinkOS in other hand holds the core data structure in a  Structure of Arrays (SOA) representation. The cost of this representation is the readability of the code, (it may look a little obscure at the beginning). 
+The idea here is simplify the race condition avoidance in the kernel and speed-up the scheduler.
+
+\subsubsection{Coding Style}
+
+\ThinkOS source uses the \href{https://www.kernel.org/doc/html/v4.10/process/coding-style.html}{Linux kernel coding style} and I encourage all developers to follow it. This is just little more than a matter of preference, please read the style guide to know the rational behind the rules before despising them :) ...
+
+%----------------------------------------------------------
+%== Introduction ==
+%ThinkOS is a Real Time Operating System designed for the ARM Cortex-M core. It takes advantage of some unique features of this processor to enable for very low task switch latency.
+
+\subsection{Compiling}
+
+There are basically two ways of using \ThinkOS:
+
+\paragraph{As a library}{ linked against your application. (Need a term to decribe this like embedded mode...). 
+In this type of usage there is usually no bootloader, the application boots and configure itself. In this scenario the firmware is the application. The advatnages of this mode are:}
+
+\begin{itemize}
+\item Smallest footprint. The linker will strip away unused (unreferenced) portions of the kernel.
+\item Kernel calls and services are tailored for the application.
+\end{itemize}
+	
+\paragraph{As part of the bootloader}{ separated from the application. This mode will be called "standalone" mode, or "bootloader" mode.
+In this case the application will be a separated entity (file, binary) and run in a separated memory space. The bootloader will be residing on the platform at all times and will be responsible to initialize the platform and to load the application. It's possible then to upload upgrade and change the application without changing the bootlader and consequently the operating system. Advantages:}
+
+\begin{itemize}
+\item No need to configure the OS (need to elaborate...) to match the application. At least initially.
+\item In field firmware upgrades are safer as the bootloader is the responsible for the upgrade.
+\item The Debug Monitor features can be used for development.
+\item Kernel data and code memory are protected.
+\end{itemize}
+
+% \subsubsection{System Calls}
+\subsection{Modules}
+ Overview of the different modules.
+\begin{itemize}
+\item Kernel
+\item Debug Monitor
+\item GDB server
+\item Console
+\end{itemize}
+
+
+\subsection{Threads}
 
 \ThinkOS is a preemptive time-sharing kernel. Each thread has its own stack and a timer. This timer is used to block the thread's execution for a certain period of time as in \lstinline{thinkos_sleep()}.
-
-\subsubsection{System Calls}
 
 \subsection{Scheduler}
 ThinkOS scheduler was designed to reduce the context switch time to a minimum. The most important piece on the Kernel is the Scheduler....
@@ -104,9 +150,17 @@ There are two types of interrupt handlers with ThinkOS:
 
 \paragraph{Native ISR}{Normal interrupt handlers that shares a common stack. These handlers are subject to to some constraints regarding API calls. It is recommended to use this type of interrupt handler when low latency is a must. But bear in mind that if the handler is too complex the actual latency due to loading registers and housekeeping may be equivalent to a context switch in which case it will be equivalent of a threaded handler in terms of performance. Another case will be a high priority interrupt you want to make sure it will won't be preempted...}
 
-\subsection{Configuration}
+
+Configuration is simply a matter of creating your custom configuration header file: \lstinline{config.h} and enabling or disabling the features the application requires.
+
+The file \lstinline{include/thinkos_sys.h} contains the definition of the structures used by the OS. In this file there is a series of macros used to set default values for the configuration options.
+
+It is not recommended to change the values directly in \lstinline{thinkos_sys.h}, create a \lstinline{config.h} file instead, and define the macro \lstinline{CONFIG_H} at the compiler's: \lstinline{-DCONFIG_H}.
+
+Note: if you are using the \ThinkOS as part of the YARD-ICE there is a \lstinline{config.h} file located at the source root.
 
 
+% -----------------------------------------------------------------------------------------
 
 \section {Quick Start}
 
@@ -321,91 +375,57 @@ Open a windows shell: Start->All Programs->Accessories->Command Prompt
 Change to the directory  in the ThinkOS source tree.
 Type: make
 
-\section{Modules}
- Overview of the different modules.
- - Kernel
- - Debug Monitor
- - GDB server
- - Console
+\section{\ThinkOS Kernel}
 
-\subsection{Configuring}
- Description on how to configure ThinkOS.
- - bootloader mode
- - embedded mode
+ - Data structures.
+ 
+ - Design decisions.
+ 
+ ...
 
-\subsection{Compiling }
- How and what is need in order to compile the ThinkOS.
- - Download the source code
- - Tools
- - Configure / or chose and example
- - Compile
- - Load and run
+\subsection{Exception Priorities}
+
+
+
+\subsection{Kernel Objects}
+
+\subsubsection{System Calls}
+
+\subsubsection{Library functions}
+
+
+%\subsection{Configuring}
+% Description on how to configure ThinkOS.
+% - bootloader mode
+% - embedded mode
+
 
 \section{API}
 
 The ThinkOS API can be separated according to the type of object the operation is performed ...
-Core - initialization configuration and debug
-\subsection{Threads}
-functions related to threads
-\subsection{Mutexes}
-\subsection{Conditional Variables}
-\subsection{Semaphores}
-\subsection{Events}
-\subsection{Interrupts}
-\subsection{Time}
-\subsection{Kernel Objects}
 
- - system calls
- - library functions
+\paragraph{Core}{initialization configuration and debug}
 
-The ThinkOS API can be separated according to the type of object the operation is performed ...
+\paragraph{Threads}{functions related to threads}
 
-Core - initialization configuration and debug Threads - functions related to threads Mutexes Conditional Variables Semaphores Events Interrupts Time Kernel Objects
+\paragraph{Mutexes}
 
-One feature that distinguish the ThinkOS from most of other Operating Systems is the way the control structures for the several type of objects are held by kernel. The usual approach for holding this information is to allocate a structure specific for a certain object and pass a pointer to the kernel. The kernel then stores this in a list or array. ThinkOS in other hand holds the information on a structure of arrays, each array refers to one field of an object. This may look very obscure but the idea here is to protect the memory and speed-up the scheduler.
+\paragraph{Conditional Variables}
 
-Threads
+\paragraph{Semaphores}
 
-The ThinkOS is a preemptive time-sharing kernel. Each thread have it's own stack and a timer. This timer is used to block the thread's execution for a certain period of time as in \lstinline{thinkos_sleep()}.
+\paragraph{Events}
 
-Scheduler
+\paragraph{Interrupts}
 
-ThinkOS scheduler was designed to reduce the context switch time to a minimum. The most important piece on the Kernel is the Scheduler....
+\paragraph{Time}
 
-Time Sharing
 
-All threads with priority higher than 0 go into a round-robin time sharing scheduling policy, when this feature is enabled. Their execution time will be inversely proportional to their priority.
-
-Interrupt Model
-
-There are two types of interrupt handlers with ThinkOS:
-
-Implicit ISR - Thread interrupt handlers that executes as normal threads. This is a simple call to \lstinline{thinkos_irq_wait(IRQ)} inside a regular task or function. The thread will block until this interrupt is raised. This mechanism provides a convenient and powerful tool to design drivers. Devices that benefit most of this type of ISR are simplex I/O channels like I2C or SPI, hardware accelerators like cryptographic ...
-
-Native ISR - Normal interrupt handlers that shares a common stack. These handlers are subject to to some constraints regarding API calls. It is recommended to use this type of interrupt handler when low latency is a must. But bare in mind that if the handler is too complex the actual latency due to loading registers and housekeeping may be equivalent to a context switch in which case it will be equivalent of a threaded handler in terms of performance. Another case will be a high priority interrupt you want to make sure it will won't be preempted...
-
-Configuration
-
-The file \lstinline{include/thinkos_sys.h} contains the definition of the structures used by the OS. In this file there is a series of macros used to set default values for the configuration options.
-
-It is not recommended to change the values directly in \lstinline{thinkos_sys.h}, create a \lstinline{config.h} file instead, and define the macro \lstinline{CONFIG_H} at the compiler's: \lstinline{-DCONFIG_H}.
-
-Note: if you are using the \ThinkOS as part of the YARD-ICE there is a \lstinline{config.h} file located at the source root.
-
-\section{How the kernel works}
- - Data structures.
- - Design decisions.
-
-\subsection{Exception Priorities}
+\input{thinkos-api.tex}
 
 \section {Demo Using Windows}
 
 %\input{thinkos-demo-win.tex}
-
-
-\section {API}
-
-\input{thinkos-api.tex}
 
 
 \section {Tools}
