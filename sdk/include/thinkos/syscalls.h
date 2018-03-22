@@ -535,7 +535,7 @@ IRQ
 ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, unsigned int ms) {
-	return THINKOS_SYSCALLS2(THINKOS_IRQ_TIMEDWAIT_CLEANUP, irq, THINKOS_SYSCALLS2(THINKOS_IRQ_TIMEDWAIT, irq, ms));
+	return THINKOS_SYSCALLS1(THINKOS_IRQ_TIMEDWAIT_CLEANUP, THINKOS_SYSCALLS2(THINKOS_IRQ_TIMEDWAIT, irq, ms));
 }
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {

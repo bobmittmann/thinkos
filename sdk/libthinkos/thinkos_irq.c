@@ -78,29 +78,30 @@ void cm3_default_isr(unsigned int irq)
 	__thinkos_preempt();
 }
 
+#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
 void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
-	unsigned int code = arg[1];
 
 	/* return appropriate error */
-	arg[0] = code;
 
-#if THINKOS_ENABLE_CLOCK && THINKOS_ENABLE_THREAD_STAT
-	/* update the thread status if interrupt is received before timeout */
-	if(thinkos_rt.th_stat[self]) {
-		thinkos_rt.th_stat[self] = 0;
-		/* remove from the time wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_clock, self, 0);
-		arg[0] = THINKOS_OK;
-	}
-#endif
-
-	/* assign idle thread to the interrupt */
-	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
-
+	/* remove from the time wait queue */
+	__bit_mem_wr(&thinkos_rt.wq_clock, self, 0);
+	/* update status */
+	thinkos_rt.th_stat[self] = 0;
 	/* enable this interrupt source */
 	cm3_irq_disable(irq);
+
+	/* update the thread status if interrupt is received before timeout */
+	if (thinkos_rt.irq_th[irq] != THINKOS_THREAD_IDLE) {
+		/* assign idle thread to the interrupt */
+		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+		arg[0] = THINKOS_OK;
+	} else {
+		/* return appropriate error */
+		arg[0] = THINKOS_ETIMEDOUT;
+	}
+
 }
 
 void thinkos_irq_timedwait_svc(int32_t * arg, int self)
@@ -125,9 +126,6 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 
 	__thinkos_tmdwq_insert(THINKOS_WQ_IRQ, self, ms);
 
-	/* return appropriate error */
-	arg[0] = THINKOS_ETIMEDOUT;
-
 	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;
 
@@ -137,6 +135,8 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
 }
+
+#endif
 
 void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
