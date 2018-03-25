@@ -46,13 +46,13 @@ void thinkos_cancel_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
-		__thinkos_error(THINKOS_ERR_THREAD_INVALID);
+		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
-		__thinkos_error(THINKOS_ERR_THREAD_ALLOC);
+		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

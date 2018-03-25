@@ -43,13 +43,12 @@ struct file * tty_fopen(struct tty_dev * tty);
 int tty_write(struct tty_dev * tty, 
 			  const void * buf, unsigned int len);
 
-int tty_read(struct tty_dev * tty, void * buf, unsigned int len);
+int tty_read(struct tty_dev * tty, void * buf, unsigned int len,
+			 unsigned int tmo);
 
 int tty_flush(struct tty_dev * tty);
 
 int tty_release(struct tty_dev * tty);
-
-
 
 int isfatty(struct file * f);
 

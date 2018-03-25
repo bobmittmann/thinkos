@@ -446,7 +446,7 @@ wr_again:
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
-		__thinkos_error(THINKOS_ERR_CONSOLE_REQINV);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}

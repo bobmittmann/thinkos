@@ -149,13 +149,15 @@ void trace_init(void)
 #define TRACE_ARG_MAX 20
 
 /* Double to uint64_t binary copy */
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
-/* Convert from double to an uint32_t encoded floating point */
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; \
+						  a.d = (D); a.u;})
+/* Convert from double to an uint32_t encoded floating point. */
 static inline uint32_t __double2u32(double val) {
 	uint64_t x = DOUBLE2UINT64(val);
-	return ((uint32_t)(x >> 32) & 0x80000000) | 
-		((((int32_t)((uint32_t)(x >> 52) & 0x7ff) - 896) & 0xff) << 23) |
-		(((uint32_t)(x >> 29)) & 0x007fffff);
+	return ((uint32_t)(x >> 32) & 0x80000000) + 
+		(((uint32_t)((x >> 52) & 0x7f) + 
+		  (uint32_t)((x >> 55) & 0x80)) << 23) +
+		(((((uint32_t)(x >> 20)) & 0xffffffff) + 0x7f) >> 9);
 }
 
 int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
@@ -370,3 +372,4 @@ void tracef_i(const struct trace_ref * ref, ... )
 
 	cm3_primask_set(pri);
 }
+

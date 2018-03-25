@@ -179,6 +179,28 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 #endif
 
+/* With this option calling thinkos_irq_wait() will return a thread id 
+   if there is a thread already waiting on this interrupt. After 
+   receiving the interrupt a thread can restore the previously 
+   waiting thread by calling thinkos_irq_restore()...  */
+#ifndef THINKOS_ENABLE_IRQ_RESTORE
+#define THINKOS_ENABLE_IRQ_RESTORE      0
+#endif
+
+/* This option cause thinkos_irq_wait() to return the value
+   of the CPU cycle count at the moment the interrupt was
+   detected. */
+#ifndef THINKOS_ENABLE_IRQ_CYCCNT_RET
+#define THINKOS_ENABLE_IRQ_CYCCNT_RET   0
+#endif
+
+/* Allow IRQs with priority 0 for low latency.
+   Be carefull if real ISRs are used as this option can impair 
+   the debug monitor operation */
+#ifndef THINKOS_ENABLE_IRQ_PRIORITY_0
+#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
@@ -441,7 +463,7 @@
 #endif
 
 
-#ifdef THINKOS_ENABLE_FPU
+#if THINKOS_ENABLE_FPU
   /* Position of register R0 in the context */
   #define CTX_R0 (16 + 8)
   /* Position of register PC in the context */
@@ -449,6 +471,22 @@
 #else
   #define CTX_R0 8
   #define CTX_PC 14
+#endif
+
+#if THINKOS_ENABLE_IRQ_RESTORE
+  /* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
+  #undef THINKOS_ENABLE_IRQ_CTL
+  #define THINKOS_ENABLE_IRQ_CTL 1
+#endif
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET  
+   /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
+   #undef THINKOS_ENABLE_IRQ_CTL
+   #define THINKOS_ENABLE_IRQ_CTL 1
+   #if THINKOS_ENABLE_IRQ_RESTORE
+      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT_RET "\
+		  "& THINKOS_ENABLE_IRQ_RESTORE"
+   #endif  
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -710,6 +748,9 @@ struct thinkos_rt {
 	uint32_t wq_comm_recv;
 #endif
 
+#if THINKOS_ENABLE_IRQ
+	uint32_t wq_irq;
+#endif
 	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
@@ -873,6 +914,10 @@ struct thinkos_rt {
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
+#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_fault) \
+						   - offsetof(struct thinkos_rt, wq_lst)) \
+						  / sizeof(uint32_t))
+
 #define THINKOS_WQ_LST_END ((offsetof(struct thinkos_rt, wq_end) \
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
@@ -958,6 +1003,8 @@ extern const uint16_t thinkos_wq_base_lut[];
 
 extern const char thinkos_type_name_lut[][6];
 
+extern const char thinkos_type_prefix_lut[];
+
 extern const char __xcpt_name_lut[16][12];
 
 #if THINKOS_ENABLE_THREAD_INFO
@@ -985,12 +1032,12 @@ void cm3_msp_init(uint64_t * stack_top);
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-static inline void __attribute__((always_inline)) __thinkos_error(int code)
-{
 #if THINKOS_ENABLE_ERROR_TRAP
-	__bkpt(THINKOS_BKPT_EXCEPT_OFF + code);
+  #define __THINKOS_ERROR(__CODE) \
+	  asm volatile ("bkpt %0" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
+#else
+  #define __THINKOS_ERROR(__CODE)
 #endif
-}
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
@@ -1253,10 +1300,6 @@ void __console_rx_pipe_commit(int cnt);
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
-
-void __thinkos_flag_give(uint32_t wq);
-void __thinkos_flag_clr(uint32_t wq);
-void __thinkos_flag_set(uint32_t wq);
 
 void __thinkos_sem_post(uint32_t wq);
 

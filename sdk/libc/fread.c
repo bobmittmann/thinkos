@@ -29,6 +29,6 @@
 size_t fread(void * ptr, size_t size, size_t  nmemb, FILE * f)
 {
 	/* FIXME: this implementation is simply wrong */
-	return f->op->read(f->data, ptr, size * nmemb);
+	return f->op->read(f->data, ptr, size * nmemb, -1);
 }
 

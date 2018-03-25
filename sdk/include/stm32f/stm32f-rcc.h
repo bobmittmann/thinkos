@@ -3457,6 +3457,8 @@ static inline uint32_t stm32_clk_hz(int bus, int bit) {
 	return stm32f_ahb_hz;
 }
 
+void stm32_rcc_i2s_pll_init(void);
+
 #ifdef __cplusplus
 }
 #endif

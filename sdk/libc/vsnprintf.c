@@ -43,6 +43,7 @@ static int sprintf_write(struct str_buf * str, const void * buf, int len)
 	char * src = (char *)buf;
 	char * dst = (char *)str->ptr;
 	char * end;
+	int cnt;
 
 	end = MIN(str->end, str->ptr + len);
 
@@ -51,9 +52,10 @@ static int sprintf_write(struct str_buf * str, const void * buf, int len)
 	while (dst != end)
 		*dst++ = *src++;
 
-	str->ptr += len;
+	cnt = dst - str->ptr;
+	str->ptr = dst;
 
-	return len;
+	return cnt;
 }
 
 static const struct fileop sprintf_fileop = {

@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-cdc.c
+ * File:	 thinkos-dbgmon.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -696,8 +696,8 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 {
 	int ret;
 
-	DCC_LOG2(LOG_INFO, "step_req=%08x thread_id=%d", 
-			 thinkos_rt.step_req, thread_id);
+	DCC_LOG2(LOG_TRACE, "step_req=%08x thread_id=%d", 
+			 thinkos_rt.step_req, thread_id + 1);
 
 	if (CM3_DCB->dhcsr & DCB_DHCSR_C_DEBUGEN) {
 		DCC_LOG(LOG_ERROR, "can't step: DCB_DHCSR_C_DEBUGEN !!");
@@ -710,16 +710,17 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 //		dmon_context_swap_ext(&thinkos_dbgmon_rt.ctx, 1); 
 	} else {
 		if (thread_id >= THINKOS_THREADS_MAX) {
-			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id);
+			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id + 1);
 			return -1;
 		}
 
 		if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
 			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", 
-					 thread_id);
+					 thread_id + 1);
 			return -1;
 		}
 
+		DCC_LOG(LOG_MSG, "setting the step_req bit");
 		/* request stepping the thread  */
 		__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
 		/* resume the thread */
@@ -729,7 +730,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 	}
 
 	if (sync) {
-		DCC_LOG(LOG_INFO, "synchronous step, waiting for signal...");
+		DCC_LOG(LOG_MSG, "synchronous step, waiting for signal...");
 		if ((ret = dbgmon_wait(DBGMON_THREAD_STEP)) < 0)
 			return ret;
 	}
@@ -984,13 +985,14 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 		if (dfsr & SCB_DFSR_HALTED) {
 			if (demcr & DCB_DEMCR_MON_STEP) {
 				int thread_id = thinkos_rt.step_id;
-				/* restore the base priority */
+				/* Restore interrupts. The base priority was
+				   set in the scheduler to perform a single step.  */
 				cm3_basepri_set(0);
 
 				if ((unsigned int)thread_id < THINKOS_THREADS_MAX) {
 					int ipsr = (ctx->xpsr & 0x1ff);
 					DCC_LOG4(LOG_TRACE, "<<STEP>> thread_id=%d PC=%08x" 
-							 " SP=%08x IPSR=%d", thread_id, ctx->pc, 
+							 " SP=%08x IPSR=%d", thread_id + 1, ctx->pc, 
 							 cm3_psp_get(), ipsr);
 					if (ipsr != 0) {
 						DCC_LOG(LOG_ERROR, "invalid step on exception !!!");
@@ -1007,7 +1009,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 					__thinkos_defer_sched();
 				} else {
 					DCC_LOG1(LOG_ERROR, "invalid stepping thread %d !!!", 
-							 thread_id);
+							 thread_id + 1);
 				}
 				thinkos_rt.break_id = thread_id;
 step_done:
@@ -1106,7 +1108,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 thinkos_rt.void_ctx, thinkos_rt.active + 1);
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-/* FIXME: this is a dare situation, probably the only resource left
+/* FIXME: this is a dire situation, probably the only resource left
    is to restart the system. */
 #if 0
 			dbgmon_soft_reset();

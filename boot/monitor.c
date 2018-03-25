@@ -88,11 +88,15 @@ void gdb_stub_task(struct dmon_comm * comm);
 #endif
 
 #ifndef MONITOR_SELFTEST_ENABLE
-#define MONITOR_SELFTEST_ENABLE    1
+#define MONITOR_SELFTEST_ENABLE    0
 #endif
 
 #ifndef MONITOR_FAULT_ENABLE
 #define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
+#endif
+
+#ifndef MONITOR_EXCEPTION_ENABLE
+#define MONITOR_EXCEPTION_ENABLE   THINKOS_ENABLE_EXCEPTIONS
 #endif
 
 #ifndef BOOT_ENABLE_GDB
@@ -114,6 +118,23 @@ void gdb_stub_task(struct dmon_comm * comm);
 #ifndef MONITOR_RESTART_MONITOR
 #define MONITOR_RESTART_MONITOR 0
 #endif
+
+#ifndef MONITOR_THREAD_STEP_ENABLE
+#define MONITOR_THREAD_STEP_ENABLE 1
+#endif
+
+/* ---------------------------------------------------------------------------
+ * Configuration options sanity check
+ */
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+  #undef MONITOR_THREADINFO_ENABLE
+  #define MONITOR_THREADINFO_ENABLE  1
+#endif
+
+/* ---------------------------------------------------------------------------
+ * 
+ */
 
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
@@ -203,7 +224,10 @@ static const char monitor_menu[] =
 " Ctrl+R - Resume all threads\r\n"
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-" Ctrl+S - Show memory\r\n"
+" Ctrl+D - Dump memory\r\n"
+#endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+" Ctrl+S - Thread step\r\n"
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 " Ctrl+T - Thread info\r\n"
@@ -215,7 +239,7 @@ static const char monitor_menu[] =
 #if (MONITOR_APPWIPE_ENABLE)
 " Ctrl+W - Wipe application\r\n"
 #endif
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 " Ctrl+X - Exception info\r\n"
 #endif
 " Ctrl+Y - YMODEM app upload\r\n"
@@ -244,7 +268,7 @@ static void monitor_show_help(struct dmon_comm * comm)
 	dmprintf(comm, s_hr);
 }
 
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(struct dmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
@@ -270,6 +294,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
 	if (dmon_comm_isconnected(comm)) {
+		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dmprintf(comm, s_hr);
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, s_hr);
@@ -300,6 +325,29 @@ static void monitor_on_bkpt(struct monitor * mon)
 	}
 }
 #endif
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+static void monitor_on_step(struct monitor * mon)
+{
+	struct dmon_comm * comm = mon->comm;
+	struct thinkos_except * xcpt = &thinkos_except_buf;
+
+	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
+
+	if (dbgmon_wait_idle() < 0) {
+		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
+	}
+
+	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+
+	if (dmon_comm_isconnected(comm)) {
+		dmprintf(comm, s_hr);
+		dmon_print_exception(comm, xcpt);
+		dmprintf(comm, s_hr);
+	}
+}
+#endif
+
 
 #if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(struct dmon_comm * comm)
@@ -521,6 +569,13 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmon_print_thread(comm, mon->thread_id);
 		break;
 #endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+	case CTRL_S:
+		dmprintf(comm, "^S\r\n");
+		dmprintf(comm, s_hr);
+		dmon_thread_step(mon->thread_id, false);
+		break;
+#endif
 #if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		dmprintf(comm, "^O\r\n");
@@ -547,8 +602,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-	case CTRL_S:
-		dmprintf(comm, "^S\r\n");
+	case CTRL_D:
+		dmprintf(comm, "^D\r\n");
 		monitor_show_mem(mon);
 		break;
 #endif
@@ -646,7 +701,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 
 	sigmask |= (1 << DBGMON_SOFTRST);
 	sigmask |= (1 << DBGMON_STARTUP);
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
 	sigmask |= (1 << DBGMON_EXCEPT);
 #endif
@@ -662,6 +717,9 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 	sigmask |= (1 << DBGMON_APP_ERASE);
 #if (MONITOR_WATCHPOINT_ENABLE)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
+#endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+	sigmask |= (1 << DBGMON_THREAD_STEP);
 #endif
 
 	for(;;) {
@@ -722,7 +780,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 		}
 #endif
 
-#if (THINKOS_ENABLE_EXCEPTIONS)
+#if (MONITOR_EXCEPTION_ENABLE)
 		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
@@ -741,6 +799,15 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			monitor_on_bkpt(&monitor);
 		}
+#endif
+
+#if (MONITOR_THREAD_STEP_ENABLE)
+		if (sigset & (1 << DBGMON_THREAD_STEP)) {
+			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
+			dbgmon_clear(DBGMON_THREAD_STEP);
+			monitor_on_step(&monitor);
+		}
+
 #endif
 
 		if (sigset & (1 << DBGMON_COMM_RCV)) {

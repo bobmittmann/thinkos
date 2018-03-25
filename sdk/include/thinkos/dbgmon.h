@@ -1,9 +1,9 @@
 /* 
- * File:	 board.h
+ * File:	 /thinkos/dbgmon.h
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
- * Copyright(c) 2003-2006 BORESTE (www.boreste.com). All Rights Reserved.
+ * Copyright(C) 2011-2018 Bob Mittmann. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

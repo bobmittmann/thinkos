@@ -120,13 +120,13 @@ int tty_write(struct tty_dev * __tty, const void * __buf, unsigned int __len)
 #define OUT_EOF     "^Z"
 #define OUT_BEL     "\7"
 
-static int tty_get_char(struct tty_dev * tty)
+static int tty_get_char(struct tty_dev * tty, unsigned int tmo)
 {
 	int ret;
 
 	while (tty->inpos >= tty->inlen) {
 		if ((ret = tty->f.op->read(tty->f.data, 
-								   tty->inbuf, TTY_INBUF_LEN)) < 0) {
+								   tty->inbuf, TTY_INBUF_LEN, tmo)) < 0) {
 			tty->inlen = 0;
 			return ret;
 		}
@@ -138,7 +138,8 @@ static int tty_get_char(struct tty_dev * tty)
 	return tty->inbuf[tty->inpos++];
 }
 
-int tty_read(struct tty_dev * __tty, void * __buf, unsigned int __len)
+int tty_read(struct tty_dev * __tty, void * __buf, size_t __len, 
+			 unsigned int tmo)
 {
 	char * s;
 	int size;
@@ -155,7 +156,7 @@ int tty_read(struct tty_dev * __tty, void * __buf, unsigned int __len)
 	pos = 0;
 
 	for (;;) {
-		c = tty_get_char(__tty);
+		c = tty_get_char(__tty, tmo);
 
 		if ((c == IN_DEL) || (c == IN_BS)) {
 			if (pos > 0) {

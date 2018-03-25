@@ -101,17 +101,21 @@ endif
 
 CFLAGS += -ffunction-sections -fdata-sections 
 
-ifdef LDSCRIPT
-  LDFLAGS += -Wl,--gc-sections -nostdlib -T $(LDSCRIPT)
-else
-  LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld
-endif
-
-include $(THISDIR)/prog.mk
 
 ifndef LOAD_ADDR
   LOAD_ADDR := $(APPADDR)
 endif
 
-include $(THISDIR)/jtag.mk
+ifdef PROG
+  ifdef LDSCRIPT
+    LDFLAGS += -Wl,--gc-sections -nostdlib -T $(LDSCRIPT)
+  else
+    LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld
+  endif
+  include $(THISDIR)/prog.mk
+  include $(THISDIR)/jtag.mk
+else
+  include $(THISDIR)/prog.mk
+endif
+
 

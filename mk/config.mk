@@ -313,6 +313,16 @@ space +=
 # OUTDIR --> Location of the building generated files 
 # ----------------------------------------------------------------------------
 
+ifeq ($(HOST),Windows)
+  fullpath = $(subst /,\,$(abspath $1))
+else
+  ifeq ($(DIRMODE),msys)
+    fullpath = $(call windrv,$(abspath $1))
+  else
+    fullpath = $(abspath $1)
+  endif
+endif
+
 ifndef SRCDIR
   src_dir := $(abspath $(dir $(SOURCE_MK)))
   ifeq ($(HOST),Windows)

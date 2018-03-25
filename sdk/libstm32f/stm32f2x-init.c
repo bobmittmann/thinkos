@@ -45,6 +45,10 @@
 #define STM32_ENABLE_PLLSAI 1
 #endif
 
+#ifndef STM32_ENABLE_PLLI2S
+#define STM32_ENABLE_PLLI2S 0
+#endif
+
 #ifndef STM32_HCLK_HZ 
   #if defined(STM32F4X)
     #define STM32_HCLK_HZ    168000000
@@ -255,9 +259,6 @@
 #define __VCO_HZ (((uint64_t)STM32_HSE_HZ * PLLN) / PLLM)
 #define __HCLK_HZ (__VCO_HZ / PLLP)
 
-#define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
-#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
-
 #if STM32_ENABLE_PLLSAI
   /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
   #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLSAIM)
@@ -269,6 +270,11 @@
   #else
     #define __SAI_HZ STM32_HSI_HZ
   #endif
+#endif
+
+#if STM32_ENABLE_PLLI2S
+#define __VCOI2S_HZ (((uint64_t)STM32_HSE_HZ * PLLI2SN) / PLLI2SM)
+#define __I2S_HZ (__VCOI2S_HZ / PLLI2SR)
 #endif
 
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
@@ -285,7 +291,7 @@ const uint32_t stm32f_vco_hz = __VCO_HZ;
 const uint32_t stm32f_vcosai_hz = __VCOSAI_HZ;
 #endif
 
-#if defined(STM32F446)
+#if STM32_ENABLE_PLLI2S
 const uint32_t stm32f_i2s_hz = __I2S_HZ;
 #endif
 
@@ -394,7 +400,7 @@ void __attribute__((section(".init"))) _init(void)
 	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
 #endif
 
-#if defined(STM32F446)
+#if STM32_ENABLE_PLLI2S
 	/* configure IS2 PLL */
 	rcc->plli2scfgr =  RCC_PLLI2SR(PLLI2SR) | RCC_PLLI2SQ(PLLI2SQ) | 
 		RCC_PLLI2SP(PLLI2SP) | RCC_PLLI2SN(PLLI2SN) | RCC_PLLI2SM(PLLI2SM);
@@ -431,7 +437,7 @@ void __attribute__((section(".init"))) _init(void)
 		}
 	}
 
-//	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
 #endif
 
 }

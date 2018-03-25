@@ -238,3 +238,24 @@ const char thinkos_type_name_lut[][6] = {
 	[THINKOS_OBJ_INVALID]   = "Inval"
 };
 
+const char thinkos_type_prefix_lut[] = {
+	[THINKOS_OBJ_READY]     = '*',
+	[THINKOS_OBJ_TMSHARE]   = 'T',
+	[THINKOS_OBJ_CLOCK]     = 'C',
+	[THINKOS_OBJ_MUTEX]     = 'M',
+	[THINKOS_OBJ_COND]      = 'N',
+	[THINKOS_OBJ_SEMAPHORE] = 'S',
+	[THINKOS_OBJ_EVENT]     = 'E',
+	[THINKOS_OBJ_FLAG]      = 'F',
+	[THINKOS_OBJ_GATE]      = 'G',
+	[THINKOS_OBJ_JOIN]      = 'J',
+	[THINKOS_OBJ_CONWRITE]  = 'W',
+	[THINKOS_OBJ_CONREAD]   = 'R',
+	[THINKOS_OBJ_PAUSED]    = 'P',
+	[THINKOS_OBJ_CANCELED]  = '-',
+	[THINKOS_OBJ_FAULT]     = '!',
+	[THINKOS_OBJ_COMMSEND]  = '>',
+	[THINKOS_OBJ_COMMRECV]  = '<',
+	[THINKOS_OBJ_INVALID]   = '?'
+};
+

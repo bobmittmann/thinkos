@@ -84,12 +84,14 @@ int u32f2str(char * buf, uint32_t x, int precision);
 int u64d2str(char * buf, uint64_t x, int precision); 
 
 /* Double to uint64_t binary copy */
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
+#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; \
+						  a.d = (D); a.u;})
 /* Convert from double to an uint32_t encoded floating point. */
 static inline uint32_t __double2u32(double val) {
 	uint64_t x = DOUBLE2UINT64(val);
 	return ((uint32_t)(x >> 32) & 0x80000000) + 
-		(((uint32_t)((x >> 52) & 0x7f) + (uint32_t)((x >> 55) & 0x80)) << 23) +
+		(((uint32_t)((x >> 52) & 0x7f) + 
+		  (uint32_t)((x >> 55) & 0x80)) << 23) +
 		(((((uint32_t)(x >> 20)) & 0xffffffff) + 0x7f) >> 9);
 }
 #endif

@@ -240,7 +240,11 @@
 1 SPI TI mode
 Note: Not used in I2S mode */
 
+#if defined(STM32L4XX)
+#define SPI_NSSP (1 << 3)
+#else
 /* Bit 3 Reserved. Forced to 0 by hardware. */
+#endif
 
 /* Bit 2 - SS output enable */
 #define SPI_SSOE (1 << 2)

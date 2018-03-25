@@ -120,10 +120,13 @@ __sched_exit_step(struct thinkos_context * ctx, unsigned int thread_id)
 {
 	register struct thinkos_context * r0 asm("r0") = ctx;
 	register unsigned int r1 asm("r1") = thread_id;
-
+ 
+	/* Disable all exceptions. They wil be automatically restored
+	 when returning from this handler. */
+	asm volatile ("cpsid   f\n", ::); 
 	asm volatile ("movw   r2, #(1 << 5)\n"
 				  "msr    BASEPRI, r2\n"
-				  : : : "r2"); 
+				  : : : "r2");
 	asm volatile (
 #if THINKOS_ENABLE_SCHED_DEBUG
 				  "add    sp, #16\n"

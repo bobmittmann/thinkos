@@ -140,7 +140,9 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self);
 
 void thinkos_irq_wait_svc(int32_t * arg, int self);
 
-void thinkos_irq_register_svc(int32_t * arg);
+void thinkos_irq_timedwait_svc(int32_t * arg, int self);
+
+void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self);
 
 void thinkos_irq_ctl_svc(int32_t * arg);
 
@@ -164,18 +166,18 @@ void thinkos_escalate_svc(int32_t * arg)
 }
 #endif
 
-void thinkos_nosys(int32_t * arg)
+static void thinkos_nosys(int32_t * arg)
 {
-	__thinkos_error(THINKOS_ERR_SYSCALL_INVALID);
+	__THINKOS_ERROR(THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;
 }
 
-void thinkos_clock_svc(int32_t * arg)
+static void thinkos_clock_svc(int32_t * arg)
 {
 	arg[0] = thinkos_rt.ticks;
 }
 
-void thinkos_thread_self_svc(int32_t * arg, int32_t self)
+static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -195,7 +197,7 @@ void thinkos_critical_enter_svc(int32_t * arg)
 void thinkos_critical_exit_svc(int32_t * arg)
 {
 	if (thinkos_rt.critical_cnt == 0) {
-		__thinkos_error(THINKOS_ERR_CRITICAL_EXIT);
+		__THINKOS_ERROR(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__thinkos_defer_sched();
@@ -568,12 +570,24 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 #endif /* THINKOS_IRQ_MAX > 0 */
 		break;
 
-	case THINKOS_IRQ_REGISTER:
-#if CM3_RAM_VECTORS
-		thinkos_irq_register_svc(arg);
+	case THINKOS_IRQ_TIMEDWAIT:
+#if THINKOS_IRQ_MAX > 0
+  #if THINKOS_ENABLE_TIMED_CALLS
+		thinkos_irq_timedwait_svc(arg, self);
+  #else
+		thinkos_ev_wait_svc(arg, self);
+  #endif
 #else
 		thinkos_nosys(arg);
-#endif /* CM3_RAM_VECTORS */
+#endif /* THINKOS_IRQ_MAX > 0 */
+		break;
+
+	case THINKOS_IRQ_TIMEDWAIT_CLEANUP:
+#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
+		thinkos_irq_timedwait_cleanup_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif /* THINKOS_IRQ_MAX > 0 */
 		break;
 
 	case THINKOS_IRQ_CTL:
