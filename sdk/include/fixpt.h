@@ -26,13 +26,14 @@
 /* Q15 Saturation */
 #define Q15_SAT(X) ((X) < Q15_MIN) ? Q15_MIN : (((X) > Q15_MAX) ? Q15_MAX: (X))
 
+/* Conversion form float to fixed point Q1.15 with saturation */
+#define Q15S(F) Q15_SAT(Q15(F))
 
-
-/* Conversion form float to fixed point Q1.15 */
-#define Q24(F) ((int32_t)((F) * (1 << 24)))
+/* Conversion form float to fixed point Q7.24 */
+#define Q24(F) ((int32_t)((F) * 16777216))
 
 /* Convert from fractional Q8.24 to float point */
-#define Q24F(Q) ((float)(((float)(Q)) / (1.0 * (1 << 24))))
+#define Q24F(Q) ((float)(((float)(Q)) / (float)16777216.0))
 
 /* Q24 Multiply */
 #define Q24_MUL(X1, X2) (((int64_t)(X1) * (int64_t)(X2) + (1 << 23)) >> 24)
@@ -59,6 +60,50 @@
 
 /* Q16.16 Int */
 #define Q16_INT(X) ((int32_t)((X) >> 16))
+
+/* -------------------------------------------------------------------------
+ Q8.23 format: -256.0 ... 255.9999999
+ */
+ 
+#define Q23_MAX ((int32_t)2147483647)
+#define Q23_MIN ((int32_t)-2147483648)
+
+#define Q23_ONE ((int32_t)(1 << 23))
+
+/* Q23 Saturation */
+#define Q23_SAT(X) (((int64_t)(X) < (int64_t)Q23_MIN) ? Q23_MIN : \
+	(((int64_t)(X) > (int64_t)Q23_MAX) ? Q23_MAX: (X)))
+
+/* Saturate to -1..0.9999 instead of the min..max (-256..255.99999) */
+#define Q23_SAT_ONE(X) \\
+	(((int32_t)(X) < -(int32_t)(1 << 23)) ? -(int32_t)(1 << 23): \
+	(((int32_t)(X) > ((int32_t)(1 << 23) - 1)) ? ((int32_t)(1 << 23) - 1): (X)))
+
+/* Conversion form float to fixed point Q8.23 */
+#define Q23(F)           ((int64_t)((double)(F) * (double)(1 << 23)))
+/* Convert from float point to fixed point Q1.30 */
+#define FLOAT_Q23(X)     ((int32_t)((X) * (1 << 23)))
+
+/* Convert from fractional Q8.23 to float point */
+#define Q23F(Q) ((double)((double)(Q) * (1.0 / (double)(1 << 23))))
+/* Convert from fixed point Q8.23 to float point */
+#define Q23_FLOAT(X)     ((float)(X) / (1 << 23))
+
+/* Conversion form float to fixed point Q1.15 with saturation */
+#define Q23S(F) Q23_SAT(Q23(F))
+
+/* Q23 Signed Multiply */
+#define Q23_MUL(X1, X2)  ((int64_t)((int64_t)(X1) * (int32_t)(X2) + \
+									(1 << 22)) >> 23)
+
+/* Q23 Unsigned Multiply */
+#define Q23_UMUL(X1, X2) ((uint64_t)(((uint64_t)(X1) * (uint32_t)(X2)) \
+									 + (1 << 22)) >> 23)
+
+/* Q23 Divide */
+#define Q23_DIV(X, Y)    (((int64_t)(X) << 23) / (int32_t)(Y))
+/* Q23 Unsigned Divide */
+#define Q23_UDIV(X, Y)   (((uint64_t)(X) << 23) / (uint32_t)(Y))
 
 /* -------------------------------------------------------------------------
  Q2.30 format: -2.0 ... 1.9999999
@@ -159,6 +204,8 @@ typedef struct {
 
 int32_t ilog2(int32_t v);
 int32_t isqrt(uint32_t x);
+uint32_t u32sqrt(uint32_t x);
+uint32_t u64sqrt(uint64_t x);
 
 static inline uint16_t cplx16_abs(cplx16_t z) {
 	uint32_t x;

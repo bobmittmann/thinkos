@@ -95,7 +95,7 @@ struct trace_entry {
 #ifdef ENABLE_TRACE
 
 void inline __attribute__((always_inline,format (__printf__, 1, 2))) 
-	tracef_chk(const char * __fmt, ... ) {};
+	static tracef_chk(const char * __fmt, ... ) {};
 
 #define YAP(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \

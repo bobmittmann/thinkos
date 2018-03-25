@@ -56,7 +56,7 @@ void stm32_dmactl_init(struct stm32_dmactl * ctl, struct stm32f_dma * dma,
 					   int id)
 {
     ctl->id = id;
-    ctl->strm = &dma->s[id];
+    ctl->strm = (struct stm32f_dma_stream *)&dma->s[id];
     ctl->isr = dma_isr_bitband(dma, id);
     ctl->ifcr = dma_ifcr_bitband(dma, id);
 

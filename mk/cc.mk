@@ -162,3 +162,31 @@ endif
 
 #------------------------------------------------------------------------------ 
 
+#------------------------------------------------------------------------------ 
+# some rules to compile files on grand-grand-parent folders...
+
+$(OUTDIR)/%.o : $(SRCDIR)/../../../../%.c
+	$(ACTION) "CC 4: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(compile) -o $(subst \,\\,$(shell cygpath -w $@)) -c $(subst \,\\,$(shell cygpath -w $<))
+else
+	$(Q)$(compile) -MMD -o $@ -c $<
+endif
+
+$(OUTDIR)/%.o : $(SRCDIR)/../../../../%.S
+	$(ACTION) "AS: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(assemble) -o $(subst \,\\,$(shell cygpath -w $@)) -c $(subst \,\\,$(shell cygpath -w $<))
+else
+	$(Q)$(assemble) -MD -MP -MT $@ -o $@ -c $<
+endif
+
+$(OUTDIR)/%.o : $(SRCDIR)/../../../../%.s
+	$(ACTION) "AS: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(assemble) -o $(subst \,\\,$(shell cygpath -w $@)) -c $(subst \,\\,$(shell cygpath -w $<))
+else
+	$(Q)$(assemble) -MD -MP -MT $@ -o $@ -c $<
+endif
+
+#------------------------------------------------------------------------------ 

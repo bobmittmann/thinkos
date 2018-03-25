@@ -776,6 +776,9 @@ struct thinkos_rt {
 	uint32_t wq_comm_recv;
 #endif
 
+#if THINKOS_ENABLE_IRQ
+	uint32_t wq_irq;
+#endif
 	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
@@ -942,6 +945,10 @@ struct thinkos_rt {
 							/ sizeof(uint32_t))
 
 #define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
+						   - offsetof(struct thinkos_rt, wq_lst)) \
+						  / sizeof(uint32_t))
+
+#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_fault) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 

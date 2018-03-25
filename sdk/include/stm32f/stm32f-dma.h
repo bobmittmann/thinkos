@@ -252,6 +252,15 @@
 	0: No effect
 	1: Clears the corresponding CFEIFx flag in the DMA_HISR register */
 
+#define STM32_DMA_STREAM0 0
+#define STM32_DMA_STREAM1 1
+#define STM32_DMA_STREAM2 2
+#define STM32_DMA_STREAM3 3
+#define STM32_DMA_STREAM4 4
+#define STM32_DMA_STREAM5 5
+#define STM32_DMA_STREAM6 6
+#define STM32_DMA_STREAM7 7
+
 /*	DMA stream x configuration register */
 #define STM32F_DMA_S0CR (0x010 + 0x018 * 0)
 #define STM32F_DMA_S1CR (0x010 + 0x018 * 1)
@@ -339,6 +348,16 @@
 #define DMA_PL_MSK (((1 << (1 + 1)) - 1) << 16)
 #define DMA_PL_SET(VAL) (((VAL) << 16) & DMA_PL_MSK)
 #define DMA_PL_GET(REG) (((REG) & DMA_PL_MSK) >> 16)
+/*These bits are set and cleared by software.
+00: Low
+01: Medium
+10: High
+11: Very high */
+#define DMA_PL_LOW       (DMA_PL_SET(0))
+#define DMA_PL_MEDIUM    (DMA_PL_SET(1))
+#define DMA_PL_HIGH      (DMA_PL_SET(2))
+#define DMA_PL_VERY_HIGH (DMA_PL_SET(3))
+
 /* These bits are set and cleared by software.
 	00: Low
 	01: Medium
@@ -917,6 +936,7 @@ This bit is set and cleared by software.
    0101: Reserved
    0110: Reserved
    0111: Channel 7 mapped on TIM1_CH3 */
+#define DMA1_C7S_USART2_TX (DMA1_C7S_SET(0x2))
 
 /* Bits [20..23] - DMA channel 6 selection */
 #define DMA1_C6S_MSK (0xf << 20)
@@ -932,6 +952,7 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Channel 6 mapped on TIM1_UP
    others: Reserved */
+#define DMA1_C6S_USART2_RX (DMA1_C6S_SET(0x2))
 
 /* Bits [16..19] - DMA channel 5 selection */
 #define DMA1_C5S_MSK (0xf << 16)
@@ -978,7 +999,7 @@ This bit is set and cleared by software.
    0111: Channel 3 mapped on TIM1_CH2
    others: Reserved */
 #define DMA1_C3S_TIM6_UP_DAC1 (0x6 << 8)
-#define DMA1_C3S_USART3_RX (0x2 << 8)
+#define DMA1_C3S_USART3_RX (DMA1_C3S_SET(0x2))
 
 /* Bits [4..7] - DMA channel 2 selection */
 #define DMA1_C2S_MSK (0xf << 4)
@@ -994,7 +1015,7 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Channel 2 mapped on TIM1_CH1
    others: Reserved */
-#define DMA1_C2S_USART3_TX (0x2 << 4)
+#define DMA1_C2S_USART3_TX (DMA1_C2S_SET(0x2))
 
 /* Bits [0..3] - DMA channel 1 selection */
 #define DMA1_C1S_MSK (0xf << 0)
@@ -1145,7 +1166,7 @@ struct stm32f_dma {
 	volatile uint32_t hisr;
 	volatile uint32_t lifcr;
 	volatile uint32_t hifcr;
-	struct stm32f_dma_stream s[8];
+	volatile struct stm32f_dma_stream s[8];
 };
 #endif
 
@@ -1177,8 +1198,8 @@ struct stm32f_dma {
 	volatile uint32_t isr;
 	volatile uint32_t ifcr;
 	union {
-		struct stm32f_dma_channel ch[8];
-		struct stm32f_dma_stream s[8];
+		volatile struct stm32f_dma_channel ch[8];
+		volatile struct stm32f_dma_stream s[8];
 	};
 	volatile uint32_t cselr; /* 0xa8 */
 };
