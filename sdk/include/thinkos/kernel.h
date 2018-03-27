@@ -739,10 +739,6 @@ struct thinkos_rt {
 	uint32_t wq_canceled; /* canceled threads wait queue */
 #endif
 
-#if THINKOS_ENABLE_DEBUG_FAULT
-	uint32_t wq_fault; /* fault threads wait queue */
-#endif
-
 #if THINKOS_ENABLE_COMM
 	uint32_t wq_comm_send;
 	uint32_t wq_comm_recv;
@@ -751,6 +747,11 @@ struct thinkos_rt {
 #if THINKOS_ENABLE_IRQ
 	uint32_t wq_irq;
 #endif
+
+#if THINKOS_ENABLE_DEBUG_FAULT
+	uint32_t wq_fault; /* fault threads wait queue */
+#endif
+
 	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT

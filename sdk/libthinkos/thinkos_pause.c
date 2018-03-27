@@ -29,7 +29,14 @@ extern const uint8_t thinkos_obj_type_lut[];
 
 static void ready_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
+	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
+			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
+}
+
 #if THINKOS_IRQ_MAX > 0
+static void irq_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
+{
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
@@ -38,15 +45,19 @@ static void ready_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 						 thinkos_rt.ctx[thread_id]->pc, irq); 
 				/* disable this interrupt source */
 				cm3_irq_enable(irq);
-				return;
+				break;
 			}
 		}
 	}
-#endif
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
 			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
+	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_CLOCK
+	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 }
+#endif
+
 #if THINKOS_ENABLE_TIMESHARE
 static void tmshare_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
@@ -318,12 +329,15 @@ static const void * const thread_resume_lut[] = {
 #if THINKOS_ENABLE_JOIN
 	[THINKOS_OBJ_CANCELED] = canceled_resume,
 #endif
-#if THINKOS_ENABLE_FAULT
-	[THINKOS_OBJ_FAULT] = fault_resume,
-#endif
 #if THINKOS_ENABLE_COMM
 	[THINKOS_OBJ_COMMSEND] = comm_send_resume,
 	[THINKOS_OBJ_COMMRECV] = comm_recv_resume
+#endif
+#if THINKOS_ENABLE_IRQ
+	[THINKOS_OBJ_IRQ]      = irq_resume,
+#endif
+#if THINKOS_ENABLE_FAULT
+	[THINKOS_OBJ_FAULT] = fault_resume,
 #endif
 };
 
