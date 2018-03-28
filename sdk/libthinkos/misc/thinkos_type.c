@@ -67,7 +67,7 @@ const struct {
 	uint8_t wq_comm_send;
 	uint8_t wq_comm_recv;
 #endif
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	uint8_t wq_irq;
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
@@ -116,11 +116,11 @@ const struct {
 	.wq_comm_send = THINKOS_OBJ_COMMSEND,
 	.wq_comm_recv = THINKOS_OBJ_COMMRECV,
 #endif
-#if THINKOS_ENABLE_IRQ
-	.wq_irq = THINKOS_OBJ_IRQ
+#if THINKOS_IRQ_MAX > 0
+	.wq_irq = THINKOS_OBJ_IRQ,
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
-	.wq_fault = THINKOS_OBJ_FAULT,
+	.wq_fault = THINKOS_OBJ_FAULT
 #endif
 
 };
@@ -177,7 +177,7 @@ uint32_t * const thinkos_obj_alloc_lut[] = {
 	[THINKOS_OBJ_COMMSEND] = NULL,
 	[THINKOS_OBJ_COMMRECV] = NULL,
 #endif
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ] = NULL,
 #endif
 #if THINKOS_ENABLE_FAULT
@@ -229,7 +229,7 @@ const uint16_t thinkos_wq_base_lut[] = {
 	[THINKOS_OBJ_COMMSEND] = THINKOS_WQ_COMM_SEND,
 	[THINKOS_OBJ_COMMRECV] = THINKOS_WQ_COMM_RECV,
 #endif
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ] = THINKOS_WQ_IRQ,
 #endif
 #if THINKOS_ENABLE_FAULT

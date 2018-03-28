@@ -333,7 +333,7 @@ static const void * const thread_resume_lut[] = {
 	[THINKOS_OBJ_COMMSEND] = comm_send_resume,
 	[THINKOS_OBJ_COMMRECV] = comm_recv_resume
 #endif
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ]      = irq_resume,
 #endif
 #if THINKOS_ENABLE_FAULT
@@ -351,7 +351,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 
 #if THINKOS_ENABLE_PAUSE
 	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
-		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", thread_id);
+		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", thread_id+1);
 		/* paused */
 		return false;
 	}
@@ -366,8 +366,8 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 		/* remove the thread from a waiting queue, including ready  */
 		stat = thinkos_rt.th_stat[thread_id];
 		wq = stat >> 1;
-		DCC_LOG4(LOG_INFO, "thread=%d stat=0x%02x wq=%d clk=%d", 
-				 thread_id, stat, wq, (stat & 1));
+		DCC_LOG5(LOG_INFO, "thread=%d stat=0x%02x wq=%d clk=%d, irq_th[irq]=%d", 
+				 thread_id+1, stat, wq, (stat & 1), thinkos_rt.irq_th[53]);
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);
 #if THINKOS_ENABLE_TIMESHARE
 		/* possibly remove from the time share wait queue */
@@ -385,7 +385,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
 			if (thinkos_rt.irq_th[irq] == thread_id) {
-				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", thread_id, irq);
+				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", thread_id+1, irq);
 				/* disable this interrupt source */
 				cm3_irq_disable(irq);
 				break;
