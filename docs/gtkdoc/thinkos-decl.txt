@@ -1,0 +1,20 @@
+<FUNCTION>
+<NAME>thinkos_init</NAME>
+<RETURNS>int  </RETURNS>
+unsigned int opt
+</FUNCTION>
+<FUNCTION>
+<NAME>thinkos_mpu_init</NAME>
+<RETURNS>void  </RETURNS>
+unsigned int size
+</FUNCTION>
+<FUNCTION>
+<NAME>thinkos_userland</NAME>
+<RETURNS>void  </RETURNS>
+void
+</FUNCTION>
+<FUNCTION>
+<NAME>thinkos_thread_create</NAME>
+<RETURNS>int  </RETURNS>
+int (* task_ptr)(void *), void * task_arg, void * stack_ptr, unsigned int opt
+</FUNCTION>
