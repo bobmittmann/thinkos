@@ -812,7 +812,7 @@ struct thinkos_rt {
 
 #if THINKOS_ENABLE_IRQ_CYCCNT_RET
 	/* Reference cycle state ... */
-	uint32_t irq_cyccnt[THINKOS_THREADS_MAX];
+	uint32_t * irq_cyccnt[THINKOS_THREADS_MAX];
 #endif
 #endif /* THINKOS_IRQ_MAX */
 

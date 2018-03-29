@@ -146,7 +146,6 @@
 #define THINKOS_IRQ_PRIORITY_SET       2
 #define THINKOS_IRQ_SYSCALLS_SET       3
 #define THINKOS_IRQ_REGISTER           4
-#define THINKOS_IRQ_CYCCNT_GET         5
 
 #ifndef __ASSEMBLER__
 
@@ -540,17 +539,17 @@ static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, 
 }
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	return THINKOS_SYSCALLS1(THINKOS_IRQ_WAIT, irq);
+	return THINKOS_SYSCALLS2(THINKOS_IRQ_WAIT, irq, 0);
+}
+
+static inline int __attribute__((always_inline)) thinkos_irq_wait_cyccnt(int irq, uint32_t * cyccnt) {
+	return THINKOS_SYSCALLS2(THINKOS_IRQ_WAIT, irq, cyccnt);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_irq_register(int irq, 
 					 unsigned int pri, void (* isr)(void)) {
 	return THINKOS_SYSCALLS4(THINKOS_IRQ_CTL, THINKOS_IRQ_REGISTER, irq, pri, isr);
-}
-
-static inline int __attribute__((always_inline)) thinkos_irq_cyccnt_get(int irq) {
-	return THINKOS_SYSCALLS2(THINKOS_IRQ_CTL, THINKOS_IRQ_CYCCNT_GET, irq);
 }
 
 static inline int __attribute__((always_inline)) 
