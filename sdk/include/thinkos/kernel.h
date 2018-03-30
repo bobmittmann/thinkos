@@ -1047,14 +1047,14 @@ void cm3_msp_init(uint64_t * stack_top);
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
-bmp_bit_set(void * bmp, unsigned int bit)
+thinkos_bit_set(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 1);  
 }
 
 /* clear a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
-bmp_bit_clr(void * bmp, unsigned int bit)
+thinkos_bit_clr(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 0);  
 }
@@ -1197,6 +1197,10 @@ __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 #if THINKOS_ENABLE_TIMED_CALLS
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+#endif
+#if THINKOS_ENABLE_THREAD_STAT
+	/* update status */
+	thinkos_rt.th_stat[th] = 0;
 #endif
 }
 
