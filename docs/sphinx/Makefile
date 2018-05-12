@@ -5,8 +5,10 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = ThinkOS
-SOURCEDIR     = source
+SOURCEDIR     = .
 BUILDDIR      = build
+PDFLATEX      = xelatex
+LATEXOPTS     = -interaction=batchmode
 
 all:
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -14,6 +16,12 @@ all:
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+latex:
+	@$(SPHINXBUILD) -M latex "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+#pdf: latex
+#	$(MAKE) PDFLATEX=$(PDFLATEX) LATEXOPTS="$(LATEXOPTS)" -C $(BUILDDIR)/latex
 
 .PHONY: help Makefile
 

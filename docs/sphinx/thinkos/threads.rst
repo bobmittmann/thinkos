@@ -167,30 +167,3 @@ returns. Note that to perform this guarantee, the unregister_ftrace_function()
 may take some time to finish.
 
 
-The callback function
----------------------
-
-The prototype of the callback function is as follows (as of v4.14):
-
-.. c:function:: void callback_func(unsigned long ip, unsigned long parent_ip, 
-	struct ftrace_ops * op, struct pt_regs * regs);
-	:noindex:
-
-.. param ip: This is the instruction pointer of the function that is being traced. (where the fentry or mcount is within the function)
-
-@parent_ip
-	This is the instruction pointer of the function that called the
-	the function being traced (where the call of the function occurred).
-
-@op
-	This is a pointer to ftrace_ops that was used to register the callback.
-	This can be used to pass data to the callback via the private pointer.
-
-@regs
-	If the FTRACE_OPS_FL_SAVE_REGS or FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED
-	flags are set in the ftrace_ops structure, then this will be pointing
-	to the pt_regs structure like it would be if an breakpoint was placed
-	at the start of the function where ftrace was tracing. Otherwise it
-	either contains garbage, or NULL.
-
-

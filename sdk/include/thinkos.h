@@ -19,7 +19,7 @@
  * http://www.gnu.org/
  */
 
-/** 
+/* 
  * @file thinkos.h
  * @brief ThinkOS API
  * @author Robinson Mittmann <bobmittmann@gmail.com>
@@ -31,19 +31,56 @@
 
 #include <stdint.h>
 
+/** 
+ * enum thinkos_err - System call and library error codes. 
+ *
+ * @THINKOS_OK: No error 
+ * @THINKOS_EPERM: Invalid permission 
+ * @THINKOS_ENOSYS: Invalid or not implemented system call 
+ * @THINKOS_EFAULT: General fault 
+ * @THINKOS_ENOMEM: Resource pool exausted 
+ * @THINKOS_ETIMEDOUT: System call timed out 
+ * @THINKOS_EINTR: System call interrupted out 
+ * @THINKOS_EINVAL: Invalid argument 
+ * @THINKOS_EAGAIN: Non blocking call failed 
+ * @THINKOS_EDEADLK: Deadlock condition detected 
+ */
 enum thinkos_err {
-	THINKOS_OK        =  0, /**< No error */
-	THINKOS_ETIMEDOUT = -1, /**< System call timed out */
-	THINKOS_EINTR     = -2, /**< System call interrupted out */
-	THINKOS_EINVAL    = -3, /**< Invalid argument */
-	THINKOS_EAGAIN    = -4, /**< Non blocking call failed */
-	THINKOS_EDEADLK   = -5, /**< Deadlock condition detected */
+	THINKOS_OK        =  0, 
+	THINKOS_ETIMEDOUT = -1, 
+	THINKOS_EINTR     = -2, 
+	THINKOS_EINVAL    = -3, 
+	THINKOS_EAGAIN    = -4, 
+	THINKOS_EDEADLK   = -5, 
 	THINKOS_EPERM     = -6,
-	THINKOS_ENOSYS    = -7, /**< Invalid system call */
+	THINKOS_ENOSYS    = -7,
 	THINKOS_EFAULT    = -8,        
-	THINKOS_ENOMEM    = -9  /**< Resource pool exausted */ 
+	THINKOS_ENOMEM    = -9  
 };
 
+/** 
+ * enum thinkos_obj_kind - Kernel object class. 
+ *
+ * @THINKOS_OBJ_READY: Ready queue
+ * @THINKOS_OBJ_TMSHARE: time share waiting queue 
+ * @THINKOS_OBJ_CLOCK: clock waiting queue 
+ * @THINKOS_OBJ_MUTEX: mutex waiting queue 
+ * @THINKOS_OBJ_COND: conditional variable waiting queue 
+ * @THINKOS_OBJ_SEMAPHORE: semaphore waiting queue 
+ * @THINKOS_OBJ_EVENT: event waiting queue 
+ * @THINKOS_OBJ_FLAG: flag waiting queue 
+ * @THINKOS_OBJ_GATE: gate waiting queue 
+ * @THINKOS_OBJ_JOIN: thread join waiting queue 
+ * @THINKOS_OBJ_CONREAD : console read waiting queue 
+ * @THINKOS_OBJ_CONWRITE: console write waiting queue 
+ * @THINKOS_OBJ_PAUSED: thread paused list 
+ * @THINKOS_OBJ_CANCELED: thread canceled list 
+ * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
+ * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
+ * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
+ * @THINKOS_OBJ_FAULT: thread fault list 
+ * @THINKOS_OBJ_INVALID: invalid object 
+ */
 enum thinkos_obj_kind {
 	THINKOS_OBJ_READY     = 0,
 	THINKOS_OBJ_TMSHARE   = 1,
@@ -59,9 +96,10 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_CONWRITE  = 11,
 	THINKOS_OBJ_PAUSED    = 12,
 	THINKOS_OBJ_CANCELED  = 13,
-	THINKOS_OBJ_FAULT     = 14,
-	THINKOS_OBJ_COMMSEND  = 15,
-	THINKOS_OBJ_COMMRECV  = 16,
+	THINKOS_OBJ_COMMSEND  = 14,
+	THINKOS_OBJ_COMMRECV  = 15,
+	THINKOS_OBJ_IRQ       = 16,
+	THINKOS_OBJ_FAULT     = 17,
 	THINKOS_OBJ_INVALID
 };
 
@@ -98,6 +136,9 @@ struct cortex_m_context {
 	uint32_t xpsr;
 };
 
+/* 
+ * FIXME: this should be called struct thinkos_thread_inf... 
+ */
 struct thinkos_thread {
 	uint32_t no: 6;
 	uint32_t tmw: 1;
@@ -126,18 +167,40 @@ struct thinkos_thread {
 
 #include <stdint.h>
 
-struct thinkos_thread_inf {
-	void * stack_ptr;
-	union {
-		uint32_t opt;
-		struct {
-			uint16_t stack_size;
-			uint8_t priority;
-			uint8_t thread_id: 7;
-			uint8_t paused: 1;
-		};
-	};
+/** 
+ * struct thinkos_thread_attr - Thread attributes. 
+ *
+ * @stack_addr: Pointer to the base of the stack.
+ * @stack_size: Size of the stak in bytes 
+ * @priority: Round robin thread priority (only used if timeshared is enabled)
+ * @thread_id: Requested thread number (may differ from the run-time thread 
+ *             number if dynamic allocation is enabled)
+ * @paused: Indicate the initial state of the thread.
+ * @tag: thread name
+ *
+ */
+struct thinkos_thread_attr {
+	void * stack_addr;
+	uint32_t stack_size: 16;
+	uint32_t priority: 8;
+	uint32_t thread_id: 7;
+	uint32_t paused: 1;
 	char tag[8];
+};
+
+int (* thinkos_task_t)(void * arg, unsigned int id)  
+
+/** 
+ * struct thinkos_thread_init - Thread initializer. 
+ *
+ * @task: Task startup function.
+ * @arg: Parameter to the task
+ * @attr: Static thread attributes.
+ */
+struct thinkos_thread_init {
+	thinkos_task_t * task;
+	void * arg;
+	struct thinkos_thread_attr attr;
 };
 
 #include <thinkos/syscalls.h>
@@ -152,7 +215,18 @@ extern "C" {
  * thread of the system.
  * @return THINKOS_OK
  */
-int thinkos_krn_init(unsigned int opt);
+
+/** 
+ * thinkos_krn_init() - Initializes the ThinkOS kernel.
+ * @opt: Optional arguments
+ * 
+ * On return the current program execution thread turns into the first 
+ * thread of the system. 
+ *
+ * Return: %THINKOS_EFAULT in case of a hardware initialization 
+ * issue. Otherwise the thread id (number) is returned.
+ */
+int thinkos_krn_init(unsigned int opt, struct thinkos_thread_attr ** lst);
 
 /** @brief Initializes the @b ThinkOS non-real-time extension.
  *

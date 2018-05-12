@@ -767,18 +767,19 @@ struct thinkos_rt {
 	uint32_t wq_canceled; /* canceled threads wait queue */
 #endif
 
-#if THINKOS_ENABLE_DEBUG_FAULT
-	uint32_t wq_fault; /* fault threads wait queue */
-#endif
-
 #if THINKOS_ENABLE_COMM
 	uint32_t wq_comm_send;
 	uint32_t wq_comm_recv;
 #endif
 
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	uint32_t wq_irq;
 #endif
+
+#if THINKOS_ENABLE_DEBUG_FAULT
+	uint32_t wq_fault; /* fault threads wait queue */
+#endif
+
 	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
@@ -836,6 +837,11 @@ struct thinkos_rt {
 
 #if THINKOS_IRQ_MAX > 0
 	int8_t irq_th[THINKOS_IRQ_MAX];
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* Reference cycle state ... */
+	uint32_t irq_cyccnt[THINKOS_THREADS_MAX];
+#endif
 #endif /* THINKOS_IRQ_MAX */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -928,14 +934,6 @@ struct thinkos_rt {
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
-							   / sizeof(uint32_t))
-
-#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
-							   / sizeof(uint32_t))
-
 #define THINKOS_WQ_PAUSED ((offsetof(struct thinkos_rt, wq_paused) \
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
@@ -944,11 +942,19 @@ struct thinkos_rt {
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
+#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
+								- offsetof(struct thinkos_rt, wq_lst)) \
+							   / sizeof(uint32_t))
+
+#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
+								- offsetof(struct thinkos_rt, wq_lst)) \
+							   / sizeof(uint32_t))
+
+#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_fault) \
+#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 

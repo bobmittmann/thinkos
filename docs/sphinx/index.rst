@@ -28,9 +28,27 @@ The user-space API manual gathers together documents describing aspects of
 the ThinkOS interface as seen by application developers.
 
 .. toctree::
-   :maxdepth: 2
+	:maxdepth: 2
 
-   thinkos/threads.rst
+	thinkos/threads.rst
+
+
+Kernel Doc
+----------
+
+.. kernel-doc:: include/thinkos.h
+	:internal:
+
+
+README
+------
+
+.. toctree::
+	:maxdepth: 2
+
+	README.rst
+
+
 
 Indices and tables
 ==================
