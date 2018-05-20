@@ -143,6 +143,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 			oid = THINKOS_WQ_READY; /* FIXME */
 			tmw = (thinkos_rt.wq_clock & (1 << i)) ? true : false;
 #endif
+#if THINKOS_ENABLE_DEBUG_FAULT
 			if (oid == THINKOS_WQ_FAULT) {
 				struct thinkos_except * xcpt = &thinkos_except_buf;
 				switch (xcpt->type) {
@@ -161,8 +162,10 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 				default:
 					dmprintf(comm, " | ERR %2d", xcpt->type - THINKOS_ERR_OFF);
 				}
+			} else 
+#endif
 #if THINKOS_IRQ_MAX > 0
-			} else if (oid == THINKOS_WQ_IRQ) {
+			if (oid == THINKOS_WQ_IRQ) {
 				if (i != THINKOS_THREAD_IDLE) {
 					int irq;
 					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
@@ -175,8 +178,9 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 					} else
 						dmprintf(comm, " | IRQ ??");
 				}
+			} else 
 #endif
-			} else if (oid == THINKOS_WQ_READY) {
+			if (oid == THINKOS_WQ_READY) {
 				dmprintf(comm, " | READY ");
 #if THINKOS_ENABLE_TIMESHARE
 				/* FIXME: implement some info ...*/

@@ -266,7 +266,9 @@
 #else
   #if STM32_ENABLE_PLL
     /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
+	/* FIXME: PLLPDIV undefined
     #define __SAI_HZ (__VCO_HZ / PLLPDIV)
+ 	*/
   #else
     #define __SAI_HZ STM32_HSI_HZ
   #endif
@@ -282,7 +284,9 @@ const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
 const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
 const uint32_t stm32f_tim2_hz = __HCLK_HZ;
+#ifdef  __SAI_HZ
 const uint32_t stm32f_sai_hz = __SAI_HZ;
+#endif
 const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
 #if STM32_ENABLE_PLL
 const uint32_t stm32f_vco_hz = __VCO_HZ;
@@ -418,7 +422,9 @@ void __attribute__((section(".init"))) _init(void)
 			return;
 		}
 	}
+#endif
 
+#if STM32_ENABLE_PLLSAI
 	/* configure SAI PLL */
 	rcc->pllsaicfgr =  RCC_PLLSAIQ(PLLSAIQ) | RCC_PLLSAIP(PLLSAIP) |
 		RCC_PLLSAIN(PLLSAIN) | RCC_PLLSAIM(PLLSAIM);
