@@ -287,6 +287,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
+	__thinkos_pause_all();
 	if (dbgmon_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
 	}

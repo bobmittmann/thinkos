@@ -739,18 +739,19 @@ struct thinkos_rt {
 	uint32_t wq_canceled; /* canceled threads wait queue */
 #endif
 
-#if THINKOS_ENABLE_DEBUG_FAULT
-	uint32_t wq_fault; /* fault threads wait queue */
-#endif
-
 #if THINKOS_ENABLE_COMM
 	uint32_t wq_comm_send;
 	uint32_t wq_comm_recv;
 #endif
 
-#if THINKOS_ENABLE_IRQ
+#if THINKOS_IRQ_MAX > 0
 	uint32_t wq_irq;
 #endif
+
+#if THINKOS_ENABLE_DEBUG_FAULT
+	uint32_t wq_fault; /* fault threads wait queue */
+#endif
+
 	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
@@ -808,6 +809,11 @@ struct thinkos_rt {
 
 #if THINKOS_IRQ_MAX > 0
 	int8_t irq_th[THINKOS_IRQ_MAX];
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* Reference cycle state ... */
+	uint32_t * irq_cyccnt[THINKOS_THREADS_MAX];
+#endif
 #endif /* THINKOS_IRQ_MAX */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -894,14 +900,6 @@ struct thinkos_rt {
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
-							   / sizeof(uint32_t))
-
-#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
-							   / sizeof(uint32_t))
-
 #define THINKOS_WQ_PAUSED ((offsetof(struct thinkos_rt, wq_paused) \
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
@@ -910,11 +908,19 @@ struct thinkos_rt {
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
+#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
+								- offsetof(struct thinkos_rt, wq_lst)) \
+							   / sizeof(uint32_t))
+
+#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
+								- offsetof(struct thinkos_rt, wq_lst)) \
+							   / sizeof(uint32_t))
+
+#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_fault) \
+#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
@@ -1041,14 +1047,14 @@ void cm3_msp_init(uint64_t * stack_top);
 
 /* set a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
-bmp_bit_set(void * bmp, unsigned int bit)
+thinkos_bit_set(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 1);  
 }
 
 /* clear a bit in a bit map atomically */
 static void inline __attribute__((always_inline)) 
-bmp_bit_clr(void * bmp, unsigned int bit)
+thinkos_bit_clr(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 0);  
 }
@@ -1191,6 +1197,10 @@ __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 #if THINKOS_ENABLE_TIMED_CALLS
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+#endif
+#if THINKOS_ENABLE_THREAD_STAT
+	/* update status */
+	thinkos_rt.th_stat[th] = 0;
 #endif
 }
 

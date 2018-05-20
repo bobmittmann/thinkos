@@ -48,6 +48,7 @@ void cm3_default_isr(unsigned int irq)
 #if THINKOS_ENABLE_IRQ_CYCCNT_RET
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;
+	uint32_t * usr_ptr;
 #endif
 
 	/* disable this interrupt source */
@@ -56,22 +57,36 @@ void cm3_default_isr(unsigned int irq)
 	thread_id = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 #if DEBUG
-	DCC_LOG2(LOG_MSG, "<%d> IRQ %d", thread_id + 1, irq);
 	/* TODO: create a wait queue for IRQ waiting. */
 	if (thread_id >= THINKOS_THREAD_IDLE) {
 		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", thread_id + 1, irq);
 		return;
 	}
 #endif
-
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
+	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
+
+	/* remove from the wait queue */
+	__thinkos_wq_remove(THINKOS_WQ_IRQ, thread_id);  
 
 /* For possible speed up, for vector on RAM case,
  * this function should be split into two variant, 2nd one with cycle count */
 #if THINKOS_ENABLE_IRQ_CYCCNT_RET
-	/* set the thread's return value to cyle count */
-	thinkos_rt.ctx[thread_id]->r0 = cyccnt;
+#if 1
+	if (thread_id == 0)
+		DCC_LOG2(LOG_WARNING, "<%d> IRQ %d", thread_id + 1, irq);
+//	DCC_LOG2(LOG_TRACE, "<%d> IRQ %d", thread_id + 1, irq);
+	/* set cyle count in the storage provided by the thread */
+	if ((usr_ptr = (uint32_t *)(thinkos_rt.ctx[thread_id]->r1)))
+		*usr_ptr = cyccnt;
+#else
+	/* set cyle count in the storage provided by the thread */
+	if(thinkos_rt.irq_cyccnt[thread_id])
+		*thinkos_rt.irq_cyccnt[thread_id] = cyccnt;
+	DCC_LOG5(LOG_MSG, "<%d> IRQ %d, cyccnt:%d, irq_cyccnt:0x%x, &ic:0x%x",
+			thread_id + 1, irq, cyccnt, thinkos_rt.irq_cyccnt[thread_id],
+			&thinkos_rt.irq_cyccnt[thread_id]);
+#endif
 #endif
 
 	/* signal the scheduler ... */
@@ -79,35 +94,8 @@ void cm3_default_isr(unsigned int irq)
 }
 
 #if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
-void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self)
-{
+void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 	unsigned int irq = arg[0];
-
-	/* return appropriate error */
-
-	/* remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 0);
-	/* update status */
-	thinkos_rt.th_stat[self] = 0;
-	/* enable this interrupt source */
-	cm3_irq_disable(irq);
-
-	/* update the thread status if interrupt is received before timeout */
-	if (thinkos_rt.irq_th[irq] != THINKOS_THREAD_IDLE) {
-		/* assign idle thread to the interrupt */
-		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
-		arg[0] = THINKOS_OK;
-	} else {
-		/* return appropriate error */
-		arg[0] = THINKOS_ETIMEDOUT;
-	}
-
-}
-
-void thinkos_irq_timedwait_svc(int32_t * arg, int self)
-{
-	unsigned int irq = arg[0];
-	uint32_t ms = (uint32_t)arg[1];
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
@@ -118,11 +106,51 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	}
 #endif
 
-	/* clear pending interrupt */
-	cm3_irq_pend_clr(irq);
+	/* update the thread status if interrupt is received before timeout */
+	if (thinkos_rt.irq_th[irq] != THINKOS_THREAD_IDLE) {
+		/* assign idle thread to the interrupt */
+		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+		/* disable this interrupt source */
+		cm3_irq_disable(irq);
+		arg[0] = THINKOS_ETIMEDOUT;      /* return value */
+	} else {
+		arg[0] = THINKOS_OK;             /* return value */
+	}
+}
 
-	/* wait for event */
+void thinkos_irq_timedwait_svc(int32_t * arg, int self)
+{
+	unsigned int irq = arg[0];
+	uint32_t ms = (uint32_t)arg[1];
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	thinkos_rt.irq_cyccnt[self] = (uint32_t *)arg[1];
+	DCC_LOG4(LOG_WARNING, "<%d> IRQ %d, r1:0x%x, &r1:0x%x",
+			 self + 1, irq, arg[1], &arg[1]);
+	/* Set r1 to 0 to avoid issues in cycle count */
+	arg[1] = 0;
+#endif
+
+#if THINKOS_ENABLE_ARG_CHECK
+	if (irq >= THINKOS_IRQ_MAX) {
+		DCC_LOG2(LOG_ERROR, "invalid IRQ %d! irq_th=%d", irq, thinkos_rt.irq_th[53]);
+		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
+#endif
+
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* Save the context pointer. In case an interrupt wakes up
+	   this thread before the scheduler is called, this will allow
+	   the interrupt handler to locate the cycle counter (r1) address. */
+	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+#endif
+
+	/* remove from ready Q */
 	__thinkos_suspend(self);
+
+	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 
 	__thinkos_tmdwq_insert(THINKOS_WQ_IRQ, self, ms);
 
@@ -131,6 +159,9 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
+
+	/* clear pending interrupt */
+	cm3_irq_pend_clr(irq);
 
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
@@ -142,6 +173,18 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
 
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+#if 1
+	/* Set r1 to 0 to avoid issues in cycle count */
+	//if(irq == 53)
+	DCC_LOG2(LOG_TRACE, "<%d> IRQ %d", self + 1, irq);
+#else
+	thinkos_rt.irq_cyccnt[self] = (uint32_t *)arg[1];
+		DCC_LOG4(LOG_MSG, "<%d> IRQ %d, r1:0x%x, &r1:0x%x",
+				self + 1, irq, thinkos_rt.irq_cyccnt[self], &thinkos_rt.irq_cyccnt[self]);
+#endif
+#endif
+
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
@@ -152,12 +195,14 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 #endif
 	arg[0] = THINKOS_OK;
 
-	/* clear pending interrupt */
-	cm3_irq_pend_clr(irq);
-
-	/* wait for event */
+	/* remove from ready Q */
 	__thinkos_suspend(self);
-
+#if THINKOS_ENABLE_IRQ_CYCCNT_RET
+	/* Save the context pointer. In case an interrupt wakes up
+	   this thread before the scheduler is called, this will allow
+	   the interrupt handler to locate the cycle counter (r1) address. */
+	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+#endif
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 
 	/* assign this thread to the interrupt */
@@ -165,6 +210,9 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
+
+	/* clear pending interrupt */
+	cm3_irq_pend_clr(irq);
 
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
@@ -178,7 +226,7 @@ extern int __sizeof_rom_vectors;
 extern void * __ram_vectors[];
 #endif
 
-void thinkos_irq_ctl_svc(int32_t * arg)
+void thinkos_irq_ctl_svc(int32_t * arg, int self)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];

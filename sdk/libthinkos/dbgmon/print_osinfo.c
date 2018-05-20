@@ -161,8 +161,8 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 				default:
 					dmprintf(comm, " | ERR %2d", xcpt->type - THINKOS_ERR_OFF);
 				}
-			} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0
+			} else if (oid == THINKOS_WQ_IRQ) {
 				if (i != THINKOS_THREAD_IDLE) {
 					int irq;
 					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
@@ -173,10 +173,11 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 					if (irq < THINKOS_IRQ_MAX) {
 						dmprintf(comm, " | IRQ %2d", irq);
 					} else
-						dmprintf(comm, " | READY ");
-				} else
+						dmprintf(comm, " | IRQ ??");
+				}
 #endif
-					dmprintf(comm, " | READY ");
+			} else if (oid == THINKOS_WQ_READY) {
+				dmprintf(comm, " | READY ");
 #if THINKOS_ENABLE_TIMESHARE
 				/* FIXME: implement some info ...*/
 #endif

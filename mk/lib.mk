@@ -233,7 +233,8 @@ ifeq ($(HOST),Cygwin)
 	$(Q)$(AR) $(ARFLAGS) $(subst \,\\,$(shell cygpath -w $@)) $(OFILES_WIN) > $(DEVNULL)
 else
   ifeq ($(HOST),Windows)
-	$(foreach f,$(OFILES),$(shell $(AR) r $@ $(f)))
+	$(foreach f,$(OFILES),$(shell $(AR) r $@.tmp $(f)))
+	$(MV) $@.tmp $@
   else
 	$(Q)$(AR) $(ARFLAGS) $@ $(OFILES) 1> $(DEVNULL)
   endif
