@@ -571,19 +571,15 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_IRQ_TIMEDWAIT:
-#if THINKOS_IRQ_MAX > 0
-  #if THINKOS_ENABLE_TIMED_CALLS
+#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
 		thinkos_irq_timedwait_svc(arg, self);
-  #else
-		thinkos_ev_wait_svc(arg, self);
-  #endif
 #else
 		thinkos_nosys(arg);
 #endif /* THINKOS_IRQ_MAX > 0 */
 		break;
 
 	case THINKOS_IRQ_TIMEDWAIT_CLEANUP:
-#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
+#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
 		thinkos_irq_timedwait_cleanup_svc(arg, self);
 #else
 		thinkos_nosys(arg);

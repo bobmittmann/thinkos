@@ -164,7 +164,7 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 				}
 			} else 
 #endif
-#if THINKOS_IRQ_MAX > 0
+#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_WQ_IRQ
 			if (oid == THINKOS_WQ_IRQ) {
 				if (i != THINKOS_THREAD_IDLE) {
 					int irq;
@@ -181,7 +181,22 @@ int dmon_print_osinfo(struct dmon_comm * comm)
 			} else 
 #endif
 			if (oid == THINKOS_WQ_READY) {
+#if THINKOS_IRQ_MAX > 0 && !THINKOS_ENABLE_WQ_IRQ
+				if (i != THINKOS_THREAD_IDLE) {
+					int irq;
+					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+						if (thinkos_rt.irq_th[irq] == i) {
+							break;
+						}
+					}
+					if (irq < THINKOS_IRQ_MAX) {
+						dmprintf(comm, " | IRQ %2d", irq);
+					} else
+						dmprintf(comm, " | READY ");
+				}
+#else
 				dmprintf(comm, " | READY ");
+#endif
 #if THINKOS_ENABLE_TIMESHARE
 				/* FIXME: implement some info ...*/
 #endif

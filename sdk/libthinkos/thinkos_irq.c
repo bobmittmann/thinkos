@@ -66,34 +66,36 @@ void cm3_default_isr(unsigned int irq)
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 
+#if THINKOS_ENABLE_WQ_IRQ
 	/* remove from the wait queue */
 	__thinkos_wq_remove(THINKOS_WQ_IRQ, thread_id);  
+#endif
 
 /* For possible speed up, for vector on RAM case,
  * this function should be split into two variant, 2nd one with cycle count */
 #if THINKOS_ENABLE_IRQ_CYCCNT_RET
-#if 1
 	if (thread_id == 0)
 		DCC_LOG2(LOG_WARNING, "<%d> IRQ %d", thread_id + 1, irq);
-//	DCC_LOG2(LOG_TRACE, "<%d> IRQ %d", thread_id + 1, irq);
 	/* set cyle count in the storage provided by the thread */
 	if ((usr_ptr = (uint32_t *)(thinkos_rt.ctx[thread_id]->r1)))
 		*usr_ptr = cyccnt;
 #else
+  #if THINKOS_ENABLE_IRQ_CYCCNT
 	/* set cyle count in the storage provided by the thread */
 	if(thinkos_rt.irq_cyccnt[thread_id])
 		*thinkos_rt.irq_cyccnt[thread_id] = cyccnt;
 	DCC_LOG5(LOG_MSG, "<%d> IRQ %d, cyccnt:%d, irq_cyccnt:0x%x, &ic:0x%x",
 			thread_id + 1, irq, cyccnt, thinkos_rt.irq_cyccnt[thread_id],
 			&thinkos_rt.irq_cyccnt[thread_id]);
-#endif
+  #endif
 #endif
 
 	/* signal the scheduler ... */
 	__thinkos_preempt();
 }
 
-#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_TIMED_CALLS
+
+#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
 void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 	unsigned int irq = arg[0];
 
@@ -150,9 +152,11 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
+#if THINKOS_ENABLE_WQ_IRQ
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 
 	__thinkos_tmdwq_insert(THINKOS_WQ_IRQ, self, ms);
+#endif 
 
 	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;
@@ -166,7 +170,6 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
 }
-
 #endif
 
 void thinkos_irq_wait_svc(int32_t * arg, int self)
@@ -203,8 +206,9 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	   the interrupt handler to locate the cycle counter (r1) address. */
 	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
 #endif
+#if THINKOS_ENABLE_WQ_IRQ
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
-
+#endif
 	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;
 
