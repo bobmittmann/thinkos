@@ -136,6 +136,7 @@ ifdef PROG
   PROG_SREC := $(OUTDIR)/$(PROG).srec
   PROG_MAP := $(OUTDIR)/$(PROG).map
   PROG_ELF := $(OUTDIR)/$(PROG).elf
+  PROG_ELX := $(OUTDIR)/$(PROG).elx
   PROG_SYM := $(OUTDIR)/$(PROG).sym
   PROG_LST := $(OUTDIR)/$(PROG).lst
   PROG_TAG := $(OUTDIR)/$(PROG).tag
@@ -160,7 +161,6 @@ ifeq ($(HOST),Cygwin)
 endif
 
 GFILES := $(HFILES_OUT) $(CFILES_OUT) $(SFILES_OUT) 
-
 PFILES := $(PROG_BIN) $(PROG_SREC) $(PROG_ELF) $(PROG_LST) \
 		  $(PROG_SYM) $(PROG_MAP)
 
@@ -263,6 +263,8 @@ prog: $(PROG_BIN)
 
 elf: $(PROG_ELF)
 
+elx: $(PROG_ELX)
+
 map: $(PROG_MAP)
 
 bin: $(PROG_BIN)
@@ -307,7 +309,7 @@ cleanDebug:
 cleanRelease: 
 	$(Q)$(MAKE) D=0 clean
 
-.PHONY: all clean prog elf map bin lst libs-all libs-clean bin_path elf_path 
+.PHONY: all clean prog elf 
 .PHONY: Debug Release cleanDebug cleanRelease
 .PHONY: $(LIBDIRS_ALL) $(LIBDIRS_CLEAN) $(LIBDIRS_INSTALL)
 
@@ -346,9 +348,9 @@ endif
 $(PROG_ELF) $(PROG_MAP): $(LIBDIRS_ALL) $(OFILES) $(OBJ_EXTRA)
 	$(ACTION) "LD: $(PROG_ELF)"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
 else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
 endif
 
 %.sym: %.elf
@@ -375,6 +377,14 @@ ifeq ($(HOST),Cygwin)
 else
 	$(Q)$(STRIP) -o $@ $<
 endif
+endif
+
+%.elx: %.elf
+	$(ACTION) "XLF: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+else
+	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $< $@
 endif
 
 %.bin: %.elf

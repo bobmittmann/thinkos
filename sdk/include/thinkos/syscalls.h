@@ -660,9 +660,9 @@ static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {
 struct dmon_comm;
 
 static inline int __attribute__((always_inline)) 
-	thinkos_dbgmon(void (* task)(struct dmon_comm * ), 
-				   struct dmon_comm * comm) {
-	return THINKOS_SYSCALLS2(THINKOS_DBGMON, task, comm);
+	thinkos_dbgmon(void (* task)(struct dmon_comm *, void *), 
+				   struct dmon_comm * comm, void * param) {
+	return THINKOS_SYSCALLS3(THINKOS_DBGMON, task, comm, param);
 }
 
 static inline int __attribute__((always_inline)) 

@@ -122,7 +122,7 @@ void thinkos_dbgmon_svc(int32_t arg[], int self);
 
 void dbgmon_reset(void);
 
-void __attribute__((noreturn)) dbgmon_exec(void (* task)(struct dmon_comm *));
+void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *, void *), void * param);
 
 int dbgmon_unmask(int sig);
 

@@ -61,11 +61,12 @@ struct thinkos_dbgmon {
 	uint32_t * ctx;           /* monitor context */
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
+	void * param;             /* user supplied parameter */
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 	uint8_t irq_en_lst[4]; /* list of interrupts forced enable */
 	uint32_t nvic_ie[NVIC_IRQ_REGS]; /* interrupt state */
 #endif
-	void (* task)(struct dmon_comm * comm);
+	void (* task)(struct dmon_comm *, void *);
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
@@ -421,10 +422,11 @@ void dbgmon_reset(void)
 	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 }
 
-void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *))
+void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *, void *), void * param)
 {
 	DCC_LOG1(LOG_MSG, "task=%p", task);
 	thinkos_dbgmon_rt.task = task;
+	thinkos_dbgmon_rt.param = param;
 	dbgmon_reset();
 }
 
@@ -746,7 +748,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-static void dbgmon_null_task(struct dmon_comm * comm)
+static void dbgmon_null_task(struct dmon_comm * comm, void * param)
 {
 #if DEBUG
 	thinkos_dbgmon_rt.mask = 0;
@@ -769,8 +771,9 @@ static void dbgmon_null_task(struct dmon_comm * comm)
 
 static void __attribute__((naked)) dbgmon_bootstrap(void)
 {
-	void (* dbgmon_task)(struct dmon_comm *) = thinkos_dbgmon_rt.task; 
+	void (* dbgmon_task)(struct dmon_comm *, void *) = thinkos_dbgmon_rt.task; 
 	struct dmon_comm * comm = thinkos_dbgmon_rt.comm; 
+	void * param = thinkos_dbgmon_rt.param; 
 
 	thinkos_dbgmon_rt.task = dbgmon_null_task;
 	
@@ -780,7 +783,7 @@ static void __attribute__((naked)) dbgmon_bootstrap(void)
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 
-	dbgmon_task(comm);
+	dbgmon_task(comm, param);
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
@@ -1058,7 +1061,7 @@ step_done:
 	DCC_LOG1(LOG_INFO, "Unhandled signal <%08x>", sigset);
 	return 0;
 }
-
+#if DEBUG
 void __attribute__((noinline, noreturn)) 
 	dbgmon_panic(struct thinkos_except * xcpt)
 {
@@ -1074,6 +1077,7 @@ void __attribute__((noinline, noreturn))
 				  : : "r" (xcpt));
 	for(;;);
 }
+#endif
 
 
 /* 
@@ -1110,11 +1114,10 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 /* FIXME: this is a dire situation, probably the only resource left
    is to restart the system. */
-#if 0
-			dbgmon_soft_reset();
-			dbgmon_signal(DBGMON_RESET);
-#endif
+#if DEBUG
 			dbgmon_panic(xcpt);
+#else
+#endif
 		} else 
 #endif
 		{
@@ -1227,8 +1230,9 @@ static void __dmon_irq_init(void)
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
-	void (* task)(struct dmon_comm * ) = (void *)arg[0] ;
+	void (* task)(struct dmon_comm *, void *) = (void *)arg[0] ;
 	struct dmon_comm * comm = (void *)arg[1];
+	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 	
@@ -1242,6 +1246,7 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	thinkos_dbgmon_rt.mask = (1 << DBGMON_RESET) | (1 << DBGMON_STARTUP);
 	thinkos_dbgmon_rt.comm = comm;
 	thinkos_dbgmon_rt.task = task;
+	thinkos_dbgmon_rt.param = param;
 
 	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
 		DCC_LOG(LOG_INFO, "system startup!!!");
