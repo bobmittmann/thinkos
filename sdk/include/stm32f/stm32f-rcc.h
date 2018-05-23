@@ -3345,14 +3345,21 @@ struct stm32_clk {
 	uint8_t bit:5;
 } __attribute__((packed))__;
 
-extern const uint32_t stm32f_apb1_hz;
-extern const uint32_t stm32f_apb2_hz;
+/*---------------------------------------------------------------------
+ * Clocks
+ *---------------------------------------------------------------------*/
 extern const uint32_t stm32f_ahb_hz;
-extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_apb1_hz;
 extern const uint32_t stm32f_tim1_hz;
+extern const uint32_t stm32f_apb2_hz;
+extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_hse_hz;
 extern const uint32_t stm32f_hsi_hz;
-extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vco_hz;
 extern const uint32_t stm32f_sai_hz;
+extern const uint32_t stm32f_vcosai_hz;
+extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vcoi2s_hz;
 
 #ifdef __cplusplus
 extern "C" {

@@ -78,6 +78,22 @@
 #include <arch/cortex-m3.h>
 
 /*---------------------------------------------------------------------
+ * Clocks
+ *---------------------------------------------------------------------*/
+extern const uint32_t stm32f_ahb_hz;
+extern const uint32_t stm32f_apb1_hz;
+extern const uint32_t stm32f_tim1_hz;
+extern const uint32_t stm32f_apb2_hz;
+extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_hse_hz;
+extern const uint32_t stm32f_hsi_hz;
+extern const uint32_t stm32f_vco_hz;
+extern const uint32_t stm32f_sai_hz;
+extern const uint32_t stm32f_vcosai_hz;
+extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vcoi2s_hz;
+
+/*---------------------------------------------------------------------
  * USB Device
  *---------------------------------------------------------------------*/
 #include <sys/usb-dev.h>
