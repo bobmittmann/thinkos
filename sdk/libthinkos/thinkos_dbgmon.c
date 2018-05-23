@@ -1083,6 +1083,7 @@ void __attribute__((noinline, noreturn))
 /* 
  * ThinkOS exception handler hook
  */
+#if THINKOS_ENABLE_EXCEPTIONS
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
 	int ipsr;
@@ -1128,7 +1129,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		}
 	}
 }
-
+#endif
 
 /**
  * dmon_soft_reset:
@@ -1237,6 +1238,9 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	uint32_t demcr; 
 	
 	demcr = dcb->demcr;
+
+	/* disable monitor and clear semaphore */
+//	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
 
 	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
 	

@@ -127,7 +127,7 @@ void stm32f_dac_init(void)
 	while (dma->s[DAC1_DMA].cr & DMA_EN); 
 
 	/* DAC configure */
-	dac->cr = DAC_EN2 | DAC_EN1 | DAC_TSEL1_TIMER2 | DAC_TEN1 | DAC_DMAEN1;
+	dac->cr = DAC_EN2 | DAC_EN1 | DAC_TSEL1_TIM2 | DAC_TEN1 | DAC_DMAEN1;
 	/* DAC channel 2 initial value */
 	dac->dhr12r2 = 2048;
 

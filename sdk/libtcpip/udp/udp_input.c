@@ -69,7 +69,7 @@ int udp_input(struct ifnet * __if, struct iphdr * __ip,
 	up = (struct udp_pcb *)pcb_wildlookup(__ip->saddr, __udp->sport, 
 										   __ip->daddr, __udp->dport, 
 										   &__udp__.active);
-	DBG("UDP: %I:%d > %I:%d (%d)", 
+	DBG("UDP: %08x:%d > %08x:%d (%d)", 
 		__ip->saddr, ntohs(__udp->sport),
 		__ip->daddr, ntohs(__udp->dport), len); 
 

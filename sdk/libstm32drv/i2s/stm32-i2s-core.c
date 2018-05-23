@@ -215,7 +215,7 @@ int16_t * stm32_i2s_getbuf(struct stm32_spi_i2s_drv * drv)
 	else
 		ptr = (int16_t *)drv->tx.dmactl.strm->m1ar;
 
-	YAP("DMA buf: %08x", ptr);
+	YAP("DMA buf: %08x", (uint32_t)ptr);
 	
 	return ptr;
 }

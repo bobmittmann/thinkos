@@ -45,10 +45,6 @@
 #define STM32_ENABLE_PLLSAI 1
 #endif
 
-#ifndef STM32_ENABLE_PLLI2S
-#define STM32_ENABLE_PLLI2S 0
-#endif
-
 #ifndef STM32_HCLK_HZ 
   #if defined(STM32F4X)
     #define STM32_HCLK_HZ    168000000
@@ -65,10 +61,6 @@
   #else
     #define STM32_HSE_HZ     12000000
   #endif
-#endif
-
-#ifndef STM32_MSI_HZ 
-#define STM32_MSI_HZ          4000000
 #endif
 
 #define STM32_HSI_HZ         16000000
@@ -116,9 +108,9 @@
   #define PLLM 8
 #elif (STM32_HSE_HZ == 12000000)
 	/* F_HSE = 12 MHz
-	   F_VCO = 336 MHz (F_HSE * 28)
+	   F_VCO = 336 MHz (F_HSE * 112 / 4)
 	   F_MAIN = 168 MHz (F_VCO / 2)
-	   F_USB = 48 MHz (F_VCO / 7)*/
+	   F_USB = 48 MHz (F_VCO / 7) */
   #define PLLQ 7
   #define PLLP 2
   #define PLLN 112
@@ -256,8 +248,14 @@
 
 #endif
 
-#define __VCO_HZ (((uint64_t)STM32_HSE_HZ * PLLN) / PLLM)
-#define __HCLK_HZ (__VCO_HZ / PLLP)
+#if STM32_ENABLE_PLL
+  #define __VCO_HZ (((uint64_t)(STM32_HSE_HZ) * PLLN) / PLLM)
+  #define __HCLK_HZ (__VCO_HZ / PLLP)
+#elif STM32_ENABLE_HSE
+  #define __HCLK_HZ STM32_HSE_HZ
+#else
+  #define __HCLK_HZ STM32_HSI_HZ
+#endif
 
 #if STM32_ENABLE_PLLSAI
   /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
@@ -287,6 +285,7 @@ const uint32_t stm32f_tim2_hz = __HCLK_HZ;
 #ifdef  __SAI_HZ
 const uint32_t stm32f_sai_hz = __SAI_HZ;
 #endif
+const uint32_t stm32f_hse_hz = STM32_HSE_HZ;
 const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
 #if STM32_ENABLE_PLL
 const uint32_t stm32f_vco_hz = __VCO_HZ;
@@ -294,7 +293,6 @@ const uint32_t stm32f_vco_hz = __VCO_HZ;
 #if STM32_ENABLE_PLLSAI
 const uint32_t stm32f_vcosai_hz = __VCOSAI_HZ;
 #endif
-
 #if STM32_ENABLE_PLLI2S
 const uint32_t stm32f_i2s_hz = __I2S_HZ;
 #endif
@@ -316,14 +314,14 @@ void __attribute__((section(".init"))) _init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;
-	uint32_t sr;
-	uint32_t cr;
-	uint32_t pll;
+	uint32_t cr = 0;
 	uint32_t cfg;
-	int again;
 
+#if DEBUG
 	/* Make sure we are using the internal oscillator */
+	rcc->cr = RCC_HSION;
 	rcc->cfgr = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_HSI;
+#endif
 
 #if defined(STM32F446)
 	rcc->sscgr = 0;
@@ -332,63 +330,58 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->dckcfgr2 = 0;
 #endif
 
-	/* Enable external oscillator */
-	cr = rcc->cr;
+#if STM32_ENABLE_HSI
+	/*******************************************************************
+	 * Enable internal oscillator 
+	 *******************************************************************/
+	cr |= RCC_HSION;
+	rcc->cr = cr;
+	while (((cr = rcc->cr) & RCC_HSIRDY) == 0);
+#endif
+
+#if STM32_ENABLE_HSE
+	/*******************************************************************
+	 * Enable external oscillator 
+	 *******************************************************************/
 	cr |= RCC_HSEON;
-	rcc->cr = cr;;
+	rcc->cr = cr;
+	while (((cr = rcc->cr) & RCC_HSERDY) == 0);
+#endif
 
-	for (again = 8192; ; again--) {
-		cr = rcc->cr;
-		if (cr & RCC_HSERDY)
-			break;
-		if (again == 0) {
-			/* external clock startup fail! */
-			return;
-		}
-
-	}
-
-	pll = RCC_PLLR(PLLR) | RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | RCC_PLLP(PLLP) | 
-		RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
-
-	rcc->pllcfgr = pll;
+#if STM32_ENABLE_PLL
+	/*******************************************************************
+	 * Configure PLL
+	 *******************************************************************/
+	rcc->pllcfgr = RCC_PLLR(PLLR) | RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | 
+		RCC_PLLP(PLLP) | RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
 
 	/* enable PLL */
 	cr |= RCC_PLLON;
-	rcc->cr = cr;;
+	rcc->cr = cr;
+	while (((cr = rcc->cr) & RCC_PLLRDY) == 0);
+#endif
 
-	for (again = 8192; ; again--) {
-		cr = rcc->cr;
-		if (cr & RCC_PLLRDY)
-			break;
-		if (again == 0) {
-			/* PLL lock fail */
-			return;
-		}
-	}
-
+#if STM32_ENABLE_HSE
 	/* switch to external clock */
 	cfg = RCC_MCO2_SYSCLK | RCC_MCO2PRE_2 /* Clock output 2 */
 		| RCC_PPRE2_2 /* APB high speed prescaler : 60|84MHz */
 		| RCC_PPRE1_4 /* APB low speed prescaler : 30|42MHz */
 		| RCC_HPRE_1 /* AHB prescaler : 120|168MHz */ 
 		| RCC_SW_HSE;
-	
-	rcc->cfgr = cfg;
 
-	for (again = 4096; ; again--) {
-		sr = flash->sr;
-		if ((sr & FLASH_BSY) == 0)
-			break;
-		if (again == 0) {
-			/* flash not ready! */
-			return;
-		}
-	}
+	rcc->cfgr = cfg;
+#endif
+
+	/*******************************************************************
+	 * Configure flash access and wait states 
+	 *******************************************************************/
+#if DEBUG	
+	while ((flash->sr & FLASH_BSY) != 0);
+#endif
 
 	/* adjust flash wait states and enable caches */
 	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | 
-		FLASH_LATENCY(STM32_HCLK_HZ / 30000000);
+		FLASH_LATENCY(__HCLK_HZ / 30000000);
 
 	if (flash->cr & FLASH_LOCK) {
 		/* unlock flash write */
@@ -396,12 +389,15 @@ void __attribute__((section(".init"))) _init(void)
 		flash->keyr = FLASH_KEY2;
 	}
 
+#if STM32_ENABLE_PLL
 	/* switch to pll oscillator */
 	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_PLL;
-
-#ifdef CM3_RAM_VECTORS
-	/* Remap the VECTOR table to SRAM 0x20000000  */
-	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
+#elif STM32_ENABLE_HSE
+	/* select HSE as system clock */
+	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_HSE;
+#else
+	/* select HSI as system clock */
+	rcc->cfgr = (cfg & ~RCC_SW) | RCC_SW_HSI;
 #endif
 
 #if STM32_ENABLE_PLLI2S
@@ -444,6 +440,11 @@ void __attribute__((section(".init"))) _init(void)
 	}
 
 	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
+#endif
+
+#ifdef CM3_RAM_VECTORS
+	/* Remap the VECTOR table to SRAM 0x20000000  */
+	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
 #endif
 
 }

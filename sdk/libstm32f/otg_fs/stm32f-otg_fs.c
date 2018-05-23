@@ -246,6 +246,7 @@ static void stm32f_otg_fs_core_reset(struct stm32f_otg_fs * otg_fs)
 	udelay(3);
 }
 
+#if 0
 void stm32f_otg_fs_clear(struct stm32f_otg_fs * otg_fs)
 {
 	uint32_t depctl;
@@ -274,6 +275,7 @@ void stm32f_otg_fs_clear(struct stm32f_otg_fs * otg_fs)
 		otg_fs->outep[i].doepint = 0xff;
 	}
 }
+#endif
 
 void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 {

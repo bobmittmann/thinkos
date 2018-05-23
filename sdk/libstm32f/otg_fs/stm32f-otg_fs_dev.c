@@ -552,6 +552,7 @@ int stm32f_otg_dev_ep_init(struct stm32f_otg_drv * drv,
 		depctl |= OTG_FS_SD0PID | OTG_FS_USBAEP;
 
 		switch (info->attr & 0x03) {
+#if 0
 		case ENDPOINT_TYPE_CONTROL:
 			DCC_LOG(LOG_MSG, "ENDPOINT_TYPE_CONTROL");
 			depctl |= OTG_FS_EPTYP_SET(OTG_FS_EPTYP_CTRL);
@@ -561,7 +562,7 @@ int stm32f_otg_dev_ep_init(struct stm32f_otg_drv * drv,
 			DCC_LOG(LOG_MSG, "ENDPOINT_TYPE_ISOCHRONOUS");
 			depctl |= OTG_FS_EPTYP_SET(OTG_FS_EPTYP_ISOC);
 			break;
-
+#endif
 		case ENDPOINT_TYPE_BULK:
 			DCC_LOG(LOG_MSG, "ENDPOINT_TYPE_BULK");
 			depctl |= OTG_FS_EPTYP_SET(OTG_FS_EPTYP_BULK);
