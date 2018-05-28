@@ -2054,6 +2054,8 @@ These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
 
 /* Bit 27 - SDIO/USBFS/HS clock selection */
 #define RCC_CK48MSEL (1 << 27)
+#define RCC_CK48MSEL_PLLSAI_P (1 << 27)
+#define RCC_CK48MSEL_PLL_Q    (0 << 27)
 /* 1: f(PLLSAI_P)
    0: f(PLL_Q) */
 

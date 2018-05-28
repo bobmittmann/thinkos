@@ -125,14 +125,6 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 
-#if THINKOS_ENABLE_IRQ_CYCCNT_RET
-	thinkos_rt.irq_cyccnt[self] = (uint32_t *)arg[1];
-	DCC_LOG4(LOG_WARNING, "<%d> IRQ %d, r1:0x%x, &r1:0x%x",
-			 self + 1, irq, arg[1], &arg[1]);
-	/* Set r1 to 0 to avoid issues in cycle count */
-	arg[1] = 0;
-#endif
-
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG2(LOG_ERROR, "invalid IRQ %d! irq_th=%d", irq, thinkos_rt.irq_th[53]);

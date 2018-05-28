@@ -43,7 +43,7 @@
 
 #include "board.h"
 
-void monitor_task(struct dmon_comm * comm);
+void monitor_task(struct dmon_comm * comm, void * arg);
 
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
@@ -97,7 +97,7 @@ int main(int argc, char ** argv)
 #endif
 
 	DCC_LOG(LOG_INFO, "8. thinkos_dbgmon()");
-	thinkos_dbgmon(monitor_task, comm);
+	thinkos_dbgmon(monitor_task, comm, NULL);
 
 	DCC_LOG(LOG_INFO, "9. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
