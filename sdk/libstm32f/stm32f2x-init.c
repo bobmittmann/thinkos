@@ -39,12 +39,19 @@
    PLLI2S (Inter-IC Sound) - Not present in all chips.
 */
 
+/* Enable HSE oscillator */
 #ifndef STM32_ENABLE_HSE
-#define STM32_ENABLE_HSE 1
+#define STM32_ENABLE_HSE    1
 #endif
 
+/* Enable main PLL */
 #ifndef STM32_ENABLE_PLL
-#define STM32_ENABLE_PLL 1
+#define STM32_ENABLE_PLL    1
+#endif
+
+/* Use HSI for main PLL input, otherwise HSE will be used if enabled. */
+#ifndef STM32_PLL_CKIN_HSI
+#define STM32_PLL_CKIN_HSI  0
 #endif
 
 #ifndef STM32_ENABLE_PLLSAI
@@ -91,14 +98,7 @@
 #define STM32_MCO_PRE    1
 #endif
 
-#if defined(STM32F446)
-  #define PLLR 2
-#else
-  #define PLLR 0
-#endif
-
-#if (STM32_HCLK_HZ == 168000000)
-#if (STM32_HSE_HZ == 25000000)
+#if (STM32_HCLK_HZ == 168000000) && (STM32_HSE_HZ == 25000000)
 	/* F_HSE = 25 MHz
 	   F_VCO = 335.9375 MHz (F_HSE * 215 / 16)
 	   F_MAIN = 167.96875 MHz (F_VCO / 2)
@@ -107,7 +107,9 @@
   #define PLLP 2
   #define PLLN 215
   #define PLLM 16
-#elif (STM32_HSE_HZ == 16000000)
+#endif
+
+#if (STM32_HCLK_HZ == 168000000) && (STM32_HSE_HZ == 16000000)
 	/* F_HSE = 16 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -116,7 +118,9 @@
   #define PLLP 2
   #define PLLN 168
   #define PLLM 8
-#elif (STM32_HSE_HZ == 12000000)
+#endif
+
+#if (STM32_HCLK_HZ == 168000000) && (STM32_HSE_HZ == 12000000)
 	/* F_HSE = 12 MHz
 	   F_VCO = 336 MHz (F_HSE * 112 / 4)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -125,6 +129,11 @@
   #define PLLP 2
   #define PLLN 112
   #define PLLM 4
+  #if defined(STM32F446)
+    #define PLLR 2
+  #else
+    #define PLLR 0
+  #endif
     /* F_VCO = 389454513
 	   F_I2S = 169333333 */
   #define PLLI2SR 3
@@ -138,7 +147,10 @@
   #define PLLSAIM 9
   #define PLLSAIQ 3
   #define PLLSAIP 2
-#elif (STM32_HSE_HZ == 8000000)
+#endif
+
+
+#if (STM32_HCLK_HZ == 168000000) && (STM32_HSE_HZ == 8000000)
 	/* F_HSE = 8 MHz
 	   F_VCO = 336 MHz (F_HSE * 42)
 	   F_MAIN = 168 MHz (F_VCO / 2)
@@ -147,12 +159,9 @@
   #define PLLP 2
   #define PLLN 168
   #define PLLM 4
-#else
-#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (STM32_HCLK_HZ == 120000000)
-#if (STM32_HSE_HZ == 24000000)
+#if (STM32_HCLK_HZ == 120000000) && (STM32_HSE_HZ == 24000000)
 	/* F_HSE = 24 MHz
 	   F_VCO = 240 MHz
 	   F_MAIN = 120 MHz
@@ -161,7 +170,9 @@
   #define PLLP 2
   #define PLLN 120
   #define PLLM 12
-#elif (STM32_HSE_HZ == 12000000)
+#endif
+
+#if (STM32_HCLK_HZ == 120000000) && (STM32_HSE_HZ == 12000000)
 	/* F_HSE = 24 MHz
 	   F_VCO = 240 MHz
 	   F_MAIN = 120 MHz
@@ -170,13 +181,9 @@
   #define PLLP 2
   #define PLLN 240
   #define PLLM 12
-  /* Target I2S frequecny = 44100 * 32 * X */
-#else
-#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (STM32_HCLK_HZ == 192000000)
-#if (STM32_HSE_HZ == 25000000)
+#if (STM32_HCLK_HZ == 192000000) && (STM32_HSE_HZ == 25000000)
 	/* F_HSE = 25 MHz
 	   F_VCO = 383.9286 MHz (F_HSE * 215 / 14)
 	   F_MAIN = 191.964 MHz (F_VCO / 2)
@@ -185,27 +192,32 @@
   #define PLLP 2
   #define PLLN 215
   #define PLLM 14
-#else
-#error "STM32_HSE_HZ invalid!"
 #endif
 
-#elif (STM32_HCLK_HZ == 180000000)
-#if (STM32_HSE_HZ == 25000000)
-	/* F_HSE = 25 MHz
-	   F_VCO = 360 MHz (F_HSE * 216 / 15)
-	   F_MAIN = 180 MHz (F_VCO / 2)
-	   F_USB = 45 MHz (F_VCO / 8) */
-  #define PLLQ 8
-  #define PLLP 2
-  #define PLLN 216
-  #define PLLM 15
-#else
-#error "STM32_HSE_HZ invalid!"
+#if (STM32_HCLK_HZ == 180006400) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 360.012800 MHz */
+  #define PLLM         9
+  #define PLLN       287
+  #define PLLP         2 /*     PLLCLK -> 180.006400 MHz */
+  #define PLLR         2 /*       PLLR ->   0.000002 MHz */
+  #define PLLQ         8 /* PLL48M1CLK ->  45.001600 MHz */
+  #define PLLPDIV      4 /* PLLSAI2CLK ->  90.003200 MHz */
+
+  /* PLLI2SVCO = 180.633600 MHz */
+  #define PLLI2SM      6
+  #define PLLI2SN     96
+  #define PLLI2SQ      2 /* PLLSAI3CLK ->  90.316800 MHz */
+  #define PLLI2SP      8 /*  SPDIF2CLK ->  22.579200 MHz */
+  #define PLLI2SR      2 /* PLLI2S1CLK ->  90.316800 MHz */
+
+  /* PLLSAIVCO = 191.923200 MHz */
+  #define PLLSAIM      6
+  #define PLLSAIN    102
+  #define PLLSAIQ      2 /* PLLSAI2CLK ->  95.961600 MHz */
+  #define PLLSAIP      4 /* PLL48M2CLK ->  47.980800 MHz */
 #endif
 
-#endif
-
-#if STM32_ENABLE_HSE
+#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
   #define __PLL_CKIN_HZ (STM32_HSE_HZ)
 #else 
   #define __PLL_CKIN_HZ (STM32_HSI_HZ)
@@ -223,12 +235,15 @@
 #error "invalid PLL configuration (err < -0.1 %)!"
 #endif
 
+/* FIXME: multible USB sources */
+#if !defined(STM32F446)
 #if (VCO_HZ / PLLQ) > ((USB_HZ) + (USB_HZ) / 1000) 
 #error "invalid PLL configuration (err > 0.1 %)!"
 #endif
 
 #if (VCO_HZ / PLLQ) < ((USB_HZ) - (USB_HZ) / 1000) 
 #error "invalid PLL configuration (err < -0.1 %)!"
+#endif
 #endif
 
 #if (PLLN > 432)
@@ -355,7 +370,7 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->sscgr = 0;
 	rcc->pllsaicfgr = 0;
 	rcc->ckgatenr = 0xffffffff;
-	rcc->dckcfgr2 = 0;
+	rcc->dckcfgr2 = RCC_CK48MSEL_PLLSAI_P;
 #endif
 
 #if STM32_ENABLE_HSE
@@ -371,7 +386,7 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure PLL
 	 *******************************************************************/
-#if STM32_ENABLE_HSE
+#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
 	rcc->pllcfgr = RCC_PLLR(PLLR) | RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | 
 		RCC_PLLP(PLLP) | RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
 #else 
@@ -384,7 +399,7 @@ void __attribute__((section(".init"))) _init(void)
 	while (((cr = rcc->cr) & RCC_PLLRDY) == 0);
 #endif
 
-#if STM32_ENABLE_HSE
+#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
 	/* switch to external clock */
 	cfg = RCC_MCO2_SYSCLK | RCC_MCO2PRE_2 /* Clock output 2 */
 		| RCC_PPRE2_2 /* APB high speed prescaler : 60|84MHz */
@@ -440,6 +455,8 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->cr = cr;;
 
 	while (((cr = rcc->cr) & RCC_PLLI2SRDY) == 0);
+
+	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
 #endif
 
 #if STM32_ENABLE_PLLSAI
@@ -452,7 +469,6 @@ void __attribute__((section(".init"))) _init(void)
 	rcc->cr = cr;;
 
 	while (((cr = rcc->cr) & RCC_PLLSAIRDY) == 0);
-	rcc->dckcfgr = I2S2SRC_PLLI2S_R | I2S1SRC_PLLI2S_R;
 #endif
 
 #ifdef CM3_RAM_VECTORS

@@ -482,35 +482,37 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-void monitor_task(struct dmon_comm *);
+void monitor_task(struct dmon_comm *, void * arg);
 
 #if (MONITOR_SELFTEST_ENABLE)
-void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm) 
+void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm, 
+											   void * arg) 
 {
 	if (this_board.selftest)
 		this_board.selftest(comm);
-	dbgmon_exec(monitor_task);
+	dbgmon_exec(monitor_task, NULL);
 }
 #endif
 
 #if (BOOT_ENABLE_GDB)
-void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm) 
+void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm, void * arg) 
 {
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_stub_task(comm);
-	dbgmon_exec(monitor_task);
+	dbgmon_exec(monitor_task, arg);
 }
 #endif
 
 #if (BOOT_ENABLE_THIRD)
 void third_stub_task(struct dmon_comm *);
 
-void __attribute__((naked)) third_bootstrap(struct dmon_comm * comm) 
+void __attribute__((naked)) third_bootstrap(struct dmon_comm * comm, 
+											void * arg) 
 {
 	/* call the THIRD stub task */
 	third_stub_task(comm);
 	/* return to the monitor */
-	dbgmon_exec(monitor_task);
+	dbgmon_exec(monitor_task, arg);
 }
 #endif
 
@@ -521,12 +523,12 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	switch (c) {
 #if (BOOT_ENABLE_GDB)
 	case '+':
-		dbgmon_exec(gdb_bootstrap);
+		dbgmon_exec(gdb_bootstrap, NULL);
 		break;
 #endif
 #if (BOOT_ENABLE_THIRD)
 	case '~':
-		dbgmon_exec(third_bootstrap);
+		dbgmon_exec(third_bootstrap, NULL);
 		break;
 #endif
 #if (MONITOR_APPTERM_ENABLE)
@@ -599,7 +601,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_RESTART_MONITOR)
 	case CTRL_Q:
 		dmprintf(comm, "^Q\r\n");
-		dbgmon_exec(monitor_task);
+		dbgmon_exec(monitor_task, NULL);
 		break;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
@@ -676,7 +678,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
    Dafault Monitor Task
  */
 
-void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
+void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
+											void * arg)
 {
 	struct monitor monitor;
 	uint32_t sigmask = 0;
