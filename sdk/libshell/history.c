@@ -362,7 +362,7 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 				fputc(buf[pos++], f);
 				if ((buf[pos - 1] != ' ') && (buf[pos] == ' '))
 					break;
-			} 
+			}
 			continue;
 
 		case IN_CTRL_CURSOR_LEFT:
