@@ -32,12 +32,15 @@
 
 /* Trace options */
 enum trace_level {
-	TRACE_LVL_NONE = 0,
-	TRACE_LVL_ERR = 1,
-	TRACE_LVL_WARN = 2,
-	TRACE_LVL_INF = 3,
-	TRACE_LVL_DBG = 4,
-	TRACE_LVL_YAP = 5
+	TRACE_LVL_NONE  = 0,
+	TRACE_LVL_ALERT = 1,
+	TRACE_LVL_CRIT  = 2,
+	TRACE_LVL_ERR   = 3,
+	TRACE_LVL_WARN  = 4,
+	TRACE_LVL_NOTE  = 5,
+	TRACE_LVL_INF   = 6,
+	TRACE_LVL_DBG   = 7,
+	TRACE_LVL_YAP   = 8
 };
 
 /* Trace flags (options) */

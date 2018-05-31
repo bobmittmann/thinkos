@@ -387,9 +387,12 @@ print_buf:
 }
 
 const char * const trace_lvl_nm[] = {
-		" NONE",
+		"PANIC",
+		"ALERT",
+		" CRIT",
 		"ERROR",
 		" WARN",
+		" NOTE",
 		" INFO",
 		"DEBUG",
 		"  YAP",
