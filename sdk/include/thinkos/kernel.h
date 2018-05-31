@@ -1000,7 +1000,8 @@ enum thinkos_exception {
 	THINKOS_ERR_CTL_REQINV        = 24,
 	THINKOS_ERR_COMM_REQINV       = 25,
 	THINKOS_ERR_SYSCALL_INVALID   = 26,
-	THINKOS_ERR_CRITICAL_EXIT     = 27
+	THINKOS_ERR_CRITICAL_EXIT     = 27,
+	THINKOS_ERR_USER              = 28
 };
 
 /* Mark for breakpoint numbers. Breakpoints above this
