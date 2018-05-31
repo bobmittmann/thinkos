@@ -42,6 +42,19 @@
   #endif
 #endif
 
+#ifndef THINKOS_DBGMON_STACK_SIZE
+#define THINKOS_DBGMON_STACK_SIZE (960 + 16)
+#endif
+
+#ifndef THINKOS_DBGMON_ENABLE_IRQ_MGMT
+#define THINKOS_DBGMON_ENABLE_IRQ_MGMT 1 
+#endif
+
+#ifndef THINKOS_DBGMON_ENABLE_RST_VEC
+#define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
+#endif
+
+
 #include <sys/usb-dev.h>
 
 enum dbgmon_event {

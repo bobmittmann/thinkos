@@ -285,6 +285,11 @@ static void monitor_on_fault(struct dmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
+#if !THINKOS_DBGMON_ENABLE_IRQ_MGMT
+	/* Restore interrupts */
+	this_board.softreset();
+#endif
+
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
 	__thinkos_pause_all();

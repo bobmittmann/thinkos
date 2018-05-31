@@ -42,18 +42,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
-#ifndef THINKOS_DBGMON_STACK_SIZE
-#define THINKOS_DBGMON_STACK_SIZE (960 + 16)
-#endif
-
-#ifndef THINKOS_DBGMON_ENABLE_IRQ_MGMT
-#define THINKOS_DBGMON_ENABLE_IRQ_MGMT 1 
-#endif
-
-#ifndef THINKOS_DBGMON_ENABLE_RST_VEC
-#define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
-#endif
-
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
@@ -166,6 +154,11 @@ void __dmon_irq_restore_all(void)
 
 	DCC_LOG(LOG_TRACE, "....");
 
+}
+#else
+void __dmon_irq_restore_all(void) {
+}
+void __dmon_irq_pause_all(void) {
 }
 #endif
 
@@ -1099,7 +1092,9 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		thinkos_rt.break_id = xcpt->active;
 #endif
 		__dmon_irq_disable_all();
+#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 		__dmon_irq_force_enable();
+#endif
 		dbgmon_signal(DBGMON_THREAD_FAULT);
 	} else {
 #if THINKOS_ENABLE_DEBUG_BKPT
@@ -1123,7 +1118,9 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 #endif
 		{
 			__dmon_irq_disable_all();
+#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 			__dmon_irq_force_enable();
+#endif
 			DCC_LOG(LOG_TRACE, "DBGMON_EXCEPT");
 			dbgmon_signal(DBGMON_EXCEPT);
 		}
