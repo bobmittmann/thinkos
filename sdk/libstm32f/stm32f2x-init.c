@@ -159,6 +159,7 @@
   #define PLLP 2
   #define PLLN 168
   #define PLLM 4
+  #define PLLR 0
 #endif
 
 #if (STM32_HCLK_HZ == 120000000) && (STM32_HSE_HZ == 24000000)
@@ -170,6 +171,7 @@
   #define PLLP 2
   #define PLLN 120
   #define PLLM 12
+  #define PLLR 0
 #endif
 
 #if (STM32_HCLK_HZ == 120000000) && (STM32_HSE_HZ == 12000000)
@@ -181,6 +183,7 @@
   #define PLLP 2
   #define PLLN 240
   #define PLLM 12
+  #define PLLR 0
 #endif
 
 #if (STM32_HCLK_HZ == 192000000) && (STM32_HSE_HZ == 25000000)
@@ -192,6 +195,7 @@
   #define PLLP 2
   #define PLLN 215
   #define PLLM 14
+  #define PLLR 0
 #endif
 
 #if (STM32_HCLK_HZ == 180006400) && (STM32_HSE_HZ == 11289600)
