@@ -41,6 +41,10 @@
 #define THINKOS_DBGMON_ENABLE_FLOWCTL 1 
 #endif
 
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
+#define THINKOS_DBGMON_ENABLE_COMM_STATS 0
+#endif
+
 #define EP0_ADDR 0
 #define EP0_MAX_PKT_SIZE 64
 
@@ -367,6 +371,10 @@ const struct cdc_line_coding usb_cdc_lc = {
     .bDataBits = 8
 };
 
+const uint16_t device_status = USB_DEVICE_STATUS_SELF_POWERED;
+const uint16_t interface_status = 0x0000;
+
+
 #define ACM_USB_SUSPENDED (1 << 1)
 #define ACM_CONNECTED     (1 << 2)
 
@@ -375,25 +383,32 @@ const struct cdc_line_coding usb_cdc_lc = {
 struct usb_cdc_acm_dev {
 	/* underling USB device */
 	struct usb_dev * usb;
+	/* endpoints handlers */
 	uint8_t ctl_ep;
 	uint8_t in_ep;
 	uint8_t out_ep;
 	uint8_t int_ep;
 
-#if DEBUG
-	uint32_t tx_pkt;
-#endif
+	uint8_t configured;
+	uint32_t ctl_buf[CDC_CTL_BUF_LEN / 4];
 
 	volatile uint8_t acm_ctrl; /* modem control lines */
+
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
 	uint8_t rx_flowctrl;
 	uint8_t rx_paused;
 #endif
 	volatile uint8_t rx_cnt; 
 	volatile uint8_t rx_pos; 
-	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE + 1];
+	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
 
-	uint32_t ctl_buf[CDC_CTL_BUF_LEN / 4];
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
+	struct {
+		uint32_t tx_pkt;
+		uint32_t rx_pkt;
+	} stats;
+#endif
+
 };
 
 void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
@@ -435,11 +450,6 @@ void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
 	}
 	dev->rx_cnt = cnt + n;
 
-#if 0
-	dev->rx_buf[n] = '\0';
-	DCC_LOGSTR(LOG_INFO, "'%s'", dev->rx_buf);
-#endif
-
 	usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 	DCC_LOG(LOG_INFO, "COMM_RCV!");
 	dbgmon_signal(DBGMON_COMM_RCV);
@@ -477,6 +487,7 @@ const usb_dev_ep_info_t usb_mon_int_info = {
 	.on_in = usb_mon_on_eot_int
 };
 
+/* Setup requests callback handler */
 int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) 
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
@@ -489,6 +500,9 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 	 Table 9-3 in USB specification Rev 1.1 */
 
 	switch ((req->request << 8) | req->type) {
+
+	/* Standard Device Requests */
+		
 	case STD_GET_DESCRIPTOR:
 		desc = value >> 8;
 
@@ -532,32 +546,98 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 			dev->out_ep = usb_dev_ep_init(dev->usb, &usb_mon_out_info, NULL, 0);
 			dev->int_ep = usb_dev_ep_init(dev->usb, &usb_mon_int_info, NULL, 0);
 			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
+			dev->configured = 1;
 		} else {
 			usb_dev_ep_ctl(dev->usb, dev->in_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev->int_ep, USB_EP_DISABLE);
 		}
-		DCC_LOG(LOG_INFO, "[CONFIGURED]");
+		DCC_LOG(LOG_TRACE, "[CONFIGURED]");
 		break;
 	}
-#if 0
+
+	case STD_GET_STATUS_DEVICE:
+		DCC_LOG(LOG_TRACE, "GetStatusDev");
+		*ptr = (void *)&device_status;
+		len = 2;
+		break;
+
 	case STD_GET_CONFIGURATION:
-		DCC_LOG(LOG_INFO, "GetCfg");
+		DCC_LOG(LOG_TRACE, "GetCfg");
+		*ptr = (void *)&dev->configured;
+		len = 1;
 		break;
 
-	case STD_GET_STATUS_INTERFACE:
-		DCC_LOG(LOG_INFO, "GetStIf");
+#if 0
+	case STD_CLEAR_FEATURE_DEVICE:
+		if (value == USB_DEVICE_REMOTE_WAKEUP) {
+		} else if (value == USB_TEST_MODE ) {
+		}
+		DCC_LOG(LOG_INFO, "ClrFeatureDev(%d)", value);
 		break;
 
-	case STD_GET_STATUS_ZERO:
-		DCC_LOG(LOG_INFO, "GetStZr");
-		break;
-
-	case STD_GET_STATUS_ENDPOINT:
-		index &= 0x0f;
-		DCC_LOG1(LOG_INFO, "GetStEpt:%d", index);
+	case STD_SET_FEATURE_DEVICE:
+		if (value == USB_DEVICE_REMOTE_WAKEUP) {
+		} else if (value == USB_TEST_MODE ) {
+		}
+		DCC_LOG(LOG_INFO, "SetFeatureDev", value);
 		break;
 #endif
+
+	/* Standard Interface Requests */
+	case STD_GET_STATUS_INTERFACE:
+		DCC_LOG1(LOG_TRACE, "GetStatusIf(%d)", index);
+		*ptr = (void *)&interface_status;
+		len = 2;
+		break;
+
+#if 0
+	case STD_CLEAR_FEATURE_INTERFACE:
+		DCC_LOG(LOG_INFO, "ClrFeatureIf(%d,%d)", index, value);
+		break;
+
+	case STD_SET_FEATURE_INTERFACE:
+		DCC_LOG(LOG_INFO, "SetFeatureIf(%d,%d)", index, value);
+		break;
+
+	case STD_GET_INTERFACE:
+		DCC_LOG(LOG_INFO, "GetInterface(%d)", index);
+		break;
+
+	case STD_SET_INTERFACE:
+		DCC_LOG(LOG_INFO, "SetInterface(%d)", index);
+		break;
+#endif
+
+
+	/* Standard Endpoint Requests */
+#if 0
+	case STD_GET_STATUS_ENDPOINT:
+		index &= 0x0f;
+		DCC_LOG1(LOG_INFO, "GetStatusEpt:%d", index);
+		break;
+
+	case STD_CLEAR_FEATURE_ENDPOINT:
+		index &= 0x0f;
+		DCC_LOG1(LOG_INFO, "ClrFeatureEP:%d", index);
+		break;
+
+	case STD_CLEAR_FEATURE_ENDPOINT:
+		index &= 0x0f;
+		DCC_LOG1(LOG_INFO, "SetFeatureEP:%d", index);
+		break;
+
+	case STD_SYNCH_FRAME:
+		index &= 0x0f;
+		DCC_LOG1(LOG_INFO, "SetFeatureEP:%d", index);
+		break;
+#endif
+
+
+	/* -------------------------------------------------------------------- 
+	 * Class specific requests 
+	 */
+
 	case SET_LINE_CODING: 
 		{
 			struct cdc_line_coding * lc;
@@ -587,7 +667,7 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 		break;
 
 	default:
-		DCC_LOG5(LOG_INFO, "CDC t=%x r=%x v=%x i=%d l=%d",
+		DCC_LOG5(LOG_WARNING, "CDC t=%x r=%x v=%x i=%d l=%d",
 				req->type, req->request, value, req->index, len);
 		break;
 	}
@@ -648,11 +728,15 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	rem = len;
 	while (rem) {
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
-			DCC_LOG1(LOG_INFO, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
-					 dev->tx_pkt);
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
+			DCC_LOG1(LOG_WARN, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
+					 dev->stats.tx_pkt);
+#else
+			DCC_LOG(LOG_WARN, "usb_dev_ep_pkt_xmit() failed");
+#endif
 		} else {
-#if DEBUG
-			dev->tx_pkt++;
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
+			dev->stats.tx_pkt++;
 #endif
 			DCC_LOG1(LOG_MSG, "n=%d!!", n);
 			rem -= n;
@@ -705,6 +789,9 @@ recv:
 #endif
 				dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
 			dev->rx_cnt = cnt;
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
+			dev->stats.rx_pkt++;
+#endif
 		} 
 		dev->rx_pos = pos;
 		return n;
@@ -809,6 +896,7 @@ struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->rx_flowctrl = false;
 	dev->rx_paused = false;
 #endif
+	dev->configured = 0;
 
 	DCC_LOG(LOG_MSG, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);

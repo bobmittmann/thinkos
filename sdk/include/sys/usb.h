@@ -373,15 +373,15 @@ struct usb_language_id {
 
 
 /* USB standard request code */
-#define STD_GET_STATUS_ZERO           0x0080
+#define STD_GET_STATUS_DEVICE         0x0080
 #define STD_GET_STATUS_INTERFACE      0x0081
 #define STD_GET_STATUS_ENDPOINT       0x0082
 
-#define STD_CLEAR_FEATURE_ZERO        0x0100
+#define STD_CLEAR_FEATURE_DEVICE      0x0100
 #define STD_CLEAR_FEATURE_INTERFACE   0x0101
 #define STD_CLEAR_FEATURE_ENDPOINT    0x0102
 
-#define STD_SET_FEATURE_ZERO          0x0300
+#define STD_SET_FEATURE_DEVICE        0x0300
 #define STD_SET_FEATURE_INTERFACE     0x0301
 #define STD_SET_FEATURE_ENDPOINT      0x0302
 
@@ -396,7 +396,14 @@ struct usb_language_id {
 
 
 
+struct usb_device_satus {
+	uint16_t bRemoteWakeuo: 1; 
+	uint16_t bSelfPowered: 1;
+	uint16_t res: 14;
+} __attribute__((__packed__));
 
+#define USB_DEVICE_STATUS_REMOTE_WAKEUP (1 << 1)
+#define USB_DEVICE_STATUS_SELF_POWERED (1 << 0)
 
 #ifdef __cplusplus
 extern "C" {
