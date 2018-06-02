@@ -725,7 +725,6 @@ static void stm32f_usb_dev_ep0_setup(struct stm32f_usb * usb,
 
 	if (req->type & 0x80) {
 		/* Control Read SETUP transaction (IN Data Phase) */
-
 		DCC_LOG(LOG_MSG, "EP0 [SETUP] IN Dev->Host");
 		ep->xfr_ptr = NULL;
 		len = ep->on_setup(drv->cl, req, (void *)&ep->xfr_ptr);
