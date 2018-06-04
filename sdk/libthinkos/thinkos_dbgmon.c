@@ -1051,7 +1051,8 @@ step_done:
 		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
 
-	DCC_LOG1(LOG_INFO, "Unhandled signal <%08x>", sigset);
+	DCC_LOG2(LOG_TRACE, "Unhandled signal sigset=%08x sigmsk=%08x", 
+			 sigset, sigmsk);
 	return 0;
 }
 #if DEBUG

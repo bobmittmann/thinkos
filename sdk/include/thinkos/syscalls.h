@@ -539,7 +539,8 @@ static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, 
 }
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	return THINKOS_SYSCALLS2(THINKOS_IRQ_WAIT, irq, 0);
+	uint32_t __cyccnt;
+	return THINKOS_SYSCALLS2(THINKOS_IRQ_WAIT, irq, &__cyccnt);
 }
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait_cyccnt(int irq, uint32_t * cyccnt) {

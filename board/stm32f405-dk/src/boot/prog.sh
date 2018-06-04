@@ -1,27 +1,20 @@
 #!/bin/sh
 
-TOOLS_DIR=../../../../tools
+TOOLS_DIR=../../../thinkos/tools
 PYTHON=python
 if [ -z "$JTAGTOOL_ADDR" ]; then
-	JTAGTOOL_ADDR=192.168.0.51
+	JTAGTOOL_ADDR=192.168.10.50
 fi
 # Collect ".bin" files in the positional parameters
 set -- `ls release/*.bin`
 # Get the last one
 for PROG_BIN; do true; done
 
-# Short remote calls
-ICE_RUN="${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR}" 
-ICE_LOAD="${PYTHON} ${TOOLS_DIR}/tftp_load.py -h ${JTAGTOOL_ADDR} -q -e"
+${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r  -a 0x0800C000 \
+	-h ${JTAGTOOL_ADDR} ${PROG_BIN} 
 
-#${ICE_RUN} 'nrst' 'nrst 1' 'tgt 9 f' 'trst' 'nrst 0' 'tgt c' 'connect' 'halt' 'init' 'erase flash' 'nrst' 'sleep 100' 
-
-${ICE_RUN} 'nrst' 'nrst 1' 'tgt 9 f' 'trst' 'nrst 0' 'tgt c' 'connect' 'halt' 'init' 
-
-${ICE_LOAD} -a 0x08000000 ${PROG_BIN} 
-
-#if [ $? = 0 ] ; then
+if [ $? = 0 ] ; then
 	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
-#	echo ${ICE_RUN} 'disable debug'
-#fi
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} 'disable debug'
+fi
 

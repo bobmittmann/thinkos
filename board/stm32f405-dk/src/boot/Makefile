@@ -28,16 +28,18 @@ VERSION_MINOR = "26"
 
 PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c monitor.c otg_xflash_pic.c
+CFILES = boot.c monitor.c otg_xflash_pic.c app_main.c
 
 LIBDIRS = $(SDKDIR)/libstm32f $(SDKDIR)/libcm3 $(SDKDIR)/libutil\
-		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm 
+		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libconsole\
+		  $(SDKDIR)/libc
 
-LIBS = cm3 stm32f util thinkos ice-comm gcc 
+LIBS = cm3 stm32f util thinkos ice-comm gcc console  c
 
 INCPATH = $(SDKDIR)/include ../include
 
-CDEFS = CONFIG_H CM3_RAM_VECTORS
+CDEFS = CONFIG_H 
+#CM3_RAM_VECTORS
 
 CFLAGS = -g -Os -Wall -fno-builtin -ffreestanding -fomit-frame-pointer
 OPTIONS = -mno-unaligned-access 

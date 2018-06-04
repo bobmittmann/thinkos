@@ -492,9 +492,11 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
 	int value = req->value;
-//	int index = req->index;
+	int index = req->index;
 	int len = 0;
 	int desc;
+
+	(void)index;
 
 	/* Handle supported standard device request Cf
 	 Table 9-3 in USB specification Rev 1.1 */
@@ -729,10 +731,10 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	while (rem) {
 		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
-			DCC_LOG1(LOG_WARN, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
+			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
 					 dev->stats.tx_pkt);
 #else
-			DCC_LOG(LOG_WARN, "usb_dev_ep_pkt_xmit() failed");
+			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed");
 #endif
 		} else {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS

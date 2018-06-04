@@ -49,7 +49,12 @@
 #define STM32_ENABLE_PLL    1
 #endif
 
-/* Use HSI for main PLL input, otherwise HSE will be used if enabled. */
+/* Use HSE for main PLL input. */
+#ifndef STM32_PLL_CKIN_HSE
+#define STM32_PLL_CKIN_HSE  1
+#endif
+
+/* Use HSI for main PLL input. */
 #ifndef STM32_PLL_CKIN_HSI
 #define STM32_PLL_CKIN_HSI  0
 #endif
@@ -141,14 +146,7 @@
   #define PLLI2SM 9
   #define PLLI2SQ 8
   #define PLLI2SP 2
-   /* F_VCO = 389454513
-      F_I2S = 169333333 */
-  #define PLLSAIN 127
-  #define PLLSAIM 9
-  #define PLLSAIQ 3
-  #define PLLSAIP 2
 #endif
-
 
 #if (STM32_HCLK_HZ == 168000000) && (STM32_HSE_HZ == 8000000)
 	/* F_HSE = 8 MHz
@@ -221,10 +219,16 @@
   #define PLLSAIP      4 /* PLL48M2CLK ->  47.980800 MHz */
 #endif
 
-#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
+#if STM32_PLL_CKIN_HSE && !STM32_ENABLE_HSE
+#error "invalid PLL HSE input clock configuration!"
+#endif
+
+#if STM32_PLL_CKIN_HSE
   #define __PLL_CKIN_HZ (STM32_HSE_HZ)
-#else 
+#elif STM32_PLL_CKIN_HSI
   #define __PLL_CKIN_HZ (STM32_HSI_HZ)
+#else 
+#error "invalid PLL input clock configuration!"
 #endif
 
 #define VCO_HZ ((STM32_HCLK_HZ) * (PLLP))
@@ -390,7 +394,7 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure PLL
 	 *******************************************************************/
-#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
+#if STM32_PLL_CKIN_HSE
 	rcc->pllcfgr = RCC_PLLR(PLLR) | RCC_PLLQ(PLLQ) | RCC_PLLSRC_HSE | 
 		RCC_PLLP(PLLP) | RCC_PLLN(PLLN) | RCC_PLLM(PLLM);
 #else 
@@ -403,7 +407,7 @@ void __attribute__((section(".init"))) _init(void)
 	while (((cr = rcc->cr) & RCC_PLLRDY) == 0);
 #endif
 
-#if STM32_ENABLE_HSE & !STM32_PLL_CKIN_HSI
+#if STM32_PLL_CKIN_HSE
 	/* switch to external clock */
 	cfg = RCC_MCO2_SYSCLK | RCC_MCO2PRE_2 /* Clock output 2 */
 		| RCC_PPRE2_2 /* APB high speed prescaler : 60|84MHz */

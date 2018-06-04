@@ -127,13 +127,18 @@
  * delay
  * ------------------------------------------------------------------------- */
 
-#define STM32_HSE_HZ     12000000
-#define STM32_ENABLE_HSI 0
-#define STM32_ENABLE_HSE 1
-#define STM32_ENABLE_PLL 1
+#define STM32_HCLK_HZ       168000000 /* HBA bus frequency */
+#define STM32_HSE_HZ        12000000 /* External oscillator frequency */
+#define STM32_ENABLE_HSE    1 /* Use external oscillator */
+#define STM32_ENABLE_PLL    1 /* Enable PLL */
+#define STM32_PLL_CKIN_HSE  1 /* Use external oscillator for PLL */
+#define STM32_ENABLE_PLLI2S 1 /* Enable SAI PLL */
+#define STM32_ENABLE_PLLSAI 0 /* Disable SAI PLL */
 
-#define STM32_ENABLE_PLLSAI           0
-#define THINKOS_ENABLE_IRQ_CYCCNT_RET 0
+#define THINKOS_ENABLE_IRQ_CYCCNT     1
+#define THINKOS_ENABLE_IRQ_PRIORITY_0 1
+//#define THINKOS_ENABLE_IRQ_TIMEDWAIT  1
+#define THINKOS_ENABLE_WQ_IRQ         1 
 
 /* -------------------------------------------------------------------------
    USB 

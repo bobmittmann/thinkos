@@ -50,6 +50,7 @@ extern uint32_t _stack;
 extern const struct thinkos_thread_inf thinkos_main_inf;
 
 void board_init(void);
+void board_app_task(void * arg);
 
 extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
@@ -247,6 +248,8 @@ static void rbf_yflash(void)
 
 int __scan_stack(void * stack, unsigned int size);
 
+extern int app_loader(void * arg);
+
 static void print_osinfo(struct dmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
@@ -331,7 +334,7 @@ static void print_osinfo(struct dmon_comm * comm)
 
 #endif /* MONITOR_OSINFO_ENABLE */
 
-static void __main_thread_exec(void (* func)(int))
+static void __app_exec(void)
 {
 	int thread_id = 0;
 
@@ -339,7 +342,8 @@ static void __main_thread_exec(void (* func)(int))
 	__thinkos_thread_abort(thread_id);
 
 	DCC_LOG(LOG_TRACE, "__thinkos_thread_init()");
-	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, func, (void *)NULL);
+	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, board_app_task, 
+						  (void *)NULL);
 
 #if THINKOS_ENABLE_THREAD_INFO
 	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
@@ -455,12 +459,11 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 	uint32_t flags = (uint32_t)param;
 
 	/* unmask events */
-	sigmask = (1 << DBGMON_SOFTRST) | 
+	sigmask =  (1 << DBGMON_STARTUP) | (1 << DBGMON_SOFTRST) | 
 		(1 << DBGMON_COMM_RCV) | (1 << DBGMON_TX_PIPE) | 
-		(1 << DBGMON_RX_PIPE) | (1 << DBGMON_APP_EXEC) ;
-#if DEBUG
-	sigmask |= (1 << DBGMON_COMM_CTL);
-#endif
+		(1 << DBGMON_RX_PIPE) | (1 << DBGMON_APP_EXEC) |
+		(1 << DBGMON_COMM_CTL);
+	DCC_LOG1(LOG_TRACE, "unmasking events=%08x", sigmask);
 
 	if (!(flags & MONITOR_AUTOBOOT)) {
 		PUTS(s_hr);
@@ -468,56 +471,45 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 	}
 
 	if (flags & MONITOR_AUTOBOOT) {
+		DCC_LOG(LOG_TRACE, "Autoboot...");
 		dbgmon_soft_reset();
 		dbgmon_signal(DBGMON_APP_EXEC); 
 	}
 
+	DCC_LOG(LOG_TRACE, "Main loop...");
 	for(;;) {
 		sigset = dbgmon_select(sigmask);
 		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
-#if DEBUG
 		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			DCC_LOG1(LOG_TRACE, "Comm Ctl, sigset=%08x", sigset);
 			dbgmon_clear(DBGMON_COMM_CTL);
-			if (!dmon_comm_isconnected(comm))	
-				dbgmon_reset();
+//			if (!dmon_comm_isconnected(comm))	
+//				dbgmon_reset();
 		}
-#endif
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
 			dbgmon_clear(DBGMON_SOFTRST);
 			board_init();
-			PUTS("+RST\r\n");
+		}
+
+		if (sigset & (1 << DBGMON_STARTUP)) {
+			dbgmon_clear(DBGMON_STARTUP);
 		}
 
 		if (sigset & (1 << DBGMON_APP_EXEC)) {
-			uint32_t * signature = (uint32_t *)APPLICATION_START_ADDR;
-			int i = app_magic.hdr.cnt;
-
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			dbgmon_clear(DBGMON_APP_EXEC);
-
-			for (i = app_magic.hdr.cnt - 1; i >= 0; --i) {
-				if (signature[i] != app_magic.rec[i].comp) {
-					DCC_LOG1(LOG_WARNING, "invalid application signature, addr=%p!", 
-							 signature);
-					PUTS("!ERR: magic\r\n");
-					flags |= MONITOR_SHELL;
-					break;
-				}
-			}
-
-			if (i < 0) {
-				__main_thread_exec((void *)(APPLICATION_START_ADDR | 1));
-			}
+			__app_exec();
 		}
 
 		if (sigset & (1 << DBGMON_COMM_RCV)) {
+			DCC_LOG(LOG_TRACE, "DBGMON_COMM_RCV siganl");
 			if (flags & MONITOR_SHELL) { 
 				/* receive from the COMM driver one bye at the time */
 				if (dmon_comm_recv(comm, buf, 1) > 0) {
 					int c = buf[0];
+					DCC_LOG1(LOG_INFO, "Comm recv. %c", c);
 					/* process the input character */
 					if (!monitor_process_input(comm, c)) {
 						/* if the character was not consumed by the monitor 

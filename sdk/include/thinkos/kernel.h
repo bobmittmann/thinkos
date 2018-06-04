@@ -187,15 +187,11 @@
 #define THINKOS_ENABLE_IRQ_RESTORE      0
 #endif
 
-#ifndef THINKOS_ENABLE_IRQ_CYCCNT
-#define THINKOS_ENABLE_IRQ_CYCCNT       0
-#endif
-
 /* This option cause thinkos_irq_wait() to return the value
    of the CPU cycle count at the moment the interrupt was
    detected. */
-#ifndef THINKOS_ENABLE_IRQ_CYCCNT_RET
-#define THINKOS_ENABLE_IRQ_CYCCNT_RET   0
+#ifndef THINKOS_ENABLE_IRQ_CYCCNT
+#define THINKOS_ENABLE_IRQ_CYCCNT       0
 #endif
 
 /* Allow IRQs with priority 0 for low latency.
@@ -205,7 +201,7 @@
 #define THINKOS_ENABLE_IRQ_PRIORITY_0   0
 #endif
 
-#if THINKOS_ENABLE_WQ_IRQ
+#ifndef THINKOS_ENABLE_WQ_IRQ
 #define THINKOS_ENABLE_WQ_IRQ           0
 #endif
 
@@ -487,14 +483,14 @@
   #define THINKOS_ENABLE_IRQ_CTL 1
 #endif
 
-#if THINKOS_ENABLE_IRQ_CYCCNT_RET  
+#if THINKOS_ENABLE_IRQ_CYCCNT
    /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
    #undef THINKOS_ENABLE_IRQ_CTL
    #define THINKOS_ENABLE_IRQ_CTL 1
    #undef THINKOS_ENABLE_WQ_IRQ
    #define THINKOS_ENABLE_WQ_IRQ 1
    #if THINKOS_ENABLE_IRQ_RESTORE
-      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT_RET "\
+      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT "\
 		  "& THINKOS_ENABLE_IRQ_RESTORE"
    #endif  
 #endif
@@ -821,11 +817,6 @@ struct thinkos_rt {
 
 #if THINKOS_IRQ_MAX > 0
 	int8_t irq_th[THINKOS_IRQ_MAX];
-
-#if THINKOS_ENABLE_IRQ_CYCCNT
-	/* Reference cycle state ... */
-	uint32_t * irq_cyccnt[THINKOS_THREADS_MAX];
-#endif
 #endif /* THINKOS_IRQ_MAX */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
