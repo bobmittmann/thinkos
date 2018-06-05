@@ -62,6 +62,13 @@ int console_close(void * dev)
 	return thinkos_console_close();
 }
 
+bool console_is_connected(void)
+{
+	int ret = thinkos_console_is_connected();
+
+	return (ret > 0) ? true : false;
+}
+
 const struct fileop console_fops = {
 	.write = (void *)console_write,
 	.read = (void *)console_read,

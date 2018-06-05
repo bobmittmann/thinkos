@@ -111,7 +111,9 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
+#if THINKOS_ENABLE_IRQ_CYCCNT
 	static uint32_t __irq_cyccnt;
+#endif
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
@@ -123,6 +125,8 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 #endif
 
 #if THINKOS_ENABLE_IRQ_CYCCNT
+	/* The cycle count is returned on the location pointed by R1. Make
+	   sure it is a valid reference. */
 	arg[1] = (uint32_t)&__irq_cyccnt;
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
@@ -162,15 +166,34 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+#if THINKOS_ENABLE_IRQ_CYCCNT
+	/* The cycle counter is returned in the memorty pointed by
+	   R1. Chek if it's a valid memory area.
+TODO: the whole kernel are should be checked. There is a potential security brech as the pointer is written by an priviledged interrupt handler. */
+	if (NULL == (void *)arg[1]) {
+		DCC_LOG(LOG_ERROR, "null pointer!");
+		__THINKOS_ERROR(THINKOS_ERR_INVALID_POINTER);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
 #endif
+#endif
+
 	arg[0] = THINKOS_OK;
 
+#if THINKOS_ENABLE_IRQ_CYCCNT
+	/* Save the context pointer. In case an interrupt wakes up
+	   this thread before the scheduler is called, this will allow
+	   the interrupt handler to locate the cycle counter (r1) address. */
+	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+#endif
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
 #if THINKOS_ENABLE_WQ_IRQ
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 #endif
+
 
 	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;

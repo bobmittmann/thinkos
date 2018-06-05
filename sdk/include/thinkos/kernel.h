@@ -992,7 +992,8 @@ enum thinkos_exception {
 	THINKOS_ERR_COMM_REQINV       = 25,
 	THINKOS_ERR_SYSCALL_INVALID   = 26,
 	THINKOS_ERR_CRITICAL_EXIT     = 27,
-	THINKOS_ERR_USER              = 28
+	THINKOS_ERR_INVALID_POINTER   = 28,
+	THINKOS_ERR_USER              = 29
 };
 
 /* Mark for breakpoint numbers. Breakpoints above this
@@ -1311,6 +1312,7 @@ void __console_reset(void);
 
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 void __console_rx_pipe_commit(int cnt); 
+void __console_connect_set(bool val); 
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);

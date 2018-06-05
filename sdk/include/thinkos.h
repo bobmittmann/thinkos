@@ -41,7 +41,8 @@ enum thinkos_err {
 	THINKOS_EPERM     = -6,
 	THINKOS_ENOSYS    = -7, /**< Invalid system call */
 	THINKOS_EFAULT    = -8,        
-	THINKOS_ENOMEM    = -9  /**< Resource pool exausted */ 
+	THINKOS_ENOMEM    = -9,  /**< Resource pool exausted */ 
+	THINKOS_EBADF     = -10  /**< Closing console if not open */ 
 };
 
 enum thinkos_obj_kind {

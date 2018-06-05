@@ -1181,7 +1181,6 @@ void dbgmon_soft_reset(void)
 	DCC_LOG(LOG_TRACE, "9. done.");
 }
 
-
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 /**
   * __dmon_irq_init:

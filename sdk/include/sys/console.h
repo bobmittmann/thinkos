@@ -47,6 +47,8 @@ struct file * console_fopen(void);
 
 bool is_console_file(struct file * f);
 
+bool console_is_connected(void);
+
 #ifdef __cplusplus
 }
 #endif

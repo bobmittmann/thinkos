@@ -786,6 +786,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			dbgmon_clear(DBGMON_COMM_CTL);
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
+			__console_connect_set(dmon_comm_isconnected(comm));
 		}
 #endif
 
