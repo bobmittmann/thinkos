@@ -34,7 +34,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 /* Console lockout debug ... */
 #ifndef ENABLE_CONSOLE_DEBUG
-#define ENABLE_CONSOLE_DEBUG 0
+#define ENABLE_CONSOLE_DEBUG 1
 #endif
 
 #if (!THINKOS_ENABLE_MONITOR)
@@ -68,7 +68,9 @@ struct console_tx_pipe {
 struct {
 	uint8_t open_cnt;
 	uint8_t connected: 1;
-	uint8_t block_if_not_connected: 1;
+#if ENABLE_CONSOLE_DEBUG
+	volatile uint16_t tx_last_cnt;
+#endif
 	struct console_tx_pipe tx_pipe;
 	struct console_rx_pipe rx_pipe;
 } thinkos_console_rt;
@@ -124,9 +126,9 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	uint32_t pos;
 
 #if ENABLE_CONSOLE_DEBUG
-	if (thinkos_console_rt.tx_pipe.tail > 0x10000000) {
+	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		for(;;);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 	/* pipe->head is declared as volatile, 
@@ -136,22 +138,24 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	tail = pipe->tail;
 	/* get the maximum number of chars we can write into buffer */
 	if ((max = tail + THINKOS_CONSOLE_TX_FIFO_LEN - head) == 0) {
-		DCC_LOG2(LOG_TRACE, "head=%u tail=%u", head, tail);
+		DCC_LOG2(LOG_TRACE, "fifo empty: head=%u tail=%u", head, tail);
 		return 0;
 	}
-
-	/* get the head position in the buffer */
-	pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
 	/* cnt is the number of chars we will write to the buffer,
 	   it should be the minimum of max and len */
 	cnt = MIN(max, len);
+	/* get the head position in the buffer */
+	pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
 	DCC_LOG6(LOG_INFO, "head=%u tail=%u max=%d len=%d cnt=%d pos=%d", 
 			 head, tail, max, len, cnt, pos);
+
+#if ENABLE_CONSOLE_DEBUG
 	if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
 		DCC_LOG4(LOG_PANIC, "head=%u tail=%u len=%d cnt = %d", 
 			 head, tail, THINKOS_CONSOLE_TX_FIFO_LEN, cnt);
-		for(;;);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
+#endif
 
 	/* check whether to wrap around or on not */
 	if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
@@ -168,8 +172,7 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 		__thinkos_memcpy(&pipe->buf[pos], cp, cnt);
 	}
 
-	head = head + cnt;
-	pipe->head = head;
+	pipe->head = head + cnt;
 
 	return cnt;
 }
@@ -185,6 +188,105 @@ static bool tx_pipe_isempty(void)
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	return pipe->tail == pipe->head;
 }
+
+/* get the a pointer from the next available character in the
+   queue and return the number of available chars */ 
+int __console_tx_pipe_ptr(uint8_t ** ptr) 
+{
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
+	uint32_t tail;
+	uint32_t head;
+	int32_t cnt;
+	int pos;
+
+#if ENABLE_CONSOLE_DEBUG
+	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
+		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+	}
+#endif
+
+	/* get the tail position in the buffer */
+	tail = pipe->tail;
+	head = pipe->head;
+	pos = (tail % THINKOS_CONSOLE_TX_FIFO_LEN);
+	/* get the used space */
+	cnt = head - tail;
+	/* check whether to wrap around or on not */
+	if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
+		/* get the number of chars from tail pos until the end of buffer */
+		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
+	}
+
+#if 0
+	/* check whether to wrap around or on not */
+	if (head >= tail) {
+		/* get the used space */
+		cnt = head - tail;
+#if ENABLE_CONSOLE_DEBUG
+		if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
+			DCC_LOG3(LOG_PANIC, "head=%u tail=%u cnt=%d", 
+					 head, tail, cnt);
+			__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+		}
+#endif
+	} else {
+		/* get the number of chars from tail pos until the end of buffer */
+		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
+#if ENABLE_CONSOLE_DEBUG
+		if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
+			DCC_LOG3(LOG_PANIC, "head=%u tail=%u cnt=%d", 
+					 head, tail, cnt);
+			__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+		}
+#endif
+	}
+#endif
+
+#if ENABLE_CONSOLE_DEBUG
+	thinkos_console_rt.tx_last_cnt = cnt;
+#endif
+	DCC_LOG4(LOG_INFO, "head=%u tail=%u cnt=%d pos=%d", 
+			 head, tail, cnt, pos);
+	*ptr = &pipe->buf[pos];
+
+	return cnt;
+}
+
+void __console_tx_pipe_commit(int cnt) 
+{
+	int wq = THINKOS_WQ_CONSOLE_WR;
+	int th;
+
+#if ENABLE_CONSOLE_DEBUG
+	if (cnt != thinkos_console_rt.tx_last_cnt) {
+		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+	}
+#endif
+	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_TX_FIFO_LEN)) {
+		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+	}
+
+	thinkos_console_rt.tx_pipe.tail += cnt;
+	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+		DCC_LOG(LOG_INFO, "no thread waiting.");
+		return;
+	}
+
+	DCC_LOG1(LOG_MSG, "thread_id=%d", th);
+
+	/* XXX: To avoid a race condition when writing to the 
+	   pipe from the service call and this function (invoked
+	   from an interrupt handler), let the thread to
+	   wake up and retry. */
+	/* wakeup from the console wait queue */
+	__thinkos_wakeup(wq, th);
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
+}
+
 
 int __console_rx_pipe_ptr(uint8_t ** ptr) 
 {
@@ -241,81 +343,6 @@ void __console_rx_pipe_commit(int cnt)
 	__thinkos_defer_sched();
 }
 
-/* get the a pointer from the next available character in the
-   queue and return the number of available chars */ 
-int __console_tx_pipe_ptr(uint8_t ** ptr) 
-{
-	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
-	uint32_t tail;
-	int32_t cnt;
-	int pos;
-
-#if ENABLE_CONSOLE_DEBUG
-	if (thinkos_console_rt.tx_pipe.tail > 0x10000000) {
-		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		for(;;);
-	}
-#endif
-
-	/* get the tail position in the buffer */
-	tail = pipe->tail;
-	pos = (tail % THINKOS_CONSOLE_TX_FIFO_LEN);
-	/* check whether to wrap around or on not */
-	if (pipe->head >= tail) {
-		/* get the used space */
-		cnt = pipe->head - tail;
-		if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
-			DCC_LOG3(LOG_PANIC, "head=%u tail=%u cnt=%d", 
-			 pipe->head, tail, cnt);
-			while(1);
-			return 0;
-		}
-	} else {
-		/* get the number of chars from tail pos until the end of buffer */
-		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
-		if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
-			DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
-			while(1);
-			return 0;
-		}
-	}
-
-	DCC_LOG4(LOG_INFO, "head=%u tail=%u cnt=%d pos=%d", 
-			 pipe->head, tail, cnt, pos);
-	*ptr = &pipe->buf[pos];
-
-	return cnt;
-}
-
-void __console_tx_pipe_commit(int cnt) 
-{
-	int wq = THINKOS_WQ_CONSOLE_WR;
-	int th;
-
-	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_TX_FIFO_LEN)) {
-		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
-		while(1);
-		return;
-	}
-
-	thinkos_console_rt.tx_pipe.tail += cnt;
-	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG(LOG_INFO, "no thread waiting.");
-		return;
-	}
-
-	DCC_LOG1(LOG_MSG, "thread_id=%d", th);
-
-	/* XXX: To avoid a race condition when writing to the 
-	   pipe from the service call and this function (invoked
-	   from an interrupt handler), let the thread to
-	   wake up and retry. */
-	/* wakeup from the console wait queue */
-	__thinkos_wakeup(wq, th);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
-}
-
 
 #if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
 void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
@@ -350,9 +377,9 @@ void thinkos_console_svc(int32_t * arg, int self)
 	int n;
 	
 #if ENABLE_CONSOLE_DEBUG
-	if (thinkos_console_rt.tx_pipe.tail > 0x10000000) {
+	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		for(;;);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 
@@ -493,9 +520,8 @@ wr_again:
 		wq = THINKOS_WQ_CONSOLE_WR;
 drain_again:
 #if ENABLE_CONSOLE_DEBUG
-		if (thinkos_console_rt.tx_pipe.tail > 0x10000000) {
-			DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-			for(;;);
+		if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
+			__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 		}
 #endif
 		if (tx_pipe_isempty()) {
@@ -582,22 +608,21 @@ void __console_reset(void)
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
 
+	thinkos_console_rt.tx_last_cnt = 0;
 	thinkos_console_rt.tx_pipe.head = 0;
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
 	thinkos_console_rt.rx_pipe.tail = 0;
 	thinkos_console_rt.connected = 0;
 	thinkos_console_rt.open_cnt = 0;
-	thinkos_console_rt.block_if_not_connected = 0;
 }
-
 
 void __console_connect_set(bool val) 
 {
 #if ENABLE_CONSOLE_DEBUG
-	if (thinkos_console_rt.tx_pipe.tail > 0x10000000) {
+	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		for(;;);
+		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 

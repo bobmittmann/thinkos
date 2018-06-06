@@ -1051,7 +1051,7 @@ step_done:
 		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
 
-	DCC_LOG2(LOG_TRACE, "Unhandled signal sigset=%08x sigmsk=%08x", 
+	DCC_LOG2(LOG_MSG, "Unhandled signal sigset=%08x sigmsk=%08x", 
 			 sigset, sigmsk);
 	return 0;
 }
@@ -1150,35 +1150,30 @@ void dbgmon_soft_reset(void)
 	idle_ctx = __thinkos_idle_init();
 	cm3_psp_set((uint32_t)&idle_ctx->r0);
 
-#if THINKOS_ENABLE_CONSOLE
-	DCC_LOG(LOG_TRACE, "3. console reset...");
-	__console_reset();
-#endif
-
 #if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "4. exception reset...");
+	DCC_LOG(LOG_TRACE, "3. exception reset...");
 	__exception_reset();
 #endif
 
 #if THINKOS_ENABLE_DEBUG_BKPT
-	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
+	DCC_LOG(LOG_TRACE, "4. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
 #endif
 
 #if THINKOS_DBGMON_ENABLE_RST_VEC
-	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
+	DCC_LOG(LOG_TRACE, "5. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	DCC_LOG(LOG_TRACE, "7. enablig listed interrupts...");
+	DCC_LOG(LOG_TRACE, "6. enablig listed interrupts...");
 	__dmon_irq_force_enable();
 #endif
 
-	DCC_LOG(LOG_TRACE, "8. signalig ...");
+	DCC_LOG(LOG_TRACE, "7. signalig ...");
 	dbgmon_signal(DBGMON_SOFTRST);
 
-	DCC_LOG(LOG_TRACE, "9. done.");
+	DCC_LOG(LOG_TRACE, "8. done.");
 }
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT

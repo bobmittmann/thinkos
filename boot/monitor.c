@@ -747,9 +747,15 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 		}
 
 		if (sigset & (1 << DBGMON_SOFTRST)) {
+			dbgmon_clear(DBGMON_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			this_board.softreset();
-			dbgmon_clear(DBGMON_SOFTRST);
+#if THINKOS_ENABLE_CONSOLE
+			__console_reset();
+			/* Update the console connection flag which was cleared
+			 by __console_reset(). */
+			__console_connect_set(dmon_comm_isconnected(comm));
+#endif
 		}
 
 		if (sigset & (1 << DBGMON_APP_UPLOAD)) {
@@ -890,5 +896,4 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 		}
 	}
 }
-
 

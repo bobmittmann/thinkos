@@ -993,7 +993,8 @@ enum thinkos_exception {
 	THINKOS_ERR_SYSCALL_INVALID   = 26,
 	THINKOS_ERR_CRITICAL_EXIT     = 27,
 	THINKOS_ERR_INVALID_POINTER   = 28,
-	THINKOS_ERR_USER              = 29
+	THINKOS_ERR_CONSOLE_FAULT     = 29,
+	THINKOS_ERR_USER              = 30
 };
 
 /* Mark for breakpoint numbers. Breakpoints above this
@@ -1045,7 +1046,8 @@ void cm3_msp_init(uint64_t * stack_top);
 
 #if THINKOS_ENABLE_ERROR_TRAP
   #define __THINKOS_ERROR(__CODE) \
-	  asm volatile ("bkpt %0" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
+	  asm volatile ("nop\n" \
+					"bkpt %0\n" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
 #else
   #define __THINKOS_ERROR(__CODE)
 #endif
