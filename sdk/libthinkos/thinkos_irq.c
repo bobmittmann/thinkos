@@ -56,10 +56,13 @@ void cm3_default_isr(unsigned int irq)
 
 	thread_id = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+
 #if DEBUG
 	if (thread_id >= THINKOS_THREAD_IDLE) {
 		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", thread_id + 1, irq);
 		return;
+	} else {
+		DCC_LOG2(LOG_TRACE, "<%d> IRQ %d..", thread_id + 1, irq);
 	}
 #endif
 	/* insert the thread into ready queue */
@@ -179,6 +182,7 @@ TODO: the whole kernel are should be checked. There is a potential security brec
 #endif
 #endif
 
+	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
 
 #if THINKOS_ENABLE_IRQ_CYCCNT
@@ -193,7 +197,6 @@ TODO: the whole kernel are should be checked. There is a potential security brec
 #if THINKOS_ENABLE_WQ_IRQ
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 #endif
-
 
 	/* assign this thread to the interrupt */
 	thinkos_rt.irq_th[irq] = self;

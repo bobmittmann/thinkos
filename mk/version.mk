@@ -70,7 +70,7 @@ else
   endif
 endif
 
-$(VERSION_H): $(MAKEFILE_LIST)
+$(VERSION_H): 
 	$(ACTION) "Creating: $@"
 	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE)
 	
