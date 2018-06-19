@@ -132,9 +132,9 @@
 /* Bits 21:16 Reserved, must be kept cleared. */
 
 /* Bits [15..13] - Discontinuous mode channel count */
-#define ADC_DISCNUM_MSK (((1 << (2 + 1)) - 1) << 13)
-#define ADC_DISCNUM_SET(VAL) (((VAL) << 13) & ADC_DISCNUM_MSK)
-#define ADC_DISCNUM_GET(REG) (((REG) & ADC_DISCNUM_MSK) >> 13)
+#define ADC_DISCNUM_MSK (7 << 13)
+#define ADC_DISCNUM_SET(VAL) ((((VAL) - 1) << 13) & ADC_DISCNUM_MSK)
+#define ADC_DISCNUM_GET(REG) ((((REG) & ADC_DISCNUM_MSK) >> 13) + 1)
 /* These bits are written by software to define the number of regular 
    channels to be converted in discontinuous mode, after receiving an 
    external trigger.
