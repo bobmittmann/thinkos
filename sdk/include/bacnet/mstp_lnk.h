@@ -73,10 +73,12 @@ struct mstp_lnk_stat {
 	uint32_t rx_mgmt;
 	uint32_t rx_unicast;
 	uint32_t rx_bcast;
+	uint32_t rx_octets;
 	uint32_t tx_token;
 	uint32_t tx_mgmt;
 	uint32_t tx_unicast;
 	uint32_t tx_bcast;
+	uint32_t tx_octets;
 	uint32_t token_lost;
 };
 
@@ -93,8 +95,9 @@ enum mstp_frame_type {
 	FRM_BACNET_DATA_XPCT_REPLY = 0x05,
 	FRM_BACNET_DATA_NO_REPLY   = 0x06,
 	FRM_REPLY_POSTPONED        = 0x07,
-	FRM_DATA_XPCT_REPLY        = 0x80,
-	FRM_DATA_NO_REPLY          = 0xc0
+	FRM_DATA_XPCT_REPLY        = 0x80, //change DATA to RCP
+	FRM_DATA_NO_REPLY          = 0xc0, //change DATA to RCP
+	FRM_DATA_CLASS_A		   = 0xca  //change DATA to BVR
 };
 
 /** @enum mstp_frame_type
@@ -207,6 +210,12 @@ int mstp_lnk_getstat(struct mstp_lnk * lnk,
 
 unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[],
 		unsigned int max);
+
+void mstp_lnk_clrnetmap (struct mstp_lnk * lnk);
+
+bool mstp_lnk_firstaddr (struct mstp_lnk * mstp);
+
+void mstp_lnk_activemasters (struct mstp_lnk * lnk);
 
 /**@}*/
 
