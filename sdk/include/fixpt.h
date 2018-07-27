@@ -107,6 +107,12 @@
 /* Q23 Unsigned Divide */
 #define Q23_UDIV(X, Y)   (((uint64_t)(X) << 23) / (uint32_t)(Y))
 
+/* Q23 to Q15 conversion */
+#define Q23to15(X)       (X>>8)
+
+/* Q23 to Q15 conversion */
+#define Q15to23(X)       (X<<8)
+
 /* -------------------------------------------------------------------------
  Q2.30 format: -2.0 ... 1.9999999
  */
