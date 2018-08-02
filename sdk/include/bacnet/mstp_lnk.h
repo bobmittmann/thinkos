@@ -94,8 +94,16 @@ enum mstp_frame_type {
 	FRM_BACNET_DATA_NO_REPLY   = 0x06,
 	FRM_REPLY_POSTPONED        = 0x07,
 	FRM_DATA_XPCT_REPLY        = 0x80,
-	FRM_DATA_NO_REPLY          = 0xc0
+	FRM_DATA_NO_REPLY          = 0xc0,
+	FRM_DATA_CLASS_A		   = 0xca,
+	FRM_FREEZE		           = 0xfe, 
+	FRM_RESUME				   = 0xff
 };
+
+enum {
+	MSTP_MODE_FREEZE = 0,
+	MSTP_MODE_RESUME
+}MSTP_MODE;
 
 /** @enum mstp_frame_type
  * @brief MSTP Frame Types
@@ -208,6 +216,11 @@ int mstp_lnk_getstat(struct mstp_lnk * lnk,
 unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[],
 		unsigned int max);
 
+void mstp_lnk_clrnetmap (struct mstp_lnk * lnk);
+
+bool mstp_lnk_firstaddr (struct mstp_lnk * mstp);
+
+void mstp_lnk_activemasters (struct mstp_lnk * lnk);		
 /**@}*/
 
 
