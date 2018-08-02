@@ -395,6 +395,24 @@
  #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
 
+
+#if THINKOS_ENABLE_IRQ_CYCCNT
+ /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
+ #undef THINKOS_ENABLE_IRQ_CTL
+ #undef THINKOS_ENABLE_WQ_IRQ
+ #define THINKOS_ENABLE_IRQ_CTL 1
+ #define THINKOS_ENABLE_WQ_IRQ 1
+#endif
+
+#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
+ /* IRQ timedwait depends on THINKOS_ENABLE_WQ_IRQ & 
+	THINKOS_ENABLE_TIMED_CALLS */
+ #undef THINKOS_ENABLE_TIMED_CALLS
+ #undef THINKOS_ENABLE_WQ_IRQ
+ #define THINKOS_ENABLE_TIMED_CALLS 1
+ #define THINKOS_ENABLE_WQ_IRQ 1
+#endif
+
 /* timed calls depends on clock */
 #if THINKOS_ENABLE_TIMED_CALLS
  #undef THINKOS_ENABLE_CLOCK
@@ -476,26 +494,6 @@
   #define CTX_R0 8
   #define CTX_PC 14
 #endif
-
-#if THINKOS_ENABLE_IRQ_RESTORE
-  /* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
-  #undef THINKOS_ENABLE_IRQ_CTL
-  #define THINKOS_ENABLE_IRQ_CTL 1
-#endif
-
-#if THINKOS_ENABLE_IRQ_CYCCNT
-   /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
-   #undef THINKOS_ENABLE_IRQ_CTL
-   #define THINKOS_ENABLE_IRQ_CTL 1
-   #undef THINKOS_ENABLE_WQ_IRQ
-   #define THINKOS_ENABLE_WQ_IRQ 1
-   #if THINKOS_ENABLE_IRQ_RESTORE
-      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT "\
-		  "& THINKOS_ENABLE_IRQ_RESTORE"
-   #endif  
-#endif
-
-#define THINKOS_ENABLE_IRQ_TIMEDWAIT ((THINKOS_IRQ_MAX) > 0 && (THINKOS_ENABLE_TIMED_CALLS) && (THINKOS_ENABLE_WQ_IRQ))
 
 /* -------------------------------------------------------------------------- 
  * Static trhead references
@@ -817,6 +815,10 @@ struct thinkos_rt {
 
 #if THINKOS_IRQ_MAX > 0
 	int8_t irq_th[THINKOS_IRQ_MAX];
+  #if THINKOS_ENABLE_IRQ_CYCCNT
+	/* Reference cycle state ... */
+	uint32_t * irq_cyccnt[THINKOS_THREADS_MAX];
+  #endif
 #endif /* THINKOS_IRQ_MAX */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -849,6 +851,14 @@ struct thinkos_rt {
 
 #if THINKOS_ENABLE_THREAD_INFO
 	const struct thinkos_thread_inf * th_inf[THINKOS_THREADS_MAX + 1]; 
+#endif
+
+#if THINKOS_ENABLE_MPU
+	/* Kernel protected memory block descriptor */
+	struct {
+		uint16_t offs;
+		uint16_t size;
+	} mpu_kernel_mem;
 #endif
 };
 

@@ -73,11 +73,11 @@ void cm3_default_isr(unsigned int irq)
 	__thinkos_wq_remove(THINKOS_WQ_IRQ, thread_id);  
 #endif
 
-/* For possible speed up, for vector on RAM case,
- * this function should be split into two variant, 2nd one with cycle count */
+
+
 #if THINKOS_ENABLE_IRQ_CYCCNT
 	/* set cyle count in the storage provided by the thread */
-	usr_ptr = (uint32_t *)(thinkos_rt.ctx[thread_id]->r1);
+	usr_ptr = (uint32_t *)(thinkos_rt.irq_cyccnt[thread_id]);
 	*usr_ptr = cyccnt;
 #endif
 
@@ -115,7 +115,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 #if THINKOS_ENABLE_IRQ_CYCCNT
-	static uint32_t __irq_cyccnt;
+	uint32_t * cyccnt_ptr;
 #endif
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -128,13 +128,10 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 #endif
 
 #if THINKOS_ENABLE_IRQ_CYCCNT
-	/* The cycle count is returned on the location pointed by R1. Make
+	/* The cycle count is returned on the location pointed by irq_cyccnt. Make
 	   sure it is a valid reference. */
-	arg[1] = (uint32_t)&__irq_cyccnt;
-	/* Save the context pointer. In case an interrupt wakes up
-	   this thread before the scheduler is called, this will allow
-	   the interrupt handler to locate the cycle counter (r1) address. */
-	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+	cyccnt_ptr = (uint32_t *)&thinkos_rt.irq_cyccnt[self];
+	thinkos_rt.irq_cyccnt[self] = cyccnt_ptr;
 #endif
 
 	/* remove from ready Q */
@@ -161,6 +158,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
+	uint32_t * cyccnt_ptr;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
@@ -169,18 +167,36 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+
 #if THINKOS_ENABLE_IRQ_CYCCNT
 	/* The cycle counter is returned in the memorty pointed by
-	   R1. Chek if it's a valid memory area.
-TODO: the whole kernel are should be checked. There is a potential security brech as the pointer is written by an priviledged interrupt handler. */
+	   R1. Chek if it's a valid memory area. */
 	if (NULL == (void *)arg[1]) {
-		DCC_LOG(LOG_ERROR, "null pointer!");
+		/* If the user pointer is null then ignore the cycle count, but
+		   make sure irq_cyccnt is a valid reference. */
+		cyccnt_ptr = (uint32_t *)&thinkos_rt.irq_cyccnt[self];
+	} 
+#if THINKOS_ENABLE_MPU
+	/* There is a potential security brech as the pointer is written by 
+	   an priviledged interrupt handler. For this reason the whole kernel 
+	   memory space is checked.  */
+	else if ((arg[1] >= thinkos_rt.mpu_kernel_mem.offs) && 
+		(arg[1] <= thinkos_rt.mpu_kernel_mem.offs +
+		 thinkos_rt.mpu_kernel_mem.size)) {
+		DCC_LOG(LOG_ERROR, "invalid pointer!");
 		__THINKOS_ERROR(THINKOS_ERR_INVALID_POINTER);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#endif
-#endif
+#endif /* THINKOS_ENABLE_MPU */
+	else {
+		cyccnt_ptr = (uint32_t *)arg[1];
+	}
+
+	thinkos_rt.irq_cyccnt[self] = cyccnt_ptr;
+#endif /* THINKOS_ENABLE_IRQ_CYCCNT */
+
+#endif /* THINKOS_ENABLE_ARG_CHECK */
 
 	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
@@ -191,6 +207,7 @@ TODO: the whole kernel are should be checked. There is a potential security brec
 	   the interrupt handler to locate the cycle counter (r1) address. */
 	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
 #endif
+
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 

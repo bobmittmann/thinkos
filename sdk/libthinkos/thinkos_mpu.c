@@ -79,7 +79,16 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
 	mpu->rasr = rasr;
 }
 
-void thinkos_mpu_init(unsigned int size)
+
+/** 
+ * thinkos_mpu_init:
+ * @offs: offset of the kernel protected memory block
+ * @size: size of the kernel protected memory block
+ *
+ * Initializes the Cortex-M MPU.
+ *
+ */
+void thinkos_mpu_init(uint32_t offs, unsigned int size)
 {
 	struct cm3_mpu * mpu = CM3_MPU;
 	uint32_t bmp;
@@ -87,9 +96,16 @@ void thinkos_mpu_init(unsigned int size)
 
 	DCC_LOG(LOG_MSG, "configuring MPU ...");
 
-	/* how many reserved 1K blocks ? */
+	/* align kernel offset to 1K block region */
+	offs &= 0xffffffff << 10;
+	/* how many kernel 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
 
+	/* save the kernel reserved memory */
+	thinkos_rt.mpu_kernel_mem.offs = offs;
+	thinkos_rt.mpu_kernel_mem.size = n * 1024;
+
+	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;
 
 	/* SRAM */
