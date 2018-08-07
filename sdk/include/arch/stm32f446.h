@@ -26,8 +26,6 @@
 #ifndef __STM32F446_H__
 #define __STM32F446_H__
 
-#include <arch/stm32f4xx.h>
-
 #ifndef STM32F446
 #define STM32F446
 #endif
@@ -39,6 +37,8 @@
 #ifndef STM32F446XX
 #define STM32F446XX
 #endif
+
+#include <arch/stm32f4xx.h>
 
 #ifndef __ASSEMBLER__
 

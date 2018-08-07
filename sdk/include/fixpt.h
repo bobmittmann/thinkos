@@ -172,7 +172,8 @@
 #define Q31_FLOAT(X)     ((float)(X) / 2147483648.)
 
 /* Q31 Signed Multiply */
-#define Q31_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 30)) >> 31)
+#define Q31_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2)) >> 31)
+//#define Q31_MUL(X1, X2) ((((int64_t)(X1) * (int32_t)(X2)) + (1 << 30)) >> 31)
 
 /* Q31 Unsigned Multiply */
 #define Q31_UMUL(X1, X2) ((((uint64_t)(X1) * (uint32_t)(X2)) + (1 << 30)) >> 31)

@@ -1,6 +1,7 @@
 #include <fixpt.h>
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
+#include <assert.h>
 
 #define SIN_N 128
 
@@ -151,23 +152,33 @@ int32_t q31sin(int32_t x)
 	int32_t dx2;
 	int32_t i;
 
-	i = ((int64_t)x * SIN_N) >> 31;
+	i = ((int64_t)x * SIN_N + (1 >> 30)) >> 31;
 	y1 = sintab[i];
 	y2 = sintab[i + 1];
 	y3 = sintab[i + 2];
 	y21 = (y2 - y1) * 2;
 	y32 = (y3 - y2) * 2;
 	y321 = y32 - y21;
-	x1 = ((int64_t)i << 31) / SIN_N;
+	x1 = (((int64_t)i << 31) + (SIN_N / 2)) / SIN_N;
 	dx1 = (x - x1) * (SIN_N / 2);
 	dx2 = dx1 + Q31(-1.0);
 	y = y1 + Q31_MUL(y21, dx1) + Q31_MUL(y321, Q31_MUL(dx1, dx2));
-#if 0
-	INF("i=%d x1=%f,%d x=%f,%d", i, Q31F(x1), x1, Q31F(x), x);
-	INF("dx1=%f dx2=%f ddx=%f", i, Q31F(dx1), Q31F(dx2), Q31F(ddx));
-	INF("y1=%f y2=%f y3=%f", i, Q31F(y1), Q31F(y2), Q31F(y3));
-	INF("y21=%f y32=%f y321=%f", i, Q31F(y21), Q31F(y32), Q31F(y321));
+
+	if (y < 0)
+		y = Q31(1.0) - 1;
+#if 1
+	if (y < 0) {
+		INF("i=%d x1=%f,%d x=%f y=%d", i, (double)Q31F(x1), x1, 
+			(double)Q31F(x), y);
+		INF("dx1=%f dx2=%f", (double)Q31F(dx1), (double)Q31F(dx2));
+		INF("y1=%f y2=%f y3=%f", (double)Q31F(y1), (double)Q31F(y2), 
+			(double)Q31F(y3));
+		INF("y21=%f y32=%f y321=%f", (double)Q31F(y21), (double)Q31F(y32), 
+			(double)Q31F(y321));
+	}
 #endif
+//	assert(y >= 0);
+
 	return y;
 }
 

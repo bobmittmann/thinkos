@@ -67,16 +67,16 @@
 #define STM32_ENABLE_PLLI2S 0
 #endif
 
+#ifndef STM32_ENABLE_PREFETCH
+#define STM32_ENABLE_PREFETCH 1
+#endif
+
 #ifndef STM32_HCLK_HZ 
-  #define STM32_HCLK_HZ    120000000
+  #define STM32_HCLK_HZ    168000000
 #endif
 
 #ifndef STM32_HSE_HZ 
-  #if defined(STM32F2X)
-    #define STM32_HSE_HZ     24000000
-  #else
-    #define STM32_HSE_HZ     12000000
-  #endif
+  #define STM32_HSE_HZ     12000000
 #endif
 
 #define STM32_HSI_HZ         16000000
@@ -128,7 +128,11 @@
   #define PLLP 2
   #define PLLN 112
   #define PLLM 4
-  #define PLLR 0
+  #if defined(STM32F446)
+    #define PLLR 2
+  #else
+    #define PLLR 0
+  #endif
     /* F_VCO = 389454513
 	   F_I2S = 169333333 */
   #define PLLI2SR 3
@@ -233,12 +237,15 @@
 #error "invalid PLL configuration (err < -0.1 %)!"
 #endif
 
+/* FIXME: multible USB sources */
+#if !defined(STM32F446)
 #if (VCO_HZ / PLLQ) > ((USB_HZ) + (USB_HZ) / 1000) 
 #error "invalid PLL configuration (err > 0.1 %)!"
 #endif
 
 #if (VCO_HZ / PLLQ) < ((USB_HZ) - (USB_HZ) / 1000) 
 #error "invalid PLL configuration (err < -0.1 %)!"
+#endif
 #endif
 
 #if (PLLN > 432)
@@ -248,6 +255,31 @@
 #if (PLLM > 63)
 #error "invalid PLLM!"
 #endif
+
+
+#if defined(STM32F446)
+
+#if (PLLI2SN < 50)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SN > 432)
+#error "invalid PLLI2SN!"
+#endif
+
+#if (PLLI2SM > 63)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SM < 2)
+#error "invalid PLLI2SM!"
+#endif
+
+#if (PLLI2SR < 2)
+#error "invalid PLLI2SR!"
+#endif
+
+#endif /* STM32F446 */
 
 #if STM32_ENABLE_PLL
   #define __VCO_HZ (((uint64_t)(__PLL_CKIN_HZ) * PLLN) / PLLM)
@@ -325,6 +357,9 @@ const uint32_t sysclk_hz[] = {
 
 void __attribute__((section(".init"))) _init(void)
 {
+#if defined(STM32F446)
+	struct stm32_pwr * pwr = STM32_PWR;
+#endif
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_flash * flash = STM32_FLASH;
 	uint32_t cr = 0;
@@ -335,6 +370,30 @@ void __attribute__((section(".init"))) _init(void)
 	while (((cr = rcc->cr) & RCC_HSIRDY) == 0);
 	cfg = RCC_PPRE2_1 | RCC_PPRE1_1 | RCC_HPRE_1 | RCC_SW_HSI;
 	rcc->cfgr = cfg;
+
+#if defined(STM32F446)
+	rcc->sscgr = 0;
+	rcc->pllsaicfgr = 0;
+	rcc->ckgatenr = 0xffffffff;
+	rcc->dckcfgr2 = RCC_CK48MSEL_PLLSAI_P;
+
+	stm32_clk_enable(STM32_RCC, STM32_CLK_PWR);
+
+	/* set PVD level to 2.9V, 
+	   regulator voltage scale 1 mode,
+	   enable over-drive */
+	pwr->cr = PWR_PLS_2_9V | PWR_PVDE | PWR_VOS1 | PWR_ODEN |
+		PWR_DBP | PWR_CSBF | PWR_CWUF | PWR_PDDS;
+
+	/* wait for input voltage to raise above PVD level */
+	while (pwr->csr & PWR_PVDO);
+
+	/* wait for ODRDY */
+	while ((pwr->csr & PWR_ODRDY) == 0);
+
+	/* Enable the Over-drive switching */
+	pwr->cr |= PWR_ODSWEN;
+#endif
 
 #if STM32_ENABLE_HSE
 	/*******************************************************************
@@ -387,9 +446,15 @@ void __attribute__((section(".init"))) _init(void)
 	while ((flash->sr & FLASH_BSY) != 0);
 #endif
 
-	/* adjust flash wait states and enable caches */
+#if STM32_ENABLE_PREFETCH
+	/* adjust flash wait states and enable caches and prefetch */
 	flash->acr = FLASH_DCEN | FLASH_ICEN | FLASH_PRFTEN | 
 		FLASH_LATENCY(__HCLK_HZ / 30000000);
+#else
+	/* adjust flash wait states and enable caches. */
+	flash->acr = FLASH_DCEN | FLASH_ICEN | 
+		FLASH_LATENCY(__HCLK_HZ / 30000000);
+#endif
 
 	if (flash->cr & FLASH_LOCK) {
 		/* unlock flash write */

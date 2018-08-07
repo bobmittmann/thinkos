@@ -336,7 +336,11 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
   #endif
 #else
+  #if STM32_VBUS_SENS_ENABLED
 	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
+  #else
+	otg_fs->gccfg = OTG_FS_PWRDWN;
+  #endif
 #endif 
 
 	/* 4. Wait for the USBRST interrupt in OTG_FS_GINTSTS. It indicates that 
