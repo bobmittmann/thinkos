@@ -105,6 +105,8 @@ static void __dmon_irq_disable_all(void)
 {
 	int i;
 
+	DCC_LOG(LOG_WARNING, "NIVC all interrupts disabled!!!");
+
 	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 		thinkos_dbgmon_rt.nvic_ie[i] = 0;

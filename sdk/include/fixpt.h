@@ -19,6 +19,8 @@
 #define Q15_MUL_FLOOR(X1, X2) (((int32_t)(X1) * (int32_t)(X2)) >> 15)
 /* Q15 Unsigned Multiply with rounding */
 #define Q15_UMUL(X1, X2) ((((uint32_t)(X1) * (uint32_t)(X2)) + (1 << 14)) >> 15)
+/* Q15 Extended Signed Multiply with rounding. Ties are rouded up. */
+#define Q15X_MUL(X1, X2) (((int64_t)(X1) * (int32_t)(X2) + (1 << 14)) >> 15)
 
 /* Q15 Divide */
 #define Q15_DIV(X, Y) (((X) * 32768) / (Y))
@@ -104,6 +106,12 @@
 #define Q23_DIV(X, Y)    (((int64_t)(X) << 23) / (int32_t)(Y))
 /* Q23 Unsigned Divide */
 #define Q23_UDIV(X, Y)   (((uint64_t)(X) << 23) / (uint32_t)(Y))
+
+/* Q23 to Q15 conversion */
+#define Q23to15(X)       (X>>8)
+
+/* Q23 to Q15 conversion */
+#define Q15to23(X)       (X<<8)
 
 /* -------------------------------------------------------------------------
  Q2.30 format: -2.0 ... 1.9999999

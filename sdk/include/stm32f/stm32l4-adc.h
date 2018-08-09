@@ -482,9 +482,10 @@
    software when JAUTO is set. */
 
 /* Bits [17..19] - Discontinuous mode channel count */
-#define ADC_DISCNUM (0x7 << 17)
-#define ADC_DISCNUM_SET(VAL) (((VAL) << 17) & ADC_DISCNUM)
-#define ADC_DISCNUM_GET(REG) (((REG) & ADC_DISCNUM) >> 17)
+#define ADC_DISCNUM_MSK (0x7 << 17)
+#define ADC_DISCNUM_SET(VAL) ((((VAL)- 1) << 17) & ADC_DISCNUM_MSK)
+#define ADC_DISCNUM_GET(REG) ((((REG) & ADC_DISCNUM_MSK) >> 17) + 1)
+
 /* These bits are written by software to define the number of regular channels
    to be converted in discontinuous mode, after receiving an external trigger.
    000: 1 channel
