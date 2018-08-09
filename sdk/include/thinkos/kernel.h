@@ -179,14 +179,6 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 #endif
 
-/* With this option calling thinkos_irq_wait() will return a thread id 
-   if there is a thread already waiting on this interrupt. After 
-   receiving the interrupt a thread can restore the previously 
-   waiting thread by calling thinkos_irq_restore()...  */
-#ifndef THINKOS_ENABLE_IRQ_RESTORE
-#define THINKOS_ENABLE_IRQ_RESTORE      0
-#endif
-
 /* This option cause thinkos_irq_wait() to return the value
    of the CPU cycle count at the moment the interrupt was
    detected. */
@@ -477,22 +469,12 @@
   #define CTX_PC 14
 #endif
 
-#if THINKOS_ENABLE_IRQ_RESTORE
-  /* IRQ restore depends on THINKOS_ENABLE_IRQ_CTL */
-  #undef THINKOS_ENABLE_IRQ_CTL
-  #define THINKOS_ENABLE_IRQ_CTL 1
-#endif
-
 #if THINKOS_ENABLE_IRQ_CYCCNT
    /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
    #undef THINKOS_ENABLE_IRQ_CTL
    #define THINKOS_ENABLE_IRQ_CTL 1
    #undef THINKOS_ENABLE_WQ_IRQ
    #define THINKOS_ENABLE_WQ_IRQ 1
-   #if THINKOS_ENABLE_IRQ_RESTORE
-      #error "config conflict THINKOS_ENABLE_IRQ_CYCCNT "\
-		  "& THINKOS_ENABLE_IRQ_RESTORE"
-   #endif  
 #endif
 
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT ((THINKOS_IRQ_MAX) > 0 && (THINKOS_ENABLE_TIMED_CALLS) && (THINKOS_ENABLE_WQ_IRQ))
