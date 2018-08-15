@@ -179,14 +179,6 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 #endif
 
-/* With this option calling thinkos_irq_wait() will return a thread id 
-   if there is a thread already waiting on this interrupt. After 
-   receiving the interrupt a thread can restore the previously 
-   waiting thread by calling thinkos_irq_restore()...  */
-#ifndef THINKOS_ENABLE_IRQ_RESTORE
-#define THINKOS_ENABLE_IRQ_RESTORE      0
-#endif
-
 /* This option cause thinkos_irq_wait() to return the value
    of the CPU cycle count at the moment the interrupt was
    detected. */

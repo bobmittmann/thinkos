@@ -10,8 +10,8 @@
 /* Conversion form float to fixed point Q1.15 */
 #define Q15(F) ((int32_t)((float)(F) * (float)32768.0))
 
-/* Convert from fractional Q1.15 to float point */
-#define Q15F(Q) ((float)((float)(Q) / (float)32768.0))
+/* Convert from fractional Q1.15 to float point with round */
+#define Q15F(Q) ((float)(((float)(Q) + (float)(0.5/32768.0)) / (float)32768.0))
 
 /* Q15 Signed Multiply with rounding. Ties are rouded up. */
 #define Q15_MUL(X1, X2) (((int32_t)(X1) * (int32_t)(X2) + (1 << 14)) >> 15)
@@ -70,6 +70,7 @@
 #define Q23_MAX ((int32_t)2147483647)
 #define Q23_MIN ((int32_t)-2147483648)
 
+
 #define Q23_ONE ((int32_t)(1 << 23))
 
 /* Q23 Saturation */
@@ -82,12 +83,11 @@
 	(((int32_t)(X) > ((int32_t)(1 << 23) - 1)) ? ((int32_t)(1 << 23) - 1): (X)))
 
 /* Conversion form float to fixed point Q8.23 */
-#define Q23(F)           ((int64_t)((double)(F) * (double)(1 << 23)))
-/* Convert from float point to fixed point Q1.30 */
-#define FLOAT_Q23(X)     ((int32_t)((X) * (1 << 23)))
+#define Q23(F)           ((int64_t)((float)(F) * (float)8388608.0))
 
 /* Convert from fractional Q8.23 to float point */
-#define Q23F(Q) ((double)((double)(Q) * (1.0 / (double)(1 << 23))))
+#define Q23F(Q) ((float)((float)(Q) * (float)(1.0/8388608.0)))
+
 /* Convert from fixed point Q8.23 to float point */
 #define Q23_FLOAT(X)     ((float)(X) / (1 << 23))
 
