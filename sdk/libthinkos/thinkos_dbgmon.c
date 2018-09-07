@@ -42,6 +42,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
+#define DBGMON_PERISTENT_MASK ((1 << DBGMON_RESET) | (1 << DBGMON_SOFTRST))
+
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
@@ -262,7 +264,8 @@ uint32_t dbgmon_select(uint32_t evmask)
 		DCC_LOG1(LOG_MSG, "wakeup evset=%08x.", evset);
 	} while ((evset & evmask) == 0);
 
-	thinkos_dbgmon_rt.mask &= ~evmask;
+	/* reset the event mask, make sure not mask non maskable events */
+	thinkos_dbgmon_rt.mask &= ((~evmask) | DBGMON_PERISTENT_MASK);
 
 	return evset & evmask;
 }
@@ -286,18 +289,18 @@ int dbgmon_expect(int sig)
 	evmsk |= (1 << sig);
 	thinkos_dbgmon_rt.mask = evmsk;
 
-	DCC_LOG2(LOG_INFO, "waiting for %d (evmsk=%08x) sleeping...", sig, evmsk);
+	DCC_LOG2(LOG_MSG, "waiting for %d (evmsk=%08x) sleeping...", sig, evmsk);
 	do {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		evset = thinkos_dbgmon_rt.events;
 		evmsk = thinkos_dbgmon_rt.mask;
-		DCC_LOG2(LOG_INFO, "swap evset=%08x evmsk=%08x", evset, evmsk);
+		DCC_LOG2(LOG_MSG, "swap evset=%08x evmsk=%08x", evset, evmsk);
 	} while ((evset & evmsk) == 0);
-	DCC_LOG1(LOG_INFO, "wakeup... evset=%08x", evset);
+	DCC_LOG1(LOG_MSG, "wakeup... evset=%08x", evset);
 
 	/* mask back the event if previously masked */
 	evmsk ^= stmsk;
-	DCC_LOG2(LOG_INFO, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
+	DCC_LOG2(LOG_MSG, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
 	thinkos_dbgmon_rt.mask = evmsk;
 
 	if (evset & (1 << sig))
@@ -1022,6 +1025,7 @@ step_done:
 
 	if (sigset & (1 << DBGMON_RESET)) {
 		uint32_t * sp;
+
 		DCC_LOG(LOG_TRACE, "DBGMON_RESET");
 
 		sp = &thinkos_dbgmon_stack[(sizeof(thinkos_dbgmon_stack) / 4) - 10];
@@ -1040,14 +1044,16 @@ step_done:
 
 	/* Process monitor events */
 	if ((sigset & sigmsk) != 0) {
-		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dbgmon_rt.ctx);
 #if DEBUG
 		/* TODO: this stack check is very usefull... 
 		   Some sort of error to the developer should be raised or
 		 force a fault */
 		if (thinkos_dbgmon_rt.ctx < thinkos_dbgmon_stack) {
-			DCC_LOG(LOG_ERROR, "stack overflow!");
+			DCC_LOG(LOG_PANIC, "stack overflow!");
+			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x dbgmon.stack=%08x", 
+					 thinkos_dbgmon_rt.ctx, thinkos_dbgmon_stack);
+			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
 		}
 #endif
 		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
@@ -1057,6 +1063,7 @@ step_done:
 			 sigset, sigmsk);
 	return 0;
 }
+
 #if DEBUG
 void __attribute__((noinline, noreturn)) 
 	dbgmon_panic(struct thinkos_except * xcpt)
@@ -1089,7 +1096,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 	thinkos_rt.xcpt_ipsr = ipsr;
 #endif
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
-		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
+		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!", 
 				 xcpt->active + 1);
 #if THINKOS_ENABLE_DEBUG_BKPT
 		thinkos_rt.break_id = xcpt->active;
@@ -1097,6 +1104,8 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		__dmon_irq_disable_all();
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 		__dmon_irq_force_enable();
+#else
+		dbgmon_signal(DBGMON_SOFTRST);
 #endif
 		dbgmon_signal(DBGMON_THREAD_FAULT);
 	} else {
@@ -1123,6 +1132,8 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 			__dmon_irq_disable_all();
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 			__dmon_irq_force_enable();
+#else
+			dbgmon_signal(DBGMON_SOFTRST);
 #endif
 			DCC_LOG(LOG_TRACE, "DBGMON_EXCEPT");
 			dbgmon_signal(DBGMON_EXCEPT);
@@ -1238,13 +1249,14 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 
 	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
 	
-	thinkos_dbgmon_rt.events = ((demcr & DCB_DEMCR_MON_EN) == 0) ? 
-		(1 << DBGMON_STARTUP) : 0;
-	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
-	thinkos_dbgmon_rt.mask = (1 << DBGMON_RESET) | (1 << DBGMON_STARTUP);
+	thinkos_dbgmon_rt.events = (1 << DBGMON_RESET) | 
+		(((demcr & DCB_DEMCR_MON_EN) == 0) ? (1 << DBGMON_STARTUP) : 0);
+	/* Set the persistent signals */
+	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
 	thinkos_dbgmon_rt.comm = comm;
 	thinkos_dbgmon_rt.task = task;
 	thinkos_dbgmon_rt.param = param;
+	thinkos_dbgmon_rt.ctx = 0;
 
 	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
 		DCC_LOG(LOG_INFO, "system startup!!!");
