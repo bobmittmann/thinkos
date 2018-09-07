@@ -768,12 +768,12 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 		if (sigset & (1 << DBGMON_APP_EXEC)) {
 			dbgmon_clear(DBGMON_APP_EXEC);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			if (!dmon_app_exec(this_board.application.start_addr, false)) {
+			if (!dbgmon_app_exec(&this_board.application, false)) {
 				dmprintf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
-				DCC_LOG(LOG_TRACE, "dmon_app_exec() failed!");
+				DCC_LOG(LOG_TRACE, "dbgmon_app_exec() failed!");
 				if (this_board.on_error != NULL)
 					dmon_thread_exec((void *)this_board.on_error, NULL);
 			}

@@ -163,7 +163,7 @@ int dbgmon_wait_idle(void);
 
 void dbgmon_soft_reset(void);
 
-bool dbgmon_app_exec(struct dbgmon_app_desc * desc);
+bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 

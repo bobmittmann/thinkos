@@ -562,7 +562,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 			dbgmon_soft_reset();
 			gdb->active_app = false;
 		}
-		if (dmon_app_exec(this_board.application.start_addr, true)) {
+		if (dbgmon_app_exec(&this_board.application, true)) {
 			gdb->active_app = true;
 		}
 	} else if (prefix(s, "os")) {
@@ -686,8 +686,8 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		/* XXX: if there is no active application */
 		if (!gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "no active application, "
-					"calling dmon_app_exec()!");
-			if (!dmon_app_exec(this_board.application.start_addr, true)) {
+					"calling dbgmon_app_exec()!");
+			if (!dbgmon_app_exec(&this_board.application, true)) {
 				n = str2str(pkt, "$1");
 			} else {
 				gdb->active_app = true;
@@ -1335,9 +1335,8 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
 						DCC_LOG(LOG_WARNING, "no active application, "
-								"calling dmon_app_exec()!");
-						if (!dmon_app_exec(this_board.application.start_addr, 
-										   true)) {
+								"calling dbgmon_app_exec()!");
+						if (!dbgmon_app_exec(&this_board.application, true)) {
 							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
 						gdb->active_app = true;
