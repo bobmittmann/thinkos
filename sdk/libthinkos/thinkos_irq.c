@@ -158,7 +158,9 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
+#if THINKOS_ENABLE_IRQ_CYCCNT
 	uint32_t * cyccnt_ptr;
+#endif
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
