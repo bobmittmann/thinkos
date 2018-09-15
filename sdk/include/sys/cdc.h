@@ -33,17 +33,13 @@
 
 /* Interface class codes */
 #define CDC_INTERFACE_CLASS_COMMUNICATION             0x02
+/* Interface class code for a data class interface */
 #define CDC_INTERFACE_CLASS_DATA                      0x0A
-
-/* This section lists the values for CDC Data Interface Descriptor. */
-
-/* Interface class code for a data class interface. */
-#define CDCDataInterfaceDescriptor_CLASS        0x0A
-/* Interface subclass code for a data class interface. */
+/* Interface subclass code for a data class interface */
 #define CDC_INTERFACE_SUBCLASS_DATA     0x00
 /* Protocol code for a data class interface which does not implement any
-    particular protocol. */
-#define CDC_DataInterfaceDescriptor_NOPROTOCOL   0x00
+    particular protocol */
+#define CDC_INTERFACE_DATA_PROTOCOL_NONE   0x00
 
 /* Communication interface class subclass codes */
 /* usbcdc11.pdf - Section 4.3 - Table 16 */

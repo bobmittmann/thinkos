@@ -43,7 +43,7 @@
 #include "board.h"
 #include "version.h"
 
-void monitor_task(struct dmon_comm * comm, void * param);
+void monitor_task(const struct dbgmon_comm * comm, void * param);
 
 int app_main(int argc, char *argv[]);
 
@@ -51,12 +51,12 @@ const char * const argv[] = { "thinkos_app" };
 
 void __attribute__((noreturn)) board_app_task(void * param)
 {
-	int argc = 1;
+//	int argc = 1;
 
 	console_write(NULL, "\r\nThinkOS app loader...\r\n\r\n", 27);
 
 	for (;;) {
-		app_main(argc, (char **)argv);
+//		app_main(argc, (char **)argv);
 		thinkos_sleep(500);
 	}
 }
@@ -267,7 +267,7 @@ void board_init(void)
 
 void main(int argc, char ** argv)
 {
-	struct dmon_comm * comm;
+	const struct dbgmon_comm * comm;
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();

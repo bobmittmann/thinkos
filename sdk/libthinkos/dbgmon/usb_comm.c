@@ -150,7 +150,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 			   (excluding endpoint zero) */
 			1,
 			/* Class code */
-			CDC_INTERFACE_COMMUNICATION,
+			CDC_INTERFACE_CLASS_COMMUNICATION,
 			/* Sub-class */
 			CDC_ABSTRACT_CONTROL_MODEL,
 			/* Protocol code: (V.25ter, Common AT commands)*/
@@ -198,18 +198,16 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		},
 		/* Union Functional Descriptor */
 		.un = {
-			{
-				/* Size of this descriptor in bytes */
-				sizeof(struct cdc_union_1slave_descriptor),
-				/* CS_INTERFACE descriptor type */
-				CDC_CS_INTERFACE,
-				/* Union functional descriptor subtype */
-				CDC_UNION,
-				/* The interface number designated as master */
-				0
-			},
+			/* Size of this descriptor in bytes */
+			sizeof(struct cdc_union_1slave_descriptor),
+			/* CS_INTERFACE descriptor type */
+			CDC_CS_INTERFACE,
+			/* Union functional descriptor subtype */
+			CDC_UNION,
+			/* The interface number designated as master */
+			0,
 			/* The interface number designated as first slave */
-			{ 1 }
+			1
 		},
 		/* Endpoint 3 descriptor */
 		.ep_int = {
@@ -241,7 +239,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 			   (excluding endpoint zero) */
 			2,
 			/* Class code */
-			CDC_INTERFACE_DATA,
+			CDC_INTERFACE_CLASS_DATA,
 			/* Sub-class */
 			0,
 			/* Protocol code */

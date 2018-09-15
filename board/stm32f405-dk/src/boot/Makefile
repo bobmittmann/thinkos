@@ -28,7 +28,7 @@ VERSION_MINOR = "26"
 
 PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c monitor.c otg_xflash_pic.c app_main.c
+CFILES = boot.c monitor.c otg_xflash_pic.c #app_main.c
 
 LIBDIRS = $(SDKDIR)/libstm32f $(SDKDIR)/libcm3 $(SDKDIR)/libutil\
 		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libconsole\

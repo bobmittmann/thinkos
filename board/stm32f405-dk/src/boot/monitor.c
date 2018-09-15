@@ -250,7 +250,7 @@ int __scan_stack(void * stack, unsigned int size);
 
 extern int app_loader(void * arg);
 
-static void print_osinfo(struct dmon_comm * comm)
+static void print_osinfo(struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 #if THINKOS_ENABLE_PROFILING
@@ -380,7 +380,7 @@ static void pause_all(void)
 }
 #endif
 
-static bool monitor_process_input(struct dmon_comm * comm, int c)
+static bool monitor_process_input(struct dbgmon_comm * comm, int c)
 {
 	switch (c) {
 #if (MONITOR_UPGRADE_ENABLE)
@@ -448,7 +448,7 @@ static bool monitor_process_input(struct dmon_comm * comm, int c)
 #define MONITOR_AUTOBOOT 1
 #define MONITOR_SHELL 2
 
-void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * param)
+void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * param)
 {
 	uint32_t sigmask;
 	uint32_t sigset;
@@ -484,7 +484,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			DCC_LOG1(LOG_TRACE, "Comm Ctl, sigset=%08x", sigset);
 			dbgmon_clear(DBGMON_COMM_CTL);
-//			if (!dmon_comm_isconnected(comm))	
+//			if (!dbgmon_comm_isconnected(comm))	
 //				dbgmon_reset();
 		}
 
@@ -507,7 +507,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 			DCC_LOG(LOG_TRACE, "DBGMON_COMM_RCV siganl");
 			if (flags & MONITOR_SHELL) { 
 				/* receive from the COMM driver one bye at the time */
-				if (dmon_comm_recv(comm, buf, 1) > 0) {
+				if (dbgmon_comm_recv(comm, buf, 1) > 0) {
 					int c = buf[0];
 					DCC_LOG1(LOG_INFO, "Comm recv. %c", c);
 					/* process the input character */
@@ -528,7 +528,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 			} else {
 				if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 					DCC_LOG1(LOG_INFO, "Comm recv. rx_pipe.free=%d", cnt);
-					if ((len = dmon_comm_recv(comm, ptr, cnt)) > 0)
+					if ((len = dbgmon_comm_recv(comm, ptr, cnt)) > 0)
 						__console_rx_pipe_commit(len); 
 				} else {
 					DCC_LOG(LOG_INFO, "Comm recv. Masking DMON_COMM_RCV!");
@@ -553,7 +553,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm, void * para
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
-				cnt = dmon_comm_send(comm, ptr, cnt);
+				cnt = dbgmon_comm_send(comm, ptr, cnt);
 				__console_tx_pipe_commit(cnt); 
 			} else {
 				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
