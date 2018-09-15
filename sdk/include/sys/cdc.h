@@ -32,8 +32,18 @@
 #define CDC1_10                                 0x0110
 
 /* Interface class codes */
-#define CDC_INTERFACE_COMMUNICATION             0x02
-#define CDC_INTERFACE_DATA                      0x0A
+#define CDC_INTERFACE_CLASS_COMMUNICATION             0x02
+#define CDC_INTERFACE_CLASS_DATA                      0x0A
+
+/* This section lists the values for CDC Data Interface Descriptor. */
+
+/* Interface class code for a data class interface. */
+#define CDCDataInterfaceDescriptor_CLASS        0x0A
+/* Interface subclass code for a data class interface. */
+#define CDC_INTERFACE_SUBCLASS_DATA     0x00
+/* Protocol code for a data class interface which does not implement any
+    particular protocol. */
+#define CDC_DataInterfaceDescriptor_NOPROTOCOL   0x00
 
 /* Communication interface class subclass codes */
 /* usbcdc11.pdf - Section 4.3 - Table 16 */
@@ -63,6 +73,8 @@
 #define CDC_PROTOCOL_CAPI                       0x93
 #define CDC_PROTOCOL_HOST_BASED_DRIVER          0xFD
 #define CDC_PROTOCOL_DESCRIBED_IN_PUFD          0xFE
+
+#define CDC_PROTOCOL_NONE                       0x00
 
 /* CDC class-specific request codes */
 /* Values of the bRequest field for the various class-specific requests 
@@ -150,6 +162,28 @@
 #define CDC_NOTIFICATION_NETWORK_CONNECTION 0x00
 #define CDC_NOTIFICATION_SERIAL_STATE       0x20
 
+
+
+/* Device handles call management itself. */
+#define CDC_CALL_MANAGEMENT_SELF (1 << 0)
+/* Device can exchange call management information over a 
+   Data class interface. */
+#define CDC_CALL_MANAGEMENT_DATA (1 << 1)
+
+
+/* usb_cdc_acm USB CDC ACM Capabilities */
+/* Device supports the request combination of SetCommFeature, ClearCommFeature
+   and GetCommFeature. */
+#define CDC_ACM_COMMFEATURE          (1 << 0)
+/* Device supports the request combination of SetLineCoding, GetLineCoding and
+   SetControlLineState. */
+#define CDC_ACM_LINE                 (1 << 1)
+/* Device supports the SendBreak request. */
+#define CDC_ACM_SENDBREAK            (1 << 2)
+/* Device supports the NetworkConnection notification. */
+#define CDC_ACM_NETWORKCONNECTION    (1 << 3)
+
+
 #define USB_CDC_NOTIFICATION 0xa1
 
 /* Header functional descriptor 
@@ -215,24 +249,30 @@ struct cdc_call_management_descriptor {
 
 /* Union functional descriptors with one slave interface */
 struct cdc_union_1slave_descriptor  {
-	    /* Union functional descriptor */
-	    struct cdc_union_descriptor sUnion;
-		    /* Slave interface 0 */
-		    uint8_t bSlaveInterfaces[1];
+	/* Size of this descriptor in bytes */
+	uint8_t bFunctionLength;
+	/* CS_INTERFACE descriptor type */
+	uint8_t bDescriptorType;
+	/* Union functional descriptor subtype */
+	uint8_t bDescriptorSubtype;
+	/* The interface number designated as master */
+	uint8_t bMasterInterface;
+	/* Slave interface 0 */
+	uint8_t bSlaveInterface;
 } __attribute__((__packed__));
 
 /* Line coding structure 
    Format of the data returned when a GetLineCoding request is received */
 /* usbcdc11.pdf - Section 6.2.13 */
 struct cdc_line_coding {
-    /* Data terminal rate in bits per second */
-    uint32_t dwDTERate;
-    /* Number of stop bits */
-    uint8_t bCharFormat;
-    /* Parity bit type */
-    uint8_t bParityType;
-    /* Number of data bits */
-    uint8_t bDataBits;
+	/* Data terminal rate in bits per second */
+	uint32_t dwDTERate;
+	/* Number of stop bits */
+	uint8_t bCharFormat;
+	/* Parity bit type */
+	uint8_t bParityType;
+	/* Number of data bits */
+	uint8_t bDataBits;
 } __attribute__((__packed__));
 
 /* Communication Interface Class notifications that the device uses to 

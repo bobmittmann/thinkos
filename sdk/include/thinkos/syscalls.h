@@ -668,11 +668,11 @@ static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {
 		return THINKOS_SYSCALL1(THINKOS_CTL, THINKOS_CTL_CYCCNT);
 	}
 
-struct dmon_comm;
+struct dbgmon_comm;
 
 static inline int __attribute__((always_inline)) 
-	thinkos_dbgmon(void (* task)(struct dmon_comm *, void *), 
-				   struct dmon_comm * comm, void * param) {
+	thinkos_dbgmon(void (* task)(const struct dbgmon_comm *, void *), 
+				   const struct dbgmon_comm * comm, void * param) {
 	return THINKOS_SYSCALL3(THINKOS_DBGMON, task, comm, param);
 }
 

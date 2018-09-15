@@ -37,22 +37,22 @@
 #define OUT_EOF     "^Z"
 #define OUT_BEL     '\7'
 
-int dmputc(int c, struct dmon_comm * comm)
+int dmputc(int c, const struct dbgmon_comm * comm)
 {
 	char buf[1] = { c };
-	return dmon_comm_send(comm, buf, sizeof(char));
+	return dbgmon_comm_send(comm, buf, sizeof(char));
 }
 
-int dmputs(const char * s, struct dmon_comm * comm)
+int dmputs(const char * s, const struct dbgmon_comm * comm)
 {
 	int n = 0;
 
 	while (s[n] != '\0')
 		n++;
-	return dmon_comm_send(comm, s, n);
+	return dbgmon_comm_send(comm, s, n);
 }
 
-int dmgets(char * s, int size, struct dmon_comm * comm)
+int dmgets(char * s, int size, const struct dbgmon_comm * comm)
 {
 	char buf[1];
 	int c;
@@ -63,7 +63,7 @@ int dmgets(char * s, int size, struct dmon_comm * comm)
 	pos = 0;
 
 	for (;;) {
-		if (dmon_comm_recv(comm, buf, sizeof(char)) <= 0)
+		if (dbgmon_comm_recv(comm, buf, sizeof(char)) <= 0)
 			return -1;
 
 		c = buf[0];

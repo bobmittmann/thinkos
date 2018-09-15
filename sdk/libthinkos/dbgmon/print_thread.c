@@ -28,7 +28,7 @@
 #include <sys/dcclog.h>
 
 
-void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
+void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 	int32_t timeout;

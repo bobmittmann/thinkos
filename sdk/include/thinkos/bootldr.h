@@ -96,9 +96,9 @@ struct thinkos_board {
 	int (* init)(void);
 	void (* softreset)(void);
 	bool (* autoboot)(unsigned int tick);
-	bool (* configure)(struct dmon_comm *);
-	void (* upgrade)(struct dmon_comm *);
-	void (* selftest)(struct dmon_comm *);
+	bool (* configure)(const struct dbgmon_comm *);
+	void (* upgrade)(const struct dbgmon_comm *);
+	void (* selftest)(const struct dbgmon_comm *);
 	void (* on_appload)(void);
 	void (* on_error)(int code);
 	void (* on_comm_init)(void);
@@ -141,39 +141,69 @@ struct ymodem_rcv {
 	} pkt;
 };
 
+static inline int dbgmon_req_app_stop(void) {
+	return dbgmon_signal(DBGMON_APP_STOP);
+}
+
+static inline int dbgmon_req_app_resume(void) {
+	return dbgmon_signal(DBGMON_APP_RESUME);
+}
+
+static inline int dbgmon_req_app_term(void) {
+	dbgmon_soft_reset();
+	return dbgmon_signal(DBGMON_APP_TERM);
+}
+
+static inline int dbgmon_req_app_erase(void) {
+	dbgmon_soft_reset();
+	return dbgmon_signal(DBGMON_APP_ERASE);
+}
+
+static inline int dbgmon_req_app_exec(void) {
+	dbgmon_soft_reset();
+	return dbgmon_signal(DBGMON_APP_EXEC);
+}
+
+static inline int dbgmon_req_app_upload(void) {
+	dbgmon_soft_reset();
+	return dbgmon_signal(DBGMON_APP_UPLOAD);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 
-int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx);
+int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
+						struct ymodem_rcv * rx);
 
-void dmon_console_io_task(struct dmon_comm * comm);
+void dmon_console_io_task(const struct dbgmon_comm * comm);
 
-void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id);
+void dmon_print_thread(const struct dbgmon_comm * comm, 
+					   unsigned int thread_id);
 
-void dmon_print_context(struct dmon_comm * comm, 
+void dmon_print_context(const struct dbgmon_comm * comm, 
 						const struct thinkos_context * ctx, 
 						uint32_t sp);
 
-void dmon_print_exception(struct dmon_comm * comm, 
+void dmon_print_exception(const struct dbgmon_comm * comm, 
 						  struct thinkos_except * xcpt);
 
-int dmon_print_osinfo(struct dmon_comm * comm);
+int dmon_print_osinfo(const struct dbgmon_comm * comm);
 
-void dmon_print_alloc(struct dmon_comm * comm);
+void dmon_print_alloc(const struct dbgmon_comm * comm);
 
-void dmon_print_stack_usage(struct dmon_comm * comm);
+void dmon_print_stack_usage(const struct dbgmon_comm * comm);
 
 void dmon_thread_exec(void (* func)(void *), void * arg);
 
 bool dmon_app_exec(uint32_t addr, bool paused);
 
-bool dmon_app_erase(struct dmon_comm * comm, 
+bool dmon_app_erase(const struct dbgmon_comm * comm, 
 					uint32_t addr, unsigned int size);
 
-int dmon_ymodem_flash(struct dmon_comm * comm,
+int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 					  uint32_t addr, unsigned int size);
 
 bool dmon_app_suspend(void);

@@ -45,7 +45,7 @@
 /* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
    dbgmon library */
 
-void gdb_stub_task(struct dmon_comm * comm);
+void gdb_stub_task(const struct dbgmon_comm * comm);
 
 #ifndef MONITOR_CONFIGURE_ENABLE
 #define MONITOR_CONFIGURE_ENABLE   1
@@ -181,7 +181,7 @@ extern int __heap_base;
 const void * heap_base = &__heap_base; 
 
 struct monitor {
-	struct dmon_comm * comm;
+	const struct dbgmon_comm * comm;
 #if (MONITOR_THREADINFO_ENABLE)
 	int8_t thread_id;
 #endif
@@ -256,7 +256,7 @@ static const char monitor_menu[] =
 
 static const char s_hr[] = "-----------------------\r\n";
 
-static void monitor_show_help(struct dmon_comm * comm)
+static void monitor_show_help(const struct dbgmon_comm * comm)
 {
 	dmprintf(comm, s_hr);
 	dmprintf(comm, "ThinkOS-%d.%d.%d (%s):\r\n", 
@@ -269,7 +269,7 @@ static void monitor_show_help(struct dmon_comm * comm)
 }
 
 #if (MONITOR_EXCEPTION_ENABLE)
-static void monitor_print_fault(struct dmon_comm * comm)
+static void monitor_print_fault(const struct dbgmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
@@ -281,7 +281,7 @@ static void monitor_print_fault(struct dmon_comm * comm)
 	dmon_print_exception(comm, xcpt);
 }
 
-static void monitor_on_fault(struct dmon_comm * comm)
+static void monitor_on_fault(const struct dbgmon_comm * comm)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
@@ -299,7 +299,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
-	if (dmon_comm_isconnected(comm)) {
+	if (dbgmon_comm_isconnected(comm)) {
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dmprintf(comm, s_hr);
 		dmon_print_exception(comm, xcpt);
@@ -313,7 +313,7 @@ static void monitor_on_fault(struct dmon_comm * comm)
 #if (MONITOR_WATCHPOINT_ENABLE)
 static void monitor_on_bkpt(struct monitor * mon)
 {
-	struct dmon_comm * comm = mon->comm;
+	const struct dbgmon_comm * comm = mon->comm;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
@@ -324,7 +324,7 @@ static void monitor_on_bkpt(struct monitor * mon)
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
-	if (dmon_comm_isconnected(comm)) {
+	if (dbgmon_comm_isconnected(comm)) {
 		dmprintf(comm, s_hr);
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, s_hr);
@@ -335,7 +335,7 @@ static void monitor_on_bkpt(struct monitor * mon)
 #if (MONITOR_THREAD_STEP_ENABLE)
 static void monitor_on_step(struct monitor * mon)
 {
-	struct dmon_comm * comm = mon->comm;
+	const struct dbgmon_comm * comm = mon->comm;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
@@ -346,7 +346,7 @@ static void monitor_on_step(struct monitor * mon)
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
-	if (dmon_comm_isconnected(comm)) {
+	if (dbgmon_comm_isconnected(comm)) {
 		dmprintf(comm, s_hr);
 		dmon_print_exception(comm, xcpt);
 		dmprintf(comm, s_hr);
@@ -356,7 +356,7 @@ static void monitor_on_step(struct monitor * mon)
 
 
 #if (MONITOR_OS_PAUSE)
-static void monitor_pause_all(struct dmon_comm * comm)
+static void monitor_pause_all(const struct dbgmon_comm * comm)
 {
 	dmprintf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
@@ -368,7 +368,7 @@ static void monitor_pause_all(struct dmon_comm * comm)
 #endif
 
 #if (MONITOR_OS_RESUME)
-static void monitor_resume_all(struct dmon_comm * comm)
+static void monitor_resume_all(const struct dbgmon_comm * comm)
 {
 	dmprintf(comm, "\r\nResuming all threads...\r\n");
 	__thinkos_resume_all();
@@ -376,7 +376,7 @@ static void monitor_resume_all(struct dmon_comm * comm)
 }
 #endif
 
-static void monitor_ymodem_recv(struct dmon_comm * comm, 
+static void monitor_ymodem_recv(const struct dbgmon_comm * comm, 
 								uint32_t addr, unsigned int size)
 {
 	dmprintf(comm, "\r\nYMODEM receive (^X to cancel) ... ");
@@ -388,7 +388,7 @@ static void monitor_ymodem_recv(struct dmon_comm * comm,
 }
 
 #if (MONITOR_APPWIPE_ENABLE)
-static void monitor_app_erase(struct dmon_comm * comm, 
+static void monitor_app_erase(const struct dbgmon_comm * comm, 
 							  uint32_t addr, unsigned int size)
 {
 	dmprintf(comm, "\r\nErasing application block (%08x)... ", addr);
@@ -403,7 +403,7 @@ static void monitor_app_erase(struct dmon_comm * comm,
 int long2hex_le(char * s, unsigned long val);
 int char2hex(char * s, int c);
 
-void monitor_dump_mem(struct dmon_comm * comm, 
+void monitor_dump_mem(const struct dbgmon_comm * comm, 
 					  uint32_t addr, unsigned int size)
 {
 	char buf[14 + 16 * 3];
@@ -426,7 +426,7 @@ void monitor_dump_mem(struct dmon_comm * comm,
 			}
 
 			if (!eq) {
-				dmon_comm_send(comm, " ...\r\n", 6);
+				dbgmon_comm_send(comm, " ...\r\n", 6);
 				eq = true;
 			}
 		} else {	
@@ -443,7 +443,7 @@ dump_line:
 			*cp++ = '\r';
 			*cp++ = '\n';
 
-			dmon_comm_send(comm, buf, cp - buf);
+			dbgmon_comm_send(comm, buf, cp - buf);
 		}
 
 		addr += n;
@@ -487,10 +487,10 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-void monitor_task(struct dmon_comm *, void * arg);
+void monitor_task(const struct dbgmon_comm *, void * arg);
 
 #if (MONITOR_SELFTEST_ENABLE)
-void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm, 
+void __attribute__((naked)) selftest_bootstrap(const struct dbgmon_comm * comm, 
 											   void * arg) 
 {
 	if (this_board.selftest)
@@ -500,7 +500,7 @@ void __attribute__((naked)) selftest_bootstrap(struct dmon_comm * comm,
 #endif
 
 #if (BOOT_ENABLE_GDB)
-void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm, void * arg) 
+void __attribute__((naked)) gdb_bootstrap(const struct dbgmon_comm * comm, void * arg) 
 {
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_stub_task(comm);
@@ -509,9 +509,9 @@ void __attribute__((naked)) gdb_bootstrap(struct dmon_comm * comm, void * arg)
 #endif
 
 #if (BOOT_ENABLE_THIRD)
-void third_stub_task(struct dmon_comm *);
+void third_stub_task(struct dbgmon_comm *);
 
-void __attribute__((naked)) third_bootstrap(struct dmon_comm * comm, 
+void __attribute__((naked)) third_bootstrap(const struct dbgmon_comm * comm, 
 											void * arg) 
 {
 	/* call the THIRD stub task */
@@ -523,7 +523,7 @@ void __attribute__((naked)) third_bootstrap(struct dmon_comm * comm,
 
 static bool monitor_process_input(struct monitor * mon, int c)
 {
-	struct dmon_comm * comm = mon->comm;
+	const struct dbgmon_comm * comm = mon->comm;
 
 	switch (c) {
 #if (BOOT_ENABLE_GDB)
@@ -539,7 +539,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_APPTERM_ENABLE)
 	case CTRL_C:
 		dmprintf(comm, "^C\r\n");
-		dbgmon_soft_reset();
+		dbgmon_req_app_term();
 		break;
 #endif
 #if (MONITOR_SELFTEST_ENABLE)
@@ -636,11 +636,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_Y:
 		dmprintf(comm, "^\\\r\nUpload application [y]? ");
 		if (dmgetc(comm) == 'y') {
-			dbgmon_soft_reset();
 			/* Request app upload */
-			dbgmon_signal(DBGMON_APP_UPLOAD); 
-			/* Request app exec */
-			dbgmon_signal(DBGMON_APP_EXEC); 
+			dbgmon_req_app_upload();
 		} else {
 			dmprintf(comm, "\r\n");
 		}
@@ -650,9 +647,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmprintf(comm, "^W\r\n");
 		dmprintf(comm, "^\\\r\nErase application [y]? ");
 		if (dmgetc(comm) == 'y') {
-			dbgmon_soft_reset();
 			/* Request app erase */
-			dbgmon_signal(DBGMON_APP_ERASE); 
+			dbgmon_req_app_erase(); 
 		} else {
 			dmprintf(comm, "\r\n");
 		}
@@ -661,9 +657,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_APPRESTART_ENABLE)
 	case CTRL_Z:
 		dmprintf(comm, "^Z\r\n");
-		dbgmon_soft_reset();
-		/* Request app exec */
-		dbgmon_signal(DBGMON_APP_EXEC); 
+		dbgmon_req_app_exec(); 
 		break;
 #endif
 #if (MONITOR_WATCHPOINT_ENABLE)
@@ -683,18 +677,18 @@ static bool monitor_process_input(struct monitor * mon, int c)
    Dafault Monitor Task
  */
 
-void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
+void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 											void * arg)
 {
 	struct monitor monitor;
 	uint32_t sigmask = 0;
-	uint32_t sigset;
 #if THINKOS_ENABLE_CONSOLE
 	uint8_t * ptr;
 	int cnt;
 #endif
 	int tick_cnt = 0;
 	uint8_t buf[1];
+	int sig;
 	
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
@@ -716,6 +710,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 #endif
 	sigmask |= (1 << DBGMON_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE
+	sigmask |= (1 << DBGMON_COMM_EOT);
 	sigmask |= (1 << DBGMON_COMM_CTL);
 	sigmask |= (1 << DBGMON_TX_PIPE);
 	sigmask |= (1 << DBGMON_RX_PIPE);
@@ -724,6 +719,8 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 	sigmask |= (1 << DBGMON_APP_EXEC);
 	sigmask |= (1 << DBGMON_APP_UPLOAD);
 	sigmask |= (1 << DBGMON_APP_ERASE);
+	sigmask |= (1 << DBGMON_APP_TERM);
+	sigmask |= (1 << DBGMON_APP_RESUME);
 #if (MONITOR_WATCHPOINT_ENABLE)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
@@ -732,21 +729,20 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 #endif
 
 	for(;;) {
-		sigset = dbgmon_select(sigmask);
+		switch ((sig = dbgmon_sched_select(sigmask))) {
 
-		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+		DCC_LOG1(LOG_TRACE, "sig=%d", sig);
 
-		if (sigset & (1 << DBGMON_STARTUP)) {
-			dbgmon_clear(DBGMON_STARTUP);
+		case DBGMON_STARTUP:
 			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
 					 cm3_sp_get());
 			/* first time we run the monitor, start a timer to call the 
 			   board_tick() periodically */
 			sigmask |= (1 << DBGMON_ALARM);
 			dbgmon_alarm(125);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_SOFTRST)) {
+		case DBGMON_SOFTRST:
 			dbgmon_clear(DBGMON_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			this_board.softreset();
@@ -754,18 +750,20 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 			__console_reset();
 			/* Update the console connection flag which was cleared
 			 by __console_reset(). */
-			__console_connect_set(dmon_comm_isconnected(comm));
+			__console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_APP_UPLOAD)) {
+		case DBGMON_APP_UPLOAD:
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
 			monitor_ymodem_recv(comm, this_board.application.start_addr, 
 								this_board.application.block_size);
-		}
+			/* Request app exec */
+			dbgmon_req_app_exec(); 
+			break;
 
-		if (sigset & (1 << DBGMON_APP_EXEC)) {
+		case DBGMON_APP_EXEC:
 			dbgmon_clear(DBGMON_APP_EXEC);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			if (!dbgmon_app_exec(&this_board.application, false)) {
@@ -777,59 +775,72 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 				if (this_board.on_error != NULL)
 					dmon_thread_exec((void *)this_board.on_error, NULL);
 			}
-		}
+			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
-		if (sigset & (1 << DBGMON_APP_ERASE)) {
+		case DBGMON_APP_ERASE:
 			dbgmon_clear(DBGMON_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
 			monitor_app_erase(comm, this_board.application.start_addr, 
 							  this_board.application.block_size);
-		}
+			break;
 #endif
 
+		case DBGMON_APP_TERM:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
+			break;
+
+		case DBGMON_APP_STOP:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
+			break;
+
+		case DBGMON_APP_RESUME:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
+			break;
+
+
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DBGMON_COMM_CTL)) {
+		case DBGMON_COMM_CTL:
 			dbgmon_clear(DBGMON_COMM_CTL);
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
-			__console_connect_set(dmon_comm_isconnected(comm));
-		}
+			__console_connect_set(dbgmon_comm_isconnected(comm));
+			break;
 #endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
-		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
+		case DBGMON_THREAD_FAULT:
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
 			monitor_on_fault(comm);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_EXCEPT)) {
+		case DBGMON_EXCEPT:
 			dbgmon_clear(DBGMON_EXCEPT);
 			DCC_LOG(LOG_TRACE, "System exception.");
 			monitor_on_fault(comm);
-		}
+			break;
 #endif
 
 #if (MONITOR_WATCHPOINT_ENABLE)
-		if (sigset & (1 << DBGMON_BREAKPOINT)) {
+		case DBGMON_BREAKPOINT:
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			monitor_on_bkpt(&monitor);
-		}
+			break;
 #endif
 
 #if (MONITOR_THREAD_STEP_ENABLE)
-		if (sigset & (1 << DBGMON_THREAD_STEP)) {
+		case DBGMON_THREAD_STEP:
 			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
 			dbgmon_clear(DBGMON_THREAD_STEP);
 			monitor_on_step(&monitor);
-		}
-
+			break;
 #endif
 
-		if (sigset & (1 << DBGMON_COMM_RCV)) {
+		case DBGMON_COMM_RCV:
 #if THINKOS_ENABLE_CONSOLE
 			/* receive from the COMM driver one bye at the time */
-			if (dmon_comm_recv(comm, buf, 1) > 0) {
+			if ((cnt = dbgmon_comm_recv(comm, buf, 1)) > 0) {
+				DCC_LOG(LOG_TRACE, "COMM_RCV: 1");
 				int c = buf[0];
 				/* process the input character */
 				if (!monitor_process_input(&monitor, c)) {
@@ -847,18 +858,19 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 						/* discard */
 					}
 				}
+			} else {
+				DCC_LOG1(LOG_TRACE, "COMM_RCV: %d", cnt);
 			}
 #else
-			if (dmon_comm_recv(comm, buf, 1) > 0) {
+			if (dbgmon_comm_recv(comm, buf, 1) > 0) {
 				/* process the input character */
 				monitor_process_input(&monitor, buf[0]);
 			}
 #endif
-		}
+			break;
 
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DBGMON_RX_PIPE)) {
-			dbgmon_clear(DBGMON_RX_PIPE);
+		case DBGMON_RX_PIPE:
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_TRACE, "RX Pipe. rx_pipe.free=%d. "
 						 "Unmaksing DBGMON_COMM_RCV!", cnt);
@@ -866,24 +878,24 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 			} else {
 				DCC_LOG(LOG_TRACE, "RX Pipe empty!!!");
 			}
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_TX_PIPE)) {
+		case DBGMON_COMM_EOT:
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
+		//	break;
+
+		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+				int n;
 				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
-				cnt = dmon_comm_send(comm, ptr, cnt);
-				__console_tx_pipe_commit(cnt); 
-			} else {
-				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
+				n = dbgmon_comm_send(comm, ptr, cnt);
+				__console_tx_pipe_commit(n); 
 			}
-		}
+			break;
 #endif
 
-		if (sigset & (1 << DBGMON_ALARM)) {
-			/* Aclknowledge the signal */
-			dbgmon_clear(DBGMON_ALARM);
+		case DBGMON_ALARM:
 			/* Query the board for app boot up */
 			if (this_board.autoboot(tick_cnt++)) {
 				DCC_LOG(LOG_TRACE, "autoboot app_exec()...");
@@ -893,6 +905,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm,
 				/* reastart the alarm timer */
 				dbgmon_alarm(125);
 			}
+			break;
 		}
 	}
 }

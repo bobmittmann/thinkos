@@ -103,7 +103,7 @@ static const char __blanks[] = {
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
 
 
-int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
+int dmprintf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	char buf[BUF_LEN];
 	va_list ap;
@@ -139,7 +139,7 @@ int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
 				flags = PERCENT;
 #if (DMPRINTF_ENABLE_FAST)
 				if (n) {
-					n = dmon_comm_send(comm, cp, n);
+					n = dbgmon_comm_send(comm, cp, n);
 					cp = (char *)fmt;
 					cnt += n;;
 					n = 0;
@@ -152,7 +152,7 @@ int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
 			n++;
 #else
 			buf[0] = c;
-			cnt += dmon_comm_send(comm, buf, 1);
+			cnt += dbgmon_comm_send(comm, buf, 1);
 #endif
 			continue;
 		}
@@ -297,24 +297,24 @@ print_buf:
 			if (flags & ZERO) {
 				if (flags & SIGN) {
 					flags &= ~SIGN;
-					cnt += dmon_comm_send(comm, buf, 1);
+					cnt += dbgmon_comm_send(comm, buf, 1);
 				}
-				r = dmon_comm_send(comm, __zeros, w - n);
+				r = dbgmon_comm_send(comm, __zeros, w - n);
 			} else {
-				r = dmon_comm_send(comm, __blanks, w - n);
+				r = dbgmon_comm_send(comm, __blanks, w - n);
 			}
 			cnt += r;
 		}
 
 		if (flags & SIGN) {
-			cnt += dmon_comm_send(comm, buf, 1);
+			cnt += dbgmon_comm_send(comm, buf, 1);
 		}
 
-		cnt += dmon_comm_send(comm, cp, n);
+		cnt += dbgmon_comm_send(comm, cp, n);
 
 #if (DMPRINTF_ENABLE_LEFT_ALIGN)
 		if ((flags & LEFT) && (w > n)) {
-			r = dmon_comm_send(comm, __blanks, w - n);
+			r = dbgmon_comm_send(comm, __blanks, w - n);
 			cnt += r;
 		}
 #endif
@@ -330,7 +330,7 @@ print_buf:
 
 #if (DMPRINTF_ENABLE_FAST)
 	if (n) {
-		r = dmon_comm_send(comm, cp, n);
+		r = dbgmon_comm_send(comm, cp, n);
 		cnt+= r;;
 	}
 #endif

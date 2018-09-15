@@ -43,7 +43,7 @@
 
 #include "board.h"
 
-void monitor_task(struct dmon_comm * comm, void * arg);
+void monitor_task(const struct dbgmon_comm * comm, void * arg);
 
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
@@ -51,7 +51,7 @@ void monitor_task(struct dmon_comm * comm, void * arg);
 
 int main(int argc, char ** argv)
 {
-	struct dmon_comm * comm;
+	const struct dbgmon_comm * comm;
 
 	DCC_LOG_INIT();
 #if 1
@@ -72,7 +72,9 @@ int main(int argc, char ** argv)
 	this_board.init();
 
 	DCC_LOG(LOG_INFO, "4. usb_comm_init()");
-#if STM32_ENABLE_OTG_FS
+#if BOOT_CUSTOM_COMM
+	comm = custom_comm_init();
+#elif STM32_ENABLE_OTG_FS
 	comm = usb_comm_init(&stm32f_otg_fs_dev);
 #elif STM32_ENABLE_OTG_HS
 	comm = usb_comm_init(&stm32f_otg_hs_dev);

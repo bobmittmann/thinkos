@@ -179,7 +179,7 @@ struct gdb_rspd {
 		uint16_t len;
 	} tx;
 #endif
-	struct dmon_comm * comm;
+	struct dbgmon_comm * comm;
 };
 
 static int rsp_get_g_thread(struct gdb_rspd * gdb)
@@ -233,13 +233,13 @@ static inline int rsp_ack(struct gdb_rspd * gdb)
 #if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Ack.");
 #endif
-	return dmon_comm_send(gdb->comm, "+", 1);
+	return dbgmon_comm_send(gdb->comm, "+", 1);
 }
 
 #if 0
-static int rsp_nack(struct dmon_comm * comm)
+static int rsp_nack(struct dbgmon_comm * comm)
 {
-	return dmon_comm_send(gdb, "-", 1);
+	return dbgmon_comm_send(gdb, "-", 1);
 }
 #endif
 
@@ -248,7 +248,7 @@ static inline int rsp_ok(struct gdb_rspd * gdb)
 #if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Ok.");
 #endif
-	return dmon_comm_send(gdb->comm, "$OK#9a", 6);
+	return dbgmon_comm_send(gdb->comm, "$OK#9a", 6);
 }
 
 static int rsp_empty(struct gdb_rspd * gdb)
@@ -256,7 +256,7 @@ static int rsp_empty(struct gdb_rspd * gdb)
 #if GDB_DEBUG_PACKET
 	DCC_LOG(LOG_INFO, "--> Empty.");
 #endif
-	return dmon_comm_send(gdb->comm, "$#00", 4);
+	return dbgmon_comm_send(gdb->comm, "$#00", 4);
 }
 
 enum gdb_error_code {
@@ -287,13 +287,13 @@ static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
 	DCC_LOG1(LOG_WARNING, "--> Error(%d)!", err);
 #endif
 
-	return dmon_comm_send(gdb->comm, pkt, 7);
+	return dbgmon_comm_send(gdb->comm, pkt, 7);
 }
 
 #if GDB_ENABLE_RXMIT
 static int rsp_pkt_rxmit(struct gdb_rspd * gdb)
 {
-	return dmon_comm_send(gdb->comm, gdb->tx.pkt, gdb->tx.len);
+	return dbgmon_comm_send(gdb->comm, gdb->tx.pkt, gdb->tx.len);
 }
 #endif
 
@@ -322,7 +322,7 @@ static int rsp_pkt_send(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	gdb->tx.len = n;
 #endif
 
-	return dmon_comm_send(gdb->comm, pkt, n);
+	return dbgmon_comm_send(gdb->comm, pkt, n);
 }
 
 int decode_thread_id(char * s)
@@ -1585,7 +1585,7 @@ static int rsp_pkt_input(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	return ret;
 }
 
-static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
+static int rsp_pkt_recv(struct dbgmon_comm * comm, char * pkt, int max)
 {
 	enum {
 		RSP_DATA = 0,
@@ -1612,8 +1612,8 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 
 	for (;;) {
 		cp = &pkt[pos];
-		if ((n = dmon_comm_recv(comm, cp, rem)) < 0) {
-			DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
+		if ((n = dbgmon_comm_recv(comm, cp, rem)) < 0) {
+			DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
 			ret = n;
 			break;
 		}
@@ -1669,7 +1669,7 @@ static int rsp_pkt_recv(struct dmon_comm * comm, char * pkt, int max)
 
 struct gdb_rspd gdb_rspd;
 
-void gdb_stub_task(struct dmon_comm * comm)
+void gdb_stub_task(struct dbgmon_comm * comm)
 {
 	struct gdb_rspd * gdb = &gdb_rspd;
 	char pkt[RSP_BUFFER_LEN];
@@ -1693,7 +1693,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 	dmon_breakpoint_clear_all();
 	dmon_watchpoint_clear_all();
 
-//	dmon_comm_connect(comm);
+//	dbgmon_comm_connect(comm);
 
 //	DCC_LOG(LOG_INFO, "Comm connected..");
 
@@ -1751,8 +1751,8 @@ void gdb_stub_task(struct dmon_comm * comm)
 
 		if (sigset & (1 << DBGMON_COMM_RCV)) {
 
-			if (dmon_comm_recv(comm, buf, 1) != 1) {
-				DCC_LOG(LOG_WARNING, "dmon_comm_recv() failed!");
+			if (dbgmon_comm_recv(comm, buf, 1) != 1) {
+				DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
 				continue;
 			}
 
@@ -1802,7 +1802,7 @@ void gdb_stub_task(struct dmon_comm * comm)
 		if (sigset & (1 << DBGMON_COMM_CTL)) {
 			DCC_LOG(LOG_INFO, "Comm Ctl.");
 			dbgmon_clear(DBGMON_COMM_CTL);
-			if (!dmon_comm_isconnected(comm)) {
+			if (!dbgmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
 				return;
 			}

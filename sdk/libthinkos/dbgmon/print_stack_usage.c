@@ -30,7 +30,7 @@ int __scan_stack(void * stack, unsigned int size);
 extern uint32_t thinkos_dbgmon_stack[];
 extern const uint16_t thinkos_dbgmon_stack_size;
 
-void dmon_print_stack_usage(struct dmon_comm * comm)
+void dmon_print_stack_usage(const struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 	int i;

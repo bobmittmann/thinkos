@@ -229,12 +229,12 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	if ((!OTG_FS_XFRSIZ_GET(deptsiz)) && (OTG_FS_PKTCNT_GET(deptsiz))) {
 	*/
 	if (OTG_FS_PKTCNT_GET(deptsiz)) {
-		DCC_LOG(LOG_MSG, "outstanding packets in FIFO!");
-		DCC_LOG3(LOG_JABBER, "ep_id=%d len=%d %d outstanding packets in FIFO", 
+		DCC_LOG3(LOG_TRACE, "ep_id=%d len=%d %d outstanding pkts", 
 				 ep_id, len, OTG_FS_PKTCNT_GET(deptsiz));
-		return -1;
+		return 0;
 	}
 
+	
 	depctl = otg_fs->inep[ep_id].diepctl;
 	if (ep_id == 0)
 		mpsiz = OTGFS_EP0_MPSIZ_GET(depctl);

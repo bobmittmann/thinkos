@@ -50,7 +50,7 @@ static unsigned long dec2int(const char * __s)
 }
 
 /* Receive a file and write it into the flash using the YMODEM preotocol */
-int dmon_ymodem_flash(struct dmon_comm * comm,
+int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 					  uint32_t addr, unsigned int size)
 {
 	/* FIXME: generalize the application load by removing the low

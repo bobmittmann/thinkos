@@ -132,7 +132,13 @@ enum usb_descriptor_type {
 	/* Other speed configuration descriptor */
 	USB_DESCRIPTOR_OTHER_SPEED_CONFIGURATION = 0x07,
 	/* Interface power descriptor */
-	USB_DESCRIPTOR_INTERFACE_POWER = 0x08
+	USB_DESCRIPTOR_INTERFACE_POWER = 0x08,
+	/* On-The-Go descriptor */
+    USB_DESCRIPTOR_OTG = 0x09,
+	/* Debug descriptor */
+	USB_DESCRIPTOR_DEBUG = 0x0a,
+    /* Interface association descriptor */
+	USB_DESCRIPTOR_INTERFACE_ASSOCIATION = 0x0b
 };
 
 /* Standard Feature Selectors */
@@ -347,6 +353,30 @@ struct usb_descriptor_device_qualifier {
 	uint8_t numconfigurations;
 	/* Reserved for future use, must be 0 */
 	uint8_t reserved;
+} __attribute__((__packed__));
+
+
+/*
+ * 
+ * 
+ */
+struct usb_descriptor_interface_association {
+	/* Size of the descriptor in bytes. */
+	uint8_t length;
+	/* INTERFACE_ASSOCIATION descriptor type */
+	uint8_t descriptortype;
+	/* First Interface . */
+	uint8_t first_interface;
+	/* Interface Count. */
+	uint8_t interface_count;
+	/* Function function code */
+	uint8_t function_class;
+	/* Function subclass code */
+	uint8_t function_subclass;
+	/* Function protocol code */
+	uint8_t function_protocol;
+	/* Index of the function string descriptor */
+	uint8_t function;
 } __attribute__((__packed__));
 
 /* represents the string descriptor zero, 

@@ -47,7 +47,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
-	struct dmon_comm * comm;
+	struct dbgmon_comm * comm;
 	uint32_t * ctx;           /* monitor context */
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
@@ -56,7 +56,7 @@ struct thinkos_dbgmon {
 	uint8_t irq_en_lst[4]; /* list of interrupts forced enable */
 	uint32_t nvic_ie[NVIC_IRQ_REGS]; /* interrupt state */
 #endif
-	void (* task)(struct dmon_comm *, void *);
+	void (* task)(const struct dbgmon_comm *, void *);
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
@@ -205,9 +205,27 @@ void __reset_ram_vectors(void)
 int dbgmon_signal(int sig) 
 {
 	struct cm3_dcb * dcb = CM3_DCB;
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 1);  
-	dcb->demcr |= DCB_DEMCR_MON_PEND;
+//	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 1);  
+//	dcb->demcr |= DCB_DEMCR_MON_PEND;
+//	asm volatile ("isb\n" :  :  : );
+//	return sig;
+	uint32_t evset;
+	uint32_t demcr;
+	
+	/* make sure not mask non maskable events */
+	do {
+		/* avoid possible race condition on dbgmon.events */
+		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+		evset |= (1 << sig);
+	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
+
+	do {
+		demcr = __ldrex((uint32_t *)&dcb->demcr);
+		demcr |= DCB_DEMCR_MON_PEND;
+	} while (__strex((uint32_t *)&dcb->demcr, demcr));
+
 	asm volatile ("isb\n" :  :  : );
+
 	return sig;
 }
 
@@ -242,6 +260,8 @@ int dbgmon_clear(int sig)
 	return sig;
 }
 
+/* wait for multiple events, return an event set of pending events,
+   but don't clear the events */
 uint32_t dbgmon_select(uint32_t evmask)
 {
 	uint32_t evset;
@@ -268,6 +288,44 @@ uint32_t dbgmon_select(uint32_t evmask)
 	thinkos_dbgmon_rt.mask &= ((~evmask) | DBGMON_PERISTENT_MASK);
 
 	return evset & evmask;
+}
+
+
+/* wait for multiple events, return the highest priority (smaller number)
+   clear the event upon exiting. */
+int dbgmon_sched_select(uint32_t evmask)
+{
+	uint32_t evset;
+	int event;
+	
+	/* make sure not mask non maskable events */
+	evmask |=  DBGMON_PERISTENT_MASK;
+	DCC_LOG1(LOG_MSG, "evmask=%08x", evmask);
+
+	for(;;) {
+		do {
+			/* avoid possible race condition on dbgmon.events */
+			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+			event = __clz(__rbit(evset));
+			evset &= ~(1 << event);
+		} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
+
+		if (event < 32)
+			break;
+
+		DCC_LOG(LOG_MSG, "sleep...");
+		/* umask events */
+		thinkos_dbgmon_rt.mask |= evmask;
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		DCC_LOG(LOG_MSG, "wakeup...");
+		/* reset the event mask, making sure not to mask non 
+		   maskable events */
+		thinkos_dbgmon_rt.mask &= ((~evmask) | DBGMON_PERISTENT_MASK);
+	} 
+
+	DCC_LOG1(LOG_MSG, "event=%d", event);
+
+	return event;
 }
 
 /* wait for an event but don't clear the 
@@ -354,7 +412,7 @@ int dbgmon_wait(int ev)
 }
 #endif
 
-/* wait for an event, clear the event,
+/* wait for a single event, clear the event,
  return the event or -1 if another unmasked event 
  is received. */
 int dbgmon_wait(int sig)
@@ -420,7 +478,9 @@ void dbgmon_reset(void)
 	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 }
 
-void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *, void *), void * param)
+void __attribute__((naked)) 
+	dbgmon_exec(void (* task)(const struct dbgmon_comm *, void *), 
+				void * param)
 {
 	DCC_LOG1(LOG_MSG, "task=%p", task);
 	thinkos_dbgmon_rt.task = task;
@@ -746,7 +806,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-static void dbgmon_null_task(struct dmon_comm * comm, void * param)
+static void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
 {
 #if DEBUG
 	thinkos_dbgmon_rt.mask = 0;
@@ -756,8 +816,8 @@ static void dbgmon_null_task(struct dmon_comm * comm, void * param)
 		int n;
 
 		/* Loopback COMM */
-		if ((n = dmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-			dmon_comm_send(comm, buf, n);
+		if ((n = dbgmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
+			dbgmon_comm_send(comm, buf, n);
 		}
 	}
 #else
@@ -767,12 +827,17 @@ static void dbgmon_null_task(struct dmon_comm * comm, void * param)
 #endif
 }
 
-static void __attribute__((naked)) dbgmon_bootstrap(void)
+static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 {
-	void (* dbgmon_task)(struct dmon_comm *, void *) = thinkos_dbgmon_rt.task; 
-	struct dmon_comm * comm = thinkos_dbgmon_rt.comm; 
+	const struct dbgmon_comm * comm = thinkos_dbgmon_rt.comm; 
+	void (* dbgmon_task)(const struct dbgmon_comm *, void *);
 	void * param = thinkos_dbgmon_rt.param; 
 
+	param = thinkos_dbgmon_rt.param; 
+
+	/* Get the new task */
+	dbgmon_task = thinkos_dbgmon_rt.task; 
+	/* Set the new task to NULL */
 	thinkos_dbgmon_rt.task = dbgmon_null_task;
 	
 	/* set the clock in the past so it won't generate signals in 
@@ -1181,10 +1246,10 @@ void dbgmon_soft_reset(void)
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 	DCC_LOG(LOG_TRACE, "6. enablig listed interrupts...");
 	__dmon_irq_force_enable();
-#endif
-
+#else
 	DCC_LOG(LOG_TRACE, "7. signalig ...");
 	dbgmon_signal(DBGMON_SOFTRST);
+#endif
 
 	DCC_LOG(LOG_TRACE, "8. done.");
 }
@@ -1236,8 +1301,8 @@ static void __dmon_irq_init(void)
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
-	void (* task)(struct dmon_comm *, void *) = (void *)arg[0] ;
-	struct dmon_comm * comm = (void *)arg[1];
+	void (* task)(const struct dbgmon_comm *, void *) = (void *)arg[0] ;
+	struct dbgmon_comm * comm = (void *)arg[1];
 	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 

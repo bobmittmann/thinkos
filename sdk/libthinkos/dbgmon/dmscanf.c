@@ -40,10 +40,10 @@
 
 #define FILE_BUF_LEN 64
 
-int dmgets(char * s, int size, struct dmon_comm * comm);
+int dmgets(char * s, int size, const struct dbgmon_comm * comm);
 
 struct stream {
-	struct dmon_comm * comm;
+	const struct dbgmon_comm * comm;
 	int pos;
 	int len;
 	char buf[FILE_BUF_LEN];
@@ -171,7 +171,7 @@ static int skip_spaces(struct stream *stream)
 	return i;
 }
 
-int dmscanf(struct dmon_comm * comm, const char *fmt, ... )
+int dmscanf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	struct stream buf;
 	struct stream * stream = &buf;

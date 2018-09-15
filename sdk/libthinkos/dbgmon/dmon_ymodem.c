@@ -54,7 +54,7 @@ int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
 }
 
 #if 0
-static int dmon_ymodem_rcv_cancel(struct dmon_comm * comm, struct ymodem_rcv * rx)
+static int dmon_ymodem_rcv_cancel(struct dbgmon_comm * comm, struct ymodem_rcv * rx)
 {
 	unsigned char * pkt = rx->pkt.hdr;
 
@@ -62,13 +62,14 @@ static int dmon_ymodem_rcv_cancel(struct dmon_comm * comm, struct ymodem_rcv * r
 	pkt[1] = CAN;
 	pkt[2] = CAN;
 
-	dmon_comm_send(comm, pkt, 3);
+	dbgmon_comm_send(comm, pkt, 3);
 
 	return 0;
 }
 #endif
 
-int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
+int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
+						struct ymodem_rcv * rx)
 {
 	unsigned char * pkt = rx->pkt.hdr;
 	unsigned char * cp;
@@ -82,12 +83,12 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 		dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
 		DCC_LOG1(LOG_INFO, "SYN=%02x", rx->sync);
-		dmon_comm_send(comm, &rx->sync, 1);
+		dbgmon_comm_send(comm, &rx->sync, 1);
 
 		for (;;) {
 			int c;
 
-			ret = dmon_comm_recv(comm, pkt, 1);
+			ret = dbgmon_comm_recv(comm, pkt, 1);
 			if (ret < 0)
 				goto timeout;
 
@@ -113,7 +114,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 				rx->sync = rx->crc_mode ? 'C' : NAK;
 				rx->pktno = 0;
 				pkt[0] = ACK;
-				dmon_comm_send(comm, pkt, 1);
+				dbgmon_comm_send(comm, pkt, 1);
 				return 0;
 			}
 		}
@@ -124,7 +125,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 		/* receive the packet */
 		while (rem) {
 			dbgmon_alarm(500);
-			ret = dmon_comm_recv(comm, cp, rem);
+			ret = dbgmon_comm_recv(comm, cp, rem);
 			if (ret < 0)
 				goto timeout;
 
@@ -199,7 +200,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 		if (rx->pktno == 0) {
 			DCC_LOG(LOG_INFO, "ACK");
 			pkt[0] = ACK;
-			dmon_comm_send(comm, pkt, 1);
+			dbgmon_comm_send(comm, pkt, 1);
 		} else {
 			rx->retry = 10;
 			rx->sync = ACK;
@@ -218,7 +219,7 @@ int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx)
 
 error:
 		/* flush */
-		while (dmon_comm_recv(comm, pkt, 1024) > 0);
+		while (dbgmon_comm_recv(comm, pkt, 1024) > 0);
 		ret = -1;
 		break;
 
@@ -235,7 +236,7 @@ timeout:
 	pkt[0] = CAN;
 	pkt[1] = CAN;
 
-	dmon_comm_send(comm, pkt, 2);
+	dbgmon_comm_send(comm, pkt, 2);
 
 	dbgmon_alarm_stop();
 	return ret;

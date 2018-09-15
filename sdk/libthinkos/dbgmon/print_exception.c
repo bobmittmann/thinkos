@@ -27,7 +27,7 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-void dmon_print_exception(struct dmon_comm * comm, 
+void dmon_print_exception(const struct dbgmon_comm * comm, 
 						  struct thinkos_except * xcpt)
 {
 //	uint32_t psr = xcpt->ctx.xpsr;

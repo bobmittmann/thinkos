@@ -84,7 +84,7 @@ struct cdc_acm_descriptor_config {
 #define CDC_ACM_PRODUCT_ID ST_VCOM_PRODUCT_ID 
 #endif
 
-const struct usb_descriptor_device cdc_acm_desc_dev = {
+static const struct usb_descriptor_device cdc_acm_desc_dev = {
 		/* Size of this descriptor in bytes */
 		sizeof(struct usb_descriptor_device),
 		/* DEVICE descriptor type */
@@ -116,7 +116,7 @@ const struct usb_descriptor_device cdc_acm_desc_dev = {
 };
 
 /* Configuration 1 descriptor */
-const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
+static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		.cfg = {
 			/* Size of this descriptor in bytes */
 			sizeof(struct usb_descriptor_configuration),
@@ -316,13 +316,13 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 
 #define LANG_STR_SZ              4
 /* LangID = 0x0409: U.S. English */
-const uint8_t cdc_acm_lang_str[LANG_STR_SZ] = {
+static const uint8_t cdc_acm_lang_str[LANG_STR_SZ] = {
 	LANG_STR_SZ, USB_DESCRIPTOR_STRING,
 	0x09, 0x04
 };
 
 #define VENDOR_STR_SZ            38
-const uint8_t cdc_acm_vendor_str[VENDOR_STR_SZ] = {
+static const uint8_t cdc_acm_vendor_str[VENDOR_STR_SZ] = {
 	VENDOR_STR_SZ, USB_DESCRIPTOR_STRING,
 	/* Manufacturer: "STMicroelectronics" */
 	'S', 0, 'T', 0, 'M', 0, 'i', 0, 'c', 0, 'r', 0, 'o', 0, 'e', 0, 'l', 0, 
@@ -331,7 +331,7 @@ const uint8_t cdc_acm_vendor_str[VENDOR_STR_SZ] = {
 
 
 #define PRODUCT_STR_SZ           44
-const uint8_t cdc_acm_product_str[PRODUCT_STR_SZ] = {
+static const uint8_t cdc_acm_product_str[PRODUCT_STR_SZ] = {
 	PRODUCT_STR_SZ, USB_DESCRIPTOR_STRING,
 	/* Product name: "ThinkOS Debug Monitor" */
 	'T', 0, 'h', 0, 'i', 0, 'n', 0, 'k', 0, 'O', 0, 'S', 0, ' ', 0, 'D', 0, 
@@ -340,7 +340,7 @@ const uint8_t cdc_acm_product_str[PRODUCT_STR_SZ] = {
 };
 
 #define SERIAL_STR_SZ            30
-const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
+static const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
 	SERIAL_STR_SZ, USB_DESCRIPTOR_STRING,
 	/* Serial number: "54 68 69 6e 6b 4f 53" */
 	'5', 0, '4', 0, '6', 0, '8', 0, '6', 0, '9', 0, '6', 0, 'E', 0, 
@@ -348,13 +348,13 @@ const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
 };
 
 #define INTERFACE_STR_SZ         16
-const uint8_t cdc_acm_interface_str[INTERFACE_STR_SZ] = {
+static const uint8_t cdc_acm_interface_str[INTERFACE_STR_SZ] = {
 	INTERFACE_STR_SZ, USB_DESCRIPTOR_STRING,
 	/* Interface 0: "ST VCOM" */
 	'S', 0, 'T', 0, ' ', 0, 'V', 0, 'C', 0, 'O', 0, 'M', 0
 };
 
-const uint8_t * const cdc_acm_str[] = {
+static const uint8_t * const cdc_acm_str[] = {
 	cdc_acm_lang_str,
 	cdc_acm_vendor_str,
 	cdc_acm_product_str,
@@ -364,15 +364,15 @@ const uint8_t * const cdc_acm_str[] = {
 
 #define USB_STRCNT() (sizeof(cdc_acm_str) / sizeof(uint8_t *))
 
-const struct cdc_line_coding usb_cdc_lc = {
+static const struct cdc_line_coding usb_cdc_lc = {
     .dwDTERate = 38400,
     .bCharFormat = 0,
     .bParityType = 0,
     .bDataBits = 8
 };
 
-const uint16_t device_status = USB_DEVICE_STATUS_SELF_POWERED;
-const uint16_t interface_status = 0x0000;
+static const uint16_t device_status = USB_DEVICE_STATUS_SELF_POWERED;
+static const uint16_t interface_status = 0x0000;
 
 
 #define ACM_USB_SUSPENDED (1 << 1)
@@ -411,7 +411,8 @@ struct usb_cdc_acm_dev {
 
 };
 
-void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
+static void usb_mon_on_rcv(usb_class_t * cl, 
+						   unsigned int ep_id, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 	int pos = dev->rx_pos;
@@ -455,32 +456,32 @@ void usb_mon_on_rcv(usb_class_t * cl, unsigned int ep_id, unsigned int len)
 	dbgmon_signal(DBGMON_COMM_RCV);
 }
 
-void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
+static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
 	DCC_LOG(LOG_MSG, "COMM_EOT");
 	dbgmon_signal(DBGMON_COMM_EOT);
 }
 
-void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
+static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
 {
 	DCC_LOG1(LOG_MSG, "ep_id=%d", ep_id);
 }
 
-const usb_dev_ep_info_t usb_mon_in_info = {
+static const usb_dev_ep_info_t usb_mon_in_info = {
 	.addr = USB_ENDPOINT_IN + EP_IN_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
 	.on_in = usb_mon_on_eot
 };
 
-const usb_dev_ep_info_t usb_mon_out_info = {
+static const usb_dev_ep_info_t usb_mon_out_info = {
 	.addr = USB_ENDPOINT_OUT + EP_OUT_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
 	.on_out = usb_mon_on_rcv
 };
 
-const usb_dev_ep_info_t usb_mon_int_info = {
+static const usb_dev_ep_info_t usb_mon_int_info = {
 	.addr = USB_ENDPOINT_IN + EP_INT_ADDR,
 	.attr = ENDPOINT_TYPE_INTERRUPT,
 	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
@@ -488,7 +489,7 @@ const usb_dev_ep_info_t usb_mon_int_info = {
 };
 
 /* Setup requests callback handler */
-int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) 
+static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) 
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
 	int value = req->value;
@@ -677,14 +678,14 @@ int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr)
 	return len;
 }
 
-const usb_dev_ep_info_t usb_mon_ep0_info = {
+static const usb_dev_ep_info_t usb_mon_ep0_info = {
 	.addr = 0,
 	.attr = ENDPOINT_TYPE_CONTROL,
 	.mxpktsz = EP0_MAX_PKT_SIZE,
 	.on_setup = usb_mon_on_setup
 };
 
-void usb_mon_on_reset(usb_class_t * cl)
+static void usb_mon_on_reset(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 	DCC_LOG(LOG_MSG, "...");
@@ -698,23 +699,23 @@ void usb_mon_on_reset(usb_class_t * cl)
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
 }
 
-void usb_mon_on_suspend(usb_class_t * cl)
+static void usb_mon_on_suspend(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 	DCC_LOG(LOG_INFO, "...");
 	dev->acm_ctrl = 0;
 }
 
-void usb_mon_on_wakeup(usb_class_t * cl)
+static void usb_mon_on_wakeup(usb_class_t * cl)
 {
 	DCC_LOG(LOG_INFO, "...");
 }
 
-void usb_mon_on_error(usb_class_t * cl, int code)
+static void usb_mon_on_error(usb_class_t * cl, int code)
 {
 }
 
-int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
+static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * ptr = (uint8_t *)buf;
@@ -756,7 +757,7 @@ int dmon_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
 	return len - rem;
 }
 
-int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
+static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	int pos;
@@ -814,7 +815,7 @@ recv:
 	return ret;
 }
 
-int dmon_comm_connect(struct dmon_comm * comm)
+static int usb_comm_connect(const void * comm)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 //	struct cdc_notification * pkt;
@@ -861,32 +862,45 @@ int dmon_comm_connect(struct dmon_comm * comm)
 	return 0;
 }
 
-bool dmon_comm_isconnected(struct dmon_comm * comm)
+static bool usb_comm_isconnected(const void * comm)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	return (dev->acm_ctrl & CDC_DTE_PRESENT) ? true : false;
 }
 
-#if THINKOS_DBGMON_ENABLE_FLOWCTL
-void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool stop)
+static void usb_comm_rxflowctrl(const void * comm, bool stop)
 {
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	dev->rx_flowctrl = stop;
-}
 #endif
+}
 
-struct usb_cdc_acm_dev thinkos_usb_comm_cdc;
+static struct usb_cdc_acm_dev usb_cdc_comm_dev;
 
-const usb_class_events_t usb_mon_ev = {
+static const usb_class_events_t usb_mon_ev = {
 	.on_reset = usb_mon_on_reset,
 	.on_suspend = usb_mon_on_suspend,
 	.on_wakeup = usb_mon_on_wakeup,
 	.on_error = usb_mon_on_error
 };
 
-struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
+static const struct dbgmon_comm_op usb_cdc_comm_op = {
+	.send = usb_comm_send,
+	.recv = usb_comm_recv,
+	.connect = usb_comm_connect,
+	.isconnected = usb_comm_isconnected,
+	.rxflowctrl = usb_comm_rxflowctrl
+};
+
+static const struct dbgmon_comm usb_comm_instance = {
+	.dev = (void *)&usb_cdc_comm_dev,
+	.op = &usb_cdc_comm_op,
+};
+
+const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb)
 {
-	struct usb_cdc_acm_dev * dev = &thinkos_usb_comm_cdc;
+	struct usb_cdc_acm_dev * dev = &usb_cdc_comm_dev;
 	usb_class_t * cl =  (usb_class_t *)dev;
 
 	/* initialize USB device */
@@ -903,14 +917,12 @@ struct dmon_comm * usb_comm_init(const usb_dev_t * usb)
 	DCC_LOG(LOG_MSG, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
 
-	return (struct dmon_comm *)dev;
+	return (struct dbgmon_comm *)&usb_comm_instance;
 }
 
-struct dmon_comm * usb_comm_getinstance(void)
+const struct dbgmon_comm * usb_comm_getinstance(void)
 {
-	struct usb_cdc_acm_dev * dev = &thinkos_usb_comm_cdc;
-
-	return (struct dmon_comm *)dev;
+	return (struct dbgmon_comm *)&usb_comm_instance;
 }
 
 #endif

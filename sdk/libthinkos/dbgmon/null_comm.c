@@ -32,45 +32,47 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
-int null_comm_send(struct dmon_comm * comm, const void * buf, unsigned int len)
+int null_comm_send(const void * arg, const void * buf, unsigned int len)
 {
 	return 0;
 }
 
-int null_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
+int null_comm_recv(const void * arg, void * buf, unsigned int len)
 {
 	return 0;
 }
 
-int null_comm_connect(struct dmon_comm * comm)
+int null_comm_connect(const void * arg)
 {
 	return 0;
 }
 
-bool null_comm_isconnected(struct dmon_comm * comm)
+bool null_comm_isconnected(const void * arg)
 {
 	return false;
 }
 
-void null_comm_rxflowctrl(struct dmon_comm * comm, bool stop)
+void null_comm_rxflowctrl(const void * arg, bool stop)
 {
 }
 
-int dmon_comm_send(struct dmon_comm * comm, const void * buf, 
-				   unsigned int len) 
-	__attribute__ ((weak, alias ("null_comm_send")));
+static const struct dbgmon_comm_op null_comm_op = {
+	.send = null_comm_send,
+	.recv = null_comm_recv,
+	.connect = null_comm_connect,
+	.isconnected = null_comm_isconnected,
+	.rxflowctrl = null_comm_rxflowctrl
+};
 
-int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
-	__attribute__ ((weak, alias ("null_comm_recv")));
+static const struct dbgmon_comm null_comm_instance = {
+	.dev = (void *)0,
+	.op = &null_comm_op,
+};
 
-int dmon_comm_connect(struct dmon_comm * comm)
-	__attribute__ ((weak, alias ("null_comm_connect")));
-
-bool dmon_comm_isconnected(struct dmon_comm * comm)
-	__attribute__ ((weak, alias ("null_comm_isconnected")));
-
-void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool stop)
-	__attribute__ ((weak, alias ("null_comm_rxflowctrl")));
+const struct dbgmon_comm * null_comm_getinstance(void)
+{
+	return &null_comm_instance;
+}
 
 #endif
 

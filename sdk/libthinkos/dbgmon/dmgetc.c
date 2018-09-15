@@ -23,14 +23,14 @@
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 
-int dmgetc(struct dmon_comm * comm)
+int dmgetc(const struct dbgmon_comm * comm)
 {
 	char buf[1];
 
-	if (dmon_comm_recv(comm, buf, sizeof(char)) <= 0)
+	if (dbgmon_comm_recv(comm, buf, sizeof(char)) <= 0)
 		return -1;
 
-	dmon_comm_send(comm, buf, sizeof(char));
+	dbgmon_comm_send(comm, buf, sizeof(char));
 
 	return	buf[0];
 }

@@ -28,7 +28,7 @@
 extern const char __xcpt_name_lut[16][12];
 
 
-void dmon_print_context(struct dmon_comm * comm, 
+void dmon_print_context(struct dbgmon_comm * comm, 
 						const struct thinkos_context * ctx, 
 						uint32_t sp)
 {

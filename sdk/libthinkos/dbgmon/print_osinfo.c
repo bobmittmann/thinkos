@@ -31,7 +31,7 @@
 #define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
 #endif
 
-int dmon_print_osinfo(struct dmon_comm * comm)
+int dmon_print_osinfo(struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 #if THINKOS_ENABLE_PROFILING

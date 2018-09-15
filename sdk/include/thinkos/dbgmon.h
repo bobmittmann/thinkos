@@ -58,41 +58,95 @@
 #include <sys/usb-dev.h>
 
 enum dbgmon_event {
-	DBGMON_COMM_RCV     = 0,
-	DBGMON_COMM_EOT     = 1,
-	DBGMON_COMM_CTL     = 2,
-
-	DBGMON_RX_PIPE      = 3,
-	DBGMON_TX_PIPE      = 4,
-	/* Timer expiry indication */
-	DBGMON_ALARM        = 5,
-
-	DBGMON_EXCEPT       = 8,
-	DBGMON_THREAD_STEP  = 9,
-	DBGMON_THREAD_FAULT = 10,
-	DBGMON_BREAKPOINT   = 11,
-	DBGMON_IRQ_STEP     = 12,
-
-	/* Board reset request */
-	DBGMON_SOFTRST      = 24,
-	/* ThinkOS application stop request */
-	DBGMON_APP_STOP     = 25,
-	/* ThinkOS application erase request */
-	DBGMON_APP_ERASE    = 26,
-	/* ThinkOS application upload request */
-	DBGMON_APP_UPLOAD   = 27,
-	/* ThinkOS application exec request */
-	DBGMON_APP_EXEC     = 28,
-
-	/* ThinkOS startup indication */
-	DBGMON_STARTUP      = 29,
-	/* ThinkOS idle indication */
-	DBGMON_IDLE         = 30,
 	/* Debug monitor internal reset */
-	DBGMON_RESET        = 31
+	DBGMON_RESET        = 0,
+	/* ThinkOS power on startup indication */
+	DBGMON_STARTUP      = 1,
+	/* ThinkOS idle indication */
+	DBGMON_IDLE         = 2,
+	/* ThinkOS exception */
+	DBGMON_EXCEPT       = 3,
+	/* Board reset request */
+	DBGMON_SOFTRST      = 4,
+	/* Debug timer expiry indication */
+	DBGMON_ALARM        = 5,
+	/* ThinkOS Thread step break */
+	DBGMON_THREAD_STEP  = 6,
+	/* ThinkOS Thread fault break */
+	DBGMON_THREAD_FAULT = 7,
+	/* ThinkOS Thread breakpoint */
+	DBGMON_BREAKPOINT   = 8,
+	/* Debug Communication data received pending */
+	DBGMON_COMM_RCV     = 9, 
+	/* Debug Communication end of transfer */
+	DBGMON_COMM_EOT     = 10,
+	/* Debug Communication control signal */
+	DBGMON_COMM_CTL     = 11,
+	/* User console RX pipe data pending */
+	DBGMON_RX_PIPE      = 12,
+	/* User console TX pipe not full */
+	DBGMON_TX_PIPE      = 13,
+
+	/* ThinkOS application stop request */
+	DBGMON_APP_STOP     = 18,
+	/* ThinkOS application resume request */
+	DBGMON_APP_RESUME   = 19,
+	/* ThinkOS application terminate request */
+	DBGMON_APP_TERM     = 20,
+	/* ThinkOS application erase request */
+	DBGMON_APP_ERASE    = 21,
+	/* ThinkOS application 2pload request */
+	DBGMON_APP_UPLOAD   = 22,
+	/* ThinkOS application exec request */
+	DBGMON_APP_EXEC     = 23,
+	/* User/bootloader extension events 0 to 7 */
+	DBGMON_USER_EVENT0  = 24,
+	DBGMON_USER_EVENT1  = 25,
+	DBGMON_USER_EVENT2  = 26,
+	DBGMON_USER_EVENT3  = 27,
+	DBGMON_USER_EVENT4  = 28,
+	DBGMON_USER_EVENT5  = 29,
+	DBGMON_USER_EVENT6  = 30,
+	DBGMON_USER_EVENT7  = 31
 };
 
-struct dmon_comm;
+
+struct dbgmon_comm_op {
+	int (*send)(const void * dev, const void * buf, unsigned int len);
+	int (*recv)(const void * dev, void * buf, unsigned int len);
+	int (* connect)(const void * dev);
+	bool (* isconnected)(const void * dev);
+	void (* rxflowctrl)(const void * dev, bool stop);
+};
+
+struct dbgmon_comm {
+	const void * dev;
+	const struct dbgmon_comm_op * op;
+};
+
+static inline int dbgmon_comm_send(const struct dbgmon_comm * comm, 
+								   const void * buf, unsigned int len) {
+	return comm->op->send(comm->dev, buf, len);
+}
+
+
+static inline int dbgmon_comm_recv(const struct dbgmon_comm * comm,
+								   void * buf, unsigned int len) {
+	return comm->op->recv(comm->dev, buf, len);
+}
+
+static inline int dbgmon_comm_connect(const struct dbgmon_comm * comm) {
+	return comm->op->connect(comm->dev);
+}
+
+static inline bool dbgmon_comm_isconnected(const struct dbgmon_comm * comm) {
+	return comm->op->isconnected(comm->dev);
+}
+
+static inline void dbgmon_comm_rxflowctrl(const struct dbgmon_comm * comm, 
+									   bool stop) {
+	comm->op->rxflowctrl(comm->dev, stop);
+}
 
 #define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
 #define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
@@ -135,7 +189,9 @@ void thinkos_dbgmon_svc(int32_t arg[], int self);
 
 void dbgmon_reset(void);
 
-void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *, void *), void * param);
+void __attribute__((noreturn)) 
+	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
+				void * param);
 
 int dbgmon_unmask(int sig);
 
@@ -179,32 +235,25 @@ void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
 
-int dmon_comm_send(struct dmon_comm * comm, 
-				   const void * buf, unsigned int len);
+const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb);
+const struct dbgmon_comm * usb_comm_getinstance(void);
 
-int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len);
+const struct dbgmon_comm * custom_comm_init(void);
+const struct dbgmon_comm * custom_comm_getinstance(void);
 
-int dmon_comm_connect(struct dmon_comm * comm);
+int dmprintf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
-bool dmon_comm_isconnected(struct dmon_comm * comm);
+int dmputc(int c, const struct dbgmon_comm * comm);
 
-void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool en);
+int dmputs(const char * s, const struct dbgmon_comm * comm);
 
-struct dmon_comm * usb_comm_init(const usb_dev_t * usb);
+int dmgets(char * s, int size, const struct dbgmon_comm * comm);
 
-struct dmon_comm * usb_comm_getinstance(void);
+int dmgetc(const struct dbgmon_comm * comm);
 
-int dmprintf(struct dmon_comm * comm, const char *fmt, ... );
+int dmscanf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
-int dmputc(int c, struct dmon_comm * comm);
-
-int dmputs(const char * s, struct dmon_comm * comm);
-
-int dmgets(char * s, int size, struct dmon_comm * comm);
-
-int dmgetc(struct dmon_comm * comm);
-
-int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
+int dbgmon_sched_select(uint32_t evmask);
 
 #ifdef __cplusplus
 }
