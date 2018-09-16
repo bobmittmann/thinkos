@@ -88,13 +88,13 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	dmprintf(comm, " - No: %d", thread_id + 1); 
+	dbgmon_printf(comm, " - No: %d", thread_id + 1); 
 #if THINKOS_ENABLE_THREAD_INFO
 	if (rt->th_inf[thread_id])
-		dmprintf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
+		dbgmon_printf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
 	else
 #endif
-		dmprintf(comm, ", '...'"); 
+		dbgmon_printf(comm, ", '...'"); 
 
 	if (THINKOS_OBJ_READY == type) {
 #if THINKOS_IRQ_MAX > 0
@@ -106,25 +106,25 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 				}
 			}
 			if (irq < THINKOS_IRQ_MAX) {
-				dmprintf(comm, " wait on IRQ[%d]\r\n", irq);
+				dbgmon_printf(comm, " wait on IRQ[%d]\r\n", irq);
 			} else
-				dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+				dbgmon_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 		} else
 #endif
-		dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+		dbgmon_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 	} else {
-		dmprintf(comm, " %swait on %s(%3d)\r\n", 
+		dbgmon_printf(comm, " %swait on %s(%3d)\r\n", 
 				 tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
 	}
 
-	dmprintf(comm, " - sched: val=%3d pri=%3d - ", 
+	dbgmon_printf(comm, " - sched: val=%3d pri=%3d - ", 
 			 sched_val, sched_pri); 
-	dmprintf(comm, " timeout=%8d ms", timeout); 
-	dmprintf(comm, " - cycles=%u\r\n", cyccnt); 
+	dbgmon_printf(comm, " timeout=%8d ms", timeout); 
+	dbgmon_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
 	dmon_print_context(comm, rt->ctx[thread_id], (uint32_t)rt->ctx[thread_id]);
 
-	dmprintf(comm, "\r\n");
+	dbgmon_printf(comm, "\r\n");
 }
 
 

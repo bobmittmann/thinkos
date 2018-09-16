@@ -39,10 +39,34 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 #include <sys/delay.h>
+#include <sys/console.h>
+#include <ascii.h>
 #include "version.h"
+
+#define APPLICATION_BLOCK_OFFS 0x00020000
+#define APPLICATION_BLOCK_SIZE (384 * 1024)
+#define APPLICATION_START_ADDR (0x08000000 + APPLICATION_BLOCK_OFFS)
+
+int app_main(int argc, char *argv[]);
+
+const char * const argv[] = { "thinkos_app" };
+
+void __attribute__((noreturn)) board_app_task(void * param)
+{
+//	int argc = 1;
+
+	console_write(NULL, "\r\nThinkOS app loader...\r\n\r\n", 27);
+
+	for (;;) {
+//		app_main(argc, (char **)argv);
+		thinkos_sleep(500);
+	}
+}
 
 extern int __heap_end;
 const void * heap_end = &__heap_end; 
@@ -70,98 +94,17 @@ struct magic {
 	struct magic_rec rec[];
 };
 
-#ifndef MONITOR_UPGRADE_ENABLE
-#if DEBUG
-#define MONITOR_UPGRADE_ENABLE     0
-#else
-#define MONITOR_UPGRADE_ENABLE     1
-#endif
-#endif
-
-#ifndef MONITOR_APPRESTART_ENABLE
-#define MONITOR_APPRESTART_ENABLE  1
-#endif
-
-#ifndef MONITOR_OSINFO_ENABLE 
-#define MONITOR_OSINFO_ENABLE      1
-#endif
-
-#ifndef MONITOR_PAUSE_ENABLE
-#define MONITOR_PAUSE_ENABLE       1
-#endif
-
-#ifndef MONITOR_LOCKINFO_ENABLE
-#define MONITOR_LOCKINFO_ENABLE    1
-#endif
-
-#define RBF_BLOCK_OFFS 0x00010000
-#define RBF_BLOCK_SIZE (64 * 1024)
-#define RBF_START_ADDR (0x08000000 + RBF_BLOCK_OFFS)
-
-#define APPLICATION_BLOCK_OFFS 0x00020000
-#define APPLICATION_BLOCK_SIZE (384 * 1024)
-#define APPLICATION_START_ADDR (0x08000000 + APPLICATION_BLOCK_OFFS)
-
-/* ASCII Keyboard codes */
-
-#define _NULL_  0x00 /* Null (Ctrl+@) */
-#define CTRL_A  0x01 /* SOH */
-#define CTRL_B  0x02 /* STX */
-#define CTRL_C  0x03 /* ETX */
-#define CTRL_D  0x04 /* EOT */
-#define CTRL_E  0x05 /* ENQ */
-#define CTRL_F  0x06 /* ACK */
-#define CTRL_G  0x07 /* BEL */
-#define CTRL_H  0x08 /* BS */
-#define CTRL_I  0x09 /* TAB */
-#define CTRL_J  0x0a /* LF */
-#define CTRL_K  0x0b /* VT */
-#define CTRL_L  0x0c /* FF */
-#define CTRL_M  0x0d /* CR */
-#define CTRL_N  0x0e /* SO */
-#define CTRL_O  0x0f /* SI */
-#define CTRL_P  0x10 /* DLE */
-#define CTRL_Q  0x11 /* DC1 */
-#define CTRL_R  0x12 /* DC2 */
-#define CTRL_S  0x13 /* DC3 */
-#define CTRL_T  0x14 /* DC4 */
-#define CTRL_U  0x15 /* NAK */
-#define CTRL_V  0x16 /* SYN */
-#define CTRL_W  0x17 /* ETB */
-#define CTRL_X  0x18 /* CAN */
-#define CTRL_Y  0x19 /* EM */
-#define CTRL_Z  0x1a /* SUB */
-#define _ESC_   0x1b /* ESC (Ctrl+[) */
-#define CTRL_FS 0x1c /* FS  (Ctrl+\) */
-#define CTRL_GS 0x1d /* GS  (Ctrl+]) */
-#define CTRL_RS 0x1e /* RS  (Ctrl+^) */
-#define CTRL_US 0x1f /* US  (Ctrl+_) */
-
 static const char s_version[] = "ThinkOS " VERSION_NUM "\r\n";
 
 static const char s_help[] = 
-#if (MONITOR_OSINFO_ENABLE)
 " ^O - OS Info\r\n"
-#endif
-#if (MONITOR_PAUSE_ENABLE)
 " ^P - Pause app\r\n"
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
 " ^R - Upload FPGA\r\n"
-#endif
 " ^V - Help\r\n"
-#if (MONITOR_APPWIPE_ENABLE)
 " ^W - Wipe App\r\n"
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
 " ^Y - Upload YARD-ICE\r\n"
-#endif
-#if (MONITOR_APPRESTART_ENABLE)
 " ^Z - Restart\r\n"
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
 " ^\\ - Upload ThinkOS\r\n"
-#endif
 ;
 
 static const char s_hr[] = 
@@ -169,12 +112,6 @@ static const char s_hr[] =
 
 //static const char s_error[] = "Error!\r\n";
 static const char s_confirm[] = "Confirm [y]?";
-
-#if (MONITOR_OSINFO_ENABLE)
-#define PUTS(S) dmprintf(comm, S) 
-#else
-#define PUTS(S) dmputs(S, comm) 
-#endif
 
 static int yflash(uint32_t blk_offs, uint32_t blk_size,
 		   const struct magic * magic)
@@ -214,7 +151,6 @@ static int app_yflash(void)
 }
 
 
-#if (MONITOR_UPGRADE_ENABLE)
 static const struct magic bootloader_magic = {
 	.hdr = {
 		.pos = 0,
@@ -231,21 +167,6 @@ static void bootloader_yflash(void)
 	yflash(0, 32768, &bootloader_magic);
 }
 
-static void rbf_yflash(void)
-{
-	dbgmon_soft_reset();
-	yflash(RBF_BLOCK_OFFS, RBF_BLOCK_SIZE, NULL);
-}
-#endif
-
-#if (MONITOR_OSINFO_ENABLE)
-
-#if THINKOS_ENABLE_THREAD_VOID
-#define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 2) /* extra slot for void thread */
-#else
-#define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
-#endif
-
 int __scan_stack(void * stack, unsigned int size);
 
 extern int app_loader(void * arg);
@@ -253,8 +174,7 @@ extern int app_loader(void * arg);
 static void print_osinfo(struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
-#if THINKOS_ENABLE_PROFILING
-	uint32_t cycbuf[CYCCNT_MAX];
+	uint32_t cycbuf[THINKOS_THREADS_MAX + 2];
 	uint32_t cyccnt;
 	int32_t delta;
 	uint32_t cycdiv;
@@ -262,11 +182,9 @@ static void print_osinfo(struct dbgmon_comm * comm)
 	uint32_t cycsum = 0;
 	uint32_t cycbusy;
 	uint32_t idle;
-#endif
 	const char * tag;
 	int i;
 
-#if THINKOS_ENABLE_PROFILING
 	cyccnt = CM3_DWT->cyccnt;
 	delta = cyccnt - thinkos_rt.cycref;
 	/* update the reference */
@@ -277,10 +195,8 @@ static void print_osinfo(struct dbgmon_comm * comm)
 	__thinkos_memcpy32(cycbuf, rt->cyccnt, sizeof(cycbuf));
 	/* reset cycle counters */
 	__thinkos_memset32(rt->cyccnt, 0, sizeof(cycbuf));
-#endif
 
-	dmprintf(comm, s_hr);
-#if THINKOS_ENABLE_PROFILING
+	dbgmon_printf(comm, s_hr);
 	cycsum = 0;
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i)
 		cycsum += cycbuf[i];
@@ -290,49 +206,35 @@ static void print_osinfo(struct dbgmon_comm * comm)
 	cycdiv = (cycsum + 500) / 1000;
 	busy = (cycbusy + cycdiv / 2) / cycdiv;
 	idle = 1000 - busy;
-	dmprintf(comm, "CPU: %d.%d%% busy, %d.%d%% idle\r\n", 
+	dbgmon_printf(comm, "CPU: %d.%d%% busy, %d.%d%% idle\r\n", 
 			 busy / 10, busy % 10, idle / 10, idle % 10);
-#endif
 
-	dmprintf(comm, " Th     Tag       SP       LR       PC  WQ TmW");
-#if THINKOS_ENABLE_PROFILING
-	dmprintf(comm, " CPU %% ");
-#endif
-#if (MONITOR_LOCKINFO_ENABLE)
-	dmprintf(comm, " Locks");
-#endif
-	dmprintf(comm, "\r\n");
+	dbgmon_printf(comm, " Th     Tag       SP       LR       PC  WQ TmW");
+	dbgmon_printf(comm, " CPU %% ");
+	dbgmon_printf(comm, " Locks");
+	dbgmon_printf(comm, "\r\n");
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		if (rt->ctx[i] != NULL) {
-#if (MONITOR_LOCKINFO_ENABLE)
 			int j;
-#endif
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			tag = (rt->th_inf[i] != NULL) ? rt->th_inf[i]->tag : "...";
-			dmprintf(comm, "%3d %7s %08x %08x %08x %3d %s", i + 1, tag,
+			dbgmon_printf(comm, "%3d %7s %08x %08x %08x %3d %s", i + 1, tag,
 					 (uint32_t)rt->ctx[i], rt->ctx[i]->lr, rt->ctx[i]->pc, 
 					 rt->th_stat[i] >> 1, rt->th_stat[i] & 1 ? "Yes" : " No");
 
-#if THINKOS_ENABLE_PROFILING
 			busy = (cycbuf[i] + cycdiv / 2) / cycdiv;
-			dmprintf(comm, " %3d.%d", busy / 10, busy % 10);
-#endif
+			dbgmon_printf(comm, " %3d.%d", busy / 10, busy % 10);
 
-
-#if (MONITOR_LOCKINFO_ENABLE)
 			for (j = 0; j < THINKOS_MUTEX_MAX ; ++j) {
 				if (rt->lock[j] == i)
-					dmprintf(comm, " %d", j + THINKOS_MUTEX_BASE);
+					dbgmon_printf(comm, " %d", j + THINKOS_MUTEX_BASE);
 			}
-#endif
-			dmprintf(comm, "\r\n");
+			dbgmon_printf(comm, "\r\n");
 		}
 	}
 }
-
-#endif /* MONITOR_OSINFO_ENABLE */
 
 static void __app_exec(void)
 {
@@ -345,9 +247,7 @@ static void __app_exec(void)
 	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, board_app_task, 
 						  (void *)NULL);
 
-#if THINKOS_ENABLE_THREAD_INFO
 	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
-#endif
 
 	DCC_LOG(LOG_TRACE, "__thinkos_thread_resume()");
 	__thinkos_thread_resume(thread_id);
@@ -356,7 +256,6 @@ static void __app_exec(void)
 	__thinkos_defer_sched();
 }
 
-#if (MONITOR_PAUSE_ENABLE)
 static void pause_all(void)
 {
 	unsigned int wq;
@@ -367,9 +266,7 @@ static void pause_all(void)
 	for (wq = 0; wq < THINKOS_WQ_LST_END; ++wq) 
 		thinkos_rt.wq_lst[wq] = 0;
 
-#if ((THINKOS_THREADS_MAX) < 32) 
-	thinkos_rt.wq_ready = 1 << (THINKOS_THREADS_MAX);
-#endif
+//	thinkos_rt.wq_ready = 1 << (THINKOS_THREADS_MAX);
 
 	for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
 		if (thinkos_rt.irq_th[irq] != THINKOS_THREAD_IDLE)
@@ -378,63 +275,44 @@ static void pause_all(void)
 
 	__thinkos_defer_sched();
 }
-#endif
 
 static bool monitor_process_input(struct dbgmon_comm * comm, int c)
 {
 	switch (c) {
-#if (MONITOR_UPGRADE_ENABLE)
 	case CTRL_FS:
-		PUTS(s_confirm);
-		if (dmgetc(comm) == 'y')
+		dbgmon_puts(s_confirm, comm);
+		if (dbgmon_getc(comm) == 'y')
 			bootloader_yflash();
 		break;
-#endif
-#if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		print_osinfo(comm);
 		break;
-#endif
 	case CTRL_V:
-		PUTS(s_hr);
-		PUTS(s_version);
-		PUTS(s_help);
+		dbgmon_puts(s_hr, comm);
+		dbgmon_puts(s_version, comm);
+		dbgmon_puts(s_help, comm);
 		break;
-
-#if (MONITOR_PAUSE_ENABLE)
 	case CTRL_P:
-		PUTS("^P\r\n");
+		dbgmon_puts("^P\r\n", comm);
 		pause_all();
 		break;
-#endif
-
 	case CTRL_Y:
-		PUTS(s_confirm);
-		if (dmgetc(comm) == 'y') {
+		dbgmon_puts(s_confirm, comm);
+		if (dbgmon_getc(comm) == 'y') {
 			app_yflash();
 		} else {
-			PUTS("\r\n");
+			dbgmon_puts("\r\n", comm);
 		}
 
 		break;
 
-#if (MONITOR_UPGRADE_ENABLE)
-	case CTRL_R:
-		PUTS(s_confirm);
-		if (dmgetc(comm) == 'y')
-			rbf_yflash();
-		break;
-#endif
-
-
-#if (MONITOR_APPRESTART_ENABLE)
 	case CTRL_Z:
-		PUTS("^Z\r\n");
+		dbgmon_puts("^Z\r\n", comm);
 		dbgmon_soft_reset();
 		/* Request app exec */
 		dbgmon_signal(DBGMON_APP_EXEC); 
 		break;
-#endif
+
 	default:
 		return false;
 	}
@@ -466,8 +344,8 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 	DCC_LOG1(LOG_TRACE, "unmasking events=%08x", sigmask);
 
 	if (!(flags & MONITOR_AUTOBOOT)) {
-		PUTS(s_hr);
-		PUTS(s_version);
+		dbgmon_puts(s_hr, comm);
+		dbgmon_puts(s_version, comm);
 	}
 
 	if (flags & MONITOR_AUTOBOOT) {

@@ -136,44 +136,11 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
  * 
  */
 
+#include <ascii.h>
+
 #if (BOOT_ENABLE_GDB)
 #include <gdb.h>
 #endif
-
-/* ASCII Keyboard codes */
-
-#define _NULL_  0x00 /* Null (Ctrl+@) */
-#define CTRL_A  0x01 /* SOH */
-#define CTRL_B  0x02 /* STX */
-#define CTRL_C  0x03 /* ETX */
-#define CTRL_D  0x04 /* EOT */
-#define CTRL_E  0x05 /* ENQ */
-#define CTRL_F  0x06 /* ACK */
-#define CTRL_G  0x07 /* BEL */
-#define CTRL_H  0x08 /* BS */
-#define CTRL_I  0x09 /* TAB */
-#define CTRL_J  0x0a /* LF */
-#define CTRL_K  0x0b /* VT */
-#define CTRL_L  0x0c /* FF */
-#define CTRL_M  0x0d /* CR */
-#define CTRL_N  0x0e /* SO */
-#define CTRL_O  0x0f /* SI */
-#define CTRL_P  0x10 /* DLE */
-#define CTRL_Q  0x11 /* DC1 */
-#define CTRL_R  0x12 /* DC2 */
-#define CTRL_S  0x13 /* DC3 */
-#define CTRL_T  0x14 /* DC4 */
-#define CTRL_U  0x15 /* NAK */
-#define CTRL_V  0x16 /* SYN */
-#define CTRL_W  0x17 /* ETB */
-#define CTRL_X  0x18 /* CAN */
-#define CTRL_Y  0x19 /* EM */
-#define CTRL_Z  0x1a /* SUB */
-#define _ESC_   0x1b /* ESC (Ctrl+[) */
-#define CTRL_FS 0x1c /* FS  (Ctrl+\) */
-#define CTRL_GS 0x1d /* GS  (Ctrl+]) */
-#define CTRL_RS 0x1e /* RS  (Ctrl+^) */
-#define CTRL_US 0x1f /* US  (Ctrl+_) */
 
 extern int __heap_end;
 const void * heap_end = &__heap_end; 
@@ -354,7 +321,6 @@ static void monitor_on_step(struct monitor * mon)
 }
 #endif
 
-
 #if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(const struct dbgmon_comm * comm)
 {
@@ -400,58 +366,6 @@ static void monitor_app_erase(const struct dbgmon_comm * comm,
 #endif
 
 #if (MONITOR_DUMPMEM_ENABLE)
-int long2hex_le(char * s, unsigned long val);
-int char2hex(char * s, int c);
-
-void monitor_dump_mem(const struct dbgmon_comm * comm, 
-					  uint32_t addr, unsigned int size)
-{
-	char buf[14 + 16 * 3];
-	unsigned int rem = size;
-	uint8_t * cmp = (uint8_t *)-1;
-	bool eq = false;
-
-	while (rem) {
-		int n = rem < 16 ? rem : 16;
-		uint8_t * src = (uint8_t *)addr;
-		char * cp = buf;
-		unsigned int i;
-	
-		if (cmp != (uint8_t *)-1) {
-			for (i = 0; i < n; ++i) {
-				if (src[i] != cmp[i]) {
-					eq = false;
-					goto dump_line;
-				}
-			}
-
-			if (!eq) {
-				dbgmon_comm_send(comm, " ...\r\n", 6);
-				eq = true;
-			}
-		} else {	
-
-dump_line:
-			cp += long2hex_le(cp, addr);
-			*cp++ = ':';
-
-			for (i = 0; i < n; ++i) {
-				*cp++ = ' ';
-				cp += char2hex(cp, src[i]);
-			}
-
-			*cp++ = '\r';
-			*cp++ = '\n';
-
-			dbgmon_comm_send(comm, buf, cp - buf);
-		}
-
-		addr += n;
-		rem -= n;
-		cmp = src;
-	}
-}
-
 void monitor_show_mem(struct monitor * mon)
 {
 	uint32_t addr = mon->memdump.addr;
@@ -462,11 +376,10 @@ void monitor_show_mem(struct monitor * mon)
 	dmprintf(mon->comm, "Size (%d): ", size);
 	dmscanf(mon->comm, "%u", &size);
 
-	monitor_dump_mem(mon->comm, addr, size);
+	dbgmon_hexdump(mon->comm, addr, (uintptr_t)addr, size);
 	mon->memdump.addr = addr;
 	mon->memdump.size = size;
 }
-
 #endif
 
 #if (MONITOR_WATCHPOINT_ENABLE)

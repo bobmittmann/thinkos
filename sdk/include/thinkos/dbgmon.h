@@ -57,6 +57,11 @@
 
 #include <sys/usb-dev.h>
 
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor events
+ * ----------------------------------------------------------------------------
+ */
+
 enum dbgmon_event {
 	/* Debug monitor internal reset */
 	DBGMON_RESET        = 0,
@@ -110,6 +115,15 @@ enum dbgmon_event {
 	DBGMON_USER_EVENT7  = 31
 };
 
+#define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
+#define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
+#define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
+#define SIG_ZERO(SIGSET) SIGSET = 0
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor communication interface
+ * ----------------------------------------------------------------------------
+ */
 
 struct dbgmon_comm_op {
 	int (*send)(const void * dev, const void * buf, unsigned int len);
@@ -129,7 +143,6 @@ static inline int dbgmon_comm_send(const struct dbgmon_comm * comm,
 	return comm->op->send(comm->dev, buf, len);
 }
 
-
 static inline int dbgmon_comm_recv(const struct dbgmon_comm * comm,
 								   void * buf, unsigned int len) {
 	return comm->op->recv(comm->dev, buf, len);
@@ -147,38 +160,6 @@ static inline void dbgmon_comm_rxflowctrl(const struct dbgmon_comm * comm,
 									   bool stop) {
 	comm->op->rxflowctrl(comm->dev, stop);
 }
-
-#define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
-#define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
-#define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
-#define SIG_ZERO(SIGSET) SIGSET = 0
-
-/* File identification magic block 
-
-   This block is used to guess the type of a memory block or file
-   based on a pattarn located somewhere inside the file.
- 
- */
-struct magic_blk {
-	struct {
-		uint16_t pos; /* Position of the pattern in bytes */
-		uint16_t cnt; /* Number of record entries */
-	} hdr;
-	/* Pattern records */
-	struct {
-	    uint32_t mask; /* Bitmask */
-		uint32_t comp; /* Compare value */
-	} rec[];
-};
-
-/* application block descriptor */
-struct dbgmon_app_desc {
-	uint32_t start_addr; /* Application memory block start address */
-	uint32_t block_size; /* Size of the memory block in bytes */
-	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
-	uint16_t filesize_offs;  /* Position of file size in the memory block */
-	const struct magic_blk * magic; /* File identification descriptor */
-};
 
 
 #ifdef __cplusplus
@@ -205,6 +186,8 @@ void dbgmon_signal_idle(void);
 
 uint32_t dbgmon_select(uint32_t watch);
 
+int dbgmon_sched_select(uint32_t evmask);
+
 int dbgmon_wait(int sig);
 
 int dbgmon_expect(int sig);
@@ -218,8 +201,6 @@ void dbgmon_alarm_stop(void);
 int dbgmon_wait_idle(void);
 
 void dbgmon_soft_reset(void);
-
-bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 
@@ -235,25 +216,32 @@ void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
 
+int dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
+
+int dbgmon_putc(int c, const struct dbgmon_comm * comm);
+
+int dbgmon_puts(const char * s, const struct dbgmon_comm * comm);
+
+int dbgmon_gets(char * s, int size, const struct dbgmon_comm * comm);
+
+int dbgmon_getc(const struct dbgmon_comm * comm);
+
+int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... );
+
+void dbgmon_hexdump(const struct dbgmon_comm * comm, 
+					uint32_t addr, void * ptr, unsigned int size);
+
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor communication interface
+ * ----------------------------------------------------------------------------
+ */
+
 const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb);
 const struct dbgmon_comm * usb_comm_getinstance(void);
 
 const struct dbgmon_comm * custom_comm_init(void);
 const struct dbgmon_comm * custom_comm_getinstance(void);
-
-int dmprintf(const struct dbgmon_comm * comm, const char *fmt, ... );
-
-int dmputc(int c, const struct dbgmon_comm * comm);
-
-int dmputs(const char * s, const struct dbgmon_comm * comm);
-
-int dmgets(char * s, int size, const struct dbgmon_comm * comm);
-
-int dmgetc(const struct dbgmon_comm * comm);
-
-int dmscanf(const struct dbgmon_comm * comm, const char *fmt, ... );
-
-int dbgmon_sched_select(uint32_t evmask);
 
 #ifdef __cplusplus
 }

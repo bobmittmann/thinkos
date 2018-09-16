@@ -27,8 +27,10 @@ DBGMON_CFILES = null_comm.c usb_comm.c \
 			  print_osinfo.c print_alloc.c print_thread.c \
 			  print_context.c print_stack_usage.c \
 			  app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
-			  print_exception.c dmgetc.c dmgets.c dmprintf.c dmscanf.c  
-
+			  print_exception.c \
+			  dbgmon_printf.c dbgmon_scanf.c \
+			  dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
+			  dbgmon_hexdump.c
 
 MISC_CFILES = thinkos_type.c obj_type_get.c \
 			  alloc_bmp_get.c bmp_alloc.c \

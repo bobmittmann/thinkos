@@ -43,47 +43,10 @@
 #include "board.h"
 #include "version.h"
 
+#define MONITOR_AUTOBOOT 1
+#define MONITOR_SHELL 2
+
 void monitor_task(const struct dbgmon_comm * comm, void * param);
-
-int app_main(int argc, char *argv[]);
-
-const char * const argv[] = { "thinkos_app" };
-
-void __attribute__((noreturn)) board_app_task(void * param)
-{
-//	int argc = 1;
-
-	console_write(NULL, "\r\nThinkOS app loader...\r\n\r\n", 27);
-
-	for (;;) {
-//		app_main(argc, (char **)argv);
-		thinkos_sleep(500);
-	}
-}
-
-
-#if 0
-static inline void __stm32_gpio_af(struct stm32_gpio * gpio, int pin, int af)
-{
-	uint32_t tmp;
-
-	if (pin < 8) {
-		tmp = gpio->afrl;
-		tmp &= ~GPIO_AFRL_MASK(pin);
-		tmp |= GPIO_AFRL_SET(pin, af);
-		gpio->afrl = tmp;
-	} else {
-		tmp = gpio->afrh;
-		tmp &= ~GPIO_AFRH_MASK(pin);
-		tmp |= GPIO_AFRH_SET(pin, af);
-		gpio->afrh = tmp;
-	}
-
-	/* select alternate function pin mode */
-	tmp = (gpio->moder & ~GPIO_MODE_MASK(pin)) | GPIO_MODE_ALT_FUNC(pin);
-	gpio->moder = tmp;
-}
-#endif
 
 static void io_init(void)
 {
@@ -260,12 +223,7 @@ void board_init(void)
 }
 #endif
 
-#define MONITOR_AUTOBOOT 1
-#define MONITOR_SHELL 2
-
-#define CTRL_C  0x03 /* ETX */
-
-void main(int argc, char ** argv)
+void __attribute__((noreturn)) main(int argc, char ** argv)
 {
 	const struct dbgmon_comm * comm;
 
@@ -278,41 +236,30 @@ void main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
 	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
 
-#if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "3. thinkos_mpu_init()");
-	thinkos_mpu_init(0x1000);
-#endif
-
-	DCC_LOG(LOG_TRACE, "4. board_init().");
+	DCC_LOG(LOG_TRACE, "3. board_init().");
 	board_init();
 
-	/* Wait for the other power supply and subsystems to stabilize */
-	DCC_LOG(LOG_TRACE, "5. thinkos_sleep().");
-	thinkos_sleep(1000);
-
-	DCC_LOG(LOG_TRACE, "6. thinkos_console_init()");
-	thinkos_console_init();
-
-	DCC_LOG(LOG_TRACE, "7. usb_comm_init()");
+	DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
 	comm = usb_comm_init(&stm32f_otg_fs_dev);
 
-	/* Wait for the other power supply and subsystems to stabilize */
-	DCC_LOG(LOG_TRACE, "5. thinkos_sleep().");
-	thinkos_sleep(100);
+	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
+	thinkos_console_init();
+
+	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
+	thinkos_mpu_init(0x1000);
+
+	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
+	thinkos_userland();
 
 	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");
 	/* starts monitor with shell enabled */
 	thinkos_dbgmon(monitor_task, comm, 
 				   (void *)(MONITOR_SHELL | MONITOR_AUTOBOOT));
 
-#if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "9. thinkos_userland()");
-	thinkos_userland();
-#endif
-
 	DCC_LOG(LOG_TRACE, "10. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "11. unreachable code reched!!!");
+	for(;;);
 }
 

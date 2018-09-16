@@ -80,7 +80,7 @@ static const char __blanks[] = {
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
 
 
-int dmprintf(const struct dbgmon_comm * comm, const char *fmt, ... )
+int dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	char buf[BUF_LEN];
 	va_list ap;

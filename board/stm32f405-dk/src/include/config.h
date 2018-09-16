@@ -110,7 +110,7 @@
 #define THINKOS_ENABLE_DEBUG_FAULT      1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
-#define THINKOS_ENABLE_MPU              0
+#define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              0
 
@@ -177,6 +177,33 @@
 /* use hardware checksum */
 #define  ENABLE_NET_TCP_CHECKSUM     0
 #define  ENABLE_NET_UDP_CHECKSUM     0
+
+/* -------------------------------------------------------------------------
+   Bootloader 
+   -------------------------------------------------------------------------- */
+#define BOOT_MEM_RESERVED          0x1000
+#define BOOT_ENABLE_GDB            1
+#define BOOT_ENABLE_THIRD          0
+#define BOOT_CUSTOM_COMM           1
+
+#define MONITOR_DUMPMEM_ENABLE     1
+#define MONITOR_WATCHPOINT_ENABLE  1
+#define MONITOR_THREAD_STEP_ENABLE 1
+#define MONITOR_SELFTEST_ENABLE    0
+#define MONITOR_CONFIGURE_ENABLE   0
+#define MONITOR_UPGRADE_ENABLE     1
+#define MONITOR_STACKUSAGE_ENABLE  1
+#define MONITOR_THREADINFO_ENABLE  1
+#define MONITOR_OSINFO_ENABLE      1
+#define MONITOR_APPWIPE_ENABLE     1
+#define MONITOR_APPTERM_ENABLE     1
+#define MONITOR_APPRESTART_ENABLE  1
+#define MONITOR_EXCEPTION_ENABLE   1
+#define MONITOR_FAULT_ENABLE       1
+#define MONITOR_OS_PAUSE           1
+#define MONITOR_OS_RESUME          1
+#define MONITOR_RESTART_MONITOR    1
+
 
 /* -------------------------------------------------------------------------
  * JTAG

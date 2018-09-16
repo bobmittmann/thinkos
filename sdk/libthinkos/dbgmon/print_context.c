@@ -35,18 +35,18 @@ void dmon_print_context(struct dbgmon_comm * comm,
 	uint32_t xpsr = ctx->xpsr;
 	int ipsr;
 
-	dmprintf(comm, "   r0=%08x   r4=%08x   r8=%08x  r12=%08x\r\n",
+	dbgmon_printf(comm, "   r0=%08x   r4=%08x   r8=%08x  r12=%08x\r\n",
 				ctx->r0, ctx->r4, ctx->r8, ctx->r12);
-	dmprintf(comm, "   r1=%08x   r5=%08x   r9=%08x   sp=%08x\r\n", 
+	dbgmon_printf(comm, "   r1=%08x   r5=%08x   r9=%08x   sp=%08x\r\n", 
 				ctx->r1, ctx->r5, ctx->r9, sp);
-	dmprintf(comm, "   r2=%08x   r6=%08x  r10=%08x   lr=%08x\r\n", 
+	dbgmon_printf(comm, "   r2=%08x   r6=%08x  r10=%08x   lr=%08x\r\n", 
 				ctx->r2, ctx->r6, ctx->r10, ctx->lr);
-	dmprintf(comm, "   r3=%08x   r7=%08x  r11=%08x   pc=%08x\r\n",  
+	dbgmon_printf(comm, "   r3=%08x   r7=%08x  r11=%08x   pc=%08x\r\n",  
 				ctx->r3, ctx->r7, ctx->r11, ctx->pc);
 
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
-		dmprintf(comm, " xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c "
+		dbgmon_printf(comm, " xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c "
 				 "ICI/IT=%02x GE=%d IPSR=%d (%s)]\r\n", 
 				 xpsr,
 				 ((xpsr >> 31) & 0x01) + '0',
@@ -58,7 +58,7 @@ void dmon_print_context(struct dbgmon_comm * comm,
 				 ((xpsr >> 16) & 0x0f),
 				 ipsr, __xcpt_name_lut[ipsr]);
 	} else {
-		dmprintf(comm, " xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c "
+		dbgmon_printf(comm, " xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c "
 				 "ICI/IT=%02x GE=%d IPSR=%d (IRQ %d) ]\r\n", 
 				 xpsr,
 				 ((xpsr >> 31) & 0x01) + '0',

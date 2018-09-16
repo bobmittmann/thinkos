@@ -30,6 +30,35 @@
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 
+/* File identification magic block 
+
+   This block is used to guess the type of a memory block or file
+   based on a pattarn located somewhere inside the file.
+ 
+ */
+struct magic_blk {
+	struct {
+		uint16_t pos; /* Position of the pattern in bytes */
+		uint16_t cnt; /* Number of record entries */
+	} hdr;
+	/* Pattern records */
+	struct {
+	    uint32_t mask; /* Bitmask */
+		uint32_t comp; /* Compare value */
+	} rec[];
+};
+
+/* application block descriptor */
+struct dbgmon_app_desc {
+	uint32_t start_addr; /* Application memory block start address */
+	uint32_t block_size; /* Size of the memory block in bytes */
+	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
+	uint16_t filesize_offs;  /* Position of file size in the memory block */
+	const struct magic_blk * magic; /* File identification descriptor */
+};
+
+
+
 #define SZ_128   7
 #define SZ_256   8
 #define SZ_1K   10
@@ -209,6 +238,8 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 bool dmon_app_suspend(void);
 
 bool dmon_app_continue(void);
+
+bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
 
 
 #ifdef __cplusplus

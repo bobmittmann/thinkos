@@ -40,8 +40,6 @@
 
 #define FILE_BUF_LEN 64
 
-int dmgets(char * s, int size, const struct dbgmon_comm * comm);
-
 struct stream {
 	const struct dbgmon_comm * comm;
 	int pos;
@@ -171,7 +169,7 @@ static int skip_spaces(struct stream *stream)
 	return i;
 }
 
-int dmscanf(const struct dbgmon_comm * comm, const char *fmt, ... )
+int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	struct stream buf;
 	struct stream * stream = &buf;
@@ -189,7 +187,7 @@ int dmscanf(const struct dbgmon_comm * comm, const char *fmt, ... )
 
 	stream->comm = comm;	
 	stream->pos = 0;
-	stream->len = dmgets(stream->buf, FILE_BUF_LEN, comm);
+	stream->len = dbgmon_gets(stream->buf, FILE_BUF_LEN, comm);
 
 	while ((c = *fmt++) != '\0') {
 

@@ -45,53 +45,53 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 
 	switch (xcpt->type) {
 	case CM3_EXCEPT_HARD_FAULT:
-		dmprintf(comm, " Hard Fault at ");
+		dbgmon_printf(comm, " Hard Fault at ");
 		break;
 
 #if THINKOS_ENABLE_MPU 
 	case CM3_EXCEPT_MEM_MANAGE:
-		dmprintf(comm, " Memory Manager Fault at ");
+		dbgmon_printf(comm, " Memory Manager Fault at ");
 		break;
 #endif
 
 #if THINKOS_ENABLE_BUSFAULT
 	case CM3_EXCEPT_BUS_FAULT:
-		dmprintf(comm, " Bus Fault at ");
+		dbgmon_printf(comm, " Bus Fault at ");
 		break;
 #endif
 
 #if THINKOS_ENABLE_USAGEFAULT 
 	case CM3_EXCEPT_USAGE_FAULT: 
-		dmprintf(comm, " Usage Fault at ");
+		dbgmon_printf(comm, " Usage Fault at ");
 		break;
 #endif
 	default:
-		dmprintf(comm, " Error %d at ", xcpt->type - THINKOS_ERR_OFF);
+		dbgmon_printf(comm, " Error %d at ", xcpt->type - THINKOS_ERR_OFF);
 	}
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;
 	if (ipsr == 0) {
-		dmprintf(comm, "thread %d", xcpt->active + 1);
+		dbgmon_printf(comm, "thread %d", xcpt->active + 1);
 	} else if (ipsr > 15) {
-		dmprintf(comm, "IRQ %d", ipsr - 16);
+		dbgmon_printf(comm, "IRQ %d", ipsr - 16);
 	} else {
 		switch (ipsr) {
 		case CM3_EXCEPT_SVC:
-			dmprintf(comm, "SVCall, thread %d", xcpt->active + 1);
+			dbgmon_printf(comm, "SVCall, thread %d", xcpt->active + 1);
 			break;
 		case CM3_EXCEPT_DEBUG_MONITOR:
-			dmprintf(comm, "Monitor");
+			dbgmon_printf(comm, "Monitor");
 			break;
 		case CM3_EXCEPT_PENDSV:
-			dmprintf(comm, "PendSV");
+			dbgmon_printf(comm, "PendSV");
 			break;
 		case CM3_EXCEPT_SYSTICK:
-			dmprintf(comm, "sysTick");
+			dbgmon_printf(comm, "sysTick");
 			break;
 		}
 	}
 
-	dmprintf(comm, "\r\n");
+	dbgmon_printf(comm, "\r\n");
 
 	sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 	dmon_print_context(comm, &xcpt->ctx, sp);
@@ -100,66 +100,66 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 #if THINKOS_ENABLE_MPU 
 	case CM3_EXCEPT_MEM_MANAGE:
 		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		dmprintf(comm, "mmfsr=%02x [", mmfsr);
+		dbgmon_printf(comm, "mmfsr=%02x [", mmfsr);
 		if (mmfsr & MMFSR_MMARVALID)
-			dmprintf(comm, " MMARVALID");
+			dbgmon_printf(comm, " MMARVALID");
 		if (mmfsr & MMFSR_MLSPERR)
-			dmprintf(comm, " MLSPERR");
+			dbgmon_printf(comm, " MLSPERR");
 		if (mmfsr & MMFSR_MSTKERR)
-			dmprintf(comm, " MSTKERR");
+			dbgmon_printf(comm, " MSTKERR");
 		if (mmfsr & MMFSR_MUNSTKERR)
-			dmprintf(comm, " MUNSTKERR");
+			dbgmon_printf(comm, " MUNSTKERR");
 		if (mmfsr & MMFSR_DACCVIOL)  
-			dmprintf(comm, " DACCVIOL");
+			dbgmon_printf(comm, " DACCVIOL");
 		if (mmfsr & MMFSR_IACCVIOL)  
-			dmprintf(comm, " IACCVIOL");
-		dmprintf(comm, " ]\r\n");
+			dbgmon_printf(comm, " IACCVIOL");
+		dbgmon_printf(comm, " ]\r\n");
 		if (mmfsr & MMFSR_MMARVALID) 
-			dmprintf(comm, " Fault address --> %08x\r\n", xcpt->mmfar);
+			dbgmon_printf(comm, " Fault address --> %08x\r\n", xcpt->mmfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_BUSFAULT
 	case CM3_EXCEPT_BUS_FAULT:
 		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		dmprintf(comm, " bfsr=%02x [", bfsr);
+		dbgmon_printf(comm, " bfsr=%02x [", bfsr);
 		if (bfsr & BFSR_BFARVALID)  
-			dmprintf(comm, " BFARVALID");
+			dbgmon_printf(comm, " BFARVALID");
 		if (bfsr & BFSR_LSPERR)
-			dmprintf(comm, " LSPERR");
+			dbgmon_printf(comm, " LSPERR");
 		if (bfsr & BFSR_STKERR)  
-			dmprintf(comm, " STKERR");
+			dbgmon_printf(comm, " STKERR");
 		if (bfsr & BFSR_UNSTKERR)  
-			dmprintf(comm, " UNSTKERR");
+			dbgmon_printf(comm, " UNSTKERR");
 		if (bfsr & BFSR_IMPRECISERR)  
-			dmprintf(comm, " IMPRECISERR");
+			dbgmon_printf(comm, " IMPRECISERR");
 		if (bfsr & BFSR_PRECISERR)
-			dmprintf(comm, " PRECISERR");
+			dbgmon_printf(comm, " PRECISERR");
 		if (bfsr & BFSR_IBUSERR)  
-			dmprintf(comm, " IBUSERR");
-		dmprintf(comm, " ]\r\n");
+			dbgmon_printf(comm, " IBUSERR");
+		dbgmon_printf(comm, " ]\r\n");
 		if (bfsr & BFSR_BFARVALID) 
-			dmprintf(comm, " Fault address --> %08x\r\n", xcpt->bfar);
+			dbgmon_printf(comm, " Fault address --> %08x\r\n", xcpt->bfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_USAGEFAULT 
 	case CM3_EXCEPT_USAGE_FAULT: 
 		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
-		dmprintf(comm, " ufsr=%04x [", ufsr);
+		dbgmon_printf(comm, " ufsr=%04x [", ufsr);
 		if (ufsr & UFSR_DIVBYZERO)  
-			dmprintf(comm, " DIVBYZERO");
+			dbgmon_printf(comm, " DIVBYZERO");
 		if (ufsr & UFSR_UNALIGNED)  
-			dmprintf(comm, " UNALIGNED");
+			dbgmon_printf(comm, " UNALIGNED");
 		if (ufsr & UFSR_NOCP)  
-			dmprintf(comm, " NOCP");
+			dbgmon_printf(comm, " NOCP");
 		if (ufsr & UFSR_INVPC)  
-			dmprintf(comm, " INVPC");
+			dbgmon_printf(comm, " INVPC");
 		if (ufsr & UFSR_INVSTATE)  
-			dmprintf(comm, " INVSTATE");
+			dbgmon_printf(comm, " INVSTATE");
 		if (ufsr & UFSR_UNDEFINSTR)  
-			dmprintf(comm, " UNDEFINSTR");
-		dmprintf(comm, " ]\r\n");
+			dbgmon_printf(comm, " UNDEFINSTR");
+		dbgmon_printf(comm, " ]\r\n");
 		break;
 #endif
 	}
