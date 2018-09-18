@@ -393,6 +393,15 @@ struct usb_language_id {
 	uint16_t langid;
 } __attribute__((__packed__));
 
+struct usb_descriptor_string {
+	/* Size of this descriptor in bytes */
+	uint8_t length;
+	/* CONFIGURATION descriptor type */
+	uint8_t type;
+	/* Unicode string */
+	uint16_t str[];
+} __attribute__((__packed__));
+
 /* USB 2.0 specification code */
 #define USB2_00                     0x0200
 #define USB1_10                     0x0110

@@ -240,7 +240,8 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	board_init();
 
 	DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
-	comm = usb_comm_init(&stm32f_otg_fs_dev);
+	//comm = usb_comm_init(&stm32f_otg_fs_dev);
+	comm = custom_comm_init();
 
 	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
 	thinkos_console_init();

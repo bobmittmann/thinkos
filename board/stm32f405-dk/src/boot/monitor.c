@@ -74,25 +74,11 @@ extern uint32_t _stack;
 extern const struct thinkos_thread_inf thinkos_main_inf;
 
 void board_init(void);
+void board_on_softreset(void);
 void board_app_task(void * arg);
 
 extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
-
-struct magic_hdr {
-	uint16_t pos;
-	uint16_t cnt;
-};
-
-struct magic_rec {
-	uint32_t mask;
-	uint32_t comp;
-};
-
-struct magic {
-	struct magic_hdr hdr;
-	struct magic_rec rec[];
-};
 
 static const char s_version[] = "ThinkOS " VERSION_NUM "\r\n";
 
@@ -114,10 +100,10 @@ static const char s_hr[] =
 static const char s_confirm[] = "Confirm [y]?";
 
 static int yflash(uint32_t blk_offs, uint32_t blk_size,
-		   const struct magic * magic)
+		   const struct magic_blk * magic)
 {
 	uint32_t * yflash_code = (uint32_t *)(0x20001000);
-	int (* yflash_ram)(uint32_t, uint32_t, const struct magic *) = 
+	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *) = 
 		((void *)yflash_code) + 1;
 //	unsigned int pri;
 	int ret;
@@ -133,7 +119,7 @@ static int yflash(uint32_t blk_offs, uint32_t blk_size,
 	return ret;
 }
 
-static const struct magic app_magic = {
+static const struct magic_blk app_magic = {
 	.hdr = {
 		.pos = 0,
 		.cnt = 3
@@ -151,7 +137,7 @@ static int app_yflash(void)
 }
 
 
-static const struct magic bootloader_magic = {
+static const struct magic_blk bootloader_magic = {
 	.hdr = {
 		.pos = 0,
 		.cnt = 2
@@ -276,6 +262,7 @@ static void pause_all(void)
 	__thinkos_defer_sched();
 }
 
+
 static bool monitor_process_input(struct dbgmon_comm * comm, int c)
 {
 	switch (c) {
@@ -299,20 +286,17 @@ static bool monitor_process_input(struct dbgmon_comm * comm, int c)
 	case CTRL_Y:
 		dbgmon_puts(s_confirm, comm);
 		if (dbgmon_getc(comm) == 'y') {
-			app_yflash();
+			/* Request app upload */
+			dbgmon_req_app_upload(); 
 		} else {
 			dbgmon_puts("\r\n", comm);
 		}
-
 		break;
-
 	case CTRL_Z:
 		dbgmon_puts("^Z\r\n", comm);
-		dbgmon_soft_reset();
 		/* Request app exec */
-		dbgmon_signal(DBGMON_APP_EXEC); 
+		dbgmon_req_app_exec(); 
 		break;
-
 	default:
 		return false;
 	}
@@ -328,17 +312,17 @@ static bool monitor_process_input(struct dbgmon_comm * comm, int c)
 
 void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * param)
 {
+	uint32_t flags = (uint32_t)param;
 	uint32_t sigmask;
-	uint32_t sigset;
+	uint32_t sig;
 	uint8_t buf[1];
 	uint8_t * ptr;
 	int cnt;
-	int len;
-	uint32_t flags = (uint32_t)param;
 
 	/* unmask events */
 	sigmask =  (1 << DBGMON_STARTUP) | (1 << DBGMON_SOFTRST) | 
-		(1 << DBGMON_COMM_RCV) | (1 << DBGMON_TX_PIPE) | 
+		(1 << DBGMON_COMM_RCV) | (1 << DBGMON_COMM_EOT) |
+		(1 << DBGMON_TX_PIPE) | 
 		(1 << DBGMON_RX_PIPE) | (1 << DBGMON_APP_EXEC) |
 		(1 << DBGMON_COMM_CTL);
 	DCC_LOG1(LOG_TRACE, "unmasking events=%08x", sigmask);
@@ -356,87 +340,127 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 
 	DCC_LOG(LOG_TRACE, "Main loop...");
 	for(;;) {
-		sigset = dbgmon_select(sigmask);
-		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+		switch ((sig = dbgmon_sched_select(sigmask))) {
 
-		if (sigset & (1 << DBGMON_COMM_CTL)) {
-			DCC_LOG1(LOG_TRACE, "Comm Ctl, sigset=%08x", sigset);
-			dbgmon_clear(DBGMON_COMM_CTL);
-//			if (!dbgmon_comm_isconnected(comm))	
-//				dbgmon_reset();
-		}
+		DCC_LOG1(LOG_TRACE, "sig=%d", sig);
 
-		if (sigset & (1 << DBGMON_SOFTRST)) {
-			dbgmon_clear(DBGMON_SOFTRST);
-			board_init();
-		}
+		case DBGMON_STARTUP:
+			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
+					 cm3_sp_get());
+			/* first time we run the monitor, start a timer to call the 
+			   board_tick() periodically */
+			sigmask |= (1 << DBGMON_ALARM);
+			dbgmon_alarm(125);
+			break;
 
-		if (sigset & (1 << DBGMON_STARTUP)) {
-			dbgmon_clear(DBGMON_STARTUP);
-		}
+		case DBGMON_SOFTRST:
+			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
+			board_on_softreset();
+			__console_reset();
+			/* Update the console connection flag which was cleared
+			 by __console_reset(). */
+			__console_connect_set(dbgmon_comm_isconnected(comm));
+			break;
 
-		if (sigset & (1 << DBGMON_APP_EXEC)) {
-			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			dbgmon_clear(DBGMON_APP_EXEC);
+		case DBGMON_APP_UPLOAD:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
+			app_yflash();
+			break;
+
+		case DBGMON_APP_EXEC:
 			__app_exec();
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_COMM_RCV)) {
-			DCC_LOG(LOG_TRACE, "DBGMON_COMM_RCV siganl");
-			if (flags & MONITOR_SHELL) { 
-				/* receive from the COMM driver one bye at the time */
-				if (dbgmon_comm_recv(comm, buf, 1) > 0) {
-					int c = buf[0];
-					DCC_LOG1(LOG_INFO, "Comm recv. %c", c);
-					/* process the input character */
-					if (!monitor_process_input(comm, c)) {
-						/* if the character was not consumed by the monitor 
-						   insert into the console pipe */
-						/* get a pointer to the head of the pipe.
-						   __console_rx_pipe_ptr() will return the number of 
-						   consecutive spaces in the buffer. We need only one. */
-						if (__console_rx_pipe_ptr(&ptr) > 0) {
-							/* copy the character into the RX fifo */
-							ptr[0] = c;
-							/* commit the fifo head */
-							__console_rx_pipe_commit(1);
-						}
+		case DBGMON_APP_ERASE:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
+			break;
+
+		case DBGMON_APP_TERM:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
+			break;
+
+		case DBGMON_APP_STOP:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
+			break;
+
+		case DBGMON_APP_RESUME:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
+			break;
+
+
+		case DBGMON_COMM_CTL:
+			DCC_LOG(LOG_MSG, "Comm Ctl.");
+			__console_connect_set(dbgmon_comm_isconnected(comm));
+			break;
+
+		case DBGMON_THREAD_FAULT:
+			DCC_LOG(LOG_TRACE, "Thread fault.");
+			break;
+
+		case DBGMON_EXCEPT:
+			DCC_LOG(LOG_TRACE, "System exception.");
+			break;
+
+		case DBGMON_BREAKPOINT:
+			break;
+
+		case DBGMON_THREAD_STEP:
+			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
+			break;
+
+		case DBGMON_COMM_RCV:
+			/* receive from the COMM driver one bye at the time */
+			if ((cnt = dbgmon_comm_recv(comm, buf, 1)) > 0) {
+				DCC_LOG(LOG_TRACE, "COMM_RCV: 1");
+				int c = buf[0];
+				/* process the input character */
+				if (!monitor_process_input(comm, c)) {
+					/* if the character was not consumed by the monitor 
+					   insert into the console pipe */
+					/* get a pointer to the head of the pipe.
+					 __console_rx_pipe_ptr() will return the number of 
+					 consecutive spaces in the buffer. We need only one. */
+					if (__console_rx_pipe_ptr(&ptr) > 0) {
+						/* copy the character into the RX fifo */
+						ptr[0] = c;
+						/* commit the fifo head */
+						__console_rx_pipe_commit(1);
+					} else {
+						/* discard */
 					}
-				} 
-			} else {
-				if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
-					DCC_LOG1(LOG_INFO, "Comm recv. rx_pipe.free=%d", cnt);
-					if ((len = dbgmon_comm_recv(comm, ptr, cnt)) > 0)
-						__console_rx_pipe_commit(len); 
-				} else {
-					DCC_LOG(LOG_INFO, "Comm recv. Masking DMON_COMM_RCV!");
-					sigmask &= ~(1 << DBGMON_COMM_RCV);
 				}
+			} else {
+				DCC_LOG1(LOG_TRACE, "COMM_RCV: %d", cnt);
 			}
-		}
 
-		if (sigset & (1 << DBGMON_RX_PIPE)) {
+			break;
+
+		case DBGMON_RX_PIPE:
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
-				DCC_LOG1(LOG_INFO, "RX Pipe. rx_pipe.free=%d. "
-						 "Unmaksing DMON_COMM_RCV!", cnt);
+				DCC_LOG1(LOG_TRACE, "RX Pipe. rx_pipe.free=%d. "
+						 "Unmaksing DBGMON_COMM_RCV!", cnt);
 				sigmask |= (1 << DBGMON_COMM_RCV);
 			} else {
-				DCC_LOG(LOG_INFO, "RX Pipe empty!!!");
+				DCC_LOG(LOG_TRACE, "RX Pipe empty!!!");
 			}
-			dbgmon_clear(DBGMON_RX_PIPE);
-		}
+			break;
 
+		case DBGMON_COMM_EOT:
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
+			break;
 
-		if (sigset & (1 << DBGMON_TX_PIPE)) {
+		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+				int n;
 				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
-				cnt = dbgmon_comm_send(comm, ptr, cnt);
-				__console_tx_pipe_commit(cnt); 
-			} else {
-				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
+				n = dbgmon_comm_send(comm, ptr, cnt);
+				__console_tx_pipe_commit(n); 
 			}
+			break;
+
+		case DBGMON_ALARM:
+			break;
 		}
 	}
 }

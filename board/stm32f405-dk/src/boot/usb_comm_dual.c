@@ -50,12 +50,12 @@
 #define EP0_MAX_PKT_SIZE 64
 
 #define EP_OUT0_ADDR 1
-#define EP_IN0_ADDR  2
+#define EP_IN0_ADDR  1
 #define EP_INT0_ADDR 3
 
-#define EP_OUT0_ADDR 4
-#define EP_IN0_ADDR  5
-#define EP_INT0_ADDR 6
+#define EP_OUT1_ADDR 2
+#define EP_IN1_ADDR  2
+#define EP_INT1_ADDR 3
 
 #ifndef CDC_EP_OUT_MAX_PKT_SIZE
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
@@ -72,10 +72,10 @@
 struct cdc_acm_descriptor_config {
 	struct usb_descriptor_configuration cfg;
 	struct usb_descriptor_interface comm_if;
-	struct cdc_header_descriptor hdr;
-	struct cdc_call_management_descriptor cm;
-	struct cdc_abstract_control_management_descriptor acm;
-	struct cdc_union_1slave_descriptor un;
+	struct cdc_descriptor_header hdr;
+	struct cdc_descriptor_call_management cm;
+	struct cdc_descriptor_abstract_control_management acm;
+	struct cdc_descriptor_union_1slave un;
 	struct usb_descriptor_endpoint ep_int;
 	struct usb_descriptor_interface if_data;
 	struct usb_descriptor_endpoint ep_out;
@@ -87,10 +87,10 @@ struct dual_cdc_acm_descriptor_set {
 
 	struct usb_descriptor_interface_association ia0;
 	struct usb_descriptor_interface if0;
-	struct cdc_header_descriptor hdr0;
-	struct cdc_call_management_descriptor cm0;
-	struct cdc_abstract_control_management_descriptor acm0;
-	struct cdc_union_1slave_descriptor un0;
+	struct cdc_descriptor_header hdr0;
+	struct cdc_descriptor_call_management cm0;
+	struct cdc_descriptor_abstract_control_management acm0;
+	struct cdc_descriptor_union_1slave un0;
 	struct usb_descriptor_endpoint ep_int0;
 	struct usb_descriptor_interface if_data0;
 	struct usb_descriptor_endpoint ep_out0;
@@ -98,10 +98,10 @@ struct dual_cdc_acm_descriptor_set {
 
 	struct usb_descriptor_interface_association ia1;
 	struct usb_descriptor_interface if1;
-	struct cdc_header_descriptor hdr1;
-	struct cdc_call_management_descriptor cm1;
-	struct cdc_abstract_control_management_descriptor acm1;
-	struct cdc_union_1slave_descriptor un1;
+	struct cdc_descriptor_header hdr1;
+	struct cdc_descriptor_call_management cm1;
+	struct cdc_descriptor_abstract_control_management acm1;
+	struct cdc_descriptor_union_1slave un1;
 	struct usb_descriptor_endpoint ep_int1;
 	struct usb_descriptor_interface if_data1;
 	struct usb_descriptor_endpoint ep_out1;
@@ -115,35 +115,66 @@ struct dual_cdc_acm_descriptor_set {
 #define CDC_ACM_PRODUCT_ID ST_VCOM_PRODUCT_ID 
 #endif
 
+#define ATMEL_DUAL_VCOM_PRODUCT_ID 0x6133
+#define ST_DUAL_VCOM_PRODUCT_ID 0x1133
+
+#ifndef DUAL_CDC_ACM_PRODUCT_ID
+#define DUAL_CDC_ACM_PRODUCT_ID ST_DUAL_VCOM_PRODUCT_ID 
+#endif
+
 static const struct usb_descriptor_device dual_cdc_acm_desc_dev = {
-		/* Size of this descriptor in bytes */
-		sizeof(struct usb_descriptor_device),
-		/* DEVICE descriptor type */
-		USB_DESCRIPTOR_DEVICE,
-		/* USB specification release number */
-		USB1_10,
-		/* Class code */
-		USB_CLASS_MISCELLANEOUS,
-		/* Subclass code */
-		0x02,
-		/* Protocol code */
-		0x01,
-		/* Control endpoint 0 max. packet size */
-		EP0_MAX_PKT_SIZE,
-		/* Vendor ID */
-		USB_VENDOR_ST,
-		/* Product ID */
-		CDC_ACM_PRODUCT_ID,
-		/* Device release number */
-		0x0002,
-		/* Index of manufacturer string descriptor */
-		0x00,
-		/* Index of product string descriptor */
-		0x01,
-		/* Index of S.N.  string descriptor */
-		0x00,
-		/* Number of possible configurations */
-		0x01
+	/* Size of this descriptor in bytes */
+	.length = sizeof(struct usb_descriptor_device),
+	/* DEVICE descriptor type */
+	.type = USB_DESCRIPTOR_DEVICE,
+	/* USB specification release number */
+	.usb_release = USB2_00,
+	/* Class code */
+	.dev_class = USB_CLASS_MISCELLANEOUS,
+	/* Subclass code */
+	.dev_subclass = 0x02,
+	/* Protocol code */
+	.dev_proto = 0x01,
+	/* Control endpoint 0 max. packet size */
+	.max_pkt_sz0 = EP0_MAX_PKT_SIZE,
+	/* Vendor ID */
+	.vendor_id = USB_VENDOR_ST,
+	/* Product ID */
+	.product_id = DUAL_CDC_ACM_PRODUCT_ID,
+	/* Device release number */
+	.dev_release = 2,
+	/* Index of manufacturer string descriptor */
+	.manufacturer = 1,
+	/* Index of product string descriptor */
+	.product = 2,
+	/* Index of S.N.  string descriptor */
+	.serial_num = 0,
+	/* Number of possible configurations */
+	.num_of_conf = 1
+};
+
+/* device qualifier structure provide information on a high-speed
+   capable device if the device was operating at the other speed.
+   see usb_20.pdf - Section 9.6.2 */
+static const struct usb_descriptor_device_qualifier dual_cdc_acm_desc_qual = {
+	/* Size of this descriptor in bytes */
+	.length = sizeof(struct usb_descriptor_device_qualifier),
+	/* DEVICE_QUALIFIER descriptor type */
+	.descriptortype = USB_DESCRIPTOR_DEVICE_QUALIFIER,
+	/* USB specification release number */
+	.usb = USB2_00,
+	/* Class code */
+	.deviceclass = CDC_DEVICE_CLASS,
+	/* Sub-class code */
+	.devicesubclass = CDC_DEVICE_SUBCLASS,
+	/* Protocol code */
+	.deviceprotocol = CDC_DEVICE_PROTOCOL,
+	/* Control endpoint 0 max. packet size */
+	.maxpacketsize0 = 0,
+	/* Number of possible configurations */
+	.numconfigurations = 0,
+	/* Reserved for future use, must be 0 */
+	.reserved = 0 
 };
 
 #define DUAL_CDC_IF0 0
@@ -151,257 +182,211 @@ static const struct usb_descriptor_device dual_cdc_acm_desc_dev = {
 
 /* Configuration 1 descriptor */
 static const struct dual_cdc_acm_descriptor_set dual_cdc_acm_desc_cfg = {
-		.cfg = {
-			sizeof(struct usb_descriptor_configuration),
-			USB_DESCRIPTOR_CONFIGURATION,
-			sizeof(struct dual_cdc_acm_descriptor_set),
-			/* Number of interfaces for this configuration */
-			4,
-			/* Value to use as an argument for the
-			   Set Configuration request to select this configuration */
-			1,
-			/* Index of string descriptor describing this configuration */
-			0,
-			/* Configuration characteristics - attributes */
-			USB_CONFIG_SELF_NOWAKEUP,
-			/* Maximum power consumption of the device */
-			USB_POWER_MA(250)
-		},
+	.cfg = {
+		.length = sizeof(struct usb_descriptor_configuration),
+		.type = USB_DESCRIPTOR_CONFIGURATION,
+		.total_length = sizeof(struct dual_cdc_acm_descriptor_set),
+		.num_interfaces = 4,
+		.configuration_value = 1,
+		.configuration = 0,
+		.attributes = USB_CONFIG_SELF_NOWAKEUP,
+		.max_power = USB_POWER_MA(250)
+	},
+	/* CDC 0 */
+	/* Interface Association Descriptor */
+	.ia0 = {
+		.length = sizeof(struct usb_descriptor_interface_association),
+		.descriptortype = USB_DESCRIPTOR_INTERFACE_ASSOCIATION,
+		.first_interface = DUAL_CDC_IF0,
+		.interface_count = 2,
+		.function_class = CDC_INTERFACE_CLASS_COMMUNICATION,
+		.function_subclass = CDC_ABSTRACT_CONTROL_MODEL,
+		.function_protocol = CDC_PROTOCOL_NONE,
+		.function = 4
+	},
+	/* Communication Class Interface Descriptor */
+	.if0 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = DUAL_CDC_IF0,
+		.alt_setting = 0,
+		.num_endpoints = 1,
+		.ceclass = CDC_INTERFACE_CLASS_COMMUNICATION,
+		.esubclass = CDC_ABSTRACT_CONTROL_MODEL,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = 3
+	},
+	/* Header Functional Descriptor */
+	.hdr0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_header),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_HEADER,
+		.bcdCDC = CDC1_10
+	},
+	/* Call Management Functional Descriptor */
+	.cm0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_call_management),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_CALL_MANAGEMENT,
+		.bmCapabilities = CDC_CALL_MANAGEMENT_SELF,
+		/* interface used for call management */
+		.bDataInterface = DUAL_CDC_IF0 + 1
+	},
+	/* Abstract Control Management Functional Descriptor */
+	.acm0 = {
+		.bFunctionLength = 
+			sizeof(struct cdc_descriptor_abstract_control_management),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
+		.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
+			CDC_ACM_SENDBREAK
+	},
+	/* Union Functional Descriptor */
+	.un0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_union_1slave),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_UNION,
+		.bMasterInterface = DUAL_CDC_IF0,
+		.bSlaveInterface = DUAL_CDC_IF0 + 1
+	},
+	/* Endpoint 3 descriptor */
+	.ep_int0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
+		.attributes = ENDPOINT_TYPE_INTERRUPT,
+		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
+		.interval = 200
+	},
+	/* Data Class Interface Descriptor Requirement */
+	.if_data0 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = DUAL_CDC_IF0 + 1,
+		.alt_setting = 0,
+		.num_endpoints = 2,
+		.ceclass =  CDC_INTERFACE_CLASS_DATA,
+		.esubclass = CDC_INTERFACE_SUBCLASS_DATA,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = DUAL_CDC_IF0
+	},
+	/* First alternate setting */
+	/* Endpoint 1 descriptor */
+	.ep_out0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress = USB_ENDPOINT_OUT + EP_OUT0_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_OUT_MAX_PKT_SIZE,
+		.interval = 0
+	},
+	/* Endpoint 2 descriptor */
+	.ep_in0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_IN0_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
+		.interval = 0
+	},
 
-		/* CDC 0 */
-		/* Interface Association Descriptor */
-		.ia0 = {
-			/* Size of this descriptor in bytes */
-			.length = sizeof(struct usb_descriptor_interface_association),
-			/* INTERFACE_ASSOCIATION descriptor type */
-			.descriptortype = USB_DESCRIPTOR_INTERFACE_ASSOCIATION,
-			/* First Interface . */
-			.first_interface = DUAL_CDC_IF0,
-			/* Interface Count. */
-			.interface_count = 2,
-			/* Class code */
-			.function_class = CDC_INTERFACE_COMMUNICATION,
-			/* Sub-class */
-			.function_subclass = CDC_ABSTRACT_CONTROL_MODEL,
-			/* Protocol code: no protocol */
-			.function_protocol = CDC_PROTOCOL_NONE,
-			/* Index of the function string descriptor */
-			.function = 0
-		},
-		/* Communication Class Interface Descriptor */
-		.if0 = {
-			.length = sizeof(struct usb_descriptor_interface),
-			.type = USB_DESCRIPTOR_INTERFACE,
-			.number = DUAL_CDC_IF0,
-			.alt_setting = 0,
-			.num_endpoints = 1,
-			.ceclass = CDC_INTERFACE_COMMUNICATION,
-			.esubclass = CDC_ABSTRACT_CONTROL_MODEL,
-			.protocol = CDC_PROTOCOL_NONE,
-			.interface = 0
-		},
-		/* Header Functional Descriptor */
-		.hdr0 = {
-			.bFunctionLength = sizeof(struct cdc_header_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_HEADER,
-			.bcdCDC = CDC1_10
-		},
-		/* Call Management Functional Descriptor */
-		.cm0 = {
-			.bFunctionLength = sizeof(struct cdc_call_management_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_CALL_MANAGEMENT,
-			.bmCapabilities = CDC_CALL_MANAGEMENT_SELF,
-			/* interface used for call management */
-			.bDataInterface = DUAL_CDC_IF0 + 1
-		},
-		/* Abstract Control Management Functional Descriptor */
-		.acm0 = {
-			.bFunctionLength = 
-				sizeof(struct cdc_abstract_control_management_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
-			.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
-				CDC_ACM_SENDBREAK
-		},
-		/* Union Functional Descriptor */
-		.un0 = {
-			.bFunctionLength = sizeof(struct cdc_union_1slave_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_UNION,
-			.bMasterInterface = DUAL_CDC_IF0,
-			.bSlaveInterface = DUAL_CDC_IF0 + 1
-		},
-		/* Endpoint 3 descriptor */
-		.ep_int0 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
-			.attributes = ENDPOINT_TYPE_INTERRUPT,
-			.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-			.interval = 100
-		},
-		/* Data Class Interface Descriptor Requirement */
-		.if_data0 = {
-			/* Size of this descriptor in bytes */
-			.length = sizeof(struct usb_descriptor_interface),
-			/* INTERFACE descriptor type */
-			.type = USB_DESCRIPTOR_INTERFACE,
-			/* Number of this interface */
-			.number = DUAL_CDC_IF0 + 1,
-			/* Value used to select this alternate setting */
-			.alt_setting = 0,
-			/* Number of endpoints used by this interface
-			   (excluding endpoint zero) */
-			.num_endpoints = 2,
-			/* Class code */
-			.ceclass =  CDC_INTERFACE_CLASS_DATA,
-			/* Sub-class */
-			.esubclass = CDC_INTERFACE_SUBCLASS_DATA,
-			/* Protocol code */
-			.protocol = CDC_PROTOCOL_NONE,
-			/* Index of string descriptor describing this interface */
-			.interface = DUAL_CDC_IF0
-		},
-		/* First alternate setting */
-		/* Endpoint 1 descriptor */
-		.ep_out0 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress = USB_ENDPOINT_OUT + EP_OUT0_ADDR,
-			.attributes = ENDPOINT_TYPE_BULK,
-			.maxpacketsize = CDC_EP_OUT_MAX_PKT_SIZE,
-			.interval = 0
-		},
-		/* Endpoint 2 descriptor */
-		.ep_in0 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress= USB_ENDPOINT_IN + EP_IN0_ADDR,
-			.attributes = ENDPOINT_TYPE_BULK,
-			.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
-			.interval = 0
-		}
-
-
-
-
-		/* CDC 1 */
-		/* Interface Association Descriptor */
-		.ia1 = {
-			/* Size of this descriptor in bytes */
-			.length = sizeof(struct usb_descriptor_interface_association),
-			/* INTERFACE_ASSOCIATION descriptor type */
-			.descriptortype = USB_DESCRIPTOR_INTERFACE_ASSOCIATION,
-			/* First Interface . */
-			.first_interface = DUAL_CDC_IF0,
-			/* Interface Count. */
-			.interface_count = 2,
-			/* Class code */
-			.function_class = CDC_INTERFACE_COMMUNICATION,
-			/* Sub-class */
-			.function_subclass = CDC_ABSTRACT_CONTROL_MODEL,
-			/* Protocol code: no protocol */
-			.function_protocol = CDC_PROTOCOL_NONE,
-			/* Index of the function string descriptor */
-			.function = 0
-		},
-		/* Communication Class Interface Descriptor */
-		.if1 = {
-			.length = sizeof(struct usb_descriptor_interface),
-			.type = USB_DESCRIPTOR_INTERFACE,
-			.number = DUAL_CDC_IF1,
-			.alt_setting = 0,
-			.num_endpoints = 1,
-			.ceclass = CDC_INTERFACE_COMMUNICATION,
-			.esubclass = CDC_ABSTRACT_CONTROL_MODEL,
-			.protocol = CDC_PROTOCOL_NONE,
-			.interface = 0
-		},
-		/* Header Functional Descriptor */
-		.hdr1 = {
-			.bFunctionLength = sizeof(struct cdc_header_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_HEADER,
-			.bcdCDC = CDC1_10
-		},
-		/* Call Management Functional Descriptor */
-		.cm1 = {
-			.bFunctionLength = sizeof(struct cdc_call_management_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_CALL_MANAGEMENT,
-			.bmCapabilities = CDC_CALL_MANAGEMENT_SELF,
-			/* interface used for call management */
-			.bDataInterface = DUAL_CDC_IF1 + 1
-		},
-		/* Abstract Control Management Functional Descriptor */
-		.acm1 = {
-			.bFunctionLength = 
-				sizeof(struct cdc_abstract_control_management_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
-			.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
-				CDC_ACM_SENDBREAK
-		},
-		/* Union Functional Descriptor */
-		.un1 = {
-			.bFunctionLength = sizeof(struct cdc_union_1slave_descriptor),
-			.bDescriptorType = CDC_CS_INTERFACE,
-			.bDescriptorSubtype = CDC_UNION,
-			.bMasterInterface = DUAL_CDC_IF1,
-			.bSlaveInterface = DUAL_CDC_IF1 + 1
-		},
-		/* Endpoint 3 descriptor */
-		.ep_int1 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress= USB_ENDPOINT_IN + EP_INT1_ADDR,
-			.attributes = ENDPOINT_TYPE_INTERRUPT,
-			.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-			.interval = 100
-		},
-		/* Data Class Interface Descriptor Requirement */
-		.if_data1 = {
-			/* Size of this descriptor in bytes */
-			.length = sizeof(struct usb_descriptor_interface),
-			/* INTERFACE descriptor type */
-			.type = USB_DESCRIPTOR_INTERFACE,
-			/* Number of this interface */
-			.number = DUAL_CDC_IF1 + 1,
-			/* Value used to select this alternate setting */
-			.alt_setting = 0,
-			/* Number of endpoints used by this interface
-			   (excluding endpoint zero) */
-			.num_endpoints = 2,
-			/* Class code */
-			.ceclass =  CDC_INTERFACE_CLASS_DATA,
-			/* Sub-class */
-			.esubclass = CDC_INTERFACE_SUBCLASS_DATA,
-			/* Protocol code */
-			.protocol = CDC_PROTOCOL_NONE,
-			/* Index of string descriptor describing this interface */
-			.interface = DUAL_CDC_IF1
-		},
-		/* First alternate setting */
-		/* Endpoint 1 descriptor */
-		.ep_out1 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress = USB_ENDPOINT_OUT + EP_OUT1_ADDR,
-			.attributes = ENDPOINT_TYPE_BULK,
-			.maxpacketsize = CDC_EP_OUT_MAX_PKT_SIZE,
-			.interval = 0
-		},
-		/* Endpoint 2 descriptor */
-		.ep_in1 = {
-			.length = sizeof(struct usb_descriptor_endpoint),
-			.type = USB_DESCRIPTOR_ENDPOINT,
-			.endpointaddress= USB_ENDPOINT_IN + EP_IN1_ADDR,
-			.attributes = ENDPOINT_TYPE_BULK,
-			.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
-			.interval = 0
-		}
+	/* CDC 1 */
+	/* Interface Association Descriptor */
+	.ia1 = {
+		/* Size of this descriptor in bytes */
+		.length = sizeof(struct usb_descriptor_interface_association),
+		.descriptortype = USB_DESCRIPTOR_INTERFACE_ASSOCIATION,
+		.first_interface = DUAL_CDC_IF1,
+		.interface_count = 2,
+		.function_class = CDC_INTERFACE_CLASS_COMMUNICATION,
+		.function_subclass = CDC_ABSTRACT_CONTROL_MODEL,
+		.function_protocol = CDC_PROTOCOL_NONE,
+		.function = 5
+	},
+	/* Communication Class Interface Descriptor */
+	.if1 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = DUAL_CDC_IF1,
+		.alt_setting = 0,
+		.num_endpoints = 1,
+		.ceclass = CDC_INTERFACE_CLASS_COMMUNICATION,
+		.esubclass = CDC_ABSTRACT_CONTROL_MODEL,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = 3
+	},
+	/* Header Functional Descriptor */
+	.hdr1 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_header),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_HEADER,
+		.bcdCDC = CDC1_10
+	},
+	/* Call Management Functional Descriptor */
+	.cm1 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_call_management),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_CALL_MANAGEMENT,
+		.bmCapabilities = CDC_CALL_MANAGEMENT_SELF,
+		.bDataInterface = DUAL_CDC_IF1 + 1
+	},
+	/* Abstract Control Management Functional Descriptor */
+	.acm1 = {
+		.bFunctionLength = 
+			sizeof(struct cdc_descriptor_abstract_control_management),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
+		.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
+			CDC_ACM_SENDBREAK
+	},
+	/* Union Functional Descriptor */
+	.un1 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_union_1slave),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_UNION,
+		.bMasterInterface = DUAL_CDC_IF1,
+		.bSlaveInterface = DUAL_CDC_IF1 + 1
+	},
+	/* Endpoint 3 descriptor */
+	.ep_int1 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_INT1_ADDR,
+		.attributes = ENDPOINT_TYPE_INTERRUPT,
+		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
+		.interval = 200
+	},
+	/* Data Class Interface Descriptor Requirement */
+	.if_data1 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = DUAL_CDC_IF1 + 1,
+		.alt_setting = 0,
+		.num_endpoints = 2,
+		.ceclass =  CDC_INTERFACE_CLASS_DATA,
+		.esubclass = CDC_INTERFACE_SUBCLASS_DATA,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = 0  
+	},
+	/* First alternate setting */
+	/* Endpoint 1 descriptor */
+	.ep_out1 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress = USB_ENDPOINT_OUT + EP_OUT1_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_OUT_MAX_PKT_SIZE,
+		.interval = 0
+	},
+	/* Endpoint 2 descriptor */
+	.ep_in1 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_IN1_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
+		.interval = 0
+	}
 };
 
 
@@ -434,52 +419,93 @@ static const struct dual_cdc_acm_descriptor_set dual_cdc_acm_desc_cfg = {
 #define CDC_DATA_BITS_MAX 16
 
 
-#define LANG_STR_SZ              4
 /* LangID = 0x0409: U.S. English */
-static const uint8_t cdc_acm_lang_str[LANG_STR_SZ] = {
-	LANG_STR_SZ, USB_DESCRIPTOR_STRING,
-	0x09, 0x04
+const struct usb_descriptor_string language_english_us = {
+	4, USB_DESCRIPTOR_STRING, { 0x0409 }
 };
 
-#define VENDOR_STR_SZ            38
-static const uint8_t cdc_acm_vendor_str[VENDOR_STR_SZ] = {
-	VENDOR_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Manufacturer: "STMicroelectronics" */
-	'S', 0, 'T', 0, 'M', 0, 'i', 0, 'c', 0, 'r', 0, 'o', 0, 'e', 0, 'l', 0, 
-	'e', 0, 'c', 0, 't', 0, 'r', 0, 'o', 0, 'n', 0, 'i', 0, 'c', 0, 's', 0
+const struct usb_descriptor_string stmicroelectronics_str = {
+	19 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'S', 'T', 'M', 'i', 'c', 'r', 'o', 'e', 'l', 'e', 
+		'c', 't', 'r', 'o', 'n', 'i', 'c', 's', 0 
+	}
 };
 
-
-#define PRODUCT_STR_SZ           44
-static const uint8_t cdc_acm_product_str[PRODUCT_STR_SZ] = {
-	PRODUCT_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Product name: "ThinkOS Debug Monitor" */
-	'T', 0, 'h', 0, 'i', 0, 'n', 0, 'k', 0, 'O', 0, 'S', 0, ' ', 0, 'D', 0, 
-	'e', 0, 'b', 0, 'u', 0, 'g', 0, ' ', 0, 'M', 0, 'o', 0, 'n', 0, 'i', 0, 
-	't', 0, 'o', 0, 'r', 0,
+const struct usb_descriptor_string composite_demo_str = {
+	14 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'C', 'o', 'm', 'p', 'o', 's', 'i', 't', 'e', ' ', 
+		'D', 'e', 'm', 'o'
+	}
 };
 
+const struct usb_descriptor_string atmel_str = {
+	5 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'A', 't', 'm', 'e', 'l'
+	}
+};
+
+/* Interface 0: "ST VCOM" */
+const struct usb_descriptor_string st_vcom_str = {
+	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'S', 'T', ' ', 'V', 'C', 'O', 'M', 0
+	}
+};
+
+/* Product name: "ThinkOS Debug Monitor" */
+const struct usb_descriptor_string thinkos_debug_monitor_str = {
+	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
+		'b', 'u', 'g', ' ', 'M', 'o', 'n', 'i', 't', 'o', 
+		'r', 0
+	}
+};
+
+const struct usb_descriptor_string thinkos_com_dual_str = {
+	17 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'O', 
+		'M', ' ', 'D', 'u', 'a', 'l', 0
+	}
+};
+const struct usb_descriptor_string usb_serial_cdc_device_str = {
+	23 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'U', 'S', 'B', ' ', 'S', 'e', 'r', 'i', 'a', 'l', 
+		' ', '(', 'C', 'D', 'C', ')', 'D', 'e', 'v', 'i',
+		'c', 'e', 0
+	}
+};
+
+const struct usb_descriptor_string debug_monitor_str = {
+	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
+		'b', 'u', 'g', '/', 'M', 'o', 'n', 'i', 't', 'o', 
+		'r', 0
+	}
+};
+
+const struct usb_descriptor_string console_str = {
+	16 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'o', 
+		'n', 's', 'o', 'l', 'e', 0
+	}
+};
+
+//"USB Serial (CDC) Generic Device"
+
+/* Serial number: "54 68 69 6e 6b 4f 53" */
 #define SERIAL_STR_SZ            30
-static const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
+const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
 	SERIAL_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Serial number: "54 68 69 6e 6b 4f 53" */
 	'5', 0, '4', 0, '6', 0, '8', 0, '6', 0, '9', 0, '6', 0, 'E', 0, 
 	'6', 0, 'B', 0, '4', 0, 'F', 0, '5', 0, '3', 0
 };
 
-#define INTERFACE_STR_SZ         16
-static const uint8_t cdc_acm_interface_str[INTERFACE_STR_SZ] = {
-	INTERFACE_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Interface 0: "ST VCOM" */
-	'S', 0, 'T', 0, ' ', 0, 'V', 0, 'C', 0, 'O', 0, 'M', 0
-};
-
-static const uint8_t * const cdc_acm_str[] = {
-	cdc_acm_lang_str,
-	cdc_acm_vendor_str,
-	cdc_acm_product_str,
-	cdc_acm_serial_str,
-	cdc_acm_interface_str
+static const struct usb_descriptor_string * const cdc_acm_str[] = {
+	&language_english_us,
+	&stmicroelectronics_str,
+	&thinkos_com_dual_str,
+	&usb_serial_cdc_device_str,
+	&debug_monitor_str,
+	&console_str
 };
 
 #define USB_STRCNT() (sizeof(cdc_acm_str) / sizeof(uint8_t *))
@@ -536,18 +562,22 @@ struct usb_cdc_acm_dev {
 
 };
 
+struct usb_class_if {
+	struct usb_cdc_acm_dev dev[2];
+};
+
 static void usb_mon_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	DCC_LOG1(LOG_MSG, "COMM_RCV! %d", len);
+	struct usb_cdc_acm_dev * dev = cl->dev;
+	DCC_LOG1(LOG_TRACE, "COMM_RCV! %d", len);
 	dev->rx_seq += len;
 	dbgmon_signal(DBGMON_COMM_RCV);
 }
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	struct usb_cdc_acm_dev * dev = cl->dev;
 	dev->tx_ack++;
 	DCC_LOG(LOG_MSG, "COMM_EOT");
 	dbgmon_signal(DBGMON_COMM_EOT);
@@ -559,36 +589,84 @@ static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
 }
 
 static const usb_dev_ep_info_t usb_mon_in_info = {
-	.addr = USB_ENDPOINT_IN + EP_IN_ADDR,
+	.addr = USB_ENDPOINT_IN + EP_IN0_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
 	.on_in = usb_mon_on_eot
 };
 
 static const usb_dev_ep_info_t usb_mon_out_info = {
-	.addr = USB_ENDPOINT_OUT + EP_OUT_ADDR,
+	.addr = USB_ENDPOINT_OUT + EP_OUT0_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
 	.on_out = usb_mon_on_rcv
 };
 
 static const usb_dev_ep_info_t usb_mon_int_info = {
-	.addr = USB_ENDPOINT_IN + EP_INT_ADDR,
+	.addr = USB_ENDPOINT_IN + EP_INT0_ADDR,
 	.attr = ENDPOINT_TYPE_INTERRUPT,
 	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
 	.on_in = usb_mon_on_eot_int
 };
 
-/* Setup requests callback handler */
-static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) 
+static void usb_aux_on_rcv(usb_class_t * cl, 
+						   unsigned int ep_id, unsigned int len)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
+	struct usb_cdc_acm_dev * dev = &cl->dev[1];
+	DCC_LOG1(LOG_TRACE, "AUX RCV! %d", len);
+	usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+						dev->rx_buf, CDC_EP_IN_MAX_PKT_SIZE);
+	usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
+}
+
+static void usb_aux_on_eot(usb_class_t * cl, unsigned int ep_id)
+{
+	//struct usb_cdc_acm_dev * dev = &cl->dev[1];
+	DCC_LOG(LOG_MSG, "AUX EOT");
+}
+
+static void usb_aux_on_eot_int(usb_class_t * cl, unsigned int ep_id)
+{
+	//struct usb_cdc_acm_dev * dev = &cl->dev[1];
+	DCC_LOG1(LOG_TRACE, "ep_id=%d", ep_id);
+}
+
+static const usb_dev_ep_info_t usb_aux_in_info = {
+	.addr = USB_ENDPOINT_IN + EP_IN1_ADDR,
+	.attr = ENDPOINT_TYPE_BULK,
+	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
+	.on_in = usb_aux_on_eot
+};
+
+static const usb_dev_ep_info_t usb_aux_out_info = {
+	.addr = USB_ENDPOINT_OUT + EP_OUT1_ADDR,
+	.attr = ENDPOINT_TYPE_BULK,
+	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
+	.on_out = usb_aux_on_rcv
+};
+
+static const usb_dev_ep_info_t usb_aux_int_info = {
+	.addr = USB_ENDPOINT_IN + EP_INT1_ADDR,
+	.attr = ENDPOINT_TYPE_INTERRUPT,
+	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
+	.on_in = usb_aux_on_eot_int
+};
+
+/* Setup requests callback handler */
+static int usb_mon_on_setup(usb_class_t * cl, 
+							struct usb_request * req, void ** ptr) 
+{
+	struct usb_cdc_acm_dev * dev = cl->dev;
+	struct usb_dev * usb = dev->usb;
 	int value = req->value;
 	int index = req->index;
 	int len = 0;
 	int desc;
+	int j;
 
 	(void)index;
+
+	j = (index > 1) ? 1 : 0;
 
 	/* Handle supported standard device request Cf
 	 Table 9-3 in USB specification Rev 1.1 */
@@ -602,8 +680,16 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 
 		if (desc == USB_DESCRIPTOR_DEVICE) {
 			/* Return Device Descriptor */
-			*ptr = (void *)&cdc_acm_desc_dev;
+			*ptr = (void *)&dual_cdc_acm_desc_dev;
 			len = sizeof(struct usb_descriptor_device);
+			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
+			break;
+		}
+
+		if (desc == USB_DESCRIPTOR_DEVICE_QUALIFIER) {
+			/* Return Device Descriptor */
+			*ptr = (void *)&dual_cdc_acm_desc_qual;
+			len = sizeof(struct usb_descriptor_device_qualifier);
 			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
 			break;
 		}
@@ -611,7 +697,7 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 		if (desc == USB_DESCRIPTOR_CONFIGURATION) {
 			/* Return Configuration Descriptor */
 			*ptr = (void *)&dual_cdc_acm_desc_cfg;
-			len = sizeof(struct dual_cdc_acm_descriptor_config);
+			len = sizeof(struct dual_cdc_acm_descriptor_set);
 			DCC_LOG1(LOG_TRACE, "GetDesc: Config: len=%d", len);
 			break;
 		}
@@ -621,11 +707,11 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 			DCC_LOG1(LOG_TRACE, "GetDesc: String[%d]", n);
 			if (n < USB_STRCNT()) {
 				*ptr = (void *)cdc_acm_str[n];
-				len = cdc_acm_str[n][0];
+				len = cdc_acm_str[n]->length;
 			}
 			break;
 		}
-		len = -1;
+		len = 0;
 		DCC_LOG1(LOG_TRACE, "GetDesc: %d ?", desc);
 		break;
 
@@ -636,17 +722,25 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 	case STD_SET_CONFIGURATION: {
 		DCC_LOG1(LOG_TRACE, "SetCfg: %d", value);
 		if (value) {
-			dev->in_ep = usb_dev_ep_init(dev->usb, &usb_mon_in_info, NULL, 0);
-			dev->out_ep = usb_dev_ep_init(dev->usb, &usb_mon_out_info, NULL, 0);
-			dev->int_ep = usb_dev_ep_init(dev->usb, &usb_mon_int_info, NULL, 0);
-			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
+			DCC_LOG(LOG_TRACE, "[CONFIGURED]");
+			dev[0].in_ep = usb_dev_ep_init(usb, &usb_mon_in_info, NULL, 0);
+			dev[0].out_ep = usb_dev_ep_init(usb, &usb_mon_out_info, NULL, 0);
+			dev[0].int_ep = usb_dev_ep_init(usb, &usb_mon_int_info, NULL, 0);
+			dev[1].in_ep = usb_dev_ep_init(usb, &usb_aux_in_info, NULL, 0);
+			dev[1].out_ep = usb_dev_ep_init(usb, &usb_aux_out_info, NULL, 0);
+			dev[1].int_ep = usb_dev_ep_init(usb, &usb_aux_int_info, NULL, 0);
+			usb_dev_ep_ctl(usb, dev->out_ep, USB_EP_RECV_OK);
 			dev->configured = 1;
 		} else {
-			usb_dev_ep_ctl(dev->usb, dev->in_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev->int_ep, USB_EP_DISABLE);
+			DCC_LOG(LOG_TRACE, "[UNCONFIGURED]");
+			usb_dev_ep_ctl(dev->usb, dev[0].in_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[0].out_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[0].int_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[1].in_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[1].out_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[1].int_ep, USB_EP_DISABLE);
+			dev->configured = 0;
 		}
-		DCC_LOG(LOG_TRACE, "[CONFIGURED]");
 		break;
 	}
 
@@ -658,7 +752,7 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 
 	case STD_GET_CONFIGURATION:
 		DCC_LOG(LOG_TRACE, "GetCfg");
-		*ptr = (void *)&dev->configured;
+		*ptr = (void *)&dev[j].configured;
 		len = 1;
 		break;
 
@@ -735,8 +829,9 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 	case SET_LINE_CODING: 
 		{
 			struct cdc_line_coding * lc;
-			lc = (struct cdc_line_coding *)dev->ctl_buf;
+			lc = (struct cdc_line_coding *)dev[j].ctl_buf;
 			(void)lc;
+			DCC_LOG1(LOG_TRACE, "[%d] CDC SetLn", j);
 			DCC_LOG1(LOG_TRACE, "dsDTERate=%d", lc->dwDTERate);
 			DCC_LOG1(LOG_TRACE, "bCharFormat=%d", lc->bCharFormat);
 			DCC_LOG1(LOG_TRACE, "bParityType=%d", lc->bParityType);
@@ -745,15 +840,16 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 		}
 
 	case GET_LINE_CODING:
-		DCC_LOG(LOG_TRACE, "CDC GetLn");
+		DCC_LOG1(LOG_TRACE, "[%d] CDC GetLn", j);
 		/* Return Line Coding */
 		*ptr = (void *)&usb_cdc_lc;
 		len = sizeof(struct cdc_line_coding);
 		break;
 
 	case SET_CONTROL_LINE_STATE:
-		dev->acm_ctrl = value;
-		DCC_LOG2(LOG_TRACE, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
+		dev[j].acm_ctrl = value;
+		DCC_LOG3(LOG_TRACE, "[%d] CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
+				 j,
 				(value & CDC_DTE_PRESENT) ? 1 : 0,
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
 		/* signal monitor */
@@ -984,7 +1080,7 @@ static void usb_comm_rxflowctrl(const void * comm, bool stop)
 #endif
 }
 
-static struct usb_cdc_acm_dev usb_cdc_comm_dev;
+static struct usb_class_if usb_comm_dual_dev;
 
 static const usb_class_events_t usb_mon_ev = {
 	.on_reset = usb_mon_on_reset,
@@ -1002,30 +1098,33 @@ static const struct dbgmon_comm_op usb_cdc_comm_op = {
 };
 
 static const struct dbgmon_comm usb_comm_instance = {
-	.dev = (void *)&usb_cdc_comm_dev,
+	.dev = (void *)&usb_comm_dual_dev,
 	.op = &usb_cdc_comm_op,
 };
 
 const struct dbgmon_comm * custom_comm_init(void)
 {
-	struct usb_cdc_acm_dev * dev = &usb_cdc_comm_dev;
-	usb_class_t * cl =  (usb_class_t *)dev;
+	struct usb_cdc_acm_dev * dev = usb_comm_dual_dev.dev;
+	struct usb_class_if * cl = &usb_comm_dual_dev;
+	int i;
 
 	/* initialize USB device */
-	dev->usb = (usb_dev_t *)&stm32f_otg_fs_dev;
-	dev->rx_cnt = 0;
-	dev->rx_pos = 0;
-	dev->tx_seq = 0; 
-	dev->tx_ack = 0; 
-	dev->rx_seq = 0;
-	dev->rx_ack = 0;
+	for (i = 0; i < 2; ++i) {
+		 dev[i].usb = (usb_dev_t *)&stm32f_otg_fs_dev;
+		 dev[i].rx_cnt = 0;
+		 dev[i].rx_pos = 0;
+		 dev[i].tx_seq = 0; 
+		 dev[i].tx_ack = 0; 
+		 dev[i].rx_seq = 0;
+		 dev[i].rx_ack = 0;
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
-	dev->rx_flowctrl = false;
-	dev->rx_paused = false;
+		 dev[i].rx_flowctrl = false;
+		 dev[i].rx_paused = false;
 #endif
-	dev->configured = 0;
+		 dev[i].configured = 0;
+	}
 
-	DCC_LOG(LOG_MSG, "usb_dev_init()");
+	DCC_LOG(LOG_TRACE, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
 
 	return &usb_comm_instance;

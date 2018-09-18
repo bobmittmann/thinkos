@@ -22,14 +22,16 @@
 THINKOSDIR = ../../../..
 SDKDIR = $(THINKOSDIR)/sdk
 
-VERSION_DATE = "2018-05-19"
+VERSION_DATE = "2018-09-17"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "26"
+VERSION_MINOR = "27"
 
 PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c monitor.c \
-		 otg_xflash_pic.c usb_comm_audio.c #app_main.c
+CFILES = boot.c monitor.c otg_xflash_pic.c \
+		 usb_comm_dual.c 
+#usb_comm_audio.c 
+#app_main.c
 
 #CFILES = $(THINKOSDIR)/boot/boot.c $(THINKOSDIR)/boot/monitor.c
 

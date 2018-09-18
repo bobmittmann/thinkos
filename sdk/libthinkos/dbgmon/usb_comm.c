@@ -67,10 +67,10 @@
 struct cdc_acm_descriptor_config {
 	struct usb_descriptor_configuration cfg;
 	struct usb_descriptor_interface comm_if;
-	struct cdc_header_descriptor hdr;
-	struct cdc_call_management_descriptor cm;
-	struct cdc_abstract_control_management_descriptor acm;
-	struct cdc_union_1slave_descriptor un;
+	struct cdc_descriptor_header hdr;
+	struct cdc_descriptor_call_management cm;
+	struct cdc_descriptor_abstract_control_management acm;
+	struct cdc_descriptor_union_1slave un;
 	struct usb_descriptor_endpoint ep_int;
 	struct usb_descriptor_interface if_data;
 	struct usb_descriptor_endpoint ep_out;
@@ -161,7 +161,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Header Functional Descriptor */
 		.hdr = {
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_header_descriptor),
+			sizeof(struct cdc_descriptor_header),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Header functional descriptor subtype */
@@ -174,7 +174,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Call Management Functional Descriptor */
 		.cm = {
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_call_management_descriptor),
+			sizeof(struct cdc_descriptor_call_management),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Call management functional descriptor subtype */
@@ -188,7 +188,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Abstract Control Management Functional Descriptor */
 		.acm = {
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_abstract_control_management_descriptor),
+			sizeof(struct cdc_descriptor_abstract_control_management),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Abstract control management functional descriptor subtype */
@@ -199,7 +199,7 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Union Functional Descriptor */
 		.un = {
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_union_1slave_descriptor),
+			sizeof(struct cdc_descriptor_union_1slave),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Union functional descriptor subtype */

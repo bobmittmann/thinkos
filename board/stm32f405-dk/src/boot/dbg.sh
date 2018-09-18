@@ -26,7 +26,7 @@ if [ $? = 0 ] ; then
 
 	if [ $? = 0 ] ; then
 		# Trace
-		${DCCLOG} ${PROG_ELF}
+		${DCCLOG} ${PROG_ELF} | tee out.log
 	fi
 fi
 

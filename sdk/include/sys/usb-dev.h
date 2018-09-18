@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/usb.h>
+#include <usb/core.h>
 
 /* USB class callback functions */
 

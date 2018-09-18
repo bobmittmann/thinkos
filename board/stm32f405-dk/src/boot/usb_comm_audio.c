@@ -36,8 +36,6 @@
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 
-#if (THINKOS_ENABLE_MONITOR)
-
 #ifndef THINKOS_DBGMON_ENABLE_FLOWCTL
 #define THINKOS_DBGMON_ENABLE_FLOWCTL 1 
 #endif
@@ -47,7 +45,7 @@
 #endif
 
 #define EP0_ADDR 0
-#define EP0_MAX_PKT_SIZE 64
+#define EP0_MAX_PKT_SIZE 32 
 
 #define EP_OUT_ADDR 1
 #define EP_IN_ADDR  2
@@ -904,7 +902,7 @@ const struct dbgmon_comm * custom_comm_init(void)
 #endif
 	dev->configured = 0;
 
-	DCC_LOG(LOG_MSG, "usb_dev_init()");
+	DCC_LOG(LOG_TRACE, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
 
 	return &usb_comm_instance;
@@ -914,6 +912,4 @@ const struct dbgmon_comm * custom_comm_getinstance(void)
 {
 	return &usb_comm_instance;
 }
-
-#endif
 
