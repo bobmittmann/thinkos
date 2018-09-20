@@ -372,11 +372,11 @@ void monitor_show_mem(struct monitor * mon)
 	unsigned int size = mon->memdump.size;
 
 	dbgmon_printf(mon->comm, "Addr (0x%08x): ", addr);
-	dmscanf(mon->comm, "%x", &addr);
+	dbgmon_scanf(mon->comm, "%x", &addr);
 	dbgmon_printf(mon->comm, "Size (%d): ", size);
-	dmscanf(mon->comm, "%u", &size);
+	dbgmon_scanf(mon->comm, "%u", &size);
 
-	dbgmon_hexdump(mon->comm, addr, (uintptr_t)addr, size);
+	dbgmon_hexdump(mon->comm, addr, (uintptr_t *)addr, size);
 	mon->memdump.addr = addr;
 	mon->memdump.size = size;
 }
@@ -389,12 +389,12 @@ void monitor_watchpoint(struct monitor * mon)
 	uint32_t addr;
 
 	dbgmon_printf(mon->comm, "No (0..3): ");
-	dmscanf(mon->comm, "%u", &no);
+	dbgmon_scanf(mon->comm, "%u", &no);
 	if (no > 3)
 		dbgmon_printf(mon->comm, "Invalid!\r\n");
 	addr = mon->wp[no].addr;
 	dbgmon_printf(mon->comm, "Addr (0x%08x): ", addr);
-	dmscanf(mon->comm, "%x", &addr);
+	dbgmon_scanf(mon->comm, "%x", &addr);
 	mon->wp[no].addr = addr;
 	dmon_watchpoint_set(addr, 4, 0);
 }
@@ -473,7 +473,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_FS:
 		dbgmon_soft_reset();
 		dbgmon_printf(comm, "^\\\r\nConfirm [y]? ");
-		if (dmgetc(comm) == 'y') {
+		if (dbgmon_getc(comm) == 'y') {
 			this_board.upgrade(comm);
 			dbgmon_printf(comm, "Failed !!!\r\n");
 		} else {
@@ -548,7 +548,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #endif
 	case CTRL_Y:
 		dbgmon_printf(comm, "^\\\r\nUpload application [y]? ");
-		if (dmgetc(comm) == 'y') {
+		if (dbgmon_getc(comm) == 'y') {
 			/* Request app upload */
 			dbgmon_req_app_upload();
 		} else {
@@ -559,7 +559,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_W:
 		dbgmon_printf(comm, "^W\r\n");
 		dbgmon_printf(comm, "^\\\r\nErase application [y]? ");
-		if (dmgetc(comm) == 'y') {
+		if (dbgmon_getc(comm) == 'y') {
 			/* Request app erase */
 			dbgmon_req_app_erase(); 
 		} else {
