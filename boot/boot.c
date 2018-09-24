@@ -72,7 +72,7 @@ int main(int argc, char ** argv)
 	this_board.init();
 
 	DCC_LOG(LOG_INFO, "4. usb_comm_init()");
-#if BOOT_CUSTOM_COMM
+#if BOOT_COMM_CUSTOM_ENABLE
 	comm = custom_comm_init();
 #elif STM32_ENABLE_OTG_FS
 	comm = usb_comm_init(&stm32f_otg_fs_dev);

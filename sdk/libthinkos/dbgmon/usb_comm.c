@@ -26,6 +26,7 @@
 #include <sys/serial.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include <sys/usb-dev.h>
 #include <sys/usb-cdc.h>
@@ -48,9 +49,10 @@
 #define EP0_ADDR 0
 #define EP0_MAX_PKT_SIZE 64
 
-#define EP_OUT_ADDR 1
-#define EP_IN_ADDR  2
-#define EP_INT_ADDR 3
+#define EP_OUT0_ADDR 1
+#define EP_IN0_ADDR  2
+#define EP_INT0_ADDR 3
+
 
 #ifndef CDC_EP_OUT_MAX_PKT_SIZE
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
@@ -77,6 +79,19 @@ struct cdc_acm_descriptor_config {
 	struct usb_descriptor_endpoint ep_in;
 } __attribute__((__packed__));
 
+struct cdc_acm_descriptor_set {
+	struct usb_descriptor_configuration cfg;
+	struct usb_descriptor_interface if0;
+	struct cdc_descriptor_header hdr0;
+	struct cdc_descriptor_call_management cm0;
+	struct cdc_descriptor_abstract_control_management acm0;
+	struct cdc_descriptor_union_1slave un0;
+	struct usb_descriptor_endpoint ep_int0;
+	struct usb_descriptor_interface if_data0;
+	struct usb_descriptor_endpoint ep_out0;
+	struct usb_descriptor_endpoint ep_in0;
+} __attribute__((__packed__));
+
 #define ATMEL_VCOM_PRODUCT_ID 0x6119
 #define ST_VCOM_PRODUCT_ID    0x5740
 
@@ -85,201 +100,161 @@ struct cdc_acm_descriptor_config {
 #endif
 
 static const struct usb_descriptor_device cdc_acm_desc_dev = {
-		/* Size of this descriptor in bytes */
-		sizeof(struct usb_descriptor_device),
-		/* DEVICE descriptor type */
-		USB_DESCRIPTOR_DEVICE,
-		/* USB specification release number */
-		USB1_10,
-		/* Class code */
-		USB_CLASS_COMMUNICATION,
-		/* Subclass code */
-		0x00,
-		/* Protocol code */
-		0x00,
-		/* Control endpoint 0 max. packet size */
-		EP0_MAX_PKT_SIZE,
-		/* Vendor ID */
-		USB_VENDOR_ST,
-		/* Product ID */
-		CDC_ACM_PRODUCT_ID,
-		/* Device release number */
-		0x0002,
-		/* Index of manufacturer string descriptor */
-		0x01,
-		/* Index of product string descriptor */
-		0x02,
-		/* Index of S.N.  string descriptor */
-		0x03,
-		/* Number of possible configurations */
-		0x01
+	/* Size of this descriptor in bytes */
+	.length = sizeof(struct usb_descriptor_device),
+	/* DEVICE descriptor type */
+	.type = USB_DESCRIPTOR_DEVICE,
+	/* USB specification release number */
+	.usb_release = USB2_00,
+	/* Class code */
+	.dev_class = USB_CLASS_COMMUNICATION,
+	/* Subclass code */
+	.dev_subclass = 0x00,
+	/* Protocol code */
+	.dev_proto = 0x00,
+	/* Control endpoint 0 max. packet size */
+	.max_pkt_sz0 = EP0_MAX_PKT_SIZE,
+	/* Vendor ID */
+	.vendor_id = USB_VENDOR_ST,
+	/* Product ID */
+	.product_id = CDC_ACM_PRODUCT_ID,
+	/* Device release number */
+	.dev_release = 2,
+	/* Index of manufacturer string descriptor */
+	.manufacturer = 1,
+	/* Index of product string descriptor */
+	.product = 2,
+	/* Index of S.N.  string descriptor */
+	.serial_num = 3,
+	/* Number of possible configurations */
+	.num_of_conf = 1
 };
 
+/* device qualifier structure provide information on a high-speed
+   capable device if the device was operating at the other speed.
+   see usb_20.pdf - Section 9.6.2 */
+static const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
+	/* Size of this descriptor in bytes */
+	.length = sizeof(struct usb_descriptor_device_qualifier),
+	/* DEVICE_QUALIFIER descriptor type */
+	.descriptortype = USB_DESCRIPTOR_DEVICE_QUALIFIER,
+	/* USB specification release number */
+	.usb = USB2_00,
+	/* Class code */
+	.deviceclass = CDC_DEVICE_CLASS,
+	/* Sub-class code */
+	.devicesubclass = CDC_DEVICE_SUBCLASS,
+	/* Protocol code */
+	.deviceprotocol = CDC_DEVICE_PROTOCOL,
+	/* Control endpoint 0 max. packet size */
+	.maxpacketsize0 = 0,
+	/* Number of possible configurations */
+	.numconfigurations = 0,
+	/* Reserved for future use, must be 0 */
+	.reserved = 0 
+};
+
+#define CDC_IF0 0
+
 /* Configuration 1 descriptor */
-static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
-		.cfg = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_configuration),
-			/* CONFIGURATION descriptor type */
-			USB_DESCRIPTOR_CONFIGURATION,
-			/* Total length of data returned for this configuration */
-			sizeof(struct cdc_acm_descriptor_config),
-			/* Number of interfaces for this configuration */
-			2,
-			/* Value to use as an argument for the
-			   Set Configuration request to select this configuration */
-			1,
-			/* Index of string descriptor describing this configuration */
-			0,
-			/* Configuration characteristics - attributes */
-			USB_CONFIG_SELF_NOWAKEUP,
-			/* Maximum power consumption of the device */
-			USB_POWER_MA(250)
-		},
-		/* Communication Class Interface Descriptor Requirement */
-		.comm_if = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_interface),
-			/* INTERFACE descriptor type */
-			USB_DESCRIPTOR_INTERFACE,
-			/* Number of this interface */
-			0,
-			/* Value used to select this alternate setting */
-			0,
-			/* Number of endpoints used by this interface
-			   (excluding endpoint zero) */
-			1,
-			/* Class code */
-			CDC_INTERFACE_CLASS_COMMUNICATION,
-			/* Sub-class */
-			CDC_ABSTRACT_CONTROL_MODEL,
-			/* Protocol code: (V.25ter, Common AT commands)*/
-			CDC_PROTOCOL_COMMON_AT_COMMANDS,
-			/* Index of string descriptor describing this interface */
-			0x04
-		},
-		/* Header Functional Descriptor */
-		.hdr = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_descriptor_header),
-			/* CS_INTERFACE descriptor type */
-			CDC_CS_INTERFACE,
-			/* Header functional descriptor subtype */
-			CDC_HEADER,
-			/* USB CDC specification release version */
-			CDC1_10
-		},
-
-
-		/* Call Management Functional Descriptor */
-		.cm = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_descriptor_call_management),
-			/* CS_INTERFACE descriptor type */
-			CDC_CS_INTERFACE,
-			/* Call management functional descriptor subtype */
-			CDC_CALL_MANAGEMENT,
-			/* The capabilities that this configuration supports */
-			1, /* D1 + D0 */
-			/* Interface number of the data class
-			   interface used for call management */
-			1
-		},
-		/* Abstract Control Management Functional Descriptor */
-		.acm = {
-			/* Size of this descriptor in bytes */
+static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
+	.cfg = {
+		.length = sizeof(struct usb_descriptor_configuration),
+		.type = USB_DESCRIPTOR_CONFIGURATION,
+		.total_length = sizeof(struct cdc_acm_descriptor_set),
+		.num_interfaces = 2,
+		.configuration_value = 1,
+		.configuration = 0,
+		.attributes = USB_CONFIG_SELF_NOWAKEUP,
+		.max_power = USB_POWER_MA(250)
+	},
+	/* CDC 0 */
+	/* Communication Class Interface Descriptor */
+	.if0 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = CDC_IF0,
+		.alt_setting = 0,
+		.num_endpoints = 1,
+		.ceclass = CDC_INTERFACE_CLASS_COMMUNICATION,
+		.esubclass = CDC_ABSTRACT_CONTROL_MODEL,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = 4
+	},
+	/* Header Functional Descriptor */
+	.hdr0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_header),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_HEADER,
+		.bcdCDC = CDC1_10
+	},
+	/* Call Management Functional Descriptor */
+	.cm0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_call_management),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_CALL_MANAGEMENT,
+		.bmCapabilities = CDC_CALL_MANAGEMENT_SELF,
+		/* interface used for call management */
+		.bDataInterface = CDC_IF0 + 1
+	},
+	/* Abstract Control Management Functional Descriptor */
+	.acm0 = {
+		.bFunctionLength = 
 			sizeof(struct cdc_descriptor_abstract_control_management),
-			/* CS_INTERFACE descriptor type */
-			CDC_CS_INTERFACE,
-			/* Abstract control management functional descriptor subtype */
-			CDC_ABSTRACT_CONTROL_MANAGEMENT,
-			/* Capabilities supported by this configuration */
-			0x06
-		},
-		/* Union Functional Descriptor */
-		.un = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_descriptor_union_1slave),
-			/* CS_INTERFACE descriptor type */
-			CDC_CS_INTERFACE,
-			/* Union functional descriptor subtype */
-			CDC_UNION,
-			/* The interface number designated as master */
-			0,
-			/* The interface number designated as first slave */
-			1
-		},
-		/* Endpoint 3 descriptor */
-		.ep_int = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_endpoint),
-			/* ENDPOINT descriptor type */
-			USB_DESCRIPTOR_ENDPOINT,
-			/* Address of the endpoint on the USB device */
-			USB_ENDPOINT_IN + EP_INT_ADDR,
-			/* Endpoint attributes when configured */
-			ENDPOINT_TYPE_INTERRUPT,
-			/* Maximum packet size this endpoint is capable
-			   of sending or receiving */
-			CDC_EP_INT_MAX_PKT_SIZE,
-			/* Interval for polling endpoint (ms) */
-			100
-		},
-		/* Data Class Interface Descriptor Requirement */
-		.if_data = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_interface),
-			/* INTERFACE descriptor type */
-			USB_DESCRIPTOR_INTERFACE,
-			/* Number of this interface */
-			1,
-			/* Value used to select this alternate setting */
-			0,
-			/* Number of endpoints used by this interface
-			   (excluding endpoint zero) */
-			2,
-			/* Class code */
-			CDC_INTERFACE_CLASS_DATA,
-			/* Sub-class */
-			0,
-			/* Protocol code */
-			0,
-			/* Index of string descriptor describing this interface */
-			0
-		},
-		/* First alternate setting */
-		/* Endpoint 1 descriptor */
-		.ep_out = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_endpoint),
-			/* ENDPOINT descriptor type */
-			USB_DESCRIPTOR_ENDPOINT,
-			/* Address of the endpoint on the USB device */
-			USB_ENDPOINT_OUT + EP_OUT_ADDR,
-			/* Endpoint attributes when configured */
-			ENDPOINT_TYPE_BULK,
-			/* Maximum packet size this endpoint is capable of
-			   sending or receiving */
-			CDC_EP_OUT_MAX_PKT_SIZE,
-			/* Interval for polling endpoint for data transfers */
-			0x0
-		},
-		/* Endpoint 2 descriptor */
-		.ep_in = {
-			/* Size of this descriptor in bytes */
-			sizeof(struct usb_descriptor_endpoint),
-			/* ENDPOINT descriptor type */
-			USB_DESCRIPTOR_ENDPOINT,
-			/* Address of the endpoint on the USB device */
-			USB_ENDPOINT_IN + EP_IN_ADDR,
-			/* Endpoint attributes when configured */
-			ENDPOINT_TYPE_BULK,
-			/* Maximum packet size this endpoint is capable of
-			   sending or receiving */
-			CDC_EP_IN_MAX_PKT_SIZE,
-			/* Interval for polling endpoint for data transfers */
-			0x0
-		}
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
+		.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
+			CDC_ACM_SENDBREAK
+	},
+	/* Union Functional Descriptor */
+	.un0 = {
+		.bFunctionLength = sizeof(struct cdc_descriptor_union_1slave),
+		.bDescriptorType = CDC_CS_INTERFACE,
+		.bDescriptorSubtype = CDC_UNION,
+		.bMasterInterface = CDC_IF0,
+		.bSlaveInterface = CDC_IF0 + 1
+	},
+	/* Endpoint 3 descriptor */
+	.ep_int0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
+		.attributes = ENDPOINT_TYPE_INTERRUPT,
+		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
+		.interval = 200
+	},
+	/* Data Class Interface Descriptor Requirement */
+	.if_data0 = {
+		.length = sizeof(struct usb_descriptor_interface),
+		.type = USB_DESCRIPTOR_INTERFACE,
+		.number = CDC_IF0 + 1,
+		.alt_setting = 0,
+		.num_endpoints = 2,
+		.ceclass =  CDC_INTERFACE_CLASS_DATA,
+		.esubclass = CDC_INTERFACE_SUBCLASS_DATA,
+		.protocol = CDC_PROTOCOL_NONE,
+		.interface = CDC_IF0
+	},
+	/* First alternate setting */
+	/* Endpoint 1 descriptor */
+	.ep_out0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress = USB_ENDPOINT_OUT + EP_OUT0_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_OUT_MAX_PKT_SIZE,
+		.interval = 0
+	},
+	/* Endpoint 2 descriptor */
+	.ep_in0 = {
+		.length = sizeof(struct usb_descriptor_endpoint),
+		.type = USB_DESCRIPTOR_ENDPOINT,
+		.endpointaddress= USB_ENDPOINT_IN + EP_IN0_ADDR,
+		.attributes = ENDPOINT_TYPE_BULK,
+		.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
+		.interval = 0
+	},
+
 };
 
 
@@ -312,52 +287,91 @@ static const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 #define CDC_DATA_BITS_MAX 16
 
 
-#define LANG_STR_SZ              4
 /* LangID = 0x0409: U.S. English */
-static const uint8_t cdc_acm_lang_str[LANG_STR_SZ] = {
-	LANG_STR_SZ, USB_DESCRIPTOR_STRING,
-	0x09, 0x04
+const struct usb_descriptor_string language_english_us = {
+	4, USB_DESCRIPTOR_STRING, { 0x0409 }
 };
 
-#define VENDOR_STR_SZ            38
-static const uint8_t cdc_acm_vendor_str[VENDOR_STR_SZ] = {
-	VENDOR_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Manufacturer: "STMicroelectronics" */
-	'S', 0, 'T', 0, 'M', 0, 'i', 0, 'c', 0, 'r', 0, 'o', 0, 'e', 0, 'l', 0, 
-	'e', 0, 'c', 0, 't', 0, 'r', 0, 'o', 0, 'n', 0, 'i', 0, 'c', 0, 's', 0
+const struct usb_descriptor_string stmicroelectronics_str = {
+	19 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'S', 'T', 'M', 'i', 'c', 'r', 'o', 'e', 'l', 'e', 
+		'c', 't', 'r', 'o', 'n', 'i', 'c', 's', 0 
+	}
 };
 
-
-#define PRODUCT_STR_SZ           44
-static const uint8_t cdc_acm_product_str[PRODUCT_STR_SZ] = {
-	PRODUCT_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Product name: "ThinkOS Debug Monitor" */
-	'T', 0, 'h', 0, 'i', 0, 'n', 0, 'k', 0, 'O', 0, 'S', 0, ' ', 0, 'D', 0, 
-	'e', 0, 'b', 0, 'u', 0, 'g', 0, ' ', 0, 'M', 0, 'o', 0, 'n', 0, 'i', 0, 
-	't', 0, 'o', 0, 'r', 0,
+const struct usb_descriptor_string composite_demo_str = {
+	14 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'C', 'o', 'm', 'p', 'o', 's', 'i', 't', 'e', ' ', 
+		'D', 'e', 'm', 'o'
+	}
 };
 
-#define SERIAL_STR_SZ            30
-static const uint8_t cdc_acm_serial_str[SERIAL_STR_SZ] = {
-	SERIAL_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Serial number: "54 68 69 6e 6b 4f 53" */
-	'5', 0, '4', 0, '6', 0, '8', 0, '6', 0, '9', 0, '6', 0, 'E', 0, 
-	'6', 0, 'B', 0, '4', 0, 'F', 0, '5', 0, '3', 0
+const struct usb_descriptor_string atmel_str = {
+	5 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'A', 't', 'm', 'e', 'l'
+	}
 };
 
-#define INTERFACE_STR_SZ         16
-static const uint8_t cdc_acm_interface_str[INTERFACE_STR_SZ] = {
-	INTERFACE_STR_SZ, USB_DESCRIPTOR_STRING,
-	/* Interface 0: "ST VCOM" */
-	'S', 0, 'T', 0, ' ', 0, 'V', 0, 'C', 0, 'O', 0, 'M', 0
+/* Interface 0: "ST VCOM" */
+const struct usb_descriptor_string st_vcom_str = {
+	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'S', 'T', ' ', 'V', 'C', 'O', 'M', 0
+	}
 };
 
-static const uint8_t * const cdc_acm_str[] = {
-	cdc_acm_lang_str,
-	cdc_acm_vendor_str,
-	cdc_acm_product_str,
-	cdc_acm_serial_str,
-	cdc_acm_interface_str
+/* Product name: "ThinkOS Debug Monitor" */
+const struct usb_descriptor_string thinkos_debug_monitor_str = {
+	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
+		'b', 'u', 'g', ' ', 'M', 'o', 'n', 'i', 't', 'o', 
+		'r', 0
+	}
+};
+
+const struct usb_descriptor_string thinkos_com_str = {
+	17 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'O', 
+		'M', ' ', 'D', 'u', 'a', 'l', 0
+	}
+};
+const struct usb_descriptor_string usb_serial_cdc_device_str = {
+	23 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'U', 'S', 'B', ' ', 'S', 'e', 'r', 'i', 'a', 'l', 
+		' ', '(', 'C', 'D', 'C', ')', 'D', 'e', 'v', 'i',
+		'c', 'e', 0
+	}
+};
+
+const struct usb_descriptor_string debug_monitor_str = {
+	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
+		'b', 'u', 'g', '/', 'M', 'o', 'n', 'i', 't', 'o', 
+		'r', 0
+	}
+};
+
+const struct usb_descriptor_string console_str = {
+	16 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'o', 
+		'n', 's', 'o', 'l', 'e', 0
+	}
+};
+
+const struct usb_descriptor_string serial_num_str= {
+	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'5', '4', '6', '8', '6', '9', '6', 'e', '6', 'b', 
+		'4', 'f', '5', '3', 0
+	}
+};
+
+//"USB Serial (CDC) Generic Device"
+
+static const struct usb_descriptor_string * const cdc_acm_str[] = {
+	&language_english_us,
+	&stmicroelectronics_str,
+	&debug_monitor_str,
+	&serial_num_str,
+	&st_vcom_str 
 };
 
 #define USB_STRCNT() (sizeof(cdc_acm_str) / sizeof(uint8_t *))
@@ -392,6 +406,11 @@ struct usb_cdc_acm_dev {
 
 	volatile uint8_t acm_ctrl; /* modem control lines */
 
+	volatile uint32_t tx_seq; 
+	volatile uint32_t tx_ack; 
+
+	volatile uint32_t rx_seq; 
+	volatile uint32_t rx_ack; 
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
 	uint8_t rx_flowctrl;
 	uint8_t rx_paused;
@@ -409,55 +428,73 @@ struct usb_cdc_acm_dev {
 
 };
 
+struct usb_class_if {
+	struct usb_cdc_acm_dev dev;
+};
+
+
 static void usb_mon_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
+#if 0
+	struct usb_cdc_acm_dev * dev = &cl->dev;
+	DCC_LOG1(LOG_TRACE, "COMM_RCV! %d", len);
+	dev->rx_seq += len;
+	dbgmon_signal(DBGMON_COMM_RCV);
+#endif
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	int pos = dev->rx_pos;
-	int cnt = dev->rx_cnt;
+	uint32_t seq;
+	uint32_t ack;
 	int free;
+	int pos;
+	int cnt;
 	int n;
 
-	if (cnt == pos) {
-		cnt = 0;
-		dev->rx_pos = pos = 0;
-		free = CDC_EP_IN_MAX_PKT_SIZE;
-		DCC_LOG3(LOG_INFO, "1. pos=%d free=%d len=%d.......", pos, free, len);
+	seq = dev->rx_seq;
+	ack = dev->rx_seq;
+	free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack);
+	if (len > free) {
+		DCC_LOG3(LOG_WARNING, "len=%d free=%d drop=%d", len, free, len - free);
+		cnt = free;
 	} else {
-		free = CDC_EP_IN_MAX_PKT_SIZE - cnt;
-		if (free < len) {
-#if THINKOS_DBGMON_ENABLE_FLOWCTL
-			if (dev->rx_flowctrl) {
-				dev->rx_paused = true;
-				DCC_LOG(LOG_INFO, "RX paused!");
-				return;
-			} else 
-#endif
-			{
-				DCC_LOG(LOG_WARNING, "overflow!");
-				cnt = 0;
-				dev->rx_pos = pos = 0;
-				free = CDC_EP_IN_MAX_PKT_SIZE; 
-			}
-		}
-		DCC_LOG2(LOG_INFO, "2. pos=%d cnt=%d.......", pos, cnt);
+		cnt = len;
 	}
+	pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
+	if (pos == 0) {
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								&dev->rx_buf[0], cnt);
 
-	n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, &dev->rx_buf[cnt], free);
-	if (n <= 0) {
-		DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_recv() failed!");
+		DCC_LOG4(LOG_TRACE, "1. seq=%d ack=%d cnt=%d n=%d", 
+				 seq, ack, cnt, n);
+
+		seq += n;
+	} else {
+		int m;
+
+		m = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), cnt);
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								&dev->rx_buf[pos],  m);
+		m = cnt - n;
+		m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								&dev->rx_buf[0], m);
+		DCC_LOG5(LOG_TRACE, "seq=%d ack=%d cnt=%d n=%d m=%d", 
+				 seq, ack, cnt, n, m);
+		seq += m + n;
 	}
-	dev->rx_cnt = cnt + n;
+	dev->rx_seq = seq;
 
-	usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-	DCC_LOG(LOG_INFO, "COMM_RCV!");
+	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
+
+	DCC_LOG2(LOG_TRACE, "COMM_RCV seq=%d ack=%d", seq, ack);
 	dbgmon_signal(DBGMON_COMM_RCV);
 }
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
-	DCC_LOG(LOG_MSG, "COMM_EOT");
+//	struct usb_cdc_acm_dev * dev = &cl->dev;
+
 	dbgmon_signal(DBGMON_COMM_EOT);
+	DCC_LOG(LOG_MSG, "COMM_EOT");
 }
 
 static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
@@ -466,36 +503,40 @@ static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
 }
 
 static const usb_dev_ep_info_t usb_mon_in_info = {
-	.addr = USB_ENDPOINT_IN + EP_IN_ADDR,
+	.addr = USB_ENDPOINT_IN + EP_IN0_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
 	.on_in = usb_mon_on_eot
 };
 
 static const usb_dev_ep_info_t usb_mon_out_info = {
-	.addr = USB_ENDPOINT_OUT + EP_OUT_ADDR,
+	.addr = USB_ENDPOINT_OUT + EP_OUT0_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
 	.on_out = usb_mon_on_rcv
 };
 
 static const usb_dev_ep_info_t usb_mon_int_info = {
-	.addr = USB_ENDPOINT_IN + EP_INT_ADDR,
+	.addr = USB_ENDPOINT_IN + EP_INT0_ADDR,
 	.attr = ENDPOINT_TYPE_INTERRUPT,
 	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
 	.on_in = usb_mon_on_eot_int
 };
 
+
 /* Setup requests callback handler */
-static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) 
+static int usb_mon_on_setup(usb_class_t * cl, 
+							struct usb_request * req, void ** ptr) 
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *) cl;
+	struct usb_cdc_acm_dev * dev = &cl->dev;
+	struct usb_dev * usb = dev->usb;
 	int value = req->value;
 	int index = req->index;
 	int len = 0;
 	int desc;
 
 	(void)index;
+
 
 	/* Handle supported standard device request Cf
 	 Table 9-3 in USB specification Rev 1.1 */
@@ -511,49 +552,59 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 			/* Return Device Descriptor */
 			*ptr = (void *)&cdc_acm_desc_dev;
 			len = sizeof(struct usb_descriptor_device);
-			DCC_LOG1(LOG_INFO, "GetDesc: Device: len=%d", len);
+			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
+			break;
+		}
+
+		if (desc == USB_DESCRIPTOR_DEVICE_QUALIFIER) {
+			/* Return Device Descriptor */
+			*ptr = (void *)&cdc_acm_desc_qual;
+			len = sizeof(struct usb_descriptor_device_qualifier);
+			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
 			break;
 		}
 
 		if (desc == USB_DESCRIPTOR_CONFIGURATION) {
 			/* Return Configuration Descriptor */
 			*ptr = (void *)&cdc_acm_desc_cfg;
-			len = sizeof(struct cdc_acm_descriptor_config);
-			DCC_LOG1(LOG_INFO, "GetDesc: Config: len=%d", len);
+			len = sizeof(struct cdc_acm_descriptor_set);
+			DCC_LOG1(LOG_TRACE, "GetDesc: Config: len=%d", len);
 			break;
 		}
 
 		if (desc == USB_DESCRIPTOR_STRING) {
 			int n = value & 0xff;
-			DCC_LOG1(LOG_INFO, "GetDesc: String[%d]", n);
+			DCC_LOG1(LOG_TRACE, "GetDesc: String[%d]", n);
 			if (n < USB_STRCNT()) {
 				*ptr = (void *)cdc_acm_str[n];
-				len = cdc_acm_str[n][0];
+				len = cdc_acm_str[n]->length;
 			}
 			break;
 		}
-		len = -1;
-		DCC_LOG1(LOG_INFO, "GetDesc: %d ?", desc);
+		len = 0;
+		DCC_LOG1(LOG_TRACE, "GetDesc: %d ?", desc);
 		break;
 
 	case STD_SET_ADDRESS:
-		DCC_LOG1(LOG_INFO, "SetAddr: %d [ADDRESS]", value);
+		DCC_LOG1(LOG_TRACE, "SetAddr: %d [ADDRESS]", value);
 		break;
 
 	case STD_SET_CONFIGURATION: {
-		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
+		DCC_LOG1(LOG_TRACE, "SetCfg: %d", value);
 		if (value) {
-			dev->in_ep = usb_dev_ep_init(dev->usb, &usb_mon_in_info, NULL, 0);
-			dev->out_ep = usb_dev_ep_init(dev->usb, &usb_mon_out_info, NULL, 0);
-			dev->int_ep = usb_dev_ep_init(dev->usb, &usb_mon_int_info, NULL, 0);
-			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
+			DCC_LOG(LOG_TRACE, "[CONFIGURED]");
+			dev[0].in_ep = usb_dev_ep_init(usb, &usb_mon_in_info, NULL, 0);
+			dev[0].out_ep = usb_dev_ep_init(usb, &usb_mon_out_info, NULL, 0);
+			dev[0].int_ep = usb_dev_ep_init(usb, &usb_mon_int_info, NULL, 0);
+			usb_dev_ep_ctl(usb, dev->out_ep, USB_EP_RECV_OK);
 			dev->configured = 1;
 		} else {
-			usb_dev_ep_ctl(dev->usb, dev->in_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev->int_ep, USB_EP_DISABLE);
+			DCC_LOG(LOG_TRACE, "[UNCONFIGURED]");
+			usb_dev_ep_ctl(dev->usb, dev[0].in_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[0].out_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev[0].int_ep, USB_EP_DISABLE);
+			dev->configured = 0;
 		}
-		DCC_LOG(LOG_TRACE, "[CONFIGURED]");
 		break;
 	}
 
@@ -574,14 +625,14 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
 		} else if (value == USB_TEST_MODE ) {
 		}
-		DCC_LOG(LOG_INFO, "ClrFeatureDev(%d)", value);
+		DCC_LOG(LOG_TRACE, "ClrFeatureDev(%d)", value);
 		break;
 
 	case STD_SET_FEATURE_DEVICE:
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
 		} else if (value == USB_TEST_MODE ) {
 		}
-		DCC_LOG(LOG_INFO, "SetFeatureDev", value);
+		DCC_LOG(LOG_TRACE, "SetFeatureDev", value);
 		break;
 #endif
 
@@ -594,19 +645,19 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 
 #if 0
 	case STD_CLEAR_FEATURE_INTERFACE:
-		DCC_LOG(LOG_INFO, "ClrFeatureIf(%d,%d)", index, value);
+		DCC_LOG(LOG_TRACE, "ClrFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_SET_FEATURE_INTERFACE:
-		DCC_LOG(LOG_INFO, "SetFeatureIf(%d,%d)", index, value);
+		DCC_LOG(LOG_TRACE, "SetFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_GET_INTERFACE:
-		DCC_LOG(LOG_INFO, "GetInterface(%d)", index);
+		DCC_LOG(LOG_TRACE, "GetInterface(%d)", index);
 		break;
 
 	case STD_SET_INTERFACE:
-		DCC_LOG(LOG_INFO, "SetInterface(%d)", index);
+		DCC_LOG(LOG_TRACE, "SetInterface(%d)", index);
 		break;
 #endif
 
@@ -615,22 +666,22 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 #if 0
 	case STD_GET_STATUS_ENDPOINT:
 		index &= 0x0f;
-		DCC_LOG1(LOG_INFO, "GetStatusEpt:%d", index);
+		DCC_LOG1(LOG_TRACE, "GetStatusEpt:%d", index);
 		break;
 
 	case STD_CLEAR_FEATURE_ENDPOINT:
 		index &= 0x0f;
-		DCC_LOG1(LOG_INFO, "ClrFeatureEP:%d", index);
+		DCC_LOG1(LOG_TRACE, "ClrFeatureEP:%d", index);
 		break;
 
 	case STD_CLEAR_FEATURE_ENDPOINT:
 		index &= 0x0f;
-		DCC_LOG1(LOG_INFO, "SetFeatureEP:%d", index);
+		DCC_LOG1(LOG_TRACE, "SetFeatureEP:%d", index);
 		break;
 
 	case STD_SYNCH_FRAME:
 		index &= 0x0f;
-		DCC_LOG1(LOG_INFO, "SetFeatureEP:%d", index);
+		DCC_LOG1(LOG_TRACE, "SetFeatureEP:%d", index);
 		break;
 #endif
 
@@ -644,15 +695,16 @@ static int usb_mon_on_setup(usb_class_t * cl, struct usb_request * req, void ** 
 			struct cdc_line_coding * lc;
 			lc = (struct cdc_line_coding *)dev->ctl_buf;
 			(void)lc;
-			DCC_LOG1(LOG_INFO, "dsDTERate=%d", lc->dwDTERate);
-			DCC_LOG1(LOG_INFO, "bCharFormat=%d", lc->bCharFormat);
-			DCC_LOG1(LOG_INFO, "bParityType=%d", lc->bParityType);
-			DCC_LOG1(LOG_INFO, "bDataBits=%d", lc->bDataBits);
+			DCC_LOG(LOG_TRACE, "CDC SetLn");
+			DCC_LOG1(LOG_TRACE, "dsDTERate=%d", lc->dwDTERate);
+			DCC_LOG1(LOG_TRACE, "bCharFormat=%d", lc->bCharFormat);
+			DCC_LOG1(LOG_TRACE, "bParityType=%d", lc->bParityType);
+			DCC_LOG1(LOG_TRACE, "bDataBits=%d", lc->bDataBits);
 			break;
 		}
 
 	case GET_LINE_CODING:
-		DCC_LOG(LOG_INFO, "CDC GetLn");
+		DCC_LOG(LOG_TRACE, "CDC GetLn");
 		/* Return Line Coding */
 		*ptr = (void *)&usb_cdc_lc;
 		len = sizeof(struct cdc_line_coding);
@@ -687,6 +739,10 @@ static void usb_mon_on_reset(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 	DCC_LOG(LOG_MSG, "...");
+	dev->tx_seq = 0;
+	dev->tx_ack = 0;
+	dev->rx_seq = 0;
+	dev->rx_ack = 0;
 	/* clear input buffer */
 	dev->rx_cnt = 0;
 	dev->rx_pos = 0;
@@ -700,13 +756,13 @@ static void usb_mon_on_reset(usb_class_t * cl)
 static void usb_mon_on_suspend(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	DCC_LOG(LOG_INFO, "...");
+	DCC_LOG(LOG_TRACE, "...");
 	dev->acm_ctrl = 0;
 }
 
 static void usb_mon_on_wakeup(usb_class_t * cl)
 {
-	DCC_LOG(LOG_INFO, "...");
+	DCC_LOG(LOG_TRACE, "...");
 }
 
 static void usb_mon_on_error(usb_class_t * cl, int code)
@@ -717,47 +773,130 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * ptr = (uint8_t *)buf;
+	uint32_t seq;
 	unsigned int rem;
 	int ret;
 	int n;
 
 	if (dev->acm_ctrl == 0) {
+		DCC_LOG(LOG_WARNING, "not connected!");
+		dev->tx_seq = 0;
+		dev->tx_ack = 0;
+		dev->rx_seq = 0;
+		dev->rx_ack = 0;
 		/* not connected, discard!! */
 		return len;
 	}
 
 	rem = len;
+	seq = dev->tx_seq;
 	while (rem) {
-		if ((n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem)) < 0) {
+#if 0
+		if (dev->tx_ack != dev->tx_seq) {
+			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
+				DCC_LOG(LOG_WARNING, "dbgmon_ched_select()!");
+				return ret;
+			}
+			DCC_LOG(LOG_MSG, "DBGMON_COMM_EOT");
+		}
+#endif
+		DCC_LOG1(LOG_MSG, "usb_dev_ep_pkt_xmit(%d)", rem);
+		dbgmon_clear(DBGMON_COMM_EOT);
+		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
+		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
 					 dev->stats.tx_pkt);
 #else
 			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed");
 #endif
-		} else {
+			dev->tx_seq = seq;
+			return n;
+		} else if (n > 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			dev->stats.tx_pkt++;
 #endif
-			DCC_LOG1(LOG_MSG, "n=%d!!", n);
 			rem -= n;
 			ptr += n;
+			seq += n;
+		}  else {
+			dev->tx_seq = seq;
+			DCC_LOG(LOG_MSG, "dbgmon_expect(DBGMON_COMM_EOT)!");
+			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
+				DCC_LOG(LOG_WARNING, "dbgmon_ched_select()!");
+				return ret;
+			}
 		}
-		if ((ret = dbgmon_wait(DBGMON_COMM_EOT)) < 0) {
-			DCC_LOG1(LOG_INFO, "dbgmon_wait() ret=%d!!", ret);
-			break;
-		}
-		DCC_LOG(LOG_MSG, "EOT");
 	}
 
+	dev->tx_seq = seq;
 	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
 
 	return len - rem;
 }
 
+//int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
+	uint32_t ack;
+	int pos;
+	int cnt;
+	int ret;
+	int n;
+
+	ack = dev->rx_ack;
+	while ((n = (int32_t)(dev->rx_seq - ack)) <= 0) {
+		DCC_LOG2(LOG_TRACE, "ack=%d n=%d blocked!!!", ack, n);
+		if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
+			DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
+			return ret;
+		}
+		dbgmon_clear(DBGMON_COMM_RCV);
+	}
+
+	cnt = MIN(n, len);
+	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
+
+	if (pos == 0) {
+		DCC_LOG4(LOG_TRACE, "1. n=%d ack=%d pos=%d cnt=%d...", 
+				 n, ack, pos, cnt);
+		__thinkos_memcpy(buf, dev->rx_buf, cnt);
+	} else {
+		int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
+		int l;
+
+		m = MIN(m, cnt);
+		__thinkos_memcpy(buf, &dev->rx_buf[pos], m);
+
+		l = cnt - m;
+		__thinkos_memcpy(buf, dev->rx_buf, l);
+
+		DCC_LOG6(LOG_TRACE, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
+				 m, l, n, ack, pos, cnt);
+	}
+
+	ack += cnt;
+	if ((int32_t)(dev->rx_seq - ack) > 0) {
+		/* Pending data on fifo, keep it signaled .. */
+		dbgmon_signal(DBGMON_COMM_RCV);
+	}
+/*
+	else {
+		dbgmon_clear(DBGMON_COMM_RCV);
+	}
+*/
+
+	dev->rx_ack = ack;
+
+	return cnt;
+}
+
+#if 0
+static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
+{
+	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
+	uint32_t ack;
 	int pos;
 	int cnt;
 	int ret;
@@ -765,53 +904,38 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 
 	pos = dev->rx_pos;
 	cnt = dev->rx_cnt;
-	if ((n = cnt - pos) > 0) {
-recv:
-		/* get data from the rx buffer if not empty */
-		n = MIN(n, len);
-		DCC_LOG3(LOG_INFO, "1. pos=%d cnt=%d n=%d .......", pos, cnt, n);
-		__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
-		pos += n;
-		if (cnt == pos) {
-			/* buffer is now empty */
-			pos = 0;
-			cnt = 0;
-#if THINKOS_DBGMON_ENABLE_FLOWCTL
-			if (dev->rx_paused) {
-				dev->rx_paused = false;
-				cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-										  dev->rx_buf, 
-										  CDC_EP_IN_MAX_PKT_SIZE);
-				DCC_LOG2(LOG_INFO, "2. pos=%d cnt=%d unpaused!!!", 
-						 pos, cnt);
-				usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-			} 
-			if (cnt == 0)
-#endif
-				dbgmon_clear(DBGMON_COMM_RCV); /* next call will block */
-			dev->rx_cnt = cnt;
-#if THINKOS_DBGMON_ENABLE_COMM_STATS
-			dev->stats.rx_pkt++;
-#endif
-		} 
-		dev->rx_pos = pos;
-		return n;
+	ack = dev->rx_ack;
+	if (pos == cnt) {
+		DCC_LOG2(LOG_TRACE, "seq=%d ack=%d", dev->rx_seq, ack);
+		while (ack == dev->rx_seq) {
+			if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
+				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
+				return ret;
+			}
+		}
+		cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								  dev->rx_buf, CDC_EP_IN_MAX_PKT_SIZE);
+		if (cnt < 0) {
+			return cnt;
+		}
+		ack += cnt;
+		dev->rx_ack = ack;
+		dev->rx_cnt = cnt;
+		pos = 0;
+		DCC_LOG3(LOG_TRACE, "usb_dev_ep_pkt_recv: seq=%d ack=%d cnt=%d", 
+				 dev->rx_seq, ack, cnt);
+		usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
 	}
+	
+	/* get data from the rx buffer */
+	n = cnt - pos;
+	n = MIN(n, len);
+	__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
+	dev->rx_pos = pos + n;
 
-	DCC_LOG2(LOG_INFO, "3. pos=%d cnt=%d blocked!!!", pos, cnt);
-	if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0)
-		return ret;
-
-	pos = dev->rx_pos;
-	cnt = dev->rx_cnt;
-	if ((n = cnt - pos) > 0)
-		goto recv;
-
-	DCC_LOG(LOG_WARNING, "Pending COMM_RCV signal!");
-	dbgmon_clear(DBGMON_COMM_RCV); 
-
-	return ret;
-}
+	return n;
+} 
+#endif
 
 static int usb_comm_connect(const void * comm)
 {
@@ -871,10 +995,11 @@ static void usb_comm_rxflowctrl(const void * comm, bool stop)
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	dev->rx_flowctrl = stop;
+	DCC_LOG1(LOG_TRACE, "flowctrl=%s", stop ? "stop" : " start");
 #endif
 }
 
-static struct usb_cdc_acm_dev usb_cdc_comm_dev;
+static struct usb_class_if usb_class_if_instance;
 
 static const usb_class_events_t usb_mon_ev = {
 	.on_reset = usb_mon_on_reset,
@@ -892,35 +1017,38 @@ static const struct dbgmon_comm_op usb_cdc_comm_op = {
 };
 
 static const struct dbgmon_comm usb_comm_instance = {
-	.dev = (void *)&usb_cdc_comm_dev,
+	.dev = (void *)&usb_class_if_instance,
 	.op = &usb_cdc_comm_op,
 };
 
 const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb)
 {
-	struct usb_cdc_acm_dev * dev = &usb_cdc_comm_dev;
-	usb_class_t * cl =  (usb_class_t *)dev;
+	struct usb_cdc_acm_dev * dev = &usb_class_if_instance.dev;
+	struct usb_class_if * cl = &usb_class_if_instance;
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)usb;
-
 	dev->rx_cnt = 0;
 	dev->rx_pos = 0;
+	dev->tx_seq = 0; 
+	dev->tx_ack = 0; 
+	dev->rx_seq = 0;
+	dev->rx_ack = 0;
 #if THINKOS_DBGMON_ENABLE_FLOWCTL
 	dev->rx_flowctrl = false;
 	dev->rx_paused = false;
 #endif
 	dev->configured = 0;
 
-	DCC_LOG(LOG_MSG, "usb_dev_init()");
+	DCC_LOG(LOG_TRACE, "usb_dev_init()");
 	usb_dev_init(dev->usb, cl, &usb_mon_ev);
 
-	return (struct dbgmon_comm *)&usb_comm_instance;
+	return &usb_comm_instance;
 }
 
-const struct dbgmon_comm * usb_comm_getinstance(void)
+const struct dbgmon_comm * custom_comm_getinstance(void)
 {
-	return (struct dbgmon_comm *)&usb_comm_instance;
+	return &usb_comm_instance;
 }
 
 #endif

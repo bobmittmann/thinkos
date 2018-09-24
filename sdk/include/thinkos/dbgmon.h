@@ -174,13 +174,13 @@ void __attribute__((noreturn))
 	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
 				void * param);
 
-int dbgmon_unmask(int sig);
+void dbgmon_unmask(int sig);
 
-int dbgmon_mask(int sig);
+void dbgmon_mask(int sig);
 
-int dbgmon_clear(int sig);
+void dbgmon_clear(int sig);
 
-int dbgmon_signal(int sig); 
+void dbgmon_signal(int sig); 
 
 void dbgmon_signal_idle(void);
 

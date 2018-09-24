@@ -170,32 +170,32 @@ struct ymodem_rcv {
 	} pkt;
 };
 
-static inline int dbgmon_req_app_stop(void) {
-	return dbgmon_signal(DBGMON_APP_STOP);
+static inline void dbgmon_req_app_stop(void) {
+	dbgmon_signal(DBGMON_APP_STOP);
 }
 
-static inline int dbgmon_req_app_resume(void) {
-	return dbgmon_signal(DBGMON_APP_RESUME);
+static inline void dbgmon_req_app_resume(void) {
+	dbgmon_signal(DBGMON_APP_RESUME);
 }
 
-static inline int dbgmon_req_app_term(void) {
+static inline void dbgmon_req_app_term(void) {
 	dbgmon_soft_reset();
-	return dbgmon_signal(DBGMON_APP_TERM);
+	dbgmon_signal(DBGMON_APP_TERM);
 }
 
-static inline int dbgmon_req_app_erase(void) {
+static inline void dbgmon_req_app_erase(void) {
 	dbgmon_soft_reset();
-	return dbgmon_signal(DBGMON_APP_ERASE);
+	dbgmon_signal(DBGMON_APP_ERASE);
 }
 
-static inline int dbgmon_req_app_exec(void) {
+static inline void dbgmon_req_app_exec(void) {
 	dbgmon_soft_reset();
-	return dbgmon_signal(DBGMON_APP_EXEC);
+	dbgmon_signal(DBGMON_APP_EXEC);
 }
 
-static inline int dbgmon_req_app_upload(void) {
+static inline void dbgmon_req_app_upload(void) {
 	dbgmon_soft_reset();
-	return dbgmon_signal(DBGMON_APP_UPLOAD);
+	dbgmon_signal(DBGMON_APP_UPLOAD);
 }
 
 #ifdef __cplusplus
