@@ -388,6 +388,7 @@ int dbgmon_expect(int sig)
 #endif
 
 #if 1
+
 /* wait for an event but don't clear the 
    event or event mask if previously set */
 int dbgmon_expect(int sig)
@@ -415,10 +416,11 @@ int dbgmon_expect(int sig)
 	DCC_LOG2(LOG_MSG, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
 	thinkos_dbgmon_rt.mask = stmsk;
 
-	if (evset & (1 << sig))
+	if (evset & (1 << sig)) {
 		return sig;
+	}
 
-	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", evset & evmsk);
+	DCC_LOG1(LOG_TRACE, "unexpected event=%08x!!", evset & evmsk);
 
 	/* unexpected event received */
 	return -1;

@@ -665,6 +665,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			 by __console_reset(). */
 			__console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
+			sigmask |= (1 << DBGMON_COMM_EOT);
 			break;
 
 		case DBGMON_APP_UPLOAD:
@@ -674,6 +675,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 								this_board.application.block_size);
 			/* Request app exec */
 	//		dbgmon_req_app_exec(); 
+			sigmask |= (1 << DBGMON_COMM_EOT);
 			break;
 
 		case DBGMON_APP_EXEC:

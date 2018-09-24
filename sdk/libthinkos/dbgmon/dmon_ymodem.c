@@ -82,7 +82,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 	for (;;) {
 
 		dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
-		DCC_LOG1(LOG_INFO, "SYN=%02x", rx->sync);
+		DCC_LOG1(LOG_TRACE, "SYN=%02x", rx->sync);
 		dbgmon_comm_send(comm, &rx->sync, 1);
 
 		for (;;) {
@@ -105,16 +105,18 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			}
 
 			if (c == CAN) {
+				dbgmon_alarm_stop();
 				return -1;
 			}
 
 			if (c == EOT) {
-				DCC_LOG(LOG_INFO, "EOT!!");
+				DCC_LOG(LOG_TRACE, "EOT!!");
 				/* end of transmission */
 				rx->sync = rx->crc_mode ? 'C' : NAK;
 				rx->pktno = 0;
 				pkt[0] = ACK;
 				dbgmon_comm_send(comm, pkt, 1);
+				dbgmon_alarm_stop();
 				return 0;
 			}
 		}
@@ -178,7 +180,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 				DCC_LOG(LOG_WARNING, "Ymodem restart...");
 				rx->pktno = 0;
 			} else */ {
-				DCC_LOG2(LOG_INFO, "pktno=%d count=%d rxmit ...", 
+				DCC_LOG2(LOG_TRACE, "pktno=%d count=%d rxmit ...", 
 						 rx->pktno, rx->count);
 				continue;
 			}
@@ -189,7 +191,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 				rx->pktno++;
 				/* Fallback to XMODEM */
 				rx->xmodem = 1;
-				DCC_LOG(LOG_INFO, "XMODEM...");
+				DCC_LOG(LOG_TRACE, "XMODEM...");
 			} else {
 				DCC_LOG(LOG_WARNING, "wrong sequence");
 				goto error;
@@ -198,7 +200,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 
 		/* YModem first packet ... */
 		if (rx->pktno == 0) {
-			DCC_LOG(LOG_INFO, "ACK");
+			DCC_LOG(LOG_TRACE, "ACK");
 			pkt[0] = ACK;
 			dbgmon_comm_send(comm, pkt, 1);
 		} else {
@@ -209,12 +211,11 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			rx->count += cnt;
 		}
 
-		DCC_LOG2(LOG_INFO, "pktno=%d count=%d", rx->pktno, rx->count);
+		DCC_LOG2(LOG_TRACE, "pktno=%d count=%d", rx->pktno, rx->count);
 
 		rx->pktno++;
 
 		dbgmon_alarm_stop();
-
 		return cnt;
 
 error:
@@ -232,13 +233,12 @@ timeout:
 		}
 	}
 
-
 	pkt[0] = CAN;
 	pkt[1] = CAN;
 
 	dbgmon_comm_send(comm, pkt, 2);
-
 	dbgmon_alarm_stop();
+
 	return ret;
 }
 

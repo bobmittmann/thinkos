@@ -773,8 +773,8 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * ptr = (uint8_t *)buf;
-	uint32_t seq;
 	unsigned int rem;
+	uint32_t seq;
 	int ret;
 	int n;
 
@@ -791,15 +791,6 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	rem = len;
 	seq = dev->tx_seq;
 	while (rem) {
-#if 0
-		if (dev->tx_ack != dev->tx_seq) {
-			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
-				DCC_LOG(LOG_WARNING, "dbgmon_ched_select()!");
-				return ret;
-			}
-			DCC_LOG(LOG_MSG, "DBGMON_COMM_EOT");
-		}
-#endif
 		DCC_LOG1(LOG_MSG, "usb_dev_ep_pkt_xmit(%d)", rem);
 		dbgmon_clear(DBGMON_COMM_EOT);
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
@@ -823,7 +814,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 			dev->tx_seq = seq;
 			DCC_LOG(LOG_MSG, "dbgmon_expect(DBGMON_COMM_EOT)!");
 			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
-				DCC_LOG(LOG_WARNING, "dbgmon_ched_select()!");
+				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 				return ret;
 			}
 		}
