@@ -97,7 +97,9 @@ struct stm32f_otg_ep {
 	uint8_t state;
 	uint8_t idx;
 	uint16_t xfr_max;
-	uint16_t xfr_rem;
+	volatile uint16_t xfr_rem;
+	volatile uint16_t xfr_cnt;
+	uint32_t xfr_dat;
 	uint16_t xfr_len;
 	uint16_t xfr_buf_len;
 	uint8_t * xfr_buf;
@@ -673,6 +675,7 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 	uint32_t data;
 	int idx;
 	int cnt;
+	int rem;
 	int n;
 
 #if DEBUG
@@ -687,8 +690,30 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 	idx = ep->idx;
 	
 	/* transfer data from fifo */
-	cnt = MIN(len, ep->xfr_rem);
-	n = cnt;
+	rem = ep->xfr_len - ep->xfr_cnt;
+	cnt = MIN(len, rem);
+	n = ep->xfr_cnt & 0x003;
+	if (n) {
+		n = 4 - n;
+		n = MIN(n, cnt);
+
+		data = ep->xfr_dat;
+		if (n > 0) {
+			cp[0] = data;
+			data >>= 8;
+			if (n > 1) {
+				cp[1] = data;
+				data >>= 8;
+				if (n > 2) {
+					cp[2] = data;
+					data >>= 8;
+				}
+			}
+		}
+		cp += n;
+	} 
+
+	n = cnt - n;
 	while (n >= 4) {
 		/* word by word trasfer */
 		data = otg_fs->dfifo[idx].pop;
@@ -699,35 +724,32 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 		cp += 4;
 		n -= 4;
 	}
+
 	if (n > 0) {
 		/* remaining data */
 		data = otg_fs->dfifo[idx].pop;
 		cp[0] = data;
-		if (n > 1)
-			cp[1] = data >> 8;
-		if (n > 2)
-			cp[2] = data >> 16;
+		data >>= 8;
+		if (n > 1) {
+			cp[1] = data;
+			data >>= 8;
+			if (n > 2) {
+				cp[2] = data;
+				data >>= 8;
+			}
+		}
+		n -= 4;
+		ep->xfr_dat = data;
 	}
 
-	ep->xfr_rem -= cnt;
-
-#if 0
-	if ((rem = ep->xfr_rem - cnt) > 0) {
-		DCC_LOG1(LOG_WARNING, "dropping %d bytes...", rem);
-		/* remove remaining data from fifo */
-		do {
-			data = otg_fs->dfifo[idx].pop;
-			(void)data;
-			rem -= 4;
-		} while (rem > 0);
-	}
+	ep->xfr_cnt += cnt;
 
 	/* 5. After the data payload is popped from the receive FIFO, the 
 	   RXFLVL interrupt (OTG_FS_GINTSTS) must be unmasked. */
 	DCC_LOG1(LOG_MSG, "cnt=%d enabling RXFLVL interrupt", cnt);
-#endif
 
-	if (ep->xfr_rem == 0) {
+	rem -= cnt;
+	if (rem == 0) {
 		DCC_LOG(LOG_TRACE, "FIFO irq enabled");
 		/* Reenable RX fifo interrupts */
 		otg_fs->gintmsk |= OTG_FS_RXFLVLM;
@@ -1158,7 +1180,8 @@ static void stm32f_otg_dev_ep_out(struct stm32f_otg_drv * drv,
 
 	DCC_LOG1(LOG_MSG, "ep_id=%d", ep_id);
 
-	ep->xfr_rem = len;
+	ep->xfr_len = len;
+	ep->xfr_cnt = 0;
 
 	/* FIXME: the single input fifo creates a problem as 
 	   packets pending on the fifo for one endpoint blocks packets for 

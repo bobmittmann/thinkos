@@ -435,11 +435,16 @@ void __attribute__((naked)) third_bootstrap(const struct dbgmon_comm * comm,
 }
 #endif
 
+static void __test(const struct dbgmon_comm * comm);
+
 static bool monitor_process_input(struct monitor * mon, int c)
 {
 	const struct dbgmon_comm * comm = mon->comm;
 
 	switch (c) {
+	case '/':
+		__test(comm);
+		break;
 #if (BOOT_ENABLE_GDB)
 	case '+':
 		dbgmon_exec(gdb_bootstrap, NULL);
@@ -587,8 +592,44 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	return true;
 }
 
+static void __test(const struct dbgmon_comm * comm)
+{
+	char buf[256];
+	int ret;
+	int rem;
+	int len;
+	char * cp;
+
+	dbgmon_printf(comm, "-----------------------------\r\n");
+	dbgmon_printf(comm, "sp=0x%08x comm=0x%08x\n\r", cm3_sp_get(), 
+				  (uintptr_t)comm);
+	dbgmon_printf(comm, "---------------------\r\n");
+
+	for (;;) {
+		len = sizeof(buf);
+		cp = buf;
+		rem = len;
+
+		/* receive the packet */
+		while (rem) {
+			dbgmon_alarm(2000);
+			ret = dbgmon_comm_recv(comm, cp, rem);
+			if (ret < 0)
+				break;
+
+			rem -= ret;
+			cp += ret;
+		}
+
+		dbgmon_alarm_stop();
+		len -= rem;
+		dbgmon_printf(comm, "(%d)\n\r", len);
+		dbgmon_hexdump(comm, 0, (uintptr_t *)buf, len);
+	}
+}
+
 /*
-   Dafault Monitor Task
+   Default Monitor Task
  */
 
 void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,

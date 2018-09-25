@@ -216,7 +216,8 @@ void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
 
-int dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
+int __attribute__((format (__printf__, 2, 3))) 
+	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
 int dbgmon_putc(int c, const struct dbgmon_comm * comm);
 

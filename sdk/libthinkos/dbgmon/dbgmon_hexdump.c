@@ -42,14 +42,14 @@ int char2hex(char * s, int c);
 void dbgmon_hexdump(const struct dbgmon_comm * comm, 
 					uint32_t addr, void * ptr, unsigned int size)
 {
-	char buf[14 + 16 * 3];
+	char buf[14 + 16 * 3 + 18];
 	unsigned int rem = size;
 	uint8_t * cmp = (uint8_t *)-1;
+	uint8_t * src = (uint8_t *)ptr;
 	bool eq = false;
 
 	while (rem) {
 		int n = rem < 16 ? rem : 16;
-		uint8_t * src = (uint8_t *)ptr;
 		char * cp = buf;
 		unsigned int i;
 	
@@ -76,15 +76,25 @@ dump_line:
 				cp += char2hex(cp, src[i]);
 			}
 
+			*cp++ = ' ';
+
+			for (i = 0; i < n; i++) {
+				unsigned int c = src[i];
+				if (i == 8)
+					*cp++ = ' ';
+				*cp++ = ((c < ' ') || (c > 126)) ? '.' : c;
+			}
+
 			*cp++ = '\r';
 			*cp++ = '\n';
 
 			dbgmon_comm_send(comm, buf, cp - buf);
 		}
 
+		cmp = src;
+		src += n;
 		addr += n;
 		rem -= n;
-		cmp = src;
 	}
 }
 

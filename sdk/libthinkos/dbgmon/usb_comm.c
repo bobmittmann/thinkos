@@ -451,7 +451,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 	int n;
 
 	seq = dev->rx_seq;
-	ack = dev->rx_seq;
+	ack = dev->rx_ack;
 	free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack);
 	if (len > free) {
 		DCC_LOG3(LOG_WARNING, "len=%d free=%d drop=%d", len, free, len - free);
@@ -461,8 +461,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 	}
 	pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
 	if (pos == 0) {
-		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								&dev->rx_buf[0], cnt);
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, dev->rx_buf, cnt);
 
 		DCC_LOG4(LOG_TRACE, "1. seq=%d ack=%d cnt=%d n=%d", 
 				 seq, ack, cnt, n);
@@ -476,7 +475,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 								&dev->rx_buf[pos],  m);
 		m = cnt - n;
 		m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								&dev->rx_buf[0], m);
+								dev->rx_buf, m);
 		DCC_LOG5(LOG_TRACE, "seq=%d ack=%d cnt=%d n=%d m=%d", 
 				 seq, ack, cnt, n, m);
 		seq += m + n;
@@ -830,6 +829,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
+	uint8_t * dst = (uint8_t *)buf;
 	uint32_t ack;
 	int pos;
 	int cnt;
@@ -852,16 +852,17 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	if (pos == 0) {
 		DCC_LOG4(LOG_TRACE, "1. n=%d ack=%d pos=%d cnt=%d...", 
 				 n, ack, pos, cnt);
-		__thinkos_memcpy(buf, dev->rx_buf, cnt);
+		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
 		int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
 		int l;
 
 		m = MIN(m, cnt);
-		__thinkos_memcpy(buf, &dev->rx_buf[pos], m);
+		__thinkos_memcpy(dst, &dev->rx_buf[pos], m);
+		dst += m;
 
 		l = cnt - m;
-		__thinkos_memcpy(buf, dev->rx_buf, l);
+		__thinkos_memcpy(dst, dev->rx_buf, l);
 
 		DCC_LOG6(LOG_TRACE, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
 				 m, l, n, ack, pos, cnt);
