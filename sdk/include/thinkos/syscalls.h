@@ -128,6 +128,10 @@
 #define CONSOLE_DRAIN                  5
 #define CONSOLE_IOCTL                  6
 #define CONSOLE_IS_CONNECTED           7
+#define CONSOLE_IO_BREAK               8
+
+#define CONSOLE_IO_WR                  (1 << 0)
+#define CONSOLE_IO_RD                  (1 << 1)
 
 #define COMM_SEND                      0
 #define COMM_RECV                      1
@@ -616,6 +620,12 @@ static inline int __attribute__((always_inline))
 thinkos_console_drain(void) {
 	return THINKOS_SYSCALL1(THINKOS_CONSOLE, CONSOLE_DRAIN);
 }
+
+static inline int __attribute__((always_inline)) 
+thinkos_console_io_break(unsigned int which) {
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_IO_BREAK, which);
+}
+
 
 /* ---------------------------------------------------------------------------
    OS Monitor and Control 
