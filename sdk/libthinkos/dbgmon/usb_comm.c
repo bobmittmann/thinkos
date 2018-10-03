@@ -476,7 +476,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 		m = cnt - n;
 		m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 								dev->rx_buf, m);
-		DCC_LOG5(LOG_TRACE, "seq=%d ack=%d cnt=%d n=%d m=%d", 
+		DCC_LOG5(LOG_TRACE, "2. seq=%d ack=%d cnt=%d n=%d m=%d", 
 				 seq, ack, cnt, n, m);
 		seq += m + n;
 	}
@@ -790,7 +790,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	rem = len;
 	seq = dev->tx_seq;
 	while (rem) {
-		DCC_LOG1(LOG_MSG, "usb_dev_ep_pkt_xmit(%d)", rem);
+		DCC_LOG1(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d)", rem);
 		dbgmon_clear(DBGMON_COMM_EOT);
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
 		if (n < 0) {
@@ -820,7 +820,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	}
 
 	dev->tx_seq = seq;
-	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
+	DCC_LOG1(LOG_TRACE, "return=%d.", len - rem);
 
 	return len - rem;
 }
@@ -872,12 +872,9 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
 		/* Pending data on fifo, keep it signaled .. */
 		dbgmon_signal(DBGMON_COMM_RCV);
-	}
-/*
-	else {
+	} else {
 		dbgmon_clear(DBGMON_COMM_RCV);
 	}
-*/
 
 	dev->rx_ack = ack;
 

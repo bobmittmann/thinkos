@@ -64,6 +64,140 @@ int uint2hex2hex(char * pkt, unsigned int val);
 #endif
 
 /* -------------------------------------------------------------------------
+ * Memory auxiliarly functions
+ * ------------------------------------------------------------------------- */
+
+struct mem_blk {
+	uint32_t addr;
+	uint32_t size: 31;
+	uint32_t ro: 1;
+};
+
+static bool addr2block(const struct mem_desc * mem, 
+					   uint32_t addr, struct mem_blk * blk) 
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr < (base + size))) {
+			if (blk != NULL) {
+				int pos;
+				pos = (addr - base) >> mem->blk[i].siz;
+				blk->addr = base + (pos << mem->blk[i].siz);
+				blk->size = 1 << mem->blk[i].siz;
+				blk->ro = (mem->blk[i].opt == BLK_RO) ? 1 : 0;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/* Safe read and write operations to avoid faults in the debugger */
+static bool __mem_wr64(const struct mem_desc * mem, 
+					   uint32_t addr, uint64_t val)
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	if (addr & 3)
+		return false;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr < (base + size - 8))) {
+			uint64_t * dst = (uint64_t *)addr;
+			if (mem->blk[i].opt == BLK_RO)
+				return false;
+			*dst = val;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+/* Safe read and write operations to avoid faults in the debugger */
+static bool __mem_wr32(const struct mem_desc * mem, 
+					   uint32_t addr, uint32_t val)
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	if (addr & 3)
+		return false;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr < (base + size - 4))) {
+			uint32_t * dst = (uint32_t *)addr;
+			if (mem->blk[i].opt == BLK_RO)
+				return false;
+			*dst = val;
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool __mem_rd32(const struct mem_desc * mem, 
+					   uint32_t addr, uint32_t * val)
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	if (addr & 3)
+		return false;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr <= (base + size - 4))) {
+			uint32_t * src = (uint32_t *)addr;
+			*val = *src;
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool __mem_rd64(const struct mem_desc * mem, 
+					   uint32_t addr, uint64_t * val)
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	if (addr & 3)
+		return false;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr <= (base + size - 8))) {
+			uint64_t * src = (uint64_t *)addr;
+			*val = *src;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
+/* -------------------------------------------------------------------------
  * Threads auxiliarly functions
  * ------------------------------------------------------------------------- */
 
@@ -181,13 +315,74 @@ bool thread_isalive(int gdb_thread_id)
 	return __thinkos_thread_isalive(thread_id);
 }
 
+const int16_t __ctx_offs[] = {
+	[0] = offsetof(struct thinkos_context, r0),
+	[1] = offsetof(struct thinkos_context, r1),
+	[2] = offsetof(struct thinkos_context, r2),
+	[3] = offsetof(struct thinkos_context, r3),
+	[4] = offsetof(struct thinkos_context, r4),
+	[5] = offsetof(struct thinkos_context, r5),
+	[6] = offsetof(struct thinkos_context, r6),
+	[7] = offsetof(struct thinkos_context, r7),
+	[8] = offsetof(struct thinkos_context, r8),
+	[9] = offsetof(struct thinkos_context, r9),
+	[10] = offsetof(struct thinkos_context, r10),
+	[11] = offsetof(struct thinkos_context, r11),
+	[12] = offsetof(struct thinkos_context, r12),
+	[13] = -1, /*sp */
+	[14] = offsetof(struct thinkos_context, lr),
+	[15] = offsetof(struct thinkos_context, pc),
+	[16] = -1,
+	[17] = -1,
+	[18] = -1,
+	[19] = -1,
+	[20] = -1,
+	[21] = -1,
+	[22] = -1,
+	[23] = -1,
+	[24] = -1,
+	[25] = offsetof(struct thinkos_context, xpsr),
+#if THINKOS_ENABLE_FPU
+	[26] = offsetof(struct thinkos_context, s[0]),
+	[27] = offsetof(struct thinkos_context, s[2]),
+	[28] = offsetof(struct thinkos_context, s[4]),
+	[29] = offsetof(struct thinkos_context, s[6]),
+	[30] = offsetof(struct thinkos_context, s[8]),
+	[31] = offsetof(struct thinkos_context, s[10]),
+	[32] = offsetof(struct thinkos_context, s[12]),
+	[33] = offsetof(struct thinkos_context, s[14]),
+
+	[34] = offsetof(struct thinkos_context, s1[0]),
+	[35] = offsetof(struct thinkos_context, s1[2]),
+	[36] = offsetof(struct thinkos_context, s1[4]),
+	[37] = offsetof(struct thinkos_context, s1[6]),
+	[38] = offsetof(struct thinkos_context, s1[8]),
+	[39] = offsetof(struct thinkos_context, s1[10]),
+	[40] = offsetof(struct thinkos_context, s1[12]),
+	[41] = offsetof(struct thinkos_context, s1[14]),
+	[42] = offsetof(struct thinkos_context, fpscr),
+#endif
+};
+
+/*
+uint32_t __reg_addr(struct thinkos_context * ctx, unsigned int reg)
+{
+	uint32_t addr;
+	int offs;
+
+	if ((reg <= 42) && (__ctx_offs[reg] >= 0)) {
+		addr = (uintptr_t)ctx + __ctx_offs[reg];
+	}
+}
+*/
+
 int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	uint32_t addr;
 	uint32_t sp;
-	uint64_t x;
 
 	if (thread_id > THINKOS_THREAD_VOID) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
@@ -223,78 +418,42 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 		return -1;
 	}
 
-	switch (reg) {
-	case 0:
-		x = ctx->r0;
-		break;
-	case 1:
-		x = ctx->r1;
-		break;
-	case 2:
-		x = ctx->r2;
-		break;
-	case 3:
-		x = ctx->r3;
-		break;
-	case 4:
-		x = ctx->r4;
-		break;
-	case 5:
-		x = ctx->r5;
-		break;
-	case 6:
-		x = ctx->r6;
-		break;
-	case 7:
-		x = ctx->r7;
-		break;
-	case 8:
-		x = ctx->r8;
-		break;
-	case 9:
-		x = ctx->r9;
-		break;
-	case 10:
-		x = ctx->r10;
-		break;
-	case 11:
-		x = ctx->r11;
-		break;
-	case 12:
-		x = ctx->r12;
-		break;
-	case 13:
-		x = sp;
-		break;
-	case 14:
-		x = ctx->lr;
-		break;
-	case 15:
-		x = ctx->pc;
-		break;
-	case 25:
-		x = ctx->xpsr;
-		break;
+	(void)sp;
+
 #if THINKOS_ENABLE_FPU
-	case 26 ... 33:
-		x = ctx->s[(reg - 26) * 2];
-		x = x | ((uint64_t)(ctx->s[(reg - 26) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
-		break;
-	case 34 ... 41:
-		x = ctx->s1[(reg - 34) * 2];
-		x = x | ((uint64_t)(ctx->s1[(reg - 34) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
-		break;
-	case 42:
-		x = ctx->fpscr;
-		break;
+	if (reg > 42) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#else
+	if (reg > 25) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
 #endif
-	default:
+	if (__ctx_offs[reg] < 0) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
 		return -1;
 	}
 
-	*val = x;
+	addr = (uintptr_t)ctx + __ctx_offs[reg];
+#if THINKOS_ENABLE_FPU
+	if (reg > 25) {
+		uint32_t dat;
+		if (!__mem_rd32(this_board.memory.ram, addr, &dat)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+		*val = dat;
+	} else {
+#endif
+		if (!__mem_rd64(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+#if THINKOS_ENABLE_FPU
+	}
+#endif
 
 	return 0;
 }
@@ -303,6 +462,8 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_context * ctx;
+	struct mem_blk blk;
+	uint32_t addr;
 
 	if (thread_id > THINKOS_THREADS_MAX) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
@@ -333,75 +494,49 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 		return -1;
 	}
 
-	switch (reg) {
-	case 0:
-		ctx->r0 = val;
-		break;
-	case 1:
-		ctx->r1 = val;
-		break;
-	case 2:
-		ctx->r2 = val;
-		break;
-	case 3:
-		ctx->r3 = val;
-		break;
-	case 4:
-		ctx->r4 = val;
-		break;
-	case 5:
-		ctx->r5 = val;
-		break;
-	case 6:
-		ctx->r6 = val;
-		break;
-	case 7:
-		ctx->r7 = val;
-		break;
-	case 8:
-		ctx->r8 = val;
-		break;
-	case 9:
-		ctx->r9 = val;
-		break;
-	case 10:
-		ctx->r10 = val;
-		break;
-	case 11:
-		ctx->r11 = val;
-		break;
-	case 12:
-		ctx->r12 = val;
-		break;
-	case 13:
-		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)(uintptr_t)val;
-		break;
-	case 14:
-		ctx->lr = val;
-		break;
-	case 15:
-		ctx->pc = val;
-		break;
-	case 25:
-		ctx->xpsr = (ctx->xpsr & ~CM_APSR_MASK) | (val & CM_APSR_MASK);
-		break;
-#if THINKOS_ENABLE_FPU
-	case 26 ... 33:
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
-				 reg, (uint32_t)val, val >> 32);
-		ctx->s[(reg - 26) * 2] = val;
-		ctx->s[(reg - 26) * 2 + 1] = val >> 32;
-		break;
-	case 34 ... 41:
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
-				 reg, (uint32_t)val, val >> 32);
-		ctx->s1[(reg - 34) * 2] = val;
-		ctx->s1[(reg - 34) * 2 + 1] = val >> 32;
-		break;
-#endif
-	default:
+	if (addr2block(this_board.memory.ram, (uintptr_t)ctx, &blk)) {
+		if (blk.ro) {
+			DCC_LOG2(LOG_ERROR, "read only block addr=0x%08x size=%d", 
+					 blk.addr, blk.size);
+			return -1;
+		}
+	} else {
+		DCC_LOG(LOG_ERROR, "invalid context address");
 		return -1;
 	}
+
+#if THINKOS_ENABLE_FPU
+	if (reg > 42) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#else
+	if (reg > 25) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#endif
+	if (__ctx_offs[reg] < 0) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+
+	addr = (uintptr_t)ctx + __ctx_offs[reg];
+#if THINKOS_ENABLE_FPU
+	if (reg > 25) {
+		if (!__mem_wr32(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+	} else {
+#endif
+		if (!__mem_wr64(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+#if THINKOS_ENABLE_FPU
+	}
+#endif
 
 	return 0;
 }
@@ -659,41 +794,6 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 	return cp - buf;
 }
 
-/* -------------------------------------------------------------------------
- * Memory auxiliarly functions
- * ------------------------------------------------------------------------- */
-
-struct mem_blk {
-	uint32_t addr;
-	uint32_t size: 31;
-	uint32_t ro: 1;
-};
-
-static bool addr2block(const struct mem_desc * mem, 
-					   uint32_t addr, struct mem_blk * blk) 
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr < (base + size))) {
-			if (blk != NULL) {
-				int pos;
-				pos = (addr - base) >> mem->blk[i].siz;
-				blk->addr = base + (pos << mem->blk[i].siz);
-				blk->size = 1 << mem->blk[i].siz;
-				blk->ro = (mem->blk[i].opt == BLK_RO) ? 1 : 0;
-			}
-			return true;
-		}
-	}
-
-	return false;
-}
-
 #define FLASH_BASE ((uint32_t)STM32_FLASH_MEM)
 
 int target_mem_write(uint32_t addr, 
@@ -793,6 +893,7 @@ int target_mem_erase(uint32_t addr, unsigned int len)
 int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 {
 	uint8_t * dst = (uint8_t *)ptr;
+	uint32_t * src;
 	struct mem_blk blk;
 	unsigned int rem;
 
@@ -802,14 +903,16 @@ int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 
 	while (rem) {
 		unsigned int cnt;
+		unsigned int n;
+		uint32_t dat;
 
 		if (addr2block(this_board.memory.ram, addr, &blk)) {
 			/* not flash */
-			DCC_LOG2(LOG_MSG, "RAM block addr=0x%08x size=%d", 
+			DCC_LOG2(LOG_TRACE, "RAM block addr=0x%08x size=%d", 
 					 blk.addr, blk.size);
 		} else if (addr2block(this_board.memory.flash, addr, &blk)) {
 			/* flash */
-			DCC_LOG2(LOG_MSG, "FLASH block addr=0x%08x size=%d", 
+			DCC_LOG2(LOG_TRACE, "FLASH block addr=0x%08x size=%d", 
 					 blk.addr, blk.size);
 		} else {
 			DCC_LOG1(LOG_MSG, "invalid mem location addr=0x%08x", addr);
@@ -820,11 +923,59 @@ int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 		if (cnt > rem)
 			cnt = rem;
 
-		__thinkos_memcpy(dst, (void *)addr, cnt);
+		src = (uint32_t *)(addr & ~3);
 
-		addr += cnt;
-		dst += cnt;
+		if ((n = (addr & 3)) > 0) {
+			dat = *src++;
+			dat >>= (4 - n) * 8;
+			if (n > cnt)
+				n = cnt;
+
+			switch (n) {
+			case 3:
+				*dst++ = dat;
+				dat >>= 8;
+			case 2:
+				*dst++ = dat;
+				dat >>= 8;
+			case 1:
+				*dst++ = dat;
+				dat >>= 8;
+			}
+		}
+
 		rem -= cnt;
+		addr += cnt;
+		cnt -= n;
+		n = cnt & ~3;
+	
+		for (n = 0; n < (cnt & ~3); n += 4) {
+			dat = *src++;
+			*dst++ = dat;
+			dat >>= 8;
+			*dst++ = dat;
+			dat >>= 8;
+			*dst++ = dat;
+			dat >>= 8;
+			*dst++ = dat;
+		}
+
+		cnt -= n;
+		if ((n = cnt) > 0) {
+			dat = *src;
+
+			switch (n) {
+			case 3:
+				*dst++ = dat;
+				dat >>= 8;
+			case 2:
+				*dst++ = dat;
+				dat >>= 8;
+			case 1:
+				*dst++ = dat;
+				dat >>= 8;
+			}
+		}
 	}
 
 	return len;

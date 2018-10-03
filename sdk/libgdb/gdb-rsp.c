@@ -23,164 +23,25 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <sys/dcclog.h>
-#include <sys/stm32f.h>
-
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#include <thinkos.h>
-#include <gdb.h>
-
-#include "signals.h"
+#include "gdb-i.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 0
+#define GDB_DEBUG_PACKET 1
 #endif
 
-#ifndef GDB_ENABLE_MEMWRITE
-#define GDB_ENABLE_MEMWRITE 0
-#endif
+static int target_sync_reset(void) 
+{
+	int ret;
 
-#define THREAD_ID_OFFS 100
-#define THREAD_ID_ALL -1
-#define THREAD_ID_ANY 0
-#define THREAD_ID_NONE -2
-#define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
-
-int uint2dec(char * s, unsigned int val);
-unsigned long long hex2ll_be(const char * __s, char ** __endp);
-unsigned long hex2int(const char * __s, char ** __endp);
-bool prefix(const char * __s, const char * __prefix);
-int char2hex(char * pkt, int c);
-int str2str(char * pkt, const char * s);
-int str2hex(char * pkt, const char * s);
-int bin2hex(char * pkt, const void * buf, int len);
-int int2str2hex(char * pkt, unsigned int val);
-int uint2hex(char * s, unsigned int val);
-int long2hex_be(char * pkt, unsigned long val);
-int longlong2hex_be(char * s, unsigned long long val);
-int hex2char(char * hex);
-extern const char __hextab[];
-
-int thread_getnext(int thread_id);
-int thread_active(void);
-int thread_step_id(void);
-int thread_break_id(void);
-int thread_any(void);
-bool thread_isalive(int thread_id);
-int thread_register_set(unsigned int thread_id, int reg, uint64_t val);
-int thread_register_get(int gdb_thread_id, int reg, uint64_t * val);
-int thread_goto(unsigned int thread_id, uint32_t addr);
-int thread_step_req(unsigned int thread_id);
-int thread_continue(unsigned int thread_id);
-int thread_info(unsigned int gdb_thread_id, char * buf);
-
-int target_mem_erase(uint32_t addr, unsigned int len);
-
-int target_mem_write(uint32_t addr, const void * ptr, unsigned int len);
-
-int target_mem_read(uint32_t addr, void * ptr, unsigned int len);
-
-int target_file_read(const char * name, char * dst, 
-					  unsigned int offs, unsigned int size);
-
-void target_halt(void);
-bool target_continue(void);
-int target_goto(uint32_t addr, int opt);
-
-#ifndef RSP_BUFFER_LEN
-#if THINKOS_ENABLE_FPU
-#define RSP_BUFFER_LEN (512 + 0)
-#else
-#define RSP_BUFFER_LEN 512
-#endif
-#endif
-
-#ifndef GDB_ENABLE_NOACK_MODE
-#define GDB_ENABLE_NOACK_MODE 1
-#endif
-
-#ifndef GDB_ENABLE_NOSTOP_MODE
-#define GDB_ENABLE_NOSTOP_MODE 1
-#endif
-
-#ifndef GDB_ENABLE_VCONT
-#define GDB_ENABLE_VCONT 1
-#endif
-
-#ifndef GDB_ENABLE_VFLASH
-#define GDB_ENABLE_VFLASH 0
-#endif
-
-#ifndef GDB_ENABLE_MULTIPROCESS
-#define GDB_ENABLE_MULTIPROCESS 0
-#endif
-
-#ifndef GDB_ENABLE_QXFER_FEATURES
-#define GDB_ENABLE_QXFER_FEATURES 1
-#endif
-
-#ifndef GDB_ENABLE_QXFER_MEMORY_MAP
-#define GDB_ENABLE_QXFER_MEMORY_MAP 1
-#endif
-
-#ifndef GDB_ENABLE_RXMIT
-#define GDB_ENABLE_RXMIT 0
-#endif
-
-#define CTRL_B 0x02
-#define CTRL_C 0x03
-#define CTRL_D 0x04
-#define CTRL_E 0x05
-#define CTRL_F 0x06
-#define CTRL_G 0x07
-#define CTRL_H 0x08
-#define CTRL_I 0x09
-#define CTRL_J 0x0a
-#define CTRL_K 0x0b
-#define CTRL_L 0x0c
-#define CTRL_M 0x0d /* CR */
-#define CTRL_N 0x0e
-#define CTRL_O 0x0f
-#define CTRL_P 0x10
-#define CTRL_Q 0x11
-#define CTRL_R 0x12
-#define CTRL_S 0x13
-#define CTRL_T 0x14
-#define CTRL_U 0x15
-#define CTRL_V 0x16
-#define CTRL_W 0x17
-#define CTRL_X 0x18
-#define CTRL_Y 0x19
-#define CTRL_Z 0x1a
-
-struct gdb_rspd {
-	uint8_t noack_mode    : 1;
-	uint8_t nonstop_mode  : 1;
-	uint8_t stopped       : 1;
-	uint8_t active_app    : 1;
-	uint8_t session_valid : 1;
-	uint8_t last_signal;
-#if GDB_ENABLE_MULTIPROCESS
-	uint16_t pid;
-#endif
-	struct {
-		int8_t g; 
-		int8_t c;
-	} thread_id;
-#if GDB_ENABLE_RXMIT
-	struct {
-		char * pkt;
-		uint16_t len;
-	} tx;
-#endif
-	struct dbgmon_comm * comm;
-};
+	dbgmon_soft_reset();
+	if ((ret = dbgmon_expect(DBGMON_SOFTRST)) < 0) {
+		DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
+		return ret;
+	}
+	dbgmon_clear(DBGMON_SOFTRST);
+	this_board.softreset();
+	return 0;
+}
 
 static int rsp_get_g_thread(struct gdb_rspd * gdb)
 {
@@ -258,17 +119,6 @@ static int rsp_empty(struct gdb_rspd * gdb)
 #endif
 	return dbgmon_comm_send(gdb->comm, "$#00", 4);
 }
-
-enum gdb_error_code {
-	GDB_ERR_THREAD_IS_DEAD = 1,
-	GDB_ERR_REGISTER_NOT_KNOWN = 2,
-	GDB_ERR_REGISTER_SET_FAIL = 3,
-	GDB_ERR_MEMORY_READ_FAIL = 4,
-	GDB_ERR_BREAKPOINT_SET_FAIL = 5,
-	GDB_ERR_WATCHPOINT_SET_FAIL = 6,
-	GDB_ERR_STEP_REQUEST_FAIL = 7,
-	GDB_ERR_APP_EXEC_FAIL = 8
-};
 
 static int rsp_error(struct gdb_rspd * gdb, unsigned int err)
 {
@@ -485,8 +335,6 @@ int rsp_console_output(struct gdb_rspd * gdb, char * pkt)
 	} else {
 		DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
 	}
-
-
 	return cnt;
 }
 #endif
@@ -558,13 +406,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 	DCC_LOGSTR(LOG_INFO, "cmd=\"%s\"", s);
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
-		if (gdb->active_app) {
-			dbgmon_soft_reset();
-			gdb->active_app = false;
-		}
-		if (dbgmon_app_exec(&this_board.application, true)) {
-			gdb->active_app = true;
-		}
+		dbgmon_req_app_exec(); 
 	} else if (prefix(s, "os")) {
 	} else if (prefix(s, "si")) {
 		print_stack_usage(gdb, pkt);
@@ -671,8 +513,8 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	if (prefix(pkt, "qC")) {
 		cp = pkt + str2str(pkt, "$Q");
 		thread_id = thread_active();
-//		thread_id = thread_any();
-//		gdb->thread_id.g = thread_id;
+		//		thread_id = thread_any();
+		//		gdb->thread_id.g = thread_id;
 		cp += uint2hex(cp, thread_id);
 		n = cp - pkt;
 		return rsp_pkt_send(gdb, pkt, n);
@@ -687,12 +529,13 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		if (!gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "no active application, "
 					"calling dbgmon_app_exec()!");
-			if (!dbgmon_app_exec(&this_board.application, true)) {
+/*			if (!dbgmon_app_exec(&this_board.application, true)) {
 				n = str2str(pkt, "$1");
 			} else {
-				gdb->active_app = true;
+				gdb->active_app = true; */
+				dbgmon_req_app_exec(); 
 				n = str2str(pkt, "$0");
-			}
+//			}
 		} else {
 			n = str2str(pkt, "$1");
 		}
@@ -721,38 +564,38 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		cp += uint2hex(cp, RSP_BUFFER_LEN - 1);
 		cp += str2str(cp, 
 #if GDB_ENABLE_QXFER_FEATURES
-					";qXfer:features:read+"
+					  ";qXfer:features:read+"
 #else
-					";qXfer:features:read-"
+					  ";qXfer:features:read-"
 #endif
 
 #if GDB_ENABLE_QXFER_MEMORY_MAP
-					";qXfer:memory-map:read+"
+					  ";qXfer:memory-map:read+"
 #else
-					";qXfer:memory-map:read-"
+					  ";qXfer:memory-map:read-"
 #endif
 
 #if GDB_ENABLE_MULTIPROCESS
-					";multiprocess+"
+					  ";multiprocess+"
 #else
-					";multiprocess-"
+					  ";multiprocess-"
 #endif
 
-					";qRelocInsn-"
+					  ";qRelocInsn-"
 #if 0
-					";QPassSignals+"
+					  ";QPassSignals+"
 #endif
 
 #if GDB_ENABLE_NOACK_MODE
-					";QStartNoAckMode+"
+					  ";QStartNoAckMode+"
 #else
-					";QStartNoAckMode-"
+					  ";QStartNoAckMode-"
 #endif
 
 #if GDB_ENABLE_NOSTOP_MODE
-					";QNonStop+"
+					  ";QNonStop+"
 #endif
-					);
+					  );
 		n = cp - pkt;
 		return rsp_pkt_send(gdb, pkt, n);
 	}
@@ -789,6 +632,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	}
 #endif
 
+#if GDB_ENABLE_NOSTOP_MODE
 	if (prefix(pkt, "QNonStop:")) {
 		gdb->nonstop_mode = pkt[9] - '0';
 		DCC_LOG1(LOG_INFO, "Nonstop=%d +++++++++++++++", gdb->nonstop_mode);
@@ -799,12 +643,15 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		}
 		return rsp_ok(gdb);
 	}
+#endif
 
+#if GDB_ENABLE_NOACK_MODE
 	if (prefix(pkt, "QStartNoAckMode")) {
 		DCC_LOG(LOG_INFO, "QStartNoAckMode");
 		gdb->noack_mode = 1;
 		return rsp_ok(gdb);
 	}
+#endif
 
 #if 0
 	if (prefix(pkt, "qTStatus")) {
@@ -953,7 +800,7 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 	cp++;
 	size = hex2int(cp, NULL);
 
-	DCC_LOG2(LOG_MSG, "addr=0x%08x size=%d", addr, size);
+	DCC_LOG2(LOG_INFO, "addr=0x%08x size=%d", addr, size);
 
 	max = (RSP_BUFFER_LEN - 8) / 2;
 
@@ -961,17 +808,17 @@ int rsp_memory_read(struct gdb_rspd * gdb, char * pkt)
 		size = max;
 
 	if ((ret = target_mem_read(addr, buf, size)) <= 0) {
-		DCC_LOG3(LOG_INFO, "%d addr=%08x size=%d", ret, addr, size);
+		DCC_LOG3(LOG_TRACE, "%d addr=%08x size=%d", ret, addr, size);
 		return rsp_error(gdb, GDB_ERR_MEMORY_READ_FAIL);
 	}
-	
+
 	data = (uint8_t *)buf;
 	cp = pkt;
 	*cp++ = '$';
 
 	for (i = 0; i < ret; ++i)
 		cp += char2hex(cp, data[i]);
-		
+
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);
 }
@@ -1000,7 +847,7 @@ static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 		   writing over it may cause errors */
 		if (gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "active application!");
-			dbgmon_soft_reset();
+			target_sync_reset();
 			gdb->active_app = false;
 		}
 		return rsp_ok(gdb);
@@ -1019,8 +866,8 @@ static int rsp_memory_write(struct gdb_rspd * gdb, char * pkt)
 
 	if (target_mem_write(addr, buf, size) < 0) {
 		/* XXX: silently ignore writing errors ...
-		return rsp_error(gdb, 1);
-		*/
+		   return rsp_error(gdb, 1);
+		 */
 	}
 
 	return rsp_ok(gdb);
@@ -1137,7 +984,7 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 	} else {
 #if (THINKOS_ENABLE_CONSOLE)
 		uint8_t * buf;
-		
+
 		DCC_LOG(LOG_INFO, "4!");
 
 		if ((n = __console_tx_pipe_ptr(&buf)) > 0) {
@@ -1245,7 +1092,7 @@ static int rsp_on_break(struct gdb_rspd * gdb, char * pkt)
 	gdb->thread_id.g = thread_id;
 	gdb->stopped = true;
 	gdb->last_signal = TARGET_SIGNAL_INT;
-	
+
 	return rsp_thread_stop_reply(gdb, pkt, thread_id);
 }
 
@@ -1334,12 +1181,14 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					DCC_LOG(LOG_INFO, "Continue all!");
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
-						DCC_LOG(LOG_WARNING, "no active application, "
+/*						DCC_LOG(LOG_WARNING, "no active application, "
 								"calling dbgmon_app_exec()!");
 						if (!dbgmon_app_exec(&this_board.application, true)) {
 							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
-						gdb->active_app = true;
+						gdb->active_app = true; */
+
+						dbgmon_req_app_exec(); 
 					}
 					if (target_continue()) {
 						gdb->stopped = false;
@@ -1401,7 +1250,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 		uint32_t size;
 		if (gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "active application!");
-			dbgmon_soft_reset();
+			target_sync_reset(); 
 			gdb->active_app = false;
 		}
 		cp = &pkt[12];
@@ -1425,7 +1274,13 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 		return rsp_ok(gdb);
 	}
 #endif
-
+#if GDB_ENABLE_COSMETIC
+	if (prefix(pkt, "vMustReplyEmpty")) {
+		DCC_LOG(LOG_TRACE, "vMustReplyEmpty");
+		/* Probe packet for unknnown 'v' packets, must respond empty */
+		return rsp_empty(gdb);
+	}
+#endif
 	DCC_LOG(LOG_WARNING, "v???");
 	return rsp_empty(gdb);
 }
@@ -1476,26 +1331,28 @@ static int rsp_memory_write_bin(struct gdb_rspd * gdb, char * pkt)
 	cp++;
 
 	if (size == 0) {
-		DCC_LOG(LOG_INFO, "write probe!");
+		DCC_LOG(LOG_TRACE, "write probe!");
 		/* XXX: if there is an active application, even if it is suspended,
 		   writing over it may cause errors */
 		if (gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "active application!");
-			dbgmon_soft_reset();
+			target_sync_reset(); 
 			gdb->active_app = false;
 		}
 		return rsp_ok(gdb);
 	}
 	if (gdb->active_app) {
 		DCC_LOG(LOG_WARNING, "active application!");
+		target_sync_reset(); 
+		gdb->active_app = false;
 	}
 
 	DCC_LOG3(LOG_INFO, "addr=%08x size=%d cp=%08x", addr, size, cp);
 
 	if (target_mem_write(addr, cp, size) < 0) {
 		/* XXX: silently ignore writing errors ...
-		return rsp_error(gdb, 1);
-		*/
+		   return rsp_error(gdb, 1);
+		 */
 	}
 
 	return rsp_ok(gdb);
@@ -1673,9 +1530,9 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 {
 	struct gdb_rspd * gdb = &gdb_rspd;
 	char pkt[RSP_BUFFER_LEN];
-	char buf[4];
 	uint32_t sigmask;
-	uint32_t sigset;
+	char buf[4];
+	int sig;
 	int len;
 
 	gdb->comm = comm;
@@ -1687,70 +1544,120 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	gdb->last_signal = TARGET_SIGNAL_0;
 
 	DCC_LOG2(LOG_INFO, "GDB [stopped=%s active_app=%s] =====================", 
-		gdb->stopped ? "true" : "false",
-		gdb->active_app ? "true" : "false");
+			 gdb->stopped ? "true" : "false",
+			 gdb->active_app ? "true" : "false");
 
 	dmon_breakpoint_clear_all();
 	dmon_watchpoint_clear_all();
 
-//	dbgmon_comm_connect(comm);
+	//	dbgmon_comm_connect(comm);
 
-//	DCC_LOG(LOG_INFO, "Comm connected..");
+	//	DCC_LOG(LOG_INFO, "Comm connected..");
 
 	sigmask = (1 << DBGMON_EXCEPT);
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
 	sigmask |= (1 << DBGMON_THREAD_STEP);
+	sigmask |= (1 << DBGMON_BREAKPOINT);
+	sigmask |= (1 << DBGMON_APP_STOP);
+	sigmask |= (1 << DBGMON_APP_EXEC);
+	sigmask |= (1 << DBGMON_APP_UPLOAD);
+	sigmask |= (1 << DBGMON_APP_ERASE);
+	sigmask |= (1 << DBGMON_APP_TERM);
+	sigmask |= (1 << DBGMON_APP_RESUME);
 	sigmask |= (1 << DBGMON_COMM_RCV);
 	sigmask |= (1 << DBGMON_COMM_CTL);
-	sigmask |= (1 << DBGMON_BREAKPOINT);
 #if (THINKOS_ENABLE_CONSOLE)
+	sigmask |= (1 << DBGMON_COMM_EOT);
 	sigmask |= (1 << DBGMON_TX_PIPE);
+	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 	sigmask |= (1 << DBGMON_SOFTRST);
 
 	for(;;) {
-#if 0
-		if (gdb->stopped)
-			DCC_LOG1(LOG_MSG, "<suspended>%02x", gdb->last_signal);
-		else
-			DCC_LOG1(LOG_MSG, "<running> %02x", gdb->last_signal);
-#endif		
-		sigset = dbgmon_select(sigmask);
+		DCC_LOG(LOG_INFO, "dbgmon_sched_select()...");
 
-		DCC_LOG1(LOG_INFO, "sig=%08x", sigset);
+		sig = dbgmon_sched_select(sigmask);
 
-		if (sigset & (1 << DBGMON_SOFTRST)) {
+		DCC_LOG1(LOG_INFO, "sig=%d", sig);
+
+		switch (sig) {
+
+		case DBGMON_SOFTRST:
 			DCC_LOG(LOG_INFO, "Soft reset.");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
-		}
+#if THINKOS_ENABLE_CONSOLE
+			__console_reset();
+			/* Update the console connection flag which was cleared
+			   by __console_reset(). */
+			__console_connect_set(dbgmon_comm_isconnected(comm));
+#endif
+			sigmask |= (1 << DBGMON_COMM_EOT);
+			break;
 
-		if (sigset & (1 << DBGMON_EXCEPT)) {
+		case DBGMON_APP_UPLOAD:
+			dbgmon_clear(DBGMON_APP_UPLOAD);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
+			sigmask |= (1 << DBGMON_COMM_EOT);
+			break;
+
+		case DBGMON_APP_EXEC:
+			dbgmon_clear(DBGMON_APP_EXEC);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
+			if (!dbgmon_app_exec(&this_board.application, true)) {
+				DCC_LOG(LOG_ERROR, "/!\\ dbgmon_app_exec() failed!");
+				gdb->active_app = false;
+			} else {
+				gdb->active_app = true;
+			}
+			sigmask |= (1 << DBGMON_COMM_EOT);
+			break;
+
+		case DBGMON_APP_ERASE:
+			dbgmon_clear(DBGMON_APP_ERASE);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
+			break;
+
+		case DBGMON_APP_TERM:
+			dbgmon_clear(DBGMON_APP_TERM);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
+			break;
+
+		case DBGMON_APP_STOP:
+			dbgmon_clear(DBGMON_APP_STOP);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
+			break;
+
+		case DBGMON_APP_RESUME:
+			dbgmon_clear(DBGMON_APP_RESUME);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
+			break;
+
+		case DBGMON_EXCEPT:
 			DCC_LOG(LOG_INFO, "Exception.");
 			dbgmon_clear(DBGMON_EXCEPT);
 			rsp_on_fault(gdb, pkt);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
+		case DBGMON_THREAD_FAULT:
 			DCC_LOG(LOG_INFO, "Thread fault.");
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			rsp_on_fault(gdb, pkt);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_THREAD_STEP)) {
+		case DBGMON_THREAD_STEP:
 			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
 			dbgmon_clear(DBGMON_THREAD_STEP);
 			rsp_on_step(gdb, pkt);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_BREAKPOINT)) {
+		case DBGMON_BREAKPOINT:
 			DCC_LOG(LOG_INFO, "DBGMON_BREAKPOINT");
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			rsp_on_breakpoint(gdb, pkt);
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_COMM_RCV)) {
-
+		case DBGMON_COMM_RCV:
 			if (dbgmon_comm_recv(comm, buf, 1) != 1) {
 				DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
 				continue;
@@ -1768,12 +1675,12 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				rsp_pkt_rxmit(gdb);
 #else
 				DCC_LOG(LOG_WARNING, "[NACK]!");
-//				return;
+				//				return;
 #endif
 				break;
 
 			case '$':
-				DCC_LOG(LOG_MSG, "Comm RX: '$'");
+				DCC_LOG(LOG_INFO, "Comm RX: '$'");
 
 				if ((len = rsp_pkt_recv(comm, pkt, RSP_BUFFER_LEN)) <= 0) {
 					DCC_LOG1(LOG_WARNING, "rsp_pkt_recv(): %d", len);
@@ -1783,6 +1690,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 						rsp_ack(gdb);
 					if (rsp_pkt_input(gdb, pkt, len) == GDB_RSP_QUIT)
 						return;
+					sigmask |= (1 << DBGMON_COMM_EOT);
 				}
 				break;
 
@@ -1797,25 +1705,38 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				return;
 			}
 
-		}
+			break;
 
-		if (sigset & (1 << DBGMON_COMM_CTL)) {
+		case DBGMON_COMM_CTL:
 			DCC_LOG(LOG_INFO, "Comm Ctl.");
 			dbgmon_clear(DBGMON_COMM_CTL);
 			if (!dbgmon_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
 				return;
 			}
-		}
+			break;
+
+		case DBGMON_COMM_EOT:
+			dbgmon_clear(DBGMON_COMM_EOT);
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
 
 #if (THINKOS_ENABLE_CONSOLE)
-		if (sigset & (1 << DBGMON_TX_PIPE)) {
-			DCC_LOG(LOG_MSG, "TX Pipe.");
-			if (rsp_console_output(gdb, pkt) <= 0) {
+		case DBGMON_TX_PIPE:
+			DCC_LOG(LOG_TRACE, "TX Pipe.");
+			if (rsp_console_output(gdb, pkt) > 0) {
+				sigmask |= (1 << DBGMON_COMM_EOT);
+			} else {
+				DCC_LOG(LOG_TRACE, "TX Pipe empty!!!");
 				dbgmon_clear(DBGMON_TX_PIPE);
+				sigmask &= ~(1 << DBGMON_COMM_EOT);
 			}
-		}
+			break;
+#else
+			sigmask &= ~(1 << DBGMON_COMM_EOT);
+			break;
 #endif
+		}
 	}
 }
- 
+
+

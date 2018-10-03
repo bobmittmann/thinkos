@@ -299,6 +299,7 @@ static void __ep0_tx_push(struct stm32f_otg_drv * drv)
 	ep->xfr_rem -= cnt;
 }
 
+#if 0
 static int __ep_tx_setup(struct stm32f_otg_fs * otg_fs, int idx, int len)
 {
 	uint32_t depctl;
@@ -355,7 +356,6 @@ static int __ep_tx_setup(struct stm32f_otg_fs * otg_fs, int idx, int len)
 	return len;
 }
 
-#if 0
 static void __ep_tx_push(struct stm32f_otg_drv * drv, int idx)
 {
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
@@ -449,6 +449,43 @@ static void __ep_tx_push(struct stm32f_otg_drv * drv, int idx)
 		ep->xfr_ptr += cnt;
 	}
 }
+
+int _stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
+							   void * buf, unsigned int len)
+{
+	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
+	struct stm32f_otg_ep * ep;
+	int cnt;
+	int idx;
+
+#if DEBUG
+	if ((unsigned int)ep_id >= OTG_EP_MAX) {
+		DCC_LOG(LOG_WARNING, "invalid EP");
+		return -1;
+	}
+#endif
+	ep = &drv->ep[ep_id];
+	idx = ep->idx;
+
+	if (ep->xfr_rem != 0) {
+		DCC_LOG3(LOG_TRACE, "[%d] len=%d %d outstanding bytes...", 
+				 idx, len, ep->xfr_rem);
+		return -1;
+	}
+
+	ep->xfr_ptr = buf;
+	cnt = MIN(len, ep->xfr_max);
+	ep->xfr_rem = cnt;
+	ep->xfr_len = cnt;
+	
+	/* enable endpoint */
+	otg_fs->inep[idx].diepctl |= OTG_FS_EPENA | OTG_FS_CNAK;
+	/* umask FIFO empty interrupt */
+	otg_fs->diepempmsk |= (1 << idx);
+
+	/* prepare fifo to transmit */
+	return __ep_tx_setup(otg_fs, idx, cnt);
+}
 #endif
 
 static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
@@ -488,51 +525,11 @@ static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
 		return;
 	}
 
-//	otg_fs->inep[idx].diepctl |= OTG_FS_SNAK; 
+	ep->state = EP_IDLE;
 
 	/* call class endpoint callback */
 	ep->on_in(drv->cl, ep_id);
 }
-
-int _stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
-							   void * buf, unsigned int len)
-{
-	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
-	struct stm32f_otg_ep * ep;
-	int cnt;
-	int idx;
-
-#if DEBUG
-	if ((unsigned int)ep_id >= OTG_EP_MAX) {
-		DCC_LOG(LOG_WARNING, "invalid EP");
-		return -1;
-	}
-#endif
-	ep = &drv->ep[ep_id];
-	idx = ep->idx;
-
-	if (ep->xfr_rem != 0) {
-		DCC_LOG3(LOG_MSG, "[%d] len=%d %d outstanding bytes...", 
-				 idx, len, ep->xfr_rem);
-		return -1;
-	}
-
-	ep->xfr_ptr = buf;
-	cnt = MIN(len, ep->xfr_max);
-	ep->xfr_rem = cnt;
-	ep->xfr_len = cnt;
-	
-	/* enable endpoint */
-	otg_fs->inep[idx].diepctl |= OTG_FS_EPENA | OTG_FS_CNAK;
-	/* umask FIFO empty interrupt */
-	otg_fs->diepempmsk |= (1 << idx);
-
-	/* prepare fifo to transmit */
-	return __ep_tx_setup(otg_fs, idx, cnt);
-
-//	return cnt;
-}
-
 
 int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 							   void * buf, unsigned int len)
@@ -562,7 +559,7 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	if ((!OTG_FS_XFRSIZ_GET(deptsiz)) && (OTG_FS_PKTCNT_GET(deptsiz))) {
 	*/
 	if ((pktcnt = OTG_FS_PKTCNT_GET(deptsiz))) {
-		DCC_LOG2(LOG_MSG, "[%d] %d outstanding pkts", idx, pktcnt);
+		DCC_LOG2(LOG_TRACE, "[%d] %d outstanding pkts", idx, pktcnt);
 		return 0;
 	}
 
@@ -590,13 +587,13 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 
 	ep->xfr_ptr = buf;
 	ep->xfr_rem = xfrsiz;
-#if 0	
+
 	if ((xfrsiz % mpsiz) == 0) 
-		ep->state = EP_IN_DATA_ZLP;
+		ep->state = EP_IN_DATA_ZLP; /* needs to send a ZLP */
 	else
 		ep->state = EP_IN_DATA;
-#endif
-	DCC_LOG4(LOG_MSG, "[%d] pktcnt=%d xfrsiz=%d xfr_max=%d", 
+
+	DCC_LOG4(LOG_TRACE, "[%d] pktcnt=%d xfrsiz=%d xfr_max=%d", 
 			 idx, pktcnt, xfrsiz, ep->xfr_max);
 
 	otg_fs->inep[idx].dieptsiz = OTG_FS_PKTCNT_SET(pktcnt) | 
@@ -615,17 +612,10 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	if (ep->xfr_rem <= xfrsiz) {
 		ep->xfr_ptr += ep->xfr_rem;
 		ep->xfr_rem = 0;
-//		DCC_LOG1(LOG_TRACE, "[%d] no more data, masking TXFE!", idx);
-//		otg_fs->diepempmsk &= ~(1 << idx);
 	}  else {
 		ep->xfr_rem -= xfrsiz;
 		ep->xfr_ptr += xfrsiz;
 	}
-	/* enable end point, clear NACK */
-	/* clear FIFO empty */
-//	otg_fs->inep[idx].diepint = OTG_FS_TXFE;
-	/* umask FIFO empty interrupt */
-//	otg_fs->diepempmsk |= (1 << idx);
 
 	return xfrsiz;
 }
