@@ -474,7 +474,6 @@ void otg_fs_fifo(struct stm32f_otg_fs * otg_fs,
 		break;
 	};
 }
-
 #endif
 
 #endif /* STM32F_OTG_FS */

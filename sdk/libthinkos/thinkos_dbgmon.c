@@ -47,8 +47,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
-	struct dbgmon_comm * comm;
 	uint32_t * ctx;           /* monitor context */
+	struct dbgmon_comm * comm;
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
 	void * param;             /* user supplied parameter */
@@ -222,6 +222,11 @@ void dbgmon_signal(int sig)
 	asm volatile ("isb\n" :  :  : );
 }
 
+bool dbgmon_is_set(int sig) 
+{
+	return thinkos_dbgmon_rt.events &  (1 << sig) ? true : false;
+}
+
 void dbgmon_signal_idle(void)
 {
 	struct cm3_dcb * dcb = CM3_DCB;
@@ -334,41 +339,45 @@ int dbgmon_sched_select(uint32_t evmask)
 	return event;
 }
 
-/* wait for an event but don't clear the 
-   event or event mask if previously set */
+/* wait for an event and clear the event */
 int dbgmon_expect(int sig)
 {
 	uint32_t evset;
 	uint32_t evmsk;
 	uint32_t stmsk;
-	
+
 	/* save the state of the bit in the event mask */
 	stmsk = thinkos_dbgmon_rt.mask;
 	evmsk = stmsk | DBGMON_PERISTENT_MASK | (1 << sig);
-	evset = thinkos_dbgmon_rt.events;
-
 	DCC_LOG2(LOG_MSG, "waiting for %d (evmsk=%08x) sleeping...", sig, evmsk);
-	while ((evset & evmsk) == 0) {
-		/* umask event */
-		thinkos_dbgmon_rt.mask = evmsk;
-		/* */
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		DCC_LOG2(LOG_MSG, "swap evset=%08x evmsk=%08x", evset, evmsk);
-	}
-	DCC_LOG1(LOG_MSG, "wakeup... evset=%08x", evset);
 
-	DCC_LOG2(LOG_MSG, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
+		/* avoid possible race condition on dbgmon.events */
+		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+		while ((evset & evmsk) == 0) {
+			/* umask event */
+			thinkos_dbgmon_rt.mask = evmsk;
+			/* */
+			dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+			DCC_LOG2(LOG_MSG, "swap evset=%08x evmsk=%08x", evset, evmsk);
+		}
+		DCC_LOG1(LOG_MSG, "wakeup... evset=%08x", evset);
+
+		if (evset & (1 << sig))
+			evset &= ~(1 << sig);
+		else {
+			/* unexpected event received */
+			sig = -1;
+			DCC_LOG1(LOG_TRACE, "unexpected event=%08x!!", evset & evmsk);
+		}
+
+		if (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset)) {
+			DCC_LOG1(LOG_WARNING, "__strex() failed", evset);
+		}
+
 	thinkos_dbgmon_rt.mask = stmsk;
 
-	if (evset & (1 << sig)) {
-		return sig;
-	}
-
-	DCC_LOG1(LOG_TRACE, "unexpected event=%08x!!", evset & evmsk);
-
-	/* unexpected event received */
-	return -1;
+	return sig;
 }
 
 /* wait for a single event, clear the event,
@@ -378,8 +387,6 @@ int dbgmon_wait(int sig)
 {
 	if ((sig = dbgmon_expect(sig)) < 0)
 		return sig;
-
-	dbgmon_clear(sig);
 
 	return sig;
 }

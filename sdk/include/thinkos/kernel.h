@@ -1038,7 +1038,10 @@ extern uint32_t * const thinkos_main_stack;
 extern "C" {
 #endif
 
-void __attribute__((noreturn)) __thinkos_thread_exit(int code);
+
+void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
+
+void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);
 
 void __thinkos_thread_abort(int thread_id);
 
@@ -1313,6 +1316,8 @@ void __thinkos_memcpy32(void * __dst, const void * __src,
 						unsigned int __len);
 
 void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
+
+unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
 
 struct thinkos_context * __thinkos_idle_init(void);
 

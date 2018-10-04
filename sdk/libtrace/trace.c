@@ -28,7 +28,9 @@
 
 float doble2float(double val);
 
-struct trace_ring trace_ring;
+struct trace_ctl trace_ctl __attribute__((section(".bkpctl.trace")));
+struct trace_ring trace_ring __attribute__((section(".bkpdat.trace")));
+
 
 /*---------------------------------------------------------------------------
  * Profiling timer
@@ -133,12 +135,12 @@ int32_t trace_dt(uint32_t * prev)
 void trace_init(void)
 {
 	__timer_init();
-	trace_ring.mutex = thinkos_mutex_alloc();
-	trace_ring.print_pos = 0;
-	trace_ring.print_tm = 0;
-	trace_ring.head = 0;
-	trace_ring.tail = 0;
-	trace_ring.tm = __timer_ts();
+	trace_ctl.mutex = thinkos_mutex_alloc();
+	trace_ctl.print_pos = 0;
+	trace_ctl.print_tm = 0;
+	trace_ctl.head = 0;
+	trace_ctl.tail = 0;
+	trace_ctl.tm = __timer_ts();
 }
 
 /*---------------------------------------------------------------------------
@@ -269,14 +271,15 @@ void tracef(const struct trace_ref * ref, ... )
 	cm3_primask_set(1);
 #endif
 
-	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (unsigned int)(cnt + 2)) {
+	head = trace_ctl.head;
+	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= 
+		(unsigned int)(cnt + 2)) {
 		int i;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
 		for (i = 0; i < cnt; ++i)
 			trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = buf[i];
-		trace_ring.head = head;
+		trace_ctl.head = head;
 	}
 
 #if THINKOS_ENABLE_CRITICAL
@@ -302,13 +305,11 @@ void trace(const struct trace_ref * ref)
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 #endif
-
-
-	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= 2) {
+	head = trace_ctl.head;
+	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= 2) {
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
-		trace_ring.head = head;
+		trace_ctl.head = head;
 	}
 
 #if THINKOS_ENABLE_CRITICAL
@@ -344,8 +345,8 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len)
 	cm3_primask_set(1);
 #endif
 
-	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (unsigned int)(cnt + 2)) {
+	head = trace_ctl.head;
+	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= (unsigned int)(cnt + 2)) {
 		uint32_t val;
 		int i;
 		int j;
@@ -384,7 +385,7 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len)
 			trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = val;
 		}
 
-		trace_ring.head = head;
+		trace_ctl.head = head;
 	}
 
 #if THINKOS_ENABLE_CRITICAL
@@ -405,11 +406,11 @@ void trace_i(const struct trace_ref * ref)
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 
-	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= 2) {
+	head = trace_ctl.head;
+	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= 2) {
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
-		trace_ring.head = head;
+		trace_ctl.head = head;
 	}
 
 	cm3_primask_set(pri);
@@ -436,14 +437,14 @@ void tracef_i(const struct trace_ref * ref, ... )
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 
-	head = trace_ring.head;
-	if ((TRACE_RING_SIZE + trace_ring.tail - head) >= (unsigned int)(cnt + 2)) {
+	head = trace_ctl.head;
+	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= (unsigned int)(cnt + 2)) {
 		int i;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;
 		for (i = 0; i < cnt; ++i)
 			trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].val = buf[i];
-		trace_ring.head = head;
+		trace_ctl.head = head;
 	}
 
 	cm3_primask_set(pri);

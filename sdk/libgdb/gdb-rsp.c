@@ -43,6 +43,21 @@ static int target_sync_reset(void)
 	return 0;
 }
 
+#if 0
+static bool target_appc_run(struct gdb_rspd * gdb) 
+{
+	if (!gdb->active_app) {
+		if (dbgmon_app_exec(&this_board.application, true)) {
+			gdb->active_app = true;
+		} else {
+			DCC_LOG(LOG_ERROR, "/!\\ dbgmon_app_exec() failed!");
+		}
+	}
+
+	return gdb->active_app;
+}
+#endif
+
 static int rsp_get_g_thread(struct gdb_rspd * gdb)
 {
 	int thread_id;
@@ -311,29 +326,28 @@ int rsp_thread_info_next(struct gdb_rspd * gdb, char * pkt)
 }
 
 #if (THINKOS_ENABLE_CONSOLE)
-int rsp_console_output(struct gdb_rspd * gdb, char * pkt)
+int rsp_console_output(struct gdb_rspd * gdb, char * pkt, 
+					   uint8_t * ptr, int cnt)
 {
-	uint8_t * ptr;
 	char * cp;
-	int cnt;
 	int n;
 
-	if (!gdb->session_valid)
+	if (!gdb->session_valid) {
 		return 0;
+	}
 
-	if (gdb->stopped)
+	if (gdb->stopped) {
 		return 0;
+	}
 
-	if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
-		cp = pkt;
-		*cp++ = '$';
-		*cp++ = 'O';
-		cp += bin2hex(cp, ptr, cnt);
-		__console_tx_pipe_commit(cnt);
-		n = cp - pkt;
-		rsp_pkt_send(gdb, pkt, n);
-	} else {
-		DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
+	cp = pkt;
+	*cp++ = '$';
+	*cp++ = 'O';
+	cp += bin2hex(cp, ptr, cnt);
+	n = cp - pkt;
+	if (rsp_pkt_send(gdb, pkt, n) < 0) {
+		DCC_LOG(LOG_WARNING, "rsp_pkt_send() failed!!!");
+		cnt = 0;
 	}
 	return cnt;
 }
@@ -529,13 +543,12 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 		if (!gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "no active application, "
 					"calling dbgmon_app_exec()!");
-/*			if (!dbgmon_app_exec(&this_board.application, true)) {
+			if (!dbgmon_app_exec(&this_board.application, true)) {
 				n = str2str(pkt, "$1");
 			} else {
-				gdb->active_app = true; */
-				dbgmon_req_app_exec(); 
+				gdb->active_app = true;
 				n = str2str(pkt, "$0");
-//			}
+			}
 		} else {
 			n = str2str(pkt, "$1");
 		}
@@ -1181,14 +1194,12 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 					DCC_LOG(LOG_INFO, "Continue all!");
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
-/*						DCC_LOG(LOG_WARNING, "no active application, "
+						DCC_LOG(LOG_WARNING, "no active application, "
 								"calling dbgmon_app_exec()!");
 						if (!dbgmon_app_exec(&this_board.application, true)) {
 							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
-						gdb->active_app = true; */
-
-						dbgmon_req_app_exec(); 
+						gdb->active_app = true; 
 					}
 					if (target_continue()) {
 						gdb->stopped = false;
@@ -1534,6 +1545,10 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	char buf[4];
 	int sig;
 	int len;
+#if THINKOS_ENABLE_CONSOLE
+	uint8_t * ptr;
+	int cnt;
+#endif
 
 	gdb->comm = comm;
 	gdb->nonstop_mode = false;
@@ -1567,11 +1582,12 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	sigmask |= (1 << DBGMON_COMM_RCV);
 	sigmask |= (1 << DBGMON_COMM_CTL);
 #if (THINKOS_ENABLE_CONSOLE)
-	sigmask |= (1 << DBGMON_COMM_EOT);
 	sigmask |= (1 << DBGMON_TX_PIPE);
 	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 	sigmask |= (1 << DBGMON_SOFTRST);
+	sigmask |= (1 << DBGMON_THREAD_CREATE);
+	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
 	for(;;) {
 		DCC_LOG(LOG_INFO, "dbgmon_sched_select()...");
@@ -1592,13 +1608,11 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			   by __console_reset(). */
 			__console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
-			sigmask |= (1 << DBGMON_COMM_EOT);
 			break;
 
 		case DBGMON_APP_UPLOAD:
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			sigmask |= (1 << DBGMON_COMM_EOT);
 			break;
 
 		case DBGMON_APP_EXEC:
@@ -1610,7 +1624,6 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			} else {
 				gdb->active_app = true;
 			}
-			sigmask |= (1 << DBGMON_COMM_EOT);
 			break;
 
 		case DBGMON_APP_ERASE:
@@ -1657,11 +1670,68 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			rsp_on_breakpoint(gdb, pkt);
 			break;
 
+		case DBGMON_THREAD_CREATE:
+			dbgmon_clear(DBGMON_THREAD_CREATE);
+			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
+			break;
+
+		case DBGMON_THREAD_TERMINATE:
+			dbgmon_clear(DBGMON_THREAD_TERMINATE);
+			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
+			break;
+
+
+		case DBGMON_COMM_CTL:
+			DCC_LOG(LOG_INFO, "Comm Ctl.");
+			dbgmon_clear(DBGMON_COMM_CTL);
+			if (!dbgmon_comm_isconnected(comm)) {
+				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
+				return;
+			}
+			break;
+
+#if (THINKOS_ENABLE_CONSOLE)
+		case DBGMON_COMM_EOT:
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
+
+		case DBGMON_TX_PIPE:
+			DCC_LOG(LOG_TRACE, "TX Pipe.");
+			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+				int n;
+				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
+				if ((n = rsp_console_output(gdb, pkt, 
+											ptr, cnt)) > 0) {
+
+					/* enable COMM_EOT event to continue sending 
+					   data */
+					sigmask |= (1 << DBGMON_COMM_EOT);
+					__console_tx_pipe_commit(n); 
+				} else {
+					DCC_LOG(LOG_WARNING, "rsp_console_output() failed!!!");
+					dbgmon_clear(DBGMON_TX_PIPE);
+				}
+			} else {
+				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
+				dbgmon_clear(DBGMON_TX_PIPE);
+				sigmask &= ~(1 << DBGMON_COMM_EOT);
+			}
+			break;
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE)
+		case DBGMON_RX_PIPE:
+			dbgmon_clear(DBGMON_RX_PIPE);
+			DCC_LOG(LOG_WARNING, "RX Pipe empty!!!");
+			break;
+#endif
+
 		case DBGMON_COMM_RCV:
+			DCC_LOG(LOG_INFO, "DBGMON_COMM_RCV +++++++++++");
 			if (dbgmon_comm_recv(comm, buf, 1) != 1) {
 				DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
 				continue;
 			}
+			DCC_LOG(LOG_INFO, "DBGMON_COMM_RCV --------");
 
 			switch (buf[0]) {
 
@@ -1690,7 +1760,6 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 						rsp_ack(gdb);
 					if (rsp_pkt_input(gdb, pkt, len) == GDB_RSP_QUIT)
 						return;
-					sigmask |= (1 << DBGMON_COMM_EOT);
 				}
 				break;
 
@@ -1706,35 +1775,6 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			}
 
 			break;
-
-		case DBGMON_COMM_CTL:
-			DCC_LOG(LOG_INFO, "Comm Ctl.");
-			dbgmon_clear(DBGMON_COMM_CTL);
-			if (!dbgmon_comm_isconnected(comm)) {
-				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
-				return;
-			}
-			break;
-
-		case DBGMON_COMM_EOT:
-			dbgmon_clear(DBGMON_COMM_EOT);
-			DCC_LOG(LOG_TRACE, "COMM_EOT");
-
-#if (THINKOS_ENABLE_CONSOLE)
-		case DBGMON_TX_PIPE:
-			DCC_LOG(LOG_TRACE, "TX Pipe.");
-			if (rsp_console_output(gdb, pkt) > 0) {
-				sigmask |= (1 << DBGMON_COMM_EOT);
-			} else {
-				DCC_LOG(LOG_TRACE, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
-				sigmask &= ~(1 << DBGMON_COMM_EOT);
-			}
-			break;
-#else
-			sigmask &= ~(1 << DBGMON_COMM_EOT);
-			break;
-#endif
 		}
 	}
 }

@@ -39,7 +39,7 @@
 #if (THINKOS_ENABLE_MONITOR)
 
 #ifndef THINKOS_DBGMON_ENABLE_FLOWCTL
-#define THINKOS_DBGMON_ENABLE_FLOWCTL 1 
+#define THINKOS_DBGMON_ENABLE_FLOWCTL 0
 #endif
 
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
@@ -484,16 +484,17 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 
 	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
 
-	DCC_LOG2(LOG_TRACE, "COMM_RCV seq=%d ack=%d", seq, ack);
-	dbgmon_signal(DBGMON_COMM_RCV);
+	if ((seq - (ack = dev->rx_ack)) > 0) {
+		DCC_LOG2(LOG_INFO, "COMM_TRACE seq=%d ack=%d", seq, ack);
+		dbgmon_signal(DBGMON_COMM_RCV);
+	}
 }
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
 //	struct usb_cdc_acm_dev * dev = &cl->dev;
-
 	dbgmon_signal(DBGMON_COMM_EOT);
-	DCC_LOG(LOG_MSG, "COMM_EOT");
+	DCC_LOG(LOG_INFO, "COMM_EOT");
 }
 
 static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
@@ -606,6 +607,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 		}
 		break;
 	}
+
 
 	case STD_GET_STATUS_DEVICE:
 		DCC_LOG(LOG_TRACE, "GetStatusDev");
@@ -790,9 +792,8 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	rem = len;
 	seq = dev->tx_seq;
 	while (rem) {
-		DCC_LOG1(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d)", rem);
-		dbgmon_clear(DBGMON_COMM_EOT);
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
+		DCC_LOG2(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
 		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
@@ -819,6 +820,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 	}
 
+
 	dev->tx_seq = seq;
 	DCC_LOG1(LOG_TRACE, "return=%d.", len - rem);
 
@@ -837,13 +839,17 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	int n;
 
 	ack = dev->rx_ack;
-	while ((n = (int32_t)(dev->rx_seq - ack)) <= 0) {
+//	while ((n = (int32_t)(dev->rx_seq - ack)) == 0) {
+	do {
 		DCC_LOG2(LOG_TRACE, "ack=%d n=%d blocked!!!", ack, n);
 		if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
 			DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 			return ret;
 		}
-		dbgmon_clear(DBGMON_COMM_RCV);
+	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
+
+	if (dbgmon_is_set(DBGMON_COMM_RCV)) {
+		DCC_LOG(LOG_WARNING, "dbgmon_is_set()!");
 	}
 
 	cnt = MIN(n, len);
@@ -870,10 +876,9 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 
 	ack += cnt;
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
-		/* Pending data on fifo, keep it signaled .. */
+		DCC_LOG(LOG_WARNING, "signal DBGMON_COMM_RCV!");
+		/* Pending data on fifo, resignal .. */
 		dbgmon_signal(DBGMON_COMM_RCV);
-	} else {
-		dbgmon_clear(DBGMON_COMM_RCV);
 	}
 
 	dev->rx_ack = ack;
@@ -976,6 +981,13 @@ static int usb_comm_connect(const void * comm)
 static bool usb_comm_isconnected(const void * comm)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
+
+	/* Pending data on fifo, resignal .. */
+	if ((int32_t)(dev->rx_seq - dev->rx_ack) > 0) {
+		DCC_LOG(LOG_WARNING, "signal DBGMON_COMM_RCV!");
+		dbgmon_signal(DBGMON_COMM_RCV);
+	}
+
 	return (dev->acm_ctrl & CDC_DTE_PRESENT) ? true : false;
 }
 

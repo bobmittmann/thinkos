@@ -22,16 +22,18 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#include <thinkos.h>
 
 /* -------------------------------------------------------------------------
- * Application execution
+ * Fast thread execution
  * ------------------------------------------------------------------------- */
 
-extern const struct thinkos_thread_inf thinkos_main_inf;
-
-void __thinkos_exec(int thread_id, void (* func)(void *), 
-					void * arg, bool paused)
+int dbgmon_thread_create(void (* func)(void *), void * arg, 
+						 const struct thinkos_thread_inf * inf)
 {
+	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
+	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
+
 	DCC_LOG(LOG_MSG, "__thinkos_thread_abort()");
 	__thinkos_thread_abort(thread_id);
 
@@ -41,17 +43,19 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 #endif
 
 	DCC_LOG2(LOG_MSG, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	__thinkos_thread_init(thread_id, (uint32_t)thinkos_main_stack, func, arg);
+	__thinkos_thread_init(thread_id, sp, func, arg);
 
 #if THINKOS_ENABLE_THREAD_INFO
 	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
-	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
+	__thinkos_thread_inf_set(thread_id, inf);
 #endif
 
-	if (!paused) {
-		DCC_LOG(LOG_MSG, "__thinkos_thread_resume()");
-		__thinkos_thread_resume(thread_id);
-		__thinkos_defer_sched();
-	}
+	return thread_id;
 }
+
+void dbgmon_thread_resume(int thread_id)
+{
+	if (__thinkos_thread_resume(thread_id))
+		__thinkos_defer_sched();
+} 
 

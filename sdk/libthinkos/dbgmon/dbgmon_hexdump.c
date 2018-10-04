@@ -40,19 +40,26 @@ int long2hex_le(char * s, unsigned long val);
 int char2hex(char * s, int c);
 
 void dbgmon_hexdump(const struct dbgmon_comm * comm, 
-					uint32_t addr, void * ptr, unsigned int size)
+					const struct mem_desc * mem,
+					uint32_t addr, unsigned int size)
 {
 	char buf[14 + 16 * 3 + 18];
 	unsigned int rem = size;
 	uint8_t * cmp = (uint8_t *)-1;
-	uint8_t * src = (uint8_t *)ptr;
 	bool eq = false;
 
 	while (rem) {
 		int n = rem < 16 ? rem : 16;
 		char * cp = buf;
 		unsigned int i;
-	
+		uint8_t src[16];
+
+		n = dbgmon_mem_read(mem, addr, src, n);
+		if (n <= 0)
+			break;
+
+		DCC_LOG2(LOG_TRACE, "addr=0x%08x n=%d", addr, n);
+
 		if (cmp != (uint8_t *)-1) {
 			for (i = 0; i < n; ++i) {
 				if (src[i] != cmp[i]) {
@@ -91,8 +98,10 @@ dump_line:
 			dbgmon_comm_send(comm, buf, cp - buf);
 		}
 
-		cmp = src;
-		src += n;
+		cmp = (uint8_t *)buf;
+		for (i = 0; i < n; i++)
+			cmp[i] = src[i];
+
 		addr += n;
 		rem -= n;
 	}

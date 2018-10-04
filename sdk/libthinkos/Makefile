@@ -27,16 +27,16 @@ DBGMON_CFILES = null_comm.c usb_comm.c \
 			  print_osinfo.c print_alloc.c print_thread.c \
 			  print_context.c print_stack_usage.c \
 			  app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
-			  print_exception.c \
+			  print_exception.c dbgmon_thread.c dbgmon_memory.c\
 			  dbgmon_printf.c dbgmon_scanf.c \
 			  dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
 			  dbgmon_hexdump.c
 
 MISC_CFILES = thinkos_type.c obj_type_get.c \
-			  alloc_bmp_get.c bmp_alloc.c \
+			  alloc_bmp_get.c bmp_alloc.c strlen.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
 			  thread_getnext.c thread_get.c thread_inf_set.c \
-			  thread_isfaulty.c thread_ispaused.c exec.c\
+			  thread_isfaulty.c thread_ispaused.c \
 			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c
 
 CONSOLE_CFILES = bypass.c 

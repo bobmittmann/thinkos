@@ -232,5 +232,30 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+
+   .sram2 :
+    {
+        /* define a global symbol marking the start of the .sram2 section */
+        PROVIDE (__sram2_start = . );
+        PROVIDE (__heap_end = . );
+        *(.sram2 .sram2*)
+        *(.stack .stack*)
+    } >"STACK"
+
+	/* Backued up control section */
+	.bkpctl :
+	{
+		PROVIDE (__bkpctl_start = . );
+		*(.bkpctl .bkpctl*)
+		PROVIDE (__bkpctl_end = . );
+	} >"rtcbkr"
+
+	/* Backued up data section */
+	.bkpdat :
+	{
+		PROVIDE (__bkpdat_start = . );
+		*(.bkpdat .bkpdat*)
+		PROVIDE (__bkpdat_end = . );
+	} >"bkpsram"
 }
 

@@ -355,7 +355,7 @@ void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 
 void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	if (tx_pipe_isfull()) {
+	if (!tx_pipe_isempty()) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
 		dbgmon_signal(DBGMON_TX_PIPE);
 	} else {
@@ -603,12 +603,12 @@ drain_again:
 		__thinkos_defer_sched(); 
 #endif
 			/* Set the return value to EGAIN. The calling thread 
-			   shuould retry ... */
+			   should retry ... */
 			arg[0] = THINKOS_EAGAIN;
 			/* (1) suspend the thread by removing it from the
 			   ready wait queue. The __thinkos_suspend() call cannot be nested
 			   inside a LDREX/STREX pair as it may use the exclusive access 
-			   itself, in case we have anabled the time sharing option. */
+			   itself, in case we have enabled the time sharing option. */
 			__thinkos_suspend(self);
 			/* update the thread status in preparation for event wait */
 #if THINKOS_ENABLE_THREAD_STAT
@@ -621,7 +621,7 @@ drain_again:
 
 			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 
-			/* The pipe may have been dranned while suspending (1).
+			/* The pipe may have been drained while suspending (1).
 			   If this is the case roll back and restart. */
 			if (tx_pipe_isempty()) {
 				/* roll back */
@@ -636,7 +636,7 @@ drain_again:
 			/* Insert into the event wait queue */
 			queue |= (1 << self);
 			/* (3) Try to save back the queue state.
-			   The queue may have changed by an interrup handler.
+			   The queue may have changed by an interrupt handler.
 			   If this is the case roll back and restart. */
 			if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
 				/* roll back */
@@ -667,7 +667,7 @@ drain_again:
 
 void __console_reset(void)
 {
-	DCC_LOG(LOG_TRACE, "clearing pipes and signals.");
+	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
 

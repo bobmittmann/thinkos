@@ -21,6 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
 void __thinkos_thread_abort(int thread_id)
@@ -160,13 +162,18 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 #endif
 
 	__thinkos_thread_abort(thread_id);
+
+#if THINKOS_ENABLE_MONITOR
+	 dbgmon_signal(DBGMON_THREAD_TERMINATE); 
+#endif
 }
 #endif /* THINKOS_ENABLE_TERMINATE */
 
-void __attribute__((noreturn)) __thinkos_thread_exit(int code)
+void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 {
+#if THINKOS_ENABLE_TERMINATE
 	thinkos_terminate(0, code);
-
+#endif
 	for(;;);
 }
 
@@ -189,7 +196,14 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 #endif /* THINKOS_ENABLE_JOIN */
 
 	/* adjust PC to the exit continuation call */
-	ctx->pc = (uint32_t)__thinkos_thread_exit;
+	ctx->pc = (uint32_t)__thinkos_thread_terminate_stub;
 }
+
+void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
+{
+	thinkos_exit(code);
+	for(;;);
+}
+
 #endif /* THINKOS_ENABLE_EXIT */
 

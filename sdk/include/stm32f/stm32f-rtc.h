@@ -760,16 +760,21 @@ struct stm32f_rtc {
 	volatile uint32_t cr;
 	volatile uint32_t isr;
 	volatile uint32_t prer;
+	volatile uint32_t wutr;
 	volatile uint32_t calibr;
 	volatile uint32_t alarmar;
 	volatile uint32_t alarmbr;
 	volatile uint32_t wpr;
-	volatile uint32_t reserved0[2];
+	volatile uint32_t ssr;
+	volatile uint32_t shiftr;
 	volatile uint32_t tstr;
 	volatile uint32_t tsdr;
-	volatile uint32_t reserved1[2];
+	volatile uint32_t tsssr;
+	volatile uint32_t calr;
 	volatile uint32_t tafcr;
-	volatile uint32_t reserved2[3];
+	volatile uint32_t alrmassr;
+	volatile uint32_t alrmbssr;
+	volatile uint32_t reserved;
 	union {
 		struct {
 			volatile uint32_t bk0r;

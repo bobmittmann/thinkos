@@ -67,11 +67,13 @@ int uint2hex2hex(char * pkt, unsigned int val);
  * Memory auxiliarly functions
  * ------------------------------------------------------------------------- */
 
+/* Expanded Memory Block */
 struct mem_blk {
 	uint32_t addr;
 	uint32_t size: 31;
 	uint32_t ro: 1;
 };
+
 
 static bool addr2block(const struct mem_desc * mem, 
 					   uint32_t addr, struct mem_blk * blk) 
@@ -89,7 +91,7 @@ static bool addr2block(const struct mem_desc * mem,
 				pos = (addr - base) >> mem->blk[i].siz;
 				blk->addr = base + (pos << mem->blk[i].siz);
 				blk->size = 1 << mem->blk[i].siz;
-				blk->ro = (mem->blk[i].opt == BLK_RO) ? 1 : 0;
+				blk->ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
 			}
 			return true;
 		}
@@ -97,105 +99,6 @@ static bool addr2block(const struct mem_desc * mem,
 
 	return false;
 }
-
-/* Safe read and write operations to avoid faults in the debugger */
-static bool __mem_wr64(const struct mem_desc * mem, 
-					   uint32_t addr, uint64_t val)
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	if (addr & 3)
-		return false;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr < (base + size - 8))) {
-			uint64_t * dst = (uint64_t *)addr;
-			if (mem->blk[i].opt == BLK_RO)
-				return false;
-			*dst = val;
-			return true;
-		}
-	}
-	return false;
-}
-
-
-/* Safe read and write operations to avoid faults in the debugger */
-static bool __mem_wr32(const struct mem_desc * mem, 
-					   uint32_t addr, uint32_t val)
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	if (addr & 3)
-		return false;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr < (base + size - 4))) {
-			uint32_t * dst = (uint32_t *)addr;
-			if (mem->blk[i].opt == BLK_RO)
-				return false;
-			*dst = val;
-			return true;
-		}
-	}
-	return false;
-}
-
-static bool __mem_rd32(const struct mem_desc * mem, 
-					   uint32_t addr, uint32_t * val)
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	if (addr & 3)
-		return false;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr <= (base + size - 4))) {
-			uint32_t * src = (uint32_t *)addr;
-			*val = *src;
-			return true;
-		}
-	}
-	return false;
-}
-
-static bool __mem_rd64(const struct mem_desc * mem, 
-					   uint32_t addr, uint64_t * val)
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	if (addr & 3)
-		return false;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr <= (base + size - 8))) {
-			uint64_t * src = (uint64_t *)addr;
-			*val = *src;
-			return true;
-		}
-	}
-	return false;
-}
-
-
-
-
 
 /* -------------------------------------------------------------------------
  * Threads auxiliarly functions
@@ -431,6 +334,12 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 		return -1;
 	}
 #endif
+
+	if (reg == 13) { /*sp */
+		*val = sp;
+		return 0;
+	} 
+
 	if (__ctx_offs[reg] < 0) {
 		DCC_LOG(LOG_ERROR, "Invalid register");
 		return -1;
@@ -440,14 +349,14 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 #if THINKOS_ENABLE_FPU
 	if (reg > 25) {
 		uint32_t dat;
-		if (!__mem_rd32(this_board.memory.ram, addr, &dat)) {
+		if (!dbgmon_mem_rd32(this_board.memory.ram, addr, &dat)) {
 			DCC_LOG(LOG_ERROR, "invalid context address");
 			return -1;
 		}
 		*val = dat;
 	} else {
 #endif
-		if (!__mem_rd64(this_board.memory.ram, addr, val)) {
+		if (!dbgmon_mem_rd64(this_board.memory.ram, addr, val)) {
 			DCC_LOG(LOG_ERROR, "invalid context address");
 			return -1;
 		}
@@ -516,6 +425,13 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 		return -1;
 	}
 #endif
+
+	if (reg == 13) { /*sp */
+		uint32_t sp = val;
+		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)sp;
+		return 0;
+	} 
+
 	if (__ctx_offs[reg] < 0) {
 		DCC_LOG(LOG_ERROR, "Invalid register");
 		return -1;
@@ -524,13 +440,13 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 	addr = (uintptr_t)ctx + __ctx_offs[reg];
 #if THINKOS_ENABLE_FPU
 	if (reg > 25) {
-		if (!__mem_wr32(this_board.memory.ram, addr, val)) {
+		if (!dbgmon_mem_wr32(this_board.memory.ram, addr, val)) {
 			DCC_LOG(LOG_ERROR, "invalid context address");
 			return -1;
 		}
 	} else {
 #endif
-		if (!__mem_wr64(this_board.memory.ram, addr, val)) {
+		if (!dbgmon_mem_wr64(this_board.memory.ram, addr, val)) {
 			DCC_LOG(LOG_ERROR, "invalid context address");
 			return -1;
 		}
@@ -850,6 +766,17 @@ int target_mem_write(uint32_t addr,
 				return -1;
 			}
 
+		} else if (addr2block(this_board.memory.periph, addr, &blk)) {
+			/* flash */
+			DCC_LOG2(LOG_TRACE, "PERIPH block addr=0x%08x size=%d", 
+					 blk.addr, blk.size);
+
+			cnt = blk.size - (addr - blk.addr);
+			if (cnt > rem)
+				cnt = rem;
+
+			/* FIXME: 32bits access only */
+			__thinkos_memcpy((void *)addr, src, cnt);
 		} else {
 			DCC_LOG1(LOG_ERROR, "invalid address 0x%08x", addr);
 			return -1;
@@ -892,93 +819,11 @@ int target_mem_erase(uint32_t addr, unsigned int len)
 
 int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 {
-	uint8_t * dst = (uint8_t *)ptr;
-	uint32_t * src;
-	struct mem_blk blk;
-	unsigned int rem;
+	const struct mem_desc * mem;
 
-	DCC_LOG2(LOG_MSG, "0x%08x .. 0x%08x", addr, addr + len - 1);
+	mem = dbgmon_mem_lookup(this_board.memory.lst, 3, addr);
 
-	rem = len;
-
-	while (rem) {
-		unsigned int cnt;
-		unsigned int n;
-		uint32_t dat;
-
-		if (addr2block(this_board.memory.ram, addr, &blk)) {
-			/* not flash */
-			DCC_LOG2(LOG_TRACE, "RAM block addr=0x%08x size=%d", 
-					 blk.addr, blk.size);
-		} else if (addr2block(this_board.memory.flash, addr, &blk)) {
-			/* flash */
-			DCC_LOG2(LOG_TRACE, "FLASH block addr=0x%08x size=%d", 
-					 blk.addr, blk.size);
-		} else {
-			DCC_LOG1(LOG_MSG, "invalid mem location addr=0x%08x", addr);
-			return -1;
-		}
-
-		cnt = blk.size - (addr - blk.addr);
-		if (cnt > rem)
-			cnt = rem;
-
-		src = (uint32_t *)(addr & ~3);
-
-		if ((n = (addr & 3)) > 0) {
-			dat = *src++;
-			dat >>= (4 - n) * 8;
-			if (n > cnt)
-				n = cnt;
-
-			switch (n) {
-			case 3:
-				*dst++ = dat;
-				dat >>= 8;
-			case 2:
-				*dst++ = dat;
-				dat >>= 8;
-			case 1:
-				*dst++ = dat;
-				dat >>= 8;
-			}
-		}
-
-		rem -= cnt;
-		addr += cnt;
-		cnt -= n;
-		n = cnt & ~3;
-	
-		for (n = 0; n < (cnt & ~3); n += 4) {
-			dat = *src++;
-			*dst++ = dat;
-			dat >>= 8;
-			*dst++ = dat;
-			dat >>= 8;
-			*dst++ = dat;
-			dat >>= 8;
-			*dst++ = dat;
-		}
-
-		cnt -= n;
-		if ((n = cnt) > 0) {
-			dat = *src;
-
-			switch (n) {
-			case 3:
-				*dst++ = dat;
-				dat >>= 8;
-			case 2:
-				*dst++ = dat;
-				dat >>= 8;
-			case 1:
-				*dst++ = dat;
-				dat >>= 8;
-			}
-		}
-	}
-
-	return len;
+	return dbgmon_mem_read(mem, addr, ptr, len);
 }
 
 /* -------------------------------------------------------------------------
