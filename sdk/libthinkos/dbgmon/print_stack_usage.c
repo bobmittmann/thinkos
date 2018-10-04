@@ -29,6 +29,9 @@ int __scan_stack(void * stack, unsigned int size);
 
 extern uint32_t thinkos_dbgmon_stack[];
 extern const uint16_t thinkos_dbgmon_stack_size;
+extern uint32_t thinkos_except_stack[];
+extern const uint16_t thinkos_except_stack_size;
+extern const uint32_t thinkos_dbgmon_rt[];
 
 void dmon_print_stack_usage(const struct dbgmon_comm * comm)
 {
@@ -79,8 +82,14 @@ void dmon_print_stack_usage(const struct dbgmon_comm * comm)
 	dbgmon_printf(comm, " | %08x", (uint32_t)thinkos_dbgmon_stack); 
 	dbgmon_printf(comm, " | %08x", (uint32_t)cm3_msp_get()); 
 	dbgmon_printf(comm, " | %6d", thinkos_dbgmon_stack_size); 
-	dbgmon_printf(comm, " | %6d", __scan_stack(thinkos_dbgmon_stack, 
+	dbgmon_printf(comm, " | %6d\r\n", __scan_stack(thinkos_dbgmon_stack, 
 										thinkos_dbgmon_stack_size));
-	dbgmon_printf(comm, "\r\n");
+	dbgmon_printf(comm, "%3d", -2);
+	dbgmon_printf(comm, " |   <IRQ>"); 
+	dbgmon_printf(comm, " | %08x", (uint32_t)thinkos_except_stack); 
+	dbgmon_printf(comm, " | %08x", thinkos_dbgmon_rt[0]); 
+	dbgmon_printf(comm, " | %6d", thinkos_except_stack_size); 
+	dbgmon_printf(comm, " | %6d\r\n", __scan_stack(thinkos_except_stack, 
+										thinkos_except_stack_size));
 }
 

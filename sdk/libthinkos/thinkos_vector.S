@@ -163,10 +163,15 @@ cm3_mem_manage_isr:
 	.thumb_func
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
+#if DEBUG
+	nop
+	b      cm3_hard_fault_isr
+#else
 	mov    r3, lr
 	movs   r1, #CM3_EXCEPT_HARD_FAULT
 	bl     collect_xcpt_inf
 	b      thinkos_hard_fault
+#endif
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 

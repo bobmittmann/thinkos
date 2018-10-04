@@ -115,10 +115,15 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
 	.stack_size = THINKOS_MAIN_STACK_SIZE,
 	.priority = 0,
-	.thread_id = 0,
+	.thread_id = 1,
 	.paused = 0
 };
 #endif
+
+void __attribute__((noreturn)) __thinkos_idle_terminate_stub(int code)
+{
+	for(;;);
+}
 
 /* initialize the idle thread */
 struct thinkos_context * __thinkos_idle_init(void)
@@ -136,7 +141,7 @@ struct thinkos_context * __thinkos_idle_init(void)
 #endif
 
 	idle_ctx->pc = (uint32_t)thinkos_idle_task & ~1;
-	idle_ctx->lr = (uint32_t)__thinkos_thread_exit;
+	idle_ctx->lr = (uint32_t)__thinkos_idle_terminate_stub;
 	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = idle_ctx;

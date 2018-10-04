@@ -53,13 +53,17 @@
 #endif
 #endif
 
-struct trace_ring {
-	int mutex;
+struct trace_ctl {
+	uint32_t crc32;
+	unsigned int mutex;
 	uint64_t tm;
 	volatile uint32_t head;
 	volatile uint32_t tail;
 	volatile uint32_t print_pos;
 	volatile uint32_t print_tm;
+};
+
+struct trace_ring {
 	struct {
 		union {
 			const struct trace_ref * ref;
@@ -69,6 +73,7 @@ struct trace_ring {
 	} buf[TRACE_RING_SIZE];
 };
 
+extern struct trace_ctl trace_ctl;
 extern struct trace_ring trace_ring;
 
 #ifdef __cplusplus

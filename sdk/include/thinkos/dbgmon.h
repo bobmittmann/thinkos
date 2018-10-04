@@ -64,61 +64,123 @@
 
 enum dbgmon_event {
 	/* Debug monitor internal reset */
-	DBGMON_RESET        = 0,
+	DBGMON_RESET           = 0,
 	/* ThinkOS power on startup indication */
-	DBGMON_STARTUP      = 1,
+	DBGMON_STARTUP         = 1,
 	/* ThinkOS idle indication */
-	DBGMON_IDLE         = 2,
+	DBGMON_IDLE            = 2,
 	/* ThinkOS exception */
-	DBGMON_EXCEPT       = 3,
+	DBGMON_EXCEPT          = 3,
 	/* Board reset request */
-	DBGMON_SOFTRST      = 4,
+	DBGMON_SOFTRST         = 4,
 	/* Debug timer expiry indication */
-	DBGMON_ALARM        = 5,
+	DBGMON_ALARM           = 5,
 	/* ThinkOS Thread step break */
-	DBGMON_THREAD_STEP  = 6,
+	DBGMON_THREAD_STEP     = 6,
 	/* ThinkOS Thread fault break */
-	DBGMON_THREAD_FAULT = 7,
+	DBGMON_THREAD_FAULT    = 7,
+	/* ThinkOS Thread create */
+	DBGMON_THREAD_CREATE   = 8,
+	/* ThinkOS Thread teminate */
+	DBGMON_THREAD_TERMINATE = 9,
 	/* ThinkOS Thread breakpoint */
-	DBGMON_BREAKPOINT   = 8,
+	DBGMON_BREAKPOINT      = 10,
 	/* Debug Communication data received pending */
-	DBGMON_COMM_RCV     = 9, 
+	DBGMON_COMM_RCV        = 11, 
 	/* Debug Communication end of transfer */
-	DBGMON_COMM_EOT     = 10,
+	DBGMON_COMM_EOT        = 12,
 	/* Debug Communication control signal */
-	DBGMON_COMM_CTL     = 11,
+	DBGMON_COMM_CTL        = 13,
 	/* User console RX pipe data pending */
-	DBGMON_RX_PIPE      = 12,
+	DBGMON_RX_PIPE         = 14,
 	/* User console TX pipe not full */
-	DBGMON_TX_PIPE      = 13,
+	DBGMON_TX_PIPE         = 15,
 
 	/* ThinkOS application stop request */
-	DBGMON_APP_STOP     = 18,
+	DBGMON_APP_STOP        = 18,
 	/* ThinkOS application resume request */
-	DBGMON_APP_RESUME   = 19,
+	DBGMON_APP_RESUME      = 19,
 	/* ThinkOS application terminate request */
-	DBGMON_APP_TERM     = 20,
+	DBGMON_APP_TERM        = 20,
 	/* ThinkOS application erase request */
-	DBGMON_APP_ERASE    = 21,
+	DBGMON_APP_ERASE       = 21,
 	/* ThinkOS application 2pload request */
-	DBGMON_APP_UPLOAD   = 22,
+	DBGMON_APP_UPLOAD      = 22,
 	/* ThinkOS application exec request */
-	DBGMON_APP_EXEC     = 23,
+	DBGMON_APP_EXEC        = 23,
 	/* User/bootloader extension events 0 to 7 */
-	DBGMON_USER_EVENT0  = 24,
-	DBGMON_USER_EVENT1  = 25,
-	DBGMON_USER_EVENT2  = 26,
-	DBGMON_USER_EVENT3  = 27,
-	DBGMON_USER_EVENT4  = 28,
-	DBGMON_USER_EVENT5  = 29,
-	DBGMON_USER_EVENT6  = 30,
-	DBGMON_USER_EVENT7  = 31
+	DBGMON_USER_EVENT0     = 24,
+	DBGMON_USER_EVENT1     = 25,
+	DBGMON_USER_EVENT2     = 26,
+	DBGMON_USER_EVENT3     = 27,
+	DBGMON_USER_EVENT4     = 28,
+	DBGMON_USER_EVENT5     = 29,
+	DBGMON_USER_EVENT6     = 30,
+	DBGMON_USER_EVENT7     = 31
 };
 
 #define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
 #define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor Memory Description 
+ * ----------------------------------------------------------------------------
+ */
+#define SZ_128   7
+#define SZ_256   8
+#define SZ_1K   10
+#define SZ_2K   11
+#define SZ_4K   12
+#define SZ_8K   13
+#define SZ_16K  14
+#define SZ_32K  15
+#define SZ_64K  16
+#define SZ_128K 17
+#define SZ_256K 18
+#define SZ_512K 19
+#define SZ_1M   20
+#define SZ_2M   21
+#define SZ_4M   22
+#define SZ_8M   23
+#define SZ_16M  24
+#define SZ_32M  25
+#define SZ_64M  26
+#define SZ_128M 27
+#define SZ_256M 28
+#define SZ_512M 29
+#define SZ_1G   30
+#define SZ_2G   31
+
+/* Memory flags */
+#define M_XC  (1 << 7) /* Execution */
+#define M_DM  (1 << 6) /* DMA  */
+#define M_PE  (1 << 5) /* Peripheral  */
+#define M_NV  (1 << 4) /* Non volatile  */
+#define M_EX  (1 << 3) /* External  */
+#define M_RW  (0 << 2) /*   */
+#define M_RO  (1 << 2) /* Read Only  */
+#define M_64  (3 << 0) /* 64 bit alignement  */
+#define M_32  (2 << 0) /* 32 bits alignement  */
+#define M_16  (1 << 0) /* 16 bits alignment */
+#define M_8   (0 << 0) /* 8 bits alignment/access */
+
+/* Memory block descriptor */
+struct blk_desc {
+	char tag[8];
+	uint32_t ref;
+	uint8_t  opt;
+	uint8_t  siz;
+	uint16_t cnt;
+};
+
+/* Memory region/type descriptor */
+struct mem_desc {
+	char tag[8];
+	uint8_t cnt; /* number of entries in the block list */
+	struct blk_desc blk[]; /* sorted block list */
+};
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
@@ -174,6 +236,11 @@ void __attribute__((noreturn))
 	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
 				void * param);
 
+int dbgmon_thread_create(void (* func)(void *), void * arg, 
+						 const struct thinkos_thread_inf * inf);
+
+int dbgmon_thread_resume(int thread_id);
+
 void dbgmon_unmask(int sig);
 
 void dbgmon_mask(int sig);
@@ -191,6 +258,8 @@ int dbgmon_sched_select(uint32_t evmask);
 int dbgmon_wait(int sig);
 
 int dbgmon_expect(int sig);
+
+bool dbgmon_is_set(int sig);
 
 int dbgmon_sleep(unsigned int ms);
 
@@ -230,8 +299,31 @@ int dbgmon_getc(const struct dbgmon_comm * comm);
 int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
 void dbgmon_hexdump(const struct dbgmon_comm * comm, 
-					uint32_t addr, void * ptr, unsigned int size);
+					const struct mem_desc * mem,
+					uint32_t addr, unsigned int size);
 
+
+/* Safe read and write operations to avoid faults in the debugger */
+
+bool dbgmon_mem_wr32(const struct mem_desc * mem, 
+					 uint32_t addr, uint32_t val);
+
+bool dbgmon_mem_rd32(const struct mem_desc * mem, 
+					 uint32_t addr, uint32_t * val);
+
+bool dbgmon_mem_rd64(const struct mem_desc * mem, 
+					   uint32_t addr, uint64_t * val);
+
+bool dbgmon_mem_wr64(const struct mem_desc * mem, 
+					 uint32_t addr, uint64_t val);
+
+int dbgmon_mem_read(const struct mem_desc * mem, uint32_t addr, 
+					void * ptr, unsigned int len);
+
+bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr);
+
+const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
+										  unsigned int cnt, uint32_t addr);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface

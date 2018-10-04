@@ -25,6 +25,8 @@ _stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(sram3) + LENGTH(sram3);
 
+__backup = ORIGIN(BACKUP);
+
 EXTERN(_stack)
 EXTERN(_reset)
 EXTERN(ice_comm_blk)
@@ -232,5 +234,16 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+
+	. = __backup;
+	/* Backup ram section */
+	.backup :
+	{
+		PROVIDE (__backup_start = . );
+		/* all .backup sections  */
+		*(.backup .backup*)
+		PROVIDE (__backup_end = . );
+	} >"BACKUP"
+
 }
 

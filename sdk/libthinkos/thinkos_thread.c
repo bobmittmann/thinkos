@@ -21,15 +21,10 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 #include <sys/delay.h>
-
-#if THINKOS_ENABLE_EXIT
-static void __exit_stub(int code)
-{
-	thinkos_exit(code);
-}
-#endif
 
 void __thinkos_thread_init(unsigned int thread_id, uint32_t sp, 
 						   void * task, void * arg)
@@ -47,9 +42,9 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 
 	ctx->r0 = (uint32_t)arg;
 #if THINKOS_ENABLE_EXIT
-	ctx->lr = (uint32_t)__exit_stub;
+	ctx->lr = (uint32_t)__thinkos_thread_exit_stub;
 #else
-	ctx->lr = (uint32_t)__thinkos_thread_exit;
+	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 #endif
 	ctx->pc = pc;
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
@@ -75,6 +70,9 @@ void thinkos_thread_create_svc(int32_t * arg)
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	int target_id = init->opt.id - 1;
+#if THINKOS_ENABLE_THREAD_INFO
+	struct thinkos_thread_inf * inf = init->inf;
+#endif
 	int thread_id;
 	uint32_t sp;
 
@@ -95,7 +93,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 		if (thread_id < 0) {
 			thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
 			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
-					target_id, thread_id);
+					 target_id, thread_id);
 		}
 	}
 
@@ -129,10 +127,6 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__thinkos_memset32(init->stack_ptr, 0xdeadbeef, init->opt.stack_size);
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
-	thinkos_rt.th_inf[thread_id] = init->inf;
-#endif
-
 #if THINKOS_ENABLE_TIMESHARE
 	thinkos_rt.sched_pri[thread_id] = init->opt.priority;
 	if (thinkos_rt.sched_pri[thread_id] > THINKOS_SCHED_LIMIT_MAX)
@@ -147,19 +141,26 @@ void thinkos_thread_create_svc(int32_t * arg)
 
 	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
 
+#if THINKOS_ENABLE_THREAD_INFO
+	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
+	__thinkos_thread_inf_set(thread_id, inf);
+#endif
+
 #if THINKOS_ENABLE_PAUSE
 	if (!init->opt.paused)
 #endif
 	{
 		DCC_LOG(LOG_JABBER, "__thinkos_thread_resume()");
-		__thinkos_thread_resume(thread_id);
-		DCC_LOG(LOG_JABBER, "__thinkos_defer_sched()");
-		__thinkos_defer_sched();
+		if (__thinkos_thread_resume(thread_id))
+			__thinkos_defer_sched();
 	}
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	arg[0] = thread_id + 1;
-}
 
+#if THINKOS_ENABLE_MONITOR
+	 dbgmon_signal(DBGMON_THREAD_CREATE); 
+#endif
+}
 

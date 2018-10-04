@@ -150,6 +150,13 @@
 #define VT100_CURSOR_UNSAVE     ESC "[u"
 #define VT100_ATTR_SAVE         ESC "[7"
 #define VT100_ATTR_RESTORE      ESC "[8"
+
+#define VT100_CURSOR_HOME       ESC "[H"
+#define VT100_CURSOR_UP         ESC "[A"
+#define VT100_CURSOR_DOWN       ESC "[B"
+#define VT100_CURSOR_FORWARD    ESC "[C"
+#define VT100_CURSOR_BACKWARD   ESC "[D"
+
 /* Save Cursor & Attrs */
 #define VT100_SAVE              ESC "7"
 /* Restore Cursor & Attrs */
@@ -185,6 +192,9 @@
 #define VT100_ATTR_BG_WHITE     ESC "[47m"
 
 #define VT100_CURSOR_HOME       ESC "[H"
+
+#define VT100_QUERY_CURSOR_POS        ESC "[6n"
+#define VT100_REPORT_CURSOR_POS       ESC "[%d;%dR"
 
 #endif /* __VT100_H__ */
 

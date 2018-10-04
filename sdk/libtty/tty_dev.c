@@ -62,7 +62,7 @@ int tty_write(struct tty_dev * __tty, const void * __buf, unsigned int __len)
 	cnt = 0;
 	cr = '\r';
 
-	/* search for control, '\n' or IAC */
+	/* search for control, '\n' */
 	for (m = 0; (m < n) && (cp[m] != '\n'); m++);
 
 	while (m < n) {

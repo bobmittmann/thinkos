@@ -50,6 +50,7 @@ struct magic_blk {
 
 /* application block descriptor */
 struct dbgmon_app_desc {
+	char tag[8];
 	uint32_t start_addr; /* Application memory block start address */
 	uint32_t block_size; /* Size of the memory block in bytes */
 	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
@@ -57,67 +58,37 @@ struct dbgmon_app_desc {
 	const struct magic_blk * magic; /* File identification descriptor */
 };
 
-
-
-#define SZ_128   7
-#define SZ_256   8
-#define SZ_1K   10
-#define SZ_2K   11
-#define SZ_4K   12
-#define SZ_8K   13
-#define SZ_16K  14
-#define SZ_32K  15
-#define SZ_64K  16
-#define SZ_128K 17
-#define SZ_256K 18
-#define SZ_512K 19
-#define SZ_1M   20
-#define SZ_2M   21
-#define SZ_4M   22
-#define SZ_8M   23
-#define SZ_16M  24
-#define SZ_32M  25
-#define SZ_64M  26
-#define SZ_128M 27
-#define SZ_256M 28
-#define SZ_512M 29
-#define SZ_1G   30
-#define SZ_2G   31
-
-#define BLK_RW  (0 << 7)
-#define BLK_RO  (1 << 7)
-
-/* Memory block descriptor */
-struct blk_desc {
-	uint32_t ref;
-	uint8_t  opt;
-	uint8_t  siz;
-	uint16_t cnt;
-};
-
-struct mem_desc {
-	char name[8];
-	struct blk_desc blk[];
-};
-
 /* Board description */
 struct thinkos_board {
-	char name[18];
+	char name[16];
+	char desc[38];
+	struct {
+		char tag[8];
+		struct {
+			uint8_t minor;
+			uint8_t major;
+		} ver;
+	} hw;
 
 	struct {
-		uint8_t minor;
-		uint8_t major;
-	} hw_ver;
+		char tag[8];
+		struct {
+			uint8_t minor;
+			uint8_t major;
+			uint16_t build;
+		} ver;
+	} sw;
 
 	struct {
-		uint8_t minor;
-		uint8_t major;
-		uint16_t build;
-	} sw_ver;
-
-	struct {
-		const struct mem_desc * ram;
-		const struct mem_desc * flash;
+		uint8_t cnt;
+		union {
+			struct {
+				const struct mem_desc * flash;
+				const struct mem_desc * ram;
+				const struct mem_desc * periph;
+			};
+			const struct mem_desc * lst[3];
+		};
 	} memory;
 
 	struct dbgmon_app_desc application;
@@ -125,12 +96,15 @@ struct thinkos_board {
 	int (* init)(void);
 	void (* softreset)(void);
 	bool (* autoboot)(unsigned int tick);
-	bool (* configure)(const struct dbgmon_comm *);
 	void (* upgrade)(const struct dbgmon_comm *);
-	void (* selftest)(const struct dbgmon_comm *);
-	void (* on_appload)(void);
-	void (* on_error)(int code);
-	void (* on_comm_init)(void);
+
+	/* ThinkOS task: monitor will run this task by request */
+	void (* configure_task)(void *);
+	/* ThinkOS task: monitor will run this task by request */
+	void (* selftest_task)(void *);
+	/* ThinkOS task: monitor will run this task if fails to load 
+	   the application */
+	void (* default_task)(void *);
 };
 
 /* Board description instance */
@@ -240,7 +214,6 @@ bool dmon_app_suspend(void);
 bool dmon_app_continue(void);
 
 bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
-
 
 #ifdef __cplusplus
 }

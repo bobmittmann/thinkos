@@ -62,7 +62,7 @@ OFILES = $(addprefix $(OUTDIR)/,\
 		   $(SFILES:.S=.o))
 
 #ifeq (Windows,$(HOST))
-#  ODIRS = $(subst /,\,$(sort $(dir $(OFILES))))
+  ODIRS = $(subst /,\,$(sort $(dir $(OFILES))))
 #else
   ODIRS = $(sort $(dir $(OFILES)))
 #endif
@@ -132,6 +132,7 @@ ifeq (Windows,$(HOST))
   CLEAN_OFILES := $(strip $(subst /,\,$(OFILES)))
   CLEAN_DFILES := $(strip $(subst /,\,$(DFILES)))
   CLEAN_LFILES := $(strip $(subst /,\,$(LFILES)))
+  CLEAN_ODIRS := $(call reverse,$(strip $(subst /,\,$(ODIRS))))
   OUTDIR := $(subst /,\,$(OUTDIR))
   INSTALLDIR := $(subst /,\,$(INSTALLDIR))
   LIB_OUT_WIN := $(subst /,\,$(LIB_OUT))
@@ -139,12 +140,12 @@ else
   CLEAN_OFILES := $(strip $(OFILES))
   CLEAN_DFILES := $(strip $(DFILES))
   CLEAN_LFILES := $(strip $(LFILES))
+  CLEAN_ODIRS := $(call reverse,$(strip $(ODIRS)))
 endif
 
 #------------------------------------------------------------------------------ 
 # Make scripts debug
 #------------------------------------------------------------------------------ 
-
 $(call trace1,<lib.mk> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~)
 $(call trace1,HOST = '$(HOST)')
 $(call trace1,DIRMODE = '$(DIRMODE)')
@@ -154,6 +155,7 @@ $(call trace2,SRCDIR = '$(SRCDIR)')
 $(call trace3,CFILES = '$(CFILES)')
 $(call trace3,OFILES = '$(OFILES)')
 $(call trace3,ODIRS = '$(ODIRS)')
+$(call trace3,CLEAN_ODIRS = '$(CLEAN_ODIRS)')
 $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info OS = '$(OS)')
 #$(info HOST = '$(HOST)')
@@ -165,6 +167,7 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info OFILES = '$(OFILES)')
 #$(info LIB_OUT = '$(LIB_OUT)')
 #$(info ODIRS = '$(ODIRS)')
+#$(info CLEAN_ODIRS = '$(CLEAN_ODIRS)')
 #$(info MAKEFILE_LIST = '$(MAKEFILE_LIST)')
 #$(info SET = '$(shell set)')
 #$(info LIB_STATIC = '$(LIB_STATIC)')
@@ -188,6 +191,7 @@ clean: deps-clean
 	$(Q)$(RMALL) $(CLEAN_LFILES)
 	$(Q)$(RMALL) $(CLEAN_DFILES)
 	$(Q)$(RMALL) $(CLEAN_OFILES)
+	$(Q)$(RMDIR) $(CLEAN_ODIRS) 1> $(DEVNULL)
 
 install: $(LIB_OUT)
 ifeq (Windows,$(HOST))

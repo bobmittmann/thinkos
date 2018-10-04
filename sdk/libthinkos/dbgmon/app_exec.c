@@ -70,28 +70,22 @@ static bool magic_match(const struct magic_blk * magic, void * ptr)
 bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 {
 	void * app = (void *)desc->start_addr;
-	int thread_id = 0;
+	int thread_id;
 
 	if (!magic_match(desc->magic, app))
 		return false;
 
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
-	__thinkos_exec(thread_id, (void *)app_bootstrap, (void *)app, paused);
+	thread_id = dbgmon_thread_create((void *)app_bootstrap, (void *)app, 
+									 &thinkos_main_inf);
 
-	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
+	if (!paused)
+		dbgmon_thread_resume(thread_id);
 
 	return true;
 }
 
-
-void dmon_thread_exec(void (* func)(void *), void * arg)
-{
-	int thread_id = 0;
-	bool paused = false;
-
-	__thinkos_exec(thread_id, func, arg, paused);
-}
 
 bool dmon_app_suspend(void)
 {

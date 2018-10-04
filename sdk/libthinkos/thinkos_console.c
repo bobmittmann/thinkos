@@ -65,12 +65,21 @@ struct console_tx_pipe {
 	uint8_t buf[THINKOS_CONSOLE_TX_FIFO_LEN];
 };
 
+#define CONSOLE_FLAG_CONNECTED (1  << 0)
+#define CONSOLE_FLAG_RD_BREAK  (1  << 1)
+#define CONSOLE_FLAG_WR_BREAK  (1  << 2)
+
 struct {
-	uint8_t open_cnt;
-	uint8_t connected: 1;
-#if ENABLE_CONSOLE_DEBUG
-	volatile uint16_t tx_last_cnt;
-#endif
+	union {
+		struct {
+			uint32_t connected: 1;
+			uint32_t rd_break: 1;
+			uint32_t wr_break: 1;
+			uint32_t reserved: 21;
+			uint32_t open_cnt: 8;
+		};
+		uint32_t flags;
+	};
 	struct console_tx_pipe tx_pipe;
 	struct console_rx_pipe rx_pipe;
 } thinkos_console_rt;
@@ -243,9 +252,6 @@ int __console_tx_pipe_ptr(uint8_t ** ptr)
 	}
 #endif
 
-#if ENABLE_CONSOLE_DEBUG
-	thinkos_console_rt.tx_last_cnt = cnt;
-#endif
 	DCC_LOG4(LOG_INFO, "head=%u tail=%u cnt=%d pos=%d", 
 			 head, tail, cnt, pos);
 	*ptr = &pipe->buf[pos];
@@ -258,12 +264,6 @@ void __console_tx_pipe_commit(int cnt)
 	int wq = THINKOS_WQ_CONSOLE_WR;
 	int th;
 
-#if ENABLE_CONSOLE_DEBUG
-	if (cnt != thinkos_console_rt.tx_last_cnt) {
-		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
-	}
-#endif
 	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_TX_FIFO_LEN)) {
 		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
 		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
@@ -355,7 +355,7 @@ void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 
 void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	if (tx_pipe_isfull()) {
+	if (!tx_pipe_isempty()) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
 		dbgmon_signal(DBGMON_TX_PIPE);
 	} else {
@@ -364,6 +364,52 @@ void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 	/* wakeup from the console write wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__thinkos_wakeup_return(wq, th, 0);
+}
+#endif
+
+#if THINKOS_ENABLE_CONSOLE_BREAK
+int __console_rd_break(void) 
+{
+	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
+	int ret;
+	int th;
+
+	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+		thinkos_console_rt.rd_break = 1;
+		DCC_LOG(LOG_INFO, "no thread waiting.");
+		ret = 0;
+	} else {
+		thinkos_console_rt.rd_break = 0;
+		/* wakeup from the console read wait queue setting the return 
+		   value to 0.
+		   The calling thread should retry the operation. */
+		__thinkos_wakeup_return(wq, th, 0);
+		ret = 1;
+	}
+
+	return ret;
+}
+
+bool __console_wr_break(void) 
+{
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+	int ret;
+	int th;
+
+	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+		DCC_LOG(LOG_INFO, "no thread waiting.");
+		thinkos_console_rt.wr_break = 1;
+		ret = 0;
+	} else {
+		thinkos_console_rt.rd_break = 0;
+		/* wakeup from the console write wait queue setting the return 
+		   value to 0.
+		   The calling thread should retry the operation. */
+		__thinkos_wakeup_return(wq, th, 0);
+		ret = 1;
+	}
+
+	return ret;
 }
 #endif
 
@@ -407,6 +453,23 @@ void thinkos_console_svc(int32_t * arg, int self)
 				thinkos_console_rt.connected);
 		arg[0] = thinkos_console_rt.connected;
 		break;
+
+#if THINKOS_ENABLE_CONSOLE_BREAK
+	case CONSOLE_IO_BREAK: 
+		{
+			unsigned int io = arg[1];
+			unsigned int cnt = 0;
+
+			if (io & CONSOLE_IO_WR)
+				cnt +=__console_wr_break(); 
+			if (io & CONSOLE_IO_RD)
+				cnt +=__console_rd_break(); 
+			if (cnt)
+				__thinkos_defer_sched(); /* signal the scheduler ... */
+		}
+		break;
+#endif
+
 
 #if THINKOS_ENABLE_TIMED_CALLS
 	case CONSOLE_TIMEDREAD:
@@ -540,12 +603,12 @@ drain_again:
 		__thinkos_defer_sched(); 
 #endif
 			/* Set the return value to EGAIN. The calling thread 
-			   shuould retry ... */
+			   should retry ... */
 			arg[0] = THINKOS_EAGAIN;
 			/* (1) suspend the thread by removing it from the
 			   ready wait queue. The __thinkos_suspend() call cannot be nested
 			   inside a LDREX/STREX pair as it may use the exclusive access 
-			   itself, in case we have anabled the time sharing option. */
+			   itself, in case we have enabled the time sharing option. */
 			__thinkos_suspend(self);
 			/* update the thread status in preparation for event wait */
 #if THINKOS_ENABLE_THREAD_STAT
@@ -558,7 +621,7 @@ drain_again:
 
 			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 
-			/* The pipe may have been dranned while suspending (1).
+			/* The pipe may have been drained while suspending (1).
 			   If this is the case roll back and restart. */
 			if (tx_pipe_isempty()) {
 				/* roll back */
@@ -573,7 +636,7 @@ drain_again:
 			/* Insert into the event wait queue */
 			queue |= (1 << self);
 			/* (3) Try to save back the queue state.
-			   The queue may have changed by an interrup handler.
+			   The queue may have changed by an interrupt handler.
 			   If this is the case roll back and restart. */
 			if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
 				/* roll back */
@@ -604,11 +667,10 @@ drain_again:
 
 void __console_reset(void)
 {
-	DCC_LOG(LOG_TRACE, "clearing pipes and signals.");
+	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
 
-	thinkos_console_rt.tx_last_cnt = 0;
 	thinkos_console_rt.tx_pipe.head = 0;
 	thinkos_console_rt.tx_pipe.tail = 0;
 	thinkos_console_rt.rx_pipe.head = 0;
