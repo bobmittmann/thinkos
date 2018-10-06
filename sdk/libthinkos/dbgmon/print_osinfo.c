@@ -235,11 +235,7 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 		uint32_t wq;
 		int type;
 		wq = rt->wq_lst[j];
-#if (THINKOS_THREADS_MAX < 32) 
-		if (wq & ~(1 << THINKOS_THREADS_MAX)) { 
-#else
 		if (wq) { 
-#endif
 			type = thinkos_obj_type_get(j);
 			dbgmon_printf(comm, "%3d %5s: {", j, thinkos_type_name_lut[type]);
 			for (i = 0; i < THINKOS_THREADS_MAX; ++i) {

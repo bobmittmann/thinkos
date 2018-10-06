@@ -25,6 +25,11 @@
 
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
+
+#define CONTROL_nPRIV      (1 << 0)
+#define CONTROL_SPSEL      (1 << 1)
+#define CONTROL_FPCA       (1 << 2)
+
 /* --------------------------------------------------------------------------
  * ThinkOS - Real Time Scheduler 
  * --------------------------------------------------------------------------*/
@@ -32,7 +37,7 @@
 	.syntax unified
 	.cpu cortex-m3
 
-#if THINKOS_ASM_SCHEDULER
+#if (THINKOS_ASM_SCHEDULER)
 
 	.text
 	.align	4
@@ -46,7 +51,7 @@ cm3_pendsv_isr:
 	mrs     r0, PSP
 	stmdb   r0!, {r4-r11}
 
-#if THINKOS_ENABLE_FPU 
+#if (THINKOS_ENABLE_FPU)
 	vstmdb  r0!, {s16-s31}
 #endif
 
@@ -73,21 +78,45 @@ thinkos_scheduler:
 	 leading zeros on the bitmap */
 	rbit    r1, r1
  	clz     r1, r1
+
+#if (THINKOS_THREADS_MAX < 32) && !(THINKOS_ENABLE_MPU)
+	cmp    r1, #32
+	it     eq
+	moveq  r1, #THINKOS_THREADS_MAX
+#elif !(THINKOS_THREADS_MAX < 32) && (THINKOS_ENABLE_MPU)
+1:
+	cmp    r1, #32
+	ite    eq
+	moveq  r3, #CONTROL_SPSEL /* privileged mode */
+	movne  r3, #CONTROL_nPRIV | CONTROL_SPSEL /* non-privileged mode */
+	msr CONTROL, r3
+	isb
+#elif (THINKOS_THREADS_MAX < 32) && (THINKOS_ENABLE_MPU)
+	1:
+	cmp    r1, #32
+	itte   eq
+	moveq  r1, #THINKOS_THREADS_MAX
+	moveq  r3, #CONTROL_SPSEL /* privileged mode */
+	movne  r3, #CONTROL_nPRIV | CONTROL_SPSEL /* non-privileged mode */
+	msr CONTROL, r3
+	isb
+#endif
+
 	/* r1: new active thread */
 	str     r1, [r7, #THINKOS_RT_ACTIVE_OFFS]
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	/* DWT.SYCCNT */
 	ldr.n   r3, .L_cm_dwt
 	/* r3: cyccnt = CM3_DWT->cyccnt */
 	ldr     r3, [r3, #4]
-#if THINKOS_ENABLE_DEBUG_STEP
+  #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* r4: step_req */
 	/* r5: cycref */
 	ldrd	r4, r5, [r7, #THINKOS_RT_STEP_REQ_OFFS]
-#else
+  #else
 	/* r5: cycref */
 	ldr     r5, [r7, #THINKOS_RT_CYCREF_OFFS]
-#endif
+  #endif
 	/* update the reference */
 	/* thinkos_rt.cycref = cyccnt */
 	str     r3, [r7, #THINKOS_RT_CYCREF_OFFS]
@@ -100,15 +129,15 @@ thinkos_scheduler:
 	adds    r5, r3
 	str     r5, [r7, r2, lsl #2]
 #else
-#if THINKOS_ENABLE_DEBUG_STEP
+  #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* r4: step_req */
 	ldr.w	r4, [r7, #THINKOS_RT_STEP_REQ_OFFS]
-#endif
-#endif
+  #endif
+#endif /* THINKOS_ENABLE_PROFILING */
 
 	ldr.w	r0, [r7, r1, lsl #2]
 
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 	/* check whether the step request bit is set for
 	   this thread */
 	movs	r3, #1
@@ -119,12 +148,12 @@ thinkos_scheduler:
 
 .L_context_restore:
 	/* Restore the context and return */
-#if THINKOS_ENABLE_FPU 
+#if (THINKOS_ENABLE_FPU)
 	vldmia  r0!, {s16-s31}
 #endif
 	ldmia   r0!, {r4-r11}
 	msr     PSP, r0
-#if THINKOS_ENABLE_SCHED_DEBUG
+#if (THINKOS_ENABLE_SCHED_DEBUG)
   #if THINKOS_ENABLE_FPU 
 	sub     r0, r0, #(24 * 4)
   #else

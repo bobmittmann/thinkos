@@ -27,6 +27,8 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 #include <thinkos.h>
 
 #include <stdio.h>
@@ -45,10 +47,7 @@ void __thinkos_kill_all(void)
 	/* clear all wait queues */
 	for (wq = 0; wq < THINKOS_WQ_LST_END; ++wq) 
 		thinkos_rt.wq_lst[wq] = 0;
-#if (THINKOS_THREADS_MAX < 32) 
-	/* put the IDLE thread in the ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, THINKOS_THREADS_MAX, 1);
-#endif
+
 #if THINKOS_ENABLE_THREAD_VOID 
 	/* discard current thread context */
 	thinkos_rt.active = THINKOS_THREAD_VOID;
@@ -190,10 +189,6 @@ void __thinkos_reset(void)
 
 	/* Set the initial thread as idle. */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
-#if (THINKOS_THREADS_MAX < 32) 
-	/* Make sure th IDLE thread is in the ready queue */
-	thinkos_rt.wq_ready = (1 << THINKOS_THREADS_MAX);
-#endif
 }
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
@@ -251,12 +246,7 @@ static int __thinkos_init_main(uint32_t opt)
 
 	/* set the active thread */
 	thinkos_rt.active = id;
-#if (THINKOS_THREADS_MAX < 32) 
-	/* put the IDLE thread in the ready queue */
-	thinkos_rt.wq_ready = (1 << id) | (1 << THINKOS_THREADS_MAX);
-#else
 	thinkos_rt.wq_ready = 1 << id;
-#endif
 
 	DCC_LOG3(LOG_TRACE, "<%d> threads_max=%d ready=%08x", 
 			 id, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
@@ -430,6 +420,26 @@ int thinkos_init(uint32_t opt)
 
 	return thread_id + 1;
 }
+
+extern int _stack;
+#define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
+#ifndef THINKOS_MAIN_STACK_SIZE
+  #define THINKOS_MAIN_STACK_SIZE 4096
+#endif
+
+#if THINKOS_ENABLE_THREAD_INFO
+uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
+
+const struct thinkos_thread_inf thinkos_main_inf = {
+	.tag = "MAIN",
+	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
+	.stack_size = THINKOS_MAIN_STACK_SIZE,
+	.priority = 0,
+	.thread_id = 1,
+	.paused = 0
+};
+#endif
+
 
 const char * const thinkos_svc_link = thinkos_svc_nm;
 const char * const thinkos_xcp_link = thinkos_xcp_nm;

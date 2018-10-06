@@ -169,6 +169,7 @@ ifeq (Windows,$(HOST))
   CLEAN_DFILES := $(strip $(subst /,\,$(DFILES)))
   CLEAN_GFILES := $(strip $(subst /,\,$(GFILES)))
   CLEAN_PFILES := $(strip $(subst /,\,$(PFILES)))
+  CLEAN_ODIRS := $(call reverse,$(strip $(subst /,\,$(ODIRS))))
   LIB_INSTALLDIR := $(subst /,\,$(OUTDIR))
   LIB_OUTDIR := $(subst /,\,$(OUTDIR))
   INSTALLDIR := $(subst /,\,$(INSTALLDIR))
@@ -177,6 +178,7 @@ else
   CLEAN_DFILES := $(strip $(DFILES))
   CLEAN_GFILES := $(strip $(GFILES))
   CLEAN_PFILES := $(strip $(PFILES))
+  CLEAN_ODIRS := $(call reverse,$(strip $(ODIRS)))
   LIB_OUTDIR = $(OUTDIR)
   LIB_INSTALLDIR = $(OUTDIR)
 endif
@@ -242,6 +244,10 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info CFLAGS = '$(CFLAGS)')
 #$(info $(shell set))
 $(call trace1,----------------------------------------------------- </prog.mk>)
+
+#------------------------------------------------------------------------------ 
+# targets/recipes 
+#------------------------------------------------------------------------------ 
 
 all: $(LIBDIRS_ALL) $(PROG_BIN) $(PROG_SYM) $(PROG_LST)
 

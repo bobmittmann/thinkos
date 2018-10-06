@@ -22,6 +22,8 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -227,19 +229,6 @@ bool dbgmon_is_set(int sig)
 	return thinkos_dbgmon_rt.events &  (1 << sig) ? true : false;
 }
 
-void dbgmon_signal_idle(void)
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t demcr;
-	/* Debug monitor request semaphore */
-	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
-		DCC_LOG(LOG_MSG, "<<< Idle >>>");
-		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE, 1);  
-		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
-		asm volatile ("isb\n" :  :  : );
-	}
-}
-
 void dbgmon_unmask(int sig)
 {
 	uint32_t mask;
@@ -270,38 +259,6 @@ void dbgmon_clear(int sig)
 		evset &= ~(1 << sig);
 	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
 }
-
-#if 0
-/* wait for multiple events, return an event set of pending events,
-   but don't clear the events */
-uint32_t dbgmon_select(uint32_t evmask)
-{
-	uint32_t evset;
-	
-	DCC_LOG1(LOG_MSG, "evmask=%08x", evmask);
-
-	evset = thinkos_dbgmon_rt.events;
-	if (evset & evmask) {
-		DCC_LOG1(LOG_MSG, "got evset=%08x !!", evset);
-		return evset & evmask;
-	}
-
-	/* umask event */
-	thinkos_dbgmon_rt.mask |= evmask;
-
-	do {
-		DCC_LOG(LOG_MSG, "sleep...");
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		DCC_LOG1(LOG_MSG, "wakeup evset=%08x.", evset);
-	} while ((evset & evmask) == 0);
-
-	/* reset the event mask, make sure not to mask non maskable events */
-	thinkos_dbgmon_rt.mask &= ((~evmask) | DBGMON_PERISTENT_MASK);
-
-	return evset & evmask;
-}
-#endif
 
 /* wait for multiple events, return the highest priority (smaller number)
    don't clear the event upon exiting. */
@@ -428,14 +385,15 @@ int dbgmon_wait_idle(void)
 {
 	int ret;
 
-	/* Debug monitor request semaphore */
-	CM3_DCB->demcr |= DCB_DEMCR_MON_REQ;
+	/* Issue an idle hook request */
+	__idle_hook_req(IDLE_HOOK_NOTIFY_DBGMON);
+	DCC_LOG(LOG_TRACE, "idle request");
 
-	/* wait for signal */
+	/* wait for response */
 	if ((ret = dbgmon_wait(DBGMON_IDLE)) < 0)
 		return ret;
 
-	DCC_LOG(LOG_MSG, "[IDLE] zzz zzz zzz zzz");
+DCC_LOG(LOG_TRACE, "[IDLE] zzz zzz zzz zzz");
 
 	return 0;
 }
@@ -454,6 +412,29 @@ void __attribute__((naked))
 	thinkos_dbgmon_rt.task = task;
 	thinkos_dbgmon_rt.param = param;
 	dbgmon_reset();
+}
+
+/* -------------------------------------------------------------------------
+ * System IDLE hook
+ * ------------------------------------------------------------------------- */
+
+/*
+   This function is invoked when the Idle thread runs and
+   a the idle threa was signaled accordingly... 
+ */
+
+void __dbgmon_idle_hook(void)
+{
+	struct cm3_dcb * dcb = CM3_DCB;
+	uint32_t demcr;
+
+	/* Debug monitor request semaphore */
+	if ((demcr = CM3_DCB->demcr) & DCB_DEMCR_MON_REQ) {
+		DCC_LOG(LOG_MSG, "<<< Idle >>>");
+		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE, 1);  
+		dcb->demcr = (demcr & ~DCB_DEMCR_MON_REQ) | DCB_DEMCR_MON_PEND;
+		asm volatile ("isb\n" :  :  : );
+	}
 }
 
 
@@ -1193,8 +1174,8 @@ void dbgmon_soft_reset(void)
 	__thinkos_reset();
 
 	/* reset the idle thread */
-	idle_ctx = __thinkos_idle_init();
-	cm3_psp_set((uint32_t)&idle_ctx->r0);
+//	idle_ctx = __thinkos_idle_init();
+//	cm3_psp_set((uint32_t)&idle_ctx->r0);
 
 #if THINKOS_ENABLE_EXCEPTIONS
 	DCC_LOG(LOG_TRACE, "3. exception reset...");

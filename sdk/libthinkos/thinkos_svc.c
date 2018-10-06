@@ -155,8 +155,6 @@ void thinkos_comm_svc(int32_t * arg, int self);
 
 void thinkos_dbgmon_svc(int32_t * arg, int self);
 
-void thinkos_idle_svc(int32_t * arg);
-
 #if THINKOS_ENABLE_ESCALATE
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg)
@@ -759,14 +757,6 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 	case THINKOS_COMM:
 #if THINKOS_ENABLE_COMM
 		thinkos_comm_svc(arg, self);
-#else
-		thinkos_nosys(arg);
-#endif
-		break;
-
-	case THINKOS_ON_IDLE:
-#if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
-		thinkos_idle_svc(arg);
 #else
 		thinkos_nosys(arg);
 #endif

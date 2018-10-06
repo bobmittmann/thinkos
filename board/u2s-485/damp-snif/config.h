@@ -114,8 +114,6 @@
 #define THINKOS_ENABLE_STACK_INIT       1
 #define THINKOS_ENABLE_THREAD_VOID      0
 #define THINKOS_ENABLE_IDLE_WFI         1
-#define THINKOS_IDLE_STACK_BSS          1
-#define THINKOS_IDLE_STACK_ALLOC        0
 
 #define THINKOS_ASM_SCHEDULER           1
 #define THINKOS_ENABLE_OFAST            1

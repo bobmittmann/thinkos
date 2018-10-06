@@ -108,7 +108,7 @@
 
 #define THINKOS_COMM                  59
 
-#define THINKOS_ON_IDLE               60
+#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 60
 
 #define THINKOS_ESCALATE              61
 
@@ -118,7 +118,6 @@
 
 #define THINKOS_DBGMON                64
 
-#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 65
 
 #define CONSOLE_WRITE                  0
 #define CONSOLE_READ                   1
@@ -717,10 +716,6 @@ thinkos_comm_recv(uint32_t * hdr, void * buf, unsigned int len) {
 static inline void thinkos_yield(void) {
 	CM3_SCB->icsr = SCB_ICSR_PENDSVSET; /* PendSV rise */
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
-}
-
-static inline void thinkos_on_idle(void) {
-	THINKOS_SYSCALL0(THINKOS_ON_IDLE);
 }
 
 static inline int thinkos_escalate(int (* call)(void *), void * arg) {

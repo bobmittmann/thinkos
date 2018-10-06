@@ -321,18 +321,6 @@
 #define THINKOS_ENABLE_IDLE_WFI         1
 #endif
 
-#ifndef THINKOS_IDLE_STACK_BSS 
-#define THINKOS_IDLE_STACK_BSS          0
-#endif
-
-#ifndef THINKOS_IDLE_STACK_ALLOC
-  #if THINKOS_IDLE_STACK_BSS 
-    #define THINKOS_IDLE_STACK_ALLOC    0
-  #else
-    #define THINKOS_IDLE_STACK_ALLOC    1
-  #endif
-#endif
-
 #ifndef THINKOS_ASM_SCHEDULER
 #define THINKOS_ASM_SCHEDULER           1
 #endif
@@ -351,6 +339,16 @@
 
 #ifndef THINKOS_ENABLE_ALIGN
 #define THINKOS_ENABLE_ALIGN            1
+#endif
+
+/* 
+   This option is used to request the execution of
+   a tasklet when the system is idle.
+
+   The tasklet runs on the IDLE thread context.
+ */
+#ifndef THINKOS_ENABLE_IDLE_HOOKS       
+#define THINKOS_ENABLE_IDLE_HOOKS        0
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -435,6 +433,12 @@
  #define THINKOS_ENABLE_MONITOR 1
 #endif
 
+/* dbug monitir depend on idle hooks */
+#if (THINKOS_ENABLE_MONITOR) & (!THINKOS_ENABLE_IDLE_HOOKS       )
+ #undef THINKOS_ENABLE_IDLE_HOOKS
+ #define THINKOS_ENABLE_IDLE_HOOKS 1
+#endif
+
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if THINKOS_ENABLE_TIMED_CALLS || THINKOS_ENABLE_PAUSE || \
 	THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_DEBUG_STEP 
@@ -503,12 +507,7 @@
 #define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + 1)
 #endif
 
-#if 0
-#define THINKOS_CYCCNT_SYS  (THINKOS_THREADS_MAX)
-#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX + 1)
-#else
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
-#endif
 
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
@@ -858,6 +857,12 @@ struct thinkos_rt {
 		uint16_t size;
 	} mpu_kernel_mem;
 #endif
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	struct {
+		uint32_t req_map;
+	} idle_hooks;
+#endif
 };
 
 
@@ -1028,7 +1033,6 @@ extern const char thinkos_type_prefix_lut[];
 extern const char __xcpt_name_lut[16][12];
 
 #if THINKOS_ENABLE_THREAD_INFO
-extern const struct thinkos_thread_inf thinkos_idle_inf;
 extern const struct thinkos_thread_inf thinkos_main_inf;
 #endif
 
@@ -1044,8 +1048,6 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);
 
 void __thinkos_thread_abort(int thread_id);
-
-void __attribute__((noreturn)) thinkos_idle_task(void);
 
 /* Moves the current MSP to PSP and 
    assert a new MSP stack top */
@@ -1135,10 +1137,6 @@ static void inline __attribute__((always_inline)) __thinkos_ready_clr(void) {
 #if THINKOS_ENABLE_TIMESHARE
 	thinkos_rt.wq_tmshare = 0;
 #endif
-#if (THINKOS_THREADS_MAX < 32) 
-	/* put the IDLE thread in the ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, THINKOS_THREADS_MAX, 1);
-#endif
 }
 
 static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) {
@@ -1151,23 +1149,19 @@ static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) 
 
 	do {
 		ready = __ldrex(&thinkos_rt.wq_ready);
-		tmshare = thinkos_rt.wq_tmshare;
 		/* remove from the ready wait queue */
 		ready &= ~(1 << thread);
 		/* if the ready queue is empty, collect
 		   the threads from the CPU wait queue */
-#if ((THINKOS_THREADS_MAX) < 32) 
-		if (ready == (1 << (THINKOS_THREADS_MAX))) {
-#else
 		if (ready == 0) {
-#endif
-				/* no more threads into the ready queue,
-				   move the timeshare queue to the ready queue */
+			/* no more threads into the ready queue,
+			   move the timeshare queue to the ready queue */
 			ready |= tmshare;
 			tmshare = 0;
 		} 
 	} while (__strex(&thinkos_rt.wq_ready, ready));
 
+		tmshare = thinkos_rt.wq_tmshare;
 	thinkos_rt.wq_tmshare = tmshare;
 
 #endif /* (!THINKOS_ENABLE_TIMESHARE) */
@@ -1318,8 +1312,6 @@ void __thinkos_memcpy32(void * __dst, const void * __src,
 void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
 
 unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
-
-struct thinkos_context * __thinkos_idle_init(void);
 
 void __thinkos_reset(void);
 

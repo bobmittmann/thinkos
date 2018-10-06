@@ -34,9 +34,6 @@
 #define THINKOS_ENABLE_IRQ_CTL          1
 
 #define THINKOS_ENABLE_IDLE_WFI         1
-#define THINKOS_IDLE_STACK_CONST        0
-#define THINKOS_IDLE_STACK_BSS          0
-#define THINKOS_IDLE_STACK_ALLOC        1
 
 #define THINKOS_ENABLE_TIMESHARE        1
 #define THINKOS_SCHED_LIMIT_MAX         32

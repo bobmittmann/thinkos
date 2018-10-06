@@ -249,7 +249,7 @@ void dbgmon_clear(int sig);
 
 void dbgmon_signal(int sig); 
 
-void dbgmon_signal_idle(void);
+void __dbgmon_idle_hook(void);
 
 uint32_t dbgmon_select(uint32_t watch);
 
