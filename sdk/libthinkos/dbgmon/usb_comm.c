@@ -357,7 +357,7 @@ const struct usb_descriptor_string console_str = {
 	}
 };
 
-const struct usb_descriptor_string serial_num_str= {
+const struct usb_descriptor_string serial_num_str = {
 	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
 		'5', '4', '6', '8', '6', '9', '6', 'e', '6', 'b', 
 		'4', 'f', '5', '3', 0
