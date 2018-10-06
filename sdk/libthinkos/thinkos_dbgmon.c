@@ -1165,30 +1165,27 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 
 void dbgmon_soft_reset(void)
 {
-	struct thinkos_context * idle_ctx;
-
 	DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
 	__dmon_irq_disable_all();
 
-	DCC_LOG(LOG_TRACE, "2. ThinkOS reset...");
-	__thinkos_reset();
+	DCC_LOG(LOG_TRACE, "2. ThinkOS core reset...");
+	__thinkos_core_reset();
 
-	/* reset the idle thread */
-//	idle_ctx = __thinkos_idle_init();
-//	cm3_psp_set((uint32_t)&idle_ctx->r0);
+	DCC_LOG(LOG_TRACE, "3. Idle thread reset...");
+	__thinkos_idle_reset();
 
 #if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "3. exception reset...");
+	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	__exception_reset();
 #endif
 
 #if THINKOS_ENABLE_DEBUG_BKPT
-	DCC_LOG(LOG_TRACE, "4. clear all breakpoints...");
+	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
 	dmon_breakpoint_clear_all();
 #endif
 
 #if THINKOS_DBGMON_ENABLE_RST_VEC
-	DCC_LOG(LOG_TRACE, "5. reset RAM vectors...");
+	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif
 

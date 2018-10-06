@@ -665,7 +665,7 @@ drain_again:
 	}
 }
 
-void __console_reset(void)
+void __thinkos_console_reset(void)
 {
 	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	dbgmon_clear(DBGMON_TX_PIPE);
@@ -694,7 +694,7 @@ void __console_connect_set(bool val)
 
 void thinkos_console_init(void)
 {
-	__console_reset();
+	__thinkos_console_reset();
 }
 
 #endif /* THINKOS_ENABLE_CONSOLE */

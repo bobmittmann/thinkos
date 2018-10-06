@@ -766,7 +766,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			this_board.softreset();
 #if THINKOS_ENABLE_CONSOLE
-			__console_reset();
+			__thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			 by __console_reset(). */
 			__console_connect_set(dbgmon_comm_isconnected(comm));

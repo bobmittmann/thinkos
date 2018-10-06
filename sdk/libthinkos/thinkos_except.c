@@ -206,16 +206,15 @@ static void __attribute__((noreturn))
 
 	icsr = CM3_SCB->icsr;
 	if (icsr & SCB_ICSR_RETTOBASE) {
-
-//		struct thinkos_context * idle_ctx;
+		struct thinkos_context * idle_ctx;
 
 		DCC_LOG(LOG_TRACE, "return to base...");
 		__xcpt_rettobase(xcpt);
 
 		/* reset the idle thread */
-//		idle_ctx = __thinkos_idle_init();
-//		sf = (struct cm3_except_context *)&idle_ctx->r0;
-//		cm3_psp_set((uint32_t)sf);
+		idle_ctx = __thinkos_idle_init();
+		sf = (struct cm3_except_context *)&idle_ctx->r0;
+		cm3_psp_set((uint32_t)sf);
 		cm3_msp_set((uint32_t)sp);
 #if THINKOS_ENABLE_FPU 
 		ret = CM3_EXC_RET_THREAD_PSP_EXT;

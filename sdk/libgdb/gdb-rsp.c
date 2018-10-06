@@ -1603,7 +1603,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 #if THINKOS_ENABLE_CONSOLE
-			__console_reset();
+			__thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			   by __console_reset(). */
 			__console_connect_set(dbgmon_comm_isconnected(comm));

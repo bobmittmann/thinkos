@@ -1313,9 +1313,9 @@ void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
 
 unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
 
-void __thinkos_reset(void);
+void __thinkos_core_reset(void);
 
-void __console_reset(void);
+void __thinkos_console_reset(void);
 
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 void __console_rx_pipe_commit(int cnt); 

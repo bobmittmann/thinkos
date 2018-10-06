@@ -62,6 +62,7 @@ static inline void __idle_hook_clr(unsigned int req) {
 	}
 
 struct thinkos_context * __thinkos_idle_init(void);
+struct thinkos_context * __thinkos_idle_reset(void);
 
 void __attribute__((noreturn)) thinkos_idle_task(void);
 

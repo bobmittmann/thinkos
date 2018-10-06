@@ -50,15 +50,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 		asm volatile ("wfi\n"); /* wait for interrupt */
 #endif
 
-#if THINKOS_ENABLE_CRITICAL
-		/* Force the scheduler to run if there are 
-		   threads in the ready queue. */
-		if (thinkos_rt.wq_ready != 0) {
-			__thinkos_defer_sched();
-			continue;
-		}
-#endif
-
 #if THINKOS_ENABLE_IDLE_HOOKS
 		do {
 			map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
@@ -69,16 +60,31 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:
-				DCC_LOG1(LOG_TRACE, "req=%d", req); 
+				DCC_LOG(LOG_TRACE, "IDLE_HOOK_NOTIFY_DBGMON"); 
+				/* Notify the debug/monitor */
 				dbgmon_signal(DBGMON_IDLE); 
 				break;
+			default:
+#endif
+
+#if THINKOS_ENABLE_CRITICAL
+			/* Force the scheduler to run if there are 
+			   threads in the ready queue. */
+			if (thinkos_rt.wq_ready != 0)
+				__thinkos_defer_sched();
+#endif
+
+#if THINKOS_ENABLE_IDLE_HOOKS
 		}
 #endif
+
 	}
 }
 
 /* IDLE stack on .bss section */
-#define THINKOS_IDLE_STACK_SIZE (sizeof(struct thinkos_context) + 64)
+#ifndef THINKOS_IDLE_STACK_SIZE 
+#define THINKOS_IDLE_STACK_SIZE (sizeof(struct thinkos_context) + 128)
+#endif
 
 uint32_t thinkos_idle_stack[THINKOS_IDLE_STACK_SIZE / 4]  
 __attribute__((aligned(8)));
@@ -96,8 +102,8 @@ const struct thinkos_thread_inf thinkos_idle_inf = {
 };
 #endif
 
-/* initialize the idle thread */
-struct thinkos_context * __thinkos_idle_init(void)
+/* resets the idle thread */
+struct thinkos_context * __thinkos_idle_reset(void)
 {
 	struct thinkos_context * idle_ctx;
 	uint32_t sp;
@@ -105,6 +111,12 @@ struct thinkos_context * __thinkos_idle_init(void)
 	sp = (uint32_t)thinkos_idle_stack;
 	sp += THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
 	sp &= 0xfffffff8; /* 64bits alignemnt */
+
+#if THINKOS_ENABLE_STACK_INIT
+	/* initialize idle stack */
+	__thinkos_memset32(thinkos_idle_stack, 0xdeadbeef, 
+					   sizeof(thinkos_idle_stack));
+#endif
 
 	DCC_LOG1(LOG_TRACE, "Idle context=%08x.", sp); 
 
@@ -120,6 +132,14 @@ struct thinkos_context * __thinkos_idle_init(void)
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
 #endif
 
+	cm3_psp_set((uint32_t)&idle_ctx->r0);
+
 	return idle_ctx;
+}
+
+/* initialize the idle thread */
+struct thinkos_context * __thinkos_idle_init(void)
+{
+ 	return __thinkos_idle_reset();
 }
 

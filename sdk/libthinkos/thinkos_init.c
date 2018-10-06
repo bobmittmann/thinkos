@@ -58,7 +58,7 @@ void __thinkos_kill_all(void)
 	__thinkos_defer_sched();
 }
 
-void __thinkos_reset(void)
+void __thinkos_core_reset(void)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 
@@ -329,7 +329,7 @@ int thinkos_init(uint32_t opt)
 					   sizeof(thinkos_except_stack));
 #endif
 
-	__thinkos_reset();
+	__thinkos_core_reset();
 
 	__thinkos_idle_init();
 
