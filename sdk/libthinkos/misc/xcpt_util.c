@@ -20,8 +20,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-_Pragma ("GCC optimize (\"O2\")")
-
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #define __THINKOS_EXCEPT__
@@ -97,21 +95,24 @@ void __xdump(struct thinkos_except * xcpt)
 		}
 	}
 
-	DCC_LOG1(LOG_INFO, "ret=%08x", xcpt->ret); 
+	DCC_LOG1(LOG_INFO, "ret=%08x", xcpt->ctx.core.ret); 
 
-	sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
-			xcpt->ctx.r0, xcpt->ctx.r1, xcpt->ctx.r2, xcpt->ctx.r3);
+			xcpt->ctx.core.r0, xcpt->ctx.core.r1, 
+			xcpt->ctx.core.r2, xcpt->ctx.core.r3);
 	DCC_LOG4(LOG_ERROR, "   R4=%08x  R5=%08x  R6=%08x  R7=%08x", 
-			xcpt->ctx.r4, xcpt->ctx.r5, xcpt->ctx.r6, xcpt->ctx.r7);
+			xcpt->ctx.core.r4, xcpt->ctx.core.r5, 
+			xcpt->ctx.core.r6, xcpt->ctx.core.r7);
 	DCC_LOG4(LOG_ERROR, "   R8=%08x  R9=%08x R10=%08x R11=%08x", 
-			xcpt->ctx.r8, xcpt->ctx.r9, xcpt->ctx.r10, xcpt->ctx.r11);
+			xcpt->ctx.core.r8, xcpt->ctx.core.r9, 
+			xcpt->ctx.core.r10, xcpt->ctx.core.r11);
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
-			xcpt->ctx.r12, sp, xcpt->ctx.lr, xcpt->ctx.pc);
+			xcpt->ctx.core.r12, sp, xcpt->ctx.core.lr, xcpt->ctx.core.pc);
 	DCC_LOG4(LOG_ERROR, " XPSR=%08x MSP=%08x PSP=%08x RET=%08x", 
-			xcpt->ctx.xpsr, xcpt->msp, xcpt->psp, xcpt->ret);
-	xpsr = xcpt->ctx.xpsr;
+			xcpt->ctx.core.xpsr, xcpt->msp, xcpt->psp, xcpt->ctx.core.ret);
+	xpsr = xcpt->ctx.core.xpsr;
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
 		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
@@ -139,26 +140,30 @@ void __xdump(struct thinkos_except * xcpt)
 				 ipsr, ipsr - 16);
 	}
 
-#if THINKOS_ENABLE_FPU 
-	DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
-			xcpt->ctx.s[0], xcpt->ctx.s[1], xcpt->ctx.s[2], xcpt->ctx.s[3]);
-	DCC_LOG4(LOG_ERROR, "   S4=%08x  S5=%08x  S6=%08x  S7=%08x", 
-			xcpt->ctx.s[4], xcpt->ctx.s[5], xcpt->ctx.s[6], xcpt->ctx.s[7]);
-	DCC_LOG4(LOG_ERROR, "   S8=%08x  S9=%08x S10=%08x S11=%08x", 
-			xcpt->ctx.s[8], xcpt->ctx.s[9], xcpt->ctx.s[10], xcpt->ctx.s[11]);
-	DCC_LOG4(LOG_ERROR, "  S12=%08x S13=%08x S14=%08x S15=%08x", 
-			xcpt->ctx.s[12], xcpt->ctx.s[13], xcpt->ctx.s[14], xcpt->ctx.s[15]);
-	DCC_LOG4(LOG_ERROR, "  S16=%08x S17=%08x S18=%08x S19=%08x", 
-			xcpt->ctx.s1[0], xcpt->ctx.s1[1], xcpt->ctx.s1[2], xcpt->ctx.s1[3]);
-	DCC_LOG4(LOG_ERROR, "  S20=%08x S21=%08x S22=%08x S23=%08x", 
-			xcpt->ctx.s1[4], xcpt->ctx.s1[5], xcpt->ctx.s1[6], xcpt->ctx.s1[7]);
-	DCC_LOG4(LOG_ERROR, "  S24=%08x S25=%08x S26=%08x S27=%08x", 
-			xcpt->ctx.s1[8], xcpt->ctx.s1[9], 
-			xcpt->ctx.s1[10], xcpt->ctx.s1[11]);
-	DCC_LOG4(LOG_ERROR, "  S28=%08x S29=%08x S30=%08x S31=%08x", 
-			xcpt->ctx.s1[12], xcpt->ctx.s1[13], 
-			xcpt->ctx.s1[14], xcpt->ctx.s1[15]);
-	DCC_LOG1(LOG_ERROR, "FPSCR=%08x", xcpt->ctx.fpscr);
+#if (THINKOS_ENABLE_FPU)
+	if ((xcpt->ctx.core.ret & CM3_EXC_RET_nFPCA) == 0) {
+		DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
+		xcpt->ctx.s0[0], xcpt->ctx.s0[1], xcpt->ctx.s0[2], xcpt->ctx.s0[3]);
+		DCC_LOG4(LOG_ERROR, "   S4=%08x  S5=%08x  S6=%08x  S7=%08x", 
+		xcpt->ctx.s0[4], xcpt->ctx.s0[5], xcpt->ctx.s0[6], xcpt->ctx.s0[7]);
+		DCC_LOG4(LOG_ERROR, "   S8=%08x  S9=%08x S10=%08x S11=%08x", 
+		xcpt->ctx.s0[8], xcpt->ctx.s0[9], xcpt->ctx.s0[10], xcpt->ctx.s0[11]);
+		DCC_LOG4(LOG_ERROR, "  S12=%08x S13=%08x S14=%08x S15=%08x", 
+		xcpt->ctx.s0[12], xcpt->ctx.s0[13], xcpt->ctx.s0[14], xcpt->ctx.s0[15]);
+		DCC_LOG4(LOG_ERROR, "  S16=%08x S17=%08x S18=%08x S19=%08x", 
+		xcpt->ctx.s1[0], xcpt->ctx.s1[1], xcpt->ctx.s1[2], xcpt->ctx.s1[3]);
+		DCC_LOG4(LOG_ERROR, "  S20=%08x S21=%08x S22=%08x S23=%08x", 
+		xcpt->ctx.s1[4], xcpt->ctx.s1[5], xcpt->ctx.s1[6], xcpt->ctx.s1[7]);
+		DCC_LOG4(LOG_ERROR, "  S24=%08x S25=%08x S26=%08x S27=%08x", 
+				 xcpt->ctx.s1[8], xcpt->ctx.s1[9], 
+				 xcpt->ctx.s1[10], xcpt->ctx.s1[11]);
+		DCC_LOG4(LOG_ERROR, "  S28=%08x S29=%08x S30=%08x S31=%08x", 
+				 xcpt->ctx.s1[12], xcpt->ctx.s1[13], 
+				 xcpt->ctx.s1[14], xcpt->ctx.s1[15]);
+		DCC_LOG1(LOG_ERROR, "FPSCR=%08x", xcpt->ctx.fpscr);
+	} else {
+		DCC_LOG(LOG_ERROR, "EXC_RETURN.nFPCA=0");
+	}
 #endif
 
 	ctrl = cm3_control_get();

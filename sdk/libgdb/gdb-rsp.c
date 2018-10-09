@@ -1590,9 +1590,9 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
 	for(;;) {
-		DCC_LOG(LOG_INFO, "dbgmon_sched_select()...");
+		DCC_LOG(LOG_INFO, "dbgmon_select()...");
 
-		sig = dbgmon_sched_select(sigmask);
+		sig = dbgmon_select(sigmask);
 
 		DCC_LOG1(LOG_INFO, "sig=%d", sig);
 

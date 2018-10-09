@@ -20,13 +20,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/stm32f.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <arch/cortex-m3.h>
-#include <sys/delay.h>
-
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #define __THINKOS_DBGMON__
@@ -36,9 +29,16 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 
+#include <sys/stm32f.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <arch/cortex-m3.h>
+#include <sys/delay.h>
+
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_EXCEPTIONS
+#if (THINKOS_ENABLE_EXCEPTIONS)
 
 #if DEBUG
   #undef THINKOS_SYSRST_ONFAULT
@@ -62,7 +62,7 @@ static void __xcpt_rettobase(struct thinkos_except * xcpt)
 	__tdump();
 #endif
 
-	ipsr = xcpt->ctx.xpsr & 0x1ff;
+	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		if ((xcpt->active > 0) && (xcpt->active <= THINKOS_THREADS_MAX)) {
 #if THINKOS_ENABLE_DEBUG_FAULT
@@ -97,6 +97,10 @@ static void __xcpt_rettobase(struct thinkos_except * xcpt)
 	}
 #endif
 
+	/* The interrupts where disabled on exception entry.
+	   Reenable interrupts */
+	cm3_cpsie_i();
+
 	thinkos_exception_dsr(xcpt);
 }
 
@@ -123,12 +127,12 @@ static int __xcpt_active_irq(void)
 static void __attribute__((noreturn)) 
 	__xcpt_unroll(struct thinkos_except * xcpt, uint32_t xpsr)
 {
-	struct cm3_except_context * sf;
+	struct armv7m_except_frame * sf;
 	uint32_t xpsr_n;
 	uint32_t shcsr;
 	uint32_t icsr;
 	uint32_t ret;
-	uint32_t sp;
+	uint32_t * sp;
 	int ipsr;
 	int irq;
 
@@ -202,36 +206,28 @@ static void __attribute__((noreturn))
 
 	/* Reset the exception stack */
 	/* Get the top of the exception stack */
-	sp = (uint32_t)thinkos_except_stack + sizeof(thinkos_except_stack);
+	sp = __thinkos_xcpt_stack_top();
 
 	icsr = CM3_SCB->icsr;
 	if (icsr & SCB_ICSR_RETTOBASE) {
-		struct thinkos_context * idle_ctx;
-
 		DCC_LOG(LOG_TRACE, "return to base...");
-		__xcpt_rettobase(xcpt);
-
 		/* reset the idle thread */
-		idle_ctx = __thinkos_idle_init();
-		sf = (struct cm3_except_context *)&idle_ctx->r0;
-		cm3_psp_set((uint32_t)sf);
+		__thinkos_idle_reset((void *)__xcpt_rettobase, (void *)xcpt);
+#if (THINKOS_ENABLE_IDLE_MSP)
 		cm3_msp_set((uint32_t)sp);
-#if THINKOS_ENABLE_FPU 
-		ret = CM3_EXC_RET_THREAD_PSP_EXT;
+		ret = CM3_EXC_RET_THREAD_MSP;
 #else
+		cm3_psp_set((uint32_t)sp);
 		ret = CM3_EXC_RET_THREAD_PSP;
 #endif
-		/* The interrupts where disabled on exception entry.
-		   Reenable interrupts */
-		cm3_cpsie_i();
 		/* return */
 		asm volatile ("bx   %0\n" : : "r" (ret)); 
 		for(;;);
 	} else {
 		DCC_LOG(LOG_TRACE, "return to exception...");
 		/* Make room for the exception frame */
-		sp -= sizeof(struct cm3_except_context); 
-		sf = (struct cm3_except_context *)sp;
+		sp -= (sizeof(struct armv7m_except_frame) / sizeof(uint32_t)); 
+		sf = (struct armv7m_except_frame *)sp;
 		sf->r0 = (uint32_t)xcpt;
 		sf->r1 = (uint32_t)xpsr_n;
 		sf->xpsr = xpsr;
@@ -242,9 +238,138 @@ static void __attribute__((noreturn))
 		asm volatile ("bx   %0\n" : : "r" (ret)); 
 		for(;;);
 	} 
+}
+
+#if 0
+void __attribute__((noreturn,noinline)) 
+__xcpt_unroll(void (* base)(void *), void  * arg, 
+			  uint32_t xpsr, uint32_t cnt)
+{
+	struct cm3_except_context * sf;
+	uint32_t xpsr_n;
+	uint32_t shcsr;
+	uint32_t icsr;
+	uint32_t ret;
+	uint32_t * sp;
+	int ipsr;
+	int irq;
+
+	ipsr = cm3_ipsr_get();
+#if DEBUG
+	__idump(__func__, ipsr);
+#endif
+
+	if ((irq = __xcpt_active_irq()) >= 0) {
+		/* Return to the next active IRQ */
+		xpsr_n = CM_EPSR_T + irq + 16;
+		DCC_LOG1(LOG_TRACE, "IRQ %d", irq);
+	} else if ((shcsr = CM3_SCB->shcsr) & (SCB_SHCSR_SYSTICKACT | 
+										   SCB_SHCSR_PENDSVACT | 
+										   SCB_SHCSR_MONITORACT | 
+										   SCB_SHCSR_SVCALLACT |
+										   SCB_SHCSR_USGFAULTACT |  
+										   SCB_SHCSR_BUSFAULTACT |
+										   SCB_SHCSR_MEMFAULTACT)) {
+
+		if (ipsr == CM3_EXCEPT_BUS_FAULT && shcsr & SCB_SHCSR_BUSFAULTACT) {
+			/* currently servicing bus fault */
+			shcsr &= ~SCB_SHCSR_BUSFAULTACT;
+		}
+		if (ipsr == CM3_EXCEPT_USAGE_FAULT && shcsr & SCB_SHCSR_USGFAULTACT) {
+			/* currently servicing usage fault */
+			shcsr &= ~SCB_SHCSR_USGFAULTACT;
+		}
+		if (ipsr == CM3_EXCEPT_MEM_MANAGE && shcsr & SCB_SHCSR_MEMFAULTACT) {
+			/* currently servicing memory management fault */
+			shcsr &= ~SCB_SHCSR_MEMFAULTACT;
+		}
+
+		if (shcsr & SCB_SHCSR_MEMFAULTACT) {
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_MEM_MANAGE;
+			DCC_LOG(LOG_TRACE, "MEM_MANAGE");
+		} else if (shcsr & SCB_SHCSR_BUSFAULTACT) {
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_BUS_FAULT;
+			DCC_LOG(LOG_TRACE, "BUS_FAULT");
+		} else if (shcsr & SCB_SHCSR_USGFAULTACT) {
+			DCC_LOG(LOG_TRACE, "USAGE_FAULT");
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_USAGE_FAULT;
+		} else if (shcsr & SCB_SHCSR_SVCALLACT) {
+			DCC_LOG(LOG_TRACE, "SVC");
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_SVC;
+		} else if (shcsr & SCB_SHCSR_MONITORACT) {
+			DCC_LOG(LOG_TRACE, "DEBUG_MONITOR");
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_DEBUG_MONITOR;
+		} else if (shcsr & SCB_SHCSR_PENDSVACT) {
+			DCC_LOG(LOG_TRACE, "PENDSV");
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_PENDSV;
+		} else if (shcsr & SCB_SHCSR_SYSTICKACT) {
+			DCC_LOG(LOG_TRACE, "SYSTICK");
+			xpsr_n = CM_EPSR_T + CM3_EXCEPT_SYSTICK;
+		} else {
+			xpsr_n = CM_EPSR_T;
+		}
+	} else {
+		xpsr_n = CM_EPSR_T;
+	}
+
+	/* Reset the exception stack */
+	/* Get the top of the exception stack */
+	sp = __thinkos_xcpt_stack_top();
+
+	icsr = CM3_SCB->icsr;
+	if (icsr & SCB_ICSR_RETTOBASE) {
+		DCC_LOG(LOG_TRACE, "return to base...");
+		/* reset the idle thread */
+		__thinkos_idle_reset(base, arg);
+		cm3_msp_set((uint32_t)sp);
+#if THINKOS_ENABLE_FPU 
+		ret = CM3_EXC_RET_THREAD_MSP_EXT;
+#else
+		ret = CM3_EXC_RET_THREAD_MSP;
+#endif
+		/* return */
+		asm volatile ("bx   %0\n" : : "r" (ret)); 
+		for(;;);
+	} else {
+		DCC_LOG(LOG_TRACE, "return to exception...");
+		/* Make room for the exception frame */
+		sp -= (sizeof(struct cm3_except_context) / sizeof(uint32_t)); 
+		sf = (struct cm3_except_context *)sp;
+		sf->r0 = (uint32_t)base;
+		sf->r1 = (uint32_t)arg;
+		sf->r2 = (uint32_t)xpsr_n;
+		sf->r3 = (uint32_t)cnt + 1;
+		sf->xpsr = xpsr;
+		sf->pc = (uint32_t)__xcpt_unroll & ~1;
+		cm3_msp_set((uint32_t)sp);
+		ret = CM3_EXC_RET_HANDLER;
+		/* return */
+		asm volatile ("bx   %0\n" : : "r" (ret)); 
+		for(;;);
+	} 
 
 }
+#endif
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
+
+
+#if (THINKOS_UNROLL_EXCEPTIONS) 
+static inline uint32_t __attribute__((always_inline)) cm3_xpsr_get(void) {
+	uint32_t ipsr;
+	asm volatile ("mrs %0, IPSR\n" : "=r" (ipsr));
+	return ipsr;
+}
+
+void __attribute__((noreturn)) thinkos_xcpt_return(void)
+{
+	uint32_t xpsr = cm3_xpsr_get();
+	DCC_LOG(LOG_TRACE, "...");
+	/* set the active thread to idle */
+	thinkos_rt.active = THINKOS_THREAD_IDLE;
+	/* Unroll exception chain */
+	__xcpt_unroll(NULL, xpsr);
+}
+#endif
 
 #if THINKOS_STDERR_FAULT_DUMP
 void __show_ctrl(uint32_t ctrl)
@@ -363,7 +488,7 @@ void __attribute__((noreturn)) thinkos_xcpt_process(struct thinkos_except *
 	/* Disable Iterrutps */
 	cm3_cpsid_i();
 	/* Unroll exception chain */
-	__xcpt_unroll(xcpt, xcpt->ctx.xpsr);
+	__xcpt_unroll(xcpt, xcpt->ctx.core.xpsr);
 #else /* THINKOS_UNROLL_EXCEPTIONS */
 	/* increment reentry counter */
 	xcpt->unroll++;
@@ -374,8 +499,8 @@ void __attribute__((noreturn)) thinkos_xcpt_process(struct thinkos_except *
 	cm3_sysrst();
   #endif
 	DCC_LOG(LOG_ERROR, "system halt!!");
-	for(;;);
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
+	for(;;);
 }
 
 void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)

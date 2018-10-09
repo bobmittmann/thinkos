@@ -29,10 +29,32 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
+
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
+
+#define __THINKOS_IRQ__
+#include <thinkos/irq.h>
+
+#include <thinkos.h>
+
+/*
+#ifndef __THINKOS_CONFIG_H__
+#error "Need <thinkos/config.h>"
+#endif 
+
+#ifndef __THINKOS_KERNEL_H__
+#error "Need <thinkos/kernel.h>"
+#endif 
+
+#ifndef __THINKOS_EXCEPT_H__
+#error "Need <thinkos/except.h>"
+#endif 
+
+#ifndef __THINKOS_IRQ_H__
+#error "Need <thinkos/irq.h>"
+#endif 
+*/
 
 #ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
   #ifdef CM3_RAM_VECTORS
@@ -53,7 +75,6 @@
 #ifndef THINKOS_DBGMON_ENABLE_RST_VEC
 #define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
 #endif
-
 
 #include <sys/usb-dev.h>
 
@@ -239,7 +260,9 @@ void __attribute__((noreturn))
 int dbgmon_thread_create(void (* func)(void *), void * arg, 
 						 const struct thinkos_thread_inf * inf);
 
-int dbgmon_thread_resume(int thread_id);
+void dbgmon_thread_resume(int thread_id);
+
+void dbgmon_thread_destroy(int thread_id);
 
 void dbgmon_unmask(int sig);
 
@@ -251,9 +274,7 @@ void dbgmon_signal(int sig);
 
 void __dbgmon_idle_hook(void);
 
-uint32_t dbgmon_select(uint32_t watch);
-
-int dbgmon_sched_select(uint32_t evmask);
+int dbgmon_select(uint32_t evmask);
 
 int dbgmon_wait(int sig);
 

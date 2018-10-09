@@ -38,12 +38,6 @@
 	.thumb_func
 dbgmon_context_swap:
 
-#if 0
-	mov    r1, #0
-	.type	dbgmon_context_swap, %function
-	.type	dbgmon_context_swap_ext, %function
-dbgmon_context_swap_ext:
-#endif
 	push   {r4-r11,lr}
 	mrs    r3, APSR
 	push   {r3}

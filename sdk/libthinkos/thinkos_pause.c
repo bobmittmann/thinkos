@@ -105,7 +105,9 @@ static void mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		thinkos_rt.th_stat[thread_id] = 0;
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_TIMED_CALLS
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 	}
 }
 #endif
@@ -116,7 +118,9 @@ static void cond_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_TIMED_CALLS
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 }
 #endif
 
@@ -168,7 +172,9 @@ static void evset_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		thinkos_rt.th_stat[thread_id] = 0;
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_TIMED_CALLS
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 	}
 }
 #endif
@@ -193,7 +199,9 @@ static void flag_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		thinkos_rt.th_stat[thread_id] = 0;
 	} else { 
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_TIMED_CALLS
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 	}
 }
 #endif
@@ -227,7 +235,9 @@ void __thinkos_gate_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		thinkos_rt.th_stat[thread_id] = 0;
 	} else { 
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
+#if THINKOS_ENABLE_TIMED_CALLS
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
+#endif
 	}
 }
 #endif
@@ -408,6 +418,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 
 	return true;
 }
+
 
 bool __thinkos_thread_resume(unsigned int thread_id)
 {

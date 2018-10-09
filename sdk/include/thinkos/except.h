@@ -24,20 +24,38 @@
 #define __THINKOS_EXCEPT_H__
 
 #ifndef __THINKOS_EXCEPT__
-#error "Never use <thinkos/except.h> directly; include <thinkos.h> instead."
+#error "Never use <thinkos/except.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#ifndef __THINKOS_KERNEL_H__
-#error "Need <thinkos/kernel.h>."
-#endif 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 /* -------------------------------------------------------------------------- 
  * Exception state
  * --------------------------------------------------------------------------*/
 
+struct armv7m_except_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
+#if (THINKOS_ENABLE_FPU) 
+	float    s[16];
+	uint32_t fpscr;
+	uint32_t res;
+#endif
+};
+
 struct thinkos_except {
-	struct thinkos_context ctx;
-	uint32_t ret;
+//#if (THINKOS_ENABLE_FPU) 
+	struct thinkos_fp_context ctx;
+//#else
+//	struct thinkos_context ctx;
+//#endif
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;
@@ -45,9 +63,10 @@ struct thinkos_except {
 	uint32_t mmfar;
 	uint32_t bfar;
 	uint8_t  ipsr;   /* IPSR */
+	uint8_t  ctrl;   /* CONTROL */
 	int8_t   active; /* active thread at the time of the exception */
 	uint8_t  type;   /* exception type */
-	uint8_t  unroll; /* unroll count */
+	uint32_t  unroll; /* unroll count */
 };
 
 extern struct thinkos_except thinkos_except_buf;
@@ -69,6 +88,8 @@ extern "C" {
 void thinkos_exception_init(void);
 
 void thinkos_exception_dsr(struct thinkos_except * xcpt);
+
+uint32_t * __thinkos_xcpt_stack_top(void);
 
 /* -------------------------------------------------------------------------
  * Exception handling utility functions

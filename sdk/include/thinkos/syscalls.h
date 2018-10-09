@@ -23,6 +23,10 @@
 #ifndef __THINKOS_SYSCALLS_H__
 #define __THINKOS_SYSCALLS_H__
 
+#ifndef __THINKOS_PROFILE_H__
+#error "Need <thinkos/profile.h>"
+#endif 
+
 /* -------------------------------------------------------------------------- 
  * Service numbers
  * --------------------------------------------------------------------------*/

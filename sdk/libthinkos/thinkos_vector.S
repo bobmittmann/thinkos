@@ -54,17 +54,17 @@
 collect_xcpt_inf:
 	ldr    r0, .L_xcpt_buf
 	mov    r2, r0
-#if THINKOS_ENABLE_FPU 
+#if (THINKOS_ENABLE_FPU)
 	vstmia r2!, {s16-s31}
 #endif
-	stmia  r2!, {r4-r11} /* r4, r11 */
-	tst    r3, #CM3_EXEC_RET_SPSEL
+	stmia  r2!, {r4-r11} /* r4, r11*/
+	tst    r3, #CM3_EXC_RET_SPSEL
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
 	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-	stmia  r2!, {r5-r12}
-#if THINKOS_ENABLE_FPU 
+	stmia  r2!, {r3,r5-r12} /* return r0..r3, r12, lr, pc, xpsr */
+#if (THINKOS_ENABLE_FPU)
 	vstmia r2!, {s0-s15}
 	vmrs   r4, FPSCR
 	stmia  r2!, {r4-r5}
@@ -72,33 +72,34 @@ collect_xcpt_inf:
 	mrs    r5, MSP 
 	sub    r5, r5, #32
 	mrs    r6, PSP 
-	tst    r3, #CM3_EXEC_RET_SPSEL
+	tst    r3, #CM3_EXC_RET_SPSEL
 	it     ne 
 	subne  r6, r6, #32
-	str    r3, [r2, #0] /* ret */
-	str    r5, [r2, #4] /* msp */
-	str    r6, [r2, #8] /* psp */
+	str    r5, [r2, #0] /* msp */
+	str    r6, [r2, #4] /* psp */
 	ldr    r7, .L_cm3_scb
 	ldr    r5, [r7, #SCB_ICSR_OFFS]
 	ldr    r6, [r7, #SCB_CFSR_OFFS]
-	str    r5, [r2, #12] /* icsr */
-	str    r6, [r2, #16] /* cfsr */
+	str    r5, [r2, #8] /* icsr */
+	str    r6, [r2, #12] /* cfsr */
 	tst    r6, #CFSR_MMARVALID
 	itt    ne 
 	ldrne  r5, [r7, #SCB_MMFAR_OFFS]
-	strne  r5, [r2, #20] /* mmfar */
+	strne  r5, [r2, #16] /* mmfar */
 	tst    r6, #CFSR_BFARVALID
 	itt    ne 
 	ldrne  r5, [r7, #SCB_BFAR_OFFS]
-	strne  r5, [r2, #24] /* bfar */
+	strne  r5, [r2, #20] /* bfar */
 	/* clear fault status */
 	str    r6, [r7, #SCB_CFSR_OFFS]
 	mrs    r5, IPSR
+	strb   r5, [r2, #24] /* ipsr */
+	mrs    r5, CONTROL
+	strb   r5, [r2, #25] /* ctrl */
 	ldr    r4, .L_thinkos_rt
 	ldr    r4, [r4, #THINKOS_RT_ACTIVE_OFFS]
-	strb   r5, [r2, #28] /* ipsr */
-	strb   r4, [r2, #29] /* active */
-	strb   r1, [r2, #30] /* type */
+	strb   r4, [r2, #26] /* active */
+	strb   r1, [r2, #27] /* type */
 
 	mov    r7, lr
 	mov    lr, r3
@@ -229,7 +230,17 @@ cm3_svc_isr:
 	str     r0, [r3, #SCB_ICSR_OFFS]
 1:
 #endif
+
+#if (THIKNOS_ENABLE_IDLE_MSP)
+	/* select the context stack according to the content of LR */
+	tst     lr, #4
+	ite     eq
+	mrseq   r0, MSP
+	mrsne   r0, PSP
+#else
 	mrs     r0, PSP
+#endif
+
 	/* Get PC from the stack */
 	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */

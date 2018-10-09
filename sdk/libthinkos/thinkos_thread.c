@@ -48,6 +48,11 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 #endif
 	ctx->pc = pc;
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
+#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+	ctx->sp = (uintptr_t)&ctx->r0;
+	ctx->ret = CM3_EXC_RET_THREAD_PSP;
+#endif
+
 	thinkos_rt.ctx[thread_id] = ctx;
 
 #if THINKOS_ENABLE_PAUSE
@@ -109,6 +114,15 @@ void thinkos_thread_create_svc(int32_t * arg)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	if (thinkos_rt.ctx[thread_id] != NULL) {
+		DCC_LOG3(LOG_ERROR, "thread %d already exists, ctx=%08x", 
+				 thread_id + 1, thinkos_rt.ctx[thread_id]);
+		return false;
+	}
+#endif 
+
+
 #endif
 
 	sp = (uint32_t)init->stack_ptr + init->opt.stack_size;

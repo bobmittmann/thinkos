@@ -665,7 +665,8 @@
 /* Return to thread mode and on return use the process stack extended frame */
 #define CM3_EXC_RET_THREAD_PSP_EXT 0xffffffed
 
-#define CM3_EXEC_RET_SPSEL (1 << 2)
+#define CM3_EXC_RET_SPSEL          (1 << 2)
+#define CM3_EXC_RET_nFPCA          (1 << 4)
 
 #ifndef __ASSEMBLER__
 

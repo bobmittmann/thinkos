@@ -22,22 +22,23 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
 void dmon_print_exception(const struct dbgmon_comm * comm, 
 						  struct thinkos_except * xcpt)
 {
-//	uint32_t psr = xcpt->ctx.xpsr;
-#if THINKOS_ENABLE_MPU 
+#if (THINKOS_ENABLE_MPU)
 	uint32_t mmfsr;
 #endif
-#if THINKOS_ENABLE_BUSFAULT
+#if (THINKOS_ENABLE_BUSFAULT)
 	uint32_t bfsr;
 #endif
-#if THINKOS_ENABLE_USAGEFAULT 
+#if (THINKOS_ENABLE_USAGEFAULT)
 	uint32_t ufsr;
 #endif
 	uint32_t sp;
@@ -69,7 +70,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 		dbgmon_printf(comm, " Error %d at ", xcpt->type - THINKOS_ERR_OFF);
 	}
 
-	ipsr = xcpt->ctx.xpsr & 0x1ff;
+	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if (ipsr == 0) {
 		dbgmon_printf(comm, "thread %d", xcpt->active + 1);
 	} else if (ipsr > 15) {
@@ -93,8 +94,15 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 
 	dbgmon_printf(comm, "\r\n");
 
-	sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-	dmon_print_context(comm, &xcpt->ctx, sp);
+						
+	sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	dmon_print_context(comm, &xcpt->ctx.core, sp);
+
+#if THINKOS_ENABLE_FPU 
+	if ((xcpt->ctx.core.ret & CM3_EXC_RET_nFPCA) == 0) {
+		dbgmon_printf(comm, " FPCA");
+	}
+#endif
 
 	switch (xcpt->type) {
 #if THINKOS_ENABLE_MPU 

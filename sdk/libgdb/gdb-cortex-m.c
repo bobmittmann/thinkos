@@ -246,24 +246,23 @@ const int16_t __ctx_offs[] = {
 	[24] = -1,
 	[25] = offsetof(struct thinkos_context, xpsr),
 #if THINKOS_ENABLE_FPU
-	[26] = offsetof(struct thinkos_context, s[0]),
-	[27] = offsetof(struct thinkos_context, s[2]),
-	[28] = offsetof(struct thinkos_context, s[4]),
-	[29] = offsetof(struct thinkos_context, s[6]),
-	[30] = offsetof(struct thinkos_context, s[8]),
-	[31] = offsetof(struct thinkos_context, s[10]),
-	[32] = offsetof(struct thinkos_context, s[12]),
-	[33] = offsetof(struct thinkos_context, s[14]),
-
-	[34] = offsetof(struct thinkos_context, s1[0]),
-	[35] = offsetof(struct thinkos_context, s1[2]),
-	[36] = offsetof(struct thinkos_context, s1[4]),
-	[37] = offsetof(struct thinkos_context, s1[6]),
-	[38] = offsetof(struct thinkos_context, s1[8]),
-	[39] = offsetof(struct thinkos_context, s1[10]),
-	[40] = offsetof(struct thinkos_context, s1[12]),
-	[41] = offsetof(struct thinkos_context, s1[14]),
-	[42] = offsetof(struct thinkos_context, fpscr),
+	[26] = (18 *4),
+	[27] = (20 *4),
+	[28] = (22 *4),
+	[29] = (24 *4),
+	[30] = (26 *4),
+	[31] = (28 *4),
+	[32] = (30 *4),
+	[33] = (32 *4),
+	[34] = -(16 * 4),
+	[35] = -(12 * 4),
+	[36] = -(12 * 4),
+	[37] = -(10 * 4),
+	[38] = -(8 * 4),
+	[39] = -(6 * 4),
+	[40] = -(4 * 4),
+	[41] = -(34 * 4), /* fpscr */
+	[42] = -(35 * 4)
 #endif
 };
 
@@ -297,16 +296,16 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
 		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = &xcpt->ctx;
-		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+		ctx = &xcpt->ctx.core;
+		sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
 		if (thinkos_except_buf.active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx;
-		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+		ctx = &thinkos_except_buf.ctx.core;
+		sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 		DCC_LOG1(LOG_INFO, "ThinkOS exception, context=%08x!", ctx);
 	} else if (__thinkos_thread_ispaused(thread_id)) {
 		ctx = thinkos_rt.ctx[thread_id];
@@ -390,7 +389,7 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &thinkos_except_buf.ctx.core;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
 		ctx = thinkos_rt.ctx[thread_id];
 		DCC_LOG2(LOG_MSG, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
@@ -466,7 +465,7 @@ int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 		return -1;
 
 	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &thinkos_except_buf.ctx.core;
 	} else {
 		ctx = thinkos_rt.ctx[thread_id];
 		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
@@ -496,7 +495,7 @@ int thread_step_req(unsigned int gdb_thread_id)
 		return -1;
 
 	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &thinkos_except_buf.ctx.core;
 	} else {
 		ctx = thinkos_rt.ctx[thread_id];
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {

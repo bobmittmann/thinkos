@@ -23,9 +23,12 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifdef CONFIG_H
-#include "config.h"
-#endif
+#include "board.h"
+
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -33,15 +36,8 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#include <thinkos.h>
-
 #include <sys/dcclog.h>
 
-#include "board.h"
 
 void monitor_task(const struct dbgmon_comm * comm, void * arg);
 

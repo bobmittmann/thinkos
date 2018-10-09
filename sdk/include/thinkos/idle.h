@@ -26,15 +26,21 @@
 #error "Never use <thinkos/idle.h> directly; include <thinkos.h> instead."
 #endif 
 
+#ifndef __THINKOS_KERNEL_H__
+#error "Need <thinkos/kernel.h>"
+#endif 
+
 /* ----------------------------------------------------------------------------
  *  Idle hooks signals 
  * ----------------------------------------------------------------------------
  */
 
 enum idle_hook_signal {
-	/* The higest priority gos to the Debug/Monitor */
-	IDLE_HOOK_NOTIFY_DBGMON = 0,
-	IDLE_HOOK_STACK_SCAN = 31
+	/* The higest priority goes to system reset request */
+	IDLE_HOOK_SYSRST = 0,
+	/* The higest priority goes to the Debug/Monitor */
+	IDLE_HOOK_NOTIFY_DBGMON = 1,
+	kDLE_HOOK_STACK_SCAN = 31
 };
 
 #if THINKOS_ENABLE_THREAD_INFO
@@ -45,6 +51,7 @@ extern const struct thinkos_thread_inf thinkos_idle_inf;
 extern "C" {
 #endif
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 static inline void __idle_hook_req(unsigned int req) {
 		uint32_t map;
 		do {
@@ -60,11 +67,10 @@ static inline void __idle_hook_clr(unsigned int req) {
 			map &= ~(1 << req);
 		} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
 	}
+#endif
 
-struct thinkos_context * __thinkos_idle_init(void);
-struct thinkos_context * __thinkos_idle_reset(void);
-
-void __attribute__((noreturn)) thinkos_idle_task(void);
+void __thinkos_idle_init(void);
+uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg);
 
 #ifdef __cplusplus
 }

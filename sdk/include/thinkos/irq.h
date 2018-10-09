@@ -26,8 +26,9 @@
 #error "Only use this file on privileged code"
 #endif 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#ifndef __THINKOS_KERNEL_H__
+#error "Need <thinkos/kernel.h>"
+#endif 
 
 #ifndef __ASSEMBLER__
 
@@ -54,10 +55,12 @@ __attribute__((always_inline)) thinkos_sched_on(void)  {
 	cm3_basepri_set(0x00);
 }
 
+#if (THINKOS_ENABLE_CLOCK)
 static inline volatile uint32_t __attribute__((always_inline)) 
 	thinkos_clock_i(void)  {
 	return (volatile uint32_t)thinkos_rt.ticks;
 }
+#endif
 
 #ifdef __cplusplus
 }

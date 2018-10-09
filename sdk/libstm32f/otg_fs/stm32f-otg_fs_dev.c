@@ -383,6 +383,7 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	ep->xfr_rem = xfrsiz;
 #endif
 
+
 	if ((xfrsiz % mpsiz) == 0) {
 		ep->state = EP_IN_DATA_ZLP; /* needs to send a ZLP */
 		DCC_LOG3(LOG_TRACE, "[%d] ZLP! pktcnt=%d xfrsiz=%d  ",

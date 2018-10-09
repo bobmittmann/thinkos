@@ -170,10 +170,12 @@ static void thinkos_nosys(int32_t * arg)
 	arg[0] = THINKOS_ENOSYS;
 }
 
+#if THINKOS_ENABLE_CLOCK
 static void thinkos_clock_svc(int32_t * arg)
 {
 	arg[0] = thinkos_rt.ticks;
 }
+#endif
 
 static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {

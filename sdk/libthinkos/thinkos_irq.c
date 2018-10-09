@@ -19,14 +19,16 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
-#if THINKOS_ENABLE_OFAST
+#include <thinkos.h>
+#include <stdio.h>
+
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-
-#include <stdio.h>
 
 #if THINKOS_IRQ_MAX > 0
 void __thinkos_irq_reset_all(void)

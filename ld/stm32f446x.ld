@@ -19,6 +19,9 @@
  * http://www.gnu.org/
  */
 
+__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
 _stack_limit = ORIGIN(STACK);
@@ -195,7 +198,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data :
+	.data __data_init :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */

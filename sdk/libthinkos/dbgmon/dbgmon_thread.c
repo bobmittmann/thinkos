@@ -22,11 +22,28 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
 /* -------------------------------------------------------------------------
  * Fast thread execution
  * ------------------------------------------------------------------------- */
+
+void dbgmon_thread_destroy(int thread_id)
+{
+	thread_id = (thread_id > 0) ? thread_id - 1 : 0;
+
+	if (thinkos_rt.ctx[thread_id] == NULL) {
+		return;
+	}
+
+	DCC_LOG(LOG_MSG, "__thinkos_thread_abort()");
+	__thinkos_thread_abort(thread_id);
+
+	dbgmon_wait_idle();
+}
+
 
 int dbgmon_thread_create(void (* func)(void *), void * arg, 
 						 const struct thinkos_thread_inf * inf)
@@ -34,19 +51,32 @@ int dbgmon_thread_create(void (* func)(void *), void * arg,
 	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
 	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
 
-	DCC_LOG(LOG_MSG, "__thinkos_thread_abort()");
-	__thinkos_thread_abort(thread_id);
+	if (thinkos_rt.ctx[thread_id] != NULL) {
+		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
+				 thread_id + 1, thinkos_rt.ctx[thread_id]);
+
+		DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
+		__thinkos_thread_abort(thread_id);
+
+		dbgmon_wait_idle();
+	}
+
+	/* Avoid race condition with kernel handlers */
+	while (thinkos_kernel_active()){
+		DCC_LOG(LOG_TRACE, "kernel is active, wait for IDLE!!");
+		dbgmon_wait_idle();
+	}
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* allocate the thread block */
 	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 1);
 #endif
 
-	DCC_LOG2(LOG_MSG, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
+	DCC_LOG2(LOG_TRACE, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
 	__thinkos_thread_init(thread_id, sp, func, arg);
 
 #if THINKOS_ENABLE_THREAD_INFO
-	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
+	DCC_LOG(LOG_TRACE, "__thinkos_thread_inf_set()");
 	__thinkos_thread_inf_set(thread_id, inf);
 #endif
 

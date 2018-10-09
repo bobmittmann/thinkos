@@ -18,7 +18,6 @@
  * You can receive a copy of the GNU Lesser General Public License from 
  * http://www.gnu.org/
  */
-#include <stdio.h>
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
@@ -27,7 +26,7 @@
 
 #include <thinkos.h>
 
-void thinkos_trace_rt(struct thinkos_rt * rt)
+void __thinkos(struct thinkos_rt * rt)
 {
 	uint32_t * wq;
 	int i;
@@ -82,7 +81,7 @@ void thinkos_trace_rt(struct thinkos_rt * rt)
 		}
 	}
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 	DCC_LOG1(LOG_TRACE, "Ticks = %d", rt->ticks);
 #endif
 
@@ -90,7 +89,7 @@ void thinkos_trace_rt(struct thinkos_rt * rt)
 		struct thinkos_context * ctx;
 
 		if ((ctx = rt->ctx[i]) != NULL) {
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 			DCC_LOG5(LOG_TRACE, "%2d %3d sp=%08x lr=%08x pc=%08x", 
 					 i, rt->th_stat[i] >> 1, (uint32_t)ctx, ctx->lr, ctx->pc);
 #else
@@ -103,20 +102,47 @@ void thinkos_trace_rt(struct thinkos_rt * rt)
 
 }
 
-void __sched_trace(struct thinkos_context * __ctx, 
-				   unsigned int __thread_id)
+void __context(struct thinkos_context * __ctx, uint32_t __thread_id)
 {
+	DCC_LOG4(LOG_TRACE, "  r0=%08x  r1=%08x  r2=%08x  r3=%08x", 
+			 __ctx->r0, __ctx->r1, __ctx->r2, __ctx->r3);
+	DCC_LOG4(LOG_TRACE, "  r4=%08x  r5=%08x  r6=%08x  r7=%08x", 
+			 __ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
+	DCC_LOG4(LOG_TRACE, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
+			 __ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
+#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
+			 __ctx->r12, __ctx->sp, __ctx->lr, __ctx->pc);
+	DCC_LOG4(LOG_TRACE, "xpsr=%08x ret=%08x ctx=%08x th=%d", 
+			 __ctx->xpsr, __ctx->ret, __ctx, __thread_id + 1);
+#else
+	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
+			 __ctx->r12, __ctx, __ctx->lr, __ctx->pc);
+	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", __ctx->xpsr)__thread_id + 1;
+#endif
+}
+
+
+void __sched_trace(struct thinkos_context * __ctx, 
+				   uint32_t __thread_id)
+{
+	uint32_t ctrl = cm3_control_get();
+	uint32_t msp = cm3_msp_get();
+	uint32_t psp = cm3_psp_get();
+
+	(void)ctrl;
+	(void)msp;
+	(void)psp;
+
 	DCC_LOG4(LOG_TRACE, "th=%d sp=%08x pc=%08x rdy=%08x", 
 			 __thread_id + 1, __ctx, __ctx->pc, thinkos_rt.wq_ready);
-	DCC_LOG4(LOG_INFO, "  r0=%08x  r1=%08x  r2=%08x  r3=%08x", 
-			 __ctx->r0, __ctx->r1, __ctx->r2, __ctx->r3);
-	DCC_LOG4(LOG_INFO, "  r4=%08x  r5=%08x  r6=%08x  r7=%08x", 
-			 __ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
-	DCC_LOG4(LOG_INFO, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
-			 __ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
-	DCC_LOG4(LOG_INFO, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
-			 __ctx->r12, __ctx, __ctx->lr, __ctx->pc);
-	DCC_LOG1(LOG_INFO, "xpsr=%08x", __ctx->xpsr);
+	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
+			 msp, psp, ctrl);
+	DCC_LOG3(LOG_TRACE, " CTRL={%s%s%s }",
+			 ctrl & CONTROL_FPCA? " FPCA" : "",
+			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
+			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
+
 }
 
 void thinkos_sched_dbg(struct thinkos_context * __ctx, 

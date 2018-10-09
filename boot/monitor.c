@@ -744,8 +744,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
+
 	for(;;) {
-		switch ((sig = dbgmon_sched_select(sigmask))) {
+		switch ((sig = dbgmon_select(sigmask))) {
 
 		case DBGMON_STARTUP:
 			dbgmon_clear(DBGMON_STARTUP);
@@ -762,7 +763,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			break;
 
 		case DBGMON_SOFTRST:
-			dbgmon_clear(DBGMON_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			this_board.softreset();
 #if THINKOS_ENABLE_CONSOLE
@@ -771,11 +771,11 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			 by __console_reset(). */
 			__console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
+			/* Acknowledge the signal */
+			dbgmon_clear(DBGMON_SOFTRST);
 			break;
 
 		case DBGMON_ALARM:
-			/* Acknowledge the signal */
-			dbgmon_clear(DBGMON_ALARM);
 			/* Query the board for app boot up */
 			if (this_board.autoboot(tick_cnt++)) {
 				DCC_LOG(LOG_TRACE, "autoboot app_exec()...");
@@ -785,6 +785,8 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 				/* reastart the alarm timer */
 				dbgmon_alarm(125);
 			}
+			/* Acknowledge the signal */
+			dbgmon_clear(DBGMON_ALARM);
 			break;
 
 
@@ -806,7 +808,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "dbgmon_app_exec() failed!");
-				monitor_thread_exec(this_board.default_task, NULL);
+//				monitor_thread_exec(this_board.default_task, NULL);
 			}
 			break;
 

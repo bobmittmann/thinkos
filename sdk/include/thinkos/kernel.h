@@ -22,478 +22,25 @@
 #ifndef __THINKOS_KERNEL_H__
 #define __THINKOS_KERNEL_H__
 
-
 #ifndef __THINKOS_KERNEL__
 #error "Never use <thinkos/kernel.h> directly; include <thinkos.h> instead."
 #endif 
 
-#ifdef CONFIG_H
-#include "config.h"
-#endif
+#define __THINKOS_PROFILE__
+#include <thinkos/profile.h>
 
 /* -------------------------------------------------------------------------- 
- * Set default configuration options
+ * context register offsets
  * --------------------------------------------------------------------------*/
 
-#ifndef THINKOS_THREADS_MAX 
-#define THINKOS_THREADS_MAX             8
-#endif
-
-#ifndef THINKOS_ENABLE_THREAD_ALLOC
-#define THINKOS_ENABLE_THREAD_ALLOC     1
-#endif
-
-#ifndef THINKOS_ENABLE_THREAD_INFO
-#define THINKOS_ENABLE_THREAD_INFO      1
-#endif
-
-#ifndef THINKOS_ENABLE_THREAD_STAT
-#define THINKOS_ENABLE_THREAD_STAT      1
-#endif
-
-#ifndef THINKOS_ENABLE_JOIN
-#define THINKOS_ENABLE_JOIN             1
-#endif
-
-#ifndef THINKOS_ENABLE_PAUSE
-#define THINKOS_ENABLE_PAUSE            1
-#endif
-
-#ifndef THINKOS_ENABLE_CANCEL
-#define THINKOS_ENABLE_CANCEL           1
-#endif
-
-#ifndef THINKOS_ENABLE_EXIT
-#define THINKOS_ENABLE_EXIT             1
-#endif
-
-#ifndef THINKOS_ENABLE_TERMINATE
-#define THINKOS_ENABLE_TERMINATE        1
-#endif
-
-#ifndef THINKOS_ENABLE_BREAK
-#define THINKOS_ENABLE_BREAK            1
-#endif
-
-#ifndef THINKOS_ENABLE_TIMESHARE
-#define THINKOS_ENABLE_TIMESHARE        1
-#endif
-
-#ifndef THINKOS_SCHED_LIMIT_MAX
-#define THINKOS_SCHED_LIMIT_MAX         32
-#endif
-
-#ifndef THINKOS_SCHED_LIMIT_MIN
-#define THINKOS_SCHED_LIMIT_MIN         1
-#endif
-
-#ifndef THINKOS_MUTEX_MAX
-#define THINKOS_MUTEX_MAX               8
-#endif
-
-#ifndef THINKOS_ENABLE_MUTEX_ALLOC
-#define THINKOS_ENABLE_MUTEX_ALLOC      1
-#endif
-
-#ifndef THINKOS_COND_MAX
-#define THINKOS_COND_MAX                8
-#endif
-
-#ifndef THINKOS_ENABLE_COND_ALLOC
-#define THINKOS_ENABLE_COND_ALLOC       1
-#endif
-
-#ifndef THINKOS_SEMAPHORE_MAX
-#define THINKOS_SEMAPHORE_MAX           8
-#endif
-
-#ifndef THINKOS_ENABLE_SEM_ALLOC
-#define THINKOS_ENABLE_SEM_ALLOC        1
-#endif
-
-#ifndef THINKOS_EVENT_MAX
-#define THINKOS_EVENT_MAX               4
-#endif
-
-#ifndef THINKOS_ENABLE_EVENT_ALLOC
-#define THINKOS_ENABLE_EVENT_ALLOC      1
-#endif
-
-#ifndef THINKOS_FLAG_MAX
-#define THINKOS_FLAG_MAX                8
-#endif
-
-#ifndef THINKOS_ENABLE_FLAG_ALLOC
-#define THINKOS_ENABLE_FLAG_ALLOC       1
-#endif
-
-#ifndef THINKOS_ENABLE_FLAG_WATCH
-#define THINKOS_ENABLE_FLAG_WATCH       1
-#endif
-
-#ifndef THINKOS_GATE_MAX
-#define THINKOS_GATE_MAX                8
-#endif
-
-#ifndef THINKOS_ENABLE_GATE_ALLOC
-#define THINKOS_ENABLE_GATE_ALLOC       1
-#endif
-
-#ifndef THINKOS_ENABLE_TIMED_CALLS
-#define THINKOS_ENABLE_TIMED_CALLS      1
-#endif
-
-#ifndef THINKOS_ENABLE_CLOCK
-#define THINKOS_ENABLE_CLOCK            1
-#endif
-
-#ifndef THINKOS_ENABLE_ALARM
-#define THINKOS_ENABLE_ALARM            1
-#endif
-
-#ifndef THINKOS_ENABLE_SLEEP
-#define THINKOS_ENABLE_SLEEP            1
-#endif
-
-#ifndef THINKOS_ENABLE_CTL
-#define THINKOS_ENABLE_CTL              1
-#endif
-
-#ifndef THINKOS_ENABLE_PREEMPTION
-#define THINKOS_ENABLE_PREEMPTION       1
-#endif
-
-#ifndef THINKOS_ENABLE_CRITICAL
-#define THINKOS_ENABLE_CRITICAL         1
-#endif
-
-#ifndef THINKOS_ENABLE_ESCALATE
-#define THINKOS_ENABLE_ESCALATE         0
-#endif
-
-#ifndef THINKOS_IRQ_MAX 
-#define THINKOS_IRQ_MAX                 80
-#endif
-
-#ifndef THINKOS_ENABLE_IRQ_CTL
-#define THINKOS_ENABLE_IRQ_CTL          0
-#endif
-
-/* This option cause thinkos_irq_wait() to return the value
-   of the CPU cycle count at the moment the interrupt was
-   detected. */
-#ifndef THINKOS_ENABLE_IRQ_CYCCNT
-#define THINKOS_ENABLE_IRQ_CYCCNT       0
-#endif
-
-/* Allow IRQs with priority 0 for low latency.
-   Be carefull if real ISRs are used as this option can impair 
-   the debug monitor operation */
-#ifndef THINKOS_ENABLE_IRQ_PRIORITY_0
-#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
-#endif
-
-#ifndef THINKOS_ENABLE_WQ_IRQ
-#define THINKOS_ENABLE_WQ_IRQ           0
-#endif
-
-#ifndef THINKOS_ENABLE_CONSOLE
-#define THINKOS_ENABLE_CONSOLE          0
-#endif
-
-/* Enable the thinkos_console_break() syscall. This can be used to 
-   interrupt any blocking conole's system calls */
-#ifndef THINKOS_ENABLE_CONSOLE_BREAK
-#define THINKOS_ENABLE_CONSOLE_BREAK    0 
-#endif
-
-#ifndef THINKOS_ENABLE_COMM
-#define THINKOS_ENABLE_COMM             0
-#endif
-
-#ifndef THINKOS_ENABLE_MPU 
-#define THINKOS_ENABLE_MPU              0
-#endif
-
-/* Enable FPU (Floating Point Unit) */
-#ifndef THINKOS_ENABLE_FPU 
-#define THINKOS_ENABLE_FPU              0
-#endif
-
-/* Enable FP lazy context save */
-#ifndef THINKOS_ENABLE_FPU_LS 
-#define THINKOS_ENABLE_FPU_LS           0
-#endif
-
-#ifndef THINKOS_ENABLE_PROFILING
-#define THINKOS_ENABLE_PROFILING        0
-#endif
-
-#ifndef THINKOS_ENABLE_ARG_CHECK
-#define THINKOS_ENABLE_ARG_CHECK        1
-#endif
-
-#ifndef THINKOS_ENABLE_DEADLOCK_CHECK
-#define THINKOS_ENABLE_DEADLOCK_CHECK   1
-#endif
-
-#ifndef THINKOS_ENABLE_SANITY_CHECK
-#define THINKOS_ENABLE_SANITY_CHECK     1
-#endif
-
-#ifndef THINKOS_ENABLE_EXCEPTIONS
-#define THINKOS_ENABLE_EXCEPTIONS       1
-#endif
-
-#ifndef THINKOS_UNROLL_EXCEPTIONS 
-#define THINKOS_UNROLL_EXCEPTIONS       0
-#endif
-
-#ifndef THINKOS_ENABLE_EXCEPT_CLEAR
-#define THINKOS_ENABLE_EXCEPT_CLEAR     1
-#endif
-
-#ifndef THINKOS_STDERR_FAULT_DUMP
-#define THINKOS_STDERR_FAULT_DUMP       0
-#endif
-
-#ifndef THINKOS_ENABLE_BUSFAULT
-#define THINKOS_ENABLE_BUSFAULT         0
-#endif
-
-#ifndef THINKOS_ENABLE_USAGEFAULT 
-#define THINKOS_ENABLE_USAGEFAULT       0
-#endif
-
-#ifndef THINKOS_ENABLE_MEMFAULT 
-#define THINKOS_ENABLE_MEMFAULT         0
-#endif
-
-#ifndef THINKOS_ENABLE_HARDFAULT
-#define THINKOS_ENABLE_HARDFAULT        0
-#endif
-
-#ifndef THINKOS_ENABLE_ERROR_TRAP
-#define THINKOS_ENABLE_ERROR_TRAP       0
-#endif
-
-#ifndef THINKOS_SYSRST_ONFAULT
-#define THINKOS_SYSRST_ONFAULT          0
-#endif
-
-#ifndef THINKOS_EXCEPT_STACK_SIZE
-#define THINKOS_EXCEPT_STACK_SIZE       320
-#endif
-
-#ifndef THINKOS_ENABLE_MONITOR
-#define THINKOS_ENABLE_MONITOR          0
-#endif
-
-#ifndef THINKOS_ENABLE_DMCLOCK
-#define THINKOS_ENABLE_DMCLOCK          0
-#endif
-
-#ifndef THINKOS_ENABLE_DEBUG_STEP 
-#define THINKOS_ENABLE_DEBUG_STEP       0
-#endif
-
-#ifndef THINKOS_ENABLE_DEBUG_BKPT
-#define THINKOS_ENABLE_DEBUG_BKPT       0
-#endif
-
-#ifndef THINKOS_ENABLE_DEBUG_WPT 
-#define THINKOS_ENABLE_DEBUG_WPT        0
-#endif
-
-#ifndef THINKOS_ENABLE_DEBUG_FAULT
-#define THINKOS_ENABLE_DEBUG_FAULT      0
-#endif
-
-#ifndef THINKOS_ENABLE_STACK_INIT
-#define THINKOS_ENABLE_STACK_INIT       1
-#endif
-
-#ifndef THINKOS_ENABLE_THREAD_VOID 
-#define THINKOS_ENABLE_THREAD_VOID      1
-#endif
-
-#ifndef THINKOS_ENABLE_IDLE_WFI
-#define THINKOS_ENABLE_IDLE_WFI         1
-#endif
-
-#ifndef THINKOS_ASM_SCHEDULER
-#define THINKOS_ASM_SCHEDULER           1
-#endif
-
-#ifndef THINKOS_ENABLE_OFAST
-#define THINKOS_ENABLE_OFAST            1
-#endif
-
-#ifndef THINKOS_ENABLE_SCHED_DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG      0
-#endif
-
-#ifndef THINKOS_ENABLE_RT_DEBUG
-#define THINKOS_ENABLE_RT_DEBUG         0
-#endif
-
-#ifndef THINKOS_ENABLE_ALIGN
-#define THINKOS_ENABLE_ALIGN            1
-#endif
-
-/* 
-   This option is used to request the execution of
-   a tasklet when the system is idle.
-
-   The tasklet runs on the IDLE thread context.
- */
-#ifndef THINKOS_ENABLE_IDLE_HOOKS       
-#define THINKOS_ENABLE_IDLE_HOOKS        0
-#endif
-
-/* -------------------------------------------------------------------------- 
- * Sanity check
- * --------------------------------------------------------------------------*/
-
-#if THINKOS_ENABLE_THREAD_ALLOC && (THINKOS_THREADS_MAX > 32)
-  #undef THINKOS_THREADS_MAX 
-  #define THINKOS_THREADS_MAX 32
-  #warn "THINKOS_THREADS_MAX set to 32"
-#endif
-
-#if (THINKOS_ENABLE_COND_ALLOC) & !(THINKOS_COND_MAX)
-  #undef THINKOS_ENABLE_COND_ALLOC
-  #define THINKOS_ENABLE_COND_ALLOC 0
-#endif
-
-#if (THINKOS_ENABLE_COND_ALLOC) & !(THINKOS_COND_MAX)
- #undef THINKOS_ENABLE_COND_ALLOC
- #define THINKOS_ENABLE_COND_ALLOC 0
-#endif
-
-#if (THINKOS_ENABLE_SEM_ALLOC) & !(THINKOS_SEMAPHORE_MAX)
- #undef THINKOS_ENABLE_SEM_ALLOC
- #define THINKOS_ENABLE_SEM_ALLOC 0
-#endif
-
-#if (THINKOS_ENABLE_EVENT_ALLOC) & !(THINKOS_EVENT_MAX)
- #undef THINKOS_ENABLE_EVENT_ALLOC
- #define THINKOS_ENABLE_EVENT_ALLOC 0
-#endif
-
-#if (THINKOS_ENABLE_FLAG_ALLOC) & !(THINKOS_FLAG_MAX)
- #undef THINKOS_ENABLE_FLAG_ALLOC
- #define THINKOS_ENABLE_FLAG_ALLOC 0
-#endif
-
-#if (THINKOS_ENABLE_GATE_ALLOC) & !(THINKOS_GATE_MAX)
- #undef THINKOS_ENABLE_GATE_ALLOC
- #define THINKOS_ENABLE_GATE_ALLOC 0
-#endif
-
-
-#if THINKOS_ENABLE_IRQ_CYCCNT
- /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
- #undef THINKOS_ENABLE_IRQ_CTL
- #undef THINKOS_ENABLE_WQ_IRQ
- #define THINKOS_ENABLE_IRQ_CTL 1
- #define THINKOS_ENABLE_WQ_IRQ 1
-#endif
-
-#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
- /* IRQ timedwait depends on THINKOS_ENABLE_WQ_IRQ & 
-	THINKOS_ENABLE_TIMED_CALLS */
- #undef THINKOS_ENABLE_TIMED_CALLS
- #undef THINKOS_ENABLE_WQ_IRQ
- #define THINKOS_ENABLE_TIMED_CALLS 1
- #define THINKOS_ENABLE_WQ_IRQ 1
-#endif
-
-/* timed calls depends on clock */
-#if THINKOS_ENABLE_TIMED_CALLS
- #undef THINKOS_ENABLE_CLOCK
- #define THINKOS_ENABLE_CLOCK 1
-#endif
-
-/* dbug step depends on debug breakpoint */
-#if (THINKOS_ENABLE_DEBUG_STEP) & (!THINKOS_ENABLE_DEBUG_BKPT)
- #undef THINKOS_ENABLE_DEBUG_BKPT
- #define THINKOS_ENABLE_DEBUG_BKPT 1
-#endif
-
-/* dbug watchpoint depends on debug breakpoint */
-#if (THINKOS_ENABLE_DEBUG_WPT) & (!THINKOS_ENABLE_DEBUG_BKPT)
- #undef THINKOS_ENABLE_DEBUG_BKPT
- #define THINKOS_ENABLE_DEBUG_BKPT 1
-#endif
-
-/* dbug breakpoint depends on monitor */
-#if (THINKOS_ENABLE_DEBUG_BKPT) & (!THINKOS_ENABLE_MONITOR)
- #undef THINKOS_ENABLE_MONITOR
- #define THINKOS_ENABLE_MONITOR 1
-#endif
-
-/* dbug monitir depend on idle hooks */
-#if (THINKOS_ENABLE_MONITOR) & (!THINKOS_ENABLE_IDLE_HOOKS       )
- #undef THINKOS_ENABLE_IDLE_HOOKS
- #define THINKOS_ENABLE_IDLE_HOOKS 1
-#endif
-
-/* timed calls, cancel, pause and debug step depend on thread status */
-#if THINKOS_ENABLE_TIMED_CALLS || THINKOS_ENABLE_PAUSE || \
-	THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_DEBUG_STEP 
- #undef THINKOS_ENABLE_THREAD_STAT
- #define THINKOS_ENABLE_THREAD_STAT 1
-#endif
-
-#if THINKOS_ENABLE_EXIT  || THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_JOIN
- #undef THINKOS_ENABLE_THREAD_VOID
- #define THINKOS_ENABLE_THREAD_VOID 1
- #undef THINKOS_ENABLE_TERMINATE
- #define THINKOS_ENABLE_TERMINATE 1
-#endif
-
-#if THINKOS_ENABLE_MEMFAULT && !THINKOS_ENABLE_MPU 
- #undef THINKOS_ENABLE_MEMFAULT 
- #define THINKOS_ENABLE_MEMFAULT 0
-#endif
-
-#if THINKOS_ENABLE_TIMESHARE
- #undef THINKOS_ENABLE_PREEMPTION
- #define THINKOS_ENABLE_PREEMPTION 1
- #undef THINKOS_ENABLE_CLOCK
- #define THINKOS_ENABLE_CLOCK 1
-#endif
-
-#if !THINKOS_ENABLE_PREEMPTION
- #undef THINKOS_ENABLE_CRITICAL
- #define THINKOS_ENABLE_CRITICAL 0
-#endif
-
-#if THINKOS_ENABLE_DEBUG_FAULT
- #undef THINKOS_ENABLE_MEMFAULT
- #define THINKOS_ENABLE_MEMFAULT   1
- #undef THINKOS_ENABLE_BUSFAULT
- #define THINKOS_ENABLE_BUSFAULT   1
- #undef THINKOS_ENABLE_USAGEFAULT 
- #define THINKOS_ENABLE_USAGEFAULT 1
- #undef THINKOS_UNROLL_EXCEPTIONS 
- #define THINKOS_UNROLL_EXCEPTIONS 1
-#endif
-
-#if THINKOS_ENABLE_FPU_LS 
- #undef THINKOS_ENABLE_FPU
- #define THINKOS_ENABLE_FPU 1
-#endif
-
-
-#if THINKOS_ENABLE_FPU
-  /* Position of register R0 in the context */
-  #define CTX_R0 (16 + 8)
-  /* Position of register PC in the context */
-  #define CTX_PC (16 + 14)
+#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+/* Position of register R0 in the context */
+  #define CTX_R0 10
+  #define CTX_PC 16
 #else
+/* Position of register R0 in the context */
   #define CTX_R0 8
+/* Position of register PC in the context */
   #define CTX_PC 14
 #endif
 
@@ -503,8 +50,9 @@
 
 #define THINKOS_THREAD_NULL (32)
 #define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
-#if THINKOS_ENABLE_THREAD_VOID 
-#define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + 1)
+
+#if (THINKOS_ENABLE_THREAD_VOID)
+  #define THINKOS_THREAD_VOID ((THINKOS_THREADS_MAX) + 1)
 #endif
 
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
@@ -591,12 +139,6 @@
 
 #ifndef __ASSEMBLER__
 
-#ifdef THINKOS_DEBUG
-#ifndef DEBUG
-#define DEBUG
-#endif
-#endif
-
 #include <arch/cortex-m3.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -608,10 +150,6 @@
  * --------------------------------------------------------------------------*/
 
 struct thinkos_context {
-#if THINKOS_ENABLE_FPU 
-	/* scheduler saved FP context { S16..S31 }*/
-	uint32_t s1[16];
-#endif
 	/* scheduler saved context */
 	uint32_t r4;
 	uint32_t r5;
@@ -623,7 +161,12 @@ struct thinkos_context {
 	uint32_t r10;
 	uint32_t r11;
 
-	/* automatic exception context */
+#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+	uint32_t sp; /* 8 bytes alignment (used for sanity check) */
+	uint32_t ret; /* return value <LR> */
+#endif
+
+	/* automatic saved context - exception frame */
 	uint32_t r0;
 	uint32_t r1;
 	uint32_t r2;
@@ -634,13 +177,22 @@ struct thinkos_context {
 	uint32_t pc;
 	uint32_t xpsr;
 
-#if THINKOS_ENABLE_FPU 
-	/* automatic reserved FP context { S0..S15 } */
-	uint32_t s[16];
+};
+
+#if (THINKOS_ENABLE_FPU) 
+struct thinkos_fp_context {
+	/* FP context { S16..S31 }*/
+	uint32_t s1[16];
+
+	/* baisc frame only core registers */
+	struct thinkos_context core;
+
+	/* FP context { S0..S15 }*/
+	uint32_t s0[16];
 	uint32_t fpscr;
 	uint32_t res;
-#endif
 };
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Run Time RTOS block
@@ -652,37 +204,37 @@ struct thinkos_rt {
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
 	/* Idle thread context pointer */
-	struct thinkos_context * ctx[THINKOS_THREADS_MAX + 1]; 
-#if THINKOS_ENABLE_THREAD_VOID 
+	struct thinkos_context * ctx[(THINKOS_THREADS_MAX) + 1]; 
+#if (THINKOS_ENABLE_THREAD_VOID)
 	/* void thread context pointer */
 	struct thinkos_context * void_ctx; 
 #endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
-#if THINKOS_ENABLE_THREAD_VOID 
+#if (THINKOS_ENABLE_THREAD_VOID)
 	uint32_t cyccnt[THINKOS_THREADS_MAX + 2]; /* extra slot for void thread */
 #else
 	uint32_t cyccnt[THINKOS_THREADS_MAX + 1];
 #endif
 #endif
 
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
 							 thread preemption is disabled */
 #endif
 
-#if THINKOS_ENABLE_DEBUG_BKPT
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
 	int8_t   break_id;  /* thread stopped by a breakpoint or step request */
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 	uint32_t step_svc;  /* step at service call bitmap */
 	uint32_t step_req;  /* step request bitmap */
 #endif
 #endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	/* Reference cycle state ... */
 	uint32_t cycref;
 #endif
@@ -693,7 +245,7 @@ struct thinkos_rt {
 
 	uint32_t wq_ready; /* ready threads queue */
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
@@ -1032,7 +584,7 @@ extern const char thinkos_type_prefix_lut[];
 
 extern const char __xcpt_name_lut[16][12];
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 extern const struct thinkos_thread_inf thinkos_main_inf;
 #endif
 
@@ -1042,22 +594,17 @@ extern uint32_t * const thinkos_main_stack;
 extern "C" {
 #endif
 
-
 void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 
 void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);
 
 void __thinkos_thread_abort(int thread_id);
 
-/* Moves the current MSP to PSP and 
-   assert a new MSP stack top */
-void cm3_msp_init(uint64_t * stack_top);
-
 /* -------------------------------------------------------------------------- 
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-#if THINKOS_ENABLE_ERROR_TRAP
+#if (THINKOS_ENABLE_ERROR_TRAP)
   #define __THINKOS_ERROR(__CODE) \
 	  asm volatile ("nop\n" \
 					"bkpt %0\n" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
@@ -1117,8 +664,8 @@ static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
 
 /* flags a deferred execution of the scheduler */
 static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
-#if THINKOS_ENABLE_PREEMPTION
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_PREEMPTION)
+#if (THINKOS_ENABLE_CRITICAL)
 	if (thinkos_rt.critical_cnt == 0)
 #endif
 		__thinkos_defer_sched();
@@ -1134,13 +681,13 @@ static void inline __attribute__((always_inline)) __thinkos_defer_svc(void) {
 
 static void inline __attribute__((always_inline)) __thinkos_ready_clr(void) {
 	thinkos_rt.wq_ready = 0;
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.wq_tmshare = 0;
 #endif
 }
 
 static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) {
-#if (!THINKOS_ENABLE_TIMESHARE)
+#if !(THINKOS_ENABLE_TIMESHARE)
 	/* remove from the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread, 0);  
 #else
@@ -1181,7 +728,7 @@ static void inline __attribute__((always_inline))
 __thinkos_wq_insert(unsigned int wq, unsigned int th) {
 	/* insert into the event wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);  
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	thinkos_rt.th_stat[th] = wq << 1;
 #endif
 }
@@ -1195,7 +742,7 @@ __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 1);  
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	thinkos_rt.th_stat[th] = (wq << 1) + 1;
 #endif
@@ -1206,11 +753,11 @@ static void inline __attribute__((always_inline))
 __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 	/* remove from the wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 0);  
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
@@ -1223,13 +770,13 @@ __thinkos_wakeup(unsigned int wq, unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 	/* remove from the wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 0);  
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 	/* set the thread's return value */
 	thinkos_rt.ctx[th]->r0 = 0;
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
@@ -1242,11 +789,11 @@ __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 	/* remove from the wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 0);  
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
@@ -1254,14 +801,12 @@ __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 	thinkos_rt.ctx[th]->r0 = ret;
 }
 
+#if (THINKOS_ENABLE_CLOCK)
 static volatile inline uint32_t __attribute__((always_inline))
 	__thinkos_ticks(void) {
-#if THINKOS_ENABLE_CLOCK
 	return thinkos_rt.ticks;
-#else
-#error "__thinkos_ticks() depends on THINKOS_ENABLE_CLOCK"
-#endif
 }
+#endif
 
 void thinkos_trace_rt(struct thinkos_rt * rt);
 
@@ -1317,6 +862,8 @@ void __thinkos_core_reset(void);
 
 void __thinkos_console_reset(void);
 
+void __thinkos_system_reset(void);
+
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 void __console_rx_pipe_commit(int cnt); 
 void __console_connect_set(bool val); 
@@ -1331,6 +878,25 @@ void __thinkos_ev_raise(uint32_t wq, int ev);
 void __thinkos_gate_open(uint32_t wq);
 
 void __thinkos_ev_info(unsigned int wq);
+
+bool thinkos_sched_active(void);
+	
+bool thinkos_syscall_active(void);
+
+bool thinkos_clock_active(void);
+
+bool thinkos_dbgmon_active(void);
+
+bool thinkos_kernel_active(void);
+
+/* -------------------------------------------------------------------------
+ * Kernel Debug
+ * ------------------------------------------------------------------------- */
+
+void __context(struct thinkos_context * __ctx, uint32_t __thread_id);
+void __trace(struct thinkos_context * __ctx, uint32_t __thread_id);
+void __thinkos(struct thinkos_rt * rt);
+
 
 /* -------------------------------------------------------------------------
  * Main thread exec
