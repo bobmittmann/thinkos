@@ -19,12 +19,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+#undef DEBUG
+#define DEBUG 6
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
+
+#undef THINKOS_ENABLE_THREAD_INFO
+#define THINKOS_ENABLE_THREAD_INFO 0
 
 const char __xcpt_name_lut[16][12] = {
 	"Thread",

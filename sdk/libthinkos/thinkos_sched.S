@@ -89,7 +89,7 @@ thinkos_sched_context_save:
 	vstmdbeq  r12!, {s16-s31}
 #endif
 
-thinkos_sched_write_sp:
+thinkos_get_active:
 	/* r7: thinkos_rt */
 	ldr.n     r7, .L_thinkos_rt
 	/* get the active (current) thread and the
@@ -99,10 +99,6 @@ thinkos_sched_write_sp:
 	/* r2: active, 
 	   r1: wq_ready */
 	ldrd    r2, r1, [r7, #THINKOS_RT_ACTIVE_OFFS]
-	/* store the old context pointer into the context vector */
-	/* r0: thread stack
-	   r2: current active thread */
-	str.w	r0, [r7, r2, lsl #2]
 
 thinkos_sched_select_ready:
 	/* get a thread from the ready bitmap by counting the
@@ -154,11 +150,11 @@ thinkos_sched_update_cyccnt:
 	/* r3: delta =  cyccnt - cycref */	
 	subs    r3, r3, r5
     /* update thread's cycle counter */
-    adds    r2, #(SIZEOF_CTX / 4)
-	ldr     r5, [r7, r2, lsl #2]
+    adds    r6, r2, #(SIZEOF_CTX / 4)
+	ldr     r5, [r7, r6, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds    r5, r3
-	str     r5, [r7, r2, lsl #2]
+	str     r5, [r7, r6, lsl #2]
 #else
   #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
@@ -166,6 +162,12 @@ thinkos_sched_step_req_check:
 	ldr.w	r4, [r7, #THINKOS_RT_STEP_REQ_OFFS]
   #endif
 #endif /* THINKOS_ENABLE_PROFILING */
+
+thinkos_sched_write_sp:
+	/* store the old context pointer into the context vector */
+	/* r0: thread stack
+	   r2: current active thread */
+	str.w	r0, [r7, r2, lsl #2]
 
 	ldr.w	r0, [r7, r1, lsl #2]
 
@@ -210,12 +212,14 @@ thinkos_sched_context_restore:
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && \
 	((THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP))
-	cmp    r0, r12
+	cmp     r0, r12
 	bne    .L_sched_error
 #endif
 
+
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	sub     r0, r0, #((CTX_R0) * 4)
+	mov     r3, sp
 	b       thinkos_sched_dbg
 #else
 	bx      lr
@@ -227,6 +231,7 @@ thinkos_sched_context_restore:
 	/* Disable interrupts */
 	cpsid   i
 	sub     r0, r0, #((CTX_R0) * 4)
+	mov     r3, sp
 	bl      thinkos_sched_error
 	/* r7: thinkos_rt */
 	ldr.n     r7, .L_thinkos_rt

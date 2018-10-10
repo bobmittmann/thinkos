@@ -789,7 +789,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			dbgmon_clear(DBGMON_ALARM);
 			break;
 
-
 		case DBGMON_APP_UPLOAD:
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");

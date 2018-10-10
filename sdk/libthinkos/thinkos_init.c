@@ -39,6 +39,7 @@ extern const char thinkos_sch_nm[];
 extern const char thinkos_xcp_nm[];
 extern const char thinkos_vec_nm[];
 extern const char thinkos_irq_nm[];
+extern const char thinkos_clk_nm[];
 
 void __thinkos_kill_all(void) 
 {
@@ -254,6 +255,7 @@ int thinkos_init(uint32_t opt)
 	/* FIXME: Enable FP lazy context save */
 	CM3_SCB->fpccr = SCB_FPCCR_ASPEN | SCB_FPCCR_LSPEN;
 #else
+	DCC_LOG(LOG_INFO, "Enabling FPU with auto context save."); 
 	/* Enable automatic FP context save */
 	CM3_SCB->fpccr = SCB_FPCCR_ASPEN;
 #endif
@@ -325,4 +327,4 @@ const char * const thinkos_xcp_link = thinkos_xcp_nm;
 const char * const thinkos_vec_link = thinkos_vec_nm;
 const char * const thinkos_sch_link = thinkos_sch_nm;
 const char * const thinkos_irq_link = thinkos_irq_nm;
-
+const char * const thinkos_clk_link = thinkos_clk_nm;

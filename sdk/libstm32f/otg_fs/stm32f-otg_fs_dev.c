@@ -304,7 +304,7 @@ static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
 	struct stm32f_otg_ep * ep = &drv->ep[ep_id];
 
 	if (diepctl & OTG_FS_EPENA) {
-		DCC_LOG1(LOG_WARNING, "[%d] pending transaction EPENA set..", idx);
+		DCC_LOG1(LOG_TRACE, "[%d] pending transaction EPENA set..", idx);
 		return;
 	}
 
@@ -1552,7 +1552,7 @@ void stm32f_otg_fs_isr(void)
 		uint32_t dsts = otg_fs->dsts;
 		(void)dsts;
 
-		DCC_LOG4(LOG_WARNING, "<ESUSP> %s%s ENUMSPD=%d %s", 
+		DCC_LOG4(LOG_INFO, "<ESUSP> %s%s ENUMSPD=%d %s", 
 				 (dsts & OTG_FS_EERR) ? " EERR" : "",
 				 (dsts & OTG_FS_SUSPSTS) ? " SUSPSTS" : "",
 				 OTG_FS_ENUMSPD_GET(dsts),
@@ -1563,7 +1563,7 @@ void stm32f_otg_fs_isr(void)
 		uint32_t dsts = otg_fs->dsts;
 		(void)dsts;
 
-		DCC_LOG4(LOG_WARNING, "<USBSUSP> %s%s ENUMSPD=%d %s", 
+		DCC_LOG4(LOG_INFO, "<USBSUSP> %s%s ENUMSPD=%d %s", 
 				 (dsts & OTG_FS_EERR) ? " EERR" : "",
 				 (dsts & OTG_FS_SUSPSTS) ? " SUSPSTS" : "",
 				 OTG_FS_ENUMSPD_GET(dsts),

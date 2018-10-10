@@ -68,6 +68,7 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 }
 
+
 /* initialize a thread context */
 void thinkos_thread_create_svc(int32_t * arg)
 {

@@ -88,12 +88,12 @@ enum dbgmon_event {
 	DBGMON_RESET           = 0,
 	/* ThinkOS power on startup indication */
 	DBGMON_STARTUP         = 1,
-	/* ThinkOS idle indication */
-	DBGMON_IDLE            = 2,
-	/* ThinkOS exception */
-	DBGMON_EXCEPT          = 3,
 	/* Board reset request */
-	DBGMON_SOFTRST         = 4,
+	DBGMON_SOFTRST         = 2,
+	/* ThinkOS idle indication */
+	DBGMON_IDLE            = 3,
+	/* ThinkOS exception */
+	DBGMON_EXCEPT          = 4,
 	/* Debug timer expiry indication */
 	DBGMON_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -137,7 +137,9 @@ enum dbgmon_event {
 	DBGMON_USER_EVENT4     = 28,
 	DBGMON_USER_EVENT5     = 29,
 	DBGMON_USER_EVENT6     = 30,
-	DBGMON_USER_EVENT7     = 31
+	DBGMON_USER_EVENT7     = 31,
+	/*  */
+	DBGMON_NONE            = 32
 };
 
 #define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
@@ -250,6 +252,10 @@ extern "C" {
 #endif
 
 void thinkos_dbgmon_svc(int32_t arg[], int self);
+
+void __dbgmon_reset(void);
+
+void thinkos_dbgmon_init(void);
 
 void dbgmon_reset(void);
 

@@ -45,7 +45,7 @@ static void __thinkos_time_wakeup(int thread_id)
 #endif
 	/* remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);  
-	DCC_LOG1(LOG_INFO, "Wakeup %d...", thread_id);
+	DCC_LOG1(LOG_TRACE, "Wakeup %d...", thread_id);
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
 	__thinkos_preempt();
@@ -64,7 +64,7 @@ static void __thinkos_timeshare(void)
 	if (thinkos_rt.sched_val[idx] < 0) {
 		thinkos_rt.sched_val[idx] += thinkos_rt.sched_limit;
 		if (__bit_mem_rd(&thinkos_rt.wq_ready, idx) == 0) {
-			DCC_LOG1(LOG_INFO, "thread %d is active but not ready!!!", idx);
+			DCC_LOG1(LOG_TRACE, "thread %d is active but not ready!!!", idx);
 		} else {
 			/* insert into the CPU wait queue */
 			__bit_mem_wr(&thinkos_rt.wq_tmshare, idx, 1);  
@@ -110,5 +110,8 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 }
+
+const char thinkos_clk_nm[] = "CLK";
+
 #endif /* THINKOS_ENABLE_CLOCK */
 

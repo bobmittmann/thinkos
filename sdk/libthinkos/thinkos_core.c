@@ -50,14 +50,26 @@ void __thinkos_idle_error(void * arg)
 	DCC_LOG(LOG_ERROR, "ThinkOS Idle error!!"); 
 }
 
+void thinkos_sched_dbg(struct thinkos_context * __ctx, 
+					   uint32_t __new_thread_id,
+					   uint32_t __prev_thread_id, 
+					   uint32_t __sp); 
+
+void __tdump(void);
+
 #if (THINKOS_ENABLE_SANITY_CHECK)
-uint32_t thinkos_sched_error(struct thinkos_context * ctx, uint32_t thread_id)
+uint32_t thinkos_sched_error(struct thinkos_context * __ctx, 
+							 uint32_t __new_thread_id,
+							 uint32_t __prev_thread_id, 
+							 uint32_t __sp)
 {
 	DCC_LOG(LOG_ERROR, "/!\\ scheduler error!");
-	__context(ctx, thread_id); 
+	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
+	__context(__ctx, __new_thread_id); 
 	__thinkos(&thinkos_rt);
+	__tdump();
 
-	if (thread_id == THINKOS_THREAD_IDLE) {
+	if (__new_thread_id == THINKOS_THREAD_IDLE) {
 		udelay(500000);
 		udelay(500000);
  		return __thinkos_idle_reset(__thinkos_idle_error, NULL);
@@ -84,7 +96,6 @@ bool thinkos_clock_active(void)
 {
 	return (CM3_SCB->shcsr & SCB_SHCSR_SYSTICKACT) ? true : false;
 }
-
 
 bool thinkos_dbgmon_active(void)
 {
@@ -234,7 +245,7 @@ void __thinkos_core_reset(void)
 
 void __thinkos_system_reset(void)
 {
-	DCC_LOG(LOG_WARNING, "/!\\ System reset inprogress...");
+	DCC_LOG(LOG_WARNING, "/!\\ System reset in progress...");
 	/* Return to the Monitor applet with the SOFTRST signal set.
 	   The applet should clear the hardware and restore the core interrups.
 	   Next context_swap() will continue in __do_soft_reset() ... */
@@ -247,18 +258,12 @@ void __thinkos_system_reset(void)
 	__exception_reset();
 #endif
 
-#if THINKOS_ENABLE_DEBUG_BKPT
-	DCC_LOG(LOG_TRACE, "3. clear all breakpoints...");
-	dmon_breakpoint_clear_all();
-#endif
-
-#if THINKOS_DBGMON_ENABLE_RST_VEC
-	DCC_LOG(LOG_TRACE, "4. reset RAM vectors...");
-	__reset_ram_vectors();
-#endif
+	DCC_LOG(LOG_TRACE, "5. reset RAM vectors...");
+	__dbgmon_reset();
 
 	/* Enable Interrupts */
-	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
-	cm3_cpsid_i();
+	DCC_LOG(LOG_TRACE, "6. enablig interrupts...");
+	cm3_cpsie_i();
 }
+
 

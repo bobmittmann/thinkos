@@ -19,11 +19,15 @@
  * http://www.gnu.org/
  */
 
+#undef DEBUG
+#define DEBUG 6
+
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
 
+//	DCC_LOG2(LOG_TRACE, "wakeup %d from wq %d", th, wq);
 #include <thinkos.h>
 
 void __thinkos(struct thinkos_rt * rt)
@@ -90,11 +94,11 @@ void __thinkos(struct thinkos_rt * rt)
 
 		if ((ctx = rt->ctx[i]) != NULL) {
 #if (THINKOS_ENABLE_THREAD_STAT)
-			DCC_LOG5(LOG_TRACE, "%2d %3d sp=%08x lr=%08x pc=%08x", 
-					 i, rt->th_stat[i] >> 1, (uint32_t)ctx, ctx->lr, ctx->pc);
+			DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", 
+					 i + 1, rt->th_stat[i] >> 1, (uint32_t)ctx, ctx->lr, ctx->pc);
 #else
-			DCC_LOG4(LOG_TRACE, "%2d sp=%08x lr=%08x pc=%08x", 
-					 i, (uint32_t)ctx, ctx->lr, ctx->pc);
+			DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", 
+					 i + 1, (uint32_t)ctx, ctx->lr, ctx->pc);
 #endif
 		}
 	}
@@ -122,41 +126,122 @@ void __context(struct thinkos_context * __ctx, uint32_t __thread_id)
 #endif
 }
 
+const char * __retstr(uint32_t __ret)
+{
+	const char * s;
 
-void __sched_trace(struct thinkos_context * __ctx, 
-				   uint32_t __thread_id)
+	switch (__ret) {
+	case 0xffffffe1:
+		s = "HDL MSP EXT";
+		break;
+	case 0xffffffe9:
+		s = "THD MSP EXT";
+		break;
+	case 0xffffffed:
+		s = "THD PSP EXT";
+		break;
+	case 0xfffffff1:
+		s = "HDL MSP BAS";
+		break;
+	case 0xfffffff9:
+		s = "THD MSP BAS";
+		break;
+	case 0xfffffffd:
+		s = "THD PSP BAS";
+		break;
+	default:
+		s = "!INVALID!  ";
+	}
+	return s;
+}
+/*
+   0xFFFFFFE1 | Handler mode | Main         | Extended
+   0xFFFFFFE9 | Thread mode  | Main         | Extended
+   0xFFFFFFED | Thread mode  | Process      | Extended
+   0xFFFFFFF1 | Handler mode | Main         | Basic
+   0xFFFFFFF9 | Thread mode  | Main         | Basic
+   0xFFFFFFFD | Thread mode  | Process      | Basic
+   */
+
+void SCHED(struct thinkos_context * __ctx, 
+			 uint32_t __new_thread_id,
+			 uint32_t __prev_thread_id, 
+			 uint32_t __sp) 
 {
 	uint32_t ctrl = cm3_control_get();
 	uint32_t msp = cm3_msp_get();
 	uint32_t psp = cm3_psp_get();
 
+	if (ctrl & CONTROL_SPSEL)
+		psp = __sp;
+	else
+		msp = __sp;
+
 	(void)ctrl;
 	(void)msp;
 	(void)psp;
 
-	DCC_LOG4(LOG_TRACE, "th=%d sp=%08x pc=%08x rdy=%08x", 
-			 __thread_id + 1, __ctx, __ctx->pc, thinkos_rt.wq_ready);
-	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
-			 msp, psp, ctrl);
-	DCC_LOG3(LOG_TRACE, " CTRL={%s%s%s }",
+	if (__prev_thread_id == THINKOS_THREAD_IDLE)
+		DCC_LOG5(LOG_TRACE, "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s", 
+				 __new_thread_id + 1, __ctx, __ctx->pc, 
+				 msp, __retstr(__ctx->ret));
+	else if (__prev_thread_id == THINKOS_THREAD_VOID)
+		DCC_LOG5(LOG_TRACE, "VOID -> <%2d> CTX=%08x PC=%08x MSP=%08x %s", 
+				 __new_thread_id + 1, __ctx, __ctx->pc, 
+				 msp, __retstr(__ctx->ret));
+	else
+		DCC_LOG6(LOG_TRACE, "<%2d> -> <%2d> CTX=%08x PC=%08x MSP=%08x %s", 
+				 __prev_thread_id + 1, __new_thread_id + 1, 
+				 __ctx, __ctx->pc, msp, __retstr(__ctx->ret));
+#if 0
+	DCC_LOG6(LOG_TRACE, "MSP=%08x PSP=%08x CTRL={%s%s%s } RDY=%08x",
+			 msp, psp,
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
-			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
+			 ctrl & CONTROL_nPRIV ? " nPRIV" : "",
+			 thinkos_rt.wq_ready
+			 );
+#endif
+}
+
+void _IDLE(struct thinkos_context * __ctx, 
+			 uint32_t __new_thread_id,
+			 uint32_t __prev_thread_id, 
+			 uint32_t __sp) 
+{
+	uint32_t psp = cm3_psp_get();
+
+	if (__prev_thread_id == THINKOS_THREAD_VOID)
+		DCC_LOG4(LOG_TRACE, "VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s", 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
+	else
+		DCC_LOG5(LOG_TRACE, "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s", 
+				 __prev_thread_id + 1, 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
 
 }
 
+
 void thinkos_sched_dbg(struct thinkos_context * __ctx, 
-						 unsigned int __new_thread_id,
-						 unsigned int __prev_thread_id) 
+					   uint32_t __new_thread_id,
+					   uint32_t __prev_thread_id, 
+					   uint32_t __sp) 
 {
-	__sched_trace(__ctx, __new_thread_id);
+	if (__new_thread_id == THINKOS_THREAD_IDLE) {
+		if (__prev_thread_id != THINKOS_THREAD_IDLE) {
+			_IDLE(__ctx, __new_thread_id, __prev_thread_id, __sp);
+		}
+	} else {
+		SCHED(__ctx, __new_thread_id, __prev_thread_id, __sp);
+	}
 }
 
 void thinkos_sched_step_dbg(struct thinkos_context * __ctx, 
-							 unsigned int __new_thread_id,
-							 unsigned int __prev_thread_id) 
+							 uint32_t __new_thread_id,
+							 uint32_t __prev_thread_id, 
+							 uint32_t __sp) 
 {
 	DCC_LOG(LOG_INFO, "single step ... ");
-	__sched_trace(__ctx, __new_thread_id);
+	SCHED(__ctx, __new_thread_id, __prev_thread_id, __sp);
 }
 

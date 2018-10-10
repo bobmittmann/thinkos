@@ -765,7 +765,6 @@ __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 
 static void inline __attribute__((always_inline)) 
 __thinkos_wakeup(unsigned int wq, unsigned int th) {
-//	DCC_LOG2(LOG_TRACE, "wakeup %d from wq %d", th, wq);
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 	/* remove from the wait queue */
@@ -784,7 +783,6 @@ __thinkos_wakeup(unsigned int wq, unsigned int th) {
 
 static void inline __attribute__((always_inline)) 
 __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
-//	DCC_LOG2(LOG_TRACE, "wakeup %d from wq %d", th, wq);
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 	/* remove from the wait queue */
