@@ -744,14 +744,13 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
-
 	for(;;) {
 		switch ((sig = dbgmon_select(sigmask))) {
 
 		case DBGMON_STARTUP:
-			dbgmon_clear(DBGMON_STARTUP);
 			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
 					 cm3_sp_get());
+			dbgmon_clear(DBGMON_STARTUP);
 			/* first time we run the monitor, start a timer to call the 
 			   board_tick() periodically */
 			sigmask |= (1 << DBGMON_ALARM);

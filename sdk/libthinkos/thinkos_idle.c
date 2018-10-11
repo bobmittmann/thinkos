@@ -36,6 +36,8 @@
 #error "Deprecated IDLE stack options!"
 #endif
 
+void __thinkos_except_done(void);
+
 void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
@@ -74,6 +76,9 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 			case IDLE_HOOK_SYSRST:
 				__thinkos_system_reset();
 				break;
+			case IDLE_HOOK_EXCEPT_DONE:
+				__thinkos_except_done();
+				break;
 
 			case 32:
 #endif
@@ -104,7 +109,7 @@ void __thinkos_idle_bootstrap(void * arg)
 	DCC_LOG(LOG_TRACE, "ThinkOS Idle bootstrap.... main()"); 
 }
 
-#if (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_IDLE_MSP) 
 
 #define THINKOS_IDLE_STACK_SIZE (sizeof(thinkos_except_stack))
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_except_stack
@@ -170,9 +175,9 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 	ctx->lr = (uint32_t)thinkos_idle_task; 
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
-#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	ctx->sp = (uintptr_t)&ctx->r0;
-  #if (THIKNOS_ENABLE_IDLE_MSP) 
+  #if (THINKOS_ENABLE_IDLE_MSP) 
 	ctx->ret = CM3_EXC_RET_THREAD_MSP;
   #else
 	ctx->ret = CM3_EXC_RET_THREAD_PSP;

@@ -44,7 +44,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
-#define DBGMON_PERISTENT_MASK ((1 << DBGMON_RESET) | (1 << DBGMON_SOFTRST))
+#define DBGMON_PERISTENT_MASK ((1 << DBGMON_RESET) | \
+							   (1 << DBGMON_SOFTRST))
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
@@ -291,7 +292,7 @@ int dbgmon_select(uint32_t evmsk)
 		   making sure not to mask non maskable events */
 		evset &= evmsk;
 		/* select the event with highest priority */
-		sig = __clz(__rbit(evset &evmsk));
+		sig = __clz(__rbit(evset & evmsk));
 
 		if (sig < 32)
 			break;
@@ -337,12 +338,12 @@ int dbgmon_expect(int sig)
 			break;
 
 		if (evset != 0) {
-			DCC_LOG3(LOG_INFO, "expected %08x got %08x/%08x, sleeping...", 
+			DCC_LOG3(LOG_MSG, "expected %08x got %08x/%08x, sleeping...", 
 					 (1 << sig), evset, evmsk);
 		}
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		if (evset != 0) {
-			DCC_LOG(LOG_INFO, "wakeup...");
+			DCC_LOG(LOG_MSG, "wakeup...");
 		}
 	}
 
@@ -419,7 +420,7 @@ int dbgmon_wait_idle(void)
 	return 0;
 }
 
-void dbgmon_reset(void)
+void __dbgmon_task_reset(void)
 {
 	dbgmon_signal(DBGMON_RESET);
 	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
@@ -429,10 +430,10 @@ void __attribute__((naked))
 	dbgmon_exec(void (* task)(const struct dbgmon_comm *, void *), 
 				void * param)
 {
-	DCC_LOG1(LOG_MSG, "task=%p", task);
+	DCC_LOG1(LOG_TRACE, "task=%p", task);
 	thinkos_dbgmon_rt.task = task;
 	thinkos_dbgmon_rt.param = param;
-	dbgmon_reset();
+	__dbgmon_task_reset();
 }
 
 #if THINKOS_ENABLE_DEBUG_BKPT
@@ -755,11 +756,14 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 static void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
 {
 #if DEBUG
-	thinkos_dbgmon_rt.mask = 0;
-
+	DCC_LOG(LOG_TRACE, "Started ...");
 	for (;;) {
 		uint32_t buf[64 / 4];
+		int sig;
 		int n;
+
+		sig = dbgmon_select(0);
+		dbgmon_clear(sig);
 
 		/* Loopback COMM */
 		if ((n = dbgmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
@@ -798,7 +802,7 @@ static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
-	dbgmon_reset();
+	__dbgmon_task_reset();
 }
 
 	/* exception frame */ 
@@ -808,6 +812,8 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 	uint32_t sigmsk = thinkos_dbgmon_rt.mask;
 	uint32_t xpsr = ctx->xpsr;
 	uint32_t * sp = (uint32_t *)&thinkos_except_buf.ctx.core;
+
+	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
 	thinkos_dbgmon_rt.xpsr = xpsr;
 
@@ -899,8 +905,7 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
 #endif
 				/* copy the thread exception context to the exception buffer. */
-				__thinkos_memcpy32(&thinkos_except_buf.ctx.core.r0, psp,
-								sizeof(struct armv7m_except_frame)); 
+				__thinkos_memcpy32(sp, psp, sizeof(struct thinkos_context)); 
 
 				/* suspend the current thread */
 				__thinkos_thread_pause(thinkos_rt.active);
@@ -929,12 +934,10 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 					thinkos_rt.break_id = THINKOS_THREAD_VOID;
 					thinkos_rt.void_ctx = (struct thinkos_context *)sp;
 					thinkos_rt.xcpt_ipsr = ipsr;
+					__thinkos_memcpy32(sp, ctx,
+									   sizeof(struct thinkos_context)); 
 #if (THINKOS_ENABLE_FPU) 
-					__thinkos_memcpy32(sp, ctx, 
-									   sizeof(struct v7m_extended_frame)); 
-#else
-					__thinkos_memcpy32(sp, ctx, 
-									   sizeof(struct v7m_basic_frame)); 
+					/* FIXME */
 #endif
 					__thinkos_pause_all();
 					/* diasble all breakpoints */
@@ -1253,21 +1256,16 @@ void __dbgmon_reset(void)
 	dbgmon_signal(DBGMON_NONE);
 }
 
-void __dbgmon_default_task(const struct dbgmon_comm * comm, void *param)
-{
-	DCC_LOG(LOG_TRACE, "1. clear all breakpoints...");
-	int sig;
-	
-	for(;;) {
-		sig = dbgmon_select(0xffffffff);
-		dbgmon_clear(sig);
-	}
-}
-
 void thinkos_dbgmon_init(void)
 {
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
+
+	demcr = dcb->demcr;
+	/* disable monitor and clear semaphore */
+	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
+
+	DCC_LOG(LOG_TRACE, "==== Debug/Monitor startup  ====");
 
 #if THINKOS_DBGMON_ENABLE_IRQ_MGMT
 	__dmon_irq_init();
@@ -1278,18 +1276,10 @@ void thinkos_dbgmon_init(void)
 					   sizeof(thinkos_dbgmon_stack));
 #endif
 
-	demcr = dcb->demcr;
-
-	/* disable monitor and clear semaphore */
-//	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
-
-	thinkos_dbgmon_rt.events = (1 << DBGMON_RESET) | 
-		(((demcr & DCB_DEMCR_MON_EN) == 0) ? (1 << DBGMON_STARTUP) : 0);
-	/* Set the persistent signals */
-	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
+	thinkos_dbgmon_rt.events = (1 << DBGMON_STARTUP);
+	thinkos_dbgmon_rt.mask = 0;
 	thinkos_dbgmon_rt.comm = NULL;
-	thinkos_dbgmon_rt.task = __dbgmon_default_task;
-	thinkos_dbgmon_rt.param = 0;
+	thinkos_dbgmon_rt.task = dbgmon_null_task;
 	thinkos_dbgmon_rt.ctx = 0;
 
 #if THINKOS_ENABLE_DEBUG_STEP
@@ -1298,10 +1288,10 @@ void thinkos_dbgmon_init(void)
 	/* enable the FPB unit */
 	CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
 #endif
-	/* enable monitor and send the reset event */
-	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
+	/* enable monitor */
+	dcb->demcr = demcr | DCB_DEMCR_MON_EN;
 
-	dcb->demcr = demcr;
+	__dbgmon_reset();
 }
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)
@@ -1312,36 +1302,23 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 
-	demcr = dcb->demcr;
+	if ((demcr = dcb->demcr) & DCB_DEMCR_MON_EN) {
+		/* disable monitor and clear semaphore */
+		dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
 
-	/* disable monitor and clear semaphore */
-	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
+		DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
 
-	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
-	
-	thinkos_dbgmon_rt.events = (1 << DBGMON_RESET) | 
-		(((demcr & DCB_DEMCR_MON_EN) == 0) ? (1 << DBGMON_STARTUP) : 0);
-	/* Set the persistent signals */
-	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
-	thinkos_dbgmon_rt.comm = comm;
-	thinkos_dbgmon_rt.task = task;
-	thinkos_dbgmon_rt.param = param;
-	thinkos_dbgmon_rt.ctx = 0;
+		/* Set the persistent signals */
+		thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
+		thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
+		thinkos_dbgmon_rt.comm = comm;
+		thinkos_dbgmon_rt.task = task;
+		thinkos_dbgmon_rt.param = param;
+		thinkos_dbgmon_rt.ctx = 0;
 
-	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
-		DCC_LOG(LOG_INFO, "system startup!!!");
+		/* enable monitor and send the reset event */
+		dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 	}
-
-#if THINKOS_ENABLE_DEBUG_STEP
-	/* clear the step request */
-	demcr &= ~DCB_DEMCR_MON_STEP;
-	/* enable the FPB unit */
-	CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
-#endif
-	/* enable monitor and send the reset event */
-	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
-
-	dcb->demcr = demcr;
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */

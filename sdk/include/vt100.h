@@ -31,7 +31,8 @@
  VT100 definitions
 ******************************************************************************/
 
-#define ESC		"\033"		/* octal 033 = hexadecimal 01B = <ESC> */
+/* octal 033 = hexadecimal 01B = <ESC> */
+#define ESC		"\033"
 
 /******************************************************************************
  VT100 Set Display Attributes definitions

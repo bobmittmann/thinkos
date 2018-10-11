@@ -48,12 +48,9 @@
   #define DCC_EXCEPT_DUMP(XCPT)
 #endif
 
-struct thinkos_except thinkos_except_buf 
-	__attribute__((section(".heap"), aligned(8)));
-
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 
-static void __xcpt_rettobase(struct thinkos_except * xcpt)
+void __xcpt_rettobase(struct thinkos_except * xcpt)
 {
 	int ipsr;
 
@@ -102,6 +99,73 @@ static void __xcpt_rettobase(struct thinkos_except * xcpt)
 	cm3_cpsie_i();
 
 	thinkos_exception_dsr(xcpt);
+}
+
+void __thinkos_except_done(void)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	/* The interrupts where disabled on exception entry.
+	   Reenable interrupts */
+	cm3_cpsie_i();
+
+	thinkos_exception_dsr(xcpt);
+}
+
+void __attribute__((noreturn))
+	thinkos_sched_context_restore(struct thinkos_context * ctx);
+
+static void __attribute__((noreturn))
+	__xcpt_return(struct thinkos_except * xcpt)
+{
+	struct thinkos_context * ctx;
+	int ipsr;
+
+#if DEBUG
+	__idump(__func__, cm3_ipsr_get());
+	__tdump();
+#endif
+
+	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
+	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
+		if ((xcpt->active > 0) && (xcpt->active <= THINKOS_THREADS_MAX)) {
+#if THINKOS_ENABLE_DEBUG_FAULT
+			/* flag the thread as faulty */
+			__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
+#endif
+		} else {
+			DCC_LOG(LOG_ERROR, "invalid active thread!");
+		}
+	} else {
+		DCC_LOG(LOG_WARNING, "fault on exception!");
+	}
+
+	/* suspend all threads */
+	__thinkos_pause_all();
+
+	/* Sanity check */
+	if (thinkos_rt.wq_ready != 0) {
+		DCC_LOG1(LOG_TRACE, "wq_ready=%08x, ready queue not empty!", 
+				 thinkos_rt.wq_ready);
+		thinkos_rt.wq_ready = 0;
+	}
+
+#if THINKOS_ENABLE_TIMESHARE
+	if (thinkos_rt.wq_tmshare != 0) {
+		DCC_LOG1(LOG_TRACE, "wq_tmshare=%08x, timeshare queue not empty!", 
+				 thinkos_rt.wq_tmshare);
+		thinkos_rt.wq_tmshare = 0;
+	}
+#endif
+
+	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
+
+	/* set the active thread to idle */
+	thinkos_rt.active = THINKOS_THREAD_IDLE;
+	/* get the IDLE context */
+	ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
+	
+	thinkos_sched_context_restore(ctx);
 }
 
 static int __xcpt_active_irq(void)
@@ -210,21 +274,37 @@ static void __attribute__((noreturn))
 
 	icsr = CM3_SCB->icsr;
 	if (icsr & SCB_ICSR_RETTOBASE) {
-		DCC_LOG(LOG_TRACE, "return to base...");
-		/* reset the idle thread */
-		__thinkos_idle_reset((void *)__xcpt_rettobase, (void *)xcpt);
 #if (THINKOS_ENABLE_IDLE_MSP)
-		cm3_msp_set((uint32_t)sp);
-		ret = CM3_EXC_RET_THREAD_MSP;
+		__xcpt_return(xcpt);
 #else
+		uint32_t msp;
+		uint32_t ctrl;
+		DCC_LOG(LOG_TRACE, "return to base...");
+		
+		/* reset the idle thread */
+		//cm3_msp_set((uint32_t)sp);
+		ret = CM3_EXC_RET_THREAD_MSP;
+		ctrl = 0;
+		msp = xcpt->msp;
+		__thinkos_idle_reset((void *)__xcpt_rettobase, (void *)xcpt);
 		cm3_psp_set((uint32_t)sp);
 		ret = CM3_EXC_RET_THREAD_PSP;
-#endif
 		/* return */
-		asm volatile ("bx   %0\n" : : "r" (ret)); 
+		asm volatile (
+					  "msr  CONTROL, %0\n"
+					  "isb\n"
+					  "msr  MSP, %1\n"
+					  "dsb\n"
+					  "mov  lr, %2\n"
+					  "mov  r0, 1\n"
+					  "1:\n"
+					  "cmp  r0, 0\n"
+					  "bne  1b\n"
+					  "bx   lr\n" : : "r" (ctrl),  "r" (msp), "r" (ret)); 
+#endif
 		for(;;);
 	} else {
-		DCC_LOG(LOG_TRACE, "return to exception...");
+		DCC_LOG(LOG_ERROR, "return to exception...");
 		/* Make room for the exception frame */
 		sp -= (sizeof(struct armv7m_except_frame) / sizeof(uint32_t)); 
 		sf = (struct armv7m_except_frame *)sp;
@@ -718,12 +798,8 @@ void __attribute__((noreturn)) thinkos_mem_manage(struct thinkos_except * xcpt)
    Application fault defered handler 
    ------------------------------------------------------------------------- */
 
-void thinkos_default_exception_dsr(struct thinkos_except * xcpt)
-{
-}
-
-void thinkos_exception_dsr(struct thinkos_except *) 
-	__attribute__((weak, alias("thinkos_default_exception_dsr")));
+struct thinkos_except thinkos_except_buf 
+	__attribute__((section(".heap"), aligned(8)));
 
 struct thinkos_except * __thinkos_except_buf(void)
 {
@@ -732,8 +808,8 @@ struct thinkos_except * __thinkos_except_buf(void)
 
 void __exception_reset(void)
 {
-	DCC_LOG(LOG_INFO, "clearing exception buffer!");
 #if THINKOS_ENABLE_EXCEPT_CLEAR
+	DCC_LOG1(LOG_TRACE, "/!\\ clearing buffer: %08x!", &thinkos_except_buf);
 	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
 					   sizeof(struct thinkos_except));
 #else
@@ -741,7 +817,7 @@ void __exception_reset(void)
 	thinkos_except_buf.type = 0;
 	thinkos_except_buf.unroll = 0;
 #endif
-	DCC_LOG(LOG_INFO, "/!\\ clearing active thread in exception buffer!");
+	DCC_LOG(LOG_TRACE, "/!\\ clearing active thread in exception buffer!");
 	thinkos_except_buf.active = -1;
 }
 

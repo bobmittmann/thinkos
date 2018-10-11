@@ -29,6 +29,8 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
+const char * __retstr(uint32_t __ret);
+
 void dmon_print_exception(const struct dbgmon_comm * comm, 
 						  struct thinkos_except * xcpt)
 {
@@ -42,6 +44,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	uint32_t ufsr;
 #endif
 	uint32_t sp;
+	uint32_t ret;
 	int ipsr;
 
 	switch (xcpt->type) {
@@ -94,15 +97,18 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 
 	dbgmon_printf(comm, "\r\n");
 
-						
-	sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-	dmon_print_context(comm, &xcpt->ctx.core, sp);
-
-#if THINKOS_ENABLE_FPU 
-	if ((xcpt->ctx.core.ret & CM3_EXC_RET_nFPCA) == 0) {
-		dbgmon_printf(comm, " FPCA");
-	}
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_NULL_MSP)
+	sp = xcpt->ctx.core.sp;
+	ret = xcpt->ctx.core.ret;
+#else
+	ret = xcpt->ctx.ret;
+	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 #endif
+
+	dmon_print_context(comm, &xcpt->ctx.core, sp);
+						
+	dbgmon_printf(comm, " ret=%08x [ %s ]\r\n", xcpt->ctx.core.ret,
+				  __retstr(ret));
 
 	switch (xcpt->type) {
 #if THINKOS_ENABLE_MPU 

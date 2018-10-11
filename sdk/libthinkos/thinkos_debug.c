@@ -114,7 +114,7 @@ void __context(struct thinkos_context * __ctx, uint32_t __thread_id)
 			 __ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
 	DCC_LOG4(LOG_TRACE, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
 			 __ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
-#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
 			 __ctx->r12, __ctx->sp, __ctx->lr, __ctx->pc);
 	DCC_LOG4(LOG_TRACE, "xpsr=%08x ret=%08x ctx=%08x th=%d", 

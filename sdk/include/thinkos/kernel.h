@@ -33,7 +33,7 @@
  * context register offsets
  * --------------------------------------------------------------------------*/
 
-#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 /* Position of register R0 in the context */
   #define CTX_R0 10
   #define CTX_PC 16
@@ -134,8 +134,8 @@
 #define THINKOS_RT_STEP_SVC_OFFS   (THINKOS_RT_BREAK_ID_OFFS + SIZEOF_BREAK_ID)
 #define THINKOS_RT_STEP_REQ_OFFS   (THINKOS_RT_STEP_SVC_OFFS + SIZEOF_STEP_SVC)
 #define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_STEP_REQ_OFFS + SIZEOF_STEP_REQ)
-#define THINKOS_RT_ACTIVE_OFFS     (THINKOS_RT_CYCREF_OFFS + SIZEOF_CYCREF)
-#define THINKOS_RT_READY_OFFS      (THINKOS_RT_ACTIVE_OFFS + 4)
+#define THINKOS_RT_ACTIVE_OFFS     ((THINKOS_RT_CYCREF_OFFS) + SIZEOF_CYCREF)
+#define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
 
 #ifndef __ASSEMBLER__
 
@@ -161,7 +161,7 @@ struct thinkos_context {
 	uint32_t r10;
 	uint32_t r11;
 
-#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	uint32_t sp; /* 8 bytes alignment (used for sanity check) */
 	uint32_t ret; /* return value <LR> */
 #endif
@@ -239,7 +239,7 @@ struct thinkos_rt {
 	uint32_t cycref;
 #endif
 
-	int32_t active; /* current active thread */
+	uint32_t active; /* current active thread */
 
 	uint32_t wq_lst[0]; /* queue list placeholder */
 

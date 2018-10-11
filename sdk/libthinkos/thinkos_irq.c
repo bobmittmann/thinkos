@@ -76,7 +76,6 @@ void cm3_default_isr(unsigned int irq)
 #endif
 
 
-
 #if THINKOS_ENABLE_IRQ_CYCCNT
 	/* set cyle count in the storage provided by the thread */
 	usr_ptr = (uint32_t *)(thinkos_rt.irq_cyccnt[thread_id]);
@@ -231,7 +230,6 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
 }
-
 #endif
 
 extern int __sizeof_rom_vectors;

@@ -51,30 +51,32 @@
 	     r3: return (lr) 
 	   Return:
 	     r0: exception buffer */
+
 collect_xcpt_inf:
 	ldr    r0, .L_xcpt_buf
 	mov    r2, r0
 #if (THINKOS_ENABLE_FPU)
 	vstmia r2!, {s16-s31}
 #endif
-	stmia  r2!, {r4-r11} /* r4, r11*/
 	tst    r3, #CM3_EXC_RET_SPSEL
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
+	stmia  r2!, {r4-r11} /* r4..r11 */
 	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+#if (THINKOS_ENABLE_IDLE_MSP)
+	stmia  r2!, {r4} /* sp */
 	stmia  r2!, {r3,r5-r12} /* return r0..r3, r12, lr, pc, xpsr */
+#else
+	stmia  r2!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+#endif
 #if (THINKOS_ENABLE_FPU)
 	vstmia r2!, {s0-s15}
 	vmrs   r4, FPSCR
 	stmia  r2!, {r4-r5}
 #endif
 	mrs    r5, MSP 
-	sub    r5, r5, #32
 	mrs    r6, PSP 
-	tst    r3, #CM3_EXC_RET_SPSEL
-	it     ne 
-	subne  r6, r6, #32
 	str    r5, [r2, #0] /* msp */
 	str    r6, [r2, #4] /* psp */
 	ldr    r7, .L_cm3_scb
@@ -231,7 +233,7 @@ cm3_svc_isr:
 1:
 #endif
 
-#if (THIKNOS_ENABLE_IDLE_MSP)
+#if (THINKOS_ENABLE_IDLE_MSP)
 	/* select the context stack according to the content of LR */
 	tst     lr, #4
 	ite     eq

@@ -355,12 +355,12 @@
 #define THINKOS_ENABLE_IDLE_HOOKS        0
 #endif
 
-/* THIKNOS_ENABLE_IDLE_MSP - IDLE thread and exceptions use the same
+/* THINKOS_ENABLE_IDLE_MSP - IDLE thread and exceptions use the same
    stack (MSP) all the remainig threads (non priviledged) makd use of
    the PSP instead.
  */
-#ifndef THIKNOS_ENABLE_IDLE_MSP
-#define THIKNOS_ENABLE_IDLE_MSP          1
+#ifndef THINKOS_ENABLE_IDLE_MSP
+#define THINKOS_ENABLE_IDLE_MSP          1
 #endif
 
 /* -------------------------------------------------------------------------- 

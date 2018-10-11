@@ -40,6 +40,9 @@ enum idle_hook_signal {
 	IDLE_HOOK_SYSRST = 0,
 	/* The higest priority goes to the Debug/Monitor */
 	IDLE_HOOK_NOTIFY_DBGMON = 1,
+	/* */
+	IDLE_HOOK_EXCEPT_DONE = 2,
+	/* The higest priority goes to the Debug/Monitor */
 	kDLE_HOOK_STACK_SCAN = 31
 };
 

@@ -48,7 +48,7 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 #endif
 	ctx->pc = pc;
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-#if (THINKOS_ENABLE_FPU) || (THIKNOS_ENABLE_IDLE_MSP) 
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	ctx->sp = (uintptr_t)&ctx->r0;
 	ctx->ret = CM3_EXC_RET_THREAD_PSP;
 #endif
