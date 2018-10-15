@@ -26,7 +26,7 @@
 #include "gdb-i.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 1
+#define GDB_DEBUG_PACKET 0
 #endif
 
 static int target_sync_reset(void) 
@@ -1569,7 +1569,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 	//	DCC_LOG(LOG_INFO, "Comm connected..");
 
-	sigmask = (1 << DBGMON_EXCEPT);
+	sigmask = (1 << DBGMON_KRN_EXCEPT);
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
 	sigmask |= (1 << DBGMON_THREAD_STEP);
 	sigmask |= (1 << DBGMON_BREAKPOINT);
@@ -1589,12 +1589,11 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
+
 	for(;;) {
-		DCC_LOG(LOG_INFO, "dbgmon_select()...");
-
+		DCC_LOG(LOG_MSG, "dbgmon_select()...");
 		sig = dbgmon_select(sigmask);
-
-		DCC_LOG1(LOG_INFO, "sig=%d", sig);
+		DCC_LOG1(LOG_MSG, "sig=%d", sig);
 
 		switch (sig) {
 
@@ -1614,6 +1613,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
 			break;
+
 
 		case DBGMON_APP_EXEC:
 			dbgmon_clear(DBGMON_APP_EXEC);
@@ -1646,9 +1646,9 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
 			break;
 
-		case DBGMON_EXCEPT:
+		case DBGMON_KRN_EXCEPT:
 			DCC_LOG(LOG_INFO, "Exception.");
-			dbgmon_clear(DBGMON_EXCEPT);
+			dbgmon_clear(DBGMON_KRN_EXCEPT);
 			rsp_on_fault(gdb, pkt);
 			break;
 
@@ -1692,10 +1692,10 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 #if (THINKOS_ENABLE_CONSOLE)
 		case DBGMON_COMM_EOT:
-			DCC_LOG(LOG_TRACE, "COMM_EOT");
+			DCC_LOG(LOG_MSG, "COMM_EOT");
 
 		case DBGMON_TX_PIPE:
-			DCC_LOG(LOG_TRACE, "TX Pipe.");
+			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				int n;
 				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
@@ -1709,6 +1709,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				} else {
 					DCC_LOG(LOG_WARNING, "rsp_console_output() failed!!!");
 					dbgmon_clear(DBGMON_TX_PIPE);
+					sigmask &= ~(1 << DBGMON_COMM_EOT);
 				}
 			} else {
 				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
@@ -1726,12 +1727,12 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 #endif
 
 		case DBGMON_COMM_RCV:
-			DCC_LOG(LOG_INFO, "DBGMON_COMM_RCV +++++++++++");
+			DCC_LOG(LOG_MSG, "DBGMON_COMM_RCV +++++++++++");
 			if (dbgmon_comm_recv(comm, buf, 1) != 1) {
 				DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
 				continue;
 			}
-			DCC_LOG(LOG_INFO, "DBGMON_COMM_RCV --------");
+			DCC_LOG(LOG_MSG, "DBGMON_COMM_RCV --------");
 
 			switch (buf[0]) {
 
@@ -1750,8 +1751,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				break;
 
 			case '$':
-				DCC_LOG(LOG_INFO, "Comm RX: '$'");
-
+				DCC_LOG(LOG_MSG, "Comm RX: '$'");
 				if ((len = rsp_pkt_recv(comm, pkt, RSP_BUFFER_LEN)) <= 0) {
 					DCC_LOG1(LOG_WARNING, "rsp_pkt_recv(): %d", len);
 					return;

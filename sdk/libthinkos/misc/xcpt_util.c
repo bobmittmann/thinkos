@@ -19,8 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-#undef DEBUG
-#define DEBUG 6
+//#undef DEBUG
+//#define DEBUG 6
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
@@ -420,7 +420,7 @@ void __tdump(void)
 	}
 #if THINKOS_ENABLE_EXIT || THINKOS_ENABLE_JOIN
 	DCC_LOG2(LOG_TRACE, "<VOID>  (%2d) SP=%08x", i + 1, 
-			 thinkos_rt.void_ctx);
+			 thinkos_rt.ctx[THINKOS_THREAD_VOID]);
 #endif
 	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", thinkos_rt.wq_ready);
 #if THINKOS_ENABLE_TIMESHARE

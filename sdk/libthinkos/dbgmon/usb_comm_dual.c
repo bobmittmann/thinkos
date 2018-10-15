@@ -1028,7 +1028,7 @@ static int usb_comm_connect(const void * comm)
 
 	while ((dev->acm_ctrl & CDC_DTE_PRESENT) == 0) {
 		DCC_LOG1(LOG_TRACE, "ctrl=%02x, waiting...", dev->acm_ctrl);
-		if ((ret = dbgmon_wait(DBGMON_COMM_CTL)) < 0) {
+		if ((ret = dbgmon_expect(DBGMON_COMM_CTL)) < 0) {
 			DCC_LOG1(LOG_WARNING, "ret=%d!!", ret);
 			return ret;
 		}

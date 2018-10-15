@@ -183,9 +183,9 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* There is a potential security brech as the pointer is written by 
 	   an priviledged interrupt handler. For this reason the whole kernel 
 	   memory space is checked.  */
-	else if ((arg[1] >= thinkos_rt.mpu_kernel_mem.offs) && 
-		(arg[1] <= thinkos_rt.mpu_kernel_mem.offs +
-		 thinkos_rt.mpu_kernel_mem.size)) {
+	else if ((arg[1] >= thinkos_mpu_kernel_mem.offs) && 
+		(arg[1] <= thinkos_mpu_kernel_mem.offs +
+		 thinkos_mpu_kernel_mem.size)) {
 		DCC_LOG(LOG_ERROR, "invalid pointer!");
 		__THINKOS_ERROR(THINKOS_ERR_INVALID_POINTER);
 		arg[0] = THINKOS_EINVAL;

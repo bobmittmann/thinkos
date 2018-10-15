@@ -180,7 +180,7 @@ uint32_t * const thinkos_obj_alloc_lut[] = {
 #if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ] = NULL,
 #endif
-#if THINKOS_ENABLE_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = NULL,
 #endif
 	[THINKOS_OBJ_INVALID] = NULL
@@ -232,7 +232,7 @@ const uint16_t thinkos_wq_base_lut[] = {
 #if THINKOS_ENABLE_WQ_IRQ
 	[THINKOS_OBJ_IRQ] = THINKOS_WQ_IRQ,
 #endif
-#if THINKOS_ENABLE_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = THINKOS_WQ_FAULT,
 #endif
 	[THINKOS_OBJ_INVALID] = 0 

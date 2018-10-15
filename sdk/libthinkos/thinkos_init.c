@@ -41,24 +41,6 @@ extern const char thinkos_vec_nm[];
 extern const char thinkos_irq_nm[];
 extern const char thinkos_clk_nm[];
 
-void __thinkos_kill_all(void) 
-{
-	int wq;
-
-	/* clear all wait queues */
-	for (wq = 0; wq < THINKOS_WQ_LST_END; ++wq) 
-		thinkos_rt.wq_lst[wq] = 0;
-
-#if THINKOS_ENABLE_THREAD_VOID 
-	/* discard current thread context */
-	thinkos_rt.active = THINKOS_THREAD_VOID;
-#else
-	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
-#endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
-}
-
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
 #define __ID(OPT)         (((OPT) >> 24) & 0x7f)
 #define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
@@ -138,6 +120,7 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 
 int thinkos_init(uint32_t opt)
 {
+	struct cm3_systick * systick = CM3_SYSTICK;
 	struct thinkos_context * ctx;
 	uint32_t sp;
 	int thread_id;
@@ -194,6 +177,9 @@ int thinkos_init(uint32_t opt)
 	/* disable interrupts */
 	cm3_cpsid_i();
 
+	/* clear the ThinkOS runtime structure */
+	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
+
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize exception stack */
 	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
@@ -203,6 +189,47 @@ int thinkos_init(uint32_t opt)
 	__thinkos_core_reset();
 
 	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", &thinkos_rt);
+
+	/* adjust exception priorities */
+	/*
+	 *  0x00 - low latency interrupts
+     *
+	 *  0x20 - high priority interrupts
+	 *  0x40   .
+	 *
+	 *  0x60 - SVC
+	 *  0x80 - regular priority interrupts
+	 * 
+	 *  0xa0 - SysTick
+	 *  0xc0 - PendSV (scheduler)
+	 *
+	 *  0xe0 - very low priority interrupts
+	 */
+
+	/* SVC should not be preempted by the scheduler, thus it runs 
+	   at higher priority. In order for the regular priority
+	   interrupts to call SVC, they should run at a lower priority
+	   then SVC.*/
+	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
+	/* SysTick interrupt has to have a lower priority then SVC,
+	 to not preempt SVC */
+	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
+	/* PendSV interrupt has to have the lowest priority among
+	   regular interrupts (higher number) */
+	cm3_except_pri_set(CM3_EXCEPT_PENDSV, SCHED_PRIORITY);
+
+#if	THINKOS_ENABLE_USAGEFAULT 
+	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
+#endif
+#if	THINKOS_ENABLE_BUSFAULT 
+	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
+#endif
+#if THINKOS_ENABLE_MPU
+	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
+#endif
+#if THINKOS_ENABLE_MONITOR 
+	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, MONITOR_PRIORITY);
+#endif
 
 
 	/* Cortex-M configuration */
@@ -262,6 +289,28 @@ int thinkos_init(uint32_t opt)
 	/* Enable FPU access */
 	CM3_SCB->cpacr |= CP11_SET(3) | CP10_SET(3);
 #endif
+
+#if THINKOS_ENABLE_PROFILING
+	/* Enable trace */
+	CM3_DCB->demcr |= DCB_DEMCR_TRCENA;
+	/* Enable cycle counter */
+	CM3_DWT->ctrl |= DWT_CTRL_CYCCNTENA;
+
+	/* set the reference to now */
+	thinkos_rt.cycref = CM3_DWT->cyccnt;
+#endif
+
+	/* initialize the SysTick module */
+	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
+	systick->cvr = 0;
+#if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
+	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
+#else
+	systick->csr = SYSTICK_CSR_ENABLE;
+#endif
+
+	/* Set the initial thread as idle. */
+	thinkos_rt.active = THINKOS_THREAD_IDLE;
 
 	DCC_LOG(LOG_INFO, "3. PSP"); 
 	/* Configure the thread stack ?? 

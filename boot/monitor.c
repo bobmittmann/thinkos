@@ -34,12 +34,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/delay.h>
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
+
 #include <sys/dcclog.h>
 
 /* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
@@ -56,7 +58,11 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #endif
 
 #ifndef MONITOR_WATCHPOINT_ENABLE
-#define MONITOR_WATCHPOINT_ENABLE  0
+#define MONITOR_WATCHPOINT_ENABLE  1
+#endif
+
+#ifndef MONITOR_BREAKPOINT_ENABLE
+#define MONITOR_BREAKPOINT_ENABLE  1
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
@@ -167,6 +173,11 @@ struct monitor {
 		uint32_t addr;
 	} wp[4];
 #endif
+#if (MONITOR_BREAKPOINT_ENABLE)
+	struct {
+		uint32_t addr;
+	} bp[4];
+#endif
 };
 
 static const char monitor_menu[] = 
@@ -229,6 +240,9 @@ static const char monitor_menu[] =
 #if (MONITOR_WATCHPOINT_ENABLE)
 "   Ctrl+] - Set watchpoint\r\n"
 #endif
+#if (MONITOR_BREAKPOINT_ENABLE)
+"   Ctrl+F - Set breakpoint\r\n"
+#endif
 ;
 
 static const char s_hr[] = 
@@ -287,28 +301,40 @@ static void monitor_print_fault(const struct dbgmon_comm * comm)
 	dmon_print_exception(comm, xcpt);
 }
 
-static void monitor_on_fault(const struct dbgmon_comm * comm)
+static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	unsigned int thread_id;
+	uint32_t addr;
 
-#if !THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	/* Restore interrupts */
-	this_board.softreset();
-#endif
+	/* get the last thread known to be at fault */
+	//thread_id = dbgmon_thread_last_fault_get(&addr);
+	thread_id = dbgmon_thread_break_get(&addr);
 
+	DCC_LOG1(LOG_ERROR, "<%d> FAULT!!!!", thread_id + 1);
+
+	if (dbgmon_comm_isconnected(comm)) {
+		DCC_LOG(LOG_TRACE, "COMM connected!");
+		dbgmon_printf(comm, s_hr);
+		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x", 
+						  thread_id + 1, addr);
+		dmon_print_thread(comm, thread_id);
+		dbgmon_printf(comm, s_hr);
+	}
+
+	DCC_LOG(LOG_TRACE, "done.");
+}
+
+static void monitor_on_krn_except(const struct dbgmon_comm * comm)
+{
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
-	__thinkos_pause_all();
-	if (dbgmon_wait_idle() < 0) {
-		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
-	}
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
 	if (dbgmon_comm_isconnected(comm)) {
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dbgmon_printf(comm, s_hr);
-		dmon_print_exception(comm, xcpt);
+		dbgmon_printf(comm, "KERNEL error !!!");
 		dbgmon_printf(comm, s_hr);
 	}
 
@@ -320,19 +346,17 @@ static void monitor_on_fault(const struct dbgmon_comm * comm)
 static void monitor_on_bkpt(struct monitor * mon)
 {
 	const struct dbgmon_comm * comm = mon->comm;
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	unsigned int thread_id;
+	uint32_t addr;
 
-	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
-
-	if (dbgmon_wait_idle() < 0) {
-		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
-	}
-
-	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+	thread_id = dbgmon_thread_break_get(&addr);
 
 	if (dbgmon_comm_isconnected(comm)) {
+		DCC_LOG2(LOG_TRACE, "<%d> breakpoint at %08x", thread_id + 1, addr);
 		dbgmon_printf(comm, s_hr);
-		dmon_print_exception(comm, xcpt);
+		mon->thread_id = thread_id;
+		dmon_print_thread(comm, thread_id);
+		dmon_breakpoint_clear(addr, 4);
 		dbgmon_printf(comm, s_hr);
 	}
 }
@@ -342,19 +366,16 @@ static void monitor_on_bkpt(struct monitor * mon)
 static void monitor_on_step(struct monitor * mon)
 {
 	const struct dbgmon_comm * comm = mon->comm;
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	unsigned int thread_id;
+	uint32_t addr;
 
-	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
-
-	if (dbgmon_wait_idle() < 0) {
-		DCC_LOG(LOG_WARNING, "dmon_wait_idle() failed!");
-	}
-
-	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+	thread_id = dbgmon_thread_step_get(&addr);
 
 	if (dbgmon_comm_isconnected(comm)) {
+		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, addr);
 		dbgmon_printf(comm, s_hr);
-		dmon_print_exception(comm, xcpt);
+		mon->thread_id = thread_id;
+		dmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
 	}
 }
@@ -423,6 +444,26 @@ void monitor_show_mem(struct monitor * mon)
 }
 #endif
 
+#if (MONITOR_BREAKPOINT_ENABLE)
+void monitor_breakpoint(struct monitor * mon)
+{
+	unsigned int no = 0;
+	uint32_t addr;
+
+	dbgmon_printf(mon->comm, "No (0..3): ");
+	dbgmon_scanf(mon->comm, "%u", &no);
+	if (no > 3) {
+		dbgmon_printf(mon->comm, "Invalid!\r\n");
+		return;
+	}
+	addr = mon->bp[no].addr;
+	dbgmon_printf(mon->comm, "Addr (0x%08x): ", addr);
+	dbgmon_scanf(mon->comm, "%x", &addr);
+	mon->bp[no].addr = addr;
+	dmon_breakpoint_set(addr, 4);
+}
+#endif
+
 #if (MONITOR_WATCHPOINT_ENABLE)
 void monitor_watchpoint(struct monitor * mon)
 {
@@ -431,8 +472,10 @@ void monitor_watchpoint(struct monitor * mon)
 
 	dbgmon_printf(mon->comm, "No (0..3): ");
 	dbgmon_scanf(mon->comm, "%u", &no);
-	if (no > 3)
+	if (no > 3) {
 		dbgmon_printf(mon->comm, "Invalid!\r\n");
+		return;
+	}
 	addr = mon->wp[no].addr;
 	dbgmon_printf(mon->comm, "Addr (0x%08x): ", addr);
 	dbgmon_scanf(mon->comm, "%x", &addr);
@@ -554,10 +597,22 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dbgmon_req_app_term();
 		break;
 #endif
+#if (MONITOR_DUMPMEM_ENABLE)
+	case CTRL_D:
+		dbgmon_printf(comm, "^D\r\n");
+		monitor_show_mem(mon);
+		break;
+#endif
 #if (MONITOR_SELFTEST_ENABLE)
 	case CTRL_E:
 		dbgmon_printf(comm, "^E\r\n");
 		monitor_req_selftest();
+		break;
+#endif
+#if (MONITOR_BREAKPOINT_ENABLE)
+	case CTRL_F:
+		dbgmon_printf(comm, "^F\r\n");
+		monitor_breakpoint(mon);
 		break;
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
@@ -587,13 +642,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		dmon_print_thread(comm, mon->thread_id);
 		break;
 #endif
-#if (MONITOR_THREAD_STEP_ENABLE)
-	case CTRL_S:
-		dbgmon_printf(comm, "^S\r\n");
-		dbgmon_printf(comm, s_hr);
-		dmon_thread_step(mon->thread_id, false);
-		break;
-#endif
 #if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		dbgmon_printf(comm, "^O\r\n");
@@ -607,22 +655,23 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_pause_all(comm);
 		break;
 #endif
-#if (MONITOR_OS_RESUME)
-	case CTRL_R:
-		dbgmon_printf(comm, "^R\r\n");
-		monitor_resume_all(comm);
-		break;
-#endif
 #if (MONITOR_RESTART_MONITOR)
 	case CTRL_Q:
 		dbgmon_printf(comm, "^Q\r\n");
 		dbgmon_exec(monitor_task, NULL);
 		break;
 #endif
-#if (MONITOR_DUMPMEM_ENABLE)
-	case CTRL_D:
-		dbgmon_printf(comm, "^D\r\n");
-		monitor_show_mem(mon);
+#if (MONITOR_OS_RESUME)
+	case CTRL_R:
+		dbgmon_printf(comm, "^R\r\n");
+		monitor_resume_all(comm);
+		break;
+#endif
+#if (MONITOR_THREAD_STEP_ENABLE)
+	case CTRL_S:
+		dbgmon_printf(comm, "^S\r\n");
+		dbgmon_printf(comm, s_hr);
+		dmon_thread_step(mon->thread_id, false);
 		break;
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
@@ -700,6 +749,8 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	uint8_t buf[1];
 	int sig;
 	
+	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
+
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
 	monitor.thread_id = -1;
@@ -709,13 +760,11 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	monitor.memdump.size = this_board.application.block_size;
 #endif
 
-	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
-
 	sigmask |= (1 << DBGMON_SOFTRST);
 	sigmask |= (1 << DBGMON_STARTUP);
 #if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << DBGMON_THREAD_FAULT);
-	sigmask |= (1 << DBGMON_EXCEPT);
+	sigmask |= (1 << DBGMON_KRN_EXCEPT);
 #endif
 	sigmask |= (1 << DBGMON_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE
@@ -848,13 +897,13 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 		case DBGMON_THREAD_FAULT:
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
-			monitor_on_fault(comm);
+			monitor_on_thread_fault(comm);
 			break;
 
-		case DBGMON_EXCEPT:
-			dbgmon_clear(DBGMON_EXCEPT);
+		case DBGMON_KRN_EXCEPT:
+			dbgmon_clear(DBGMON_KRN_EXCEPT);
 			DCC_LOG(LOG_TRACE, "System exception.");
-			monitor_on_fault(comm);
+			monitor_on_krn_except(comm);
 			break;
 #endif
 

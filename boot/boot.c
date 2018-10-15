@@ -66,11 +66,6 @@ int main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 	this_board.init();
 
-#if THINKOS_ENABLE_MONITOR
-	DCC_LOG(LOG_TRACE, "4. thinkos_dbgmon_init()()");
-	thinkos_dbgmon_init();
-#endif
-
 	DCC_LOG(LOG_TRACE, "5. usb_comm_init()");
 #if BOOT_COMM_CUSTOM_ENABLE
 	comm = custom_comm_init();

@@ -26,18 +26,17 @@
 #error "Only use this file on privileged code"
 #endif 
 
-#ifndef __THINKOS_KERNEL_H__
-#error "Need <thinkos/kernel.h>"
-#endif 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 #ifndef __ASSEMBLER__
 
 #define MONITOR_PRIORITY       (0 << 5)
 #define EXCEPT_PRIORITY        (1 << 5)
 #define IRQ_DEF_PRIORITY       (4 << 5)
-#define SYSCALL_PRIORITY       (6 << 5)
-#define CLOCK_PRIORITY         (6 << 5)
-#define SCHED_PRIORITY         (7 << 5)
+#define SYSCALL_PRIORITY       (0xef)
+#define CLOCK_PRIORITY         (0xef)
+#define SCHED_PRIORITY         (0xff)
 
 #ifdef __cplusplus
 extern "C" {

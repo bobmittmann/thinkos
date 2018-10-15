@@ -62,11 +62,6 @@ const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
 
 void monitor_task(struct dmon_comm * comm);
 
-void monitor_exec_protected(struct dmon_comm * comm)
-{
-	thinkos_dbgmon_init(comm, monitor_task);
-}
-
 void monitor_exec(void)
 {
 	struct dmon_comm * comm;

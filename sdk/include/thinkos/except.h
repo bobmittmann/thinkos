@@ -34,7 +34,7 @@
  * Exception state
  * --------------------------------------------------------------------------*/
 
-struct armv7m_except_frame {
+struct armv7m_basic_frame {
 	uint32_t r0;
 	uint32_t r1;
 	uint32_t r2;
@@ -43,11 +43,20 @@ struct armv7m_except_frame {
 	uint32_t lr;
 	uint32_t pc;
 	uint32_t xpsr;
-#if (THINKOS_ENABLE_FPU) 
+};
+
+struct armv7m_extended_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
 	float    s[16];
 	uint32_t fpscr;
 	uint32_t res;
-#endif
 };
 
 struct thinkos_except {
@@ -64,9 +73,15 @@ struct thinkos_except {
 	uint32_t bfar;
 	uint8_t  ipsr;   /* IPSR */
 	uint8_t  ctrl;   /* CONTROL */
-	int8_t   active; /* active thread at the time of the exception */
 	uint8_t  type;   /* exception type */
-	uint32_t  unroll; /* unroll count */
+	uint8_t  unroll; /* unroll count */
+
+	uint32_t  active; /* active thread at the time of the exception */
+	uint32_t  ready; /* ready bitmap */
+	struct thinkos_context * idle_ctx;
+#if (THINKOS_ENABLE_PROFILING)
+	uint32_t  cycref; 
+#endif
 };
 
 extern struct thinkos_except thinkos_except_buf;
@@ -87,7 +102,7 @@ extern "C" {
 
 void thinkos_exception_init(void);
 
-void thinkos_exception_dsr(struct thinkos_except * xcpt);
+void thinkos_exception_dsr(void);
 
 uint32_t * __thinkos_xcpt_stack_top(void);
 
@@ -112,6 +127,8 @@ void __xcpt_systick_int_enable(void);
 void __exception_reset(void);
 
 struct thinkos_except * __thinkos_except_buf(void);
+
+const char * __retstr(uint32_t __ret);
 
 #ifdef __cplusplus
 }

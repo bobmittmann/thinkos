@@ -89,7 +89,6 @@ bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 
 bool dmon_app_suspend(void)
 {
-	__dmon_irq_pause_all(); 
 	__thinkos_pause_all();
 
 	if (thinkos_rt.active == THINKOS_THREADS_MAX) {
@@ -99,7 +98,6 @@ bool dmon_app_suspend(void)
 	}
 
 	/* Make sure the communication channel interrupts are enabled. */
-	__dmon_irq_force_enable();
 
 	dbgmon_wait_idle();
 
@@ -113,7 +111,6 @@ bool dmon_app_continue(void)
 	if (xcpt->type == 0) {
 		DCC_LOG(LOG_TRACE, "....");
 		__thinkos_resume_all();
-		__dmon_irq_restore_all();
 		return true;
 	}
 

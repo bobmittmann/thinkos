@@ -31,6 +31,7 @@
 #include <thinkos/idle.h>
 #include <sys/delay.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 void thinkos_idle_task(void);
 
@@ -47,7 +48,9 @@ const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
 void __thinkos_idle_error(void * arg)
 {
+	udelay(500000);
 	DCC_LOG(LOG_ERROR, "ThinkOS Idle error!!"); 
+	udelay(500000);
 }
 
 void thinkos_sched_dbg(struct thinkos_context * __ctx, 
@@ -63,19 +66,43 @@ uint32_t thinkos_sched_error(struct thinkos_context * __ctx,
 							 uint32_t __prev_thread_id, 
 							 uint32_t __sp)
 {
-	DCC_LOG(LOG_ERROR, "/!\\ scheduler error!");
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_context * ctx = &xcpt->ctx.core;
+
+	DCC_LOG(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _BRIGHT_ _REVERSE_
+
+			" /!\\ scheduler error! " _ATTR_POP_);
+	
+#if (THINKOS_ENABLE_SCHED_DEBUG)
 	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
 	__context(__ctx, __new_thread_id); 
 	__thinkos(&thinkos_rt);
 	__tdump();
-
+#endif
 	if (__new_thread_id == THINKOS_THREAD_IDLE) {
-		udelay(500000);
-		udelay(500000);
  		return __thinkos_idle_reset(__thinkos_idle_error, NULL);
 	}
 
-	for(;;);
+	thinkos_rt.break_id = __new_thread_id;
+	/* clear IPSR to indicate a thread error */
+	thinkos_rt.xcpt_ipsr = 0;
+	xcpt->active = __prev_thread_id;
+	xcpt->type = THINKOS_ERR_INVALID_STACK;
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+	/* flag the thread as faulty */
+	__thinkos_thread_fault_set(__new_thread_id);
+#endif
+	/* copy the thread exception context to the exception buffer. */
+	__thinkos_memcpy32(ctx, __ctx, sizeof(struct thinkos_context)); 
+
+	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
+
+	/* set the active thread to idle */
+	thinkos_rt.active = THINKOS_THREAD_IDLE;
+	/* get the IDLE context */
+	ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
+	
+ 	return (uint32_t)ctx;
 }
 #endif
 
@@ -83,7 +110,6 @@ uint32_t thinkos_sched_error(struct thinkos_context * __ctx,
 bool thinkos_sched_active(void)
 {
 	return (CM3_SCB->shcsr & SCB_SHCSR_PENDSVACT) ? true : false;
-
 }
 	
 bool thinkos_syscall_active(void)
@@ -100,7 +126,6 @@ bool thinkos_clock_active(void)
 bool thinkos_dbgmon_active(void)
 {
 	return (CM3_SCB->shcsr & SCB_SHCSR_MONITORACT) ? true : false;
-
 }
 
 bool thinkos_kernel_active(void)
@@ -111,72 +136,27 @@ bool thinkos_kernel_active(void)
 
 void __thinkos_core_reset(void)
 {
-	struct cm3_systick * systick = CM3_SYSTICK;
+	int i;
 
-	/* adjust exception priorities */
-	/*
-	 *  0x00 - low latency interrupts
-     *
-	 *  0x20 - high priority interrupts
-	 *  0x40   .
-	 *
-	 *  0x60 - SVC
-	 *  0x80 - regular priority interrupts
-	 * 
-	 *  0xa0 - SysTick
-	 *  0xc0 - PendSV (scheduler)
-	 *
-	 *  0xe0 - very low priority interrupts
-	 */
-
-	/* SVC should not be preempted by the scheduler, thus it runs 
-	   at higher priority. In order for the regular priority
-	   interrupts to call SVC, they should run at a lower priority
-	   then SVC.*/
-	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
-	/* SysTick interrupt has to have a lower priority then SVC,
-	 to not preempt SVC */
-	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
-	/* PendSV interrupt has to have the lowest priority among
-	   regular interrupts (higher number) */
-	cm3_except_pri_set(CM3_EXCEPT_PENDSV, SCHED_PRIORITY);
-
-#if	THINKOS_ENABLE_USAGEFAULT 
-	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
+	/* clear all threads excpet NULL */
+	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+		thinkos_rt.ctx[i] = 0x00000000;
+#if THINKOS_ENABLE_THREAD_STAT
+		thinkos_rt.th_stat[i] = 0; 
 #endif
-#if	THINKOS_ENABLE_BUSFAULT 
-	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
+#if THINKOS_ENABLE_THREAD_INFO
+		thinkos_rt.th_inf[i] = NULL; 
 #endif
-#if THINKOS_ENABLE_MPU
-	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
-#endif
-#if THINKOS_ENABLE_MONITOR 
-	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, MONITOR_PRIORITY);
-#endif
-
-	/* clear the ThinkOS runtime structure */
-	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
-
-#if THINKOS_IRQ_MAX > 0
-	__thinkos_irq_reset_all();
-#endif
-
-#if (THINKOS_MUTEX_MAX > 0)
-	{
-		int i;
-		/* initialize the mutex locks */
-		for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
-			thinkos_rt.lock[i] = -1;
 	}
-#endif
 
-#if THINKOS_EVENT_MAX > 0
-	{
-		int i;
-		/* initialize the event set mask */
-		for (i = 0; i < THINKOS_EVENT_MAX; i++) 
-			thinkos_rt.ev[i].mask = 0xffffffff;
-	}
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_LST_END ; ++i)
+		thinkos_rt.wq_lst[i] = 0x00000000;
+
+#if (THINKOS_ENABLE_PROFILING)
+	/* Per thread cycle count */
+	for (i = 0; i < THINKOS_THREADS_MAX ; ++i)
+		thinkos_rt.cyccnt[i] = 0;
 #endif
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -184,64 +164,76 @@ void __thinkos_core_reset(void)
 	__thinkos_bmp_init(thinkos_rt.th_alloc, THINKOS_THREADS_MAX); 
 #endif
 
+#if (THINKOS_MUTEX_MAX > 0)
 #if THINKOS_ENABLE_MUTEX_ALLOC
+	/* initialize the mutex locks */
+	for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
+	thinkos_rt.lock[i] = -1;
 	/* initialize the mutex allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.mutex_alloc, THINKOS_MUTEX_MAX); 
 #endif
+#endif /* THINKOS_MUTEX_MAX > 0 */
 
+#if THINKOS_SEMAPHORE_MAX > 0
+	for (i = 0; i < THINKOS_SEMAPHORE_MAX; i++) 
+		thinkos_rt.sem_val[i] = 0;
 #if THINKOS_ENABLE_SEM_ALLOC
 	/* initialize the semaphore allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.sem_alloc, THINKOS_SEMAPHORE_MAX); 
 #endif
+#endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
 #if THINKOS_ENABLE_COND_ALLOC
 	/* initialize the conditional variable allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.cond_alloc, THINKOS_COND_MAX); 
 #endif
 
+#if THINKOS_FLAG_MAX > 0
+	for (i = 0; i < (THINKOS_FLAG_MAX + 31) / 32; i++) 
+		thinkos_rt.flag[i] = 0;
 #if THINKOS_ENABLE_FLAG_ALLOC
 	/* initialize the flag allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.flag_alloc, THINKOS_FLAG_MAX); 
 #endif
+#endif /* THINKOS_FLAG_MAX > 0 */
 
+#if THINKOS_EVENT_MAX > 0
+	for (i = 0; i < THINKOS_EVENT_MAX ; i++) {
+		thinkos_rt.ev[i].pend = 0;
+		thinkos_rt.ev[i].mask = 0xffffffff;
+	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	/* initialize the event set allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.ev_alloc, THINKOS_EVENT_MAX); 
 #endif
+#endif /* THINKOS_EVENT_MAX > 0 */
 
+#if THINKOS_GATE_MAX > 0
+	for (i = 0; i < ((THINKOS_GATE_MAX + 15) / 16); i++) 
+		thinkos_rt.gate[i] = 0;
 #if THINKOS_ENABLE_GATE_ALLOC
 	/* initialize the gate allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.gate_alloc, THINKOS_GATE_MAX); 
 #endif
+#endif /* THINKOS_GATE_MAX > 0 */
 
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 	thinkos_rt.step_id = -1;
 	thinkos_rt.break_id = -1;
+#if THINKOS_ENABLE_DEBUG_STEP
+	thinkos_rt.step_svc = 0;  /* step at service call bitmap */
+	thinkos_rt.step_req = 0;  /* step request bitmap */
+#endif
 #endif
 
-#if THINKOS_ENABLE_PROFILING
-	/* Enable trace */
-	CM3_DCB->demcr |= DCB_DEMCR_TRCENA;
-	/* Enable cycle counter */
-	CM3_DWT->ctrl |= DWT_CTRL_CYCCNTENA;
-
-	/* set the reference to now */
-	thinkos_rt.cycref = CM3_DWT->cyccnt;
+#if (THINKOS_ENABLE_CRITICAL)
+	thinkos_rt.critical_cnt = 0;
 #endif
 
-	/* initialize the SysTick module */
-	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
-	systick->cvr = 0;
-#if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
-	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
-#else
-	systick->csr = SYSTICK_CSR_ENABLE;
+#if THINKOS_IRQ_MAX > 0
+	__thinkos_irq_reset_all();
 #endif
-
-	/* Set the initial thread as idle. */
-	thinkos_rt.active = THINKOS_THREAD_IDLE;
 }
-
 
 void __thinkos_system_reset(void)
 {
@@ -266,4 +258,22 @@ void __thinkos_system_reset(void)
 	cm3_cpsie_i();
 }
 
+void __thinkos_kill_all(void) 
+{
+	int i;
+
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_LST_END ; ++i)
+		thinkos_rt.wq_lst[i] = 0x00000000;
+
+#if THINKOS_ENABLE_THREAD_VOID 
+	/* discard current thread context */
+	if (thinkos_rt.active != THINKOS_THREAD_IDLE)
+		thinkos_rt.active = THINKOS_THREAD_VOID;
+#else
+	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
+#endif
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
+}
 

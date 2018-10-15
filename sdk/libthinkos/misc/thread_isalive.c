@@ -27,15 +27,7 @@ bool __thinkos_thread_isalive(unsigned int th)
 {
 //	bool dead;
 
-	if (th == THINKOS_THREAD_IDLE)
-		return true;
-
-#if (THINKOS_ENABLE_THREAD_VOID)
-	if (th == THINKOS_THREAD_VOID)
-		return (thinkos_rt.void_ctx == NULL) ? false : true;
-#endif
-
-	if (th >= THINKOS_THREADS_MAX)
+	if (th > THINKOS_THREAD_VOID)
 		return false;
 
 	if (thinkos_rt.ctx[th] == NULL)

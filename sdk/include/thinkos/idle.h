@@ -38,13 +38,22 @@
 enum idle_hook_signal {
 	/* The higest priority goes to system reset request */
 	IDLE_HOOK_SYSRST = 0,
-	/* The higest priority goes to the Debug/Monitor */
+	/* Debug/Monitor IDLE signal is next in the list */
 	IDLE_HOOK_NOTIFY_DBGMON = 1,
 	/* */
-	IDLE_HOOK_EXCEPT_DONE = 2,
+	IDLE_HOOK_SOFTRST = 2,
+	IDLE_HOOK_EXCEPT_DONE = 3,
 	/* The higest priority goes to the Debug/Monitor */
 	kDLE_HOOK_STACK_SCAN = 31
 };
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+struct thinkos_idle_rt {
+	volatile uint32_t req_map;
+};
+
+extern struct thinkos_idle_rt thinkos_idle_rt;
+#endif
 
 #if THINKOS_ENABLE_THREAD_INFO
 extern const struct thinkos_thread_inf thinkos_idle_inf;
@@ -58,22 +67,24 @@ extern "C" {
 static inline void __idle_hook_req(unsigned int req) {
 		uint32_t map;
 		do {
-			map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
 			map |= (1 << req);
-		} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
 	}
 
 static inline void __idle_hook_clr(unsigned int req) {
 		uint32_t map;
 		do {
-			map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
 			map &= ~(1 << req);
-		} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
 	}
 #endif
 
 void __thinkos_idle_init(void);
 uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg);
+
+struct thinkos_context * __thinkos_idle_ctx(void);
 
 #ifdef __cplusplus
 }

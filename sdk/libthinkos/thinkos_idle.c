@@ -26,6 +26,7 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 /* -------------------------------------------------------------------------- 
  * Idle task
@@ -36,7 +37,7 @@
 #error "Deprecated IDLE stack options!"
 #endif
 
-void __thinkos_except_done(void);
+struct thinkos_idle_rt thinkos_idle_rt;
 
 void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 {
@@ -50,36 +51,64 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 
 	for (;;) {
 
-		clk++;
+		asm volatile ("wfi\n"); /* wait for interrupt */
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
-			map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
+//			map = thinkos_idle_rt.req_map;
 			req = __clz(__rbit(map));
-			map &= ~(1 << req);
-		} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+			if (map != 0) {
+				uint32_t y;
+
+				y = map & ~(1 << req);
+
+				DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
+						 "map=%08x y=%08x req=%d clk=%d" _ATTR_POP_ , 
+						 map, y, req, clk);
+				map = y;
+			}
+		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
+
+//		thinkos_idle_rt.req_map = map;
+
+		clk++;
 
 		if ((clk & 0x00ffffff) == 0) {
-			DCC_LOG3(LOG_TRACE, "clk=%8d ctx=%08x sp=%08x", clk, 
-					 thinkos_rt.ctx[THINKOS_THREAD_IDLE], cm3_sp_get()); 
-			__thinkos_defer_sched();
+			DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
+					 "map=%08x" _ATTR_POP_ , map);
+		}
+#if 0
+		if ((clk & 0x00ffffff) == 0) {
+//			DCC_LOG3(LOG_TRACE, "clk=%8d ctx=%08x sp=%08x", clk, 
+//					 thinkos_rt.ctx[THINKOS_THREAD_IDLE], cm3_sp_get()); 
 		}
 		if ((clk & 0x01ffffff) == 0x01000000) {
-//			asm volatile ("wfi\n"); /* wait for interrupt */
 		}
-
+#endif
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
+						"IDLE_HOOK_NOTIFY_DBGMON" _ATTR_POP_ );
 				/* Notify the debug/monitor */
 				dbgmon_signal(DBGMON_IDLE); 
 				break;
 			case IDLE_HOOK_SYSRST:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
+						"IDLE_HOOK_SYSRST" _ATTR_POP_ );
 				__thinkos_system_reset();
 				break;
-			case IDLE_HOOK_EXCEPT_DONE:
-				__thinkos_except_done();
+			case IDLE_HOOK_SOFTRST:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_SOFTRST" _ATTR_POP_ );
+				dbgmon_signal(DBGMON_SOFTRST); 
 				break;
 
+#if THINKOS_ENABLE_EXCEPTIONS
+			case IDLE_HOOK_EXCEPT_DONE:
+				thinkos_exception_dsr();
+				break;
+#endif
 			case 32:
 #endif
 
@@ -148,21 +177,29 @@ uint32_t *  __thinkos_xcpt_stack_top(void)
 	return (uint32_t *)sp;
 }
 
-/* resets the idle thread and context */
-uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
+struct thinkos_context * __thinkos_idle_ctx(void)
 {
 	struct thinkos_context * ctx;
 	uintptr_t sp;
 
 	sp = (uintptr_t)THINKOS_IDLE_STACK_BASE;
 	sp += THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
-
-	DCC_LOG1(LOG_TRACE, "Idle context=%08x.", sp); 
-
 	ctx = (struct thinkos_context *)sp;
+
+	return ctx;
+}
+
+/* resets the idle thread and context */
+uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
+{
+	struct thinkos_context * ctx;
+
+	ctx  = __thinkos_idle_ctx();
+
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 
 	ctx->r0 = (uint32_t)arg;
+#if DEBUG
 	ctx->r1 = (uint32_t)0x11111111;
 	ctx->r2 = (uint32_t)0x22222222;
 	ctx->r3 = (uint32_t)0x33333333;
@@ -171,6 +208,11 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 	ctx->r6 = (uint32_t)0x66666666;
 	ctx->r7 = (uint32_t)0x77777777;
 	ctx->r8 = (uint32_t)0x88888888;
+	ctx->r9 = (uint32_t)0x99999999;
+	ctx->r10 = (uint32_t)0xaaaaaaaa;
+	ctx->r11 = (uint32_t)0xbbbbbbbb;
+	ctx->r12 = (uint32_t)0xcccccccc;
+#endif
 	ctx->pc = (uint32_t)task_ptr & ~1;
 	ctx->lr = (uint32_t)thinkos_idle_task; 
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
@@ -191,12 +233,14 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = ctx;
 
-	return sp;
+	return (uintptr_t)ctx;
 }
 
 /* initialize the idle thread */
 void __thinkos_idle_init(void)
 {
+
+	DCC_LOG(LOG_WARNING, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"); 
 
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize idle stack */

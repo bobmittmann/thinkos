@@ -59,13 +59,32 @@ thinkos_scheduler:
 
 	/* store context */
 
-thinkos_sched_context_save:
+thinkos_sched_get_active:
+	/* r3: thinkos_rt */
+	ldr.n     r3, .L_thinkos_rt
+	/* get the active (current) thread and the ready bitmap */
+	ldrd      r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+	/* r1: ready, */
+	/* r2: active, */
+#if 0
+1:
+	cmp       r2, #33
+	bgt       1b 
+	cmp       r2, #THINKOS_THREAD_IDLE
+	it        eq
+	cmpeq     r1, 0
+	it        eq 
+	bxeq      lr
+#endif
+
 #if !(THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
 	mrs     r0, PSP
+thinkos_sched_context_save:
 	stmdb   r0!, {r4-r11}
 #elif (THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
 	mrs     r0, PSP
 	mov     r12, r0
+thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
     tst     lr, #EXC_RETURN_nFPCA
 	it      eq
@@ -76,6 +95,7 @@ thinkos_sched_context_save:
 	moveq   r0, sp
 	subeq   sp, sp, #(CTX_R0 * 4)
 	mrsne   r0, PSP
+thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
 #else
 	tst     lr, #EXC_RETURN_SPSEL
@@ -84,19 +104,13 @@ thinkos_sched_context_save:
 	subeq   sp, sp, #(CTX_R0 * 4) /* reserve spce on MSP stack */
 	mrsne   r0, PSP
 	movs    r12, r0
+thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
-	movs    r12, r0
     tst     lr, #EXC_RETURN_nFPCA
-	it      eq
-	vstmdbeq  r12!, {s16-s31}
+	itt      eq
+	moveq    r7, r0
+	vstmdbeq  r7!, {s16-s31}
 #endif
-
-thinkos_get_active:
-	/* r3: thinkos_rt */
-	ldr.n     r3, .L_thinkos_rt
-	/* get the active (current) thread */
-	ldr       r2, [r3, #THINKOS_RT_ACTIVE_OFFS]
-	/* r2: active, */
 
 #if (THINKOS_ENABLE_PROFILING)
 thinkos_sched_update_cyccnt:
@@ -108,6 +122,7 @@ thinkos_sched_update_cyccnt:
 	/* r4: step_req */
 	/* r5: cycref */
 	ldrd	r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
+
   #else
 	/* r5: cycref */
 	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]
@@ -125,17 +140,12 @@ thinkos_sched_update_cyccnt:
 	str     r5, [r3, r7, lsl #2]
 #else
   #if (THINKOS_ENABLE_DEBUG_STEP)
-thinkos_sched_step_req_check:
 	/* r4: step_req */
 	ldr.w	r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
   #endif
 #endif /* THINKOS_ENABLE_PROFILING */
 
-	/* store the old context pointer into the context vector */
-	str.w	r0, [r3, r2, lsl #2]
-
 thinkos_sched_select_ready:
-	ldr     r1, [r3, #THINKOS_RT_READY_OFFS]
 	/* r1 - ready queue
 	   r2 - old thread */
 	/* get a thread from the ready bitmap by counting the
@@ -153,25 +163,36 @@ thinkos_sched_swap:
 	/* r0: thread stack
 	   r1: next active thread 
 	   r3: thinkos_rt */
+	/* store the old context pointer into the context vector */
+	str.w	r0, [r3, r2, lsl #2]
+	/* load the new context pointer from the context vector */
 	ldr.w	r0, [r3, r1, lsl #2]
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* check whether the step request bit is set for
-	   this thread */
+thinkos_sched_step_req_check:
+	/* check if the step request bit is set for this thread */
 	movs	r5, #1
 	lsls	r5, r1
 	tst     r5, r4
 	bne.n   thinkos_sched_step
 #endif
 
-.L_save_active:
+.L_save_active_and_restore:
 	/* r0: thread stack
 	   r1: new active thread
 	   r3: thinkos_rt */
 	str     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 
-.L_context_restore:
+	.thumb_func
+thinkos_sched_context_restore:
+	.global thinkos_sched_context_restore
+	.type   thinkos_sched_context_restore, %function
+	.size   thinkos_sched_context_restore, . - thinkos_sched_context_restore
+
 #if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
+  #if (THINKOS_ENABLE_FPU)
+  #endif
+	mov     r3, r0
 	ldmia   r0!, {r4-r12,lr}
   #if (THINKOS_ENABLE_SANITY_CHECK) 
 	cmp     r0, r12
@@ -180,7 +201,11 @@ thinkos_sched_swap:
 #else
 	ldmia   r0!, {r4-r11}
 #endif
-
+#if (THINKOS_ENABLE_FPU)
+    tst     lr, #EXC_RETURN_nFPCA
+	it      eq
+	vldmdbeq  r3!, {s16-s31}
+#endif
 #if (THINKOS_ENABLE_IDLE_MSP)
 	tst     lr, #EXC_RETURN_SPSEL
 	ittee   ne
@@ -193,14 +218,6 @@ thinkos_sched_swap:
 #else
 	msr     PSP, r0
 #endif
-
-#if (THINKOS_ENABLE_FPU)
-    tst     lr, #EXC_RETURN_nFPCA
-	itt     eq
-	subeq     r3, r0, #((CTX_R0) * 4)
-	vldmdbeq  r3!, {s16-s31}
-#endif
-
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	sub     r0, r0, #((CTX_R0) * 4)
 	mov     r3, sp
@@ -214,14 +231,10 @@ thinkos_sched_on_error:
 	((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP))
 .L_sched_error:
 	/* Disable interrupts */
-	cpsid   i
 	sub     r0, r0, #((CTX_R0) * 4)
 	mov     r3, sp
 	bl      thinkos_sched_error
-	/* Reenable interrupts */
-	cpsie   i
-	/* Try again */
-    b       thinkos_get_active
+	b       .L_save_active_and_restore
 #endif
 
 	.align  0
@@ -247,7 +260,43 @@ thinkos_sched_step:
 	ldr     r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]	
 	/* r6: step_svc */
 	tst     r4, r6
-	beq.n   .L_normal_step
+	bne.n   .L_service_setp
+
+.L_normal_step:
+	/* get the PC value */
+	ldr     r5, [r0, #(CTX_PC * 4)]
+	/* load the next instruction */
+	ldrb    r5, [r5, #1]
+	/* if the thread is running, and it is about to invoke 
+	   a system call then we don't step but set the service 
+	   flag for stepping on service exit. */
+	and      r5, r5, #0xdf
+	cmp      r5, #0xdf
+	itt      eq
+    /* the thread is stepping into a system call */
+	orreq    r6, r4
+	streq    r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]
+	beq      .L_save_active_and_restore
+
+	/* Set the thread step  */
+	strb    r1, [r3, #THINKOS_RT_STEP_ID_OFFS]
+
+.L_restore_and_step:
+	ldr.n   r6, .L_cm_dcb
+	/* Disable all exceptions. They wil be automatically restored
+	 when returning from this handler. */
+	cpsid   f
+	/* Request Debug/Monitor step */
+	ldr     r5, [r6, #DCB_DEMCR_OFFS]
+	orr     r5, r5, #DCB_DEMCR_MON_STEP
+	str     r5, [r6, #DCB_DEMCR_OFFS]
+	/* Mask low priority interrupts except debug monitor */
+	mov     r5, #(1 << 5)
+	msr	    BASEPRI, r5
+
+	b       .L_save_active_and_restore
+	
+.L_service_setp:
 	/* this thread got a step request when calling a service.
 	   We allowed for the system call to go through as if it
 	   was a single instruction. Which make sense from the point of
@@ -267,53 +316,26 @@ thinkos_sched_step:
 	   a SVC call.
 	 */
 
-	/* set the new context to the idle context */
+	/* Set the thread step  */
+	strb    r1, [r3, #THINKOS_RT_STEP_ID_OFFS]
 	/* Get the idle contex t*/
 	ldr     r0, [r3, #THINKOS_RT_IDLE_CTX_OFFS]
+	movs    r1, #THINKOS_THREAD_IDLE
+#if 0
+	movs    r1, #THINKOS_THREAD_IDLE
+	/* XXX: if no SVC calls are allowed on IDLE we don't need 
+	   this */
 	ldr     r6, .L_idle_task
 	movs    r5, #THINKOS_THREAD_IDLE
 	str     r5, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* set the PC */
 	str     r6, [r0, #(CTX_PC * 4)]
+#endif
 	/* step the IDLE thread instead  */
 	b       .L_restore_and_step
 
-.L_normal_step:
-	/* get the PC value */
-	ldr     r5, [r0, #(CTX_PC * 4)]
-	/* load the next instruction */
-	ldrb    r5, [r5, #1]
-	/* if the thread is running, and it is about to invoke 
-	   a system call then we don't step but set the service 
-	   flag for stepping on service exit. */
-	and     r5, r5, #0xdf
-	cmp     r5, #0xdf
-	bne.n   .L_restore_and_step
-    /* the thread is stepping into a system call */
-	orrs    r6, r4
-	str     r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]
-	b       .L_context_restore
 
-thinkos_sched_restore_and_step:
-
-.L_restore_and_step:
-	/* Return and step */
-	strb    r1, [r3, #THINKOS_RT_STEP_ID_OFFS]
-	ldr.n   r6, .L_cm_dcb
-	/* Disable all exceptions. They wil be automatically restored
-	 when returning from this handler. */
-	cpsid   f
-	/* Request Debug/Monitor step */
-	ldr     r5, [r6, #DCB_DEMCR_OFFS]
-	orr     r5, r5, #DCB_DEMCR_MON_STEP
-	str     r5, [r6, #DCB_DEMCR_OFFS]
-	/* Mask low priority interrupts except debug monitor */
-	mov     r2, #(1 << 5)
-	msr	    BASEPRI, r2
-
-	b       .L_context_restore
-
-	.align  2
+	.align  4
 .L_idle_task:
 	.word	thinkos_idle_task
 .L_cm_dcb:
@@ -322,18 +344,9 @@ thinkos_sched_restore_and_step:
 	.size   thinkos_sched_step, . - thinkos_sched_step
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 
-	.thumb_func
-thinkos_sched_context_restore:
-	.global thinkos_sched_context_restore
-	.type   thinkos_sched_context_restore, %function
-
-	b       .L_context_restore
-
-	.size   thinkos_sched_context_restore, . - thinkos_sched_context_restore
-
 /* FIXME: this is a hack to force linking this file. 
  The linker then will override the weak alias for the cm3_hard_fault_isr() */
-	.align 2
+	.align 4
 	.global	thinkos_sch_nm
 	.section .rodata
 	.type   thinkos_sch_nm, %object

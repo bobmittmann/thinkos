@@ -37,11 +37,13 @@
 /* Position of register R0 in the context */
   #define CTX_R0 10
   #define CTX_PC 16
+  #define CTX_SIZE (18 * 4)
 #else
 /* Position of register R0 in the context */
   #define CTX_R0 8
 /* Position of register PC in the context */
   #define CTX_PC 14
+  #define CTX_SIZE (16 * 4)
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -60,6 +62,11 @@
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
  * --------------------------------------------------------------------------*/
+#if (THINKOS_ENABLE_THREAD_VOID)
+  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 2)
+#else
+  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 1)
+#endif
 
 #if THINKOS_ENABLE_THREAD_VOID
   #define SIZEOF_VOID_CTX  4
@@ -70,11 +77,7 @@
 #endif
 
 #if THINKOS_ENABLE_PROFILING
-  #if THINKOS_ENABLE_THREAD_VOID
-    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 2) * 4)
-  #else
-    #define SIZEOF_CYCCNT  ((THINKOS_THREADS_MAX + 1) * 4)
-  #endif
+  #define SIZEOF_CYCCNT    (THINKOS_CTX_LEN * 4)
   #define SIZEOF_CYCREF    4
 #else
   #define SIZEOF_CYCCNT    0
@@ -204,19 +207,12 @@ struct thinkos_rt {
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
 	/* Idle thread context pointer */
-	struct thinkos_context * ctx[(THINKOS_THREADS_MAX) + 1]; 
-#if (THINKOS_ENABLE_THREAD_VOID)
 	/* void thread context pointer */
-	struct thinkos_context * void_ctx; 
-#endif
+	struct thinkos_context * ctx[THINKOS_CTX_LEN]; 
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
-#if (THINKOS_ENABLE_THREAD_VOID)
-	uint32_t cyccnt[THINKOS_THREADS_MAX + 2]; /* extra slot for void thread */
-#else
-	uint32_t cyccnt[THINKOS_THREADS_MAX + 1];
-#endif
+	uint32_t cyccnt[THINKOS_CTX_LEN];
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -401,22 +397,17 @@ struct thinkos_rt {
 #if THINKOS_ENABLE_THREAD_INFO
 	const struct thinkos_thread_inf * th_inf[THINKOS_THREADS_MAX + 1]; 
 #endif
-
-#if THINKOS_ENABLE_MPU
-	/* Kernel protected memory block descriptor */
-	struct {
-		uint16_t offs;
-		uint16_t size;
-	} mpu_kernel_mem;
-#endif
-
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	struct {
-		uint32_t req_map;
-	} idle_hooks;
-#endif
 };
 
+#if THINKOS_ENABLE_MPU
+struct mpu_mem_block {
+	uint16_t offs;
+	uint16_t size;
+};
+
+/* Kernel protected memory block descriptor */
+extern struct mpu_mem_block thinkos_mpu_kernel_mem;
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Base indexes for the wait queue list (wq_lst[])
@@ -559,7 +550,8 @@ enum thinkos_exception {
 	THINKOS_ERR_CRITICAL_EXIT     = 27,
 	THINKOS_ERR_INVALID_POINTER   = 28,
 	THINKOS_ERR_CONSOLE_FAULT     = 29,
-	THINKOS_ERR_USER              = 30
+	THINKOS_ERR_INVALID_STACK     = 30,
+	THINKOS_ERR_USER              = 31
 };
 
 /* Mark for breakpoint numbers. Breakpoints above this
@@ -677,6 +669,7 @@ static void inline __attribute__((always_inline)) __thinkos_defer_svc(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
+	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
 static void inline __attribute__((always_inline)) __thinkos_ready_clr(void) {
@@ -806,6 +799,37 @@ static volatile inline uint32_t __attribute__((always_inline))
 }
 #endif
 
+/* Set the fault flag */
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+static void inline __thinkos_thread_fault_set(unsigned int th) {
+	__bit_mem_wr(&thinkos_rt.wq_fault, th, 1);
+#if (THINKOS_ENABLE_THREAD_STAT)
+	thinkos_rt.th_stat[th] = THINKOS_WQ_FAULT << 1;
+#endif
+#if (THINKOS_ENABLE_TIMED_CALLS)
+	/* possibly remove from the time wait queue */
+	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+#endif
+}
+
+/* Clear the fault flag */
+static void inline __thinkos_thread_fault_clr(unsigned int th) {
+	__bit_mem_wr(&thinkos_rt.wq_fault, th, 0);
+}
+#endif
+
+/* Set the pause flag */
+#if (THINKOS_ENABLE_PAUSE)
+static void inline __thinkos_thread_pause_set(unsigned int th) {
+	__bit_mem_wr(&thinkos_rt.wq_paused, th, 1);
+}
+
+/* Clear the pause flag */
+static void inline __thinkos_thread_pause_clr(unsigned int th) {
+	__bit_mem_wr(&thinkos_rt.wq_paused, th, 0);
+}
+#endif
+
 void thinkos_trace_rt(struct thinkos_rt * rt);
 
 int thinkos_obj_type_get(unsigned int oid);
@@ -861,6 +885,8 @@ void __thinkos_core_reset(void);
 void __thinkos_console_reset(void);
 
 void __thinkos_system_reset(void);
+
+void __thinkos_sched_stop(void);
 
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 void __console_rx_pipe_commit(int cnt); 

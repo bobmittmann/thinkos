@@ -68,10 +68,6 @@
 #define THINKOS_DBGMON_STACK_SIZE (960 + 16)
 #endif
 
-#ifndef THINKOS_DBGMON_ENABLE_IRQ_MGMT
-#define THINKOS_DBGMON_ENABLE_IRQ_MGMT 1 
-#endif
-
 #ifndef THINKOS_DBGMON_ENABLE_RST_VEC
 #define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
 #endif
@@ -88,12 +84,12 @@ enum dbgmon_event {
 	DBGMON_RESET           = 0,
 	/* ThinkOS power on startup indication */
 	DBGMON_STARTUP         = 1,
-	/* Board reset request */
-	DBGMON_SOFTRST         = 2,
 	/* ThinkOS idle indication */
-	DBGMON_IDLE            = 3,
-	/* ThinkOS exception */
-	DBGMON_EXCEPT          = 4,
+	DBGMON_IDLE            = 2,
+	/* Board reset request */
+	DBGMON_SOFTRST         = 3,
+	/* ThinkOS kernel exception */
+	DBGMON_KRN_EXCEPT      = 4,
 	/* Debug timer expiry indication */
 	DBGMON_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -205,6 +201,41 @@ struct mem_desc {
 	struct blk_desc blk[]; /* sorted block list */
 };
 
+#if 0
+
+struct blk_desc {
+	uint64_t tag: 20;
+	uint64_t off: 20;
+	uint64_t opt: 8;
+	uint64_t siz: 5;
+	uint64_t cnt: 11;
+};
+
+/* Memory region/type descriptor */
+struct mem_desc {
+	char tag[7];
+	uint8_t cnt; /* number of entries in the block list */
+	uint32_t base; /* base adress */
+	struct blk_desc blk[]; /* sorted block list */
+};
+
+/* Expanded Memory Block */
+struct mem_blk {
+	uint32_t addr;
+	uint32_t size;
+	uint8_t al: 2;
+	uint8_t ro: 1;
+	uint8_t ex: 1;
+	uint8_t nv: 1;
+	uint8_t pe: 1;
+	uint8_t dm: 1;
+	uint8_t xc: 1;
+};
+#endif
+
+
+
+
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
  * ----------------------------------------------------------------------------
@@ -255,8 +286,6 @@ void thinkos_dbgmon_svc(int32_t arg[], int self);
 
 void __dbgmon_reset(void);
 
-void thinkos_dbgmon_init(void);
-
 void dbgmon_reset(void);
 
 void __attribute__((noreturn)) 
@@ -281,8 +310,6 @@ void dbgmon_signal(int sig);
 void __dbgmon_idle_hook(void);
 
 int dbgmon_select(uint32_t evmask);
-
-int dbgmon_wait(int sig);
 
 int dbgmon_expect(int sig);
 
@@ -312,6 +339,14 @@ void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
 
+int dbgmon_thread_break_get(uint32_t * addr);
+
+int dbgmon_thread_step_get(uint32_t * addr);
+
+void dbgmon_thread_step_clr(void);
+
+void dbgmon_thread_break_clr(void);
+
 int __attribute__((format (__printf__, 2, 3))) 
 	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
@@ -329,6 +364,7 @@ void dbgmon_hexdump(const struct dbgmon_comm * comm,
 					const struct mem_desc * mem,
 					uint32_t addr, unsigned int size);
 
+int dbgmon_thread_last_fault_get(uint32_t * addr);
 
 /* Safe read and write operations to avoid faults in the debugger */
 

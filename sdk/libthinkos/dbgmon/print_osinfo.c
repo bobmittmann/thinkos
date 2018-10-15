@@ -46,11 +46,11 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 
 #if THINKOS_ENABLE_PROFILING
 	cyccnt = CM3_DWT->cyccnt;
-	delta = cyccnt - thinkos_rt.cycref;
+	delta = cyccnt - rt->cycref;
 	/* update the reference */
-	thinkos_rt.cycref = cyccnt;
+	rt->cycref = cyccnt;
 	/* update active thread's cycle counter */
-	thinkos_rt.cyccnt[thinkos_rt.active] += delta; 
+	rt->cyccnt[rt->active] += delta; 
 	/* copy the thread counters to a buffer */
 	__thinkos_memcpy32(cycbuf, rt->cyccnt, sizeof(cycbuf));
 	/* reset cycle counters */

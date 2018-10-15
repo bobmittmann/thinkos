@@ -34,7 +34,10 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 #include <gdb.h>
 
@@ -70,8 +73,8 @@ int uint2hex2hex(char * pkt, unsigned int val);
 /* Expanded Memory Block */
 struct mem_blk {
 	uint32_t addr;
-	uint32_t size: 31;
-	uint32_t ro: 1;
+	uint32_t size;
+	uint32_t ro;
 };
 
 
@@ -232,18 +235,18 @@ const int16_t __ctx_offs[] = {
 	[10] = offsetof(struct thinkos_context, r10),
 	[11] = offsetof(struct thinkos_context, r11),
 	[12] = offsetof(struct thinkos_context, r12),
-	[13] = -1, /*sp */
+	[13] = INT16_MIN, /*sp */
 	[14] = offsetof(struct thinkos_context, lr),
 	[15] = offsetof(struct thinkos_context, pc),
-	[16] = -1,
-	[17] = -1,
-	[18] = -1,
-	[19] = -1,
-	[20] = -1,
-	[21] = -1,
-	[22] = -1,
-	[23] = -1,
-	[24] = -1,
+	[16] = INT16_MIN,
+	[17] = INT16_MIN,
+	[18] = INT16_MIN,
+	[19] = INT16_MIN,
+	[20] = INT16_MIN,
+	[21] = INT16_MIN,
+	[22] = INT16_MIN,
+	[23] = INT16_MIN,
+	[24] = INT16_MIN,
 	[25] = offsetof(struct thinkos_context, xpsr),
 #if THINKOS_ENABLE_FPU
 	[26] = (18 *4),
@@ -283,6 +286,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	struct mem_blk blk;
 	uint32_t addr;
 	uint32_t sp;
 
@@ -291,36 +295,26 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 		return -1;
 	}
 
+	ctx = thinkos_rt.ctx[thread_id];
+
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
+		ctx  = __thinkos_idle_ctx();
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = &xcpt->ctx.core;
-		sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
+		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx.core;
-		sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-		DCC_LOG1(LOG_INFO, "ThinkOS exception, context=%08x!", ctx);
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-		DCC_LOG2(LOG_INFO, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
-	} else {
+		ctx = &xcpt->ctx.core;
+	} else if (!__thinkos_thread_ispaused(thread_id)) {
 		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 
-	(void)sp;
+	if (!addr2block(this_board.memory.ram, (uintptr_t)ctx, &blk)) {
+		DCC_LOG(LOG_ERROR, "invalid context address");
+		return -1;
+	}
 
 #if THINKOS_ENABLE_FPU
 	if (reg > 42) {
@@ -335,12 +329,17 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 #endif
 
 	if (reg == 13) { /*sp */
+		sp = (uint32_t)ctx->sp;
+		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
 		*val = sp;
 		return 0;
 	} 
 
-	if (__ctx_offs[reg] < 0) {
-		DCC_LOG(LOG_ERROR, "Invalid register");
+	if (__ctx_offs[reg] == INT16_MIN) {
+		DCC_LOG1(LOG_ERROR, "Invalid register %d", reg);
 		return -1;
 	}
 
@@ -369,6 +368,7 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
 	struct mem_blk blk;
 	uint32_t addr;
@@ -378,27 +378,21 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 		return -1;
 	}
 
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		DCC_LOG1(LOG_TRACE, "ThinkOS Idle thread, context=%08x!", ctx);
-		return 0;
-	} 
+	ctx = thinkos_rt.ctx[thread_id];
 
-	if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
+	if (thread_id == THINKOS_THREAD_IDLE) {
+		return 0;
+	} else if (thread_id == THINKOS_THREAD_VOID) {
+		return 0;
+	} else if (__thinkos_thread_isfaulty(thread_id)) {
+		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx.core;
+		ctx = &xcpt->ctx.core;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		DCC_LOG2(LOG_MSG, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
 	} else {
-		DCC_LOG(LOG_ERROR, "Invalid thread state!");
+		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 
@@ -427,11 +421,15 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 
 	if (reg == 13) { /*sp */
 		uint32_t sp = val;
-		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)sp;
+		sp -= (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
+		ctx->sp = sp;
 		return 0;
 	} 
 
-	if (__ctx_offs[reg] < 0) {
+	if (__ctx_offs[reg] == INT16_MIN) {
 		DCC_LOG(LOG_ERROR, "Invalid register");
 		return -1;
 	}
@@ -523,6 +521,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_context * ctx;
 	char * cp = buf;
 	int oid;
 	int type;
@@ -534,17 +533,20 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		return -1;
 	}
 
+	ctx = thinkos_rt.ctx[thread_id];
+
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		DCC_LOG(LOG_INFO, "ThinkOS Idle thread");
+		DCC_LOG(LOG_MSG, "ThinkOS Idle thread");
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_INFO, "ThinkOS Void thread");
+		DCC_LOG(LOG_MSG, "ThinkOS Void thread");
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
 		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
+		ctx = &xcpt->ctx.core;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
-		DCC_LOG1(LOG_INFO, "ThinkOS thread=%d!", thread_id);
+		DCC_LOG1(LOG_MSG, "ThinkOS thread=%d!", thread_id);
 	} else {
 		DCC_LOG(LOG_ERROR, "Invalid thread state!");
 		return -1;
@@ -554,7 +556,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		cp += str2hex(cp, "IDLE");
 	} else if (thread_id == THINKOS_THREAD_VOID) {
 		int ipsr;
-		ipsr = (thinkos_rt.void_ctx->xpsr & 0x1ff);
+		ipsr = (ctx->xpsr & 0x1ff);
 		cp += str2hex(cp, "IRQ");
 		cp += int2str2hex(cp, ipsr - 16);
 	} else {

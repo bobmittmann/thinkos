@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <string.h>
 
+struct mpu_mem_block thinkos_mpu_kernel_mem;
+
 /* 
 
   */
@@ -102,8 +104,8 @@ void thinkos_mpu_init(uint32_t offs, unsigned int size)
 	for (n = 0; (n * 1024) < size; ++n);
 
 	/* save the kernel reserved memory */
-	thinkos_rt.mpu_kernel_mem.offs = offs;
-	thinkos_rt.mpu_kernel_mem.size = n * 1024;
+	thinkos_mpu_kernel_mem.offs = offs;
+	thinkos_mpu_kernel_mem.size = n * 1024;
 
 	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;
