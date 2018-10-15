@@ -48,8 +48,8 @@ int main(int argc, char ** argv)
 {
 	const struct dbgmon_comm * comm;
 
+#if DEBUG
 	DCC_LOG_INIT();
-#if 1
 	DCC_LOG_CONNECT();
 #endif
 
