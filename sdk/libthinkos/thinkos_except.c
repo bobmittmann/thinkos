@@ -80,7 +80,13 @@ void __xcpt_return(struct thinkos_except * xcpt)
 			DCC_LOG4(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
 					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
-					 xcpt->active + 1, ctx->sp, xcpt->msp, xcpt->psp);
+					 xcpt->active + 1, 
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FP)
+					 ctx->sp, 
+#else
+					 xcpt->psp,
+#endif
+					 xcpt->msp, xcpt->psp);
 			DCC_LOG4(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "   IDLE=" _BRIGHT_ "%08x" _DIM_ " IPSR=%02x "  
 					 "CTRL=%02x RDY=%08x"  _ATTR_POP_,

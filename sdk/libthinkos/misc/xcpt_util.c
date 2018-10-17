@@ -77,6 +77,7 @@ void __xdump(struct thinkos_except * xcpt)
 	uint32_t ipsr;
 	uint32_t xpsr;
 	uint32_t ctrl;
+	uint32_t ret;
 	uint32_t sp;
 	int irqregs;
 	int irqbits;
@@ -100,9 +101,13 @@ void __xdump(struct thinkos_except * xcpt)
 		}
 	}
 
-	DCC_LOG1(LOG_INFO, "ret=%08x", xcpt->ctx.core.ret); 
-
-	sp = (xcpt->ctx.core.ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FP)
+	ret = xcpt->ctx.core.ret;
+#else
+	ret  = xcpt->ret;
+#endif
+	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	DCC_LOG1(LOG_INFO, "ret=%08x", ret); 
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
 			xcpt->ctx.core.r0, xcpt->ctx.core.r1, 
@@ -116,7 +121,7 @@ void __xdump(struct thinkos_except * xcpt)
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
 			xcpt->ctx.core.r12, sp, xcpt->ctx.core.lr, xcpt->ctx.core.pc);
 	DCC_LOG4(LOG_ERROR, " XPSR=%08x MSP=%08x PSP=%08x RET=%08x", 
-			xcpt->ctx.core.xpsr, xcpt->msp, xcpt->psp, xcpt->ctx.core.ret);
+			xcpt->ctx.core.xpsr, xcpt->msp, xcpt->psp, ret);
 	xpsr = xcpt->ctx.core.xpsr;
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 

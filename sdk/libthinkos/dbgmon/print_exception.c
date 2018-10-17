@@ -101,17 +101,14 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	sp = xcpt->ctx.core.sp;
 	ret = xcpt->ctx.core.ret;
 #else
-	ret = xcpt->ctx.ret;
+	ret = xcpt->ret;
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 #endif
 
 	dmon_print_context(comm, &xcpt->ctx.core, sp);
 						
 	dbgmon_printf(comm, " ret=%08x [ %s ] PSP=%08x MSP=%08x\r\n", 
-				  xcpt->ctx.core.ret,
-				  __retstr(ret),
-				  xcpt->psp,
-				  xcpt->msp);
+				  ret, __retstr(ret), xcpt->psp, xcpt->msp);
 
 	switch (xcpt->type) {
 #if THINKOS_ENABLE_MPU 

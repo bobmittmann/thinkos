@@ -830,6 +830,21 @@ static void inline __thinkos_thread_pause_clr(unsigned int th) {
 }
 #endif
 
+static inline void __thinkos_thread_ctx_set(unsigned int th, 
+											struct thinkos_context * __ctx) {
+	thinkos_rt.ctx[th] = __ctx;
+}
+
+static inline struct thinkos_context * __thinkos_thread_ctx_get(unsigned int th) {
+	return thinkos_rt.ctx[th];
+}
+
+#if THINKOS_ENABLE_THREAD_INFO
+static inline const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int th) {
+	return thinkos_rt.th_inf[th];
+}
+#endif
+
 void thinkos_trace_rt(struct thinkos_rt * rt);
 
 int thinkos_obj_type_get(unsigned int oid);

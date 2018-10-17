@@ -64,9 +64,9 @@ xcpt_collect:
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
-#if (THINKOS_ENABLE_IDLE_MSP)
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
 	str    r4, [r3, #0] /* sp */
-	str    r2, [r3, #4] /* lr */
+	str    r2, [r3, #4] /* ret */
 	adds   r3, r3, #8
 #endif
 	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
@@ -75,6 +75,9 @@ xcpt_collect:
 	vstmia r3!, {s0-s15}
 	vmrs   r4, FPSCR
 	stmia  r3!, {r4-r5}
+#endif
+#if !((THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU))
+	stmia  r3!, {r2}
 #endif
 	mrs    r5, MSP 
 	mrs    r6, PSP 

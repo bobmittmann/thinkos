@@ -60,11 +60,16 @@ struct armv7m_extended_frame {
 };
 
 struct thinkos_except {
-//#if (THINKOS_ENABLE_FPU) 
+#if (THINKOS_ENABLE_FPU) 
 	struct thinkos_fp_context ctx;
-//#else
-//	struct thinkos_context ctx;
-//#endif
+#else
+	struct {
+		struct thinkos_context core;
+	} ctx;
+#endif
+#if !((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_NULL_MSP))
+	uint32_t ret;
+#endif
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;

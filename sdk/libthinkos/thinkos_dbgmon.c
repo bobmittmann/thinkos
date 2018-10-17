@@ -804,13 +804,14 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 {
 	uint32_t * dst = (uint32_t *)&thinkos_except_buf.ctx.core;
 	uint32_t * src = (uint32_t *)ctx;
-	unsigned int sz = sizeof(struct thinkos_fp_context);
-
+	unsigned int sz = sizeof(struct thinkos_context);
+#if (THINKOS_ENABLE_FPU) 
 	if ((ctx->ret & CM3_EXC_RET_nFPCA) == 0) {
 		src -=16;
 		dst -=16;
 		sz = sizeof(struct thinkos_fp_context);
 	}
+#endif
 
 	__thinkos_memcpy32(dst, src, sz);
 }
