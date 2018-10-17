@@ -278,6 +278,7 @@ static void monitor_req_configure(void)
 }
 #endif
 
+#if (MONITOR_SELFTEST_ENABLE) || (MONITOR_CONFIGURE_ENABLE)
 static void monitor_thread_exec(void (* task)(void *), void * arg) 
 {
 	int thread_id;
@@ -287,6 +288,7 @@ static void monitor_thread_exec(void (* task)(void *), void * arg)
 		dbgmon_thread_resume(thread_id);
 	}
 }
+#endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct dbgmon_comm * comm)
@@ -855,7 +857,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "dbgmon_app_exec() failed!");
-//				monitor_thread_exec(this_board.default_task, NULL);
 			}
 			break;
 

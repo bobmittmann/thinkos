@@ -268,7 +268,7 @@ void __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
 #endif
 
 #if THINKOS_ENABLE_COMM
-static void comm_recv_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
+static bool comm_recv_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
 	/* wakeup from the comm recv wait queue setting the return value to 0.
@@ -277,7 +277,7 @@ static void comm_recv_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	return true;
 }
 
-static void comm_send_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
+static bool comm_send_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
 	/* wakeup from the comm send wait queue setting the return value to 0.
@@ -288,11 +288,11 @@ static void comm_send_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #endif
 
 #if THINKOS_ENABLE_JOIN
-static void canceled_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
+static bool canceled_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
 
-	__bit_bool(&thinkos_rt.wq_lst[wq], thread_id, 1);
+	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 	return true;
 }
 #endif
@@ -310,8 +310,6 @@ static bool paused_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
-
-//	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 	return false;
 }
 #endif

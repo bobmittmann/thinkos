@@ -66,16 +66,6 @@ thinkos_sched_get_active:
 	ldrd      r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* r1: ready, */
 	/* r2: active, */
-#if 0
-1:
-	cmp       r2, #33
-	bgt       1b 
-	cmp       r2, #THINKOS_THREAD_IDLE
-	it        eq
-	cmpeq     r1, 0
-	it        eq 
-	bxeq      lr
-#endif
 
 #if !(THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
 	mrs     r0, PSP
@@ -87,13 +77,14 @@ thinkos_sched_context_save:
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
     tst     lr, #EXC_RETURN_nFPCA
-	it      eq
-	vstmdbeq  r12!, {s16-s31}
+	itt     eq
+	moveq   r7, r0
+	vstmdbeq r7!, {s16-s31}
 #elif !(THINKOS_ENABLE_FPU) && (THINKOS_ENABLE_IDLE_MSP)
 	tst     lr, #EXC_RETURN_SPSEL
 	itte    eq
 	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4)
+	subeq   sp, sp, #(CTX_R0 * 4) /* reserve spce on MSP stack */
 	mrsne   r0, PSP
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
@@ -107,9 +98,9 @@ thinkos_sched_context_save:
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
     tst     lr, #EXC_RETURN_nFPCA
-	itt      eq
-	moveq    r7, r0
-	vstmdbeq  r7!, {s16-s31}
+	itt     eq
+	moveq   r7, r0
+	vstmdbeq r7!, {s16-s31}
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)

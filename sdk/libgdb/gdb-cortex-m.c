@@ -329,11 +329,15 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 #endif
 
 	if (reg == 13) { /*sp */
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
 		sp = (uint32_t)ctx->sp;
 		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
 		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
 				 thread_id + 1, sp, __retstr(ctx->ret));				
+#else
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+#endif
 		*val = sp;
 		return 0;
 	} 
@@ -421,12 +425,16 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 
 	if (reg == 13) { /*sp */
 		uint32_t sp = val;
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
 		sp -= (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
 		DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
 				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
 				 thread_id + 1, sp, __retstr(ctx->ret));				
 		ctx->sp = sp;
-		return 0;
+#else
+		sp -= (uint32_t)ctx + sizeof(struct thinkos_context);
+		__thinkos_thread_ctx_set(thread_id, (struct thinkos_context *)sp);
+#endif
 	} 
 
 	if (__ctx_offs[reg] == INT16_MIN) {
@@ -465,7 +473,7 @@ int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 	if (thinkos_except_buf.active == thread_id) {
 		ctx = &thinkos_except_buf.ctx.core;
 	} else {
-		ctx = thinkos_rt.ctx[thread_id];
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG(LOG_ERROR, "Invalid context!");
@@ -495,7 +503,7 @@ int thread_step_req(unsigned int gdb_thread_id)
 	if (thinkos_except_buf.active == thread_id) {
 		ctx = &thinkos_except_buf.ctx.core;
 	} else {
-		ctx = thinkos_rt.ctx[thread_id];
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG1(LOG_ERROR, "Invalid context: %08x!", ctx);
 			return -1;
@@ -533,7 +541,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		return -1;
 	}
 
-	ctx = thinkos_rt.ctx[thread_id];
+	ctx = __thinkos_thread_ctx_get(thread_id);
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_MSG, "ThinkOS Idle thread");

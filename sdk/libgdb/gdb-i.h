@@ -1,13 +1,3 @@
-#ifndef __GDB_I_H__
-#define __GDB_I_H__
-
-#include <audio.h>
-#include <string.h>
-#include <sys/param.h>
-#include <math.h>
-#include <assert.h>
-#include <stdlib.h>
-
 
 /* 
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
@@ -34,16 +24,21 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
+#ifndef __GDB_I_H__
+#define __GDB_I_H__
+
+#include <string.h>
+#include <sys/param.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <sys/dcclog.h>
-#include <sys/stm32f.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <gdb.h>
+
+#include <sys/dcclog.h>
 
 #include "signals.h"
 
