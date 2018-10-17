@@ -819,10 +819,8 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 /* exception frame */ 
 int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
 	uint32_t sigset = thinkos_dbgmon_rt.events;
 	uint32_t sigmsk = thinkos_dbgmon_rt.mask;
-	unsigned int thread_id = thinkos_rt.active;
 	uint32_t xpsr = frm->xpsr;
 
 	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
@@ -977,6 +975,8 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
 					} 
 				} else {
+					struct thinkos_except * xcpt = __thinkos_except_buf();
+
 					/* FIXME: add support for breakpoints on IRQ */
 					DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
 							 " IRQ BKPT " _NORMAL_ _FG_RED_
@@ -1002,6 +1002,8 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 #if (THINKOS_ENABLE_DEBUG_WPT)
 		if (dfsr & SCB_DFSR_DWTTRAP) {
+			unsigned int thread_id = thinkos_rt.active;
+
 			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: exception=%d pc=%08x", 
 						 xpsr & 0x1ff, frm->pc);
@@ -1041,9 +1043,9 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 #if THINKOS_ENABLE_DEBUG_STEP
 		if (dfsr & SCB_DFSR_HALTED) {
+			unsigned int thread_id = thinkos_rt.step_id;
 
 			if (demcr & DCB_DEMCR_MON_STEP) {
-				int thread_id = thinkos_rt.step_id;
 				int ipsr = (xpsr & 0x1ff);
 				/* Restore interrupts. The base priority was
 				   set in the scheduler to perform a single step.  */

@@ -25,12 +25,13 @@
 #include <stdio.h>
 #include <string.h>
 
-struct mpu_mem_block thinkos_mpu_kernel_mem;
-
 /* 
 
   */
 #if THINKOS_ENABLE_MPU
+
+struct mpu_mem_block thinkos_mpu_kernel_mem;
+
 
 #define STRONGLY_ORDERED MPU_RASR_TEX(0) 
 #define SHARED_DEVICE    MPU_RASR_TEX(0) | MPU_RASR_B
