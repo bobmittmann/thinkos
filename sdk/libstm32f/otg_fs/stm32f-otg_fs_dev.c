@@ -52,11 +52,11 @@
 #endif
 
 #ifndef STM32_OTG_FS_IO_INIT
-#define STM32_OTG_FS_IO_INIT 1
+#define STM32_OTG_FS_IO_INIT 0
 #endif
 
 #ifndef STM32_OTG_FS_VBUS_ENABLE
-#define STM32_OTG_FS_VBUS_ENABLE 1
+#define STM32_OTG_FS_VBUS_ENABLE 0
 #endif
 
 #ifndef STM32_OTG_FS_IRQ_ENABLE
@@ -1303,6 +1303,7 @@ void stm32f_otg_fs_isr(void)
 				DCC_LOG(LOG_MSG, "[2] <IEPINT> <XFRC>");
 				__ep_tx_done(drv, 2);
 			}
+
 			if (diepint & OTG_FS_TOC) {
 				/* Bit 3 - Timeout condition */
 				DCC_LOG(LOG_WARNING, "[2] <IEPINT> <OTG_FS_TOC>");

@@ -33,8 +33,6 @@
 #include <thinkos.h>
 #include <vt100.h>
 
-void thinkos_idle_task(void);
-
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
@@ -45,13 +43,6 @@ uint32_t __attribute__((aligned(8))) thinkos_except_stack[THINKOS_EXCEPT_STACK_S
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-
-void __thinkos_idle_error(void * arg)
-{
-	udelay(500000);
-	DCC_LOG(LOG_ERROR, "ThinkOS Idle error!!"); 
-	udelay(500000);
-}
 
 void thinkos_sched_dbg(struct thinkos_context * __ctx, 
 					   uint32_t __new_thread_id,
@@ -80,7 +71,8 @@ uint32_t thinkos_sched_error(struct thinkos_context * __ctx,
 	__tdump();
 #endif
 	if (__new_thread_id == THINKOS_THREAD_IDLE) {
- 		return __thinkos_idle_reset(__thinkos_idle_error, NULL);
+
+ 		return __thinkos_idle_reset(thinkos_idle_task, NULL);
 	}
 
 	thinkos_rt.break_id = __new_thread_id;

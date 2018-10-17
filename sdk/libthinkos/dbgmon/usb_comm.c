@@ -134,7 +134,7 @@ static const struct usb_descriptor_device cdc_acm_desc_dev = {
 /* device qualifier structure provide information on a high-speed
    capable device if the device was operating at the other speed.
    see usb_20.pdf - Section 9.6.2 */
-static const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
+const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
 	/* Size of this descriptor in bytes */
 	.length = sizeof(struct usb_descriptor_device_qualifier),
 	/* DEVICE_QUALIFIER descriptor type */
@@ -300,16 +300,22 @@ const struct usb_descriptor_string stmicroelectronics_str = {
 	}
 };
 
+const struct usb_descriptor_string stmicro_str = {
+	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'S', 'T', 'M', 'i', 'c', 'r', 'o', 0
+	}
+};
+
 const struct usb_descriptor_string composite_demo_str = {
-	14 * 2 + 4, USB_DESCRIPTOR_STRING, {
+	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
 		'C', 'o', 'm', 'p', 'o', 's', 'i', 't', 'e', ' ', 
-		'D', 'e', 'm', 'o'
+		'D', 'e', 'm', 'o', '0'
 	}
 };
 
 const struct usb_descriptor_string atmel_str = {
-	5 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'A', 't', 'm', 'e', 'l'
+	6 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'A', 't', 'm', 'e', 'l', '0'
 	}
 };
 
@@ -343,6 +349,12 @@ const struct usb_descriptor_string usb_serial_cdc_device_str = {
 	}
 };
 
+const struct usb_descriptor_string thinkos_str = {
+	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'T', 'h', 'i', 'n', 'k', 'O', 'S', 0
+	}
+};
+
 const struct usb_descriptor_string debug_monitor_str = {
 	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
 		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
@@ -359,9 +371,8 @@ const struct usb_descriptor_string console_str = {
 };
 
 const struct usb_descriptor_string serial_num_str = {
-	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'5', '4', '6', '8', '6', '9', '6', 'e', '6', 'b', 
-		'4', 'f', '5', '3', 0
+	5 * 2 + 4, USB_DESCRIPTOR_STRING, {
+		'1', '1', '1', '1', 0
 	}
 };
 
@@ -369,8 +380,8 @@ const struct usb_descriptor_string serial_num_str = {
 
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
 	&language_english_us,
-	&stmicroelectronics_str,
-	&debug_monitor_str,
+	&stmicro_str,
+	&thinkos_str,
 	&serial_num_str,
 	&st_vcom_str 
 };
@@ -556,7 +567,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
 			break;
 		}
-
+#if 0
 		if (desc == USB_DESCRIPTOR_DEVICE_QUALIFIER) {
 			/* Return Device Descriptor */
 			*ptr = (void *)&cdc_acm_desc_qual;
@@ -564,7 +575,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
 			break;
 		}
-
+#endif
 		if (desc == USB_DESCRIPTOR_CONFIGURATION) {
 			/* Return Configuration Descriptor */
 			*ptr = (void *)&cdc_acm_desc_cfg;

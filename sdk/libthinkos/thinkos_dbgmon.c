@@ -320,29 +320,16 @@ int dbgmon_wait_idle(void)
 	uint32_t evset;
 	uint32_t evmsk;
 	uint32_t result;
-//	int ret;
 
 	/* Issue an idle hook request */
 	__idle_hook_req(IDLE_HOOK_NOTIFY_DBGMON);
-	//DCC_LOG(LOG_TRACE, "idle request");
 
 	save = thinkos_dbgmon_rt.mask;
-
-	// thinkos_dbgmon_rt.mask = 0;
-	/* wait for response */
-	//ret = dbgmon_expect(DBGMON_IDLE);
 
 	/* set the local mask */
 	evmsk = (1 << DBGMON_IDLE);
 	thinkos_dbgmon_rt.mask = evmsk;
 	
-	/* mske sure event is clear */
-//	do { /* avoid possible race condition on dbgmon.events */
-//		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
-//		evset &= evmsk; /* clear the event */
-//	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-
-	/* wait for response */
 	do {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 		do { /* avoid possible race condition on dbgmon.events */
@@ -1219,40 +1206,28 @@ void dbgmon_soft_reset(void)
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
 	__dmon_irq_disable_all();
 
-	//DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-	//		"2. Kill all threads"  _ATTR_POP_); 
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"2. Kill all threads"  _ATTR_POP_); 
 	__thinkos_kill_all(); 
-/*
-	DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			" 2.1 ched=%d syscall=%d clock=%d"  _ATTR_POP_,
-			thinkos_sched_active() ? 1 : 0,
-			thinkos_syscall_active() ? 1 : 0,
-			thinkos_clock_active() ? 1 : 0); 
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"4. Request system reset"   _ATTR_POP_);
-			*/
-//	__idle_hook_req(IDLE_HOOK_SYSRST);
-/*
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"3. Wait IDLE signal..."   _ATTR_POP_); 
-*/
-	DCC_LOG(LOG_TRACE, "1. ThinkOS core reset...");
+			"3. Core reset..."   _ATTR_POP_); 
 	__thinkos_core_reset();
 
 #if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "2. exception reset...");
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"4. Except reset..."   _ATTR_POP_); 
 	__exception_reset();
 #endif
 
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"5. Wait IDLE signal..."   _ATTR_POP_); 
 	dbgmon_wait_idle();
 
-	dbgmon_signal(DBGMON_SOFTRST); 
-
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"5. Send soft reset signal"  _ATTR_POP_);
+			"6. Send soft reset signal"  _ATTR_POP_);
+	dbgmon_signal(DBGMON_SOFTRST); 
 }
-
 
 /* -------------------------------------------------------------------------
  * ThinkOS kernel level API

@@ -39,15 +39,12 @@
 
 struct thinkos_idle_rt thinkos_idle_rt;
 
-void __attribute__((noreturn, naked)) thinkos_idle_task(void)
+void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	uint32_t map;
 	int req;
 #endif
-	uint32_t clk = 0;
-
-	DCC_LOG(LOG_TRACE, "ThinkOS Idle reset."); 
 
 	for (;;) {
 
@@ -56,7 +53,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
 			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
-//			map = thinkos_idle_rt.req_map;
 			req = __clz(__rbit(map));
 			if (map != 0) {
 				uint32_t y;
@@ -70,22 +66,11 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 			}
 		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
 
-//		thinkos_idle_rt.req_map = map;
-
-		clk++;
-
-		if ((clk & 0x00ffffff) == 0) {
-			DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
-					 "map=%08x" _ATTR_POP_ , map);
-		}
-#if 0
-		if ((clk & 0x00ffffff) == 0) {
-//			DCC_LOG3(LOG_TRACE, "clk=%8d ctx=%08x sp=%08x", clk, 
-//					 thinkos_rt.ctx[THINKOS_THREAD_IDLE], cm3_sp_get()); 
-		}
-		if ((clk & 0x01ffffff) == 0x01000000) {
-		}
+#if (THINKOS_ENABLE_IDLE_WFI)
+		asm volatile ("wfi\n"); /* wait for interrupt */
 #endif
+
+
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
@@ -119,10 +104,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 					__thinkos_defer_sched();
 #endif
 
-#if (THINKOS_ENABLE_IDLE_WFI)
-//				asm volatile ("wfi\n"); /* wait for interrupt */
-#endif
-
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 				break;
 			default:
@@ -133,12 +114,12 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 	}
 }
 
+#if (THINKOS_ENABLE_IDLE_MSP) 
+
 void __thinkos_idle_bootstrap(void * arg)
 {
 	DCC_LOG(LOG_TRACE, "ThinkOS Idle bootstrap.... main()"); 
 }
-
-#if (THINKOS_ENABLE_IDLE_MSP) 
 
 #define THINKOS_IDLE_STACK_SIZE (sizeof(thinkos_except_stack))
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_except_stack
@@ -196,8 +177,6 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 
 	ctx  = __thinkos_idle_ctx();
 
-	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
-
 	ctx->r0 = (uint32_t)arg;
 #if DEBUG
 	ctx->r1 = (uint32_t)0x11111111;
@@ -248,6 +227,6 @@ void __thinkos_idle_init(void)
 					   THINKOS_IDLE_STACK_SIZE);
 #endif
 
- 	__thinkos_idle_reset(__thinkos_idle_bootstrap, NULL);
+ 	__thinkos_idle_reset(thinkos_idle_task, NULL);
 }
 

@@ -81,6 +81,7 @@ static inline void __idle_hook_clr(unsigned int req) {
 	}
 #endif
 
+void thinkos_idle_task(void *);
 void __thinkos_idle_init(void);
 uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg);
 

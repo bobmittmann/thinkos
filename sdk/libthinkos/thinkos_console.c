@@ -34,7 +34,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 /* Console lockout debug ... */
 #ifndef ENABLE_CONSOLE_DEBUG
-#define ENABLE_CONSOLE_DEBUG 1
+#define ENABLE_CONSOLE_DEBUG 0
 #endif
 
 #if (!THINKOS_ENABLE_MONITOR)
@@ -670,13 +670,8 @@ void __thinkos_console_reset(void)
 	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	dbgmon_clear(DBGMON_TX_PIPE);
 	dbgmon_clear(DBGMON_RX_PIPE);
-
-	thinkos_console_rt.tx_pipe.head = 0;
-	thinkos_console_rt.tx_pipe.tail = 0;
-	thinkos_console_rt.rx_pipe.head = 0;
-	thinkos_console_rt.rx_pipe.tail = 0;
-	thinkos_console_rt.connected = 0;
-	thinkos_console_rt.open_cnt = 0;
+	__thinkos_memcpy32(&thinkos_console_rt, 0x00000000, sizeof
+					   (thinkos_console_rt));
 }
 
 void __console_connect_set(bool val) 
