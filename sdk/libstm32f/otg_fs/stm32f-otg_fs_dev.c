@@ -36,8 +36,8 @@
 #include <sys/delay.h>
 #include <sys/usb-dev.h>
 #include <sys/param.h>
-
 #include <sys/dcclog.h>
+#include <vt100.h>
 
 #ifndef STM32_ENABLE_OTG_FS 
 #define STM32_ENABLE_OTG_FS 0
@@ -242,10 +242,12 @@ static void __ep0_tx_push(struct stm32f_otg_drv * drv)
 	if (xfrsiz == 0) {
 		otg_fs->diepempmsk &= ~(1 << 0);
 		if (pktcnt != 0) {
-			DCC_LOG1(LOG_PANIC, "[0] pktcnt(%d) != 0 !!!", pktcnt);
+			DCC_LOG1(LOG_PANIC, _ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+					 "[0] pktcnt(%d) != 0 !!!" _ATTR_POP_, pktcnt);
 			otg_fs->inep[0].diepctl = diepctl | OTG_FS_EPENA | OTG_FS_CNAK; 
 		} else
-			DCC_LOG(LOG_MSG, "[0] no pending data...");
+			DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
+					"[0] no pending data..." _ATTR_POP_);
 		return;
 	}
 
@@ -255,13 +257,15 @@ static void __ep0_tx_push(struct stm32f_otg_drv * drv)
 #if DEBUG
 	(void)pktcnt;
 
-	DCC_LOG4(LOG_MSG, "[0] mpsiz=%d pktcnt=%d xfrsiz=%d free=%d", 
+	DCC_LOG4(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
+			 "[0] mpsiz=%d pktcnt=%d xfrsiz=%d free=%d" _ATTR_POP_, 
 			 mpsiz, pktcnt, xfrsiz, free);
 #endif
 
 	if (xfrsiz < mpsiz) {
 		if (free < xfrsiz) {
-			DCC_LOG2(LOG_ERROR, "free(%d) < xfrsiz(%d) !!!", free, xfrsiz);
+			DCC_LOG2(LOG_ERROR, _ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+					 "free(%d) < xfrsiz(%d) !!!" _ATTR_POP_, free, xfrsiz);
 			otg_fs->diepempmsk &= ~(1 << 0);
 			return;
 		}
@@ -269,7 +273,9 @@ static void __ep0_tx_push(struct stm32f_otg_drv * drv)
 		cnt = xfrsiz;
 	} else {
 		if (free < mpsiz) {
-			DCC_LOG2(LOG_ERROR, "free(%d) < mpsiz(%d) !!!", free, mpsiz);
+			DCC_LOG2(LOG_ERROR, _ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+					 "free(%d) < mpsiz(%d) !!!" _ATTR_POP_, 
+					 free, mpsiz);
 			otg_fs->diepempmsk &= ~(1 << 0);
 			return;
 		}
@@ -304,12 +310,14 @@ static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
 	struct stm32f_otg_ep * ep = &drv->ep[ep_id];
 
 	if (diepctl & OTG_FS_EPENA) {
-		DCC_LOG1(LOG_TRACE, "[%d] pending transaction EPENA set..", idx);
+		DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				 "[%d] pending transaction EPENA set.." _ATTR_POP_, idx);
 		return;
 	}
 
 	if (ep->state == EP_IN_DATA_ZLP) {
-		DCC_LOG1(LOG_TRACE, "[%d] ZLP!", idx);
+		DCC_LOG1(LOG_TRACE,  _ATTR_PUSH_ _FG_GREEN_ 
+				 "[%d] ZLP!" _ATTR_POP_, idx);
 		otg_fs->inep[idx].dieptsiz = OTG_FS_PKTCNT_SET(1) | 
 			OTG_FS_XFRSIZ_SET(0);
 		otg_fs->inep[idx].diepctl = diepctl | OTG_FS_EPENA;
@@ -1264,13 +1272,16 @@ void stm32f_otg_fs_isr(void)
 				DCC_LOG(LOG_MSG, "[1] <IEPINT> <TXFE>");
 			}
 #endif
+			
 			if (diepint & OTG_FS_XFRC) {
-				DCC_LOG(LOG_MSG, "[1] <IEPINT> <IN XFRC>");
+				DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_
+						"[1] <IEPINT> <IN XFRC>" _ATTR_POP_);
 				__ep_tx_done(drv, 1);
 			} 
 			if (diepint & OTG_FS_TOC) {
 				/* Bit 3 - Timeout condition */
-				DCC_LOG(LOG_WARNING, "[1] <IEPINT> <OTG_FS_TOC>");
+				DCC_LOG(LOG_WARNING, _ATTR_PUSH_ _FG_GREEN_
+						"[1] <IEPINT> <OTG_FS_TOC>" _ATTR_POP_);
 			} 
 			/* clear interrupts */
 			otg_fs->inep[1].diepint = diepint;
@@ -1472,7 +1483,8 @@ void stm32f_otg_fs_isr(void)
 			switch (grxsts & OTG_FS_PKTSTS_MSK) {
 			case OTG_FS_PKTSTS_OUT_DATA_UPDT:
 				/* OUT data packet received */
-				DCC_LOG1(LOG_INFO, "[%d] <RXFLVL> <OUT_DATA_UPDT>", epnum);
+				DCC_LOG1(LOG_INFO, _ATTR_PUSH_ _FG_GREEN_
+						 "[%d] <RXFLVL> <OUT_DATA_UPDT>" _ATTR_POP_ , epnum);
 				/* 2. The application can mask the RXFLVL interrupt (in
 				   OTG_FS_GINTSTS) by writing to RXFLVL = 0 (in
 				   OTG_FS_GINTMSK), until it has read the packet from
@@ -1483,7 +1495,8 @@ void stm32f_otg_fs_isr(void)
 				stm32f_otg_dev_ep_out(drv, epnum, len);
 				break;
 			case OTG_FS_PKTSTS_OUT_XFER_COMP:
-				DCC_LOG1(LOG_INFO, "[%d] <RXFLVL> <OUT_XFER_COMP>", epnum);
+				DCC_LOG1(LOG_INFO, _ATTR_PUSH_ _FG_GREEN_
+						 "[%d] <RXFLVL> <OUT_XFER_COMP>" _ATTR_POP_ , epnum);
 				/* Prepare to receive more */
 				otg_fs->outep[epnum].doeptsiz = drv->ep[epnum].doeptsiz;
 				/* EP enable */
@@ -1526,14 +1539,16 @@ void stm32f_otg_fs_isr(void)
 
 	if (gintsts & OTG_FS_USBRST ) {
 		/* end of bus reset */
-		DCC_LOG(LOG_MSG, "<USBRST> --------------- [DEFAULT]");
+		DCC_LOG(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+				"<USBRST> --------------- [DEFAULT]" _ATTR_POP_);
 		stm32f_otg_dev_reset(drv);
 	}
 
 #if DEBUG
 	if (gintsts & OTG_FS_SRQINT) {
 		/* Session request/new session detected interrupt */
-		DCC_LOG(LOG_MSG, "<SRQINT>  [POWERED]");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ 
+				"<SRQINT>  [POWERED]" _ATTR_POP_);
 		otg_fs->gintmsk |= OTG_FS_WUIM | OTG_FS_USBRSTM | OTG_FS_ENUMDNEM |
 			OTG_FS_ESUSPM | OTG_FS_USBSUSPM;
 	}
@@ -1542,7 +1557,8 @@ void stm32f_otg_fs_isr(void)
 		uint32_t gotgint = otg_fs->gotgint;
 		DCC_LOG(LOG_MSG, "<OTGINT>");
 		if (gotgint & OTG_FS_OTGINT) {
-			DCC_LOG(LOG_MSG, "<SEDET>  [ATTACHED]");
+			DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ 
+					"<SEDET>  [ATTACHED]" _ATTR_POP_);
 			otg_fs->gintmsk = OTG_FS_SRQIM | OTG_FS_OTGINT;
 		}
 		otg_fs->gotgint = gotgint;
@@ -1552,7 +1568,8 @@ void stm32f_otg_fs_isr(void)
 		uint32_t dsts = otg_fs->dsts;
 		(void)dsts;
 
-		DCC_LOG4(LOG_INFO, "<ESUSP> %s%s ENUMSPD=%d %s", 
+		DCC_LOG4(LOG_INFO, _ATTR_PUSH_ _FG_CYAN_
+				 "<ESUSP> %s%s ENUMSPD=%d %s" _ATTR_POP_, 
 				 (dsts & OTG_FS_EERR) ? " EERR" : "",
 				 (dsts & OTG_FS_SUSPSTS) ? " SUSPSTS" : "",
 				 OTG_FS_ENUMSPD_GET(dsts),
@@ -1563,7 +1580,8 @@ void stm32f_otg_fs_isr(void)
 		uint32_t dsts = otg_fs->dsts;
 		(void)dsts;
 
-		DCC_LOG4(LOG_INFO, "<USBSUSP> %s%s ENUMSPD=%d %s", 
+		DCC_LOG4(LOG_INFO, _ATTR_PUSH_ _FG_CYAN_
+				 "<USBSUSP> %s%s ENUMSPD=%d %s" _ATTR_POP_, 
 				 (dsts & OTG_FS_EERR) ? " EERR" : "",
 				 (dsts & OTG_FS_SUSPSTS) ? " SUSPSTS" : "",
 				 OTG_FS_ENUMSPD_GET(dsts),
@@ -1571,44 +1589,45 @@ void stm32f_otg_fs_isr(void)
 	}
 
 	if (gintsts & OTG_FS_GONAKEFF) {
-		DCC_LOG(LOG_MSG, "<GONAKEFF>");
+		DCC_LOG(LOG_MSG,  _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<GONAKEFF>" _ATTR_POP_);
 		otg_fs->gintmsk &= ~OTG_FS_GONAKEFFM;
 	}
 
 	if (gintsts & OTG_FS_SOF) {
-		DCC_LOG(LOG_MSG, "<SOF>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<SOF>" _ATTR_POP_);
 	}
 
 	if (gintsts & OTG_FS_PTXFE) {
-		DCC_LOG(LOG_MSG, "<PTXFE>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<PTXFE>" _ATTR_POP_);
 		otg_fs->gintmsk &= ~OTG_FS_PTXFEM;
 	}
 
 	if (gintsts & OTG_FS_NPTXFE) {
-		DCC_LOG(LOG_MSG, "<NPTXFE>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<NPTXFE>" _ATTR_POP_);
 		otg_fs->gintmsk &= ~OTG_FS_NPTXFEM;
 	}
 
 	if (gintsts & OTG_FS_CIDSCHG) {
-		DCC_LOG(LOG_MSG, "<CIDSCHG>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<CIDSCHG>" _ATTR_POP_);
 		otg_fs->gintmsk &= ~OTG_FS_CIDSCHGM ;
 	}
 
 	if (gintsts & OTG_FS_WKUPINT) {
-		DCC_LOG(LOG_MSG, "<WKUPINT>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<WKUPINT>" _ATTR_POP_);
 		/* disable resume/wakeup interrupts */
 	}
 
 	if (gintsts & OTG_FS_IISOIXFR) {
-		DCC_LOG(LOG_MSG, "<IISOIXFR>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<IISOIXFR>" _ATTR_POP_);
 	}
 
 	if (gintsts & OTG_FS_INCOMPISOOUT) {
-		DCC_LOG(LOG_MSG, "<INCOMPISOOUT>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ 
+				"<INCOMPISOOUT>" _ATTR_POP_);
 	}
 
 	if (gintsts & OTG_FS_MMIS) {
-		DCC_LOG(LOG_MSG, "<MMIS>");
+		DCC_LOG(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ _DIM_ "<MMIS>" _ATTR_POP_);
 	}
 #endif
 	/* clear pending interrupts */

@@ -316,7 +316,7 @@ static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-static const void const * thread_resume_lut[] = {
+static const void * const thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
 #if THINKOS_ENABLE_TIMESHARE
 	[THINKOS_OBJ_TMSHARE] = tmshare_resume,

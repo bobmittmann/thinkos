@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <vt100.h>
 
 #include <sys/usb-dev.h>
 #include <sys/usb-cdc.h>
@@ -780,7 +781,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	int n;
 
 	if (dev->acm_ctrl == 0) {
-		DCC_LOG(LOG_WARNING, "not connected!");
+//		DCC_LOG(LOG_MSG, "not connected!");
 		dev->tx_seq = 0;
 		dev->tx_ack = 0;
 		dev->rx_seq = 0;
@@ -1053,4 +1054,5 @@ const struct dbgmon_comm * custom_comm_getinstance(void)
 }
 
 #endif
+
 
