@@ -744,6 +744,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 #if THINKOS_ENABLE_CONSOLE
+	bool raw_mode = false;
 	uint8_t * ptr;
 	int cnt;
 #endif
@@ -772,7 +773,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << DBGMON_COMM_CTL);
 	sigmask |= (1 << DBGMON_TX_PIPE);
-	sigmask |= (1 << DBGMON_RX_PIPE);
+//	sigmask |= (1 << DBGMON_RX_PIPE);
 #endif
 	sigmask |= (1 << DBGMON_APP_STOP);
 	sigmask |= (1 << DBGMON_APP_EXEC);
@@ -813,16 +814,13 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			break;
 
 		case DBGMON_SOFTRST:
+			/* Acknowledge the signal */
+			dbgmon_clear(DBGMON_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			this_board.softreset();
 #if THINKOS_ENABLE_CONSOLE
-			__thinkos_console_reset();
-			/* Update the console connection flag which was cleared
-			 by __console_reset(). */
-			__console_connect_set(dbgmon_comm_isconnected(comm));
+			goto is_connected;
 #endif
-			/* Acknowledge the signal */
-			dbgmon_clear(DBGMON_SOFTRST);
 			break;
 
 		case DBGMON_ALARM:
@@ -850,6 +848,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 
 		case DBGMON_APP_EXEC:
 			dbgmon_clear(DBGMON_APP_EXEC);
+			raw_mode = false;
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			if (!dbgmon_app_exec(&this_board.application, false)) {
 				dbgmon_printf(comm, "Can't run application!\r\n");
@@ -871,11 +870,13 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 
 		case DBGMON_APP_TERM:
 			dbgmon_clear(DBGMON_APP_TERM);
+			raw_mode = false;
 			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
 			break;
 
 		case DBGMON_APP_STOP:
 			dbgmon_clear(DBGMON_APP_STOP);
+			raw_mode = false;
 			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
 			break;
 
@@ -898,12 +899,14 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 		case DBGMON_THREAD_FAULT:
 			dbgmon_clear(DBGMON_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
+			raw_mode = false;
 			monitor_on_thread_fault(comm);
 			break;
 
 		case DBGMON_KRN_EXCEPT:
 			dbgmon_clear(DBGMON_KRN_EXCEPT);
 			DCC_LOG(LOG_TRACE, "System exception.");
+			raw_mode = false;
 			monitor_on_krn_except(comm);
 			break;
 #endif
@@ -911,6 +914,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #if (MONITOR_WATCHPOINT_ENABLE)
 		case DBGMON_BREAKPOINT:
 			dbgmon_clear(DBGMON_BREAKPOINT);
+			raw_mode = false;
 			monitor_on_bkpt(&monitor);
 			break;
 #endif
@@ -926,6 +930,8 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 		case DBGMON_COMM_RCV:
 			DCC_LOG(LOG_TRACE, "COMM_RCV: +++++++++++++++++");
 #if THINKOS_ENABLE_CONSOLE
+			if (raw_mode)
+				goto raw_mode_recv;
 			/* receive from the COMM driver one byte at the time */
 			if ((cnt = dbgmon_comm_recv(comm, buf, 1)) > 0) {
 				int c = buf[0];
@@ -962,36 +968,92 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 		case DBGMON_COMM_CTL:
 			dbgmon_clear(DBGMON_COMM_CTL);
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
-			__console_connect_set(dbgmon_comm_isconnected(comm));
+is_connected:
+			{
+				bool connected = dbgmon_comm_isconnected(comm);
+				sigmask &= ~((1 << DBGMON_COMM_EOT) | 
+							 (1 << DBGMON_COMM_RCV) |
+							 (1 << DBGMON_RX_PIPE) |
+							 (1 << DBGMON_TX_PIPE));
+				__console_connect_set(connected);
+				raw_mode = __console_is_raw_mode();
+				if (connected) {
+					sigmask |= ((1 << DBGMON_COMM_EOT) |
+								(1 << DBGMON_COMM_RCV) |
+								(1 << DBGMON_TX_PIPE));
+					if (raw_mode)
+						sigmask |= (1 << DBGMON_RX_PIPE);
+				}
+			}
 			break;
-
+#if 0
 		case DBGMON_RX_PIPE:
 			dbgmon_clear(DBGMON_RX_PIPE);
 			DCC_LOG(LOG_TRACE, "RX Pipe!");
 			break;
+#endif
 
 		case DBGMON_COMM_EOT:
 			DCC_LOG(LOG_TRACE, "COMM_EOT");
-
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				int n;
-				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
 				if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
-					/* enable COMM_EOT event to continue sending 
-					   data */
-					sigmask |= (1 << DBGMON_COMM_EOT);
 					__console_tx_pipe_commit(n); 
+					if (n == cnt) {
+						/* Wait for TX_PIPE */
+						sigmask |= (1 << DBGMON_TX_PIPE);
+						sigmask &= ~(1 << DBGMON_COMM_EOT);
+					} else {
+						/* Wait for COMM_EOT */
+						sigmask |= (1 << DBGMON_COMM_EOT);
+						sigmask &= ~(1 << DBGMON_TX_PIPE);
+					}
 				} else {
-					DCC_LOG(LOG_WARNING, "dbgmon_comm_send() failed!!!");
+					/* Wait for COMM_EOT */
+					sigmask |= (1 << DBGMON_COMM_EOT);
+					sigmask &=  ~(1 << DBGMON_TX_PIPE);
 				}
 			} else {
-				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
+				/* Wait for TX_PIPE */
+				sigmask |= (1 << DBGMON_TX_PIPE);
 				sigmask &= ~(1 << DBGMON_COMM_EOT);
 			}
 			break;
+
+		case DBGMON_RX_PIPE:
+raw_mode_recv:
+			/* get a pointer to the head of the pipe.
+			   __console_rx_pipe_ptr() will return the number of 
+			   consecutive spaces in the buffer. */
+			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
+				int n;
+				/* receive from the COMM driver */
+				if ((n = dbgmon_comm_recv(comm, ptr, cnt)) > 0) {
+					/* commit the fifo head */
+					__console_rx_pipe_commit(n);
+					if (n == cnt) {
+						/* Wait for RX_PIPE */
+						sigmask &= ~(1 << DBGMON_COMM_RCV);
+						sigmask |= (1 << DBGMON_RX_PIPE);
+					} else {
+						/* Wait for RX_PIPE and/or COMM_RCV */
+						sigmask |= (1 << DBGMON_RX_PIPE);
+						sigmask |= (1 << DBGMON_COMM_RCV);
+					}
+				} else {
+					/* Wait for COMM_RECV */
+					sigmask |= (1 << DBGMON_COMM_RCV);
+					sigmask &=  ~(1 << DBGMON_RX_PIPE);
+				}
+			} else {
+				/* Wait for RX_PIPE */
+				sigmask &= ~(1 << DBGMON_COMM_RCV);
+				sigmask |= (1 << DBGMON_RX_PIPE);
+			}
+			break;
+
 #endif
 
 #if (MONITOR_SELFTEST_ENABLE)

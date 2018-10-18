@@ -910,6 +910,8 @@ void __console_connect_set(bool val);
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
 
+bool __console_is_raw_mode(void); 
+
 void __thinkos_sem_post(uint32_t wq);
 
 void __thinkos_ev_raise(uint32_t wq, int ev);
@@ -917,6 +919,7 @@ void __thinkos_ev_raise(uint32_t wq, int ev);
 void __thinkos_gate_open(uint32_t wq);
 
 void __thinkos_ev_info(unsigned int wq);
+
 
 bool thinkos_sched_active(void);
 	

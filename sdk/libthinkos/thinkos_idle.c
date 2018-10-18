@@ -59,9 +59,9 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 
 				y = map & ~(1 << req);
 
-				DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
-						 "map=%08x y=%08x req=%d clk=%d" _ATTR_POP_ , 
-						 map, y, req, clk);
+				DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
+						 "map=%08x y=%08x req=%d" _ATTR_POP_ , 
+						 map, y, req);
 				map = y;
 			}
 		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));

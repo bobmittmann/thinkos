@@ -207,7 +207,7 @@
 #endif
 
 /* Enable the thinkos_console_break() syscall. This can be used to 
-   interrupt any blocking conole's system calls */
+   interrupt any blocking console's system calls */
 #ifndef THINKOS_ENABLE_CONSOLE_BREAK
 #define THINKOS_ENABLE_CONSOLE_BREAK    0 
 #endif

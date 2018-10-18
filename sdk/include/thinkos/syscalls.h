@@ -131,6 +131,7 @@
 #define CONSOLE_IOCTL                  6
 #define CONSOLE_IS_CONNECTED           7
 #define CONSOLE_IO_BREAK               8
+#define CONSOLE_RAW_MODE               9
 
 #define CONSOLE_IO_WR                  (1 << 0)
 #define CONSOLE_IO_RD                  (1 << 1)
@@ -626,6 +627,12 @@ thinkos_console_drain(void) {
 static inline int __attribute__((always_inline)) 
 thinkos_console_io_break(unsigned int which) {
 	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_IO_BREAK, which);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_console_raw_mode(bool enable) {
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE, 
+							enable ? 1 : 0);
 }
 
 
