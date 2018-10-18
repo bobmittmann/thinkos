@@ -630,9 +630,8 @@ thinkos_console_io_break(unsigned int which) {
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_console_raw_mode(bool enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE, 
-							enable ? 1 : 0);
+thinkos_console_raw_mode(unsigned int enable) {
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE, enable);
 }
 
 
