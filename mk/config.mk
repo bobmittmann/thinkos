@@ -229,6 +229,7 @@ ifeq ($(HOST),Linux)
   RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -239,6 +240,7 @@ ifeq ($(HOST),Cygwin)
   RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -249,6 +251,7 @@ ifeq ($(HOST),Msys)
   RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -258,7 +261,8 @@ ifeq ($(HOST),Windows)
   RMALL := del /F /Q 
   RMDIR := rmdir
   MKDIR := mkdir
-  CP := copy 
+  CP := copy /Y
+  CPDIR := xcopy /Y /R /E /I
   MV := ren
   ECHO := echo
   DEVNULL := NUL:

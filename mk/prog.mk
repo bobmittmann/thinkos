@@ -98,7 +98,26 @@ LIBDIRS := $(abspath $(LIBDIRS))
 # Installation directory
 #------------------------------------------------------------------------------ 
 
-INSTALLDIR = $(abspath .)
+ifndef LIB_INSTALLDIR
+  ifdef INSTALLDIR
+    LIB_INSTALLDIR = $(abspath $(INSTALLDIR)/lib)
+  else
+    LIB_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+ifndef INC_INSTALLDIR
+  ifdef INSTALLDIR
+    INC_INSTALLDIR = $(abspath $(INSTALLDIR)/include)
+  else
+    LIB_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+
+ifndef INSTALLDIR
+  INSTALLDIR = $(abspath .)
+endif
 
 #------------------------------------------------------------------------------ 
 # library output directories 
@@ -106,10 +125,8 @@ INSTALLDIR = $(abspath .)
 
 ifeq (Windows,$(HOST))
   LIB_OUTDIR := $(subst /,\,$(OUTDIR))
-  LIB_INSTALLDIR := $(subst /,\,$(OUTDIR))
 else
   LIB_OUTDIR = $(OUTDIR)
-  LIB_INSTALLDIR = $(OUTDIR)
 endif
 
 #------------------------------------------------------------------------------ 
@@ -170,7 +187,6 @@ ifeq (Windows,$(HOST))
   CLEAN_GFILES := $(strip $(subst /,\,$(GFILES)))
   CLEAN_PFILES := $(strip $(subst /,\,$(PFILES)))
   CLEAN_ODIRS := $(call reverse,$(strip $(subst /,\,$(ODIRS))))
-  LIB_INSTALLDIR := $(subst /,\,$(OUTDIR))
   LIB_OUTDIR := $(subst /,\,$(OUTDIR))
   INSTALLDIR := $(subst /,\,$(INSTALLDIR))
 else
@@ -180,7 +196,6 @@ else
   CLEAN_PFILES := $(strip $(PFILES))
   CLEAN_ODIRS := $(call reverse,$(strip $(ODIRS)))
   LIB_OUTDIR = $(OUTDIR)
-  LIB_INSTALLDIR = $(OUTDIR)
 endif
 
 FLAGS_TO_PASS := $(FLAGS_TO_PASS) 'D=$(dbg_level)' 'V=$(verbose)' \
@@ -199,7 +214,9 @@ FLAGS_TO_PASS := $(FLAGS_TO_PASS) 'D=$(dbg_level)' 'V=$(verbose)' \
 				 'INCPATH=$(INCPATH)'\
 				 'LIBPATH=$(LIBPATH)'\
 				 'LIBDIR=$(LIB_OUTDIR)'\
-				 'INSTALLDIR=$(LIB_INSTALLDIR)'
+				 'INSTALLDIR=$(INSTALLDIR)'\
+				 'LIB_INSTALLDIR=$(LIB_INSTALLDIR)'\
+				 'INC_INSTALLDIR=$(INC_INSTALLDIR)'
 
 LIBDIRS_ALL := $(LIBDIRS:%=%-all)
 

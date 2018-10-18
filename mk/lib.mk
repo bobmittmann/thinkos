@@ -62,7 +62,7 @@ OFILES = $(addprefix $(OUTDIR)/,\
 		   $(SFILES:.S=.o))
 
 #ifeq (Windows,$(HOST))
-  ODIRS = $(subst /,\,$(sort $(dir $(OFILES))))
+#  ODIRS = $(subst /,\,$(sort $(dir $(OFILES))))
 #else
   ODIRS = $(sort $(dir $(OFILES)))
 #endif
@@ -77,7 +77,25 @@ DFILES = $(OFILES:.o=.d) $(OFILES_OUT:.c=.d)
 # Installation directory
 #------------------------------------------------------------------------------ 
 
-INSTALLDIR = $(abspath .)
+ifndef LIB_INSTALLDIR
+  ifdef INSTALLDIR
+    LIB_INSTALLDIR = $(abspath $(INSTALLDIR)/lib)
+  else
+    LIB_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+ifndef INC_INSTALLDIR
+  ifdef INSTALLDIR
+    INC_INSTALLDIR = $(abspath $(INSTALLDIR)/include)
+  else
+    INC_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+ifndef INSTALLDIR
+  INSTALLDIR = $(abspath .)
+endif
 
 ifndef LIBDIR
   LIBDIR := $(OUTDIR)
@@ -91,19 +109,20 @@ override INCPATH += $(abspath .)
 ifeq ($(HOST),Cygwin)
   INCPATH_WIN := $(subst \,\\,$(foreach h,$(INCPATH),$(shell cygpath -w $h)))
   OFILES_WIN := $(subst \,\\,$(foreach o,$(OFILES),$(shell cygpath -w $o)))
+  HFILES_WIN := $(subst \,\\,$(foreach o,$(HFILES),$(shell cygpath -w $o)))
 endif
 
 #------------------------------------------------------------------------------ 
 # library output files
 #------------------------------------------------------------------------------ 
 ifdef LIB_STATIC
-ifeq (Windows,$(HOST))
-  LIB_STATIC_OUT = $(LIBDIR)\lib$(LIB_STATIC).a
-  LIB_STATIC_LST = $(LIBDIR)\lib$(LIB_STATIC).lst
-else
-  LIB_STATIC_OUT = $(LIBDIR)/lib$(LIB_STATIC).a
-  LIB_STATIC_LST = $(LIBDIR)/lib$(LIB_STATIC).lst
-endif
+  ifeq (Windows,$(HOST))
+    LIB_STATIC_OUT = $(LIBDIR)\lib$(LIB_STATIC).a
+    LIB_STATIC_LST = $(LIBDIR)\lib$(LIB_STATIC).lst
+  else
+    LIB_STATIC_OUT = $(LIBDIR)/lib$(LIB_STATIC).a
+    LIB_STATIC_LST = $(LIBDIR)/lib$(LIB_STATIC).lst
+  endif
   LIB_OUT = $(LIB_STATIC_OUT)
   LIB_LST = $(LIB_STATIC_LST)
 endif
@@ -121,6 +140,19 @@ ifdef LIB_SHARED
   LIB_LST += $(LIB_SHARED_LST)
 endif
 
+ifdef HFILES
+  HFILES_DIRS := $(dir $(HFILES))
+  ifdef LIB_INCLUDE
+    LIB_INC := $(sort $(LIB_INCLUDE) $(HFILES_DIRS:%/=%))
+  else
+    LIB_INC := $(sort $(HFILES_DIRS:%/=%))
+  endif
+else
+  ifdef LIB_INCLUDE
+    LIB_INC := $(sort $(LIB_INCLUDE))
+  endif
+endif
+
 DEPDIRS_ALL:= $(DEPDIRS:%=%-all)
 
 DEPDIRS_CLEAN := $(DEPDIRS:%=%-clean)
@@ -136,6 +168,7 @@ ifeq (Windows,$(HOST))
   OUTDIR := $(subst /,\,$(OUTDIR))
   INSTALLDIR := $(subst /,\,$(INSTALLDIR))
   LIB_OUT_WIN := $(subst /,\,$(LIB_OUT))
+  LIB_INC_WIN := $(subst /,\,$(LIB_INC))
 else
   CLEAN_OFILES := $(strip $(OFILES))
   CLEAN_DFILES := $(strip $(DFILES))
@@ -154,7 +187,10 @@ $(call trace2,OUTDIR = '$(OUTDIR)')
 $(call trace2,SRCDIR = '$(SRCDIR)')
 $(call trace3,CFILES = '$(CFILES)')
 $(call trace3,OFILES = '$(OFILES)')
+$(call trace3,HFILES = '$(HFILES)')
 $(call trace3,ODIRS = '$(ODIRS)')
+$(call trace3,LIB_INCLUDE = '$(LIB_INCLUDE)')
+$(call trace3,LIB_INC = '$(LIB_INC)')
 $(call trace3,CLEAN_ODIRS = '$(CLEAN_ODIRS)')
 $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info OS = '$(OS)')
@@ -164,6 +200,7 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info SRCDIR = '$(SRCDIR)')
 #$(info OUTDIR = '$(OUTDIR)')
 #$(info CFILES = '$(CFILES)')
+#$(info HFILES = '$(HFILES)')
 #$(info OFILES = '$(OFILES)')
 #$(info LIB_OUT = '$(LIB_OUT)')
 #$(info ODIRS = '$(ODIRS)')
@@ -173,6 +210,7 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info LIB_STATIC = '$(LIB_STATIC)')
 #$(info LIB_STATIC_OUT = '$(LIB_STATIC_OUT)')
 #$(info CFILES_OUT = '$(CFILES_OUT)')
+#$(info HFILES_OUT = '$(HFILES_OUT)')
 #$(info MSYSTEM = '$(MSYSTEM)')
 #$(info MSYSCON = '$(MSYSCON)')
 #$(info MAKE_MODE = '$(MAKE_MODE)')
@@ -195,13 +233,21 @@ clean: deps-clean
 	$(Q)$(RMALL) $(CLEAN_LFILES)
 	$(Q)$(RMALL) $(CLEAN_DFILES)
 	$(Q)$(RMALL) $(CLEAN_OFILES)
+ifneq (, $(CLEAN_ODIRS))
 	$(Q)$(RMDIR) $(CLEAN_ODIRS) 1> $(DEVNULL)
+endif
 
-install: $(LIB_OUT)
+install: $(LIB_OUT) 
 ifeq (Windows,$(HOST))
-	$(Q)$(CP) $(LIB_OUT_WIN) $(INSTALLDIR)
+	$(Q)$(CP) $(LIB_OUT_WIN) $(ILIB_NSTALLDIR)
+  ifdef LIB_INCLUDE
+	$(Q)$(CPDIR) $(LIB_INC_WIN) $(INC_INSTALLDIR)
+  endif
 else
-	$(Q)$(CP) $(LIB_OUT) $(INSTALLDIR)
+	$(Q)$(CP) $(LIB_OUT) $(LIB_INSTALLDIR)
+  ifdef LIB_INCLUDE
+	$(Q)$(CPDIR) $(LIB_INC) $(INC_INSTALLDIR)
+  endif
 endif
 
 
@@ -299,6 +345,24 @@ $(HFILES_OUT) $(CFILES_OUT) $(SFILES_OUT): | $(ODIRS)
 $(DFILES): | $(ODIRS)
 
 $(OFILES): | $(ODIRS)
+
+install: | $(LIB_INSTALLDIR) $(INC_INSTALLDIR)
+
+$(LIB_INSTALLDIR):
+	$(ACTION) "Creating lib install dir: $@"
+ifeq ($(HOST),Windows)
+	$(Q)if not exist $(subst /,\,$@) $(MKDIR) $(subst /,\,$@)
+else
+	-$(Q)$(MKDIR) $@ 
+endif
+
+$(INC_INSTALLDIR):
+	$(ACTION) "Creating include install dir: $@"
+ifeq ($(HOST),Windows)
+	$(Q)if not exist $(subst /,\,$@) $(MKDIR) $(subst /,\,$@)
+else
+	-$(Q)$(MKDIR) $@ 
+endif
 
 #------------------------------------------------------------------------------ 
 # Compilation
