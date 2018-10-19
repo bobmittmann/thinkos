@@ -140,17 +140,18 @@ ifdef LIB_SHARED
   LIB_LST += $(LIB_SHARED_LST)
 endif
 
+ifdef LIB_INCLUDE
+# TODO handles only one dir, need to fix it
+	LIB_INC := $(sort $(LIB_INCLUDE))/
+endif
 ifdef HFILES
-  HFILES_DIRS := $(dir $(HFILES))
-  ifdef LIB_INCLUDE
-    LIB_INC := $(sort $(LIB_INCLUDE) $(HFILES_DIRS:%/=%))
-  else
-    LIB_INC := $(sort $(HFILES_DIRS:%/=%))
-  endif
-else
-  ifdef LIB_INCLUDE
-    LIB_INC := $(sort $(LIB_INCLUDE))
-  endif
+	# TODO Needs to implement
+  #HFILES_DIRS := $(dir $(HFILES))
+  #ifdef LIB_INCLUDE
+  #  LIB_INC := $(sort $(LIB_INCLUDE) $(HFILES_DIRS:%/=%))
+  #else
+  #  LIB_INC := $(sort $(HFILES_DIRS:%/=%))
+  #endif
 endif
 
 DEPDIRS_ALL:= $(DEPDIRS:%=%-all)
