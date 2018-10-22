@@ -245,7 +245,7 @@ SECTIONS
         *(.stack .stack*)
     } >"STACK"
 
-	/* Backued up control section */
+	/* Backed up control section */
 	.bkpctl :
 	{
 		PROVIDE (__bkpctl_start = . );
@@ -253,7 +253,7 @@ SECTIONS
 		PROVIDE (__bkpctl_end = . );
 	} >"rtcbkr"
 
-	/* Backued up data section */
+	/* Backed up data section */
 	.bkpdat :
 	{
 		PROVIDE (__bkpdat_start = . );

@@ -217,6 +217,7 @@ void _IDLE(struct thinkos_context * __ctx,
 			 uint32_t __prev_thread_id, 
 			 uint32_t __sp) 
 {
+#if DEBUG
 	uint32_t psp = cm3_psp_get();
 
 	if (__prev_thread_id == THINKOS_THREAD_VOID)
@@ -232,7 +233,7 @@ void _IDLE(struct thinkos_context * __ctx,
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __prev_thread_id + 1, 
 				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
-
+#endif
 }
 
 void __tdump(void);
@@ -242,6 +243,7 @@ void ERROR(struct thinkos_context * __ctx,
 			 uint32_t __prev_thread_id, 
 			 uint32_t __sp) 
 {
+#if DEBUG
 	uint32_t msp = cm3_psp_get();
 
 	DCC_LOG6(LOG_ERROR,  _ATTR_PUSH_ _FG_RED_ 
@@ -253,6 +255,7 @@ void ERROR(struct thinkos_context * __ctx,
 	__context(__ctx, __new_thread_id); 
 	__thinkos(&thinkos_rt);
 	__tdump();
+#endif
 }
 
 void thinkos_sched_dbg(struct thinkos_context * __ctx, 
@@ -291,6 +294,4 @@ void thinkos_sched_step_dbg(struct thinkos_context * __ctx,
 }
 
 #endif
-
-
 
