@@ -86,6 +86,7 @@ thinkos_sched_context_save:
 	moveq   r0, sp
 	subeq   sp, sp, #(CTX_R0 * 4) /* reserve spce on MSP stack */
 	mrsne   r0, PSP
+	movs    r12, r0
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
 #else
