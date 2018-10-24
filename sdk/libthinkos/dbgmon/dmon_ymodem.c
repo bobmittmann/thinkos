@@ -95,16 +95,19 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			c = pkt[0];
 
 			if (c == STX) {
+				DCC_LOG(LOG_TRACE, "STX");
 				cnt = 1024;
 				break;
 			}
 
 			if (c == SOH) {
+				DCC_LOG(LOG_TRACE, "SOH");
 				cnt = 128;
 				break;
 			}
 
 			if (c == CAN) {
+				DCC_LOG(LOG_TRACE, "CAN");
 				dbgmon_alarm_stop();
 				return -1;
 			}
@@ -141,6 +144,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 		nseq = pkt[2];
 
 		if (seq != ((~nseq) & 0xff)) {
+			DCC_LOG1(LOG_WARNING, "invalid seq...", seq);
 			goto error;
 		}
 
@@ -176,11 +180,11 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
-/*			if ((seq == 0) & (rx->xmodem == 0)) {
+			if ((seq == 0) && (rx->pktno == 1) && (rx->xmodem == 0)) {
 				DCC_LOG(LOG_WARNING, "Ymodem restart...");
 				rx->pktno = 0;
-			} else */ {
-				DCC_LOG2(LOG_TRACE, "pktno=%d count=%d rxmit ...", 
+			} else {
+				DCC_LOG2(LOG_WARNING, "pktno=%d count=%d rxmit ...", 
 						 rx->pktno, rx->count);
 				continue;
 			}
@@ -227,6 +231,10 @@ error:
 timeout:
 		DCC_LOG(LOG_WARNING, "timeout!!");
 		if ((--rx->retry) == 0) {
+			if ((rx->count == rx->fsize) && (rx->xmodem == 0)) {
+				DCC_LOG(LOG_TRACE, "transfer complete!!");
+				return 0;
+			}
 			/* too many errors */
 			ret = -1;
 			break;

@@ -59,7 +59,6 @@ const char * __retstr(uint32_t __ret)
 }
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-
 void __thinkos(struct thinkos_rt * rt)
 {
 	uint32_t * wq;

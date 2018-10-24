@@ -695,7 +695,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 	case CTRL_Y:
-		dbgmon_printf(comm, "^\\\r\nUpload application [y]? ");
+		dbgmon_printf(comm, "^Y\r\nUpload application [y]? ");
 		if (dbgmon_getc(comm) == 'y') {
 			/* Request app upload */
 			dbgmon_req_app_upload();
@@ -705,8 +705,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #if (MONITOR_APPWIPE_ENABLE)
 	case CTRL_W:
-		dbgmon_printf(comm, "^W\r\n");
-		dbgmon_printf(comm, "^\\\r\nErase application [y]? ");
+		dbgmon_printf(comm, "^W\r\nErase application [y]? ");
 		if (dbgmon_getc(comm) == 'y') {
 			/* Request app erase */
 			dbgmon_req_app_erase(); 

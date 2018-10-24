@@ -39,6 +39,8 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
+#define THINKOS_DBGMON_ENABLE_FLOWCTL 1
+
 #ifndef THINKOS_DBGMON_ENABLE_FLOWCTL
 #define THINKOS_DBGMON_ENABLE_FLOWCTL 0
 #endif
@@ -444,69 +446,81 @@ struct usb_class_if {
 	struct usb_cdc_acm_dev dev;
 };
 
+static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
+{
+	uint32_t seq;
+	uint32_t ack;
+	int free;
+	int cnt;
+
+	seq = dev->rx_seq;
+	ack = dev->rx_ack;
+	if ((free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack)) > 0) {
+		int pos;
+
+		pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
+		if (pos == 0) {
+			int n;
+
+			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+									dev->rx_buf, free);
+			DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d n=%d", 
+					 seq, ack, free, n);
+			cnt = n;
+		} else {
+			int m;
+			int n;
+
+			n = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), free);
+			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+									&dev->rx_buf[pos], n);
+			if (m == n)	{
+				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+										dev->rx_buf, free - m);
+				DCC_LOG5(LOG_TRACE, "seq=%d ack=%d free=%d n=%d m=%d", 
+						 seq, ack, free, n, m);
+				cnt = n + m;
+			} else {
+				DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d m=%d", 
+						 seq, ack, free, m);
+				cnt = m;
+			}
+
+		}
+
+		seq += cnt;
+
+		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
+			DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
+			dev->rx_paused = true;
+		}
+
+		dev->rx_seq = seq;
+		//	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
+	} else {
+		cnt = 0;
+	}
+
+	return cnt;
+}
 
 static void usb_mon_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
-#if 0
-	struct usb_cdc_acm_dev * dev = &cl->dev;
-	DCC_LOG1(LOG_TRACE, "COMM_RCV! %d", len);
-	dev->rx_seq += len;
-	dbgmon_signal(DBGMON_COMM_RCV);
-#endif
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	uint32_t seq;
-	uint32_t ack;
-	int free;
-	int pos;
-	int cnt;
-	int n;
 
-	seq = dev->rx_seq;
-	ack = dev->rx_ack;
-	free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack);
-	if (len > free) {
-		DCC_LOG3(LOG_WARNING, "len=%d free=%d drop=%d", len, free, len - free);
-		cnt = free;
-	} else {
-		cnt = len;
-	}
-	pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
-	if (pos == 0) {
-		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, dev->rx_buf, cnt);
+	DCC_LOG1(LOG_TRACE, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
 
-		DCC_LOG4(LOG_TRACE, "1. seq=%d ack=%d cnt=%d n=%d", 
-				 seq, ack, cnt, n);
+	__cdc_acm_recv(dev);
 
-		seq += n;
-	} else {
-		int m;
-
-		m = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), cnt);
-		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								&dev->rx_buf[pos],  m);
-		m = cnt - n;
-		m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								dev->rx_buf, m);
-		DCC_LOG5(LOG_TRACE, "2. seq=%d ack=%d cnt=%d n=%d m=%d", 
-				 seq, ack, cnt, n, m);
-		seq += m + n;
-	}
-	dev->rx_seq = seq;
-
-	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
-
-	if ((seq - (ack = dev->rx_ack)) > 0) {
-		DCC_LOG2(LOG_INFO, "COMM_TRACE seq=%d ack=%d", seq, ack);
-		dbgmon_signal(DBGMON_COMM_RCV);
-	}
+	dbgmon_signal(DBGMON_COMM_RCV);
 }
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
 //	struct usb_cdc_acm_dev * dev = &cl->dev;
 	dbgmon_signal(DBGMON_COMM_EOT);
-	DCC_LOG(LOG_INFO, "COMM_EOT");
+	DCC_LOG(LOG_MSG, "COMM_EOT");
 }
 
 static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
@@ -793,10 +807,10 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 
 	if (dev->acm_ctrl == 0) {
 //		DCC_LOG(LOG_MSG, "not connected!");
-		dev->tx_seq = 0;
-		dev->tx_ack = 0;
-		dev->rx_seq = 0;
-		dev->rx_ack = 0;
+//		dev->tx_seq = 0;
+//		dev->tx_ack = 0;
+//		dev->rx_seq = 0;
+//		dev->rx_ack = 0;
 		/* not connected, discard!! */
 		return len;
 	}
@@ -805,7 +819,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	seq = dev->tx_seq;
 	while (rem) {
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
-		DCC_LOG2(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
+		DCC_LOG2(LOG_MSG, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
 		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
@@ -832,14 +846,12 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 	}
 
-
 	dev->tx_seq = seq;
-	DCC_LOG1(LOG_TRACE, "return=%d.", len - rem);
+	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
 
 	return len - rem;
 }
 
-//int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
@@ -850,19 +862,14 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	int ret;
 	int n;
 
+
 	ack = dev->rx_ack;
-//	while ((n = (int32_t)(dev->rx_seq - ack)) == 0) {
 	do {
-		DCC_LOG2(LOG_TRACE, "ack=%d n=%d blocked!!!", ack, n);
 		if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
 			DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 			return ret;
 		}
 	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
-
-	if (dbgmon_is_set(DBGMON_COMM_RCV)) {
-		DCC_LOG(LOG_WARNING, "dbgmon_is_set()!");
-	}
 
 	cnt = MIN(n, len);
 	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
@@ -887,13 +894,22 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	}
 
 	ack += cnt;
+	dev->rx_ack = ack;
+
+	if (dev->rx_paused) {
+		if ((dev->rx_seq - ack) != CDC_EP_IN_MAX_PKT_SIZE) {
+			DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
+			dev->rx_paused = false;
+			__cdc_acm_recv(dev);
+
+		}
+	}
+
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
 		DCC_LOG(LOG_WARNING, "signal DBGMON_COMM_RCV!");
 		/* Pending data on fifo, resignal .. */
 		dbgmon_signal(DBGMON_COMM_RCV);
 	}
-
-	dev->rx_ack = ack;
 
 	return cnt;
 }
