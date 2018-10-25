@@ -60,8 +60,7 @@ static const struct dbgmon_comm_op null_comm_op = {
 	.send = null_comm_send,
 	.recv = null_comm_recv,
 	.connect = null_comm_connect,
-	.isconnected = null_comm_isconnected,
-	.rxflowctrl = null_comm_rxflowctrl
+	.isconnected = null_comm_isconnected
 };
 
 static const struct dbgmon_comm null_comm_instance = {

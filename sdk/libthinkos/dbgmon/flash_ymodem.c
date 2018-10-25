@@ -108,6 +108,7 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 			/* skip null */
 		} else {
 			if (ry->pktno == 2) {
+				DCC_LOG1(LOG_TRACE, "Erasing %d bytes...", ry->fsize);
 				stm32_flash_erase(offs, ry->fsize);
 			}	
 			stm32_flash_write(offs, ry->pkt.data, len);
