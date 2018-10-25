@@ -29,6 +29,7 @@
 #include <sys/param.h>
 #include <sys/stm32f.h>
 #include <crc.h>
+#include <vt100.h>
 
 #define SOH  0x01
 #define STX  0x02
@@ -78,62 +79,70 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 	int nseq;
 	int seq;
 	int rem;
+	int len;
 
 	for (;;) {
 
-		dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
-		DCC_LOG1(LOG_TRACE, "SYN=%02x", rx->sync);
+		dbgmon_alarm_stop();
+		DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG VT_REV " SYN=%02x " VT_POP, rx->sync);
 		dbgmon_comm_send(comm, &rx->sync, 1);
+
+		dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
 
 		for (;;) {
 			int c;
 
 			ret = dbgmon_comm_recv(comm, pkt, 1);
-			if (ret < 0)
+			if (ret < 0) {
+				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI "SYN timeout!" VT_POP);
 				goto timeout;
+			}
 
 			c = pkt[0];
 
 			if (c == STX) {
-				DCC_LOG(LOG_TRACE, "STX");
+				DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV " STX " VT_POP);
 				cnt = 1024;
 				break;
 			}
 
 			if (c == SOH) {
-				DCC_LOG(LOG_TRACE, "SOH");
+				DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV " SOH " VT_POP);
 				cnt = 128;
 				break;
 			}
 
 			if (c == CAN) {
-				DCC_LOG(LOG_TRACE, "CAN");
+				DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV " CAN " VT_POP);
 				dbgmon_alarm_stop();
 				return -1;
 			}
 
 			if (c == EOT) {
-				DCC_LOG(LOG_TRACE, "EOT!!");
+				DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV " EOT " VT_POP);
 				/* end of transmission */
 				rx->sync = rx->crc_mode ? 'C' : NAK;
 				rx->pktno = 0;
 				pkt[0] = ACK;
-				dbgmon_comm_send(comm, pkt, 1);
 				dbgmon_alarm_stop();
+				dbgmon_comm_send(comm, pkt, 1);
 				return 0;
 			}
 		}
 
-		rem = cnt + ((rx->crc_mode) ? 4 : 3);
+		len = cnt + ((rx->crc_mode) ? 5 : 4);
 		cp = pkt + 1;
+		rem = len - 1;
 
 		/* receive the packet */
 		while (rem) {
-			dbgmon_alarm(500);
+			dbgmon_alarm(XMODEM_RCV_TMOUT_MS);
 			ret = dbgmon_comm_recv(comm, cp, rem);
-			if (ret < 0)
+			if (ret < 0) {
+				DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_BRI 
+						 "timeout len=%d rem=%d" VT_POP, len, rem);
 				goto timeout;
-
+			}
 			rem -= ret;
 			cp += ret;
 		}
@@ -144,7 +153,8 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 		nseq = pkt[2];
 
 		if (seq != ((~nseq) & 0xff)) {
-			DCC_LOG1(LOG_WARNING, "invalid seq...", seq);
+			DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_REV
+					 "invalid seq=%d..." VT_POP, seq);
 			goto error;
 		}
 
@@ -161,7 +171,10 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			cmp = (unsigned short)cp[i] << 8 | cp[i + 1];
 
 			if (cmp != crc) {
-				DCC_LOG(LOG_WARNING, "CRC error");
+				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_REV
+						" /!\\ CRC error /!\\ " VT_POP);
+
+				DCC_XXD(LOG_WARNING, "PKT", pkt, len);
 				goto error;
 			}
 
@@ -173,7 +186,8 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 				cks += cp[i];
 
 			if (cp[i] != cks) {
-				DCC_LOG(LOG_WARNING, "wrong sum");
+				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_REV
+						"wrong sum" VT_POP);
 				goto error;
 			}
 		}
@@ -181,10 +195,12 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 		if (seq == ((rx->pktno - 1) & 0xff)) {
 			/* retransmission */
 			if ((seq == 0) && (rx->pktno == 1) && (rx->xmodem == 0)) {
-				DCC_LOG(LOG_WARNING, "Ymodem restart...");
+				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_UND
+						"Ymodem restart..." VT_POP);
 				rx->pktno = 0;
 			} else {
-				DCC_LOG2(LOG_WARNING, "pktno=%d count=%d rxmit ...", 
+				DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_UND
+						 "pktno=%d count=%d rxmit ..." VT_POP, 
 						 rx->pktno, rx->count);
 				continue;
 			}
@@ -195,16 +211,18 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 				rx->pktno++;
 				/* Fallback to XMODEM */
 				rx->xmodem = 1;
-				DCC_LOG(LOG_TRACE, "XMODEM...");
+				DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_BRI VT_UND
+						"XMODEM..." VT_POP);
 			} else {
-				DCC_LOG(LOG_WARNING, "wrong sequence");
+				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_UND
+						"wrong sequence" VT_POP);
 				goto error;
 			}
 		}
 
 		/* YModem first packet ... */
 		if (rx->pktno == 0) {
-			DCC_LOG(LOG_TRACE, "ACK");
+			DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV " ACK " VT_POP);
 			pkt[0] = ACK;
 			dbgmon_comm_send(comm, pkt, 1);
 		} else {
@@ -215,8 +233,8 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			rx->count += cnt;
 		}
 
-		DCC_LOG2(LOG_TRACE, "pktno=%d count=%d", rx->pktno, rx->count);
-
+		DCC_LOG2(LOG_TRACE, VT_PSH VT_FMG 
+				 "pktno=%d count=%d" VT_POP, rx->pktno, rx->count);
 		rx->pktno++;
 
 		dbgmon_alarm_stop();

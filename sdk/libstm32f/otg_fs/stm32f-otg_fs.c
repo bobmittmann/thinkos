@@ -40,7 +40,7 @@ void stm32f_otg_fs_txfifo_flush(struct stm32f_otg_fs * otg_fs,
 	do {
 	} while (otg_fs->grstctl & OTG_FS_TXFFLSH);
 	/* Wait for 3 PHY Clocks ?? */
-	udelay(3);
+//	udelay(3);
 }
 
 void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
@@ -49,7 +49,7 @@ void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
 	do {
 	} while (otg_fs->grstctl & OTG_FS_RXFFLSH);
 	/* Wait for 3 PHY Clocks ?? */
-	udelay(3);
+//	udelay(3);
 }
 
 void stm32f_otg_fs_addr_set(struct stm32f_otg_fs * otg_fs, unsigned int addr)
@@ -126,7 +126,7 @@ int stm32f_otg_fs_txf_setup(struct stm32f_otg_fs * otg_fs,
 
 	depctl = otg_fs->inep[ep_id].diepctl;
 	if (ep_id == 0)
-		mpsiz = OTGFS_EP0_MPSIZ_GET(depctl);
+		mpsiz = OTG_FS_EP0_MPSIZ_GET(depctl);
 	else
 		mpsiz = OTG_FS_MPSIZ_GET(depctl);
 
@@ -181,7 +181,7 @@ int stm32f_otg_fs_txf_push(struct stm32f_otg_fs * otg_fs, unsigned int ep_id,
 	deptsiz = otg_fs->inep[ep_id].dieptsiz;
 
 	if (ep_id == 0)
-		mpsiz = OTGFS_EP0_MPSIZ_GET(depctl);
+		mpsiz = OTG_FS_EP0_MPSIZ_GET(depctl);
 	else
 		mpsiz = OTG_FS_MPSIZ_GET(depctl);
 
@@ -385,7 +385,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 		eptfsav = otg_fs->inep[ep_id].dtxfsts;
 		eptsiz = otg_fs->inep[ep_id].dieptsiz;
 
-		mpsiz = (ep_id == 0) ? OTGFS_EP0_MPSIZ_GET(depctl) : OTG_FS_MPSIZ_GET(depctl);
+		mpsiz = (ep_id == 0) ? OTG_FS_EP0_MPSIZ_GET(depctl) : 
+			OTG_FS_MPSIZ_GET(depctl);
 
 		(void)eptsiz;
 		eptfsav = eptfsav * 4;
@@ -417,7 +418,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 			return;
 		}
 		
-		mpsiz = (ep_id == 0) ? OTGFS_EP0_MPSIZ_GET(depctl) : OTG_FS_MPSIZ_GET(depctl);
+		mpsiz = (ep_id == 0) ? OTG_FS_EP0_MPSIZ_GET(depctl) : 
+			OTG_FS_MPSIZ_GET(depctl);
 		(void)mpsiz;
 
 		DCC_LOG5(LOG_INFO, "EP%d OUT %s SNPM=%d STALL=%d NAKSTS=%d",
@@ -439,8 +441,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 
 }
 
-void otg_fs_fifo(struct stm32f_otg_fs * otg_fs, 
-				 unsigned int addr, unsigned int len)
+void otg_fs_fifo_dump(struct stm32f_otg_fs * otg_fs, 
+					  unsigned int addr, unsigned int len)
 {
 	unsigned int q;
 	unsigned int r;

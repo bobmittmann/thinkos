@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-cdc.c
+ * File:	 usb_comm-quueue.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -36,19 +36,17 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_QUEUE__
+#include <thinkos/queue.h>
 
 #if (THINKOS_ENABLE_MONITOR)
 
-#ifdef THINKOS_DBGMON_ENABLE_FLOWCTL
-#warning "deprecated THINKOS_DBGMON_ENABLE_FLOWCTL"
+#ifndef THINKOS_DBGMON_ENABLE_FLOWCTL
+#define THINKOS_DBGMON_ENABLE_FLOWCTL 0
 #endif
 
-#ifndef THINKOS_DBGMON_ENABLE_COMM_STATS
+#if THINKOS_DBGMON_ENABLE_COMM_STATS
 #define THINKOS_DBGMON_ENABLE_COMM_STATS 0
-#endif
-
-#ifdef THINKOS_DBGMON_ENABLE_USB2_00
-#define THINKOS_DBGMON_ENABLE_USB2_00 0
 #endif
 
 #define EP0_ADDR 0
@@ -110,11 +108,7 @@ static const struct usb_descriptor_device cdc_acm_desc_dev = {
 	/* DEVICE descriptor type */
 	.type = USB_DESCRIPTOR_DEVICE,
 	/* USB specification release number */
-#if (THINKOS_DBGMON_ENABLE_USB2_00)
 	.usb_release = USB2_00,
-#else
-	.usb_release = USB1_10,
-#endif
 	/* Class code */
 	.dev_class = USB_CLASS_COMMUNICATION,
 	/* Subclass code */
@@ -139,11 +133,10 @@ static const struct usb_descriptor_device cdc_acm_desc_dev = {
 	.num_of_conf = 1
 };
 
-#if (THINKOS_DBGMON_ENABLE_USB2_00)
 /* device qualifier structure provide information on a high-speed
    capable device if the device was operating at the other speed.
    see usb_20.pdf - Section 9.6.2 */
-static const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
+const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
 	/* Size of this descriptor in bytes */
 	.length = sizeof(struct usb_descriptor_device_qualifier),
 	/* DEVICE_QUALIFIER descriptor type */
@@ -163,7 +156,6 @@ static const struct usb_descriptor_device_qualifier cdc_acm_desc_qual = {
 	/* Reserved for future use, must be 0 */
 	.reserved = 0 
 };
-#endif
 
 #define CDC_IF0 0
 
@@ -298,102 +290,14 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 #define CDC_DATA_BITS_MAX 16
 
 
-/* LangID = 0x0409: U.S. English */
-const struct usb_descriptor_string language_english_us = {
-	4, USB_DESCRIPTOR_STRING, { 0x0409 }
-};
-
-const struct usb_descriptor_string stmicroelectronics_str = {
-	19 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'S', 'T', 'M', 'i', 'c', 'r', 'o', 'e', 'l', 'e', 
-		'c', 't', 'r', 'o', 'n', 'i', 'c', 's', 0 
-	}
-};
-
-const struct usb_descriptor_string stmicro_str = {
-	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'S', 'T', 'M', 'i', 'c', 'r', 'o', 0
-	}
-};
-
-const struct usb_descriptor_string composite_demo_str = {
-	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'C', 'o', 'm', 'p', 'o', 's', 'i', 't', 'e', ' ', 
-		'D', 'e', 'm', 'o', '0'
-	}
-};
-
-const struct usb_descriptor_string atmel_str = {
-	6 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'A', 't', 'm', 'e', 'l', '0'
-	}
-};
-
-/* Interface 0: "ST VCOM" */
-const struct usb_descriptor_string st_vcom_str = {
-	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'S', 'T', ' ', 'V', 'C', 'O', 'M', 0
-	}
-};
-
-/* Product name: "ThinkOS Debug Monitor" */
-const struct usb_descriptor_string thinkos_debug_monitor_str = {
-	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
-		'b', 'u', 'g', ' ', 'M', 'o', 'n', 'i', 't', 'o', 
-		'r', 0
-	}
-};
-
-const struct usb_descriptor_string thinkos_com_str = {
-	17 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'O', 
-		'M', ' ', 'D', 'u', 'a', 'l', 0
-	}
-};
-const struct usb_descriptor_string usb_serial_cdc_device_str = {
-	23 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'U', 'S', 'B', ' ', 'S', 'e', 'r', 'i', 'a', 'l', 
-		' ', '(', 'C', 'D', 'C', ')', 'D', 'e', 'v', 'i',
-		'c', 'e', 0
-	}
-};
-
-const struct usb_descriptor_string thinkos_str = {
-	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', 0
-	}
-};
-
-const struct usb_descriptor_string debug_monitor_str = {
-	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
-		'b', 'u', 'g', '/', 'M', 'o', 'n', 'i', 't', 'o', 
-		'r', 0
-	}
-};
-
-const struct usb_descriptor_string console_str = {
-	16 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'o', 
-		'n', 's', 'o', 'l', 'e', 0
-	}
-};
-
-const struct usb_descriptor_string serial_num_str = {
-	5 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'1', '1', '1', '1', 0
-	}
-};
-
 //"USB Serial (CDC) Generic Device"
 
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
-	&language_english_us,
-	&stmicro_str,
-	&thinkos_str,
-	&serial_num_str,
-	&st_vcom_str 
+//	&language_english_us,
+//	&stmicro_str,
+//	&thinkos_str,
+//	&serial_num_str,
+//	&st_vcom_str 
 };
 
 #define USB_STRCNT() (sizeof(cdc_acm_str) / sizeof(uint8_t *))
@@ -423,26 +327,26 @@ struct usb_cdc_acm_dev {
 	uint8_t out_ep;
 	uint8_t int_ep;
 
-	uint8_t rx_paused;
 	uint8_t configured;
-	volatile uint8_t acm_ctrl; /* modem control lines */
-
 	uint32_t ctl_buf[CDC_CTL_BUF_LEN / 4];
+
+	volatile uint8_t acm_ctrl; /* modem control lines */
 
 	volatile uint32_t tx_seq; 
 	volatile uint32_t tx_ack; 
 
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
+	uint8_t rx_flowctrl;
+	uint8_t rx_paused;
+#endif
 	volatile uint8_t rx_cnt; 
 	volatile uint8_t rx_pos; 
-
 	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
 
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 	struct {
-		uint32_t tx_octet;
-		uint32_t rx_octet;
 		uint32_t tx_pkt;
 		uint32_t rx_pkt;
 	} stats;
@@ -454,81 +358,63 @@ struct usb_class_if {
 	struct usb_cdc_acm_dev dev;
 };
 
-static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
-{
-	uint32_t seq;
-	uint32_t ack;
-	int free;
-	int cnt;
-
-	seq = dev->rx_seq;
-	ack = dev->rx_ack;
-	if ((free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack)) > 0) {
-		int pos;
-
-		pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
-		if (pos == 0) {
-			int n;
-
-			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-									dev->rx_buf, free);
-			DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d n=%d", 
-					 seq, ack, free, n);
-			cnt = n;
-		} else {
-			int m;
-			int n;
-
-			n = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), free);
-			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-									&dev->rx_buf[pos], n);
-			if (m == n)	{
-				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-										dev->rx_buf, free - m);
-				DCC_LOG5(LOG_TRACE, "seq=%d ack=%d free=%d n=%d m=%d", 
-						 seq, ack, free, n, m);
-				cnt = n + m;
-			} else {
-				DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d m=%d", 
-						 seq, ack, free, m);
-				cnt = m;
-			}
-
-		}
-
-		seq += cnt;
-
-		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
-			DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
-			dev->rx_paused = true;
-		}
-
-		dev->rx_seq = seq;
-		//	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
-	} else {
-		cnt = 0;
-	}
-
-	return cnt;
-}
 
 static void usb_mon_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	uint32_t seq;
+	uint32_t ack;
+	int free;
+	int pos;
+	int cnt;
+	int n;
 
-	DCC_LOG1(LOG_TRACE, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
+	seq = dev->rx_seq;
+	ack = dev->rx_ack;
+	free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack);
+	if (len > free) {
+		DCC_LOG3(LOG_WARNING, "len=%d free=%d drop=%d", len, free, len - free);
+		cnt = free;
+	} else {
+		cnt = len;
+	}
+	pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
+	if (pos == 0) {
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, dev->rx_buf, cnt);
 
-	__cdc_acm_recv(dev);
+		DCC_LOG4(LOG_TRACE, "1. seq=%d ack=%d cnt=%d n=%d", 
+				 seq, ack, cnt, n);
 
-	dbgmon_signal(DBGMON_COMM_RCV);
+		seq += n;
+	} else {
+		int m;
+
+		m = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), cnt);
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								&dev->rx_buf[pos],  m);
+		m = cnt - n;
+		m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+								dev->rx_buf, m);
+		DCC_LOG5(LOG_TRACE, "2. seq=%d ack=%d cnt=%d n=%d m=%d", 
+				 seq, ack, cnt, n, m);
+		seq += m + n;
+	}
+	dev->rx_seq = seq;
+
+	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
+
+	if ((seq - (ack = dev->rx_ack)) > 0) {
+		DCC_LOG2(LOG_INFO, "COMM_TRACE seq=%d ack=%d", seq, ack);
+		dbgmon_signal(DBGMON_COMM_RCV);
+	}
 }
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
 //	struct usb_cdc_acm_dev * dev = &cl->dev;
 	dbgmon_signal(DBGMON_COMM_EOT);
-	DCC_LOG(LOG_MSG, "COMM_EOT");
+	DCC_LOG(LOG_INFO, "COMM_EOT");
 }
 
 static void usb_mon_on_eot_int(usb_class_t * cl, unsigned int ep_id)
@@ -589,7 +475,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
 			break;
 		}
-#if (THINKOS_DBGMON_ENABLE_USB2_00)
+#if 0
 		if (desc == USB_DESCRIPTOR_DEVICE_QUALIFIER) {
 			/* Return Device Descriptor */
 			*ptr = (void *)&cdc_acm_desc_qual;
@@ -815,10 +701,10 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 
 	if (dev->acm_ctrl == 0) {
 //		DCC_LOG(LOG_MSG, "not connected!");
-//		dev->tx_seq = 0;
-//		dev->tx_ack = 0;
-//		dev->rx_seq = 0;
-//		dev->rx_ack = 0;
+		dev->tx_seq = 0;
+		dev->tx_ack = 0;
+		dev->rx_seq = 0;
+		dev->rx_ack = 0;
 		/* not connected, discard!! */
 		return len;
 	}
@@ -827,7 +713,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	seq = dev->tx_seq;
 	while (rem) {
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
-		DCC_LOG2(LOG_MSG, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
+		DCC_LOG2(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
 		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
@@ -840,7 +726,6 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		} else if (n > 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			dev->stats.tx_pkt++;
-			dev->stats.tx_octet += n;
 #endif
 			rem -= n;
 			ptr += n;
@@ -855,12 +740,14 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 	}
 
+
 	dev->tx_seq = seq;
-	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
+	DCC_LOG1(LOG_TRACE, "return=%d.", len - rem);
 
 	return len - rem;
 }
 
+//int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len)
 static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
@@ -871,14 +758,19 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	int ret;
 	int n;
 
-
 	ack = dev->rx_ack;
+//	while ((n = (int32_t)(dev->rx_seq - ack)) == 0) {
 	do {
+		DCC_LOG2(LOG_TRACE, "ack=%d n=%d blocked!!!", ack, n);
 		if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
 			DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 			return ret;
 		}
 	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
+
+	if (dbgmon_is_set(DBGMON_COMM_RCV)) {
+		DCC_LOG(LOG_WARNING, "dbgmon_is_set()!");
+	}
 
 	cnt = MIN(n, len);
 	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
@@ -902,78 +794,21 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 				 m, l, n, ack, pos, cnt);
 	}
 
-#if THINKOS_DBGMON_ENABLE_COMM_STATS
-	dev->stats.rx_octet += cnt;
-#endif
-
 	ack += cnt;
-	dev->rx_ack = ack;
-
-	if (dev->rx_paused && ((dev->rx_seq - ack) < CDC_EP_IN_MAX_PKT_SIZE)) {
-		DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
-		dev->rx_paused = false;
-		__cdc_acm_recv(dev);
-	}
-
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
-		DCC_LOG(LOG_MSG, "signal DBGMON_COMM_RCV!");
+		DCC_LOG(LOG_WARNING, "signal DBGMON_COMM_RCV!");
 		/* Pending data on fifo, resignal .. */
 		dbgmon_signal(DBGMON_COMM_RCV);
 	}
 
+	dev->rx_ack = ack;
+
 	return cnt;
 }
-
-#if 0
-static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
-{
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-	uint32_t ack;
-	int pos;
-	int cnt;
-	int ret;
-	int n;
-
-	pos = dev->rx_pos;
-	cnt = dev->rx_cnt;
-	ack = dev->rx_ack;
-	if (pos == cnt) {
-		DCC_LOG2(LOG_TRACE, "seq=%d ack=%d", dev->rx_seq, ack);
-		while (ack == dev->rx_seq) {
-			if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
-				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
-				return ret;
-			}
-		}
-		cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								  dev->rx_buf, CDC_EP_IN_MAX_PKT_SIZE);
-		if (cnt < 0) {
-			return cnt;
-		}
-		ack += cnt;
-		dev->rx_ack = ack;
-		dev->rx_cnt = cnt;
-		pos = 0;
-		DCC_LOG3(LOG_TRACE, "usb_dev_ep_pkt_recv: seq=%d ack=%d cnt=%d", 
-				 dev->rx_seq, ack, cnt);
-		usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-	}
-	
-	/* get data from the rx buffer */
-	n = cnt - pos;
-	n = MIN(n, len);
-	__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
-	dev->rx_pos = pos + n;
-
-	return n;
-} 
-#endif
 
 static int usb_comm_connect(const void * comm)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-//	struct cdc_notification * pkt;
-//	uint32_t buf[4];
 
 	int ret;
 
@@ -984,34 +819,6 @@ static int usb_comm_connect(const void * comm)
 			return ret;
 		}
 	}
-
-#if 0
-	if ((dev->acm.flags & ACM_CONNECTED) == 0) {
-		dev->acm.flags |= ACM_CONNECTED;
-		pkt = (struct cdc_notification *)buf;
-		/* bmRequestType */
-		pkt->bmRequestType = USB_CDC_NOTIFICATION;
-		/* bNotification */
-		pkt->bNotification = CDC_NOTIFICATION_SERIAL_STATE;
-		/* wValue */
-		pkt->wValue = 0;
-		/* wIndex */
-		pkt->wIndex = 1;
-		/* wLength */
-		pkt->wLength = 2;
-		/* data */
-		pkt->bData[0] = CDC_SERIAL_STATE_TX_CARRIER | 
-			CDC_SERIAL_STATE_RX_CARRIER;
-		pkt->bData[1] = 0;
-
-		ret = usb_dev_ep_pkt_xmit(dev->usb, dev->int_ep, pkt, 
-								  sizeof(struct cdc_notification));
-		if (ret < 0) {
-			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!");
-			return ret;
-		}
-	}
-#endif
 
 	return 0;
 }
@@ -1063,7 +870,10 @@ const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->tx_ack = 0; 
 	dev->rx_seq = 0;
 	dev->rx_ack = 0;
+#if THINKOS_DBGMON_ENABLE_FLOWCTL
+	dev->rx_flowctrl = false;
 	dev->rx_paused = false;
+#endif
 	dev->configured = 0;
 
 	DCC_LOG(LOG_TRACE, "usb_dev_init()");

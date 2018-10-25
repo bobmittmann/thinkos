@@ -246,7 +246,6 @@ struct dbgmon_comm_op {
 	int (*recv)(const void * dev, void * buf, unsigned int len);
 	int (* connect)(const void * dev);
 	bool (* isconnected)(const void * dev);
-	void (* rxflowctrl)(const void * dev, bool stop);
 };
 
 struct dbgmon_comm {
@@ -271,12 +270,6 @@ static inline int dbgmon_comm_connect(const struct dbgmon_comm * comm) {
 static inline bool dbgmon_comm_isconnected(const struct dbgmon_comm * comm) {
 	return comm->op->isconnected(comm->dev);
 }
-
-static inline void dbgmon_comm_rxflowctrl(const struct dbgmon_comm * comm, 
-									   bool stop) {
-	comm->op->rxflowctrl(comm->dev, stop);
-}
-
 
 #ifdef __cplusplus
 extern "C" {
