@@ -2299,7 +2299,7 @@
 #define RCC_SPI3     15
 #define RCC_SPI2     14
 #define RCC_WWDG     11
-#define RCC_RTCAPB   10
+#define RCC_RTC      10
 #define RCC_LCD       9
 #define RCC_TIM7      5
 #define RCC_TIM6      4

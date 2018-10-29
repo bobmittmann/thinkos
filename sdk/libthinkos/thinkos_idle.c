@@ -48,7 +48,9 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 
 	for (;;) {
 
+#if (THINKOS_ENABLE_IDLE_WFI)
 		asm volatile ("wfi\n"); /* wait for interrupt */
+#endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
@@ -65,11 +67,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				map = y;
 			}
 		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
-
-#if (THINKOS_ENABLE_IDLE_WFI)
-		asm volatile ("wfi\n"); /* wait for interrupt */
-#endif
-
 
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:

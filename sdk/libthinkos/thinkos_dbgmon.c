@@ -59,6 +59,8 @@ struct thinkos_dbgmon {
 	volatile uint32_t events; /* events bitmap */
 	void * param;             /* user supplied parameter */
 	uint32_t xpsr;
+	int8_t thread_id;
+	int32_t code;
 	void (* task)(const struct dbgmon_comm *, void *);
 };
 
@@ -343,6 +345,25 @@ int dbgmon_wait_idle(void)
 	return (result == evmsk) ? 0 : -1;
 }
 
+void __dbgmon_signal_thread_terminate(int thread_id, int code)
+{
+	thinkos_dbgmon_rt.thread_id = thread_id;
+	thinkos_dbgmon_rt.code = code;
+	dbgmon_signal(DBGMON_THREAD_TERMINATE);
+}
+
+int dbgmon_thread_terminate_get(int * code)
+{
+	int thread_id;
+
+	if ((thread_id = thinkos_dbgmon_rt.thread_id) >= 0) {
+		if (code != NULL) {
+			*code = thinkos_dbgmon_rt.code;
+		}
+	}
+
+	return thread_id;
+}
 
 void __dbgmon_task_reset(void)
 {
@@ -1244,6 +1265,9 @@ void __dbgmon_reset(void)
 	DCC_LOG(LOG_TRACE, "2. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif
+
+	thinkos_dbgmon_rt.thread_id = -1;
+	thinkos_dbgmon_rt.code = 0;
 }
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)

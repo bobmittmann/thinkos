@@ -285,7 +285,7 @@ void __attribute__((noreturn))
 	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
 				void * param);
 
-int dbgmon_thread_create(void (* func)(void *), void * arg, 
+int dbgmon_thread_create(int (* func)(void *), void * arg, 
 						 const struct thinkos_thread_inf * inf);
 
 void dbgmon_thread_resume(int thread_id);
@@ -331,6 +331,10 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size);
 void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
+
+void __dbgmon_signal_thread_terminate(int thread_id, int code);
+
+int dbgmon_thread_terminate_get(int * code);
 
 int dbgmon_thread_break_get(uint32_t * addr);
 

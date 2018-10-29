@@ -44,8 +44,7 @@ void dbgmon_thread_destroy(int thread_id)
 	dbgmon_wait_idle();
 }
 
-
-int dbgmon_thread_create(void (* func)(void *), void * arg, 
+int dbgmon_thread_create(int (* func)(void *), void * arg, 
 						 const struct thinkos_thread_inf * inf)
 {
 	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;

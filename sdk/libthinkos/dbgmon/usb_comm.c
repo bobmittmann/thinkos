@@ -499,7 +499,7 @@ static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 		seq += cnt;
 
 		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
-			DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
+			DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
 			dev->rx_paused = true;
 		}
 
@@ -910,7 +910,7 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	dev->rx_ack = ack;
 
 	if (dev->rx_paused && ((dev->rx_seq - ack) < CDC_EP_IN_MAX_PKT_SIZE)) {
-		DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
+		DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
 		dev->rx_paused = false;
 		__cdc_acm_recv(dev);
 	}

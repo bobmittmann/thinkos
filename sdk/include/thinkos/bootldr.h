@@ -100,16 +100,16 @@ struct thinkos_board {
 
 	int (* init)(void);
 	void (* softreset)(void);
-	bool (* autoboot)(unsigned int tick);
 	void (* upgrade)(const struct dbgmon_comm *);
 
+	int (* preboot_task)(void * );
 	/* ThinkOS task: monitor will run this task by request */
-	void (* configure_task)(void *);
+	int (* configure_task)(void *);
 	/* ThinkOS task: monitor will run this task by request */
-	void (* selftest_task)(void *);
+	int (* selftest_task)(void *);
 	/* ThinkOS task: monitor will run this task if fails to load 
 	   the application */
-	void (* default_task)(void *);
+	int (* default_task)(void *);
 };
 
 /* Board description instance */

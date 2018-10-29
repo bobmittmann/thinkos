@@ -89,8 +89,7 @@ enum ep_state {
 	EP_WAIT_STATUS_IN,
 	EP_WAIT_STATUS_OUT,
 	EP_OUT_DATA,
-	EP_OUT_DATA_LAST,
-	EP_OUT_DBLBUF,
+	EP_OUT_DATA_LAST
 };
 
 /* Endpoint control */
@@ -105,9 +104,13 @@ struct stm32f_usb_ep {
 			uint8_t * xfr_ptr; /* Pointer to the next transfer */
 		};
 		struct {
-			uint16_t rx_rem;
-			uint16_t rx_cnt;
-			void * res;
+			volatile uint16_t rx_len;
+			volatile uint16_t rx_pos;
+#if defined(STM32L4X)
+			uint16_t * volatile rx_pkt;
+#else
+			volatile uint32_t * rx_pkt;
+#endif
 			struct stm32f_usb_rx_pktbuf * rx_pktbuf;
 		};
 	};
@@ -143,7 +146,7 @@ struct stm32f_usb_drv {
 
 #if defined(STM32L4X)
 
-static uint16_t * __pktbuf_ptr(struct stm32f_usb_rx_pktbuf * p) {
+static uint16_t * __rx_pktbuf_ptr(struct stm32f_usb_rx_pktbuf * p) {
 	return (uint16_t *)STM32F_USB_PKTBUF_ADDR + (p->addr / 2);
 }
 
@@ -183,7 +186,7 @@ static void __copy_to_pktbuf(struct stm32f_usb_tx_pktbuf * tx,
 
 #else
 
-static uint16_t * __pktbuf_ptr(struct stm32f_usb_rx_pktbuf * p) {
+static uint16_t * __rx_pktbuf_ptr(struct stm32f_usb_rx_pktbuf * p) {
 	return (uint16_t *)STM32F_USB_PKTBUF_ADDR + (p->addr / 2);
 }
 
@@ -420,15 +423,20 @@ int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id,
 	return len;
 }
 
+#define USB_SWBUF_RX_BIT 6
+#define USB_DTOG_RX_BIT 14
+
 int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
-							   void * buf, int len)
+							   void * buf, unsigned int len)
 {
 	struct stm32f_usb * usb = STM32F_USB;
 	struct stm32f_usb_ep * ep;
 #if (ENABLE_IRQ_MASK)
 	uint32_t pri;
 #endif
-	int ea;
+	uint32_t epr;
+	int rem;
+	int pos;
 
 	ep = &drv->ep[ep_id];
 	(void)ep;
@@ -437,13 +445,19 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 #endif
+#if (ENABLE_IRQ_MASK)
+	/* disable interrupts */
+	cm3_cpsid_i();
+#endif
+	pos = ep->rx_pos;
+	rem = ep->rx_len - pos;
 
-	if ((len = MIN(ep->rx_rem, len)) > 0) {
+	if ((len = MIN(rem, len)) > 0) {
 		DCC_LOG2(LOG_INFO, VT_PSH VT_FBL VT_BRI
 				 "[%d] len=%d" 
 				 VT_POP, ep_id, len); 
 
-		struct stm32f_usb_rx_pktbuf * rx_pktbuf = ep->rx_pktbuf;
+		struct stm32f_usb_rx_pktbuf * rx_pktbuf;
 #if defined(STM32L4X)
 		uint16_t * src;
 #else
@@ -451,15 +465,16 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 #endif
 		uint8_t * dst;
 		uint32_t data;
-		int pos;
 		int cnt;
 		int i;
 		int n;
 
-		pos = ep->rx_cnt;
-		cnt = 0;
-		src = __pktbuf_ptr(rx_pktbuf) + (pos / 2);
+//		src = ep->rx_pkt + (pos / 2);
+
+		rx_pktbuf = ep->rx_pktbuf; 
+		src = __rx_pktbuf_ptr(rx_pktbuf) + (pos / 2);
 		dst = (uint8_t *)buf;
+		cnt = 0;
 
 		if (pos & 0x01) {
 			data = *src++;
@@ -482,34 +497,46 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 			cnt++;
 		}
 
-		ep->rx_rem -= cnt;
-		ep->rx_cnt += cnt;
+		ep->rx_pos = pos + len;
 
-		if (ep->rx_rem == 0) {
-			rx_pktbuf->count = 0;
-			if (ep->state == EP_OUT_DBLBUF) {
-				uint32_t epr;
-				epr = usb->epr[ep_id];
-				ea = USB_EA_GET(epr);
-				(void)ea;
+		if (rem == len) {
+			epr = usb->epr[ep_id];
 
-				DCC_LOG4(LOG_INFO, VT_PSH VT_FBL VT_DIM
-						 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
-						 VT_POP, ep_id, 
-						 (epr & USB_DTOG_RX) ? 1 : 0, 
-						 (epr & USB_SWBUF_RX) ? 1 : 0, len); 
+			if (epr & USB_EP_DBL_BUF) {
+				rx_pktbuf->count = 0;
 				/* release the buffer to the USB controller */
-				__toggle_ep_flag(usb, ep_id, USB_SWBUF_RX);
+				/* Toggle SWBUF_RX flag */
+				usb->epr[ep_id] = (epr & USB_EPREG_MASK) | USB_SWBUF_RX;
+
+				if ((epr & USB_STAT_RX_MSK) == USB_RX_VALID) {
+					DCC_LOG4(LOG_INFO, VT_PSH VT_FBL
+							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
+							 VT_POP, ep_id, 
+							 (epr & USB_DTOG_RX) ? 1 : 0, 
+							 (epr & USB_SWBUF_RX) ? 1 : 0, len); 
+				} else {
+					DCC_LOG4(LOG_INFO, VT_PSH VT_FRD
+							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
+							 VT_POP, ep_id, 
+							 (epr & USB_DTOG_RX) ? 1 : 0, 
+							 (epr & USB_SWBUF_RX) ? 1 : 0, len); 
+				}
+
 			} else {
+				rx_pktbuf->count = 0;
 				/* free the out(rx) packet buffer */
-				__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
+				usb->epr[ep_id] = (epr | USB_RX_VALID) & USB_EPREG_MASK;
 			}
-			ep->state = EP_IDLE;
 		}
 	} else {
 		DCC_LOG1(LOG_INFO, VT_PSH VT_FBL VT_BRI
 				 "[%d] empty!" VT_POP, ep_id); 
 	}
+
+#if (ENABLE_IRQ_MASK)
+	/* enable interrupts */
+	cm3_cpsie_i();
+#endif
 
 #if (ENABLE_IRQ_MASK)
 	cm3_primask_set(pri);
@@ -589,10 +616,10 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 	DCC_LOG3(LOG_INFO, "ep_id=%d addr=%d mxpktsz=%d",
 			 ep_id, info->addr & 0x7f, mxpktsz);
 
-	if (ep_id == 0) {
+	/* clear the correct transfer bits */
+	__clr_ep_flag(usb, ep_id, USB_CTR_RX | USB_CTR_TX);
 
-		/* clear the correct transfer bits */
-		__clr_ep_flag(usb, 0, USB_CTR_RX | USB_CTR_TX);
+	if (ep_id == 0) {
 		__set_ep_type(usb, 0, USB_EP_CONTROL);
 		__set_ep_txstat(usb, 0, USB_TX_NAK);
 
@@ -609,14 +636,10 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		__set_ep_rxstat(usb, 0, USB_RX_VALID);
 
 		DCC_LOG1(LOG_INFO, "epr=0x%04x...", usb->epr[0]);
-
 		return 0;
 	}
 
-	/* clear the correct transfer bits */
-	__clr_ep_flag(usb, ep_id, USB_CTR_RX | USB_CTR_TX);
 	__set_ep_addr(usb, ep_id, info->addr & 0x7f);
-
 	__set_ep_rxstat(usb, ep_id, USB_RX_NAK);
 	__set_ep_txstat(usb, ep_id, USB_TX_NAK);
 
@@ -1231,52 +1254,71 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 
 		if (epr & USB_CTR_RX) {
 			struct stm32f_usb_rx_pktbuf * rx_pktbuf;
-			int cnt;
+			int len;
 
 			/* OUT */
-			__clr_ep_flag(usb, ep_id, USB_CTR_RX);
 
 			if (epr & USB_EP_DBL_BUF) {
 				/* select the descriptor according to the data toggle bit */
-				rx_pktbuf = &pktbuf[ep_id].dbrx[(epr & USB_SWBUF_RX) ? 1: 0];
-				if ((cnt = rx_pktbuf->count) == 0) {
-					DCC_LOG1(LOG_WARNING, VT_PSH VT_FBL VT_REV VT_BRI 
-							 "[%d] RX cnt=0!!" VT_POP, ep_id);
-					/* release the buffer to the USB controller */
-					__toggle_ep_flag(usb, ep_id, USB_SWBUF_RX);
-				} else {
-					DCC_LOG4(LOG_INFO, VT_PSH VT_FBL
+				rx_pktbuf = &pktbuf[ep_id].dbrx[(epr >> USB_SWBUF_RX_BIT) & 1];
+				len = rx_pktbuf->count;
+
+				if (((epr >> USB_DTOG_RX_BIT) ^
+					 (epr >> USB_SWBUF_RX_BIT)) & 1) {
+					DCC_LOG4(LOG_INFO, VT_PSH VT_FBL VT_BRI VT_UND
 							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
 							 VT_POP, ep_id, 
 							 (epr & USB_DTOG_RX) ? 1 : 0, 
-							 (epr & USB_SWBUF_RX) ? 1 : 0, cnt); 
-					ep->rx_pktbuf = rx_pktbuf;
-					ep->rx_rem = cnt;
-					ep->rx_cnt = 0;
-					ep->state = EP_OUT_DBLBUF;
-					/* call class endpoint callback */
-					ep->on_out(drv->cl, ep_id, cnt);
+							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
+					/* clear interrupt */
+//					usb->epr[ep_id] = (epr & ~USB_CTR_RX) & USB_EPREG_MASK;
+				} 
+				if ((len == 0)) {
+					DCC_LOG4(LOG_WARNING, VT_PSH VT_FYW VT_BRI VT_UND
+							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
+							 VT_POP, ep_id, 
+							 (epr & USB_DTOG_RX) ? 1 : 0, 
+							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
+					/* clear interrupt */
+					usb->epr[ep_id] = (epr & ~USB_CTR_RX) & USB_EPREG_MASK;
+				} else {
+					if (ep->rx_len != ep->rx_pos) {
+						DCC_LOG3(LOG_ERROR, VT_PSH VT_FRD VT_BRI
+								 "[%d] RX len=%d pos=%d !!!" 
+								 VT_POP, ep_id, 
+								 ep->rx_len,
+								 ep->rx_pos);
+						/* clear interrupt */
+						usb->epr[ep_id] = (epr & ~USB_CTR_RX) & USB_EPREG_MASK;
+					} else {
+						DCC_LOG3(LOG_INFO, VT_PSH VT_FBL VT_BRI
+								 "[%d] RX len=%d pos=%d !!!" 
+								 VT_POP, ep_id, 
+								 ep->rx_len,
+								 ep->rx_pos);
+						ep->rx_pktbuf = rx_pktbuf;
+						ep->rx_len = len;
+						ep->rx_pos = 0;
+						/* call class endpoint callback */
+						ep->on_out(drv->cl, ep_id, len);
+					if (ep->rx_len != ep->rx_pos) {
+						/* clear interrupt */
+						usb->epr[ep_id] = (epr & ~USB_CTR_RX) & USB_EPREG_MASK;
+						}
+					}
 				}
+
 			} else {
 				/* single buffer */
+				__clr_ep_flag(usb, ep_id, USB_CTR_RX);
 				rx_pktbuf = &pktbuf[ep_id].rx;
-				if ((cnt = rx_pktbuf->count) == 0) {
-					DCC_LOG1(LOG_INFO, VT_PSH VT_FBL VT_REV VT_BRI 
-							 "[%d] RX cnt=0!!" VT_POP, ep_id);
-					/* free the out(rx) packet buffer */
-					__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
-				} else {
-					DCC_LOG2(LOG_INFO, VT_PSH VT_FBL
-							 "[%d] RX cnt=%d" VT_POP, ep_id, cnt); 
-					ep->rx_pktbuf = rx_pktbuf;
-					ep->rx_rem = cnt;
-					ep->rx_cnt = 0;
-					ep->state = EP_OUT_DATA;
-					/* call class endpoint callback */
-					ep->on_out(drv->cl, ep_id, cnt);
-				}
+				len = rx_pktbuf->count;
+				ep->rx_pktbuf = rx_pktbuf;
+				ep->rx_len = len;
+				ep->rx_pos = 0;
+				/* call class endpoint callback */
+				ep->on_out(drv->cl, ep_id, len);
 			}
-
 		}
 	}
 
@@ -1297,14 +1339,16 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 
 	if (sr & USB_RESET) {
 		usb->istr = ~USB_RESET;
-		DCC_LOG(LOG_INFO, "RESET");
+		DCC_LOG(LOG_TRACE, VT_PSH VT_FYW VT_REV VT_BRI
+				" RESET " VT_POP);
 		stm32f_usb_dev_reset(drv);
 	}
 
 #ifdef DEBUG
 	if (sr & USB_ERR) {
 		usb->istr = ~USB_ERR;
-		DCC_LOG(LOG_MSG, "ERR");
+		DCC_LOG(LOG_WARNING, VT_PSH VT_FRD VT_REV
+				" ERR " VT_POP);
 		/* The USB software can usually ignore errors, since the 
 		   USB peripheral and the PC host manage retransmission in case 
 		   of errors in a fully transparent way. */
@@ -1312,7 +1356,8 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 
 	if (sr & USB_PMAOVR) {
 		usb->istr = ~USB_PMAOVR;
-		DCC_LOG(LOG_MSG, "PMAOVR");
+		DCC_LOG(LOG_WARNING,  VT_PSH VT_FRD VT_REV
+				" PMAOVR " VT_POP);
 	}
 #endif
 

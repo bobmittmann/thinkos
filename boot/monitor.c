@@ -278,8 +278,7 @@ static void monitor_req_configure(void)
 }
 #endif
 
-#if (MONITOR_SELFTEST_ENABLE) || (MONITOR_CONFIGURE_ENABLE)
-static void monitor_thread_exec(void (* task)(void *), void * arg) 
+static void monitor_thread_exec(int (* task)(void *), void * arg) 
 {
 	int thread_id;
 
@@ -288,7 +287,6 @@ static void monitor_thread_exec(void (* task)(void *), void * arg)
 		dbgmon_thread_resume(thread_id);
 	}
 }
-#endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct dbgmon_comm * comm)
@@ -404,15 +402,16 @@ static void monitor_resume_all(const struct dbgmon_comm * comm)
 }
 #endif
 
-static void monitor_ymodem_recv(const struct dbgmon_comm * comm, 
+static bool monitor_ymodem_recv(const struct dbgmon_comm * comm, 
 								uint32_t addr, unsigned int size)
 {
 	dbgmon_printf(comm, "\r\nYMODEM receive (^X to cancel) ... ");
 	if (dmon_ymodem_flash(comm, addr, size) < 0) {
 		dbgmon_printf(comm, "\r\n#ERROR: YMODEM failed!\r\n"); 
-		return;
+		return false;
 	}	
 	dbgmon_printf(comm, "\r\nOK\r\n");
+	return true;
 }
 
 #if (MONITOR_APPWIPE_ENABLE)
@@ -747,9 +746,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	uint8_t * ptr;
 	int cnt;
 #endif
-	int tick_cnt = 0;
 	uint8_t buf[1];
 	int sig;
+	bool preboot = false;
 	
 	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 
@@ -823,26 +822,19 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			break;
 
 		case DBGMON_ALARM:
-			/* Query the board for app boot up */
-			if (this_board.autoboot(tick_cnt++)) {
-				DCC_LOG(LOG_TRACE, "autoboot app_exec()...");
-				sigmask &= ~(1 << DBGMON_ALARM);
-				dbgmon_req_app_exec();
-			} else {
-				/* reastart the alarm timer */
-				dbgmon_alarm(125);
-			}
-			/* Acknowledge the signal */
 			dbgmon_clear(DBGMON_ALARM);
+			preboot = true;
+			monitor_thread_exec(this_board.preboot_task, NULL);
 			break;
 
 		case DBGMON_APP_UPLOAD:
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			monitor_ymodem_recv(comm, this_board.application.start_addr, 
-								this_board.application.block_size);
-			/* Request app exec */
-			dbgmon_req_app_exec(); 
+			if (monitor_ymodem_recv(comm, this_board.application.start_addr, 
+								this_board.application.block_size)) {
+				/* Request app exec */
+				dbgmon_req_app_exec(); 
+			}
 			break;
 
 		case DBGMON_APP_EXEC:
@@ -889,9 +881,25 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
 			break;
 
-		case DBGMON_THREAD_TERMINATE:
+		case DBGMON_THREAD_TERMINATE: {
+			int thread_id;
+			int code;
+
 			dbgmon_clear(DBGMON_THREAD_TERMINATE);
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
+			thread_id = dbgmon_thread_terminate_get(&code);
+			(void)thread_id; 
+			(void)code; 
+			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
+					thread_id, code);
+
+			if (preboot) {
+				preboot = false;
+				if (code >= 0) {
+					dbgmon_req_app_exec();
+				}
+			}
+
+		}
 			break;
 
 #if (MONITOR_EXCEPTION_ENABLE)
@@ -1073,4 +1081,3 @@ raw_mode_recv:
 		}
 	}
 }
-
