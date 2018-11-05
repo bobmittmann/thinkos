@@ -106,11 +106,7 @@ struct stm32f_usb_ep {
 		struct {
 			volatile uint16_t rx_len;
 			volatile uint16_t rx_pos;
-#if defined(STM32L4X)
-			uint16_t * volatile rx_pkt;
-#else
-			volatile uint32_t * rx_pkt;
-#endif
+			volatile uint32_t rx_dat;
 			struct stm32f_usb_rx_pktbuf * rx_pktbuf;
 		};
 	};
@@ -469,19 +465,18 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 		int i;
 		int n;
 
-//		src = ep->rx_pkt + (pos / 2);
-
 		rx_pktbuf = ep->rx_pktbuf; 
 		src = __rx_pktbuf_ptr(rx_pktbuf) + (pos / 2);
 		dst = (uint8_t *)buf;
 		cnt = 0;
 
 		if (pos & 0x01) {
-			data = *src++;
+			data = ep->rx_dat;
 			*dst++ = data >> 8;
 			cnt++;
 		}
 
+		/* FIXME: is EP still enabled */
 		n = (len - cnt) / 2;
 		for (i = 0; i < n; i++) {
 			data = *src++;
@@ -494,11 +489,16 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 		if (cnt < len) {
 			data = *src;
 			*dst = data;
+			ep->rx_dat = data;
 			cnt++;
 		}
 
 		ep->rx_pos = pos + len;
 
+
+
+//		if (((ep->rx_len + 1) & ~0x1) == ((ep->rx_pos + 1) & ~0x1)) {
+//
 		if (rem == len) {
 			epr = usb->epr[ep_id];
 

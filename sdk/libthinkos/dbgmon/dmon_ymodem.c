@@ -171,8 +171,9 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 			cmp = (unsigned short)cp[i] << 8 | cp[i + 1];
 
 			if (cmp != crc) {
-				DCC_LOG(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_REV
-						" /!\\ CRC error /!\\ " VT_POP);
+				DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_BRI VT_REV
+						" /!\\ CRC error: %04x != %04x /!\\ " 
+						VT_POP, crc, cmp);
 
 				DCC_XXD(LOG_WARNING, "PKT", pkt, len);
 				goto error;
