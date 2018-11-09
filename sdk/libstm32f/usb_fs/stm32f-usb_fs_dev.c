@@ -1277,8 +1277,8 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 			int len;
 
 			/* OUT */
-
 			if (epr & USB_EP_DBL_BUF) {
+				/* clear interrupt */
 				usb->epr[ep_id] = (epr & ~USB_CTR_RX) & USB_EPREG_MASK;
 				/* select the descriptor according to the data toggle bit */
 				rx_pktbuf = &pktbuf[ep_id].dbrx[(epr >> USB_SWBUF_RX_BIT) & 1];
@@ -1291,7 +1291,6 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 							 VT_POP, ep_id, 
 							 (epr & USB_DTOG_RX) ? 1 : 0, 
 							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
-					/* clear interrupt */
 				} 
 				if ((len == 0)) {
 					DCC_LOG4(LOG_WARNING, VT_PSH VT_FYW VT_BRI VT_UND
@@ -1299,29 +1298,24 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 							 VT_POP, ep_id, 
 							 (epr & USB_DTOG_RX) ? 1 : 0, 
 							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
-					/* clear interrupt */
+				} else if (ep->rx_len != ep->rx_pos) {
+					DCC_LOG3(LOG_ERROR, VT_PSH VT_FRD VT_BRI
+							 "[%d] RX len=%d pos=%d !!!" 
+							 VT_POP, ep_id, 
+							 ep->rx_len,
+							 ep->rx_pos);
 				} else {
-					if (ep->rx_len != ep->rx_pos) {
-						DCC_LOG3(LOG_ERROR, VT_PSH VT_FRD VT_BRI
-								 "[%d] RX len=%d pos=%d !!!" 
-								 VT_POP, ep_id, 
-								 ep->rx_len,
-								 ep->rx_pos);
-						/* clear interrupt */
-					} else {
-						DCC_LOG3(LOG_INFO, VT_PSH VT_FBL VT_BRI
-								 "[%d] RX len=%d pos=%d !!!" 
-								 VT_POP, ep_id, 
-								 ep->rx_len,
-								 ep->rx_pos);
-						ep->rx_pktbuf = rx_pktbuf;
-						ep->rx_len = len;
-						ep->rx_pos = 0;
-					}
-						/* call class endpoint callback */
-						ep->on_out(drv->cl, ep_id, len);
+					DCC_LOG3(LOG_INFO, VT_PSH VT_FBL VT_BRI
+							 "[%d] RX len=%d pos=%d !!!" 
+							 VT_POP, ep_id, 
+							 ep->rx_len,
+							 ep->rx_pos);
+					ep->rx_pktbuf = rx_pktbuf;
+					ep->rx_len = len;
+					ep->rx_pos = 0;
 				}
-
+					/* call class endpoint callback */
+				ep->on_out(drv->cl, ep_id, len);
 			} else {
 				/* single buffer */
 				__clr_ep_flag(usb, ep_id, USB_CTR_RX);
