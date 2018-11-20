@@ -855,8 +855,9 @@ int __thinkos_bmp_alloc(uint32_t bmp[], int bits);
 
 void thinkos_console_init(void);
 
-void __thinkos_thread_init(unsigned int thread_id, uint32_t sp, 
-						   void * task, void * arg);
+struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
+											   uint32_t sp, 
+											   void * task, void * arg);
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 

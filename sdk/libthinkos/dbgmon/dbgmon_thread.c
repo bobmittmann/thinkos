@@ -49,6 +49,7 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 {
 	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
 	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
+	struct thinkos_context * ctx;
 
 #if 1 
 	if (thinkos_rt.ctx[thread_id] != NULL) {
@@ -74,7 +75,8 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 #endif
 
 	DCC_LOG2(LOG_TRACE, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	__thinkos_thread_init(thread_id, sp, func, arg);
+	ctx = __thinkos_thread_init(thread_id, sp, func, arg);
+	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 
 #if THINKOS_ENABLE_THREAD_INFO
 	DCC_LOG(LOG_TRACE, "__thinkos_thread_inf_set()");
