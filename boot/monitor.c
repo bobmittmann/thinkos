@@ -762,6 +762,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #endif
 	uint8_t buf[1];
 	int sig;
+	bool connected = false;
 	
 	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 
@@ -999,20 +1000,22 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
 is_connected:
 			{
-				bool connected = dbgmon_comm_isconnected(comm);
+				connected = dbgmon_comm_isconnected(comm);
 				sigmask &= ~((1 << DBGMON_COMM_EOT) | 
 							 (1 << DBGMON_COMM_RCV) |
-							 (1 << DBGMON_RX_PIPE) |
-							 (1 << DBGMON_TX_PIPE));
+							 (1 << DBGMON_RX_PIPE));
 				__console_connect_set(connected);
 				raw_mode = __console_is_raw_mode();
 				if (connected) {
+					DCC_LOG(LOG_TRACE, "Comm connected.");
 					sigmask |= ((1 << DBGMON_COMM_EOT) |
-								(1 << DBGMON_COMM_RCV) |
-								(1 << DBGMON_TX_PIPE));
+								(1 << DBGMON_COMM_RCV));
 					if (raw_mode)
 						sigmask |= (1 << DBGMON_RX_PIPE);
 				}
+				else
+					DCC_LOG(LOG_TRACE, "Comm not connected!.");
+				sigmask |= (1 << DBGMON_TX_PIPE);
 			}
 			break;
 #if 0
@@ -1026,23 +1029,29 @@ is_connected:
 			DCC_LOG(LOG_TRACE, "COMM_EOT");
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
+			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", __console_tx_pipe_ptr(&ptr));
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
-				int n;
-				if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
-					__console_tx_pipe_commit(n); 
-					if (n == cnt) {
-						/* Wait for TX_PIPE */
-						sigmask |= (1 << DBGMON_TX_PIPE);
-						sigmask &= ~(1 << DBGMON_COMM_EOT);
+				if (connected) {
+					int n;
+					if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
+						__console_tx_pipe_commit(n);
+						if (n == cnt) {
+							/* Wait for TX_PIPE */
+							sigmask |= (1 << DBGMON_TX_PIPE);
+							sigmask &= ~(1 << DBGMON_COMM_EOT);
+						} else {
+							/* Wait for COMM_EOT */
+							sigmask |= (1 << DBGMON_COMM_EOT);
+							sigmask &= ~(1 << DBGMON_TX_PIPE);
+						}
 					} else {
 						/* Wait for COMM_EOT */
 						sigmask |= (1 << DBGMON_COMM_EOT);
-						sigmask &= ~(1 << DBGMON_TX_PIPE);
+						sigmask &=  ~(1 << DBGMON_TX_PIPE);
 					}
 				} else {
-					/* Wait for COMM_EOT */
-					sigmask |= (1 << DBGMON_COMM_EOT);
-					sigmask &=  ~(1 << DBGMON_TX_PIPE);
+					/* Drain the Rx pipe */
+					__console_tx_pipe_commit(cnt);
 				}
 			} else {
 				/* Wait for TX_PIPE */
@@ -1110,6 +1119,7 @@ raw_mode_recv:
 			break;
 #endif
 		}
+		DCC_LOG1(LOG_TRACE, "SIG %d!", sig);
 	}
 }
 
