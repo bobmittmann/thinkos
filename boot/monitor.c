@@ -902,16 +902,18 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #if (MONITOR_SELFTEST_ENABLE)
 				selftest = true;
 				dbgmon_signal(DBGMON_USER_EVENT0);
-			} else if (selftet) {
+			} else if (selftest) {
 				selftest = false;
 				DCC_LOG(LOG_TRACE, "/!\\ Selftest !!!");
-#elif (MONITOR_CONFIGURE_ENABLE)
+#endif
+#if (MONITOR_CONFIGURE_ENABLE)
 				config = true;
 				dbgmon_signal(DBGMON_USER_EVENT1);
 			} else if (config) {
 				config = false;
 				DCC_LOG(LOG_TRACE, "/!\\ Config !!!");
-#elif (MONITOR_PREBOOT_ENABLE)
+#endif
+#if (MONITOR_PREBOOT_ENABLE)
 				preboot = true;
 				dbgmon_signal(DBGMON_USER_EVENT2);
 			} else if (preboot) {
