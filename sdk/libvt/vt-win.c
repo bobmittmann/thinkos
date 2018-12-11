@@ -536,7 +536,7 @@ int vt_default_msg_loop(void)
 {
 	struct vt_win * win;
 	enum vt_msg msg;
-	uintptr_t arg;
+	uintptr_t arg = 0;
 
 	while ((msg = vt_msg_wait(&win, &arg)) != VT_QUIT) {
 		vt_msg_dispatch(win, msg, arg);
