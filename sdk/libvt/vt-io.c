@@ -242,13 +242,21 @@ int __vt_move_to(char * s, int x, int y)
 	return cp - s;
 }
 
+void __vt_flush(void)
+{
+	unsigned int tmo = 100;
+	char buf[8];
+
+	while (thinkos_console_timedread(buf, 8, tmo) >= 0);
+}
+
 int __vt_getc(void)
 {
 	unsigned int tmo = 100;
 	char buf[1];
 	int ret = 0;
 
-	ret = thinkos_console_timedread(buf, 1, tmo);
+	while ((ret = thinkos_console_timedread(buf, 1, tmo)) == 0);
 	if (ret < 0)
 		return ret;
 
@@ -260,6 +268,8 @@ int __vt_get_cursor_pos(struct vt_pos * pos)
 	int c;
 	int x;
 	int y;
+
+	__vt_flush();
 
 	__vt_console_write(VT100_QUERY_CURSOR_POS, 
 					   sizeof(VT100_QUERY_CURSOR_POS));
