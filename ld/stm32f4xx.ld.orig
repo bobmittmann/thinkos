@@ -235,12 +235,17 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+<<<<<<< nonRtExtension
+=======
+
 	/* Backed up control section */
 	.bkpctl :
+	{
 		PROVIDE (__bkpctl_start = . );
 		*(.bkpctl .bkpctl*)
 		PROVIDE (__bkpctl_end = . );
 	} >"rtcbkr"
+
 	/* Backed up data section */
 	.bkpdat :
 	{
@@ -248,5 +253,6 @@ SECTIONS
 		*(.bkpdat .bkpdat*)
 		PROVIDE (__bkpdat_end = . );
 	} >"bkpsram"
+>>>>>>> local
 }
 
