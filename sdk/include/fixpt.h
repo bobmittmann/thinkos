@@ -82,16 +82,16 @@
 	(((int32_t)(X) < -(int32_t)(1 << 23)) ? -(int32_t)(1 << 23): \
 	(((int32_t)(X) > ((int32_t)(1 << 23) - 1)) ? ((int32_t)(1 << 23) - 1): (X)))
 
-/* Conversion form float to fixed point Q8.23 */
+/* Conversion form float to fixed point Q9.23 */
 #define Q23(F)           ((int64_t)((float)(F) * (float)8388608.0))
 
-/* Convert from fractional Q8.23 to float point */
+/* Convert from fractional Q9.23 to float point */
 #define Q23F(Q) ((float)((float)(Q) * (float)(1.0/8388608.0)))
 
-/* Convert from fixed point Q8.23 to float point */
+/* Convert from fixed point Q9.23 to float point */
 #define Q23_FLOAT(X)     ((float)(X) / (1 << 23))
 
-/* Conversion form float to fixed point Q1.15 with saturation */
+/* Conversion form float to fixed point Q9.23 with saturation */
 #define Q23S(F) Q23_SAT(Q23(F))
 
 /* Q23 Signed Multiply */
@@ -128,14 +128,14 @@
 #define Q30_SAT_ONE(X) (((int32_t)(X) < -1073741824) ? -1073741824: \
 	(((int32_t)(X) > 1073741823) ? 1073741823: (X)))
 
-/* Conversion form float to fixed point Q1.30 */
+/* Conversion form float to fixed point Q2.30 */
 #define Q30(F)           ((int64_t)((double)(F) * (double)(1073741824.)))
-/* Convert from float point to fixed point Q1.30 */
+/* Convert from float point to fixed point Q2.30 */
 #define FLOAT_Q30(X)     ((int32_t)((X) * 1073741824.))
 
-/* Convert from fractional Q1.30 to float point */
+/* Convert from fractional Q2.30 to float point */
 #define Q30F(Q) ((double)((double)(Q) * (1.0 / (double)(1073741824.))))
-/* Convert from fixed point Q1.30 to float point */
+/* Convert from fixed point Q2.30 to float point */
 #define Q30_FLOAT(X)     ((float)(X) / 1073741824.)
 
 /* Q30 Signed Multiply */
