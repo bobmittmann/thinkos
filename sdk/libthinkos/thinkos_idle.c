@@ -75,6 +75,8 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				/* Notify the debug/monitor */
 				dbgmon_signal(DBGMON_IDLE); 
 				break;
+
+#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
 			case IDLE_HOOK_SYSRST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
 						"IDLE_HOOK_SYSRST" _ATTR_POP_ );
@@ -87,12 +89,18 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				break;
 
 #if THINKOS_ENABLE_EXCEPTIONS
-			case IDLE_HOOK_EXCEPT_DONE:
-				thinkos_exception_dsr();
+			case IDLE_HOOK_EXCEPT_DONE: {
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_EXCEPT_DONE" _ATTR_POP_ );
+				struct thinkos_except * xcpt = __thinkos_except_buf();
+				thinkos_exception_dsr(xcpt);
+				}
 				break;
 #endif
-			case 32:
 #endif
+
+			case 32:
+#endif /* THINKOS_ENABLE_IDLE_HOOKS */
 
 #if (THINKOS_ENABLE_CRITICAL)
 				/* Force the scheduler to run if there are 

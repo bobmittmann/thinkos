@@ -58,7 +58,8 @@ thinkos_sched_context_restore(struct thinkos_context * __ctx,
 							  uint32_t __prev_thread_id, 
 							  uint32_t __sp);
 
-void __xcpt_return(struct thinkos_except * xcpt)
+static void __attribute__((noreturn)) 
+__xcpt_return(struct thinkos_except * xcpt)
 {
 	struct thinkos_context * ctx = &xcpt->ctx.core;
 	int ipsr;
@@ -100,12 +101,18 @@ void __xcpt_return(struct thinkos_except * xcpt)
 
 	/* suspend all threads */
 	__thinkos_pause_all();
-#if DEBUG
-	/* Sanity */
-	__thinkos_ready_clr();
+
+#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
+//#if (THINKOS_ENABLE_IDLE_HOOKS)
+	/* defer exception handler */
+	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
+#else
+	/* call exception handler directly */
+	thinkos_exception_dsr(xcpt);
 #endif
 
-	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
+	/* force clearing the ready queue */
+	__thinkos_ready_clr();
 
 	/* set the active thread to idle */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
@@ -153,6 +160,15 @@ static void __attribute__((noreturn))
 #if DEBUG
 	__idump(__func__, ipsr);
 #endif
+
+	icsr = CM3_SCB->icsr;
+	if (icsr & SCB_ICSR_RETTOBASE) {
+#if (THINKOS_ENABLE_IDLE_MSP)
+		DCC_LOG(LOG_ERROR, "return from exception...");
+		__xcpt_return(xcpt);
+#endif
+		for(;;);
+	}
 
 	/* increment reentry counter */
 	if (++xcpt->unroll > 8) {
@@ -221,50 +237,23 @@ static void __attribute__((noreturn))
 	/* Get the top of the exception stack */
 	sp = __thinkos_xcpt_stack_top();
 
-	icsr = CM3_SCB->icsr;
-	if (icsr & SCB_ICSR_RETTOBASE) {
-#if (THINKOS_ENABLE_IDLE_MSP)
-		__xcpt_return(xcpt);
-#else
-#endif
-		for(;;);
-	} else {
-		DCC_LOG(LOG_ERROR, "return to exception...");
-		/* Make room for the exception frame */
-		sp -= (sizeof(struct armv7m_basic_frame) / sizeof(uint32_t)); 
-		sf = (struct armv7m_basic_frame *)sp;
-		sf->r0 = (uint32_t)xcpt;
-		sf->r1 = (uint32_t)xpsr_n;
-		sf->xpsr = xpsr;
-		sf->pc = (uint32_t)__xcpt_unroll;
-		cm3_msp_set((uint32_t)sp);
-		ret = CM3_EXC_RET_HANDLER;
-		/* return */
-		asm volatile ("bx   %0\n" : : "r" (ret)); 
-		for(;;);
-	} 
+	DCC_LOG(LOG_ERROR, "return to exception...");
+	/* Make room for the exception frame */
+	sp -= (sizeof(struct armv7m_basic_frame) / sizeof(uint32_t)); 
+	sf = (struct armv7m_basic_frame *)sp;
+	sf->r0 = (uint32_t)xcpt;
+	sf->r1 = (uint32_t)xpsr_n;
+	sf->xpsr = xpsr;
+	sf->pc = (uint32_t)__xcpt_unroll;
+	cm3_msp_set((uint32_t)sp);
+	ret = CM3_EXC_RET_HANDLER;
+	/* return */
+	asm volatile ("bx   %0\n" : : "r" (ret)); 
+	for(;;);
 }
 
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 
-
-#if (THINKOS_UNROLL_EXCEPTIONS) 
-static inline uint32_t __attribute__((always_inline)) cm3_xpsr_get(void) {
-	uint32_t ipsr;
-	asm volatile ("mrs %0, IPSR\n" : "=r" (ipsr));
-	return ipsr;
-}
-
-void __attribute__((noreturn)) thinkos_xcpt_return(void)
-{
-	uint32_t xpsr = cm3_xpsr_get();
-	DCC_LOG(LOG_TRACE, "...");
-	/* set the active thread to idle */
-	thinkos_rt.active = THINKOS_THREAD_IDLE;
-	/* Unroll exception chain */
-	__xcpt_unroll(NULL, xpsr);
-}
-#endif
 
 #if THINKOS_STDERR_FAULT_DUMP
 void __show_ctrl(uint32_t ctrl)
@@ -380,24 +369,20 @@ void thinkos_xcpt_process(struct thinkos_except * xcpt)
 	/* Disable Iterrutps */
 	cm3_cpsid_i();
 
-	if ((xcpt->icsr & SCB_ICSR_RETTOBASE) == 0) {
 #if (THINKOS_UNROLL_EXCEPTIONS) 
-		/* Unroll exception chain */
-		__xcpt_unroll(xcpt, xcpt->ctx.core.xpsr);
+	/* Unroll exception chain */
+	__xcpt_unroll(xcpt, xcpt->ctx.core.xpsr);
 #else /* THINKOS_UNROLL_EXCEPTIONS */
-		/* increment reentry counter */
-		xcpt->unroll++;
-		/* call exception handler */
-		thinkos_exception_dsr(xcpt);
-	  #if THINKOS_SYSRST_ONFAULT
-		DCC_LOG(LOG_WARNING, "system reset...");
-		cm3_sysrst();
-	  #endif
-		DCC_LOG(LOG_ERROR, "system halt!!");
-#endif /* THINKOS_UNROLL_EXCEPTIONS */
-	}
-
+	/* increment reentry counter */
+	xcpt->unroll++;
+	/* call exception handler */
+	thinkos_exception_dsr(xcpt);
+  #if THINKOS_SYSRST_ONFAULT
+	DCC_LOG(LOG_WARNING, "system reset...");
+	cm3_sysrst();
+  #endif
 	__xcpt_return(xcpt);
+#endif /* THINKOS_UNROLL_EXCEPTIONS */
 }
 
 void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)

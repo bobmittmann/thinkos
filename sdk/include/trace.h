@@ -367,6 +367,17 @@ void trace_flush(struct trace_entry * entry);
 
 int trace_tail(struct trace_entry * entry);
 
+/* ----------------------------------------------------------------------
+ * Trace kernel level decode (no locking)
+ * ----------------------------------------------------------------------
+ */
+
+int trace_krn_getfirst(struct trace_entry * entry, char * s, int len);
+
+int trace_krn_getnext(struct trace_entry * entry, char * s, int len);
+
+int trace_krn_tail(struct trace_entry * entry);
+
 #ifdef __cplusplus
 }
 #endif	

@@ -51,7 +51,7 @@ void thinkos_sched_dbg(struct thinkos_context * __ctx,
 
 void __tdump(void);
 
-#if (THINKOS_ENABLE_SANITY_CHECK)
+#if (THINKOS_ENABLE_SCHED_ERROR)
 uint32_t thinkos_sched_error(struct thinkos_context * __ctx, 
 							 uint32_t __new_thread_id,
 							 uint32_t __prev_thread_id, 

@@ -1162,9 +1162,8 @@ void __attribute__((noinline, noreturn))
  * ThinkOS exception handler hook
  */
 #if THINKOS_ENABLE_EXCEPTIONS
-void thinkos_exception_dsr(void)
+void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
 	struct thinkos_context * ctx = &xcpt->ctx.core;
 	int ipsr;
 
@@ -1181,15 +1180,23 @@ void thinkos_exception_dsr(void)
 		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
 				 " /!\\ Fault at thread %d /!\\ "  _ATTR_POP_, 
 				 xcpt->active + 1);
-#if THINKOS_ENABLE_DEBUG_BKPT
-		thinkos_rt.break_id = xcpt->active;
-#endif
+
+#if 0
+		/* suspend the active thread */
 		__thinkos_thread_pause(xcpt->active);
+
+		/* The exception handling return will pause all threads */
+#endif
+
+		/* record the break thread id */
+		thinkos_rt.break_id = xcpt->active;
+
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 		/* flag the thread as faulty */
 		__thinkos_thread_fault_set(xcpt->active);
 #endif
 		dbgmon_signal(DBGMON_THREAD_FAULT);
+		
 	} else {
 #if THINKOS_ENABLE_DEBUG_BKPT
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
