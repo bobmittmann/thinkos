@@ -58,8 +58,9 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 }
 #endif
 
-void __thinkos_thread_init(unsigned int thread_id, uint32_t sp, 
-						   void * task, void * arg)
+struct thinkos_context * __thinkos_thread_init( unsigned int thread_id, 
+												uint32_t sp, 
+												void * task, void * arg)
 {
 	struct thinkos_context * ctx;
 	uint32_t pc;
@@ -73,12 +74,12 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 
 	ctx->r0 = (uint32_t)arg;
+	ctx->pc = pc;
 #if THINKOS_ENABLE_EXIT
 	ctx->lr = (uint32_t)__thinkos_thread_exit_stub;
 #else
 	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 #endif
-	ctx->pc = pc;
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 #if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	ctx->sp = (uintptr_t)&ctx->r0;
@@ -103,6 +104,7 @@ void __thinkos_thread_init(unsigned int thread_id, uint32_t sp,
 	DCC_LOG3(LOG_MSG, "msp=%08x psp=%08x ctrl=%02x", 
 			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 #endif
+	return ctx;
 }
 
 #if THINKOS_ENABLE_THREAD_INFO

@@ -70,9 +70,12 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 	ry->fsize = size;
 
 	DCC_LOG(LOG_INFO, "Starting...");
-	while ((ret = dmon_ymodem_rcv_pkt(comm, ry)) > 0) {
+	while ((ret = dmon_ymodem_rcv_pkt(comm, ry)) >= 0) {
 		int len = ret;
 		int i;
+
+		if ((ret == 0) && (ry->xmodem) )
+			break;
 
 		if (ry->pktno == 1) {
 			char * cp;

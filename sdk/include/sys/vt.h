@@ -89,6 +89,7 @@ struct vt_screen_def {
 	uint8_t fg_color;
 	uint8_t bg_color;
 	uint8_t attr;
+	struct vt_size size;
 	void * data;
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, 
 						  uint32_t arg, void * data);

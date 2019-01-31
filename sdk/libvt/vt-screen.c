@@ -19,16 +19,21 @@ int vt_screen_init(const struct vt_screen_def * def)
 	}
 	win->cursor_hide = 0;
 
-	n = __vt_move_to(s, 255, 255);
-	__vt_console_write(s, n);
-	if ((c = __vt_get_cursor_pos(&pos)) != 0) {
-		win->size.w = 80;
-		win->size.h = 25;
+	if (def->size.h == 0 || def->size.w == 0) {
+		n = __vt_move_to(s, 255, 255);
+		__vt_console_write(s, n);
+		if ((c = __vt_get_cursor_pos(&pos)) != 0) {
+			win->size.w = 80;
+			win->size.h = 25;
+		} else {
+			win->size.w = pos.x;
+			win->size.h = pos.y;
+		}
+		__vt_move_to(s, win->cursor.x, win->cursor.y);
 	} else {
-		win->size.w = pos.x;
-		win->size.h = pos.y;
+		win->size.w = def->size.w;
+		win->size.h = def->size.h;
 	}
-	__vt_move_to(s, win->cursor.x, win->cursor.y);
 
 	/* Update tree */
 	win->parent = 0;

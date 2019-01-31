@@ -49,8 +49,16 @@
 
 void gdb_stub_task(const struct dbgmon_comm * comm);
 
+#ifndef MONITOR_SELFTEST_ENABLE
+#define MONITOR_SELFTEST_ENABLE    0
+#endif
+
 #ifndef MONITOR_CONFIGURE_ENABLE
 #define MONITOR_CONFIGURE_ENABLE   1
+#endif
+
+#ifndef MONITOR_PREBOOT_ENABLE
+#define MONITOR_PREBOOT_ENABLE     1
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
@@ -91,10 +99,6 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 
 #ifndef MONITOR_APPRESTART_ENABLE
 #define MONITOR_APPRESTART_ENABLE  1
-#endif
-
-#ifndef MONITOR_SELFTEST_ENABLE
-#define MONITOR_SELFTEST_ENABLE    0
 #endif
 
 #ifndef MONITOR_FAULT_ENABLE
@@ -746,9 +750,19 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	uint8_t * ptr;
 	int cnt;
 #endif
+	bool startup = false;
+#if (MONITOR_SELFTEST_ENABLE)
+	bool selftest = false;
+#endif
+#if (MONITOR_CONFIGURE_ENABLE)
+	bool config = false;
+#endif
+#if (MONITOR_PREBOOT_ENABLE)
+	bool preboot = false;
+#endif
 	uint8_t buf[1];
 	int sig;
-	bool preboot = false;
+	bool connected = false;
 	
 	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 
@@ -791,6 +805,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #if (MONITOR_CONFIGURE_ENABLE)
 	sigmask |= (1 << DBGMON_USER_EVENT1);
 #endif
+#if (MONITOR_PREBOOT_ENABLE)
+	sigmask |= (1 << DBGMON_USER_EVENT2);
+#endif
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
@@ -801,14 +818,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
 					 cm3_sp_get());
 			dbgmon_clear(DBGMON_STARTUP);
-			/* first time we run the monitor, start a timer to call the 
-			   board_tick() periodically */
-			sigmask |= (1 << DBGMON_ALARM);
-			dbgmon_alarm(125);
-#if (MONITOR_SELFTEST_ENABLE)
-			/* run the self test task */
-			dbgmon_signal(DBGMON_USER_EVENT0);
-#endif
+			startup = true;
 			break;
 
 		case DBGMON_SOFTRST:
@@ -819,12 +829,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #if THINKOS_ENABLE_CONSOLE
 			goto is_connected;
 #endif
-			break;
-
-		case DBGMON_ALARM:
-			dbgmon_clear(DBGMON_ALARM);
-			preboot = true;
-			monitor_thread_exec(this_board.preboot_task, NULL);
 			break;
 
 		case DBGMON_APP_UPLOAD:
@@ -892,13 +896,34 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
 					thread_id, code);
 
-			if (preboot) {
+			if (startup) {
+				startup = false;
+				DCC_LOG(LOG_TRACE, "/!\\ Startup !!!");
+#if (MONITOR_SELFTEST_ENABLE)
+				selftest = true;
+				dbgmon_signal(DBGMON_USER_EVENT0);
+			} else if (selftest) {
+				selftest = false;
+				DCC_LOG(LOG_TRACE, "/!\\ Selftest !!!");
+#endif
+#if (MONITOR_CONFIGURE_ENABLE)
+				config = true;
+				dbgmon_signal(DBGMON_USER_EVENT1);
+			} else if (config) {
+				config = false;
+				DCC_LOG(LOG_TRACE, "/!\\ Config !!!");
+#endif
+#if (MONITOR_PREBOOT_ENABLE)
+				preboot = true;
+				dbgmon_signal(DBGMON_USER_EVENT2);
+			} else if (preboot) {
+				DCC_LOG(LOG_TRACE, "/!\\ Preboot !!!");
 				preboot = false;
+#endif
 				if (code >= 0) {
 					dbgmon_req_app_exec();
 				}
 			}
-
 		}
 			break;
 
@@ -977,20 +1002,22 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
 is_connected:
 			{
-				bool connected = dbgmon_comm_isconnected(comm);
+				connected = dbgmon_comm_isconnected(comm);
 				sigmask &= ~((1 << DBGMON_COMM_EOT) | 
 							 (1 << DBGMON_COMM_RCV) |
-							 (1 << DBGMON_RX_PIPE) |
-							 (1 << DBGMON_TX_PIPE));
+							 (1 << DBGMON_RX_PIPE));
 				__console_connect_set(connected);
 				raw_mode = __console_is_raw_mode();
 				if (connected) {
+					DCC_LOG(LOG_TRACE, "Comm connected.");
 					sigmask |= ((1 << DBGMON_COMM_EOT) |
-								(1 << DBGMON_COMM_RCV) |
-								(1 << DBGMON_TX_PIPE));
+								(1 << DBGMON_COMM_RCV));
 					if (raw_mode)
 						sigmask |= (1 << DBGMON_RX_PIPE);
 				}
+				else
+					DCC_LOG(LOG_TRACE, "Comm not connected!.");
+				sigmask |= (1 << DBGMON_TX_PIPE);
 			}
 			break;
 #if 0
@@ -1004,23 +1031,29 @@ is_connected:
 			DCC_LOG(LOG_TRACE, "COMM_EOT");
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
+			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", __console_tx_pipe_ptr(&ptr));
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
-				int n;
-				if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
-					__console_tx_pipe_commit(n); 
-					if (n == cnt) {
-						/* Wait for TX_PIPE */
-						sigmask |= (1 << DBGMON_TX_PIPE);
-						sigmask &= ~(1 << DBGMON_COMM_EOT);
+				if (connected) {
+					int n;
+					if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
+						__console_tx_pipe_commit(n);
+						if (n == cnt) {
+							/* Wait for TX_PIPE */
+							sigmask |= (1 << DBGMON_TX_PIPE);
+							sigmask &= ~(1 << DBGMON_COMM_EOT);
+						} else {
+							/* Wait for COMM_EOT */
+							sigmask |= (1 << DBGMON_COMM_EOT);
+							sigmask &= ~(1 << DBGMON_TX_PIPE);
+						}
 					} else {
 						/* Wait for COMM_EOT */
 						sigmask |= (1 << DBGMON_COMM_EOT);
-						sigmask &= ~(1 << DBGMON_TX_PIPE);
+						sigmask &=  ~(1 << DBGMON_TX_PIPE);
 					}
 				} else {
-					/* Wait for COMM_EOT */
-					sigmask |= (1 << DBGMON_COMM_EOT);
-					sigmask &=  ~(1 << DBGMON_TX_PIPE);
+					/* Drain the Rx pipe */
+					__console_tx_pipe_commit(cnt);
 				}
 			} else {
 				/* Wait for TX_PIPE */
@@ -1075,9 +1108,20 @@ raw_mode_recv:
 		case DBGMON_USER_EVENT1:
 			DCC_LOG(LOG_TRACE, "DBGMON_USER_EVENT1: configure!");
 			dbgmon_clear(DBGMON_USER_EVENT1);
-			monitor_thread_exec(this_board.selftest_task, NULL);
+			monitor_thread_exec(this_board.configure_task, NULL);
+			break;
+#endif
+
+#if (MONITOR_PREBOOT_ENABLE)
+		case DBGMON_USER_EVENT2:
+			DCC_LOG(LOG_TRACE, "DBGMON_USER_EVENT2: preboot!");
+			dbgmon_clear(DBGMON_USER_EVENT2);
+			preboot	= true;
+			monitor_thread_exec(this_board.preboot_task, NULL);
 			break;
 #endif
 		}
+		DCC_LOG1(LOG_TRACE, "SIG %d!", sig);
 	}
 }
+
