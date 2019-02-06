@@ -767,6 +767,45 @@ int thinkos_thread_abort(unsigned int thread);
 
 /**@}*/
 
+/** @brief write into to console driver
+ *
+ * @param buf pointer to an block of data to be transferred. 
+ * @param len size of the data block in octets.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int  thinkos_console_write(const void * buf, unsigned int len);
+
+/** @brief read from console driver
+ *
+ * @param buf pointer to a memory for data to be transferred. 
+ * @param len size of the data block in octets.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_console_read(void * buf, unsigned int len);
+
+/** @brief read from console driver with timeout
+ *
+ * @param buf pointer to a memory for data to be transferred. 
+ * @param len size of the data block in octets.
+ * @param ms timeout time in milliseconds.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
+
+int thinkos_console_is_connected(void);
+
+int thinkos_console_close(void);
+
+int thinkos_console_drain(void);
+
+int thinkos_console_io_break(unsigned int which);
+
+int thinkos_console_raw_mode(unsigned int enable);
+
+int thinkos_console_rd_nonblock(unsigned int enable);
+
+int thinkos_console_wr_nonblock(unsigned int enable);
+
 #ifdef __cplusplus
 }
 #endif

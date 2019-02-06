@@ -131,7 +131,9 @@
 #define CONSOLE_IOCTL                  6
 #define CONSOLE_IS_CONNECTED           7
 #define CONSOLE_IO_BREAK               8
-#define CONSOLE_RAW_MODE               9
+#define CONSOLE_RAW_MODE_SET           9
+#define CONSOLE_RD_NONBLOCK_SET        10
+#define CONSOLE_WR_NONBLOCK_SET        11
 
 #define CONSOLE_IO_WR                  (1 << 0)
 #define CONSOLE_IO_RD                  (1 << 1)
@@ -631,9 +633,18 @@ thinkos_console_io_break(unsigned int which) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_raw_mode(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE, enable);
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE_SET, enable);
 }
 
+static inline int __attribute__((always_inline)) 
+thinkos_console_rd_nonblock(unsigned int enable) {
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RD_NONBLOCK_SET, enable);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_console_wr_nonblock(unsigned int enable) {
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_WR_NONBLOCK_SET, enable);
+}
 
 /* ---------------------------------------------------------------------------
    OS Monitor and Control 

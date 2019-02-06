@@ -71,7 +71,9 @@
 						  (STM32_OTG_FS_OUTEP_MAX) + 1)
 #define OTG_INEP_OFF     (OTG_OUTEP_MAX)
 
-#define OTG_RX_FIFO_SIZE    384
+#define OTG_RX_FIFO_SIZE    192
+
+#define XFER_PKTS_MAX 2
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -169,7 +171,7 @@ static void __ep_pktbuf_alloc(struct stm32f_otg_drv * drv,
 #endif
 	}
 
-	DCC_LOG2(LOG_MSG, "addr=%d siz=%d", drv->fifo_addr, siz);
+	DCC_LOG2(LOG_TRACE, "addr=%d siz=%d", drv->fifo_addr, siz);
 
 	drv->fifo_addr += siz;
 }
@@ -392,9 +394,9 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 		/* XXX: check whether to get rid of this division or not,
 		 if the CM3 div is used it is not necessary.... */
 		pktcnt = (xfrsiz + (mpsiz - 1)) / mpsiz;
-		if (pktcnt > 4) {
-			pktcnt = 4;
-			xfrsiz = 4 * mpsiz;
+		if (pktcnt > XFER_PKTS_MAX) {
+			pktcnt = XFER_PKTS_MAX;
+			xfrsiz = XFER_PKTS_MAX * mpsiz;
 		} 
 	} else {
 		/* zero lenght packet */
@@ -785,12 +787,18 @@ int stm32f_otg_dev_ep_init(struct stm32f_otg_drv * drv,
 		uint32_t depctl;
 
 		if (info->addr & USB_ENDPOINT_IN) {
+			uint32_t addr = drv->fifo_addr;
 			if ((info->attr & 0x03) == ENDPOINT_TYPE_BULK) {
-				ep->xfr_max = 4 * mxpktsz;
+				ep->xfr_max = XFER_PKTS_MAX * mxpktsz;
 			} else {
 				ep->xfr_max = mxpktsz;
 			}
 			__ep_pktbuf_alloc(drv, idx, ep->xfr_max);
+/*FIXME: 
+  		    don't allocate fifo for irq 	
+*/
+
+			drv->fifo_addr = addr;
 		} else {
 			ep->xfr_max = mxpktsz;
 		}

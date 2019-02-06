@@ -27,6 +27,9 @@
 #ifndef __XMODEM_H__
 #define __XMODEM_H__
 
+#include <stdint.h>
+#include <stdbool.h>
+
 
 struct comm_ops {
 	int  (* send)(void *, const void *, unsigned int);
@@ -69,14 +72,17 @@ struct xmodem_snd {
 	const struct comm_dev * comm;
 
 	unsigned char seq;
+	unsigned char ack;
 	unsigned char state;
 	unsigned char mode;
 	unsigned short data_len;
 	unsigned short data_max;
+	unsigned int tmout_ms;
 
 	struct { 
 		unsigned char hdr[3];
 		unsigned char data[1024];
+		unsigned char fcs[2];
 	} pkt;
 };
 
@@ -101,6 +107,106 @@ struct ymodem_rcv {
 	} pkt;
 };
 
+struct ymodem_snd {
+	const struct comm_dev * comm;
+
+	unsigned int pktno;
+	unsigned int fsize;
+	unsigned int count;
+
+	unsigned char seq;
+	unsigned char ack;
+	unsigned char state;
+	unsigned char mode;
+	unsigned short data_len;
+	unsigned short data_max;
+	unsigned short data_pos;
+
+	char crc_mode;
+	char xmodem;
+	unsigned char sync;
+	unsigned char retry;
+
+	struct { 
+		unsigned char hdr[3];
+		unsigned char data[1024];
+		unsigned char fcs[2];
+	} pkt;
+};
+
+#define ZMODEM_HDR_LEN 16
+#define ZMODEM_PKT_LEN_MAX 1024
+
+struct zmodem {
+	const struct comm_dev * comm;
+
+	struct {
+		uint8_t	hdr[ZMODEM_HDR_LEN];	/* last received header */
+		uint8_t hdr_len;			/* last received header size */
+		uint32_t hdr_pos;	/* last received header position value */
+	} rxd;
+	int type;	/* last received status */
+
+	/*
+	 * receiver capability flags
+	 * extracted from the ZRINIT frame as received
+	 */
+
+	bool can_full_duplex;
+	bool can_overlap_io;
+	bool can_break;
+	bool can_fcs_32;
+	bool want_fcs_16;
+	bool escape_ctrl_chars;	
+	bool escape_8th_bit;
+
+	/*
+	 * file management options.
+	 * only one should be on
+	 */
+
+	bool management_newer;
+	bool management_clobber;
+	bool management_protect;
+
+
+	struct {
+		uint8_t raw[ZMODEM_PKT_LEN_MAX + 4];
+		uint8_t data[ZMODEM_PKT_LEN_MAX + 4];
+	} pkt; 
+	unsigned int data_len;
+
+	union {
+		uint8_t rx_data_subpacket[ZMODEM_PKT_LEN_MAX]; 
+	};
+
+	uint32_t file_size;
+	uint32_t file_pos;
+
+	bool receive_32bit_data;
+	uint32_t ack_file_pos;	
+	/* file position used in acknowledgement of correctly */
+						/* received data subpackets */
+
+	int last_sent;
+	int n_cans;
+
+	/* Status */
+	bool		cancelled;
+	bool		connected;
+	bool		file_skipped;
+	bool		no_streaming;
+	uint16_t	recv_bufsize;	/* Receiver specified buffer size */
+	uint16_t	crc_request;
+	uint16_t	errors;
+	uint16_t	consecutive_errors;
+
+	/* Configuration */
+	uint16_t	recv_timeout;
+	uint16_t	max_errors;
+	uint16_t	block_size;
+	uint16_t	max_block_size;
+};
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -129,10 +235,43 @@ int ymodem_rcv_init(struct ymodem_rcv * ry,
 					const struct comm_dev * comm, 
 					unsigned int mode);
 
+int xmodem_snd_start(struct xmodem_snd * sx);
+
 int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len);
 
 int ymodem_rcv_cancel(struct ymodem_rcv * ry);
 
+
+
+
+
+int ymodem_snd_init(struct ymodem_snd * sy, 
+					const struct comm_dev * comm, unsigned int mode);
+
+int ymodem_snd_start(struct ymodem_snd * sy, const char fname, 
+					 unsigned int size);
+
+int ymodem_snd_cancel(struct ymodem_snd * sy);
+
+int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len);
+
+int ymodem_snd_eot(struct ymodem_snd * sy);
+
+
+
+int zmodem_snd_init(struct zmodem * zm, const struct comm_dev * comm, 
+					unsigned int mode);
+
+int zmodem_snd_rz(struct zmodem * zm);
+
+int zmodem_snd_start(struct zmodem * zm, const char * fname, 
+					 unsigned int fsize);
+
+int zmodem_snd_cancel(struct zmodem * zm);
+
+int zmodem_snd_loop(struct zmodem * zm, const void * data, int len);
+
+int zmodem_snd_eof(struct zmodem * zm);
 
 
 #ifdef __cplusplus

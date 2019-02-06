@@ -57,6 +57,15 @@ int console_drain(void * dev)
 	return 0;
 }
 
+int console_flush(void * dev)
+{
+	uint8_t buf[4];
+
+	while (thinkos_console_timedread(buf, 4, 100) > 0);
+
+	return 0;
+}
+
 int console_close(void * dev)
 {
 	return thinkos_console_close();

@@ -28,8 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <thinkos.h>
 
 #if THINKOS_ENABLE_CONSOLE
-
-void __attribute__((noreturn)) dbgmon_console_io_task(struct dbgmon_comm * comm)
+void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 {
 	uint32_t sigmask = 0;
 	uint8_t * ptr;
@@ -138,29 +137,6 @@ void __attribute__((noreturn)) dbgmon_console_io_task(struct dbgmon_comm * comm)
 	}
 }
 
-void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
-{
-#if DEBUG
-	DCC_LOG(LOG_TRACE, "Started ...");
-	for (;;) {
-		uint32_t buf[64 / 4];
-		int sig;
-		int n;
-
-		sig = dbgmon_select(0);
-		dbgmon_clear(sig);
-
-		/* Loopback COMM */
-		if ((n = dbgmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-			dbgmon_comm_send(comm, buf, n);
-		}
-	}
-#else
-	for (;;) {
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-	}
-#endif
-}
-
 #endif /* THINKOS_ENABLE_CONSOLE */
+
 

@@ -55,9 +55,8 @@
 #define EP0_MAX_PKT_SIZE 64
 
 #define EP_OUT0_ADDR 1
-#define EP_IN0_ADDR  2
-#define EP_INT0_ADDR 3
-
+#define EP_IN0_ADDR  1
+#define EP_INT0_ADDR 2
 
 #ifndef CDC_EP_OUT_MAX_PKT_SIZE
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
@@ -232,7 +231,7 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
 		.attributes = ENDPOINT_TYPE_INTERRUPT,
 		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-		.interval = 200
+		.interval = 100
 	},
 	/* Data Class Interface Descriptor Requirement */
 	.if_data0 = {
@@ -264,7 +263,7 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 		.attributes = ENDPOINT_TYPE_BULK,
 		.maxpacketsize = CDC_EP_IN_MAX_PKT_SIZE,
 		.interval = 0
-	},
+	}
 
 };
 
@@ -407,7 +406,6 @@ static const struct cdc_line_coding usb_cdc_lc = {
 
 static const uint16_t device_status = USB_DEVICE_STATUS_SELF_POWERED;
 static const uint16_t interface_status = 0x0000;
-
 
 #define ACM_USB_SUSPENDED (1 << 1)
 #define ACM_CONNECTED     (1 << 2)

@@ -904,9 +904,15 @@ void __thinkos_system_reset(void);
 
 void __thinkos_sched_stop(void);
 
+/* get a pointer to the console's recieving pipe */
 int __console_rx_pipe_ptr(uint8_t ** ptr);
+/* commit 'cnt' octets on console's recieving pipe */
 void __console_rx_pipe_commit(int cnt); 
+
+/* set/clear the console's connected flag */
 void __console_connect_set(bool val); 
+/* set/clear the console's raw mode flag */
+void __console_raw_mode_set(bool val);
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);

@@ -37,6 +37,10 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define ENABLE_CONSOLE_DEBUG 0
 #endif
 
+#ifndef THINKOS_ENABLE_CONSOLE_NONBLOCK
+#define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
+#endif
+
 #if (!THINKOS_ENABLE_MONITOR)
 #error "Need THINKOS_ENABLE_MONITOR!"
 #endif
@@ -71,19 +75,21 @@ struct console_tx_pipe {
 #define CONSOLE_FLAG_RAW       (1  << 3)
 
 struct {
-	union {
+	struct console_tx_pipe tx_pipe;
+	struct console_rx_pipe rx_pipe;
+	volatile union {
 		struct {
 			uint32_t connected: 1;
 			uint32_t rd_break: 1;
 			uint32_t wr_break: 1;
 			uint32_t raw_mode: 1;
-			uint32_t reserved: 20;
+			uint32_t rd_nonblock: 1;
+			uint32_t wr_nonblock: 1;
+			uint32_t reserved: 18;
 			uint32_t open_cnt: 8;
 		};
 		uint32_t flags;
 	};
-	struct console_tx_pipe tx_pipe;
-	struct console_rx_pipe rx_pipe;
 } thinkos_console_rt;
 
 static int rx_pipe_read(uint8_t * buf, unsigned int len)
@@ -101,6 +107,7 @@ static int rx_pipe_read(uint8_t * buf, unsigned int len)
 	/* get the maximum number of chars we can read from the buffer */
 	if ((max = pipe->head - tail) == 0)
 		return 0;
+
 	/* cnt is the number of chars we will read from the buffer,
 	   it should be the minimum of max and len */
 	cnt = MIN(max, len);
@@ -149,7 +156,7 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	tail = pipe->tail;
 	/* get the maximum number of chars we can write into buffer */
 	if ((max = tail + THINKOS_CONSOLE_TX_FIFO_LEN - head) == 0) {
-		DCC_LOG2(LOG_TRACE, "fifo empty: head=%u tail=%u", head, tail);
+		DCC_LOG2(LOG_TRACE, "fifo full: head=%u tail=%u", head, tail);
 		return 0;
 	}
 	/* cnt is the number of chars we will write to the buffer,
@@ -199,6 +206,24 @@ static bool tx_pipe_isempty(void)
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	return pipe->tail == pipe->head;
 }
+
+#if 0
+static bool __rx_pipe_isempty(struct console_rx_pipe * pipe)
+{
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
+	return pipe->tail == pipe->head;
+}
+
+static unsigned int __rx_pipe_avail(struct console_rx_pipe * pipe) 
+{
+	int32_t cnt;
+
+	/* get the used space */
+	cnt = pipe->head - pipe->tail;
+
+	return cnt;
+}
+#endif
 
 /* get the a pointer from the next available character in the
    queue and return the number of available chars */ 
@@ -252,7 +277,7 @@ void __console_tx_pipe_commit(int cnt)
 	tail = thinkos_console_rt.tx_pipe.tail + cnt;
 	thinkos_console_rt.tx_pipe.tail = tail;
 	if (tail == thinkos_console_rt.tx_pipe.head) {
-		DCC_LOG(LOG_MSG, "TX_PIPE empty");
+		DCC_LOG(LOG_TRACE, "TX_PIPE empty");
 		dbgmon_clear(DBGMON_TX_PIPE);
 	}
 
@@ -272,7 +297,6 @@ void __console_tx_pipe_commit(int cnt)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
-
 
 int __console_rx_pipe_ptr(uint8_t ** ptr) 
 {
@@ -450,21 +474,23 @@ void thinkos_console_svc(int32_t * arg, int self)
 			arg[0] = THINKOS_OK;
 		break;
 
-	case CONSOLE_IOCTL:
-		DCC_LOG(LOG_TRACE, "CONSOLE_IOCTL");
-		arg[0] = THINKOS_OK;
-		break;
-
-	case CONSOLE_RAW_MODE:
-		DCC_LOG(LOG_TRACE, "CONSOLE_RAW_MODE");
-		thinkos_console_rt.raw_mode = arg[1];
-		arg[0] = THINKOS_OK;
-		break;
-
 	case CONSOLE_IS_CONNECTED:
 		DCC_LOG1(LOG_TRACE, "CONSOLE_IS_CONNECTED(%d)", 
 				thinkos_console_rt.connected);
 		arg[0] = thinkos_console_rt.connected;
+		break;
+
+	case CONSOLE_RAW_MODE_SET:
+		{
+			bool val = arg[1];
+
+			thinkos_console_rt.raw_mode = val ? 1 : 0;
+			DCC_LOG1(LOG_TRACE, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
+			arg[0] = THINKOS_OK;
+			/* FIXME: the raw mode console mechanism has a circular dependency 
+			   between console and debug monitor */
+			dbgmon_signal(DBGMON_COMM_CTL);
+		}
 		break;
 
 #if THINKOS_ENABLE_CONSOLE_BREAK
@@ -483,27 +509,53 @@ void thinkos_console_svc(int32_t * arg, int self)
 		break;
 #endif
 
+#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+	case CONSOLE_RD_NONBLOCK_SET: 
+		thinkos_console_rt.rd_nonblock = arg[1] ? 1 : 0;
+		break;
+
+	case CONSOLE_WR_NONBLOCK_SET: 
+		thinkos_console_rt.wr_nonblock = arg[1] ? 1 : 0;
+		break;
+#endif
 
 #if THINKOS_ENABLE_TIMED_CALLS
 	case CONSOLE_TIMEDREAD:
-		buf = (uint8_t *)arg[1];
-		len = arg[2];
-		DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
-		if ((n = rx_pipe_read(buf, len)) > 0) {
-			dbgmon_signal(DBGMON_RX_PIPE);
-			arg[0] = n;
+		{
+			unsigned int tmo;
+
+			buf = (uint8_t *)arg[1];
+			len = arg[2];
+			tmo = arg[3];
+
+			if ((n = rx_pipe_read(buf, len)) > 0) {
+				DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
+				dbgmon_signal(DBGMON_RX_PIPE);
+				arg[0] = n;
+				break;
+			}
+
+			if ((tmo > 0) 
+#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+				&& (!thinkos_console_rt.rd_nonblock) 
+#endif
+			   ) {
+				DCC_LOG(LOG_INFO, "Console timed read wait...");
+				/* wait for event */
+				__thinkos_suspend(self);
+				/* insert into the mutex wait queue */
+				__thinkos_tmdwq_insert(THINKOS_WQ_CONSOLE_RD, self, tmo);
+				/* Set the default return value to timeout. */
+				arg[0] = THINKOS_ETIMEDOUT;
+				/* signal the scheduler ... */
+				__thinkos_defer_sched(); 
+			} else {
+				/* if timeout is 0 do not block */
+				arg[0] = THINKOS_EAGAIN;
+			}
+
 			break;
 		}
-		DCC_LOG(LOG_INFO, "Console timed read wait...");
-		/* wait for event */
-		__thinkos_suspend(self);
-		/* insert into the mutex wait queue */
-		__thinkos_tmdwq_insert(THINKOS_WQ_CONSOLE_RD, self, arg[3]);
-		/* Set the default return value to timeout. */
-		arg[0] = THINKOS_ETIMEDOUT;
-		/* signal the scheduler ... */
-		__thinkos_defer_sched(); 
-		break;
 #endif
 
 	case CONSOLE_READ:
@@ -516,6 +568,12 @@ void thinkos_console_svc(int32_t * arg, int self)
 			break;
 		}
 		DCC_LOG(LOG_INFO, "Console read wait...");
+#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+		if (thinkos_console_rt.rd_nonblock) {
+			arg[0] = THINKOS_EAGAIN;
+			break;
+		}
+#endif
 		/* wait for event */
 		__thinkos_suspend(self);
 		/* insert into the mutex wait queue */
@@ -528,13 +586,19 @@ void thinkos_console_svc(int32_t * arg, int self)
 		buf = (uint8_t *)arg[1];
 		len = arg[2];
 		wq = THINKOS_WQ_CONSOLE_WR;
-		DCC_LOG1(LOG_MSG, "Console write: len=%d", len);
+		DCC_LOG1(LOG_INFO, "Console write: len=%d", len);
 wr_again:
 		if ((n = tx_pipe_write(buf, len)) > 0) {
 			DCC_LOG1(LOG_INFO, "tx_pipe_write: n=%d", n);
 			dbgmon_signal(DBGMON_TX_PIPE);
 			arg[0] = n;
 		} else {
+#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+			if (thinkos_console_rt.wr_nonblock) {
+				arg[0] = THINKOS_EAGAIN;
+				break;
+			}
+#endif
 			/* Set the return value to ZERO. The calling thread 
 			   shuould retry sending data. */
 			arg[0] = 0;
@@ -689,19 +753,18 @@ void __thinkos_console_reset(void)
 
 bool __console_is_raw_mode(void) 
 {
-	return thinkos_console_rt.raw_mode;
+	return thinkos_console_rt.raw_mode ? true : false;
+}
+
+void __console_raw_mode_set(bool val) 
+{
+	DCC_LOG1(LOG_TRACE, "raw_mode=%s", val ? "true" : "false");
+	thinkos_console_rt.raw_mode = val;
 }
 
 void __console_connect_set(bool val) 
 {
-#if ENABLE_CONSOLE_DEBUG
-	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
-		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
-	}
-#endif
-
-	DCC_LOG1(LOG_TRACE, "connected=%d.", val);
+	DCC_LOG1(LOG_TRACE, "connected=%s", val ? "true" : "false");
 	thinkos_console_rt.connected = val;
 }
 
