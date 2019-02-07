@@ -39,7 +39,8 @@
 #define NAK  0x15
 #define CAN  0x18
 
-#define XMODEM_SND_TMOUT_MS 2000
+#define XMODEM_SND_INIT_TMO_MS 1000
+#define XMODEM_SND_TMO_MS 8
 
 #define TRACE_LEVEL TRACE_LVL_ERR
 //#define TRACE_LEVEL TRACE_LVL_DBG
@@ -50,7 +51,6 @@ enum {
 	XMODEM_SND_CRC = 1,
 	XMODEM_SND_CKS = 2
 };
-
 
 int xmodem_snd_init(struct xmodem_snd * sx, 
 					const struct comm_dev * comm, unsigned int mode)
@@ -65,7 +65,7 @@ int xmodem_snd_init(struct xmodem_snd * sx,
 	sx->seq = 1;
 	sx->ack = 1;
 	sx->state = XMODEM_SND_IDLE;
-	sx->tmout_ms = XMODEM_SND_TMOUT_MS;
+	sx->tmout_ms = XMODEM_SND_INIT_TMO_MS;
 
 	/* flush */
 	while (sx->comm->op.recv(sx->comm->arg, sx->pkt.data, 1024, 200) > 0); 
@@ -152,7 +152,7 @@ int xmodem_snd_start(struct xmodem_snd * sx)
 
 	}
 
-	sx->tmout_ms = 10;
+	sx->tmout_ms = XMODEM_SND_TMO_MS;
 
 	return 0;
 }
@@ -163,13 +163,45 @@ static int xmodem_send_pkt(struct xmodem_snd * sx,
 	unsigned char * pkt = data - 3; 
 	unsigned char * cp;
 	unsigned char * fcs;
-	int retry = 0;
 	int tot_len;
 	int ret;
 	int c;
 
 	if (sx->state == XMODEM_SND_IDLE)
 		return -EINVAL;
+
+	if ((signed char)(sx->seq - sx->ack) >= 1) {
+		// Wait for ACK
+		if ((ret = sx->comm->op.recv(sx->comm->arg, pkt, 
+									 1, sx->tmout_ms)) <= 0) {
+			ERRS("RX: too many retries!");
+			return ret;
+		}
+
+		c = *pkt;
+
+		if (c == CAN) {
+			INFS("RX: CAN");
+			ret = -ECANCELED;
+			goto error;
+		}
+
+		if (c == NAK) {
+			WARNS("RX: NAK");
+			ret = -EBADMSG;
+			goto error;
+		} 
+		
+		if (c != ACK) {
+			INFS("RX: ??");
+			ret = -EBADMSG;
+			goto error;
+
+		}
+
+		INFS("RX: ACK");
+		sx->ack++;
+	}
 
 	if (data_len == 1024) {
 		pkt[0] = STX;
@@ -204,64 +236,16 @@ static int xmodem_send_pkt(struct xmodem_snd * sx,
 		tot_len = 3 + data_len + 1;
 	}
 
+	INF("TX: tot_len=%d", tot_len);
+
+	// Send packet 
+	if ((ret = sx->comm->op.send(sx->comm->arg, pkt, tot_len)) < 0) {
+		INFS("TX: console_write() failed!..");
+		return ret;
+	}
+
 	sx->seq++;
 
-		// Send packet 
-		if ((ret = sx->comm->op.send(sx->comm->arg, pkt, tot_len)) < 0) {
-			INFS("TX: console_write() failed!..");
-			return ret;
-		}
-
-//	for (;;) {
-
-		INF("TX: tot_len=%d", tot_len);
-
-		if ((signed char)(sx->seq - sx->ack) >= 2) {
-
-			// Wait for ACK
-			if ((ret = sx->comm->op.recv(sx->comm->arg, pkt, 
-										 1, sx->tmout_ms)) <= 0) {
-				//	if (ret == ETIMEDOUT) {
-				//		if (++retry < 10)
-				//			continue;
-				//	}
-		//		if (++retry < 10) {
-		//			WARNS("RX: TMO...");
-		//			continue;
-		//		}
-				ERRS("RX: too many retries!");
-				return ret;
-			}
-
-			c = *pkt;
-
-			if (c == ACK) {
-				INFS("RX: ACK");
-				sx->ack++;
-				return 0;
-			}
-
-			if (c == CAN) {
-				INFS("RX: CAN");
-				ret = -ECANCELED;
-				goto error;
-			}
-
-			if (c != NAK) {
-				INFS("RX: ??");
-				ret = -EBADMSG;
-				goto error;
-			}
-
-			WARNS("RX: NAK");
-
-			if (++retry == 10) {
-				ERRS("RX: too many retries!");
-				ret = -ECANCELED;
-				goto error;
-			}
-		}
-//	}
 
 	return 0;
 

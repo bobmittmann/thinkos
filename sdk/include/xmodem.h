@@ -67,6 +67,26 @@ enum {
 	XMODEM_SND_STD = 0,
 	XMODEM_SND_1K = 1
 };
+/*
+struct xmodem_snd {
+	const struct comm_dev * comm;
+
+	volatile uint8_t seq;
+	volatile uint8_t ack;
+	volatile uint8_t state;
+	uint8_t mode;
+
+	uint16_t err;
+	uint16_t tmout_ms;
+
+	struct { 
+		uint8_t hdr[3];
+		uint8_t data[1024];
+		uint8_t fcs[2];
+		uint16_t free;
+	} pkt;
+};
+*/
 
 struct xmodem_snd {
 	const struct comm_dev * comm;
@@ -85,6 +105,7 @@ struct xmodem_snd {
 		unsigned char fcs[2];
 	} pkt;
 };
+
 
 struct ymodem_rcv {
 	const struct comm_dev * comm;
@@ -223,6 +244,9 @@ int xmodem_rcv_cancel(struct xmodem_rcv * rx);
 int xmodem_snd_init(struct xmodem_snd * sx, const struct comm_dev * comm, 
 					unsigned int mode);
 
+//int xmodem_snd_loop(struct xmodem_snd * sx, const void * data, 
+//					unsigned int len);
+
 int xmodem_snd_loop(struct xmodem_snd * sx, const void * data, int len);
 
 int xmodem_snd_cancel(struct xmodem_snd * sx);
@@ -273,6 +297,9 @@ int zmodem_snd_loop(struct zmodem * zm, const void * data, int len);
 
 int zmodem_snd_eof(struct zmodem * zm);
 
+int xmodem_snd_readback(struct xmodem_snd * sx);
+
+int xmodem_snd_status(struct xmodem_snd * sx);
 
 #ifdef __cplusplus
 }

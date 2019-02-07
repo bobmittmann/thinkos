@@ -52,11 +52,12 @@
 #endif
 
 #define EP0_ADDR 0
-#define EP0_MAX_PKT_SIZE 64
+#define EP0_MAX_PKT_SIZE 32
 
 #define EP_OUT0_ADDR 1
-#define EP_IN0_ADDR  1
-#define EP_INT0_ADDR 2
+#define EP_IN0_ADDR  2
+#define EP_INT0_ADDR 3
+
 
 #ifndef CDC_EP_OUT_MAX_PKT_SIZE
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
@@ -67,7 +68,7 @@
 #endif
 
 #ifndef CDC_EP_INT_MAX_PKT_SIZE 
-#define CDC_EP_INT_MAX_PKT_SIZE 64
+#define CDC_EP_INT_MAX_PKT_SIZE 32
 #endif
 
 struct cdc_acm_descriptor_config {
@@ -628,7 +629,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 			dev[0].in_ep = usb_dev_ep_init(usb, &usb_mon_in_info, NULL, 0);
 			dev[0].out_ep = usb_dev_ep_init(usb, &usb_mon_out_info, NULL, 0);
 			dev[0].int_ep = usb_dev_ep_init(usb, &usb_mon_int_info, NULL, 0);
-			usb_dev_ep_ctl(usb, dev->out_ep, USB_EP_RECV_OK);
+			//usb_dev_ep_ctl(usb, dev->out_ep, USB_EP_RECV_OK);
 			dev->configured = 1;
 		} else {
 			DCC_LOG(LOG_TRACE, "[UNCONFIGURED]");
@@ -653,19 +654,23 @@ static int usb_mon_on_setup(usb_class_t * cl,
 		len = 1;
 		break;
 
-#if 0
+#if DEBUG
 	case STD_CLEAR_FEATURE_DEVICE:
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
+			DCC_LOG(LOG_TRACE, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
-		}
-		DCC_LOG(LOG_TRACE, "ClrFeatureDev(%d)", value);
+			DCC_LOG(LOG_TRACE, "SetFeatureDev(TEST_MODE )");
+		} else
+			DCC_LOG1(LOG_WARNING, "ClrFeatureDev(%d)", value);
 		break;
 
 	case STD_SET_FEATURE_DEVICE:
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
+			DCC_LOG(LOG_TRACE, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
-		}
-		DCC_LOG(LOG_TRACE, "SetFeatureDev", value);
+			DCC_LOG(LOG_TRACE, "SetFeatureDev(TEST_MODE )");
+		} else
+			DCC_LOG1(LOG_WARNING, "SetFeatureDev(%d)", value);
 		break;
 #endif
 
@@ -676,48 +681,74 @@ static int usb_mon_on_setup(usb_class_t * cl,
 		len = 2;
 		break;
 
-#if 0
+#if DEBUG
 	case STD_CLEAR_FEATURE_INTERFACE:
-		DCC_LOG(LOG_TRACE, "ClrFeatureIf(%d,%d)", index, value);
+		DCC_LOG2(LOG_TRACE, "ClrFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_SET_FEATURE_INTERFACE:
-		DCC_LOG(LOG_TRACE, "SetFeatureIf(%d,%d)", index, value);
+		DCC_LOG2(LOG_TRACE, "SetFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_GET_INTERFACE:
-		DCC_LOG(LOG_TRACE, "GetInterface(%d)", index);
+		DCC_LOG1(LOG_TRACE, "GetInterface(%d)", index);
 		break;
 
 	case STD_SET_INTERFACE:
-		DCC_LOG(LOG_TRACE, "SetInterface(%d)", index);
+		DCC_LOG1(LOG_TRACE, "SetInterface(%d)", index);
 		break;
 #endif
 
 
+#if DEBUG
 	/* Standard Endpoint Requests */
-#if 0
 	case STD_GET_STATUS_ENDPOINT:
-		index &= 0x0f;
-		DCC_LOG1(LOG_TRACE, "GetStatusEpt:%d", index);
-		break;
-
-	case STD_CLEAR_FEATURE_ENDPOINT:
-		index &= 0x0f;
-		DCC_LOG1(LOG_TRACE, "ClrFeatureEP:%d", index);
-		break;
-
-	case STD_CLEAR_FEATURE_ENDPOINT:
-		index &= 0x0f;
-		DCC_LOG1(LOG_TRACE, "SetFeatureEP:%d", index);
-		break;
-
-	case STD_SYNCH_FRAME:
-		index &= 0x0f;
-		DCC_LOG1(LOG_TRACE, "SetFeatureEP:%d", index);
+		{
+			int ep_addr = index;
+			(void)ep_addr;
+		
+			DCC_LOG1(LOG_TRACE, VT_PSH VT_FRD VT_BRI 
+					 "GetStatusEP(%d)" VT_POP, ep_addr);
+		}
 		break;
 #endif
 
+	case STD_CLEAR_FEATURE_ENDPOINT:
+		{
+			int ep_addr = index;
+
+			if (value == USB_ENDPOINT_HALT) {
+				DCC_LOG2(LOG_TRACE, VT_PSH VT_FMG VT_BRI
+						 "ClrFeatureEP Halt (%s %d)" VT_POP, 
+						  (ep_addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
+						  ep_addr & 0x7f);
+
+				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_CLR);
+			} else
+				DCC_LOG2(LOG_TRACE, "ClrFeatureEP(%d,%d)", ep_addr, value);
+		}
+		break;
+
+	case STD_SET_FEATURE_ENDPOINT:
+		{
+			int ep_addr = index;
+
+			if (value == USB_ENDPOINT_HALT) {
+				DCC_LOG2(LOG_TRACE, VT_PSH VT_FMG VT_BRI
+						 "SetFeatureEP Halt (%s %d)" VT_POP, 
+						  (ep_addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
+						  ep_addr & 0x7f);
+				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_SET);
+			} else
+				DCC_LOG2(LOG_TRACE, "SetFeatureEP(%d,%d)", ep_addr, value);
+		}
+		break;
+
+#if DEBUG
+	case STD_SYNCH_FRAME:
+		DCC_LOG1(LOG_TRACE, "SetSynchFrame:%d", index);
+		break;
+#endif
 
 	/* -------------------------------------------------------------------- 
 	 * Class specific requests 
