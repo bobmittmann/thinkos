@@ -40,7 +40,7 @@
 #define CAN  0x18
 
 #define XMODEM_SND_INIT_TMO_MS 1000
-#define XMODEM_SND_TMO_MS 8
+#define XMODEM_SND_TMO_MS 16
 
 #define TRACE_LEVEL TRACE_LVL_ERR
 //#define TRACE_LEVEL TRACE_LVL_DBG
@@ -76,7 +76,7 @@ int xmodem_snd_init(struct xmodem_snd * sx,
 
 int xmodem_snd_cancel(struct xmodem_snd * sx)
 {
-	unsigned char buf[4];
+	uint8_t buf[4];
 	int ret;
 
 
@@ -158,11 +158,11 @@ int xmodem_snd_start(struct xmodem_snd * sx)
 }
 
 static int xmodem_send_pkt(struct xmodem_snd * sx, 
-						   unsigned char * data, int data_len)
+						   uint8_t * data, int data_len)
 {
-	unsigned char * pkt = data - 3; 
-	unsigned char * cp;
-	unsigned char * fcs;
+	uint8_t * pkt = data - 3; 
+	uint8_t * cp;
+	uint8_t * fcs;
 	int tot_len;
 	int ret;
 	int c;
@@ -225,7 +225,7 @@ static int xmodem_send_pkt(struct xmodem_snd * sx,
 		fcs[1] = crc & 0xff;
 		tot_len = 3 + data_len + 2;
 	} else {
-		unsigned char cks = 0;
+		uint8_t cks = 0;
 		int i;
 
 		for (i = 0; i < data_len; ++i)
@@ -236,11 +236,11 @@ static int xmodem_send_pkt(struct xmodem_snd * sx,
 		tot_len = 3 + data_len + 1;
 	}
 
-	INF("TX: tot_len=%d", tot_len);
+	INF("SX: tot_len=%d", tot_len);
 
 	// Send packet 
 	if ((ret = sx->comm->op.send(sx->comm->arg, pkt, tot_len)) < 0) {
-		INFS("TX: console_write() failed!..");
+		INFS("SX: console_write() failed!..");
 		return ret;
 	}
 
@@ -258,50 +258,49 @@ error:
 
 int xmodem_snd_loop(struct xmodem_snd * sx, const void * data, int len)
 {
-	unsigned char * src = (unsigned char *)data;
-	unsigned int cnt;
+	uint8_t * src = (uint8_t *)data;
+	unsigned int rem;
 
 	if ((src == NULL) || (len < 0))
 		return -EINVAL;
 
-	cnt = 0;
-
-	do {
-		unsigned char * dst;
-		int ret;
-		int rem;
+	rem = len;
+	while (rem > 0) {
+		unsigned int free;
+		uint8_t * dst;
 		int n;
 		int i;
 
 		dst = &sx->pkt.data[sx->data_len];
-		rem = sx->data_max - sx->data_len;
-		n = MIN(len, rem);
+		free = sx->data_max - sx->data_len;
+		n = MIN(rem, free);
 
 		for (i = 0; i < n; ++i)
 			dst[i] = src[i];
 
+		src += n;
+		rem -= n;
 		sx->data_len += n;
 
 		if (sx->data_len == sx->data_max) {
+			int ret;
 
 			if ((ret = xmodem_send_pkt(sx, sx->pkt.data, sx->data_len)) < 0) {
+				ERRS("XS.SendPkt failed...");
 				return ret;
 			}
 
 			sx->data_len = 0;
 		}
+	}
 
-		src += n;
-		cnt += n;
-	} while (cnt < len);
-
-	return cnt;
+	return len;
 }
 
 int xmodem_snd_eot(struct xmodem_snd * sx)
 {
-	unsigned char buf[4];
-	unsigned char * data;
+	uint8_t buf[4];
+	uint8_t * data;
 	int data_len;
 	int data_max;
 	int ret;
