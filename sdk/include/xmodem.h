@@ -142,6 +142,7 @@ struct ymodem_snd {
 	unsigned short data_len;
 	unsigned short data_max;
 	unsigned short data_pos;
+	unsigned int tmout_ms;
 
 	char crc_mode;
 	char xmodem;
@@ -272,8 +273,8 @@ int ymodem_rcv_cancel(struct ymodem_rcv * ry);
 int ymodem_snd_init(struct ymodem_snd * sy, 
 					const struct comm_dev * comm, unsigned int mode);
 
-int ymodem_snd_start(struct ymodem_snd * sy, const char fname, 
-					 unsigned int size);
+int ymodem_snd_start(struct ymodem_snd * sy, const char * fname, 
+					 unsigned int fsize);
 
 int ymodem_snd_cancel(struct ymodem_snd * sy);
 

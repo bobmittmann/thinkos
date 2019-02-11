@@ -27,10 +27,15 @@
 #include <sys/param.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <xmodem.h>
 #include <crc.h>
 #include <errno.h>
+
+//#define TRACE_LEVEL TRACE_LVL_ERR
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
 
 #define SOH  0x01
 #define STX  0x02
@@ -39,14 +44,15 @@
 #define NAK  0x15
 #define CAN  0x18
 
-#define XMODEM_SND_TMOUT_MS 2000
+#define YMODEM_SND_INIT_TMO_MS 1000
+#define YMODEM_SND_TMO_MS 16
 
 enum {
-	XMODEM_SND_IDLE = 0,
-	XMODEM_SND_CRC = 1,
-	XMODEM_SND_CKS = 2
+	YMODEM_SND_IDLE = 0,
+	YMODEM_SND_CRC = 1,
+	YMODEM_SND_CKS = 2,
+	YMODEM_SND_START = 3
 };
-
 
 int ymodem_snd_init(struct ymodem_snd * sy, 
 					const struct comm_dev * comm, unsigned int mode)
@@ -59,7 +65,9 @@ int ymodem_snd_init(struct ymodem_snd * sy,
 	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 1;
-	sy->state = XMODEM_SND_IDLE;
+	sy->ack = 1;
+	sy->state = YMODEM_SND_IDLE;
+	sy->tmout_ms = YMODEM_SND_INIT_TMO_MS;
 
 	/* flush */
 	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
@@ -68,16 +76,9 @@ int ymodem_snd_init(struct ymodem_snd * sy,
 	return 0;
 }
 
-int ymodem_snd_start(struct ymodem_snd * sy, const char fname, 
-					 unsigned int size)
-{
-	return 0;
-}
-
-
 int ymodem_snd_cancel(struct ymodem_snd * sy)
 {
-	unsigned char buf[4];
+	uint8_t buf[4];
 	int ret;
 
 
@@ -88,53 +89,60 @@ int ymodem_snd_cancel(struct ymodem_snd * sy)
 	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 1;
-	sy->state = XMODEM_SND_IDLE;
-
+	sy->ack = 1;
+	sy->state = YMODEM_SND_IDLE;
 
 	return ret;
 }
 
 static int ymodem_send_pkt(struct ymodem_snd * sy, 
-						   unsigned char * data, int data_len)
+						   uint8_t * data, int data_len)
 {
-	unsigned char * pkt = data - 3; 
-	unsigned char * cp;
-	unsigned char fcs[2];
-	int retry = 0;
-	int fcs_len;
+	uint8_t * pkt = data - 3; 
+	uint8_t * cp;
+	uint8_t * fcs;
+	int tot_len;
 	int ret;
 	int c;
 
+	if (sy->state == YMODEM_SND_IDLE)
+		return -EINVAL;
 
-	if (sy->state == XMODEM_SND_IDLE) {
+	if ((signed char)(sy->seq - sy->ack) >= 1) {
+		// Wait for ACK
+		if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) <= 0) {
+			ERRS("YS: too many retries!");
+			return ret;
+		}
 
-		for (;;) {
+		c = *pkt;
 
-			// Wait for NAK or 'C'
-			if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
-										 1, XMODEM_SND_TMOUT_MS)) < 0) {
-				if (ret == ETIMEDOUT) {
-					if (++retry < 20) 
-						continue;
-				}
-				return ret;
-			}
-			c = *pkt;
+		if (c == CAN) {
+			INFS("YS: CAN");
+			ret = -ECANCELED;
+			goto error;
+		}
 
-			if (c == CAN) {
-				return -ECANCELED;
-			}
-
+		if (c == ACK) {
+			INFS("YS: ACK");
+			sy->ack++;
+		} else if (sy->state == YMODEM_SND_START) {
 			if (c == 'C') {
-				sy->state = XMODEM_SND_CRC;
-				break;
+				INFS("YS: CRC mode ...");
+				sy->state = YMODEM_SND_CRC;
+			} else if (c == NAK) {
+				INFS("YS: CKS mode ...");
+				sy->state = YMODEM_SND_CKS;
 			}
-
-			if (c == NAK) {
-				sy->state = XMODEM_SND_CKS;
-				break;
-			}
-
+		} else if (c == NAK) {
+			WARNS("YS: NAK");
+			ret = -EBADMSG;
+			goto error;
+		} else { 
+			INF("YS: %02x ??", c);
+			ret = -EBADMSG;
+			goto error;
 		}
 	}
 
@@ -148,74 +156,40 @@ static int ymodem_send_pkt(struct ymodem_snd * sy,
 	pkt[2] = ~sy->seq;
 	cp = &pkt[3];
 
-	if (sy->state == XMODEM_SND_CRC) {
+	if ((sy->state == YMODEM_SND_CRC) || 
+		(sy->state == YMODEM_SND_START)) {
 		unsigned short crc = 0;
 		int i;
 
 		for (i = 0; i < data_len; ++i)
 			crc = CRC16CCITT(crc, cp[i]);
 
+		fcs = &cp[i];
 		fcs[0] = crc >> 8;
 		fcs[1] = crc & 0xff;
-		fcs_len = 2;
+		tot_len = 3 + data_len + 2;
 	} else {
-		unsigned char cks = 0;
+		uint8_t cks = 0;
 		int i;
 
 		for (i = 0; i < data_len; ++i)
 			cks += cp[i];
 
+		fcs = &cp[i];
 		fcs[0] = cks;
-		fcs_len = 1;
+		tot_len = 3 + data_len + 1;
 	}
 
-	for (;;) {
+	INF("YS: tot_len=%d", tot_len);
 
-
-		// Send packet less FCS 
-		if ((ret = sy->comm->op.send(sy->comm->arg, pkt, data_len + 3)) < 0) {
-			return ret;
-		}
-
-		// Send FCS (checksum or CRC)
-		if ((ret = sy->comm->op.send(sy->comm->arg, fcs, fcs_len)) < 0) {
-			return ret;
-		}
-
-		// Wait for ACK
-		if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
-									 1, XMODEM_SND_TMOUT_MS)) <= 0) {
-			if (ret == ETIMEDOUT) {
-				if (++retry < 10)
-					continue;
-			}
-			return ret;
-		}
-
-		c = *pkt;
-
-		if (c == ACK) {
-			break;
-		}
-
-		if (c == CAN) {
-			ret = -ECANCELED;
-			goto error;
-		}
-
-		if (c != NAK) {
-			ret = -EBADMSG;
-			goto error;
-		}
-
-
-		if (++retry == 10) {
-			ret = -ECANCELED;
-			goto error;
-		}
+	// Send packet 
+	if ((ret = sy->comm->op.send(sy->comm->arg, pkt, tot_len)) < 0) {
+		INFS("YS: console_write() failed!..");
+		return ret;
 	}
 
 	sy->seq++;
+
 
 	return 0;
 
@@ -226,49 +200,151 @@ error:
 	return ret;
 }
 
+
+int ymodem_snd_start(struct ymodem_snd * sy, const char * fname, 
+					 unsigned int fsize)
+{
+	char * buf = (char *)sy->pkt.data;
+	unsigned int dlen;
+	unsigned int dmax;
+	uint8_t pkt[8];
+	int retry;
+	char * cp;
+	int ret;
+//	int i;
+	int c;
+
+	retry = 0;
+
+	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
+
+	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
+	sy->data_len = 0;
+	sy->seq = 0;
+	sy->ack = 0;
+	sy->state = YMODEM_SND_IDLE;
+
+	INFS("YS: IDLE...");
+
+	for (;;) {
+
+		// Wait for NAK or 'C'
+		if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) <= 0) {
+			/*
+			   if (ret == -THINKOS_ETIMEDOUT) {
+			   INFS("YS: ETIMEDOUT...");
+			   if (++retry < 20) 
+			   continue;
+			   } else {
+			   INF("YS: ret=%d", ret);
+			   } */
+			if (++retry < 20) 
+				continue;
+			return ret;
+		}
+
+		c = *pkt;
+
+		if (c == CAN) {
+			ERRS("YS: CAN");
+			return -ECANCELED;
+		}
+
+		if (c == 'C') {
+			INFS("YS: CRC mode");
+			sy->state = YMODEM_SND_START;
+			break;
+		}
+
+		if (c == NAK) {
+			INFS("YS: CKS mode");
+			sy->state = YMODEM_SND_CKS;
+			break;
+		}
+
+		ERR("YS.Start: received '%02x' ???", c);
+	}
+
+	buf = (char *)sy->pkt.data;
+	cp = buf;
+	strcpy(cp, fname);
+	cp += strlen(cp) + 1;
+	cp += sprintf(cp, "%d ", fsize);
+	dlen = cp - buf + 1;
+
+	INF("YS.Start: fname=\"%s\" fsize=%d", fname, fsize);
+	DBG("YS.Start: dlen=%d", dlen);
+
+	if (dlen > 1024) {
+		ERR("YS.Start: dlen=%d > 1024 !!!!", dlen);
+		return -1;
+	} 
+
+	dmax = (dlen > 128) ? 1024 : 128;
+
+	/* padding */
+//	for (i = 0; dmax - dlen; ++i)
+//			cp[i] = '\0';
+
+	if ((ret = ymodem_send_pkt(sy, (uint8_t *)buf, dmax)) < 0) {
+		ERRS("YS.SendPkt failed...");
+		return ret;
+	}
+
+	sy->tmout_ms = YMODEM_SND_TMO_MS;
+
+	sy->data_len = 0;
+
+	return 0;
+}
+
+
 int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len)
 {
-	unsigned char * src = (unsigned char *)data;
+	uint8_t * src = (uint8_t *)data;
+	unsigned int rem;
 
 	if ((src == NULL) || (len < 0))
 		return -EINVAL;
 
-	do {
-		unsigned char * dst;
-		int ret;
-		int rem;
+	rem = len;
+	while (rem > 0) {
+		unsigned int free;
+		uint8_t * dst;
 		int n;
 		int i;
 
 		dst = &sy->pkt.data[sy->data_len];
-		rem = sy->data_max - sy->data_len;
-		n = MIN(len, rem);
+		free = sy->data_max - sy->data_len;
+		n = MIN(rem, free);
 
 		for (i = 0; i < n; ++i)
 			dst[i] = src[i];
 
+		src += n;
+		rem -= n;
 		sy->data_len += n;
 
 		if (sy->data_len == sy->data_max) {
+			int ret;
 
 			if ((ret = ymodem_send_pkt(sy, sy->pkt.data, sy->data_len)) < 0) {
+				ERRS("YS.SendPkt failed...");
 				return ret;
 			}
 
 			sy->data_len = 0;
 		}
+	}
 
-		src += n;
-		len -= n;
-	} while (len);
-
-	return 0;
+	return len;
 }
 
 int ymodem_snd_eot(struct ymodem_snd * sy)
 {
-	unsigned char buf[4];
-	unsigned char * data;
+	uint8_t buf[4];
+	uint8_t * data;
 	int data_len;
 	int data_max;
 	int ret;
@@ -302,13 +378,18 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 
 
 	buf[0] = EOT;
-	ret = sy->comm->op.send(sy->comm->arg, buf, 1);
+	buf[1] = EOT;
+	buf[2] = EOT;
+	ret = sy->comm->op.send(sy->comm->arg, buf, 3);
 
 	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
-	sy->seq = 1;
-	sy->state = XMODEM_SND_IDLE;
+	sy->seq = 0;
+	sy->state = YMODEM_SND_IDLE;
 
+	/* flush */
+	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
+	
 	return ret;
 }
 
