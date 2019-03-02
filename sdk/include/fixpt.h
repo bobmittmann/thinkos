@@ -134,7 +134,7 @@
 #define FLOAT_Q30(X)     ((int32_t)((X) * 1073741824.))
 
 /* Convert from fractional Q2.30 to float point */
-#define Q30F(Q) ((double)((double)(Q) * (1.0 / (double)(1073741824.))))
+#define Q30F(Q) ((double)((double)(Q) * ((double)1.0 / (double)(1073741824.))))
 /* Convert from fixed point Q2.30 to float point */
 #define Q30_FLOAT(X)     ((float)(X) / 1073741824.)
 
@@ -167,7 +167,7 @@
 #define FLOAT_Q31(X)     ((int32_t)((X) * 2147483648.))
 
 /* Convert from fractional Q1.31 to float point */
-#define Q31F(Q) ((double)((double)(Q) * (1.0 / (double)(2147483648.))))
+#define Q31F(Q) ((double)((double)(Q) * ((double)1.0 / (double)(2147483648.))))
 /* Convert from fixed point Q1.31 to float point */
 #define Q31_FLOAT(X)     ((float)(X) / 2147483648.)
 

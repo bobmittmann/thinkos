@@ -33,8 +33,8 @@
 #include <crc.h>
 #include <errno.h>
 
-//#define TRACE_LEVEL TRACE_LVL_ERR
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_ERR
+//#define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
 #define SOH  0x01
@@ -44,8 +44,11 @@
 #define NAK  0x15
 #define CAN  0x18
 
+#define SUB 0x1a 
+
 #define YMODEM_SND_INIT_TMO_MS 1000
 #define YMODEM_SND_TMO_MS 16
+#define YMODEM_SND_EOT_TMO_MS 100
 
 enum {
 	YMODEM_SND_IDLE = 0,
@@ -72,6 +75,18 @@ int ymodem_snd_init(struct ymodem_snd * sy,
 	/* flush */
 	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
 
+	return 0;
+}
+
+int ymodem_snd_flush(struct ymodem_snd * sy, unsigned int tmo_ms)
+{
+	uint8_t buf[16];
+	int n;
+
+	/* flush */
+	while ((n = sy->comm->op.recv(sy->comm->arg, buf, 16, tmo_ms)) > 0)  {
+		INFX("SY", buf, n);
+	}
 
 	return 0;
 }
@@ -148,8 +163,10 @@ static int ymodem_send_pkt(struct ymodem_snd * sy,
 
 	if (data_len == 1024) {
 		pkt[0] = STX;
+		DBG("YS: STX");
 	} else {
 		pkt[0] = SOH;
+		DBG("YS: SOH");
 	} 
 
 	pkt[1] = sy->seq;
@@ -180,7 +197,7 @@ static int ymodem_send_pkt(struct ymodem_snd * sy,
 		tot_len = 3 + data_len + 1;
 	}
 
-	INF("YS: tot_len=%d", tot_len);
+	YAP("YS: tot_len=%d", tot_len);
 
 	// Send packet 
 	if ((ret = sy->comm->op.send(sy->comm->arg, pkt, tot_len)) < 0) {
@@ -189,7 +206,6 @@ static int ymodem_send_pkt(struct ymodem_snd * sy,
 	}
 
 	sy->seq++;
-
 
 	return 0;
 
@@ -295,6 +311,8 @@ int ymodem_snd_start(struct ymodem_snd * sy, const char * fname,
 	sy->tmout_ms = YMODEM_SND_TMO_MS;
 
 	sy->data_len = 0;
+	sy->fsize = fsize;
+	sy->count = 0;
 
 	return 0;
 }
@@ -334,6 +352,7 @@ int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len)
 				return ret;
 			}
 
+			sy->count += sy->data_len;
 			sy->data_len = 0;
 		}
 	}
@@ -341,14 +360,87 @@ int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len)
 	return len;
 }
 
-int ymodem_snd_eot(struct ymodem_snd * sy)
+static int ymodem_eot(struct ymodem_snd * sy)
 {
 	uint8_t buf[4];
+	uint8_t pkt[4];
+	int again = 5;
+	int ret;
+
+
+	while ((int8_t)(sy->seq - sy->ack) > 0) {
+		// Wait for ACK
+		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) == 0) {
+				WARNS("YS: ret==0");
+		}
+		
+		if (ret < 0) {
+			ERRS("YS: EOT timeout!");
+			break;
+		} else {
+			int c = *pkt;
+			if (c == ACK) {
+				INFS("YS: ACK");
+				sy->ack++;
+			} else if (c == NAK) {
+				WARNS("YS: NAK");
+				goto cancel;
+			} else {
+				WARN("YS: %02x", c);
+			}
+		}
+	}
+
+	sy->seq++;
+
+	while (again)  {
+		int ret;
+
+		INFS("YS: EOT");
+		buf[0] = EOT;
+		ret = sy->comm->op.send(sy->comm->arg, buf, 1);
+
+		// Wait for ACK
+		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) == 0) {
+				WARNS("YS: ret==0");
+		}
+		
+		if (ret < 0) {
+			ERRS("YS: EOT timeout!");
+			again--;
+		} else {
+			int c = *pkt;
+			if (c == ACK) {
+				INFS("YS: ACK");
+				sy->ack++;
+				if (sy->ack == sy->seq)
+					return 0;
+			} else if (c == NAK) {
+				WARNS("YS: NAK");
+			} else {
+				WARN("YS: %02x", c);
+			}
+		}
+	}
+
+cancel:
+	WARNS("YS: CAN CAN CAN");
+	buf[0] = CAN;
+	buf[1] = CAN;
+	buf[2] = CAN;
+	ret = sy->comm->op.send(sy->comm->arg, buf, 3);
+
+	return -1;
+}
+
+int ymodem_snd_eot(struct ymodem_snd * sy)
+{
 	uint8_t * data;
 	int data_len;
 	int data_max;
 	int ret;
-
 
 	if ((data_len = sy->data_len) <= (1024 - 128))
 		data_max = 128;
@@ -357,16 +449,22 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 
 	data = sy->pkt.data;
 
+	INF("ymodem_snd_eot: size=%d count=%d rem=%d...", 
+		sy->fsize, sy->count, sy->fsize - sy->count);
+
+	sy->tmout_ms = YMODEM_SND_EOT_TMO_MS;
+
 	while (data_len > 0) {
 		int len;
 		int i;
+
+		INF("ymodem_snd_eot: rem=%d...", data_len);
 
 		len = MIN(data_len, data_max);
 
 		/* padding */
 		for (i = len; i < data_max; ++i)
-			data[i] = '\0';
-
+			data[i] = SUB;
 
 		if ((ret = ymodem_send_pkt(sy, data, data_max)) < 0) {
 			return ret;
@@ -376,20 +474,99 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 		data += len;
 	}
 
-
-	buf[0] = EOT;
-	buf[1] = EOT;
-	buf[2] = EOT;
-	ret = sy->comm->op.send(sy->comm->arg, buf, 3);
+	INFS("ymodem_snd_eot: sending EOT...");
+	ymodem_eot(sy);
 
 	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 0;
+	sy->ack = 0;
 	sy->state = YMODEM_SND_IDLE;
 
-	/* flush */
-	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
-	
-	return ret;
+	return 0;
+}
+
+/* end of Batch Transmission Session */
+int ymodem_snd_done(struct ymodem_snd * sy)
+{
+	unsigned int dmax;
+	uint8_t pkt[8];
+	uint8_t * buf;
+	int ret;
+	int i;
+
+	for (;;) {
+		int c;
+		
+		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) == 0) {
+				WARNS("YS: ret==0");
+		}
+		
+		if (ret < 0) {
+			WARNS("YS: EOT timeout!");
+			return 0;
+		} 
+		
+		c = *pkt;
+
+		if (c == CAN) {
+			ERRS("YS: CAN");
+			return -ECANCELED;
+		}
+
+		if (c == 'C') {
+			INFS("YS: CRC mode");
+			sy->state = YMODEM_SND_START;
+			break;
+		}
+	}
+
+	/* NULL packet */
+	dmax = 128;
+	buf = (uint8_t *)sy->pkt.data;
+	for (i = 0; dmax; ++i)
+			buf[i] = '\0';
+
+	INFS("YS: NULL");
+
+	if ((ret = ymodem_send_pkt(sy, (uint8_t *)buf, dmax)) < 0) {
+		ERRS("YS.SendPkt failed...");
+		return ret;
+	}
+
+	INFS("YS: NULL sent...");
+
+	while ((int8_t)(sy->seq - sy->ack) > 0) {
+		// Wait for ACK
+		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
+									 1, sy->tmout_ms)) == 0) {
+				WARNS("YS: ret==0");
+		}
+		
+		if (ret < 0) {
+			ERRS("YS: EOT timeout!");
+			break;
+		} else {
+			int c = *pkt;
+			if (c == ACK) {
+				INFS("YS: ACK");
+				sy->ack++;
+			} else if (c == NAK) {
+				WARNS("YS: NAK");
+			} else {
+				WARN("YS: %02x", c);
+			}
+		}
+	}
+
+	WARNS("YS: ret==0");
+	sy->state = YMODEM_SND_IDLE;
+	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
+	sy->data_len = 0;
+	sy->seq = 0;
+	sy->ack = 0;
+
+	return 0;
 }
 

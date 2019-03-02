@@ -13,6 +13,9 @@
 #define __ASSERT_VOID_CAST (void)
 #endif
 
+#undef __CONCAT
+#undef __STRING
+
 #define __CONCAT(x,y) x ## y
 #define __STRING(x)	#x
 

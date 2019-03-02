@@ -282,7 +282,9 @@ int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len);
 
 int ymodem_snd_eot(struct ymodem_snd * sy);
 
+int ymodem_snd_done(struct ymodem_snd * sy);
 
+int ymodem_snd_flush(struct ymodem_snd * sy, unsigned int tmo_ms);
 
 int zmodem_snd_init(struct zmodem * zm, const struct comm_dev * comm, 
 					unsigned int mode);
