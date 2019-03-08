@@ -12,6 +12,8 @@ char * __zm_ch(int ch)
 	switch(ch) {
 		case TIMEOUT:	
 			f = "TIMEOUT";
+			/* FALLTHROUGH */
+
 		case ZRQINIT:
 			f = "ZRQINIT";
 			break;

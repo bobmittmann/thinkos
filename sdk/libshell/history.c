@@ -414,7 +414,8 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 
 			fputs(OUT_CURSOR_LEFT, f);
 			pos--;
-			/* fall back */
+
+			/* FALLTHROUGH */
 
 		case IN_DELETE:
 

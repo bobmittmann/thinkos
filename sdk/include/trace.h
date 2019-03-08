@@ -101,8 +101,8 @@ struct trace_entry {
 
 #ifdef ENABLE_TRACE
 
-void inline __attribute__((always_inline,format (__printf__, 1, 2))) 
-	static tracef_chk(const char * __fmt, ... ) {};
+static inline void __attribute__((always_inline,format (__printf__, 1, 2))) 
+	tracef_chk(const char * __fmt, ... ) {};
 
 #define TRACE_REF(__LVL, __OPT, __STR) ({static const struct trace_ref \
 	__attribute__((section(".rodata.trace"))) __ref__ = { .lvl = (__LVL), \

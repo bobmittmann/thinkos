@@ -346,7 +346,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 #if THINKOS_MUTEX_MAX > 0
 		fprintf(f, " - Mutex Locks: ");
 		for (j = 0; j < THINKOS_MUTEX_MAX ; ++j) {
-			if (rt.lock[j] == th)
+			if (rt.lock[j] == (int)th)
 				fprintf(f, " %d", j + THINKOS_MUTEX_BASE);
 		}
 		fprintf(f, "\n");
@@ -375,7 +375,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_THREAD_INFO
 static int scan_stack(uint32_t * ptr, unsigned int size)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < size / 4; ++i) {
 		if (ptr[i] != 0xdeadbeef)

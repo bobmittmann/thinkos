@@ -348,8 +348,8 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len)
 	head = trace_ctl.head;
 	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= (unsigned int)(cnt + 2)) {
 		uint32_t val;
-		int i;
-		int j;
+		unsigned int i;
+		unsigned int j;
 
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;

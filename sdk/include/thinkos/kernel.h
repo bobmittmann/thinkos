@@ -605,14 +605,14 @@ void __thinkos_thread_abort(int thread_id);
 #endif
 
 /* set a bit in a bit map atomically */
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 thinkos_bit_set(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 1);  
 }
 
 /* clear a bit in a bit map atomically */
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 thinkos_bit_clr(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 0);  
@@ -647,7 +647,7 @@ thinkos_alloc_hi(uint32_t * ptr, int start) {
 }
 
 /* flags a deferred execution of the scheduler */
-static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
+static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending service interrupt */
 	scb->icsr = SCB_ICSR_PENDSVSET;
@@ -655,7 +655,7 @@ static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
 }
 
 /* flags a deferred execution of the scheduler */
-static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
+static inline void __attribute__((always_inline)) __thinkos_preempt(void) {
 #if (THINKOS_ENABLE_PREEMPTION)
 #if (THINKOS_ENABLE_CRITICAL)
 	if (thinkos_rt.critical_cnt == 0)
@@ -665,21 +665,21 @@ static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
 }
 
 /* flags a deferred queued syscall */
-static void inline __attribute__((always_inline)) __thinkos_defer_svc(void) {
+static inline void __attribute__((always_inline)) __thinkos_defer_svc(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
-static void inline __attribute__((always_inline)) __thinkos_ready_clr(void) {
+static inline void __attribute__((always_inline)) __thinkos_ready_clr(void) {
 	thinkos_rt.wq_ready = 0;
 #if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.wq_tmshare = 0;
 #endif
 }
 
-static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) {
+static inline void __attribute__((always_inline)) __thinkos_suspend(int thread) {
 #if !(THINKOS_ENABLE_TIMESHARE)
 	/* remove from the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread, 0);  
@@ -707,17 +707,17 @@ static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) 
 #endif /* (!THINKOS_ENABLE_TIMESHARE) */
 }
 
-static int inline __attribute__((always_inline)) __wq_idx(uint32_t * ptr) {
+static inline int __attribute__((always_inline)) __wq_idx(uint32_t * ptr) {
 	return ptr - thinkos_rt.wq_lst;
 }
 
-static int inline __attribute__((always_inline)) 
+static inline int __attribute__((always_inline)) 
 __thinkos_wq_head(unsigned int wq) {
 	/* get a thread from the queue bitmap */
 	return __clz(__rbit(thinkos_rt.wq_lst[wq]));
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wq_insert(unsigned int wq, unsigned int th) {
 	/* insert into the event wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);  
@@ -727,7 +727,7 @@ __thinkos_wq_insert(unsigned int wq, unsigned int th) {
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 	/* set the clock */
 	thinkos_rt.clock[th] = thinkos_rt.ticks + ms;
@@ -742,7 +742,7 @@ __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 }
 #endif
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 	/* remove from the wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 0);  
@@ -756,7 +756,7 @@ __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 #endif
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wakeup(unsigned int wq, unsigned int th) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
@@ -774,7 +774,7 @@ __thinkos_wakeup(unsigned int wq, unsigned int th) {
 #endif
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
@@ -793,15 +793,14 @@ __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 }
 
 #if (THINKOS_ENABLE_CLOCK)
-static volatile inline uint32_t __attribute__((always_inline))
-	__thinkos_ticks(void) {
+static inline uint32_t __attribute__((always_inline)) __thinkos_ticks(void) {
 	return thinkos_rt.ticks;
 }
 #endif
 
 /* Set the fault flag */
 #if (THINKOS_ENABLE_DEBUG_FAULT)
-static void inline __thinkos_thread_fault_set(unsigned int th) {
+static inline void __thinkos_thread_fault_set(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 1);
 #if (THINKOS_ENABLE_THREAD_STAT)
 	thinkos_rt.th_stat[th] = THINKOS_WQ_FAULT << 1;
@@ -813,19 +812,19 @@ static void inline __thinkos_thread_fault_set(unsigned int th) {
 }
 
 /* Clear the fault flag */
-static void inline __thinkos_thread_fault_clr(unsigned int th) {
+static inline void __thinkos_thread_fault_clr(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 0);
 }
 #endif
 
 /* Set the pause flag */
 #if (THINKOS_ENABLE_PAUSE)
-static void inline __thinkos_thread_pause_set(unsigned int th) {
+static inline void __thinkos_thread_pause_set(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_paused, th, 1);
 }
 
 /* Clear the pause flag */
-static void inline __thinkos_thread_pause_clr(unsigned int th) {
+static inline void __thinkos_thread_pause_clr(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_paused, th, 0);
 }
 #endif

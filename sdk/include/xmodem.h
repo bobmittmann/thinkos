@@ -296,7 +296,7 @@ int zmodem_snd_start(struct zmodem * zm, const char * fname,
 
 int zmodem_snd_cancel(struct zmodem * zm);
 
-int zmodem_snd_loop(struct zmodem * zm, const void * data, int len);
+int zmodem_snd_loop(struct zmodem* zm, const void * data, unsigned int len);
 
 int zmodem_snd_eof(struct zmodem * zm);
 

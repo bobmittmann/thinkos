@@ -3,7 +3,7 @@
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < len; ++i)
 		dst[i] = src[i];

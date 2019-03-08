@@ -187,7 +187,7 @@ int vt_hbar(struct vt_win * win, unsigned int y)
 {
 	char s[16];
 	char * cp;
-	int rem;
+	unsigned int rem;
 
 	assert(win != NULL);
 

@@ -719,10 +719,10 @@ static int __zm_snd_blk(struct zmodem* zm, uint8_t * buf, unsigned long len)
 	return ZACK;
 }
 
-int zmodem_snd_loop(struct zmodem* zm, const void * data, int len)
+int zmodem_snd_loop(struct zmodem* zm, const void * data, unsigned int len)
 {
 	uint8_t * src = (uint8_t *)data;
-	uint32_t cnt;
+	unsigned int cnt;
 	int type;
 
 	zm->errors = 0;
@@ -730,14 +730,14 @@ int zmodem_snd_loop(struct zmodem* zm, const void * data, int len)
 
 	YAP("loop: %u", len);
 
-	if ((src == NULL) || (len < 0))
+	if (src == NULL)
 		return -EINVAL;
 
 	cnt = 0;
 
 	do {
 		uint8_t * dst;
-		int rem;
+		unsigned int rem;
 		int n;
 		int i;
 

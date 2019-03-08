@@ -231,10 +231,10 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 {
 	unsigned char * pkt = ry->pkt.hdr;
 	unsigned char * cp;
+	unsigned int nseq;
+	unsigned int seq;
 	int ret = 0;
 	int cnt = 0;
-	int seq;
-	int nseq;
 	int rem;
 	int pos;
 	int i;

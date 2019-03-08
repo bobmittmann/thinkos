@@ -232,9 +232,9 @@ extern const int8_t q15_db2amp_min;
 extern const uint16_t q15_db2pwr_lut[];
 extern const int8_t q15_db2pwr_min;
 
-const uint16_t q15_db2amp(int amp);
+uint16_t q15_db2amp(int amp);
 
-const uint16_t q15_db2pwr(int pwr);
+uint16_t q15_db2pwr(int pwr);
 
 /* Normalized fixed point sine:
  x = Q31(0.0) .. (1.0) -> 0 .. pi */
