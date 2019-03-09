@@ -1,4 +1,5 @@
 #include "vt-i.h"
+#include <sys/null.h>
 
 /* -------------------------------------------------------------------------
  * */
@@ -144,10 +145,10 @@ int __vt_win_drain(void * dev)
 }
 
 static const struct fileop __win_fops = {
-	.write = (void *)__vt_win_write,
-	.read = (void *)NULL,
-	.flush = (void *)__vt_win_drain,
-	.close = (void *)NULL
+	.write = (int (*)(void *, const void *, size_t))__vt_win_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
+	.flush = (int (*)(void *))__vt_win_drain,
+	.close = (int (*)(void *))null_close
 };
 
 int vt_printf(struct vt_win * win, const char * fmt, ...)

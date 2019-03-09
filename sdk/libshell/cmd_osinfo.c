@@ -255,7 +255,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 		}
 	}
 
-	for (wq = rt.wq_lst; wq != rt.wq_end; ++wq) {
+	for (wq = rt.wq_lst; wq != &rt.wq_lst[THINKOS_WQ_CNT]; ++wq) {
 		int oid;
 		int type;
 		if (*wq) { 

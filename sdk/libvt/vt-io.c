@@ -1,5 +1,5 @@
 #include "vt-i.h"
-
+#include <sys/null.h>
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
@@ -342,10 +342,10 @@ int __vt_win_fwrite(struct vt_win * win, const void * buf, unsigned int len)
 }
 
 const struct fileop vt_win_fops = {
-	.write = (void *)__vt_win_fwrite,
-	.read = (void *)NULL,
-	.flush = (void *)__vt_win_drain,
-	.close = (void *)NULL
+	.write = (int (*)(void *, const void *, size_t))__vt_win_fwrite,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
+	.flush = (int (*)(void *))__vt_win_drain,
+	.close = (int (*)(void *))null_close
 };
 
 FILE * vt_console_fopen(struct vt_win * win)

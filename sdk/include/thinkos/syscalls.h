@@ -163,40 +163,43 @@
  * C service call macros 
  * ------------------------------------------------------------------------- */
 
-#define __SYSCALLS_CALL(N) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL(N) __extension__({ register int ret asm("r0"); \
 asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
-ret; } )
+ret; })
 
-#define __SYSCALLS_CALL1(N, A1) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL1(N, A1) __extension__({ register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : "0"(r0) : ); \
 ret; } )
 
-#define __SYSCALLS_CALL2(N, A1, A2) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL2(N, A1, A2) __extension__({ register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
 "0"(r0), "r"(r1) : ); \
-ret; } )
+ret; })
 
-#define __SYSCALLS_CALL3(N, A1, A2, A3) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL3(N, A1, A2, A3) __extension__({ \
+register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
 register int r2 asm("r2") = (int)A3; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
 	"0"(r0), "r"(r1), "r"(r2) : ); \
-	ret; } )
+	ret; })
 
-#define __SYSCALLS_CALL4(N, A1, A2, A3, A4) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL4(N, A1, A2, A3, A4) __extension__({\
+register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
 register int r2 asm("r2") = (int)A3; \
 register int r3 asm("r3") = (int)A4; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
 		"0"(r0), "r"(r1), "r"(r2), "r"(r3) : ); \
-		ret; } )
+		ret; })
 
-#define __SYSCALLS_CALL5(N, A1, A2, A3, A4, A5) ( { register int ret asm("r0"); \
+#define __SYSCALLS_CALL5(N, A1, A2, A3, A4, A5) __extension__({\
+register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
 register int r2 asm("r2") = (int)A3; \
@@ -204,7 +207,7 @@ register int r3 asm("r3") = (int)A4; \
 register int r12 asm("r12") = (int)A5; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
 			"0"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r12) : ); \
-			ret; } )
+			ret; })
 
 /* No arguments function */
 #define THINKOS_SYSCALL0(N) __SYSCALLS_CALL(N)
@@ -229,8 +232,7 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 extern "C" {
 #endif
 
-static inline int __attribute__((always_inline))
-thinkos_thread_self(void) {
+static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 	return THINKOS_SYSCALL0(THINKOS_THREAD_SELF);
 }
 
@@ -399,7 +401,7 @@ return THINKOS_SYSCALL1(THINKOS_SEM_POST, sem);
 
 static inline void  __attribute__((always_inline)) thinkos_sem_post_i(int sem) {
 uintptr_t * except = (uintptr_t *)(0);
-void (* sem_post_i)(int) = (void *)except[7];
+void (* sem_post_i)(int) = (void (*)(int))except[7];
 sem_post_i(sem);
 }
 
@@ -442,7 +444,7 @@ return THINKOS_SYSCALL2(THINKOS_EVENT_CLEAR, set, ev);
 static inline void __attribute__((always_inline)) thinkos_ev_raise_i(
 																 int set, int ev) {
 uintptr_t * except = (uintptr_t *)(0);
-void (* ev_raise_i)(int, int) = (void *)except[9];
+void (* ev_raise_i)(int, int) = (void (*)(int, int))except[9];
 ev_raise_i(set, ev);
 }
 
@@ -495,7 +497,7 @@ thinkos_flag_timedtake(int flag, unsigned int ms) {
 static inline void __attribute__((always_inline)) 
 thinkos_flag_give_i(int flag) {
 	uintptr_t * except = (uintptr_t *)(0);
-	void (* flag_give_i)(int) = (void *)except[10];
+	void (* flag_give_i)(int) = (void (*)(int))except[10];
 	flag_give_i(flag);
 }
 
@@ -540,7 +542,7 @@ thinkos_gate_timedwait(int gate, unsigned int ms) {
 static inline void __attribute__((always_inline)) 
 thinkos_gate_open_i(int gate) {
 	uintptr_t * except = (uintptr_t *)(0);
-	void (* __gate_open_i)(uint32_t) = (void *)except[13];
+	void (* __gate_open_i)(uint32_t) = (void (*)(uint32_t))except[13];
 	__gate_open_i(gate);
 }
 

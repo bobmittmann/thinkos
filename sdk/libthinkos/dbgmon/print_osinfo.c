@@ -231,7 +231,7 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 		}
 	}
 
-	for (j = 0; j < (rt->wq_end - rt->wq_lst); ++j) {
+	for (j = 0; j < THINKOS_WQ_CNT; ++j) {
 		uint32_t wq;
 		int type;
 		wq = rt->wq_lst[j];

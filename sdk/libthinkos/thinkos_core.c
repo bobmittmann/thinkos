@@ -142,7 +142,7 @@ void __thinkos_core_reset(void)
 	}
 
 	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_LST_END ; ++i)
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		thinkos_rt.wq_lst[i] = 0x00000000;
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -255,7 +255,7 @@ void __thinkos_kill_all(void)
 	int i;
 
 	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_LST_END ; ++i)
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		thinkos_rt.wq_lst[i] = 0x00000000;
 
 #if THINKOS_ENABLE_THREAD_VOID 

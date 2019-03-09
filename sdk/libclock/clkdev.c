@@ -51,7 +51,42 @@ struct clkdev * clkdev_alloc(void * __clk, const struct clkdevop * __op)
 	return NULL;
 }
 
-static int32_t clkdevop_dummy(void * clk)
+int clkdevop_null_tick(void * clk)
+{
+	(void)clk;
+
+	return 0;
+}
+
+uint64_t clkdevop_null_get(void * clk)
+{
+	(void)clk;
+
+	return 0;
+}
+
+void clkdevop_null_set(void * clk, uint64_t t)
+{
+	(void)clk;
+	(void)t;
+}
+
+void clkdevop_null_step(void * clk, int64_t dt)
+{
+	(void)clk;
+	(void)dt;
+}
+
+int32_t clkdevop_null_drift_comp(void * clk, int32_t drift, int32_t precision)
+{
+	(void)clk;
+	(void)drift;
+	(void)precision;
+
+	return 0;
+}
+
+int32_t clkdevop_null_drift_get(void * clk)
 {
 	(void)clk;
 
@@ -60,12 +95,13 @@ static int32_t clkdevop_dummy(void * clk)
 
 /* Null clock device operations */
 static const struct clkdevop null_clkdevop = {
-	.tick = (void *)clkdevop_dummy,
-	.get = (void *)clkdevop_dummy,
-	.set = (void *)clkdevop_dummy,
-	.step = (void *)clkdevop_dummy,
-	.drift_comp = (void *)clkdevop_dummy,
-	.drift_get = (void *)clkdevop_dummy
+	.tick = (int (*)(void *))clkdevop_null_tick,
+	.get = (uint64_t (*)(void *))clkdevop_null_get,
+	.set = (void (*)(void *, uint64_t))clkdevop_null_set,
+	.step = (void (*)(void *, int64_t))clkdevop_null_step,
+	.drift_comp = (int32_t (*)(void *, int32_t, 
+							   int32_t))clkdevop_null_drift_comp,
+	.drift_get = (int32_t (*)(void *))clkdevop_null_drift_get
 };
 
 int clkdev_free(struct clkdev * __dev)

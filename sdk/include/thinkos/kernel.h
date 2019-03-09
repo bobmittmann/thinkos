@@ -140,6 +140,116 @@
 #define THINKOS_RT_ACTIVE_OFFS     ((THINKOS_RT_CYCREF_OFFS) + SIZEOF_CYCREF)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
 
+
+
+#if (THINKOS_ENABLE_TIMESHARE)
+  #define THINKOS_WQ_TIMESHARE_CNT 1
+#else
+  #define THINKOS_WQ_TIMESHARE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_CLOCK)
+  #define THINKOS_WQ_CLOCK_CNT 1
+#else
+  #define THINKOS_WQ_CLOCK_CNT 0 
+#endif
+
+#if ((THINKOS_MUTEX_MAX) > 0)
+  #define THINKOS_WQ_MUTEX_CNT (THINKOS_MUTEX_MAX)
+#else
+  #define THINKOS_WQ_MUTEX_CNT 0 
+#endif
+
+#if ((THINKOS_COND_MAX) > 0)
+  #define THINKOS_WQ_COND_CNT (THINKOS_COND_MAX)
+#else
+  #define THINKOS_WQ_COND_CNT 0 
+#endif
+
+#if ((THINKOS_SEMAPHORE_MAX) > 0)
+  #define THINKOS_WQ_SEMAPHORE_CNT (THINKOS_SEMAPHORE_MAX)
+#else
+  #define THINKOS_WQ_SEMAPHORE_CNT 0 
+#endif
+
+#if ((THINKOS_EVENT_MAX) > 0)
+  #define THINKOS_WQ_EVENT_CNT (THINKOS_EVENT_MAX)
+#else
+  #define THINKOS_WQ_EVENT_CNT 0 
+#endif
+
+#if ((THINKOS_FLAG_MAX) > 0)
+  #define THINKOS_WQ_FLAG_CNT (THINKOS_FLAG_MAX)
+#else
+  #define THINKOS_WQ_FLAG_CNT 0 
+#endif
+
+#if ((THINKOS_GATE_MAX) > 0)
+  #define THINKOS_WQ_GATE_CNT (THINKOS_GATE_MAX)
+#else
+  #define THINKOS_WQ_GATE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_JOIN)
+  #define THINKOS_WQ_JOIN_CNT (THINKOS_THREADS_MAX)
+#else
+  #define THINKOS_WQ_JOIN_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE)
+  #define THINKOS_WQ_CONSOLE_CNT 2
+#else
+  #define THINKOS_WQ_CONSOLE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_PAUSE)
+  #define THINKOS_WQ_PAUSED_CNT 1
+#else
+  #define THINKOS_WQ_PAUSED_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_JOIN)
+  #define THINKOS_WQ_CANCELED_CNT 1
+#else
+  #define THINKOS_WQ_CANCELED_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_COMM)
+  #define THINKOS_WQ_COMM_CNT 2
+#else
+  #define THINKOS_WQ_COMM_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_WQ_IRQ)
+  #define THINKOS_WQ_IRQ_CNT 1
+#else
+  #define THINKOS_WQ_IRQ_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+  #define THINKOS_WQ_FAULT_CNT 1
+#else
+  #define THINKOS_WQ_FAULT_CNT 0 
+#endif
+
+#define THINKOS_WQ_CNT (1 + \
+  THINKOS_WQ_TIMESHARE_CNT + \
+  THINKOS_WQ_CLOCK_CNT + \
+  THINKOS_WQ_MUTEX_CNT + \
+  THINKOS_WQ_COND_CNT + \
+  THINKOS_WQ_SEMAPHORE_CNT + \
+  THINKOS_WQ_EVENT_CNT + \
+  THINKOS_WQ_FLAG_CNT + \
+  THINKOS_WQ_GATE_CNT + \
+  THINKOS_WQ_JOIN_CNT + \
+  THINKOS_WQ_CONSOLE_CNT + \
+  THINKOS_WQ_PAUSED_CNT + \
+  THINKOS_WQ_CANCELED_CNT + \
+  THINKOS_WQ_COMM_CNT + \
+  THINKOS_WQ_IRQ_CNT + \
+  THINKOS_WQ_FAULT_CNT)
+
+
 #ifndef __ASSEMBLER__
 
 #include <arch/cortex-m3.h>
@@ -237,73 +347,76 @@ struct thinkos_rt {
 
 	uint32_t active; /* current active thread */
 
-	uint32_t wq_lst[0]; /* queue list placeholder */
-
-	uint32_t wq_ready; /* ready threads queue */
+	union {
+		uint32_t wq_lst[THINKOS_WQ_CNT]; /* queue list */
+		struct {
+			uint32_t wq_ready; /* ready threads queue */
 
 #if (THINKOS_ENABLE_TIMESHARE)
-	uint32_t wq_tmshare; /* Threads waiting for time share cycle */
+			uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
 #if THINKOS_ENABLE_CLOCK
-	uint32_t wq_clock;
+			uint32_t wq_clock;
 #endif
 
 #if THINKOS_MUTEX_MAX > 0
-	uint32_t wq_mutex[THINKOS_MUTEX_MAX];
+			uint32_t wq_mutex[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
 #if THINKOS_COND_MAX > 0
-	uint32_t wq_cond[THINKOS_COND_MAX];
+			uint32_t wq_cond[THINKOS_COND_MAX];
 #endif /* THINKOS_COND_MAX > 0 */
 
 #if THINKOS_SEMAPHORE_MAX > 0
-	uint32_t wq_sem[THINKOS_SEMAPHORE_MAX];
+			uint32_t wq_sem[THINKOS_SEMAPHORE_MAX];
 #endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
 #if THINKOS_EVENT_MAX > 0
-	uint32_t wq_event[THINKOS_EVENT_MAX]; /* event sets wait queues */
+			uint32_t wq_event[THINKOS_EVENT_MAX]; /* event sets wait queues */
 #endif /* THINKOS_EVENT_MAX > 0 */
 
 #if THINKOS_FLAG_MAX > 0
-	uint32_t wq_flag[THINKOS_FLAG_MAX]; /* flags wait queues */
+			uint32_t wq_flag[THINKOS_FLAG_MAX]; /* flags wait queues */
 #endif /* THINKOS_FLAG_MAX > 0 */
 
 #if THINKOS_GATE_MAX > 0
-	uint32_t wq_gate[THINKOS_GATE_MAX]; /* gates wait queues */
+			uint32_t wq_gate[THINKOS_GATE_MAX]; /* gates wait queues */
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if THINKOS_ENABLE_JOIN
-	uint32_t wq_join[THINKOS_THREADS_MAX];
+			uint32_t wq_join[THINKOS_THREADS_MAX];
 #endif /* THINKOS_ENABLE_JOIN */
 
 #if THINKOS_ENABLE_CONSOLE
-	uint32_t wq_console_wr;
-	uint32_t wq_console_rd;
+			uint32_t wq_console_wr;
+			uint32_t wq_console_rd;
 #endif
 
 #if THINKOS_ENABLE_PAUSE
-	uint32_t wq_paused;
+			uint32_t wq_paused;
 #endif
 
 #if THINKOS_ENABLE_JOIN
-	uint32_t wq_canceled; /* canceled threads wait queue */
+			uint32_t wq_canceled; /* canceled threads wait queue */
 #endif
 
 #if THINKOS_ENABLE_COMM
-	uint32_t wq_comm_send;
-	uint32_t wq_comm_recv;
+			uint32_t wq_comm_send;
+			uint32_t wq_comm_recv;
 #endif
 
 #if THINKOS_ENABLE_WQ_IRQ
-	uint32_t wq_irq;
+			uint32_t wq_irq;
 #endif
 
 #if THINKOS_ENABLE_DEBUG_FAULT
-	uint32_t wq_fault; /* fault threads wait queue */
+			uint32_t wq_fault; /* fault threads wait queue */
 #endif
+		};
+	};
 
-	uint32_t wq_end[0]; /* end of queue list placeholder */
+//	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
@@ -482,10 +595,6 @@ extern struct mpu_mem_block thinkos_mpu_kernel_mem;
 #define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
-
-#define THINKOS_WQ_LST_END ((offsetof(struct thinkos_rt, wq_end) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
-							/ sizeof(uint32_t))
 
 /* -------------------------------------------------------------------------- 
  * Static initialized kernel descriptors
