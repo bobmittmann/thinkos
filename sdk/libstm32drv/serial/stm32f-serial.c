@@ -208,7 +208,7 @@ int stm32f_serial_init(struct stm32f_serial_drv * drv,
 }
 
 int stm32f_serial_recv(struct stm32f_serial_drv * drv, void * buf, 
-					   unsigned int len, unsigned int tmo)
+					   size_t len, unsigned int tmo)
 {
 	uint8_t * cp = (uint8_t *)buf;
 	uint32_t tail;
@@ -262,7 +262,7 @@ again:
 }
 
 int stm32f_serial_send(struct stm32f_serial_drv * drv, const void * buf,
-						unsigned int len)
+						size_t len)
 {
 	struct stm32_usart * uart = drv->uart;
 	uint8_t * cp = (uint8_t *)buf;
@@ -403,10 +403,13 @@ int stm32f_serial_ioctl(struct stm32f_serial_drv * drv, int opt,
 }
 
 const struct serial_op stm32f_uart_serial_op = {
-	.send = (void *)stm32f_serial_send,
-	.recv = (void *)stm32f_serial_recv,
-	.drain = (void *)stm32f_serial_drain,
-	.close = (void *)stm32f_serial_close,
-	.ioctl = (void *)stm32f_serial_ioctl
+	.send = (int (*)(void *, const void *, size_t))
+		stm32f_serial_send,
+	.recv = (int (*)(void *, void *, size_t, unsigned int))
+		stm32f_serial_recv,
+	.drain = (int (*)(void *))stm32f_serial_drain,
+	.close = (int (*)(void *))stm32f_serial_close,
+	.ioctl = (int (*)(void *, int, uintptr_t, uintptr_t))
+		stm32f_serial_ioctl
 };
 
