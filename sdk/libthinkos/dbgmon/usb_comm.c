@@ -298,6 +298,9 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 #define CDC_DATA_BITS_MAX 16
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 /* LangID = 0x0409: U.S. English */
 const struct usb_descriptor_string language_english_us = {
 	4, USB_DESCRIPTOR_STRING, { 0x0409 }
@@ -385,6 +388,8 @@ const struct usb_descriptor_string serial_num_str = {
 		'1', '1', '1', '1', 0
 	}
 };
+
+#pragma GCC diagnostic pop
 
 //"USB Serial (CDC) Generic Device"
 

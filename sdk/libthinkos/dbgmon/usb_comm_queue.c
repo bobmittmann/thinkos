@@ -292,8 +292,10 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 
 //"USB Serial (CDC) Generic Device"
 
+extern const struct usb_descriptor_string language_english_us;
+
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
-//	&language_english_us,
+	&language_english_us,
 //	&stmicro_str,
 //	&thinkos_str,
 //	&serial_num_str,

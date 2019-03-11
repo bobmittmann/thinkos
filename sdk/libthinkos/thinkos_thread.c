@@ -60,7 +60,8 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 
 struct thinkos_context * __thinkos_thread_init( unsigned int thread_id, 
 												uint32_t sp, 
-												void * task, void * arg)
+												int (* task)(void *), 
+												void * arg)
 {
 	struct thinkos_context * ctx;
 	uint32_t pc;

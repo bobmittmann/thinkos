@@ -264,7 +264,7 @@ static bool join_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 
 #if THINKOS_ENABLE_CONSOLE
 bool __console_rd_resume(unsigned int thread_id, unsigned int wq, bool tmw);
-void __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
+bool __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
 #endif
 
 #if THINKOS_ENABLE_COMM
@@ -314,7 +314,11 @@ static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-static const void * const thread_resume_lut[] = {
+typedef  bool (* thread_resume_t)(unsigned int, unsigned int, bool);
+
+//static bool (* thread_resume_lut)(unsigned int, unsigned int, bool)[] = {
+
+static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
 #if THINKOS_ENABLE_TIMESHARE
 	[THINKOS_OBJ_TMSHARE] = tmshare_resume,

@@ -61,6 +61,7 @@ ret:
 	cm3_faultmask_set(fm);  /* restore fault mask */
 }
 
-void dcclogbin(const struct dcc_trace_entry *, const char *) 
+void dcclogbin(const struct dcc_trace_entry *, const void * __ptr, 
+			   unsigned int __len)
 	__attribute__ ((weak, alias ("ice_tracebin")));
 

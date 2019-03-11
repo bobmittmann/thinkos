@@ -618,7 +618,7 @@ struct thinkos_thread_opt {
 };
 
 struct thinkos_thread_init {
-	void * task;
+	int (* task)(void *);
 	void * arg;
 	void * stack_ptr;
 	struct thinkos_thread_opt opt;
@@ -965,7 +965,8 @@ void thinkos_console_init(void);
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
 											   uint32_t sp, 
-											   void * task, void * arg);
+											   int (* task)(void *), 
+											   void * arg);
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 

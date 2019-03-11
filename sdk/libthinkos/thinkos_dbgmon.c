@@ -1260,7 +1260,8 @@ void __dbgmon_reset(void)
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
-	void (* task)(const struct dbgmon_comm *, void *) = (void *)arg[0];
+	void (* task)(const struct dbgmon_comm *, void *) = 
+		(void (*)(const struct dbgmon_comm *, void *))arg[0];
 	struct dbgmon_comm * comm = (void *)arg[1];
 	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
