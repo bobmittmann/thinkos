@@ -46,7 +46,7 @@ uint32_t u32sqrt(uint32_t x)
 	return root >> 1;
 }	
 
-int32_t isqrt(uint32_t x) __attribute__ ((weak, alias ("u32sqrt")));
+uint32_t isqrt(uint32_t x) __attribute__ ((weak, alias ("u32sqrt")));
 
 uint32_t u64sqrt(uint64_t x)
 {
