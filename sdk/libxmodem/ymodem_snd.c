@@ -163,10 +163,10 @@ static int ymodem_send_pkt(struct ymodem_snd * sy,
 
 	if (data_len == 1024) {
 		pkt[0] = STX;
-		DBG("YS: STX");
+		DBGS("YS: STX");
 	} else {
 		pkt[0] = SOH;
-		DBG("YS: SOH");
+		DBGS("YS: SOH");
 	} 
 
 	pkt[1] = sy->seq;

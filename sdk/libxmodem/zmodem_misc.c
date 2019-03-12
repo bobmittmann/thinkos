@@ -265,7 +265,7 @@ int __zm_rcv_raw(struct zmodem* zm)
 	int c;
 
 	if (zm->comm->op.recv(zm->comm->arg, buf, 1, zm->recv_timeout) < 0) {
-		WARN("__zm_rcv_raw: timeout");
+		WARNS("__zm_rcv_raw: timeout");
 		return TIMEOUT;
 	}
 	
@@ -275,7 +275,7 @@ int __zm_rcv_raw(struct zmodem* zm)
 		zm->n_cans++;
 		if (zm->n_cans == 5) {
 			zm->cancelled = true;
-			WARN("__zm_rcv_raw: cancelled remotely");
+			WARNS("__zm_rcv_raw: cancelled remotely");
 		}
 	} else {
 		zm->n_cans = 0;
@@ -300,7 +300,7 @@ int __zm_rcv_raw_tmo(struct zmodem* zm, unsigned int tmo)
 		zm->n_cans++;
 		if (zm->n_cans == 5) {
 			zm->cancelled = true;
-			WARN("__zm_rcv_raw: cancelled remotely");
+			WARNS("__zm_rcv_raw: cancelled remotely");
 		}
 	} else {
 		zm->n_cans = 0;

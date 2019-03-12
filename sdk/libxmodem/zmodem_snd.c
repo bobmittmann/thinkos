@@ -93,7 +93,7 @@ int __zm_snd_zfin(struct zmodem* zm)
 
 int zmodem_abort_receive(struct zmodem* zm)
 {
-	WARN("aborting receive");
+	WARNS("aborting receive");
 	return __zm_snd_pos_hdr(zm, ZABORT, 0, /* hex? */ true);
 }
 
@@ -125,14 +125,14 @@ bool __zm_rcv_bin16_hdr(struct zmodem* zm)
 	unsigned short int crc;
 	unsigned short int rxd_crc;
 
-	DBG("recv_bin16_header");
+	DBGS("recv_bin16_header");
 
 	crc = 0;
 
 	for(n=0;n<HDRLEN;n++) {
 		c = __zm_getc(zm);
 		if(c == TIMEOUT) {
-			WARN("recv_bin16_header: timeout");
+			WARNS("recv_bin16_header: timeout");
 			return(false);
 		}
 		crc = __crc16ccitt(crc, c);
@@ -210,7 +210,7 @@ bool __zm_rcv_bin32_hdr(struct zmodem* zm)
 	unsigned long crc;
 	unsigned long rxd_crc;
 
-	DBG("recv_bin32_header");
+	DBGS("recv_bin32_header");
 
 	crc = 0xffffffffl;
 
@@ -524,13 +524,13 @@ int zmodem_snd_start(struct zmodem * zm, const char * fname,
 
 	if (zm->management_protect) {
 		zfile_frame[ZF1] = ZF1_ZMPROT;		
-		DBG("send_file: protecting destination");
+		DBGS("send_file: protecting destination");
 	} else if (zm->management_clobber) {
 		zfile_frame[ZF1] = ZF1_ZMCLOB;
-		DBG("send_file: overwriting destination");
+		DBGS("send_file: overwriting destination");
 	} else if (zm->management_newer) {
 		zfile_frame[ZF1] = ZF1_ZMNEW;
-		DBG("send_file: overwriting destination if newer");
+		DBGS("send_file: overwriting destination if newer");
 	} else
 		zfile_frame[ZF1] = ZF1_ZMCRC;
 
@@ -614,15 +614,15 @@ int zmodem_snd_start(struct zmodem * zm, const char * fname,
 
 		if (type == ZSKIP) {
 			zm->file_skipped = true;
-			WARN("file skipped by receiver");
+			WARNS("file skipped by receiver");
 			return -1;
 		}
 
 		if (type == ZCRC) {
-			ERR("ZCRC not implemented for stream...");
+			ERRS("ZCRC not implemented for stream...");
 
 			if (zm->crc_request == 0)
-				INF("receiver requested crc of entire file");
+				INFS("receiver requested crc of entire file");
 			else
 				INF("receiver requested crc of first %d bytes", 
 					zm->crc_request);

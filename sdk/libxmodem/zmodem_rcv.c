@@ -26,7 +26,7 @@ int __zm_rcv_data32(struct zmodem* zm, unsigned char * p,
 	unsigned long crc;
 	int subpkt_type;
 
-	DBG("recv_data32");
+	DBGS("recv_data32");
 
 	crc = 0xffffffffl;
 
@@ -76,7 +76,7 @@ int __zm_rcv_data16(struct zmodem* zm, register unsigned char* p,
  	unsigned short crc;
 	unsigned short rxd_crc;
 
-	DBG("recv_data16");
+	DBGS("recv_data16");
 
 	crc = 0;
 
