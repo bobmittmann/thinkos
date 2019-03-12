@@ -41,7 +41,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (thinkos_rt.irq_th[irq] == thread_id) {
+			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "PC=%08x IRQ=%d ......", 
 						 thinkos_rt.ctx[thread_id]->pc, irq); 
 				/* disable this interrupt source */
@@ -410,7 +410,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (thinkos_rt.irq_th[irq] == thread_id) {
+			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", thread_id+1, irq);
 				/* disable this interrupt source */
 				cm3_irq_disable(irq);

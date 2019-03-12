@@ -29,7 +29,7 @@ void __thinkos_memcpy32(void * __dst, const void * __src, unsigned int __len)
 {
 	uint32_t * dst = (uint32_t *)__dst;
 	uint32_t * src = (uint32_t *)__src;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < ((__len + 3) / 4); ++i)
 		dst[i] = src[i];

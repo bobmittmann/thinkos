@@ -59,11 +59,11 @@ int __qs_wr8(struct qs * q, uint8_t * ring, const uint8_t * buf, uint32_t len)
 	uint32_t head;
 	uint32_t tail;
 	uint32_t mask;
-	int size;
-	int used;
-	int free;
-	int pos;
-	int cnt;
+	unsigned int size;
+	unsigned int used;
+	unsigned int free;
+	unsigned int pos;
+	unsigned int cnt;
 
 	head = q->head;
 	tail = q->tail;
@@ -87,8 +87,8 @@ int __qs_wr8(struct qs * q, uint8_t * ring, const uint8_t * buf, uint32_t len)
 	/* check whether to wrap around or on not */
 	if ((pos + cnt) > size) {
 		/* we need to perform two writes */
-		int n;
-		int m;
+		unsigned int n;
+		unsigned int m;
 		/* get the number of chars from tail pos until the end of buffer */
 		n = size - pos;
 		/* the remaining chars are at the beginning of the buffer */
@@ -109,10 +109,10 @@ int __qs_rd8(struct qs * q, uint8_t * ring, uint8_t * buf, uint32_t len)
 	uint32_t head;
 	uint32_t tail;
 	uint32_t mask;
-	int size;
-	int used;
-	int pos;
-	int cnt;
+	unsigned int size;
+	unsigned int used;
+	unsigned int pos;
+	unsigned int cnt;
 
 	head = q->head;
 	tail = q->tail;
@@ -135,8 +135,8 @@ int __qs_rd8(struct qs * q, uint8_t * ring, uint8_t * buf, uint32_t len)
 	/* check whether to wrap around or on not */
 	if ((pos + cnt) > size) {
 		/* we need to perform two writes */
-		int n;
-		int m;
+		unsigned int n;
+		unsigned int m;
 		/* get the number of chars from tail pos until the end of buffer */
 		n = size - pos;
 		/* the remaining chars are at the beginning of the buffer */

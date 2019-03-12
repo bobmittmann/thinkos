@@ -96,7 +96,7 @@ static int rx_pipe_read(uint8_t * buf, unsigned int len)
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
 	uint32_t tail;
-	int max;
+	unsigned int max;
 	int cnt;
 	int pos;
 

@@ -67,7 +67,7 @@ bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr)
 const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
 										  unsigned int cnt, uint32_t addr)
 {
-	int j;
+	unsigned int j;
 
 	for (j = 0; j < cnt; ++j) {
 		const struct mem_desc * mem = lst[j];
@@ -195,7 +195,7 @@ int dbgmon_mem_read(const struct mem_desc * mem,
 	while (rem) {
 		unsigned int n;
 		uint32_t dat;
-		int32_t cnt;
+		uint32_t cnt;
 
 		if (mem->blk[j].cnt == 0) {
 			/* end of list */

@@ -25,7 +25,7 @@
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
-void __thinkos_thread_abort(int thread_id)
+void __thinkos_thread_abort(unsigned int thread_id)
 {
 	DCC_LOG1(LOG_TRACE, "<%2d> ....", thread_id + 1); 
 

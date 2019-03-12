@@ -55,7 +55,7 @@ __attribute__((always_inline)) thinkos_sched_on(void)  {
 }
 
 #if (THINKOS_ENABLE_CLOCK)
-static inline volatile uint32_t __attribute__((always_inline)) 
+static inline uint32_t __attribute__((always_inline)) 
 	thinkos_clock_i(void)  {
 	return (volatile uint32_t)thinkos_rt.ticks;
 }

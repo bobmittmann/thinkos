@@ -53,7 +53,7 @@ const char __xcpt_name_lut[16][12] = {
 int __scan_stack(void * stack, unsigned int size)
 {
 	uint32_t * ptr = (uint32_t *)stack;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < size / 4; ++i) {
 		if (ptr[i] != 0xdeadbeef)

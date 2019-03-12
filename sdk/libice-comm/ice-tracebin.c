@@ -33,7 +33,7 @@ void ice_tracebin(const struct dcc_trace_entry * __entry,
 	int fm = cm3_faultmask_get(); /* save fault mask */
 	uint32_t val;
 	uint8_t * cp = (uint8_t *)__ptr;
-	int i;
+	unsigned int i;
 	
 	cm3_cpsid_f(); /* disable interrupts and faults */
 	head = comm->tx_head;

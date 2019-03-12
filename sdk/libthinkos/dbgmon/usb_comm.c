@@ -611,7 +611,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 		}
 
 		if (desc == USB_DESCRIPTOR_STRING) {
-			int n = value & 0xff;
+			unsigned int n = value & 0xff;
 			DCC_LOG1(LOG_TRACE, "GetDesc: String[%d]", n);
 			if (n < USB_STRCNT()) {
 				*ptr = (void *)cdc_acm_str[n];
@@ -900,11 +900,10 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * dst = (uint8_t *)buf;
 	uint32_t ack;
-	int pos;
-	int cnt;
+	unsigned int pos;
+	unsigned int cnt;
+	unsigned int n;
 	int ret;
-	int n;
-
 
 	ack = dev->rx_ack;
 	do {
@@ -922,8 +921,8 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 				 n, ack, pos, cnt);
 		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
-		int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
-		int l;
+		unsigned int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
+		unsigned int l;
 
 		m = MIN(m, cnt);
 		__thinkos_memcpy(dst, &dev->rx_buf[pos], m);

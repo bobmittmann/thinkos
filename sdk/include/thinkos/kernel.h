@@ -699,7 +699,7 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 
 void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);
 
-void __thinkos_thread_abort(int thread_id);
+void __thinkos_thread_abort(unsigned int thread_id);
 
 /* -------------------------------------------------------------------------- 
  * Support Functions

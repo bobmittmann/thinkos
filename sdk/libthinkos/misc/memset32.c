@@ -28,7 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len)
 {
 	uint32_t * dst = (uint32_t *)__dst;
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < (__len / 4); ++i)
 		dst[i] = __val;

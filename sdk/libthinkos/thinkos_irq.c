@@ -244,7 +244,8 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 	unsigned int irq = arg[1];
 
 #if THINKOS_ENABLE_ARG_CHECK
-	int irq_max = ((uintptr_t)&__sizeof_rom_vectors / sizeof(void *)) - 16;
+	unsigned int irq_max = ((uintptr_t)&__sizeof_rom_vectors / 
+							sizeof(void *)) - 16;
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);

@@ -195,7 +195,7 @@ static void __copy_from_pktbuf(void * ptr,
 {
 	uint8_t * dst = (uint8_t *)ptr;
 	uint32_t data;
-	int i;
+	unsigned int i;
 
 	/* pop data from the fifo and copy to destination buffer */
 	for (i = 0; i < (cnt + 3) / 4; i++) {
@@ -464,7 +464,7 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	uint32_t free;
 	uint8_t * cp;
 	unsigned int idx;
-	int i;
+	unsigned int i;
 
 	ep = &drv->ep[ep_id];
 	idx = ep->idx;

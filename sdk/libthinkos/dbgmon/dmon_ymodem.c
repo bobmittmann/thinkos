@@ -76,8 +76,8 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 	unsigned char * cp;
 	int ret = 0;
 	int cnt = 0;
-	int nseq;
-	int seq;
+	unsigned int nseq;
+	unsigned int seq;
 	int rem;
 	int len;
 
