@@ -274,27 +274,27 @@ int stm32f_ethif_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 	switch (ext_st.ippt) {
 	case ETH_IPPT_UNKOWN:
 		DCC_LOG(LOG_INFO, "not IP!");
-		DBG("STM32ETH: not IP!");
+		DBGS("STM32ETH: not IP!");
 		break;
 	case ETH_IPPT_UDP:
-		DBG("STM32ETH: UDP");
+		DBGS("STM32ETH: UDP");
 		break;
 	case ETH_IPPT_TCP:
-		DBG("STM32ETH: TCP");
+		DBGS("STM32ETH: TCP");
 		break;
 	case ETH_IPPT_ICMP:
-		DBG("STM32ETH: ICMP");
+		DBGS("STM32ETH: ICMP");
 		break;
 	}
 
 	if (ext_st.iphe) {
 		DCC_LOG(LOG_WARNING, "IP header error!");
-		DBG("IP header error!");
+		DBGS("IP header error!");
 		goto error;
 	}
 	if (ext_st.ippe) {
 		DCC_LOG(LOG_WARNING, "IP payload error!");
-		DBG("IP payload error!");
+		DBGS("IP payload error!");
 		goto error;
 	}
 	if (ext_st.ipcb)
