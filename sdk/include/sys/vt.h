@@ -164,6 +164,8 @@ int vt_default_msg_loop(void);
 
 struct vt_win * vt_win_create(const struct vt_win_def * def);
 
+char * vt_freadline(FILE *f, char * buf, unsigned int max);
+
 #ifdef __cplusplus
 }
 #endif	
