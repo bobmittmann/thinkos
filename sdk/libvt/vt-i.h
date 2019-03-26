@@ -52,6 +52,7 @@ struct vt_win {
 	uint16_t attr: 6;
 	uint16_t cursor_hide: 1;
 	uint16_t open: 1;
+	uint16_t visible: 1;
 
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, uintptr_t arg, 
 						  void * data);

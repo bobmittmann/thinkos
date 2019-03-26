@@ -121,8 +121,8 @@ int vt_win_resize(struct vt_win * win, int width, int height);
 struct vt_size vt_win_size(struct vt_win * win);
 struct vt_pos vt_win_pos(struct vt_win * win);
 
-int vt_win_hide(struct vt_win * win);
-int vt_win_show(struct vt_win * win);
+void vt_win_hide(struct vt_win * win);
+void vt_win_show(struct vt_win * win);
 int vt_win_refresh(struct vt_win * win);
 void vt_win_clear(struct vt_win * win);
 int vt_win_open(struct vt_win * win);

@@ -39,9 +39,9 @@ extern "C" {
 /*
  * File IO operations
  */
-int null_write(void * arg, const void * buf, size_t len, unsigned int tmo);
+int null_write(void * arg, const void * buf, size_t len);
 
-int null_read(void * arg, void * buf, size_t len);
+int null_read(void * arg, void * buf, size_t len, unsigned int tmo);
 
 int null_close(void * arg);
 

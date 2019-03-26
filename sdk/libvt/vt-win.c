@@ -53,6 +53,9 @@ int __vt_win_write(struct vt_win * win,
 	int x;
 	int y;
 
+	if (!win->visible)
+		return 0;
+
 	x = win->cursor.x;
 	y = win->cursor.y;
 	cp = (char *)buf;
@@ -127,13 +130,18 @@ int __vt_win_write(struct vt_win * win,
 int vt_win_open(struct vt_win * win)
 {
 	__vt_lock();
-	__vt_win_open(win);
+
+	if (win->visible)
+		__vt_win_open(win);
+
 	return 0;
 }
 
 int vt_win_close(struct vt_win * win)
 {
-	__vt_win_close(win);
+	if (win->visible)
+		__vt_win_close(win);
+
 	__vt_unlock();
 	return 0;
 }
@@ -317,6 +325,9 @@ void vt_win_clear(struct vt_win * win)
 	int n;
 	int i;
 
+	if (!win->visible)
+		return;
+
 	for (i = 0; i < win->size.h; ++i) {
 		n = __vt_move_to(s, win->pos.x, win->pos.y + i);
 		__vt_console_write(s, n);
@@ -364,11 +375,26 @@ struct vt_size vt_win_size(struct vt_win * win)
 	return win->size;
 }
 
+void vt_win_show(struct vt_win * win)
+{
+	if (!win->visible) {
+		win->visible = true;
+	}
+}
+
+void vt_win_hide(struct vt_win * win)
+{
+	if (win->visible) {
+		win->visible = false;
+	}
+}
+
 void vt_default_msg_handler(struct vt_win * win, enum vt_msg msg, 
 						 uint32_t arg, void * data)
 {
 	switch (msg) {
 	case VT_WIN_CREATE:
+		vt_win_show(win);
 		vt_win_open(win);
 		vt_win_clear(win);
 		vt_win_close(win);
