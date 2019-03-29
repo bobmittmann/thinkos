@@ -72,6 +72,43 @@
    to ignore this supply.
    1: VDDUSB is valid */
 
+/* Bits [3..1]  - Power voltage detector level selection. */
+#define PWR_PLS_MSK (0x3 << 1)
+#define PWR_PLS_SET(VAL) (((VAL) << 1) & PWR_PLS_MSK)
+#define PWR_PLS_GET(REG) (((REG) & PWR_PLS_MSK) >> 1)
+#define PWR_PLS (0x3 << 1)
+#define PWR_PLS_2_0V (0x0 << 1)
+#define PWR_PLS_2_2V (0x1 << 1)
+#define PWR_PLS_2_4V (0x2 << 1)
+#define PWR_PLS_2_5V (0x3 << 1)
+#define PWR_PLS_2_6V (0x4 << 1)
+#define PWR_PLS_2_8V (0x5 << 1)
+#define PWR_PLS_2_9V (0x6 << 1)
+/* These bits select the voltage threshold detected by the power 
+   voltage detector:
+   000: VPVD0 around 2.0 V
+   001: VPVD1 around 2.2 V
+   010: VPVD2 around 2.4 V
+   011: VPVD3 around 2.5 V
+   100: VPVD4 around 2.6 V
+   101: VPVD5 around 2.8 V
+   110: VPVD6 around 2.9 V
+   111: External input analog voltage PVD_IN (compared internally to VREFINT)
+   Note: These bits are write-protected when the bit PVDL (PVD Lock) is 
+   set in the SYSCFG_CBR register.
+
+   These bits are reset only by a system reset.
+*/
+
+
+/*  Bit 0 PVDE: Power voltage detector enable */
+#define PWR_USV (1 << 0)
+/* 0: Power voltage detector disable.
+   1: Power voltage detector enable.
+   Note: This bit is write-protected when the bit PVDL (PVD Lock) is set in 
+   the SYSCFG_CBR register.
+   This bit is reset only by a system reset. */
+
 
 #ifndef __ASSEMBLER__
 
