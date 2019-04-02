@@ -30,12 +30,12 @@
 
 #include <sys/dcclog.h>
 
-int null_write(void * arg, const void * buf, size_t len, unsigned int tmo)
+int null_write(void * arg, const void * buf, size_t len)
 {
 	return len;
 }
 
-int null_read(void * arg, void * buf, size_t len)
+int null_read(void * arg, void * buf, size_t len, unsigned int tmo)
 {
 	return 0;
 }
