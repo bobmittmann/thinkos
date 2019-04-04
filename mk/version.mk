@@ -23,7 +23,7 @@ ifndef TOOLSDIR
 endif	
 
 ifndef VERSION_MAJOR
-$(error VERSION_MAJOR undefined!) 
+  $(error VERSION_MAJOR undefined!) 
 endif
 
 ifdef PROG
@@ -70,19 +70,18 @@ else
   endif
 endif
 
+ifndef VERSION_TAG
+  VERSION_TAG := $(VERSION_H:.h=.tag)
+endif
+
 $(VERSION_H): 
 	$(ACTION) "Creating: $@"
-	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE)
-	
-$(PROG_TAG):
-	$(ACTION) "Creating: $@"
-	@QTAG="$(PROG)-$(VERSION_MAJOR)_$(VERSION_MINOR)-`date -d "$$NOW" +"%Y%m%d"`"; \
-	echo $$TAG > $@;
-	cat $@
+	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE) > $(VERSION_TAG)
 
 version: 
-	$(Q)$(RMALL) $(VERSION_H)
+	$(Q)$(RMALL) $(VERSION_H) $(VERSION_TAG)
 	$(Q)$(MAKE) $(VERSION_H)
 
-.PHONY: version
+.PHONY: version 
+
 
