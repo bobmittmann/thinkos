@@ -367,9 +367,10 @@ static void __ep0_tx_push(struct stm32f_otg_drv * drv)
 			DCC_LOG1(LOG_PANIC, VT_PSH VT_FGR VT_REV
 					 "[0] pktcnt(%d) != 0 !!!" VT_POP, pktcnt);
 			otg_fs->inep[0].diepctl = diepctl | OTG_FS_EPENA | OTG_FS_CNAK; 
-		} else
+		} else {
 			DCC_LOG(LOG_MSG, VT_PSH VT_FGR 
 					"[0] no pending data..." VT_POP);
+		}
 		return;
 	}
 
@@ -669,9 +670,11 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 			case 3:
 				*cp++ = data;
 				data >>= 8;
+				/* FALLTHROUGH */
 			case 2:
 				*cp++ = data;
 				data >>= 8;
+				/* FALLTHROUGH */
 			case 1:
 				*cp++ = data;
 				data >>= 8;
@@ -726,9 +729,11 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 			case 3:
 				*cp++ = data;
 				data >>= 8;
+				/* FALLTHROUGH */
 			case 2:
 				*cp++ = data;
 				data >>= 8;
+				/* FALLTHROUGH */
 			case 1:
 				*cp++ = data;
 				data >>= 8;
@@ -1248,8 +1253,9 @@ static void stm32f_otg_dev_ep0_out(struct stm32f_otg_drv * drv)
 		return;
 	} 
 
-	if (ep->state == EP_WAIT_STATUS_IN)
+	if (ep->state == EP_WAIT_STATUS_IN) {
 		DCC_LOG(LOG_WARNING, "ep->state != EP_WAIT_STATUS_IN!");
+	}
 }
 
 static void stm32f_otg_dev_ep0_setup(struct stm32f_otg_drv * drv)

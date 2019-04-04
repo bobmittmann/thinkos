@@ -228,9 +228,11 @@ int dbgmon_mem_read(const struct mem_desc * mem,
 			case 3:
 				*dst++ = dat;
 				dat >>= 8;
+				/* FALLTHROUGH */
 			case 2:
 				*dst++ = dat;
 				dat >>= 8;
+				/* FALLTHROUGH */
 			case 1:
 				*dst++ = dat;
 				dat >>= 8;
@@ -261,9 +263,11 @@ int dbgmon_mem_read(const struct mem_desc * mem,
 			case 3:
 				*dst++ = dat;
 				dat >>= 8;
+				/* FALLTHROUGH */
 			case 2:
 				*dst++ = dat;
 				dat >>= 8;
+				/* FALLTHROUGH */
 			case 1:
 				*dst++ = dat;
 				dat >>= 8;

@@ -729,8 +729,9 @@ static int usb_mon_on_setup(usb_class_t * cl,
 						  ep_addr & 0x7f);
 
 				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_CLR);
-			} else
+			} else {
 				DCC_LOG2(LOG_TRACE, "ClrFeatureEP(%d,%d)", ep_addr, value);
+			}
 		}
 		break;
 
@@ -744,8 +745,9 @@ static int usb_mon_on_setup(usb_class_t * cl,
 						  (ep_addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
 						  ep_addr & 0x7f);
 				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_SET);
-			} else
+			} else {
 				DCC_LOG2(LOG_TRACE, "SetFeatureEP(%d,%d)", ep_addr, value);
+			}
 		}
 		break;
 

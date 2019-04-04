@@ -76,7 +76,8 @@ ret:
 	return len;
 }
 
-int ice_io_comm_read(struct ice_comm_blk * comm, void * buf, size_t len)
+int ice_io_comm_read(struct ice_comm_blk * comm, void * buf, 
+					 size_t len, unsigned int tmo)
 {
 	return 0;
 }

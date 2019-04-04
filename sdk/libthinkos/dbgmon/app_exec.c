@@ -35,7 +35,7 @@ static const char * const app_argv[] = {
 	"thinkos_app"
 };
 
-static void __attribute__((naked, noreturn)) app_bootstrap(void * arg)
+static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 {
 	int (* app_reset)(int argc, char ** argv);
 	uintptr_t thumb_call = (uintptr_t)arg | 1;

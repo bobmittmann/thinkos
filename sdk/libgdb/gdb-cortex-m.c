@@ -152,8 +152,9 @@ int thread_getnext(int thread_id)
 
 int thread_active(void)
 {
-	if (thinkos_rt.active == THINKOS_THREAD_IDLE)
+	if (thinkos_rt.active == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_TRACE, "IDLE");
+	}
 	return thinkos_rt.active + THREAD_ID_OFFS;
 }
 
@@ -199,8 +200,9 @@ int thread_any(void)
 		DCC_LOG(LOG_MSG, "IDLE thread!");
 	else if (thinkos_rt.active == THINKOS_THREAD_VOID)
 		DCC_LOG(LOG_MSG, "VOID thread!");
-	else
+	else {
 		DCC_LOG1(LOG_MSG, "active=%d is invalid!", thinkos_rt.active);
+	}
 
 	/* Active thread is IDLE or invalid, try to get the first 
 	   initialized thread. */
