@@ -153,7 +153,7 @@ static void __copy_from_pktbuf(void * ptr,
 	uint8_t * dst = (uint8_t *)ptr;
 	uint16_t * src;
 	uint32_t data;
-	int i;
+	unsigned int i;
 
 	/* copy data from source buffer */
 	src = (uint16_t *)STM32F_USB_PKTBUF_ADDR + (rx->addr / 2);
@@ -165,10 +165,10 @@ static void __copy_from_pktbuf(void * ptr,
 }
 
 static void __copy_to_pktbuf(struct stm32f_usb_tx_pktbuf * tx,
-							 uint8_t * src, int len)
+							 uint8_t * src, unsigned int len)
 {
 	uint16_t * dst;
-	int i;
+	unsigned int i;
 
 	/* copy data to destination buffer */
 	dst = (uint16_t *)STM32F_USB_PKTBUF_ADDR + (tx->addr / 2);
@@ -433,7 +433,7 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 	uint32_t pri;
 #endif
 	uint32_t epr;
-	int rem;
+	unsigned int rem;
 	int pos;
 
 	ep = &drv->ep[ep_id];
@@ -463,9 +463,9 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 #endif
 		uint8_t * dst;
 		uint32_t data;
-		int cnt;
-		int i;
-		int n;
+		unsigned int cnt;
+		unsigned int i;
+		unsigned int n;
 
 		rx_pktbuf = ep->rx_pktbuf; 
 		/* FIXME: is EP still enabled */
@@ -574,6 +574,13 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 
 	DCC_LOG2(LOG_TRACE, "ep=%d opt=%d", ep_id, opt);
 
+#if DEBUG
+	if ((unsigned int)ep_id >= STM32_USB_FS_EP_MAX) {
+		DCC_LOG(LOG_WARNING, "invalid EP");
+		return -1;
+	}
+#endif
+
 	switch (opt) {
 	case USB_EP_RECV_OK:
 		break;
@@ -590,9 +597,14 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 		__ep_zlp_send(usb, ep_id);
 		break;
 
-	case USB_EP_STALL:
+	case USB_EP_STALL_SET:
 		__ep_stall(usb, ep_id, ep);
 		break;
+
+	case USB_EP_STALL_CLR:
+		/* TODO: implement stall clear ... */
+		break;
+
 
 	case USB_EP_DISABLE:
 		ep->state = EP_DISABLED;
@@ -605,7 +617,6 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 
 	return 0;
 }
-
 
 int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv, 
 						   const usb_dev_ep_info_t * info,

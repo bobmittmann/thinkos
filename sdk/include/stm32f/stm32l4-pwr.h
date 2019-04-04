@@ -102,7 +102,7 @@
 
 
 /*  Bit 0 PVDE: Power voltage detector enable */
-#define PWR_USV (1 << 0)
+#define PWR_PVDE (1 << 0)
 /* 0: Power voltage detector disable.
    1: Power voltage detector enable.
    Note: This bit is write-protected when the bit PVDL (PVD Lock) is set in 
