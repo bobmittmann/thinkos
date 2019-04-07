@@ -210,7 +210,7 @@ char * fmt_clk_6(char * s, int64_t x);
 /* Format a clock timetamp into a string with 9 fractional decimal digits.
    The string has to be at least 22 characters long */
 char * fmt_clk_9(char * s, int64_t x);
-#define FMT_CLK_9(X) fmt_clk_6(__extension__({char __s[22]; __s;}), \
+#define FMT_CLK_9(X) fmt_clk_9(__extension__({char __s[22]; __s;}), \
 							   (int64_t)(X))
 
 #ifdef __cplusplus

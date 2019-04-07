@@ -35,6 +35,25 @@
 #include <sys/vt.h>
 #include <vt100.h>
 
+#define IN_BS      '\x8'
+#define IN_TN_BS     0x7F /* TELNET back space */
+#define IN_EOL      '\r'
+#define IN_SKIP     '\3'
+#define IN_EOF      '\x1A'
+#define IN_ESC      '\033'
+
+
+#define OUT_CURSOR_LEFT     "\x8"
+#define OUT_BS              "\x8 \x8"
+#define OUT_SKIP            "^C"
+#define OUT_BEL             "\7"
+
+#define MODE_RAW 0
+#define MODE_ESC 1
+#define MODE_ESC_VAL1 2
+#define MODE_ESC_VAL2 3
+#define MODE_ESC_O 4
+
 /* -------------------------------------------------------------------------
  * VT Window */
 struct vt_win {
@@ -66,6 +85,12 @@ union vt_mem_blk {
 	struct vt_win win;
 };
 
+struct vt_console {
+	uint8_t mode;
+	uint16_t ctrl;
+	uint32_t val;
+};
+
 #ifndef VT_WIN_POOL_SIZE
 #define VT_WIN_POOL_SIZE  16
 #endif
@@ -83,6 +108,7 @@ struct sys_vt_rt {
 		volatile uint32_t head;
 		volatile uint32_t tail;
 	} queue;
+	struct vt_console con;
 	struct {
 		uint8_t max;
 		uint8_t used;
@@ -199,6 +225,8 @@ int __vt_win_write(struct vt_win * win,
 void __vt_lock(void);
 
 void __vt_unlock(void);
+
+int __vt_console_decode(struct vt_console * con, int c);
 
 #ifdef __cplusplus
 }

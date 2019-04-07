@@ -15,7 +15,8 @@ union vt_mem_blk * __vt_alloc(void)
 
 	if ((p = __sys_vt.alloc.free.first) != NULL) {
 		if ((__sys_vt.alloc.free.first = p->next) == NULL)
-			__sys_vt.alloc.free.last = (union vt_mem_blk *)&__sys_vt.alloc.free.first;
+			__sys_vt.alloc.free.last = 
+				(union vt_mem_blk *)&__sys_vt.alloc.free.first;
 
 		__sys_vt.alloc.used++;
 	}
