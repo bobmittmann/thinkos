@@ -438,8 +438,6 @@ struct usb_cdc_acm_dev {
 
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
-	volatile uint8_t rx_cnt; 
-	volatile uint8_t rx_pos; 
 
 	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
 
@@ -814,9 +812,6 @@ static void usb_mon_on_reset(usb_class_t * cl)
 	dev->tx_ack = 0;
 	dev->rx_seq = 0;
 	dev->rx_ack = 0;
-	/* clear input buffer */
-	dev->rx_cnt = 0;
-	dev->rx_pos = 0;
 	/* reset control lines */
 	dev->acm_ctrl = 0;
 	/* initializes EP0 */
@@ -959,50 +954,6 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	return cnt;
 }
 
-#if 0
-static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
-{
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-	uint32_t ack;
-	int pos;
-	int cnt;
-	int ret;
-	int n;
-
-	pos = dev->rx_pos;
-	cnt = dev->rx_cnt;
-	ack = dev->rx_ack;
-	if (pos == cnt) {
-		DCC_LOG2(LOG_TRACE, "seq=%d ack=%d", dev->rx_seq, ack);
-		while (ack == dev->rx_seq) {
-			if ((ret = dbgmon_expect(DBGMON_COMM_RCV)) < 0) {
-				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
-				return ret;
-			}
-		}
-		cnt = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-								  dev->rx_buf, CDC_EP_IN_MAX_PKT_SIZE);
-		if (cnt < 0) {
-			return cnt;
-		}
-		ack += cnt;
-		dev->rx_ack = ack;
-		dev->rx_cnt = cnt;
-		pos = 0;
-		DCC_LOG3(LOG_TRACE, "usb_dev_ep_pkt_recv: seq=%d ack=%d cnt=%d", 
-				 dev->rx_seq, ack, cnt);
-		usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-	}
-	
-	/* get data from the rx buffer */
-	n = cnt - pos;
-	n = MIN(n, len);
-	__thinkos_memcpy(buf, &dev->rx_buf[pos], n);
-	dev->rx_pos = pos + n;
-
-	return n;
-} 
-#endif
 
 static int usb_comm_connect(const void * comm)
 {
@@ -1092,8 +1043,6 @@ const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb)
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)usb;
-	dev->rx_cnt = 0;
-	dev->rx_pos = 0;
 	dev->tx_seq = 0; 
 	dev->tx_ack = 0; 
 	dev->rx_seq = 0;
