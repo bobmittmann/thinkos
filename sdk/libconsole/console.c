@@ -25,7 +25,7 @@
 #include <sys/file.h>
 #include <stdbool.h>
 
-int console_write(void * dev, const void * buf, unsigned int len) 
+int console_write(void * dev, const void * buf, size_t len) 
 {
 	unsigned int rem = len;
 	uint8_t * cp = (uint8_t *)buf;
@@ -40,7 +40,7 @@ int console_write(void * dev, const void * buf, unsigned int len)
 	return len;
 }
 
-int console_read(void * dev, void * buf, unsigned int len, unsigned int msec) 
+int console_read(void * dev, void * buf, size_t len, unsigned int msec) 
 {
 	int ret = 0;
 
@@ -57,6 +57,15 @@ int console_drain(void * dev)
 	return 0;
 }
 
+int console_flush(void * dev)
+{
+	uint8_t buf[4];
+
+	while (thinkos_console_timedread(buf, 4, 100) > 0);
+
+	return 0;
+}
+
 int console_close(void * dev)
 {
 	return thinkos_console_close();
@@ -70,10 +79,10 @@ bool console_is_connected(void)
 }
 
 const struct fileop console_fops = {
-	.write = (void *)console_write,
-	.read = (void *)console_read,
-	.flush = (void *)console_drain,
-	.close = (void *)console_close
+	.write = (int (*)(void *, const void *, size_t))console_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))console_read,
+	.flush = (int (*)(void *))console_drain,
+	.close = (int (*)(void *))console_close
 };
 
 const struct file console_file = {

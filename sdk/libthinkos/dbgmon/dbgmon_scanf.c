@@ -169,6 +169,9 @@ static int skip_spaces(struct stream *stream)
 	return i;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-arith"
+
 int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	struct stream buf;
@@ -322,4 +325,6 @@ eof:
 
 	return nconvs ? nconvs : -1;
 }
+
+#pragma GCC diagnostic pop
 

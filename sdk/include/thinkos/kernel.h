@@ -140,6 +140,116 @@
 #define THINKOS_RT_ACTIVE_OFFS     ((THINKOS_RT_CYCREF_OFFS) + SIZEOF_CYCREF)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
 
+
+
+#if (THINKOS_ENABLE_TIMESHARE)
+  #define THINKOS_WQ_TIMESHARE_CNT 1
+#else
+  #define THINKOS_WQ_TIMESHARE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_CLOCK)
+  #define THINKOS_WQ_CLOCK_CNT 1
+#else
+  #define THINKOS_WQ_CLOCK_CNT 0 
+#endif
+
+#if ((THINKOS_MUTEX_MAX) > 0)
+  #define THINKOS_WQ_MUTEX_CNT (THINKOS_MUTEX_MAX)
+#else
+  #define THINKOS_WQ_MUTEX_CNT 0 
+#endif
+
+#if ((THINKOS_COND_MAX) > 0)
+  #define THINKOS_WQ_COND_CNT (THINKOS_COND_MAX)
+#else
+  #define THINKOS_WQ_COND_CNT 0 
+#endif
+
+#if ((THINKOS_SEMAPHORE_MAX) > 0)
+  #define THINKOS_WQ_SEMAPHORE_CNT (THINKOS_SEMAPHORE_MAX)
+#else
+  #define THINKOS_WQ_SEMAPHORE_CNT 0 
+#endif
+
+#if ((THINKOS_EVENT_MAX) > 0)
+  #define THINKOS_WQ_EVENT_CNT (THINKOS_EVENT_MAX)
+#else
+  #define THINKOS_WQ_EVENT_CNT 0 
+#endif
+
+#if ((THINKOS_FLAG_MAX) > 0)
+  #define THINKOS_WQ_FLAG_CNT (THINKOS_FLAG_MAX)
+#else
+  #define THINKOS_WQ_FLAG_CNT 0 
+#endif
+
+#if ((THINKOS_GATE_MAX) > 0)
+  #define THINKOS_WQ_GATE_CNT (THINKOS_GATE_MAX)
+#else
+  #define THINKOS_WQ_GATE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_JOIN)
+  #define THINKOS_WQ_JOIN_CNT (THINKOS_THREADS_MAX)
+#else
+  #define THINKOS_WQ_JOIN_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE)
+  #define THINKOS_WQ_CONSOLE_CNT 2
+#else
+  #define THINKOS_WQ_CONSOLE_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_PAUSE)
+  #define THINKOS_WQ_PAUSED_CNT 1
+#else
+  #define THINKOS_WQ_PAUSED_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_JOIN)
+  #define THINKOS_WQ_CANCELED_CNT 1
+#else
+  #define THINKOS_WQ_CANCELED_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_COMM)
+  #define THINKOS_WQ_COMM_CNT 2
+#else
+  #define THINKOS_WQ_COMM_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_WQ_IRQ)
+  #define THINKOS_WQ_IRQ_CNT 1
+#else
+  #define THINKOS_WQ_IRQ_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+  #define THINKOS_WQ_FAULT_CNT 1
+#else
+  #define THINKOS_WQ_FAULT_CNT 0 
+#endif
+
+#define THINKOS_WQ_CNT (1 + \
+  THINKOS_WQ_TIMESHARE_CNT + \
+  THINKOS_WQ_CLOCK_CNT + \
+  THINKOS_WQ_MUTEX_CNT + \
+  THINKOS_WQ_COND_CNT + \
+  THINKOS_WQ_SEMAPHORE_CNT + \
+  THINKOS_WQ_EVENT_CNT + \
+  THINKOS_WQ_FLAG_CNT + \
+  THINKOS_WQ_GATE_CNT + \
+  THINKOS_WQ_JOIN_CNT + \
+  THINKOS_WQ_CONSOLE_CNT + \
+  THINKOS_WQ_PAUSED_CNT + \
+  THINKOS_WQ_CANCELED_CNT + \
+  THINKOS_WQ_COMM_CNT + \
+  THINKOS_WQ_IRQ_CNT + \
+  THINKOS_WQ_FAULT_CNT)
+
+
 #ifndef __ASSEMBLER__
 
 #include <arch/cortex-m3.h>
@@ -237,73 +347,76 @@ struct thinkos_rt {
 
 	uint32_t active; /* current active thread */
 
-	uint32_t wq_lst[0]; /* queue list placeholder */
-
-	uint32_t wq_ready; /* ready threads queue */
+	union {
+		uint32_t wq_lst[THINKOS_WQ_CNT]; /* queue list */
+		struct {
+			uint32_t wq_ready; /* ready threads queue */
 
 #if (THINKOS_ENABLE_TIMESHARE)
-	uint32_t wq_tmshare; /* Threads waiting for time share cycle */
+			uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
 #if THINKOS_ENABLE_CLOCK
-	uint32_t wq_clock;
+			uint32_t wq_clock;
 #endif
 
 #if THINKOS_MUTEX_MAX > 0
-	uint32_t wq_mutex[THINKOS_MUTEX_MAX];
+			uint32_t wq_mutex[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
 #if THINKOS_COND_MAX > 0
-	uint32_t wq_cond[THINKOS_COND_MAX];
+			uint32_t wq_cond[THINKOS_COND_MAX];
 #endif /* THINKOS_COND_MAX > 0 */
 
 #if THINKOS_SEMAPHORE_MAX > 0
-	uint32_t wq_sem[THINKOS_SEMAPHORE_MAX];
+			uint32_t wq_sem[THINKOS_SEMAPHORE_MAX];
 #endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
 #if THINKOS_EVENT_MAX > 0
-	uint32_t wq_event[THINKOS_EVENT_MAX]; /* event sets wait queues */
+			uint32_t wq_event[THINKOS_EVENT_MAX]; /* event sets wait queues */
 #endif /* THINKOS_EVENT_MAX > 0 */
 
 #if THINKOS_FLAG_MAX > 0
-	uint32_t wq_flag[THINKOS_FLAG_MAX]; /* flags wait queues */
+			uint32_t wq_flag[THINKOS_FLAG_MAX]; /* flags wait queues */
 #endif /* THINKOS_FLAG_MAX > 0 */
 
 #if THINKOS_GATE_MAX > 0
-	uint32_t wq_gate[THINKOS_GATE_MAX]; /* gates wait queues */
+			uint32_t wq_gate[THINKOS_GATE_MAX]; /* gates wait queues */
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if THINKOS_ENABLE_JOIN
-	uint32_t wq_join[THINKOS_THREADS_MAX];
+			uint32_t wq_join[THINKOS_THREADS_MAX];
 #endif /* THINKOS_ENABLE_JOIN */
 
 #if THINKOS_ENABLE_CONSOLE
-	uint32_t wq_console_wr;
-	uint32_t wq_console_rd;
+			uint32_t wq_console_wr;
+			uint32_t wq_console_rd;
 #endif
 
 #if THINKOS_ENABLE_PAUSE
-	uint32_t wq_paused;
+			uint32_t wq_paused;
 #endif
 
 #if THINKOS_ENABLE_JOIN
-	uint32_t wq_canceled; /* canceled threads wait queue */
+			uint32_t wq_canceled; /* canceled threads wait queue */
 #endif
 
 #if THINKOS_ENABLE_COMM
-	uint32_t wq_comm_send;
-	uint32_t wq_comm_recv;
+			uint32_t wq_comm_send;
+			uint32_t wq_comm_recv;
 #endif
 
 #if THINKOS_ENABLE_WQ_IRQ
-	uint32_t wq_irq;
+			uint32_t wq_irq;
 #endif
 
 #if THINKOS_ENABLE_DEBUG_FAULT
-	uint32_t wq_fault; /* fault threads wait queue */
+			uint32_t wq_fault; /* fault threads wait queue */
 #endif
+		};
+	};
 
-	uint32_t wq_end[0]; /* end of queue list placeholder */
+//	uint32_t wq_end[0]; /* end of queue list placeholder */
 
 #if THINKOS_ENABLE_THREAD_STAT
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
@@ -483,10 +596,6 @@ extern struct mpu_mem_block thinkos_mpu_kernel_mem;
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_LST_END ((offsetof(struct thinkos_rt, wq_end) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
-							/ sizeof(uint32_t))
-
 /* -------------------------------------------------------------------------- 
  * Static initialized kernel descriptors
  * --------------------------------------------------------------------------*/
@@ -509,7 +618,7 @@ struct thinkos_thread_opt {
 };
 
 struct thinkos_thread_init {
-	void * task;
+	int (* task)(void *);
 	void * arg;
 	void * stack_ptr;
 	struct thinkos_thread_opt opt;
@@ -555,7 +664,7 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 
 void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);
 
-void __thinkos_thread_abort(int thread_id);
+void __thinkos_thread_abort(unsigned int thread_id);
 
 /* -------------------------------------------------------------------------- 
  * Support Functions
@@ -570,14 +679,14 @@ void __thinkos_thread_abort(int thread_id);
 #endif
 
 /* set a bit in a bit map atomically */
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 thinkos_bit_set(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 1);  
 }
 
 /* clear a bit in a bit map atomically */
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 thinkos_bit_clr(void * bmp, unsigned int bit)
 {
 	__bit_mem_wr(bmp, bit, 0);  
@@ -612,7 +721,7 @@ thinkos_alloc_hi(uint32_t * ptr, int start) {
 }
 
 /* flags a deferred execution of the scheduler */
-static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
+static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending service interrupt */
 	scb->icsr = SCB_ICSR_PENDSVSET;
@@ -620,7 +729,7 @@ static void inline __attribute__((always_inline)) __thinkos_defer_sched(void) {
 }
 
 /* flags a deferred execution of the scheduler */
-static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
+static inline void __attribute__((always_inline)) __thinkos_preempt(void) {
 #if (THINKOS_ENABLE_PREEMPTION)
 #if (THINKOS_ENABLE_CRITICAL)
 	if (thinkos_rt.critical_cnt == 0)
@@ -630,21 +739,21 @@ static void inline __attribute__((always_inline)) __thinkos_preempt(void) {
 }
 
 /* flags a deferred queued syscall */
-static void inline __attribute__((always_inline)) __thinkos_defer_svc(void) {
+static inline void __attribute__((always_inline)) __thinkos_defer_svc(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
-static void inline __attribute__((always_inline)) __thinkos_ready_clr(void) {
+static inline void __attribute__((always_inline)) __thinkos_ready_clr(void) {
 	thinkos_rt.wq_ready = 0;
 #if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.wq_tmshare = 0;
 #endif
 }
 
-static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) {
+static inline void __attribute__((always_inline)) __thinkos_suspend(int thread) {
 #if !(THINKOS_ENABLE_TIMESHARE)
 	/* remove from the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread, 0);  
@@ -672,17 +781,17 @@ static void inline __attribute__((always_inline)) __thinkos_suspend(int thread) 
 #endif /* (!THINKOS_ENABLE_TIMESHARE) */
 }
 
-static int inline __attribute__((always_inline)) __wq_idx(uint32_t * ptr) {
+static inline int __attribute__((always_inline)) __wq_idx(uint32_t * ptr) {
 	return ptr - thinkos_rt.wq_lst;
 }
 
-static int inline __attribute__((always_inline)) 
+static inline int __attribute__((always_inline)) 
 __thinkos_wq_head(unsigned int wq) {
 	/* get a thread from the queue bitmap */
 	return __clz(__rbit(thinkos_rt.wq_lst[wq]));
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wq_insert(unsigned int wq, unsigned int th) {
 	/* insert into the event wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);  
@@ -692,7 +801,7 @@ __thinkos_wq_insert(unsigned int wq, unsigned int th) {
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 	/* set the clock */
 	thinkos_rt.clock[th] = thinkos_rt.ticks + ms;
@@ -707,7 +816,7 @@ __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 }
 #endif
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 	/* remove from the wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 0);  
@@ -721,7 +830,7 @@ __thinkos_wq_remove(unsigned int wq, unsigned int th) {
 #endif
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wakeup(unsigned int wq, unsigned int th) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
@@ -739,7 +848,7 @@ __thinkos_wakeup(unsigned int wq, unsigned int th) {
 #endif
 }
 
-static void inline __attribute__((always_inline)) 
+static inline void __attribute__((always_inline)) 
 __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
@@ -758,15 +867,14 @@ __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 }
 
 #if (THINKOS_ENABLE_CLOCK)
-static volatile inline uint32_t __attribute__((always_inline))
-	__thinkos_ticks(void) {
+static inline uint32_t __attribute__((always_inline)) __thinkos_ticks(void) {
 	return thinkos_rt.ticks;
 }
 #endif
 
 /* Set the fault flag */
 #if (THINKOS_ENABLE_DEBUG_FAULT)
-static void inline __thinkos_thread_fault_set(unsigned int th) {
+static inline void __thinkos_thread_fault_set(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 1);
 #if (THINKOS_ENABLE_THREAD_STAT)
 	thinkos_rt.th_stat[th] = THINKOS_WQ_FAULT << 1;
@@ -778,19 +886,19 @@ static void inline __thinkos_thread_fault_set(unsigned int th) {
 }
 
 /* Clear the fault flag */
-static void inline __thinkos_thread_fault_clr(unsigned int th) {
+static inline void __thinkos_thread_fault_clr(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 0);
 }
 #endif
 
 /* Set the pause flag */
 #if (THINKOS_ENABLE_PAUSE)
-static void inline __thinkos_thread_pause_set(unsigned int th) {
+static inline void __thinkos_thread_pause_set(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_paused, th, 1);
 }
 
 /* Clear the pause flag */
-static void inline __thinkos_thread_pause_clr(unsigned int th) {
+static inline void __thinkos_thread_pause_clr(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_paused, th, 0);
 }
 #endif
@@ -822,7 +930,8 @@ void thinkos_console_init(void);
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
 											   uint32_t sp, 
-											   void * task, void * arg);
+											   int (* task)(void *), 
+											   void * arg);
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 
@@ -869,9 +978,15 @@ void __thinkos_system_reset(void);
 
 void __thinkos_sched_stop(void);
 
+/* get a pointer to the console's recieving pipe */
 int __console_rx_pipe_ptr(uint8_t ** ptr);
+/* commit 'cnt' octets on console's recieving pipe */
 void __console_rx_pipe_commit(int cnt); 
+
+/* set/clear the console's connected flag */
 void __console_connect_set(bool val); 
+/* set/clear the console's raw mode flag */
+void __console_raw_mode_set(bool val);
 
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);

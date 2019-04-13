@@ -26,11 +26,13 @@
 #ifndef __SYS_FILE_H__
 #define __SYS_FILE_H__
 
+#include <stddef.h>
+
 struct file;
 
 struct fileop {
-	int (* write)(void * arg, const void * buf, int count);
-	int (* read)(void * arg, void * buf, int count, unsigned int tmo);
+	int (* write)(void * arg, const void * buf, size_t count);
+	int (* read)(void * arg, void * buf, size_t count, unsigned int tmo);
 	int (* flush)(void * arg);
 	int (* close)(void * arg);
 };

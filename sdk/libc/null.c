@@ -30,12 +30,12 @@
 
 #include <sys/dcclog.h>
 
-int null_write(void * arg, const void * buf, int len, unsigned int tmo)
+int null_write(void * arg, const void * buf, size_t len)
 {
 	return len;
 }
 
-int null_read(void * arg, void * buf, int len)
+int null_read(void * arg, void * buf, size_t len, unsigned int tmo)
 {
 	return 0;
 }
@@ -52,8 +52,8 @@ int null_close(void * arg)
 }
 
 const struct fileop null_fileop = {
-	.write = (int (*)(void *, const void *, int))null_write,
-	.read = (int (*)(void *, void *, int, unsigned int))null_read,
+	.write = (int (*)(void *, const void *, size_t))null_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
 	.flush = (int (*)(void *))null_flush,
 	.close = (int (*)(void *))null_close
 };

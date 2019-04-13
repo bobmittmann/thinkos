@@ -107,7 +107,7 @@ extern "C" {
 
 void thinkos_exception_init(void);
 
-void thinkos_exception_dsr(void);
+void thinkos_exception_dsr(struct thinkos_except * xcpt);
 
 uint32_t * __thinkos_xcpt_stack_top(void);
 

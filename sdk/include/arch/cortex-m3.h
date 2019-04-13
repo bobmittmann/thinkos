@@ -1328,7 +1328,7 @@ static inline int64_t __smull(int32_t op1, int32_t op2)
 }
 
 #define __SSAT(ARG1,ARG2) \
-	({                          \
+	__extension__({                          \
 	 int32_t __RES, __ARG1 = (ARG1); \
 	 asm volatile ("ssat %0, %1, %2" : "=r" (__RES) :  "I" (ARG2), "r" (__ARG1) ); \
 	 __RES; \

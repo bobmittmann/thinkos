@@ -124,7 +124,7 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 		if (thread_id != THINKOS_THREAD_IDLE) {
 			int irq;
 			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-				if (thinkos_rt.irq_th[irq] == thread_id) {
+				if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 					break;
 				}
 			}

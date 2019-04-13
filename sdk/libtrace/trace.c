@@ -151,8 +151,9 @@ void trace_init(void)
 #define TRACE_ARG_MAX 20
 
 /* Double to uint64_t binary copy */
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; \
+#define DOUBLE2UINT64(D) __extension__({ union { double d; uint64_t u; } a; \
 						  a.d = (D); a.u;})
+
 /* Convert from double to an uint32_t encoded floating point. */
 static inline uint32_t __double2u32(double val) {
 	uint64_t x = DOUBLE2UINT64(val);
@@ -348,8 +349,8 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len)
 	head = trace_ctl.head;
 	if ((TRACE_RING_SIZE + trace_ctl.tail - head) >= (unsigned int)(cnt + 2)) {
 		uint32_t val;
-		int i;
-		int j;
+		unsigned int i;
+		unsigned int j;
 
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ref = ref;
 		trace_ring.buf[head++ & (TRACE_RING_SIZE - 1)].ts = now;

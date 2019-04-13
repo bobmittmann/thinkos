@@ -61,14 +61,15 @@ const char * __retstr(uint32_t __ret)
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 void __thinkos(struct thinkos_rt * rt)
 {
-	uint32_t * wq;
-	int i;
+	unsigned int i;
+	unsigned int oid;
 
-	for (wq = rt->wq_lst; wq != rt->wq_end; ++wq) {
-		int oid;
+	for (oid = 0; oid < THINKOS_WQ_CNT; ++oid) {
+		uint32_t * wq;
 		int type;
+
+		wq = &rt->wq_lst[oid];
 		if (*wq) { 
-			oid = wq - rt->wq_lst;
 			type = thinkos_obj_type_get(oid);
 			switch (type) {
 			case THINKOS_OBJ_READY:

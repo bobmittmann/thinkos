@@ -26,8 +26,8 @@ int stm32_usart_canon_write(struct stm32_usart * usart, const void * buf,
 							 unsigned int len)
 {
 	char * cp = (char *)buf;
+	unsigned int n;
 	int c;
-	int n;
 
 	for (n = 0; n < len; n++) {
 		c = cp[n];

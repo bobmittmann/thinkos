@@ -186,9 +186,9 @@ thinkos_sched_context_restore:
   #endif
 	mov     r3, r0
 	ldmia   r0!, {r4-r12,lr}
-  #if (THINKOS_ENABLE_SANITY_CHECK) 
+  #if (THINKOS_ENABLE_SCHED_ERROR) 
 	cmp     r0, r12
-	bne    .L_sched_error
+	bne     thinkos_sched_on_error
   #endif	
 #else
 	ldmia   r0!, {r4-r11}
@@ -218,10 +218,9 @@ thinkos_sched_context_restore:
 	bx      lr
 #endif
 
-thinkos_sched_on_error:
-#if (THINKOS_ENABLE_SANITY_CHECK) && \
+#if (THINKOS_ENABLE_SCHED_ERROR) && \
 	((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP))
-.L_sched_error:
+thinkos_sched_on_error:
 	/* Disable interrupts */
 	sub     r0, r0, #((CTX_R0) * 4)
 	mov     r3, sp

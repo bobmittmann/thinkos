@@ -45,6 +45,7 @@ int vt_screen_init(const struct vt_screen_def * def)
 	win->msg_handler = (def->msg_handler == NULL) ? vt_default_msg_handler :
 		def->msg_handler;
 	win->data = def->data;
+	win->visible = true;
 
 	vt_msg_post(win, VT_WIN_CREATE, 0);
 

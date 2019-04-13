@@ -39,6 +39,8 @@ int console_write(void * dev, const void * buf, unsigned int len);
 
 int console_read(void * dev, void * buf, unsigned int len, unsigned int msec); 
 
+int console_flush(void * dev);
+
 int console_drain(void * dev);
 
 int console_close(void * dev);

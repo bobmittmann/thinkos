@@ -338,6 +338,11 @@
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 #endif
 
+/* Enable stack check on scheduler */
+#ifndef THINKOS_ENABLE_SCHED_ERROR
+#define THINKOS_ENABLE_SCHED_ERROR      0
+#endif
+
 #ifndef THINKOS_ENABLE_RT_DEBUG
 #define THINKOS_ENABLE_RT_DEBUG         0
 #endif

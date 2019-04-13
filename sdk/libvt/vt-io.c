@@ -1,9 +1,9 @@
 #include "vt-i.h"
-
+#include <sys/null.h>
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < len; ++i)
 		dst[i] = src[i];
@@ -314,6 +314,131 @@ int __vt_get_cursor_pos(struct vt_pos * pos)
 	return 0;
 }
 
+
+int __vt_console_decode(struct vt_console * con, int c)
+{
+	int ret = -1;
+	
+	unsigned int ctrl = con->ctrl;
+
+	do {
+		switch (con->mode) {
+		case MODE_RAW:
+			switch (c) {
+			case IN_ESC:
+				con->mode = MODE_ESC;
+				break;
+			default:
+				ret = c;
+			}
+			continue;
+
+		case MODE_ESC:
+			switch (c) {
+			case '[':
+				con->mode = MODE_ESC_VAL1;
+				con->val = 0;
+				con->ctrl = 0;
+				break;
+			case 'O':
+				con->mode = MODE_ESC_O;
+				break;
+			default:
+				con->mode = MODE_RAW;
+			};
+			continue;
+
+		case MODE_ESC_VAL1:
+		case MODE_ESC_VAL2:
+			switch (c) {
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				con->val = con->val * 10 + c - '0';
+				continue;
+			case 'A':
+				/* cursor up */
+				c = VT_CURSOR_UP + ctrl;
+				break;
+			case 'B':
+				/* cursor down */
+				c = VT_CURSOR_DOWN + ctrl;
+				break;
+			case 'C':
+				/* cursor right */
+				c = VT_CURSOR_RIGHT + ctrl;
+				break;
+			case 'D':
+				/* cursor left */
+				c = VT_CURSOR_LEFT + ctrl;
+				break;
+			case '~':
+				switch (con->val) {
+				case 1:
+					c = VT_HOME + ctrl;
+					break;
+				case 2:
+					c = VT_INSERT + ctrl;
+					break;
+				case 3:
+					/* delete */
+					c = VT_DELETE + ctrl;
+					break;
+				case 4:
+					/* end */
+					c = VT_END + ctrl;
+					break;
+				case 5:
+					c = VT_PAGE_UP + ctrl;
+					break;
+				case 6:
+					c = VT_PAGE_DOWN + ctrl;
+					break;
+				default:
+					con->mode = 0;
+					continue;
+				}
+				break;
+			case ';':
+				con->mode = MODE_ESC_VAL2;
+				con->ctrl = VT_CTRL;
+				con->val = 0;
+				continue;
+			default:
+				con->mode = 0;
+				continue;
+			};
+			con->mode = 0;
+			break;
+
+		case MODE_ESC_O:
+			switch (c) {
+			case 'F':
+				/* end */
+				c = VT_END;
+				break;
+			case 'H':
+				/* home */
+				c = VT_HOME;
+				break;
+			default:
+				con->mode = 0;
+				continue;
+			}
+			con->mode = 0;
+			break;
+		} 
+	} while (0);
+
+	return ret;
+}
 int vt_getc(unsigned int tmo)
 {
 	char buf[1];
@@ -342,10 +467,10 @@ int __vt_win_fwrite(struct vt_win * win, const void * buf, unsigned int len)
 }
 
 const struct fileop vt_win_fops = {
-	.write = (void *)__vt_win_fwrite,
-	.read = (void *)NULL,
-	.flush = (void *)__vt_win_drain,
-	.close = (void *)NULL
+	.write = (int (*)(void *, const void *, size_t))__vt_win_fwrite,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
+	.flush = (int (*)(void *))__vt_win_drain,
+	.close = (int (*)(void *))null_close
 };
 
 FILE * vt_console_fopen(struct vt_win * win)

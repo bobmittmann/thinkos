@@ -300,6 +300,8 @@ sym: $(PROG_SYM)
 
 lst: $(PROG_LST)
 
+tag: $(PROG_TAG)
+
 libs-all: $(LIBDIRS_ALL)
 
 libs-clean: $(LIBDIRS_CLEAN)

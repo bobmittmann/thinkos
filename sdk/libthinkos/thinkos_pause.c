@@ -41,7 +41,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (thinkos_rt.irq_th[irq] == thread_id) {
+			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "PC=%08x IRQ=%d ......", 
 						 thinkos_rt.ctx[thread_id]->pc, irq); 
 				/* disable this interrupt source */
@@ -264,7 +264,7 @@ static bool join_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 
 #if THINKOS_ENABLE_CONSOLE
 bool __console_rd_resume(unsigned int thread_id, unsigned int wq, bool tmw);
-void __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
+bool __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
 #endif
 
 #if THINKOS_ENABLE_COMM
@@ -314,7 +314,11 @@ static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-static const void * const thread_resume_lut[] = {
+typedef  bool (* thread_resume_t)(unsigned int, unsigned int, bool);
+
+//static bool (* thread_resume_lut)(unsigned int, unsigned int, bool)[] = {
+
+static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
 #if THINKOS_ENABLE_TIMESHARE
 	[THINKOS_OBJ_TMSHARE] = tmshare_resume,
@@ -406,7 +410,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (thinkos_rt.irq_th[irq] == thread_id) {
+			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", thread_id+1, irq);
 				/* disable this interrupt source */
 				cm3_irq_disable(irq);

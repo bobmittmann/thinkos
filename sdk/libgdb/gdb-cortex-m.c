@@ -152,8 +152,9 @@ int thread_getnext(int thread_id)
 
 int thread_active(void)
 {
-	if (thinkos_rt.active == THINKOS_THREAD_IDLE)
+	if (thinkos_rt.active == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_TRACE, "IDLE");
+	}
 	return thinkos_rt.active + THREAD_ID_OFFS;
 }
 
@@ -199,8 +200,9 @@ int thread_any(void)
 		DCC_LOG(LOG_MSG, "IDLE thread!");
 	else if (thinkos_rt.active == THINKOS_THREAD_VOID)
 		DCC_LOG(LOG_MSG, "VOID thread!");
-	else
+	else {
 		DCC_LOG1(LOG_MSG, "active=%d is invalid!", thinkos_rt.active);
+	}
 
 	/* Active thread is IDLE or invalid, try to get the first 
 	   initialized thread. */
@@ -688,7 +690,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 			if (thread_id != THINKOS_THREAD_IDLE) {
 				int irq;
 				for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-					if (thinkos_rt.irq_th[irq] == thread_id) {
+					if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 						break;
 					}
 				}
@@ -926,9 +928,9 @@ int target_file_read(const char * name, char * dst,
 					  unsigned int offs, unsigned int size)
 {
 	char * src;
-	int len;
-	int cnt;
-	int i;
+	unsigned int len;
+	unsigned int cnt;
+	unsigned int i;
 
 	if (prefix(name, "target.xml")) {
 		src = (char *)target_xml;

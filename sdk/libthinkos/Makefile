@@ -30,7 +30,7 @@ DBGMON_CFILES = null_comm.c usb_comm.c usb_comm_queue.c \
 			  print_exception.c dbgmon_thread.c dbgmon_memory.c\
 			  dbgmon_printf.c dbgmon_scanf.c \
 			  dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
-			  dbgmon_hexdump.c
+			  dbgmon_hexdump.c dbgmon_console_task.c 
 
 MISC_CFILES = thinkos_type.c obj_type_get.c \
 			  alloc_bmp_get.c bmp_alloc.c strlen.c \

@@ -110,7 +110,7 @@ enum dbgmon_event {
 	DBGMON_COMM_CTL        = 13,
 	/* User console RX pipe data pending */
 	DBGMON_RX_PIPE         = 14,
-	/* User console TX pipe not full */
+	/* User console TX pipe not empty */
 	DBGMON_TX_PIPE         = 15,
 
 	/* ThinkOS application stop request */

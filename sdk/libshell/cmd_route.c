@@ -69,7 +69,7 @@ int cmd_route(FILE * f, int argc, char ** argv)
 
 	if (argc == 1) {
 		fprintf(f, "Destination     Gateway         Genmask         Iface\n");
-		ipv4_route_enum((void *)show_route, (void *)f);
+		ipv4_route_enum((int (*)(struct route *, void *))show_route, (void *)f);
 		return 0;
 	}
 

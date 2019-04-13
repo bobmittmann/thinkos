@@ -756,28 +756,11 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-static void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
+void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
 {
-#if DEBUG
-	DCC_LOG(LOG_TRACE, "Started ...");
-	for (;;) {
-		uint32_t buf[64 / 4];
-		int sig;
-		int n;
-
-		sig = dbgmon_select(0);
-		dbgmon_clear(sig);
-
-		/* Loopback COMM */
-		if ((n = dbgmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-			dbgmon_comm_send(comm, buf, n);
-		}
-	}
-#else
 	for (;;) {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
-#endif
 }
 
 static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
@@ -793,8 +776,6 @@ static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 	/* Set the new task to NULL */
 	thinkos_dbgmon_rt.task = dbgmon_null_task;
 	
-//	void (* task)(const struct dbgmon_comm *, void *);
-
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if THINKOS_ENABLE_DMCLOCK
@@ -1162,9 +1143,8 @@ void __attribute__((noinline, noreturn))
  * ThinkOS exception handler hook
  */
 #if THINKOS_ENABLE_EXCEPTIONS
-void thinkos_exception_dsr(void)
+void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
 	struct thinkos_context * ctx = &xcpt->ctx.core;
 	int ipsr;
 
@@ -1181,15 +1161,23 @@ void thinkos_exception_dsr(void)
 		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
 				 " /!\\ Fault at thread %d /!\\ "  _ATTR_POP_, 
 				 xcpt->active + 1);
-#if THINKOS_ENABLE_DEBUG_BKPT
-		thinkos_rt.break_id = xcpt->active;
-#endif
+
+#if 0
+		/* suspend the active thread */
 		__thinkos_thread_pause(xcpt->active);
+
+		/* The exception handling return will pause all threads */
+#endif
+
+		/* record the break thread id */
+		thinkos_rt.break_id = xcpt->active;
+
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 		/* flag the thread as faulty */
 		__thinkos_thread_fault_set(xcpt->active);
 #endif
 		dbgmon_signal(DBGMON_THREAD_FAULT);
+		
 	} else {
 #if THINKOS_ENABLE_DEBUG_BKPT
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
@@ -1272,7 +1260,8 @@ void __dbgmon_reset(void)
 
 void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
-	void (* task)(const struct dbgmon_comm *, void *) = (void *)arg[0] ;
+	void (* task)(const struct dbgmon_comm *, void *) = 
+		(void (*)(const struct dbgmon_comm *, void *))arg[0];
 	struct dbgmon_comm * comm = (void *)arg[1];
 	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
@@ -1308,7 +1297,14 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
 	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
 	thinkos_dbgmon_rt.comm = comm;
-	thinkos_dbgmon_rt.task = task;
+
+	arg[0] = (uint32_t)thinkos_dbgmon_rt.task;
+	if (task == NULL)
+		/* Set the new task to NULL */
+		thinkos_dbgmon_rt.task = dbgmon_null_task;
+	else
+		thinkos_dbgmon_rt.task = task;
+
 	thinkos_dbgmon_rt.param = param;
 	thinkos_dbgmon_rt.ctx = 0;
 

@@ -35,14 +35,14 @@ static const char * const app_argv[] = {
 	"thinkos_app"
 };
 
-static void __attribute__((naked, noreturn)) app_bootstrap(void * arg)
+static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 {
 	int (* app_reset)(int argc, char ** argv);
 	uintptr_t thumb_call = (uintptr_t)arg | 1;
 
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 
-	app_reset = (void *)thumb_call;
+	app_reset = (int (*)(int argc, char ** argv))thumb_call;
 	for (;;) {
 		app_reset(1, (char **)app_argv);
 	}
@@ -77,7 +77,8 @@ bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
-	thread_id = dbgmon_thread_create((void *)app_bootstrap, (void *)app, 
+	thread_id = dbgmon_thread_create((int (*)(void *))app_bootstrap, 
+									 (void *)app, 
 									 &thinkos_main_inf);
 
 	if (!paused)

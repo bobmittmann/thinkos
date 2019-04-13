@@ -292,8 +292,10 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 
 //"USB Serial (CDC) Generic Device"
 
+extern const struct usb_descriptor_string language_english_us;
+
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
-//	&language_english_us,
+	&language_english_us,
 //	&stmicro_str,
 //	&thinkos_str,
 //	&serial_num_str,
@@ -362,10 +364,10 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 	uint32_t seq;
 	uint32_t ack;
-	int free;
-	int pos;
-	int cnt;
-	int n;
+	unsigned int free;
+	unsigned int pos;
+	unsigned int cnt;
+	unsigned int n;
 
 	seq = dev->rx_seq;
 	ack = dev->rx_ack;
@@ -385,7 +387,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 
 		seq += n;
 	} else {
-		int m;
+		unsigned int m;
 
 		m = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), cnt);
 		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
@@ -490,7 +492,7 @@ static int usb_mon_on_setup(usb_class_t * cl,
 		}
 
 		if (desc == USB_DESCRIPTOR_STRING) {
-			int n = value & 0xff;
+			unsigned int n = value & 0xff;
 			DCC_LOG1(LOG_TRACE, "GetDesc: String[%d]", n);
 			if (n < USB_STRCNT()) {
 				*ptr = (void *)cdc_acm_str[n];
@@ -750,10 +752,10 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * dst = (uint8_t *)buf;
 	uint32_t ack;
-	int pos;
-	int cnt;
+	unsigned int pos;
+	unsigned int cnt;
+	unsigned int n;
 	int ret;
-	int n;
 
 	ack = dev->rx_ack;
 //	while ((n = (int32_t)(dev->rx_seq - ack)) == 0) {
@@ -777,8 +779,8 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 				 n, ack, pos, cnt);
 		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
-		int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
-		int l;
+		unsigned int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
+		unsigned int l;
 
 		m = MIN(m, cnt);
 		__thinkos_memcpy(dst, &dev->rx_buf[pos], m);

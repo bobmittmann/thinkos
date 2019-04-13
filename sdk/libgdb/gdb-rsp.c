@@ -166,7 +166,7 @@ static int rsp_pkt_send(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 {
 	unsigned int sum = 0;
 	char c;
-	int n;
+	unsigned int n;
 
 	for (n = 1; n < len; ++n) {
 		c = pkt[n];
@@ -245,23 +245,25 @@ static int rsp_h_packet(struct gdb_rspd * gdb, char * pkt)
 	/* set thread for subsequent operations */
 	switch (pkt[1]) {
 	case 'c':
-		if (thread_id == THREAD_ID_ALL)
+		if (thread_id == THREAD_ID_ALL) {
 			DCC_LOG(LOG_INFO, "continue all threads");
-		else if (thread_id == THREAD_ID_ANY)
+		} else if (thread_id == THREAD_ID_ANY) {
 			DCC_LOG(LOG_INFO, "continue any thread");
-		else
+		} else {
 			DCC_LOG1(LOG_INFO, "continue thread %d", thread_id);
+		}
 		gdb->thread_id.c = thread_id;
 		ret = rsp_ok(gdb);
 		break;
 
 	case 'g':
-		if (thread_id == THREAD_ID_ALL)
+		if (thread_id == THREAD_ID_ALL) {
 			DCC_LOG(LOG_INFO, "get all threads");
-		else if (thread_id == THREAD_ID_ANY)
+		} else if (thread_id == THREAD_ID_ANY) {
 			DCC_LOG(LOG_INFO, "get any thread");
-		else
+		} else {
 			DCC_LOG1(LOG_INFO, "get thread %d", thread_id);
+		}
 		gdb->thread_id.g = thread_id;
 		ret = rsp_ok(gdb);
 		break;
@@ -476,7 +478,7 @@ int rsp_features_read(struct gdb_rspd * gdb, char * pkt)
 	unsigned int offs;
 	unsigned int size;
 	char * annex;
-	int cnt;
+	unsigned int cnt;
 
 	annex = pkt + sizeof("qXfer:features:read:") - 1;
 	rsp_decode_read(annex, &offs, &size);
@@ -494,7 +496,7 @@ int rsp_memory_map_read(struct gdb_rspd * gdb, char * pkt)
 	unsigned int offs;
 	unsigned int size;
 	char * fname;
-	int cnt;
+	unsigned int cnt;
 
 	fname = pkt + sizeof("qXfer:memory-map:read:") - 1;
 	rsp_decode_read(fname, &offs, &size);
@@ -1758,7 +1760,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				} else {
 					if (!gdb->noack_mode)
 						rsp_ack(gdb);
-					if (rsp_pkt_input(gdb, pkt, len) == GDB_RSP_QUIT)
+					if (rsp_pkt_input(gdb, pkt, len) == (int)GDB_RSP_QUIT)
 						return;
 				}
 				break;

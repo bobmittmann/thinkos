@@ -217,7 +217,7 @@ void stm32f_eth_init(struct stm32f_eth * eth)
 	stm32_gpio_set(ETH_PHY_RST_GPIO);
 	udelay(9000);
 #endif
-};
+}
 
 void stm32f_eth_mac_get(struct stm32f_eth * eth, int idx, uint8_t * mac)
 {

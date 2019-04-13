@@ -63,6 +63,27 @@ enum vt_msg {
 	VT_WIN_CREATE = 18
 };
 
+#define MK_VT_KEY(CODE)   (0x2000 + (CODE))
+#define VT_CTRL        0x4000
+
+#define VT_CURSOR_UP    MK_VT_KEY(0)
+#define VT_CURSOR_DOWN  MK_VT_KEY(1)
+#define VT_CURSOR_RIGHT MK_VT_KEY(2)
+#define VT_CURSOR_LEFT  MK_VT_KEY(3)
+#define VT_PAGE_UP      MK_VT_KEY(5)
+#define VT_PAGE_DOWN    MK_VT_KEY(6)
+#define VT_INSERT       MK_VT_KEY(7)
+#define VT_DELETE       MK_VT_KEY(8)
+#define VT_HOME         MK_VT_KEY(9)
+#define VT_END          MK_VT_KEY(10)
+
+#define VT_CTRL_CURSOR_UP    VT_CURSOR_UP + VT_CTRL 
+#define VT_CTRL_CURSOR_DOWN  VT_CURSOR_DOWN + VT_CTRL   
+#define VT_CTRL_CURSOR_RIGHT VT_CURSOR_RIGHT + VT_CTRL    
+#define VT_CTRL_CURSOR_LEFT  VT_CURSOR_LEFT + VT_CTRL   
+#define VT_CTRL_PAGE_UP      VT_PAGE_UP + VT_CTRL   
+#define VT_CTRL_PAGE_DOWN    VT_PAGE_DOWN + VT_CTRL   
+
 struct vt_pos {
 	uint8_t x;
 	uint8_t y;
@@ -121,8 +142,8 @@ int vt_win_resize(struct vt_win * win, int width, int height);
 struct vt_size vt_win_size(struct vt_win * win);
 struct vt_pos vt_win_pos(struct vt_win * win);
 
-int vt_win_hide(struct vt_win * win);
-int vt_win_show(struct vt_win * win);
+void vt_win_hide(struct vt_win * win);
+void vt_win_show(struct vt_win * win);
 int vt_win_refresh(struct vt_win * win);
 void vt_win_clear(struct vt_win * win);
 int vt_win_open(struct vt_win * win);
@@ -155,14 +176,18 @@ int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def);
 void vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t data);
 
 enum vt_msg vt_msg_wait(struct vt_win ** win, uintptr_t * data);
+enum vt_msg vt_msg_timedwait(struct vt_win ** win, uintptr_t * arg,
+							unsigned int tmo_ms);
 int vt_msg_dispatch(struct vt_win * win, enum vt_msg msg, uintptr_t data);
 
 void vt_default_msg_handler(struct vt_win * win, enum vt_msg msg, 
 							uint32_t arg, void * data);
 
-int vt_default_msg_loop(void);
+int vt_default_msg_loop(unsigned int tmo_ms);
 
 struct vt_win * vt_win_create(const struct vt_win_def * def);
+
+char * vt_freadline(FILE *f, char * buf, unsigned int max);
 
 #ifdef __cplusplus
 }

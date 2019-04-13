@@ -49,7 +49,7 @@ void dbgmon_hexdump(const struct dbgmon_comm * comm,
 	bool eq = false;
 
 	while (rem) {
-		int n = rem < 16 ? rem : 16;
+		unsigned int n = rem < 16 ? rem : 16;
 		char * cp = buf;
 		unsigned int i;
 		uint8_t src[16];
