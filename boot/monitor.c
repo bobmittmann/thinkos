@@ -319,7 +319,7 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 	if (dbgmon_comm_isconnected(comm)) {
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dbgmon_printf(comm, s_hr);
-		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x", 
+		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x\n", 
 						  thread_id + 1, addr);
 		dmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);

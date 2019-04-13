@@ -49,7 +49,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
 		 thinkos_dbgmon.c thinkos_console.c thinkos_systmr.c \
-		 thinkos_profile.c \
+		 thinkos_profile.c thinkos_error.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 		 $(addprefix dbgmon/,$(DBGMON_CFILES))
 

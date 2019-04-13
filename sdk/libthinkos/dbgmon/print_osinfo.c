@@ -160,7 +160,8 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 					dbgmon_printf(comm, " | !USAGE");
 					break;
 				default:
-					dbgmon_printf(comm, " | ERR %2d", xcpt->type - THINKOS_ERR_OFF);
+					dbgmon_printf(comm, " | ERR %2d", 
+								  xcpt->type - THINKOS_ERR_OFF);
 				}
 			} else 
 #endif

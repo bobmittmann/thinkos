@@ -516,47 +516,12 @@ struct thinkos_thread_init {
 	struct thinkos_thread_inf * inf;
 };
 
-/* -------------------------------------------------------------------------- 
- * Internal errors
- * --------------------------------------------------------------------------*/
-
-enum thinkos_exception {
-	THINKOS_ERR_COND_INVALID      = 1,
-	THINKOS_ERR_COND_ALLOC        = 2,
-	THINKOS_ERR_MUTEX_INVALID     = 3,
-	THINKOS_ERR_MUTEX_ALLOC       = 4,
-	THINKOS_ERR_MUTEX_NOTMINE     = 5,
-	THINKOS_ERR_MUTEX_LOCKED      = 6,
-	THINKOS_ERR_SEM_INVALID       = 7,
-	THINKOS_ERR_SEM_ALLOC         = 8,
-	THINKOS_ERR_THREAD_INVALID    = 9,
-	THINKOS_ERR_THREAD_ALLOC      = 10,
-	THINKOS_ERR_THREAD_SMALLSTACK = 11,
-	THINKOS_ERR_IRQ_INVALID       = 12,
-	THINKOS_ERR_OBJECT_INVALID    = 13,
-	THINKOS_ERR_OBJECT_ALLOC      = 14,
-	THINKOS_ERR_GATE_INVALID      = 15,
-	THINKOS_ERR_GATE_ALLOC        = 16,
-	THINKOS_ERR_GATE_UNLOCKED     = 17,
-	THINKOS_ERR_FLAG_INVALID      = 18,
-	THINKOS_ERR_FLAG_ALLOC        = 19,
-	THINKOS_ERR_EVSET_INVALID     = 20,
-	THINKOS_ERR_EVSET_ALLOC       = 21,
-	THINKOS_ERR_EVENT_OUTOFRANGE  = 22,
-	THINKOS_ERR_CONSOLE_REQINV    = 23,
-	THINKOS_ERR_CTL_REQINV        = 24,
-	THINKOS_ERR_COMM_REQINV       = 25,
-	THINKOS_ERR_SYSCALL_INVALID   = 26,
-	THINKOS_ERR_CRITICAL_EXIT     = 27,
-	THINKOS_ERR_INVALID_POINTER   = 28,
-	THINKOS_ERR_CONSOLE_FAULT     = 29,
-	THINKOS_ERR_INVALID_STACK     = 30,
-	THINKOS_ERR_USER              = 31
-};
-
 /* Mark for breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
+
+#define __THINKOS_ERROR__
+#include <thinkos/error.h>
 
 #define THINKOS_ERR_OFF 16
 
