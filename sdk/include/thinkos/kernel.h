@@ -629,6 +629,9 @@ struct thinkos_thread_init {
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
 
+#define __THINKOS_MEMORY__
+#include <thinkos/memory.h>
+
 #define __THINKOS_ERROR__
 #include <thinkos/error.h>
 

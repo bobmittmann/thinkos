@@ -37,7 +37,8 @@ MISC_CFILES = thinkos_type.c obj_type_get.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
 			  thread_getnext.c thread_get.c \
 			  thread_isfaulty.c thread_ispaused.c \
-			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c
+			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
+			  cpu-info.c
 
 CONSOLE_CFILES = bypass.c 
 
