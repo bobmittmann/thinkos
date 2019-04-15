@@ -143,9 +143,21 @@ enum dbgmon_event {
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
 
+/* Memory block descriptor */
+struct blk_desc {
+	char tag[8];
+	uint32_t ref;
+	uint8_t  opt;
+	uint8_t  siz;
+	uint16_t cnt;
+};
 
-
-
+/* Memory region/type descriptor */
+struct mem_desc {
+	char tag[8];
+	uint8_t cnt; /* number of entries in the block list */
+	struct blk_desc blk[]; /* sorted block list */
+};
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
@@ -294,7 +306,7 @@ int dbgmon_mem_read(const struct mem_desc * mem, uint32_t addr,
 bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr);
 
 const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
-										  unsigned int cnt, uint32_t addr);
+					  unsigned int cnt, uint32_t addr);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface

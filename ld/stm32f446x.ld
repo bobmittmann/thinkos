@@ -143,13 +143,13 @@ SECTIONS
 {
 	. = 0;
 
-	.dcclog (NOLOAD):
+	.dcclog :
 	{
 		. = ALIGN(4);
 		KEEP(*(.dcclog))
 	} >dcclog
 
-	.dccdata (NOLOAD):
+	.dccdata :
 	{
 		. = ALIGN(4);
 		KEEP(*(.rodata.__FUNCTION__*))

@@ -27,7 +27,7 @@ DBGMON_CFILES = null_comm.c usb_comm.c usb_comm_queue.c \
 			  print_osinfo.c print_alloc.c print_thread.c \
 			  print_context.c print_stack_usage.c \
 			  app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
-			  print_exception.c dbgmon_thread.c dbgmon_memory.c\
+			  print_exception.c dbgmon_thread.c dbgmon_memory.c \
 			  dbgmon_printf.c dbgmon_scanf.c \
 			  dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
 			  dbgmon_hexdump.c dbgmon_console_task.c 
@@ -50,7 +50,8 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
 		 thinkos_dbgmon.c thinkos_console.c thinkos_systmr.c \
-		 thinkos_profile.c thinkos_error.c \
+		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
+		 thinkos_dma.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 		 $(addprefix dbgmon/,$(DBGMON_CFILES))
 
