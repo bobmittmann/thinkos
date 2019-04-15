@@ -84,22 +84,6 @@
 #define M_16  (1 << 0) /* 16 bits alignment */
 #define M_8   (0 << 0) /* 8 bits alignment/access */
 
-/* Memory block descriptor */
-struct blk_desc {
-	char tag[8];
-	uint32_t ref;
-	uint8_t  opt;
-	uint8_t  siz;
-	uint16_t cnt;
-};
-
-/* Memory region/type descriptor */
-struct mem_desc {
-	char tag[8];
-	uint8_t cnt; /* number of entries in the block list */
-	struct blk_desc blk[]; /* sorted block list */
-};
-
 struct thinkos_mem_blk {
 	char tag[8];
 	uint32_t off; /* offset */
@@ -108,11 +92,11 @@ struct thinkos_mem_blk {
 	uint16_t cnt; /* number of blocks */
 };
 
-/* Memory sector */
-struct thinkos_mem_sct {
-	char tag[7]; /* sector tag */
-	uint8_t cnt; /* number of blocks */
-	uint32_t base; /* base address */
+/* Memory descriptor */
+struct thinkos_mem_desc {
+	char tag[8]; /* sector tag */
+	uint32_t base; /* Base address */
+	uint8_t cnt; /* number of blocks in the list */
 	struct thinkos_mem_blk blk[]; /* sorted block list */
 };
 
@@ -120,6 +104,7 @@ struct thinkos_mem_map {
 	const struct thinkos_mem_sct * flash;
 	const struct thinkos_mem_sct * ram;
 	const struct thinkos_mem_sct * periph;
+	const struct thinkos_mem_sct * stack;
 };
 
 #ifdef __cplusplus

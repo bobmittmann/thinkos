@@ -41,7 +41,8 @@ enum thinkos_krn_err {
 	THINKOS_ERR_INVALID_POINTER   = 28,
 	THINKOS_ERR_CONSOLE_FAULT     = 29,
 	THINKOS_ERR_INVALID_STACK     = 30,
-	THINKOS_ERR_USER              = 31
+	THINKOS_ERR_DMA_INVALID       = 31,
+	THINKOS_ERR_USER              = 32
 };
 
 #ifdef __cplusplus

@@ -25,6 +25,7 @@
 
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>
+#include <stdint.h>
 
 /* -------------------------------------------------------------------------- 
  * Service numbers
@@ -159,6 +160,11 @@
 
 #ifndef __ASSEMBLER__
 
+struct __ret64 {
+	int32_t err;
+	uint32_t val;
+};
+
 /* ------------------------------------------------------------------------- 
  * C service call macros 
  * ------------------------------------------------------------------------- */
@@ -167,12 +173,20 @@
 asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
 ret; })
 
-#define __SYSCALLS_CALL1(N, A1) __extension__({ register int ret asm("r0"); \
+#define __SYSCALLS_CALL1(N, A1) __extension__({ \
+register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : "0"(r0) : ); \
 ret; } )
 
-#define __SYSCALLS_CALL2(N, A1, A2) __extension__({ register int ret asm("r0"); \
+#define __SYSCALL_64_32(N, A1) __extension__({ \
+register uint32_t err asm("r0"); register uint32_t val asm("r1"); \
+register uint32_t r0 asm("r0") = (int)A1; struct __ret64 ret; \
+asm volatile ("svc " #N "\n" : "=r"(err), "=&r"(val) : "0"(r0) : ); \
+ret.val = val; ret.err = err; ret; })
+
+#define __SYSCALLS_CALL2(N, A1, A2) __extension__( \
+{ register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
@@ -227,6 +241,10 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 /* Five arguments function */
 #define THINKOS_SYSCALL5(N, A1, A2, A3, A4, A5) __SYSCALLS_CALL5(N, (A1), \
                                                 (A2), (A3), (A4), (A5))
+
+/* 64bits return value, one 32bits argument */
+#define THINKOS_SYSCALL_64_32(N, A1) __SYSCALL_64_32(N, (A1))
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -551,22 +569,27 @@ IRQ
 ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, unsigned int ms) {
-	return THINKOS_SYSCALL1(THINKOS_IRQ_TIMEDWAIT_CLEANUP, THINKOS_SYSCALL2(THINKOS_IRQ_TIMEDWAIT, irq, ms));
+	THINKOS_SYSCALL_64_32(THINKOS_IRQ_TIMEDWAIT, irq);
+	return THINKOS_SYSCALL1(THINKOS_IRQ_TIMEDWAIT_CLEANUP, irq);
 }
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	uint32_t __cyccnt;
-	return THINKOS_SYSCALL2(THINKOS_IRQ_WAIT, irq, &__cyccnt);
+	struct __ret64 ret = THINKOS_SYSCALL_64_32(THINKOS_IRQ_WAIT, irq);
+	return ret.err;
 }
 
-static inline int __attribute__((always_inline)) thinkos_irq_wait_cyccnt(int irq, uint32_t * cyccnt) {
-	return THINKOS_SYSCALL2(THINKOS_IRQ_WAIT, irq, cyccnt);
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_wait_cyccnt(int irq, uint32_t * pcyccnt) {
+	struct __ret64 ret = THINKOS_SYSCALL_64_32(THINKOS_IRQ_WAIT, irq);
+	*pcyccnt = ret.val;
+	return ret.err;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_irq_register(int irq, 
 					 unsigned int pri, void (* isr)(void)) {
-	return THINKOS_SYSCALL4(THINKOS_IRQ_CTL, THINKOS_IRQ_REGISTER, irq, pri, isr);
+	return THINKOS_SYSCALL4(THINKOS_IRQ_CTL, THINKOS_IRQ_REGISTER, 
+							irq, pri, isr);
 }
 
 static inline int __attribute__((always_inline)) 

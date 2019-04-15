@@ -226,6 +226,13 @@
   #define THINKOS_WQ_IRQ_CNT 0 
 #endif
 
+#if (THINKOS_ENABLE_WQ_DMA)
+  #define THINKOS_WQ_DMA_CNT 1
+#else
+  #define THINKOS_WQ_DMA_CNT 0 
+#endif
+
+
 #if (THINKOS_ENABLE_DEBUG_FAULT)
   #define THINKOS_WQ_FAULT_CNT 1
 #else
@@ -247,6 +254,7 @@
   THINKOS_WQ_CANCELED_CNT + \
   THINKOS_WQ_COMM_CNT + \
   THINKOS_WQ_IRQ_CNT + \
+  THINKOS_WQ_DMA_CNT + \
   THINKOS_WQ_FAULT_CNT)
 
 
@@ -410,6 +418,10 @@ struct thinkos_rt {
 			uint32_t wq_irq;
 #endif
 
+#if THINKOS_ENABLE_WQ_DMA
+			uint32_t wq_dma;
+#endif
+
 #if THINKOS_ENABLE_DEBUG_FAULT
 			uint32_t wq_fault; /* fault threads wait queue */
 #endif
@@ -473,10 +485,6 @@ struct thinkos_rt {
 
 #if THINKOS_IRQ_MAX > 0
 	int8_t irq_th[THINKOS_IRQ_MAX];
-  #if THINKOS_ENABLE_IRQ_CYCCNT
-	/* Reference cycle state ... */
-	uint32_t * irq_cyccnt[THINKOS_THREADS_MAX];
-  #endif
 #endif /* THINKOS_IRQ_MAX */
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -808,15 +816,29 @@ static inline void __attribute__((always_inline))
 __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms) {
 	/* set the clock */
 	thinkos_rt.clock[th] = thinkos_rt.ticks + ms;
-	/* insert into the event wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 1);  
+	/* insert into the event wait queue */
+	__bit_mem_wr(&thinkos_rt.wq_lst[wq], th, 1);
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	thinkos_rt.th_stat[th] = (wq << 1) + 1;
 #endif
 }
+#endif
+
+#if THINKOS_ENABLE_TIMED_CALLS
+static inline void __attribute__((always_inline)) 
+	__thinkos_wq_clock_insert(unsigned int th, unsigned int ms) {
+	/* set the clock */
+	thinkos_rt.clock[th] = thinkos_rt.ticks + ms;
+	/* insert into the clock wait queue */
+	__bit_mem_wr(&thinkos_rt.wq_clock, th, 1);  
+#if (THINKOS_ENABLE_THREAD_STAT)
+	/* update status, mark the thread clock enable bit */
+	thinkos_rt.th_stat[th] = 1;
+#endif
+	}
 #endif
 
 static inline void __attribute__((always_inline)) 

@@ -43,43 +43,41 @@ void __thinkos_irq_reset_all(void)
 #endif
 
 #if THINKOS_IRQ_MAX > 0
-
 void cm3_default_isr(unsigned int irq) 
 {
-	unsigned int thread_id;
+	unsigned int th;
+
 #if THINKOS_ENABLE_IRQ_CYCCNT
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;
-	uint32_t * usr_ptr;
 #endif
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
-	thread_id = thinkos_rt.irq_th[irq];
+	th = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 
 #if DEBUG
-	if (thread_id >= THINKOS_THREAD_IDLE) {
-		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", thread_id + 1, irq);
+	if (th >= THINKOS_THREAD_IDLE) {
+		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th + 1, irq);
 		return;
 	} else {
-		DCC_LOG2(LOG_TRACE, "<%d> IRQ %d..", thread_id + 1, irq);
+		DCC_LOG2(LOG_TRACE, "<%d> IRQ %d..", th + 1, irq);
 	}
 #endif
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
+	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 
 #if THINKOS_ENABLE_WQ_IRQ
 	/* remove from the wait queue */
-	__thinkos_wq_remove(THINKOS_WQ_IRQ, thread_id);  
+	__thinkos_wq_remove(THINKOS_WQ_IRQ, th);  
 #endif
 
 
 #if THINKOS_ENABLE_IRQ_CYCCNT
-	/* set cyle count in the storage provided by the thread */
-	usr_ptr = (uint32_t *)(thinkos_rt.irq_cyccnt[thread_id]);
-	*usr_ptr = cyccnt;
+	/* set the thread's return value */
+	thinkos_rt.ctx[th]->r1 = cyccnt;
 #endif
 
 	/* signal the scheduler ... */
@@ -111,28 +109,18 @@ void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 		arg[0] = THINKOS_OK;             /* return value */
 	}
 }
+
 void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-#if THINKOS_ENABLE_IRQ_CYCCNT
-	uint32_t * cyccnt_ptr;
-#endif
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
-		DCC_LOG2(LOG_ERROR, "invalid IRQ %d! irq_th=%d", irq, thinkos_rt.irq_th[53]);
 		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#endif
-
-#if THINKOS_ENABLE_IRQ_CYCCNT
-	/* The cycle count is returned on the location pointed by irq_cyccnt. Make
-	   sure it is a valid reference. */
-	cyccnt_ptr = (uint32_t *)&thinkos_rt.irq_cyccnt[self];
-	thinkos_rt.irq_cyccnt[self] = cyccnt_ptr;
 #endif
 
 	/* remove from ready Q */
@@ -140,6 +128,8 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 
 #if THINKOS_ENABLE_WQ_IRQ
 	__thinkos_tmdwq_insert(THINKOS_WQ_IRQ, self, ms);
+#else
+	__thinkos_wq_clock_insert(self, ms);
 #endif 
 
 	/* assign this thread to the interrupt */
@@ -159,9 +149,6 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
-#if THINKOS_ENABLE_IRQ_CYCCNT
-	uint32_t * cyccnt_ptr;
-#endif
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (irq >= THINKOS_IRQ_MAX) {
@@ -170,35 +157,6 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-
-#if THINKOS_ENABLE_IRQ_CYCCNT
-	/* The cycle counter is returned in the memorty pointed by
-	   R1. Chek if it's a valid memory area. */
-	if (NULL == (void *)arg[1]) {
-		/* If the user pointer is null then ignore the cycle count, but
-		   make sure irq_cyccnt is a valid reference. */
-		cyccnt_ptr = (uint32_t *)&thinkos_rt.irq_cyccnt[self];
-	} 
-#if THINKOS_ENABLE_MPU
-	/* There is a potential security brech as the pointer is written by 
-	   an priviledged interrupt handler. For this reason the whole kernel 
-	   memory space is checked.  */
-	else if ((arg[1] >= thinkos_mpu_kernel_mem.offs) && 
-		(arg[1] <= thinkos_mpu_kernel_mem.offs +
-		 thinkos_mpu_kernel_mem.size)) {
-		DCC_LOG(LOG_ERROR, "invalid pointer!");
-		__THINKOS_ERROR(THINKOS_ERR_INVALID_POINTER);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif /* THINKOS_ENABLE_MPU */
-	else {
-		cyccnt_ptr = (uint32_t *)arg[1];
-	}
-
-	thinkos_rt.irq_cyccnt[self] = cyccnt_ptr;
-#endif /* THINKOS_ENABLE_IRQ_CYCCNT */
-
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
 	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
@@ -258,7 +216,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 	
 	switch (req) {
 /* This macro is here for backword compatibility, TODO should be deprecated */
-#ifdef THINKOS_ENABLE_IRQ_CTL
+#if (THINKOS_ENABLE_IRQ_CTL)
 	case THINKOS_IRQ_ENABLE:
 		DCC_LOG1(LOG_TRACE, "enabling IRQ %d", irq);
 		/* clear pending interrupt */
