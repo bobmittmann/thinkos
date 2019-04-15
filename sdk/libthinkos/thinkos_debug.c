@@ -266,10 +266,7 @@ void thinkos_sched_dbg(struct thinkos_context * __ctx,
 	if ((__prev_thread_id > THINKOS_THREAD_VOID) || 
 		(__new_thread_id > THINKOS_THREAD_IDLE)) {
 		ERROR(__ctx, __new_thread_id, __prev_thread_id, __sp);
-		for(;;);
-	}
-
-	if (__new_thread_id == THINKOS_THREAD_IDLE) {
+	} else if (__new_thread_id == THINKOS_THREAD_IDLE) {
 		if (__prev_thread_id != THINKOS_THREAD_IDLE) {
 			_IDLE(__ctx, __new_thread_id, __prev_thread_id, __sp);
 		} else {

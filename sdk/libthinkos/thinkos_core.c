@@ -51,51 +51,63 @@ void thinkos_sched_dbg(struct thinkos_context * __ctx,
 
 void __tdump(void);
 
+
 #if (THINKOS_ENABLE_SCHED_ERROR)
-uint32_t thinkos_sched_error(struct thinkos_context * __ctx, 
-							 uint32_t __new_thread_id,
-							 uint32_t __prev_thread_id, 
-							 uint32_t __sp)
+/* This function is called by the scheduler in case of an error*/
+
+uint64_t thinkos_sched_error(struct thinkos_context * __ctx, 
+											 uint32_t __new_thread_id,
+											 uint32_t __prev_thread_id, 
+											 uint32_t __sp)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-	struct thinkos_context * ctx = &xcpt->ctx.core;
+	uint32_t thread_id;
+	uint32_t ptr;
 
 	DCC_LOG(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _BRIGHT_ _REVERSE_
-
 			" /!\\ scheduler error! " _ATTR_POP_);
-	
+
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
-	__context(__ctx, __new_thread_id); 
-	__thinkos(&thinkos_rt);
-	__tdump();
+//	__context(__ctx, __new_thread_id); 
+//	__thinkos(&thinkos_rt);
+//	__tdump();
 #endif
 	if (__new_thread_id == THINKOS_THREAD_IDLE) {
+		__thinkos_idle_reset(thinkos_idle_task, NULL);
+		DCC_LOG2(LOG_ERROR, "IDLE: %d -> %d", __prev_thread_id, __new_thread_id);
+	} else {
+		struct thinkos_except * xcpt = __thinkos_except_buf();
+//		struct thinkos_context * ctx = &xcpt->ctx.core;
 
- 		return __thinkos_idle_reset(thinkos_idle_task, NULL);
+		xcpt->ipsr = CM3_EXCEPT_PENDSV;
+		xcpt->active = __new_thread_id;
+		xcpt->type = THINKOS_ERR_INVALID_STACK;
+		/* copy the thread exception context to the exception buffer. */
+	//	__thinkos_memcpy32(ctx, __ctx, sizeof(struct thinkos_context)); 
+
+#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
+		//#if (THINKOS_ENABLE_IDLE_HOOKS)
+		/* defer exception handler */
+		__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
+#else
+		/* call exception handler directly */
+		thinkos_exception_dsr(xcpt);
+#endif
+
+		/* suspend all threads */
+		__thinkos_pause_all();
+		/* force clearing the ready queue */
+		__thinkos_ready_clr();
+	
 	}
 
-	thinkos_rt.break_id = __new_thread_id;
-	/* clear IPSR to indicate a thread error */
-	thinkos_rt.xcpt_ipsr = 0;
-	xcpt->active = __prev_thread_id;
-	xcpt->type = THINKOS_ERR_INVALID_STACK;
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-	/* flag the thread as faulty */
-	__thinkos_thread_fault_set(__new_thread_id);
-#endif
-	/* copy the thread exception context to the exception buffer. */
-	__thinkos_memcpy32(ctx, __ctx, sizeof(struct thinkos_context)); 
-
-	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
-
-	/* set the active thread to idle */
-	thinkos_rt.active = THINKOS_THREAD_IDLE;
 	/* get the IDLE context */
-	ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-	
- 	return (uint32_t)ctx;
+	ptr = (uint32_t)thinkos_rt.ctx[THINKOS_THREAD_IDLE];
+	thread_id = THINKOS_THREAD_IDLE;
+
+ 	return ((uint64_t)thread_id << 32) | ptr;
 }
+
 #endif
 
 
@@ -268,5 +280,4 @@ void __thinkos_kill_all(void)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
-
 

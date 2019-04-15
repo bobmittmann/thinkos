@@ -389,9 +389,9 @@ int dbgmon_thread_break_get(uint32_t * addr)
 	int thread_id;
 
 	if ((thread_id = thinkos_rt.break_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
-			return -1;
-		*addr = ctx->pc;
+		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL) {
+			*addr = ctx->pc;
+		}
 	}
 
 	return thread_id;
@@ -1157,17 +1157,23 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 #if THINKOS_ENABLE_DEBUG_BKPT
 	thinkos_rt.xcpt_ipsr = ipsr;
 #endif
-	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
+	if (xcpt->ipsr == CM3_EXCEPT_PENDSV) {
+		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+				 " /!\\ PENDSV? Kernel error %d /!\\ "  _ATTR_POP_, 
+				 xcpt->active + 1);
+
+		/* record the break thread id */
+		thinkos_rt.break_id = xcpt->active;
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+		/* flag the thread as faulty */
+		__thinkos_thread_fault_set(xcpt->active);
+#endif
+		dbgmon_signal(DBGMON_KRN_EXCEPT);
+
+	} else if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
 				 " /!\\ Fault at thread %d /!\\ "  _ATTR_POP_, 
 				 xcpt->active + 1);
-
-#if 0
-		/* suspend the active thread */
-		__thinkos_thread_pause(xcpt->active);
-
-		/* The exception handling return will pause all threads */
-#endif
 
 		/* record the break thread id */
 		thinkos_rt.break_id = xcpt->active;

@@ -295,7 +295,7 @@ static void monitor_thread_exec(int (* task)(void *), void * arg)
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct dbgmon_comm * comm)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 
 	if (xcpt->type == 0) {
 		dbgmon_printf(comm, "No fault!");
@@ -319,7 +319,7 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 	if (dbgmon_comm_isconnected(comm)) {
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dbgmon_printf(comm, s_hr);
-		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x\n", 
+		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x\r\n", 
 						  thread_id + 1, addr);
 		dmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
@@ -330,17 +330,33 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 
 static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 {
+	int thread_id;
+	uint32_t addr;
+
+
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
+	thread_id = dbgmon_thread_break_get(&addr);
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
 	if (dbgmon_comm_isconnected(comm)) {
+		struct thinkos_except * xcpt = __thinkos_except_buf();
+
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dbgmon_printf(comm, s_hr);
-		dbgmon_printf(comm, "KERNEL error !!!");
+	
+		if (xcpt->type == THINKOS_ERR_INVALID_STACK) {
+			dbgmon_printf(comm, "# Kernel error, possible stack overflow !!!\r\n");
+			dbgmon_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
+		} else {
+			dbgmon_printf(comm, "Exception!!!\r\n");
+		}
+
+		dmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
 	}
+
 
 	DCC_LOG(LOG_TRACE, "done.");
 }

@@ -170,7 +170,7 @@ thinkos_sched_step_req_check:
 #endif
 
 .L_save_active_and_restore:
-	/* r0: thread stack
+	/* r0: new thread stack
 	   r1: new active thread
 	   r3: thinkos_rt */
 	str     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
@@ -221,10 +221,12 @@ thinkos_sched_context_restore:
 #if (THINKOS_ENABLE_SCHED_ERROR) && \
 	((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP))
 thinkos_sched_on_error:
-	/* Disable interrupts */
+	push    {r2, r3}
+	subs    r3, sp, #8
 	sub     r0, r0, #((CTX_R0) * 4)
-	mov     r3, sp
 	bl      thinkos_sched_error
+	pop     {r2, r3}
+	b .
 	b       .L_save_active_and_restore
 #endif
 

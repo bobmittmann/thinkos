@@ -51,7 +51,6 @@
 
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 
-
 void __attribute__((noreturn))
 thinkos_sched_context_restore(struct thinkos_context * __ctx, 
 							  uint32_t __new_thread_id,
@@ -107,9 +106,6 @@ __xcpt_return(struct thinkos_except * xcpt)
 		DCC_LOG(LOG_WARNING, "fault on exception!");
 	}
 
-	/* suspend all threads */
-	__thinkos_pause_all();
-
 #if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
 //#if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* defer exception handler */
@@ -118,6 +114,9 @@ __xcpt_return(struct thinkos_except * xcpt)
 	/* call exception handler directly */
 	thinkos_exception_dsr(xcpt);
 #endif
+
+	/* suspend all threads */
+	__thinkos_pause_all();
 
 	/* force clearing the ready queue */
 	__thinkos_ready_clr();
