@@ -433,9 +433,6 @@ struct usb_cdc_acm_dev {
 
 	uint32_t ctl_buf[CDC_CTL_BUF_LEN / 4];
 
-	volatile uint32_t tx_seq; 
-	volatile uint32_t tx_ack; 
-
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
@@ -528,7 +525,6 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 
 static void usb_mon_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
-//	struct usb_cdc_acm_dev * dev = &cl->dev;
 	dbgmon_signal(DBGMON_COMM_EOT);
 	DCC_LOG(LOG_MSG, "COMM_EOT");
 }
@@ -807,16 +803,15 @@ static const usb_dev_ep_info_t usb_mon_ep0_info = {
 static void usb_mon_on_reset(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	DCC_LOG(LOG_MSG, "...");
-	dev->tx_seq = 0;
-	dev->tx_ack = 0;
-	dev->rx_seq = 0;
-	dev->rx_ack = 0;
+	DCC_LOG(LOG_WARNING, "...");
 	/* reset control lines */
 	dev->acm_ctrl = 0;
 	/* initializes EP0 */
 	dev->ctl_ep = usb_dev_ep_init(dev->usb, &usb_mon_ep0_info, 
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
+	/* wakeup xmit */
+	dbgmon_signal(DBGMON_COMM_EOT);
+	dbgmon_signal(DBGMON_COMM_CTL);
 }
 
 static void usb_mon_on_suspend(usb_class_t * cl)
@@ -833,6 +828,7 @@ static void usb_mon_on_wakeup(usb_class_t * cl)
 
 static void usb_mon_on_error(usb_class_t * cl, int code)
 {
+	DCC_LOG(LOG_TRACE, "...");
 }
 
 static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
@@ -840,25 +836,23 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	uint8_t * ptr = (uint8_t *)buf;
 	unsigned int rem;
-	uint32_t seq;
 	int ret;
 	int n;
 
-	if (dev->acm_ctrl == 0) {
-//		DCC_LOG(LOG_MSG, "not connected!");
-//		dev->tx_seq = 0;
-//		dev->tx_ack = 0;
-//		dev->rx_seq = 0;
-//		dev->rx_ack = 0;
-		/* not connected, discard!! */
-		return len;
-	}
+	DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG "entry len=%d" VT_POP, len);
 
 	rem = len;
-	seq = dev->tx_seq;
 	while (rem) {
+
+		if (dev->acm_ctrl == 0) {
+//			DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV "not connected!=%d" VT_POP);
+			/* not connected, discard!! */
+			rem = 0;
+			break;
+		}
+
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
-		DCC_LOG2(LOG_MSG, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
+		DCC_LOG2(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
 		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
@@ -866,7 +860,6 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 #else
 			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed");
 #endif
-			dev->tx_seq = seq;
 			return n;
 		} else if (n > 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
@@ -875,10 +868,8 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 #endif
 			rem -= n;
 			ptr += n;
-			seq += n;
 		}  else {
-			dev->tx_seq = seq;
-			DCC_LOG(LOG_MSG, "dbgmon_expect(DBGMON_COMM_EOT)!");
+			DCC_LOG(LOG_TRACE, "dbgmon_expect(DBGMON_COMM_EOT)!");
 			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
 				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 				return ret;
@@ -886,8 +877,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 	}
 
-	dev->tx_seq = seq;
-	DCC_LOG1(LOG_MSG, "return=%d.", len - rem);
+	DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG VT_REV "return=%d" VT_POP, len - rem);
 
 	return len - rem;
 }
@@ -1043,8 +1033,6 @@ const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb)
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)usb;
-	dev->tx_seq = 0; 
-	dev->tx_ack = 0; 
 	dev->rx_seq = 0;
 	dev->rx_ack = 0;
 	dev->rx_paused = false;
