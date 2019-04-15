@@ -347,7 +347,8 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 		dbgmon_printf(comm, s_hr);
 	
 		if (xcpt->type == THINKOS_ERR_INVALID_STACK) {
-			dbgmon_printf(comm, "# Kernel error, possible stack overflow !!!\r\n");
+			dbgmon_printf(comm, 
+						  "# Kernel error, possible stack overflow !!!\r\n");
 			dbgmon_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
 		} else {
 			dbgmon_printf(comm, "Exception!!!\r\n");

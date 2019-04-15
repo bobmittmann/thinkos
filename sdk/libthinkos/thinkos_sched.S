@@ -226,7 +226,6 @@ thinkos_sched_on_error:
 	sub     r0, r0, #((CTX_R0) * 4)
 	bl      thinkos_sched_error
 	pop     {r2, r3}
-	b .
 	b       .L_save_active_and_restore
 #endif
 
