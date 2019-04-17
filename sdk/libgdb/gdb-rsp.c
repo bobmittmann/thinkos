@@ -1695,6 +1695,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 #if (THINKOS_ENABLE_CONSOLE)
 		case DBGMON_COMM_EOT:
 			DCC_LOG(LOG_MSG, "COMM_EOT");
+			/* FALLTHROUGH */
 
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");

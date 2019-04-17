@@ -65,6 +65,7 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 
 		case DBGMON_COMM_EOT:
 			DCC_LOG(LOG_TRACE, "COMM_EOT");
+			/* FALLTHROUGH */
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", __console_tx_pipe_ptr(&ptr));
