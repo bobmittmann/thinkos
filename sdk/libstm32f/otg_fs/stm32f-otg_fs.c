@@ -40,7 +40,7 @@ void stm32f_otg_fs_txfifo_flush(struct stm32f_otg_fs * otg_fs,
 	do {
 	} while (otg_fs->grstctl & OTG_FS_TXFFLSH);
 	/* Wait for 3 PHY Clocks ?? */
-//	udelay(3);
+	udelay(3);
 }
 
 void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
@@ -49,7 +49,7 @@ void stm32f_otg_fs_rxfifo_flush(struct stm32f_otg_fs * otg_fs)
 	do {
 	} while (otg_fs->grstctl & OTG_FS_RXFFLSH);
 	/* Wait for 3 PHY Clocks ?? */
-//	udelay(3);
+	udelay(3);
 }
 
 void stm32f_otg_fs_addr_set(struct stm32f_otg_fs * otg_fs, unsigned int addr)

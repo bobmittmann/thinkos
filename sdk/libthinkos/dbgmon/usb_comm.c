@@ -395,6 +395,8 @@ const struct usb_descriptor_string serial_num_str = {
 
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
 	&language_english_us,
+//	&stmicroelectronics_str,
+//	&debug_monitor_str,
 	&stmicro_str,
 	&thinkos_str,
 	&serial_num_str,
@@ -436,7 +438,7 @@ struct usb_cdc_acm_dev {
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
-	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
+	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE + 1];
 
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 	struct {
