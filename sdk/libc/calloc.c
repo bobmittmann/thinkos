@@ -49,12 +49,19 @@ void * calloc(size_t __nmemb, size_t __size)
 		}
 		switch (mctmp) {
 		case 0: for(;;) { *zp++ = z;
+			/* FALLTHROUGH */
 		case 7:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 6:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 5:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 4:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 3:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 2:           *zp++ = z;
+			/* FALLTHROUGH */
 		case 1:           *zp++ = z; 
 						  if(mcn <= 0) 
 							  break; 

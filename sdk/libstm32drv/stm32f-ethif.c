@@ -297,12 +297,15 @@ int stm32f_ethif_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 		DBGS("IP payload error!");
 		goto error;
 	}
-	if (ext_st.ipcb)
+	if (ext_st.ipcb) {
 		DCC_LOG(LOG_INFO, "IP checksum bypass.");
-	if (ext_st.ipv4pr)
+	}
+	if (ext_st.ipv4pr) {
 		DCC_LOG(LOG_INFO, "IPv4 packet received.");
-	if (ext_st.ipv6pr)
+	}
+	if (ext_st.ipv6pr) {
 		DCC_LOG(LOG_INFO, "IPv6 packet received.");
+	}
 
 	/* get the current buffer */
 	hdr = (struct eth_hdr *)rxdesc->rbap1;
@@ -352,7 +355,7 @@ const char stm32f_ethif_desc[] = "STM32F-Ethernet";
 
 int stm32f_ethif_getdesc(struct ifnet * __if, char * __s, int __len)
 {
-	int n = MIN(__len, sizeof(stm32f_ethif_desc));
+	int n = MIN(__len, (int)sizeof(stm32f_ethif_desc));
 	memcpy(__s, stm32f_ethif_desc, n);
 	__s[n - 1] = '\0';
 	return n;
