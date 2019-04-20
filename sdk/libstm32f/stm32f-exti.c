@@ -41,9 +41,6 @@ void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin,
 	/* Select exti */
 	syscfg->exticr[pin >> 2] = port << ((pin & 0x3) * 4);
 
-	/* Unmask interrupt */
-	exti->imr |= (1 << pin);
-
 	if (opt & EXTI_EDGE_RISING)
 		/* Select rising edge trigger */
 		exti->rtsr |= (1 << pin);
@@ -53,8 +50,11 @@ void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin,
 
 	/* Clear pending flag */
 	exti->pr = (1 << pin);
-}
 
+	/* Unmask interrupt */
+	exti->imr |= (1 << pin);
+
+}
 
 #endif
 

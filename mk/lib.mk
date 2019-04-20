@@ -55,11 +55,16 @@ endif
 #------------------------------------------------------------------------------ 
 # object files
 #------------------------------------------------------------------------------ 
-OFILES = $(addprefix $(OUTDIR)/,\
+#OFILES = $(addprefix $(OUTDIR)/,\
 		   $(CFILES_GEN:.c=.o) \
 		   $(SFILES_GEN:.S=.o) \
 		   $(CFILES:.c=.o) \
 		   $(SFILES:.S=.o))
+
+OFILES = $(addprefix $(OUTDIR)/,\
+		   $(notdir $(CFILES_GEN:.c=.o) $(SFILES_GEN:.S=.o))\
+		   $(subst ../,,$(CFILES:.c=.o))\
+		   $(subst ../,,$(SFILES:.S=.o)))
 
 #ifeq (Windows,$(HOST))
 #  ODIRS = $(subst /,\,$(sort $(dir $(OFILES))))
@@ -194,6 +199,7 @@ $(call trace3,LIB_INCLUDE = '$(LIB_INCLUDE)')
 $(call trace3,LIB_INC = '$(LIB_INC)')
 $(call trace3,CLEAN_ODIRS = '$(CLEAN_ODIRS)')
 $(call trace3,VERSION_H = '$(VERSION_H)')
+$(call trace3,CFILES_OUT = '$(CFILES_OUT)')
 #$(info OS = '$(OS)')
 #$(info HOST = '$(HOST)')
 #$(info DIRMODE = '$(DIRMODE)')
@@ -210,7 +216,6 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info SET = '$(shell set)')
 #$(info LIB_STATIC = '$(LIB_STATIC)')
 #$(info LIB_STATIC_OUT = '$(LIB_STATIC_OUT)')
-#$(info CFILES_OUT = '$(CFILES_OUT)')
 #$(info HFILES_OUT = '$(HFILES_OUT)')
 #$(info MSYSTEM = '$(MSYSTEM)')
 #$(info MSYSCON = '$(MSYSCON)')

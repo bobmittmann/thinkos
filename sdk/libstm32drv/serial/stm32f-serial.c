@@ -212,10 +212,10 @@ int stm32f_serial_recv(struct stm32f_serial_drv * drv, void * buf,
 {
 	uint8_t * cp = (uint8_t *)buf;
 	uint32_t tail;
+	unsigned int cnt;
+	unsigned int n;
+	unsigned int i;
 	int ret;
-	int cnt;
-	int n;
-	int i;
 
 	DCC_LOG2(LOG_INFO, "1. len=%d tmo=%d", len, tmo);
 

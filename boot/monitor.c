@@ -1094,6 +1094,7 @@ is_connected:
 
 		case DBGMON_COMM_EOT:
 			DCC_LOG(LOG_TRACE, "COMM_EOT");
+			/* FALLTHROUGH */
 		case DBGMON_TX_PIPE:
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				if (connected) {

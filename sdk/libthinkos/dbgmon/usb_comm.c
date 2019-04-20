@@ -52,7 +52,7 @@
 #endif
 
 #define EP0_ADDR 0
-#define EP0_MAX_PKT_SIZE 32
+#define EP0_MAX_PKT_SIZE 64
 
 #define EP_OUT0_ADDR 1
 #define EP_IN0_ADDR  2
@@ -232,7 +232,7 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
 		.attributes = ENDPOINT_TYPE_INTERRUPT,
 		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-		.interval = 100
+		.interval = 200
 	},
 	/* Data Class Interface Descriptor Requirement */
 	.if_data0 = {
@@ -395,6 +395,8 @@ const struct usb_descriptor_string serial_num_str = {
 
 static const struct usb_descriptor_string * const cdc_acm_str[] = {
 	&language_english_us,
+//	&stmicroelectronics_str,
+//	&debug_monitor_str,
 	&stmicro_str,
 	&thinkos_str,
 	&serial_num_str,
@@ -503,7 +505,6 @@ static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 		}
 
 		dev->rx_seq = seq;
-		//	usb_dev_ep_ctl(dev->usb, ep_id, USB_EP_RECV_OK);
 	} else {
 		cnt = 0;
 	}
@@ -628,7 +629,6 @@ static int usb_mon_on_setup(usb_class_t * cl,
 			dev[0].in_ep = usb_dev_ep_init(usb, &usb_mon_in_info, NULL, 0);
 			dev[0].out_ep = usb_dev_ep_init(usb, &usb_mon_out_info, NULL, 0);
 			dev[0].int_ep = usb_dev_ep_init(usb, &usb_mon_int_info, NULL, 0);
-			//usb_dev_ep_ctl(usb, dev->out_ep, USB_EP_RECV_OK);
 			dev->configured = 1;
 		} else {
 			DCC_LOG(LOG_TRACE, "[UNCONFIGURED]");
