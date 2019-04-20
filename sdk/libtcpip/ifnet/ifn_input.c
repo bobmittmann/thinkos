@@ -99,7 +99,7 @@ void __attribute__((noreturn)) ifnet_input_task(void * arg)
 				ifn_pkt_free(ifn, pkt);
 			} else {
 				__ifnet__.stats.err++;
-				WARN("IFNET: not releasing packet: %d", pkt);
+				WARN("IFNET: not releasing packet: %p", pkt);
 			}
 		}
 	}

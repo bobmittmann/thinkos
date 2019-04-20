@@ -120,17 +120,21 @@ EXTERN(stm32f_dcmi_isr)
 EXTERN(stm32f_cryp_isr)
 EXTERN(stm32f_hash_rng_isr)
 
+ENTRY(_reset)
+/* STARTUP(crt0.o) */
+
 SECTIONS
 {
+
 	. = 0;
 
-	.dcclog :
+	.dcclog (NOLOAD):
 	{
 		. = ALIGN(4);
 		KEEP(*(.dcclog))
 	} >dcclog
 
-	.dccdata :
+	.dccdata (NOLOAD):
 	{
 		. = ALIGN(4);
 		KEEP(*(.rodata.__FUNCTION__*))

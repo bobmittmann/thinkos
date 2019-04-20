@@ -101,133 +101,133 @@ enum {
 #define DCC_LOG_CONNECT() ice_comm_connect()
 
 #define DCC_LOG(__LVL, __MSG) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace0( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace0( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__MSG);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; })); }} while (0)
 
 #define DCC_LOG1(__LVL, __FMT, __A) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace1( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace1( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A)); }} while (0)
 
 #define DCC_LOG2(__LVL, __FMT, __A, __B) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace2( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace2( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), \
 	(int)(__B)); }} while (0)
 
 #define DCC_LOG3(__LVL, __FMT, __A, __B, __C) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace3( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace3( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), \
 		(int)(__B), (int)(__C)); }} while (0)
 
 #define DCC_LOG4(__LVL, __FMT, __A, __B, __C, __D) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace4( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace4( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D)); }} while (0)
 
 #define DCC_LOG5(__LVL, __FMT, __A, __B, __C, __D, __E) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace5( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace5( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E)); }} while (0)
 
 #define DCC_LOG6(__LVL, __FMT, __A, __B, __C, __D, __E, __F) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace6( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace6( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F)); }} while (0)
 
 #define DCC_LOG7(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace7( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace7( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G)); \
 	}} while (0)
 
 #define DCC_LOG8(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace8( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace8( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G), \
 		(int)(__H)); }} while (0)
 
 #define DCC_LOG9(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace9( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace9( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G), \
 		(int)(__H), (int)(__I)); }} while (0)
 
 #define DCC_LOG10(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, \
 				  __I, __J) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_trace10( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace10( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G), \
 		(int)(__H), (int)(__I), (int)(__J)); }} while (0)
 
 #define DCC_LOGSTR(__LVL, __FMT, __STR) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_tracestr( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_tracestr( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog")))\
-	log_entry = { _f, __LINE__, __LVL, LOG_OPT_STR, __FUNCTION__, _m };\
+	log_entry = { _f, __LINE__, __LVL, LOG_OPT_STR, __func__, _m };\
 	(struct dcc_trace_entry *)&log_entry; }), (const char *)(__STR));\
 	}} while (0)
 
 #define DCC_ASSERT_FAIL(__EXPR) { \
 	extern void __attribute((noreturn)) _halt(void); \
-	ice_trace1( ({ \
+	ice_trace1( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = \
 													 "Assertion failed: '%s'";\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, LOG_PANIC, 0, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, LOG_PANIC, 0, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (int)(__EXPR)); \
 	_halt(); }
 
 #define DCC_XXD(__LVL, __STR, __PTR, __LEN) \
-	do { if (__LVL <= LOG_LEVEL)  { ice_tracebin( ({ \
+	do { if (__LVL <= LOG_LEVEL)  { ice_tracebin( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
 	static const char _m[] __attribute__ ((section(".dccdata"))) = (__STR);\
 	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
-	log_entry = { _f, __LINE__, __LVL, LOG_OPT_XXD, __FUNCTION__, _m }; \
+	log_entry = { _f, __LINE__, __LVL, LOG_OPT_XXD, __func__, _m }; \
 	(struct dcc_trace_entry *)&log_entry; }), (__PTR), (__LEN)); }} while (0)
 
 #define __STRING(x)	#x

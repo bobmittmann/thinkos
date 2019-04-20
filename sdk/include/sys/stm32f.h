@@ -78,6 +78,22 @@
 #include <arch/cortex-m3.h>
 
 /*---------------------------------------------------------------------
+ * Clocks
+ *---------------------------------------------------------------------*/
+extern const uint32_t stm32f_ahb_hz;
+extern const uint32_t stm32f_apb1_hz;
+extern const uint32_t stm32f_tim1_hz;
+extern const uint32_t stm32f_apb2_hz;
+extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_hse_hz;
+extern const uint32_t stm32f_hsi_hz;
+extern const uint32_t stm32f_vco_hz;
+extern const uint32_t stm32f_sai_hz;
+extern const uint32_t stm32f_vcosai_hz;
+extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vcoi2s_hz;
+
+/*---------------------------------------------------------------------
  * USB Device
  *---------------------------------------------------------------------*/
 #include <sys/usb-dev.h>
@@ -184,6 +200,7 @@ void stm32f_fsmc_speed(int div);
  *---------------------------------------------------------------------*/
 
 #define EXTI_EDGE_RISING 1
+#define EXTI_EDGE_FALLING 0
 
 void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt);

@@ -23,9 +23,9 @@
 #include "usart-priv.h"
 
 const struct fileop stm32_usart_fops = {
-	.write = (void *)stm32_usart_canon_write,
-	.read = (void *)stm32_usart_read,
-	.flush = (void *)stm32_usart_flush,
-	.close = (void *)stm32_usart_power_off
+	.write = (int (*)(void *, const void *, size_t))stm32_usart_canon_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))stm32_usart_read,
+	.flush = (int (*)(void *))stm32_usart_flush,
+	.close = (int (*)(void *))stm32_usart_power_off
 };
 

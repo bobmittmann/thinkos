@@ -23,56 +23,63 @@
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 const struct {
-	uint8_t wq[0]; /* placeholder */
-	uint8_t wq_ready; /* ready threads queue */
+	union {
+		uint8_t wq[THINKOS_WQ_CNT]; /* placeholder */
+		struct {	
+			uint8_t wq_ready; /* ready threads queue */
 #if THINKOS_ENABLE_TIMESHARE
-	uint8_t wq_tmshare; /* Threads waiting for time share cycle */
+			uint8_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 #if THINKOS_ENABLE_CLOCK
-	uint8_t wq_clock;
+			uint8_t wq_clock;
 #endif
 #if THINKOS_MUTEX_MAX > 0
-	uint8_t wq_mutex[THINKOS_MUTEX_MAX];
+			uint8_t wq_mutex[THINKOS_MUTEX_MAX];
 #endif
 #if THINKOS_COND_MAX > 0
-	uint8_t wq_cond[THINKOS_COND_MAX];
+			uint8_t wq_cond[THINKOS_COND_MAX];
 #endif
 #if THINKOS_SEMAPHORE_MAX > 0
-	uint8_t wq_sem[THINKOS_SEMAPHORE_MAX];
+			uint8_t wq_sem[THINKOS_SEMAPHORE_MAX];
 #endif
 #if THINKOS_EVENT_MAX > 0
-	uint8_t wq_event[THINKOS_EVENT_MAX];
+			uint8_t wq_event[THINKOS_EVENT_MAX];
 #endif
 #if THINKOS_FLAG_MAX > 0
-	uint8_t wq_flag[THINKOS_FLAG_MAX];
+			uint8_t wq_flag[THINKOS_FLAG_MAX];
 #endif
 #if THINKOS_GATE_MAX > 0
-	uint8_t wq_gate[THINKOS_GATE_MAX];
+			uint8_t wq_gate[THINKOS_GATE_MAX];
 #endif
 #if THINKOS_ENABLE_JOIN
-	uint8_t wq_join[THINKOS_THREADS_MAX];
+			uint8_t wq_join[THINKOS_THREADS_MAX];
 #endif
 #if THINKOS_ENABLE_CONSOLE
-	uint8_t wq_console_wr;
-	uint8_t wq_console_rd;
+			uint8_t wq_console_wr;
+			uint8_t wq_console_rd;
 #endif
 #if THINKOS_ENABLE_PAUSE
-	uint8_t wq_paused;
+			uint8_t wq_paused;
 #endif
 #if THINKOS_ENABLE_JOIN
-	uint8_t wq_canceled; /* canceled threads wait queue */
+			uint8_t wq_canceled; /* canceled threads wait queue */
 #endif
 #if THINKOS_ENABLE_COMM
-	uint8_t wq_comm_send;
-	uint8_t wq_comm_recv;
+			uint8_t wq_comm_send;
+			uint8_t wq_comm_recv;
 #endif
 #if THINKOS_IRQ_MAX > 0
-	uint8_t wq_irq;
+			uint8_t wq_irq;
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
-	uint8_t wq_fault;
+			uint8_t wq_fault;
 #endif
+		};
+	};
 } thinkos_obj_type_lut = {
 	.wq_ready = THINKOS_OBJ_READY,
 #if THINKOS_ENABLE_TIMESHARE
@@ -122,8 +129,9 @@ const struct {
 #if THINKOS_ENABLE_DEBUG_FAULT
 	.wq_fault = THINKOS_OBJ_FAULT
 #endif
-
 };
+
+#pragma GCC diagnostic pop
 
 uint32_t * const thinkos_obj_alloc_lut[] = {
 	[THINKOS_OBJ_READY] = NULL,
@@ -180,7 +188,7 @@ uint32_t * const thinkos_obj_alloc_lut[] = {
 #if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ] = NULL,
 #endif
-#if THINKOS_ENABLE_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = NULL,
 #endif
 	[THINKOS_OBJ_INVALID] = NULL
@@ -229,10 +237,10 @@ const uint16_t thinkos_wq_base_lut[] = {
 	[THINKOS_OBJ_COMMSEND] = THINKOS_WQ_COMM_SEND,
 	[THINKOS_OBJ_COMMRECV] = THINKOS_WQ_COMM_RECV,
 #endif
-#if THINKOS_IRQ_MAX > 0
+#if THINKOS_ENABLE_WQ_IRQ
 	[THINKOS_OBJ_IRQ] = THINKOS_WQ_IRQ,
 #endif
-#if THINKOS_ENABLE_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = THINKOS_WQ_FAULT,
 #endif
 	[THINKOS_OBJ_INVALID] = 0 

@@ -29,10 +29,32 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
+
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
+
+#define __THINKOS_IRQ__
+#include <thinkos/irq.h>
+
+#include <thinkos.h>
+
+/*
+#ifndef __THINKOS_CONFIG_H__
+#error "Need <thinkos/config.h>"
+#endif 
+
+#ifndef __THINKOS_KERNEL_H__
+#error "Need <thinkos/kernel.h>"
+#endif 
+
+#ifndef __THINKOS_EXCEPT_H__
+#error "Need <thinkos/except.h>"
+#endif 
+
+#ifndef __THINKOS_IRQ_H__
+#error "Need <thinkos/irq.h>"
+#endif 
+*/
 
 #ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
   #ifdef CM3_RAM_VECTORS
@@ -42,84 +64,135 @@
   #endif
 #endif
 
+#ifndef THINKOS_DBGMON_STACK_SIZE
+#define THINKOS_DBGMON_STACK_SIZE (960 + 16)
+#endif
+
+#ifndef THINKOS_DBGMON_ENABLE_RST_VEC
+#define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
+#endif
+
 #include <sys/usb-dev.h>
 
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor events
+ * ----------------------------------------------------------------------------
+ */
+
 enum dbgmon_event {
-	DBGMON_COMM_RCV     = 0,
-	DBGMON_COMM_EOT     = 1,
-	DBGMON_COMM_CTL     = 2,
-
-	DBGMON_RX_PIPE      = 3,
-	DBGMON_TX_PIPE      = 4,
-	/* Timer expiry indication */
-	DBGMON_ALARM        = 5,
-
-	DBGMON_EXCEPT       = 8,
-	DBGMON_THREAD_STEP  = 9,
-	DBGMON_THREAD_FAULT = 10,
-	DBGMON_BREAKPOINT   = 11,
-	DBGMON_IRQ_STEP     = 12,
-
-	/* Board reset request */
-	DBGMON_SOFTRST      = 23,
-	/* ThinkOS application stop request */
-	DBGMON_APP_STOP     = 24,
-	/* ThinkOS application erase request */
-	DBGMON_APP_ERASE    = 25,
-	/* ThinkOS application upload request */
-	DBGMON_APP_UPLOAD   = 26,
-	/* ThinkOS application exec request */
-	DBGMON_APP_EXEC     = 27,
-
-	/* ThinkOS idle indication: response from DBGMON_IDLE_REQ.
-	   ! This flag position must be lower than the DBGMON_IDLE_REQ. !
-	 */
-	DBGMON_OS_IDLE      = 28,
-	/* Request the IDLE thread to notify when it is running.
-	   The IDLE thread should respond by setting the 
-	   DBGMON_OS_IDLE flag. This mechanism is used to flush
-	   the current running thread state. */
-	DBGMON_IDLE_REQ     = 29,
-	/* ThinkOS startup indication */
-	DBGMON_STARTUP      = 30,
 	/* Debug monitor internal reset */
-	DBGMON_RESET        = 31
-};
+	DBGMON_RESET           = 0,
+	/* ThinkOS power on startup indication */
+	DBGMON_STARTUP         = 1,
+	/* ThinkOS idle indication */
+	DBGMON_IDLE            = 2,
+	/* Board reset request */
+	DBGMON_SOFTRST         = 3,
+	/* ThinkOS kernel exception */
+	DBGMON_KRN_EXCEPT      = 4,
+	/* Debug timer expiry indication */
+	DBGMON_ALARM           = 5,
+	/* ThinkOS Thread step break */
+	DBGMON_THREAD_STEP     = 6,
+	/* ThinkOS Thread fault break */
+	DBGMON_THREAD_FAULT    = 7,
+	/* ThinkOS Thread create */
+	DBGMON_THREAD_CREATE   = 8,
+	/* ThinkOS Thread teminate */
+	DBGMON_THREAD_TERMINATE = 9,
+	/* ThinkOS Thread breakpoint */
+	DBGMON_BREAKPOINT      = 10,
+	/* Debug Communication data received pending */
+	DBGMON_COMM_RCV        = 11, 
+	/* Debug Communication end of transfer */
+	DBGMON_COMM_EOT        = 12,
+	/* Debug Communication control signal */
+	DBGMON_COMM_CTL        = 13,
+	/* User console RX pipe data pending */
+	DBGMON_RX_PIPE         = 14,
+	/* User console TX pipe not empty */
+	DBGMON_TX_PIPE         = 15,
 
-struct dmon_comm;
+	/* ThinkOS application stop request */
+	DBGMON_APP_STOP        = 18,
+	/* ThinkOS application resume request */
+	DBGMON_APP_RESUME      = 19,
+	/* ThinkOS application terminate request */
+	DBGMON_APP_TERM        = 20,
+	/* ThinkOS application erase request */
+	DBGMON_APP_ERASE       = 21,
+	/* ThinkOS application 2pload request */
+	DBGMON_APP_UPLOAD      = 22,
+	/* ThinkOS application exec request */
+	DBGMON_APP_EXEC        = 23,
+	/* User/bootloader extension events 0 to 7 */
+	DBGMON_USER_EVENT0     = 24,
+	DBGMON_USER_EVENT1     = 25,
+	DBGMON_USER_EVENT2     = 26,
+	DBGMON_USER_EVENT3     = 27,
+	DBGMON_USER_EVENT4     = 28,
+	DBGMON_USER_EVENT5     = 29,
+	DBGMON_USER_EVENT6     = 30,
+	DBGMON_USER_EVENT7     = 31,
+	/*  */
+	DBGMON_NONE            = 32
+};
 
 #define SIG_SET(SIGSET, SIG) SIGSET |= (1 << (SIG))
 #define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
 
-/* File identification magic block 
+/* Memory block descriptor */
+struct blk_desc {
+	char tag[8];
+	uint32_t ref;
+	uint8_t  opt;
+	uint8_t  siz;
+	uint16_t cnt;
+};
 
-   This block is used to guess the type of a memory block or file
-   based on a pattarn located somewhere inside the file.
- 
+/* Memory region/type descriptor */
+struct mem_desc {
+	char tag[8];
+	uint8_t cnt; /* number of entries in the block list */
+	struct blk_desc blk[]; /* sorted block list */
+};
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor communication interface
+ * ----------------------------------------------------------------------------
  */
-struct magic_blk {
-	struct {
-		uint16_t pos; /* Position of the pattern in bytes */
-		uint16_t cnt; /* Number of record entries */
-	} hdr;
-	/* Pattern records */
-	struct {
-	    uint32_t mask; /* Bitmask */
-		uint32_t comp; /* Compare value */
-	} rec[];
+
+struct dbgmon_comm_op {
+	int (*send)(const void * dev, const void * buf, unsigned int len);
+	int (*recv)(const void * dev, void * buf, unsigned int len);
+	int (* connect)(const void * dev);
+	bool (* isconnected)(const void * dev);
 };
 
-/* application block descriptor */
-struct dbgmon_app_desc {
-	uint32_t start_addr; /* Application memory block start address */
-	uint32_t block_size; /* Size of the memory block in bytes */
-	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
-	uint16_t filesize_offs;  /* Position of file size in the memory block */
-	const struct magic_blk * magic; /* File identification descriptor */
+struct dbgmon_comm {
+	const void * dev;
+	const struct dbgmon_comm_op * op;
 };
 
+static inline int dbgmon_comm_send(const struct dbgmon_comm * comm, 
+								   const void * buf, unsigned int len) {
+	return comm->op->send(comm->dev, buf, len);
+}
+
+static inline int dbgmon_comm_recv(const struct dbgmon_comm * comm,
+								   void * buf, unsigned int len) {
+	return comm->op->recv(comm->dev, buf, len);
+}
+
+static inline int dbgmon_comm_connect(const struct dbgmon_comm * comm) {
+	return comm->op->connect(comm->dev);
+}
+
+static inline bool dbgmon_comm_isconnected(const struct dbgmon_comm * comm) {
+	return comm->op->isconnected(comm->dev);
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,25 +200,36 @@ extern "C" {
 
 void thinkos_dbgmon_svc(int32_t arg[], int self);
 
+void __dbgmon_reset(void);
+
 void dbgmon_reset(void);
 
-void __attribute__((noreturn)) dbgmon_exec(void (* task)(struct dmon_comm *));
+void __attribute__((noreturn)) 
+	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
+				void * param);
 
-int dbgmon_unmask(int sig);
+int dbgmon_thread_create(int (* func)(void *), void * arg, 
+						 const struct thinkos_thread_inf * inf);
 
-int dbgmon_mask(int sig);
+void dbgmon_thread_resume(int thread_id);
 
-int dbgmon_clear(int sig);
+void dbgmon_thread_destroy(int thread_id);
 
-int dbgmon_signal(int sig); 
+void dbgmon_unmask(int sig);
 
-void dbgmon_signal_idle(void);
+void dbgmon_mask(int sig);
 
-uint32_t dbgmon_select(uint32_t watch);
+void dbgmon_clear(int sig);
 
-int dbgmon_wait(int sig);
+void dbgmon_signal(int sig); 
+
+void __dbgmon_idle_hook(void);
+
+int dbgmon_select(uint32_t evmask);
 
 int dbgmon_expect(int sig);
+
+bool dbgmon_is_set(int sig);
 
 int dbgmon_sleep(unsigned int ms);
 
@@ -156,8 +240,6 @@ void dbgmon_alarm_stop(void);
 int dbgmon_wait_idle(void);
 
 void dbgmon_soft_reset(void);
-
-bool dbgmon_app_exec(struct dbgmon_app_desc * desc);
 
 bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
 
@@ -173,32 +255,69 @@ void dmon_watchpoint_clear_all(void);
 
 int dmon_thread_step(unsigned int id, bool block);
 
-int dmon_comm_send(struct dmon_comm * comm, 
-				   const void * buf, unsigned int len);
+void __dbgmon_signal_thread_terminate(int thread_id, int code);
 
-int dmon_comm_recv(struct dmon_comm * comm, void * buf, unsigned int len);
+int dbgmon_thread_terminate_get(int * code);
 
-int dmon_comm_connect(struct dmon_comm * comm);
+int dbgmon_thread_break_get(uint32_t * addr);
 
-bool dmon_comm_isconnected(struct dmon_comm * comm);
+int dbgmon_thread_step_get(uint32_t * addr);
 
-void dmon_comm_rxflowctrl(struct dmon_comm * comm, bool en);
+void dbgmon_thread_step_clr(void);
 
-struct dmon_comm * usb_comm_init(const usb_dev_t * usb);
+void dbgmon_thread_break_clr(void);
 
-struct dmon_comm * usb_comm_getinstance(void);
+int __attribute__((format (__printf__, 2, 3))) 
+	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
-int dmprintf(struct dmon_comm * comm, const char *fmt, ... );
+int dbgmon_putc(int c, const struct dbgmon_comm * comm);
 
-int dmputc(int c, struct dmon_comm * comm);
+int dbgmon_puts(const char * s, const struct dbgmon_comm * comm);
 
-int dmputs(const char * s, struct dmon_comm * comm);
+int dbgmon_gets(char * s, int size, const struct dbgmon_comm * comm);
 
-int dmgets(char * s, int size, struct dmon_comm * comm);
+int dbgmon_getc(const struct dbgmon_comm * comm);
 
-int dmgetc(struct dmon_comm * comm);
+int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... );
 
-int dmscanf(struct dmon_comm * comm, const char *fmt, ... );
+void dbgmon_hexdump(const struct dbgmon_comm * comm, 
+					const struct mem_desc * mem,
+					uint32_t addr, unsigned int size);
+
+int dbgmon_thread_last_fault_get(uint32_t * addr);
+
+/* Safe read and write operations to avoid faults in the debugger */
+
+bool dbgmon_mem_wr32(const struct mem_desc * mem, 
+					 uint32_t addr, uint32_t val);
+
+bool dbgmon_mem_rd32(const struct mem_desc * mem, 
+					 uint32_t addr, uint32_t * val);
+
+bool dbgmon_mem_rd64(const struct mem_desc * mem, 
+					   uint32_t addr, uint64_t * val);
+
+bool dbgmon_mem_wr64(const struct mem_desc * mem, 
+					 uint32_t addr, uint64_t val);
+
+int dbgmon_mem_read(const struct mem_desc * mem, uint32_t addr, 
+					void * ptr, unsigned int len);
+
+bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr);
+
+const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
+					  unsigned int cnt, uint32_t addr);
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor communication interface
+ * ----------------------------------------------------------------------------
+ */
+
+const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb);
+const struct dbgmon_comm * usb_comm_getinstance(void);
+
+const struct dbgmon_comm * custom_comm_init(void);
+const struct dbgmon_comm * custom_comm_getinstance(void);
 
 #ifdef __cplusplus
 }

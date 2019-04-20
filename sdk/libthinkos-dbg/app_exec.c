@@ -22,6 +22,8 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
@@ -33,14 +35,14 @@ static const char * const app_argv[] = {
 	"thinkos_app"
 };
 
-static void __attribute__((naked, noreturn)) app_bootstrap(void * arg)
+static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 {
 	int (* app_reset)(int argc, char ** argv);
 	uintptr_t thumb_call = (uintptr_t)arg | 1;
 
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 
-	app_reset = (void *)thumb_call;
+	app_reset = (int (*)(int argc, char ** argv))thumb_call;
 	for (;;) {
 		app_reset(1, (char **)app_argv);
 	}
@@ -50,31 +52,7 @@ static void __attribute__((naked, noreturn)) app_bootstrap(void * arg)
  * Application execution
  * ------------------------------------------------------------------------- */
 
-/* XXX this API is obsolete, use dbgmon_app_exec instead */
-bool dmon_app_exec(uint32_t addr, bool paused)
-{
-	uint32_t * app = (uint32_t *)addr;
-	int thread_id = 0;
-
-	if ((app[0] != 0x0a0de004) ||
-		(app[1] != 0x6e696854) ||
-		(app[2] != 0x00534f6b)) {
-		DCC_LOG1(LOG_WARNING, "invalid signature at %p!", app);
-		DCC_XXD(LOG_MSG, "app", app, 32);
-		return false;
-	}
-
-	DCC_LOG2(LOG_TRACE, "app=%p paused=%s", app,
-			 paused ? "true" : "false");
-
-	__thinkos_exec(thread_id, (void *)app_bootstrap, (void *)app, paused);
-
-	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
-
-	return true;
-}
-
-bool magic_match(const struct magic_blk * magic, void * ptr)
+static bool magic_match(const struct magic_blk * magic, void * ptr)
 {
 	uint32_t * mem = (uint32_t *)ptr;
 	int k;
@@ -89,35 +67,29 @@ bool magic_match(const struct magic_blk * magic, void * ptr)
 	return true;
 }
 
-bool dbgmon_app_exec(struct dbgmon_app_desc * desc)
+bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 {
 	void * app = (void *)desc->start_addr;
-	int thread_id = 0;
+	int thread_id;
 
 	if (!magic_match(desc->magic, app))
 		return false;
 
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
-	__thinkos_exec(thread_id, (void *)app_bootstrap, (void *)app, false);
+	thread_id = dbgmon_thread_create((int (*)(void *))app_bootstrap, 
+									 (void *)app, 
+									 &thinkos_main_inf);
 
-	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
+	if (!paused)
+		dbgmon_thread_resume(thread_id);
 
 	return true;
 }
 
 
-void dmon_thread_exec(void (* func)(void *), void * arg)
-{
-	int thread_id = 0;
-	bool paused = false;
-
-	__thinkos_exec(thread_id, func, arg, paused);
-}
-
 bool dmon_app_suspend(void)
 {
-	__dmon_irq_pause_all(); 
 	__thinkos_pause_all();
 
 	if (thinkos_rt.active == THINKOS_THREADS_MAX) {
@@ -127,7 +99,6 @@ bool dmon_app_suspend(void)
 	}
 
 	/* Make sure the communication channel interrupts are enabled. */
-	__dmon_irq_force_enable();
 
 	dbgmon_wait_idle();
 
@@ -141,7 +112,6 @@ bool dmon_app_continue(void)
 	if (xcpt->type == 0) {
 		DCC_LOG(LOG_TRACE, "....");
 		__thinkos_resume_all();
-		__dmon_irq_restore_all();
 		return true;
 	}
 

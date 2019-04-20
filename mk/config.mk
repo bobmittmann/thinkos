@@ -226,9 +226,10 @@ endif
 ifeq ($(HOST),Linux)
   CAT := cat
   RMALL := rm -f 
-  RMDIR := rm -fr
+  RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -236,9 +237,10 @@ else
 ifeq ($(HOST),Cygwin)
   CAT := cat
   RMALL := rm -f 
-  RMDIR := rm -fr
+  RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -246,9 +248,10 @@ else
 ifeq ($(HOST),Msys)
   CAT := cat
   RMALL := rm -f
-  RMDIR := rm -fr
+  RMDIR := rmdir
   MKDIR := mkdir -p
   CP := cp
+  CPDIR := cp -rd
   MV := mv    
   ECHO := echo
   DEVNULL := /dev/null
@@ -258,7 +261,8 @@ ifeq ($(HOST),Windows)
   RMALL := del /F /Q 
   RMDIR := rmdir
   MKDIR := mkdir
-  CP := copy 
+  CP := copy /Y
+  CPDIR := xcopy /Y /R /E /I
   MV := ren
   ECHO := echo
   DEVNULL := NUL:
@@ -299,6 +303,26 @@ lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(s
 # ----------------------------------------------------------------------------
 uc = $(subst a,A,$(subst b,B,$(subst c,C,$(subst d,D,$(subst e,E,$(subst f,F,$(subst g,G,$(subst h,H,$(subst i,I,$(subst j,J,$(subst k,K,$(subst l,L,$(subst m,M,$(subst n,N,$(subst o,O,$(subst p,P,$(subst q,Q,$(subst r,R,$(subst s,S,$(subst t,T,$(subst u,U,$(subst v,V,$(subst w,W,$(subst x,X,$(subst y,Y,$(subst z,Z,$1))))))))))))))))))))))))))
 
+# ----------------------------------------------------------------------------
+# Function:  first (same as LISP's car, or head)
+# Arguments: 1: A list
+# Returns:   Returns the first element of a list
+# ----------------------------------------------------------------------------
+first = $(firstword $1)
+
+# ----------------------------------------------------------------------------
+# Function:  rest (same as LISP's cdr, or tail)
+# Arguments: 1: A list
+# Returns:   Returns the list with the first element removed
+# ----------------------------------------------------------------------------
+rest = $(wordlist 2,$(words $1),$1)
+
+# ----------------------------------------------------------------------------
+# Function:  reverse
+# Arguments: 1: A list to reverse
+# Returns:   The list with its elements in reverse order
+# ----------------------------------------------------------------------------
+reverse = $(strip $(if $1,$(call reverse,$(call rest,$1)) $(call first,$1)))
 
 # ----------------------------------------------------------------------------
 # Define useful strings

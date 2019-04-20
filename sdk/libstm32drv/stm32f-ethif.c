@@ -274,35 +274,38 @@ int stm32f_ethif_pkt_recv(struct ifnet * __if, uint8_t ** __src,
 	switch (ext_st.ippt) {
 	case ETH_IPPT_UNKOWN:
 		DCC_LOG(LOG_INFO, "not IP!");
-		DBG("STM32ETH: not IP!");
+		DBGS("STM32ETH: not IP!");
 		break;
 	case ETH_IPPT_UDP:
-		DBG("STM32ETH: UDP");
+		DBGS("STM32ETH: UDP");
 		break;
 	case ETH_IPPT_TCP:
-		DBG("STM32ETH: TCP");
+		DBGS("STM32ETH: TCP");
 		break;
 	case ETH_IPPT_ICMP:
-		DBG("STM32ETH: ICMP");
+		DBGS("STM32ETH: ICMP");
 		break;
 	}
 
 	if (ext_st.iphe) {
 		DCC_LOG(LOG_WARNING, "IP header error!");
-		DBG("IP header error!");
+		DBGS("IP header error!");
 		goto error;
 	}
 	if (ext_st.ippe) {
 		DCC_LOG(LOG_WARNING, "IP payload error!");
-		DBG("IP payload error!");
+		DBGS("IP payload error!");
 		goto error;
 	}
-	if (ext_st.ipcb)
+	if (ext_st.ipcb) {
 		DCC_LOG(LOG_INFO, "IP checksum bypass.");
-	if (ext_st.ipv4pr)
+	}
+	if (ext_st.ipv4pr) {
 		DCC_LOG(LOG_INFO, "IPv4 packet received.");
-	if (ext_st.ipv6pr)
+	}
+	if (ext_st.ipv6pr) {
 		DCC_LOG(LOG_INFO, "IPv6 packet received.");
+	}
 
 	/* get the current buffer */
 	hdr = (struct eth_hdr *)rxdesc->rbap1;
@@ -352,7 +355,7 @@ const char stm32f_ethif_desc[] = "STM32F-Ethernet";
 
 int stm32f_ethif_getdesc(struct ifnet * __if, char * __s, int __len)
 {
-	int n = MIN(__len, sizeof(stm32f_ethif_desc));
+	int n = MIN(__len, (int)sizeof(stm32f_ethif_desc));
 	memcpy(__s, stm32f_ethif_desc, n);
 	__s[n - 1] = '\0';
 	return n;

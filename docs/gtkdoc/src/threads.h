@@ -49,13 +49,14 @@ int thinkos_init(unsigned int opt);
 
 /** 
  * thinkos_mpu_init:
- * @size: size of the protected block
+ * @offs: offset of the kernel protected memory block
+ * @size: size of the kernel protected memory block
  *
  * Initializes the Cortex-M MPU.
  *
  * Returns: THINKOS_OK
  */
-void thinkos_mpu_init(unsigned int size);
+void thinkos_mpu_init(uint32_t offs, unsigned int size);
 
 /** 
  * thinkos_userland:

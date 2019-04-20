@@ -80,7 +80,7 @@ struct stm32f_env_blk {
 int stm32f_bkp_sram_env_clean(void)
 {
 	struct stm32f_env_blk * blk = (struct stm32f_env_blk *)ENV_BLK_ADDR;
-	int i;
+	unsigned int i;
 
 	DCC_LOG(LOG_TRACE, "zeroing...");
 

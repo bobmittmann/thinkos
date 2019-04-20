@@ -45,8 +45,10 @@
    its safe to just downconvert withouth checking for boundaries.
  */
 
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
-#define UINT322FLOAT(U) ({ union { float f; uint32_t u; } a; a.u = (U); a.f;})
+#define DOUBLE2UINT64(D) __extension__({ union { double d; uint64_t u; } \
+									   a; a.d = (D); a.u;})
+#define UINT322FLOAT(U) __extension__({ union { float f; uint32_t u; } \
+									  a; a.u = (U); a.f;})
 
 float double2float(double val) 
 {

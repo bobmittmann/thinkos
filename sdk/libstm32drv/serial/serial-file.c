@@ -33,12 +33,12 @@
  */
 
 int serial_send_op(struct serial_dev * dev, const void * buf,
-							  unsigned int len) {
+							  size_t len) {
 	return dev->op->send(dev->drv, buf, len);
 }
 
 int serial_recv_op(struct serial_dev * dev, void * buf,
-							  unsigned int len, unsigned int msec) {
+							  size_t len, unsigned int msec) {
 	return dev->op->recv(dev->drv, buf, len, msec);
 }
 
@@ -51,10 +51,10 @@ int serial_close_op(struct serial_dev * dev){
 }
 
 const struct fileop serial_fileop = {
-	.write = (void *)serial_send_op,
-	.read = (void *)serial_recv_op,
-	.flush = (void *)serial_drain_op,
-	.close = (void *)serial_close_op
+	.write = (int (*)(void *, const void *, size_t))serial_send_op,
+	.read = (int (*)(void *, void *, size_t, unsigned int))serial_recv_op,
+	.flush = (int (*)(void *))serial_drain_op,
+	.close = (int (*)(void *))serial_close_op
 };
 
 struct file * serial_fopen(struct serial_dev * dev)

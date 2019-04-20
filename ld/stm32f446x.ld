@@ -19,6 +19,9 @@
  * http://www.gnu.org/
  */
 
+__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
 _stack_limit = ORIGIN(STACK);
@@ -195,7 +198,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data :
+	.data __data_init :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
@@ -232,5 +235,30 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+
+   .sram2 :
+    {
+        /* define a global symbol marking the start of the .sram2 section */
+        PROVIDE (__sram2_start = . );
+        PROVIDE (__heap_end = . );
+        *(.sram2 .sram2*)
+        *(.stack .stack*)
+    } >"STACK"
+
+	/* Backed up control section */
+	.bkpctl :
+	{
+		PROVIDE (__bkpctl_start = . );
+		*(.bkpctl .bkpctl*)
+		PROVIDE (__bkpctl_end = . );
+	} >"rtcbkr"
+
+	/* Backed up data section */
+	.bkpdat :
+	{
+		PROVIDE (__bkpdat_start = . );
+		*(.bkpdat .bkpdat*)
+		PROVIDE (__bkpdat_end = . );
+	} >"bkpsram"
 }
 

@@ -52,12 +52,15 @@ const char * const version_str = "ThinkOS Boot Loader " \
 const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
 #endif
 
-void monitor_task(struct dmon_comm * comm);
+#ifndef BOOT_CUSTOM_COMM
+#define BOOT_CUSTOM_COMM 0
+#endif
 
-void monitor_exec_protected(struct dmon_comm * comm)
-{
-	thinkos_dbgmon_init(comm, monitor_task);
-}
+#ifndef BOOT_MEM_RESERVED 
+#define BOOT_MEM_RESERVED 0x1000
+#endif
+
+void monitor_task(struct dmon_comm * comm);
 
 void monitor_exec(void)
 {
@@ -76,7 +79,9 @@ int app_exec(void)
 
 void comm_init(void)
 {
-#if STM32_ENABLE_OTG_FS
+#if BOOT_CUSTOM_COMM
+	custom_comm_init();
+#elif STM32_ENABLE_OTG_FS
 	usb_comm_init(&stm32f_otg_fs_dev);
 #elif STM32_ENABLE_OTG_HS
 	usb_comm_init(&stm32f_otg_hs_dev);
@@ -88,9 +93,6 @@ void comm_init(void)
 	this_board.on_comm_init();
 }
 
-#ifndef BOOT_MEM_RESERVED 
-#define BOOT_MEM_RESERVED 0x1000
-#endif
 
 int main(int argc, char ** argv)
 {

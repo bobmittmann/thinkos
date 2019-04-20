@@ -38,7 +38,7 @@ struct str_buf {
 	char * end;
 };
 
-static int sprintf_write(struct str_buf * str, const void * buf, int len)
+static int sprintf_write(struct str_buf * str, const void * buf, size_t len)
 {
 	char * src = (char *)buf;
 	char * dst = (char *)str->ptr;
@@ -59,7 +59,7 @@ static int sprintf_write(struct str_buf * str, const void * buf, int len)
 }
 
 static const struct fileop sprintf_fileop = {
-	.write = (int (*)(void *, const void *, int))sprintf_write
+	.write = (int (*)(void *, const void *, size_t))sprintf_write
 };
 
 /*

@@ -44,58 +44,63 @@ static int bmp_bit_cnt(uint32_t bmp[], int bits)
 	return cnt;
 }
 
-void dmon_print_alloc(struct dmon_comm * comm)
+void dmon_print_alloc(struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 
-	dmprintf(comm, "     ");
+	dbgmon_printf(comm, "     ");
 #if THINKOS_ENABLE_MUTEX_ALLOC
-	dmprintf(comm, "   Thread");
+	dbgmon_printf(comm, "   Thread");
 #endif
 #if THINKOS_ENABLE_MUTEX_ALLOC
-	dmprintf(comm, "    Mutex");
+	dbgmon_printf(comm, "    Mutex");
 #endif
 #if THINKOS_ENABLE_COND_ALLOC
-	dmprintf(comm, "     Cond");
+	dbgmon_printf(comm, "     Cond");
 #endif
 #if THINKOS_ENABLE_SEM_ALLOC
-	dmprintf(comm, "  Semaphr");
+	dbgmon_printf(comm, "  Semaphr");
 #endif
 #if THINKOS_ENABLE_EVENT_ALLOC
-	dmprintf(comm, "    Event");
+	dbgmon_printf(comm, "    Event");
 #endif
 #if THINKOS_ENABLE_FLAG_ALLOC
-	dmprintf(comm, "     Flag");
+	dbgmon_printf(comm, "     Flag");
 #endif
-	dmprintf(comm, "\r\n");
+	dbgmon_printf(comm, "\r\n");
 
-	dmprintf(comm, " Cnt:");
+	dbgmon_printf(comm, " Cnt:");
 #if THINKOS_ENABLE_THREAD_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->th_alloc, THINKOS_THREADS_MAX), 
-			THINKOS_THREADS_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->th_alloc, THINKOS_THREADS_MAX), 
+				  THINKOS_THREADS_MAX);
 #endif
 #if THINKOS_ENABLE_MUTEX_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->mutex_alloc, THINKOS_MUTEX_MAX), 
-			THINKOS_MUTEX_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->mutex_alloc, THINKOS_MUTEX_MAX), 
+				  THINKOS_MUTEX_MAX);
 #endif
 #if THINKOS_ENABLE_COND_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->cond_alloc, THINKOS_COND_MAX),
-			THINKOS_COND_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->cond_alloc, THINKOS_COND_MAX),
+				  THINKOS_COND_MAX);
 #endif
 #if THINKOS_ENABLE_SEM_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->sem_alloc, THINKOS_SEMAPHORE_MAX), 
-			THINKOS_SEMAPHORE_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->sem_alloc, THINKOS_SEMAPHORE_MAX), 
+				  THINKOS_SEMAPHORE_MAX);
 #endif
 #if THINKOS_ENABLE_EVENT_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->ev_alloc, THINKOS_EVENT_MAX),
-			THINKOS_EVENT_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->ev_alloc, THINKOS_EVENT_MAX),
+				  THINKOS_EVENT_MAX);
 #endif
 #if THINKOS_ENABLE_FLAG_ALLOC
-	dmprintf(comm, "%6d/%-2d", bmp_bit_cnt(rt->flag_alloc, THINKOS_FLAG_MAX),
-			THINKOS_FLAG_MAX);
+	dbgmon_printf(comm, "%6d/%-2d", 
+				  bmp_bit_cnt(rt->flag_alloc, THINKOS_FLAG_MAX),
+				  THINKOS_FLAG_MAX);
 #endif
-	dmprintf(comm, "\r\n");
-
+	dbgmon_printf(comm, "\r\n");
 }
 
 #endif

@@ -30,10 +30,10 @@
 #include <sys/dcclog.h>
 
 const struct fileop tty_ops = {
-	.write = (void *)tty_write,
-	.read = (void *)tty_read,
-	.flush = (void *)tty_flush,
-	.close = (void *)tty_release
+	.write = (int (*)(void *, const void *, size_t))tty_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))tty_read,
+	.flush = (int (*)(void *))tty_flush,
+	.close = (int (*)(void *))tty_release
 };
 
 FILE * tty_fopen(struct tty_dev * __dev)

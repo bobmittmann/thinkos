@@ -24,9 +24,10 @@
 #include <stdlib.h>
 #include <sys/ice-comm.h>
 #include <arch/cortex-m3.h>
+#include <sys/null.h>
 
 int ice_io_comm_write(struct ice_comm_blk * comm, const void * buf, 
-					   unsigned int len)
+					   size_t len)
 {
 	uint32_t fm = cm3_faultmask_get(); /* save fault mask */
 	unsigned int head;
@@ -75,16 +76,17 @@ ret:
 	return len;
 }
 
-int ice_io_comm_read(struct ice_comm_blk * comm, void * buf, unsigned int len)
+int ice_io_comm_read(struct ice_comm_blk * comm, void * buf, 
+					 size_t len, unsigned int tmo)
 {
 	return 0;
 }
 
 const struct fileop ice_io_comm_ops = {
-	.write = (void *)ice_io_comm_write,
-	.read = (void *)ice_io_comm_read,
-	.flush = (void *)NULL,
-	.close = (void *)NULL
+	.write = (int (*)(void *, const void *, size_t))ice_io_comm_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))ice_io_comm_read,
+	.flush = (int (*)(void *))null_flush,
+	.close = (int (*)(void *))null_close
 };
 
 const struct file ice_comm_file = {

@@ -98,7 +98,26 @@ LIBDIRS := $(abspath $(LIBDIRS))
 # Installation directory
 #------------------------------------------------------------------------------ 
 
-INSTALLDIR = $(abspath .)
+ifndef LIB_INSTALLDIR
+  ifdef INSTALLDIR
+    LIB_INSTALLDIR = $(abspath $(INSTALLDIR)/lib)
+  else
+    LIB_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+ifndef INC_INSTALLDIR
+  ifdef INSTALLDIR
+    INC_INSTALLDIR = $(abspath $(INSTALLDIR)/include)
+  else
+    LIB_INSTALLDIR = $(OUTDIR)
+  endif
+endif
+
+
+ifndef INSTALLDIR
+  INSTALLDIR = $(abspath .)
+endif
 
 #------------------------------------------------------------------------------ 
 # library output directories 
@@ -106,10 +125,8 @@ INSTALLDIR = $(abspath .)
 
 ifeq (Windows,$(HOST))
   LIB_OUTDIR := $(subst /,\,$(OUTDIR))
-  LIB_INSTALLDIR := $(subst /,\,$(OUTDIR))
 else
   LIB_OUTDIR = $(OUTDIR)
-  LIB_INSTALLDIR = $(OUTDIR)
 endif
 
 #------------------------------------------------------------------------------ 
@@ -136,6 +153,7 @@ ifdef PROG
   PROG_SREC := $(OUTDIR)/$(PROG).srec
   PROG_MAP := $(OUTDIR)/$(PROG).map
   PROG_ELF := $(OUTDIR)/$(PROG).elf
+  PROG_ELX := $(OUTDIR)/$(PROG).elx
   PROG_SYM := $(OUTDIR)/$(PROG).sym
   PROG_LST := $(OUTDIR)/$(PROG).lst
   PROG_TAG := $(OUTDIR)/$(PROG).tag
@@ -160,7 +178,6 @@ ifeq ($(HOST),Cygwin)
 endif
 
 GFILES := $(HFILES_OUT) $(CFILES_OUT) $(SFILES_OUT) 
-
 PFILES := $(PROG_BIN) $(PROG_SREC) $(PROG_ELF) $(PROG_LST) \
 		  $(PROG_SYM) $(PROG_MAP)
 
@@ -169,7 +186,7 @@ ifeq (Windows,$(HOST))
   CLEAN_DFILES := $(strip $(subst /,\,$(DFILES)))
   CLEAN_GFILES := $(strip $(subst /,\,$(GFILES)))
   CLEAN_PFILES := $(strip $(subst /,\,$(PFILES)))
-  LIB_INSTALLDIR := $(subst /,\,$(OUTDIR))
+  CLEAN_ODIRS := $(call reverse,$(strip $(subst /,\,$(ODIRS))))
   LIB_OUTDIR := $(subst /,\,$(OUTDIR))
   INSTALLDIR := $(subst /,\,$(INSTALLDIR))
 else
@@ -177,8 +194,8 @@ else
   CLEAN_DFILES := $(strip $(DFILES))
   CLEAN_GFILES := $(strip $(GFILES))
   CLEAN_PFILES := $(strip $(PFILES))
+  CLEAN_ODIRS := $(call reverse,$(strip $(ODIRS)))
   LIB_OUTDIR = $(OUTDIR)
-  LIB_INSTALLDIR = $(OUTDIR)
 endif
 
 FLAGS_TO_PASS := $(FLAGS_TO_PASS) 'D=$(dbg_level)' 'V=$(verbose)' \
@@ -197,7 +214,9 @@ FLAGS_TO_PASS := $(FLAGS_TO_PASS) 'D=$(dbg_level)' 'V=$(verbose)' \
 				 'INCPATH=$(INCPATH)'\
 				 'LIBPATH=$(LIBPATH)'\
 				 'LIBDIR=$(LIB_OUTDIR)'\
-				 'INSTALLDIR=$(LIB_INSTALLDIR)'
+				 'INSTALLDIR=$(INSTALLDIR)'\
+				 'LIB_INSTALLDIR=$(LIB_INSTALLDIR)'\
+				 'INC_INSTALLDIR=$(INC_INSTALLDIR)'
 
 LIBDIRS_ALL := $(LIBDIRS:%=%-all)
 
@@ -243,6 +262,10 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info $(shell set))
 $(call trace1,----------------------------------------------------- </prog.mk>)
 
+#------------------------------------------------------------------------------ 
+# targets/recipes 
+#------------------------------------------------------------------------------ 
+
 all: $(LIBDIRS_ALL) $(PROG_BIN) $(PROG_SYM) $(PROG_LST)
 
 clean:: libs-clean
@@ -263,6 +286,8 @@ prog: $(PROG_BIN)
 
 elf: $(PROG_ELF)
 
+elx: $(PROG_ELX)
+
 map: $(PROG_MAP)
 
 bin: $(PROG_BIN)
@@ -274,6 +299,8 @@ ihex: $(PROG_IHEX)
 sym: $(PROG_SYM)
 
 lst: $(PROG_LST)
+
+tag: $(PROG_TAG)
 
 libs-all: $(LIBDIRS_ALL)
 
@@ -307,7 +334,7 @@ cleanDebug:
 cleanRelease: 
 	$(Q)$(MAKE) D=0 clean
 
-.PHONY: all clean prog elf map bin lst libs-all libs-clean bin_path elf_path 
+.PHONY: all clean prog elf 
 .PHONY: Debug Release cleanDebug cleanRelease
 .PHONY: $(LIBDIRS_ALL) $(LIBDIRS_CLEAN) $(LIBDIRS_INSTALL)
 
@@ -345,8 +372,13 @@ endif
 
 $(PROG_ELF) $(PROG_MAP): $(LIBDIRS_ALL) $(OFILES) $(OBJ_EXTRA)
 	$(ACTION) "LD: $(PROG_ELF)"
+
+ifdef $(CROSS_COMPILE))
 ifeq ($(HOST),Cygwin)
-	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
+else
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
+endif
 else
 	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,--print-map -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
 endif
@@ -375,6 +407,14 @@ ifeq ($(HOST),Cygwin)
 else
 	$(Q)$(STRIP) -o $@ $<
 endif
+endif
+
+%.elx: %.elf
+	$(ACTION) "XLF: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+else
+	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $< $@
 endif
 
 %.bin: %.elf

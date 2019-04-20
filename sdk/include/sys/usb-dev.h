@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/usb.h>
+#include <usb/core.h>
 
 /* USB class callback functions */
 
@@ -102,10 +102,11 @@ typedef struct usb_dev_ep_info usb_dev_ep_info_t;
 enum usb_ep_ctl {
 	USB_EP_RECV_OK = 0,
 	USB_EP_ZLP_SEND,
-	USB_EP_STALL,
+	USB_EP_STALL_SET,
+	USB_EP_STALL_CLR,
 	USB_EP_NAK_SET,
 	USB_EP_NAK_CLR,
-	USB_EP_DISABLE
+	USB_EP_DISABLE,
 };
 
 
@@ -161,9 +162,9 @@ static inline int usb_dev_ep_init(const usb_dev_t * dev,
 	return dev->op->ep_init(dev->priv, info, xfr_buf, buf_len);
 }
 
-static inline int usb_dev_ep_ctl(const usb_dev_t * dev, int ep_id,
+static inline int usb_dev_ep_ctl(const usb_dev_t * dev, int ep_addr,
 								 unsigned int opt) {
-	return dev->op->ep_ctl(dev->priv, ep_id, opt);
+	return dev->op->ep_ctl(dev->priv, ep_addr, opt);
 }
 
 static inline int usb_dev_ep_pkt_xmit(const usb_dev_t * dev, int ep_id,

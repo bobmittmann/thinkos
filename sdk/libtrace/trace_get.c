@@ -25,50 +25,45 @@
 
 #include "trace-i.h"
 
-int trace_getfirst(struct trace_entry * entry, char * s, int len)
+int trace_krn_getfirst(struct trace_entry * entry, char * s, int len)
 {
 	uint32_t tail;
+	int ret;
 
-	if (entry == NULL)
-		return -1;
-
-	tail = trace_ring.tail;
+	tail = trace_ctl.tail;
 
 	entry->dt = 0;
 	entry->idx = tail;
 
-	if ((int32_t)(trace_ring.head - tail) < 2) {
+	if ((int32_t)(trace_ctl.head - tail) < 2) {
 		entry->ref = NULL;
-		entry->tm = trace_ring.tm;
-		return -1;
+		entry->tm = trace_ctl.tm;
+		ret = -1;
+	} else {
+		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
+		entry->tm = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
+
+		if (s == NULL)
+			len = 0;
+
+		ret = trace_fmt(entry, s, len);
 	}
 
-	entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
-	entry->tm = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
-
-	if (s == NULL)
-		len = 0;
-
-	return trace_fmt(entry, s, len);
+	return ret;
 }
 
-int trace_getnext(struct trace_entry * entry, char * s, int len)
+int trace_krn_getnext(struct trace_entry * entry, char * s, int len)
 {
 	uint32_t tail;
 	uint32_t ts;
 	uint32_t dt;
 	int ret;
 
-	if (entry == NULL)
-		return -1;
-
-	thinkos_mutex_lock(trace_ring.mutex);
-
-	tail = trace_ring.tail;
+	tail = trace_ctl.tail;
 	if ((int32_t)(entry->idx - tail) > 0)
 		tail = entry->idx;
 
-	if ((int32_t)(trace_ring.head - tail) < 2) {
+	if ((int32_t)(trace_ctl.head - tail) < 2) {
 		ret = -1;
 	} else {
 		entry->idx = tail;
@@ -84,57 +79,21 @@ int trace_getnext(struct trace_entry * entry, char * s, int len)
 		ret = trace_fmt(entry, s, len);
 	}
 
-	thinkos_mutex_unlock(trace_ring.mutex);
-
 	return ret;
 }
 
-int trace_tail(struct trace_entry * entry)
-{
-	uint32_t tail;
-	uint32_t ts;
-	uint32_t dt;
-
-	if (entry == NULL)
-		return -1;
-
-	thinkos_mutex_lock(trace_ring.mutex);
-
-	tail = trace_ring.tail;
-
-	entry->dt = 0;
-	entry->idx = tail;
-
-	if ((int32_t)(trace_ring.head - tail) < 2) {
-		entry->ref = NULL;
-		entry->tm = trace_ring.tm;
-	} else {
-		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
-		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
-		dt = ts - (trace_ring.tm & 0xffffffff);
-		entry->tm = trace_ring.tm + dt;
-	}
-
-	thinkos_mutex_unlock(trace_ring.mutex);
-
-	return 0;
-}
-
-
-void trace_flush(struct trace_entry * entry)
+void trace_krn_flush(struct trace_entry * entry)
 {
 	uint32_t head;
 	uint32_t tail;
 	uint32_t ts;
 	uint32_t dt;
 
-	thinkos_mutex_lock(trace_ring.mutex);
-
-	head = trace_ring.head;
-	tail = trace_ring.tail;
+	head = trace_ctl.head;
+	tail = trace_ctl.tail;
 
 	if ((int32_t)(head - tail) < 2) {
-		ts = (trace_ring.tm & 0xffffffff);
+		ts = (trace_ctl.tm & 0xffffffff);
 	} else {
 		ts = trace_ring.buf[(tail + 1) & (TRACE_RING_SIZE - 1)].ts;
 	}
@@ -148,10 +107,89 @@ void trace_flush(struct trace_entry * entry)
 	}
 
 	/* update the time at tail */
-	dt = ts - (trace_ring.tm & 0xffffffff);
-	trace_ring.tm += dt;
+	dt = ts - (trace_ctl.tm & 0xffffffff);
+	trace_ctl.tm += dt;
 	/* set the new tail */
-	trace_ring.tail = tail;
+	trace_ctl.tail = tail;
+}
 
-	thinkos_mutex_unlock(trace_ring.mutex);
+int trace_krn_tail(struct trace_entry * entry)
+{
+	uint32_t tail;
+	uint32_t ts;
+	uint32_t dt;
+
+	tail = trace_ctl.tail;
+
+	entry->dt = 0;
+	entry->idx = tail;
+
+	if ((int32_t)(trace_ctl.head - tail) < 2) {
+		entry->ref = NULL;
+		entry->tm = trace_ctl.tm;
+	} else {
+		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
+		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
+		dt = ts - (trace_ctl.tm & 0xffffffff);
+		entry->tm = trace_ctl.tm + dt;
+	}
+
+	return 0;
+}
+
+void trace_flush(struct trace_entry * entry)
+{
+	thinkos_mutex_lock(trace_ctl.mutex);
+
+	trace_krn_flush(entry);
+
+	thinkos_mutex_unlock(trace_ctl.mutex);
+}
+
+int trace_tail(struct trace_entry * entry)
+{
+	int ret;
+
+	if (entry == NULL)
+		return -1;
+
+	thinkos_mutex_lock(trace_ctl.mutex);
+
+	ret = trace_krn_tail(entry);
+
+	thinkos_mutex_unlock(trace_ctl.mutex);
+
+	return ret;
+}
+
+int trace_getfirst(struct trace_entry * entry, char * s, int len)
+{
+	int ret;
+
+	if (entry == NULL)
+		return -1;
+
+	thinkos_mutex_lock(trace_ctl.mutex);
+
+	ret = trace_krn_getfirst(entry, s, len);
+
+	thinkos_mutex_unlock(trace_ctl.mutex);
+
+	return ret;
+}
+
+int trace_getnext(struct trace_entry * entry, char * s, int len)
+{
+	int ret;
+
+	if (entry == NULL)
+		return -1;
+
+	thinkos_mutex_lock(trace_ctl.mutex);
+
+	ret = trace_krn_getnext(entry, s, len);
+
+	thinkos_mutex_unlock(trace_ctl.mutex);
+
+	return ret;
 }

@@ -30,10 +30,6 @@
 
 #include <sys/stm32f.h>
 
-const uint32_t stm32f_apb1_hz;
-const uint32_t stm32f_apb2_hz;
-const uint32_t stm32f_ahb_hz;
-
 /* for 11025 freq @ 8 oversample rate */
 //#define PLLI2SR 3
 //#define PLLI2SN 254
@@ -78,9 +74,6 @@ void stm32_rcc_i2s_pll_init(void)
 	struct stm32_rcc * rcc = STM32_RCC;
 	uint32_t cr;
 	int again;
-
-	rcc->dckcfgr2 = 0;
-	rcc->pllsaicfgr = 0;
 
 	cr = rcc->cr;
 	/* disable I2SPLL */

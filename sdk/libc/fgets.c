@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/file.h>
+#include <stdint.h>
 
 #define IN_BS      '\x8'
 #define IN_DEL      0x7F
@@ -77,7 +78,7 @@ char * fgets(char * s, int size, FILE * f)
 
 #endif
 
-	if ((len = f->op->read(f->data, s, size - 1, -1)) <= 0) {
+	if ((len = f->op->read(f->data, s, size - 1, INT32_MAX)) <= 0) {
 		return NULL;
 	}
 

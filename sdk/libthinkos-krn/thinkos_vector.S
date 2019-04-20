@@ -42,67 +42,93 @@
 	.thumb
 	.text
 	.align	2
-	.global	collect_xcpt_inf
+	.global	xcpt_collect
 	.thumb
 	.thumb_func
-	.type	collect_xcpt_inf, %function
+	.type	xcpt_collect, %function
 	/* Arguments:
 	     r1: except number
-	     r3: return (lr) 
+	     r2: return (lr) 
 	   Return:
 	     r0: exception buffer */
-collect_xcpt_inf:
+
+xcpt_collect:
 	ldr    r0, .L_xcpt_buf
-	mov    r2, r0
-#if THINKOS_ENABLE_FPU 
-	vstmia r2!, {s16-s31}
+	mov    r3, r0
+#if (THINKOS_ENABLE_FPU)
+	/* allways collect FP data */ 
+	vstmia r3!, {s16-s31}
 #endif
-	stmia  r2!, {r4-r11} /* r4, r11 */
-	tst    r3, #CM3_EXEC_RET_SPSEL
+	stmia  r3!, {r4-r11} /* r4..r11 */
+	tst    r2, #CM3_EXC_RET_SPSEL
 	ite    eq 
 	mrseq  r4, MSP 
 	mrsne  r4, PSP 
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+	str    r4, [r3, #0] /* sp */
+	str    r2, [r3, #4] /* ret */
+	adds   r3, r3, #8
+#endif
 	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-	stmia  r2!, {r5-r12}
-#if THINKOS_ENABLE_FPU 
-	vstmia r2!, {s0-s15}
+	stmia  r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+#if (THINKOS_ENABLE_FPU)
+	vstmia r3!, {s0-s15}
 	vmrs   r4, FPSCR
-	stmia  r2!, {r4-r5}
+	stmia  r3!, {r4-r5}
+#endif
+#if !((THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU))
+	stmia  r3!, {r2}
 #endif
 	mrs    r5, MSP 
-	sub    r5, r5, #32
 	mrs    r6, PSP 
-	tst    r3, #CM3_EXEC_RET_SPSEL
-	it     ne 
-	subne  r6, r6, #32
-	str    r3, [r2, #0] /* ret */
-	str    r5, [r2, #4] /* msp */
-	str    r6, [r2, #8] /* psp */
+	str    r5, [r3, #0] /* msp */
+	str    r6, [r3, #4] /* psp */
 	ldr    r7, .L_cm3_scb
 	ldr    r5, [r7, #SCB_ICSR_OFFS]
 	ldr    r6, [r7, #SCB_CFSR_OFFS]
-	str    r5, [r2, #12] /* icsr */
-	str    r6, [r2, #16] /* cfsr */
+	str    r5, [r3, #8] /* icsr */
+	str    r6, [r3, #12] /* cfsr */
 	tst    r6, #CFSR_MMARVALID
 	itt    ne 
 	ldrne  r5, [r7, #SCB_MMFAR_OFFS]
-	strne  r5, [r2, #20] /* mmfar */
+	strne  r5, [r3, #16] /* mmfar */
 	tst    r6, #CFSR_BFARVALID
 	itt    ne 
 	ldrne  r5, [r7, #SCB_BFAR_OFFS]
-	strne  r5, [r2, #24] /* bfar */
+	strne  r5, [r3, #20] /* bfar */
 	/* clear fault status */
 	str    r6, [r7, #SCB_CFSR_OFFS]
 	mrs    r5, IPSR
+	strb   r5, [r3, #24] /* ipsr */
+	mrs    r5, CONTROL
+	strb   r5, [r3, #25] /* ctrl */
+	strb   r1, [r3, #26] /* type */
+	/* Thinkos state info */
+	add    r3, r3, #28
 	ldr    r4, .L_thinkos_rt
-	ldr    r4, [r4, #THINKOS_RT_ACTIVE_OFFS]
-	strb   r5, [r2, #28] /* ipsr */
-	strb   r4, [r2, #29] /* active */
-	strb   r1, [r2, #30] /* type */
+	ldr    r5, [r4, #THINKOS_RT_ACTIVE_OFFS]
+	ldr    r6, [r4, #THINKOS_RT_READY_OFFS]
+	ldr    r7, [r4, #THINKOS_RT_IDLE_CTX_OFFS]
+	stmia  r3!, {R5, R6, r7}
+#if (THINKOS_ENABLE_PROFILING)
+	ldr    r5, [r4, #THINKOS_RT_CYCREF_OFFS]
+	stmia  r3!, {R5}
+#endif
 
+	/* restore our context */
+	mov    r3, r0
+#if (THINKOS_ENABLE_FPU)
+	/* skip FP data */ 
+	adds   r3, r3, #(16 * 4)
+#endif
+	/* restore lr */
 	mov    r7, lr
-	mov    lr, r3
-	bx     r7
+	mov    lr, r2
+	mov    r2, r7
+	ldmia  r3, {r4-r11} /* r4..r11 */
+	/* return to the original handler */
+	bx     r2
+
 	.align  2
 .L_xcpt_buf:
 	.word	thinkos_except_buf
@@ -111,7 +137,21 @@ collect_xcpt_inf:
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
 
-	.size   collect_xcpt_inf, . - collect_xcpt_inf
+	.size   xcpt_collect, . - xcpt_collect
+
+
+	.thumb
+	.text
+	.align	2
+	.global	xcpt_collect
+	.thumb
+	.thumb_func
+	.type	xcpt_collect, %function
+	/* Arguments:
+	     r1: except number
+	     r3: return (lr) 
+	   Return:
+	     r0: exception buffer */
 
 #if	THINKOS_ENABLE_BUSFAULT 
 	.thumb
@@ -122,9 +162,9 @@ collect_xcpt_inf:
 	.thumb_func
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
-	mov    r3, lr
+	mov    r2, lr
 	movs   r1, #CM3_EXCEPT_BUS_FAULT
-	bl     collect_xcpt_inf
+	bl     xcpt_collect
 	b      thinkos_bus_fault
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
@@ -136,9 +176,9 @@ cm3_bus_fault_isr:
 	.thumb_func
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
-	mov    r3, lr
+	mov    r2, lr
 	movs   r1, #CM3_EXCEPT_USAGE_FAULT
-	bl     collect_xcpt_inf
+	bl     xcpt_collect
 	b      thinkos_usage_fault
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif
@@ -150,9 +190,9 @@ cm3_usage_fault_isr:
 	.thumb_func
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
-	mov    r3, lr
+	mov    r2, lr
 	movs   r1, #CM3_EXCEPT_MEM_MANAGE
-	bl     collect_xcpt_inf
+	bl     xcpt_collect
 	b      thinkos_mem_manage
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
@@ -163,9 +203,9 @@ cm3_mem_manage_isr:
 	.thumb_func
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
-	mov    r3, lr
+	mov    r2, lr
 	movs   r1, #CM3_EXCEPT_HARD_FAULT
-	bl     collect_xcpt_inf
+	bl     xcpt_collect
 	b      thinkos_hard_fault
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
@@ -178,7 +218,8 @@ cm3_hard_fault_isr:
 	.type   cm3_debug_mon_isr, %function
 cm3_debug_mon_isr:
 	/* select the context stack according to the content of LR */
-	tst     lr, #4
+	mov     r1, lr
+	tst     r1, #CM3_EXC_RET_SPSEL
 	ite     eq
 	mrseq   r0, MSP
 	mrsne   r0, PSP
@@ -224,19 +265,22 @@ cm3_svc_isr:
 	str     r0, [r3, #SCB_ICSR_OFFS]
 1:
 #endif
-	/* Get a pointer to the parameters store on the stack */
+
+#if (THINKOS_ENABLE_IDLE_MSP)
+	/* select the context stack according to the content of LR */
+	tst     lr, #4
+	ite     eq
+	mrseq   r0, MSP
+	mrsne   r0, PSP
+#else
 	mrs     r0, PSP
+#endif
+
 	/* Get PC from the stack */
 	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
 	ldrb    r2, [r2, #-2]
-#if THINKOS_NRT_THREADS_MAX
-	cmp     r1, #THINKOS_NRT_THREADS_MAX
-	blt     thinkos_svc_isr
-	b       thinkos_nrt_svc_isr
-#else
 	b       thinkos_svc_isr
-#endif
 	.align  2
 .L_thinkos_rt_1:
 	.word   thinkos_rt

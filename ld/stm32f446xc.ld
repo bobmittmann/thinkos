@@ -33,12 +33,14 @@ SEARCH_DIR(.)
 
 MEMORY
 {
-	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash (rx) : ORIGIN = 0x08000000, LENGTH = 256K
-	sram1 (rw) : ORIGIN = 0x20000000, LENGTH = 112K
-	sram2 (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
-	dcclog (r) : ORIGIN = 0x40000000, LENGTH = 1024K
-	alloc  (r) : ORIGIN = 0x50000000, LENGTH = 1024K
+	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
+	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 256K
+	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
+	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
+	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
+	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
+	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
+	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
 
 REGION_ALIAS("CODE", flash);
@@ -48,5 +50,5 @@ REGION_ALIAS("STACK", sram2);
 __code_init = ORIGIN(flash) + (DEFINED(__thinkos) ? 0x10000 : 0) ;
 __data_init = ORIGIN(sram1) + (DEFINED(__thinkos) ? 0x01000 : 0) ;
 
-INCLUDE stm32f4xx.ld
+INCLUDE stm32f446x.ld
 

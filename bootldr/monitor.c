@@ -450,6 +450,19 @@ void __attribute__((naked)) third_bootstrap(struct dmon_comm * comm)
 }
 #endif
 
+	/* ThinkOS application terminate request */
+	DBGMON_APP_TERM     = 19,
+	/* ThinkOS application stop request */
+	DBGMON_APP_STOP     = 20,
+	/* ThinkOS application resume request */
+	DBGMON_APP_RESUME   = 21,
+	/* ThinkOS application erase request */
+	DBGMON_APP_ERASE    = 22,
+	/* ThinkOS application upload request */
+	DBGMON_APP_UPLOAD   = 23,
+	/* ThinkOS application exec request */
+	DBGMON_APP_EXEC     = 24,
+
 static bool monitor_process_input(struct monitor * mon, int c)
 {
 	struct dmon_comm * comm = mon->comm;
@@ -591,7 +604,7 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 {
 	struct monitor monitor;
 	uint32_t sigmask = 0;
-	uint32_t sigset;
+	uint32_t sig;
 #if THINKOS_ENABLE_CONSOLE
 	uint8_t * ptr;
 	int cnt;
@@ -637,44 +650,45 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 #endif
 
 	for(;;) {
-		sigset = dbgmon_select(sigmask);
-		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+		switch((sig = dbgmon_select(sigmask)) {
 
-		if (sigset & (1 << DBGMON_SOFTRST)) {
+		DCC_LOG1(LOG_INFO, "sig=%08x", sig);
+
+	case DBGMON_SOFTRST:
 			DCC_LOG(LOG_TRACE, "Soft reset.");
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
-		}
+		break;
 
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DBGMON_COMM_CTL)) {
+case DBGMON_COMM_CTL:
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
 			dbgmon_clear(DBGMON_COMM_CTL);
-		}
+		break;
 #endif
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
-		if (sigset & (1 << DBGMON_THREAD_FAULT)) {
+		case DBGMON_THREAD_FAULT:
 			DCC_LOG(LOG_TRACE, "Thread fault.");
 			monitor_on_fault(comm);
 			dbgmon_clear(DBGMON_THREAD_FAULT);
-		}
+		break;
 
-		if (sigset & (1 << DBGMON_EXCEPT)) {
+		case DBGMON_EXCEPT:
 			DCC_LOG(LOG_TRACE, "System exception.");
 			monitor_on_fault(comm);
 			dbgmon_clear(DBGMON_EXCEPT);
-		}
+		break;
 #endif
 
 #if (MONITOR_WATCHPOINT_ENABLE)
-		if (sigset & (1 << DBGMON_BREAKPOINT)) {
+		case DBGMON_BREAKPOINT:
 			monitor_on_bkpt(&monitor);
 			dbgmon_clear(DBGMON_BREAKPOINT);
-		}
+		break;
 #endif
 
-		if (sigset & (1 << DBGMON_COMM_RCV)) {
+		case DBGMON_COMM_RCV:
 #if THINKOS_ENABLE_CONSOLE
 			/* receive from the COMM driver one bye at the time */
 			if (dmon_comm_recv(comm, buf, 1) > 0) {
@@ -694,16 +708,19 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 					}
 				}
 			}
+
 #else
 			if (dmon_comm_recv(comm, buf, 1) > 0) {
 				/* process the input character */
 				monitor_process_input(&monitor, buf[0]);
 			}
 #endif
-		}
+		break;
 
 #if THINKOS_ENABLE_CONSOLE
-		if (sigset & (1 << DBGMON_RX_PIPE)) {
+		case DBGMON_COMM_EOT:
+			break;
+		case DBGMON_RX_PIPE:
 			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_TRACE, "RX Pipe. rx_pipe.free=%d. "
 						 "Unmaksing DBGMON_COMM_RCV!", cnt);
@@ -711,36 +728,17 @@ void __attribute__((noreturn)) monitor_task(struct dmon_comm * comm)
 			} else {
 				DCC_LOG(LOG_TRACE, "RX Pipe empty!!!");
 			}
-			dbgmon_clear(DBGMON_RX_PIPE);
-		}
+		break;
 
-		if (sigset & (1 << DBGMON_TX_PIPE)) {
+		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
 				cnt = dmon_comm_send(comm, ptr, cnt);
 				__console_tx_pipe_commit(cnt); 
-			} else {
-				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
 			}
-		}
+		break;
 #endif
-
-#if 0
-		if (sigset & (1 << DBGMON_ALARM)) {
-			dbgmon_clear(DBGMON_ALARM);
-			if (this_board.autoboot(tick_cnt++) && 
-				dmon_app_exec(this_board.application.start_addr, false)) {
-				sigmask &= ~(1 << DBGMON_ALARM);
-				this_board.on_appload();
-			} else {
-				/* reastart the alarm timer */
-				dbgmon_alarm(125);
-			}  
-		}
-#endif
-
 	}
 }
 

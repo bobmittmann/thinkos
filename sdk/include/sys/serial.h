@@ -74,6 +74,7 @@
 					(SERIAL_PARITY_ODD << 4) | \
 					(SERIAL_STOPBITS_1 << 8) 
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -141,8 +142,8 @@ enum {
 #define SERIAL_TX_EN 2
 
 struct serial_op {
-	int (* send)(void *, const void *, unsigned int);
-	int (* recv)(void *, void *, unsigned int, unsigned int);
+	int (* send)(void *, const void *, size_t);
+	int (* recv)(void *, void *, size_t, unsigned int);
 	int (* drain)(void *);
 	int (* close)(void *);
 	int (* ioctl)(void *, int, uintptr_t, uintptr_t);
@@ -154,12 +155,12 @@ struct serial_dev {
 };
 
 static inline int serial_send(struct serial_dev * dev, const void * buf,
-							  unsigned int len) {
+							  size_t len) {
 	return dev->op->send(dev->drv, buf, len);
 }
 
 static inline int serial_recv(struct serial_dev * dev, void * buf,
-							  unsigned int len, unsigned int msec) {
+							  size_t len, unsigned int msec) {
 	return dev->op->recv(dev->drv, buf, len, msec);
 }
 

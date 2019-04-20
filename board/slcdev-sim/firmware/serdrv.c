@@ -231,10 +231,10 @@ struct serdrv * serdrv_init(unsigned int speed)
 #include <sys/tty.h>
 
 const struct fileop serdrv_ops = {
-	.write = (void *)serdrv_send,
-	.read = (void *)serdrv_recv,
-	.flush = (void *)serdrv_flush,
-	.close = (void *)NULL
+	.write = (int (*)(void *, const void *, size_t))serdrv_send,
+	.read = (int (*)(void *, void *, size_t, unsigned int))serdrv_recv,
+	.flush = (int (*)(void *))serdrv_flush,
+	.close = (int (*)(void *))null_close
 };
 
 FILE * serdrv_tty_fopen(struct serdrv * drv)

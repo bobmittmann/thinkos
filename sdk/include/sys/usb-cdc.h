@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/cdc.h>
+#include <usb/cdc.h>
 #include <sys/usb-dev.h>
 #include <sys/serial.h>
 

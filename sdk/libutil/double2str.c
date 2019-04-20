@@ -205,8 +205,10 @@ zero:
 
 }
 
-#define FLOAT2UINT32(F) ({ union { float f; uint32_t u; } a; a.f = (F); a.u;})
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
+#define FLOAT2UINT32(F) __extension__({ union { float f; uint32_t u; } \
+									  a; a.f = (F); a.u;})
+#define DOUBLE2UINT64(D) __extension__({ union { double d; uint64_t u; } \
+									   a; a.d = (D); a.u;})
 	
 int double2str(char * buf, double d, int precision) 
 {

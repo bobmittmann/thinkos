@@ -165,6 +165,7 @@ const uint32_t stm32f_mco_hz  = __MCO_HZ;
 const uint32_t stm32f_tim1_hz = __TIM1_HZ;
 const uint32_t stm32f_tim2_hz = __TIM2_HZ;
 const uint32_t stm32f_sai_hz = __SAI_HZ;
+const uint32_t stm32f_hse_hz = STM32_HSE_HZ;
 const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
 #if STM32_ENABLE_PLL
 const uint32_t stm32f_vco_hz = __VCO_HZ;

@@ -158,7 +158,7 @@ int ip_input(struct ifnet * __if, struct iphdr * __ip, int __len)
 	len = tot_len - hdr_len;
 
 	DCC_LOG3(LOG_INFO, "IP %I > %I (%d)", __ip->saddr, __ip->daddr, __len);
-	DBG("IP %I > %I (%d)", __ip->saddr, __ip->daddr, __len);
+	DBG("IP %08x > %08x (%d)", __ip->saddr, __ip->daddr, __len);
 
 	/* check the destination ip address */
 	/* get interface ip address */

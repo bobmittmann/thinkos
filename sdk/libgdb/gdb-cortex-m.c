@@ -34,7 +34,10 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 #include <gdb.h>
 
@@ -62,6 +65,43 @@ int uint2hex2hex(char * pkt, unsigned int val);
 #if (!THINKOS_ENABLE_DEBUG_FAULT)
 #error "Need THINKOS_ENABLE_DEBUG_FAULT!"
 #endif
+
+/* -------------------------------------------------------------------------
+ * Memory auxiliarly functions
+ * ------------------------------------------------------------------------- */
+
+/* Expanded Memory Block */
+struct mem_blk {
+	uint32_t addr;
+	uint32_t size;
+	uint32_t ro;
+};
+
+
+static bool addr2block(const struct mem_desc * mem, 
+					   uint32_t addr, struct mem_blk * blk) 
+{
+	uint32_t base;
+	uint32_t size;
+	int i;
+
+	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+		size = mem->blk[i].cnt << mem->blk[i].siz;
+		base = mem->blk[i].ref;
+		if ((addr >= base) && (addr < (base + size))) {
+			if (blk != NULL) {
+				int pos;
+				pos = (addr - base) >> mem->blk[i].siz;
+				blk->addr = base + (pos << mem->blk[i].siz);
+				blk->size = 1 << mem->blk[i].siz;
+				blk->ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
 
 /* -------------------------------------------------------------------------
  * Threads auxiliarly functions
@@ -112,8 +152,9 @@ int thread_getnext(int thread_id)
 
 int thread_active(void)
 {
-	if (thinkos_rt.active == THINKOS_THREAD_IDLE)
+	if (thinkos_rt.active == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_TRACE, "IDLE");
+	}
 	return thinkos_rt.active + THREAD_ID_OFFS;
 }
 
@@ -159,8 +200,9 @@ int thread_any(void)
 		DCC_LOG(LOG_MSG, "IDLE thread!");
 	else if (thinkos_rt.active == THINKOS_THREAD_VOID)
 		DCC_LOG(LOG_MSG, "VOID thread!");
-	else
+	else {
 		DCC_LOG1(LOG_MSG, "active=%d is invalid!", thinkos_rt.active);
+	}
 
 	/* Active thread is IDLE or invalid, try to get the first 
 	   initialized thread. */
@@ -181,120 +223,150 @@ bool thread_isalive(int gdb_thread_id)
 	return __thinkos_thread_isalive(thread_id);
 }
 
+const int16_t __ctx_offs[] = {
+	[0] = offsetof(struct thinkos_context, r0),
+	[1] = offsetof(struct thinkos_context, r1),
+	[2] = offsetof(struct thinkos_context, r2),
+	[3] = offsetof(struct thinkos_context, r3),
+	[4] = offsetof(struct thinkos_context, r4),
+	[5] = offsetof(struct thinkos_context, r5),
+	[6] = offsetof(struct thinkos_context, r6),
+	[7] = offsetof(struct thinkos_context, r7),
+	[8] = offsetof(struct thinkos_context, r8),
+	[9] = offsetof(struct thinkos_context, r9),
+	[10] = offsetof(struct thinkos_context, r10),
+	[11] = offsetof(struct thinkos_context, r11),
+	[12] = offsetof(struct thinkos_context, r12),
+	[13] = INT16_MIN, /*sp */
+	[14] = offsetof(struct thinkos_context, lr),
+	[15] = offsetof(struct thinkos_context, pc),
+	[16] = INT16_MIN,
+	[17] = INT16_MIN,
+	[18] = INT16_MIN,
+	[19] = INT16_MIN,
+	[20] = INT16_MIN,
+	[21] = INT16_MIN,
+	[22] = INT16_MIN,
+	[23] = INT16_MIN,
+	[24] = INT16_MIN,
+	[25] = offsetof(struct thinkos_context, xpsr),
+#if THINKOS_ENABLE_FPU
+	[26] = (18 *4),
+	[27] = (20 *4),
+	[28] = (22 *4),
+	[29] = (24 *4),
+	[30] = (26 *4),
+	[31] = (28 *4),
+	[32] = (30 *4),
+	[33] = (32 *4),
+	[34] = -(16 * 4),
+	[35] = -(12 * 4),
+	[36] = -(12 * 4),
+	[37] = -(10 * 4),
+	[38] = -(8 * 4),
+	[39] = -(6 * 4),
+	[40] = -(4 * 4),
+	[41] = -(34 * 4), /* fpscr */
+	[42] = -(35 * 4)
+#endif
+};
+
+/*
+uint32_t __reg_addr(struct thinkos_context * ctx, unsigned int reg)
+{
+	uint32_t addr;
+	int offs;
+
+	if ((reg <= 42) && (__ctx_offs[reg] >= 0)) {
+		addr = (uintptr_t)ctx + __ctx_offs[reg];
+	}
+}
+*/
+
 int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	struct mem_blk blk;
+	uint32_t addr;
 	uint32_t sp;
-	uint64_t x;
 
 	if (thread_id > THINKOS_THREAD_VOID) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
 		return -1;
 	}
 
+	ctx = thinkos_rt.ctx[thread_id];
+
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-		DCC_LOG1(LOG_INFO, "ThinkOS Idle thread, context=%08x!", ctx);
+		ctx  = __thinkos_idle_ctx();
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		ctx = &xcpt->ctx;
-		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-		DCC_LOG1(LOG_INFO, "ThinkOS Void thread, context=%08x!", ctx);
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
+		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx;
-		sp = (xcpt->ret & CM3_EXEC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-		DCC_LOG1(LOG_INFO, "ThinkOS exception, context=%08x!", ctx);
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-		DCC_LOG2(LOG_INFO, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
-	} else {
+		ctx = &xcpt->ctx.core;
+	} else if (!__thinkos_thread_ispaused(thread_id)) {
 		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 
-	switch (reg) {
-	case 0:
-		x = ctx->r0;
-		break;
-	case 1:
-		x = ctx->r1;
-		break;
-	case 2:
-		x = ctx->r2;
-		break;
-	case 3:
-		x = ctx->r3;
-		break;
-	case 4:
-		x = ctx->r4;
-		break;
-	case 5:
-		x = ctx->r5;
-		break;
-	case 6:
-		x = ctx->r6;
-		break;
-	case 7:
-		x = ctx->r7;
-		break;
-	case 8:
-		x = ctx->r8;
-		break;
-	case 9:
-		x = ctx->r9;
-		break;
-	case 10:
-		x = ctx->r10;
-		break;
-	case 11:
-		x = ctx->r11;
-		break;
-	case 12:
-		x = ctx->r12;
-		break;
-	case 13:
-		x = sp;
-		break;
-	case 14:
-		x = ctx->lr;
-		break;
-	case 15:
-		x = ctx->pc;
-		break;
-	case 25:
-		x = ctx->xpsr;
-		break;
-#if THINKOS_ENABLE_FPU
-	case 26 ... 33:
-		x = ctx->s[(reg - 26) * 2];
-		x = x | ((uint64_t)(ctx->s[(reg - 26) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
-		break;
-	case 34 ... 41:
-		x = ctx->s1[(reg - 34) * 2];
-		x = x | ((uint64_t)(ctx->s1[(reg - 34) * 2 + 1]) << 32);
-		DCC_LOG3(LOG_MSG, "reg=%d %12.6f %12.6f", reg, x, x >> 32);
-		break;
-	case 42:
-		x = ctx->fpscr;
-		break;
-#endif
-	default:
+	if (!addr2block(this_board.memory.ram, (uintptr_t)ctx, &blk)) {
+		DCC_LOG(LOG_ERROR, "invalid context address");
 		return -1;
 	}
 
-	*val = x;
+#if THINKOS_ENABLE_FPU
+	if (reg > 42) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#else
+	if (reg > 25) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#endif
+
+	if (reg == 13) { /*sp */
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+		sp = (uint32_t)ctx->sp;
+		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
+#else
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+#endif
+		*val = sp;
+		return 0;
+	} 
+
+	if (__ctx_offs[reg] == INT16_MIN) {
+		DCC_LOG1(LOG_ERROR, "Invalid register %d", reg);
+		return -1;
+	}
+
+	addr = (uintptr_t)ctx + __ctx_offs[reg];
+#if THINKOS_ENABLE_FPU
+	if (reg > 25) {
+		uint32_t dat;
+		if (!dbgmon_mem_rd32(this_board.memory.ram, addr, &dat)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+		*val = dat;
+	} else {
+#endif
+		if (!dbgmon_mem_rd64(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+#if THINKOS_ENABLE_FPU
+	}
+#endif
 
 	return 0;
 }
@@ -302,106 +374,92 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	struct mem_blk blk;
+	uint32_t addr;
 
 	if (thread_id > THINKOS_THREADS_MAX) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
 		return -1;
 	}
 
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx = thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-		DCC_LOG1(LOG_TRACE, "ThinkOS Idle thread, context=%08x!", ctx);
-		return 0;
-	} 
+	ctx = thinkos_rt.ctx[thread_id];
 
-	if (__thinkos_thread_isfaulty(thread_id)) {
-		if (thinkos_except_buf.active != thread_id) {
+	if (thread_id == THINKOS_THREAD_IDLE) {
+		return 0;
+	} else if (thread_id == THINKOS_THREAD_VOID) {
+		return 0;
+	} else if (__thinkos_thread_isfaulty(thread_id)) {
+		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &xcpt->ctx.core;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
-		ctx = thinkos_rt.ctx[thread_id];
-		DCC_LOG2(LOG_MSG, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
 	} else {
-		DCC_LOG(LOG_ERROR, "Invalid thread state!");
+		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 
-	switch (reg) {
-	case 0:
-		ctx->r0 = val;
-		break;
-	case 1:
-		ctx->r1 = val;
-		break;
-	case 2:
-		ctx->r2 = val;
-		break;
-	case 3:
-		ctx->r3 = val;
-		break;
-	case 4:
-		ctx->r4 = val;
-		break;
-	case 5:
-		ctx->r5 = val;
-		break;
-	case 6:
-		ctx->r6 = val;
-		break;
-	case 7:
-		ctx->r7 = val;
-		break;
-	case 8:
-		ctx->r8 = val;
-		break;
-	case 9:
-		ctx->r9 = val;
-		break;
-	case 10:
-		ctx->r10 = val;
-		break;
-	case 11:
-		ctx->r11 = val;
-		break;
-	case 12:
-		ctx->r12 = val;
-		break;
-	case 13:
-		thinkos_rt.ctx[thread_id] = (struct thinkos_context *)(uintptr_t)val;
-		break;
-	case 14:
-		ctx->lr = val;
-		break;
-	case 15:
-		ctx->pc = val;
-		break;
-	case 25:
-		ctx->xpsr = (ctx->xpsr & ~CM_APSR_MASK) | (val & CM_APSR_MASK);
-		break;
-#if THINKOS_ENABLE_FPU
-	case 26 ... 33:
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
-				 reg, (uint32_t)val, val >> 32);
-		ctx->s[(reg - 26) * 2] = val;
-		ctx->s[(reg - 26) * 2 + 1] = val >> 32;
-		break;
-	case 34 ... 41:
-		DCC_LOG3(LOG_TRACE, "reg=%d %12.6f %12.6f", 
-				 reg, (uint32_t)val, val >> 32);
-		ctx->s1[(reg - 34) * 2] = val;
-		ctx->s1[(reg - 34) * 2 + 1] = val >> 32;
-		break;
-#endif
-	default:
+	if (addr2block(this_board.memory.ram, (uintptr_t)ctx, &blk)) {
+		if (blk.ro) {
+			DCC_LOG2(LOG_ERROR, "read only block addr=0x%08x size=%d", 
+					 blk.addr, blk.size);
+			return -1;
+		}
+	} else {
+		DCC_LOG(LOG_ERROR, "invalid context address");
 		return -1;
 	}
+
+#if THINKOS_ENABLE_FPU
+	if (reg > 42) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#else
+	if (reg > 25) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+#endif
+
+	if (reg == 13) { /*sp */
+		uint32_t sp = val;
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+		sp -= (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
+		ctx->sp = sp;
+#else
+		sp -= (uint32_t)ctx + sizeof(struct thinkos_context);
+		__thinkos_thread_ctx_set(thread_id, (struct thinkos_context *)sp);
+#endif
+	} 
+
+	if (__ctx_offs[reg] == INT16_MIN) {
+		DCC_LOG(LOG_ERROR, "Invalid register");
+		return -1;
+	}
+
+	addr = (uintptr_t)ctx + __ctx_offs[reg];
+#if THINKOS_ENABLE_FPU
+	if (reg > 25) {
+		if (!dbgmon_mem_wr32(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+	} else {
+#endif
+		if (!dbgmon_mem_wr64(this_board.memory.ram, addr, val)) {
+			DCC_LOG(LOG_ERROR, "invalid context address");
+			return -1;
+		}
+#if THINKOS_ENABLE_FPU
+	}
+#endif
 
 	return 0;
 }
@@ -415,9 +473,9 @@ int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 		return -1;
 
 	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &thinkos_except_buf.ctx.core;
 	} else {
-		ctx = thinkos_rt.ctx[thread_id];
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG(LOG_ERROR, "Invalid context!");
@@ -445,9 +503,9 @@ int thread_step_req(unsigned int gdb_thread_id)
 		return -1;
 
 	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx;
+		ctx = &thinkos_except_buf.ctx.core;
 	} else {
-		ctx = thinkos_rt.ctx[thread_id];
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG1(LOG_ERROR, "Invalid context: %08x!", ctx);
 			return -1;
@@ -473,6 +531,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
 	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_context * ctx;
 	char * cp = buf;
 	int oid;
 	int type;
@@ -484,17 +543,20 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		return -1;
 	}
 
+	ctx = __thinkos_thread_ctx_get(thread_id);
+
 	if (thread_id == THINKOS_THREAD_IDLE) {
-		DCC_LOG(LOG_INFO, "ThinkOS Idle thread");
+		DCC_LOG(LOG_MSG, "ThinkOS Idle thread");
 	} else if (thread_id == THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_INFO, "ThinkOS Void thread");
+		DCC_LOG(LOG_MSG, "ThinkOS Void thread");
 	} else if (__thinkos_thread_isfaulty(thread_id)) {
 		if (xcpt->active != thread_id) {
 			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
 			return -1;
 		}
+		ctx = &xcpt->ctx.core;
 	} else if (__thinkos_thread_ispaused(thread_id)) {
-		DCC_LOG1(LOG_INFO, "ThinkOS thread=%d!", thread_id);
+		DCC_LOG1(LOG_MSG, "ThinkOS thread=%d!", thread_id);
 	} else {
 		DCC_LOG(LOG_ERROR, "Invalid thread state!");
 		return -1;
@@ -504,7 +566,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		cp += str2hex(cp, "IDLE");
 	} else if (thread_id == THINKOS_THREAD_VOID) {
 		int ipsr;
-		ipsr = (thinkos_rt.void_ctx->xpsr & 0x1ff);
+		ipsr = (ctx->xpsr & 0x1ff);
 		cp += str2hex(cp, "IRQ");
 		cp += int2str2hex(cp, ipsr - 16);
 	} else {
@@ -628,7 +690,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 			if (thread_id != THINKOS_THREAD_IDLE) {
 				int irq;
 				for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-					if (thinkos_rt.irq_th[irq] == thread_id) {
+					if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 						break;
 					}
 				}
@@ -657,41 +719,6 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 	}
 	
 	return cp - buf;
-}
-
-/* -------------------------------------------------------------------------
- * Memory auxiliarly functions
- * ------------------------------------------------------------------------- */
-
-struct mem_blk {
-	uint32_t addr;
-	uint32_t size: 31;
-	uint32_t ro: 1;
-};
-
-static bool addr2block(const struct mem_desc * mem, 
-					   uint32_t addr, struct mem_blk * blk) 
-{
-	uint32_t base;
-	uint32_t size;
-	int i;
-
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
-		if ((addr >= base) && (addr < (base + size))) {
-			if (blk != NULL) {
-				int pos;
-				pos = (addr - base) >> mem->blk[i].siz;
-				blk->addr = base + (pos << mem->blk[i].siz);
-				blk->size = 1 << mem->blk[i].siz;
-				blk->ro = (mem->blk[i].opt == BLK_RO) ? 1 : 0;
-			}
-			return true;
-		}
-	}
-
-	return false;
 }
 
 #define FLASH_BASE ((uint32_t)STM32_FLASH_MEM)
@@ -750,6 +777,17 @@ int target_mem_write(uint32_t addr,
 				return -1;
 			}
 
+		} else if (addr2block(this_board.memory.periph, addr, &blk)) {
+			/* flash */
+			DCC_LOG2(LOG_TRACE, "PERIPH block addr=0x%08x size=%d", 
+					 blk.addr, blk.size);
+
+			cnt = blk.size - (addr - blk.addr);
+			if (cnt > rem)
+				cnt = rem;
+
+			/* FIXME: 32bits access only */
+			__thinkos_memcpy((void *)addr, src, cnt);
 		} else {
 			DCC_LOG1(LOG_ERROR, "invalid address 0x%08x", addr);
 			return -1;
@@ -792,42 +830,11 @@ int target_mem_erase(uint32_t addr, unsigned int len)
 
 int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 {
-	uint8_t * dst = (uint8_t *)ptr;
-	struct mem_blk blk;
-	unsigned int rem;
+	const struct mem_desc * mem;
 
-	DCC_LOG2(LOG_MSG, "0x%08x .. 0x%08x", addr, addr + len - 1);
+	mem = dbgmon_mem_lookup(this_board.memory.lst, 3, addr);
 
-	rem = len;
-
-	while (rem) {
-		unsigned int cnt;
-
-		if (addr2block(this_board.memory.ram, addr, &blk)) {
-			/* not flash */
-			DCC_LOG2(LOG_MSG, "RAM block addr=0x%08x size=%d", 
-					 blk.addr, blk.size);
-		} else if (addr2block(this_board.memory.flash, addr, &blk)) {
-			/* flash */
-			DCC_LOG2(LOG_MSG, "FLASH block addr=0x%08x size=%d", 
-					 blk.addr, blk.size);
-		} else {
-			DCC_LOG1(LOG_MSG, "invalid mem location addr=0x%08x", addr);
-			return -1;
-		}
-
-		cnt = blk.size - (addr - blk.addr);
-		if (cnt > rem)
-			cnt = rem;
-
-		__thinkos_memcpy(dst, (void *)addr, cnt);
-
-		addr += cnt;
-		dst += cnt;
-		rem -= cnt;
-	}
-
-	return len;
+	return dbgmon_mem_read(mem, addr, ptr, len);
 }
 
 /* -------------------------------------------------------------------------
@@ -921,9 +928,9 @@ int target_file_read(const char * name, char * dst,
 					  unsigned int offs, unsigned int size)
 {
 	char * src;
-	int len;
-	int cnt;
-	int i;
+	unsigned int len;
+	unsigned int cnt;
+	unsigned int i;
 
 	if (prefix(name, "target.xml")) {
 		src = (char *)target_xml;

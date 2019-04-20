@@ -436,6 +436,7 @@
    be written, writing 1 has no effect. */
 
 /* Bit 14 - Data Toggle, for reception transfers */
+#define USB_DTOG_RX_BIT 14
 #define USB_DTOG_RX (1 << 14)
 #define USB_SWBUF_TX (1 << 14)
 /* If the endpoint is not Isochronous, this bit contains the expected value of
@@ -551,6 +552,7 @@
    This bit is read/write but only ‘0 can be written. */
 
 /* Bit 6 - Data Toggle, for transmission transfers */
+#define USB_SWBUF_RX_BIT 6
 #define USB_DTOG_TX (1 << 6)
 #define USB_SWBUF_RX (1 << 6)
 /* If the endpoint is non-isochronous, this bit contains the required value of
@@ -716,33 +718,29 @@ struct stm32f_usb_pktbuf {
 #define USB_EPREG_MASK (USB_CTR_RX | USB_SETUP | USB_EP_TYPE_MSK | \
 						USB_EP_KIND| USB_CTR_TX | USB_EA_MSK)
 
-#define EPTX_DTOGMASK  (USB_STAT_TX_MSK | USB_EPREG_MASK)
-#define EPRX_DTOGMASK  (USB_STAT_RX_MSK | USB_EPREG_MASK)
-
 static inline void __set_ep_txstat(struct stm32f_usb * usb, 
 								 unsigned int ep_id, uint32_t stat) {
 	uint32_t epr;
-	epr = usb->epr[ep_id] & EPTX_DTOGMASK;
+	epr = usb->epr[ep_id] & (USB_EPREG_MASK | USB_STAT_TX_MSK);
 	usb->epr[ep_id] = epr ^ (stat & USB_STAT_TX_MSK);
-};
+}
 
 static inline void __set_ep_rxstat(struct stm32f_usb * usb, 
 								 unsigned int ep_id, uint32_t stat) {
 	uint32_t epr;
-	epr = usb->epr[ep_id] & EPRX_DTOGMASK;
+	epr = usb->epr[ep_id] & (USB_EPREG_MASK | USB_STAT_RX_MSK);
 	usb->epr[ep_id] = epr ^ (stat & USB_STAT_RX_MSK);
-};
+}
 
 static inline uint32_t __get_ep_txstat(struct stm32f_usb * usb, 
 									 unsigned int ep_id) {
 	return usb->epr[ep_id] & USB_STAT_TX_MSK;
-};
+}
 
 static inline uint32_t __get_ep_rxstat(struct stm32f_usb * usb, 
 									 unsigned int ep_id) {
 	return usb->epr[ep_id] & USB_STAT_RX_MSK;
-};
-
+}
 
 static inline void __clr_ep_flag(struct stm32f_usb * usb, 
 							   int ep_id, uint32_t flag) {
@@ -764,29 +762,6 @@ static inline void __toggle_ep_flag(struct stm32f_usb * usb,
 	epr = usb->epr[ep_id];
 	usb->epr[ep_id] = (epr & USB_EPREG_MASK) | flag;
 }
-
-
-/*
-static inline void __set_ep_rxvalid(struct stm32f_usb * usb, int ep_id) {
-	__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
-} 
-
-static inline void __clr_ep_kind(struct stm32f_usb * usb, int ep_id) {
-	__clr_ep_flag(usb, ep_id, USB_EP_KIND);
-}
-
-static inline void __set_ep_kind(struct stm32f_usb * usb, int ep_id) {
-	__set_ep_flag(usb, ep_id, USB_EP_KIND);
-}
-
-static inline void __set_ep_dbl_buf(struct stm32f_usb * usb, int ep_id) {
-	__set_ep_flag(usb, ep_id, USB_EP_DBL_BUF);
-}
-
-static inline void __clr_status_out(struct stm32f_usb * usb, int ep_id) {
-	__clr_ep_flag(usb, ep_id, USB_EP_STATUS_OUT);
-}
-*/
 
 static inline void __set_ep_type(struct stm32f_usb * usb, int ep_id, int type) {
 	uint32_t epr;

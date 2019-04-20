@@ -21,11 +21,13 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
 
-void __thinkos_thread_abort(int thread_id)
+void __thinkos_thread_abort(unsigned int thread_id)
 {
-	DCC_LOG1(LOG_INFO, "<%d> ....", thread_id); 
+	DCC_LOG1(LOG_TRACE, "<%2d> ....", thread_id + 1); 
 
 #if THINKOS_ENABLE_TIMESHARE
 	{
@@ -96,7 +98,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id);
+		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id + 1);
 		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
 		ctx->r0 = THINKOS_EINVAL;
 		return;
@@ -109,7 +111,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	}
 #endif
 #endif
-	DCC_LOG2(LOG_TRACE, "<%d> code=%d", thread_id, code); 
+	DCC_LOG2(LOG_TRACE, "<%2d> code=%d", thread_id + 1, code); 
 
 #if THINKOS_ENABLE_TIMESHARE
 	/* possibly remove from the time share wait queue */
@@ -143,13 +145,13 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		int th;
 
 		if ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
-			DCC_LOG2(LOG_INFO, "<%d> wakeup from join %d.", th, wq);
+			DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
 			/* wakeup from the join wait queue */
 			__thinkos_wakeup(wq, th);
 			thinkos_rt.ctx[th]->r0 = code;
 			/* wakeup all remaining threads */
 			while ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
-				DCC_LOG2(LOG_INFO, "<%d> wakeup from join %d.", th, wq);
+				DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
 				__thinkos_wakeup(wq, th);
 				thinkos_rt.ctx[th]->r0 = code;
 			}
@@ -160,25 +162,30 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 #endif
 
 	__thinkos_thread_abort(thread_id);
+
+#if THINKOS_ENABLE_MONITOR
+	__dbgmon_signal_thread_terminate(thread_id, code);
+#endif
 }
 #endif /* THINKOS_ENABLE_TERMINATE */
 
-void __attribute__((noreturn)) __thinkos_thread_exit(int code)
+void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 {
+#if THINKOS_ENABLE_TERMINATE
 	thinkos_terminate(0, code);
-
+#endif
 	for(;;);
 }
 
 #if THINKOS_ENABLE_EXIT
 void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
-	DCC_LOG2(LOG_MSG, "<%d> exit with code %d!", 
-			 thinkos_rt.active, ctx->r0); 
+	DCC_LOG2(LOG_MSG, "<%2d> exit with code %d!", 
+			 thinkos_rt.active + 1, ctx->r0); 
 
 #if THINKOS_ENABLE_JOIN
 	if (thinkos_rt.wq_join[self] == 0) {
-		DCC_LOG1(LOG_MSG, "<%d> canceled...", self); 
+		DCC_LOG1(LOG_MSG, "<%2d> canceled...", self + 1); 
 		/* insert into the canceled wait queue and wait for a join call */ 
 		__thinkos_wq_insert(THINKOS_WQ_CANCELED, self);
 		/* remove from the ready wait queue */
@@ -189,7 +196,14 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 #endif /* THINKOS_ENABLE_JOIN */
 
 	/* adjust PC to the exit continuation call */
-	ctx->pc = (uint32_t)__thinkos_thread_exit;
+	ctx->pc = (uint32_t)__thinkos_thread_terminate_stub;
 }
+
+void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
+{
+	thinkos_exit(code);
+	for(;;);
+}
+
 #endif /* THINKOS_ENABLE_EXIT */
 

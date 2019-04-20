@@ -95,6 +95,14 @@ else
   OPTIONS += -mno-unaligned-access
 endif
 
+ifdef LDCODE
+  SYMDEFS += __ldcode=$(LDCODE)
+endif
+
+ifdef LDDATA
+  SYMDEFS += __lddata=$(LDDATA)
+endif
+
 ifndef APPADDR
   APPADDR := 0x08010000
 endif

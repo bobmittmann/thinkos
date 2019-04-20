@@ -27,8 +27,31 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
+int __thinkos_thread_wq_get(unsigned int thread_id)
+{
+	struct thinkos_rt * rt = &thinkos_rt;
+	int wq;
 
-void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
+	if ((thread_id >= THINKOS_THREADS_MAX) || (rt->ctx[thread_id] == NULL)) {
+		return -1;
+	}
+
+#if THINKOS_ENABLE_THREAD_STAT
+	wq = rt->th_stat[thread_id] >> 1;
+#else
+	for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+		if (rt->wq_lst[i] & (1 << thread_id))
+			break;
+	}
+	if (i == THINKOS_WQ_LST_END)
+		return -1; /* not found */
+	wq = i;
+#endif /* THINKOS_ENABLE_THREAD_STAT */
+
+	return wq;
+}
+
+void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 	int32_t timeout;
@@ -88,43 +111,63 @@ void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id)
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	dmprintf(comm, " - No: %d", thread_id + 1); 
+	dbgmon_printf(comm, " - No: %d", thread_id + 1); 
 #if THINKOS_ENABLE_THREAD_INFO
 	if (rt->th_inf[thread_id])
-		dmprintf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
+		dbgmon_printf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
 	else
 #endif
-		dmprintf(comm, ", '...'"); 
+		dbgmon_printf(comm, ", '...'"); 
 
 	if (THINKOS_OBJ_READY == type) {
 #if THINKOS_IRQ_MAX > 0
 		if (thread_id != THINKOS_THREAD_IDLE) {
 			int irq;
 			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-				if (thinkos_rt.irq_th[irq] == thread_id) {
+				if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 					break;
 				}
 			}
 			if (irq < THINKOS_IRQ_MAX) {
-				dmprintf(comm, " wait on IRQ[%d]\r\n", irq);
+				dbgmon_printf(comm, " wait on IRQ[%d]\r\n", irq);
 			} else
-				dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+				dbgmon_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 		} else
 #endif
-		dmprintf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+		dbgmon_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 	} else {
-		dmprintf(comm, " %swait on %s(%3d)\r\n", 
-				 tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
+		if (THINKOS_OBJ_FAULT == type) {
+			struct thinkos_except * xcpt = &thinkos_except_buf;
+			switch (xcpt->type) {
+			case CM3_EXCEPT_HARD_FAULT:
+				dbgmon_printf(comm, " Hard Fault");
+				break;
+			case CM3_EXCEPT_MEM_MANAGE:
+				dbgmon_printf(comm, " Mem Mgmt Fault");
+				break;
+			case CM3_EXCEPT_BUS_FAULT:
+				dbgmon_printf(comm, " Bus Fault");
+				break;
+			case CM3_EXCEPT_USAGE_FAULT: 
+				dbgmon_printf(comm, " Usage Fault");
+				break;
+			default:
+				dbgmon_printf(comm, " Error %2d", xcpt->type - THINKOS_ERR_OFF);
+			}
+		} else 
+			dbgmon_printf(comm, " %swait on %s(%3d)\r\n", 
+						  tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
+
 	}
 
-	dmprintf(comm, " - sched: val=%3d pri=%3d - ", 
+	dbgmon_printf(comm, " - sched: val=%3d pri=%3d - ", 
 			 sched_val, sched_pri); 
-	dmprintf(comm, " timeout=%8d ms", timeout); 
-	dmprintf(comm, " - cycles=%u\r\n", cyccnt); 
+	dbgmon_printf(comm, " timeout=%8d ms", timeout); 
+	dbgmon_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
 	dmon_print_context(comm, rt->ctx[thread_id], (uint32_t)rt->ctx[thread_id]);
 
-	dmprintf(comm, "\r\n");
+	dbgmon_printf(comm, "\r\n");
 }
 
 

@@ -2054,6 +2054,8 @@ These bits should be written when the PLL, PLLSAI and PLLI2S are disabled.
 
 /* Bit 27 - SDIO/USBFS/HS clock selection */
 #define RCC_CK48MSEL (1 << 27)
+#define RCC_CK48MSEL_PLLSAI_P (1 << 27)
+#define RCC_CK48MSEL_PLL_Q    (0 << 27)
 /* 1: f(PLLSAI_P)
    0: f(PLL_Q) */
 
@@ -3345,14 +3347,21 @@ struct stm32_clk {
 	uint8_t bit:5;
 } __attribute__((packed))__;
 
-extern const uint32_t stm32f_apb1_hz;
-extern const uint32_t stm32f_apb2_hz;
+/*---------------------------------------------------------------------
+ * Clocks
+ *---------------------------------------------------------------------*/
 extern const uint32_t stm32f_ahb_hz;
-extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_apb1_hz;
 extern const uint32_t stm32f_tim1_hz;
+extern const uint32_t stm32f_apb2_hz;
+extern const uint32_t stm32f_tim2_hz;
+extern const uint32_t stm32f_hse_hz;
 extern const uint32_t stm32f_hsi_hz;
-extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vco_hz;
 extern const uint32_t stm32f_sai_hz;
+extern const uint32_t stm32f_vcosai_hz;
+extern const uint32_t stm32f_i2s_hz;
+extern const uint32_t stm32f_vcoi2s_hz;
 
 #ifdef __cplusplus
 extern "C" {

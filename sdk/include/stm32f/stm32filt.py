@@ -334,6 +334,20 @@ class Register(object):
       self.fields.append(field)
       return 
 
+    # multiple bits field
+    m = re.match(r'Bits ([1-3]{,1}[0-9]):([1-3]{,1}[0-9])' + 
+      r'[ ]+([A-Z_][A-Za-z_0-9]*)[:]?', s)
+    if (m):
+      x = m.groups()
+      name = x[2]
+      begin = x[1]
+      end = x[0]
+      desc = u''
+      field = Field(name, self.mod, begin, end, desc)
+      self.fields.append(field)
+      return 
+
+
     # single bit field
     m = re.match('Bit[s]* ([1-3]{,1}[0-9])[ ]+' + 
       r'([A-Z_][A-Za-z_0-9]*):[ ]+(.*)', s)
@@ -343,6 +357,19 @@ class Register(object):
       begin = x[0]
       end = x[0]
       desc = x[2]
+      field = Field(name, self.mod, begin, end, desc)
+      self.fields.append(field)
+      return 
+
+    # single bit field
+    m = re.match('Bit ([1-3]{,1}[0-9])[ ]+' + 
+      r'([A-Z_][A-Za-z_0-9]*)[:]?', s)
+    if (m):
+      x = m.groups()
+      name = x[1]
+      begin = x[0]
+      end = x[0]
+      desc = u''
       field = Field(name, self.mod, begin, end, desc)
       self.fields.append(field)
       return 
@@ -470,7 +497,7 @@ class Peripheral(object):
     res = 0
     for r in self.regs:
       if (r.offs[0] > offs):
-        cnt = (r.offs[0] - offs) / 4
+        cnt = int((r.offs[0] - offs) / 4)
         s = s + '\tuint32_t res{:d}[{:d}];\n'.format(res, cnt)
         res = res + 1
 
@@ -538,12 +565,12 @@ def extract(f):
     r'([A-Za-z][A-Za-z0-9 _/-]+[A-Za-z0-9])[ ]+' + 
     r'\(([A-Za-z][A-Za-z0-9_]+)([/]([A-Za-z][A-Za-z0-9_]+))*\)')
   # Regular expression to mach a 'registers' subsection
-  regsub_re = re.compile(r'([1-9][0-9.]+)[ ]+([A-Z][A-Za-z0-9_/]*)' + 
+  regsub_re = re.compile(r'([1-9][0-9]?[.][1-9]+)[ ]+([A-Z][A-Za-z0-9_/ ]*)' + 
     r'[ ]+[Rr]egisters')
   # Regular expression to mach a 'register map' subsection
   mapsub_re = re.compile(r'Table [1-9][0-9.]*[ ]+' + 
     r'([A-Za-z][A-Za-z0-9_/]+)' + 
-    r'[ ]+[Rr]egister map')
+    r'[ -]+[Rr]egister map')
 
   mod = None
   flag = False
@@ -666,10 +693,12 @@ if __name__ == '__main__':
   if options.name:
     for m in modules: 
       if (m.name == options.name):
+        log(0, '+++ Module: ' + m.name)
         m.filter() 
         print_module(fout, m)
   else:
     for m in modules: 
+      log(0, '+++ Module: ' + m.name)
       m.filter() 
       print_module(fout, m)
 

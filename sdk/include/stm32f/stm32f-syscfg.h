@@ -23,17 +23,35 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __STM32F_SYSCFG_H__
-#define __STM32F_SYSCFG_H__
+/* ------------------------------------------------------------------------- */
+/* SYSCFG - System configuration controller */
+/* ------------------------------------------------------------------------- */
 
-/*-------------------------------------------------------------------------
-  System configuration controller (SYSCFG)
-  -------------------------------------------------------------------------*/
+#ifndef __STM32_SYSCFG_H__
+#define __STM32_SYSCFG_H__
 
-/* SYSCFG memory remap register */
-#define STM32F_SYSCFG_MEMRMP 0x00
+/* ------------------------------------------------------------------------- */
+/* SYSCFG peripheral mode configuration register - PMC */
+#define STM32_SYSCFG_PMC 0x0004
 
-/* [31..2] Reserved */
+/* Bits [19..31] - Reserved, must be kept at reset value. */
+
+/* Bits [16..18] -  */
+#define SYSCFG_ADCXDC2_MSK (0x7 << 16)
+#define SYSCFG_ADCXDC2_SET(VAL) (((VAL) << 16) & SYSCFG_ADCXDC2_MSK)
+#define SYSCFG_ADCXDC2_GET(REG) (((REG) & SYSCFG_ADCXDC2_MSK) >> 16)
+/* 0: No effect.
+   1: Refer to AN4073 on how to use this bit.
+   Note: These bits can be set only if the following conditions are met: - ADC
+   clock higher or equal to 30 MHz.
+   - Only one ADCxDC2 bit must be selected if ADC conversions do not start at
+   the same time and the sampling times differ.
+   - These bits must not be set when the ADCDC1 bit is set in PWR_CR register. */
+#define SYSCFG_ADCXDC2 (0x1 << 16)
+
+/* Bits [0..15] - Reserved, must be kept at reset value. */
+
+
 
 /* Bits [1..0] - Memory mapping selection */
 #define SYSCFG_MEM_MODE ((1 - 0) << 0)
@@ -351,6 +369,25 @@
 /* 0: I/O compensation cell power-down mode
    1: I/O compensation cell enabled  */
 
+
+/* ------------------------------------------------------------------------- */
+/* SYSCFG configuration register - CFGR */
+#define STM32_SYSCFG_CFGR 0x002c
+
+/* Bits [2..31] - Reserved, must be kept at reset value. */
+
+/* Bit 1 -  */
+#define SYSCFG_FMPI2C1_SDA (1 << 1)
+/* Set and cleared by software. When set it forces FM+ drive capability on
+   FMPI2C1_SDA pin selected through GPIO port mode register and GPIO alternate
+   function selection bits */
+
+/* Bit 0 -  */
+#define SYSCFG_FMPI2C1_SCL (1 << 0)
+/* Set and cleared by software. When set it forces FM+ drive capability on
+   FMPI2C1_SCL pin selected through GPIO port mode register and GPIO alternate
+   function selection bits */
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
@@ -367,8 +404,10 @@ struct stm32f_syscfg {
 		};
 		volatile uint32_t exticr[4];
 	};
-	volatile uint32_t res[2];
+	uint32_t res[2];
 	volatile uint32_t cmpcr; /* Compensation cell control register */
+    uint32_t res2[2];
+    volatile uint32_t cfgr; /* 0x2c */
 };
 
 #endif /* __ASSEMBLER__ */

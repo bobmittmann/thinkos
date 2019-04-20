@@ -1,25 +1,3 @@
-/* 
- * File:	 usb-cdc.c
- * Author:   Robinson Mittmann (bobmittmann@gmail.com)
- * Target:
- * Comment:
- * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
-
 #include <stdarg.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
@@ -53,7 +31,6 @@
 #ifndef DMPRINTF_ENABLE_ARG_WIDTH
 #define DMPRINTF_ENABLE_ARG_WIDTH    0
 #endif
-
 
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
@@ -103,7 +80,7 @@ static const char __blanks[] = {
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
 
 
-int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
+int dmprintf(const struct dbgmon_comm * comm, const char *fmt, ... )
 {
 	char buf[BUF_LEN];
 	va_list ap;
@@ -139,7 +116,7 @@ int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
 				flags = PERCENT;
 #if (DMPRINTF_ENABLE_FAST)
 				if (n) {
-					n = dmon_comm_send(comm, cp, n);
+					n = dbgmon_comm_send(comm, cp, n);
 					cp = (char *)fmt;
 					cnt += n;;
 					n = 0;
@@ -152,7 +129,7 @@ int dmprintf(struct dmon_comm * comm, const char *fmt, ... )
 			n++;
 #else
 			buf[0] = c;
-			cnt += dmon_comm_send(comm, buf, 1);
+			cnt += dbgmon_comm_send(comm, buf, 1);
 #endif
 			continue;
 		}
@@ -297,24 +274,24 @@ print_buf:
 			if (flags & ZERO) {
 				if (flags & SIGN) {
 					flags &= ~SIGN;
-					cnt += dmon_comm_send(comm, buf, 1);
+					cnt += dbgmon_comm_send(comm, buf, 1);
 				}
-				r = dmon_comm_send(comm, __zeros, w - n);
+				r = dbgmon_comm_send(comm, __zeros, w - n);
 			} else {
-				r = dmon_comm_send(comm, __blanks, w - n);
+				r = dbgmon_comm_send(comm, __blanks, w - n);
 			}
 			cnt += r;
 		}
 
 		if (flags & SIGN) {
-			cnt += dmon_comm_send(comm, buf, 1);
+			cnt += dbgmon_comm_send(comm, buf, 1);
 		}
 
-		cnt += dmon_comm_send(comm, cp, n);
+		cnt += dbgmon_comm_send(comm, cp, n);
 
 #if (DMPRINTF_ENABLE_LEFT_ALIGN)
 		if ((flags & LEFT) && (w > n)) {
-			r = dmon_comm_send(comm, __blanks, w - n);
+			r = dbgmon_comm_send(comm, __blanks, w - n);
 			cnt += r;
 		}
 #endif
@@ -330,7 +307,7 @@ print_buf:
 
 #if (DMPRINTF_ENABLE_FAST)
 	if (n) {
-		r = dmon_comm_send(comm, cp, n);
+		r = dbgmon_comm_send(comm, cp, n);
 		cnt+= r;;
 	}
 #endif

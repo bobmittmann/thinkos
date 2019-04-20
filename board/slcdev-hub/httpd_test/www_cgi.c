@@ -198,16 +198,16 @@ int qotd_cgi(struct httpctl * ctl)
   ---------------------------------------------------------------------------*/
 
 int http_write(struct httpctl * ctl, 
-			   const void * buf, unsigned int len)
+			   const void * buf, size_t len)
 {
 	return tcp_send(ctl->tp, buf, len, 0);
 }
 
 const struct fileop http_fops = {
-	.write = (void *)http_write,
-	.read = (void *)null_read,
-	.flush = (void *)null_flush,
-	.close = (void *)null_close
+	.write = (int (*)(void *, const void *, size_t))http_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
+	.flush = (int (*)(void *))null_flush,
+	.close = (int (*)(void *))null_close
 };
 
 extern const struct shell_cmd shell_cmd_tab[];
