@@ -19,7 +19,7 @@
  * http://www.gnu.org/
  */
 
-/* 
+/** 
  * @file thinkos.h
  * @brief ThinkOS API
  * @author Robinson Mittmann <bobmittmann@gmail.com>
@@ -46,16 +46,17 @@
  * @THINKOS_EDEADLK: Deadlock condition detected 
  */
 enum thinkos_err {
-	THINKOS_OK        =  0, 
-	THINKOS_ETIMEDOUT = -1, 
-	THINKOS_EINTR     = -2, 
-	THINKOS_EINVAL    = -3, 
-	THINKOS_EAGAIN    = -4, 
-	THINKOS_EDEADLK   = -5, 
+	THINKOS_OK        =  0, /**< No error */
+	THINKOS_ETIMEDOUT = -1, /**< System call timed out */
+	THINKOS_EINTR     = -2, /**< System call interrupted out */
+	THINKOS_EINVAL    = -3, /**< Invalid argument */
+	THINKOS_EAGAIN    = -4, /**< Non blocking call failed */
+	THINKOS_EDEADLK   = -5, /**< Deadlock condition detected */
 	THINKOS_EPERM     = -6,
-	THINKOS_ENOSYS    = -7,
+	THINKOS_ENOSYS    = -7, /**< Invalid system call */
 	THINKOS_EFAULT    = -8,        
-	THINKOS_ENOMEM    = -9  
+	THINKOS_ENOMEM    = -9,  /**< Resource pool exausted */ 
+	THINKOS_EBADF     = -10  /**< Closing console if not open */ 
 };
 
 /** 
@@ -215,6 +216,7 @@ extern "C" {
  * thread of the system.
  * @return THINKOS_OK
  */
+int thinkos_init(unsigned int opt);
 
 /** 
  * thinkos_krn_init() - Initializes the ThinkOS kernel.
@@ -874,6 +876,45 @@ int thinkos_trace_getfirst(int id, struct trace_entry * entry);
 int thinkos_trace_getnext(int id, struct trace_entry * entry);
 
 /**@}*/
+
+/** @brief write into to console driver
+ *
+ * @param buf pointer to an block of data to be transferred. 
+ * @param len size of the data block in octets.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int  thinkos_console_write(const void * buf, unsigned int len);
+
+/** @brief read from console driver
+ *
+ * @param buf pointer to a memory for data to be transferred. 
+ * @param len size of the data block in octets.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_console_read(void * buf, unsigned int len);
+
+/** @brief read from console driver with timeout
+ *
+ * @param buf pointer to a memory for data to be transferred. 
+ * @param len size of the data block in octets.
+ * @param ms timeout time in milliseconds.
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
+
+int thinkos_console_is_connected(void);
+
+int thinkos_console_close(void);
+
+int thinkos_console_drain(void);
+
+int thinkos_console_io_break(unsigned int which);
+
+int thinkos_console_raw_mode(unsigned int enable);
+
+int thinkos_console_rd_nonblock(unsigned int enable);
+
+int thinkos_console_wr_nonblock(unsigned int enable);
 
 #ifdef __cplusplus
 }

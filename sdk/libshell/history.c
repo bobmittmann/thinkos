@@ -228,7 +228,16 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 		case MODE_ESC_VAL1:
 		case MODE_ESC_VAL2:
 			switch (c) {
-			case '0'...'9':
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
 				val = val * 10 + c - '0';
 				continue;
 			case 'A':
@@ -362,7 +371,7 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 				fputc(buf[pos++], f);
 				if ((buf[pos - 1] != ' ') && (buf[pos] == ' '))
 					break;
-			} 
+			}
 			continue;
 
 		case IN_CTRL_CURSOR_LEFT:
@@ -414,7 +423,8 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 
 			fputs(OUT_CURSOR_LEFT, f);
 			pos--;
-			/* fall back */
+
+			/* FALLTHROUGH */
 
 		case IN_DELETE:
 

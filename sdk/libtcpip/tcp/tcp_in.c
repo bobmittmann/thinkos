@@ -27,8 +27,10 @@
 #include <sys/tcp.h>
 #include <tcpip/tcp.h>
 
-inline struct tcp_pcb * tcp_active_lookup(in_addr_t __faddr, uint16_t __fport, 
-										  in_addr_t __laddr, uint16_t __lport)
+static inline struct tcp_pcb * tcp_active_lookup(in_addr_t __faddr, 
+												 uint16_t __fport, 
+												 in_addr_t __laddr, 
+												 uint16_t __lport)
 {
 
 	return (struct tcp_pcb *)pcb_lookup(__faddr, __fport, 
@@ -36,7 +38,7 @@ inline struct tcp_pcb * tcp_active_lookup(in_addr_t __faddr, uint16_t __fport,
 										&__tcp__.active);
 }
 
-inline struct tcp_listen_pcb * tcp_listen_lookup(in_addr_t __faddr, 
+static inline struct tcp_listen_pcb * tcp_listen_lookup(in_addr_t __faddr, 
 												 uint16_t __fport, 
 												 in_addr_t __laddr, 
 												 uint16_t __lport)

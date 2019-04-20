@@ -126,7 +126,7 @@ int stm32f_otg_fs_txf_setup(struct stm32f_otg_fs * otg_fs,
 
 	depctl = otg_fs->inep[ep_id].diepctl;
 	if (ep_id == 0)
-		mpsiz = OTGFS_EP0_MPSIZ_GET(depctl);
+		mpsiz = OTG_FS_EP0_MPSIZ_GET(depctl);
 	else
 		mpsiz = OTG_FS_MPSIZ_GET(depctl);
 
@@ -181,7 +181,7 @@ int stm32f_otg_fs_txf_push(struct stm32f_otg_fs * otg_fs, unsigned int ep_id,
 	deptsiz = otg_fs->inep[ep_id].dieptsiz;
 
 	if (ep_id == 0)
-		mpsiz = OTGFS_EP0_MPSIZ_GET(depctl);
+		mpsiz = OTG_FS_EP0_MPSIZ_GET(depctl);
 	else
 		mpsiz = OTG_FS_MPSIZ_GET(depctl);
 
@@ -246,6 +246,7 @@ static void stm32f_otg_fs_core_reset(struct stm32f_otg_fs * otg_fs)
 	udelay(3);
 }
 
+#if 0
 void stm32f_otg_fs_clear(struct stm32f_otg_fs * otg_fs)
 {
 	uint32_t depctl;
@@ -274,6 +275,7 @@ void stm32f_otg_fs_clear(struct stm32f_otg_fs * otg_fs)
 		otg_fs->outep[i].doepint = 0xff;
 	}
 }
+#endif
 
 void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 {
@@ -334,7 +336,11 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
   #endif
 #else
+  #if STM32_VBUS_SENS_ENABLED
 	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
+  #else
+	otg_fs->gccfg = OTG_FS_PWRDWN;
+  #endif
 #endif 
 
 	/* 4. Wait for the USBRST interrupt in OTG_FS_GINTSTS. It indicates that 
@@ -379,7 +385,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 		eptfsav = otg_fs->inep[ep_id].dtxfsts;
 		eptsiz = otg_fs->inep[ep_id].dieptsiz;
 
-		mpsiz = (ep_id == 0) ? OTGFS_EP0_MPSIZ_GET(depctl) : OTG_FS_MPSIZ_GET(depctl);
+		mpsiz = (ep_id == 0) ? OTG_FS_EP0_MPSIZ_GET(depctl) : 
+			OTG_FS_MPSIZ_GET(depctl);
 
 		(void)eptsiz;
 		eptfsav = eptfsav * 4;
@@ -411,7 +418,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 			return;
 		}
 		
-		mpsiz = (ep_id == 0) ? OTGFS_EP0_MPSIZ_GET(depctl) : OTG_FS_MPSIZ_GET(depctl);
+		mpsiz = (ep_id == 0) ? OTG_FS_EP0_MPSIZ_GET(depctl) : 
+			OTG_FS_MPSIZ_GET(depctl);
 		(void)mpsiz;
 
 		DCC_LOG5(LOG_INFO, "EP%d OUT %s SNPM=%d STALL=%d NAKSTS=%d",
@@ -433,8 +441,8 @@ void stm32f_otg_fs_ep_dump(struct stm32f_otg_fs * otg_fs, unsigned int addr)
 
 }
 
-void otg_fs_fifo(struct stm32f_otg_fs * otg_fs, 
-				 unsigned int addr, unsigned int len)
+void otg_fs_fifo_dump(struct stm32f_otg_fs * otg_fs, 
+					  unsigned int addr, unsigned int len)
 {
 	unsigned int q;
 	unsigned int r;
@@ -468,7 +476,6 @@ void otg_fs_fifo(struct stm32f_otg_fs * otg_fs,
 		break;
 	};
 }
-
 #endif
 
 #endif /* STM32F_OTG_FS */

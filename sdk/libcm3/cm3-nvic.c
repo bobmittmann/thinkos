@@ -32,7 +32,7 @@
 
 void cm3_nvic_irq_disable_all(void)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < (CM3_ICTR + 1); ++i) {
 		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */

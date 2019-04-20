@@ -64,6 +64,7 @@ void thinkos_gate_free_svc(int32_t * arg)
 
 #endif
 
+
 /* --------------------------------------------------------------------------
  * 
  * -------------------------------------------------------------------------- */
@@ -105,7 +106,7 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 #endif
 	idx *= 2;
 
-	DCC_LOG1(LOG_MSG, "gate %d", wq);
+	DCC_LOG1(LOG_INFO, "gate %d", wq);
 
 again:
 	/* check whether the gate is open or not */

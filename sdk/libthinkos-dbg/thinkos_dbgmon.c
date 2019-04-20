@@ -22,6 +22,8 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -32,74 +34,43 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <arch/cortex-m3.h>
 #include <sys/param.h>
 #include <stdbool.h>
-
 #include <sys/dcclog.h>
-
+#include <vt100.h>
 
 #if (THINKOS_ENABLE_MONITOR)
+
+#ifdef THINKOS_DBGMON_ENABLE_IRQ_MGMT
+#warning "Deprecated THINKOS_DBGMON_ENABLE_IRQ_MGMT"
+#endif
 
 #if (THINKOS_ENABLE_DEBUG_BKPT && !THINKOS_ENABLE_THREAD_VOID)
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
-#ifndef THINKOS_DBGMON_STACK_SIZE
-#define THINKOS_DBGMON_STACK_SIZE (960 + 16)
-#endif
-
-#ifndef THINKOS_DBGMON_ENABLE_IRQ_MGMT
-#define THINKOS_DBGMON_ENABLE_IRQ_MGMT 1 
-#endif
-
-#ifndef THINKOS_DBGMON_ENABLE_RST_VEC
-#define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
-#endif
+#define DBGMON_PERISTENT_MASK ((1 << DBGMON_RESET) | \
+							   (1 << DBGMON_SOFTRST))
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
-	struct dmon_comm * comm;
 	uint32_t * ctx;           /* monitor context */
+	struct dbgmon_comm * comm;
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	uint8_t irq_en_lst[4]; /* list of interrupts forced enable */
-	uint32_t nvic_ie[NVIC_IRQ_REGS]; /* interrupt state */
-#endif
-	void (* task)(struct dmon_comm * comm);
+	void * param;             /* user supplied parameter */
+	uint32_t xpsr;
+	int8_t thread_id;
+	int32_t code;
+	void (* task)(const struct dbgmon_comm *, void *);
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
 
-uint32_t __attribute__((aligned(8))) thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
+uint32_t __attribute__((aligned(8))) 
+	thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
 const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
 
 int dbgmon_context_swap(uint32_t ** pctx); 
-
-/**
-  * __dmon_irq_force_enable:
-  *
-  * Enable interrupts listed in the IRQ forced enable list.
-  */
-void __dmon_irq_force_enable(void)
-{
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	int cnt = 0;
-
-	while (cnt < 4) {
-		int irq;
-		int i;
-		int k;
-
-		/* get the next irq from the list */
-		irq = thinkos_dbgmon_rt.irq_en_lst[cnt++];
-		i = irq / 32;
-		k = irq % 32;
-
-		thinkos_dbgmon_rt.nvic_ie[i] |= (1 << k);
-		CM3_NVIC->iser[i] = (1 << k);
-	}
-#endif
-}
 
 /**
   * __dmon_irq_disable_all:
@@ -116,10 +87,9 @@ static void __dmon_irq_disable_all(void)
 {
 	int i;
 
+	DCC_LOG(LOG_WARNING, "NIVC all interrupts disabled!!!");
+
 	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-		thinkos_dbgmon_rt.nvic_ie[i] = 0;
-#endif
 		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
 		/* FIXME: clearing the pending interrupt may have a side effect 
 		   on the comms irq used by the debug monitor. An alternative 
@@ -131,42 +101,6 @@ static void __dmon_irq_disable_all(void)
 	}
 }
 
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-/**
-  * __dmon_irq_pause_all:
-  *
-  * Save the state of the interrupt enable registers and 
-  * disable all interrupts.
-  */
-void __dmon_irq_pause_all(void)
-{
-	int i;
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		/* save interrupt state */
-		thinkos_dbgmon_rt.nvic_ie[i] = CM3_NVIC->iser[i];
-		CM3_NVIC->icer[i] = 0xffffffff; /* disable all interrupts */
-	}
-}
-
-/**
-  * __dmon_irq_restore_all:
-  *
-  * Restore the state of the interrupt enable registers.
-  */
-void __dmon_irq_restore_all(void)
-{
-	int i;
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		/* restore interrupt state */
-		CM3_NVIC->iser[i] = thinkos_dbgmon_rt.nvic_ie[i];
-	}
-
-	DCC_LOG(LOG_TRACE, "....");
-
-}
-#endif
 
 #if THINKOS_DBGMON_ENABLE_RST_VEC
 
@@ -204,168 +138,148 @@ void __reset_ram_vectors(void)
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-int dbgmon_signal(int sig) 
+void dbgmon_signal(int sig) 
 {
 	struct cm3_dcb * dcb = CM3_DCB;
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 1);  
-	dcb->demcr |= DCB_DEMCR_MON_PEND;
-	asm volatile ("isb\n" :  :  : );
-	return sig;
-}
-
-void dbgmon_signal_idle(void)
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-
-	/* Debug monitor request semaphore */
-	if ((thinkos_dbgmon_rt.events) & DBGMON_IDLE_REQ) {
-		DCC_LOG(LOG_MSG, "<<< Idle >>>");
-		/* REspond with system idle */
-		__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, 
-					 DBGMON_OS_IDLE, 1);  
-		dcb->demcr |= DCB_DEMCR_MON_PEND;
-		asm volatile ("isb\n" :  :  : );
-	}
-}
-
-int dbgmon_unmask(int sig)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, sig, 1);  
-	return sig;
-}
-
-int dbgmon_mask(int sig)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.mask, sig, 0);  
-	return sig;
-}
-
-int dbgmon_clear(int sig)
-{
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, sig, 0);  
-	return sig;
-}
-
-uint32_t dbgmon_select(uint32_t evmask)
-{
 	uint32_t evset;
+
 	
-	DCC_LOG1(LOG_MSG, "evmask=%08x", evmask);
-
-	evset = thinkos_dbgmon_rt.events;
-	if (evset & evmask) {
-		DCC_LOG1(LOG_MSG, "got evset=%08x !!", evset);
-		return evset & evmask;
-	}
-
-	/* umask event */
-	thinkos_dbgmon_rt.mask |= evmask;
+	do {
+		/* avoid possible race condition on dbgmon.events */
+		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+		evset |= (1 << sig);
+	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
 
 	do {
-		DCC_LOG(LOG_MSG, "sleep...");
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		DCC_LOG1(LOG_MSG, "wakeup evset=%08x.", evset);
-	} while ((evset & evmask) == 0);
+		demcr = __ldrex((uint32_t *)&dcb->demcr);
+		demcr |= DCB_DEMCR_MON_PEND;
+	} while (__strex((uint32_t *)&dcb->demcr, demcr));
 
-	thinkos_dbgmon_rt.mask &= ~evmask;
-
-	return evset & evmask;
+	asm volatile ("isb\n" :  :  : );
 }
 
-/* wait for an event but don't clear the 
-   event or event mask if previously set */
+bool dbgmon_is_set(int sig) 
+{
+	return thinkos_dbgmon_rt.events &  (1 << sig) ? true : false;
+}
+
+void dbgmon_unmask(int sig)
+{
+	uint32_t mask;
+
+	do {
+		mask = __ldrex((uint32_t *)&thinkos_dbgmon_rt.mask);
+		mask |= (1 << sig);
+	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.mask, mask));
+}
+
+void dbgmon_mask(int sig)
+{
+	uint32_t mask;
+
+	do {
+		mask = __ldrex((uint32_t *)&thinkos_dbgmon_rt.mask);
+		mask &= ~(1 << sig);
+	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.mask, mask));
+}
+
+void dbgmon_clear(int sig)
+{
+	uint32_t evact;
+	uint32_t evset;
+
+	do {
+		/* avoid possible race condition on dbgmon.events */
+		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+		evact = evset & (1 << sig);
+		evset ^= evact;
+	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
+}
+
+/* wait for multiple events, return the highest priority (smaller number)
+   don't clear the event upon exiting. */
+int dbgmon_select(uint32_t evmsk)
+{
+	int evset;
+	uint32_t save;
+	int sig;
+
+	save = thinkos_dbgmon_rt.mask;
+	/* set the local mask */
+	evmsk |= save | DBGMON_PERISTENT_MASK;
+	DCC_LOG1(LOG_MSG, "evmask=%08x ........ ", evmsk);
+	thinkos_dbgmon_rt.mask = evmsk;
+	for(;;) {
+		evset = thinkos_dbgmon_rt.events;
+		/* apply local and global masks, 
+		   making sure not to mask non maskable events */
+		evset &= evmsk;
+		/* select the event with highest priority */
+		sig = __clz(__rbit(evset & evmsk));
+
+		if (sig < 32)
+			break;
+
+		DCC_LOG1(LOG_MSG, "waiting for events evmsk=%08x sleeping...", evmsk);
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		DCC_LOG(LOG_MSG, "wakeup...");
+	} 
+	thinkos_dbgmon_rt.mask = save;
+
+	DCC_LOG1(LOG_MSG, "event=%d", sig);
+
+	return sig;
+}
+
+
+/* wait for a single event and clear the event */
 int dbgmon_expect(int sig)
 {
+	uint32_t save;
 	uint32_t evset;
 	uint32_t evmsk;
-	uint32_t stmsk;
-	
-	evset = thinkos_dbgmon_rt.events;
-	if (evset & (1 << sig))
-		return sig;
+	uint32_t result;
 
-	/* save the state of the bit in the event mask */
-	evmsk = thinkos_dbgmon_rt.mask;
-	stmsk = (evmsk & (1 << sig)) ^ (1 << sig);
-	/* umask event */
-	evmsk |= (1 << sig);
+	save = thinkos_dbgmon_rt.mask;
+	/* set the local mask */
+	evmsk = save | (1 << sig) | DBGMON_PERISTENT_MASK;
 	thinkos_dbgmon_rt.mask = evmsk;
 
-	DCC_LOG2(LOG_INFO, "waiting for %d (evmsk=%08x) sleeping...", sig, evmsk);
-	do {
+	for (;;) {
+		/* avoid possible race condition on dbgmon.events */
+		do {
+			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+			/* apply local and global masks, 
+			   making sure not to mask non maskable events */
+			result = evset;
+			result &= evmsk;
+			if (result & (1 << sig))
+				evset &= ~(1 << sig); /* clear the event */
+		} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
+
+		if (result != 0)
+			break;
+
+		if (evset != 0) {
+			DCC_LOG3(LOG_MSG, "expected %08x got %08x/%08x, sleeping...", 
+					 (1 << sig), evset, evmsk);
+		}
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		evmsk = thinkos_dbgmon_rt.mask;
-		DCC_LOG2(LOG_INFO, "swap evset=%08x evmsk=%08x", evset, evmsk);
-	} while ((evset & evmsk) == 0);
-	DCC_LOG1(LOG_INFO, "wakeup... evset=%08x", evset);
-
-	/* mask back the event if previously masked */
-	evmsk ^= stmsk;
-	DCC_LOG2(LOG_INFO, "masking evmsk=%08x bitsave=%08x", evmsk, stmsk);
-	thinkos_dbgmon_rt.mask = evmsk;
-
-	if (evset & (1 << sig))
-		return sig;
-
-	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", evset & evmsk);
-
-	/* unexpected event received */
-	return -1;
-}
-
-#if 0
-/* wait for an event, clear the event and event mask */
-int dbgmon_wait(int ev)
-{
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t mask = (1 << ev);
-	
-	evset = thinkos_dbgmon_rt.events;
-	if (evset & mask) {
-		thinkos_dbgmon_rt.events = evset & ~(mask);
-		return 0;
+		if (evset != 0) {
+			DCC_LOG(LOG_MSG, "wakeup...");
+		}
 	}
 
-	/* umask event */
-	thinkos_dbgmon_rt.mask |= mask;
+	thinkos_dbgmon_rt.mask = save;
 
-	DCC_LOG1(LOG_MSG, "waiting for %d, sleeping...", ev);
-	do {
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		evset = thinkos_dbgmon_rt.events;
-		evmsk = thinkos_dbgmon_rt.mask;
-	} while ((evset & evmsk) == 0);
-	DCC_LOG(LOG_MSG, "wakeup...");
-
-	/* mask event */
-	thinkos_dbgmon_rt.mask = evmsk & ~mask;
-
-	if (evset & mask) {
-		/* clear event */
-		thinkos_dbgmon_rt.events = evset & ~mask;
-		return 0;
+	if ((result & (1 << sig)) == 0) {
+		/* unexpected event received */
+		sig = -1;
+		DCC_LOG3(LOG_WARNING, "expected %08x got %08x/%08x, sleeping...", 
+				 (1 << sig), result, evmsk);
 	}
 
-	DCC_LOG1(LOG_INFO, "unexpected event=%08x!!", 
-			 evset & thinkos_dbgmon_rt.mask);
-
-	/* unexpected event received */
-	return -1;
-}
-#endif
-
-/* wait for an event, clear the event,
- return the event or -1 if another unmasked event 
- is received. */
-int dbgmon_wait(int sig)
-{
-	if ((sig = dbgmon_expect(sig)) < 0)
-		return sig;
-
-	return dbgmon_clear(sig);
+	return sig;
 }
 
 int dbgmon_sleep(unsigned int ms)
@@ -376,11 +290,12 @@ int dbgmon_sleep(unsigned int ms)
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
 	/* wait for signal */
-	return dbgmon_wait(DBGMON_ALARM);
+	return dbgmon_expect(DBGMON_ALARM);
 }
 
 void dbgmon_alarm(unsigned int ms)
 {
+	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	dbgmon_clear(DBGMON_ALARM);
 	dbgmon_unmask(DBGMON_ALARM);
 #if THINKOS_ENABLE_DMCLOCK
@@ -403,35 +318,123 @@ void dbgmon_alarm_stop(void)
 
 int dbgmon_wait_idle(void)
 {
-	int ret;
+	uint32_t save;
+	uint32_t evset;
+	uint32_t evmsk;
+	uint32_t result;
 
-	/* Debug monitor IDLE request semaphore */
-	__bit_mem_wr((uint32_t *)&thinkos_dbgmon_rt.events, DBGMON_IDLE_REQ, 1);  
+	/* Issue an idle hook request */
+	__idle_hook_req(IDLE_HOOK_NOTIFY_DBGMON);
 
-	/* wait for signal */
-	if ((ret = dbgmon_wait(DBGMON_OS_IDLE)) < 0)
-		return ret;
+	save = thinkos_dbgmon_rt.mask;
 
-	DCC_LOG(LOG_MSG, "[IDLE] zzz zzz zzz zzz");
+	/* set the local mask */
+	evmsk = (1 << DBGMON_IDLE);
+	thinkos_dbgmon_rt.mask = evmsk;
+	
+	do {
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+		do { /* avoid possible race condition on dbgmon.events */
+			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
+			result = evset;
+			evset &= evmsk; /* clear the event */
+		} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
+	} while (result == 0);
+	thinkos_dbgmon_rt.mask = save;
 
-	return 0;
+	return (result == evmsk) ? 0 : -1;
 }
 
-void dbgmon_reset(void)
+void __dbgmon_signal_thread_terminate(int thread_id, int code)
+{
+	thinkos_dbgmon_rt.thread_id = thread_id;
+	thinkos_dbgmon_rt.code = code;
+	dbgmon_signal(DBGMON_THREAD_TERMINATE);
+}
+
+int dbgmon_thread_terminate_get(int * code)
+{
+	int thread_id;
+
+	if ((thread_id = thinkos_dbgmon_rt.thread_id) >= 0) {
+		if (code != NULL) {
+			*code = thinkos_dbgmon_rt.code;
+		}
+	}
+
+	return thread_id;
+}
+
+void __dbgmon_task_reset(void)
 {
 	dbgmon_signal(DBGMON_RESET);
 	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 }
 
-void __attribute__((naked)) dbgmon_exec(void (* task)(struct dmon_comm *))
+void __attribute__((naked)) 
+	dbgmon_exec(void (* task)(const struct dbgmon_comm *, void *), 
+				void * param)
 {
-	DCC_LOG1(LOG_MSG, "task=%p", task);
+	DCC_LOG1(LOG_TRACE, "task=%p", task);
 	thinkos_dbgmon_rt.task = task;
-	dbgmon_reset();
+	thinkos_dbgmon_rt.param = param;
+	__dbgmon_task_reset();
+}
+
+#if THINKOS_ENABLE_DEBUG_BKPT
+
+int dbgmon_thread_break_get(uint32_t * addr)
+{
+	struct thinkos_context * ctx;
+	int thread_id;
+
+	if ((thread_id = thinkos_rt.break_id) >= 0) {
+		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL) {
+			*addr = ctx->pc;
+		}
+	}
+
+	return thread_id;
+}
+
+int dbgmon_thread_step_get(uint32_t * addr)
+{
+	struct thinkos_context * ctx;
+	int thread_id;
+
+	if ((thread_id = thinkos_rt.step_id) >= 0) {
+		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
+			return -1;
+		*addr = ctx->pc;
+	}
+
+	return thread_id;
+}
+
+int dbgmon_thread_last_fault_get(uint32_t * addr)
+{
+	struct thinkos_context * ctx;
+	int thread_id;
+
+	if ((thread_id = thinkos_rt.step_id) >= 0) {
+		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
+			return -1;
+		*addr = ctx->pc;
+	}
+
+	return thread_id;
 }
 
 
-#if THINKOS_ENABLE_DEBUG_BKPT
+void dbgmon_thread_step_clr(void)
+{
+	thinkos_rt.break_id = -1;
+}
+
+void dbgmon_thread_break_clr(void)
+{
+	thinkos_rt.break_id = -1;
+}
 
 /* -------------------------------------------------------------------------
  * Debug Breakpoint
@@ -518,6 +521,8 @@ bool dmon_breakpoint_disable(uint32_t addr)
 
 	for (i = 0; i < CM3_FP_NUM_CODE; ++i) {
 		if ((fpb->comp[i] & 0x0ffffffc) == (addr & 0x0ffffffc)) {
+			DCC_LOG2(LOG_WARNING, "breakpoint %d at 0x%08x disabled!", 
+					 i, addr);
 			fpb->comp[i] &= ~COMP_ENABLE;
 			return true;
 		}
@@ -668,6 +673,7 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size)
 #define DWT_DATAV_WO_CMP       (10 << 0)
 #define DWT_DATAV_RW_CMP       (11 << 0)
 
+
 void dmon_watchpoint_clear_all(void)
 {
 	struct cm3_dwt * dwt = CM3_DWT;
@@ -698,7 +704,9 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 {
 	int ret;
 
-	DCC_LOG2(LOG_TRACE, "step_req=%08x thread_id=%d", 
+	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+			 "step_req=%08x thread_id=%d"
+			 _ATTR_POP_, 
 			 thinkos_rt.step_req, thread_id + 1);
 
 	if (CM3_DCB->dhcsr & DCB_DHCSR_C_DEBUGEN) {
@@ -733,7 +741,7 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 
 	if (sync) {
 		DCC_LOG(LOG_MSG, "synchronous step, waiting for signal...");
-		if ((ret = dbgmon_wait(DBGMON_THREAD_STEP)) < 0)
+		if ((ret = dbgmon_expect(DBGMON_THREAD_STEP)) < 0)
 			return ret;
 	}
 
@@ -748,32 +756,24 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-static void dbgmon_null_task(struct dmon_comm * comm)
+void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
 {
-#if DEBUG
-	thinkos_dbgmon_rt.mask = 0;
-
-	for (;;) {
-		uint32_t buf[64 / 4];
-		int n;
-
-		/* Loopback COMM */
-		if ((n = dmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
-			dmon_comm_send(comm, buf, n);
-		}
-	}
-#else
 	for (;;) {
 		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
-#endif
 }
 
-static void __attribute__((naked)) dbgmon_bootstrap(void)
+static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 {
-	void (* dbgmon_task)(struct dmon_comm *) = thinkos_dbgmon_rt.task; 
-	struct dmon_comm * comm = thinkos_dbgmon_rt.comm; 
+	const struct dbgmon_comm * comm = thinkos_dbgmon_rt.comm; 
+	void (* dbgmon_task)(const struct dbgmon_comm *, void *);
+	void * param = thinkos_dbgmon_rt.param; 
 
+	param = thinkos_dbgmon_rt.param; 
+
+	/* Get the new task */
+	dbgmon_task = thinkos_dbgmon_rt.task; 
+	/* Set the new task to NULL */
 	thinkos_dbgmon_rt.task = dbgmon_null_task;
 	
 	/* set the clock in the past so it won't generate signals in 
@@ -782,17 +782,39 @@ static void __attribute__((naked)) dbgmon_bootstrap(void)
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 
-	dbgmon_task(comm);
+	dbgmon_task(comm, param);
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
-	dbgmon_reset();
+	__dbgmon_task_reset();
 }
 
-int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
+void __except_ctx_cpy(struct thinkos_context * ctx)
+{
+	uint32_t * dst = (uint32_t *)&thinkos_except_buf.ctx.core;
+	uint32_t * src = (uint32_t *)ctx;
+	unsigned int sz = sizeof(struct thinkos_context);
+#if (THINKOS_ENABLE_FPU) 
+	if ((ctx->ret & CM3_EXC_RET_nFPCA) == 0) {
+		src -=16;
+		dst -=16;
+		sz = sizeof(struct thinkos_fp_context);
+	}
+#endif
+
+	__thinkos_memcpy32(dst, src, sz);
+}
+
+/* exception frame */ 
+int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {
 	uint32_t sigset = thinkos_dbgmon_rt.events;
 	uint32_t sigmsk = thinkos_dbgmon_rt.mask;
+	uint32_t xpsr = frm->xpsr;
+
+	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+
+	thinkos_dbgmon_rt.xpsr = xpsr;
 
 #if THINKOS_ENABLE_DEBUG_BKPT
 	uint32_t dfsr;
@@ -837,147 +859,172 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 #endif
 
 		if (dfsr & SCB_DFSR_BKPT) {
+			unsigned int thread_id = thinkos_rt.active;
 			unsigned int insn;
 			unsigned int code; 
 			uint16_t * pc;
 			int ipsr;
 
-			ipsr = ctx->xpsr & 0x1ff;
-			pc = (uint16_t *)ctx->pc;
+			ipsr = xpsr & 0x1ff;
+			pc = (uint16_t *)frm->pc;
 			insn = pc[0];
 			code = insn & 0x00ff;
 			insn &= 0xff00;
 
-			/* this is a breakpoint intruction */
-			if ((insn == 0xbe00) && (code > THINKOS_BKPT_EXCEPT_OFF)) {
-				int err = code - THINKOS_BKPT_EXCEPT_OFF;
-				uint32_t * psp;
-
-				psp = (uint32_t *)cm3_psp_get();
-
-				DCC_LOG4(LOG_ERROR, "<<ERROR %d>>: pc=%08x thread=%d psp=%08x", 
-						 err, pc, thinkos_rt.active + 1, psp);
-				/* Skip the breakpoint intruction */
-				ctx->pc += 2;
-
-				DCC_LOG4(LOG_ERROR, "r0=%08x r1=%08x, r2=%08x r3=%08x", 
-						 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
-				DCC_LOG4(LOG_ERROR, "r12=%08x lr=%08x, pc=%08x xpsr=%08x", 
-						 ctx->r12, ctx->lr, ctx->pc, ctx->xpsr);
-
-				/* FIXME: a breakpoint is used to indicate a fault or wrong
-				   usage of a system call in thinkOS. */
-				sigset |= (1 << DBGMON_THREAD_FAULT);
-				sigmsk |= (1 << DBGMON_THREAD_FAULT);
-				thinkos_dbgmon_rt.events = sigset;
-				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
-				thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
-				/* clear IPSR to indicate a thread error */
-				thinkos_rt.xcpt_ipsr = 0;
-				thinkos_except_buf.active = thinkos_rt.active;
-				thinkos_except_buf.type = THINKOS_ERR_OFF + err;
-#if THINKOS_ENABLE_DEBUG_FAULT
-				/* flag the thread as faulty */
-				__bit_mem_wr(&thinkos_rt.wq_fault, thinkos_rt.active, 1);
-#endif
-				/* copy the thread exception context to the exception buffer. */
-				__thinkos_memcpy32(&thinkos_except_buf.ctx.r0, psp,
-								sizeof(struct cm3_except_context)); 
-				/* suspend the current thread */
-				__thinkos_thread_pause(thinkos_rt.active);
-				thinkos_rt.active = THINKOS_THREAD_VOID;
-				__thinkos_defer_sched();
-			} else if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
-				DCC_LOG3(LOG_ERROR, "<<BREAKPOINT>>: "
-						 "except=%d pc=%08x insn=%04x", ipsr, pc, insn);
-				DCC_LOG(LOG_ERROR, "invalid breakpoint on exception!!!");
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-				/* FIXME: add support for breakpoints on IRQ */
-
-				/* if this is a breakpoint intruction, skip it */
-				if (insn == 0xbe00) {
-					/* Skip thr breakpoint intruction */
-					ctx->pc += 2;
+			/* this is a breakpoint instruction */
+			if (insn == 0xbe00) {
+				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+							 " SOFT BKPT: %2d " _NORMAL_ _FG_GREEN_
+							 " PC=%08x SP=%08x IPSR=%d"
+							 _ATTR_POP_,
+							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
 					/* suspend the current thread */
-					__thinkos_thread_pause(thinkos_rt.active);
+					__thinkos_thread_pause(thread_id);
 					/* record the break thread id */
-					thinkos_rt.break_id = thinkos_rt.active;
+					thinkos_rt.break_id = thread_id;
+					/* delivers a thread breakpoint on next round */
+					dbgmon_signal(DBGMON_BREAKPOINT); 
+					/* run scheduler */
 					__thinkos_defer_sched();
 				} else {
-					/* record the break thread id */
-					thinkos_rt.break_id = THINKOS_THREAD_VOID;
-					thinkos_rt.void_ctx = &thinkos_except_buf.ctx;
-					thinkos_rt.xcpt_ipsr = ipsr;
-					__thinkos_memcpy32(&thinkos_except_buf.ctx.r0,
-									 ctx, sizeof(struct cm3_except_context)); 
+					/* Skip breakpoint intruction, by adjusting
+					   the call stack...*/
+					frm->pc += 2;
+					if (code > THINKOS_BKPT_EXCEPT_OFF) {
+						/* XXX: a breakpoint is used to indicate a fault or 
+						   wrong usage of a system call in thinkOS. */
+						DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+								 " ERROR: %2d " _NORMAL_ _FG_YELLOW_
+								 " PC=%08x SP=%08x IPSR=%d"
+								 _ATTR_POP_,
+								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+
+						/* suspend all threads */
+						__thinkos_pause_all();
+						/* record the break thread id */
+						thinkos_rt.break_id = thread_id;
+						/* clear IPSR to indicate a thread error */
+						thinkos_rt.xcpt_ipsr = 0;
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+						/* flag the thread as faulty */
+						__thinkos_thread_fault_set(thread_id);
+#endif
+						/* delivers a thread fault on next round */
+						dbgmon_signal(DBGMON_THREAD_FAULT); 
+						/* run scheduler */
+						__thinkos_defer_sched();
+
+					} else {
+						DCC_LOG4(LOG_WARNING,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+								 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
+								 " PC=%08x SP=%08x IPSR=%d"
+								 " Breakpoint on service call",
+								 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
+						__thinkos_pause_all();
+						/* record the break thread id */
+						thinkos_rt.break_id = thread_id;
+						/* save the current state of IPSR */
+						thinkos_rt.xcpt_ipsr = ipsr;
+						/* delivers a kernel exception on next round */
+						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+					}
+				}
+			} else {
+				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+					if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
+						DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+								 " BREAKPOINT: %2d " _NORMAL_ _FG_GREEN_
+								 " PC=%08x SP=%08x IPSR=%d"
+								 _ATTR_POP_,
+								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+						/* suspend the current thread */
+						__thinkos_thread_pause(thread_id);
+						/* disable this breakpoint */
+						dmon_breakpoint_disable(frm->pc);
+						/* record the break thread id */
+						thinkos_rt.break_id = thread_id;
+						/* run scheduler */
+						__thinkos_defer_sched();
+						/* delivers a breakpoint swignal on next round */
+						thinkos_dbgmon_rt.events |= (1 << DBGMON_BREAKPOINT);
+					} else {
+						DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+								 " BREAKPOINT: %2d " _NORMAL_ 
+								 " PC=%08x SP=%08x IPSR=%d Invalid thread!!"
+								 _ATTR_POP_,
+								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+						/* suspend all threads */
+						__thinkos_pause_all();
+						/* diasble all breakpoints */
+						dmon_breakpoint_clear_all();
+						/* XXX: use IDLE as break thread id */
+						thinkos_rt.break_id = THINKOS_THREAD_IDLE; 
+						/* delivers a thread fault on next round */
+						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+					} 
+				} else {
+					struct thinkos_except * xcpt = __thinkos_except_buf();
+
+					/* FIXME: add support for breakpoints on IRQ */
+					DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+							 " IRQ BKPT " _NORMAL_ _FG_RED_
+							 " PC=%08x SP=%08x IPSR=%d"
+							 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
+					/* suspend all threads */
 					__thinkos_pause_all();
 					/* diasble all breakpoints */
 					dmon_breakpoint_clear_all();
+					/* record the break thread id */
+					thinkos_rt.break_id = thread_id;
+					/* save the current state of IPSR */
+					thinkos_rt.xcpt_ipsr = ipsr;
+					/* Copy cuurent stack frame into exception
+					   buffer */
+					__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
+									   sizeof(struct armv7m_basic_frame));
+					/* delivers a kernel exception on next round */
+					thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
 				}
-			} else if ((uint32_t)thinkos_rt.active < THINKOS_THREADS_MAX) {
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-				DCC_LOG2(LOG_TRACE, "<<BREAKPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active + 1, ctx->pc);
-				/* suspend the current thread */
-				__thinkos_thread_pause(thinkos_rt.active);
-				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
-				__thinkos_defer_sched();
-				/* diasble this breakpoint */
-				dmon_breakpoint_disable(ctx->pc);
-			} else {
-				DCC_LOG2(LOG_ERROR, "<<BREAKPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active + 1, ctx->pc);
-				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
-				__thinkos_pause_all();
-				/* diasble all breakpoints */
-				dmon_breakpoint_clear_all();
 			}
 		}
 
-#if THINKOS_ENABLE_DEBUG_WPT
+#if (THINKOS_ENABLE_DEBUG_WPT)
 		if (dfsr & SCB_DFSR_DWTTRAP) {
+			unsigned int thread_id = thinkos_rt.active;
+
 			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: exception=%d pc=%08x", 
-						 ctx->xpsr & 0x1ff, ctx->pc);
+						 xpsr & 0x1ff, frm->pc);
 				DCC_LOG(LOG_ERROR, "invalid breakpoint on exception!!!");
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
 				/* FIXME: add support for breakpoints on IRQ */
 				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
+				thinkos_rt.break_id = thread_id;
 				__thinkos_pause_all();
-			} else if ((uint32_t)thinkos_rt.active < THINKOS_THREADS_MAX) {
+
 				sigset |= (1 << DBGMON_BREAKPOINT);
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
+			} else if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
 				DCC_LOG2(LOG_TRACE, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active + 1, ctx->pc);
+						 thread_id + 1, frm->pc);
 				/* suspend the current thread */
-				__thinkos_thread_pause(thinkos_rt.active);
+				__thinkos_thread_pause(thread_id);
 				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
+				thinkos_rt.break_id = thread_id;
+				sigset |= (1 << DBGMON_BREAKPOINT);
+				sigmsk |= (1 << DBGMON_BREAKPOINT);
+				thinkos_dbgmon_rt.events = sigset;
 				__thinkos_defer_sched();
 			} else {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thinkos_rt.active + 1, ctx->pc);
+						 thread_id + 1, frm->pc);
 				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
 				sigset |= (1 << DBGMON_BREAKPOINT);
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
 				/* record the break thread id */
-				thinkos_rt.break_id = thinkos_rt.active;
+				thinkos_rt.break_id = thread_id;
 				__thinkos_pause_all();
 			}
 		}
@@ -985,19 +1032,28 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 
 #if THINKOS_ENABLE_DEBUG_STEP
 		if (dfsr & SCB_DFSR_HALTED) {
+			unsigned int thread_id = thinkos_rt.step_id;
+
 			if (demcr & DCB_DEMCR_MON_STEP) {
-				int thread_id = thinkos_rt.step_id;
+				int ipsr = (xpsr & 0x1ff);
 				/* Restore interrupts. The base priority was
 				   set in the scheduler to perform a single step.  */
 				cm3_basepri_set(0);
 
 				if ((unsigned int)thread_id < THINKOS_THREADS_MAX) {
-					int ipsr = (ctx->xpsr & 0x1ff);
-					DCC_LOG4(LOG_TRACE, "<<STEP>> thread_id=%d PC=%08x" 
-							 " SP=%08x IPSR=%d", thread_id + 1, ctx->pc, 
-							 cm3_psp_get(), ipsr);
+					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+							 " STEP: %2d " _NORMAL_ _FG_GREEN_
+							 " PC=%08x SP=%08x IPSR=%d"
+							 _ATTR_POP_,
+							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+
 					if (ipsr != 0) {
-						DCC_LOG(LOG_ERROR, "invalid step on exception !!!");
+						DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+								 " STEP: %2d " _NORMAL_ _FG_RED_
+								 " PC=%08x SP=%08x IPSR=%d"
+								 " Invalid step on exception!!"
+								 _ATTR_POP_,
+								 thread_id + 1, frm->pc, cm3_msp_get(), ipsr);
 						goto step_done;
 					}
 
@@ -1010,8 +1066,12 @@ int thinkos_dbgmon_isr(struct cm3_except_context * ctx)
 					thinkos_dbgmon_rt.events = sigset;
 					__thinkos_defer_sched();
 				} else {
-					DCC_LOG1(LOG_ERROR, "invalid stepping thread %d !!!", 
-							 thread_id + 1);
+					DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+							 " STEP: %2d " _NORMAL_ _FG_RED_
+							 " PC=%08x SP=%08x IPSR=%d Invalid thread!!"
+							 _ATTR_POP_,
+							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+
 				}
 				thinkos_rt.break_id = thread_id;
 step_done:
@@ -1027,13 +1087,8 @@ step_done:
 	if (sigset & (1 << DBGMON_RESET)) {
 		uint32_t * sp;
 		DCC_LOG(LOG_TRACE, "DBGMON_RESET");
-
 		sp = &thinkos_dbgmon_stack[(sizeof(thinkos_dbgmon_stack) / 4) - 10];
-		sp[0] = 0x0100000f; /* CPSR */
-#if DEBUG
-		/* R4 ... R11 */
-		__thinkos_memset32(&sp[1], 0, 7 * sizeof(uint32_t));
-#endif
+		sp[0] = CM_EPSR_T + CM3_EXCEPT_DEBUG_MONITOR; /* CPSR */
 		sp[9] = ((uint32_t)dbgmon_bootstrap) | 1; /* LR */
 		thinkos_dbgmon_rt.ctx = sp;
 		/* clear the RESET event */
@@ -1044,23 +1099,28 @@ step_done:
 
 	/* Process monitor events */
 	if ((sigset & sigmsk) != 0) {
-		DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dbgmon_rt.ctx);
 #if DEBUG
 		/* TODO: this stack check is very usefull... 
 		   Some sort of error to the developer should be raised or
 		 force a fault */
 		if (thinkos_dbgmon_rt.ctx < thinkos_dbgmon_stack) {
-			DCC_LOG(LOG_ERROR, "stack overflow!");
+			DCC_LOG(LOG_PANIC, "stack overflow!");
+			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x dbgmon.stack=%08x", 
+					 thinkos_dbgmon_rt.ctx, thinkos_dbgmon_stack);
+			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
 		}
 #endif
 		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
 	}
 
-	DCC_LOG1(LOG_INFO, "Unhandled signal <%08x>", sigset);
+	DCC_LOG2(LOG_MSG, "Unhandled signal sigset=%08x sigmsk=%08x", 
+			 sigset, sigmsk);
 	return 0;
 }
 
+
+#if DEBUG
 void __attribute__((noinline, noreturn)) 
 	dbgmon_panic(struct thinkos_except * xcpt)
 {
@@ -1076,58 +1136,77 @@ void __attribute__((noinline, noreturn))
 				  : : "r" (xcpt));
 	for(;;);
 }
+#endif
 
 
 /* 
  * ThinkOS exception handler hook
  */
+#if THINKOS_ENABLE_EXCEPTIONS
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
+	struct thinkos_context * ctx = &xcpt->ctx.core;
 	int ipsr;
 
-	ipsr = xcpt->ctx.xpsr & 0x1ff;
+	/* The interrupts where disabled on exception entry.
+	   Reenable interrupts */
+	cm3_cpsie_i();
+
+	ipsr = ctx->xpsr & 0x1ff;
+
 #if THINKOS_ENABLE_DEBUG_BKPT
 	thinkos_rt.xcpt_ipsr = ipsr;
 #endif
-	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
-		DCC_LOG1(LOG_WARNING, "Fault at thread %d !!!!!!!!!!!!!", 
+	if (xcpt->ipsr == CM3_EXCEPT_PENDSV) {
+		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+				 " /!\\ PENDSV? Kernel error %d /!\\ "  _ATTR_POP_, 
 				 xcpt->active + 1);
-#if THINKOS_ENABLE_DEBUG_BKPT
+
+		/* record the break thread id */
 		thinkos_rt.break_id = xcpt->active;
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+		/* flag the thread as faulty */
+		__thinkos_thread_fault_set(xcpt->active);
 #endif
-		__dmon_irq_disable_all();
-		__dmon_irq_force_enable();
+		dbgmon_signal(DBGMON_KRN_EXCEPT);
+
+	} else if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
+		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+				 " /!\\ Fault at thread %d /!\\ "  _ATTR_POP_, 
+				 xcpt->active + 1);
+
+		/* record the break thread id */
+		thinkos_rt.break_id = xcpt->active;
+
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+		/* flag the thread as faulty */
+		__thinkos_thread_fault_set(xcpt->active);
+#endif
 		dbgmon_signal(DBGMON_THREAD_FAULT);
+		
 	} else {
 #if THINKOS_ENABLE_DEBUG_BKPT
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
 				 ipsr - 16);
 		/* exceptions on IRQ */
 		thinkos_rt.break_id = -1;
-		thinkos_rt.void_ctx = &xcpt->ctx;
-
-		DCC_LOG2(LOG_WARNING, "VOID context=%08x active=%d!", 
-				 thinkos_rt.void_ctx, thinkos_rt.active + 1);
+		thinkos_rt.ctx[THINKOS_THREAD_VOID] = ctx;
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 /* FIXME: this is a dire situation, probably the only resource left
    is to restart the system. */
-#if 0
-			dbgmon_soft_reset();
-			dbgmon_signal(DBGMON_RESET);
-#endif
+#if DEBUG
 			dbgmon_panic(xcpt);
+#else
+#endif
 		} else 
 #endif
 		{
-			__dmon_irq_disable_all();
-			__dmon_irq_force_enable();
-			DCC_LOG(LOG_TRACE, "DBGMON_EXCEPT");
-			dbgmon_signal(DBGMON_EXCEPT);
+			dbgmon_signal(DBGMON_KRN_EXCEPT);
 		}
 	}
 }
-
+#endif
 
 /**
  * dmon_soft_reset:
@@ -1138,134 +1217,78 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 
 void dbgmon_soft_reset(void)
 {
-	struct thinkos_context * idle_ctx;
-
-	DCC_LOG(LOG_TRACE, "1. disable all interrupts"); 
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
 	__dmon_irq_disable_all();
 
-	DCC_LOG(LOG_TRACE, "2. ThinkOS reset...");
-	__thinkos_reset();
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"2. Kill all threads"  _ATTR_POP_); 
+	__thinkos_kill_all(); 
 
-	/* reset the idle thread */
-	idle_ctx = __thinkos_idle_init();
-	cm3_psp_set((uint32_t)&idle_ctx->r0);
-
-#if THINKOS_ENABLE_CONSOLE
-	DCC_LOG(LOG_TRACE, "3. console reset...");
-	__console_reset();
-#endif
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"3. Core reset..."   _ATTR_POP_); 
+	__thinkos_core_reset();
 
 #if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "4. exception reset...");
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"4. Except reset..."   _ATTR_POP_); 
 	__exception_reset();
 #endif
 
-#if THINKOS_ENABLE_DEBUG_BKPT
-	DCC_LOG(LOG_TRACE, "5. clear all breakpoints...");
-	dmon_breakpoint_clear_all();
-#endif
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"5. Wait IDLE signal..."   _ATTR_POP_); 
+	dbgmon_wait_idle();
 
-#if THINKOS_DBGMON_ENABLE_RST_VEC
-	DCC_LOG(LOG_TRACE, "6. reset RAM vectors...");
-	__reset_ram_vectors();
-#endif
-
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	DCC_LOG(LOG_TRACE, "7. enablig listed interrupts...");
-	__dmon_irq_force_enable();
-#endif
-
-	DCC_LOG(LOG_TRACE, "8. signalig ...");
-	dbgmon_signal(DBGMON_SOFTRST);
-
-	DCC_LOG(LOG_TRACE, "9. done.");
+	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+			"6. Send soft reset signal"  _ATTR_POP_);
+	dbgmon_signal(DBGMON_SOFTRST); 
 }
-
-
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-/**
-  * __dmon_irq_init:
-  *
-  * Initialize the IRQ track subsystem
-  */
-static void __dmon_irq_init(void)
-{
-	int cnt;
-	int i;
-	
-	cnt = 0;
-	thinkos_dbgmon_rt.irq_en_lst[0] = 0xff;
-	thinkos_dbgmon_rt.irq_en_lst[1] = 0xff;
-	thinkos_dbgmon_rt.irq_en_lst[2] = 0xff;
-	thinkos_dbgmon_rt.irq_en_lst[3] = 0xff;
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		uint32_t mask;
-		int k;
-
-		mask = CM3_NVIC->iser[i];
-		/* save the current interrupts */
-		thinkos_dbgmon_rt.nvic_ie[i] = mask;
-		DCC_LOG1(LOG_INFO, "nvic.iser[i]=0x%08x.", mask);
-
-		/* probe interrupts */
-		while ((cnt < 4) && (mask != 0)) {
-			int irq;
-
-			k = __clz(__rbit(mask));
-			mask &= ~(1 << k);
-
-			irq = (i * 32) + k;
-			thinkos_dbgmon_rt.irq_en_lst[cnt++] = irq;
-
-			DCC_LOG1(LOG_TRACE, "IRQ %d always enabled.", irq);
-		}	
-	}
-}
-#endif
 
 /* -------------------------------------------------------------------------
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
+void __dbgmon_reset(void)
+{
+#if THINKOS_ENABLE_DEBUG_BKPT
+	DCC_LOG(LOG_TRACE, "1. clear all breakpoints...");
+	dmon_breakpoint_clear_all();
+#endif
+
+#if THINKOS_DBGMON_ENABLE_RST_VEC
+	DCC_LOG(LOG_TRACE, "2. reset RAM vectors...");
+	__reset_ram_vectors();
+#endif
+
+	thinkos_dbgmon_rt.thread_id = -1;
+	thinkos_dbgmon_rt.code = 0;
+}
+
 void thinkos_dbgmon_svc(int32_t arg[], int self)
 {
-	void (* task)(struct dmon_comm * ) = (void *)arg[0] ;
-	struct dmon_comm * comm = (void *)arg[1];
+	void (* task)(const struct dbgmon_comm *, void *) = 
+		(void (*)(const struct dbgmon_comm *, void *))arg[0];
+	struct dbgmon_comm * comm = (void *)arg[1];
+	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
-	
-	demcr = dcb->demcr;
 
-	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
-	
-	thinkos_dbgmon_rt.events = ((demcr & DCB_DEMCR_MON_EN) == 0) ? 
-		(1 << DBGMON_STARTUP) : 0;
-	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
-	thinkos_dbgmon_rt.mask = (1 << DBGMON_RESET) | (1 << DBGMON_STARTUP);
-	thinkos_dbgmon_rt.comm = comm;
-	thinkos_dbgmon_rt.task = task;
-
-	if (thinkos_dbgmon_rt.events & (1 << DBGMON_STARTUP)) {
-		DCC_LOG(LOG_INFO, "system startup!!!");
-	}
-
-#if THINKOS_DBGMON_ENABLE_IRQ_MGMT
-	__dmon_irq_init();
-#endif
-
+	if (((demcr = dcb->demcr) & DCB_DEMCR_MON_EN) == 0) {
+		DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
+		__dbgmon_reset();
 #if THINKOS_ENABLE_STACK_INIT
-	__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
-					   sizeof(thinkos_dbgmon_stack));
+		__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
+						   sizeof(thinkos_dbgmon_stack));
 #endif
-
 #if THINKOS_ENABLE_DEBUG_STEP
-	/* clear the step request */
-	demcr &= ~DCB_DEMCR_MON_STEP;
-	/* enable the FPB unit */
-	CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
+		/* clear the step request */
+		demcr &= ~DCB_DEMCR_MON_STEP;
+		/* enable the FPB unit */
+		CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
 #endif
-	/* enable monitor and send the reset event */
-	demcr |= DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
+		/* set the startup signal */
+		thinkos_dbgmon_rt.events = (1 << DBGMON_STARTUP);
 
 	/* XXX: enabling all vector catch? Not sure if this is
 	   really necessary. At least the breakpoint somehow depends
@@ -1274,8 +1297,34 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 //		DCB_DEMCR_VC_STATERR | DCB_DEMCR_VC_CHKERR | DCB_DEMCR_VC_NOCPERR |
 //		DCB_DEMCR_VC_MMERR | DCB_DEMCR_VC_CORERESET;
 
-	dcb->demcr = demcr;
+		/* clear semaphore */
+		demcr &= ~(DCB_DEMCR_MON_REQ );
+	} 
+	
+	/* disable monitor and clear semaphore */
+	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
+
+	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
+
+	/* Set the persistent signals */
+	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
+	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
+	thinkos_dbgmon_rt.comm = comm;
+
+	arg[0] = (uint32_t)thinkos_dbgmon_rt.task;
+	if (task == NULL)
+		/* Set the new task to NULL */
+		thinkos_dbgmon_rt.task = dbgmon_null_task;
+	else
+		thinkos_dbgmon_rt.task = task;
+
+	thinkos_dbgmon_rt.param = param;
+	thinkos_dbgmon_rt.ctx = 0;
+
+	/* enable monitor and send the reset event */
+	dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */
+
 

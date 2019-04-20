@@ -1,9 +1,9 @@
 /* 
- * File:	 dmgetc.c
+ * File:	 /thinkos/string.h
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
- * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+ * Copyright(C) 2011-2018 Bob Mittmann. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,18 +20,30 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#ifndef __THINKOS_STRING_H__
+#define __THINKOS_STRING_H__
 
-int dmgetc(struct dmon_comm * comm)
-{
-	char buf[1];
+#ifndef __THINKOS_DBGMON__
+#error "Never use <thinkos/string.h> directly; include <thinkos.h> instead."
+#endif 
 
-	if (dmon_comm_recv(comm, buf, sizeof(char)) <= 0)
-		return -1;
+#define _(__STR__) \
+	 { static const char _s[] __attribute__ ((section(".tinkos.str"))) = __STR__; s; }
 
-	dmon_comm_send(comm, buf, sizeof(char));
 
-	return	buf[0];
+#define TAG("") \
+	STR = __str
+	 { static const char _s[] __attribute__ ((section(".tinkos.str"))) = __STR__; s; }
+
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* __THINKOS_STRING_H__ */
 

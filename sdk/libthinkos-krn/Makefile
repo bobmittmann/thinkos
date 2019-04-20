@@ -23,12 +23,18 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
+DBGMON_CFILES = null_comm.c usb_comm.c usb_comm_queue.c \
+			  print_exception.c dbgmon_thread.c dbgmon_memory.c \
+			  dbgmon_printf.c dbgmon_scanf.c \
+			  dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
+			  dbgmon_hexdump.c dbgmon_console_task.c 
 MISC_CFILES = thinkos_type.c obj_type_get.c \
-			  alloc_bmp_get.c bmp_alloc.c \
+			  alloc_bmp_get.c bmp_alloc.c strlen.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
-			  thread_getnext.c thread_get.c thread_inf_set.c \
-			  thread_isfaulty.c thread_ispaused.c exec.c\
-			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c
+			  thread_getnext.c thread_get.c \
+			  thread_isfaulty.c thread_ispaused.c \
+			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
+			  cpu-info.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
@@ -37,8 +43,9 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_break.c thinkos_pause.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
-		 thinkos_console.c \
-		 $(addprefix misc/,$(MISC_CFILES))
+		 thinkos_dbgmon.c thinkos_console.c thinkos_systmr.c \
+		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
+		 thinkos_dma.c \
 
 SFILES = thinkos_sched.S thinkos_vector.S 
 

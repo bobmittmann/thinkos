@@ -21,87 +21,145 @@
 
 _Pragma ("GCC optimize (\"Ofast\")")
 
-#define __THINKOS_SYS__
-#include <thinkos_sys.h>
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
 #include <thinkos.h>
-
-#include <sys/param.h>
 
 #if THINKOS_ENABLE_CONSOLE
 
-void __attribute__((noreturn)) dmon_console_io_task(struct dmon_comm * comm)
+void __attribute__((noreturn)) dbgmon_console_io_task(struct dbgmon_comm * comm)
 {
-	uint32_t sigmask;
-	uint32_t sigset;
-	uint8_t * buf;
+	uint32_t sigmask = 0;
+	uint8_t * ptr;
 	int cnt;
-	int len;
+	int sig;
+	bool connected = false;
+	
+	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
 
-	DCC_LOG(LOG_TRACE, "Monitor COMM bypass start...");
+	sigmask |= (1 << DBGMON_COMM_RCV);
+	sigmask |= (1 << DBGMON_COMM_CTL);
+	sigmask |= (1 << DBGMON_TX_PIPE);
 
-	dmon_comm_rxflowctrl(comm, true);
-	dmon_comm_connect(comm);
-
-	DCC_LOG(LOG_INFO, "COMMM connected...");
-
-
-	sigmask = (1 << DMON_THREAD_FAULT);
-	sigmask |= (1 << DMON_COMM_RCV);
-	sigmask |= (1 << DMON_COMM_CTL);
-	sigmask |= (1 << DMON_TX_PIPE);
-	sigmask |= (1 << DMON_RX_PIPE);
 	for(;;) {
-		
-		sigset = dbgmon_select(sigmask);
-		DCC_LOG1(LOG_MSG, "sigset=%08x.", sigset);
+		switch ((sig = dbgmon_select(sigmask))) {
 
-		if (sigset & (1 << DMON_THREAD_FAULT)) {
-			DCC_LOG(LOG_INFO, "Thread fault.");
-			dmon_clear(DMON_THREAD_FAULT);
-		}
+		case DBGMON_COMM_CTL:
+			dbgmon_clear(DBGMON_COMM_CTL);
+			DCC_LOG(LOG_MSG, "Comm Ctl.");
+			connected = dbgmon_comm_isconnected(comm);
+			sigmask &= ~((1 << DBGMON_COMM_EOT) | 
+						 (1 << DBGMON_COMM_RCV) |
+						 (1 << DBGMON_RX_PIPE));
+			__console_connect_set(connected);
+			if (connected) {
+				DCC_LOG(LOG_TRACE, "Comm connected.");
+				sigmask |= (1 << DBGMON_COMM_EOT) |
+					(1 << DBGMON_COMM_RCV) |
+					(1 << DBGMON_RX_PIPE);
+				}
+			sigmask |= (1 << DBGMON_TX_PIPE);
+		break;
 
-		if (sigset & (1 << DMON_COMM_CTL)) {
-			DCC_LOG(LOG_INFO, "Comm Ctl.");
-			dmon_clear(DMON_COMM_CTL);
-			if (!dmon_comm_isconnected(comm))	
-				dmon_reset();
-		}
 
-		if (sigset & (1 << DMON_COMM_RCV)) {
-			if ((cnt = __console_rx_pipe_ptr(&buf)) > 0) {
-				DCC_LOG1(LOG_INFO, "Comm recv. rx_pipe.free=%d", cnt);
-				if ((len = dmon_comm_recv(comm, buf, cnt)) > 0)
-					__console_rx_pipe_commit(len); 
-			} else {
-				DCC_LOG(LOG_INFO, "Comm recv. Masking DMON_COMM_RCV!");
-				sigmask &= ~(1 << DMON_COMM_RCV);
-			}
-		}
-
-		if (sigset & (1 << DMON_RX_PIPE)) {
-			if ((cnt = __console_rx_pipe_ptr(&buf)) > 0) {
-				DCC_LOG1(LOG_INFO, "RX Pipe. rx_pipe.free=%d. "
-						 "Unmaksing DMON_COMM_RCV!", cnt);
-				sigmask |= (1 << DMON_COMM_RCV);
-			} else {
-				DCC_LOG(LOG_INFO, "RX Pipe empty!!!");
-			}
-			dmon_clear(DMON_RX_PIPE);
-		}
-
-		if (sigset & (1 << DMON_TX_PIPE)) {
+		case DBGMON_COMM_EOT:
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
+		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
-			if ((cnt = __console_tx_pipe_ptr(&buf)) > 0) {
-				len = dmon_comm_send(comm, buf, cnt);
-				__console_tx_pipe_commit(len); 
+			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", __console_tx_pipe_ptr(&ptr));
+			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+				if (connected) {
+					int n;
+					if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
+						__console_tx_pipe_commit(n);
+						if (n == cnt) {
+							/* Wait for TX_PIPE */
+							sigmask |= (1 << DBGMON_TX_PIPE);
+							sigmask &= ~(1 << DBGMON_COMM_EOT);
+						} else {
+							/* Wait for COMM_EOT */
+							sigmask |= (1 << DBGMON_COMM_EOT);
+							sigmask &= ~(1 << DBGMON_TX_PIPE);
+						}
+					} else {
+						/* Wait for COMM_EOT */
+						sigmask |= (1 << DBGMON_COMM_EOT);
+						sigmask &=  ~(1 << DBGMON_TX_PIPE);
+					}
+				} else {
+					/* Drain the Rx pipe */
+					__console_tx_pipe_commit(cnt);
+				}
 			} else {
-				DCC_LOG(LOG_INFO, "TX Pipe empty!!!");
-				dmon_clear(DMON_TX_PIPE);
+				/* Wait for TX_PIPE */
+				sigmask |= (1 << DBGMON_TX_PIPE);
+				sigmask &= ~(1 << DBGMON_COMM_EOT);
 			}
+			break;
+
+		case DBGMON_COMM_RCV:
+		case DBGMON_RX_PIPE:
+			DCC_LOG(LOG_TRACE, "DBGMON_RX_PIPE");
+			/* get a pointer to the head of the pipe.
+			   __console_rx_pipe_ptr() will return the number of 
+			   consecutive spaces in the buffer. */
+			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
+				int n;
+			
+				DCC_LOG1(LOG_TRACE, "Raw mode RX, cnt=%d", cnt);
+
+				/* receive from the COMM driver */
+				if ((n = dbgmon_comm_recv(comm, ptr, cnt)) > 0) {
+					/* commit the fifo head */
+					__console_rx_pipe_commit(n);
+					if (n == cnt) {
+						/* Wait for RX_PIPE */
+						sigmask &= ~(1 << DBGMON_COMM_RCV);
+						sigmask |= (1 << DBGMON_RX_PIPE);
+					} else {
+						/* Wait for RX_PIPE and/or COMM_RCV */
+						sigmask |= (1 << DBGMON_RX_PIPE);
+						sigmask |= (1 << DBGMON_COMM_RCV);
+					}
+				} else {
+					/* Wait for COMM_RECV */
+					sigmask |= (1 << DBGMON_COMM_RCV);
+					sigmask &=  ~(1 << DBGMON_RX_PIPE);
+				}
+			} else {
+				/* Wait for RX_PIPE */
+				sigmask &= ~(1 << DBGMON_COMM_RCV);
+				sigmask |= (1 << DBGMON_RX_PIPE);
+			}
+			break;
 		}
 	}
+}
+
+void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
+{
+#if DEBUG
+	DCC_LOG(LOG_TRACE, "Started ...");
+	for (;;) {
+		uint32_t buf[64 / 4];
+		int sig;
+		int n;
+
+		sig = dbgmon_select(0);
+		dbgmon_clear(sig);
+
+		/* Loopback COMM */
+		if ((n = dbgmon_comm_recv(comm, buf, sizeof(buf))) > 0) {
+			dbgmon_comm_send(comm, buf, n);
+		}
+	}
+#else
+	for (;;) {
+		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
+	}
+#endif
 }
 
 #endif /* THINKOS_ENABLE_CONSOLE */

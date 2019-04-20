@@ -27,8 +27,10 @@
 
 unsigned long crc32(unsigned long __crc, const void * __buf, int __len)
 {
+	unsigned char * src = (unsigned char *)__buf;
+
 	for(; __len; __len--)
-	 	__crc = CRC32(__crc, *(unsigned char *)__buf++);
+	 	__crc = CRC32(__crc, *src++);
 	 
 	return __crc ^ 0xffffffffL;
 }

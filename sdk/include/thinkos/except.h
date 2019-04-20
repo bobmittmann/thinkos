@@ -24,20 +24,52 @@
 #define __THINKOS_EXCEPT_H__
 
 #ifndef __THINKOS_EXCEPT__
-#error "Never use <thinkos/except.h> directly; include <thinkos.h> instead."
+#error "Never use <thinkos/except.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#ifndef __THINKOS_KERNEL_H__
-#error "Need <thinkos/kernel.h>."
-#endif 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 /* -------------------------------------------------------------------------- 
  * Exception state
  * --------------------------------------------------------------------------*/
 
+struct armv7m_basic_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
+};
+
+struct armv7m_extended_frame {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t pc;
+	uint32_t xpsr;
+	float    s[16];
+	uint32_t fpscr;
+	uint32_t res;
+};
+
 struct thinkos_except {
-	struct thinkos_context ctx;
+#if (THINKOS_ENABLE_FPU) 
+	struct thinkos_fp_context ctx;
+#else
+	struct {
+		struct thinkos_context core;
+	} ctx;
+#endif
+#if !((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_NULL_MSP))
 	uint32_t ret;
+#endif
 	uint32_t msp;
 	uint32_t psp;
 	uint32_t icsr;
@@ -45,9 +77,16 @@ struct thinkos_except {
 	uint32_t mmfar;
 	uint32_t bfar;
 	uint8_t  ipsr;   /* IPSR */
-	int8_t   active; /* active thread at the time of the exception */
+	uint8_t  ctrl;   /* CONTROL */
 	uint8_t  type;   /* exception type */
 	uint8_t  unroll; /* unroll count */
+
+	uint32_t  active; /* active thread at the time of the exception */
+	uint32_t  ready; /* ready bitmap */
+	struct thinkos_context * idle_ctx;
+#if (THINKOS_ENABLE_PROFILING)
+	uint32_t  cycref; 
+#endif
 };
 
 extern struct thinkos_except thinkos_except_buf;
@@ -70,6 +109,8 @@ void thinkos_exception_init(void);
 
 void thinkos_exception_dsr(struct thinkos_except * xcpt);
 
+uint32_t * __thinkos_xcpt_stack_top(void);
+
 /* -------------------------------------------------------------------------
  * Exception handling utility functions
  * ------------------------------------------------------------------------- */
@@ -91,6 +132,8 @@ void __xcpt_systick_int_enable(void);
 void __exception_reset(void);
 
 struct thinkos_except * __thinkos_except_buf(void);
+
+const char * __retstr(uint32_t __ret);
 
 #ifdef __cplusplus
 }

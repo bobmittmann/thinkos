@@ -36,7 +36,7 @@
 #define STM32L4XX
 
 #include <stm32f/stm32l4-pwr.h>
-#include <stm32f/stm32f-syscfg.h>
+#include <stm32f/stm32l4-syscfg.h>
 #include <stm32f/stm32l4-rcc.h>
 #include <stm32f/stm32f-usart.h>
 #include <stm32f/stm32f-gpio.h>

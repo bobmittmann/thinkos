@@ -50,7 +50,7 @@ static unsigned long dec2int(const char * __s)
 }
 
 /* Receive a file and write it into the flash using the YMODEM preotocol */
-int dmon_ymodem_flash(struct dmon_comm * comm,
+int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 					  uint32_t addr, unsigned int size)
 {
 	/* FIXME: generalize the application load by removing the low
@@ -71,16 +71,18 @@ int dmon_ymodem_flash(struct dmon_comm * comm,
 
 	DCC_LOG(LOG_INFO, "Starting...");
 	while ((ret = dmon_ymodem_rcv_pkt(comm, ry)) >= 0) {
-		if ((ret == 0) && (ry->xmodem) )
-			break;
 		int len = ret;
 		int i;
+
+		if ((ret == 0) && (ry->xmodem) )
+			break;
+
 		if (ry->pktno == 1) {
 			char * cp;
 			int fsize;
 
-//			DCC_LOG1(LOG_INFO, "YMODEM pkt, len=%d...", len);
-//			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
+			DCC_LOG1(LOG_INFO, "YMODEM pkt, len=%d...", len);
+			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
 
 			cp = (char *)ry->pkt.data;
 			if (*cp == '\0') {
@@ -109,6 +111,7 @@ int dmon_ymodem_flash(struct dmon_comm * comm,
 			/* skip null */
 		} else {
 			if (ry->pktno == 2) {
+				DCC_LOG1(LOG_TRACE, "Erasing %d bytes...", ry->fsize);
 				stm32_flash_erase(offs, ry->fsize);
 			}	
 			stm32_flash_write(offs, ry->pkt.data, len);

@@ -27,9 +27,9 @@ extern const char __hextab[];
 
 int ull2hex(char * s, unsigned long long val)
 {
+	unsigned int i;
 	int n;
 	int c;
-	int i;
 
 	/* value is zero ? */
 	if (val == 0) {

@@ -142,7 +142,7 @@ unsigned int stm32_i2s_get_dma_rx_count(struct stm32_spi_i2s_drv * drv)
 }
 
 int stm32_i2s_setbuf(struct stm32_spi_i2s_drv * drv,
-					 int16_t * buf1, int16_t * buf2, unsigned int len)
+					 int16_t * buf1, int16_t * buf2, size_t len)
 {
 	bool enabled;
 	uint32_t ccr;
@@ -215,7 +215,7 @@ int16_t * stm32_i2s_getbuf(struct stm32_spi_i2s_drv * drv)
 	else
 		ptr = (int16_t *)drv->tx.dmactl.strm->m1ar;
 
-	YAP("DMA buf: %08x", ptr);
+	YAP("DMA buf: %08x", (uint32_t)ptr);
 	
 	return ptr;
 }
@@ -399,11 +399,17 @@ int stm32_i2s_ioctl(struct stm32_spi_i2s_drv * drv, int opt,
 }
 
 const struct i2s_op stm32_spi_i2s_op = {
-	.close = (void *)stm32_i2s_close,
-	.ioctl = (void *)stm32_i2s_ioctl,
-	.setbuf = (void *)stm32_i2s_setbuf,
-	.getbuf = (void *)stm32_i2s_getbuf,
-	.get_dma_tx_cnt = (void *)stm32_i2s_get_dma_tx_count,
-	.get_dma_rx_cnt = (void *)stm32_i2s_get_dma_rx_count
+	.close = (int (*)(void *))stm32_i2s_close,
+	.ioctl = (int (*)(void *, int, uintptr_t, uintptr_t))
+		stm32_i2s_ioctl,
+	.enable = (int (*)(void *))NULL,
+	.setbuf = (int (*)(void *, int16_t *, int16_t *, size_t))
+		stm32_i2s_setbuf,
+	.getbuf = (int16_t * (*)(void *))
+		stm32_i2s_getbuf,
+	.get_dma_tx_cnt = (uint32_t (*)(void *))
+		stm32_i2s_get_dma_tx_count,
+	.get_dma_rx_cnt = (uint32_t (*)(void *))
+		stm32_i2s_get_dma_rx_count
 };
 

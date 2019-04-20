@@ -79,7 +79,7 @@ int cmd_arp(FILE *f, int argc, char ** argv)
 		}
 	} else  {
 		fprintf(f, "Address         HWaddress           Flags\n");
-		ipv4_arp_enum((void *)show_arp, (void *)f);
+		ipv4_arp_enum((int (*)(struct ipv4_arp *, void *))show_arp, (void *)f);
 	}
 
 	return 0;

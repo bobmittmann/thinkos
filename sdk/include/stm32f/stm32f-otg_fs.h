@@ -2929,7 +2929,7 @@ struct stm32f_otg_fs {
 
 extern const uint8_t stm32f_otg_fs_ep0_mpsiz_lut[];
 
-#define OTGFS_EP0_MPSIZ_GET(DEPCTL) \
+#define OTG_FS_EP0_MPSIZ_GET(DEPCTL) \
 	stm32f_otg_fs_ep0_mpsiz_lut[OTG_FS_MPSIZ_GET(DEPCTL)]
 
 #define OTG_FS_EP0_MPSIZ_SET(MPSIZ) ((MPSIZ == 64) ? OTG_FS_MPSIZ_64 : \

@@ -416,16 +416,6 @@ again:
 	/* XXX: find the clock about to expire sooner  */
 	dt = silence_clk - clk + timer_ms[lnk->state];
 
-/*
-	INF("state=%s tmr=%d dt=%d", state_nm[lnk->state],
-			 timer_ms[lnk->state], dt);
-*/
-
-/*	if (dt <= 0) {
-		INF("state=%s tmr=%d dt=%d", state_nm[lnk->state],
-			 timer_ms[lnk->state], dt);
-	}
-*/
 	ret = mstp_frame_recv(lnk,  &frm, dt);
 	event_count += lnk->rx.off;
 	clk = thinkos_clock();
@@ -499,7 +489,7 @@ transition_now:
 					memcpy(lnk->recv.pdu, pdu, pdu_len);
 					thinkos_flag_give(lnk->recv.flag);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
-					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
+					DBG("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 					DBG("[IDLE] ReceivedDataNoReply --> [IDLE]");
 					break;
 				case FRM_BACNET_DATA_XPCT_REPLY:
@@ -511,7 +501,7 @@ transition_now:
 					lnk->recv.pdu_len = pdu_len;
 					memcpy(lnk->recv.pdu, pdu, pdu_len);
 					thinkos_flag_give(lnk->recv.flag);
-					INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
+					DBG("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 //					bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 					if (dst_addr == MSTP_ADDR_BCAST) {
 						lnk->state = MSTP_ANSWER_DATA_REQUEST;
@@ -521,7 +511,7 @@ transition_now:
 					break;
 				default:
 					rcvd_valid_frm = false;
-					INF("[IDLE] ReceivedUnwantedFrame"
+					DBGS("[IDLE] ReceivedUnwantedFrame"
 							" --> [IDLE]");
 					break;
 				}
@@ -565,7 +555,7 @@ transition_now:
 			dst_addr = lnk->tx.inf.daddr;
 			mstp_frame_send(lnk, MKROUTE(frm_type, dst_addr, ts),
 							lnk->tx.pdu, lnk->tx.pdu_len);
-			INF("XMT daddr=%d pdu_len=%d", lnk->tx.inf.daddr, lnk->tx.pdu_len);
+			DBG("XMT daddr=%d pdu_len=%d", lnk->tx.inf.daddr, lnk->tx.pdu_len);
 			RESET_SILENCE_TIMER();
 			lnk->tx.pdu_len = 0;
 			thinkos_flag_give(lnk->tx.flag);
@@ -631,7 +621,7 @@ transition_now:
 						thinkos_flag_give(lnk->recv.flag);
 //						bacnet_dl_pdu_recv_notify(lnk->addr.netif);
 						lnk->state = MSTP_DONE_WITH_TOKEN;
-						INF("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
+						DBG("RCV saddr=%d pdu_len=%d", src_addr, pdu_len);
 						DBG("[WAIT_FOR_REPLY] ReceivedReply --> [DONE_WITH_TOKEN]");
 						break;
 					default:
@@ -705,7 +695,7 @@ transition_now:
 				token_count = 1;
 				/* event_count = 0; removed in Addendum 135-2004d-8 */
 				lnk->state = MSTP_POLL_FOR_MASTER;
-				INF("[DONE_WITH_TOKEN]"
+				DBG("[DONE_WITH_TOKEN]"
 						" SoleMasterRestartMaintenancePFM -->"
 						" [POLL_FOR_MASTER]");
 			} else {
@@ -717,7 +707,7 @@ transition_now:
 				token_count = 1;
 				event_count = 0;
 				lnk->state = MSTP_PASS_TOKEN;
-				INF("[DONE_WITH_TOKEN] ResetMaintenancePFM"
+				DBG("[DONE_WITH_TOKEN] ResetMaintenancePFM"
 						" --> [PASS_TOKEN]");
 			}
 		} else {
@@ -726,7 +716,7 @@ transition_now:
 			RESET_SILENCE_TIMER();
 			retry_count = 0;
 			lnk->state = MSTP_POLL_FOR_MASTER;
-			INF("[DONE_WITH_TOKEN] SendMaintenancePFM"
+			DBG("[DONE_WITH_TOKEN] SendMaintenancePFM"
 					" --> [POLL_FOR_MASTER]");
 		}
 
@@ -806,7 +796,7 @@ transition_now:
 				if (ns != src_addr) {
 					ns = src_addr;
 					lnk->next_station = ns;
-					INF("MS/TP next_station=%d", ns);
+					DBG("MS/TP next_station=%d", ns);
 				}
 				event_count = 0;
 				mstp_fast_send(lnk, FRM_TOKEN, ns);
@@ -820,11 +810,11 @@ transition_now:
 					lnk->sole_master = false;
 				}
 				lnk->state = MSTP_PASS_TOKEN;
-				INF("[POLL_FOR_MASTER] ReceivedReplyToPFM --> [PASS_TOKEN]");
+				DBGS("[POLL_FOR_MASTER] ReceivedReplyToPFM --> [PASS_TOKEN]");
 			} else {
 				rcvd_valid_frm = false;
 				lnk->state = MSTP_IDLE;
-				INF("[POLL_FOR_MASTER] "
+				DBGS("[POLL_FOR_MASTER] "
 						 "ReceivedUnexpectedFrame --> [IDLE]");
 				goto transition_now;
 			}
@@ -844,14 +834,14 @@ transition_now:
 					RESET_SILENCE_TIMER();
 					retry_count = 0;
 					lnk->state = MSTP_PASS_TOKEN;
-					INF("[POLL_FOR_MASTER] DoneWithPFM --> [PASS_TOKEN]");
+					DBGS("[POLL_FOR_MASTER] DoneWithPFM --> [PASS_TOKEN]");
 				} else {
 					if ((ps + 1) % (N_MAX_MASTER + 1) != ts) {
 						ps = (ps + 1) % (N_MAX_MASTER + 1);
 						mstp_fast_send(lnk, FRM_POLL_FOR_MASTER, ps);
 						RESET_SILENCE_TIMER();
 						retry_count = 0;
-						INF("[POLL_FOR_MASTER] SendNextPFM --> "
+						DBGS("[POLL_FOR_MASTER] SendNextPFM --> "
 							"[POLL_FOR_MASTER]");
 					} else {
 						lnk->sole_master = true;
@@ -859,7 +849,7 @@ transition_now:
 						rcvd_invalid_frm = false;
 						lnk->state = MSTP_USE_TOKEN;
 						lnk->mgmt.callback(lnk, MSTP_EV_SOLE_MASTER);
-						INF("[POLL_FOR_MASTER] DeclareSoleMaster --> [USE_TOKEN]");
+						DBGS("[POLL_FOR_MASTER] DeclareSoleMaster --> [USE_TOKEN]");
 						goto transition_now;
 					}
 				}

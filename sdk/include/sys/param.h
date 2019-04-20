@@ -26,12 +26,12 @@
 #ifndef __SYS_PARAM_H__
 #define __SYS_PARAM_H__
 
-#define MIN(_A, _B) ({ \
+#define MIN(_A, _B) __extension__({ \
 	__typeof__ (_A) __A = (_A); \
 	__typeof__ (_B) __B = (_B); \
 	__A < __B ? __A : __B; })
 
-#define MAX(_A, _B) ({ \
+#define MAX(_A, _B) __extension__({ \
 	__typeof__ (_A) __A = (_A); \
 	__typeof__ (_B) __B = (_B); \
 	__A > __B ? __A : __B; })

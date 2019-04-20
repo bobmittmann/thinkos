@@ -121,7 +121,7 @@ void stm32f_serial_dma_rx_isr(struct stm32f_serial_dma_drv * drv)
 }
 
 int stm32f_serial_dma_recv(struct stm32f_serial_dma_drv * drv, 
-						   void * buf, unsigned int len, unsigned int tmo)
+						   void * buf, size_t len, unsigned int tmo)
 {
 	unsigned int ndtr;
 	unsigned int cnt;
@@ -200,10 +200,11 @@ int stm32f_serial_dma_recv(struct stm32f_serial_dma_drv * drv,
 		}
 	}
 
-	if (cnt == 0)
+	if (cnt == 0) {
 		DCC_LOG1(LOG_WARNING, "%6d: DMA XFR cnt == 0!!!", thinkos_clock_i());
-	else
+	} else {
 		DCC_LOG2(LOG_INFO, "%6d: cnt=%d", thinkos_clock_i(), cnt);
+	}
 
 	return cnt;
 }
@@ -335,7 +336,7 @@ int stm32f_serial_dma_recv(struct stm32f_serial_dma_drv * drv,
 #endif
 
 int stm32f_serial_dma_send(struct stm32f_serial_dma_drv * drv, 
-						   const void * buf, unsigned int len)
+						   const void * buf, size_t len)
 {
 //	struct stm32_usart * uart = drv->uart;
 	uint32_t ccr;
@@ -534,10 +535,13 @@ int stm32f_serial_dma_ioctl(struct stm32f_serial_dma_drv * drv, int opt,
 }
 
 const struct serial_op stm32f_uart_serial_dma_op = {
-	.send = (void *)stm32f_serial_dma_send,
-	.recv = (void *)stm32f_serial_dma_recv,
-	.drain = (void *)stm32f_serial_dma_drain,
-	.close = (void *)stm32f_serial_dma_close,
-	.ioctl = (void *)stm32f_serial_dma_ioctl
+	.send = (int (*)(void *, const void *, size_t))
+		stm32f_serial_dma_send,
+	.recv = (int (*)(void *, void *, size_t, unsigned int))
+		stm32f_serial_dma_recv,
+	.drain = (int (*)(void *))stm32f_serial_dma_drain,
+	.close = (int (*)(void *))stm32f_serial_dma_close,
+	.ioctl = (int (*)(void *, int, uintptr_t, uintptr_t))
+		stm32f_serial_dma_ioctl
 };
 

@@ -34,9 +34,9 @@
 #define MONITOR_PRIORITY       (0 << 5)
 #define EXCEPT_PRIORITY        (1 << 5)
 #define IRQ_DEF_PRIORITY       (4 << 5)
-#define SYSCALL_PRIORITY       (6 << 5)
-#define CLOCK_PRIORITY         (6 << 5)
-#define SCHED_PRIORITY         (7 << 5)
+#define SYSCALL_PRIORITY       (0xef)
+#define CLOCK_PRIORITY         (0xef)
+#define SCHED_PRIORITY         (0xff)
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,10 +54,12 @@ __attribute__((always_inline)) thinkos_sched_on(void)  {
 	cm3_basepri_set(0x00);
 }
 
-static inline volatile uint32_t __attribute__((always_inline)) 
+#if (THINKOS_ENABLE_CLOCK)
+static inline uint32_t __attribute__((always_inline)) 
 	thinkos_clock_i(void)  {
 	return (volatile uint32_t)thinkos_rt.ticks;
 }
+#endif
 
 #ifdef __cplusplus
 }

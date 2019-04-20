@@ -146,10 +146,6 @@
 
 #define THINKOS_ENABLE_IDLE_WFI         1
 
-#define THINKOS_IDLE_STACK_BSS          0
-
-#define THINKOS_IDLE_STACK_ALLOC        1
-
 #define THINKOS_ASM_SCHEDULER           1
 
 #endif /* __CONFIG_H__ */

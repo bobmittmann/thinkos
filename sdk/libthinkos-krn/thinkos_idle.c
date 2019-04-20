@@ -23,32 +23,33 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
-#define __THINKOS_TRACE__
-#include <thinkos/trace.h>
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 /* -------------------------------------------------------------------------- 
  * Idle task
  * --------------------------------------------------------------------------*/
 
-#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_BSS) > 1
-#error "Invalid multiple IDLE stack options!"
+#if ((THINKOS_IDLE_STACK_ALLOC) || (THINKOS_IDLE_STACK_BSS) || \
+	 (THINKOS_IDLE_STACK_CONST))
+#error "Deprecated IDLE stack options!"
 #endif
 
-#if (THINKOS_IDLE_STACK_ALLOC + THINKOS_IDLE_STACK_BSS) == 0
-#error "Invalid IDLE stack option!"
-#endif
+struct thinkos_idle_rt thinkos_idle_rt;
 
-void thinkos_idle_svc(int32_t * arg)
+void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 {
-#if THINKOS_ENABLE_MONITOR
-	dbgmon_signal_idle();
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	uint32_t map;
+	int req;
 #endif
 
-#if (THINKOS_ENABLE_TRACE)
-	do {
-		/* Chek for threads in the ready queue. */
-  #if ((THINKOS_THREADS_MAX) < 32) 
+	for (;;) {
+
+#if (THINKOS_ENABLE_IDLE_WFI)
+		asm volatile ("wfi\n"); /* wait for interrupt */
 		if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX))) {
   #else
 		if (thinkos_rt.wq_ready != 0) {
@@ -61,61 +62,98 @@ void thinkos_idle_svc(int32_t * arg)
 		/* Try to send one trace entry to a remote host... */
 	} while (__thinkos_trace_try_send() >= 0);
 #else
-  #if THINKOS_ENABLE_CRITICAL
-	/* Force the scheduler to run if there are 
-	   threads in the ready queue. */
-   #if ((THINKOS_THREADS_MAX) < 32) 
-	if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
-   #else
-	if (thinkos_rt.wq_ready != 0) 
-   #endif
-	{
-		__thinkos_defer_sched();
-	}
   #endif
 #endif
-}
 
-void __attribute__((noreturn, naked)) thinkos_idle_task(void)
-{
-	asm volatile ("nop\n"); 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+		do {
+			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
+			req = __clz(__rbit(map));
+			if (map != 0) {
+				uint32_t y;
 
-	DCC_LOG(LOG_TRACE, "ThinkOS Idle reset."); 
+				y = map & ~(1 << req);
 
-	for (;;) {
-#if THINKOS_ENABLE_IDLE_WFI
-		asm volatile ("wfi\n"); /* wait for interrupt */
+				DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
+						 "map=%08x y=%08x req=%d" _ATTR_POP_ , 
+						 map, y, req);
+				map = y;
+			}
+		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
+
+		switch (req) {
+			case IDLE_HOOK_NOTIFY_DBGMON:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
+						"IDLE_HOOK_NOTIFY_DBGMON" _ATTR_POP_ );
+				/* Notify the debug/monitor */
+				dbgmon_signal(DBGMON_IDLE); 
+				break;
+
+#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
+			case IDLE_HOOK_SYSRST:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
+						"IDLE_HOOK_SYSRST" _ATTR_POP_ );
+				__thinkos_system_reset();
+				break;
+			case IDLE_HOOK_SOFTRST:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_SOFTRST" _ATTR_POP_ );
+				dbgmon_signal(DBGMON_SOFTRST); 
+				break;
+
+#if THINKOS_ENABLE_EXCEPTIONS
+			case IDLE_HOOK_EXCEPT_DONE: {
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_EXCEPT_DONE" _ATTR_POP_ );
+				struct thinkos_except * xcpt = __thinkos_except_buf();
+				thinkos_exception_dsr(xcpt);
+				}
+				break;
 #endif
-#if THINKOS_ENABLE_MONITOR || THINKOS_ENABLE_CRITICAL
-		thinkos_on_idle();
 #endif
+
+			case 32:
+#endif /* THINKOS_ENABLE_IDLE_HOOKS */
+
+#if (THINKOS_ENABLE_CRITICAL)
+				/* Force the scheduler to run if there are 
+				   threads in the ready queue. */
+				if (thinkos_rt.wq_ready != 0)
+					__thinkos_defer_sched();
+#endif
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+				break;
+			default:
+				DCC_LOG1(LOG_TRACE, "%d", req); 
+		}
+#endif
+
 	}
 }
 
-#if THINKOS_IDLE_STACK_BSS
-/* IDLE stack on .bss section */
-struct thinkos_context __attribute__((aligned(8))) thinkos_idle_ctx;
-#define THINKOS_IDLE_STACK_BASE (uint32_t *)&thinkos_idle_ctx
-#endif
+#if (THINKOS_ENABLE_IDLE_MSP) 
 
-extern int _stack;
+void __thinkos_idle_bootstrap(void * arg)
+{
+	DCC_LOG(LOG_TRACE, "ThinkOS Idle bootstrap.... main()"); 
+}
 
-#if THINKOS_IDLE_STACK_ALLOC
-  /* IDLE stack pre allocated on main stack */
-  #define THINKOS_IDLE_STACK_BASE ((uint32_t *)&_stack - \
-                                   sizeof(struct thinkos_context))
-  #define THINKOS_MAIN_STACK_TOP THINKOS_IDLE_STACK_BASE
+#define THINKOS_IDLE_STACK_SIZE (sizeof(thinkos_except_stack))
+#define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_except_stack
+
 #else
-  #define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
+
+#ifndef THINKOS_IDLE_STACK_SIZE 
+#define THINKOS_IDLE_STACK_SIZE (sizeof(struct thinkos_context) + 128)
 #endif
 
-#define THINKOS_IDLE_STACK_SIZE sizeof(struct thinkos_context)
+uint32_t thinkos_idle_stack[THINKOS_IDLE_STACK_SIZE / 4]  
+	__attribute__((aligned(8)));
+#define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_idle_stack
 
-#ifndef THINKOS_MAIN_STACK_SIZE
-  #define THINKOS_MAIN_STACK_SIZE 4096
 #endif
 
-uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
 
 #if THINKOS_ENABLE_THREAD_INFO
 const struct thinkos_thread_inf thinkos_idle_inf = {
@@ -123,46 +161,66 @@ const struct thinkos_thread_inf thinkos_idle_inf = {
 	.stack_ptr = THINKOS_IDLE_STACK_BASE,
 	.stack_size = THINKOS_IDLE_STACK_SIZE,
 	.priority = 255,
-	.thread_id = THINKOS_THREAD_IDLE,
-	.paused = 0
-};
-
-/* FIXME: move this definition elsewere, or allow it 
-   to be configured by the user ... */
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
-	.stack_size = THINKOS_MAIN_STACK_SIZE,
-	.priority = 0,
-	.thread_id = 0,
+	.thread_id = (THINKOS_THREAD_IDLE + 1),
 	.paused = 0
 };
 #endif
 
-/* initialize the idle thread */
-struct thinkos_context * __thinkos_idle_init(void)
+uint32_t *  __thinkos_xcpt_stack_top(void)
 {
-	struct thinkos_context * idle_ctx;
+	uintptr_t sp;
 
-	idle_ctx = (struct thinkos_context *)THINKOS_IDLE_STACK_BASE;
+	sp = (uintptr_t)THINKOS_IDLE_STACK_BASE;
+	sp += THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
 
-#if THINKOS_IDLE_STACK_BSS
-	DCC_LOG1(LOG_MSG, "BSS idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
+	return (uint32_t *)sp;
+}
+
+struct thinkos_context * __thinkos_idle_ctx(void)
+{
+	struct thinkos_context * ctx;
+	uintptr_t sp;
+
+	sp = (uintptr_t)THINKOS_IDLE_STACK_BASE;
+	sp += THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
+	ctx = (struct thinkos_context *)sp;
+
+	return ctx;
+}
+
+/* resets the idle thread and context */
+uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
+{
+	struct thinkos_context * ctx;
+
+	ctx  = __thinkos_idle_ctx();
+
+	ctx->r0 = (uint32_t)arg;
+#if DEBUG
+	ctx->r1 = (uint32_t)0x11111111;
+	ctx->r2 = (uint32_t)0x22222222;
+	ctx->r3 = (uint32_t)0x33333333;
+	ctx->r4 = (uint32_t)0x44444444;
+	ctx->r5 = (uint32_t)0x55555555;
+	ctx->r6 = (uint32_t)0x66666666;
+	ctx->r7 = (uint32_t)0x77777777;
+	ctx->r8 = (uint32_t)0x88888888;
+	ctx->r9 = (uint32_t)0x99999999;
+	ctx->r10 = (uint32_t)0xaaaaaaaa;
+	ctx->r11 = (uint32_t)0xbbbbbbbb;
+	ctx->r12 = (uint32_t)0xcccccccc;
 #endif
+	ctx->pc = (uint32_t)task_ptr & ~1;
+	ctx->lr = (uint32_t)thinkos_idle_task; 
+	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
-#if THINKOS_IDLE_STACK_ALLOC
-	DCC_LOG1(LOG_TRACE, "alloc idle stack @ 0x%08x", THINKOS_IDLE_STACK_BASE);
-#endif
-
-	idle_ctx->pc = (uint32_t)thinkos_idle_task & ~1;
-	idle_ctx->lr = (uint32_t)__thinkos_thread_exit;
-	idle_ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-
-	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = idle_ctx;
-
-#if (THINKOS_THREADS_MAX < 32) 
-	/* put the IDLE thread in the ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, THINKOS_THREADS_MAX, 1);
+#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
+	ctx->sp = (uintptr_t)&ctx->r0;
+  #if (THINKOS_ENABLE_IDLE_MSP) 
+	ctx->ret = CM3_EXC_RET_THREAD_MSP;
+  #else
+	ctx->ret = CM3_EXC_RET_THREAD_PSP;
+  #endif
 #endif
 
 #if THINKOS_ENABLE_THREAD_INFO
@@ -170,6 +228,23 @@ struct thinkos_context * __thinkos_idle_init(void)
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
 #endif
 
-	return idle_ctx;
+	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = ctx;
+
+	return (uintptr_t)ctx;
+}
+
+/* initialize the idle thread */
+void __thinkos_idle_init(void)
+{
+
+	DCC_LOG(LOG_WARNING, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"); 
+
+#if THINKOS_ENABLE_STACK_INIT
+	/* initialize idle stack */
+	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 
+					   THINKOS_IDLE_STACK_SIZE);
+#endif
+
+ 	__thinkos_idle_reset(thinkos_idle_task, NULL);
 }
 

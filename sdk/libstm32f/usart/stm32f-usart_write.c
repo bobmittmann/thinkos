@@ -27,8 +27,8 @@ int stm32_usart_write(struct stm32_usart * usart, const void * buf,
 {
 	char * cp = (char *)buf;
 	uint32_t cr1 = usart->cr1;
+	unsigned int n;
 	int c;
-	int n;
 
 	cr1 = usart->cr1;
 	usart->cr1 = cr1 & ~(USART_TXEIE | USART_TCIE);

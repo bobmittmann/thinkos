@@ -52,6 +52,7 @@
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
 int u32f2str(char * buf, uint32_t x, int precision); 
+extern const char __hextab[];
 
 #define PERCENT 0x01
 #define WIDTH 0x02
@@ -84,6 +85,75 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 
 	/* leave room for null at the end */
 	max--;
+
+	if (entry->ref->opt & TRACE_XXD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+		cnt = 0;
+		cp = (char *)entry->ref->fmt;
+		while ((cnt < max) && *cp) {
+			s[cnt++] = *cp++;
+		}
+		if (cnt < max)
+			s[cnt++] = ':';
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+		cp = &s[cnt];
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+			else
+				val >>= 8;
+			if ((cnt + 3) < max) {
+				*cp++ = ' ';
+				*cp++ = __hextab[(val >> 4) & 0xf];
+				*cp++ = __hextab[val & 0xf];
+				cnt += 3;
+			}
+		}
+	
+		*cp ='\0';
+		entry->idx = tail;
+		return cnt;
+	} else if (entry->ref->opt & TRACE_AD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+		cnt = 0;
+		cp = (char *)entry->ref->fmt;
+		while ((cnt < max) && *cp) {
+			s[cnt++] = *cp++;
+		}
+		if (cnt < max)
+			s[cnt++] = ':';
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+		cp = &s[cnt];
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+			else
+				val >>= 8;
+			if (cnt < max) {
+				c = val & 0xff;
+				*cp++ = ((c < ' ') || (c > 126)) ? '.' : c;
+				cnt++;
+			}
+		}
+	
+		*cp ='\0';
+		entry->idx = tail;
+		return cnt;
+	}
 
 	n = 0;
 	w = 0;
@@ -317,9 +387,12 @@ print_buf:
 }
 
 const char * const trace_lvl_nm[] = {
-		" NONE",
+		"PANIC",
+		"ALERT",
+		" CRIT",
 		"ERROR",
 		" WARN",
+		" NOTE",
 		" INFO",
 		"DEBUG",
 		"  YAP",

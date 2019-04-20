@@ -72,7 +72,7 @@ static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 	uint32_t cyccnt;
 	int32_t delta;
 	int self;
-	int cnt = MIN(max, THINKOS_THREADS_MAX + 1);
+	int cnt = MIN((int)max, THINKOS_THREADS_MAX + 1);
 
 	self = thinkos_rt.active;
 	cyccnt = CM3_DWT->cyccnt;

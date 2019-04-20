@@ -65,7 +65,7 @@ typedef uint32_t chsize_t;
 /*	We allocate at least 2 chunks each time: 1 for header and 1+ for data. */
 struct mem {
 	chsize_t size;
-	chaddr_t data[0];
+	chaddr_t data[];
 };
 
 /*	Since holes hold no data, we use that extra chunk to our own purposes.

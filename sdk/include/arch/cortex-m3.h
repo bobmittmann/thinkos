@@ -665,7 +665,8 @@
 /* Return to thread mode and on return use the process stack extended frame */
 #define CM3_EXC_RET_THREAD_PSP_EXT 0xffffffed
 
-#define CM3_EXEC_RET_SPSEL (1 << 2)
+#define CM3_EXC_RET_SPSEL          (1 << 2)
+#define CM3_EXC_RET_nFPCA          (1 << 4)
 
 #ifndef __ASSEMBLER__
 
@@ -1327,7 +1328,7 @@ static inline int64_t __smull(int32_t op1, int32_t op2)
 }
 
 #define __SSAT(ARG1,ARG2) \
-	({                          \
+	__extension__({                          \
 	 int32_t __RES, __ARG1 = (ARG1); \
 	 asm volatile ("ssat %0, %1, %2" : "=r" (__RES) :  "I" (ARG2), "r" (__ARG1) ); \
 	 __RES; \

@@ -35,4 +35,3 @@ bool __thinkos_thread_isfaulty(unsigned int th)
 }
 #endif
 
-

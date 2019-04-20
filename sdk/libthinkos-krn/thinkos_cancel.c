@@ -89,7 +89,7 @@ void thinkos_cancel_svc(int32_t * arg, int self)
 	DCC_LOG3(LOG_TRACE, "<%d> cancel %d, with code %d!", 
 			 thinkos_rt.active, thread_id, code); 
 
-	thinkos_rt.ctx[thread_id]->pc = (uint32_t)__thinkos_thread_exit;
+	thinkos_rt.ctx[thread_id]->pc = (uint32_t)__thinkos_thread_terminate_stub;
 	thinkos_rt.ctx[thread_id]->r0 = code;
 	arg[0] = 0;
 }

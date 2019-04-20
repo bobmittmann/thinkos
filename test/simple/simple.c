@@ -142,11 +142,7 @@ void thread_wait2(unsigned int thread_id)
 		rdy = __ldrexw(&thinkos_rt.wq_ready);
 		tms = thinkos_rt.wq_tmshare;
 		rdy &= ~(1 << thread_id);
-#if ((THINKOS_THREADS_MAX) < 32) 
-		if (rdy == (1 << (THINKOS_THREADS_MAX))) {
-#else
 		if (rdy == 0) {
-#endif
 			/* no more threads into the ready queue,
 			   move the timeshare queue to the ready queue */
 			rdy |= tms;
