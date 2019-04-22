@@ -21,12 +21,9 @@
 
 include ../../mk/config.mk
 
-LIB_STATIC = util
+LIB_STATIC = fixpt
 
-CFILES = udelay.c mdelay.c delay.c bswap_16.c bswap_32.c \
-		 int2dec.c uint2dec.c ll2dec.c ull2dec.c uint2hex.c ull2hex.c \
-		 long2hex.c short2hex.c char2hex.c float2str.c double2float.c \
-		 double2str.c uint2hexup.c ull2hexup.c 
+CFILES = ilog2.c isqrt.c q31sin.c q31cos.c
 
 include ../../mk/lib.mk
 
