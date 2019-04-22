@@ -168,6 +168,22 @@ struct thinkos_thread {
 
 #include <stdint.h>
 
+
+struct thinkos_thread_inf {
+	void * stack_ptr;
+	union {
+		uint32_t opt;
+		struct {
+			uint16_t stack_size;
+			uint8_t priority;
+			uint8_t thread_id: 7;
+			uint8_t paused: 1;
+		};
+	};
+
+	char tag[8];
+};
+
 /** 
  * struct thinkos_thread_attr - Thread attributes. 
  *
@@ -189,7 +205,7 @@ struct thinkos_thread_attr {
 	char tag[8];
 };
 
-int (* thinkos_task_t)(void * arg, unsigned int id)  
+int (* thinkos_task_t)(void * arg, unsigned int id);
 
 /** 
  * struct thinkos_thread_init - Thread initializer. 
@@ -198,11 +214,13 @@ int (* thinkos_task_t)(void * arg, unsigned int id)
  * @arg: Parameter to the task
  * @attr: Static thread attributes.
  */
+/*
 struct thinkos_thread_init {
-	thinkos_task_t * task;
+	thinkos_task_t task;
 	void * arg;
 	struct thinkos_thread_attr attr;
 };
+*/
 
 #include <thinkos/syscalls.h>
 

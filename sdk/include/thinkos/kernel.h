@@ -65,6 +65,10 @@
 #define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
 
 #if (THINKOS_ENABLE_THREAD_VOID)
+  #define THINKOS_THREAD_VOID ((THINKOS_THREADS_MAX) + 1)
+#endif
+
+#if (THINKOS_ENABLE_THREAD_VOID)
 #define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 2)
 #else
 #define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 1)
@@ -72,21 +76,15 @@
 
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
 
-
-
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
- * --------------------------------------------------------------------------*/
+  * --------------------------------------------------------------------------*/
 #if (THINKOS_ENABLE_THREAD_VOID)
   #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 2)
-#else
-  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 1)
-#endif
-
-#if THINKOS_ENABLE_THREAD_VOID
   #define SIZEOF_VOID_CTX  4
   #define SIZEOF_CTX (((THINKOS_THREADS_MAX) + 2) * 4)
 #else
+  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 1)
   #define SIZEOF_VOID_CTX  0
   #define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
 #endif
@@ -95,10 +93,6 @@
 
 #if THINKOS_ENABLE_PROFILING
   #define SIZEOF_CYCCNT    (THINKOS_CTX_LEN * 4)
-    #define SIZEOF_CYCCNT  (((THINKOS_THREADS_MAX) + \
-							 (THINKOS_NRT_THREADS_MAX) + 2) * 4)
-    #define SIZEOF_CYCCNT  (((THINKOS_THREADS_MAX) + \
-							 (THINKOS_NRT_THREADS_MAX) + 1) * 4)
   #define SIZEOF_CYCREF    4
 #else
   #define SIZEOF_CYCCNT    0
@@ -348,9 +342,6 @@ struct thinkos_rt {
 	   and their order and sizes must not be changed.
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
-	/* Idle thread context pointer */
-	struct thinkos_context * ctx[(THINKOS_THREADS_MAX) + 1]; 
-	/* void thread context pointer */
 	struct thinkos_context * ctx[THINKOS_CTX_LEN]; 
 
 #if THINKOS_NRT_THREADS_MAX > 0
@@ -364,7 +355,6 @@ struct thinkos_rt {
   #else
 	uint32_t cyccnt[(THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX) + 1];
   #endif
-#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
@@ -664,7 +654,7 @@ struct thinkos_thread_opt {
 	uint8_t paused: 1;
 };
 
-struct thinkos_thread_init {
+struct thinkos_krn_thread_init {
 	int (* task)(void *);
 	void * arg;
 	void * stack_ptr;
@@ -672,7 +662,6 @@ struct thinkos_thread_init {
 	struct thinkos_thread_inf * inf;
 };
 
-	THINKOS_ERR_TRACE_ENTRY_NULL  = 28
 /* Mark for breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
