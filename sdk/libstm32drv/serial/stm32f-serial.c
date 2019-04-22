@@ -219,22 +219,14 @@ int stm32f_serial_recv(struct stm32f_serial_drv * drv, void * buf,
 
 	DCC_LOG2(LOG_INFO, "1. len=%d tmo=%d", len, tmo);
 
-//	thinkos_trace("stm32f_serial_recv() 1.");
-
 again:
-
-	thinkos_trace("stm32f_serial_recv() 2.");
 
 	if ((ret = thinkos_gate_timedwait(drv->rx_gate, tmo)) < 0) {
 		DCC_LOG1(LOG_INFO, "cnt=%d, timeout!", 
 				 drv->rx_fifo.head - drv->rx_fifo.tail);
 
-		thinkos_trace("stm32f_serial_recv() 3.");
-
 		return ret;
 	}
-
-	thinkos_trace("stm32f_serial_recv() 4.");
 
 	tail = drv->rx_fifo.tail;
 	cnt = drv->rx_fifo.head - tail;
