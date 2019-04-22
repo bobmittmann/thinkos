@@ -239,6 +239,8 @@ clean: deps-clean
 	$(Q)$(RMALL) $(CLEAN_LFILES)
 	$(Q)$(RMALL) $(CLEAN_DFILES)
 	$(Q)$(RMALL) $(CLEAN_OFILES)
+
+dist-clean: clean
 ifneq (, $(CLEAN_ODIRS))
 	$(Q)$(RMDIR) $(CLEAN_ODIRS) 1> $(DEVNULL)
 endif
@@ -266,6 +268,7 @@ gen: $(HFILES_OUT) $(CFILES_OUT) $(SFILES_OUT)
 deps-all: $(DEPDIRS_ALL)
 
 deps-clean: $(DEPDIRS_CLEAN)
+
 
 #------------------------------------------------------------------------------ 
 # Code::Blocks targets
@@ -330,7 +333,7 @@ else
 	$(Q)$(OBJDUMP) -w -t -d -S $< > $@
 endif
 
-.PHONY: all clean lib lst deps-all deps-clean
+.PHONY: all clean dist-clean lib lst deps-all deps-clean
 .PHONY: Debug Release cleanDebug cleanRelease
 .PHONY: $(DEPDIRS_BUILD) $(DEPDIRS_CLEAN)
 
