@@ -118,12 +118,16 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	return id;
 }
 
-int thinkos_krn_init(uint32_t opt)
+int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
+					 const struct thinkos_thread_attr * lst[])
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 	struct thinkos_context * ctx;
 	uint32_t sp;
 	int thread_id;
+
+	(void)map;
+	(void)lst;
 
 #if (THINKOS_MUTEX_MAX > 0)
 	DCC_LOG3(LOG_INFO, "    mutex: %2d (%2d .. %2d)", THINKOS_MUTEX_MAX,

@@ -123,7 +123,8 @@ void __thinkos_thread_inf_set(unsigned int thread_id,
 /* initialize a thread context */
 void thinkos_thread_create_svc(int32_t * arg)
 {
-	struct thinkos_thread_init * init = (struct thinkos_thread_init *)arg;
+	struct thinkos_thread_create_args * init = 
+		(struct thinkos_thread_create_args *)arg;
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	int target_id = init->opt.id - 1;

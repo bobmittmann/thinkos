@@ -122,9 +122,8 @@
 
 #define THINKOS_DBGMON                64
 
+#define THINKOS_TRACE                 65
 #define THINKOS_TRACE_CTL             66
-
-#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 67
 
 #define CONSOLE_WRITE                  0
 #define CONSOLE_READ                   1
@@ -179,11 +178,11 @@ struct __ret64 {
  * C service call macros 
  * ------------------------------------------------------------------------- */
 
-#define __SYSCALLS_CALL(N) __extension__({ register int ret asm("r0"); \
+#define __SYSCALL_CALL(N) __extension__({ register int ret asm("r0"); \
 asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
 ret; })
 
-#define __SYSCALLS_CALL1(N, A1) __extension__({ \
+#define __SYSCALL_CALL1(N, A1) __extension__({ \
 register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : "0"(r0) : ); \
@@ -195,7 +194,7 @@ register uint32_t r0 asm("r0") = (int)A1; struct __ret64 ret; \
 asm volatile ("svc " #N "\n" : "=r"(err), "=&r"(val) : "0"(r0) : ); \
 ret.val = val; ret.err = err; ret; })
 
-#define __SYSCALLS_CALL2(N, A1, A2) __extension__( \
+#define __SYSCALL_CALL2(N, A1, A2) __extension__( \
 { register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
@@ -203,7 +202,7 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 "0"(r0), "r"(r1) : ); \
 ret; })
 
-#define __SYSCALLS_CALL3(N, A1, A2, A3) __extension__({ \
+#define __SYSCALL_CALL3(N, A1, A2, A3) __extension__({ \
 register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
@@ -212,7 +211,7 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 	"0"(r0), "r"(r1), "r"(r2) : ); \
 	ret; })
 
-#define __SYSCALLS_CALL4(N, A1, A2, A3, A4) __extension__({\
+#define __SYSCALL_CALL4(N, A1, A2, A3, A4) __extension__({\
 register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
@@ -222,7 +221,7 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 		"0"(r0), "r"(r1), "r"(r2), "r"(r3) : ); \
 		ret; })
 
-#define __SYSCALLS_CALL5(N, A1, A2, A3, A4, A5) __extension__({\
+#define __SYSCALL_CALL5(N, A1, A2, A3, A4, A5) __extension__({\
 register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
 register int r1 asm("r1") = (int)A2; \
@@ -234,22 +233,22 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 			ret; })
 
 /* No arguments function */
-#define THINKOS_SYSCALL0(N) __SYSCALLS_CALL(N)
+#define THINKOS_SYSCALL0(N) __SYSCALL_CALL(N)
 
 /* One argument function */
-#define THINKOS_SYSCALL1(N, A1) __SYSCALLS_CALL1(N, (A1))
+#define THINKOS_SYSCALL1(N, A1) __SYSCALL_CALL1(N, (A1))
 
 /* Two arguments function */
-#define THINKOS_SYSCALL2(N, A1, A2) __SYSCALLS_CALL2(N, (A1), (A2))
+#define THINKOS_SYSCALL2(N, A1, A2) __SYSCALL_CALL2(N, (A1), (A2))
 
 /* Three arguments function */
-#define THINKOS_SYSCALL3(N, A1, A2, A3) __SYSCALLS_CALL3(N, (A1), (A2), (A3))
+#define THINKOS_SYSCALL3(N, A1, A2, A3) __SYSCALL_CALL3(N, (A1), (A2), (A3))
 
 /* Four arguments function */
-#define THINKOS_SYSCALL4(N, A1, A2, A3, A4) __SYSCALLS_CALL4(N, (A1), (A2), \
+#define THINKOS_SYSCALL4(N, A1, A2, A3, A4) __SYSCALL_CALL4(N, (A1), (A2), \
                                              (A3), (A4))
 /* Five arguments function */
-#define THINKOS_SYSCALL5(N, A1, A2, A3, A4, A5) __SYSCALLS_CALL5(N, (A1), \
+#define THINKOS_SYSCALL5(N, A1, A2, A3, A4, A5) __SYSCALL_CALL5(N, (A1), \
                                                 (A2), (A3), (A4), (A5))
 
 /* 64bits return value, one 32bits argument */
@@ -775,42 +774,42 @@ struct trace_entry;
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace(const struct trace_ref * ref) {
-	return THINKOS_SYSCALLS1(THINKOS_TRACE, ref);
+	return THINKOS_SYSCALL1(THINKOS_TRACE, ref);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_open(void) {
-	return THINKOS_SYSCALLS1(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL1(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_OPEN);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_close(int id) {
-	return THINKOS_SYSCALLS2(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL2(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_CLOSE, id);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_read(int id, uint32_t * buf, unsigned int len) {
-	return THINKOS_SYSCALLS4(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL4(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_READ, id, buf, len);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_flush(int id) {
-	return THINKOS_SYSCALLS2(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL2(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_FLUSH, id);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_getfirst(int id, struct trace_entry * entry) {
-	return THINKOS_SYSCALLS3(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL3(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_GETFIRST, id, entry);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_trace_getnext(int id, struct trace_entry * entry) {
-	return THINKOS_SYSCALLS3(THINKOS_TRACE_CTL, 
+	return THINKOS_SYSCALL3(THINKOS_TRACE_CTL, 
 							 THINKOS_TRACE_GETNEXT, id, entry);
 }
 

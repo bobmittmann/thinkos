@@ -100,7 +100,7 @@ struct thinkos_mem_desc {
 	struct thinkos_mem_blk blk[]; /* sorted block list */
 };
 
-struct thinkos_mem_map {
+struct thinkos_memory_map {
 	const struct thinkos_mem_sct * flash;
 	const struct thinkos_mem_sct * ram;
 	const struct thinkos_mem_sct * periph;

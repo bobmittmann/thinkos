@@ -47,23 +47,10 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 #endif
 
 	for (;;) {
-
-#if (THINKOS_ENABLE_IDLE_WFI)
+		/* Chek for threads in the ready queue. */
+  #if (THINKOS_ENABLE_IDLE_WFI)
 		asm volatile ("wfi\n"); /* wait for interrupt */
-		if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX))) {
-  #else
-		if (thinkos_rt.wq_ready != 0) {
   #endif
-  #if THINKOS_ENABLE_CRITICAL
-			__thinkos_defer_sched();
-			break;
-  #endif
-		}
-		/* Try to send one trace entry to a remote host... */
-	} while (__thinkos_trace_try_send() >= 0);
-#else
-  #endif
-#endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
@@ -118,8 +105,19 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 #if (THINKOS_ENABLE_CRITICAL)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
+  #if ((THINKOS_THREADS_MAX) < 32) 
+				if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
+  #else
 				if (thinkos_rt.wq_ready != 0)
+  #endif
+				{
 					__thinkos_defer_sched();
+				}
+#endif
+
+#if (THINKOS_ENABLE_TRACE)
+				/* Try to send one trace entry to a remote host... */
+				__thinkos_trace_try_send();
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
@@ -128,7 +126,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				DCC_LOG1(LOG_TRACE, "%d", req); 
 		}
 #endif
-
 	}
 }
 

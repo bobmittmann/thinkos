@@ -142,7 +142,7 @@ void dbgmon_signal(int sig)
 {
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t evset;
-
+	uint32_t demcr;
 	
 	do {
 		/* avoid possible race condition on dbgmon.events */

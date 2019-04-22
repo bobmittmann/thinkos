@@ -29,6 +29,8 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+#define __THINKOS_USB__
+#include <thinkos/bootldr.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -63,7 +65,7 @@ int main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
 	udelay(256);
-	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
+	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 	udelay(256);
