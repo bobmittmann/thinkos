@@ -24,7 +24,6 @@
 #include <thinkos.h>
 #include <stdlib.h>
 #include <arch/cortex-m3.h>
-#include <sys/dcclog.h>
 
 #include <sys/tty.h>
 #include <errno.h>
@@ -53,7 +52,6 @@ int tty_write(struct tty_dev * __tty, const void * __buf, unsigned int __len)
 	int n;
 
 	if ((__tty == NULL) || (__buf == NULL)) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return -EINVAL;
 	}
 
@@ -147,7 +145,6 @@ int tty_read(struct tty_dev * __tty, void * __buf, size_t __len,
 	int c;
 
 	if ((__tty == NULL) || (__buf == NULL)) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return -EINVAL;
 	}
 
@@ -191,7 +188,6 @@ int tty_read(struct tty_dev * __tty, void * __buf, size_t __len,
 int tty_flush(struct tty_dev * __tty)
 {
 	if (__tty == NULL) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return -EINVAL;
 	}
 
@@ -207,7 +203,6 @@ static struct tty_dev __tty_dev__[TTY_DEV_MAX];
 int tty_release(struct tty_dev * __tty)
 {
 	if (__tty == NULL) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return -EINVAL;
 	}
 
@@ -225,12 +220,10 @@ struct tty_dev * tty_attach(const struct file * __f)
 	int i;
 
 	if (__f == NULL) {
-		DCC_LOG(LOG_WARNING, "__f == NULL!");
 		return NULL;
 	}
 
 	if (__f->op == NULL) {
-		DCC_LOG(LOG_WARNING, "__f->op == NULL!");
 		return NULL;
 	}
 
@@ -253,7 +246,6 @@ struct tty_dev * tty_attach(const struct file * __f)
 struct file * tty_lowlevel(struct tty_dev * __tty)
 {
 	if (__tty == NULL) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return NULL;
 	}
 
@@ -263,7 +255,6 @@ struct file * tty_lowlevel(struct tty_dev * __tty)
 void * tty_drv(struct tty_dev * __tty)
 {
 	if (__tty == NULL) {
-		DCC_LOG(LOG_WARNING, "Null pointer!");
 		return NULL;
 	}
 

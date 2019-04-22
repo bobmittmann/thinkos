@@ -21,11 +21,11 @@
 
 include ../../mk/config.mk
 
-LIB_STATIC = console
+LIB_STATIC = thinkos-usr
 
-CFILES = console.c
+CONSOLE_CFILES = console.c
 
-override INCPATH += ../include 
+CFILES = $(addprefix console/,$(CONSOLE_CFILES))
 
 include ../../mk/lib.mk
 

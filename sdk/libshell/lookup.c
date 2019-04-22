@@ -34,8 +34,6 @@
 #define __SHELL_I__
 #include "shell-i.h"
 
-#include <sys/dcclog.h>
-
 struct shell_cmd * cmd_lookup(const struct shell_cmd cmd_tab[], char * line)
 {
 	struct shell_cmd * cmd = (struct shell_cmd *)cmd_tab; 
@@ -44,7 +42,6 @@ struct shell_cmd * cmd_lookup(const struct shell_cmd cmd_tab[], char * line)
 	int n;
 
 	if ((cp = line) == NULL) {
-		DCC_LOG(LOG_WARNING, "NULL pointer...");
 		return NULL;
 	}
 
@@ -57,20 +54,16 @@ struct shell_cmd * cmd_lookup(const struct shell_cmd cmd_tab[], char * line)
 	n = cp - s;
 
 	if (n == 0) {
-		DCC_LOG(LOG_WARNING, "empty line...");
 		return NULL;
 	}
 
 	while (cmd->callback != NULL) {
 		if ((cmd->name[n] == '\0' && strncmp(s, cmd->name, n) == 0) ||
 			(cmd->alias[n] == '\0' && strncmp(s, cmd->alias, n) == 0)) {
-			DCC_LOG1(LOG_MSG, "\"%s\"", cmd->name);
 			return cmd;
 		}
 		cmd++;
 	}
-
-	DCC_LOG(LOG_WARNING, "not found...");
 
 	return NULL;
 }

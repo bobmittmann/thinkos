@@ -409,6 +409,7 @@ char * history_readline(struct cmd_history * ht, FILE * f,
 
 		case IN_TN_BS:     
 			DCC_LOG(LOG_MSG, "IN_TN_BS");
+			/* FALLTHROUGH */
 		case IN_BS:
 			if (pos == 0) {
 				fputs(OUT_BEL, f);

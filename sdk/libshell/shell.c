@@ -37,8 +37,6 @@
 #define __SHELL_I__
 #include "shell-i.h"
 
-#include <sys/dcclog.h>
-
 #ifndef SHELL_LINE_MAX
 #define SHELL_LINE_MAX 72
 #endif
@@ -62,7 +60,6 @@ int shell(FILE * f, const char * (* prompt)(void),
 	memset(line, 0, sizeof(line));
 	memset(hist_buf, 0, sizeof(hist_buf));
 
-	DCC_LOG(LOG_TRACE, "history_init()");
 	history = history_init(hist_buf, sizeof(hist_buf), SHELL_LINE_MAX);
 
 	if (greeting != NULL)

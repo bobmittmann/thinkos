@@ -23,8 +23,6 @@
 
 #define assert(EXPR)		(void)0
 
-#include <sys/dcclog.h>
-
 #else /* Not NDEBUG.  */
 
 /* This prints an "Assertion failed" message and aborts.  */
