@@ -196,7 +196,7 @@ void hole_dump(void)
 
 	puts("HOLE DUMP:");
 	for (curr = malloc_heap.holes; curr != NULL; curr = curr->next) {
-		printf("  0x%p(%u)\n", curr, curr->size);
+		printf("  0x%p(%u)\n", (void *)curr, curr->size);
 	}
 	puts("END.");
 }
