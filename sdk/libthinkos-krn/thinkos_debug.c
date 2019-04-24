@@ -19,9 +19,6 @@
  * http://www.gnu.org/
  */
 
-//#undef DEBUG
-//#define DEBUG 6
-
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #define __THINKOS_IRQ__

@@ -105,12 +105,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 #if (THINKOS_ENABLE_CRITICAL)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
-  #if ((THINKOS_THREADS_MAX) < 32) 
-				if (thinkos_rt.wq_ready != (1 << (THINKOS_THREADS_MAX)))
-  #else
-				if (thinkos_rt.wq_ready != 0)
-  #endif
-				{
+				if (thinkos_rt.wq_ready != 0) {
 					__thinkos_defer_sched();
 				}
 #endif
