@@ -93,6 +93,7 @@ enum ep_state {
 	EP_STALLED,
 	EP_IN_DATA,
 	EP_IN_DATA_ZLP,
+	EP_IN_ZLP,
 	EP_WAIT_STATUS_IN,
 	EP_OUT_DATA,
 	EP_OUT_DATA_LAST
@@ -431,25 +432,47 @@ static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
 {
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
 	int ep_id = idx + OTG_INEP_OFF;
-	uint32_t diepctl = otg_fs->inep[idx].diepctl;
-	struct stm32f_otg_ep * ep = &drv->ep[ep_id];
-#if 0
-	if (diepctl & OTG_FS_EPENA) {
-		DCC_LOG1(LOG_TRACE, VT_PSH VT_FGR 
-				 "[%d] pending transaction EPENA set.." VT_POP, idx);
-		return;
-	}
-#endif
+	struct stm32f_otg_ep * ep;
+	uint32_t diepctl;
+
+	ep = &drv->ep[ep_id];
+	diepctl = otg_fs->inep[idx].diepctl;
 	if (ep->state == EP_IN_DATA_ZLP) {
-		DCC_LOG1(LOG_TRACE,  VT_PSH VT_FGR 
-				 "[%d] ZLP!" VT_POP, idx);
+		DCC_LOG4(LOG_TRACE, VT_PSH VT_FGR
+				 "[%d] [IN_DATA_ZLP] -> [IN_ZLP] EPENA=%d NAKSTS=%d DPID=%d." 
+				 VT_POP, idx, 
+				 diepctl & OTG_FS_EPENA ? 1 : 0, 
+				 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+				 diepctl & OTG_FS_DPID ? 1 : 0);
 		otg_fs->inep[idx].dieptsiz = OTG_FS_PKTCNT_SET(1) | 
 			OTG_FS_XFRSIZ_SET(0);
 		otg_fs->inep[idx].diepctl = diepctl | OTG_FS_EPENA;
-		ep->state = EP_IDLE;
+		ep->state = EP_IN_ZLP;
 		return;
 	}
 
+	if (ep->state == EP_IN_DATA) {
+		DCC_LOG4(LOG_MSG, VT_PSH VT_FGR
+				 "[%d] [IN_DATA]->[IDLE] EPENA=%d NAKSTS=%d DPID=%d." 
+				 VT_POP, idx, 
+				 diepctl & OTG_FS_EPENA ? 1 : 0, 
+				 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+				 diepctl & OTG_FS_DPID ? 1 : 0);
+	} else if (ep->state == EP_IN_ZLP) {
+		DCC_LOG4(LOG_MSG, VT_PSH VT_FGR
+				 "[%d] [IN_ZLP]->[IDLE] EPENA=%d NAKSTS=%d DPID=%d." 
+				 VT_POP, idx, 
+				 diepctl & OTG_FS_EPENA ? 1 : 0, 
+				 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+				 diepctl & OTG_FS_DPID ? 1 : 0);
+	} else {
+		DCC_LOG5(LOG_MSG, VT_PSH VT_FRD
+				 "[%d] [state=%d]->[IDLE]  EPENA=%d NAKSTS=%d DPID=%d." 
+				 VT_POP, idx, ep->state,
+				 diepctl & OTG_FS_EPENA ? 1 : 0, 
+				 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+				 diepctl & OTG_FS_DPID ? 1 : 0);
+	}
 
 	ep->state = EP_IDLE;
 	/* call class endpoint callback */
@@ -474,18 +497,40 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	idx = ep->idx;
 
 	diepctl = otg_fs->inep[idx].diepctl;
-	if (diepctl & OTG_FS_EPENA) {
-		DCC_LOG1(LOG_TRACE, VT_PSH VT_FGR
-				 "[%d] pending transaction EPENA set." VT_POP, idx);
-		if (ep->state != EP_IN_DATA) {
-			DCC_LOG1(LOG_ERROR, VT_PSH VT_FRD
-					 "[%d] ep->state != EP_DATA." VT_POP, idx);
+	if (ep->state != EP_IDLE) {
+		if (ep->state == EP_IN_DATA) {
+			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+					 "[%d] IN_DATA EPENA=%d NAKSTS=%d DPID=%d." 
+					 VT_POP, idx, 
+					 diepctl & OTG_FS_EPENA ? 1 : 0, 
+					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+					 diepctl & OTG_FS_DPID ? 1 : 0);
+		} else if (ep->state == EP_IN_DATA_ZLP) {
+			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+					 "[%d] IN_DATA_ZLP EPENA=%d NAKSTS=%d DPID=%d." 
+					 VT_POP, idx, 
+					 diepctl & OTG_FS_EPENA ? 1 : 0, 
+					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+					 diepctl & OTG_FS_DPID ? 1 : 0);
+		} else if (ep->state == EP_IN_ZLP) {
+			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+					 "[%d] IN_ZLP EPENA=%d NAKSTS=%d DPID=%d." 
+					 VT_POP, idx, 
+					 diepctl & OTG_FS_EPENA ? 1 : 0, 
+					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+					 diepctl & OTG_FS_DPID ? 1 : 0);
+		} else {
+			DCC_LOG5(LOG_WARNING, VT_PSH VT_FMG
+					 "[%d] state=%d EPENA=%d NAKSTS=%d DPID=%d." 
+					 VT_POP, idx, ep->state,
+					 diepctl & OTG_FS_EPENA ? 1 : 0, 
+					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
+					 diepctl & OTG_FS_DPID ? 1 : 0);
 		}
 		return 0;
 	}
 
 	mpsiz = OTG_FS_MPSIZ_GET(diepctl);
-
 	free = otg_fs->inep[idx].dtxfsts * 4;
 	xfrsiz = MIN(len, free);
 
@@ -504,14 +549,14 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	}
 
 	if ((xfrsiz % mpsiz) == 0) {
-		ep->state = EP_IN_DATA_ZLP; /* needs to send a ZLP */
-		DCC_LOG3(LOG_INFO,
-				 VT_PSH VT_FGR "[%d] ZLP! pktcnt=%d xfrsiz=%d" VT_POP,
+		ep->state = EP_IN_DATA_ZLP; /* data + ZLP */
+		DCC_LOG3(LOG_TRACE, VT_PSH VT_FGR 
+				 "[%d] [IDLE]->[IN_DATA_ZLP]! pktcnt=%d xfrsiz=%d" VT_POP,
 				 idx, pktcnt, xfrsiz);
 	} else {
 		ep->state = EP_IN_DATA;
-		DCC_LOG3(LOG_INFO, VT_PSH VT_FGR 
-				 "[%d] DATA pktcnt=%d xfrsiz=%d" VT_POP, 
+		DCC_LOG3(LOG_TRACE, VT_PSH VT_FGR 
+				 "[%d] [IDLE]->[IN_DATA] pktcnt=%d xfrsiz=%d" VT_POP, 
 				 idx, pktcnt, xfrsiz);
 	}
 
@@ -805,6 +850,7 @@ int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv,
 			__ep_in_stall_set(otg_fs, idx);
 		else
 			__ep_out_stall_set(otg_fs, idx);
+		DCC_LOG1(LOG_MSG, "[%d] [STALLED]", idx);
 		ep->state = EP_STALLED;
 		break;
 
@@ -813,6 +859,7 @@ int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv,
 			__ep_in_stall_clr(otg_fs, idx);
 		else
 			__ep_out_stall_clr(otg_fs, idx);
+		DCC_LOG1(LOG_MSG, "[%d] [IDLE]", idx);
 		ep->state = EP_IDLE;
 		break;
 
@@ -948,17 +995,11 @@ int stm32f_otg_dev_ep_init(struct stm32f_otg_drv * drv,
 		}
 
 		if (info->addr & USB_ENDPOINT_IN) {
-			/* Activate IN endpoint */
+			/* Set TX fifo number */
 			depctl |= OTG_FS_TXFNUM_SET(idx);
-
-			/* ZLP */
-			otg_fs->inep[idx].dieptsiz = OTG_FS_PKTCNT_SET(0) | 
-				OTG_FS_XFRSIZ_SET(0);
-
-			/* EP enable */
+			otg_fs->inep[idx].dieptsiz = 0;
+			/* Activate IN endpoint */
 			otg_fs->inep[idx].diepctl = depctl;
-			// | OTG_FS_EPENA | OTG_FS_CNAK; 
-
 			/* Enable endpoint interrupt */
 			otg_fs->daintmsk |= OTG_FS_IEPM(idx);
 
