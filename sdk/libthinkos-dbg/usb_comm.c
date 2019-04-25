@@ -473,7 +473,7 @@ static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 
 			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 									dev->rx_buf, free);
-			DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d n=%d", 
+			DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d n=%d", 
 					 seq, ack, free, n);
 			cnt = n;
 		} else {
@@ -486,11 +486,11 @@ static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 			if (m == n)	{
 				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 										dev->rx_buf, free - m);
-				DCC_LOG5(LOG_TRACE, "seq=%d ack=%d free=%d n=%d m=%d", 
+				DCC_LOG5(LOG_MSG, "seq=%d ack=%d free=%d n=%d m=%d", 
 						 seq, ack, free, n, m);
 				cnt = n + m;
 			} else {
-				DCC_LOG4(LOG_TRACE, "seq=%d ack=%d free=%d m=%d", 
+				DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d m=%d", 
 						 seq, ack, free, m);
 				cnt = m;
 			}
@@ -500,7 +500,7 @@ static int __cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 		seq += cnt;
 
 		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
-			DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
+			DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
 			dev->rx_paused = true;
 		}
 
@@ -517,7 +517,7 @@ static void usb_mon_on_rcv(usb_class_t * cl,
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 
-	DCC_LOG1(LOG_TRACE, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
+	DCC_LOG1(LOG_MSG, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
 
 	__cdc_acm_recv(dev);
 
@@ -904,7 +904,7 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
 
 	if (pos == 0) {
-		DCC_LOG4(LOG_TRACE, "1. n=%d ack=%d pos=%d cnt=%d...", 
+		DCC_LOG4(LOG_INFO, "1. n=%d ack=%d pos=%d cnt=%d...", 
 				 n, ack, pos, cnt);
 		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
@@ -918,7 +918,7 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 		l = cnt - m;
 		__thinkos_memcpy(dst, dev->rx_buf, l);
 
-		DCC_LOG6(LOG_TRACE, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
+		DCC_LOG6(LOG_INFO, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
 				 m, l, n, ack, pos, cnt);
 	}
 
@@ -930,7 +930,7 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	dev->rx_ack = ack;
 
 	if (dev->rx_paused && ((dev->rx_seq - ack) < CDC_EP_IN_MAX_PKT_SIZE)) {
-		DCC_LOG(LOG_TRACE, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
+		DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
 		dev->rx_paused = false;
 		__cdc_acm_recv(dev);
 	}
