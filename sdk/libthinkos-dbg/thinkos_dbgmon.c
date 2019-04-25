@@ -383,67 +383,94 @@ void __attribute__((naked))
 	__dbgmon_task_reset();
 }
 
-#if THINKOS_ENABLE_DEBUG_BKPT
-
-int dbgmon_thread_break_get(struct dbgmon_brk_inf * inf)
+int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 	unsigned int errno = THINKOS_NO_ERROR;
 	struct thinkos_context * ctx;
-	uint32_t addr = 0;
-	int thread_id;
+	unsigned int thread_id = id;
+	uint32_t pc = 0;
+	uint32_t sp = 0;
 
-	if ((thread_id = thinkos_dbgmon_rt.break_id) >= 0) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
+	if (thread_id > THINKOS_THREAD_VOID) {
+		DCC_LOG(LOG_ERROR, "Invalid thread!");
+		return -1;
+	}
 
-		if (xcpt->errno != THINKOS_NO_ERROR) {
-			ctx = &xcpt->ctx.core;
-			errno = xcpt->errno;
-		} else {
-			ctx = thinkos_rt.ctx[thread_id];
+	if (thread_id == xcpt->active) {
+		ctx = &xcpt->ctx.core;
+		errno = xcpt->errno;
+		pc = ctx->pc;
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+		sp = (uint32_t)ctx->sp;
+		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
+#else
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+#endif
+	} else if (thread_id == THINKOS_THREAD_IDLE) {
+		ctx  = __thinkos_idle_ctx();
+		pc = ctx->pc;
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+	} else {
+		ctx = thinkos_rt.ctx[thread_id];
+		if (thread_id == (unsigned int)thinkos_dbgmon_rt.break_id)
 			errno = thinkos_dbgmon_rt.errno;
-		}
 
-		if (ctx != NULL)
-			addr = ctx->pc;
+		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
+			DCC_LOG2(LOG_ERROR, "<%d> context 0x%08x invalid!!!", 
+					 thread_id + 1, ctx);
+			return -1;
+		}
+#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+		sp = (uint32_t)ctx->sp;
+		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
+		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
+				 thread_id + 1, sp, __retstr(ctx->ret));				
+#else
+		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+#endif
+		pc = ctx->pc;
 	}
 
 	if (inf != NULL) {
-		inf->addr = addr;
+		inf->pc = pc;
+		inf->sp = sp;
 		inf->errno = errno;
-		inf->thread_id = thread_id;
+		inf->thread_id = id;
+		inf->ctx = ctx;
 	}
 
-	return thread_id;
+	return 0;
 }
 
-int dbgmon_thread_step_get(uint32_t * addr)
+int dbgmon_errno_get(void)
+{
+	return  thinkos_dbgmon_rt.errno;
+}
+
+#if THINKOS_ENABLE_DEBUG_BKPT
+
+int dbgmon_thread_break_get(void)
 {
 	struct thinkos_context * ctx;
 	int thread_id;
 
-	if ((thread_id = thinkos_rt.step_id) >= 0) {
+	if ((thread_id = thinkos_dbgmon_rt.break_id) >= 0) {
 		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
 			return -1;
-		*addr = ctx->pc;
 	}
 
 	return thread_id;
-}
-
-void dbgmon_thread_step_clr(void)
-{
-	thinkos_rt.step_id = -1;
 }
 
 void dbgmon_thread_break_clr(void)
 {
 	thinkos_dbgmon_rt.break_id = -1;
 	thinkos_dbgmon_rt.errno = 0;
-}
-
-int dbgmon_errno_get(void)
-{
-	return  thinkos_dbgmon_rt.errno;
 }
 
 /* -------------------------------------------------------------------------
@@ -710,7 +737,7 @@ void dmon_watchpoint_clear_all(void)
  * Thread stepping
  * ------------------------------------------------------------------------- */
 
-int dmon_thread_step(unsigned int thread_id, bool sync)
+int dbgmon_thread_step(unsigned int thread_id, bool sync)
 {
 	int ret;
 
@@ -756,6 +783,24 @@ int dmon_thread_step(unsigned int thread_id, bool sync)
 	}
 
 	return 0;
+}
+
+int dbgmon_thread_step_get(void)
+{
+	struct thinkos_context * ctx;
+	int thread_id;
+
+	if ((thread_id = thinkos_rt.step_id) >= 0) {
+		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
+			return -1;
+	}
+
+	return thread_id;
+}
+
+void dbgmon_thread_step_clr(void)
+{
+	thinkos_rt.step_id = -1;
 }
 
 #endif /* THINKOS_ENABLE_DEBUG_STEP */

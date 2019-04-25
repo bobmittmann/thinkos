@@ -26,7 +26,7 @@
 #include "gdb-i.h"
 
 #ifndef GDB_DEBUG_PACKET
-#define GDB_DEBUG_PACKET 0
+#define GDB_DEBUG_PACKET 1
 #endif
 
 static int target_sync_reset(void) 
@@ -97,8 +97,6 @@ static int rsp_get_c_thread(struct gdb_rspd * gdb)
 
 	return thread_id;
 }
-
-
 
 /* -------------------------------------------------------------------------
  * Common response packets
@@ -491,6 +489,7 @@ int rsp_features_read(struct gdb_rspd * gdb, char * pkt)
 	return rsp_pkt_send(gdb, pkt, cnt + 2);
 }
 
+#if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 int rsp_memory_map_read(struct gdb_rspd * gdb, char * pkt)
 {
 	unsigned int offs;
@@ -508,7 +507,7 @@ int rsp_memory_map_read(struct gdb_rspd * gdb, char * pkt)
 
 	return rsp_pkt_send(gdb, pkt, cnt + 2);
 }
-
+#endif
 
 static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 {
@@ -584,7 +583,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 					  ";qXfer:features:read-"
 #endif
 
-#if GDB_ENABLE_QXFER_MEMORY_MAP
+#if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 					  ";qXfer:memory-map:read+"
 #else
 					  ";qXfer:memory-map:read-"
@@ -640,7 +639,7 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	}
 #endif
 
-#if GDB_ENABLE_QXFER_MEMORY_MAP
+#if (GDB_ENABLE_QXFER_MEMORY_MAP)
 	if (prefix(pkt, "qXfer:memory-map:read:")) {
 		DCC_LOG(LOG_INFO, "qXfer:memory-map:read:");
 		return rsp_memory_map_read(gdb, pkt);
@@ -720,6 +719,7 @@ static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 	thread_register_get(thread_id, 25, &val);
 	cp += long2hex_be(cp, val);
 
+#if THINKOS_ENABLE_FPU
 	for (r = 26; r < 42; r++) {
 		if (thread_register_get(thread_id, r, &val) < 0)
 			break;
@@ -729,6 +729,7 @@ static int rsp_all_registers_get(struct gdb_rspd * gdb, char * pkt)
 	if (thread_register_get(thread_id, 42, &val) >= 0) {
 		cp += long2hex_be(cp, val);
 	}
+#endif
 
 	n = cp - pkt;
 	return rsp_pkt_send(gdb, pkt, n);

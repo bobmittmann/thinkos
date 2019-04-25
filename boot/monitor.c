@@ -303,13 +303,14 @@ static void monitor_print_fault(const struct dbgmon_comm * comm)
 
 static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 {
-	struct dbgmon_brk_inf brk;
+	struct dbgmon_thread_inf inf;
 	int thread_id;
 
 	/* get the last thread known to be at fault */
-	thread_id = dbgmon_thread_break_get(&brk);
+	thread_id = dbgmon_thread_break_get();
+	dbgmon_thread_inf_get(thread_id, &inf);
 
-	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, brk.addr);
+	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
 	if (dbgmon_comm_isconnected(comm)) {
 		struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -318,10 +319,10 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 		dbgmon_printf(comm, s_crlf);
 		dbgmon_printf(comm, s_hr);
 		dbgmon_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-						  thinkos_err_name_lut[brk.errno],
-						  brk.thread_id,
-						  brk.addr,
-						  brk.errno);
+						  thinkos_err_name_lut[inf.errno],
+						  inf.thread_id,
+						  inf.pc,
+						  inf.errno);
 		if (xcpt->errno != THINKOS_NO_ERROR)
 			dmon_print_exception(comm, xcpt);
 		else
@@ -334,14 +335,16 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 
 static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 {
-	struct dbgmon_brk_inf brk;
+	struct dbgmon_thread_inf inf;
 	int thread_id;
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
-	thread_id = dbgmon_thread_break_get(&brk);
+	/* get the last thread known to be at fault */
+	thread_id = dbgmon_thread_break_get();
+	dbgmon_thread_inf_get(thread_id, &inf);
 
-	DCC_LOG(LOG_TRACE, "<<IDLE>>");
+	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
 	if (dbgmon_comm_isconnected(comm)) {
 		struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -370,19 +373,21 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 static void monitor_on_bkpt(struct monitor * mon)
 {
 	const struct dbgmon_comm * comm = mon->comm;
-	struct dbgmon_brk_inf brk;
+	struct dbgmon_thread_inf inf;
 	unsigned int thread_id;
 
-	thread_id = dbgmon_thread_break_get(&brk);
-	DCC_LOG2(LOG_TRACE, "<%d> breakpoint at %08x", thread_id + 1, brk.addr);
+	thread_id = dbgmon_thread_break_get();
+	dbgmon_thread_inf_get(thread_id, &inf);
+
+	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id + 1, inf.pc);
 
 	if (dbgmon_comm_isconnected(comm)) {
 		dbgmon_printf(comm, s_hr);
 		dbgmon_printf(mon->comm, "<%d> breakpoint @ 0x%08x\r\n", 
-					  thread_id + 1, brk.addr);
+					  thread_id + 1, inf.pc);
 		mon->thread_id = thread_id;
 		dmon_print_thread(comm, thread_id);
-		dmon_breakpoint_clear(brk.addr, 4);
+		dmon_breakpoint_clear(inf.pc, 4);
 		dbgmon_printf(comm, s_hr);
 	}
 }
@@ -392,13 +397,14 @@ static void monitor_on_bkpt(struct monitor * mon)
 static void monitor_on_step(struct monitor * mon)
 {
 	const struct dbgmon_comm * comm = mon->comm;
+	struct dbgmon_thread_inf inf;
 	unsigned int thread_id;
-	uint32_t addr;
 
-	thread_id = dbgmon_thread_step_get(&addr);
+	thread_id = dbgmon_thread_step_get();
+	dbgmon_thread_inf_get(thread_id, &inf);
 
 	if (dbgmon_comm_isconnected(comm)) {
-		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, addr);
+		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, inf.pc);
 		dbgmon_printf(comm, s_hr);
 		mon->thread_id = thread_id;
 		dmon_print_thread(comm, thread_id);
@@ -699,7 +705,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_S:
 		dbgmon_printf(comm, "^S\r\n");
 		dbgmon_printf(comm, s_hr);
-		dmon_thread_step(mon->thread_id, false);
+		dbgmon_thread_step(mon->thread_id, false);
 		break;
 #endif
 #if (MONITOR_THREADINFO_ENABLE)

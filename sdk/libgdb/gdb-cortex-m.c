@@ -18,53 +18,18 @@
  */
 
 /** 
- * @file gdb-rsp.c
+ * @file gdb-cortex-m.c
  * @brief YARD-ICE
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
 
-#include <stdlib.h>
-#include <stdbool.h>
+#include "gdb-i.h"
 
-#include <sys/dcclog.h>
-#include <sys/stm32f.h>
-
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
-#include <thinkos.h>
-#include <vt100.h>
+#include <sys/stm32f.h>
 
-#include <gdb.h>
-
-int uint2dec(char * s, unsigned int val);
-unsigned long hex2int(const char * __s, char ** __endp);
-bool prefix(const char * __s, const char * __prefix);
-int char2hex(char * pkt, int c);
-int str2str(char * pkt, const char * s);
-int str2hex(char * pkt, const char * s);
-int bin2hex(char * pkt, const void * buf, int len);
-int int2str2hex(char * pkt, unsigned int val);
-int uint2hex(char * s, unsigned int val);
-int hex2char(char * hex);
-extern const char hextab[];
-int uint2hex2hex(char * pkt, unsigned int val);
-
-#if (!THINKOS_ENABLE_PAUSE)
-#error "Need THINKOS_ENABLE_PAUSE!"
-#endif
-
-#if (!THINKOS_ENABLE_DEBUG_STEP)
-#error "Need THINKOS_ENABLE_DEBUG_STEP!"
-#endif
-
-#if (!THINKOS_ENABLE_DEBUG_FAULT)
-#error "Need THINKOS_ENABLE_DEBUG_FAULT!"
-#endif
 
 /* -------------------------------------------------------------------------
  * Memory auxiliarly functions
@@ -106,13 +71,6 @@ static bool addr2block(const struct mem_desc * mem,
 /* -------------------------------------------------------------------------
  * Threads auxiliarly functions
  * ------------------------------------------------------------------------- */
-
-#define THREAD_ID_OFFS 1
-#define THREAD_ID_ALL -1
-#define THREAD_ID_ANY 0
-#define THREAD_ID_NONE -2
-#define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
-#define THREAD_ID_IRQ (THINKOS_THREAD_VOID + THREAD_ID_OFFS)
 
 int thread_getnext(int thread_id)
 {
@@ -172,7 +130,7 @@ int thread_break_id(void)
 {
 	int break_id;
 	
-	if ((break_id = dbgmon_thread_break_get(NULL)) == -1) {
+	if ((break_id = dbgmon_thread_break_get()) == -1) {
 		DCC_LOG(LOG_WARNING, "invalid break thread!");
 		if (thinkos_rt.xcpt_ipsr == 0) {
 			DCC_LOG(LOG_WARNING, "No exception at IRQ!");
@@ -288,32 +246,15 @@ uint32_t __reg_addr(struct thinkos_context * ctx, unsigned int reg)
 int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct dbgmon_thread_inf inf;
 	struct thinkos_context * ctx;
 	struct mem_blk blk;
 	uint32_t addr;
-	uint32_t sp;
 
-	if (thread_id > THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_ERROR, "Invalid thread!");
+	if (dbgmon_thread_inf_get(thread_id, &inf) < 0)
 		return -1;
-	}
 
-	ctx = thinkos_rt.ctx[thread_id];
-
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx  = __thinkos_idle_ctx();
-	} else if (thread_id == THINKOS_THREAD_VOID) {
-	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (xcpt->active != thread_id) {
-			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
-			return -1;
-		}
-		ctx = &xcpt->ctx.core;
-	} else if (!__thinkos_thread_ispaused(thread_id)) {
-		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
-		return -1;
-	}
+	ctx = inf.ctx;
 
 	if (!addr2block(this_board.memory.ram, (uintptr_t)ctx, &blk)) {
 		DCC_LOG(LOG_ERROR, "invalid context address");
@@ -322,27 +263,18 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 
 #if THINKOS_ENABLE_FPU
 	if (reg > 42) {
-		DCC_LOG(LOG_ERROR, "Invalid register");
+		DCC_LOG1(LOG_ERROR, "Invalid register %d", reg);
 		return -1;
 	}
 #else
 	if (reg > 25) {
-		DCC_LOG(LOG_ERROR, "Invalid register");
+		DCC_LOG1(LOG_ERROR, "Invalid register %d", reg);
 		return -1;
 	}
 #endif
 
 	if (reg == 13) { /*sp */
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-		sp = (uint32_t)ctx->sp;
-		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
-		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
-				 thread_id + 1, sp, __retstr(ctx->ret));				
-#else
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-#endif
-		*val = sp;
+		*val = inf.sp;
 		return 0;
 	} 
 
@@ -376,31 +308,17 @@ int thread_register_get(int gdb_thread_id, int reg, uint64_t * val)
 int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct dbgmon_thread_inf inf;
 	struct thinkos_context * ctx;
 	struct mem_blk blk;
 	uint32_t addr;
 
+	if (dbgmon_thread_inf_get(thread_id, &inf) < 0)
+		return -1;
+
+	ctx = inf.ctx;
 	if (thread_id > THINKOS_THREADS_MAX) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
-		return -1;
-	}
-
-	ctx = thinkos_rt.ctx[thread_id];
-
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		return 0;
-	} else if (thread_id == THINKOS_THREAD_VOID) {
-		return 0;
-	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (xcpt->active != thread_id) {
-			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
-			return -1;
-		}
-		ctx = &xcpt->ctx.core;
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-	} else {
-		DCC_LOG1(LOG_ERROR, "ThinkOS thread=%d invalid state!", thread_id);
 		return -1;
 	}
 
@@ -469,23 +387,12 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_context * ctx;
+	struct dbgmon_thread_inf inf;
 
-	if (thread_id >= THINKOS_THREADS_MAX)
+	if (dbgmon_thread_inf_get(thread_id, &inf) < 0)
 		return -1;
 
-	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx.core;
-	} else {
-		ctx = __thinkos_thread_ctx_get(thread_id);
-		DCC_LOG2(LOG_TRACE, "ThinkOS thread=%d context=%08x!", thread_id, ctx);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG(LOG_ERROR, "Invalid context!");
-			return -1;
-		}
-	}
-
-	ctx->pc = addr;
+	inf.ctx->pc = addr;
 
 	return 0;
 }
@@ -493,7 +400,7 @@ int thread_goto(unsigned int gdb_thread_id, uint32_t addr)
 int thread_step_req(unsigned int gdb_thread_id)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_context * ctx;
+	struct dbgmon_thread_inf inf;
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
 		/* thread is the IDLE try to get the first initialized 
@@ -501,22 +408,10 @@ int thread_step_req(unsigned int gdb_thread_id)
 		thread_id = __thinkos_thread_getnext(-1);
 	}
 
-	if (thread_id >= THINKOS_THREADS_MAX)
+	if (dbgmon_thread_inf_get(thread_id, &inf) < 0)
 		return -1;
 
-	if (thinkos_except_buf.active == thread_id) {
-		ctx = &thinkos_except_buf.ctx.core;
-	} else {
-		ctx = __thinkos_thread_ctx_get(thread_id);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG1(LOG_ERROR, "Invalid context: %08x!", ctx);
-			return -1;
-		}
-		DCC_LOG3(LOG_TRACE, "ThinkOS thread=%d context=%08x PC=%08x!", 
-				 thread_id, ctx, ctx->pc);
-	}
-
-	return dmon_thread_step(thread_id, false);
+	return dbgmon_thread_step(thread_id, false);
 }
 
 int thread_continue(unsigned int gdb_thread_id)
@@ -532,8 +427,8 @@ int thread_continue(unsigned int gdb_thread_id)
 int thread_info(unsigned int gdb_thread_id, char * buf)
 {
 	unsigned int thread_id = gdb_thread_id - THREAD_ID_OFFS;
-	struct thinkos_except * xcpt = &thinkos_except_buf;
 	struct thinkos_context * ctx;
+	struct dbgmon_thread_inf inf;
 	char * cp = buf;
 	int oid;
 	int type;
@@ -545,24 +440,10 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		return -1;
 	}
 
-	ctx = __thinkos_thread_ctx_get(thread_id);
-
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		DCC_LOG(LOG_MSG, "ThinkOS Idle thread");
-	} else if (thread_id == THINKOS_THREAD_VOID) {
-		DCC_LOG(LOG_MSG, "ThinkOS Void thread");
-	} else if (__thinkos_thread_isfaulty(thread_id)) {
-		if (xcpt->active != thread_id) {
-			DCC_LOG(LOG_ERROR, "Invalid exception thread_id!");
-			return -1;
-		}
-		ctx = &xcpt->ctx.core;
-	} else if (__thinkos_thread_ispaused(thread_id)) {
-		DCC_LOG1(LOG_MSG, "ThinkOS thread=%d!", thread_id);
-	} else {
-		DCC_LOG(LOG_ERROR, "Invalid thread state!");
+	if (dbgmon_thread_inf_get(thread_id, &inf) < 0)
 		return -1;
-	}
+
+	ctx = inf.ctx;
 
 	if (thread_id == THINKOS_THREAD_IDLE) {
 		cp += str2hex(cp, "IDLE");
@@ -611,11 +492,12 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		}
 	} else {
 		if (oid == THINKOS_WQ_FAULT) {
+			struct thinkos_except * xcpt = __thinkos_except_buf();
 			uint32_t bfsr;
 			uint32_t ufsr;
 			uint32_t mmfsr;
 
-			switch (xcpt->errno) {
+			switch (inf.errno) {
 			case THINKOS_ERR_HARD_FAULT:
 				cp += str2hex(cp, "Hard Fault ");
 				break;
@@ -684,9 +566,9 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				cp += str2hex(cp, " ]");
 				break;
 			default:
-				cp += str2hex(cp, thinkos_err_name_lut[xcpt->errno]);
+				cp += str2hex(cp, thinkos_err_name_lut[inf.errno]);
 				cp += str2hex(cp, " [");
-				cp += int2str2hex(cp, xcpt->errno);
+				cp += int2str2hex(cp, inf.errno);
 				cp += str2hex(cp, " ]");
 			}
 		} else if (oid == THINKOS_WQ_READY) {
@@ -909,10 +791,6 @@ const char target_xml[] =
 #endif
 "</target>";
 
-
-#ifndef GDB_ENABLE_QXFER_MEMORY_MAP
-#define GDB_ENABLE_QXFER_MEMORY_MAP 0
-#endif
 
 #if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 const char memory_map_xml[] = 

@@ -159,10 +159,12 @@ struct mem_desc {
 	struct blk_desc blk[]; /* sorted block list */
 };
 
-struct dbgmon_brk_inf {
+struct dbgmon_thread_inf {
 	int8_t thread_id;
 	uint8_t errno;
-	uint32_t addr;
+	uint32_t pc;
+	uint32_t sp;
+	struct thinkos_context * ctx;
 };
 
 /* ----------------------------------------------------------------------------
@@ -259,19 +261,20 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size);
 
 void dmon_watchpoint_clear_all(void);
 
-int dmon_thread_step(unsigned int id, bool block);
-
 void __dbgmon_signal_thread_terminate(int thread_id, int code);
+
 
 int dbgmon_thread_terminate_get(int * code);
 
-int dbgmon_thread_break_get(struct dbgmon_brk_inf * inf);
+int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf);
 
-int dbgmon_thread_step_get(uint32_t * addr);
-
-void dbgmon_thread_step_clr(void);
-
+int dbgmon_thread_break_get(void);
 void dbgmon_thread_break_clr(void);
+
+int dbgmon_thread_step_get(void);
+void dbgmon_thread_step_clr(void);
+int dbgmon_thread_step(unsigned int id, bool block);
+
 
 int __attribute__((format (__printf__, 2, 3))) 
 	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );

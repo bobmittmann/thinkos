@@ -31,12 +31,16 @@
 #include <sys/param.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
+
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+
 #include <thinkos.h>
 #include <gdb.h>
+#include <vt100.h>
 
 #include <sys/dcclog.h>
 
@@ -46,11 +50,12 @@
 #define GDB_ENABLE_MEMWRITE 0
 #endif
 
-#define THREAD_ID_OFFS 100
+#define THREAD_ID_OFFS 1
 #define THREAD_ID_ALL -1
 #define THREAD_ID_ANY 0
 #define THREAD_ID_NONE -2
 #define THREAD_ID_IDLE (THINKOS_THREAD_IDLE + THREAD_ID_OFFS) 
+#define THREAD_ID_IRQ (THINKOS_THREAD_VOID + THREAD_ID_OFFS)
 
 #ifndef RSP_BUFFER_LEN
 #if THINKOS_ENABLE_FPU
@@ -172,8 +177,10 @@ int int2str2hex(char * pkt, unsigned int val);
 int uint2hex(char * s, unsigned int val);
 int long2hex_be(char * pkt, unsigned long val);
 int longlong2hex_be(char * s, unsigned long long val);
+int uint2hex2hex(char * pkt, unsigned int val);
 int hex2char(char * hex);
 extern const char __hextab[];
+extern const char hextab[];
 
 int thread_getnext(int thread_id);
 int thread_active(void);
