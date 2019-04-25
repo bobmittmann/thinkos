@@ -28,9 +28,9 @@
 
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>
-#ifndef THINKOS_NRT_THREADS_MAX
-#define THINKOS_NRT_THREADS_MAX         0
-#endif
+
+#define __THINKOS_ERROR__
+#include <thinkos/error.h>
 
 
 /* Enable kernel support for real time trace. The kernel hold the trace
@@ -275,6 +275,11 @@
   THINKOS_WQ_DMA_CNT + \
   THINKOS_WQ_FAULT_CNT)
 
+/* Mark for breakpoint numbers. Breakpoints above this
+   number are considered errors. */
+#define THINKOS_BKPT_EXCEPT_OFF 128
+
+#define THINKOS_ERROR_BKPT(_CODE_) ((THINKOS_BKPT_EXCEPT_OFF) + (_CODE_))
 
 #ifndef __ASSEMBLER__
 
@@ -364,7 +369,7 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
-	int8_t   break_id;  /* thread stopped by a breakpoint or step request */
+	int8_t   res;  /* thread stopped by a breakpoint or step request */
   #if THINKOS_ENABLE_DEBUG_STEP
 	uint32_t step_svc;  /* step at service call bitmap */
 	uint32_t step_req;  /* step request bitmap */
@@ -663,15 +668,9 @@ struct thinkos_thread_create_args {
 	struct thinkos_thread_inf * inf; /* R4 */
 };
 
-/* Mark for breakpoint numbers. Breakpoints above this
-   number are considered errors. */
-#define THINKOS_BKPT_EXCEPT_OFF 128
 /* Offset in the error assignment to allow for system exceptions */
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
-
-#define __THINKOS_ERROR__
-#include <thinkos/error.h>
 
 #define THINKOS_ERR_OFF    16
 
@@ -714,7 +713,7 @@ void __thinkos_thread_abort(unsigned int thread_id);
 #if (THINKOS_ENABLE_ERROR_TRAP)
   #define __THINKOS_ERROR(__CODE) \
 	  asm volatile ("nop\n" \
-					"bkpt %0\n" : : "I" (THINKOS_BKPT_EXCEPT_OFF + __CODE))
+					"bkpt %0\n" : : "I" (THINKOS_ERROR_BKPT(__CODE)))
 #else
   #define __THINKOS_ERROR(__CODE)
 #endif

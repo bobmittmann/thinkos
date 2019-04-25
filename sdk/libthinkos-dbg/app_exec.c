@@ -40,10 +40,11 @@ static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 	int (* app_reset)(int argc, char ** argv);
 	uintptr_t thumb_call = (uintptr_t)arg | 1;
 
-	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
-
 	app_reset = (int (*)(int argc, char ** argv))thumb_call;
+
 	for (;;) {
+		DCC_LOG2(LOG_TRACE, "sp=0x%08x app_reset=0x%08x", 
+				 cm3_sp_get(), app_reset);
 		app_reset(1, (char **)app_argv);
 	}
 }
@@ -109,7 +110,7 @@ bool dmon_app_continue(void)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
-	if (xcpt->type == 0) {
+	if (xcpt->errno == 0) {
 		DCC_LOG(LOG_TRACE, "....");
 		__thinkos_resume_all();
 		return true;

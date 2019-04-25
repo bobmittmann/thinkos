@@ -88,13 +88,13 @@ enum dbgmon_event {
 	DBGMON_IDLE            = 2,
 	/* Board reset request */
 	DBGMON_SOFTRST         = 3,
-	/* ThinkOS kernel exception */
+	/* ThinkOS kernel fault */
 	DBGMON_KRN_EXCEPT      = 4,
 	/* Debug timer expiry indication */
 	DBGMON_ALARM           = 5,
 	/* ThinkOS Thread step break */
 	DBGMON_THREAD_STEP     = 6,
-	/* ThinkOS Thread fault break */
+	/* ThinkOS Thread error */
 	DBGMON_THREAD_FAULT    = 7,
 	/* ThinkOS Thread create */
 	DBGMON_THREAD_CREATE   = 8,
@@ -157,6 +157,12 @@ struct mem_desc {
 	char tag[8];
 	uint8_t cnt; /* number of entries in the block list */
 	struct blk_desc blk[]; /* sorted block list */
+};
+
+struct dbgmon_brk_inf {
+	int8_t thread_id;
+	uint8_t errno;
+	uint32_t addr;
 };
 
 /* ----------------------------------------------------------------------------
@@ -259,7 +265,7 @@ void __dbgmon_signal_thread_terminate(int thread_id, int code);
 
 int dbgmon_thread_terminate_get(int * code);
 
-int dbgmon_thread_break_get(uint32_t * addr);
+int dbgmon_thread_break_get(struct dbgmon_brk_inf * inf);
 
 int dbgmon_thread_step_get(uint32_t * addr);
 

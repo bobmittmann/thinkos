@@ -249,6 +249,7 @@ static const char monitor_menu[] =
 #endif
 ;
 
+static const char s_crlf[] =  "\r\n";
 static const char s_hr[] = 
 "-----------------------------------------------------------------------\r\n";
 
@@ -297,31 +298,34 @@ static void monitor_print_fault(const struct dbgmon_comm * comm)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
-	if (xcpt->type == 0) {
-		dbgmon_printf(comm, "No fault!");
-		return;
-	}
-
 	dmon_print_exception(comm, xcpt);
 }
 
 static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 {
-	unsigned int thread_id;
-	uint32_t addr;
+	struct dbgmon_brk_inf brk;
+	int thread_id;
 
 	/* get the last thread known to be at fault */
-	//thread_id = dbgmon_thread_last_fault_get(&addr);
-	thread_id = dbgmon_thread_break_get(&addr);
+	thread_id = dbgmon_thread_break_get(&brk);
 
-	DCC_LOG1(LOG_ERROR, "<%d> FAULT!!!!", thread_id + 1);
+	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, brk.addr);
 
 	if (dbgmon_comm_isconnected(comm)) {
+		struct thinkos_except * xcpt = __thinkos_except_buf();
+
 		DCC_LOG(LOG_TRACE, "COMM connected!");
+		dbgmon_printf(comm, s_crlf);
 		dbgmon_printf(comm, s_hr);
-		dbgmon_printf(comm, "Fault on thread: %d @ address 0x%08x\r\n", 
-						  thread_id + 1, addr);
-		dmon_print_thread(comm, thread_id);
+		dbgmon_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+						  thinkos_err_name_lut[brk.errno],
+						  brk.thread_id,
+						  brk.addr,
+						  brk.errno);
+		if (xcpt->errno != THINKOS_NO_ERROR)
+			dmon_print_exception(comm, xcpt);
+		else
+			dmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
 	}
 
@@ -330,13 +334,12 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 
 static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 {
+	struct dbgmon_brk_inf brk;
 	int thread_id;
-	uint32_t addr;
-
 
 	DCC_LOG(LOG_TRACE, "dmon_wait_idle()...");
 
-	thread_id = dbgmon_thread_break_get(&addr);
+	thread_id = dbgmon_thread_break_get(&brk);
 
 	DCC_LOG(LOG_TRACE, "<<IDLE>>");
 
@@ -346,7 +349,7 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		dbgmon_printf(comm, s_hr);
 	
-		if (xcpt->type == THINKOS_ERR_INVALID_STACK) {
+		if (xcpt->errno == THINKOS_ERR_INVALID_STACK) {
 			dbgmon_printf(comm, 
 						  "# Kernel error, possible stack overflow !!!\r\n");
 			dbgmon_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
@@ -363,21 +366,23 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 }
 #endif
 
-#if (MONITOR_WATCHPOINT_ENABLE)
+#if (MONITOR_BREAKPOINT_ENABLE)
 static void monitor_on_bkpt(struct monitor * mon)
 {
 	const struct dbgmon_comm * comm = mon->comm;
+	struct dbgmon_brk_inf brk;
 	unsigned int thread_id;
-	uint32_t addr;
 
-	thread_id = dbgmon_thread_break_get(&addr);
+	thread_id = dbgmon_thread_break_get(&brk);
+	DCC_LOG2(LOG_TRACE, "<%d> breakpoint at %08x", thread_id + 1, brk.addr);
 
 	if (dbgmon_comm_isconnected(comm)) {
-		DCC_LOG2(LOG_TRACE, "<%d> breakpoint at %08x", thread_id + 1, addr);
 		dbgmon_printf(comm, s_hr);
+		dbgmon_printf(mon->comm, "<%d> breakpoint @ 0x%08x\r\n", 
+					  thread_id + 1, brk.addr);
 		mon->thread_id = thread_id;
 		dmon_print_thread(comm, thread_id);
-		dmon_breakpoint_clear(addr, 4);
+		dmon_breakpoint_clear(brk.addr, 4);
 		dbgmon_printf(comm, s_hr);
 	}
 }
@@ -483,6 +488,7 @@ void monitor_breakpoint(struct monitor * mon)
 	dbgmon_scanf(mon->comm, "%x", &addr);
 	mon->bp[no].addr = addr;
 	dmon_breakpoint_set(addr, 4);
+	dbgmon_printf(mon->comm, "Breakpoint %d @ 0x%08x\r\n", no, addr);
 }
 #endif
 
@@ -509,7 +515,8 @@ void monitor_watchpoint(struct monitor * mon)
 void monitor_task(const struct dbgmon_comm *, void * arg);
 
 #if (BOOT_ENABLE_GDB)
-void __attribute__((naked)) gdb_bootstrap(const struct dbgmon_comm * comm, void * arg) 
+void __attribute__((naked)) gdb_bootstrap(const struct dbgmon_comm * comm, 
+										  void * arg) 
 {
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_stub_task(comm);
@@ -660,7 +667,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		mon->thread_id = __thinkos_thread_getnext(mon->thread_id);
 		if (mon->thread_id == - 1)
 			mon->thread_id = __thinkos_thread_getnext(mon->thread_id);
-		dbgmon_printf(comm, "Thread = %d\r\n", mon->thread_id);
 		dmon_print_thread(comm, mon->thread_id);
 		break;
 #endif
@@ -780,8 +786,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	int sig;
 	bool connected = false;
 	
-	DCC_LOG1(LOG_TRACE, "Monitor sp=%08x ...", cm3_sp_get());
-
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
 	monitor.thread_id = -1;
@@ -810,6 +814,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	sigmask |= (1 << DBGMON_APP_TERM);
 	sigmask |= (1 << DBGMON_APP_RESUME);
 #if (MONITOR_WATCHPOINT_ENABLE)
+	sigmask |= (1 << DBGMON_BREAKPOINT);
+#endif
+#if (MONITOR_BREAKPOINT_ENABLE)
 	sigmask |= (1 << DBGMON_BREAKPOINT);
 #endif
 #if (MONITOR_THREAD_STEP_ENABLE)
@@ -861,6 +868,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			dbgmon_clear(DBGMON_APP_EXEC);
 			__console_raw_mode_set(raw_mode = false);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
+			dbgmon_printf(comm, "Starting application @ 0x%08x\r\n",
+						  (uint32_t)this_board.application.start_addr);
+
 			if (!dbgmon_app_exec(&this_board.application, false)) {
 				dbgmon_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
@@ -959,7 +969,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			break;
 #endif
 
-#if (MONITOR_WATCHPOINT_ENABLE)
+#if (MONITOR_BREAKPOINT_ENABLE)
 		case DBGMON_BREAKPOINT:
 			dbgmon_clear(DBGMON_BREAKPOINT);
 			__console_raw_mode_set(raw_mode = false);

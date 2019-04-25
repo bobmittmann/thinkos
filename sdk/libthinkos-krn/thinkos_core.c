@@ -51,66 +51,6 @@ void thinkos_sched_dbg(struct thinkos_context * __ctx,
 
 void __tdump(void);
 
-
-#if (THINKOS_ENABLE_SCHED_ERROR)
-/* This function is called by the scheduler in case of an error*/
-
-uint64_t thinkos_sched_error(struct thinkos_context * __ctx, 
-											 uint32_t __new_thread_id,
-											 uint32_t __prev_thread_id, 
-											 uint32_t __sp)
-{
-	uint32_t thread_id;
-	uint32_t ptr;
-
-	DCC_LOG(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _BRIGHT_ _REVERSE_
-			" /!\\ scheduler error! " _ATTR_POP_);
-
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
-//	__context(__ctx, __new_thread_id); 
-//	__thinkos(&thinkos_rt);
-//	__tdump();
-#endif
-	if (__new_thread_id == THINKOS_THREAD_IDLE) {
-		__thinkos_idle_reset(thinkos_idle_task, NULL);
-		DCC_LOG2(LOG_ERROR, "IDLE: %d -> %d", __prev_thread_id, __new_thread_id);
-	} else {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
-//		struct thinkos_context * ctx = &xcpt->ctx.core;
-
-		xcpt->ipsr = CM3_EXCEPT_PENDSV;
-		xcpt->active = __new_thread_id;
-		xcpt->type = THINKOS_ERR_INVALID_STACK;
-		/* copy the thread exception context to the exception buffer. */
-	//	__thinkos_memcpy32(ctx, __ctx, sizeof(struct thinkos_context)); 
-
-#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
-		//#if (THINKOS_ENABLE_IDLE_HOOKS)
-		/* defer exception handler */
-		__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
-#else
-		/* call exception handler directly */
-		thinkos_exception_dsr(xcpt);
-#endif
-
-		/* suspend all threads */
-		__thinkos_pause_all();
-		/* force clearing the ready queue */
-		__thinkos_ready_clr();
-	
-	}
-
-	/* get the IDLE context */
-	ptr = (uint32_t)thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-	thread_id = THINKOS_THREAD_IDLE;
-
- 	return ((uint64_t)thread_id << 32) | ptr;
-}
-
-#endif
-
-
 bool thinkos_sched_active(void)
 {
 	return (CM3_SCB->shcsr & SCB_SHCSR_PENDSVACT) ? true : false;
@@ -223,7 +163,6 @@ void __thinkos_core_reset(void)
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 	thinkos_rt.step_id = -1;
-	thinkos_rt.break_id = -1;
 #if THINKOS_ENABLE_DEBUG_STEP
 	thinkos_rt.step_svc = 0;  /* step at service call bitmap */
 	thinkos_rt.step_req = 0;  /* step request bitmap */

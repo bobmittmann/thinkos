@@ -47,31 +47,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	uint32_t ret;
 	int ipsr;
 
-	switch (xcpt->type) {
-	case CM3_EXCEPT_HARD_FAULT:
-		dbgmon_printf(comm, " Hard Fault at ");
-		break;
-
-#if THINKOS_ENABLE_MPU 
-	case CM3_EXCEPT_MEM_MANAGE:
-		dbgmon_printf(comm, " Memory Manager Fault at ");
-		break;
-#endif
-
-#if THINKOS_ENABLE_BUSFAULT
-	case CM3_EXCEPT_BUS_FAULT:
-		dbgmon_printf(comm, " Bus Fault at ");
-		break;
-#endif
-
-#if THINKOS_ENABLE_USAGEFAULT 
-	case CM3_EXCEPT_USAGE_FAULT: 
-		dbgmon_printf(comm, " Usage Fault at ");
-		break;
-#endif
-	default:
-		dbgmon_printf(comm, " Error %d at ", xcpt->type - THINKOS_ERR_OFF);
-	}
+	dbgmon_printf(comm, " Error %d at ", xcpt->errno);
 
 	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if (ipsr == 0) {
@@ -95,9 +71,9 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 		}
 	}
 
-	dbgmon_printf(comm, "\r\n");
+	dbgmon_printf(comm, ": %s\r\n", thinkos_err_name_lut[xcpt->errno]);
 
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_NULL_MSP)
+#if ((THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU))
 	sp = xcpt->ctx.core.sp;
 	ret = xcpt->ctx.core.ret;
 #else
@@ -110,9 +86,9 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	dbgmon_printf(comm, " ret=%08x [ %s ] PSP=%08x MSP=%08x\r\n", 
 				  ret, __retstr(ret), xcpt->psp, xcpt->msp);
 
-	switch (xcpt->type) {
+	switch (xcpt->errno) {
 #if THINKOS_ENABLE_MPU 
-	case CM3_EXCEPT_MEM_MANAGE:
+	case THINKOS_ERR_MEM_MANAGE:
 		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 		dbgmon_printf(comm, "mmfsr=%02x [", mmfsr);
 		if (mmfsr & MMFSR_MMARVALID)
@@ -134,7 +110,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 #endif
 
 #if THINKOS_ENABLE_BUSFAULT
-	case CM3_EXCEPT_BUS_FAULT:
+	case THINKOS_ERR_BUS_FAULT:
 		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
 		dbgmon_printf(comm, " bfsr=%02x [", bfsr);
 		if (bfsr & BFSR_BFARVALID)  
@@ -158,7 +134,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 #endif
 
 #if THINKOS_ENABLE_USAGEFAULT 
-	case CM3_EXCEPT_USAGE_FAULT: 
+	case THINKOS_ERR_USAGE_FAULT: 
 		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 		dbgmon_printf(comm, " ufsr=%04x [", ufsr);
 		if (ufsr & UFSR_DIVBYZERO)  

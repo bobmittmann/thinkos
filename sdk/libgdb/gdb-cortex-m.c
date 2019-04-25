@@ -170,7 +170,9 @@ int thread_step_id(void)
 
 int thread_break_id(void)
 {
-	if (thinkos_rt.break_id == -1) {
+	int break_id;
+	
+	if ((break_id = dbgmon_thread_break_get(NULL)) == -1) {
 		DCC_LOG(LOG_WARNING, "invalid break thread!");
 		if (thinkos_rt.xcpt_ipsr == 0) {
 			DCC_LOG(LOG_WARNING, "No exception at IRQ!");
@@ -181,9 +183,9 @@ int thread_break_id(void)
 		return THREAD_ID_IRQ;
 	}
 
-	DCC_LOG1(LOG_INFO, "break_id=%d", thinkos_rt.break_id);
+	DCC_LOG1(LOG_INFO, "break_id=%d", break_id);
 
-	return thinkos_rt.break_id + THREAD_ID_OFFS;
+	return break_id + THREAD_ID_OFFS;
 }
 
 
@@ -613,11 +615,11 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 			uint32_t ufsr;
 			uint32_t mmfsr;
 
-			switch (xcpt->type) {
-			case CM3_EXCEPT_HARD_FAULT:
+			switch (xcpt->errno) {
+			case THINKOS_ERR_HARD_FAULT:
 				cp += str2hex(cp, "Hard Fault ");
 				break;
-			case CM3_EXCEPT_MEM_MANAGE:
+			case THINKOS_ERR_MEM_MANAGE:
 				cp += str2hex(cp, "Memory Fault ");
 				mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, "MMFSR=[");
@@ -639,7 +641,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 					cp += uint2hex2hex(cp, xcpt->mmfar);
 				}
 				break;
-			case CM3_EXCEPT_BUS_FAULT:
+			case THINKOS_ERR_BUS_FAULT:
 				cp += str2hex(cp, " Bus Fault ");
 				bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, " BFSR=[");
@@ -663,7 +665,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 					cp += uint2hex2hex(cp, xcpt->bfar);
 				}
 				break;
-			case CM3_EXCEPT_USAGE_FAULT: 
+			case THINKOS_ERR_USAGE_FAULT: 
 				cp += str2hex(cp, " Usage Fault ");
 				ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 				cp += str2hex(cp, " UFSR=[");
@@ -682,8 +684,10 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 				cp += str2hex(cp, " ]");
 				break;
 			default:
-				cp += str2hex(cp, "error ");
-				cp += int2str2hex(cp, xcpt->type - THINKOS_ERR_OFF);
+				cp += str2hex(cp, thinkos_err_name_lut[xcpt->errno]);
+				cp += str2hex(cp, " [");
+				cp += int2str2hex(cp, xcpt->errno);
+				cp += str2hex(cp, " ]");
 			}
 		} else if (oid == THINKOS_WQ_READY) {
 #if THINKOS_IRQ_MAX > 0

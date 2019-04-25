@@ -60,6 +60,15 @@ struct armv7m_extended_frame {
 };
 
 struct thinkos_except {
+	uint8_t  errno;  /* exception error code */
+	uint8_t  unroll; /* unroll count */
+	uint8_t  res1;   /* */
+	uint8_t  primask;    /* PRIMASK */
+	uint8_t  faultmask;    /* FAULTMASK */
+	uint8_t  basepri;    /* BASEPRI */
+	uint8_t  ipsr;   /* IPSR */
+	uint8_t  ctrl;   /* CONTROL */
+
 #if (THINKOS_ENABLE_FPU) 
 	struct thinkos_fp_context ctx;
 #else
@@ -67,26 +76,27 @@ struct thinkos_except {
 		struct thinkos_context core;
 	} ctx;
 #endif
-#if !((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_NULL_MSP))
-	uint32_t ret;
-#endif
+
 	uint32_t msp;
 	uint32_t psp;
-	uint32_t icsr;
-	uint32_t cfsr;
-	uint32_t mmfar;
-	uint32_t bfar;
-	uint8_t  ipsr;   /* IPSR */
-	uint8_t  ctrl;   /* CONTROL */
-	uint8_t  type;   /* exception type */
-	uint8_t  unroll; /* unroll count */
+
+    /* SCB (System Control Block) */
+	uint32_t icsr; /* Interrupt Control State */
+	uint32_t shcsr; /* System Handler Control and State */
+
+	uint32_t cfsr; /* Configurable Fault Status */
+	uint32_t hfsr; /* Hard Fault Status */
+
+	uint32_t mmfar; /* Mem Manage Address */
+	uint32_t bfar; /* Bus Fault Address */
+
+#if (THINKOS_ENABLE_PROFILING)
+	uint32_t  cyccnt; 
+	uint32_t  cycref; 
+#endif
 
 	uint32_t  active; /* active thread at the time of the exception */
 	uint32_t  ready; /* ready bitmap */
-	struct thinkos_context * idle_ctx;
-#if (THINKOS_ENABLE_PROFILING)
-	uint32_t  cycref; 
-#endif
 };
 
 extern struct thinkos_except thinkos_except_buf;

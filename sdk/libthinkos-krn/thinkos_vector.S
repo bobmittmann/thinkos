@@ -23,14 +23,16 @@
 #include <thinkos/kernel.h>
 #include <arch/cortex-m3.h>
 
-#define SCB_ICSR_OFFS 4
-#define SCB_CFSR_OFFS 0x28
-#define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
-#define SCB_MMFAR_OFFS   0x34
-#define SCB_BFAR_OFFS    0x38
+#define SCB_ICSR_OFFS  0x04
+#define SCB_SHCSR_OFFS 0x24 /* System Handler Control and State */
+#define SCB_CFSR_OFFS  0x28 /* Configurable Fault Status */
+#define SCB_HFSR_OFF   0x2c /* Hard Fault Status */
+#define SCB_DFSR_OFFS  0x30 /* Debug Fault Status */
+#define SCB_MMFAR_OFFS 0x34 /* Mem Manage Address */
+#define SCB_BFAR_OFFS  0x38 /* Bus Fault Address */
+#define SCB_AFSR_OFFS  0x3c /* Auxiliary Fault Status */
 
-#define CFSR_BFARVALID (1 << (7 + 8))
-#define CFSR_MMARVALID (1 << 7)
+#define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
 	.syntax unified
 	.cpu cortex-m3
@@ -53,10 +55,24 @@
 	     r0: exception buffer */
 
 xcpt_collect:
+	mrs    r3, PRIMASK
+	/* disable interrupts */
+	cpsid   i
 	ldr    r0, .L_xcpt_buf
-	mov    r3, r0
+	strb   r1, [r0, #0] /* errno */
+	strb   r3, [r0, #3] /* primask */
+	mrs    r3, FAULTMASK
+	strb   r3, [r0, #4] /* faultmask */
+	mrs    r3, BASEPRI 
+	strb   r3, [r0, #5] /* basepri */
+	mrs    r3, CONTROL
+	strb   r3, [r0, #6] /* control */
+	mrs    r3, IPSR
+	strb   r3, [r0, #7] /* ipsr */
+
+	adds   r3, r0, #8
 #if (THINKOS_ENABLE_FPU)
-	/* allways collect FP data */ 
+	/* collect FP data */ 
 	vstmia r3!, {s16-s31}
 #endif
 	stmia  r3!, {r4-r11} /* r4..r11 */
@@ -76,56 +92,52 @@ xcpt_collect:
 	vmrs   r4, FPSCR
 	stmia  r3!, {r4-r5}
 #endif
-#if !((THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU))
-	stmia  r3!, {r2}
-#endif
 	mrs    r5, MSP 
 	mrs    r6, PSP 
-	str    r5, [r3, #0] /* msp */
-	str    r6, [r3, #4] /* psp */
+	stmia  r3!, {R5, R6} /* msp, psp */
+
 	ldr    r7, .L_cm3_scb
-	ldr    r5, [r7, #SCB_ICSR_OFFS]
-	ldr    r6, [r7, #SCB_CFSR_OFFS]
-	str    r5, [r3, #8] /* icsr */
-	str    r6, [r3, #12] /* cfsr */
-	tst    r6, #CFSR_MMARVALID
-	itt    ne 
-	ldrne  r5, [r7, #SCB_MMFAR_OFFS]
-	strne  r5, [r3, #16] /* mmfar */
-	tst    r6, #CFSR_BFARVALID
-	itt    ne 
-	ldrne  r5, [r7, #SCB_BFAR_OFFS]
-	strne  r5, [r3, #20] /* bfar */
-	/* clear fault status */
-	str    r6, [r7, #SCB_CFSR_OFFS]
-	mrs    r5, IPSR
-	strb   r5, [r3, #24] /* ipsr */
-	mrs    r5, CONTROL
-	strb   r5, [r3, #25] /* ctrl */
-	strb   r1, [r3, #26] /* type */
-	/* Thinkos state info */
-	add    r3, r3, #28
+
+	ldr    r5, [r7, #SCB_ICSR_OFFS] /* Interrupt Control State */
+	ldr    r6, [r7, #SCB_SHCSR_OFFS] /* System Handler Control and State */
+	stmia  r3!, {R5, R6} /* icsr, shcsr */
+
+	ldr    r5, [r7, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	ldr    r6, [r7, #SCB_HFSR_OFF] /* Hard Fault Status */
+	stmia  r3!, {R5, R6} /* cfsr, hfsr*/
+
+	ldr    r5, [r7, #SCB_MMFAR_OFFS] /* Mem Manage Address */
+	ldr    r6, [r7, #SCB_BFAR_OFFS] /* Bus Fault Address */
+	stmia  r3!, {R5, R6} /* mmfar, bfar */
+
 	ldr    r4, .L_thinkos_rt
-	ldr    r5, [r4, #THINKOS_RT_ACTIVE_OFFS]
-	ldr    r6, [r4, #THINKOS_RT_READY_OFFS]
-	ldr    r7, [r4, #THINKOS_RT_IDLE_CTX_OFFS]
-	stmia  r3!, {R5, R6, r7}
 #if (THINKOS_ENABLE_PROFILING)
-	ldr    r5, [r4, #THINKOS_RT_CYCREF_OFFS]
-	stmia  r3!, {R5}
+	/* DWT.SYCCNT */
+	ldr.n   r5, .L_cm3_dwt
+	/* r6: cyccnt = CM3_DWT->cyccnt */
+	ldr.n   r5, [r5, #4]
+	ldr    r6, [r4, #THINKOS_RT_CYCREF_OFFS]
+	stmia  r3!, {R5, R6} /* cyccnt, cycref */
 #endif
 
+	ldr    r5, [r4, #THINKOS_RT_ACTIVE_OFFS]
+	ldr    r6, [r4, #THINKOS_RT_READY_OFFS]
+	stmia  r3!, {R5, R6}
+
 	/* restore our context */
-	mov    r3, r0
+	adds   r3, r0, #8
 #if (THINKOS_ENABLE_FPU)
 	/* skip FP data */ 
 	adds   r3, r3, #(16 * 4)
 #endif
+
 	/* restore lr */
 	mov    r7, lr
 	mov    lr, r2
 	mov    r2, r7
 	ldmia  r3, {r4-r11} /* r4..r11 */
+	/* XXX: enable interrupts */
+	cpsie   i
 	/* return to the original handler */
 	bx     r2
 
@@ -136,6 +148,8 @@ xcpt_collect:
 	.word	thinkos_rt
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
+.L_cm3_dwt:
+	.word   CM3_DWT_BASE    /* DWT Base Address */
 
 	.size   xcpt_collect, . - xcpt_collect
 
@@ -149,7 +163,7 @@ xcpt_collect:
 	.type	xcpt_collect, %function
 	/* Arguments:
 	     r1: except number
-	     r3: return (lr) 
+	     r2: return (lr) 
 	   Return:
 	     r0: exception buffer */
 
@@ -163,7 +177,7 @@ xcpt_collect:
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
 	mov    r2, lr
-	movs   r1, #CM3_EXCEPT_BUS_FAULT
+	movs   r1, #THINKOS_ERR_BUS_FAULT
 	bl     xcpt_collect
 	b      thinkos_bus_fault
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
@@ -177,7 +191,7 @@ cm3_bus_fault_isr:
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
 	mov    r2, lr
-	movs   r1, #CM3_EXCEPT_USAGE_FAULT
+	movs   r1, #THINKOS_ERR_USAGE_FAULT
 	bl     xcpt_collect
 	b      thinkos_usage_fault
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
@@ -191,7 +205,7 @@ cm3_usage_fault_isr:
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
 	mov    r2, lr
-	movs   r1, #CM3_EXCEPT_MEM_MANAGE
+	movs   r1, #THINKOS_ERR_MEM_MANAGE
 	bl     xcpt_collect
 	b      thinkos_mem_manage
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
@@ -204,7 +218,7 @@ cm3_mem_manage_isr:
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
 	mov    r2, lr
-	movs   r1, #CM3_EXCEPT_HARD_FAULT
+	movs   r1, #THINKOS_ERR_HARD_FAULT
 	bl     xcpt_collect
 	b      thinkos_hard_fault
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr

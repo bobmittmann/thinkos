@@ -61,7 +61,7 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	dbgmon_printf(comm, " Current: %d", rt->active + 1);
+	dbgmon_printf(comm, " Active: %d", rt->active + 1);
 
 #if THINKOS_ENABLE_CLOCK
 	dbgmon_printf(comm, ", Clock: %u", rt->ticks);
@@ -146,23 +146,7 @@ int dmon_print_osinfo(struct dbgmon_comm * comm)
 #if THINKOS_ENABLE_DEBUG_FAULT
 			if (oid == THINKOS_WQ_FAULT) {
 				struct thinkos_except * xcpt = &thinkos_except_buf;
-				switch (xcpt->type) {
-				case CM3_EXCEPT_HARD_FAULT:
-					dbgmon_printf(comm, " | !HARD ");
-					break;
-				case CM3_EXCEPT_MEM_MANAGE:
-					dbgmon_printf(comm, " | !MEM  ");
-					break;
-				case CM3_EXCEPT_BUS_FAULT:
-					dbgmon_printf(comm, " | !BUS  ");
-					break;
-				case CM3_EXCEPT_USAGE_FAULT: 
-					dbgmon_printf(comm, " | !USAGE");
-					break;
-				default:
-					dbgmon_printf(comm, " | ERR %2d", 
-								  xcpt->type - THINKOS_ERR_OFF);
-				}
+				dbgmon_printf(comm, " | ERR %2d", xcpt->errno);
 			} else 
 #endif
 #if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_WQ_IRQ

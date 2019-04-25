@@ -56,8 +56,10 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 	struct thinkos_rt * rt = &thinkos_rt;
 	int32_t timeout;
 	uint32_t cyccnt;
+#if THINKOS_ENABLE_TIMESHARE
 	int sched_val;
 	int sched_pri;
+#endif
 	int type;
 	int tmw;
 	int wq;
@@ -90,9 +92,6 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 #if THINKOS_ENABLE_TIMESHARE
 	sched_val = rt->sched_val[thread_id];
 	sched_pri = rt->sched_pri[thread_id]; 
-#else
-	sched_val = 0;
-	sched_pri = 0;
 #endif
 
 #if THINKOS_ENABLE_CLOCK
@@ -137,32 +136,18 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 		dbgmon_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
 	} else {
 		if (THINKOS_OBJ_FAULT == type) {
-			struct thinkos_except * xcpt = &thinkos_except_buf;
-			switch (xcpt->type) {
-			case CM3_EXCEPT_HARD_FAULT:
-				dbgmon_printf(comm, " Hard Fault");
-				break;
-			case CM3_EXCEPT_MEM_MANAGE:
-				dbgmon_printf(comm, " Mem Mgmt Fault");
-				break;
-			case CM3_EXCEPT_BUS_FAULT:
-				dbgmon_printf(comm, " Bus Fault");
-				break;
-			case CM3_EXCEPT_USAGE_FAULT: 
-				dbgmon_printf(comm, " Usage Fault");
-				break;
-			default:
-				dbgmon_printf(comm, " Error %2d", xcpt->type - THINKOS_ERR_OFF);
-			}
+			dbgmon_printf(comm, " FAULT!");
 		} else 
 			dbgmon_printf(comm, " %swait on %s(%3d)\r\n", 
 						  tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
 
 	}
 
-	dbgmon_printf(comm, " - sched: val=%3d pri=%3d - ", 
+#if THINKOS_ENABLE_TIMESHARE
+	dbgmon_printf(comm, " - sched: val=%3d pri=%3d", 
 			 sched_val, sched_pri); 
-	dbgmon_printf(comm, " timeout=%8d ms", timeout); 
+#endif
+	dbgmon_printf(comm, " - timeout=%8d ms", timeout); 
 	dbgmon_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
 	dmon_print_context(comm, rt->ctx[thread_id], (uint32_t)rt->ctx[thread_id]);

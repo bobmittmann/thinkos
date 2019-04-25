@@ -25,7 +25,7 @@
 #include <thinkos/irq.h>
 #include <thinkos.h>
 #include <vt100.h>
-
+ 
 const char * __retstr(uint32_t __ret)
 {
 	const char * s;
@@ -115,6 +115,7 @@ void __thinkos(struct thinkos_rt * rt)
 #if (THINKOS_ENABLE_CLOCK)
 	DCC_LOG1(LOG_TRACE, "Ticks = %d", rt->ticks);
 #endif
+	DCC_LOG1(LOG_TRACE, "Active = %d", rt->active);
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		struct thinkos_context * ctx;
@@ -241,13 +242,35 @@ void ERROR(struct thinkos_context * __ctx,
 			 uint32_t __sp) 
 {
 #if DEBUG
-	uint32_t msp = cm3_psp_get();
+	uint32_t msp = cm3_msp_get();
+	uint32_t psp = cm3_psp_get();
 
-	DCC_LOG6(LOG_ERROR,  _ATTR_PUSH_ _FG_RED_ 
-			 "<%2d> -> <%2d> " 
-			 "CTX=%08x PC=%08x MSP=%08x %s"  _ATTR_POP_,
-			 __prev_thread_id + 1, __new_thread_id + 1, 
-			 __ctx, __ctx->pc, msp, __retstr(__ctx->ret));
+	if (__prev_thread_id == THINKOS_THREAD_VOID)
+		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
+				 "VOID -> <%2d> CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
+				 __new_thread_id + 1, 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
+	else if (__prev_thread_id == THINKOS_THREAD_IDLE)
+		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
+				 "IDLE -> <%2d> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
+				 __new_thread_id + 1, 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
+	else if (__new_thread_id == THINKOS_THREAD_VOID)
+		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
+				 "<%2d> VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
+				 __prev_thread_id + 1, 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
+	else if (__new_thread_id == THINKOS_THREAD_IDLE)
+		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
+				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
+				 __prev_thread_id + 1, 
+				 __ctx, __ctx->pc, psp, __retstr(__ctx->ret));
+	else
+		DCC_LOG6(LOG_ERROR,  _ATTR_PUSH_ _FG_RED_ 
+				 "<%2d> -> <%2d> " 
+				 "CTX=%08x PC=%08x MSP=%08x %s"  _ATTR_POP_,
+				 __prev_thread_id + 1, __new_thread_id + 1, 
+				 __ctx, __ctx->pc, msp, __retstr(__ctx->ret));
 
 	__context(__ctx, __new_thread_id); 
 	__thinkos(&thinkos_rt);

@@ -60,6 +60,8 @@ struct thinkos_dbgmon {
 	void * param;             /* user supplied parameter */
 	uint32_t xpsr;
 	int8_t thread_id;
+	int8_t break_id;
+	uint8_t errno;
 	int32_t code;
 	void (* task)(const struct dbgmon_comm *, void *);
 };
@@ -383,15 +385,32 @@ void __attribute__((naked))
 
 #if THINKOS_ENABLE_DEBUG_BKPT
 
-int dbgmon_thread_break_get(uint32_t * addr)
+int dbgmon_thread_break_get(struct dbgmon_brk_inf * inf)
 {
+	unsigned int errno = THINKOS_NO_ERROR;
 	struct thinkos_context * ctx;
+	uint32_t addr = 0;
 	int thread_id;
 
-	if ((thread_id = thinkos_rt.break_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL) {
-			*addr = ctx->pc;
+	if ((thread_id = thinkos_dbgmon_rt.break_id) >= 0) {
+		struct thinkos_except * xcpt = __thinkos_except_buf();
+
+		if (xcpt->errno != THINKOS_NO_ERROR) {
+			ctx = &xcpt->ctx.core;
+			errno = xcpt->errno;
+		} else {
+			ctx = thinkos_rt.ctx[thread_id];
+			errno = thinkos_dbgmon_rt.errno;
 		}
+
+		if (ctx != NULL)
+			addr = ctx->pc;
+	}
+
+	if (inf != NULL) {
+		inf->addr = addr;
+		inf->errno = errno;
+		inf->thread_id = thread_id;
 	}
 
 	return thread_id;
@@ -411,29 +430,20 @@ int dbgmon_thread_step_get(uint32_t * addr)
 	return thread_id;
 }
 
-int dbgmon_thread_last_fault_get(uint32_t * addr)
-{
-	struct thinkos_context * ctx;
-	int thread_id;
-
-	if ((thread_id = thinkos_rt.step_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
-			return -1;
-		*addr = ctx->pc;
-	}
-
-	return thread_id;
-}
-
-
 void dbgmon_thread_step_clr(void)
 {
-	thinkos_rt.break_id = -1;
+	thinkos_rt.step_id = -1;
 }
 
 void dbgmon_thread_break_clr(void)
 {
-	thinkos_rt.break_id = -1;
+	thinkos_dbgmon_rt.break_id = -1;
+	thinkos_dbgmon_rt.errno = 0;
+}
+
+int dbgmon_errno_get(void)
+{
+	return  thinkos_dbgmon_rt.errno;
 }
 
 /* -------------------------------------------------------------------------
@@ -805,6 +815,54 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 	__thinkos_memcpy32(dst, src, sz);
 }
 
+#if 0
+/* This function is called by the scheduler in case of an error*/
+
+uint64_t thinkos_sched_error(struct thinkos_context * __ctx, 
+											 uint32_t __new_thread_id,
+											 uint32_t __prev_thread_id, 
+											 uint32_t __sp)
+{
+	uint32_t thread_id;
+	uint32_t ptr;
+
+	DCC_LOG(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _BRIGHT_ _REVERSE_
+			" /!\\ scheduler error! " _ATTR_POP_);
+
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
+//	__context(__ctx, __new_thread_id); 
+//	__thinkos(&thinkos_rt);
+//	__tdump();
+#endif
+	if (__new_thread_id == THINKOS_THREAD_IDLE) {
+		__thinkos_idle_reset(thinkos_idle_task, NULL);
+		DCC_LOG2(LOG_ERROR, "IDLE: %d -> %d", 
+				 __prev_thread_id, __new_thread_id);
+	} else {
+		struct thinkos_except * xcpt = __thinkos_except_buf();
+
+		/* suspend all threads */
+		__thinkos_pause_all();
+		/* force clearing the ready queue */
+		__thinkos_ready_clr();
+	
+		xcpt->ipsr = CM3_EXCEPT_PENDSV;
+		xcpt->active = __new_thread_id;
+		xcpt->type = THINKOS_ERR_INVALID_STACK;
+	}
+
+	/* get the IDLE context */
+	ptr = (uint32_t)thinkos_rt.ctx[THINKOS_THREAD_IDLE];
+	thread_id = THINKOS_THREAD_IDLE;
+
+ 	return ((uint64_t)thread_id << 32) | ptr;
+}
+
+#endif
+
+
+
 /* exception frame */ 
 int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {
@@ -882,7 +940,8 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* suspend the current thread */
 					__thinkos_thread_pause(thread_id);
 					/* record the break thread id */
-					thinkos_rt.break_id = thread_id;
+					thinkos_dbgmon_rt.break_id = thread_id;
+					thinkos_dbgmon_rt.errno = THINKOS_NO_ERROR;
 					/* delivers a thread breakpoint on next round */
 					dbgmon_signal(DBGMON_BREAKPOINT); 
 					/* run scheduler */
@@ -892,20 +951,22 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					   the call stack...*/
 					frm->pc += 2;
 					if (code > THINKOS_BKPT_EXCEPT_OFF) {
+						unsigned int err = code - THINKOS_BKPT_EXCEPT_OFF;
+						(void)err;
+
 						/* XXX: a breakpoint is used to indicate a fault or 
 						   wrong usage of a system call in thinkOS. */
-						DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-								 " ERROR: %2d " _NORMAL_ _FG_YELLOW_
+						DCC_LOG5(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+								 " ERROR %d: %2d " _NORMAL_ _FG_YELLOW_
 								 " PC=%08x SP=%08x IPSR=%d"
-								 _ATTR_POP_,
+								 _ATTR_POP_, err,
 								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
 
 						/* suspend all threads */
 						__thinkos_pause_all();
 						/* record the break thread id */
-						thinkos_rt.break_id = thread_id;
-						/* clear IPSR to indicate a thread error */
-						thinkos_rt.xcpt_ipsr = 0;
+						thinkos_dbgmon_rt.break_id = thread_id;
+						thinkos_dbgmon_rt.errno = err;
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 						/* flag the thread as faulty */
 						__thinkos_thread_fault_set(thread_id);
@@ -923,7 +984,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 								 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
 						__thinkos_pause_all();
 						/* record the break thread id */
-						thinkos_rt.break_id = thread_id;
+						thinkos_dbgmon_rt.break_id = thread_id;
 						/* save the current state of IPSR */
 						thinkos_rt.xcpt_ipsr = ipsr;
 						/* delivers a kernel exception on next round */
@@ -943,7 +1004,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						/* disable this breakpoint */
 						dmon_breakpoint_disable(frm->pc);
 						/* record the break thread id */
-						thinkos_rt.break_id = thread_id;
+						thinkos_dbgmon_rt.break_id = thread_id;
 						/* run scheduler */
 						__thinkos_defer_sched();
 						/* delivers a breakpoint swignal on next round */
@@ -959,7 +1020,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						/* diasble all breakpoints */
 						dmon_breakpoint_clear_all();
 						/* XXX: use IDLE as break thread id */
-						thinkos_rt.break_id = THINKOS_THREAD_IDLE; 
+						thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
 						/* delivers a thread fault on next round */
 						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
 					} 
@@ -976,7 +1037,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* diasble all breakpoints */
 					dmon_breakpoint_clear_all();
 					/* record the break thread id */
-					thinkos_rt.break_id = thread_id;
+					thinkos_dbgmon_rt.break_id = thread_id;
 					/* save the current state of IPSR */
 					thinkos_rt.xcpt_ipsr = ipsr;
 					/* Copy cuurent stack frame into exception
@@ -999,7 +1060,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				DCC_LOG(LOG_ERROR, "invalid breakpoint on exception!!!");
 				/* FIXME: add support for breakpoints on IRQ */
 				/* record the break thread id */
-				thinkos_rt.break_id = thread_id;
+				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();
 
 				sigset |= (1 << DBGMON_BREAKPOINT);
@@ -1011,7 +1072,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				/* suspend the current thread */
 				__thinkos_thread_pause(thread_id);
 				/* record the break thread id */
-				thinkos_rt.break_id = thread_id;
+				thinkos_dbgmon_rt.break_id = thread_id;
 				sigset |= (1 << DBGMON_BREAKPOINT);
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
@@ -1024,7 +1085,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				sigmsk |= (1 << DBGMON_BREAKPOINT);
 				thinkos_dbgmon_rt.events = sigset;
 				/* record the break thread id */
-				thinkos_rt.break_id = thread_id;
+				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();
 			}
 		}
@@ -1073,7 +1134,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
 
 				}
-				thinkos_rt.break_id = thread_id;
+				thinkos_dbgmon_rt.break_id = thread_id;
 step_done:
 				CM3_DCB->demcr = demcr & ~DCB_DEMCR_MON_STEP;
 			} else {
@@ -1143,6 +1204,7 @@ void __attribute__((noinline, noreturn))
  * ThinkOS exception handler hook
  */
 #if THINKOS_ENABLE_EXCEPTIONS
+#if 0
 void thinkos_exception_dsr(struct thinkos_except * xcpt)
 {
 	struct thinkos_context * ctx = &xcpt->ctx.core;
@@ -1163,7 +1225,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 xcpt->active + 1);
 
 		/* record the break thread id */
-		thinkos_rt.break_id = xcpt->active;
+		thinkos_dbgmon_rt.break_id = xcpt->active;
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 		/* flag the thread as faulty */
 		__thinkos_thread_fault_set(xcpt->active);
@@ -1176,7 +1238,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 xcpt->active + 1);
 
 		/* record the break thread id */
-		thinkos_rt.break_id = xcpt->active;
+		thinkos_dbgmon_rt.break_id = xcpt->active;
 
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 		/* flag the thread as faulty */
@@ -1189,7 +1251,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
 				 ipsr - 16);
 		/* exceptions on IRQ */
-		thinkos_rt.break_id = -1;
+		thinkos_dbgmon_rt.break_id = -1;
 		thinkos_rt.ctx[THINKOS_THREAD_VOID] = ctx;
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
@@ -1206,6 +1268,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 		}
 	}
 }
+#endif
 #endif
 
 /**
@@ -1261,6 +1324,7 @@ void __dbgmon_reset(void)
 #endif
 
 	thinkos_dbgmon_rt.thread_id = -1;
+	thinkos_dbgmon_rt.errno = THINKOS_NO_ERROR;
 	thinkos_dbgmon_rt.code = 0;
 }
 

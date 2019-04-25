@@ -142,14 +142,11 @@ thinkos_sched_select_ready:
 	   r2 - old thread */
 	/* get a thread from the ready bitmap by counting the
 	 leading zeros on the bitmap */
+#if (THINKOS_THREADS_MAX < 32) 
+	orr     r1, #(1 << THINKOS_THREADS_MAX)
+#endif
 	rbit    r1, r1
  	clz     r1, r1
-
-#if (THINKOS_THREADS_MAX < 32) 
-	cmp    r1, #32
-	it     eq
-	moveq  r1, #THINKOS_THREADS_MAX
-#endif
 
 thinkos_sched_swap:
 	/* r0: thread stack
@@ -182,13 +179,13 @@ thinkos_sched_context_restore:
 	.size   thinkos_sched_context_restore, . - thinkos_sched_context_restore
 
 #if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-  #if (THINKOS_ENABLE_FPU)
-  #endif
 	mov     r3, r0
 	ldmia   r0!, {r4-r12,lr}
   #if (THINKOS_ENABLE_SCHED_ERROR) 
 	cmp     r0, r12
-	bne     thinkos_sched_on_error
+	beq     .L_restore
+	bkpt    THINKOS_ERROR_BKPT(THINKOS_ERR_SP_INVALID)
+.L_restore:
   #endif	
 #else
 	ldmia   r0!, {r4-r11}
@@ -216,17 +213,6 @@ thinkos_sched_context_restore:
 	b       thinkos_sched_dbg
 #else
 	bx      lr
-#endif
-
-#if (THINKOS_ENABLE_SCHED_ERROR) && \
-	((THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP))
-thinkos_sched_on_error:
-	push    {r2, r3}
-	subs    r3, sp, #8
-	sub     r0, r0, #((CTX_R0) * 4)
-	bl      thinkos_sched_error
-	pop     {r2, r3}
-	b       .L_save_active_and_restore
 #endif
 
 	.align  0

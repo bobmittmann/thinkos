@@ -9,51 +9,62 @@
  * Internal errors
  * --------------------------------------------------------------------------*/
 
-enum thinkos_krn_err {
-	THINKOS_NO_ERR                = 0,
-	THINKOS_ERR_COND_INVALID      = 1,
-	THINKOS_ERR_COND_ALLOC        = 2,
-	THINKOS_ERR_MUTEX_INVALID     = 3,
-	THINKOS_ERR_MUTEX_ALLOC       = 4,
-	THINKOS_ERR_MUTEX_NOTMINE     = 5,
-	THINKOS_ERR_MUTEX_LOCKED      = 6,
-	THINKOS_ERR_SEM_INVALID       = 7,
-	THINKOS_ERR_SEM_ALLOC         = 8,
-	THINKOS_ERR_THREAD_INVALID    = 9,
-	THINKOS_ERR_THREAD_ALLOC      = 10,
-	THINKOS_ERR_THREAD_SMALLSTACK = 11,
-	THINKOS_ERR_IRQ_INVALID       = 12,
-	THINKOS_ERR_OBJECT_INVALID    = 13,
-	THINKOS_ERR_OBJECT_ALLOC      = 14,
-	THINKOS_ERR_GATE_INVALID      = 15,
-	THINKOS_ERR_GATE_ALLOC        = 16,
-	THINKOS_ERR_GATE_UNLOCKED     = 17,
-	THINKOS_ERR_FLAG_INVALID      = 18,
-	THINKOS_ERR_FLAG_ALLOC        = 19,
-	THINKOS_ERR_EVSET_INVALID     = 20,
-	THINKOS_ERR_EVSET_ALLOC       = 21,
-	THINKOS_ERR_EVENT_OUTOFRANGE  = 22,
-	THINKOS_ERR_CONSOLE_REQINV    = 23,
-	THINKOS_ERR_CTL_REQINV        = 24,
-	THINKOS_ERR_COMM_REQINV       = 25,
-	THINKOS_ERR_SYSCALL_INVALID   = 26,
-	THINKOS_ERR_CRITICAL_EXIT     = 27,
-	THINKOS_ERR_INVALID_POINTER   = 28,
-	THINKOS_ERR_CONSOLE_FAULT     = 29,
-	THINKOS_ERR_INVALID_STACK     = 30,
-	THINKOS_ERR_DMA_INVALID       = 31,
-	THINKOS_ERR_USER              = 32
-};
+#define THINKOS_NO_ERROR               0
+#define THINKOS_ERR_KERNEL_PANIC       1
+#define THINKOS_ERR_HARD_FAULT         2
+#define THINKOS_ERR_BUS_FAULT          3
+#define THINKOS_ERR_USAGE_FAULT        4
+#define THINKOS_ERR_MEM_MANAGE         5
+#define THINKOS_ERR_COND_INVALID       6
+#define THINKOS_ERR_COND_ALLOC         7
+#define THINKOS_ERR_MUTEX_INVALID      8
+#define THINKOS_ERR_MUTEX_ALLOC        9
+#define THINKOS_ERR_MUTEX_NOTMINE      10
+#define THINKOS_ERR_MUTEX_LOCKED       11
+#define THINKOS_ERR_SEM_INVALID        12
+#define THINKOS_ERR_SEM_ALLOC          13
+#define THINKOS_ERR_THREAD_INVALID     14
+#define THINKOS_ERR_THREAD_ALLOC       15
+#define THINKOS_ERR_THREAD_SMALLSTACK  16
+#define THINKOS_ERR_IRQ_INVALID        17
+#define THINKOS_ERR_OBJECT_INVALID     18
+#define THINKOS_ERR_OBJECT_ALLOC       19
+#define THINKOS_ERR_GATE_INVALID       20
+#define THINKOS_ERR_GATE_ALLOC         21
+#define THINKOS_ERR_GATE_UNLOCKED      22
+#define THINKOS_ERR_FLAG_INVALID       23
+#define THINKOS_ERR_FLAG_ALLOC         24
+#define THINKOS_ERR_EVSET_INVALID      25
+#define THINKOS_ERR_EVSET_ALLOC        26
+#define THINKOS_ERR_EVENT_OUTOFRANGE   27
+#define THINKOS_ERR_CONSOLE_REQINV     28
+#define THINKOS_ERR_CTL_REQINV         29
+#define THINKOS_ERR_COMM_REQINV        30
+#define THINKOS_ERR_SYSCALL_INVALID    31
+#define THINKOS_ERR_CRITICAL_EXIT      32
+#define THINKOS_ERR_INVALID_POINTER    33
+#define THINKOS_ERR_CONSOLE_FAULT      34
+#define THINKOS_ERR_INVALID_STACK      35
+#define THINKOS_ERR_DMA_INVALID        36
+#define THINKOS_ERR_SP_INVALID         37
+#define THINKOS_ERR_USER               38
+#define THINKOS_ERR_MAX                38
+
+#ifndef __ASSEMBLER__
+
+extern const char thinkos_err_name_lut[THINKOS_ERR_MAX][12];
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char const * thinkos_krn_strerr(enum thinkos_krn_err errno);
+char const * thinkos_krn_strerr(unsigned int errno);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* __THINKOS_ERROR_H__ */
 

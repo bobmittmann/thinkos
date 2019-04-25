@@ -95,10 +95,10 @@ __xcpt_return(struct thinkos_except * xcpt)
 					 xcpt->psp,
 					 xcpt->msp, xcpt->psp);
 #endif
-			DCC_LOG4(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
-					 "   IDLE=" _BRIGHT_ "%08x" _DIM_ " IPSR=%02x "  
+			DCC_LOG3(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
+					 "   IPSR=%02x "  
 					 "CTRL=%02x RDY=%08x"  _ATTR_POP_,
-					 xcpt->idle_ctx, xcpt->ipsr, xcpt->ctrl, xcpt->ready);
+					 xcpt->ipsr, xcpt->ctrl, xcpt->ready);
 		} else {
 			DCC_LOG(LOG_ERROR, "invalid active thread!");
 		}
@@ -106,11 +106,7 @@ __xcpt_return(struct thinkos_except * xcpt)
 		DCC_LOG(LOG_WARNING, "fault on exception!");
 	}
 
-#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
-//#if (THINKOS_ENABLE_IDLE_HOOKS)
-	/* defer exception handler */
-	__idle_hook_req(IDLE_HOOK_EXCEPT_DONE);
-#else
+#if 0
 	/* call exception handler directly */
 	thinkos_exception_dsr(xcpt);
 #endif
@@ -383,7 +379,10 @@ void thinkos_xcpt_process(struct thinkos_except * xcpt)
 	/* increment reentry counter */
 	xcpt->unroll++;
 	/* call exception handler */
+#if 0
 	thinkos_exception_dsr(xcpt);
+#endif
+	__THINKOS_ERROR(THINKOS_ERR_KRN_PANIC);
   #if THINKOS_SYSRST_ONFAULT
 	DCC_LOG(LOG_WARNING, "system reset...");
 	cm3_sysrst();
@@ -494,7 +493,11 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 		for(;;);
 	}
 
-	thinkos_xcpt_process(xcpt);
+	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
+		__THINKOS_ERROR(THINKOS_ERR_HARD_FAULT);
+	} else { 
+		thinkos_xcpt_process(xcpt);
+	}
 	for(;;);
 }
 
@@ -529,7 +532,11 @@ void thinkos_bus_fault(struct thinkos_except * xcpt)
 	fflush(stderr);
 #endif
 
-	thinkos_xcpt_process(xcpt);
+	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
+		__THINKOS_ERROR(THINKOS_ERR_BUS_FAULT);
+	} else {
+		thinkos_xcpt_process(xcpt);
+	}
 }
 #endif /* THINKOS_ENABLE_BUSFAULT  */
 
@@ -539,6 +546,7 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 #if DEBUG
 	uint32_t ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
 
+	DCC_LOG1(LOG_ERROR, "xcpt=%08X", xcpt);
 	DCC_LOG(LOG_ERROR, "!!! Usage fault !!!");
 	DCC_LOG1(LOG_ERROR, "UFSR=%08X", ufsr);
 	if (ufsr) {
@@ -565,13 +573,18 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 	fflush(stderr);
 #endif
 
-	thinkos_xcpt_process(xcpt);
+	if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+		__THINKOS_ERROR(THINKOS_ERR_USAGE_FAULT);
+	} else {
+		thinkos_xcpt_process(xcpt);
+	}
 }
 #endif /* THINKOS_ENABLE_USAGEFAULT  */
 
 #if THINKOS_ENABLE_MEMFAULT
 void thinkos_mem_manage(struct thinkos_except * xcpt)
 {
+
 #if DEBUG
 	uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
 	uint32_t mmfar = xcpt->mmfar;
@@ -600,7 +613,11 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 	fflush(stderr);
 #endif
 
-	thinkos_xcpt_process(xcpt);
+	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
+		__THINKOS_ERROR(THINKOS_ERR_MEM_MANAGE);
+	} else {
+		thinkos_xcpt_process(xcpt);
+	}
 }
 #endif
 

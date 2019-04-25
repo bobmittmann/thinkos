@@ -104,6 +104,7 @@ void __xdump(struct thinkos_except * xcpt)
 #if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FP)
 	ret = xcpt->ctx.core.ret;
 #else
+	/* FIXME: return ?? */
 	ret  = xcpt->ret;
 #endif
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
@@ -176,13 +177,13 @@ void __xdump(struct thinkos_except * xcpt)
 	}
 #endif
 
-	ctrl = cm3_control_get();
+	ctrl = xcpt->ctrl;
 	DCC_LOG3(LOG_TRACE, " CTRL={%s%s%s }",
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
 			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
 
-	shcsr = CM3_SCB->shcsr;
+	shcsr = xcpt->shcsr;
 	DCC_LOG7(LOG_ERROR, "SHCSR={%s%s%s%s%s%s%s }", 
 				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
 				 (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
@@ -192,7 +193,18 @@ void __xdump(struct thinkos_except * xcpt)
 				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
 				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
 
-	icsr = CM3_SCB->icsr;
+	icsr = xcpt->icsr;
+	DCC_LOG8(LOG_ERROR, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
+				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
+				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
+				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
+				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
+				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
+				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
+				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
+				 (icsr & SCB_ICSR_VECTACTIVE));
+
+	icsr = xcpt->icsr;
 	DCC_LOG8(LOG_ERROR, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
 				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
 				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",

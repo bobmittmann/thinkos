@@ -28,6 +28,7 @@
 #include <thinkos.h>
 #include <sys/delay.h>
 
+
 #if THINKOS_ENABLE_DEBUG_FAULT
 int __thinkos_thread_fault_code(unsigned int thread_id)
 {
@@ -40,7 +41,7 @@ int __thinkos_thread_fault_code(unsigned int thread_id)
 		return 0;
 
 	if (xcpt->active == thread_id)
-		return xcpt->type;
+		return xcpt->errno;
 
 	pc = (uint16_t *)&thinkos_rt.ctx[thread_id]->pc;
 	insn = pc[0];
