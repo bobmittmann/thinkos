@@ -839,7 +839,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 	int ret;
 	int n;
 
-	DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG "entry len=%d" VT_POP, len);
+	DCC_LOG1(LOG_MSG, VT_PSH VT_FMG "entry len=%d" VT_POP, len);
 
 	rem = len;
 	while (rem) {
@@ -852,7 +852,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 
 		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
-		DCC_LOG2(LOG_TRACE, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
+		DCC_LOG2(LOG_INFO, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
 		if (n < 0) {
 #if THINKOS_DBGMON_ENABLE_COMM_STATS
 			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
@@ -869,7 +869,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 			rem -= n;
 			ptr += n;
 		}  else {
-			DCC_LOG(LOG_TRACE, "dbgmon_expect(DBGMON_COMM_EOT)!");
+			DCC_LOG(LOG_MSG, "dbgmon_expect(DBGMON_COMM_EOT)!");
 			if ((ret = dbgmon_expect(DBGMON_COMM_EOT)) < 0) {
 				DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
 				return ret;
@@ -877,7 +877,7 @@ static int usb_comm_send(const void * comm, const void * buf, unsigned int len)
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG VT_REV "return=%d" VT_POP, len - rem);
+	DCC_LOG1(LOG_MSG, VT_PSH VT_FMG VT_REV "return=%d" VT_POP, len - rem);
 
 	return len - rem;
 }

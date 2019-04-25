@@ -44,6 +44,10 @@
 #define THINKOS_THREADS_MAX             8
 #endif
 
+#ifndef THINKOS_NRT_THREADS_MAX
+#define THINKOS_NRT_THREADS_MAX         0
+#endif
+
 #ifndef THINKOS_ENABLE_THREAD_ALLOC
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 #endif
@@ -360,7 +364,7 @@
 #endif
 
 /* THINKOS_ENABLE_IDLE_MSP - IDLE thread and exceptions use the same
-   stack (MSP) all the remainig threads (non priviledged) makd use of
+   stack (MSP) all the remaining threads (non privileged) make use of
    the PSP instead.
  */
 #ifndef THINKOS_ENABLE_IDLE_MSP

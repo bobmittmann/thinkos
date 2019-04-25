@@ -64,8 +64,8 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 	uint32_t offs = addr - base;
 	int ret;
 
-	DCC_LOG2(LOG_INFO, "sp=%p ry=%p", cm3_sp_get(), ry);
-	DCC_LOG2(LOG_INFO, "offs=0x%08x size=%d", offs, size);
+	DCC_LOG2(LOG_MSG, "sp=%p ry=%p", cm3_sp_get(), ry);
+	DCC_LOG2(LOG_MSG, "offs=0x%08x size=%d", offs, size);
 	dmon_ymodem_rcv_init(ry, true, false);
 	ry->fsize = size;
 
@@ -81,8 +81,8 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 			char * cp;
 			int fsize;
 
-			DCC_LOG1(LOG_INFO, "YMODEM pkt, len=%d...", len);
-			DCC_XXD(LOG_TRACE, "YModem pkt", ry->pkt.data, len);
+			DCC_LOG1(LOG_MSG, "YMODEM pkt, len=%d...", len);
+			DCC_XXD(LOG_MSG, "YModem pkt", ry->pkt.data, len);
 
 			cp = (char *)ry->pkt.data;
 			if (*cp == '\0') {
@@ -107,7 +107,7 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 			} else {
 				DCC_LOG(LOG_WARNING, "no file size info!");
 			}
-			DCC_LOG(LOG_INFO, "YMODEM first packet...");
+			DCC_LOG(LOG_MSG, "YMODEM first packet...");
 			/* skip null */
 		} else {
 			if (ry->pktno == 2) {

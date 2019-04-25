@@ -175,7 +175,7 @@ int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm,
 						" /!\\ CRC error: %04x != %04x /!\\ " 
 						VT_POP, crc, cmp);
 
-				DCC_XXD(LOG_WARNING, "PKT", pkt, len);
+				DCC_XXD(LOG_MSG, "PKT", pkt, len);
 				goto error;
 			}
 
