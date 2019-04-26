@@ -78,6 +78,10 @@
 #define ENABLE_DBLBUF_DEBUG 0
 #endif
 
+#ifndef DOUBLE_BUFFER_ENABLE
+#define DOUBLE_BUFFER_ENABLE 0
+#endif
+
 /* Endpoint state */
 enum ep_state {
 	EP_DISABLED,
@@ -94,14 +98,15 @@ enum ep_state {
 
 /* Endpoint control */
 struct stm32f_usb_ep {
-	uint8_t state; /* Current EP state */
+	volatile uint8_t state; /* Current EP state */
+	uint8_t addr;
 	uint16_t mxpktsz; /* Maximum packet size for this EP */
 	union {
 		struct {
-			uint16_t xfr_rem; /* Bytes pendig in the transfer buffer */
+			volatile uint16_t xfr_rem; /* Bytes pendig in the transfer buffer */
 			uint16_t xfr_buf_len; /* Length of the transfer buffer */
 			uint8_t * xfr_buf; /* Transfer buffer pointer */
-			uint8_t * xfr_ptr; /* Pointer to the next transfer */
+			uint8_t * volatile xfr_ptr; /* Pointer to the next transfer */
 		};
 		struct {
 			volatile uint16_t rx_len;
@@ -245,18 +250,18 @@ static int __ep_pkt_send(struct stm32f_usb * usb, int ep_id,
 	len = MIN(ep->xfr_rem, ep->mxpktsz);
 
 	__copy_to_pktbuf(tx_pktbuf, ep->xfr_ptr, len);
-	ep->xfr_rem -= len;
 	ep->xfr_ptr += len;
+	ep->xfr_rem -= len;
 
 	if ((ep->xfr_rem == 0) && (len != ep->mxpktsz)) {
 		/* if we put all data into the TX packet buffer but the data
 		 * didn't fill the whole packet, this is the last packet,
 		 * otherwise we need to send a ZLP to finish the transaction */
-		DCC_LOG2(LOG_MSG, VT_PSH VT_FGR "[%d] len=%d [EP_IN_DATA_LAST]"
+		DCC_LOG2(LOG_INFO, VT_PSH VT_FGR  "[%d] len=%d [EP_IN_DATA_LAST]"
 				 VT_POP, ep_id, len);
 		ep->state = EP_IN_DATA_LAST;
 	} else {
-		DCC_LOG2(LOG_MSG, VT_PSH VT_FGR "[%d] len=%d [EP_IN_DATA]"
+		DCC_LOG2(LOG_INFO, VT_PSH VT_FGR VT_DIM "[%d] len=%d [EP_IN_DATA]"
 				 VT_POP, ep_id, len);
 		ep->state = EP_IN_DATA;
 	}
@@ -395,20 +400,24 @@ int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id,
 		ep->xfr_rem = len;
 		epr = usb->epr[ep_id];
 		if (epr & USB_EP_DBL_BUF) {
-			DCC_LOG4(LOG_MSG, VT_PSH VT_FGR 
+#if (ENABLE_DBLBUF_DEBUG)
+			DCC_LOG4(LOG_TRACE, VT_PSH VT_FGR 
 					 "[%d] len=%d TX DblBuf DTOG=%d SW_BUF=%d " 
 					 VT_POP, ep_id, len,
 					 (epr & USB_DTOG_TX) ? 1: 0,
 					 (epr & USB_SWBUF_TX) ? 1: 0);
+#endif
 			/* select the descriptor according to the data toggle bit */
 			tx_pktbuf = &pktbuf[ep_id].dbtx[(epr & USB_SWBUF_TX) ? 1: 0];
-			__ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+			len = __ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+			ep->xfr_rem = 0;
 			__toggle_ep_flag(usb, ep_id, USB_SWBUF_TX);
 		} else {
-			DCC_LOG2(LOG_MSG, VT_PSH VT_FGR " len=%d [%d] single" VT_POP,
-					 ep_id, len);
+			DCC_LOG2(LOG_TRACE, VT_PSH VT_FGR " len=%d [%d] single" 
+					 VT_POP, ep_id, len);
 			tx_pktbuf = &pktbuf[ep_id].tx;
-			__ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+			len = __ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+			ep->xfr_rem = 0;
 			__set_ep_txstat(usb, ep_id, USB_TX_VALID);
 		}
 	}
@@ -443,15 +452,11 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 #endif
-#if (ENABLE_IRQ_MASK)
-	/* disable interrupts */
-//	cm3_cpsid_i();
-#endif
 	pos = ep->rx_pos;
 	rem = ep->rx_len - pos;
 
 	if ((len = MIN(rem, len)) > 0) {
-		DCC_LOG2(LOG_INFO, VT_PSH VT_FBL VT_BRI
+		DCC_LOG2(LOG_MSG, VT_PSH VT_FBL VT_BRI
 				 "[%d] len=%d" 
 				 VT_POP, ep_id, len); 
 
@@ -517,7 +522,7 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 				if ((epr & USB_STAT_RX_MSK) == USB_RX_VALID) {
 					if (((epr >> USB_DTOG_RX_BIT) ^
 						 (epr >> USB_SWBUF_RX_BIT)) & 1) {
-						DCC_LOG4(LOG_INFO, VT_PSH VT_FBL VT_BRI VT_UND
+						DCC_LOG4(LOG_MSG, VT_PSH VT_FBL VT_BRI VT_UND
 								 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
 								 VT_POP, ep_id, 
 								 (epr & USB_DTOG_RX) ? 1 : 0, 
@@ -526,7 +531,7 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 						ep->rx_len = n;
 						ep->rx_pos = 0;
 					} else {
-						DCC_LOG4(LOG_INFO, VT_PSH VT_FBL
+						DCC_LOG4(LOG_MSG, VT_PSH VT_FBL
 								 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
 								 VT_POP, ep_id, 
 								 (epr & USB_DTOG_RX) ? 1 : 0, 
@@ -548,15 +553,9 @@ int stm32f_usb_dev_ep_pkt_recv(struct stm32f_usb_drv * drv, int ep_id,
 			}
 		}
 	} else {
-		DCC_LOG1(LOG_INFO, VT_PSH VT_FBL VT_BRI
+		DCC_LOG1(LOG_MSG, VT_PSH VT_FBL VT_BRI
 				 "[%d] empty!" VT_POP, ep_id); 
 	}
-
-#if (ENABLE_IRQ_MASK)
-	/* enable interrupts */
-//	cm3_cpsie_i();
-#endif
-
 
 #if (ENABLE_IRQ_MASK)
 	cm3_primask_set(pri);
@@ -634,7 +633,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		return -1;
 	}
 
-	DCC_LOG2(LOG_MSG, "ep_id=%d mxpktsz=%d", ep_id, mxpktsz);
+	DCC_LOG2(LOG_TRACE, "ep_id=%d mxpktsz=%d", ep_id, mxpktsz);
 
 	ep = &drv->ep[ep_id];
 	ep->mxpktsz = mxpktsz;
@@ -691,8 +690,9 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 
 	case ENDPOINT_TYPE_BULK:
 		__set_ep_type(usb, ep_id, USB_EP_BULK);
-		__set_ep_flag(usb, ep_id, USB_EP_DBL_BUF);
 		if (info->addr & USB_ENDPOINT_IN) {
+#if DOUBLE_BUFFER_ENABLE
+			__set_ep_flag(usb, ep_id, USB_EP_DBL_BUF);
 			DCC_LOG(LOG_INFO, "BULK IN");
 			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[0], 
 								 drv->pktbuf_addr, mxpktsz);
@@ -700,8 +700,13 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].dbtx[1], 
 								 drv->pktbuf_addr, mxpktsz);
 			drv->pktbuf_addr += sz;
+#else
+			sz = __pktbuf_tx_cfg(&pktbuf[ep_id].tx, drv->pktbuf_addr, mxpktsz);
+			drv->pktbuf_addr += sz;
+#endif
 			__set_ep_txstat(usb, ep_id, USB_TX_VALID);
 		} else {
+			__set_ep_flag(usb, ep_id, USB_EP_DBL_BUF);
 			DCC_LOG(LOG_INFO, "BULK OUT");
 			sz = __pktbuf_rx_cfg(&pktbuf[ep_id].dbrx[0], 
 								 drv->pktbuf_addr, mxpktsz);
@@ -1052,7 +1057,6 @@ void stm32f_can1_tx_usb_hp_isr(void)
 		}
 #endif
 
-
 #if (ENABLE_DBLBUF_DEBUG)
 		drv->pkt_recv++;
 #endif
@@ -1221,7 +1225,17 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 
 		if (epr & USB_CTR_TX) {
 			struct stm32f_usb_tx_pktbuf * tx_pktbuf;
+#if (ENABLE_IRQ_MASK)
+			uint32_t pri;
+#endif
 			int len;
+		
+#if (ENABLE_IRQ_MASK)
+			pri = cm3_primask_get();
+			cm3_primask_set(1);
+#endif
+			len = ep->xfr_rem;
+			(void)len;
 
 			/* IN */
 			__clr_ep_flag(usb, ep_id, USB_CTR_TX);
@@ -1233,47 +1247,43 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				break;
 
 			case EP_IN_DATA_LAST:
-				DCC_LOG3(LOG_MSG, VT_PSH VT_FGR 
+#if (ENABLE_DBLBUF_DEBUG)
+				DCC_LOG3(LOG_TRACE, VT_PSH VT_FGR 
 						 "[%d] TX 2 BUF DTOG=%d SW_BUF=%d [EP_IDLE]" 
 						 VT_POP, 
 						 ep_id, (epr & USB_DTOG_TX) ? 1: 0,
 						 (epr & USB_SWBUF_TX) ? 1: 0);
+#endif
 				ep->state = EP_IDLE;
 				/* call class endpoint callback */
 				ep->on_in(drv->cl, ep_id);
 				break;
 
 			case EP_IN_DATA: 
-				/* select the descriptor according to the data toggle bit */
-				tx_pktbuf = &pktbuf[ep_id].dbtx[(epr & USB_SWBUF_TX) ? 1: 0];
 				/* send the next data chunk */
-				len = MIN(ep->xfr_rem, ep->mxpktsz);
-
-				DCC_LOG4(LOG_MSG, VT_PSH VT_FGR 
-						 "[%d] len=%d TX DblBuf DTOG=%d SW_BUF=%d " 
-						 VT_POP, ep_id, len,
-						 (epr & USB_DTOG_TX) ? 1: 0,
-						 (epr & USB_SWBUF_TX) ? 1: 0);
-
-				/* copy to packet buffer */
-				__copy_to_pktbuf(tx_pktbuf, ep->xfr_ptr, len);
-
-				/* release the previous packet buffer */
-				__toggle_ep_flag(usb, ep_id, USB_SWBUF_TX);
-
-				ep->xfr_rem -= len;
-				ep->xfr_ptr += len;
-
-				if ((ep->xfr_rem == 0) && (len != ep->mxpktsz)) {
-					/* if we put all data into the TX packet buffer but the data
-					 * didn't filled the whole packet, this is the last packet,
-					 * otherwise we need to send a ZLP to finish 
-					 * the transaction */
-					DCC_LOG1(LOG_MSG,  VT_PSH VT_FGR 
-							 "[%d] [EP_IN_DATA_LAST]" VT_POP, ep_id);
-					ep->state = EP_IN_DATA_LAST;
+				if (epr & USB_EP_DBL_BUF) {
+//					if (len == 0) {
+//						DCC_LOG2(LOG_INFO, VT_PSH VT_FMG 
+//								 "[%d] ZLP [EP_IN_DATA_LAST]"
+//								 VT_POP, ep_id, len);
+//						ep->state = EP_IN_DATA_LAST;
+//						__ep_zlp_send(usb, ep_id);
+					DCC_LOG4(LOG_TRACE, VT_PSH VT_FGR 
+							 "[%d] len=%d TX DblBuf DTOG=%d SW_BUF=%d " 
+							 VT_POP, ep_id, len,
+							 (epr & USB_DTOG_TX) ? 1: 0,
+							 (epr & USB_SWBUF_TX) ? 1: 0);
+					/* select the descriptor according to the data toggle bit */
+					tx_pktbuf = &pktbuf[ep_id].dbtx[(epr & USB_SWBUF_TX) ? 1: 0];
+					__ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+					__toggle_ep_flag(usb, ep_id, USB_SWBUF_TX);
+				} else {
+					DCC_LOG2(LOG_TRACE, VT_PSH VT_FGR " len=%d [%d] single" 
+							 VT_POP, ep_id, len);
+					tx_pktbuf = &pktbuf[ep_id].tx;
+					__ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
+					__set_ep_txstat(usb, ep_id, USB_TX_VALID);
 				}
-
 				break;
 
 			default:
@@ -1281,6 +1291,9 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				break;
 
 			}
+#if (ENABLE_IRQ_MASK)
+			cm3_primask_set(pri);
+#endif
 		}
 
 		if (epr & USB_CTR_RX) {
@@ -1297,26 +1310,26 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 
 				if (((epr >> USB_DTOG_RX_BIT) ^
 					 (epr >> USB_SWBUF_RX_BIT)) & 1) {
-					DCC_LOG4(LOG_INFO, VT_PSH VT_FBL VT_BRI VT_UND
+					DCC_LOG4(LOG_MSG, VT_PSH VT_FBL VT_BRI VT_UND
 							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
 							 VT_POP, ep_id, 
 							 (epr & USB_DTOG_RX) ? 1 : 0, 
 							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
 				} 
 				if ((len == 0)) {
-					DCC_LOG4(LOG_WARNING, VT_PSH VT_FYW VT_BRI VT_UND
+					DCC_LOG4(LOG_MSG, VT_PSH VT_FYW VT_BRI VT_UND
 							 "[%d] RX DblBuf DOTG=%d SW_BUF=%d cnt=%d" 
 							 VT_POP, ep_id, 
 							 (epr & USB_DTOG_RX) ? 1 : 0, 
 							 (epr & USB_SWBUF_RX) ? 1 : 0, rx_pktbuf->count); 
 				} else if (ep->rx_len != ep->rx_pos) {
-					DCC_LOG3(LOG_ERROR, VT_PSH VT_FRD VT_BRI
+					DCC_LOG3(LOG_MSG, VT_PSH VT_FRD VT_BRI
 							 "[%d] RX len=%d pos=%d !!!" 
 							 VT_POP, ep_id, 
 							 ep->rx_len,
 							 ep->rx_pos);
 				} else {
-					DCC_LOG3(LOG_INFO, VT_PSH VT_FBL VT_BRI
+					DCC_LOG3(LOG_MSG, VT_PSH VT_FBL VT_BRI
 							 "[%d] RX len=%d pos=%d !!!" 
 							 VT_POP, ep_id, 
 							 ep->rx_len,
