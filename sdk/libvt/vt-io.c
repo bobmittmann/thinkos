@@ -196,6 +196,55 @@ int __vt_set_scroll(char * s, int y0, int y1)
 	return cp - s;
 }
 
+int __vt_attr_fg_color(char * s, int color)
+{
+	s[0] = ';';
+	s[1] = '3';
+	s[2] = '0' + color;
+	return 3;
+}
+
+int __vt_attr_bg_color(char * s, int color)
+{
+	s[0] = ';';
+	s[1] = '3';
+	s[2] = '0' + color;
+	return 3;
+}
+
+int __vt_attr_add(char * s, int attr)
+{
+	s[0] = ';';
+	s[1] = '0' + attr;
+	return 2;
+}
+
+int __vt_attr_end(char * s)
+{
+	s[0] = 'm';
+	return 1;
+}
+
+int __vt_set_attr_lst(char * s, uint8_t attr[], int len)
+{
+	char * cp = s;
+	int i;
+
+	*cp++ = '\033';
+	*cp++ = '[';
+
+	for (i = 0; i < len; ++i) {
+		if (i  > 0)
+			*cp++ = ';';
+		if (attr[i] > 10)
+			*cp++ = '0' + attr[i] / 10;
+		*cp++ = '0' + attr[i] % 10;
+	}
+
+	*cp++ = 'm';
+	return cp - s;
+}
+
 int __vt_set_bg_color(char * s, int color)
 {
 	s[0] = '\033';
@@ -228,6 +277,28 @@ int __vt_set_font_mode(char * s, int mode)
 	return 4;
 }
 
+int __vt_clear_attr(char * s)
+{
+	s[0] = '\033';
+	s[1] = '[';
+	s[2] = '0';
+	return 3;
+}
+
+int __vt_set_attr(char * s, int attr)
+{
+	char * cp = s;
+
+	*cp++ = '\033';
+	*cp++ = '[';
+	if (attr > 10)
+		*cp++ = '0' + attr / 10;
+	*cp++ = '0' + attr % 10;
+	*cp++ = 'm';
+
+	return cp - s;
+}
+
 int __vt_move_to(char * s, int x, int y)
 {
 	char * cp = s;
@@ -238,6 +309,24 @@ int __vt_move_to(char * s, int x, int y)
 	*cp++ = ';';
 	cp += uint2dec(cp, x);
 	*cp++ = 'f';
+
+	return cp - s;
+}
+
+int __vt_font_g0(char * s)
+{
+	char * cp = s;
+
+	*cp++ = '\017';
+
+	return cp - s;
+}
+
+int __vt_font_g1(char * s)
+{
+	char * cp = s;
+
+	*cp++ = '\016';
 
 	return cp - s;
 }

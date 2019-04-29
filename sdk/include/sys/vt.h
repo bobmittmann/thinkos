@@ -48,10 +48,10 @@ enum vt_attr {
 	VT_ATTR_NORMAL    = 0,
 	VT_ATTR_BRIGHT    = 1,
 	VT_ATTR_DIM       = 2,
-	VT_ATTR_UNDERLINE = 3,
-	VT_ATTR_BLINK     = 4,
-	VT_ATTR_REVERSE   = 5,
-	VT_ATTR_HIDDEN    = 6
+	VT_ATTR_UNDERLINE = 4,
+	VT_ATTR_BLINK     = 5,
+	VT_ATTR_REVERSE   = 7,
+	VT_ATTR_HIDDEN    = 8
 };
 
 enum vt_msg {
@@ -94,23 +94,30 @@ struct vt_size {
 	uint8_t h;
 };
 
+struct vt_disp_attr {
+	uint32_t bg_color: 4;
+	uint32_t fg_color: 4;
+	uint32_t bright: 1;
+	uint32_t dim: 1;
+	uint32_t underline: 1;
+	uint32_t blink: 1;
+	uint32_t reverse: 1;
+	uint32_t hidden: 1;
+};
+
 struct vt_win_def {
 	struct vt_win * parent;
 	struct vt_pos pos;
 	struct vt_size size;
-	uint8_t fg_color;
-	uint8_t bg_color;
-	uint8_t attr;
+	struct vt_disp_attr attr;
 	void * data;
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, 
 						  uint32_t arg, void * data);
 };
 
 struct vt_screen_def {
-	uint8_t fg_color;
-	uint8_t bg_color;
-	uint8_t attr;
 	struct vt_size size;
+	struct vt_disp_attr attr;
 	void * data;
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, 
 						  uint32_t arg, void * data);
@@ -152,6 +159,8 @@ int vt_win_close(struct vt_win * win);
 int vt_bg_color_set(struct vt_win * win, enum vt_color);
 int vt_fg_color_set(struct vt_win * win, enum vt_color);
 int vt_font_attr_set(struct vt_win * win, enum vt_attr);
+int vt_font_g0(struct vt_win * win);
+int vt_font_g1(struct vt_win * win);
 
 int vt_write(struct vt_win * win, const void * buf, unsigned int len); 
 
@@ -188,6 +197,8 @@ int vt_default_msg_loop(unsigned int tmo_ms);
 struct vt_win * vt_win_create(const struct vt_win_def * def);
 
 char * vt_freadline(FILE *f, char * buf, unsigned int max);
+
+int vt_puts(struct vt_win * win, const char * buf);
 
 #ifdef __cplusplus
 }
