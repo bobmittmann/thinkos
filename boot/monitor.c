@@ -41,6 +41,7 @@
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
+#include <vt100.h>
 
 #include <sys/dcclog.h>
 
@@ -48,6 +49,10 @@
    dbgmon library */
 
 void gdb_stub_task(const struct dbgmon_comm * comm);
+
+#ifndef MONITOR_VT100_ENABLE
+#define MONITOR_VT100_ENABLE       1
+#endif
 
 #ifndef MONITOR_SELFTEST_ENABLE
 #define MONITOR_SELFTEST_ENABLE    0
@@ -253,8 +258,17 @@ static const char s_crlf[] =  "\r\n";
 static const char s_hr[] = 
 "-----------------------------------------------------------------------\r\n";
 
+#if (MONITOR_VT100_ENABLE)
+static const char s_bottom[] = 
+	VT100_SET_FONT_G0_ASCII VT100_FONT_SELECT_G0 VT100_SET_SCROLL_ALL 
+	VT100_ATTR_NORMAL  VT100_GOTO(199,199) "\r\n";
+#endif
+
 static void monitor_show_help(const struct dbgmon_comm * comm)
 {
+#if (MONITOR_VT100_ENABLE)
+	dbgmon_printf(comm, s_bottom);
+#endif
 	DCC_LOG2(LOG_TRACE, "sp=0x%08x comm=0x%08x", cm3_sp_get(), comm);
 	dbgmon_printf(comm, s_hr);
 	dbgmon_printf(comm, "%s-%d.%d.%d (%s):\r\n", 
