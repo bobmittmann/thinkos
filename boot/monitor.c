@@ -334,9 +334,9 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 		dbgmon_printf(comm, s_hr);
 		dbgmon_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
 						  thinkos_err_name_lut[inf.errno],
-						  inf.thread_id,
-						  inf.pc,
-						  inf.errno);
+						  inf.thread_id + 1,
+						  inf.errno,
+						  inf.pc);
 		if (xcpt->errno != THINKOS_NO_ERROR)
 			dmon_print_exception(comm, xcpt);
 		else
@@ -1127,29 +1127,23 @@ is_connected:
 			/* FALLTHROUGH */
 		case DBGMON_TX_PIPE:
 			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
-				if (connected) {
-					int n;
-					DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, send...", cnt);
-					if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
-						__console_tx_pipe_commit(n);
-						if (n == cnt) {
-							/* Wait for TX_PIPE */
-							sigmask |= (1 << DBGMON_TX_PIPE);
-							sigmask &= ~(1 << DBGMON_COMM_EOT);
-						} else {
-							/* Wait for COMM_EOT */
-							sigmask |= (1 << DBGMON_COMM_EOT);
-							sigmask &= ~(1 << DBGMON_TX_PIPE);
-						}
+				int n;
+				DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, send...", cnt);
+				if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
+					__console_tx_pipe_commit(n);
+					if (n == cnt) {
+						/* Wait for TX_PIPE */
+						sigmask |= (1 << DBGMON_TX_PIPE);
+						sigmask &= ~(1 << DBGMON_COMM_EOT);
 					} else {
 						/* Wait for COMM_EOT */
 						sigmask |= (1 << DBGMON_COMM_EOT);
-						sigmask &=  ~(1 << DBGMON_TX_PIPE);
+						sigmask &= ~(1 << DBGMON_TX_PIPE);
 					}
 				} else {
-					DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, drain...", cnt);
-					/* Drain the Tx pipe */
-					__console_tx_pipe_commit(cnt);
+					/* Wait for COMM_EOT */
+					sigmask |= (1 << DBGMON_COMM_EOT);
+					sigmask &=  ~(1 << DBGMON_TX_PIPE);
 				}
 			} else {
 				/* Wait for TX_PIPE */
