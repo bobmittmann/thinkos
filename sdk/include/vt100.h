@@ -91,41 +91,6 @@
 /* octal 033 = hexadecimal 01B = <ESC> */
 #define ESC		"\033"
 
-/* Font mode */
-#define VT100_NORMAL        0
-#define VT100_BRIGHT		1
-#define VT100_DIM           2
-#define VT100_UNDERLINE     3
-#define VT100_BLINK         4
-#define VT100_REVERSE		5
-#define VT100_HIDDEN		6
-
-/* Foreground colors */
-#define VT100_FG_BLACK		30
-#define VT100_FG_RED		31
-#define VT100_FG_GREEN		32
-#define VT100_FG_YELLOW		33
-#define VT100_FG_BLUE		34
-#define VT100_FG_MAGENTA	35
-#define VT100_FG_CYAN		36
-#define VT100_FG_WHITE		37
-
-/* Background colors */
-#define VT100_BG_BLACK		40
-#define VT100_BG_RED		41
-#define VT100_BG_GREEN		42
-#define VT100_BG_YELLOW		43
-#define VT100_BG_BLUE		44
-#define VT100_BG_MAGENTA	45
-#define VT100_BG_CYAN		46
-#define VT100_BG_WHITE		47
-
-/* Set disp attr macro */
-#define VT100_DISP_ATTR(_ATTR_) { printf(ESC"[%dm",_ATTR_); } 
-#define VT100_ATTR(_ATTR_)	{ printf(ESC"[%dm",_ATTR_); }
-#define VT100_GOTOXY(X, Y)	{ printf(ESC"[%d;%df", Y, X); }
-
-
 /* Scrolling */
 #define VT100_SET_SCROLL        ESC "[%d;%dr"
 #define VT100_SET_SCROLL_ALL    ESC "[r"
@@ -138,7 +103,8 @@
 #define VT100_LINE_WRAP_DIS     ESC "7l"
 
 #define VT100_CLRSCR            ESC "[2J"
-#define VT100_GOTO              ESC "[%d;%df"
+#define VT100_GOTOYX            ESC "[%d;%df"
+#define VT100_GOTO(Y, X)        ESC "["#Y";"#X"f"
 #define VT100_CLREOL            ESC "[K"
 #define VT100_CURSOR_SHOW       ESC "[?25h"
 #define VT100_CURSOR_HIDE       ESC "[?25l"
@@ -162,10 +128,10 @@
 #define VT100_ATTR_NORMAL       ESC "[0m"
 #define VT100_ATTR_BRIGHT       ESC "[1m"
 #define VT100_ATTR_DIM          ESC "[2m"
-#define VT100_ATTR_UNDERLINE    ESC "[3m"
-#define VT100_ATTR_BLINK        ESC "[4m"
-#define VT100_ATTR_REVERSE      ESC "[5m"
-#define VT100_ATTR_HIDDEN       ESC "[6m"
+#define VT100_ATTR_UNDERLINE    ESC "[4m"
+#define VT100_ATTR_BLINK        ESC "[5m"
+#define VT100_ATTR_REVERSE      ESC "[7m"
+#define VT100_ATTR_HIDDEN       ESC "[8m"
 
 /* Foreground colors */
 #define VT100_ATTR_FG_BLACK     ESC "[30m"
@@ -191,6 +157,33 @@
 
 #define VT100_QUERY_CURSOR_POS        ESC "[6n"
 #define VT100_REPORT_CURSOR_POS       ESC "[%d;%dR"
+
+/* Device Status
+The following codes are used for reporting 
+terminal/display settings, and vary depending on the implementation: */
+
+#define VT100_QUERY_DEVICE_CODE     ESC "[c"
+#define VT100_REPORT_DEVICE_CODE    ESC "[%d0c"
+
+/* Fonts */
+
+#define VT100_FONT_SELECT_G1       "\016"
+#define VT100_FONT_SELECT_G0       "\017"
+
+#define VT100_ENTER_GRP_MODE       ESC "F"
+#define VT100_EXIT_GRP_MODE       ESC "G"
+
+#define VT100_SET_FONT_G0_UK       ESC "(A"
+#define VT100_SET_FONT_G0_ASCII    ESC "(B"
+#define VT100_SET_FONT_G0_GRP      ESC "(0"
+#define VT100_SET_FONT_G0_ALT1     ESC "(1"
+#define VT100_SET_FONT_G0_ALT2     ESC "(2"
+
+#define VT100_SET_FONT_G1_UK       ESC ")A"
+#define VT100_SET_FONT_G1_ASCII    ESC ")B"
+#define VT100_SET_FONT_G1_GRP      ESC ")0"
+#define VT100_SET_FONT_G1_ALT1     ESC ")1"
+#define VT100_SET_FONT_G1_ALT2     ESC ")2"
 
 /******************************************************************************
  VT100 Old macros

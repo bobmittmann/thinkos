@@ -1,5 +1,16 @@
 #include "vt-i.h"
 
+const struct vt_screen_def vt_default_screen_def = {
+	.attr = {
+		.fg_color = VT_COLOR_GREEN,
+		.bg_color = VT_COLOR_BLUE,
+	},
+	.size = {.h = 0, .w = 0},
+	.data = NULL,
+	.msg_handler = vt_default_msg_handler
+
+};
+
 int vt_screen_init(const struct vt_screen_def * def)
 {
 	struct vt_win * win;
@@ -7,6 +18,9 @@ int vt_screen_init(const struct vt_screen_def * def)
 	char s[16];
 	int n;
 	int c;
+
+	if (def == NULL)
+		def = &vt_default_screen_def;
 
 	win = __vt_win_root();
 	win->pos.x = 1;
@@ -39,8 +53,6 @@ int vt_screen_init(const struct vt_screen_def * def)
 	win->parent = 0;
 	win->child = 0;
 	win->sibiling = 0;
-	win->fg_color = def->fg_color;
-	win->bg_color = def->bg_color;
 	win->attr = def->attr;
 	win->msg_handler = (def->msg_handler == NULL) ? vt_default_msg_handler :
 		def->msg_handler;

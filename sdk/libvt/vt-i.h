@@ -54,24 +54,24 @@
 #define MODE_ESC_VAL2 3
 #define MODE_ESC_O 4
 
+#define VT_ATTR_FG_COLOR(_VT_COLOR_) (30 + (_VT_COLOR_))
+#define VT_ATTR_BG_COLOR(_VT_COLOR_) (40 + (_VT_COLOR_))
+
 /* -------------------------------------------------------------------------
  * VT Window */
 struct vt_win {
 	uint8_t parent;
 	uint8_t sibiling;
 	uint8_t child;
-	uint8_t fg_color:4;
-	uint8_t bg_color:4;
+	uint8_t open: 1;
+	uint8_t visible: 1;
+	uint8_t font_g1: 1;
+	uint8_t cursor_hide: 1;
 
 	struct vt_pos pos;
 	struct vt_size size;
-
 	struct vt_pos cursor;
-
-	uint16_t attr: 6;
-	uint16_t cursor_hide: 1;
-	uint16_t open: 1;
-	uint16_t visible: 1;
+	struct vt_disp_attr attr;
 
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, uintptr_t arg, 
 						  void * data);
@@ -101,6 +101,7 @@ struct vt_console {
 
 struct sys_vt_rt {
 	uint8_t mutex;
+	uint8_t sem;
 	uint8_t msg[VT_MSG_QUEUE_SIZE];
 	uint8_t idx[VT_MSG_QUEUE_SIZE];
 	uintptr_t arg[VT_MSG_QUEUE_SIZE];
@@ -169,11 +170,28 @@ int __vt_strcpyn(char * dst, const char * src, unsigned int len);
 
 int __vt_set_scroll(char * s, int y0, int y1);
 
+
+int __vt_set_attr_lst(char * s, uint8_t attr[], int len);
+
+int __vt_attr_clear(char * s);
+
+int __vt_attr_set(char * sl, int attr);
+
+int __vt_attr_fg_color(char * s, int color);
+
+int __vt_attr_bg_color(char * s, int color);
+
+int __vt_attr_add(char * s, int attr);
+
+
+
 int __vt_set_bg_color(char * s, int color);
 
 int __vt_set_fg_color(char * s, int color);
 
 int __vt_set_font_mode(char * s, int mode);
+
+int __vt_set_attr(char * s, int attr);
 
 int __vt_move_to(char * s, int x, int y);
 
@@ -221,6 +239,10 @@ void __vt_win_close(struct vt_win * win);
 
 int __vt_win_write(struct vt_win * win, 
 				   const void * buf, unsigned int len);
+
+int __vt_font_g0(char * s);
+
+int __vt_font_g1(char * s);
 
 void __vt_lock(void);
 

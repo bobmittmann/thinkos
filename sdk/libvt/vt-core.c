@@ -54,6 +54,10 @@ void vt_init(void)
 		__sys_vt.mutex = thinkos_mutex_alloc();
 	}
 
+	if (__sys_vt.sem == 0) {
+		__sys_vt.sem = thinkos_sem_alloc(0);
+	}
+
 	__sys_vt.alloc.used = 0;
 	__sys_vt.alloc.max = VT_WIN_POOL_SIZE;
 
