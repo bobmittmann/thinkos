@@ -820,6 +820,17 @@ int thinkos_gate_exit(int gate, unsigned int open);
  */
 int thinkos_irq_wait(int irq);
 
+/** @brief wait for interrupt or timeout
+ *
+ * @param irq
+ * @param ms timeout time in milliseconds.
+ * - #THINKOS_OK is returned on sucess. 
+ * - #THINKOS_EINVAL: @p irq is not valid handler.
+ * - #THINKOS_ETIMEDOUT: timer expired before the @p gate opens.
+ * - #THINKOS_ENOSYS: syscall not implemented.
+ */
+int thinkos_irq_timedwait(int irq, unsigned int ms);
+
 /** @brief reqister an interrupt handler
  *
  * @param irq
@@ -919,7 +930,8 @@ int thinkos_console_read(void * buf, unsigned int len);
  * @param buf pointer to a memory for data to be transferred. 
  * @param len size of the data block in octets.
  * @param ms timeout time in milliseconds.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_ETIMEDOUT if
+ * it times out, OK #THINKOS_OK otherwise. 
  */
 int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
 

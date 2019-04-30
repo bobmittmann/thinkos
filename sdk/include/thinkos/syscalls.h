@@ -202,6 +202,13 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 "0"(r0), "r"(r1) : ); \
 ret; })
 
+#define __SYSCALL_64_2X32(N, A1, A2) __extension__({ \
+register uint32_t err asm("r0"); register uint32_t val asm("r1"); \
+register uint32_t r0 asm("r0") = (int)A1; \
+register uint32_t r1 asm("r1") = (int)A2; struct __ret64 ret; \
+asm volatile ("svc " #N "\n" : "=r"(err), "=&r"(val) : "0"(r0), "1"(r1) : ); \
+ret.val = val; ret.err = err; ret; })
+
 #define __SYSCALL_CALL3(N, A1, A2, A3) __extension__({ \
 register int ret asm("r0"); \
 register int r0 asm("r0") = (int)A1; \
@@ -254,6 +261,8 @@ asm volatile ("svc " #N "\n" : "=r"(ret) : \
 /* 64bits return value, one 32bits argument */
 #define THINKOS_SYSCALL_64_32(N, A1) __SYSCALL_64_32(N, (A1))
 
+/* 64bits return value, two 32bits argument */
+#define THINKOS_SYSCALL_64_2X32(N, A1, A2) __SYSCALL_64_2X32(N, (A1), (A2))
 
 #ifdef __cplusplus
 extern "C" {
@@ -578,7 +587,7 @@ IRQ
 ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) thinkos_irq_timedwait(int irq, unsigned int ms) {
-	THINKOS_SYSCALL_64_32(THINKOS_IRQ_TIMEDWAIT, irq);
+	THINKOS_SYSCALL_64_2X32(THINKOS_IRQ_TIMEDWAIT, irq, ms);
 	return THINKOS_SYSCALL1(THINKOS_IRQ_TIMEDWAIT_CLEANUP, irq);
 }
 
