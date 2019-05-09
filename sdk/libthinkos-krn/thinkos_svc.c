@@ -159,6 +159,8 @@ void thinkos_trace_svc(int32_t * arg, int self);
 
 void thinkos_trace_ctl_svc(int32_t * arg, int self);
 
+void thinkos_flash_mem_svc(int32_t * arg, int self);
+
 #if THINKOS_ENABLE_ESCALATE
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg)
@@ -787,6 +789,18 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 	case THINKOS_TRACE_CTL:
 #if THINKOS_ENABLE_TRACE    
 		thinkos_trace_ctl_svc(arg, self);
+#else
+		thinkos_nosys(arg);
+#endif
+		break;
+
+/* ----------------------------------------------
+ * Flash memory IO
+ * --------------------------------------------- */
+
+	case THINKOS_FLASH_MEM:
+#if THINKOS_ENABLE_FLASH_MEM
+		thinkos_flash_mem_svc(arg, self);
 #else
 		thinkos_nosys(arg);
 #endif

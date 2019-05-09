@@ -371,6 +371,12 @@
 #define THINKOS_ENABLE_IDLE_MSP          0
 #endif
 
+/* THINKOS_ENABLE_FLASH_MEM - enable the kernel to handle low-level
+   flash memory erase read and write operations.
+ */
+#ifndef THINKOS_ENABLE_FLASH_MEM
+#define THINKOS_ENABLE_FLASH_MEM         0
+#endif
 
 
 /* -------------------------------------------------------------------------- 
