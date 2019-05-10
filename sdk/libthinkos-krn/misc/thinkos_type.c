@@ -75,6 +75,12 @@ const struct {
 #if THINKOS_IRQ_MAX > 0
 			uint8_t wq_irq;
 #endif
+#if THINKOS_DMA_MAX > 0
+			uint8_t wq_dma;
+#endif
+#if THINKOS_ENABLE_FLASH_MEM
+			uint8_t wq_flash_mem;
+#endif
 #if THINKOS_ENABLE_DEBUG_FAULT
 			uint8_t wq_fault;
 #endif
@@ -125,6 +131,12 @@ const struct {
 #endif
 #if THINKOS_IRQ_MAX > 0
 	.wq_irq = THINKOS_OBJ_IRQ,
+#endif
+#if THINKOS_DMA_MAX > 0
+	.wq_irq = THINKOS_OBJ_DMA,
+#endif
+#if THINKOS_ENABLE_FLASH_MEM
+	.wq_flash_mem = THINKOS_OBJ_FLASH_MEM,
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
 	.wq_fault = THINKOS_OBJ_FAULT
@@ -188,6 +200,12 @@ uint32_t * const thinkos_obj_alloc_lut[] = {
 #if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ] = NULL,
 #endif
+#if THINKOS_DMA_MAX > 0
+	[THINKOS_OBJ_DMA] = NULL,
+#endif
+#if THINKOS_FLASH_MEM > 0
+	[THINKOS_OBJ_FLASH_MEM] = NULL,
+#endif
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = NULL,
 #endif
@@ -240,6 +258,12 @@ const uint16_t thinkos_wq_base_lut[] = {
 #if THINKOS_ENABLE_WQ_IRQ
 	[THINKOS_OBJ_IRQ] = THINKOS_WQ_IRQ,
 #endif
+#if THINKOS_ENABLE_WQ_DMA > 0
+	[THINKOS_OBJ_DMA] = THINKOS_WQ_DMA,
+#endif
+#if THINKOS_ENABLE_FLASH_MEM
+	[THINKOS_OBJ_FLASH_MEM] = THINKOS_WQ_FLASH_MEM,
+#endif
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = THINKOS_WQ_FAULT,
 #endif
@@ -264,6 +288,8 @@ const char thinkos_type_name_lut[][6] = {
 	[THINKOS_OBJ_COMMSEND]  = "ComSnd",
 	[THINKOS_OBJ_COMMRECV]  = "ComRcv",
 	[THINKOS_OBJ_IRQ]       = "Irq",
+	[THINKOS_OBJ_DMA]       = "Dma",
+	[THINKOS_OBJ_FLASH_MEM] = "Flash",
 	[THINKOS_OBJ_FAULT]     = "Fault",
 	[THINKOS_OBJ_INVALID]   = "Inval"
 };
@@ -286,6 +312,8 @@ const char thinkos_type_prefix_lut[] = {
 	[THINKOS_OBJ_COMMSEND]  = '>',
 	[THINKOS_OBJ_COMMRECV]  = '<',
 	[THINKOS_OBJ_IRQ]       = 'I',
+	[THINKOS_OBJ_DMA]       = 'D',
+	[THINKOS_OBJ_FLASH_MEM] = 'Y',
 	[THINKOS_OBJ_FAULT]     = '!',
 	[THINKOS_OBJ_INVALID]   = '?'
 };

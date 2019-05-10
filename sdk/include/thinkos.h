@@ -79,9 +79,12 @@ enum thinkos_err {
  * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
  * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
+ * @THINKOS_OBJ_DMA: IRQ (Direct Memory Access) waiting queue 
+ * @THINKOS_OBJ_FLASH_MEM: Flesh Memory operation waiting queue 
  * @THINKOS_OBJ_FAULT: thread fault list 
  * @THINKOS_OBJ_INVALID: invalid object 
  */
+
 enum thinkos_obj_kind {
 	THINKOS_OBJ_READY     = 0,
 	THINKOS_OBJ_TMSHARE   = 1,
@@ -100,7 +103,9 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_COMMSEND  = 14,
 	THINKOS_OBJ_COMMRECV  = 15,
 	THINKOS_OBJ_IRQ       = 16,
-	THINKOS_OBJ_FAULT     = 17,
+	THINKOS_OBJ_DMA       = 17,
+	THINKOS_OBJ_FLASH_MEM = 18,
+	THINKOS_OBJ_FAULT     = 19,
 	THINKOS_OBJ_INVALID
 };
 
@@ -272,6 +277,10 @@ void thinkos_userland(void);
  *
  * @{
  */
+
+int thinkos_obj_alloc(int kind);
+
+int thinkos_obj_free(int obj);
 
 /** @brief create a new thread
  *
@@ -964,7 +973,7 @@ int thinkos_flash_mem_close(int mem);
  * @param mem memory partition id
  * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
-int thinkos_flash_mem_open(int mem);
+int thinkos_flash_mem_open(const char * tag);
 
 /** @brief reads from a flash memory partition
  *

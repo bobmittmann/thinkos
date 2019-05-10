@@ -1,5 +1,5 @@
 /* 
- * thikos/version.h
+ * thinkos/version.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -38,8 +38,7 @@
  */
 
 #define THINKOS_KERNEL_VERSION_MAJOR 0
-#define THINKOS_KERNEL_VERSION_MINOR 1
-
+#define THINKOS_KERNEL_VERSION_MINOR 16
 
 /* -------------------------------------------------------------------------- 
  * Profile version 

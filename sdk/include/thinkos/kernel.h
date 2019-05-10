@@ -1,5 +1,5 @@
 /* 
- * thikos.h
+ * thinkos/kernel.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -250,6 +250,12 @@
   #define THINKOS_WQ_DMA_CNT 0 
 #endif
 
+#if (THINKOS_ENABLE_FLASH_MEM)
+  #define THINKOS_WQ_FLASH_MEM_CNT 1
+#else
+  #define THINKOS_WQ_FLASH_MEM_CNT 0 
+#endif
+
 
 #if (THINKOS_ENABLE_DEBUG_FAULT)
   #define THINKOS_WQ_FAULT_CNT 1
@@ -273,6 +279,7 @@
   THINKOS_WQ_COMM_CNT + \
   THINKOS_WQ_IRQ_CNT + \
   THINKOS_WQ_DMA_CNT + \
+  THINKOS_WQ_FLASH_MEM_CNT + \
   THINKOS_WQ_FAULT_CNT)
 
 /* Mark for breakpoint numbers. Breakpoints above this
@@ -448,6 +455,10 @@ struct thinkos_rt {
 
 #if THINKOS_ENABLE_WQ_DMA
 			uint32_t wq_dma;
+#endif
+
+#if THINKOS_ENABLE_FLASH_MEM
+			uint32_t wq_flash_mem;
 #endif
 
 #if THINKOS_ENABLE_DEBUG_FAULT
@@ -631,6 +642,14 @@ extern struct mpu_mem_block thinkos_mpu_kernel_mem;
 							   / sizeof(uint32_t))
 
 #define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
+						   - offsetof(struct thinkos_rt, wq_lst)) \
+						  / sizeof(uint32_t))
+
+#define THINKOS_WQ_DMA ((offsetof(struct thinkos_rt, wq_dma) \
+						   - offsetof(struct thinkos_rt, wq_lst)) \
+						  / sizeof(uint32_t))
+
+#define THINKOS_WQ_FLASH_MEM ((offsetof(struct thinkos_rt, wq_flash_mem) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 

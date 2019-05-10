@@ -1,5 +1,5 @@
 /* 
- * thikos/config.h
+ * thinkos/config.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -206,8 +206,20 @@
 #define THINKOS_ENABLE_WQ_IRQ           0
 #endif
 
+#ifndef THINKOS_ENABLE_WQ_DMA
+#define THINKOS_ENABLE_WQ_DMA           0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
+#endif
+
+#ifndef THINKOS_ENABLE_OBJ_ALLOC
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#endif
+
+#ifndef THINKOS_ENABLE_OBJ_FREE
+#define THINKOS_ENABLE_OBJ_FREE         0
 #endif
 
 /* Enable the thinkos_console_break() syscall. This can be used to 
@@ -468,8 +480,14 @@
 #define THINKOS_ENABLE_MONITOR 1
 #endif
 
-/* dbug monitir depend on idle hooks */
+/* dbug monitor depend on idle hooks */
 #if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_IDLE_HOOKS)
+#undef THINKOS_ENABLE_IDLE_HOOKS
+#define THINKOS_ENABLE_IDLE_HOOKS 1
+#endif
+
+/* flash mem depend on idle hooks */
+#if (THINKOS_ENABLE_FLASH_MEM) && !(THINKOS_ENABLE_IDLE_HOOKS)
 #undef THINKOS_ENABLE_IDLE_HOOKS
 #define THINKOS_ENABLE_IDLE_HOOKS 1
 #endif
@@ -514,6 +532,19 @@
 #define THINKOS_ENABLE_USAGEFAULT 1
 #undef THINKOS_UNROLL_EXCEPTIONS 
 #define THINKOS_UNROLL_EXCEPTIONS 1
+#endif
+
+#if (THINKOS_ENABLE_MUTEX_ALLOC | THINKOS_ENABLE_COND_ALLOC | \
+  THINKOS_ENABLE_SEM_ALLOC | THINKOS_ENABLE_EVENT_ALLOC | \
+  THINKOS_ENABLE_FLAG_ALLOC |  THINKOS_ENABLE_GATE_ALLOC)
+#undef THINKOS_ENABLE_OBJ_ALLOC
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#undef THINKOS_ENABLE_OBJ_FREE
+#define THINKOS_ENABLE_OBJ_FREE         0
+#endif
+
+#ifndef THINKOS_ENABLE_OBJ_FREE
+#define THINKOS_ENABLE_OBJ_FREE         0
 #endif
 
 #if THINKOS_ENABLE_FPU_LS 
@@ -641,6 +672,8 @@ struct thinkos_profile {
 			uint32_t fpu             :1;
 			uint32_t fpu_ls          :1;
 			uint32_t profiling       :1;
+			uint32_t mem_map         :1;
+			uint32_t flash_mem       :1;
 		};
 	};
 

@@ -43,42 +43,6 @@ void __thinkos_ev_info(unsigned int wq)
 }
 #endif
 
-#if THINKOS_ENABLE_EVENT_ALLOC
-void thinkos_ev_alloc_svc(int32_t * arg)
-{
-	unsigned int wq;
-	int idx;
-
-	if ((idx = __thinkos_bmp_alloc(thinkos_rt.ev_alloc, 
-								   THINKOS_EVENT_MAX)) >= 0) {
-		thinkos_rt.ev[idx].mask = 0xffffffff;
-		thinkos_rt.ev[idx].pend = 0;
-		wq = idx + THINKOS_EVENT_BASE;
-		DCC_LOG2(LOG_MSG, "event set=%d wq=%d", idx, wq);
-		arg[0] = wq;
-	} else 
-		arg[0] = idx;
-}
-
-void thinkos_ev_free_svc(int32_t * arg)
-{
-	unsigned int wq = arg[0];
-
-#if THINKOS_ENABLE_ARG_CHECK
-	if ((wq < THINKOS_EVENT_BASE) || 
-		(wq >= (THINKOS_EVENT_BASE + THINKOS_EVENT_MAX))) {
-		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-
-	DCC_LOG1(LOG_MSG, "event wq=%d", wq);
-	__bit_mem_wr(&thinkos_rt.ev_alloc, wq - THINKOS_EVENT_BASE, 0);
-}
-#endif
-
 void thinkos_ev_wait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];

@@ -25,7 +25,7 @@ LIB_STATIC = thinkos-usr
 
 CONSOLE_CFILES = console.c
 
-CFILES = $(addprefix console/,$(CONSOLE_CFILES))
+CFILES = obj_alloc.c $(addprefix console/,$(CONSOLE_CFILES))
 
 include ../../mk/lib.mk
 

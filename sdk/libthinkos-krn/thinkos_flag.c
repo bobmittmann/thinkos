@@ -28,41 +28,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if THINKOS_FLAG_MAX > 0
 
-#if THINKOS_ENABLE_FLAG_ALLOC
-
-void thinkos_flag_alloc_svc(int32_t * arg)
-{
-	int idx;
-
-	if ((idx = __thinkos_bmp_alloc(thinkos_rt.flag_alloc, 
-								   THINKOS_FLAG_MAX)) >= 0) {
-		__bit_mem_wr(thinkos_rt.flag, idx, 0);
-		arg[0] = idx + THINKOS_FLAG_BASE;
-		DCC_LOG1(LOG_TRACE, "wq=%d", arg[0]);
-	} else {
-		arg[0] = idx;
-	}
-}
-
-void thinkos_flag_free_svc(int32_t * arg)
-{
-	unsigned int wq = arg[0];
-
-#if THINKOS_ENABLE_ARG_CHECK
-	unsigned int idx = wq - THINKOS_FLAG_BASE;
-
-	if (idx >= THINKOS_FLAG_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a flag!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_FLAG_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-	__bit_mem_wr(thinkos_rt.flag_alloc, wq - THINKOS_FLAG_BASE, 0);
-}
-
-#endif
-
 
 /* --------------------------------------------------------------------------
  * Flag give/take family 
