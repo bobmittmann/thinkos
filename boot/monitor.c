@@ -854,6 +854,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
 
+
 	for(;;) {
 		switch ((sig = dbgmon_select(sigmask))) {
 
@@ -897,6 +898,12 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "dbgmon_app_exec() failed!");
+				if (this_board.default_task != NULL) {
+					DCC_LOG(LOG_TRACE, "default_task()...!");
+					monitor_thread_exec(this_board.default_task, NULL);
+				} else {
+					DCC_LOG(LOG_TRACE, "no default app set!");
+				}
 			}
 			break;
 

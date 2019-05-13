@@ -84,7 +84,7 @@
 #define SCB_ICSR_PENDSTCLR (1 << 25)
 #define SCB_ICSR_ISRPREEMPT (1 << 23)
 #define SCB_ICSR_ISRPENDING (1 << 22)
-#define SCB_ICSR_VECTPENDING (0x1ff << 12)
+#define SCB_ICSR_VECTPENDING (0x3ff << 12)
 #define SCB_ICSR_RETTOBASE (1 << 11)
 #define SCB_ICSR_VECTACTIVE (0x1ff << 0)
 
