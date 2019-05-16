@@ -128,7 +128,7 @@ struct vt_screen_def {
 extern "C" {
 #endif
 
-void vt_init(void);
+int vt_init(void);
 void vt_clrscr(void);
 void vt_refresh(void);
 void vt_quit(int retcode);
@@ -177,6 +177,7 @@ int vt_cursor_show(struct vt_win * win);
 int vt_hbar(struct vt_win * win, unsigned int y); 
 
 int vt_getc(unsigned int tmo);
+int vt_getkey(unsigned int tmo);
 
 FILE * vt_console_fopen(struct vt_win * win);
 

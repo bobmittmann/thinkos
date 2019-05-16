@@ -44,18 +44,23 @@ int __vt_free(void * __p)
 	return 0;
 }
 
-void vt_init(void)
+int vt_init(void)
 {
 	union vt_mem_blk * p;
 	union vt_mem_blk * q;
 	int i;
+	int ret;
 
 	if (__sys_vt.mutex == 0) {
-		__sys_vt.mutex = thinkos_mutex_alloc();
+		if ((ret = thinkos_mutex_alloc()) < 0)
+			return ret;
+		__sys_vt.mutex = ret;
 	}
 
 	if (__sys_vt.sem == 0) {
-		__sys_vt.sem = thinkos_sem_alloc(0);
+		if ((ret = thinkos_sem_alloc(0)) < 0)
+			return ret;
+		__sys_vt.sem = ret;
 	}
 
 	__sys_vt.alloc.used = 0;
@@ -76,6 +81,7 @@ void vt_init(void)
 	__sys_vt.queue.head = 0;
 	__sys_vt.queue.tail = 0;
 
+	return 0;
 }
 
 void vt_quit(int retcode)

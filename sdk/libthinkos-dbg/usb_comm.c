@@ -176,8 +176,8 @@ static const struct cdc_acm_descriptor_set cdc_acm_desc_cfg = {
 		.num_interfaces = 2,
 		.configuration_value = 1,
 		.configuration = 0,
-		.attributes = USB_CONFIG_SELF_NOWAKEUP,
-		.max_power = USB_POWER_MA(250)
+		.attributes = USB_CONFIG_SELF_WAKEUP,
+		.max_power = USB_POWER_MA(20)
 	},
 	/* CDC 0 */
 	/* Communication Class Interface Descriptor */

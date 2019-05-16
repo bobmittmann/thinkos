@@ -528,6 +528,7 @@ int __vt_console_decode(struct vt_console * con, int c)
 
 	return ret;
 }
+
 int vt_getc(unsigned int tmo)
 {
 	char buf[1];
@@ -538,6 +539,20 @@ int vt_getc(unsigned int tmo)
 		return ret;
 
 	return buf[0];
+}
+
+int vt_getkey(unsigned int tmo_ms)
+{
+	char buf[1];
+	int ret = 0;
+
+	while ((ret = thinkos_console_timedread(buf, 1, tmo_ms)) > 0) {
+		int c;
+		if ((c = __vt_console_decode(&__sys_vt.con, buf[0])) > 0)
+			return c;
+	}
+
+	return ret;
 }
 
 int __vt_win_fwrite(struct vt_win * win, const void * buf, unsigned int len) 
