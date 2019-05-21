@@ -44,7 +44,8 @@ int cmd_reboot(FILE * f, int argc, char ** argv)
 
 	thinkos_sleep(2000);
 
-	cm3_sysrst();
+	//cm3_sysrst();
+	thinkos_reboot(0);
 
 	return 0;
 }
