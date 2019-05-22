@@ -27,4 +27,5 @@
 
 int errno = 0;
 
+extern int __errno __attribute__((alias("errno")));
 
