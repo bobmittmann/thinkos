@@ -205,7 +205,7 @@ struct thinkos_thread_attr {
 	char tag[8];
 };
 
-int (* thinkos_task_t)(void * arg, unsigned int id);
+typedef int (* thinkos_task_t)(void * arg, unsigned int id);
 
 /** 
  * struct thinkos_thread_init - Thread initializer. 

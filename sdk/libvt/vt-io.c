@@ -577,13 +577,15 @@ const struct fileop vt_win_fops = {
 	.close = (int (*)(void *))null_close
 };
 
+struct file vt_console_file;
+
 FILE * vt_console_fopen(struct vt_win * win)
 {
-	static struct file f;
+	struct file * f = &vt_console_file;
 
-	f.data = (void *)win;
-	f.op = &vt_win_fops;
+	f->data = (void *)win;
+	f->op = &vt_win_fops;
 
-	return &f;
+	return f;
 }
 
