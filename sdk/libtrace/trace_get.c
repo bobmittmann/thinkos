@@ -25,35 +25,36 @@
 
 #include "trace-i.h"
 
-int trace_krn_getfirst(struct trace_entry * entry, char * s, int len)
+int trace_krn_getfirst(struct trace_iterator * it)
 {
+	struct trace_entry * entry = &it->entry;
 	uint32_t tail;
+	uint32_t ts;
 	int ret;
 
 	tail = trace_ctl.tail;
-
 	entry->dt = 0;
-	entry->idx = tail;
 
 	if ((int32_t)(trace_ctl.head - tail) < 2) {
 		entry->ref = NULL;
 		entry->tm = trace_ctl.tm;
+		entry->idx = tail;
 		ret = -1;
 	} else {
 		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
-		entry->tm = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
-
-		if (s == NULL)
-			len = 0;
-
-		ret = trace_fmt(entry, s, len);
+		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
+		entry->tm = ts;
+		it->ts = ts;
+		entry->idx = tail;
+		ret = 0;
 	}
 
 	return ret;
 }
 
-int trace_krn_getnext(struct trace_entry * entry, char * s, int len)
+int trace_krn_getnext(struct trace_iterator * it)
 {
+	struct trace_entry * entry = &it->entry;
 	uint32_t tail;
 	uint32_t ts;
 	uint32_t dt;
@@ -66,24 +67,22 @@ int trace_krn_getnext(struct trace_entry * entry, char * s, int len)
 	if ((int32_t)(trace_ctl.head - tail) < 2) {
 		ret = -1;
 	} else {
-		entry->idx = tail;
 		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
 		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
 		dt = ts - (entry->tm & 0xffffffff);
+		it->ts = ts;
 		entry->dt = dt;
 		entry->tm += dt;
-
-		if (s == NULL)
-			len = 0;
-
-		ret = trace_fmt(entry, s, len);
+		entry->idx = tail;
+		ret = 0;
 	}
 
 	return ret;
 }
 
-void trace_krn_flush(struct trace_entry * entry)
+void trace_krn_flush(struct trace_iterator * it)
 {
+	struct trace_entry * entry = &it->entry;
 	uint32_t head;
 	uint32_t tail;
 	uint32_t ts;
@@ -113,8 +112,9 @@ void trace_krn_flush(struct trace_entry * entry)
 	trace_ctl.tail = tail;
 }
 
-int trace_krn_tail(struct trace_entry * entry)
+int trace_krn_tail(struct trace_iterator * it)
 {
+	struct trace_entry * entry = &it->entry;
 	uint32_t tail;
 	uint32_t ts;
 	uint32_t dt;
@@ -131,65 +131,73 @@ int trace_krn_tail(struct trace_entry * entry)
 		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
 		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
 		dt = ts - (trace_ctl.tm & 0xffffffff);
+		it->ts = ts;
 		entry->tm = trace_ctl.tm + dt;
 	}
 
 	return 0;
 }
 
-void trace_flush(struct trace_entry * entry)
+void trace_flush(struct trace_iterator * it)
 {
 	thinkos_mutex_lock(trace_ctl.mutex);
 
-	trace_krn_flush(entry);
+	trace_krn_flush(it);
 
 	thinkos_mutex_unlock(trace_ctl.mutex);
 }
 
-int trace_tail(struct trace_entry * entry)
+int trace_tail(struct trace_iterator * it)
 {
 	int ret;
 
-	if (entry == NULL)
+	if (it == NULL)
 		return -1;
 
 	thinkos_mutex_lock(trace_ctl.mutex);
 
-	ret = trace_krn_tail(entry);
+	ret = trace_krn_tail(it);
 
 	thinkos_mutex_unlock(trace_ctl.mutex);
 
 	return ret;
 }
 
-int trace_getfirst(struct trace_entry * entry, char * s, int len)
+struct trace_entry * trace_getfirst(struct trace_iterator * it)
 {
-	int ret;
+	struct trace_entry * entry;
 
-	if (entry == NULL)
-		return -1;
+	if (it == NULL)
+		return NULL;
 
 	thinkos_mutex_lock(trace_ctl.mutex);
 
-	ret = trace_krn_getfirst(entry, s, len);
+	if (trace_krn_getfirst(it) < 0)
+		entry = NULL;
+	else
+		entry = &it->entry;
 
 	thinkos_mutex_unlock(trace_ctl.mutex);
 
-	return ret;
+	return entry;
 }
 
-int trace_getnext(struct trace_entry * entry, char * s, int len)
+struct trace_entry * trace_getnext(struct trace_iterator * it)
 {
-	int ret;
+	struct trace_entry * entry; 
 
-	if (entry == NULL)
-		return -1;
+	if (it == NULL)
+		return NULL;
 
 	thinkos_mutex_lock(trace_ctl.mutex);
 
-	ret = trace_krn_getnext(entry, s, len);
+	if (trace_krn_getnext(it) < 0)
+		entry = NULL;
+	else
+		entry = &it->entry;
 
 	thinkos_mutex_unlock(trace_ctl.mutex);
 
-	return ret;
+	return entry;
 }
+

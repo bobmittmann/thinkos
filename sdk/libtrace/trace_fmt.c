@@ -62,7 +62,7 @@ extern const char __hextab[];
 
 int trace_fmt(struct trace_entry * entry, char * s, int max)
 {
-	uint32_t tail = entry->idx + 2;
+	uint32_t tail = entry->idx;
 	const char * fmt = entry->ref->fmt;
 	char buf[TRACE_STRING_MAX];
 	char * cp;

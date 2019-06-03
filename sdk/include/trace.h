@@ -59,9 +59,16 @@ struct trace_ref {
 /* Trace entry */
 struct trace_entry {
 	const struct trace_ref * ref; /* Pointer to a trace entry reference */
-	uint32_t dt; /* Time elapsed since last trance in the buffer [microsseconds] */
-	uint64_t tm; /* Absolute time of this trace entry */
+	uint64_t tm; /* Absolute time of the last trace entry */
+	uint32_t dt; /* Time elapsed since last trace 
+					in the buffer [microsseconds] */
 	uint32_t idx; /* Trace entry sequential number */
+};
+
+struct trace_iterator {
+	int id;
+	uint32_t ts; /* Trace timestamp; */
+	struct trace_entry entry;
 };
 
 #ifndef TRACE_LEVEL
@@ -381,24 +388,28 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len);
 
 int trace_fprint(FILE * f, unsigned int opt);
 
-int trace_getfirst(struct trace_entry * entry, char * s, int max);
+struct trace_entry * trace_getfirst(struct trace_iterator * it);
 
-int trace_getnext(struct trace_entry * entry, char * s, int max);
+struct trace_entry * trace_getnext(struct trace_iterator * it);
 
-void trace_flush(struct trace_entry * entry);
+void trace_flush(struct trace_iterator * it);
 
-int trace_tail(struct trace_entry * entry);
+int trace_tail(struct trace_iterator * it);
+
+int trace_fmt(struct trace_entry * entry, char * s, int max);
+
 
 /* ----------------------------------------------------------------------
  * Trace kernel level decode (no locking)
  * ----------------------------------------------------------------------
  */
 
-int trace_krn_getfirst(struct trace_entry * entry, char * s, int len);
+int trace_krn_getfirst(struct trace_iterator * it);
 
-int trace_krn_getnext(struct trace_entry * entry, char * s, int len);
+int trace_krn_getnext(struct trace_iterator * it);
 
-int trace_krn_tail(struct trace_entry * entry);
+int trace_krn_tail(struct trace_iterator * it);
+
 
 #ifdef __cplusplus
 }

@@ -71,7 +71,7 @@ static void __timer_init(void)
 #ifdef STM32F_TIM5
 	/* Timer clock enable */
 	if (TRACE_TIMER == STM32F_TIM5)
-			stm32_clk_enable(STM32_RCC, STM32_CLK_TIM5);
+		stm32_clk_enable(STM32_RCC, STM32_CLK_TIM5);
 #endif
 
 #ifdef STM32F_TIM2
@@ -331,8 +331,8 @@ void tracex(const struct trace_ref * ref, const void * buf, size_t len)
 	unsigned int cnt;
 
 	now = __timer_ts();
-	if (len > 255)
-		len = 255;
+	if (len > TRACE_XXD_MAX)
+		len = TRACE_XXD_MAX;
 
 	cnt = (len + 3) / 4;
 

@@ -394,9 +394,9 @@ endif
 %.lst: %.elf
 	$(ACTION) "LST: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJDUMP) -w -d -t -S -r -z $(PROG_ELF_WIN) > $@
+	$(Q)$(OBJDUMP) -f -w -d -t -S -r -z $(PROG_ELF_WIN) > $@
 else
-	$(Q)$(OBJDUMP) -w -d -t -S -r -z $< > $@
+	$(Q)$(OBJDUMP) -f -w -d -t -S -r -z $< > $@
 endif
 
 ifeq ($(strip $(CROSS_COMPILE)),)

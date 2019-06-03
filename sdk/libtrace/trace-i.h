@@ -45,6 +45,10 @@
 #define TRACE_STRING_MAX 64
 #endif
 
+#ifndef TRACE_XXD_MAX
+#define TRACE_XXD_MAX 128
+#endif
+
 #ifndef TRACE_TIMER
 #if defined(STM32F_TIM5)
 #define TRACE_TIMER STM32F_TIM5
