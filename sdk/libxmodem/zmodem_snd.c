@@ -129,9 +129,9 @@ bool __zm_rcv_bin16_hdr(struct zmodem* zm)
 
 	crc = 0;
 
-	for(n=0;n<HDRLEN;n++) {
+	for(n=0; n < HDRLEN;n++) {
 		c = __zm_getc(zm);
-		if(c == TIMEOUT) {
+		if (c == TIMEOUT) {
 			WARNS("recv_bin16_header: timeout");
 			return(false);
 		}
@@ -142,7 +142,7 @@ bool __zm_rcv_bin16_hdr(struct zmodem* zm)
 	rxd_crc  = __zm_getc(zm) << 8;
 	rxd_crc |= __zm_getc(zm);
 
-	if(rxd_crc != crc) {
+	if (rxd_crc != crc) {
 		WARN("crc16 error: 0x%hx, expected: 0x%04x", rxd_crc, crc);
 		return(false);
 	}
@@ -151,6 +151,65 @@ bool __zm_rcv_bin16_hdr(struct zmodem* zm)
 	zm->rxd.hdr_len = 5;
 
 	return(true);
+}
+
+static int __zm_rcv_nibble(struct zmodem* zm) 
+{
+	int c;
+
+	c = __zm_getc(zm);
+
+	if (c == TIMEOUT) {
+		return c;
+	}
+
+	if (c > '9') {
+		if(c < 'a' || c > 'f') {
+			/*
+			 * illegal hex; different than expected.
+			 * we might as well time out.
+			 */
+			return TIMEOUT;
+		}
+
+		c -= 'a' - 10;
+	} else {
+		if(c < '0') {
+			/*
+			 * illegal hex; different than expected.
+			 * we might as well time out.
+			 */
+			return TIMEOUT;
+		}
+		c -= '0';
+	}
+
+	return c;
+}
+
+int __zm_rcv_hex(struct zmodem* zm)
+{
+	int n1;
+	int n0;
+	int ret;
+
+	n1 = __zm_rcv_nibble(zm);
+
+	if (n1 == TIMEOUT) {
+		return n1;
+	}
+
+	n0 = __zm_rcv_nibble(zm);
+
+	if (n0 == TIMEOUT) {
+		return n0;
+	}
+
+	ret = (n1 << 4) | n0;
+
+	YAP("__zm_rcv_hex: 0x%02x", ret);
+
+	return ret;
 }
 
 void __zm_rcv_hex_hdr(struct zmodem* zm)
@@ -455,15 +514,16 @@ static int __zm_snd_zrqinit(struct zmodem* zm)
 {
 	uint8_t zrqinit_hdr[] = { ZRQINIT, 0, 0, 0, 0 };
 
-	return __zm_snd_hex_hdr(zm, zrqinit_hdr);
+	//return __zm_snd_hex_hdr(zm, zrqinit_hdr);
+	return __zm_snd_bin_hdr(zm, zrqinit_hdr);
 }
 
 int zmodem_snd_start(struct zmodem * zm, const char * fname, 
 					 unsigned int fsize)
 {
 	uint8_t zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
-	int raw_len;
 	uint8_t * raw_buf;
+	int raw_len;
 	int retry;
 	int type;
 	int len;
@@ -645,6 +705,22 @@ int zmodem_snd_start(struct zmodem * zm, const char * fname,
 		zm->file_pos = zm->rxd.hdr_pos;
 		INF("starting transfer at offset: %u (resume)", zm->file_pos);
 	}
+
+	return 0;
+}
+
+int zmodem_snd_wait_connect(struct zmodem * zm)
+{
+	int type;
+
+	do {
+		type = __zm_rcv_hdr(zm);
+
+		if (type == ZRINIT) {
+			zmodem_parse_zrinit(zm);
+			break;
+		}
+	} while (type != ZRPOS);
 
 	return 0;
 }
@@ -868,9 +944,12 @@ int zmodem_snd_init(struct zmodem * zm, const struct comm_dev * comm,
 	zm->file_skipped = false;
 	zm->cancelled = false;
 	zm->connected = true;
-	zm->recv_timeout = 3; /* USB */
+	//zm->recv_timeout = 3; /* USB */
+	zm->recv_timeout = 1000; /* USB */
 	zm->recv_bufsize = 0;
-	zm->n_cans = 0;
+	zm->rxd.n_cans = 0;
+	zm->rxd.cnt = 0;
+	zm->rxd.pos = 0;
 	zm->management_protect = false;
 	zm->management_clobber = true;
 	zm->management_newer = false;

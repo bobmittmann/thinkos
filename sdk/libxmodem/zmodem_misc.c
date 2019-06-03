@@ -259,56 +259,43 @@ void __zm_flush(struct zmodem* zm)
  * for an exit. (but that was wat session abort was all about.)
  */
 
-int __zm_rcv_raw(struct zmodem* zm)
-{
-	uint8_t buf[4];
-	int c;
-
-	if (zm->comm->op.recv(zm->comm->arg, buf, 1, zm->recv_timeout) < 0) {
-		WARNS("__zm_rcv_raw: timeout");
-		return TIMEOUT;
-	}
-	
-	c = buf[0];
-
-	if (c == CAN) {
-		zm->n_cans++;
-		if (zm->n_cans == 5) {
-			zm->cancelled = true;
-			WARNS("__zm_rcv_raw: cancelled remotely");
-		}
-	} else {
-		zm->n_cans = 0;
-	}
-
-	return c;
-}
-
 int __zm_rcv_raw_tmo(struct zmodem* zm, unsigned int tmo)
 {
-	uint8_t buf[4];
 	int c;
 
-	if (zm->comm->op.recv(zm->comm->arg, buf, 1, tmo) < 0) {
-		YAPS("__zm_rcv_raw: timeout");
-		return TIMEOUT;
+	if (zm->rxd.pos == zm->rxd.cnt) {
+		int ret;
+
+		if ((ret = zm->comm->op.recv(zm->comm->arg, zm->rxd.buf, 
+									 ZMODEM_RXD_BUF_LEN, tmo)) < 0) {
+			YAPS("__zm_rcv_raw: timeout");
+			return TIMEOUT;
+		}
+
+		DBGX("ZRX", zm->rxd.buf, ret);
+		zm->rxd.cnt = ret;
+		zm->rxd.pos = 0;
 	}
 	
-	c = buf[0];
+	c = zm->rxd.buf[zm->rxd.pos++];
 
 	if (c == CAN) {
-		zm->n_cans++;
-		if (zm->n_cans == 5) {
+		zm->rxd.n_cans++;
+		if (zm->rxd.n_cans == 5) {
 			zm->cancelled = true;
 			WARNS("__zm_rcv_raw: cancelled remotely");
 		}
 	} else {
-		zm->n_cans = 0;
+		zm->rxd.n_cans = 0;
 	}
 
 	return c;
 }
 
+int __zm_rcv_raw(struct zmodem* zm)
+{
+	return __zm_rcv_raw_tmo(zm, zm->recv_timeout);
+}
 
 /*
  * rx; receive a single byte undoing any escaping at the
@@ -423,65 +410,6 @@ int __zm_getc(struct zmodem* zm)
 	return 0;
 }
 
-static int __zm_rcv_nibble(struct zmodem* zm) 
-{
-	int c;
-
-	c = __zm_getc(zm);
-
-	if (c == TIMEOUT) {
-		return c;
-	}
-
-	if (c > '9') {
-		if(c < 'a' || c > 'f') {
-			/*
-			 * illegal hex; different than expected.
-			 * we might as well time out.
-			 */
-			return TIMEOUT;
-		}
-
-		c -= 'a' - 10;
-	} else {
-		if(c < '0') {
-			/*
-			 * illegal hex; different than expected.
-			 * we might as well time out.
-			 */
-			return TIMEOUT;
-		}
-		c -= '0';
-	}
-
-	return c;
-}
-
-int __zm_rcv_hex(struct zmodem* zm)
-{
-	int n1;
-	int n0;
-	int ret;
-
-	n1 = __zm_rcv_nibble(zm);
-
-	if (n1 == TIMEOUT) {
-		return n1;
-	}
-
-	n0 = __zm_rcv_nibble(zm);
-
-	if (n0 == TIMEOUT) {
-		return n0;
-	}
-
-	ret = (n1 << 4) | n0;
-
-	YAP("__zm_rcv_hex: 0x%02x", ret);
-
-	return ret;
-}
-
 bool __zm_data_waiting(struct zmodem* zm, unsigned int timeout)
 {
 	uint8_t buf[4];
@@ -530,9 +458,8 @@ int __zm_snd_raw(struct zmodem* zm, const void * buf, unsigned int len)
 		INFS("TX: console_write() failed!..");
 	} else {
 		zm->last_sent = cp[len - 1];
-		YAPX("RAW", cp, len);
+		DBGX("RAW", cp, len);
 	}
-
 
 	return ret;
 }
