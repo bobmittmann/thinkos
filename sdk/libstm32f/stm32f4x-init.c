@@ -213,6 +213,29 @@
   #define PLLSAIP      4 /* PLL48M2CLK ->  47.980800 MHz */
 #endif
 
+#if (STM32_HCLK_HZ == 180633600) && (STM32_HSE_HZ == 11289600)
+  /* PLLVCO = 361.267200 MHz */
+  #define PLLM         9
+  #define PLLN       288
+  #define PLLP         2 /*     PLLCLK -> 180.633600 MHz */
+  #define PLLR         2 /*       PLLR ->   0.000002 MHz */
+  #define PLLQ         8 /* PLL48M1CLK ->  45.001600 MHz */
+  #define PLLPDIV      4 /* PLLSAI2CLK ->  90.003200 MHz */
+
+  /* PLLI2SVCO = 180.633600 MHz */
+  #define PLLI2SM      6
+  #define PLLI2SN     96
+  #define PLLI2SQ      2 /* PLLSAI3CLK ->  90.316800 MHz */
+  #define PLLI2SP      8 /*  SPDIF2CLK ->  22.579200 MHz */
+  #define PLLI2SR      2 /* PLLI2S1CLK ->  90.316800 MHz */
+
+  /* PLLSAIVCO = 191.923200 MHz */
+  #define PLLSAIM      6
+  #define PLLSAIN    102
+  #define PLLSAIQ      2 /* PLLSAI2CLK ->  95.961600 MHz */
+  #define PLLSAIP      4 /* PLL48M2CLK ->  47.980800 MHz */
+#endif
+
 #if STM32_PLL_CKIN_HSE && !STM32_ENABLE_HSE
 #error "invalid PLL HSE input clock configuration!"
 #endif

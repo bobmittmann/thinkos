@@ -535,8 +535,6 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	xfrsiz = MIN(len, free);
 
 	if (xfrsiz > 0) {
-		/* XXX: check whether to get rid of this division or not,
-		 if the CM3 div is used it is not necessary.... */
 		pktcnt = (xfrsiz + (mpsiz - 1)) / mpsiz;
 		if (pktcnt > STM32_OTG_FS_BULK_PKTS) {
 			pktcnt = STM32_OTG_FS_BULK_PKTS;
