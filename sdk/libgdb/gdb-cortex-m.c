@@ -806,6 +806,15 @@ const char memory_map_xml[] =
 "</memory-map>";
 #endif
 
+#if (GDB_ENABLE_QXFER_THREADS) 
+const char threads_xml[] = 
+"<?xml version=\"1.0\"?>"
+"<threads>"
+    "<thread id=\"%d\" core=\"0\" name=\"%s\">"
+    "</thread>"
+"</threads>"
+#endif
+
 int target_file_read(const char * name, char * dst, 
 					  unsigned int offs, unsigned int size)
 {

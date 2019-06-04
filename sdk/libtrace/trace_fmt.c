@@ -86,7 +86,7 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 	/* leave room for null at the end */
 	max--;
 
-	if (entry->ref->opt & TRACE_XXD) {
+	if (entry->ref->opt & TRACE_OPT_XXD) {
 		unsigned int len;
 		uint32_t val;
 		unsigned int i;
@@ -120,7 +120,7 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 		*cp ='\0';
 		entry->idx = tail;
 		return cnt;
-	} else if (entry->ref->opt & TRACE_AD) {
+	} else if (entry->ref->opt & TRACE_OPT_AD) {
 		unsigned int len;
 		uint32_t val;
 		unsigned int i;

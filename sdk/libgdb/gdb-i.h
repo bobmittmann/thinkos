@@ -27,6 +27,10 @@
 #ifndef __GDB_I_H__
 #define __GDB_I_H__
 
+#ifdef CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <sys/param.h>
 #include <stdlib.h>
@@ -90,7 +94,11 @@
 #endif
 
 #ifndef GDB_ENABLE_QXFER_MEMORY_MAP
-#define GDB_ENABLE_QXFER_MEMORY_MAP 1
+#define GDB_ENABLE_QXFER_MEMORY_MAP 0
+#endif
+
+#ifndef GDB_ENABLE_QXFER_THREADS
+#define GDB_ENABLE_QXFER_THREADS 0
 #endif
 
 #ifndef GDB_ENABLE_COSMETIC

@@ -44,8 +44,8 @@ enum trace_level {
 };
 
 /* Trace flags (options) */
-#define TRACE_XXD 1
-#define TRACE_AD  2
+#define TRACE_OPT_XXD 1
+#define TRACE_OPT_AD  2
 
 /* Trace reference */
 struct trace_ref {
@@ -64,6 +64,16 @@ struct trace_entry {
 					in the buffer [microsseconds] */
 	uint32_t idx; /* Trace entry sequential number */
 };
+
+/* Trace options */
+#if 0
+#define TRACE_FLUSH     (1 << 0)
+#define TRACE_COUNT     (1 << 1)
+#define TRACE_ABSTIME   (1 << 2)
+#define TRACE_ALL       (1 << 3)
+#define TRACE_UNSAFE    (1 << 4)
+#define TRACE_FUNC      (1 << 5)
+#endif
 
 struct trace_iterator {
 	int id;
@@ -98,218 +108,260 @@ struct trace_iterator {
  #endif
 #endif
 
-/* Trace optons */
-#define TRACE_FLUSH     (1 << 0)
-#define TRACE_COUNT     (1 << 1)
-#define TRACE_ABSTIME   (1 << 2)
-#define TRACE_ALL       (1 << 3)
-#define TRACE_UNSAFE    (1 << 4)
-#define TRACE_FUNC      (1 << 5)
 
 #ifdef ENABLE_TRACE
 
 static inline void __attribute__((always_inline,format (__printf__, 1, 2))) 
 	tracef_chk(const char * __fmt, ... ) {}
 
-#define TRACE_REF(__LVL, __OPT, __STR) __extension__({static const struct trace_ref \
-	__attribute__((section(".rodata.trace"))) __ref__ = { .lvl = (__LVL), \
-	.opt = (__OPT), .line = __LINE__, .func = __func__, .fmt = __STR };\
-	&__ref__;})
+#define TRACE_REF_DEF(__TAG) static const struct trace_ref \
+		__attribute__((section(".rodata.trace." __TAG))) 
 
+#define __SYSCALL_CALL(N) __extension__({ register int ret asm("r0"); \
+asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
+ret; })
+
+/* ----------------------------------------------------------------------
+ * Printf style trace macros
+ * ----------------------------------------------------------------------
+ */
 
 #define YAP(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("yap") __yap = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef(&__ref, ## __VA_ARGS__); \
+		tracef(&__yap, ## __VA_ARGS__); \
 	}} while (0)
 
 #define DBG(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("dbg") __dbg = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef(&__ref, ## __VA_ARGS__); \
+		tracef(&__dbg, ## __VA_ARGS__); \
 	}} while (0)
 
 #define INF(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("inf") __inf = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef(&__ref, ## __VA_ARGS__); \
+		tracef(&__inf, ## __VA_ARGS__); \
 	}} while (0)
 
 #define WARN(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("warn") __warn = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_WARN, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef(&__ref, ## __VA_ARGS__); \
+		tracef(&__warn, ## __VA_ARGS__); \
 	}} while (0)
 
 #define ERR(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("err") __err = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef(&__ref, ## __VA_ARGS__); \
+		tracef(&__err, ## __VA_ARGS__); \
 	}} while (0)
 
-
-#define YAP_I(__FMT, ...) do { tracef_chk( __fmt, , ## __VA_ARGS__); \
+#define YAP_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("yap") __yap = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef_i(&__ref, ## __VA_ARGS__); \
+		tracef_i(&__yap, ## __VA_ARGS__); \
 	}} while (0)
 
-#define DBG_I(__FMT, ...) do { tracef_chk( __fmt, , ## __VA_ARGS__); \
+#define DBG_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("dbg") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
 		tracef_i(&__ref, ## __VA_ARGS__); \
 	}} while (0)
 
-#define INF_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		static const struct trace_ref __ref = \
+#define INF_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
+	if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		TRACE_REF_DEF("inf") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
 		tracef_chk( __fmt, , ## __VA_ARGS__); \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} while (0)
+	}} while (0)
 
-#define WARN_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		static const struct trace_ref __ref = \
+#define WARN_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
+	if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		TRACE_REF_DEF("warn") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_WARN, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
-		tracef_chk( __fmt, , ## __VA_ARGS__); \
+		 \
 		tracef_i(&__ref, ## __VA_ARGS__); \
-		}} while (0)
+	}} while (0)
 
-#define ERR_I(__FMT, ...) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		static const struct trace_ref __ref = \
+#define ERR_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
+	if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+		TRACE_REF_DEF("err") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
 		tracef_chk( __fmt, , ## __VA_ARGS__); \
 		tracef_i(&__ref, ## __VA_ARGS__); \
 		}} while (0)
 
+/* ----------------------------------------------------------------------
+ * Simple static strings trace macros (fast)
+ * ----------------------------------------------------------------------
+ */
 
 #define YAPS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("yap") __yap = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace(&__ref); \
+		trace(&__yap); \
 		}} while (0)
 
 #define DBGS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("dbg") __dbg = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace(&__ref); \
+		trace(&__dbg); \
 		}} while (0)
 
 #define INFS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("inf") __inf = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace(&__ref); \
+		trace(&__inf); \
 		}} while (0)
 
 #define WARNS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("warn") __warn = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_WARN, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace(&__ref); \
+		trace(&__warn); \
 		}} while (0)
 
 #define ERRS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("err") __err = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace(&__ref); \
+		trace(&__err); \
 		}} while (0)
-
-
-#define YAPX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		tracex(TRACE_REF(TRACE_LVL_YAP, TRACE_XXD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define DBGX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		tracex(TRACE_REF(TRACE_LVL_DBG, TRACE_XXD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define INFX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		tracex(TRACE_REF(TRACE_LVL_INF, TRACE_XXD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define WARNX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		tracex(TRACE_REF(TRACE_LVL_WARN, TRACE_XXD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define ERRX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		tracex(TRACE_REF(TRACE_LVL_ERR, TRACE_XXD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-
-#define YAPA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		tracex(TRACE_REF(TRACE_LVL_YAP, TRACE_AD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define DBGA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		tracex(TRACE_REF(TRACE_LVL_DBG, TRACE_AD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define INFA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		tracex(TRACE_REF(TRACE_LVL_INF, TRACE_AD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define WARNA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		tracex(TRACE_REF(TRACE_LVL_WARN, TRACE_AD, __STR), __BUF, __LEN); \
-		}} while (0)
-
-#define ERRA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		tracex(TRACE_REF(TRACE_LVL_ERR, TRACE_AD, __STR), __BUF, __LEN); \
-		}} while (0)
-
 
 #define YAPS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("yap") __yap = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
-		trace_I(&__ref); \
+		trace_I(&__yap); \
 		}} while (0)
 
 #define DBGS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("dbg") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
 		trace_I(&__ref); \
 		}} while (0)
 
 #define INFS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("inf") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
 		trace_i(&__ref); \
 		}} while (0)
 
 #define WARNS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("warn") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_WARN, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
 		trace_i(&__ref); \
 		}} while (0)
 
 #define ERRS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
-		static const struct trace_ref __ref = \
+		TRACE_REF_DEF("err") __ref = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=0, \
 		  .func=__func__, .fmt=__STR}; \
 		trace_i(&__ref); \
+		}} while (0)
+
+/* ----------------------------------------------------------------------
+ * Hexdump style trace macros 
+ * ----------------------------------------------------------------------
+ */
+
+#define YAPX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		TRACE_REF_DEF("yapx") __yapx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__yapx, __BUF, __LEN);\
+		}} while (0)
+
+#define DBGX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+		TRACE_REF_DEF("dbgx") __dbgx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__dbgx, __BUF, __LEN);\
+		}} while (0)
+
+#define INFX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		TRACE_REF_DEF("infx") __infx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__infx, __BUF, __LEN);\
+		}} while (0)
+
+#define WARNX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		TRACE_REF_DEF("warnx") __warnx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__warnx, __BUF, __LEN);\
+		}} while (0)
+
+#define ERRX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+		TRACE_REF_DEF("errx") __errx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__errx, __BUF, __LEN);\
+		}} while (0)
+
+/* ----------------------------------------------------------------------
+ * Ascii buffer dump trace macros 
+ * ----------------------------------------------------------------------
+ */
+
+#define YAPA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
+		TRACE_REF_DEF("yapx") __yapx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__yapx, __BUF, __LEN);\
+		}} while (0)
+
+#define DBGA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_DBG)  { \
+		TRACE_REF_DEF("dbgx") __dbgx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_DBG, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__dbgx, __BUF, __LEN);\
+		}} while (0)
+
+#define INFA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		TRACE_REF_DEF("infx") __infx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__infx, __BUF, __LEN);\
+		}} while (0)
+
+#define WARNA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		TRACE_REF_DEF("warnx") __warnx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__warnx, __BUF, __LEN);\
+		}} while (0)
+
+#define ERRA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
+		TRACE_REF_DEF("errx") __errx = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__errx, __BUF, __LEN);\
 		}} while (0)
 
 #else

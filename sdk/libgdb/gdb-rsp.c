@@ -471,6 +471,7 @@ static void rsp_decode_read(char * annex, unsigned int * offs,
 	*size = hex2int(cp, NULL);
 }
 
+#if GDB_ENABLE_QXFER_FEATURES
 int rsp_features_read(struct gdb_rspd * gdb, char * pkt)
 {
 	unsigned int offs;
@@ -488,6 +489,7 @@ int rsp_features_read(struct gdb_rspd * gdb, char * pkt)
 
 	return rsp_pkt_send(gdb, pkt, cnt + 2);
 }
+#endif
 
 #if (GDB_ENABLE_QXFER_MEMORY_MAP) 
 int rsp_memory_map_read(struct gdb_rspd * gdb, char * pkt)
@@ -508,6 +510,27 @@ int rsp_memory_map_read(struct gdb_rspd * gdb, char * pkt)
 	return rsp_pkt_send(gdb, pkt, cnt + 2);
 }
 #endif
+
+#if (GDB_ENABLE_QXFER_THREADS_MAP) 
+int rsp_threads_read(struct gdb_rspd * gdb, char * pkt)
+{
+	unsigned int offs;
+	unsigned int size;
+	char * fname;
+	unsigned int cnt;
+
+	fname = pkt + sizeof("qXfer:threads:read:") - 1;
+	rsp_decode_read(fname, &offs, &size);
+
+	cnt = target_file_read("memmap.xml", &pkt[2], offs, size);
+
+	pkt[0] = '$';
+	pkt[1] = (cnt == size) ? 'm' : 'l';
+
+	return rsp_pkt_send(gdb, pkt, cnt + 2);
+}
+#endif
+
 
 static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 {
@@ -609,6 +632,11 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 #if GDB_ENABLE_NOSTOP_MODE
 					  ";QNonStop+"
 #endif
+#if GDB_ENABLE_QXFER_THREADS
+					  ";qXfer:threads:read+"
+#endif
+#if GDB_ENABLE_VFLASH
+#endif
 					  );
 		n = cp - pkt;
 		return rsp_pkt_send(gdb, pkt, n);
@@ -643,6 +671,13 @@ static int rsp_query(struct gdb_rspd * gdb, char * pkt)
 	if (prefix(pkt, "qXfer:memory-map:read:")) {
 		DCC_LOG(LOG_INFO, "qXfer:memory-map:read:");
 		return rsp_memory_map_read(gdb, pkt);
+	}
+#endif
+
+#if GDB_ENABLE_QXFER_THREADS
+	if (prefix(pkt, "qXfer:threads:read:")) {
+		DCC_LOG(LOG_INFO, "qXfer:threads:read:");
+		return rsp_threads_read(gdb, pkt);
 	}
 #endif
 
@@ -1299,6 +1334,7 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	return rsp_empty(gdb);
 }
 
+
 #define GDB_RSP_QUIT -0x80000000
 
 static int rsp_detach(struct gdb_rspd * gdb)
@@ -1782,5 +1818,4 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 		}
 	}
 }
-
 

@@ -52,29 +52,39 @@ int trace_krn_getfirst(struct trace_iterator * it)
 	return ret;
 }
 
+extern const struct trace_ref __trace_usr_tab[];
+extern const struct trace_ref __trace_usr_end;
+
 int trace_krn_getnext(struct trace_iterator * it)
 {
 	struct trace_entry * entry = &it->entry;
 	uint32_t tail;
-	uint32_t ts;
-	uint32_t dt;
 	int ret;
 
 	tail = trace_ctl.tail;
 	if ((int32_t)(entry->idx - tail) > 0)
 		tail = entry->idx;
 
-	if ((int32_t)(trace_ctl.head - tail) < 2) {
-		ret = -1;
+	if ((int32_t)(trace_ctl.head - tail) >= 2) {
+		const struct trace_ref  * ref;
+		uint32_t ts;
+		uint32_t dt;
+
+		ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
+		if ((ref >= __trace_usr_tab) && (ref < &__trace_usr_end)) {
+			entry->ref = ref;
+			ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
+			dt = ts - (entry->tm & 0xffffffff);
+			it->ts = ts;
+			entry->dt = dt;
+			entry->tm += dt;
+			entry->idx = tail;
+			ret = 0;
+		} else {
+			ret = -2;
+		}
 	} else {
-		entry->ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
-		ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
-		dt = ts - (entry->tm & 0xffffffff);
-		it->ts = ts;
-		entry->dt = dt;
-		entry->tm += dt;
-		entry->idx = tail;
-		ret = 0;
+		ret = -1;
 	}
 
 	return ret;
