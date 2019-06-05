@@ -214,7 +214,7 @@ int vt_write(struct vt_win * win, const void * buf, unsigned int len)
 	return cnt;
 }
 
-int vt_puts(struct vt_win * win, const char * buf) 
+int vt_win_puts(struct vt_win * win, const char * buf) 
 {
 	unsigned int len;
 	int cnt;
@@ -224,9 +224,7 @@ int vt_puts(struct vt_win * win, const char * buf)
 
 	len = strlen(buf);
 
-//	cnt = __vt_win_write(win, buf, len); 
-	__vt_console_write(buf, len);
-	cnt = len;
+	cnt = __vt_win_write(win, buf, len); 
 
 	return cnt;
 }

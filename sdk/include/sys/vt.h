@@ -178,6 +178,9 @@ int vt_hbar(struct vt_win * win, unsigned int y);
 
 int vt_getc(unsigned int tmo);
 int vt_getkey(unsigned int tmo);
+int vt_puts(const char * s);
+int vt_putc(int c);
+char * vt_readline(char * buf, unsigned int max, unsigned int tmo);
 
 FILE * vt_console_fopen(struct vt_win * win);
 
@@ -197,9 +200,8 @@ int vt_default_msg_loop(unsigned int tmo_ms);
 
 struct vt_win * vt_win_create(const struct vt_win_def * def);
 
-char * vt_freadline(FILE *f, char * buf, unsigned int max);
 
-int vt_puts(struct vt_win * win, const char * buf);
+int vt_win_puts(struct vt_win * win, const char * buf);
 
 #ifdef __cplusplus
 }

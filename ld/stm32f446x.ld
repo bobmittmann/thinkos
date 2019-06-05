@@ -170,8 +170,24 @@ SECTIONS
 		/* all .glue_7t sections (interworking thumb helpers) */
 		*(.glue_7) *(.glue_7t) *(.vfp11_veneer) *(.v4_bx)
 		/* all .rodata sections (constants, strings, etc.)  */
-		*(.rodata .rodata.* .gnu.linkonce.r.*)
+		*(.rodata)
+		*(.rodata.__func__.*)
+
+		. = ALIGN(4);
+		/* kernel traces */
+		PROVIDE(__trace_krn_tab = .);
+		KEEP(*(SORT(.rodata.trace_krn.*)))
+		PROVIDE(__trace_krn_end = .);
+
+		. = ALIGN(4);
+		/* user traces */
+		PROVIDE(__trace_usr_tab = .);
+		KEEP(*(SORT(.rodata.trace.*)))
+		PROVIDE(__trace_usr_end = .);
+
+		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
+
 		. = ALIGN(4);
 		/* constructors */
 		PROVIDE(__ctors_start = .);
@@ -182,6 +198,7 @@ SECTIONS
 		PROVIDE(__ctors_end = .);
 		. = ALIGN(8);
 	} >"CODE" = 0xffffffff
+
 
 	.ARM.extab : 
 	{ 

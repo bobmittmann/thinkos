@@ -162,7 +162,7 @@ union vt_mem_blk * __vt_alloc(void);
 
 int __vt_free(void * __p);
 
-void __vt_console_write(const char * s, unsigned int len);
+int __vt_console_write(const char * s, unsigned int len);
 
 void __vt_puts(const char * s);
 

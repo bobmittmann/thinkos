@@ -12,7 +12,7 @@ int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 	return len;
 }
 
-void __vt_console_write(const char * s, unsigned int len)
+int __vt_console_write(const char * s, unsigned int len)
 {
 	char * cp = (char *)s;
 	char * ep = cp + len;
@@ -22,9 +22,11 @@ void __vt_console_write(const char * s, unsigned int len)
 
 		n = thinkos_console_write(cp, ep - cp);
 		if (n < 0)
-			return;
+			return n;
 		cp += n;
 	}
+
+	return len;
 }
 
 int uint2dec(char * s, unsigned int val);
@@ -528,6 +530,20 @@ int __vt_console_decode(struct vt_console * con, int c)
 
 	return ret;
 }
+
+int vt_putc(int c)
+{
+	char buf[1];
+
+	buf[0] = c;
+	return __vt_console_write(buf, 1);
+}
+
+int vt_puts(const char * s)
+{
+	return __vt_console_write(s, strlen(s));
+}
+
 
 int vt_getc(unsigned int tmo)
 {

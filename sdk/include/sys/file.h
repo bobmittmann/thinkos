@@ -27,6 +27,7 @@
 #define __SYS_FILE_H__
 
 #include <stddef.h>
+#include <stdint.h>
 
 struct file;
 
@@ -35,6 +36,7 @@ struct fileop {
 	int (* read)(void * arg, void * buf, size_t count, unsigned int tmo);
 	int (* flush)(void * arg);
 	int (* close)(void * arg);
+	int (* ctl)(void * arg, int cmd, uintptr_t val);
 };
 
 struct file {

@@ -81,6 +81,7 @@
 #define EINPROGRESS   115    /* Operation now in progress */
 #define ECANCELED     125    /* Operation Canceled */
 
+
 #ifndef __ASSEMBLER__
 
 extern int errno;
