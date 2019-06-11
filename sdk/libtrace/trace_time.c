@@ -27,6 +27,7 @@
 
 int trace_ts2timeval(struct timeval * tv, uint32_t ts)
 {
+	uint32_t sec;
 	uint32_t us;
 
 	if (tv == NULL)
@@ -34,14 +35,16 @@ int trace_ts2timeval(struct timeval * tv, uint32_t ts)
 
 	us = trace_ts2us(ts);
 
-	tv->tv_sec = us / 1000000;
-	tv->tv_usec = us - (tv->tv_sec * 1000000);
+	sec = us / 1000000;
+	tv->tv_sec = sec;
+	tv->tv_usec = us - (sec * 1000000);
 
 	return 0;
 }
 
 int trace_tm2timeval(struct timeval * tv, uint64_t tm)
 {
+	uint32_t sec;
 	uint64_t us;
 
 	if (tv == NULL)
@@ -49,8 +52,9 @@ int trace_tm2timeval(struct timeval * tv, uint64_t tm)
 
 	us = trace_tm2us(tm);
 
-	tv->tv_sec = (us >> 10) +  (us >> 15) - (us >> 17) + (us >> 21);
-	tv->tv_usec = us - ((uint64_t)tv->tv_sec * 1000000LL);
+	sec = us / 1000000;
+	tv->tv_sec = sec;
+	tv->tv_usec = us - ((uint64_t)sec * 1000000LL);
 
 	return 0;
 }
