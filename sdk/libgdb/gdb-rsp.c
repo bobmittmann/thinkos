@@ -29,6 +29,14 @@
 #define GDB_DEBUG_PACKET 1
 #endif
 
+#ifndef GDB_IDLE_TIMEOUT_MS 
+#define GDB_IDLE_TIMEOUT_MS 1000
+#endif
+
+#ifndef GDB_ENABLE_CONSOLE
+#define GDB_ENABLE_CONSOLE 0
+#endif
+
 static int target_sync_reset(void) 
 {
 	int ret;
@@ -329,6 +337,7 @@ int rsp_thread_info_next(struct gdb_rspd * gdb, char * pkt)
 int rsp_console_output(struct gdb_rspd * gdb, char * pkt, 
 					   uint8_t * ptr, int cnt)
 {
+#if (GDB_ENABLE_CONSOLE)
 	char * cp;
 	int n;
 
@@ -349,6 +358,7 @@ int rsp_console_output(struct gdb_rspd * gdb, char * pkt,
 		DCC_LOG(LOG_WARNING, "rsp_pkt_send() failed!!!");
 		cnt = 0;
 	}
+#endif
 	return cnt;
 }
 #endif
@@ -1334,7 +1344,6 @@ static int rsp_v_packet(struct gdb_rspd * gdb, char * pkt, unsigned int len)
 	return rsp_empty(gdb);
 }
 
-
 #define GDB_RSP_QUIT -0x80000000
 
 static int rsp_detach(struct gdb_rspd * gdb)
@@ -1589,6 +1598,8 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	int cnt;
 #endif
 
+	__thinkos_memset32(pkt, 0, sizeof(pkt));
+
 	gdb->comm = comm;
 	gdb->nonstop_mode = false;
 	gdb->noack_mode = false;
@@ -1627,14 +1638,26 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 	sigmask |= (1 << DBGMON_SOFTRST);
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
+	sigmask |= (1 << DBGMON_ALARM);
 
+
+#if (GDB_IDLE_TIMEOUT_MS > 0)
+	dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+#endif		
 
 	for(;;) {
 		DCC_LOG(LOG_MSG, "dbgmon_select()...");
 		sig = dbgmon_select(sigmask);
-		DCC_LOG1(LOG_MSG, "sig=%d", sig);
+		DCC_LOG1(LOG_INFO, "sig=%d", sig);
 
 		switch (sig) {
+
+#if (GDB_IDLE_TIMEOUT_MS > 0)
+		case DBGMON_ALARM:
+			DCC_LOG(LOG_INFO, "alarm!");
+			dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+		break;
+#endif
 
 		case DBGMON_SOFTRST:
 			DCC_LOG(LOG_INFO, "Soft reset.");
@@ -1814,8 +1837,12 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 				return;
 			}
 
+#if (GDB_IDLE_TIMEOUT_MS > 0)
+			dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+#endif
 			break;
 		}
 	}
 }
+
 

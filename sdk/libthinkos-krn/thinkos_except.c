@@ -399,15 +399,15 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 
 	hfsr = scb->hfsr;
 
-	DCC_LOG3(LOG_ERROR, "Hard fault:%s%s%s", 
+	DCC_LOG3(LOG_PANIC, "Hard fault:%s%s%s", 
 			 (hfsr & SCB_HFSR_DEBUGEVT) ? " DEBUGEVT" : "",
 			 (hfsr & SCB_HFSR_FORCED) ?  " FORCED" : "",
 			 (hfsr & SCB_HFSR_VECTTBL) ? " VECTTBL" : "");
 	DCC_EXCEPT_DUMP(xcpt);
-	DCC_LOG1(LOG_ERROR, " HFSR=%08x", scb->hfsr);
-	DCC_LOG1(LOG_ERROR, " CFSR=%08x", xcpt->cfsr);
-	DCC_LOG1(LOG_ERROR, " BFAR=%08x", xcpt->bfar);
-	DCC_LOG1(LOG_ERROR, "MMFAR=%08x", xcpt->mmfar);
+	DCC_LOG1(LOG_PANIC, " HFSR=%08x", scb->hfsr);
+	DCC_LOG1(LOG_PANIC, " CFSR=%08x", xcpt->cfsr);
+	DCC_LOG1(LOG_PANIC, " BFAR=%08x", xcpt->bfar);
+	DCC_LOG1(LOG_PANIC, "MMFAR=%08x", xcpt->mmfar);
 
 	if (hfsr & SCB_HFSR_FORCED) {
 		uint32_t mmfsr;
@@ -421,9 +421,9 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 		(void)ufsr;
 		(void)mmfsr ;
 
-		DCC_LOG1(LOG_ERROR, "BFSR=%08X", bfsr);
+		DCC_LOG1(LOG_PANIC, "BFSR=%08X", bfsr);
 		if (bfsr) {
-			DCC_LOG7(LOG_ERROR, "    %s%s%s%s%s%s%s", 
+			DCC_LOG7(LOG_PANIC, "    %s%s%s%s%s%s%s", 
 					 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
 					 (bfsr & BFSR_LSPERR) ? " LSPERR" : "",
 					 (bfsr & BFSR_STKERR) ? " STKERR" : "",
@@ -433,9 +433,9 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
 		}
 
-		DCC_LOG1(LOG_ERROR, "UFSR=%08X", ufsr);
+		DCC_LOG1(LOG_PANIC, "UFSR=%08X", ufsr);
 		if (ufsr) {
-			DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
+			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
 					 (ufsr & UFSR_DIVBYZERO)  ? " DIVBYZERO" : "",
 					 (ufsr & UFSR_UNALIGNED)  ? " UNALIGNED" : "",
 					 (ufsr & UFSR_NOCP)  ? " NOCP" : "",
@@ -443,9 +443,9 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 					 (ufsr & UFSR_INVSTATE)  ? " INVSTATE" : "",
 					 (ufsr & UFSR_UNDEFINSTR)  ? " UNDEFINSTR" : "");
 		}
-		DCC_LOG1(LOG_ERROR, "MMFSR=%08X", mmfsr);
+		DCC_LOG1(LOG_PANIC, "MMFSR=%08X", mmfsr);
 		if (mmfsr) {
-			DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
+			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
 					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
 					 (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
 					 (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
@@ -485,11 +485,10 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 #endif
 
 	if (xcpt->unroll) {
-		DCC_LOG(LOG_ERROR, "unhandled exception ...");
 #if THINKOS_SYSRST_ONFAULT
 		cm3_sysrst();
 #endif
-		DCC_LOG(LOG_ERROR, "system halt!!");
+		DCC_LOG(LOG_PANIC, "system halt!!");
 		for(;;);
 	}
 

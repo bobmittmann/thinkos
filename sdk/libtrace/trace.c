@@ -51,7 +51,7 @@ static inline uint32_t __timer_ts2us(uint32_t ts)
 	return ts;
 }
 
-static inline uint64_t __timer_tm2us(uint32_t tm)
+static inline uint64_t __timer_tm2us(uint64_t tm)
 {
 	return tm;
 }

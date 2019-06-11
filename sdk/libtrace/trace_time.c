@@ -50,7 +50,6 @@ int trace_tm2timeval(struct timeval * tv, uint64_t tm)
 	us = trace_tm2us(tm);
 
 	tv->tv_sec = (us >> 10) +  (us >> 15) - (us >> 17) + (us >> 21);
-//	tv->tv_sec = us / 1000000;
 	tv->tv_usec = us - ((uint64_t)tv->tv_sec * 1000000LL);
 
 	return 0;

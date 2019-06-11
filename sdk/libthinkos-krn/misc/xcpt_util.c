@@ -19,8 +19,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-//#undef DEBUG
-//#define DEBUG 6
+
+#undef DEBUG
+#define DEBUG 6
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
@@ -71,7 +72,7 @@ extern const uint16_t thinkos_except_stack_size;
 /* Exception state dump */
 void __xdump(struct thinkos_except * xcpt)
 {
-#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
 	uint32_t shcsr;
 	uint32_t icsr;
 	uint32_t ipsr;
