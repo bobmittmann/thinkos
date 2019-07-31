@@ -111,8 +111,12 @@ enum {
  */
 enum mstp_mgmt_event {
 	MSTP_EV_SOLE_MASTER = 0,
-	MSTP_EV_MULTIMASTER,
-	MSTP_EV_TOKEN_LOST
+	MSTP_EV_MULTIMASTER = 1,
+	MSTP_EV_TOKEN_LOST  = 2,
+	MSTP_EV_PROBE_SEND  = 3,
+	MSTP_EV_PROBE_RECV  = 4,
+	MSTP_EV_PROBE_TMO   = 5,
+	MSTP_EV_PROBE_ERR   = 6
 };
 
 /** @def MSTP_ADDR_BCAST
@@ -152,6 +156,8 @@ extern "C" {
  * returned. On error @b NULL is returned.
  */
 struct mstp_lnk * mstp_lnk_alloc(void);
+
+struct mstp_lnk * mstp_lnk_getinstance(unsigned int id);
 
 /** @brief Initialize a MS/TP link control structure
  *
@@ -209,6 +215,9 @@ int mstp_lnk_getbcast(struct mstp_lnk * lnk);
  */
 int mstp_lnk_mgmt(struct mstp_lnk * lnk,
 		void (*cbk)(struct mstp_lnk *, unsigned int));
+
+int mstp_lnk_mgmt_set(struct mstp_lnk *lnk,
+					  void (*cbk) (struct mstp_lnk *, unsigned int));
 
 int mstp_lnk_getstat(struct mstp_lnk * lnk,
 		struct mstp_lnk_stat * stat, bool reset);
