@@ -67,12 +67,13 @@ struct mstp_frame_inf {
 	uint8_t saddr; /**< source address */
 };
 
-struct mstp_lnk_stat {
+struct mstp_lnk_stats {
 	uint32_t rx_err;
 	uint32_t rx_token;
 	uint32_t rx_mgmt;
 	uint32_t rx_unicast;
 	uint32_t rx_bcast;
+	uint32_t rx_drop;
 	uint32_t tx_token;
 	uint32_t tx_mgmt;
 	uint32_t tx_unicast;
@@ -219,8 +220,8 @@ int mstp_lnk_mgmt(struct mstp_lnk * lnk,
 int mstp_lnk_mgmt_set(struct mstp_lnk *lnk,
 					  void (*cbk) (struct mstp_lnk *, unsigned int));
 
-int mstp_lnk_getstat(struct mstp_lnk * lnk,
-		struct mstp_lnk_stat * stat, bool reset);
+int mstp_lnk_stats_get(struct mstp_lnk * lnk,
+					   struct mstp_lnk_stats * stats, bool reset);
 
 unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[],
 		unsigned int max);
@@ -230,6 +231,9 @@ void mstp_lnk_clrnetmap (struct mstp_lnk * lnk);
 bool mstp_lnk_firstaddr (struct mstp_lnk * mstp);
 
 void mstp_lnk_activemasters (struct mstp_lnk * lnk);		
+
+int mstp_lnk_addr_set(struct mstp_lnk *lnk, unsigned int addr);
+
 /**@}*/
 
 
