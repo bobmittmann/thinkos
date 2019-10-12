@@ -549,7 +549,8 @@ struct thinkos_rt {
 	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX) + 
 		(THINKOS_NRT_THREADS_MAX) + 2]; 
   #else
-	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX)];
+	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX) +
+		(THINKOS_NRT_THREADS_MAX) + 1]; 
   #endif
 #endif
 };

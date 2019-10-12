@@ -383,6 +383,12 @@ void __attribute__((naked))
 	__dbgmon_task_reset();
 }
 
+#if (THINKOS_ENABLE_THREAD_VOID)
+  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 2)
+#else
+  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
+#endif
+
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -392,7 +398,7 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 	uint32_t pc = 0;
 	uint32_t sp = 0;
 
-	if (thread_id > THINKOS_THREAD_VOID) {
+	if (thread_id > THINKOS_THREAD_LAST) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
 		return -1;
 	}
@@ -751,7 +757,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 		return -1;
 	}
 
-	if (thread_id == THINKOS_THREAD_VOID) {
+	if (thread_id == THINKOS_THREAD_LAST) {
 		DCC_LOG(LOG_ERROR, "void thread, IRQ step!");
 		return -1;
 //		dmon_context_swap_ext(&thinkos_dbgmon_rt.ctx, 1); 
@@ -1297,7 +1303,7 @@ void thinkos_exception_dsr(struct thinkos_except * xcpt)
 				 ipsr - 16);
 		/* exceptions on IRQ */
 		thinkos_dbgmon_rt.break_id = -1;
-		thinkos_rt.ctx[THINKOS_THREAD_VOID] = ctx;
+		thinkos_rt.ctx[THINKOS_THREAD_LAST] = ctx;
 
 		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
 /* FIXME: this is a dire situation, probably the only resource left
