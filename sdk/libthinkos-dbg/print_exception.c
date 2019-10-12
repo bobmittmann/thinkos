@@ -77,7 +77,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	sp = xcpt->ctx.core.sp;
 	ret = xcpt->ctx.core.ret;
 #else
-	ret = xcpt->ret;
+	ret = 0xffffff00 | (xcpt->ret & 0xff);
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 #endif
 

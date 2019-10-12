@@ -105,8 +105,7 @@ void __xdump(struct thinkos_except * xcpt)
 #if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FP)
 	ret = xcpt->ctx.core.ret;
 #else
-	/* FIXME: return ?? */
-	ret  = xcpt->ret;
+	ret  = 0xffffff00 | (xcpt->ret & 0xff);
 #endif
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 	DCC_LOG1(LOG_INFO, "ret=%08x", ret); 

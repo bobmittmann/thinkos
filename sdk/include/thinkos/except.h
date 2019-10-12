@@ -62,7 +62,7 @@ struct armv7m_extended_frame {
 struct thinkos_except {
 	uint8_t  errno;  /* exception error code */
 	uint8_t  unroll; /* unroll count */
-	uint8_t  res1;   /* */
+	uint8_t  ret;   /* */
 	uint8_t  primask;    /* PRIMASK */
 	uint8_t  faultmask;    /* FAULTMASK */
 	uint8_t  basepri;    /* BASEPRI */
