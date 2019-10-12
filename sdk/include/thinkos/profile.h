@@ -372,6 +372,9 @@
 #endif
 
 
+#ifndef THINKOS_DMA_MAX 
+#define THINKOS_DMA_MAX                 0
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Dependency check

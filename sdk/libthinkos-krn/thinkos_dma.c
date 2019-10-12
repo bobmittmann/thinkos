@@ -231,13 +231,6 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	/* enable this interrupt source */
 	cm3_dma_enable(dma);
 }
-#endif
-
-extern int __sizeof_rom_vectors;
-
-#ifdef CM3_RAM_VECTORS
-extern void * __ram_vectors[];
-#endif
 
 void thinkos_dma_ctl_svc(int32_t * arg, int self)
 {
@@ -327,4 +320,6 @@ void thinkos_dma_ctl_svc(int32_t * arg, int self)
 
 const char thinkos_dma_nm[] = "DMA";
 
+
+#endif
 
