@@ -24,6 +24,7 @@
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 void __thinkos_thread_abort(unsigned int thread_id)
 {

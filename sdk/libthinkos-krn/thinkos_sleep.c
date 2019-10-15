@@ -26,6 +26,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
 #include <sys/delay.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_SLEEP
 void thinkos_sleep_svc(int32_t * arg, int self)

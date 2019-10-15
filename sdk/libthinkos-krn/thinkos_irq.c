@@ -25,6 +25,7 @@
 #include <thinkos/irq.h>
 #include <thinkos.h>
 #include <stdio.h>
+#include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")

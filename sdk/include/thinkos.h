@@ -29,6 +29,20 @@
 #ifndef __THINKOS_H__
 #define __THINKOS_H__
 
+#define IRQ_PRIORITY_HIGHEST   (1 << 5)
+#define IRQ_PRIORITY_VERY_HIGH (2 << 5)
+#define IRQ_PRIORITY_HIGH      (3 << 5)
+#define IRQ_PRIORITY_REGULAR   (4 << 5)
+#define IRQ_PRIORITY_LOW       (5 << 5)
+#define IRQ_PRIORITY_VERY_LOW  (6 << 5)
+
+#define THINKOS_OPT_PRIORITY(VAL)   (((VAL) & 0xff) << 16)
+#define THINKOS_OPT_ID(VAL)         (((VAL) & 0x07f) << 24)
+#define THINKOS_OPT_PAUSED          (1 << 31) /* don't run at startup */
+#define THINKOS_OPT_STACK_SIZE(VAL) ((VAL) & 0xffff)
+
+#ifndef __ASSEMBLER__
+
 #include <stdint.h>
 
 /** 
@@ -151,23 +165,6 @@ struct thinkos_thread {
 	uint32_t cyccnt;
 	const struct thinkos_thread_inf * inf;
 };
-
-#define IRQ_PRIORITY_HIGHEST   (1 << 5)
-#define IRQ_PRIORITY_VERY_HIGH (2 << 5)
-#define IRQ_PRIORITY_HIGH      (3 << 5)
-#define IRQ_PRIORITY_REGULAR   (4 << 5)
-#define IRQ_PRIORITY_LOW       (5 << 5)
-#define IRQ_PRIORITY_VERY_LOW  (6 << 5)
-
-#define THINKOS_OPT_PRIORITY(VAL)   (((VAL) & 0xff) << 16)
-#define THINKOS_OPT_ID(VAL)         (((VAL) & 0x07f) << 24)
-#define THINKOS_OPT_PAUSED          (1 << 31) /* don't run at startup */
-#define THINKOS_OPT_STACK_SIZE(VAL) ((VAL) & 0xffff)
-
-#ifndef __ASSEMBLER__
-
-#include <stdint.h>
-
 
 struct thinkos_thread_inf {
 	void * stack_ptr;

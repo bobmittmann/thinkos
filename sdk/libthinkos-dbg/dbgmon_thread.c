@@ -25,6 +25,7 @@
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------
  * Fast thread execution
@@ -51,7 +52,6 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
 	struct thinkos_context * ctx;
 
-#if 1 
 	if (thinkos_rt.ctx[thread_id] != NULL) {
 		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
 				 thread_id + 1, thinkos_rt.ctx[thread_id]);
@@ -61,13 +61,13 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 
 		dbgmon_wait_idle();
 	}
-	// FIXME: This call is not safe 
+
+	/* FIXME: This call is not safe  */
 	/* Avoid race condition with kernel handlers */
 	while (thinkos_kernel_active()){
 		DCC_LOG(LOG_TRACE, "kernel is active, wait for IDLE!!");
 		dbgmon_wait_idle();
 	}
-#endif
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* allocate the thread block */

@@ -25,6 +25,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_FLAG_MAX > 0
 

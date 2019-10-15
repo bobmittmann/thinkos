@@ -21,6 +21,7 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_PAUSE
 bool __thinkos_thread_ispaused(unsigned int th)

@@ -640,7 +640,7 @@ void __exception_reset(void)
 					   sizeof(struct thinkos_except));
 #else
 	thinkos_except_buf.ipsr = 0;
-	thinkos_except_buf.type = 0;
+	thinkos_except_buf.errno = 0;
 	thinkos_except_buf.unroll = 0;
 #endif
 	DCC_LOG(LOG_TRACE, "/!\\ clearing active thread in exception buffer!");

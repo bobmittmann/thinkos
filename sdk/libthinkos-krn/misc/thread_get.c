@@ -43,11 +43,11 @@ int __thinkos_thread_get(unsigned int thread_id,
 #else
 	{
 		int i;
-		for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+		for (i = 0; i < THINKOS_WQ_CNT; ++i) {
 			if (rt->wq_lst[i] & (1 << thread_id))
 				break;
 		}
-		if (i == THINKOS_WQ_LST_END)
+		if (i == THINKOS_WQ_CNT)
 			return -1; /* not found */
 		st->wq = i;
 	}

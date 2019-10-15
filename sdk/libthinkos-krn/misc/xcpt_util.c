@@ -28,6 +28,7 @@
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #undef THINKOS_ENABLE_THREAD_INFO
 #define THINKOS_ENABLE_THREAD_INFO 0

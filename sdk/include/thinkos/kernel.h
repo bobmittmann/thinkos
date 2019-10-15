@@ -287,7 +287,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------- 
  * Thread context layout

@@ -1,5 +1,5 @@
 /* 
- * stm32f207.ld
+ * stm32f2xx.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -18,6 +18,9 @@
  * You can receive a copy of the GNU Lesser General Public License from 
  * http://www.gnu.org/
  */
+
+__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
 
 _stack_top = ORIGIN(sram2) + LENGTH(sram2);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
@@ -125,21 +128,7 @@ ENTRY(_reset)
 
 SECTIONS
 {
-
 	. = 0;
-
-	.dcclog (NOLOAD):
-	{
-		. = ALIGN(4);
-		KEEP(*(.dcclog))
-	} >dcclog
-
-	.dccdata (NOLOAD):
-	{
-		. = ALIGN(4);
-		KEEP(*(.rodata.__FUNCTION__*))
-		KEEP(*(.dccdata))
-	} >dcclog
 
 	.init __code_init :
 	{
@@ -155,8 +144,24 @@ SECTIONS
 		/* all .glue_7t sections (interworking thumb helpers) */
 		*(.glue_7) *(.glue_7t) *(.vfp11_veneer) *(.v4_bx)
 		/* all .rodata sections (constants, strings, etc.)  */
-		*(.rodata .rodata.* .gnu.linkonce.r.*)
+		*(.rodata)
+		*(.rodata.__func__.*)
+
+		. = ALIGN(4);
+		/* kernel traces */
+		PROVIDE(__trace_krn_tab = .);
+		KEEP(*(SORT(.rodata.trace_krn.*)))
+		PROVIDE(__trace_krn_end = .);
+
+		. = ALIGN(4);
+		/* user traces */
+		PROVIDE(__trace_usr_tab = .);
+		KEEP(*(SORT(.rodata.trace.*)))
+		PROVIDE(__trace_usr_end = .);
+
+		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
+
 		. = ALIGN(4);
 		/* constructors */
 		PROVIDE(__ctors_start = .);
@@ -183,7 +188,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data :
+	.data __data_init :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
@@ -210,16 +215,54 @@ SECTIONS
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
 
-	/* advance location counter to the next 32-bit boundary */
 	.heap :
 	{
 		PROVIDE (__heap_start = . );
 		/* all .heap sections  */
 		*(.heap .heap*)
-		/* advance location counter to the next 32-bit boundary */
 	} >"DATA"
 
+	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+
+   .sram2 :
+    {
+        /* define a global symbol marking the start of the .sram2 section */
+        PROVIDE (__sram2_start = . );
+        PROVIDE (__heap_end = . );
+        *(.sram2 .sram2*)
+        *(.stack .stack*)
+    } >"STACK"
+
+	/* Backed up control section */
+	.bkpctl :
+	{
+		PROVIDE (__bkpctl_start = . );
+		*(.bkpctl .bkpctl*)
+		PROVIDE (__bkpctl_end = . );
+	} >"rtcbkr"
+
+	/* Backed up data section */
+	.bkpdat :
+	{
+		PROVIDE (__bkpdat_start = . );
+		*(.bkpdat .bkpdat*)
+		PROVIDE (__bkpdat_end = . );
+	} >"bkpsram"
+
+	.dcclog :
+	{
+		. = ALIGN(4);
+		KEEP(*(.dcclog))
+	} >dcclog
+
+	.dccdata :
+	{
+		. = ALIGN(4);
+		KEEP(*(.rodata.__FUNCTION__*))
+		KEEP(*(.dccdata))
+	} >dcclog
+
 }
 

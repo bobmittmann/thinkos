@@ -22,6 +22,7 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 extern const uint8_t thinkos_obj_type_lut[];
 
@@ -402,7 +403,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 	}
 #else
 	/* clear all bits on all queues */
-	for (wq = 0; wq < THINKOS_WQ_LST_END; ++wq) 
+	for (wq = 0; wq < THINKOS_WQ_CNT; ++wq) 
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 

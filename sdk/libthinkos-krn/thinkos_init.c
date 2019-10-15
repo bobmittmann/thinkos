@@ -30,6 +30,7 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -124,6 +125,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	struct cm3_systick * systick = CM3_SYSTICK;
 	struct thinkos_context * ctx;
 	uint32_t sp;
+	uint32_t ctrl;
 	int thread_id;
 
 	(void)map;
@@ -239,18 +241,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	/* Cortex-M configuration */
 	DCC_LOG(LOG_INFO, "Cortex-M configuration:"); 
 
-#ifdef DEBUG
-	{
-		uint32_t ctrl = cm3_control_get();
-
-		DCC_LOG4(LOG_INFO, "CTRL=%02x { nPRIV=%d SPSEL=%d FPCA=%d }",
-				 ctrl, 
-				 ctrl & CONTROL_nPRIV ? 1 : 0,
-				 ctrl & CONTROL_SPSEL? 1 : 0,
-				 ctrl & CONTROL_FPCA? 1 : 0);
-	}
-#endif
-
 	DCC_LOG(LOG_TRACE, "1. SCB->SCR"); 
 	/* System Control Register
 	   The SCR controls features of entry to and exit from low power state. */
@@ -316,7 +306,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	/* Set the initial thread as idle. */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
 
-	DCC_LOG(LOG_INFO, "3. PSP"); 
 	/* Configure the thread stack ?? 
 	   If we already using the PSP nothing changes, if on the other 
 	   hand MSP is our stack we will move it to PSP 
@@ -324,9 +313,16 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	sp = cm3_sp_get();
 	cm3_psp_set(sp);
 
-	DCC_LOG(LOG_INFO, "5. CONTROL"); 
 	/* configure the use of PSP in thread mode */
-	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV);
+	ctrl = CONTROL_THREAD_PSP | CONTROL_THREAD_PRIV;
+	cm3_control_set(ctrl);
+#ifdef DEBUG
+	DCC_LOG4(LOG_JABBER, "5. CONTROL=0x%02x { nPRIV=%d SPSEL=%d FPCA=%d }",
+			 ctrl, 
+			 ctrl & CONTROL_nPRIV ? 1 : 0,
+			 ctrl & CONTROL_SPSEL? 1 : 0,
+			 ctrl & CONTROL_FPCA? 1 : 0);
+#endif
 
 	ctx = (struct thinkos_context *)sp - 1;
 	if ((thread_id = __thinkos_init_main(ctx, opt)) < 0)
@@ -334,8 +330,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 
 	/* everything good with the main thread, we need to configure 
 	   idle thread and exceptions. ... */
-
-	DCC_LOG(LOG_INFO, "6. Idle thread"); 
+	DCC_LOG(LOG_INFO, "6. Idle thread init..."); 
 	__thinkos_idle_init();
 
 	/* configure the main stack */
@@ -348,9 +343,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 
-
-	DCC_LOG(LOG_INFO, "7. enabling interrupts!");
+	DCC_LOG(LOG_INFO, "7. Enabling interrupts!");
 	cm3_cpsie_i();
+
+#if DEBUG
+	__profile();
+#endif
 
 	return thread_id + 1;
 }

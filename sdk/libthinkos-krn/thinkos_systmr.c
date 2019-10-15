@@ -31,6 +31,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_CLOCK
 static void __thinkos_time_wakeup(int thread_id) 

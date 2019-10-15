@@ -25,6 +25,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_BREAK
 
@@ -40,7 +41,7 @@ void thinkos_break_svc(int32_t * arg)
 	unsigned int idx;
 	int type;
 
-	if (wq >= THINKOS_WQ_LST_END) {
+	if (wq >= THINKOS_WQ_CNT) {
 		__THINKOS_ERROR(THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;

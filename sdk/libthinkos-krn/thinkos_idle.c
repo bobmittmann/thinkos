@@ -27,6 +27,7 @@
 #include <thinkos/idle.h>
 #include <thinkos.h>
 #include <vt100.h>
+#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------- 
  * Idle task
@@ -217,7 +218,7 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 
 #if THINKOS_ENABLE_THREAD_INFO
 	/* set the IDLE thread info */
-	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf; 
+	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf;
 #endif
 
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = ctx;
@@ -228,9 +229,6 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 /* initialize the idle thread */
 void __thinkos_idle_init(void)
 {
-
-	DCC_LOG(LOG_WARNING, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"); 
-
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize idle stack */
 	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 

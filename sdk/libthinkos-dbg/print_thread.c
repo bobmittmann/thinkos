@@ -39,11 +39,11 @@ int __thinkos_thread_wq_get(unsigned int thread_id)
 #if THINKOS_ENABLE_THREAD_STAT
 	wq = rt->th_stat[thread_id] >> 1;
 #else
-	for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+	for (i = 0; i < THINKOS_WQ_CNT; ++i) {
 		if (rt->wq_lst[i] & (1 << thread_id))
 			break;
 	}
-	if (i == THINKOS_WQ_LST_END)
+	if (i == THINKOS_WQ_CNT)
 		return -1; /* not found */
 	wq = i;
 #endif /* THINKOS_ENABLE_THREAD_STAT */
@@ -75,11 +75,11 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 	wq = rt->th_stat[thread_id] >> 1;
 	tmw = rt->th_stat[thread_id] & 1;
 #else
-	for (i = 0; i < THINKOS_WQ_LST_END; ++i) {
+	for (i = 0; i < THINKOS_WQ_CNT; ++i) {
 		if (rt->wq_lst[i] & (1 << thread_id))
 			break;
 	}
-	if (i == THINKOS_WQ_LST_END)
+	if (i == THINKOS_WQ_CNT)
 		return ; /* not found */
 	wq = i;
 #if THINKOS_ENABLE_CLOCK

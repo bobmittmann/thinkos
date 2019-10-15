@@ -25,6 +25,7 @@
 #include <thinkos/irq.h>
 #include <thinkos.h>
 #include <vt100.h>
+#include <sys/dcclog.h>
  
 const char * __retstr(uint32_t __ret)
 {

@@ -262,10 +262,6 @@
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #endif
 
-#ifndef THINKOS_STDERR_FAULT_DUMP
-#define THINKOS_STDERR_FAULT_DUMP       0
-#endif
-
 #ifndef THINKOS_ENABLE_BUSFAULT
 #define THINKOS_ENABLE_BUSFAULT         0
 #endif
@@ -330,14 +326,6 @@
 #define THINKOS_ENABLE_IDLE_WFI         1
 #endif
 
-#ifndef THINKOS_ASM_SCHEDULER
-#define THINKOS_ASM_SCHEDULER           1
-#endif
-
-#ifndef THINKOS_ENABLE_OFAST
-#define THINKOS_ENABLE_OFAST            1
-#endif
-
 #ifndef THINKOS_ENABLE_SCHED_DEBUG
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 #endif
@@ -347,10 +335,16 @@
 #define THINKOS_ENABLE_SCHED_ERROR      0
 #endif
 
-#ifndef THINKOS_ENABLE_RT_DEBUG
-#define THINKOS_ENABLE_RT_DEBUG         0
+/* Compiler flag: 
+
+   -Ofast  */
+#ifndef THINKOS_ENABLE_OFAST
+#define THINKOS_ENABLE_OFAST            1
 #endif
 
+/* Compiler flag:
+
+   -mno-unaligned-access */
 #ifndef THINKOS_ENABLE_ALIGN
 #define THINKOS_ENABLE_ALIGN            1
 #endif
@@ -371,9 +365,35 @@
 #define THINKOS_ENABLE_IDLE_MSP          0
 #endif
 
+/* Non implemented/Planned options, should not be used in 
+   production code.
+ */
 
 #ifndef THINKOS_DMA_MAX 
-#define THINKOS_DMA_MAX                 0
+#define THINKOS_DMA_MAX                  0
+#endif
+
+#ifndef THINKOS_QUEUE_MAX 
+#define THINKOS_QUEUE_MAX                0
+#endif
+
+#ifndef THINKOS_ENABLE_TRACE
+#define THINKOS_ENABLE_TRACE             0
+#endif
+
+/* Deprecated options, to be removed in the future 
+ */
+
+#ifndef THINKOS_ASM_SCHEDULER
+#define THINKOS_ASM_SCHEDULER           1
+#endif
+
+#ifndef THINKOS_ENABLE_RT_DEBUG
+#define THINKOS_ENABLE_RT_DEBUG         0
+#endif
+
+#ifndef THINKOS_STDERR_FAULT_DUMP
+#define THINKOS_STDERR_FAULT_DUMP       0
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -576,21 +596,23 @@ struct thinkos_profile {
 
 	struct {
 		uint32_t threads_max         :8;
+		uint32_t nrt_threads_max     :8;
 		uint32_t mutex_max           :8;
 		uint32_t cond_max            :8;
-		uint32_t semaphore_max       :8;
 
+		uint32_t semaphore_max       :8;
 		uint32_t event_max           :8;
 		uint32_t flag_max            :8;
 		uint32_t gate_max            :8;
-		uint32_t queue_max           :8;
 
+		uint32_t queue_max           :8;
 		uint32_t irq_max             :8;
+		uint32_t dma_max             :8;
 		uint32_t except_stack_size   :16;
 	} limit;
 
 	union {
-		uint32_t syscall_flags;
+		uint32_t flags;
 		struct {
 			uint32_t join            :1;
 			uint32_t clock           :1;
@@ -609,10 +631,10 @@ struct thinkos_profile {
 			uint32_t flag_watch      :1;
 			uint32_t timed_calls     :1;
 		};
-	};
+	} syscall;
 
 	union {
-		uint32_t alloc_flags;
+		uint32_t flags;
 		struct {
 			uint32_t thread_alloc    :1;
 			uint32_t mutex_alloc     :1;
@@ -622,10 +644,10 @@ struct thinkos_profile {
 			uint32_t gate_alloc      :1;
 			uint32_t flag_alloc      :1;
 		};
-	};
+	} alloc;
 
 	union {
-		uint32_t feature_flags;
+		uint32_t flags;
 		struct {
 			uint32_t thread_info     :1;
 			uint32_t thread_stat     :1;
@@ -639,19 +661,20 @@ struct thinkos_profile {
 			uint32_t fpu_ls          :1;
 			uint32_t profiling       :1;
 		};
-	};
+	} feature;
 
 	union {
-		uint32_t security_flags;
+		uint32_t flags;
 		struct {
 			uint32_t arg_check       :1;
 			uint32_t deadlock_check  :1;
 			uint32_t sanity_check    :1;
+			uint32_t stack_init      :1;
 		};
-	};
+	} security;
 
 	union {
-		uint32_t xcpt_flags;
+		uint32_t flags;
 		struct {
 			uint32_t exceptions      :1;
 			uint32_t busfault        :1;
@@ -662,10 +685,10 @@ struct thinkos_profile {
 			uint32_t error_trap      :1;
 			uint32_t sysrst_onfault  :1;
 		};
-	};
+	} except;
 
 	union {
-		uint32_t dbgmon_flags;
+		uint32_t flags;
 		struct {
 			uint32_t monitor         :1;
 			uint32_t dmclock         :1;
@@ -674,12 +697,11 @@ struct thinkos_profile {
 			uint32_t debug_wpt       :1;
 			uint32_t debug_fault     :1;
 		};
-	};
+	} dbgmon;
 
 	union {
 		uint32_t misc_flags;
 		struct {
-			uint32_t stack_init      :1;
 			uint32_t thread_void     :1;
 			uint32_t idle_wfi        :1;
 			uint32_t sched_debug     :1;
@@ -688,18 +710,17 @@ struct thinkos_profile {
 			uint32_t idle_hooks      :1;
 			uint32_t idle_msp        :1;
 		};
-	};
-
+	} misc;
 
 	union {
-		uint32_t obsolete_flags;
+		uint32_t flags;
 		struct {
 			uint32_t asm_scheduler       :1;
 			uint32_t rt_debug            :1;
 			uint32_t unroll_exceptions   :1;
 			uint32_t stderr_fault_dump   :1;
 		};
-	};
+	} deprecated;
 };
 
 extern const struct thinkos_profile thinkos_profile;

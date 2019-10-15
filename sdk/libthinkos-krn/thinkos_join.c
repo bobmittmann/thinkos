@@ -23,6 +23,7 @@
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 #include <sys/delay.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_JOIN
 void thinkos_join_svc(int32_t * arg, int self)

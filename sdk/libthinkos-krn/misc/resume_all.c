@@ -21,6 +21,7 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#include <sys/dcclog.h>
 
 void __thinkos_resume_all(void)
 {

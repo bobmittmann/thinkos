@@ -27,6 +27,7 @@
 #include <sys/param.h>
 #include <sys/sysclk.h>
 #include <sys/delay.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_CTL
 

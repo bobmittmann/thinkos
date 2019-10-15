@@ -61,18 +61,26 @@ int main(int argc, char ** argv)
 #endif
 
 	DCC_LOG1(LOG_MSG, "udelay_factor=%d.", udelay_factor);
+#if DEBUG
 	udelay(256);
+#endif
 
-	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
+	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");
+#if DEBUG
 	udelay(256);
+#endif
 	this_board.init();
 
 	DCC_LOG(LOG_TRACE, "5. usb_comm_init()");
+#if DEBUG
 	udelay(256);
+#endif
 #if BOOT_COMM_CUSTOM_ENABLE
 	comm = custom_comm_init();
 #elif STM32_ENABLE_OTG_FS
@@ -88,26 +96,36 @@ int main(int argc, char ** argv)
 
 #if THINKOS_ENABLE_CONSOLE
 	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_console_init();
 #endif
 
 #if THINKOS_ENABLE_MPU
 	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_mpu_init(BOOT_MEM_RESERVED);
 
 	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_userland();
 #endif
 
 	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_dbgmon(monitor_task, comm, NULL);
 
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
+#if DEBUG
 	udelay(256);
+#endif
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");

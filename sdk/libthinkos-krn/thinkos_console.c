@@ -29,6 +29,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <thinkos.h>
 
 #include <sys/param.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_CONSOLE
 

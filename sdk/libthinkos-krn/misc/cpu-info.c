@@ -44,6 +44,7 @@
 #include <string.h>
 #include "arm-v7m.h"
 #include "arm-dwt.h"
+#include <sys/dcclog.h>
 
 /*****************************************************************/
 /* Component and Peripheral ID Registers                         */

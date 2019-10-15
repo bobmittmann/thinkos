@@ -27,6 +27,7 @@
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
 #include <sys/delay.h>
+#include <sys/dcclog.h>
 
 
 #if THINKOS_ENABLE_DEBUG_FAULT

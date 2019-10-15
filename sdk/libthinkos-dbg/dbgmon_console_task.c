@@ -26,6 +26,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_CONSOLE
 void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)

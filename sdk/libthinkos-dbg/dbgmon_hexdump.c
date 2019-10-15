@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/dcclog.h>
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>

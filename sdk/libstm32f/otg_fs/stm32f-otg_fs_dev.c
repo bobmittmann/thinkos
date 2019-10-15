@@ -1462,14 +1462,24 @@ struct stm32f_otg_drv stm32f_otg_fs_drv0;
 
 void stm32f_otg_fs_isr(void)
 {
+	asm volatile ("mov r3, #0\n"
+				  "1:\n"
+				  "cmp r3, #0\n"
+				  "beq 1b\n"
+				  : : );
+
 	struct stm32f_otg_drv * drv = &stm32f_otg_fs_drv0;
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
 	uint32_t gintsts;
 	uint32_t ep_intr;
 
+
 	gintsts = otg_fs->gintsts & otg_fs->gintmsk;
 
+#if DEBUG
 	DCC_LOG1(LOG_MSG, "GINTSTS=0x%08x", gintsts);
+	udelay(8192);
+#endif
 
 	/* IN endpoints interrupts 
 	 * ----------------------------------------------------------- 

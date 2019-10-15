@@ -32,6 +32,7 @@
 #include <sys/delay.h>
 #include <thinkos.h>
 #include <vt100.h>
+#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
