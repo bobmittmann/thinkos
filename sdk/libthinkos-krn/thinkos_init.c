@@ -241,12 +241,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	/* Cortex-M configuration */
 	DCC_LOG(LOG_INFO, "Cortex-M configuration:"); 
 
-	DCC_LOG(LOG_TRACE, "1. SCB->SCR"); 
 	/* System Control Register
 	   The SCR controls features of entry to and exit from low power state. */
 	CM3_SCB->scr = 0; 
+	DCC_LOG1(LOG_INFO, "SCB->SCR=0x%08x", CM3_SCB->scr); 
 
-	DCC_LOG(LOG_INFO, "2. SCB->CCR"); 
 	/* Configuration and Control Register
 		The CCR controls entry to Thread mode and enables:
 		- the handlers for NMI, hard fault and faults escalated by FAULTMASK 
@@ -260,6 +259,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 #else
 	CM3_SCB->ccr = SCB_CCR_USERSETMPEND;
 #endif
+	DCC_LOG1(LOG_INFO, "SCB->CCR=0x%08x", CM3_SCB->ccr); 
 //		| SCB_CCR_NONBASETHRDENA;
 	/*  NONBASETHRDENA
 		Indicates how the processor enters Thread mode:
@@ -285,16 +285,18 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 #endif
 
 #if THINKOS_ENABLE_PROFILING
+	DCC_LOG(LOG_INFO, "Enable trace"); 
 	/* Enable trace */
 	CM3_DCB->demcr |= DCB_DEMCR_TRCENA;
+	DCC_LOG(LOG_INFO, "Enable cycle counter"); 
 	/* Enable cycle counter */
 	CM3_DWT->ctrl |= DWT_CTRL_CYCCNTENA;
-
 	/* set the reference to now */
 	thinkos_rt.cycref = CM3_DWT->cyccnt;
 #endif
 
-	/* initialize the SysTick module */
+	DCC_LOG(LOG_INFO, "Initialize the SysTick"); 
+	/* Initialize the SysTick module */
 	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
 	systick->cvr = 0;
 #if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
