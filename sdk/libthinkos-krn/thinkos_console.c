@@ -38,10 +38,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define ENABLE_CONSOLE_DEBUG 0
 #endif
 
-#ifndef THINKOS_ENABLE_CONSOLE_NONBLOCK
-#define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
-#endif
-
 #if (!THINKOS_ENABLE_MONITOR)
 #error "Need THINKOS_ENABLE_MONITOR!"
 #endif
@@ -399,7 +395,7 @@ void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 }
 #endif
 
-#if THINKOS_ENABLE_CONSOLE_BREAK
+#if (THINKOS_ENABLE_CONSOLE_BREAK)
 int __console_rd_break(void) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
@@ -481,6 +477,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		arg[0] = thinkos_console_rt.connected;
 		break;
 
+#if (THINKOS_ENABLE_CONSOLE_MODE)
 	case CONSOLE_RAW_MODE_SET:
 		{
 			bool val = arg[1];
@@ -493,8 +490,9 @@ void thinkos_console_svc(int32_t * arg, int self)
 			dbgmon_signal(DBGMON_COMM_CTL);
 		}
 		break;
+#endif
 
-#if THINKOS_ENABLE_CONSOLE_BREAK
+#if (THINKOS_ENABLE_CONSOLE_BREAK)
 	case CONSOLE_IO_BREAK: 
 		{
 			unsigned int io = arg[1];
@@ -510,7 +508,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		break;
 #endif
 
-#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 	case CONSOLE_RD_NONBLOCK_SET: 
 		thinkos_console_rt.rd_nonblock = arg[1] ? 1 : 0;
 		break;
@@ -520,7 +518,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		break;
 #endif
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	case CONSOLE_TIMEDREAD:
 		{
 			unsigned int tmo;
@@ -537,7 +535,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 			}
 
 			if ((tmo > 0) 
-#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 				&& (!thinkos_console_rt.rd_nonblock) 
 #endif
 			   ) {
@@ -569,7 +567,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 			break;
 		}
 		DCC_LOG(LOG_INFO, "Console read wait...");
-#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 		if (thinkos_console_rt.rd_nonblock) {
 			arg[0] = THINKOS_EAGAIN;
 			break;
@@ -594,7 +592,7 @@ wr_again:
 			dbgmon_signal(DBGMON_TX_PIPE);
 			arg[0] = n;
 		} else {
-#if THINKOS_ENABLE_CONSOLE_NONBLOCK
+#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 			if (thinkos_console_rt.wr_nonblock) {
 				arg[0] = THINKOS_EAGAIN;
 				break;
@@ -752,6 +750,8 @@ void __thinkos_console_reset(void)
 	dbgmon_clear(DBGMON_RX_PIPE);
 }
 
+
+#if (THINKOS_ENABLE_CONSOLE_MODE)
 bool __console_is_raw_mode(void) 
 {
 	return thinkos_console_rt.raw_mode ? true : false;
@@ -762,6 +762,7 @@ void __console_raw_mode_set(bool val)
 	DCC_LOG1(LOG_TRACE, "raw_mode=%s", val ? "true" : "false");
 	thinkos_console_rt.raw_mode = val;
 }
+#endif
 
 void __console_connect_set(bool val) 
 {

@@ -216,6 +216,17 @@
 #define THINKOS_ENABLE_CONSOLE_BREAK    0 
 #endif
 
+/* Enable the console nonblocking calls. */
+#ifndef THINKOS_ENABLE_CONSOLE_NONBLOCK
+#define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
+#endif
+
+/* Enable the console mode set calls. Ex:. raw_mode 
+ */
+#ifndef THINKOS_ENABLE_CONSOLE_MODE
+#define THINKOS_ENABLE_CONSOLE_MODE     0
+#endif
+
 #ifndef THINKOS_ENABLE_COMM
 #define THINKOS_ENABLE_COMM             0
 #endif
@@ -523,20 +534,28 @@
 #endif
 
 #if THINKOS_ENABLE_DEBUG_FAULT
-#undef THINKOS_ENABLE_MEMFAULT
-#define THINKOS_ENABLE_MEMFAULT   1
-#undef THINKOS_ENABLE_BUSFAULT
-#define THINKOS_ENABLE_BUSFAULT   1
-#undef THINKOS_ENABLE_USAGEFAULT 
-#define THINKOS_ENABLE_USAGEFAULT 1
-#undef THINKOS_UNROLL_EXCEPTIONS 
-#define THINKOS_UNROLL_EXCEPTIONS 1
+  #undef THINKOS_ENABLE_MEMFAULT
+  #undef THINKOS_ENABLE_BUSFAULT
+  #undef THINKOS_ENABLE_USAGEFAULT 
+  #undef THINKOS_UNROLL_EXCEPTIONS 
+  #define THINKOS_ENABLE_USAGEFAULT 1
+  #define THINKOS_ENABLE_MEMFAULT   1
+  #define THINKOS_ENABLE_BUSFAULT   1
+  #define THINKOS_UNROLL_EXCEPTIONS 1
+#endif
+
+#if !THINKOS_ENABLE_CONSOLE
+  #undef THINKOS_ENABLE_CONSOLE_BREAK
+  #undef THINKOS_ENABLE_CONSOLE_NONBLOCK
+  #undef THINKOS_ENABLE_CONSOLE_MODE
+  #define THINKOS_ENABLE_CONSOLE_BREAK    0 
+  #define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
+  #define THINKOS_ENABLE_CONSOLE_MODE     0
 #endif
 
 #if THINKOS_ENABLE_FPU_LS 
 #error "THINKOS_ENABLE_FPU_LS depends on THINKOS_ENABLE_FPU"
 #endif
-
 
 /* -------------------------------------------------------------------------- 
  * FIXME: ??? Not sure what is the intent here ????
@@ -546,8 +565,6 @@
 #define DEBUG
 #endif
 #endif
-
-
 
 #ifndef __ASSEMBLER__
 
@@ -649,17 +666,19 @@ struct thinkos_profile {
 	union {
 		uint32_t flags;
 		struct {
-			uint32_t thread_info     :1;
-			uint32_t thread_stat     :1;
-			uint32_t irq_cyccnt      :1;
-			uint32_t irq_priority_0  :1;
-			uint32_t wq_irq          :1;
-			uint32_t console_break   :1;
-			uint32_t comm            :1;
-			uint32_t mpu             :1;
-			uint32_t fpu             :1;
-			uint32_t fpu_ls          :1;
-			uint32_t profiling       :1;
+			uint32_t thread_info        :1;
+			uint32_t thread_stat        :1;
+			uint32_t irq_cyccnt         :1;
+			uint32_t irq_priority_0     :1;
+			uint32_t wq_irq             :1;
+			uint32_t console_break      :1;
+			uint32_t console_mode       :1;
+			uint32_t console_nonblock   :1;
+			uint32_t comm               :1;
+			uint32_t mpu                :1;
+			uint32_t fpu                :1;
+			uint32_t fpu_ls             :1;
+			uint32_t profiling          :1;
 		};
 	} feature;
 
