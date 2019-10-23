@@ -161,8 +161,130 @@ void __profile(void)
 {
 	const struct thinkos_profile * p = &thinkos_profile;
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_VOID = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_JOIN            = %d", 
+			 p->syscall.join);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CLOCK           = %d", 
+			 p->syscall.clock);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ALARM           = %d", 
+			 p->syscall.alarm);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SLEEP           = %d", 
+			 p->syscall.sleep);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_KRN_CTL         = %d", 
+			 p->syscall.ctl);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CRITICAL        = %d", 
+			 p->syscall.critical);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ESCALATE        = %d", 
+			 p->syscall.escalate);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_CTL         = %d", 
+			 p->syscall.irq_ctl);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PAUSE           = %d", 
+			 p->syscall.pause);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CANCEL          = %d", 
+			 p->syscall.cancel);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXIT            = %d", 
+			 p->syscall.exit);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TERMINATE       = %d", 
+			 p->syscall.terminate);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_BREAK           = %d", 
+			 p->syscall.thread_break);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE         = %d", 
+			 p->syscall.console);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FLAG_WATCH      = %d", 
+			 p->syscall.flag_watch);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TIMED_CALLS     = %d", 
+			 p->syscall.timed_calls);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_ALLOC    = %d", 
+			 p->alloc.thread_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MUTEX_ALLOC     = %d", 
+			 p->alloc.mutex_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_COND_ALLOC      = %d", 
+			 p->alloc.cond_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SEM_ALLOC       = %d", 
+			 p->alloc.sem_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EVENT_ALLOC     = %d", 
+			 p->alloc.event_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_GATE_ALLOC      = %d", 
+			 p->alloc.gate_alloc);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FLAG_ALLOC      = %d", 
+			 p->alloc.flag_alloc);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_INFO     = %d", 
+			 p->feature.thread_info);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_STAT     = %d", 
+			 p->feature.thread_stat);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_CYCCNT      = %d", 
+			 p->feature.irq_cyccnt);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_PRIORITY_0  = %d", 
+			 p->feature.irq_priority_0);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_WQ_IRQ          = %d", 
+			 p->feature.wq_irq);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_BREAK   = %d", 
+			 p->feature.console_break);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_COMM            = %d", 
+			 p->feature.comm);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MPU             = %d", 
+			 p->feature.mpu);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FPU             = %d", 
+			 p->feature.fpu);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FPU_LS          = %d", 
+			 p->feature.fpu_ls);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PROFILING       = %d", 
+			 p->feature.profiling);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ARG_CHECK       = %d", 
+			 p->security.arg_check);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEADLOCK_CHECK  = %d", 
+			 p->security.deadlock_check);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SANITY_CHECK    = %d", 
+			 p->security.sanity_check);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_INIT      = %d", 
+			 p->security.stack_init);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPTIONS      = %d", 
+			 p->except.exceptions);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_BUSFAULT        = %d", 
+			 p->except.busfault);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_USAGEFAULT      = %d", 
+			 p->except.usagefault);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEMFAULT        = %d", 
+			 p->except.memfault);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_HARDFAULT       = %d", 
+			 p->except.hardfault);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPT_CLEAR    = %d", 
+			 p->except.except_clear);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ERROR_TRAP      = %d", 
+			 p->except.error_trap);
+	DCC_LOG1(LOG_TRACE, "THINKOS_SYSRST_ONFAULT         = %d", 
+			 p->except.sysrst_onfault);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR         = %d", 
+			 p->dbgmon.monitor);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DMCLOCK         = %d", 
+			 p->dbgmon.dmclock);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
+			 p->dbgmon.debug_step);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BKPT      = %d", 
+			 p->dbgmon.debug_bkpt);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_WPT       = %d", 
+			 p->dbgmon.debug_wpt);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
+			 p->dbgmon.debug_fault);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_VOID     = %d", 
 			 p->misc.thread_void);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_WFI        = %d", 
+			 p->misc.idle_wfi);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SCHED_DEBUG     = %d", 
+			 p->misc.sched_debug);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_OFAST           = %d", 
+			 p->misc.ofast);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ALIGN           = %d", 
+			 p->misc.align);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_HOOKS      = %d", 
+			 p->misc.idle_hooks);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_MSP        = %d", 
+			 p->misc.idle_msp);
 
 }
 #endif

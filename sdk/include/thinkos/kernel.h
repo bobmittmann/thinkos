@@ -1073,7 +1073,7 @@ bool thinkos_kernel_active(void);
 void __context(struct thinkos_context * __ctx, uint32_t __thread_id);
 void __trace(struct thinkos_context * __ctx, uint32_t __thread_id);
 void __thinkos(struct thinkos_rt * rt);
-
+void __profile(void);
 
 /* -------------------------------------------------------------------------
  * Main thread exec
