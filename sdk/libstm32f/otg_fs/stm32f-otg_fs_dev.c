@@ -56,8 +56,8 @@
 #define STM32_OTG_FS_IO_INIT 0
 #endif
 
-#ifndef STM32_OTG_FS_VBUS_ENABLE
-#define STM32_OTG_FS_VBUS_ENABLE 0
+#ifndef STM32_OTG_FS_VBUS_CONNECT
+#define STM32_OTG_FS_VBUS_CONNECT 0
 #endif
 
 #ifndef STM32_OTG_FS_IRQ_ENABLE
@@ -661,8 +661,8 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 	int n;
 
 #if DEBUG
-	if ((unsigned int)ep_id >= OTG_OUTEP_MAX) {
-		DCC_LOG(LOG_WARNING, "invalid EP");
+	if ((unsigned int)ep_id >= OTG_EP_MAX) {
+		DCC_LOG1(LOG_WARNING, "invalid ep_id=%d!", ep_id);
 		return -1;
 	}
 #endif
@@ -1067,7 +1067,7 @@ static void otg_io_init(void)
 	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-#if STM32_OTG_FS_VBUS_ENABLE
+#if STM32_OTG_FS_VBUS_CONNECT
 	DCC_LOG(LOG_MSG, "Configuring VBUS GPIO ...");
 	if (vbus_gpio(OTG_FS_VBUS) == STM32_GPIOB)
 		stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
@@ -1084,28 +1084,34 @@ static void otg_io_init(void)
 #endif
 }
 
+#if STM32_OTG_FS_VBUS_CONNECT
 static void otg_vbus_connect(bool connect)
 {
-#if STM32_OTG_FS_VBUS_ENABLE
 	if (connect)
 		stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
 	else
 		stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
-#endif
 }
+#endif
 
 static void otg_connect(struct stm32f_otg_fs * otg_fs)
 {
+#if STM32_OTG_FS_VBUS_CONNECT
+	otg_vbus_connect(true);
+#endif
 	/* Connect device */
 	otg_fs->dctl &= ~OTG_FS_SDIS;
 	udelay(3000);
-
 }
 
 static void otg_disconnect(struct stm32f_otg_fs * otg_fs)
 {
+#if STM32_OTG_FS_VBUS_CONNECT
+	otg_vbus_connect(false);
+#endif
 	otg_fs->dctl |= OTG_FS_SDIS;
 	udelay(3000);
+
 }
 
 void otg_power_on(struct stm32f_otg_fs * otg_fs)
@@ -1114,9 +1120,8 @@ void otg_power_on(struct stm32f_otg_fs * otg_fs)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_OTGFS);
 
 	otg_connect(otg_fs);
+
 	DCC_LOG(LOG_MSG, "[ATTACHED]");
- 
-	otg_vbus_connect(true);
 
 	/* Enable Cortex interrupt */
 #if STM32_OTG_FS_IRQ_ENABLE
@@ -1127,8 +1132,6 @@ void otg_power_on(struct stm32f_otg_fs * otg_fs)
 void otg_power_off(struct stm32f_otg_fs * otg_fs)
 {
 	otg_disconnect(otg_fs);
-
-	otg_vbus_connect(false);
 
 	DCC_LOG(LOG_MSG, "Disabling USB device clock...");
 	stm32_clk_disable(STM32_RCC, STM32_CLK_OTGFS);

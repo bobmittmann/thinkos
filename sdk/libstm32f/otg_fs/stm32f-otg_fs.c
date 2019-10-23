@@ -20,15 +20,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/dcclog.h>
-
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <sys/param.h>
 #include <stdio.h>
 
-#ifndef STM32_VBUS_SENS_ENABLED
-#define STM32_VBUS_SENS_ENABLED 1
+#include <sys/dcclog.h>
+
+#ifndef STM32_OTG_FS_VBUS_SENS
+#define STM32_OTG_FS_VBUS_SENS 1
 #endif
 
 #ifdef STM32F_OTG_FS
@@ -329,14 +329,14 @@ void stm32f_otg_fs_device_init(struct stm32f_otg_fs * otg_fs)
 	   resistor on the DP line. */
 
 #ifdef STM32F446X
-  #if STM32_VBUS_SENS_ENABLED
+  #if STM32_OTG_FS_VBUS_SENS
 	otg_fs->gccfg = OTG_FS_VBDEN | OTG_FS_PWRDWN;
   #else
 	otg_fs->gccfg = OTG_FS_PWRDWN;
 	otg_fs->gotgctl = OTG_FS_BVALOEN | OTG_FS_BVALOVAL;
   #endif
 #else
-  #if STM32_VBUS_SENS_ENABLED
+  #if STM32_OTG_FS_VBUS_SENS
 	otg_fs->gccfg = OTG_FS_VBUSBSEN | OTG_FS_PWRDWN;
   #else
 	otg_fs->gccfg = OTG_FS_PWRDWN;
