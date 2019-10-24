@@ -48,7 +48,7 @@ struct iphdr {
     uint32_t saddr;
     uint32_t daddr;
     /*The options start here. */
-//	uint8_t opt[];
+	uint8_t opt[];
 };
 
 #define ip_off frag_off
