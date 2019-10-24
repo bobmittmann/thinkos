@@ -114,7 +114,6 @@ thinkos_sched_update_cyccnt:
 	/* r4: step_req */
 	/* r5: cycref */
 	ldrd	r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-
   #else
 	/* r5: cycref */
 	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]

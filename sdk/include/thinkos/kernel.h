@@ -91,7 +91,7 @@
 
 #define SIZEOF_NRT_CTX     ((THINKOS_NRT_THREADS_MAX) * 4)
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
   #define SIZEOF_CYCCNT    (THINKOS_CTX_LEN * 4)
   #define SIZEOF_CYCREF    4
 #else
@@ -99,19 +99,19 @@
   #define SIZEOF_CYCREF    0
 #endif
 
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_CRITICAL)
   #define SIZEOF_CRITCNT   4
 #else
   #define SIZEOF_CRITCNT   0
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
   #define SIZEOF_SCHED_LM  4
 #else
   #define SIZEOF_SCHED_LM  0
 #endif
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
   #define SIZEOF_TICKS     4
   #if THINKOS_ENABLE_DMCLOCK
     #define SIZEOF_DMCLOCK 4
@@ -123,7 +123,7 @@
   #define SIZEOF_DMCLOCK   0
 #endif
 
-#if THINKOS_ENABLE_DEBUG_BKPT
+#if (THINKOS_ENABLE_DEBUG_BKPT)
   #define SIZEOF_XCPT_IPSR 2
   #define SIZEOF_STEP_ID   1
   #define SIZEOF_BREAK_ID  1
@@ -348,10 +348,11 @@ struct thinkos_rt {
 	/* Thread context pointers */
 	struct thinkos_context * ctx[THINKOS_CTX_LEN]; 
 
-#if THINKOS_NRT_THREADS_MAX > 0
+#if (THINKOS_NRT_THREADS_MAX > 0)
 	struct thinkos_context * nrt_ctx[THINKOS_NRT_THREADS_MAX]; 
 #endif
 
+#if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
   #if THINKOS_ENABLE_THREAD_VOID 
 	/* extra slot for void thread */
@@ -359,6 +360,7 @@ struct thinkos_rt {
   #else
 	uint32_t cyccnt[(THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX) + 1];
   #endif
+#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
@@ -391,7 +393,7 @@ struct thinkos_rt {
 			uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 			uint32_t wq_clock;
 #endif
 
@@ -461,7 +463,7 @@ struct thinkos_rt {
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	/* This fields are used for time sharing (round robin) schedule only */
 	struct {
 		int8_t sched_val[THINKOS_THREADS_MAX]; /* Thread schedule value */
@@ -472,15 +474,15 @@ struct thinkos_rt {
 	};
 #endif
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 	struct {
 		uint32_t ticks;
 		/* This fields are used for time wait (e.g. sleep()) */
 		uint32_t clock[THINKOS_THREADS_MAX];
-#if THINKOS_ENABLE_DMCLOCK
+  #if THINKOS_ENABLE_DMCLOCK
 		/* monitor timer */
 		uint32_t dmclock;
-#endif
+  #endif
 	};
 #endif
 
@@ -542,7 +544,7 @@ struct thinkos_rt {
 	uint32_t gate_alloc[(THINKOS_GATE_MAX + 31) / 32];
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
   #if THINKOS_ENABLE_THREAD_VOID 
 	/* extra slot for void thread */
 	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX) + 
