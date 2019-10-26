@@ -235,8 +235,9 @@ void thinkos_thread_create_svc(int32_t * arg)
 	   thread numbers start form one ... */
 	arg[0] = thread_id + 1;
 
-#if THINKOS_ENABLE_MONITOR
-	 dbgmon_signal(DBGMON_THREAD_CREATE); 
+#if THINKOS_ENABLE_MONITOR_THREADS
+	/* Notify the debug/monitor */
+	__dbgmon_signal_thread_create(thread_id);
 #endif
 }
 

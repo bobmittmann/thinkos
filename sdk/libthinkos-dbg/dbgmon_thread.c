@@ -58,7 +58,6 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 
 		DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
 		__thinkos_thread_abort(thread_id);
-
 		dbgmon_wait_idle();
 	}
 

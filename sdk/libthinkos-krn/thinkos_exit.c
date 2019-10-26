@@ -164,7 +164,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 	__thinkos_thread_abort(thread_id);
 
-#if THINKOS_ENABLE_MONITOR
+#if THINKOS_ENABLE_MONITOR_THREADS
 	__dbgmon_signal_thread_terminate(thread_id, code);
 #endif
 }

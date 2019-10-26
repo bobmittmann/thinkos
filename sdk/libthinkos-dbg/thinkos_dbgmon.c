@@ -320,6 +320,7 @@ void dbgmon_alarm_stop(void)
 
 int dbgmon_wait_idle(void)
 {
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 	uint32_t save;
 	uint32_t evset;
 	uint32_t evmsk;
@@ -345,14 +346,28 @@ int dbgmon_wait_idle(void)
 	thinkos_dbgmon_rt.mask = save;
 
 	return (result == evmsk) ? 0 : -1;
+#else
+	return 0;
+#endif
+}
+
+#if THINKOS_ENABLE_MONITOR_THREADS
+void __dbgmon_signal_thread_create(int thread_id)
+{
+	thinkos_dbgmon_rt.thread_id = thread_id;
+	thinkos_dbgmon_rt.code = 0;
+
+	dbgmon_signal(DBGMON_THREAD_TERMINATE);
 }
 
 void __dbgmon_signal_thread_terminate(int thread_id, int code)
 {
 	thinkos_dbgmon_rt.thread_id = thread_id;
 	thinkos_dbgmon_rt.code = code;
+
 	dbgmon_signal(DBGMON_THREAD_TERMINATE);
 }
+#endif
 
 int dbgmon_thread_terminate_get(int * code)
 {

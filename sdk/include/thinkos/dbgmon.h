@@ -261,8 +261,9 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size);
 
 void dmon_watchpoint_clear_all(void);
 
-void __dbgmon_signal_thread_terminate(int thread_id, int code);
+void __dbgmon_signal_thread_create(int thread_id);
 
+void __dbgmon_signal_thread_terminate(int thread_id, int code);
 
 int dbgmon_thread_terminate_get(int * code);
 
