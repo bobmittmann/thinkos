@@ -151,7 +151,7 @@ uint32_t thinkos_idle_stack[THINKOS_IDLE_STACK_SIZE / 4]
 #endif
 
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 const struct thinkos_thread_inf thinkos_idle_inf = {
 	.tag = "IDLE",
 	.stack_ptr = THINKOS_IDLE_STACK_BASE,
@@ -219,7 +219,7 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
   #endif
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 	/* set the IDLE thread info */
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf;
 #endif

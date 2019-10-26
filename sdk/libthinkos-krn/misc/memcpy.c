@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * memcpy.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

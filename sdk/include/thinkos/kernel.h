@@ -1031,6 +1031,10 @@ void __thinkos_system_reset(void);
 void __thinkos_sched_stop(void);
 
 
+/* -------------------------------------------------------------------------- 
+ * Console Kernel API
+ * --------------------------------------------------------------------------*/
+
 /* intialize console */
 void thinkos_console_init(void);
 /* set/clear the console's connected flag */
@@ -1039,14 +1043,14 @@ void thinkos_console_connect_set(bool val);
 void thinkos_console_raw_mode_set(bool val);
 
 /* get a pointer to the console's recieving pipe */
-int __console_rx_pipe_ptr(uint8_t ** ptr);
+int thinkos_console_rx_pipe_ptr(uint8_t ** ptr);
 /* commit 'cnt' octets on console's recieving pipe */
-void __console_rx_pipe_commit(int cnt); 
+void thinkos_console_rx_pipe_commit(int cnt); 
 
-int __console_tx_pipe_ptr(uint8_t ** ptr);
-void __console_tx_pipe_commit(int cnt);
+int thinkos_console_tx_pipe_ptr(uint8_t ** ptr);
+void thinkos_console_tx_pipe_commit(int cnt);
 
-bool __console_is_raw_mode(void); 
+bool thinkos_console_is_raw_mode(void); 
 
 
 void __thinkos_sem_post(uint32_t wq);

@@ -69,12 +69,12 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 			/* FALLTHROUGH */
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
-			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", __console_tx_pipe_ptr(&ptr));
-			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+			DCC_LOG1(LOG_TRACE, "TX Pipe :%d", thinkos_console_tx_pipe_ptr(&ptr));
+			if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
 				if (connected) {
 					int n;
 					if ((n = dbgmon_comm_send(comm, ptr, cnt)) > 0) {
-						__console_tx_pipe_commit(n);
+						thinkos_console_tx_pipe_commit(n);
 						if (n == cnt) {
 							/* Wait for TX_PIPE */
 							sigmask |= (1 << DBGMON_TX_PIPE);
@@ -91,7 +91,7 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 					}
 				} else {
 					/* Drain the Rx pipe */
-					__console_tx_pipe_commit(cnt);
+					thinkos_console_tx_pipe_commit(cnt);
 				}
 			} else {
 				/* Wait for TX_PIPE */
@@ -104,9 +104,9 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 		case DBGMON_RX_PIPE:
 			DCC_LOG(LOG_TRACE, "DBGMON_RX_PIPE");
 			/* get a pointer to the head of the pipe.
-			   __console_rx_pipe_ptr() will return the number of 
+			   thinkos_console_rx_pipe_ptr() will return the number of 
 			   consecutive spaces in the buffer. */
-			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
+			if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
 				int n;
 			
 				DCC_LOG1(LOG_TRACE, "Raw mode RX, cnt=%d", cnt);
@@ -114,7 +114,7 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 				/* receive from the COMM driver */
 				if ((n = dbgmon_comm_recv(comm, ptr, cnt)) > 0) {
 					/* commit the fifo head */
-					__console_rx_pipe_commit(n);
+					thinkos_console_rx_pipe_commit(n);
 					if (n == cnt) {
 						/* Wait for RX_PIPE */
 						sigmask &= ~(1 << DBGMON_COMM_RCV);
