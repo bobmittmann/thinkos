@@ -227,6 +227,30 @@
 #define THINKOS_ENABLE_CONSOLE_MODE     0
 #endif
 
+/* Enable the console open/close calls.
+ */
+#ifndef THINKOS_ENABLE_CONSOLE_OPEN
+#define THINKOS_ENABLE_CONSOLE_OPEN     THINKOS_ENABLE_CONSOLE
+#endif
+
+/* Enable the console drain call.
+ */
+#ifndef THINKOS_ENABLE_CONSOLE_DRAIN
+#define THINKOS_ENABLE_CONSOLE_DRAIN    THINKOS_ENABLE_CONSOLE
+#endif
+
+/* Enable the console read call.
+ */
+#ifndef THINKOS_ENABLE_CONSOLE_READ
+#define THINKOS_ENABLE_CONSOLE_READ     THINKOS_ENABLE_CONSOLE
+#endif
+
+/* Enable the console miscelaneous calls Ex: is_connected.
+ */
+#ifndef THINKOS_ENABLE_CONSOLE_MISC
+#define THINKOS_ENABLE_CONSOLE_MISC     THINKOS_ENABLE_CONSOLE
+#endif
+
 #ifndef THINKOS_ENABLE_COMM
 #define THINKOS_ENABLE_COMM             0
 #endif
@@ -307,6 +331,10 @@
 
 #ifndef THINKOS_ENABLE_DMCLOCK
 #define THINKOS_ENABLE_DMCLOCK          (THINKOS_ENABLE_CLOCK)
+#endif
+
+#ifndef THINKOS_ENABLE_MONITOR_THREADS 
+#define THINKOS_ENABLE_MONITOR_THREADS  0
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
@@ -478,28 +506,31 @@
 #error "THINKOS_ENABLE_DMCLOCK depends on THINKOS_ENABLE_CLOCK"
 #endif
 
-/* dbug step depends on debug breakpoint */
+/* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)
 #undef THINKOS_ENABLE_DEBUG_BKPT
 #define THINKOS_ENABLE_DEBUG_BKPT 1
 #endif
 
-/* dbug watchpoint depends on debug breakpoint */
+/* debug watchpoint depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_WPT) && !(THINKOS_ENABLE_DEBUG_BKPT)
 #undef THINKOS_ENABLE_DEBUG_BKPT
 #define THINKOS_ENABLE_DEBUG_BKPT 1
 #endif
 
-/* dbug breakpoint depends on monitor */
+/* debug breakpoint depends on monitor */
 #if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_MONITOR)
 #undef THINKOS_ENABLE_MONITOR
 #define THINKOS_ENABLE_MONITOR 1
 #endif
 
-/* dbug monitir depend on idle hooks */
+/* debug monitor depend on idle hooks */
 #if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_IDLE_HOOKS)
-#undef THINKOS_ENABLE_IDLE_HOOKS
-#define THINKOS_ENABLE_IDLE_HOOKS 1
+//#error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_IDLE_HOOKS"
+#endif
+
+#if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
 
 /* timed calls, cancel, pause and debug step depend on thread status */
@@ -674,6 +705,10 @@ struct thinkos_profile {
 			uint32_t console_break      :1;
 			uint32_t console_mode       :1;
 			uint32_t console_nonblock   :1;
+			uint32_t console_open       :1;
+			uint32_t console_drain      :1;
+			uint32_t console_read       :1;
+			uint32_t console_misc       :1;
 			uint32_t comm               :1;
 			uint32_t mpu                :1;
 			uint32_t fpu                :1;
@@ -715,6 +750,7 @@ struct thinkos_profile {
 			uint32_t debug_bkpt      :1;
 			uint32_t debug_wpt       :1;
 			uint32_t debug_fault     :1;
+			uint32_t monitor_threads :1;
 		};
 	} dbgmon;
 

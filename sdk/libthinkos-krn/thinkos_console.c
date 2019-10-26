@@ -89,6 +89,7 @@ struct {
 	};
 } thinkos_console_rt;
 
+#if (THINKOS_ENABLE_CONSOLE_READ)
 static int rx_pipe_read(uint8_t * buf, unsigned int len)
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
@@ -129,6 +130,7 @@ static int rx_pipe_read(uint8_t * buf, unsigned int len)
 
 	return cnt;
 }
+#endif
 
 static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 {
@@ -192,13 +194,13 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	return cnt;
 }
 
-static bool tx_pipe_isfull(void)
+static inline bool tx_pipe_isfull(void)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	return (pipe->tail + THINKOS_CONSOLE_TX_FIFO_LEN) == pipe->head;
 }
 
-static bool tx_pipe_isempty(void)
+static inline bool tx_pipe_isempty(void)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	return pipe->tail == pipe->head;
@@ -459,6 +461,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 
 	switch (req) {
 
+#if (THINKOS_ENABLE_CONSOLE_OPEN)
 	case CONSOLE_OPEN:
 		thinkos_console_rt.open_cnt++;
 		arg[0] = THINKOS_OK;
@@ -470,12 +473,15 @@ void thinkos_console_svc(int32_t * arg, int self)
 		else
 			arg[0] = THINKOS_OK;
 		break;
+#endif
 
+#if (THINKOS_ENABLE_CONSOLE_MISC)
 	case CONSOLE_IS_CONNECTED:
 		DCC_LOG1(LOG_TRACE, "CONSOLE_IS_CONNECTED(%d)", 
 				thinkos_console_rt.connected);
 		arg[0] = thinkos_console_rt.connected;
 		break;
+#endif
 
 #if (THINKOS_ENABLE_CONSOLE_MODE)
 	case CONSOLE_RAW_MODE_SET:
@@ -518,6 +524,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		break;
 #endif
 
+#if (THINKOS_ENABLE_CONSOLE_READ)
 #if (THINKOS_ENABLE_TIMED_CALLS)
 	case CONSOLE_TIMEDREAD:
 		{
@@ -580,6 +587,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		/* signal the scheduler ... */
 		__thinkos_defer_sched(); 
 		break;
+#endif
 
 	case CONSOLE_WRITE:
 		buf = (uint8_t *)arg[1];
@@ -654,6 +662,7 @@ wr_again:
 		}
 		break;
 
+#if (THINKOS_ENABLE_CONSOLE_DRAIN)
 	case CONSOLE_DRAIN:
 		DCC_LOG(LOG_TRACE, "CONSOLE_DRAIN");
 		wq = THINKOS_WQ_CONSOLE_WR;
@@ -732,6 +741,7 @@ drain_again:
 			__thinkos_defer_sched(); 
 		}
 		break;
+#endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);

@@ -106,11 +106,16 @@ const struct thinkos_profile thinkos_profile = {
 		.console_break   = THINKOS_ENABLE_CONSOLE_BREAK,
 		.console_mode    = THINKOS_ENABLE_CONSOLE_MODE,
 		.console_nonblock = THINKOS_ENABLE_CONSOLE_NONBLOCK,
+		.console_open    = THINKOS_ENABLE_CONSOLE_OPEN,
+		.console_drain   = THINKOS_ENABLE_CONSOLE_DRAIN,
+		.console_read    = THINKOS_ENABLE_CONSOLE_READ,
+		.console_misc    = THINKOS_ENABLE_CONSOLE_MISC,
 		.comm            = THINKOS_ENABLE_COMM,
 		.mpu             = THINKOS_ENABLE_MPU,
 		.fpu             = THINKOS_ENABLE_FPU,
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
 		.profiling       = THINKOS_ENABLE_PROFILING,
+
 	},
 
 	.security = {
@@ -138,6 +143,7 @@ const struct thinkos_profile thinkos_profile = {
 		.debug_bkpt      = THINKOS_ENABLE_DEBUG_BKPT,
 		.debug_wpt       = THINKOS_ENABLE_DEBUG_WPT,
 		.debug_fault     = THINKOS_ENABLE_DEBUG_FAULT,
+		.monitor_threads = THINKOS_ENABLE_MONITOR_THREADS
 	},
 
 	.misc = {
@@ -221,8 +227,20 @@ void __profile(void)
 			 p->feature.irq_priority_0);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_WQ_IRQ          = %d", 
 			 p->feature.wq_irq);
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_BREAK   = %d", 
 			 p->feature.console_break);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_NONBLOCK = %d", 
+			 p->feature.console_nonblock);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_OPEN    = %d", 
+			 p->feature.console_open);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_DRAIN   = %d", 
+			 p->feature.console_drain);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_READ    = %d", 
+			 p->feature.console_read);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_MISC    = %d", 
+			 p->feature.console_misc);
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_COMM            = %d", 
 			 p->feature.comm);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MPU             = %d", 
@@ -272,6 +290,8 @@ void __profile(void)
 			 p->dbgmon.debug_wpt);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
 			 p->dbgmon.debug_fault);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_THREADS = %d", 
+			 p->dbgmon.monitor_threads);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_VOID     = %d", 
 			 p->misc.thread_void);

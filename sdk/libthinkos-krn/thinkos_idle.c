@@ -38,7 +38,9 @@
 #error "Deprecated IDLE stack options!"
 #endif
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 struct thinkos_idle_rt thinkos_idle_rt;
+#endif
 
 void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 {
@@ -49,9 +51,9 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 
 	for (;;) {
 		/* Chek for threads in the ready queue. */
-  #if (THINKOS_ENABLE_IDLE_WFI)
+#if (THINKOS_ENABLE_IDLE_WFI)
 		asm volatile ("wfi\n"); /* wait for interrupt */
-  #endif
+#endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
@@ -77,7 +79,8 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				dbgmon_signal(DBGMON_IDLE); 
 				break;
 
-#if 0 /* FIXME: IDLE hooks or not, see KERNEL_ERROR */
+#if 0 
+			/* FIXME: IDLE hooks or not, see KERNEL_ERROR */
 			case IDLE_HOOK_SYSRST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
 						"IDLE_HOOK_SYSRST" _ATTR_POP_ );
