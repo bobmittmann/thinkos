@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * memset32.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

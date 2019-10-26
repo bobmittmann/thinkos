@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thread_ispaused.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

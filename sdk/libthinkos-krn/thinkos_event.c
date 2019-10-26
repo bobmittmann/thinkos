@@ -1,5 +1,5 @@
 /* 
- * thikos_event.c
+ * thinkos_event.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

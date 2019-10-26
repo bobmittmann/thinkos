@@ -1,5 +1,5 @@
 /* 
- * thikos_nonrt_thread.c
+ * thinkos_nonrt_thread.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

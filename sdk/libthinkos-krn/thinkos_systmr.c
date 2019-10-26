@@ -1,5 +1,5 @@
 /* 
- * thikos_systmr.c
+ * thinkos_systmr.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

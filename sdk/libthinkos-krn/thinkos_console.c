@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thinkos_util.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -226,7 +226,7 @@ static unsigned int __rx_pipe_avail(struct console_rx_pipe * pipe)
 
 /* get the a pointer from the next available character in the
    queue and return the number of available chars */ 
-int __console_tx_pipe_ptr(uint8_t ** ptr) 
+int thinkos_console_tx_pipe_ptr(uint8_t ** ptr) 
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	uint32_t tail;
@@ -260,7 +260,7 @@ int __console_tx_pipe_ptr(uint8_t ** ptr)
 	return cnt;
 }
 
-void __console_tx_pipe_commit(int cnt) 
+void thinkos_console_tx_pipe_commit(int cnt) 
 {
 	uint32_t tail;
 	int wq = THINKOS_WQ_CONSOLE_WR;
@@ -297,7 +297,7 @@ void __console_tx_pipe_commit(int cnt)
 	__thinkos_defer_sched();
 }
 
-int __console_rx_pipe_ptr(uint8_t ** ptr) 
+int thinkos_console_rx_pipe_ptr(uint8_t ** ptr) 
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
 	uint32_t head;
@@ -319,7 +319,7 @@ int __console_rx_pipe_ptr(uint8_t ** ptr)
 	return cnt;
 }
 
-void __console_rx_pipe_commit(int cnt) 
+void thinkos_console_rx_pipe_commit(int cnt) 
 {
 	int wq = THINKOS_WQ_CONSOLE_RD;
 	uint32_t head;
@@ -375,7 +375,7 @@ void __console_rx_pipe_commit(int cnt)
 }
 
 #if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
-void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
+void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_TRACE, "PC=%08x ...........", thinkos_rt.ctx[th]->pc); 
 	/* wakeup from the console read wait queue setting the return value to 0.
@@ -383,7 +383,7 @@ void __console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 	__thinkos_wakeup_return(wq, th, 0);
 }
 
-void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
+void thinkos_console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
 	if (!tx_pipe_isempty()) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
@@ -398,7 +398,7 @@ void __console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 #endif
 
 #if (THINKOS_ENABLE_CONSOLE_BREAK)
-int __console_rd_break(void) 
+static int __console_rd_break(void) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
 	int ret;
@@ -420,7 +420,7 @@ int __console_rd_break(void)
 	return ret;
 }
 
-bool __console_wr_break(void) 
+static int __console_wr_break(void) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
 	int ret;
@@ -762,19 +762,19 @@ void __thinkos_console_reset(void)
 
 
 #if (THINKOS_ENABLE_CONSOLE_MODE)
-bool __console_is_raw_mode(void) 
+bool thinkos_console_is_raw_mode(void) 
 {
 	return thinkos_console_rt.raw_mode ? true : false;
 }
 
-void __console_raw_mode_set(bool val) 
+void thinkos_console_raw_mode_set(bool val) 
 {
 	DCC_LOG1(LOG_TRACE, "raw_mode=%s", val ? "true" : "false");
 	thinkos_console_rt.raw_mode = val;
 }
 #endif
 
-void __console_connect_set(bool val) 
+void thinkos_console_connect_set(bool val) 
 {
 	DCC_LOG1(LOG_TRACE, "connected=%s", val ? "true" : "false");
 	thinkos_console_rt.connected = val;

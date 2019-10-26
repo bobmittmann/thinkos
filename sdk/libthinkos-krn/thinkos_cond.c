@@ -1,5 +1,5 @@
 /* 
- * thikos_cond.c
+ * thinkos_cond.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

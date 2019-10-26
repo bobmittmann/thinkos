@@ -1,5 +1,5 @@
 /* 
- * thikos_cancel.c
+ * thinkos_cancel.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

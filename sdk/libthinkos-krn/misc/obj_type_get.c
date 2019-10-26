@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * obj_type_get.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

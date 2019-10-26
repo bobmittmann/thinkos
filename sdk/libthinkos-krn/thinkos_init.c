@@ -1,5 +1,5 @@
 /* 
- * thikos_core.c
+ * thinkos_core.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -57,8 +57,6 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	   thread numbers start form one ... */
 	int id = __ID(opt) - 1;
 
-	if (id < 0)
-		id = 0;
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
 	id = thinkos_alloc_lo(thinkos_rt.th_alloc, id);
@@ -67,8 +65,10 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 		id = THINKOS_THREADS_MAX - 1;
 #endif
 
-	/* initialize the main thread */ 
+	if (id < 0)
+		id = 0;
 
+	/* initialize the main thread */ 
 #if THINKOS_ENABLE_THREAD_INFO
 	thinkos_rt.th_inf[id] = (struct thinkos_thread_inf *)&thinkos_main_inf;
 #endif

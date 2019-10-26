@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thread_getnext.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

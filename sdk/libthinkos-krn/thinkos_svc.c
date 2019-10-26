@@ -1,5 +1,5 @@
 /* 
- * thikos_svc.c
+ * thinkos_svc.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

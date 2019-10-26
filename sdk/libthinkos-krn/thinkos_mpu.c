@@ -1,5 +1,5 @@
 /* 
- * thikos_core.c
+ * thinkos_core.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

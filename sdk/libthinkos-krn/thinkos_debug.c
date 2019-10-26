@@ -1,5 +1,5 @@
 /* 
- * thikos_debug.c
+ * thinkos_debug.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

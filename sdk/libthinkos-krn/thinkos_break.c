@@ -1,5 +1,5 @@
 /* 
- * thikos.c
+ * thinkos_break.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

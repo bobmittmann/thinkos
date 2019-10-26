@@ -1,5 +1,5 @@
 /* 
- * thikos_flag.c
+ * thinkos_flag.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

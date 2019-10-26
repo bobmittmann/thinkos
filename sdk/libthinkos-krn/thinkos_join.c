@@ -1,5 +1,5 @@
 /* 
- * thikos_join.c
+ * thinkos_join.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

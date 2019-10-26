@@ -194,8 +194,10 @@ void __thinkos_system_reset(void)
 	__exception_reset();
 #endif
 
-	DCC_LOG(LOG_TRACE, "5. reset RAM vectors...");
-	__dbgmon_reset();
+#if THINKOS_ENABLE_MONITOR
+	DCC_LOG(LOG_TRACE, "5. reset debug monitor...");
+	thinkos_dbgmon_reset();
+#endif
 
 	/* Enable Interrupts */
 	DCC_LOG(LOG_TRACE, "6. enablig interrupts...");
