@@ -982,8 +982,6 @@ void __thinkos_bmp_init(uint32_t bmp[], int bits);
 
 int __thinkos_bmp_alloc(uint32_t bmp[], int bits);
 
-void thinkos_console_init(void);
-
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
 											   uint32_t sp, 
 											   int (* task)(void *), 
@@ -1028,26 +1026,28 @@ unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
 
 void __thinkos_core_reset(void);
 
-void __thinkos_console_reset(void);
-
 void __thinkos_system_reset(void);
 
 void __thinkos_sched_stop(void);
+
+
+/* intialize console */
+void thinkos_console_init(void);
+/* set/clear the console's connected flag */
+void thinkos_console_connect_set(bool val); 
+/* set/clear the console's raw mode flag */
+void thinkos_console_raw_mode_set(bool val);
 
 /* get a pointer to the console's recieving pipe */
 int __console_rx_pipe_ptr(uint8_t ** ptr);
 /* commit 'cnt' octets on console's recieving pipe */
 void __console_rx_pipe_commit(int cnt); 
 
-/* set/clear the console's connected flag */
-void __console_connect_set(bool val); 
-/* set/clear the console's raw mode flag */
-void __console_raw_mode_set(bool val);
-
 int __console_tx_pipe_ptr(uint8_t ** ptr);
 void __console_tx_pipe_commit(int cnt);
 
 bool __console_is_raw_mode(void); 
+
 
 void __thinkos_sem_post(uint32_t wq);
 

@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thinkos_util.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -53,7 +53,7 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 			sigmask &= ~((1 << DBGMON_COMM_EOT) | 
 						 (1 << DBGMON_COMM_RCV) |
 						 (1 << DBGMON_RX_PIPE));
-			__console_connect_set(connected);
+			thinkos_console_connect_set(connected);
 			if (connected) {
 				DCC_LOG(LOG_TRACE, "Comm connected.");
 				sigmask |= (1 << DBGMON_COMM_EOT) |

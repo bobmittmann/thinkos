@@ -208,13 +208,11 @@ extern "C" {
 
 void thinkos_dbgmon_svc(int32_t arg[], int self);
 
-void __dbgmon_reset(void);
-
-void dbgmon_reset(void);
+void thinkos_dbgmon_reset(void);
 
 void __attribute__((noreturn)) 
 	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
-				void * param);
+	            void * param);
 
 int dbgmon_thread_create(int (* func)(void *), void * arg, 
 						 const struct thinkos_thread_inf * inf);
@@ -283,6 +281,22 @@ int __attribute__((format (__printf__, 2, 3)))
 int dbgmon_putc(int c, const struct dbgmon_comm * comm);
 
 int dbgmon_puts(const char * s, const struct dbgmon_comm * comm);
+
+/* COMM miscelaneous sending calls */
+void dbgmon_comm_send_int(int32_t val, unsigned int width, 
+						  const struct dbgmon_comm * comm);
+
+void dbgmon_comm_send_uint(uint32_t val, unsigned int width, 
+						   const struct dbgmon_comm * comm); 
+
+void dbgmon_comm_send_str(const char * s, unsigned int width, 
+						  const struct dbgmon_comm * comm);
+
+void dbgmon_comm_send_blanks(unsigned int width, 
+							 const struct dbgmon_comm * comm);
+
+void dbgmon_comm_send_hex(uint32_t val, unsigned int width, 
+						  const struct dbgmon_comm * comm);
 
 int dbgmon_gets(char * s, int size, const struct dbgmon_comm * comm);
 

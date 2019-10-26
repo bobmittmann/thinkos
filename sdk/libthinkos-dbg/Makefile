@@ -29,8 +29,10 @@ CFILES = null_comm.c usb_comm.c usb_comm_queue.c \
 		 app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
 		 print_exception.c dbgmon_thread.c dbgmon_memory.c \
 		 dbgmon_printf.c dbgmon_scanf.c \
-		 dbgmon_putc.c dbgmon_puts.c dbgmon_getc.c dbgmon_gets.c \
-		 dbgmon_hexdump.c dbgmon_console_task.c  \
+		 dbgmon_putc.c dbgmon_puts.c \
+		 dbgmon_getc.c dbgmon_gets.c \
+		 dbgmon_hexdump.c dbgmon_console_task.c \
+		 dbgmon_comm_misc.c \
 		 thinkos_dbgmon.c
 
 SFILES = dbgmon_swap.S

@@ -58,7 +58,6 @@ struct thinkos_dbgmon {
 	volatile uint32_t mask;   /* events mask */
 	volatile uint32_t events; /* events bitmap */
 	void * param;             /* user supplied parameter */
-	uint32_t xpsr;
 	int8_t thread_id;
 	int8_t break_id;
 	uint8_t errno;
@@ -382,7 +381,7 @@ int dbgmon_thread_terminate_get(int * code)
 	return thread_id;
 }
 
-void __dbgmon_task_reset(void)
+static inline void __dbgmon_task_reset(void)
 {
 	dbgmon_signal(DBGMON_RESET);
 	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
@@ -591,7 +590,7 @@ bool dmon_breakpoint_disable(uint32_t addr)
 	return false;
 }
 
-void dmon_breakpoint_clear_all(void)
+static void dbgmon_breakpoint_clear_all(void)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
 
@@ -881,66 +880,15 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 	__thinkos_memcpy32(dst, src, sz);
 }
 
-#if 0
-/* This function is called by the scheduler in case of an error*/
-
-uint64_t thinkos_sched_error(struct thinkos_context * __ctx, 
-											 uint32_t __new_thread_id,
-											 uint32_t __prev_thread_id, 
-											 uint32_t __sp)
-{
-	uint32_t thread_id;
-	uint32_t ptr;
-
-	DCC_LOG(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _BRIGHT_ _REVERSE_
-			" /!\\ scheduler error! " _ATTR_POP_);
-
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	thinkos_sched_dbg(__ctx, __new_thread_id, __prev_thread_id, __sp);
-//	__context(__ctx, __new_thread_id); 
-//	__thinkos(&thinkos_rt);
-//	__tdump();
-#endif
-	if (__new_thread_id == THINKOS_THREAD_IDLE) {
-		__thinkos_idle_reset(thinkos_idle_task, NULL);
-		DCC_LOG2(LOG_ERROR, "IDLE: %d -> %d", 
-				 __prev_thread_id, __new_thread_id);
-	} else {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
-
-		/* suspend all threads */
-		__thinkos_pause_all();
-		/* force clearing the ready queue */
-		__thinkos_ready_clr();
-	
-		xcpt->ipsr = CM3_EXCEPT_PENDSV;
-		xcpt->active = __new_thread_id;
-		xcpt->type = THINKOS_ERR_INVALID_STACK;
-	}
-
-	/* get the IDLE context */
-	ptr = (uint32_t)thinkos_rt.ctx[THINKOS_THREAD_IDLE];
-	thread_id = THINKOS_THREAD_IDLE;
-
- 	return ((uint64_t)thread_id << 32) | ptr;
-}
-
-#endif
-
-
-
-/* exception frame */ 
 int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {
 	uint32_t sigset = thinkos_dbgmon_rt.events;
 	uint32_t sigmsk = thinkos_dbgmon_rt.mask;
-	uint32_t xpsr = frm->xpsr;
 
 	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
-	thinkos_dbgmon_rt.xpsr = xpsr;
-
 #if THINKOS_ENABLE_DEBUG_BKPT
+	uint32_t xpsr = frm->xpsr;
 	uint32_t dfsr;
 
 	/* read SCB Debug Fault Status Register */
@@ -1084,7 +1032,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						/* suspend all threads */
 						__thinkos_pause_all();
 						/* diasble all breakpoints */
-						dmon_breakpoint_clear_all();
+						dbgmon_breakpoint_clear_all();
 						/* XXX: use IDLE as break thread id */
 						thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
 						/* delivers a thread fault on next round */
@@ -1101,7 +1049,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* suspend all threads */
 					__thinkos_pause_all();
 					/* diasble all breakpoints */
-					dmon_breakpoint_clear_all();
+					dbgmon_breakpoint_clear_all();
 					/* record the break thread id */
 					thinkos_dbgmon_rt.break_id = thread_id;
 					/* save the current state of IPSR */
@@ -1266,77 +1214,6 @@ void __attribute__((noinline, noreturn))
 #endif
 
 
-/* 
- * ThinkOS exception handler hook
- */
-#if THINKOS_ENABLE_EXCEPTIONS
-#if 0
-void thinkos_exception_dsr(struct thinkos_except * xcpt)
-{
-	struct thinkos_context * ctx = &xcpt->ctx.core;
-	int ipsr;
-
-	/* The interrupts where disabled on exception entry.
-	   Reenable interrupts */
-	cm3_cpsie_i();
-
-	ipsr = ctx->xpsr & 0x1ff;
-
-#if THINKOS_ENABLE_DEBUG_BKPT
-	thinkos_rt.xcpt_ipsr = ipsr;
-#endif
-	if (xcpt->ipsr == CM3_EXCEPT_PENDSV) {
-		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-				 " /!\\ PENDSV? Kernel error %d /!\\ "  _ATTR_POP_, 
-				 xcpt->active + 1);
-
-		/* record the break thread id */
-		thinkos_dbgmon_rt.break_id = xcpt->active;
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-		/* flag the thread as faulty */
-		__thinkos_thread_fault_set(xcpt->active);
-#endif
-		dbgmon_signal(DBGMON_KRN_EXCEPT);
-
-	} else if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
-		DCC_LOG1(LOG_WARNING,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-				 " /!\\ Fault at thread %d /!\\ "  _ATTR_POP_, 
-				 xcpt->active + 1);
-
-		/* record the break thread id */
-		thinkos_dbgmon_rt.break_id = xcpt->active;
-
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-		/* flag the thread as faulty */
-		__thinkos_thread_fault_set(xcpt->active);
-#endif
-		dbgmon_signal(DBGMON_THREAD_FAULT);
-		
-	} else {
-#if THINKOS_ENABLE_DEBUG_BKPT
-		DCC_LOG1(LOG_ERROR, "Exception at IRQ: %d !!!", 
-				 ipsr - 16);
-		/* exceptions on IRQ */
-		thinkos_dbgmon_rt.break_id = -1;
-		thinkos_rt.ctx[THINKOS_THREAD_LAST] = ctx;
-
-		if (ipsr == CM3_EXCEPT_DEBUG_MONITOR) {
-/* FIXME: this is a dire situation, probably the only resource left
-   is to restart the system. */
-#if DEBUG
-			dbgmon_panic(xcpt);
-#else
-#endif
-		} else 
-#endif
-		{
-			dbgmon_signal(DBGMON_KRN_EXCEPT);
-		}
-	}
-}
-#endif
-#endif
-
 /**
  * dmon_soft_reset:
  *
@@ -1364,9 +1241,11 @@ void dbgmon_soft_reset(void)
 	__exception_reset();
 #endif
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"5. Wait IDLE signal..."   _ATTR_POP_); 
 	dbgmon_wait_idle();
+#endif
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"6. Send soft reset signal"  _ATTR_POP_);
@@ -1377,11 +1256,11 @@ void dbgmon_soft_reset(void)
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
-void __dbgmon_reset(void)
+void thinkos_dbgmon_reset(void)
 {
 #if THINKOS_ENABLE_DEBUG_BKPT
 	DCC_LOG(LOG_TRACE, "1. clear all breakpoints...");
-	dmon_breakpoint_clear_all();
+	__dbgmon_breakpoint_clear_all();
 #endif
 
 #if THINKOS_DBGMON_ENABLE_RST_VEC
@@ -1406,7 +1285,7 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	if (((demcr = dcb->demcr) & DCB_DEMCR_MON_EN) == 0) {
 		DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
-		__dbgmon_reset();
+		thinkos_dbgmon_reset();
 #if THINKOS_ENABLE_STACK_INIT
 		__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
 						   sizeof(thinkos_dbgmon_stack));
