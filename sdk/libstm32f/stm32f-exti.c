@@ -36,6 +36,9 @@ void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin,
 	struct stm32f_exti * exti = STM32F_EXTI;
 	int port;
 
+	/* System configuration controller clock enable */
+	stm32_clk_enable(STM32_RCC, STM32_CLK_SYSCFG);
+
 	port = stm32_gpio_id(gpio);
 
 	/* Select exti */
