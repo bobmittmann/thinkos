@@ -751,16 +751,6 @@ drain_again:
 	}
 }
 
-void __thinkos_console_reset(void)
-{
-	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
-	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
-					 sizeof(thinkos_console_rt));
-	dbgmon_clear(DBGMON_TX_PIPE);
-	dbgmon_clear(DBGMON_RX_PIPE);
-}
-
-
 #if (THINKOS_ENABLE_CONSOLE_MODE)
 bool thinkos_console_is_raw_mode(void) 
 {
@@ -782,7 +772,11 @@ void thinkos_console_connect_set(bool val)
 
 void thinkos_console_init(void)
 {
-	__thinkos_console_reset();
+	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
+	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
+					 sizeof(thinkos_console_rt));
+	dbgmon_clear(DBGMON_TX_PIPE);
+	dbgmon_clear(DBGMON_RX_PIPE);
 }
 
 #endif /* THINKOS_ENABLE_CONSOLE */

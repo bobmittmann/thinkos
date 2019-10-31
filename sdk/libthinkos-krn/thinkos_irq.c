@@ -48,7 +48,7 @@ void cm3_default_isr(unsigned int irq)
 {
 	unsigned int th;
 
-#if THINKOS_ENABLE_IRQ_CYCCNT
+#if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;
 #endif
@@ -70,13 +70,13 @@ void cm3_default_isr(unsigned int irq)
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
 
-#if THINKOS_ENABLE_WQ_IRQ
+#if (THINKOS_ENABLE_WQ_IRQ)
 	/* remove from the wait queue */
 	__thinkos_wq_remove(THINKOS_WQ_IRQ, th);  
 #endif
 
 
-#if THINKOS_ENABLE_IRQ_CYCCNT
+#if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value */
 	thinkos_rt.ctx[th]->r1 = cyccnt;
 #endif
@@ -86,11 +86,11 @@ void cm3_default_isr(unsigned int irq)
 }
 
 
-#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
+#if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
 void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 	unsigned int irq = arg[0];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
@@ -116,7 +116,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
@@ -127,7 +127,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
-#if THINKOS_ENABLE_WQ_IRQ
+#if (THINKOS_ENABLE_WQ_IRQ)
 	__thinkos_tmdwq_insert(THINKOS_WQ_IRQ, self, ms);
 #else
 	__thinkos_wq_clock_insert(self, ms);
@@ -139,8 +139,10 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 
+#if 0
 	/* clear pending interrupt */
 	cm3_irq_pend_clr(irq);
+#endif
 
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
@@ -151,7 +153,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 {
 	unsigned int irq = arg[0];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
@@ -163,7 +165,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
 
-#if THINKOS_ENABLE_IRQ_CYCCNT
+#if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the cycle counter (r1) address. */
@@ -173,7 +175,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
-#if THINKOS_ENABLE_WQ_IRQ
+#if (THINKOS_ENABLE_WQ_IRQ)
 	__thinkos_wq_insert(THINKOS_WQ_IRQ, self);  
 #endif
 
@@ -183,8 +185,10 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 
+#if 0
 	/* clear pending interrupt */
 	cm3_irq_pend_clr(irq);
+#endif
 
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);
@@ -202,7 +206,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	unsigned int irq_max = ((uintptr_t)&__sizeof_rom_vectors / 
 							sizeof(void *)) - 16;
 
@@ -234,7 +238,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 
 			if (priority > IRQ_PRIORITY_VERY_LOW)
 				priority = IRQ_PRIORITY_VERY_LOW;
-#if !THINKOS_ENABLE_IRQ_PRIORITY_0
+#if (!THINKOS_ENABLE_IRQ_PRIORITY_0)
 			else if (priority < IRQ_PRIORITY_VERY_HIGH)
 				priority = IRQ_PRIORITY_VERY_HIGH;
 #endif
@@ -256,7 +260,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 
 			if (priority > IRQ_PRIORITY_VERY_LOW)
 				priority = IRQ_PRIORITY_VERY_LOW;
-#if !THINKOS_ENABLE_IRQ_PRIORITY_0
+#if (!THINKOS_ENABLE_IRQ_PRIORITY_0)
 			else if (priority < IRQ_PRIORITY_VERY_HIGH)
 				priority = IRQ_PRIORITY_VERY_HIGH;
 #endif

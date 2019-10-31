@@ -206,6 +206,10 @@
 #define THINKOS_ENABLE_WQ_IRQ           0
 #endif
 
+#ifndef THINKOS_ENABLE_IRQ_TIMEDWAIT 
+#define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
+#endif
+
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
@@ -480,8 +484,8 @@
 /* IRQ return cyclecnt depends on THINKOS_ENABLE_IRQ_CTL */
 #undef THINKOS_ENABLE_IRQ_CTL
 #undef THINKOS_ENABLE_WQ_IRQ
-#define THINKOS_ENABLE_IRQ_CTL 1
-#define THINKOS_ENABLE_WQ_IRQ 1
+#define THINKOS_ENABLE_IRQ_CTL      1
+#define THINKOS_ENABLE_WQ_IRQ       1
 #endif
 
 #if THINKOS_ENABLE_IRQ_TIMEDWAIT 
@@ -489,8 +493,8 @@
    THINKOS_ENABLE_TIMED_CALLS */
 #undef THINKOS_ENABLE_TIMED_CALLS
 #undef THINKOS_ENABLE_WQ_IRQ
-#define THINKOS_ENABLE_TIMED_CALLS 1
-#define THINKOS_ENABLE_WQ_IRQ 1
+#define THINKOS_ENABLE_TIMED_CALLS  1
+#define THINKOS_ENABLE_WQ_IRQ       1
 #endif
 
 /* timed calls depends on clock */
@@ -678,6 +682,7 @@ struct thinkos_profile {
 			uint32_t console         :1;
 			uint32_t flag_watch      :1;
 			uint32_t timed_calls     :1;
+			uint32_t irq_timedwait   :1;
 		};
 	} syscall;
 

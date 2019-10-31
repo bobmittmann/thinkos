@@ -84,7 +84,8 @@ const struct thinkos_profile thinkos_profile = {
 		.thread_break = THINKOS_ENABLE_BREAK,
 		.console      = THINKOS_ENABLE_CONSOLE,
 		.flag_watch   = THINKOS_ENABLE_FLAG_WATCH,
-		.timed_calls  = THINKOS_ENABLE_TIMED_CALLS
+		.timed_calls  = THINKOS_ENABLE_TIMED_CALLS,
+		.irq_timedwait = THINKOS_ENABLE_IRQ_TIMEDWAIT
 	},
 
 	.alloc = {
@@ -201,6 +202,8 @@ void __profile(void)
 			 p->syscall.flag_watch);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TIMED_CALLS     = %d", 
 			 p->syscall.timed_calls);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_TIMEDWAIT   = %d", 
+			 p->syscall.irq_timedwait);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_ALLOC    = %d", 
 			 p->alloc.thread_alloc);
