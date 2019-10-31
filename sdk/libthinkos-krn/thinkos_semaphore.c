@@ -29,42 +29,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if THINKOS_SEMAPHORE_MAX > 0
 
-#if THINKOS_ENABLE_SEM_ALLOC
-void thinkos_sem_alloc_svc(int32_t * arg)
-{	
-	unsigned int wq;
-	uint32_t value = (uint32_t)arg[0];
-	int idx;
-
-	if ((idx = __thinkos_bmp_alloc(thinkos_rt.sem_alloc, 
-								   THINKOS_SEMAPHORE_MAX )) >= 0) {
-		thinkos_rt.sem_val[idx] = value;
-		wq = idx + THINKOS_SEM_BASE;
-		DCC_LOG2(LOG_INFO, "sem=%d wq=%d", idx, wq);
-		arg[0] = wq;
-	} else {
-		DCC_LOG(LOG_WARNING, "__thinkos_bmp_alloc() failed!");
-		arg[0] = idx;
-	}	
-}
-
-void thinkos_sem_free_svc(int32_t * arg)
-{	
-	unsigned int wq = arg[0];
-	unsigned int idx = wq - THINKOS_SEM_BASE;
-
-#if THINKOS_ENABLE_ARG_CHECK
-	if (idx >= THINKOS_SEMAPHORE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a semaphore!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_SEM_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-	__bit_mem_wr(thinkos_rt.sem_alloc, idx, 0);
-}
-#endif
-
 void thinkos_sem_init_svc(int32_t * arg)
 {	
 	unsigned int wq = arg[0];

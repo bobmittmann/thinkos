@@ -29,43 +29,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if THINKOS_GATE_MAX > 0
 
-#if THINKOS_ENABLE_GATE_ALLOC
-
-void thinkos_gate_alloc_svc(int32_t * arg)
-{
-	int idx;
-
-	if ((idx = __thinkos_bmp_alloc(thinkos_rt.gate_alloc, 
-								   THINKOS_GATE_MAX)) >= 0) {
-		__bit_mem_wr(thinkos_rt.gate, idx * 2, 0);
-		__bit_mem_wr(thinkos_rt.gate, idx * 2 + 1, 0);
-		arg[0] = idx + THINKOS_GATE_BASE;
-		DCC_LOG1(LOG_INFO, "wq=%d", arg[0]);
-	} else {
-		arg[0] = idx;
-	}
-}
-
-void thinkos_gate_free_svc(int32_t * arg)
-{
-	unsigned int wq = arg[0];
-
-#if THINKOS_ENABLE_ARG_CHECK
-	unsigned int idx = wq - THINKOS_GATE_BASE;
-
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-	__bit_mem_wr(thinkos_rt.gate_alloc, wq - THINKOS_GATE_BASE, 0);
-}
-
-#endif
-
-
 /* --------------------------------------------------------------------------
  * 
  * -------------------------------------------------------------------------- */

@@ -1,5 +1,5 @@
 /* 
- * thikos/idle.h
+ * thinkos/idle.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -44,6 +44,7 @@ enum idle_hook_signal {
 	IDLE_HOOK_SOFTRST = 2,
 	IDLE_HOOK_EXCEPT_DONE = 3,
 	/* The higest priority goes to the Debug/Monitor */
+	IDLE_HOOK_FLASH_MEM = 30,
 	kDLE_HOOK_STACK_SCAN = 31
 };
 

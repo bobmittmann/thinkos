@@ -93,9 +93,12 @@ enum thinkos_err {
  * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
  * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
+ * @THINKOS_OBJ_DMA: IRQ (Direct Memory Access) waiting queue 
+ * @THINKOS_OBJ_FLASH_MEM: Flesh Memory operation waiting queue 
  * @THINKOS_OBJ_FAULT: thread fault list 
  * @THINKOS_OBJ_INVALID: invalid object 
  */
+
 enum thinkos_obj_kind {
 	THINKOS_OBJ_READY     = 0,
 	THINKOS_OBJ_TMSHARE   = 1,
@@ -114,7 +117,9 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_COMMSEND  = 14,
 	THINKOS_OBJ_COMMRECV  = 15,
 	THINKOS_OBJ_IRQ       = 16,
-	THINKOS_OBJ_FAULT     = 17,
+	THINKOS_OBJ_DMA       = 17,
+	THINKOS_OBJ_FLASH_MEM = 18,
+	THINKOS_OBJ_FAULT     = 19,
 	THINKOS_OBJ_INVALID
 };
 
@@ -227,22 +232,16 @@ struct thinkos_thread_init {
 extern "C" {
 #endif
 
-/** @brief Initializes the @b ThinkOS kernel.
+/** @brief thinkos_krn_init() - Initializes the @b ThinkOS kernel.
  *
- * On return the current program execution thread turns into the first 
- * thread of the system.
- * @return THINKOS_OK
- */
-int thinkos_init(unsigned int opt);
-
-/** 
- * thinkos_krn_init() - Initializes the ThinkOS kernel.
- * @opt: Optional arguments
+ * @param opt  Optional arguments
+ * @param map  Optional Memory Map
+ * @param lst  Optional initial thread list
  * 
  * On return the current program execution thread turns into the first 
  * thread of the system. 
  *
- * Return: %THINKOS_EFAULT in case of a hardware initialization 
+ * @return  %THINKOS_EFAULT in case of a hardware initialization 
  * issue. Otherwise the thread id (number) is returned.
  */
 int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
@@ -264,6 +263,18 @@ void thinkos_mpu_init(unsigned int size);
  *
  */
 void thinkos_userland(void);
+
+/** @brief Allocate a kernel object.
+ *
+ * @return #THINKOS_ENOSYS if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
+ */
+int thinkos_obj_alloc(int kind);
+
+/** @brief Release a kernel object.
+ *
+ */
+int thinkos_obj_free(int obj);
 
 /** @defgroup threads Threads
  *
@@ -945,6 +956,82 @@ int thinkos_console_raw_mode(unsigned int enable);
 int thinkos_console_rd_nonblock(unsigned int enable);
 
 int thinkos_console_wr_nonblock(unsigned int enable);
+
+
+
+
+/** @brief close the flash memory partition
+ *
+ * @param mem memory partition id
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_flash_mem_close(int mem);
+
+/** @brief open the flash memory partition
+ *
+ * @param mem memory partition id
+ * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ */
+int thinkos_flash_mem_open(const char * tag);
+
+/** @brief reads from a flash memory partition
+ *
+ * @param mem memory partition id
+ * @param buf buffer pointer 
+ * @param len maximum number of bytes to be read from the partition  
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes read is returned.
+ */
+int thinkos_flash_mem_read(int mem, void * buf, size_t len);
+
+/** @brief writes to a flash memory partition
+ *
+ * @param mem memory partition id
+ * @param buf buffer pointer
+ * @param len number of bytes to transfer to the partition.
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes written is returned.
+ */
+int thinkos_flash_mem_write(int mem, const void * buf, size_t len);
+
+/** @brief repositions the offset of the flash memory partition descriptor
+ *
+ * @param mem memory partition id
+ * @param offset position from the start of partition
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes written is returned.
+ */
+int thinkos_flash_mem_seek(int mem, off_t offset);
+
+/** @brief erase flash blocks of a memory partition
+ *
+ * @param mem memory partition id
+ * @param offset position from the start of partition
+ * @param len size of the erase area
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes written is returned.
+ */
+int thinkos_flash_mem_erase(int mem, off_t offset, size_t len);
+
+/** @brief lock flash blocks of a memory partition
+ *
+ * @param mem memory partition id
+ * @param offset position from the start of partition
+ * @param len size of the locking area
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes written is returned.
+ */
+int thinkos_flash_mem_lock(int mem, off_t offset, size_t len);
+
+/** @brief unlock flash blocks of a memory partition
+ *
+ * @param mem memory partition id
+ * @param offset position from the start of partition
+ * @param len size of the locking area
+ * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
+ of bytes written is returned.
+ */
+int thinkos_flash_mem_unlock(int mem, off_t offset, size_t len);
 
 #ifdef __cplusplus
 }

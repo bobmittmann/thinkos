@@ -1,5 +1,5 @@
 /* 
- * thikos/config.h
+ * thinkos/config.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -214,6 +214,14 @@
 #define THINKOS_ENABLE_CONSOLE          0
 #endif
 
+#ifndef THINKOS_ENABLE_OBJ_ALLOC
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#endif
+
+#ifndef THINKOS_ENABLE_OBJ_FREE
+#define THINKOS_ENABLE_OBJ_FREE         0
+#endif
+
 /* Enable the thinkos_console_break() syscall. This can be used to 
    interrupt any blocking console's system calls */
 #ifndef THINKOS_ENABLE_CONSOLE_BREAK
@@ -408,9 +416,23 @@
 #define THINKOS_ENABLE_IDLE_MSP          0
 #endif
 
-/* Non implemented/Planned options, should not be used in 
-   production code.
+/* -------------------------------------------------------------------------- 
+ * Default configuration options
+ * Non implemented/Planned options, should not be used in 
+ *   production code.
  */
+
+/* THINKOS_ENABLE_FLASH_MEM - enable the kernel to handle low-level
+   flash memory erase read and write operations.
+ */
+
+#ifndef THINKOS_ENABLE_FLASH_MEM
+#define THINKOS_ENABLE_FLASH_MEM         0
+#endif
+
+#ifndef THINKOS_ENABLE_MEM_MAP
+#define THINKOS_ENABLE_MEM_MAP           0
+#endif
 
 #ifndef THINKOS_DMA_MAX 
 #define THINKOS_DMA_MAX                  0
@@ -420,8 +442,8 @@
 #define THINKOS_QUEUE_MAX                0
 #endif
 
-#ifndef THINKOS_ENABLE_TRACE
-#define THINKOS_ENABLE_TRACE             0
+#ifndef THINKOS_ENABLE_KRN_TRACE
+#define THINKOS_ENABLE_KRN_TRACE         0
 #endif
 
 /* Deprecated options, to be removed in the future 
@@ -537,6 +559,12 @@
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
 
+/* flash mem depend on idle hooks */
+#if (THINKOS_ENABLE_FLASH_MEM) && !(THINKOS_ENABLE_IDLE_HOOKS)
+#undef THINKOS_ENABLE_IDLE_HOOKS
+#define THINKOS_ENABLE_IDLE_HOOKS 1
+#endif
+
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if THINKOS_ENABLE_TIMED_CALLS || THINKOS_ENABLE_PAUSE || \
 	THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_DEBUG_STEP 
@@ -588,6 +616,19 @@
   #define THINKOS_ENABLE_CONSOLE_MODE     0
 #endif
 
+#if (THINKOS_ENABLE_MUTEX_ALLOC | THINKOS_ENABLE_COND_ALLOC | \
+  THINKOS_ENABLE_SEM_ALLOC | THINKOS_ENABLE_EVENT_ALLOC | \
+  THINKOS_ENABLE_FLAG_ALLOC |  THINKOS_ENABLE_GATE_ALLOC)
+  #undef THINKOS_ENABLE_OBJ_FREE
+  #undef THINKOS_ENABLE_OBJ_ALLOC
+  #define THINKOS_ENABLE_OBJ_ALLOC        1
+  #define THINKOS_ENABLE_OBJ_FREE         0
+#endif
+
+#ifndef THINKOS_ENABLE_OBJ_FREE
+#define THINKOS_ENABLE_OBJ_FREE         0
+#endif
+
 #if THINKOS_ENABLE_FPU_LS 
 #error "THINKOS_ENABLE_FPU_LS depends on THINKOS_ENABLE_FPU"
 #endif
@@ -596,9 +637,9 @@
  * FIXME: ??? Not sure what is the intent here ????
  * --------------------------------------------------------------------------*/
 #ifdef THINKOS_DEBUG
-#ifndef DEBUG
-#define DEBUG
-#endif
+  #ifndef DEBUG
+  #define DEBUG
+  #endif
 #endif
 
 #ifndef __ASSEMBLER__
@@ -719,6 +760,9 @@ struct thinkos_profile {
 			uint32_t fpu                :1;
 			uint32_t fpu_ls             :1;
 			uint32_t profiling          :1;
+			uint32_t mem_map            :1;
+			uint32_t flash_mem          :1;
+			uint32_t krn_trace          :1;
 		};
 	} feature;
 

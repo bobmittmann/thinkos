@@ -39,6 +39,8 @@
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
+void thinkos_flash_mem_hook(void);
+
 struct thinkos_idle_rt thinkos_idle_rt;
 #endif
 
@@ -101,6 +103,14 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 				}
 				break;
 #endif
+#endif
+
+#if THINKOS_ENABLE_FLASH_MEM
+			case IDLE_HOOK_FLASH_MEM:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
+				thinkos_flash_mem_hook();
+				break;
 #endif
 
 			case 32:

@@ -27,13 +27,7 @@
 #error "Never use <thinkos/bootldr.h> directly; include <thinkos.h> instead."
 #endif 
 
-#ifndef __THINKOS_KERNEL_H__
-#error "Need <thinkos/kernel.h>"
-#endif 
-
-#ifndef __THINKOS_DBGMON_H__
-#error "Need <thinkos/dbgmon.h>"
-#endif 
+#include <thinkos/board.h>
 
 /* File identification magic block 
 

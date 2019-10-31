@@ -29,40 +29,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if THINKOS_COND_MAX > 0
 
-#if THINKOS_ENABLE_COND_ALLOC
-void thinkos_cond_alloc_svc(int32_t * arg)
-{
-	unsigned int wq;
-	int idx;
-
-	if ((idx = __thinkos_bmp_alloc(thinkos_rt.cond_alloc, 
-								   THINKOS_COND_MAX)) >= 0) {
-		wq = idx + THINKOS_COND_BASE;
-		DCC_LOG2(LOG_INFO, "cond=%d wq=%d", idx, wq);
-		arg[0] = wq;
-	} else
-		arg[0] = idx;
-}
-
-void thinkos_cond_free_svc(int32_t * arg)
-{
-	unsigned int wq = arg[0];
-	unsigned int cond = wq - THINKOS_COND_BASE;
-
-#if THINKOS_ENABLE_ARG_CHECK
-	if (cond >= THINKOS_COND_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is conditional variable!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-
-	DCC_LOG2(LOG_INFO, "cond=%d wq=%d", cond, wq);
-	__bit_mem_wr(thinkos_rt.cond_alloc, cond, 0);
-}
-#endif
-
 void thinkos_cond_wait_svc(int32_t * arg, int self)
 {
 	unsigned int cwq = arg[0];
