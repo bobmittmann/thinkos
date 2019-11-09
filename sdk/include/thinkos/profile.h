@@ -622,7 +622,7 @@
   #undef THINKOS_ENABLE_OBJ_FREE
   #undef THINKOS_ENABLE_OBJ_ALLOC
   #define THINKOS_ENABLE_OBJ_ALLOC        1
-  #define THINKOS_ENABLE_OBJ_FREE         0
+  #define THINKOS_ENABLE_OBJ_FREE         1
 #endif
 
 #ifndef THINKOS_ENABLE_OBJ_FREE
