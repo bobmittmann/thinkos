@@ -146,7 +146,9 @@ void thinkos_flash_mem_svc(int32_t * arg, int self);
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg, int self)
 {
-	int32_t ( * call)(int32_t, int32_t, int32_t) = (void *)arg[0];
+	int32_t ( * call)(int32_t, int32_t, int32_t);
+
+	call = (int32_t (*)(int32_t, int32_t, int32_t))arg[0];
 	arg[0] = call(arg[1], arg[2], arg[3]);
 }
 #endif
