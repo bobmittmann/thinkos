@@ -50,7 +50,7 @@ static unsigned long dec2int(const char * __s)
 }
 
 /* Receive a file and write it into the flash using the YMODEM preotocol */
-int dmon_ymodem_flash(const struct dbgmon_comm * comm,
+int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 					  uint32_t addr, unsigned int size)
 {
 	/* FIXME: generalize the application load by removing the low
@@ -58,7 +58,7 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 #ifdef STM32_FLASH_MEM
 	/* The YMODEM state machine is allocated at the top of 
 	   the stack, make sure there is no app running before 
-	   calling the dmon_ymodem_flash()! */
+	   calling the dbgmon_ymodem_flash()! */
 	struct ymodem_rcv * ry = ((struct ymodem_rcv *)thinkos_main_stack) - 1;
 	uint32_t base = (uint32_t)STM32_FLASH_MEM;
 	uint32_t offs = addr - base;
@@ -66,11 +66,11 @@ int dmon_ymodem_flash(const struct dbgmon_comm * comm,
 
 	DCC_LOG2(LOG_MSG, "sp=%p ry=%p", cm3_sp_get(), ry);
 	DCC_LOG2(LOG_MSG, "offs=0x%08x size=%d", offs, size);
-	dmon_ymodem_rcv_init(ry, true, false);
+	dbgmon_ymodem_rcv_init(ry, true, false);
 	ry->fsize = size;
 
 	DCC_LOG(LOG_INFO, "Starting...");
-	while ((ret = dmon_ymodem_rcv_pkt(comm, ry)) >= 0) {
+	while ((ret = dbgmon_ymodem_rcv_pkt(comm, ry)) >= 0) {
 		int len = ret;
 		int i;
 

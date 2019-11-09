@@ -449,7 +449,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 		/* get a pointer to the head of the pipe.
 		   __console_rx_pipe_ptr() will return the number of 
 		   consecutive spaces in the buffer. */
-		if ((n = __console_rx_pipe_ptr(&buf)) > 0) {
+		if ((n = thinkos_console_rx_pipe_ptr(&buf)) > 0) {
 			/* copy the character into the RX fifo */
 			for (i = 0; (i < n) && (*s != '\0'); ++i)
 				buf[i] = *s++;
@@ -457,7 +457,7 @@ int rsp_cmd(struct gdb_rspd * gdb, char * pkt)
 			if (i < n) 
 				buf[i++] = '\r';
 			/* commit the fifo head */
-			__console_rx_pipe_commit(i);
+			thinkos_console_rx_pipe_commit(i);
 		} else {
 			/* discard */
 		}
@@ -951,25 +951,25 @@ static int rsp_breakpoint_insert(struct gdb_rspd * gdb, char * pkt)
 	if ((type == 0) || (type == 1)) {
 		/* 0 - software-breakpoint */
 		/* 1 - hardware-breakpoint */
-		if (dmon_breakpoint_set(addr, size))
+		if (dbgmon_breakpoint_set(addr, size))
 			return rsp_ok(gdb);
 		return rsp_error(gdb, GDB_ERR_BREAKPOINT_SET_FAIL);
 	}
 	if (type == 2) {
 		/* write-watchpoint */
-		if (dmon_watchpoint_set(addr, size, 2))
+		if (dbgmon_watchpoint_set(addr, size, 2))
 			return rsp_ok(gdb);
 		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 	if (type == 3) {
 		/* read-watchpoint */
-		if (dmon_watchpoint_set(addr, size, 1))
+		if (dbgmon_watchpoint_set(addr, size, 1))
 			return rsp_ok(gdb);
 		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
 	if (type == 4) {
 		/* access-watchpoint */
-		if (dmon_watchpoint_set(addr, size, 3))
+		if (dbgmon_watchpoint_set(addr, size, 3))
 			return rsp_ok(gdb);
 		return rsp_error(gdb, GDB_ERR_WATCHPOINT_SET_FAIL);
 	}
@@ -995,12 +995,12 @@ static int rsp_breakpoint_remove(struct gdb_rspd * gdb, char * pkt)
 	switch (type) {
 	case 0:
 	case 1:
-		dmon_breakpoint_clear(addr, size);
+		dbgmon_breakpoint_clear(addr, size);
 		break;
 	case 2:
 	case 3:
 	case 4:
-		dmon_watchpoint_clear(addr, size);
+		dbgmon_watchpoint_clear(addr, size);
 		break;
 	}
 
@@ -1048,10 +1048,10 @@ static int rsp_stop_reply(struct gdb_rspd * gdb, char * pkt)
 
 		DCC_LOG(LOG_INFO, "4!");
 
-		if ((n = __console_tx_pipe_ptr(&buf)) > 0) {
+		if ((n = thinkos_console_tx_pipe_ptr(&buf)) > 0) {
 			*cp++ = 'O';
 			cp += bin2hex(cp, buf, n);
-			__console_tx_pipe_commit(n);
+			thinkos_console_tx_pipe_commit(n);
 		} else
 #endif
 			return 0;
@@ -1612,8 +1612,8 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			 gdb->stopped ? "true" : "false",
 			 gdb->active_app ? "true" : "false");
 
-	dmon_breakpoint_clear_all();
-	dmon_watchpoint_clear_all();
+	dbgmon_breakpoint_clear_all();
+	dbgmon_watchpoint_clear_all();
 
 	//	dbgmon_comm_connect(comm);
 
@@ -1664,10 +1664,10 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			this_board.softreset();
 			dbgmon_clear(DBGMON_SOFTRST);
 #if THINKOS_ENABLE_CONSOLE
-			__thinkos_console_reset();
+//			thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			   by __console_reset(). */
-			__console_connect_set(dbgmon_comm_isconnected(comm));
+			thinkos_console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
 			break;
 
@@ -1759,7 +1759,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
-			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+			if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
 				int n;
 				DCC_LOG1(LOG_MSG, "TX Pipe, %d pending chars.", cnt);
 				if ((n = rsp_console_output(gdb, pkt, 
@@ -1768,7 +1768,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 					/* enable COMM_EOT event to continue sending 
 					   data */
 					sigmask |= (1 << DBGMON_COMM_EOT);
-					__console_tx_pipe_commit(n); 
+					thinkos_console_tx_pipe_commit(n); 
 				} else {
 					DCC_LOG(LOG_WARNING, "rsp_console_output() failed!!!");
 					dbgmon_clear(DBGMON_TX_PIPE);

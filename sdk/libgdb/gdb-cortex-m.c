@@ -729,12 +729,12 @@ int target_mem_read(uint32_t addr, void * ptr, unsigned int len)
 
 void target_halt(void)
 {
-	dmon_app_suspend();
+	dbgmon_app_suspend();
 }
 
 bool target_continue(void)
 {
-	return dmon_app_continue();
+	return dbgmon_app_continue();
 }
 
 int target_goto(uint32_t addr, int opt)

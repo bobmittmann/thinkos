@@ -40,7 +40,7 @@
 
 #define XMODEM_RCV_TMOUT_MS 2000
 
-int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
+int dbgmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
 {
 	rx->pktno = 0;
 	rx->crc_mode = crc_mode;
@@ -55,7 +55,7 @@ int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
 }
 
 #if 0
-static int dmon_ymodem_rcv_cancel(struct dbgmon_comm * comm, struct ymodem_rcv * rx)
+static int dbgmon_ymodem_rcv_cancel(struct dbgmon_comm * comm, struct ymodem_rcv * rx)
 {
 	unsigned char * pkt = rx->pkt.hdr;
 
@@ -69,7 +69,7 @@ static int dmon_ymodem_rcv_cancel(struct dbgmon_comm * comm, struct ymodem_rcv *
 }
 #endif
 
-int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
+int dbgmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
 						struct ymodem_rcv * rx)
 {
 	unsigned char * pkt = rx->pkt.hdr;

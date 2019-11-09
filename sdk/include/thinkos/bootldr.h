@@ -175,42 +175,40 @@ static inline void dbgmon_req_app_upload(void) {
 extern "C" {
 #endif
 
-int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
+int dbgmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 
-int dmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
+int dbgmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
 						struct ymodem_rcv * rx);
 
-void dmon_console_io_task(const struct dbgmon_comm * comm);
+void dbgmon_console_io_task(const struct dbgmon_comm * comm);
 
-void dmon_print_thread(const struct dbgmon_comm * comm, 
+void dbgmon_print_thread(const struct dbgmon_comm * comm, 
 					   unsigned int thread_id);
 
-void dmon_print_context(const struct dbgmon_comm * comm, 
+void dbgmon_print_context(const struct dbgmon_comm * comm, 
 						const struct thinkos_context * ctx, 
 						uint32_t sp);
 
-void dmon_print_exception(const struct dbgmon_comm * comm, 
+void dbgmon_print_exception(const struct dbgmon_comm * comm, 
 						  struct thinkos_except * xcpt);
 
-int dmon_print_osinfo(const struct dbgmon_comm * comm);
+int dbgmon_print_osinfo(const struct dbgmon_comm * comm);
 
-void dmon_print_alloc(const struct dbgmon_comm * comm);
+void dbgmon_print_alloc(const struct dbgmon_comm * comm);
 
-void dmon_print_stack_usage(const struct dbgmon_comm * comm);
+void dbgmon_print_stack_usage(const struct dbgmon_comm * comm);
 
-void dmon_thread_exec(void (* func)(void *), void * arg);
+void dbgmon_thread_exec(void (* func)(void *), void * arg);
 
-bool dmon_app_exec(uint32_t addr, bool paused);
-
-bool dmon_app_erase(const struct dbgmon_comm * comm, 
-					uint32_t addr, unsigned int size);
-
-int dmon_ymodem_flash(const struct dbgmon_comm * comm,
+bool dbgmon_app_erase(const struct dbgmon_comm * comm, 
 					  uint32_t addr, unsigned int size);
 
-bool dmon_app_suspend(void);
+int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
+						uint32_t addr, unsigned int size);
 
-bool dmon_app_continue(void);
+bool dbgmon_app_suspend(void);
+
+bool dbgmon_app_continue(void);
 
 bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
 

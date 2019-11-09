@@ -31,8 +31,8 @@
 
 const char * __retstr(uint32_t __ret);
 
-void dmon_print_exception(const struct dbgmon_comm * comm, 
-						  struct thinkos_except * xcpt)
+void dbgmon_print_exception(const struct dbgmon_comm * comm, 
+							struct thinkos_except * xcpt)
 {
 #if (THINKOS_ENABLE_MPU)
 	uint32_t mmfsr;
@@ -81,7 +81,7 @@ void dmon_print_exception(const struct dbgmon_comm * comm,
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 #endif
 
-	dmon_print_context(comm, &xcpt->ctx.core, sp);
+	dbgmon_print_context(comm, &xcpt->ctx.core, sp);
 						
 	dbgmon_printf(comm, " ret=%08x [ %s ] PSP=%08x MSP=%08x\r\n", 
 				  ret, __retstr(ret), xcpt->psp, xcpt->msp);

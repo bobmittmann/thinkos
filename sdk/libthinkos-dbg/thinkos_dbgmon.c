@@ -74,17 +74,17 @@ const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
 int dbgmon_context_swap(uint32_t ** pctx); 
 
 /**
-  * __dmon_irq_disable_all:
+  * __dbgmon_irq_disable_all:
   *
   * Disable all interrupts by clearing the interrupt enable bit
   * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
   *
   * Also the interrupt enable backup is cleared to avoid 
-  * interrupts being reenabled by calling __dmon_irq_restore_all().
+  * interrupts being reenabled by calling __dbgmon_irq_restore_all().
   *
   * The systick interrupt is not disabled.
   */
-static void __dmon_irq_disable_all(void)
+static void __dbgmon_irq_disable_all(void)
 {
 	int i;
 
@@ -472,7 +472,7 @@ int dbgmon_errno_get(void)
 	return  thinkos_dbgmon_rt.errno;
 }
 
-#if THINKOS_ENABLE_DEBUG_BKPT
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 
 int dbgmon_thread_break_get(void)
 {
@@ -502,7 +502,7 @@ void dbgmon_thread_break_clr(void)
 /* (Flash Patch) Number of literal address comparators */
 #define CM3_FP_NUM_LIT  2
 
-bool dmon_breakpoint_set(uint32_t addr, uint32_t size)
+bool dbgmon_breakpoint_set(uint32_t addr, uint32_t size)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
 	uint32_t comp;
@@ -539,7 +539,7 @@ bool dmon_breakpoint_set(uint32_t addr, uint32_t size)
 	return true;
 }
 
-bool dmon_breakpoint_clear(uint32_t addr, uint32_t size)
+bool dbgmon_breakpoint_clear(uint32_t addr, uint32_t size)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
 	uint32_t comp;
@@ -571,7 +571,7 @@ bool dmon_breakpoint_clear(uint32_t addr, uint32_t size)
 	return false;
 }
 
-bool dmon_breakpoint_disable(uint32_t addr)
+bool dbgmon_breakpoint_disable(uint32_t addr)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
 	int i;
@@ -590,7 +590,7 @@ bool dmon_breakpoint_disable(uint32_t addr)
 	return false;
 }
 
-static void dbgmon_breakpoint_clear_all(void)
+void dbgmon_breakpoint_clear_all(void)
 {
 	struct cm3_fpb * fpb = CM3_FPB;
 
@@ -634,7 +634,7 @@ static void dbgmon_breakpoint_clear_all(void)
 
 #define CM3_DWT_NUMCOMP 4
 
-bool dmon_watchpoint_set(uint32_t addr, uint32_t size, int access)
+bool dbgmon_watchpoint_set(uint32_t addr, uint32_t size, int access)
 {
 	struct cm3_dwt * dwt = CM3_DWT;
 	uint32_t func;
@@ -686,7 +686,7 @@ bool dmon_watchpoint_set(uint32_t addr, uint32_t size, int access)
 	return true;
 }
 
-bool dmon_watchpoint_clear(uint32_t addr, uint32_t size)
+bool dbgmon_watchpoint_clear(uint32_t addr, uint32_t size)
 {
 	struct cm3_dwt * dwt = CM3_DWT;
 	int i;
@@ -731,7 +731,7 @@ bool dmon_watchpoint_clear(uint32_t addr, uint32_t size)
 #define DWT_DATAV_RW_CMP       (11 << 0)
 
 
-void dmon_watchpoint_clear_all(void)
+void dbgmon_watchpoint_clear_all(void)
 {
 	struct cm3_dwt * dwt = CM3_DWT;
 	int i;
@@ -774,7 +774,6 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 	if (thread_id == THINKOS_THREAD_LAST) {
 		DCC_LOG(LOG_ERROR, "void thread, IRQ step!");
 		return -1;
-//		dmon_context_swap_ext(&thinkos_dbgmon_rt.ctx, 1); 
 	} else {
 		if (thread_id >= THINKOS_THREADS_MAX) {
 			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id + 1);
@@ -1016,7 +1015,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						/* suspend the current thread */
 						__thinkos_thread_pause(thread_id);
 						/* disable this breakpoint */
-						dmon_breakpoint_disable(frm->pc);
+						dbgmon_breakpoint_disable(frm->pc);
 						/* record the break thread id */
 						thinkos_dbgmon_rt.break_id = thread_id;
 						/* run scheduler */
@@ -1215,7 +1214,7 @@ void __attribute__((noinline, noreturn))
 
 
 /**
- * dmon_soft_reset:
+ * dbgmon_soft_reset:
  *
  * Reinitialize the plataform by reseting all ThinkOS subsystems.
  * 
@@ -1225,7 +1224,7 @@ void dbgmon_soft_reset(void)
 {
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
-	__dmon_irq_disable_all();
+	__dbgmon_irq_disable_all();
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"2. Kill all threads"  _ATTR_POP_); 
@@ -1260,7 +1259,7 @@ void thinkos_dbgmon_reset(void)
 {
 #if THINKOS_ENABLE_DEBUG_BKPT
 	DCC_LOG(LOG_TRACE, "1. clear all breakpoints...");
-	__dbgmon_breakpoint_clear_all();
+	dbgmon_breakpoint_clear_all();
 #endif
 
 #if THINKOS_DBGMON_ENABLE_RST_VEC

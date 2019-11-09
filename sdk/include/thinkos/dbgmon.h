@@ -247,17 +247,17 @@ int dbgmon_wait_idle(void);
 
 void dbgmon_soft_reset(void);
 
-bool dmon_breakpoint_set(uint32_t addr, uint32_t size);
+bool dbgmon_breakpoint_set(uint32_t addr, uint32_t size);
 
-bool dmon_breakpoint_clear(uint32_t addr, uint32_t size);
+bool dbgmon_breakpoint_clear(uint32_t addr, uint32_t size);
 
-void dmon_breakpoint_clear_all(void);
+void dbgmon_breakpoint_clear_all(void);
 
-bool dmon_watchpoint_set(uint32_t addr, uint32_t size, int access);
+bool dbgmon_watchpoint_set(uint32_t addr, uint32_t size, int access);
 
-bool dmon_watchpoint_clear(uint32_t addr, uint32_t size);
+bool dbgmon_watchpoint_clear(uint32_t addr, uint32_t size);
 
-void dmon_watchpoint_clear_all(void);
+void dbgmon_watchpoint_clear_all(void);
 
 void __dbgmon_signal_thread_create(int thread_id);
 
@@ -342,6 +342,12 @@ const struct dbgmon_comm * usb_comm_getinstance(void);
 
 const struct dbgmon_comm * custom_comm_init(void);
 const struct dbgmon_comm * custom_comm_getinstance(void);
+
+void dbgmon_print_context(const struct dbgmon_comm * comm, 
+						  const struct thinkos_context * ctx, uint32_t sp);
+
+void dbgmon_print_exception(const struct dbgmon_comm * comm, 
+							struct thinkos_except * xcpt);
 
 #ifdef __cplusplus
 }

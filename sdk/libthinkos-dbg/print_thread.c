@@ -51,7 +51,8 @@ int __thinkos_thread_wq_get(unsigned int thread_id)
 	return wq;
 }
 
-void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
+void dbgmon_print_thread(const struct dbgmon_comm * comm, 
+						 unsigned int thread_id)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 	int32_t timeout;
@@ -150,7 +151,8 @@ void dmon_print_thread(const struct dbgmon_comm * comm, unsigned int thread_id)
 	dbgmon_printf(comm, " - timeout=%8d ms", timeout); 
 	dbgmon_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
-	dmon_print_context(comm, rt->ctx[thread_id], (uint32_t)rt->ctx[thread_id]);
+	dbgmon_print_context(comm, rt->ctx[thread_id], 
+						 (uint32_t)rt->ctx[thread_id]);
 
 	dbgmon_printf(comm, "\r\n");
 }

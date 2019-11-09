@@ -33,7 +33,7 @@ extern uint32_t thinkos_except_stack[];
 extern const uint16_t thinkos_except_stack_size;
 extern const uint32_t thinkos_dbgmon_rt[];
 
-void dmon_print_stack_usage(const struct dbgmon_comm * comm)
+void dbgmon_print_stack_usage(const struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 	int i;

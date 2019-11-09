@@ -29,7 +29,7 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
-bool dmon_app_erase(const struct dbgmon_comm * comm, 
+bool dbgmon_app_erase(const struct dbgmon_comm * comm, 
 					uint32_t addr, unsigned int size)
 {
 	/* FIXME: generalize the application load by removing the low

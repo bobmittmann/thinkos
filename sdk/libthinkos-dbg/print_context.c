@@ -28,9 +28,9 @@
 extern const char __xcpt_name_lut[16][12];
 
 
-void dmon_print_context(struct dbgmon_comm * comm, 
-						const struct thinkos_context * ctx, 
-						uint32_t sp)
+void dbgmon_print_context(const struct dbgmon_comm * comm, 
+						  const struct thinkos_context * ctx, 
+						  uint32_t sp)
 {
 	uint32_t xpsr = ctx->xpsr;
 	int ipsr;

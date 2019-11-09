@@ -36,7 +36,7 @@ static void rt_snapshot(uint32_t * dst)
 {
 	uint32_t pri = cm3_primask_get();
 	uint32_t * src;
-	int i;
+	unsigned int i;
 
 	cm3_primask_set(1);
 #if THINKOS_ENABLE_PROFILING

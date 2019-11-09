@@ -264,8 +264,10 @@ static bool join_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #endif
 
 #if THINKOS_ENABLE_CONSOLE
-bool __console_rd_resume(unsigned int thread_id, unsigned int wq, bool tmw);
-bool __console_wr_resume(unsigned int thread_id, unsigned int wq, bool tmw);
+bool thinkos_console_rd_resume(unsigned int thread_id, 
+							   unsigned int wq, bool tmw);
+bool thinkos_console_wr_resume(unsigned int thread_id, 
+							   unsigned int wq, bool tmw);
 #endif
 
 #if THINKOS_ENABLE_COMM
@@ -349,8 +351,8 @@ static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_JOIN] = join_resume,
 #endif
 #if THINKOS_ENABLE_CONSOLE
-	[THINKOS_OBJ_CONREAD] = __console_rd_resume,
-	[THINKOS_OBJ_CONWRITE] = __console_wr_resume,
+	[THINKOS_OBJ_CONREAD] = thinkos_console_rd_resume,
+	[THINKOS_OBJ_CONWRITE] = thinkos_console_wr_resume,
 #endif
 #if THINKOS_ENABLE_PAUSE
 	[THINKOS_OBJ_PAUSED] = paused_resume,

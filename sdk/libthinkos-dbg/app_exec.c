@@ -27,10 +27,6 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-void __dmon_irq_pause_all(void);
-void __dmon_irq_restore_all(void);
-void __dmon_irq_force_enable(void);
-
 static const char * const app_argv[] = {
 	"thinkos_app"
 };
@@ -89,7 +85,7 @@ bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 }
 
 
-bool dmon_app_suspend(void)
+bool dbgmon_app_suspend(void)
 {
 	__thinkos_pause_all();
 
@@ -106,7 +102,7 @@ bool dmon_app_suspend(void)
 	return true;
 }
 
-bool dmon_app_continue(void)
+bool dbgmon_app_continue(void)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 

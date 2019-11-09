@@ -19,13 +19,14 @@
  * http://www.gnu.org/
  */
 
+__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
 _stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(sram3) + LENGTH(sram3);
-
-__backup = ORIGIN(BACKUP);
 
 EXTERN(_stack)
 EXTERN(_reset)
@@ -251,15 +252,21 @@ SECTIONS
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
 
-	. = __backup;
-	/* Backup ram section */
-	.backup :
+	/* Backed up control section */
+	.bkpctl :
 	{
-		PROVIDE (__backup_start = . );
-		/* all .backup sections  */
-		*(.backup .backup*)
-		PROVIDE (__backup_end = . );
-	} >"BACKUP"
+		PROVIDE (__bkpctl_start = . );
+		*(.bkpctl .bkpctl*)
+		PROVIDE (__bkpctl_end = . );
+	} >"rtcbkr"
+
+	/* Backed up data section */
+	.bkpdat :
+	{
+		PROVIDE (__bkpdat_start = . );
+		*(.bkpdat .bkpdat*)
+		PROVIDE (__bkpdat_end = . );
+	} >"bkpsram"
 
 }
 

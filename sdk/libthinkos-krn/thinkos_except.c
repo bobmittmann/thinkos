@@ -57,8 +57,7 @@ thinkos_sched_context_restore(struct thinkos_context * __ctx,
 							  uint32_t __prev_thread_id, 
 							  uint32_t __sp);
 
-static void __attribute__((noreturn)) 
-__xcpt_return(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 {
 	struct thinkos_context * ctx = &xcpt->ctx.core;
 	int ipsr;
@@ -91,7 +90,6 @@ __xcpt_return(struct thinkos_except * xcpt)
 					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
 					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
 					 xcpt->active + 1, 
-					 xcpt->psp,
 					 xcpt->psp,
 					 xcpt->msp, xcpt->psp);
 #endif
