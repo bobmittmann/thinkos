@@ -19,35 +19,35 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-THINKOSDIR = ../../../..
-SDKDIR = $(THINKOSDIR)/sdk
+PROJECT_ROOT = ../../
+THINKOS_DIR = $(PROJECT_ROOT)/../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-VERSION_DATE = "2018-09-17"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "27"
+VERSION_DATE = "2019-08-08"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "0"
 
-PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c monitor.c otg_xflash_pic.c \
-		 usb_comm_dual.c 
-#usb_comm_audio.c 
-#app_main.c
+CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
+		 otg_xflash_pic.c board.c
 
-#CFILES = $(THINKOSDIR)/boot/boot.c $(THINKOSDIR)/boot/monitor.c
+LIBDIRS = $(SDK_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
+		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libgdb
 
-LIBDIRS = $(SDKDIR)/libstm32f $(SDKDIR)/libcm3 $(SDKDIR)/libutil\
-		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libconsole\
-		  $(SDKDIR)/libc 
+LIBS = cm3 stm32f util thinkos-krn thinkos-dbg ice-comm gcc gdb
 
-LIBS = cm3 stm32f util thinkos ice-comm gcc console  c
-
-INCPATH = $(SDKDIR)/include ../include
+INCPATH = $(SDK_DIR)/include ../include
 
 CDEFS = CONFIG_H 
-#CM3_RAM_VECTORS
 
-CFLAGS = -g -Os -Wall -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -mno-unaligned-access 
+CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f405
-include $(THINKOSDIR)/mk/stm32.mk
+#LDCODE := 0x08001000
+#LDDATA := 0x20001000
+include $(THINKOS_DIR)/mk/stm32.mk
+

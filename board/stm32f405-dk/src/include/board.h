@@ -33,32 +33,18 @@
 #define OTG_FS_VBUS STM32_GPIOA, 9
 
 /**************************************************************************
- * Sebug serial
+ * Debug serial
  **************************************************************************/
 #define IO_UART5_TX       STM32_GPIOC, 12
 #define IO_UART5_RX       STM32_GPIOD, 2
 
 /**************************************************************************
- * Relay and Power
+ * LEDs 
  **************************************************************************/
-
-#define IO_RELAY          STM32_GPIOB, 9
-#define IO_PWR_EN         STM32_GPIOD, 12 
-#define IO_PWR_MON        STM32_GPIOD, 11
-
-/**************************************************************************
- * Altera Cyclone FPGA connections
- **************************************************************************/
-
-#define IO_FPGA_EXTI      STM32_GPIOB, 15
-#define IO_UART6_TX       STM32_GPIOC, 6
-#define IO_UART6_RX       STM32_GPIOD, 7
-
-#define IO_N_CONFIG       STM32_GPIOE, 0
-#define IO_CONF_DONE      STM32_GPIOE, 1
-#define IO_N_STATUS       STM32_GPIOC, 11
-#define IO_DCLK           STM32_GPIOC, 10
-#define IO_DATA0          STM32_GPIOB, 5
+#define IO_LED1           STM32_GPIOC, 1
+#define IO_LED2           STM32_GPIOC, 14
+#define IO_LED3           STM32_GPIOC, 7
+#define IO_LED4           STM32_GPIOC, 8
 
 /**************************************************************************
  * FLASH memory partitions

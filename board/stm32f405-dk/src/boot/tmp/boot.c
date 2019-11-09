@@ -233,15 +233,18 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");
 	cm3_udelay_calibrate();
 
-	DCC_LOG(LOG_TRACE, "2. thinkos_init().");
-	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
+#if DEBUG
+	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
+	udelay(0x10000);
+#endif
+	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 	board_init();
 
 	DCC_LOG(LOG_TRACE, "4. usb_comm_init()");
-	//comm = usb_comm_init(&stm32f_otg_fs_dev);
-	comm = custom_comm_init();
+	comm = usb_comm_init(&stm32f_otg_fs_dev);
+	//comm = custom_comm_init();
 
 	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
 	thinkos_console_init();

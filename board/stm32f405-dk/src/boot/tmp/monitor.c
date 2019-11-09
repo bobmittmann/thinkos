@@ -56,11 +56,11 @@ int app_main(int argc, char *argv[]);
 
 const char * const argv[] = { "thinkos_app" };
 
-void __attribute__((noreturn)) board_app_task(void * param)
+int __attribute__((noreturn)) board_app_task(void * param)
 {
 //	int argc = 1;
 
-	console_write(NULL, "\r\nThinkOS app loader...\r\n\r\n", 27);
+//	console_write(NULL, "\r\nThinkOS app loader...\r\n\r\n", 27);
 
 	for (;;) {
 //		app_main(argc, (char **)argv);
@@ -73,9 +73,7 @@ const void * heap_end = &__heap_end;
 extern uint32_t _stack;
 extern const struct thinkos_thread_inf thinkos_main_inf;
 
-void board_init(void);
 void board_on_softreset(void);
-void board_app_task(void * arg);
 
 extern const uint8_t otg_xflash_pic[];
 extern const unsigned int sizeof_otg_xflash_pic;
@@ -99,26 +97,28 @@ static const char s_hr[] =
 //static const char s_error[] = "Error!\r\n";
 static const char s_confirm[] = "Confirm [y]?";
 
+/* Receies a file using YMODEM protocol and writes into Flash. */
 static int yflash(uint32_t blk_offs, uint32_t blk_size,
 		   const struct magic_blk * magic)
 {
-	uint32_t * yflash_code = (uint32_t *)(0x20001000);
-	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *) = 
-		((void *)yflash_code) + 1;
-//	unsigned int pri;
+	uintptr_t yflash_code = (uintptr_t)(0x20001000);
+	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *);
+	uintptr_t thumb;
 	int ret;
 
-//	pri = cm3_primask_get();
 	cm3_primask_set(1);
+	__thinkos_memcpy((void *)yflash_code, otg_xflash_pic, 
+					 sizeof_otg_xflash_pic);
 
-	__thinkos_memcpy(yflash_code, otg_xflash_pic, sizeof_otg_xflash_pic);
+    thumb = yflash_code | 0x00000001; /* thumb call */
+	yflash_ram = (int (*)(uint32_t, uint32_t, const struct magic_blk *))thumb;
 	ret = yflash_ram(blk_offs, blk_size, magic);
-
-//	cm3_primask_set(pri);
 
 	return ret;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 static const struct magic_blk app_magic = {
 	.hdr = {
 		.pos = 0,
@@ -130,13 +130,15 @@ static const struct magic_blk app_magic = {
 		{  0xffffffff, 0x00534f6b }
 	}
 };
+#pragma GCC diagnostic pop
 
 static int app_yflash(void)
 {
 	return yflash(APPLICATION_BLOCK_OFFS, APPLICATION_BLOCK_SIZE, &app_magic);
 }
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 static const struct magic_blk bootloader_magic = {
 	.hdr = {
 		.pos = 0,
@@ -147,6 +149,7 @@ static const struct magic_blk bootloader_magic = {
 		{  0xffff0000, 0x08000000 },
 	}
 };
+#pragma GCC diagnostic pop
 
 static void bootloader_yflash(void)
 {
@@ -230,8 +233,8 @@ static void __app_exec(void)
 	__thinkos_thread_abort(thread_id);
 
 	DCC_LOG(LOG_TRACE, "__thinkos_thread_init()");
-	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, board_app_task, 
-						  (void *)NULL);
+	__thinkos_thread_init(thread_id, (uintptr_t)&_stack, 
+								(int (*)(void *))board_app_task, (void *)NULL);
 
 	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
 
@@ -249,7 +252,7 @@ static void pause_all(void)
 
 
 	/* clear all bits on all queues */
-	for (wq = 0; wq < THINKOS_WQ_LST_END; ++wq) 
+	for (wq = 0; wq < THINKOS_WQ_CNT; ++wq) 
 		thinkos_rt.wq_lst[wq] = 0;
 
 //	thinkos_rt.wq_ready = 1 << (THINKOS_THREADS_MAX);
@@ -340,7 +343,7 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 
 	DCC_LOG(LOG_TRACE, "Main loop...");
 	for(;;) {
-		switch ((sig = dbgmon_sched_select(sigmask))) {
+		switch ((sig = dbgmon_select(sigmask))) {
 
 		DCC_LOG1(LOG_TRACE, "sig=%d", sig);
 
@@ -356,10 +359,10 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 		case DBGMON_SOFTRST:
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
 			board_on_softreset();
-			__console_reset();
+//			thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			 by __console_reset(). */
-			__console_connect_set(dbgmon_comm_isconnected(comm));
+			thinkos_console_connect_set(dbgmon_comm_isconnected(comm));
 			break;
 
 		case DBGMON_APP_UPLOAD:
@@ -390,16 +393,16 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 
 		case DBGMON_COMM_CTL:
 			DCC_LOG(LOG_MSG, "Comm Ctl.");
-			__console_connect_set(dbgmon_comm_isconnected(comm));
+			thinkos_console_connect_set(dbgmon_comm_isconnected(comm));
 			break;
 
 		case DBGMON_THREAD_FAULT:
 			DCC_LOG(LOG_TRACE, "Thread fault.");
 			break;
 
-		case DBGMON_EXCEPT:
-			DCC_LOG(LOG_TRACE, "System exception.");
-			break;
+//		case DBGMON_EXCEPT:
+//			DCC_LOG(LOG_TRACE, "System exception.");
+//			break;
 
 		case DBGMON_BREAKPOINT:
 			break;
@@ -420,11 +423,11 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 					/* get a pointer to the head of the pipe.
 					 __console_rx_pipe_ptr() will return the number of 
 					 consecutive spaces in the buffer. We need only one. */
-					if (__console_rx_pipe_ptr(&ptr) > 0) {
+					if (thinkos_console_rx_pipe_ptr(&ptr) > 0) {
 						/* copy the character into the RX fifo */
 						ptr[0] = c;
 						/* commit the fifo head */
-						__console_rx_pipe_commit(1);
+						thinkos_console_rx_pipe_commit(1);
 					} else {
 						/* discard */
 					}
@@ -436,7 +439,7 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 			break;
 
 		case DBGMON_RX_PIPE:
-			if ((cnt = __console_rx_pipe_ptr(&ptr)) > 0) {
+			if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
 				DCC_LOG1(LOG_TRACE, "RX Pipe. rx_pipe.free=%d. "
 						 "Unmaksing DBGMON_COMM_RCV!", cnt);
 				sigmask |= (1 << DBGMON_COMM_RCV);
@@ -451,11 +454,11 @@ void __attribute__((noreturn)) monitor_task(struct dbgmon_comm * comm, void * pa
 
 		case DBGMON_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
-			if ((cnt = __console_tx_pipe_ptr(&ptr)) > 0) {
+			if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
 				int n;
 				DCC_LOG1(LOG_INFO, "TX Pipe, %d pending chars.", cnt);
 				n = dbgmon_comm_send(comm, ptr, cnt);
-				__console_tx_pipe_commit(n); 
+				thinkos_console_tx_pipe_commit(n); 
 			}
 			break;
 
