@@ -36,6 +36,55 @@
 #include "board.h"
 #include "version.h"
 
+extern const uint8_t otg_xflash_pic[];
+extern const unsigned int sizeof_otg_xflash_pic;
+
+/* Receives a file using YMODEM protocol and writes into Flash. */
+static int yflash(uint32_t blk_offs, uint32_t blk_size,
+		   const struct magic_blk * magic)
+{
+	uintptr_t yflash_code = (uintptr_t)(0x20001000);
+	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *);
+	uintptr_t thumb;
+	int ret;
+
+	cm3_primask_set(1);
+	__thinkos_memcpy((void *)yflash_code, otg_xflash_pic, 
+					 sizeof_otg_xflash_pic);
+
+    thumb = yflash_code | 0x00000001; /* thumb call */
+	yflash_ram = (int (*)(uint32_t, uint32_t, const struct magic_blk *))thumb;
+	ret = yflash_ram(blk_offs, blk_size, magic);
+
+	return ret;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+static const struct magic_blk bootloader_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 2
+	},
+	.rec = {
+		{  0xffff0000, 0x10010000 },
+		{  0xffff0000, 0x08000000 },
+	}
+};
+#pragma GCC diagnostic pop
+
+static void bootloader_yflash(const struct dbgmon_comm * comm)
+{
+
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_clr(IO_LED2);
+	stm32_gpio_clr(IO_LED3);
+	stm32_gpio_clr(IO_LED4);
+
+	yflash(0, 32768, &bootloader_magic);
+}
+
+
 void __puts(const char *s)
 {
 	int rem = __thinkos_strlen(s, 64);
@@ -49,137 +98,98 @@ void __puts(const char *s)
 
 void io_init(void)
 {
-	struct stm32_gpio *gpioa = STM32_GPIOA;
-	struct stm32_gpio *gpiob = STM32_GPIOB;
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
 
-	/* select alternate functions to USB and SPI1 pins ... */
-	/* Port A */
-	gpioa->afrl = GPIO_AFRL_SET(1, GPIO_AF5);	/* SPI SCK and SS */
-	gpioa->afrh = GPIO_AFRH_SET(8, GPIO_AF0) |	/* MCO */
-	    GPIO_AFRH_SET(11, GPIO_AF10) | GPIO_AFRH_SET(12, GPIO_AF10) |	/* USB */
-	    GPIO_AFRH_SET(13, GPIO_AF0) | GPIO_AFRH_SET(14, GPIO_AF0) |	/* JTAG */
-	    GPIO_AFRH_SET(15, GPIO_AF0);	/* JTAG */
+	/* - USB ----------------------------------------------------*/
+	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_DM, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
 
-	gpioa->moder = GPIO_MODE_ALT_FUNC(1) | GPIO_MODE_OUTPUT(4) |	/* SPI */
-	    GPIO_MODE_ALT_FUNC(8) |	/* MCO */
-	    GPIO_MODE_OUTPUT(9) |	/* CRESET */
-	    GPIO_MODE_INPUT(10) |	/* CDONE */
-	    GPIO_MODE_ALT_FUNC(11) | GPIO_MODE_ALT_FUNC(12) |	/* USB */
-	    GPIO_MODE_ALT_FUNC(13) | GPIO_MODE_ALT_FUNC(14) |	/* JTAG */
-	    GPIO_MODE_ALT_FUNC(15);	/* JTAG */
+	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
 
-	gpioa->otyper = GPIO_PUSH_PULL(1) | GPIO_OPEN_DRAIN(4) |	/* SPI */
-	    GPIO_PUSH_PULL(8) |	/* MCO */
-	    GPIO_PUSH_PULL(9) |	/* CRESET */
-	    GPIO_PUSH_PULL(11) | GPIO_MODE_OUTPUT(12);	/* USB */
+	/* - LEDs ---------------------------------------------------------*/
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_mode(IO_LED1, OUTPUT, PUSH_PULL | SPEED_LOW);
 
-	gpioa->ospeedr = GPIO_OSPEED_HIGH(1) | GPIO_OSPEED_HIGH(4) |	/* SPI */
-	    GPIO_OSPEED_HIGH(8) |	/* MCO */
-	    GPIO_OSPEED_LOW(9) |	/* CRESET */
-	    GPIO_OSPEED_HIGH(11) | GPIO_OSPEED_HIGH(12);	/* USB */
+	stm32_gpio_clr(IO_LED2);
+	stm32_gpio_mode(IO_LED2, OUTPUT, PUSH_PULL | SPEED_LOW);
 
-	gpioa->pupdr = GPIO_PULL_UP(4) |	/* SPI SS */
-	    GPIO_PULL_UP(10) |	/* CDONE */
-	    GPIO_PULL_UP(13) | GPIO_PULL_DOWN(14) |	/* JTAG */
-	    GPIO_PULL_UP(15);	/* JTAG */
-#if 0
-	gpioa->dor = GPIO_SET(4) |	/* SPI SS */
-	    GPIO_SET(9);	/* CRESET */
-#endif
-	gpioa->odr = 0;
+	stm32_gpio_clr(IO_LED3);
+	stm32_gpio_mode(IO_LED3, OUTPUT, PUSH_PULL | SPEED_LOW);
 
-	/* Port B */
-	gpiob->afrl = GPIO_AFRL_SET(5, GPIO_AF5) |	/* SPI */
-	    GPIO_AFRL_SET(3, GPIO_AF0) | GPIO_AFRL_SET(4, GPIO_AF0);	/* JTAG */
-	gpiob->afrh = 0;
-
-	gpiob->moder = GPIO_MODE_ALT_FUNC(5) |	/* SPI */
-	    GPIO_MODE_ALT_FUNC(3) | GPIO_MODE_ALT_FUNC(4) |	/* JTAG */
-	    GPIO_MODE_OUTPUT(8) | GPIO_MODE_OUTPUT(12);	/* IO */
-
-	gpiob->otyper = GPIO_PUSH_PULL(5) |	/* SPI */
-	    GPIO_PUSH_PULL(8) | GPIO_PUSH_PULL(12);	/* IO */
-
-	gpiob->ospeedr = GPIO_OSPEED_HIGH(5) |	/* SPI */
-	    GPIO_OSPEED_HIGH(3) | GPIO_OSPEED_HIGH(4) |	/* JTAG */
-	    GPIO_OSPEED_LOW(8) | GPIO_OSPEED_LOW(12);	/* IO */
-
-	gpiob->pupdr = GPIO_PULL_UP(4);	/* JTAG */
-
-	gpioa->odr = GPIO_SET(8) | GPIO_SET(12);	/* IO */
+	stm32_gpio_clr(IO_LED4);
+	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 }
 
-#ifndef SOFTRESET_DISABLE_DMA
-#define SOFTRESET_DISABLE_DMA 0
-#endif
-
-void __board_on_softreset(void)
+void board_on_softreset(void)
 {
-	struct stm32_rcc *rcc = STM32_RCC;
-#if SOFTRESET_DISABLE_DMA
-	struct stm32f_dma *dma;
-	unsigned int j;
-#endif
+	struct stm32_rcc * rcc = STM32_RCC;
+//	struct stm32f_spi * spi = ICE40_SPI;
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_BRI "^^^^ Soft Reset ^^^^" VT_POP);
+	DCC_LOG(LOG_TRACE, "^^^^ Soft Reset ^^^^");
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
-	DCC_LOG1(LOG_TRACE, "ahb1enr =0x%08x", rcc->ahb1enr);
-	DCC_LOG1(LOG_TRACE, "ahb2enr =0x%08x", rcc->ahb2enr);
-	DCC_LOG1(LOG_TRACE, "ahb3enr =0x%08x", rcc->ahb3enr);
-	DCC_LOG1(LOG_TRACE, "apb1enr1=0x%08x", rcc->apb1enr1);
-	DCC_LOG1(LOG_TRACE, "apb1enr2=0x%08x", rcc->apb1enr2);
-	DCC_LOG1(LOG_TRACE, "apb2enr =0x%08x", rcc->apb2enr);
+	DCC_LOG1(LOG_TRACE, "ahb1enr=0x%08x", rcc->ahb1enr);
+	DCC_LOG1(LOG_TRACE, "ahb2enr=0x%08x", rcc->ahb2enr);
+	DCC_LOG1(LOG_TRACE, "apb1enr=0x%08x", rcc->apb1enr);
+	DCC_LOG1(LOG_TRACE, "apb2enr=0x%08x", rcc->apb2enr);
 
-#if SOFTRESET_DISABLE_DMA
-	dma = STM32_DMA1;
-	for (j = 0; j < 7; ++j) {
-		dma->ch[j].ccr = 0;
-		while (dma->ch[j].ccr & DMA_EN);
-	}
-	dma = STM32F_DMA2;
-	for (j = 0; j < 7; ++j) {
-		dma->ch[j].ccr = 0;
-		while (dma->ch[j].ccr & DMA_EN);
-	}
-#endif
-	/* Reset all peripherals except USB_FS, GPIOA, FLASH and RTC */
-//	rcc->ahb1rstr = ~(1 << RCC_FLASH) | (1 << RCC_RTC);
-	rcc->ahb2rstr = ~((1 << RCC_GPIOA) | (1 << RCC_GPIOB));
+	/* Reset all peripherals except USB_FS, GPIOA and FLASH */
+
+	/* disable all peripherals clock sources except USB_FS, 
+	   GPIOA and GPIOB */
+	rcc->ahb1enr |= (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+	rcc->ahb2enr |= (1 << RCC_OTGFS);
+
+	DCC_LOG1(LOG_TRACE, "AHB1ENR=0x%08x", rcc->ahb1enr);
+	DCC_LOG1(LOG_TRACE, "AHB2ENR=0x%08x", rcc->ahb2enr);
+	DCC_LOG1(LOG_TRACE, "AHB3ENR=0x%08x", rcc->ahb3enr);
+	DCC_LOG1(LOG_TRACE, "APB1ENR=0x%08x", rcc->apb1enr);
+	DCC_LOG1(LOG_TRACE, "APB2ENR=0x%08x", rcc->apb2enr);
+
+	/* Reset all peripherals except USB_OTG and GPIOA */
+	rcc->ahb1rstr = ~((1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA)); 
+	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
 	rcc->ahb3rstr = ~(0);
-//	rcc->apb1rstr1 = ~((1 << RCC_USBFS) | (1 << RCC_PWR));
-//	rcc->apb1rstr2 = ~(0);
+	rcc->apb1rstr = ~(0);
 	rcc->apb2rstr = ~(0);
+
 
 	rcc->ahb1rstr = 0;
 	rcc->ahb2rstr = 0;
 	rcc->ahb3rstr = 0;
-//	rcc->apb1rstr1 = 0;
-//	rcc->apb1rstr2 = 0;
+	rcc->apb1rstr = 0;
 	rcc->apb2rstr = 0;
 
-	/* enable peripherals clock sources for FLASH, RTC, SPI1, USB_FS, 
-	   GPIOA and GPIOB */
-//	rcc->ahb1enr = (1 << RCC_FLASH) | (RCC_RTC);
-	rcc->ahb2enr = (1 << RCC_GPIOA) | (1 << RCC_GPIOB);
+	/* disable all peripherals clock sources except USB_OTG and GPIOA */
+	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+	rcc->ahb2enr = (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
-//	rcc->apb1enr1 = (1 << RCC_USBFS) | (1 << RCC_PWR);
-//	rcc->apb1enr2 = 0;
-	rcc->apb2enr = (1 << RCC_SPI1);
+	rcc->apb1enr = 0;
+	rcc->apb2enr = 0;
 
-	/* initialize IO's */
+	/* reinitialize IO's */
 	io_init();
 
-	/* Adjust USB interrupt priority */
+	/* Adjust USB OTG FS interrupts priority */
 	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
-	/* Enable USB interrupt */
+	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 }
 
-int __board_init(void)
+int board_init(void)
 {
-	__board_on_softreset();
+	board_on_softreset();
+
+	stm32_gpio_set(IO_LED3);
+	stm32_gpio_set(IO_LED4);
 
 	return 0;
 }
@@ -196,7 +206,7 @@ int board_preboot_task(void *ptr)
 {
 	uint32_t tick;
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_BRI "Preboot start..." VT_POP);
+	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
 	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
@@ -233,13 +243,13 @@ int board_preboot_task(void *ptr)
 
 int board_configure_task(void *ptr)
 {
-	DCC_LOG(LOG_TRACE, "board configuration");
+	__puts("- board configuration\r\n");
 	return 0;
 }
 
 int board_selftest_task(void *ptr)
 {
-	DCC_LOG(LOG_TRACE, "board self test");
+	__puts("- board self test\r\n");
 	return 0;
 }
 
@@ -253,18 +263,37 @@ int board_default_task(void *ptr)
 {
 	uint32_t tick;
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_FRD VT_BRI "^^^^ ERROR! ^^^^" VT_POP);
+	__puts("- board default\r\n");
 
 	for (tick = 0;; ++tick) {
 		thinkos_sleep(128);
-		if (tick & 1) {
-			stm32_gpio_clr(IO_LED1);
-			stm32_gpio_clr(IO_LED2);
-		} else {
-			stm32_gpio_set(IO_LED1);
-			stm32_gpio_set(IO_LED2);
-		}
 
+		switch (tick & 0x7) {
+		case 0:
+			stm32_gpio_clr(IO_LED1);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED2);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED1);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED2);
+			break;
+		case 4:
+			stm32_gpio_clr(IO_LED3);
+			break;
+		case 5:
+			stm32_gpio_clr(IO_LED4);
+			break;
+		case 6:
+			stm32_gpio_set(IO_LED3);
+			break;
+		case 7:
+			stm32_gpio_set(IO_LED4);
+			break;
+		}
 	}
 }
 
@@ -290,9 +319,12 @@ const struct magic_blk thinkos_10_app_magic = {
 const struct mem_desc sram_desc = {
 	.tag = "RAM",
 	.blk = {
-		{"STACK", 0x10000000, M_RW, SZ_1K, 16},	/*  CCM - Main Stack */
-		{"BOOT", 0x20000000, M_RO, SZ_1K, 4},	/* Bootloader: 4KiB */
-		{"APP", 0x20001000, M_RW, SZ_1K, 44},	/* Application: 44KiB */
+		{"STACK",  0x10000000, M_RW, SZ_64K, 1},	/*  CCM - Main Stack */
+		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	/* Bootloader: 4KiB */
+		{"DATA",   0x20001000, M_RW, SZ_4K, 27},	/* Application: 108KiB */
+		{"SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
+		{"SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
+
 		{"", 0x00000000, 0, 0, 0}
 		}
 };
@@ -300,8 +332,9 @@ const struct mem_desc sram_desc = {
 const struct mem_desc flash_desc = {
 	.tag = "FLASH",
 	.blk = {
-		{"BOOT", 0x08000000, M_RO, SZ_2K, 32},	/* Bootloader: 64 KiB */
-		{"APP", 0x08010000, M_RW, SZ_2K, 96},	/* Application:  */
+		{"BOOT", 0x08000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
+		{"CONF", 0x08010000, M_RO, SZ_64K, 1},	/* Configuration: 64 KiB */
+		{"APP",  0x08020000, M_RW, SZ_128K, 3},	/* Application:  */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };
@@ -317,9 +350,9 @@ const struct mem_desc peripheral_desc = {
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
 	.name = "STM32F405-DK",
-	.desc = "Rio Digital Audio Comm Interface",
+	.desc = "STM32F405 Development Kit",
 	.hw = {
-	       .tag = "405DK",
+	       .tag = "32F405DK",
 	       .ver = {.major = 0,.minor = 1}
 	       },
 	.sw = {
@@ -336,12 +369,12 @@ const struct thinkos_board this_board = {
 		   .periph = &peripheral_desc},
 	.application = {
 			.tag = "",
-			.start_addr = 0x08010000,
-			.block_size = (96 * 2) * 1024,
+			.start_addr = 0x08020000,
+			.block_size = (128 * 3) * 1024,
 			.magic = &thinkos_10_app_magic},
-	.init = __board_init,
-	.softreset = __board_on_softreset,
-	.upgrade = NULL,
+	.init = board_init,
+	.softreset = board_on_softreset,
+	.upgrade = bootloader_yflash,
 	.preboot_task = board_preboot_task,
 	.configure_task = board_configure_task,
 	.selftest_task = board_selftest_task,

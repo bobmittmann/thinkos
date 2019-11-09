@@ -79,14 +79,17 @@
 #define THINKOS_ENABLE_SANITY_CHECK     1
 
 #define THINKOS_ENABLE_CTL              1
+#define THINKOS_ENABLE_CRITICAL         1
+#define THINKOS_ENABLE_PREEMPTION       1
 
-#define THINKOS_ENABLE_SCHED_DEBUG      0
-#define THINKOS_ENABLE_RT_DEBUG         1
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#define THINKOS_ENABLE_OBJ_FREE         1
 
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_DMCLOCK          1
+#define THINKOS_ENABLE_MONITOR_THREADS  1
 
 #define THINKOS_ENABLE_CONSOLE          1
 
@@ -100,7 +103,6 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          1
 #define THINKOS_ENABLE_DEBUG_FAULT      1
-#define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
@@ -108,8 +110,8 @@
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         0
-#define THINKOS_ENABLE_FPU              0
+#define THINKOS_ENABLE_ESCALATE         1
+#define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
@@ -119,6 +121,9 @@
 
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
 #define THINKOS_CONSOLE_TX_FIFO_LEN     128
+
+#define THINKOS_ENABLE_IDLE_HOOKS       1
+#define THINKOS_ENABLE_IDLE_MSP         1
 
 /* -------------------------------------------------------------------------
  * delay
@@ -134,7 +139,7 @@
 
 #define THINKOS_ENABLE_IRQ_CYCCNT     1
 #define THINKOS_ENABLE_IRQ_PRIORITY_0 1
-//#define THINKOS_ENABLE_IRQ_TIMEDWAIT  1
+#define THINKOS_ENABLE_IRQ_TIMEDWAIT  1
 #define THINKOS_ENABLE_WQ_IRQ         1 
 
 /* -------------------------------------------------------------------------
@@ -186,8 +191,8 @@
 #define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  1
 #define MONITOR_THREAD_STEP_ENABLE 1
-#define MONITOR_SELFTEST_ENABLE    0
-#define MONITOR_CONFIGURE_ENABLE   0
+#define MONITOR_SELFTEST_ENABLE    1
+#define MONITOR_CONFIGURE_ENABLE   1
 #define MONITOR_UPGRADE_ENABLE     1
 #define MONITOR_STACKUSAGE_ENABLE  1
 #define MONITOR_THREADINFO_ENABLE  1
@@ -200,7 +205,7 @@
 #define MONITOR_OS_PAUSE           1
 #define MONITOR_OS_RESUME          1
 #define MONITOR_RESTART_MONITOR    1
-
+#define MONITOR_PREBOOT_ENABLE     1
 
 /* -------------------------------------------------------------------------
  * JTAG

@@ -297,6 +297,14 @@ static void monitor_req_configure(void)
 }
 #endif
 
+#if (MONITOR_UPGRADE_ENABLE)
+static void monitor_req_upgrade(void) 
+{
+	dbgmon_soft_reset();
+	dbgmon_signal(DBGMON_USER_EVENT3);
+}
+#endif
+
 static void monitor_thread_exec(int (* task)(void *), void * arg) 
 {
 	int thread_id;
@@ -672,14 +680,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #endif
 #if (MONITOR_UPGRADE_ENABLE)
 	case CTRL_FS:
-		dbgmon_soft_reset();
-		dbgmon_printf(comm, "^\\\r\nConfirm [y]? ");
-		if (dbgmon_getc(comm) == 'y') {
-			this_board.upgrade(comm);
-			dbgmon_printf(comm, "Failed !!!\r\n");
-		} else {
-			dbgmon_printf(comm, "\r\n");
-		}
+		dbgmon_printf(comm, "^\\\r\n");
+		monitor_req_upgrade();
 		break;
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
@@ -852,6 +854,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 #endif
 #if (MONITOR_PREBOOT_ENABLE)
 	sigmask |= (1 << DBGMON_USER_EVENT2);
+#endif
+#if (MONITOR_UPGRADE_ENABLE)
+	sigmask |= (1 << DBGMON_USER_EVENT3);
 #endif
 	sigmask |= (1 << DBGMON_THREAD_CREATE);
 	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
@@ -1243,6 +1248,19 @@ is_connected:
 			dbgmon_clear(DBGMON_USER_EVENT2);
 			preboot	= true;
 			monitor_thread_exec(this_board.preboot_task, NULL);
+			break;
+#endif
+#if (MONITOR_UPGRADE_ENABLE)
+		case DBGMON_USER_EVENT3:
+			DCC_LOG(LOG_TRACE, "DBGMON_USER_EVENT2: preboot!");
+			dbgmon_clear(DBGMON_USER_EVENT3);
+			dbgmon_printf(comm, "Confirm [y]? ");
+			if (dbgmon_getc(comm) == 'y') {
+				this_board.upgrade(comm);
+				dbgmon_printf(comm, "Failed !!!\r\n");
+			} else {
+				dbgmon_printf(comm, "\r\n");
+			}
 			break;
 #endif
 		}
