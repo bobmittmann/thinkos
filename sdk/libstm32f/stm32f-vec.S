@@ -21,6 +21,7 @@
 
 #include <sys/stm32f.h>
 
+#ifndef THINKAPP
 	.syntax unified
 	.cpu cortex-m3
 
@@ -714,3 +715,6 @@ _fault:
 #endif
 
 	.end
+
+#endif /* THINKAPP */
+

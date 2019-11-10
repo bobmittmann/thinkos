@@ -579,7 +579,7 @@ static void show_mem_info(const struct dbgmon_comm * comm,
 	if (mem== NULL)
 		return;
 
-	dbgmon_printf(comm, "%s:\r\n", mem->tag);
+	dbgmon_printf(comm, "  %s:\r\n", mem->tag);
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		tag = mem->blk[i].tag;
 		size = mem->blk[i].cnt << mem->blk[i].siz;
@@ -587,23 +587,25 @@ static void show_mem_info(const struct dbgmon_comm * comm,
 		ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
 		align = ((mem->blk[i].opt & 3) + 1) * 8;
 
-		dbgmon_printf(comm, "  %8s %08x-%08x %8d %6s %2d\r\n",
+		dbgmon_printf(comm, "    %8s %08x-%08x %8d %6s %2d\r\n",
 					  tag, base, base + size - 4, size, 
 					  ro ? "RO" : "RW", align);
 	}
+
 }
 
 static void monitor_board_info(const struct dbgmon_comm * comm)
 {
 	dbgmon_printf(comm, s_hr);
-	dbgmon_printf(comm, "  %s %s-%d.%d\r\n  %s\r\n",
-				  this_board.name, 
+	dbgmon_printf(comm, "Board: %s <%s>\r\n",
+				  this_board.name, this_board.desc);
+	dbgmon_printf(comm, "Hardware: %s revision %d.%d\r\n",
 				  this_board.hw.tag, 
 				  this_board.hw.ver.major, 
-				  this_board.hw.ver.minor, 
-				  this_board.desc);
+				  this_board.hw.ver.minor
+				  );
 	/* preprocessor running date and time */
-	dbgmon_printf(comm, "  Firmware: %s-%d.%d.%d (%s) " __DATE__ 
+	dbgmon_printf(comm, "Firmware: %s-%d.%d.%d (%s) " __DATE__ 
 				  ", " __TIME__ "\r\n",
 				  this_board.sw.tag, 
 				  this_board.sw.ver.major, 
@@ -616,14 +618,19 @@ static void monitor_board_info(const struct dbgmon_comm * comm)
 #endif
 				  ); 
 	/* compiler version string */
-	dbgmon_printf(comm, "  Compiler: GCC-" __VERSION__ "\r\n");
+	dbgmon_printf(comm, "Compiler: GCC-" __VERSION__ "\r\n");
+
 	/* memory blocks */
-	dbgmon_printf(comm, "       Tag       Adress span"
+	dbgmon_printf(comm, "\r\nMemory Map:\r\n");
+	dbgmon_printf(comm, "         Tag       Adress span"
 				  "     Size  Flags  Align \r\n");
 
 	show_mem_info(comm, this_board.memory.flash);
 	show_mem_info(comm, this_board.memory.ram);
 	show_mem_info(comm, this_board.memory.periph);
+
+	dbgmon_printf(comm, "\r\nKernel Profile:\r\n");
+	dbgmon_print_profile(comm, &thinkos_profile);
 }
 #endif
 
@@ -1202,7 +1209,8 @@ is_connected:
 					thinkos_console_rx_pipe_commit(n);
 					if (n == cnt) {
 						/* Wait for RX_PIPE */
-						DCC_LOG(LOG_TRACE, "RX_PIPE: Wait for RX_PIPE && COMM_RECV");
+						DCC_LOG(LOG_TRACE, 
+								"RX_PIPE: Wait for RX_PIPE && COMM_RECV");
 						sigmask |= (1 << DBGMON_COMM_RCV);
 						sigmask &=  ~(1 << DBGMON_RX_PIPE);
 					} else {

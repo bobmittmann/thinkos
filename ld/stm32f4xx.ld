@@ -214,7 +214,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data :
+	.data __data_init :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */

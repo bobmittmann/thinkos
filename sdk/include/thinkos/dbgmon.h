@@ -349,6 +349,9 @@ void dbgmon_print_context(const struct dbgmon_comm * comm,
 void dbgmon_print_exception(const struct dbgmon_comm * comm, 
 							struct thinkos_except * xcpt);
 
+int dbgmon_print_profile(const struct dbgmon_comm * comm, 
+						 const struct thinkos_profile * p);
+
 #ifdef __cplusplus
 }
 #endif

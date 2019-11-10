@@ -172,6 +172,43 @@ void __profile(void)
 {
 	const struct thinkos_profile * p = &thinkos_profile;
 
+	DCC_LOG1(LOG_TRACE, "THINKOS_KERNEL_VERSION         = %d.%d", 
+			 p->kernel.version.major, p->kernel.version.minor);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TIMESHARE       = %d", 
+			 p->kernel.timeshare);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PREEMPTION      = %d", 
+			 p->kernel.preemption);
+	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MAX        = %d", 
+			 p->kernel..sched_limit_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MIN        = %d", 
+			 p->kernel.sched_limit_min);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_THREADS_MAX            = %d", 
+			 p->limit.threads_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_NRT_THREADS_MAX        = %d", 
+			 p->limit.nrt_threads_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_THREADS_MAX            = %d", 
+			 p->limit.mutex_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_COND_MAX               = %d", 
+			 p->limit.cond_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_SEMAPHORE_MAX          = %d", 
+			 p->limit.semaphore_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_EVENT_MAX              = %d", 
+			 p->limit.event_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_FLAG_MAX               = %d", 
+			 p->limit.flag_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_GATE_MAX               = %d", 
+			 p->limit.gate_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_QUEUE_MAX              = %d", 
+			 p->limit.queue_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_IRQ_MAX                = %d", 
+			 p->limit.irq_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_DMA_MAX                = %d", 
+			 p->limit.dma_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_EXCEPT_STACK_SIZE      = %d", 
+			 p->limit.except_stack_size);
+
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_JOIN            = %d", 
 			 p->syscall.join);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CLOCK           = %d", 
