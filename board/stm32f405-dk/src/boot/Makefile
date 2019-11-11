@@ -22,6 +22,7 @@
 PROJECT_ROOT = ../../
 THINKOS_DIR = $(PROJECT_ROOT)/../..
 SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
 VERSION_DATE = "2019-11-09"
@@ -33,21 +34,19 @@ PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
 		 otg_xflash_pic.c board.c
 
-LIBDIRS = $(SDK_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
-		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libgdb
+		  $(SDK_DIR)/libgdb $(SDK_DIR)/libice-comm 
 
-LIBS = cm3 stm32f util thinkos-krn thinkos-dbg ice-comm gcc gdb
+LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc gdb ice-comm 
 
 INCPATH = $(SDK_DIR)/include ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+CFLAGS = -Ofast -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
 OPTIONS = -g -mno-unaligned-access 
 
-MACH = stm32f405
-#LDCODE := 0x08001000
-#LDDATA := 0x20001000
-include $(THINKOS_DIR)/mk/stm32.mk
+MACH = stm32f415xg
+include $(ARCH_DIR)/mk/stm32.mk
 

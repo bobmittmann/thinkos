@@ -18,9 +18,11 @@
 # You can receive a copy of the GNU Lesser General Public License from 
 # http://www.gnu.org/
 
-THISDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+__THISDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+__ARCH_DIR := $(abspath $(__THISDIR)/..)
+__THINKOS_DIR := $(abspath $(__ARCH_DIR)/../..)
 
-include $(THISDIR)/config.mk
+include $(__THINKOS_DIR)/mk/config.mk
 
 ARCH = cm3
 
@@ -34,6 +36,11 @@ ifneq ($(findstring $(MACH), stm32f405 stm32f407 stm32f427 stm32f429),)
 endif
 
 ifneq ($(findstring $(MACH), stm32f446xc stm32f446xe),)
+  CPU = cortex-m4
+  STM32 = stm32f4
+endif
+
+ifneq ($(findstring $(MACH), stm32f415xg),)
   CPU = cortex-m4
   STM32 = stm32f4
 endif
@@ -108,7 +115,9 @@ ifndef APPADDR
 endif
 
 CFLAGS += -ffunction-sections -fdata-sections 
-
+INCPATH += $(__ARCH_DIR)/include $(__THINKOS_DIR)/sdk/include
+LDDIR := $(abspath $(THISDIR)/../ld)
+LIBPATH += $(__ARCH_DIR)/ld $(__THINKOS_DIR)/ld
 
 ifndef LOAD_ADDR
   LOAD_ADDR := $(APPADDR)
@@ -118,12 +127,16 @@ ifdef PROG
   ifdef LDSCRIPT
     LDFLAGS += -Wl,--gc-sections -nostdlib -T $(LDSCRIPT)
   else
-    LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld
+    ifdef THINKAPP
+      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-app.ld
+    else
+      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
+    endif
   endif
-  include $(THISDIR)/prog.mk
-  include $(THISDIR)/jtag.mk
+  include $(__THINKOS_DIR)/mk/prog.mk
+  include $(__THINKOS_DIR)/mk/jtag.mk
 else
-  include $(THISDIR)/prog.mk
+  include $(__THINKOS_DIR)/mk/prog.mk
 endif
 
 

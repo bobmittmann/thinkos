@@ -133,7 +133,7 @@ endif
 # path variables
 #------------------------------------------------------------------------------ 
 
-LIBPATH := $(LIB_OUTDIR) $(LDDIR) $(abspath $(LIBPATH))
+LIBPATH := $(LIB_OUTDIR) $(abspath $(LIBPATH))
 INCPATH	:= $(abspath $(INCPATH)) $(abspath .) $(OUTDIR)
 
 #------------------------------------------------------------------------------ 
@@ -245,7 +245,6 @@ $(call trace3,VERSION_H = '$(VERSION_H)')
 #$(info MACHTYPE = '$(MACHTYPE)')
 #$(info LIBDIRS_ALL = '$(LIBDIRS_ALL)')
 #$(info SET = '$(shell set)')
-#$(info LDDIR = '$(LDDIR)')
 #$(info BASEDIR = '$(BASEDIR)')
 #$(info LIB_OUTDIR = '$(LIB_OUTDIR)')
 #$(info LIB_INSTALLDIR = '$(LIB_INSTALLDIR)')

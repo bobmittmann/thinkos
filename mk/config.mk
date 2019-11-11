@@ -29,7 +29,6 @@ THISDIR := $(dir $(CONFIG_MK))
 SCRPTDIR := $(abspath $(THISDIR))
 BASEDIR := $(abspath $(THISDIR)/..)
 TOOLSDIR := $(abspath $(THISDIR)/../tools)
-LDDIR := $(abspath $(THISDIR)/../ld)
 
 #------------------------------------------------------------------------------ 
 # default output directories

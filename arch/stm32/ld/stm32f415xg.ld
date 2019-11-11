@@ -1,5 +1,5 @@
 /* 
- * stm32f446xe.ld
+ * stm32f207.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,14 +19,6 @@
  * http://www.gnu.org/
  */
 
-
-/* Devices:
-   STM32F446ME 
-   STM32F446RE 
-   STM32F446VE 
-   STM32F446ZE 
- */
-
 OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
@@ -34,9 +26,10 @@ SEARCH_DIR(.)
 MEMORY
 {
 	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 512K
+	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
 	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
 	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
+	ccm     (rw) : ORIGIN = 0x10000000, LENGTH = 64K
 	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
 	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
 	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
@@ -45,8 +38,13 @@ MEMORY
 
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("STACK", sram2);
+REGION_ALIAS("STACK", ccm);
 REGION_ALIAS("LOG", dcclog);
+REGION_ALIAS("HEAP", sram1);
 
-INCLUDE stm32f446x.ld
+/* Device Vectors */
+INCLUDE stm32f4xx.ld
+/* ARM ThinkOS common */
+/* INCLUDE arm-elf-thinkos-eabi.ld
+*/
 

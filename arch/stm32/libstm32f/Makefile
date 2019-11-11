@@ -21,7 +21,7 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-include ../../mk/config.mk
+include ../../../mk/config.mk
 
 LIB_STATIC = stm32f
 
@@ -105,7 +105,5 @@ CFILES = stm32f1x-init.c stm32f-gpio.c stm32f-eth.c\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
 endif
 
-
-
-include ../../mk/lib.mk
+include ../../../mk/lib.mk
 

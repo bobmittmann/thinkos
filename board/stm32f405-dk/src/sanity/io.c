@@ -23,14 +23,16 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <stdint.h>
+#include <thinkos.h>
 
 #include "io.h"
+#include "board.h"
 
 #define POLL_PERIOD_MS 16
 
 /* GPIO pin description */ 
 struct stm32f_io {
-	struct stm32f_gpio * gpio;
+	struct stm32_gpio * gpio;
 	uint8_t pin;
 };
 
@@ -40,10 +42,10 @@ struct stm32f_io {
  */
 
 const struct stm32f_io led_io[] = {
-	{ STM32F_GPIOC, 1 },
-	{ STM32F_GPIOC, 14 },
-	{ STM32F_GPIOC, 7 },
-	{ STM32F_GPIOC, 8 }
+	{ STM32_GPIOC, 1 },
+	{ STM32_GPIOC, 14 },
+	{ STM32_GPIOC, 7 },
+	{ STM32_GPIOC, 8 }
 };
 
 #define UNLOCKED -1
@@ -58,7 +60,7 @@ void led_on(int id)
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	stm32f_gpio_set(led_io[id].gpio, led_io[id].pin);
+	stm32_gpio_set(led_io[id].gpio, led_io[id].pin);
 }
 
 void led_off(int id)
@@ -66,7 +68,7 @@ void led_off(int id)
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	stm32f_gpio_clr(led_io[id].gpio, led_io[id].pin);
+	stm32_gpio_clr(led_io[id].gpio, led_io[id].pin);
 }
 
 void led_flash(int id, int ms)
@@ -75,41 +77,41 @@ void led_flash(int id, int ms)
 //		return;
 
 	led_drv.tmr[id] = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
-	stm32f_gpio_set(led_io[id].gpio, led_io[id].pin);
+	stm32_gpio_set(led_io[id].gpio, led_io[id].pin);
 }
 
 void leds_all_off(void)
 {
-	int i;
+	unsigned int i;
 
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
 	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i)
-		stm32f_gpio_clr(led_io[i].gpio, led_io[i].pin);
+		stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
 }
 
 void leds_all_on(void)
 {
-	int i;
+	unsigned int i;
 
 	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 		return;
 
 	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i)
-		stm32f_gpio_set(led_io[i].gpio, led_io[i].pin);
+		stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
 }
 
 void leds_all_flash(int ms)
 {
-	int i;
+	unsigned int i;
 
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
 	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i) {
 		led_drv.tmr[i] = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
-		stm32f_gpio_set(led_io[i].gpio, led_io[i].pin);
+		stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
 	}
 }
 
@@ -132,15 +134,15 @@ void leds_unlock(void)
 
 static void leds_init(void)
 {
-	int i;
+	unsigned int i;
 
 	led_drv.lock = UNLOCKED;
 
 	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i) {
-		stm32f_gpio_mode(led_io[i].gpio, led_io[i].pin,
+		stm32_gpio_mode(led_io[i].gpio, led_io[i].pin,
 						 OUTPUT, PUSH_PULL | SPEED_LOW);
 
-		stm32f_gpio_clr(led_io[i].gpio, led_io[i].pin);
+		stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
 	}
 }
 
@@ -149,8 +151,6 @@ static void leds_init(void)
  * I/O 
  * ----------------------------------------------------------------------
  */
-
-#define PUSH_BTN STM32F_GPIOC, 9
 
 /* Button internal events */
 enum {
@@ -184,13 +184,11 @@ int btn_event_wait(void)
 	int irq_ev;
 
 //	tracef("%s(): wait...", __func__);
-	thinkos_flag_wait(btn_drv.flag);
+	thinkos_flag_take(btn_drv.flag);
 
 	/* FIXME: possible race condition on this variable */
 	irq_ev = btn_drv.event;
 	btn_drv.event = 0;
-
-	thinkos_flag_clr(btn_drv.flag);
 
 	switch (btn_drv.fsm) {
 	case BTN_FSM_IDLE:
@@ -286,7 +284,7 @@ int btn_event_wait(void)
 static void btn_init(void)
 {
 	btn_drv.flag = thinkos_flag_alloc();
-	btn_drv.st = stm32f_gpio_stat(PUSH_BTN) ? 0 : 1;
+	btn_drv.st = stm32_gpio_stat(PUSH_BTN) ? 0 : 1;
 	btn_drv.fsm = BTN_FSM_IDLE;
 }
 
@@ -296,11 +294,11 @@ static void btn_init(void)
  * ----------------------------------------------------------------------
  */
 
-void stm32f_tim2_isr(void)
+void stm32_tim2_isr(void)
 {
 	struct stm32f_tim * tim = STM32F_TIM2;
+	unsigned int i;
 	int st;
-	int i;
 
 	/* Clear interrupt flags */
 	tim->sr = 0;
@@ -310,20 +308,20 @@ void stm32f_tim2_isr(void)
 		if (led_drv.tmr[i] == 0)
 			continue;
 		if (--led_drv.tmr[i] == 0) 
-			stm32f_gpio_clr(led_io[i].gpio, led_io[i].pin);
+			stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
 	}
 
 	if ((btn_drv.tmr) && (--btn_drv.tmr == 0)) {
 		/* process button timer */
 		btn_drv.event = BTN_TIMEOUT;
-		__thinkos_flag_signal(btn_drv.flag);
+		thinkos_flag_give(btn_drv.flag);
 	} else {
 		/* process push button */
-		st = stm32f_gpio_stat(PUSH_BTN) ? 0 : 1;
+		st = stm32_gpio_stat(PUSH_BTN) ? 0 : 1;
 		if (btn_drv.st != st) {
 			btn_drv.st = st;
 			btn_drv.event = st ? BTN_PRESSED : BTN_RELEASED;
-			__thinkos_flag_signal(btn_drv.flag);
+			thinkos_flag_give(btn_drv.flag);
 		}
 	}
 }
@@ -332,13 +330,13 @@ void __attribute__((noreturn)) io_task(void * arg)
 {
 	for (;;) {
 		thinkos_irq_wait(STM32F_IRQ_TIM2);
-		stm32f_tim2_isr();
+		stm32_tim2_isr();
 	}
 }
 
 static void io_timer_init(uint32_t freq)
 {
-	struct stm32f_rcc * rcc = STM32F_RCC;
+	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32f_tim * tim = STM32F_TIM2;
 	uint32_t div;
 	uint32_t pre;
@@ -370,27 +368,33 @@ static void io_timer_init(uint32_t freq)
 	tim->cr1 = TIM_URS | TIM_CEN; /* Enable counter */
 }
 
-uint32_t io_stack[64];
+uint32_t io_stack[64] __attribute__ ((aligned(8), section(".stack")));
+
+const struct thinkos_thread_inf io_thread_inf = {
+	.stack_ptr = io_stack,
+	.stack_size = sizeof(io_stack),
+	.priority = 28,
+	.thread_id = 28,
+	.paused = 0,
+	.tag = "RATEGEN"
+};
+
 
 void io_init(void)
 {
 	/* Enable IO clocks */
-	stm32f_gpio_clock_en(STM32F_GPIOA);
-	stm32f_gpio_clock_en(STM32F_GPIOB);
-	stm32f_gpio_clock_en(STM32F_GPIOC);
+	stm32_gpio_mode(PUSH_BTN, INPUT, PULL_UP);
 
-	stm32f_gpio_mode(PUSH_BTN, INPUT, PULL_UP);
-
-	stm32f_gpio_mode(STM32F_GPIOB, 10, INPUT, 0);
-	stm32f_gpio_mode(STM32F_GPIOB, 11, INPUT, 0);
+	stm32_gpio_mode(STM32_GPIOB, 10, INPUT, 0);
+	stm32_gpio_mode(STM32_GPIOB, 11, INPUT, 0);
 
 	btn_init();
 	leds_init();
 
-	thinkos_thread_create((void *)io_task, (void *)NULL, 
-						  io_stack, sizeof(io_stack), 15);
-
 	io_timer_init(1000 / POLL_PERIOD_MS);
+
+	thinkos_thread_create_inf((void *)io_task, (void *)NULL,
+				  &io_thread_inf);
 }
 
 

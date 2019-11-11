@@ -95,13 +95,13 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE       320
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       1
+#define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_SYSRST_ONFAULT          1
+#define THINKOS_SYSRST_ONFAULT          0
 #define THINKOS_ENABLE_DEBUG_FAULT      1
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
@@ -124,6 +124,7 @@
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 #define THINKOS_ENABLE_IDLE_MSP         1
+#define THINKOS_ENABLE_SCHED_DEBUG      0
 
 /* -------------------------------------------------------------------------
  * delay
@@ -244,7 +245,6 @@
  * Trace 
  * ------------------------------------------------------------------------- */
 
-#define TRACE_LEVEL TRACE_LVL_DBG
 
 /* -------------------------------------------------------------------------
  * LibC

@@ -42,6 +42,10 @@
 #include <arch/stm32f405.h>
 #endif
 
+#if defined(STM32F415) || defined(STM32F415XG)
+#include <arch/stm32f415.h>
+#endif
+
 #ifdef STM32F207
 #include <arch/stm32f207.h>
 #endif

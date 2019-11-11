@@ -1,5 +1,5 @@
 /* 
- * thinkos.ld
+ * stm32f4xx.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -23,24 +23,28 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__thinkos = 0;
+__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
 
-MEMORY
-{
-	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash (rx) : ORIGIN = 0x08000000, LENGTH = 512K
-	sram0 (rw) : ORIGIN = 0x20000000, LENGTH = 112K
-	sram1 (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
-	sram2 (rw) : ORIGIN = 0x10000000, LENGTH = 64K
-	dcclog (r) : ORIGIN = 0x40000000, LENGTH = 1024K
-}
+_stack_top = ORIGIN(STACK) + LENGTH(STACK);
+_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
+_stack_limit = ORIGIN(STACK);
+ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram0);
-REGION_ALIAS("STACK", sram2);
+EXTERN(_stack)
+EXTERN(_reset)
+EXTERN(ice_comm_blk)
 
-__code_init = ORIGIN(flash) + (DEFINED(__thinkos) ? 0x10000 : 0) ;
-__data_init = ORIGIN(sram0) + (DEFINED(__thinkos) ? 0x01000 : 0) ;
+EXTERN(cm3_nmi_isr)
+EXTERN(cm3_hard_fault_isr)
+EXTERN(cm3_mem_manage_isr)
+EXTERN(cm3_bus_fault_isr)
+EXTERN(cm3_usage_fault_isr)
+EXTERN(cm3_svc_isr)
+EXTERN(cm3_debug_mon_isr)
+EXTERN(cm3_pendsv_isr)
+EXTERN(cm3_systick_isr)
 
 SECTIONS
 {
@@ -61,6 +65,8 @@ SECTIONS
 
 	.init __code_init :
 	{
+		KEEP (*(.rom_vectors))
+		KEEP (*(.boot))
 		KEEP (*(.init))
 	} >"CODE" = 0xffffffff
 
@@ -71,8 +77,24 @@ SECTIONS
 		/* all .glue_7t sections (interworking thumb helpers) */
 		*(.glue_7) *(.glue_7t) *(.vfp11_veneer) *(.v4_bx)
 		/* all .rodata sections (constants, strings, etc.)  */
-		*(.rodata .rodata.* .gnu.linkonce.r.*)
+		*(.rodata)
+		*(.rodata.__func__.*)
+
+		. = ALIGN(4);
+		/* kernel traces */
+		PROVIDE(__trace_krn_start = .);
+		KEEP(*(SORT(.rodata.trace_krn.*)))
+		PROVIDE(__trace_krn_end = .);
+
+		. = ALIGN(4);
+		/* user traces */
+		PROVIDE(__trace_usr_start = .);
+		KEEP(*(SORT(.rodata.trace.*)))
+		PROVIDE(__trace_usr_end = .);
+
+		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
+
 		. = ALIGN(4);
 		/* constructors */
 		PROVIDE(__ctors_start = .);
@@ -104,6 +126,7 @@ SECTIONS
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
+		KEEP (*(.ram_vectors))
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */
@@ -118,12 +141,39 @@ SECTIONS
 		/* define a global symbol marking the start of the .bss section */
 		PROVIDE (__bss_start = . );
 		/* all .bss sections  */
-		*(.bss)
+		*(.bss .bss*)
 	} >"DATA"
 
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
-	PROVIDE (__heap_start = . );
+
+	.heap :
+	{
+		PROVIDE (__heap_start = . );
+		/* all .heap sections  */
+		*(.heap .heap*)
+	} >"DATA"
+
+	/* advance location counter to the next 32-bit boundary */
+	. = ALIGN(4);
+	PROVIDE (__heap_base = . );
+
+	/* Backed up control section */
+	.bkpctl :
+	{
+		PROVIDE (__bkpctl_start = . );
+		*(.bkpctl .bkpctl*)
+		PROVIDE (__bkpctl_end = . );
+	} >"rtcbkr"
+
+	/* Backed up data section */
+	.bkpdat :
+	{
+		PROVIDE (__bkpdat_start = . );
+		*(.bkpdat .bkpdat*)
+		PROVIDE (__bkpdat_end = . );
+	} >"bkpsram"
+
 }
 
