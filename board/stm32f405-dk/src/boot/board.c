@@ -52,7 +52,7 @@ static int yflash(uint32_t blk_offs, uint32_t blk_size,
 	__thinkos_memcpy((void *)yflash_code, otg_xflash_pic, 
 					 sizeof_otg_xflash_pic);
 
-    thumb = yflash_code | 0x00000001; /* thumb call */
+	thumb = yflash_code | 0x00000001; /* thumb call */
 	yflash_ram = (int (*)(uint32_t, uint32_t, const struct magic_blk *))thumb;
 	ret = yflash_ram(blk_offs, blk_size, magic);
 
@@ -310,9 +310,9 @@ const struct magic_blk thinkos_10_app_magic = {
 const struct mem_desc sram_desc = {
 	.tag = "RAM",
 	.blk = {
-		{"STACK",  0x10000000, M_RW, SZ_64K, 1},	/*  CCM - Main Stack */
-		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	/* Bootloader: 4KiB */
-		{"DATA",   0x20001000, M_RW, SZ_4K, 27},	/* Application: 108KiB */
+		{"STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
+		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
+		{"DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
 		{"SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
 		{"SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
 
@@ -325,7 +325,7 @@ const struct mem_desc flash_desc = {
 	.blk = {
 		{"BOOT", 0x08000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
 		{"CONF", 0x08010000, M_RO, SZ_64K, 1},	/* Configuration: 64 KiB */
-		{"APP",  0x08020000, M_RW, SZ_128K, 3},	/* Application:  */
+		{"APP",  0x08020000, M_RW, SZ_128K, 7},	/* Application:  */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };
@@ -333,7 +333,7 @@ const struct mem_desc flash_desc = {
 const struct mem_desc peripheral_desc = {
 	.tag = "PERIPH",
 	.blk = {
-		{"RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
+		{"RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };

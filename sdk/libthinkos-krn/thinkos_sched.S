@@ -1,5 +1,5 @@
 /* 
- * thikos_core.c
+ * thikos_sched.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -65,7 +65,7 @@ thinkos_sched_get_active:
 	/* get the active (current) thread and the ready bitmap */
 	ldrd      r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* r1: ready, */
-	/* r2: active, */
+	/* r2: active, (thread status) */
 
 #if !(THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
 	mrs     r0, PSP
@@ -76,7 +76,7 @@ thinkos_sched_context_save:
 	mov     r12, r0
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
-    tst     lr, #EXC_RETURN_nFPCA
+	tst     lr, #EXC_RETURN_nFPCA
 	itt     eq
 	moveq   r7, r0
 	vstmdbeq r7!, {s16-s31}
@@ -84,7 +84,7 @@ thinkos_sched_context_save:
 	tst     lr, #EXC_RETURN_SPSEL
 	itte    eq
 	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4) /* reserve spce on MSP stack */
+	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
 	mrsne   r0, PSP
 	movs    r12, r0
 thinkos_sched_context_save:
@@ -93,12 +93,12 @@ thinkos_sched_context_save:
 	tst     lr, #EXC_RETURN_SPSEL
 	itte    eq
 	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4) /* reserve spce on MSP stack */
+	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
 	mrsne   r0, PSP
 	movs    r12, r0
 thinkos_sched_context_save:
 	stmdb   r0!, {r4-r12,lr}
-    tst     lr, #EXC_RETURN_nFPCA
+	tst     lr, #EXC_RETURN_nFPCA
 	itt     eq
 	moveq   r7, r0
 	vstmdbeq r7!, {s16-s31}
@@ -123,8 +123,8 @@ thinkos_sched_update_cyccnt:
 	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
 	/* r6: delta =  cyccnt - cycref */	
 	subs    r6, r6, r5
-    /* update thread's cycle counter */
-    adds    r7, r2, #(SIZEOF_CTX / 4)
+	/* update thread's cycle counter */
+	adds    r7, r2, #(SIZEOF_CTX / 4)
 	ldr     r5, [r3, r7, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds    r5, r6
@@ -140,8 +140,9 @@ thinkos_sched_select_ready:
 	/* r1 - ready queue
 	   r2 - old thread */
 	/* get a thread from the ready bitmap by counting the
-	 leading zeros on the bitmap */
+	leading zeros on the bitmap */
 #if (THINKOS_THREADS_MAX < 32) 
+	/* force the IDLE thread bit to one */
 	orr     r1, #(1 << THINKOS_THREADS_MAX)
 #endif
 	rbit    r1, r1
@@ -190,7 +191,7 @@ thinkos_sched_context_restore:
 	ldmia   r0!, {r4-r11}
 #endif
 #if (THINKOS_ENABLE_FPU)
-    tst     lr, #EXC_RETURN_nFPCA
+	tst     lr, #EXC_RETURN_nFPCA
 	it      eq
 	vldmdbeq  r3!, {s16-s31}
 #endif
@@ -200,8 +201,8 @@ thinkos_sched_context_restore:
 	msrne   PSP, r0
 	movne   r3, #CONTROL_nPRIV | CONTROL_SPSEL /* non-privileged mode */
 	moveq   sp, r0
-	moveq   r3, 0 /* privileged mode MSP */
-	msr CONTROL, r3
+	moveq   r3, #0 /* privileged mode MSP */
+	msr     CONTROL, r3
 	isb
 #else
 	msr     PSP, r0
@@ -250,7 +251,7 @@ thinkos_sched_step:
 	and      r5, r5, #0xdf
 	cmp      r5, #0xdf
 	itt      eq
-    /* the thread is stepping into a system call */
+	/* the thread is stepping into a system call */
 	orreq    r6, r4
 	streq    r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]
 	beq      .L_save_active_and_restore
@@ -269,7 +270,7 @@ thinkos_sched_step:
 	str     r5, [r6, #DCB_DEMCR_OFFS]
 	/* Mask low priority interrupts except debug monitor */
 	mov     r5, #(1 << 5)
-	msr	    BASEPRI, r5
+	msr     BASEPRI, r5
 
 	b       .L_save_active_and_restore
 	
@@ -297,18 +298,8 @@ thinkos_sched_step:
 	strb    r1, [r3, #THINKOS_RT_STEP_ID_OFFS]
 	/* Get the idle contex t*/
 	ldr     r0, [r3, #THINKOS_RT_IDLE_CTX_OFFS]
-	movs    r1, #THINKOS_THREAD_IDLE
-#if 0
-	movs    r1, #THINKOS_THREAD_IDLE
-	/* XXX: if no SVC calls are allowed on IDLE we don't need 
-	   this */
-	ldr     r6, .L_idle_task
-	movs    r5, #THINKOS_THREAD_IDLE
-	str     r5, [r3, #THINKOS_RT_ACTIVE_OFFS]
-	/* set the PC */
-	str     r6, [r0, #(CTX_PC * 4)]
-#endif
 	/* step the IDLE thread instead  */
+	movs    r1, #THINKOS_THREAD_IDLE
 	b       .L_restore_and_step
 
 

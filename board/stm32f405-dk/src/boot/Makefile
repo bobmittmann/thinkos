@@ -44,7 +44,7 @@ INCPATH = $(SDK_DIR)/include ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Ofast -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f415xg
