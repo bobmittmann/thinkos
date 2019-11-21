@@ -23,18 +23,23 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-dbg
 
-CFILES = null_comm.c usb_comm.c usb_comm_queue.c \
-		 thinkos_dbgmon.c \
-		 dbgmon_thread.c dbgmon_memory.c \
-		 dbgmon_printf.c dbgmon_scanf.c \
-		 dbgmon_putc.c dbgmon_puts.c \
-		 dbgmon_getc.c dbgmon_gets.c \
-		 dbgmon_hexdump.c dbgmon_console_task.c \
-		 dbgmon_comm_misc.c \
-		 print_osinfo.c print_alloc.c print_thread.c \
-		 print_context.c print_stack_usage.c \
-		 app_exec.c flash_erase.c dmon_ymodem.c flash_ymodem.c \
-		 print_exception.c print_profile.c 
+COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
+
+COMMIO_CFILES = dbgmon_putc.c dbgmon_puts.c \
+		dbgmon_getc.c dbgmon_gets.c \
+		dbgmon_printf.c dbgmon_scanf.c \
+		dbgmon_ymodem.c dbgmon_send_misc.c \
+		print_osinfo.c print_alloc.c print_thread.c \
+		print_context.c print_stack_usage.c \
+		print_exception.c print_profile.c  \
+		dbgmon_hexdump.c
+
+CFILES = thinkos_dbgmon.c \
+	 dbgmon_thread.c dbgmon_memory.c \
+	 dbgmon_console_task.c \
+	 app_exec.c flash_erase.c flash_ymodem.c \
+	 $(addprefix comm/,$(COMM_CFILES)) $(addprefix commio/,$(COMMIO_CFILES))
+
 
 SFILES = dbgmon_swap.S
 

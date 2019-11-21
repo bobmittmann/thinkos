@@ -72,8 +72,6 @@
 #define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
 #endif
 
-#include <sys/usb-dev.h>
-
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events
  * ----------------------------------------------------------------------------
@@ -210,17 +208,10 @@ void thinkos_dbgmon_svc(int32_t arg[], int self);
 
 void thinkos_dbgmon_reset(void);
 
-void __attribute__((noreturn)) 
-	dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
-	            void * param);
-
-int dbgmon_thread_create(int (* func)(void *), void * arg, 
-						 const struct thinkos_thread_inf * inf);
-
-void dbgmon_thread_resume(int thread_id);
-
-void dbgmon_thread_destroy(int thread_id);
-
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor events/signals 
+ * ----------------------------------------------------------------------------
+ */
 void dbgmon_unmask(int sig);
 
 void dbgmon_mask(int sig);
@@ -229,13 +220,22 @@ void dbgmon_clear(int sig);
 
 void dbgmon_signal(int sig); 
 
-void __dbgmon_idle_hook(void);
-
 int dbgmon_select(uint32_t evmask);
 
 int dbgmon_expect(int sig);
 
 bool dbgmon_is_set(int sig);
+
+int dbgmon_wait_idle(void);
+
+void dbgmon_soft_reset(void);
+
+void __dbgmon_idle_hook(void);
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor alarm/timer 
+ * ----------------------------------------------------------------------------
+ */
 
 int dbgmon_sleep(unsigned int ms);
 
@@ -243,10 +243,10 @@ void dbgmon_alarm(unsigned int ms);
 
 void dbgmon_alarm_stop(void);
 
-int dbgmon_wait_idle(void);
-
-void dbgmon_soft_reset(void);
-
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor watchpoint/breakpoint API
+ * ----------------------------------------------------------------------------
+ */
 bool dbgmon_breakpoint_set(uint32_t addr, uint32_t size);
 
 bool dbgmon_breakpoint_clear(uint32_t addr, uint32_t size);
@@ -259,6 +259,10 @@ bool dbgmon_watchpoint_clear(uint32_t addr, uint32_t size);
 
 void dbgmon_watchpoint_clear_all(void);
 
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor thread API
+ * ----------------------------------------------------------------------------
+ */
 void __dbgmon_signal_thread_create(int thread_id);
 
 void __dbgmon_signal_thread_terminate(int thread_id, int code);
@@ -274,41 +278,23 @@ int dbgmon_thread_step_get(void);
 void dbgmon_thread_step_clr(void);
 int dbgmon_thread_step(unsigned int id, bool block);
 
-
-int __attribute__((format (__printf__, 2, 3))) 
-	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
-
-int dbgmon_putc(int c, const struct dbgmon_comm * comm);
-
-int dbgmon_puts(const char * s, const struct dbgmon_comm * comm);
-
-/* COMM miscelaneous sending calls */
-void dbgmon_comm_send_int(int32_t val, unsigned int width, 
-						  const struct dbgmon_comm * comm);
-
-void dbgmon_comm_send_uint(uint32_t val, unsigned int width, 
-						   const struct dbgmon_comm * comm); 
-
-void dbgmon_comm_send_str(const char * s, unsigned int width, 
-						  const struct dbgmon_comm * comm);
-
-void dbgmon_comm_send_blanks(unsigned int width, 
-							 const struct dbgmon_comm * comm);
-
-void dbgmon_comm_send_hex(uint32_t val, unsigned int width, 
-						  const struct dbgmon_comm * comm);
-
-int dbgmon_gets(char * s, int size, const struct dbgmon_comm * comm);
-
-int dbgmon_getc(const struct dbgmon_comm * comm);
-
-int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... );
-
-void dbgmon_hexdump(const struct dbgmon_comm * comm, 
-					const struct mem_desc * mem,
-					uint32_t addr, unsigned int size);
-
 int dbgmon_thread_last_fault_get(uint32_t * addr);
+
+int dbgmon_thread_create(int (* func)(void *), void * arg, 
+                         const struct thinkos_thread_inf * inf);
+
+void dbgmon_thread_resume(int thread_id);
+
+void dbgmon_thread_destroy(int thread_id);
+
+/* ??? */
+void __attribute__((noreturn)) dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
+		void * param);
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor memory API
+ * ----------------------------------------------------------------------------
+ */
 
 /* Safe read and write operations to avoid faults in the debugger */
 
@@ -337,20 +323,74 @@ const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[],
  * ----------------------------------------------------------------------------
  */
 
+#include <sys/usb-dev.h>
+
 const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb);
 const struct dbgmon_comm * usb_comm_getinstance(void);
 
 const struct dbgmon_comm * custom_comm_init(void);
 const struct dbgmon_comm * custom_comm_getinstance(void);
 
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor COMM IO API
+ * ----------------------------------------------------------------------------
+ */
+
+/* Minimalistic printf style output formatter */
+int __attribute__((format (__printf__, 2, 3))) 
+	dbgmon_printf(const struct dbgmon_comm * comm, const char *fmt, ... );
+
+/* Sends a single ASCII character */
+int dbgmon_putc(int c, const struct dbgmon_comm * comm);
+
+/* Sends a NULL terminated string */
+int dbgmon_puts(const char * s, const struct dbgmon_comm * comm);
+
+/* Formats and sends a 32bits signed value into decimal */
+void dbgmon_comm_send_int(int32_t val, unsigned int width, 
+                          const struct dbgmon_comm * comm);
+
+/* Formats and sends a 32bits unsigned value into decimal */
+void dbgmon_comm_send_uint(uint32_t val, unsigned int width, 
+                           const struct dbgmon_comm * comm); 
+
+/* Formats and sends a C string */
+void dbgmon_comm_send_str(const char * s, unsigned int width, 
+		const struct dbgmon_comm * comm);
+
+/* Formats and sends a blanks */
+void dbgmon_comm_send_blanks(unsigned int width, 
+		const struct dbgmon_comm * comm);
+
+/* Formats 32bits unsigned value into hexadecimal and sends */
+void dbgmon_comm_send_hex(uint32_t val, unsigned int width, 
+		const struct dbgmon_comm * comm);
+
+/* Returns a string */
+int dbgmon_gets(char * s, int size, const struct dbgmon_comm * comm);
+
+/* Returns a single character */
+int dbgmon_getc(const struct dbgmon_comm * comm);
+
+/* Minimalistic scanf style input formatter */
+int dbgmon_scanf(const struct dbgmon_comm * comm, const char *fmt, ... );
+
+/* Formats and sends a memory buffer formatted as hexadecimal */
+void dbgmon_hexdump(const struct dbgmon_comm * comm, 
+                    const struct mem_desc * mem,
+                    uint32_t addr, unsigned int size);
+
 void dbgmon_print_context(const struct dbgmon_comm * comm, 
-						  const struct thinkos_context * ctx, uint32_t sp);
+                          const struct thinkos_context * ctx, 
+                          uint32_t sp);
 
 void dbgmon_print_exception(const struct dbgmon_comm * comm, 
-							struct thinkos_except * xcpt);
+                            struct thinkos_except * xcpt);
 
-int dbgmon_print_profile(const struct dbgmon_comm * comm, 
-						 const struct thinkos_profile * p);
+void dbgmon_print_profile(const struct dbgmon_comm * comm, 
+                          const struct thinkos_profile * p);
+
+void dbgmon_print_alloc(const struct dbgmon_comm * comm);
 
 #ifdef __cplusplus
 }

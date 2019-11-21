@@ -44,7 +44,7 @@ static int bmp_bit_cnt(uint32_t bmp[], int bits)
 	return cnt;
 }
 
-void dmon_print_alloc(struct dbgmon_comm * comm)
+void dbgmon_print_alloc(const struct dbgmon_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 

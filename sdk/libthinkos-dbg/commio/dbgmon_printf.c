@@ -58,7 +58,7 @@ int ull2hex(char * s, unsigned long long val);
 #define DMPRINTF_ENABLE_LARGE_PADDING 1
 #endif
 
-static const char __zeros[]  = {  
+static const char dbgmon_zeros[]  = {  
 #if (DMPRINTF_ENABLE_LARGE_PADDING)
 	'0', '0', '0', '0', '0', '0', '0', '0', 
 	'0', '0', '0', '0', '0', '0', '0', '0', 
@@ -67,7 +67,7 @@ static const char __zeros[]  = {
 	'0', '0', '0', '0', '0', '0', '0', '0', 
 	'0', '0', '0', '0', };
 	
-static const char __blanks[] = {
+static const char dbgmon_blanks[] = {
 #if (DMPRINTF_ENABLE_LARGE_PADDING)
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 
@@ -276,9 +276,9 @@ print_buf:
 					flags &= ~SIGN;
 					cnt += dbgmon_comm_send(comm, buf, 1);
 				}
-				r = dbgmon_comm_send(comm, __zeros, w - n);
+				r = dbgmon_comm_send(comm, dbgmon_zeros, w - n);
 			} else {
-				r = dbgmon_comm_send(comm, __blanks, w - n);
+				r = dbgmon_comm_send(comm, dbgmon_blanks, w - n);
 			}
 			cnt += r;
 		}
@@ -291,7 +291,7 @@ print_buf:
 
 #if (DMPRINTF_ENABLE_LEFT_ALIGN)
 		if ((flags & LEFT) && (w > n)) {
-			r = dbgmon_comm_send(comm, __blanks, w - n);
+			r = dbgmon_comm_send(comm, dbgmon_blanks, w - n);
 			cnt += r;
 		}
 #endif

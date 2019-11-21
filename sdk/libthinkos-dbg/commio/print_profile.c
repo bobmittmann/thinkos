@@ -27,8 +27,8 @@
 /* -------------------------------------------------------------------------- 
  * ThinkOS profile 
  * --------------------------------------------------------------------------*/
-int dbgmon_print_profile(const struct dbgmon_comm * comm, 
-						 const struct thinkos_profile * p)
+void dbgmon_print_profile(const struct dbgmon_comm * comm, 
+                          const struct thinkos_profile * p)
 {
 
 	dbgmon_printf(comm, "%32s = %d.%d\r\n", "THINKOS_KERNEL_VERSION",          
@@ -155,6 +155,5 @@ int dbgmon_print_profile(const struct dbgmon_comm * comm,
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_HOOKS", p->misc.idle_hooks);
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_MSP", p->misc.idle_msp);
 
-	return 0;
 }
 
