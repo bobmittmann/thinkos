@@ -98,7 +98,7 @@ SECTIONS
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
 
-	.bss :
+	.bss __data_end :
 	{
 		/* define a global symbol marking the start of the .bss section */
 		PROVIDE (__bss_start = . );
