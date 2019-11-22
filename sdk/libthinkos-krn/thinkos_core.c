@@ -113,7 +113,7 @@ void __thinkos_core_reset(void)
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	/* initialize the mutex locks */
 	for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
-	thinkos_rt.lock[i] = -1;
+		thinkos_rt.lock[i] = -1;
 	/* initialize the mutex allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.mutex_alloc, THINKOS_MUTEX_MAX); 
 #endif

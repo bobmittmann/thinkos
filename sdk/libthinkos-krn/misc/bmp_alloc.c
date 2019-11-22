@@ -22,6 +22,7 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #include <thinkos.h>
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \
 	THINKOS_ENABLE_COND_ALLOC | THINKOS_ENABLE_SEM_ALLOC | \
@@ -61,7 +62,7 @@ void __thinkos_bmp_init(uint32_t bmp[], int bits)
 
 
 #if THINKOS_ENABLE_THREAD_ALLOC 
-int __thinkos_alloc_lo(uint32_t * ptr, int start) 
+static int __thinkos_alloc_lo(uint32_t * ptr, int start) 
 {
 	int idx;
 
@@ -77,7 +78,7 @@ int __thinkos_alloc_lo(uint32_t * ptr, int start)
 	return idx;
 }
 
-int __thinkos_alloc_hi(uint32_t * ptr, int start) 
+static int __thinkos_alloc_hi(uint32_t * ptr, int start) 
 {
 	int idx;
 
@@ -91,6 +92,34 @@ int __thinkos_alloc_hi(uint32_t * ptr, int start)
 	/* Mark as used */
 	__bit_mem_wr(ptr, idx, 1);  
 	return idx;
+}
+
+int __thinkos_thread_alloc(int target_id)
+{
+	int thread_id;
+
+	DCC_LOG1(LOG_INFO, "thinkos_rt.th_alloc=0x%08x", thinkos_rt.th_alloc[0]);
+
+	if (target_id >= THINKOS_THREADS_MAX) {
+		thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, 
+				THINKOS_THREADS_MAX);
+		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", target_id, 
+				thread_id);
+	} else {
+		/* Look for the next available slot */
+		if (target_id < 0)
+			target_id = 0;
+		thread_id = __thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
+		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", 
+				target_id, thread_id);
+		if (thread_id < 0) {
+			thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
+			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
+					target_id, thread_id);
+		}
+	}
+
+	return thread_id;
 }
 
 #endif

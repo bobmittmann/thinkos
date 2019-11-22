@@ -62,6 +62,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 }
 #endif
 
+
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
                                                uint32_t sp, 
                                                int (* task)(void *), 
@@ -139,26 +140,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	uint32_t sp;
 
 #if THINKOS_ENABLE_THREAD_ALLOC
-	DCC_LOG1(LOG_INFO, "thinkos_rt.th_alloc=0x%08x", thinkos_rt.th_alloc[0]);
-
-	if (target_id >= THINKOS_THREADS_MAX) {
-		thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, 
-									   THINKOS_THREADS_MAX);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", target_id, 
-				 thread_id);
-	} else {
-		/* Look for the next available slot */
-		if (target_id < 0)
-			target_id = 0;
-		thread_id = __thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", 
-				 target_id, thread_id);
-		if (thread_id < 0) {
-			thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
-			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
-					 target_id, thread_id);
-		}
-	}
+	thread_id = __thinkos_thread_alloc(target_id);
 
 	if (thread_id < 0) {
 		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);

@@ -57,16 +57,16 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	   thread numbers start form one ... */
 	int id = __ID(opt) - 1;
 
+	if (id < 0)
+		id = 0;
+
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
-	id = __thinkos_alloc_lo(thinkos_rt.th_alloc, id);
+	id = __thinkos_thread_alloc(id);
 #else
 	if (id >= THINKOS_THREADS_MAX)
 		id = THINKOS_THREADS_MAX - 1;
 #endif
-
-	if (id < 0)
-		id = 0;
 
 	/* initialize the main thread */ 
 #if THINKOS_ENABLE_THREAD_INFO

@@ -973,14 +973,12 @@ void __thinkos_bmp_init(uint32_t bmp[], int bits);
 
 int __thinkos_bmp_alloc(uint32_t bmp[], int bits);
 
-int __thinkos_alloc_lo(uint32_t * ptr, int start);
-
-int __thinkos_alloc_hi(uint32_t * ptr, int start);
+int __thinkos_thread_alloc(int target_id);
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
-											   uint32_t sp, 
-											   int (* task)(void *), 
-											   void * arg);
+                                               uint32_t sp, 
+                                               int (* task)(void *), 
+                                               void * arg);
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 

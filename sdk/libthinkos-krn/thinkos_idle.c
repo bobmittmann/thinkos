@@ -105,7 +105,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 #endif
 #endif
 
-#if THINKOS_ENABLE_FLASH_MEM
+#if (THINKOS_ENABLE_FLASH_MEM)
 			case IDLE_HOOK_FLASH_MEM:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
