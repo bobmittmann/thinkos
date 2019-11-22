@@ -37,17 +37,24 @@
 #include <sys/delay.h>
 #include <vt100.h>
 
-#include <sys/dcclog.h>
-
 #if (THINKOS_ENABLE_EXCEPTIONS)
 
-#if DEBUG
+#if (DEBUG)
+  #ifndef LOG_LEVEL
+    #define LOG_LEVEL LOG_TRACE
+  #elif LOG_LEVEL < LOG_TRACE
+    #undef LOG_LEVEL 
+    #define LOG_LEVEL LOG_TRACE
+  #endif
+
   #undef THINKOS_SYSRST_ONFAULT
   #define THINKOS_SYSRST_ONFAULT    0
   #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)
 #else
   #define DCC_EXCEPT_DUMP(XCPT)
 #endif
+
+#include <sys/dcclog.h>
 
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 
@@ -676,5 +683,4 @@ void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
 const char thinkos_xcp_nm[] = "XCP";
-
 

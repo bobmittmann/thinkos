@@ -25,6 +25,17 @@
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #include <thinkos.h>
+
+
+#if (DEBUG)
+  #ifndef LOG_LEVEL
+    #define LOG_LEVEL LOG_INFO
+  #elif LOG_LEVEL < LOG_INFO
+    #undef LOG_LEVEL 
+    #define LOG_LEVEL LOG_INFO
+  #endif
+#endif
+
 #include <sys/dcclog.h>
 
 #undef THINKOS_ENABLE_THREAD_INFO
@@ -380,7 +391,6 @@ void __xcpt_systick_int_enable(void)
 	systick->csr |= SYSTICK_CSR_TICKINT;
 #endif
 }
-
 
 void __tdump(void)
 {

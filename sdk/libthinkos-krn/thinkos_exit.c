@@ -96,6 +96,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		thread_id = thread - 1;
 
 	(void)code;
+	DCC_LOG2(LOG_TRACE, "<%2d> code=%d", thread_id + 1, code); 
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
@@ -106,13 +107,15 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
+
+		DCC_LOG2(LOG_ERROR, "<%2d> thread not allocated, th_alloc=%08x", 
+				 thread_id + 1, thinkos_rt.th_alloc);
 		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
 		ctx->r0 = THINKOS_EINVAL;
 		return;
 	}
 #endif
 #endif
-	DCC_LOG2(LOG_TRACE, "<%2d> code=%d", thread_id + 1, code); 
 
 #if THINKOS_ENABLE_TIMESHARE
 	/* possibly remove from the time share wait queue */

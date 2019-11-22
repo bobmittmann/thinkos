@@ -972,7 +972,6 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						dbgmon_signal(DBGMON_THREAD_FAULT); 
 						/* run scheduler */
 						__thinkos_defer_sched();
-
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 					} else if (code == DBGMON_BKPT_ON_THREAD_CREATE) {
 						DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
@@ -1337,5 +1336,4 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */
-
 
