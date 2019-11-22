@@ -350,24 +350,6 @@ int dbgmon_wait_idle(void)
 #endif
 }
 
-#if THINKOS_ENABLE_MONITOR_THREADS
-void __dbgmon_signal_thread_create(int thread_id)
-{
-	thinkos_dbgmon_rt.thread_id = thread_id;
-	thinkos_dbgmon_rt.code = 0;
-
-	dbgmon_signal(DBGMON_THREAD_TERMINATE);
-}
-
-void __dbgmon_signal_thread_terminate(int thread_id, int code)
-{
-	thinkos_dbgmon_rt.thread_id = thread_id;
-	thinkos_dbgmon_rt.code = code;
-
-	dbgmon_signal(DBGMON_THREAD_TERMINATE);
-}
-#endif
-
 int dbgmon_thread_terminate_get(int * code)
 {
 	int thread_id;
@@ -945,6 +927,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 			/* this is a breakpoint instruction */
 			if (insn == 0xbe00) {
 				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+					/* Breakpoint on a thread */
 					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
 							 " SOFT BKPT: %2d " _NORMAL_ _FG_GREEN_
 							 " PC=%08x SP=%08x IPSR=%d"
@@ -960,6 +943,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* run scheduler */
 					__thinkos_defer_sched();
 				} else {
+					/* Breakpoint on a system call */
 					/* Skip breakpoint intruction, by adjusting
 					   the call stack...*/
 					frm->pc += 2;
@@ -968,7 +952,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						(void)err;
 
 						/* XXX: a breakpoint is used to indicate a fault or 
-						   wrong usage of a system call in thinkOS. */
+						   wrong usage of a system call in ThinkOS. */
 						DCC_LOG5(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 								 " ERROR %d: %2d " _NORMAL_ _FG_YELLOW_
 								 " PC=%08x SP=%08x IPSR=%d"
@@ -989,11 +973,30 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						/* run scheduler */
 						__thinkos_defer_sched();
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
+					} else if (code == DBGMON_BKPT_ON_THREAD_CREATE) {
+						DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+								 " THREAD CREATE" _NORMAL_ _FG_YELLOW_
+								 " PC=%08x LR=%08x R0=%d" _ATTR_POP_, 
+								 frm->pc, frm->lr, frm->r0);
+						thinkos_dbgmon_rt.thread_id = frm->r0;
+						thinkos_dbgmon_rt.code = 0;
+						dbgmon_signal(DBGMON_THREAD_CREATE);
+					} else if (code == DBGMON_BKPT_ON_THREAD_TERMINATE) {
+						DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+								 " THREAD TERMINATE" _NORMAL_ _FG_YELLOW_
+								 " PC=%08x LR=%08x R0=%d R1=%d" _ATTR_POP_, 
+								 frm->pc, frm->lr, frm->r0, frm->r1);
+						thinkos_dbgmon_rt.thread_id = frm->r0;
+						thinkos_dbgmon_rt.code = frm->r1;
+						dbgmon_signal(DBGMON_THREAD_TERMINATE);
+#endif
+
 					} else {
-						DCC_LOG4(LOG_WARNING,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+						DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 								 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
 								 " PC=%08x SP=%08x IPSR=%d"
-								 " Breakpoint on service call",
+								 " Breakpoint on service call"
 								 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
 						__thinkos_pause_all();
 						/* record the break thread id */

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-TOOLS_DIR=../../thinkos/tools
+TOOLS_DIR=../../../../tools
 PYTHON=python
 if [ -z "$JTAGTOOL_ADDR" ]; then
 	JTAGTOOL_ADDR=192.168.10.51

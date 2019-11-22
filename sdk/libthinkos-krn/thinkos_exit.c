@@ -82,7 +82,7 @@ void __thinkos_thread_abort(unsigned int thread_id)
 	__thinkos_defer_sched();
 }
 
-#if THINKOS_ENABLE_TERMINATE
+#if (THINKOS_ENABLE_TERMINATE)
 /* Terminate the target thread */
 void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 {
@@ -181,7 +181,7 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 #if THINKOS_ENABLE_EXIT
 void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
-	DCC_LOG2(LOG_MSG, "<%2d> exit with code %d!", 
+	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", 
 			 thinkos_rt.active + 1, ctx->r0); 
 
 #if THINKOS_ENABLE_JOIN
@@ -207,4 +207,5 @@ void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
 }
 
 #endif /* THINKOS_ENABLE_EXIT */
+
 

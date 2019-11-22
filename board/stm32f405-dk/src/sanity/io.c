@@ -314,14 +314,14 @@ void stm32_tim2_isr(void)
 	if ((btn_drv.tmr) && (--btn_drv.tmr == 0)) {
 		/* process button timer */
 		btn_drv.event = BTN_TIMEOUT;
-		thinkos_flag_give(btn_drv.flag);
+//		thinkos_flag_give(btn_drv.flag);
 	} else {
 		/* process push button */
 		st = stm32_gpio_stat(PUSH_BTN) ? 0 : 1;
 		if (btn_drv.st != st) {
 			btn_drv.st = st;
 			btn_drv.event = st ? BTN_PRESSED : BTN_RELEASED;
-			thinkos_flag_give(btn_drv.flag);
+//			thinkos_flag_give(btn_drv.flag);
 		}
 	}
 }
@@ -361,10 +361,6 @@ static void io_timer_init(uint32_t freq)
 	tim->ccmr1 = TIM_OC1M_PWM_MODE1;
 	tim->ccr1 = tim->arr / 2;
 
-	cm3_irq_pri_set(STM32F_IRQ_TIM2, IRQ_PRIORITY_LOW);
-	/* Enable interrupt */
-//	cm3_irq_enable(STM32F_IRQ_TIM2);
-
 	tim->cr1 = TIM_URS | TIM_CEN; /* Enable counter */
 }
 
@@ -378,7 +374,6 @@ const struct thinkos_thread_inf io_thread_inf = {
 	.paused = 0,
 	.tag = "RATEGEN"
 };
-
 
 void io_init(void)
 {
@@ -396,5 +391,4 @@ void io_init(void)
 	thinkos_thread_create_inf((void *)io_task, (void *)NULL,
 				  &io_thread_inf);
 }
-
 

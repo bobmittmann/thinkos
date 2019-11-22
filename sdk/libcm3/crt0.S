@@ -71,13 +71,13 @@ _reset:
 	.string "ThinkOS"
 #endif
 0:
-	/* save lr, arv, and argc */
+	/* save arv, and argc */
     mov     r8, r0
     mov     r9, r1
-    mov     r10, lr
 #else /* THINKAPP */
 	/* jump to hardware initialization code */
 	bl		_init
+	ldr     lr, .L_main_atexit
 #endif
 
 	/* copy initialized variables .data section  (Copy from ROM to RAM) */
@@ -115,26 +115,27 @@ _reset:
 .L_ctor_end:
 
 #ifdef THINKAPP 
-    mov     fp, #0
+	mov     r2, #0
+	mov     r3, #0
+	mov     r4, #0
+	mov     r5, #0
+	mov     r6, #0
 	mov     r7, #0
+    mov     fp, #0
+	mov     sl, #0
 	/* argc  */
 	mov     r0, r8
 	/* argv */
 	mov     r1, r9
+	mov     r8, #0
+	mov     r9, #0
 #else
 	ldr     r1, .L_main_stack
 	ldr     r0, [r1]
 	mov     sp, r0
 #endif
 	/* go to C main function */
-	bl      main
-
-#ifdef THINKAPP 
-	mov     lr, r10
-	bx      lr
-#else
-	b       abort
-#endif
+	b       main
 
 /* section of initialized data at ROM */
 .L_idata_start:
@@ -154,6 +155,8 @@ _reset:
 .L_ctors_end:
 	.word   __ctors_end
 #ifndef THINKAPP 
+.L_main_atexit:
+	.word   abort
 .L_main_stack:
 	.word   thinkos_main_stack
 #endif

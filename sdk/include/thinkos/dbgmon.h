@@ -72,6 +72,12 @@
 #define THINKOS_DBGMON_ENABLE_RST_VEC CM3_RAM_VECTORS 
 #endif
 
+/* Mark for debug/monitor breakpoint numbers. */
+#define DBGMON_BKPT_ON_THREAD_CREATE 64
+#define DBGMON_BKPT_ON_THREAD_TERMINATE 65
+
+#define __BKPT(__NO) asm volatile ("bkpt %0\n" : : "I" __NO)
+
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events
  * ----------------------------------------------------------------------------
@@ -263,9 +269,18 @@ void dbgmon_watchpoint_clear_all(void);
  *  Debug/Monitor thread API
  * ----------------------------------------------------------------------------
  */
-void __dbgmon_signal_thread_create(int thread_id);
+static inline void __dbgmon_signal_thread_create(int thread_id) {
+	register int r0 asm("r0") = (int)thread_id;
+	asm volatile ("bkpt %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_CREATE), 
+				  "r"(r0) : );
+}
 
-void __dbgmon_signal_thread_terminate(int thread_id, int code);
+static inline void __dbgmon_signal_thread_terminate(int thread_id, int code) {
+	register int r0 asm("r0") = (int)thread_id;
+	register int r1 asm("r1") = (int)code;
+	asm volatile ("bkpt %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_TERMINATE), 
+				  "r"(r0), "r"(r1) );
+}
 
 int dbgmon_thread_terminate_get(int * code);
 
@@ -288,8 +303,8 @@ void dbgmon_thread_resume(int thread_id);
 void dbgmon_thread_destroy(int thread_id);
 
 /* ??? */
-void __attribute__((noreturn)) dbgmon_exec(void (* task) (const struct dbgmon_comm *, void *), 
-		void * param);
+void __attribute__((noreturn)) dbgmon_exec(void (* task) 
+   (const struct dbgmon_comm *, void *), void * param);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor memory API
@@ -299,24 +314,24 @@ void __attribute__((noreturn)) dbgmon_exec(void (* task) (const struct dbgmon_co
 /* Safe read and write operations to avoid faults in the debugger */
 
 bool dbgmon_mem_wr32(const struct mem_desc * mem, 
-					 uint32_t addr, uint32_t val);
+                     uint32_t addr, uint32_t val);
 
 bool dbgmon_mem_rd32(const struct mem_desc * mem, 
-					 uint32_t addr, uint32_t * val);
+                     uint32_t addr, uint32_t * val);
 
 bool dbgmon_mem_rd64(const struct mem_desc * mem, 
-					   uint32_t addr, uint64_t * val);
+                     uint32_t addr, uint64_t * val);
 
 bool dbgmon_mem_wr64(const struct mem_desc * mem, 
-					 uint32_t addr, uint64_t val);
+                     uint32_t addr, uint64_t val);
 
 int dbgmon_mem_read(const struct mem_desc * mem, uint32_t addr, 
-					void * ptr, unsigned int len);
+                    void * ptr, unsigned int len);
 
 bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr);
 
 const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
-					  unsigned int cnt, uint32_t addr);
+                                          unsigned int cnt, uint32_t addr);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface

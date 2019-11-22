@@ -62,17 +62,22 @@ int main(int argc, char **argv)
 	   any code meant for release, except for shell utilities.  */
 	stdio_init();
 
-//	printf("Test..\n");
+	printf("Test..\n");
+	thinkos_sleep(100);
 
-//	io_init();
-
-	for (i = 0; i < 100; ++i) {
+	io_init();
+	for (i = 0; i < 200; ++i) {
+		asm volatile ("nop\n");
+		asm volatile ("nop\n");
+		asm volatile ("nop\n");
+		asm volatile ("nop\n");
+		asm volatile ("nop\n");
 		thinkos_sleep(100);
-//		printf(".%d", i);
+		printf("%2d  ", i);
 	}
 
 
-	return 0;
+	return 42;
 }
 
 

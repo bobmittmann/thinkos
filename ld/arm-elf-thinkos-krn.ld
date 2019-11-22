@@ -23,8 +23,13 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
-__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+__code_init = ORIGIN(CODE);
+__data_init = ORIGIN(DATA);
+
+/*
+__code_end = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
+__data_end = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+*/
 
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
@@ -135,6 +140,12 @@ SECTIONS
 	} >"DATA" AT >"CODE"
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
+
+	.image :
+	{
+		. = . + 512000;
+		PROVIDE (__image_end = . );
+	} >"CODE"
 
 	.bss :
 	{

@@ -62,10 +62,10 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 }
 #endif
 
-struct thinkos_context * __thinkos_thread_init( unsigned int thread_id, 
-												uint32_t sp, 
-												int (* task)(void *), 
-												void * arg)
+struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
+                                               uint32_t sp, 
+                                               int (* task)(void *), 
+                                               void * arg)
 {
 	struct thinkos_context * ctx;
 	uint32_t pc;
@@ -76,7 +76,9 @@ struct thinkos_context * __thinkos_thread_init( unsigned int thread_id,
 	sp -= sizeof(struct thinkos_context);
 	ctx = (struct thinkos_context *)sp;
 
+#if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
+#endif
 
 	ctx->r0 = (uint32_t)arg;
 	ctx->pc = pc;
@@ -101,12 +103,12 @@ struct thinkos_context * __thinkos_thread_init( unsigned int thread_id,
 
 	thinkos_rt.ctx[thread_id] = ctx;
 
-#if 0
+#if 1
 	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
 			 thread_id + 1, sp, ctx->lr, ctx->pc);
-	DCC_LOG4(LOG_MSG, "r0=%08x r1=%08x r2=%08x r3=%08x", 
+	DCC_LOG4(LOG_TRACE, "r0=%08x r1=%08x r2=%08x r3=%08x", 
 			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
-	DCC_LOG3(LOG_MSG, "msp=%08x psp=%08x ctrl=%02x", 
+	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
 			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 #endif
 	return ctx;
@@ -240,4 +242,5 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__dbgmon_signal_thread_create(thread_id);
 #endif
 }
+
 

@@ -27,6 +27,13 @@
 #include <vt100.h>
 #include <sys/dcclog.h>
  
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+  #if LOG_LEVEL < LOG_TRACE
+    #undef LOG_LEVEL 
+    #define LOG_LEVEL LOG_TRACE
+  #endif
+#endif
+
 const char * __retstr(uint32_t __ret)
 {
 	const char * s;
@@ -183,10 +190,10 @@ void SCHED(struct thinkos_context * __ctx,
 	else
 		msp = __sp;
 
-
 	(void)ctrl;
 	(void)msp;
 	(void)psp;
+	(void)ret;
 
 	if (__prev_thread_id == THINKOS_THREAD_IDLE) {
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
@@ -342,4 +349,5 @@ void thinkos_sched_step_dbg(struct thinkos_context * __ctx,
 }
 
 #endif
+
 

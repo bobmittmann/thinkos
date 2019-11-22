@@ -31,6 +31,7 @@ static const char * const app_argv[] = {
 	"thinkos_app"
 };
 
+#if 0
 static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 {
 	int (* app_reset)(int argc, char ** argv);
@@ -44,6 +45,7 @@ static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
 		app_reset(1, (char **)app_argv);
 	}
 }
+#endif
 
 /* -------------------------------------------------------------------------
  * Application execution
@@ -66,16 +68,22 @@ static bool magic_match(const struct magic_blk * magic, void * ptr)
 
 bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 {
-	void * app = (void *)desc->start_addr;
+	void * ptr = (void *)desc->start_addr;
+	uintptr_t thumb_call = (uintptr_t)ptr | 1;
+//	int (* app)(int argc, char ** argv);
+	int (* app)(void *);
 	int thread_id;
 
-	if (!magic_match(desc->magic, app))
+//	app = (int (*)(int argc, char ** argv))thumb_call;
+	app = (int (*)(void *))thumb_call;
+
+	if (!magic_match(desc->magic, ptr))
 		return false;
 
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
-	thread_id = dbgmon_thread_create((int (*)(void *))app_bootstrap, 
-									 (void *)app, 
+	thread_id = dbgmon_thread_create((int (*)(void *))app, 
+									 (void *)app_argv, 
 									 &thinkos_main_inf);
 
 	if (!paused)

@@ -172,14 +172,14 @@ void __profile(void)
 {
 	const struct thinkos_profile * p = &thinkos_profile;
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_KERNEL_VERSION         = %d.%d", 
+	DCC_LOG2(LOG_TRACE, "THINKOS_KERNEL_VERSION         = %d.%d", 
 			 p->kernel.version.major, p->kernel.version.minor);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TIMESHARE       = %d", 
 			 p->kernel.timeshare);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PREEMPTION      = %d", 
 			 p->kernel.preemption);
 	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MAX        = %d", 
-			 p->kernel..sched_limit_max);
+			 p->kernel.sched_limit_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MIN        = %d", 
 			 p->kernel.sched_limit_min);
 

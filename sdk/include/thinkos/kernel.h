@@ -282,7 +282,7 @@
   THINKOS_WQ_FLASH_MEM_CNT + \
   THINKOS_WQ_FAULT_CNT)
 
-/* Mark for breakpoint numbers. Breakpoints above this
+/* Mark for kernel breakpoint numbers. Breakpoints above this
    number are considered errors. */
 #define THINKOS_BKPT_EXCEPT_OFF 128
 
