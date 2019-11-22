@@ -59,7 +59,7 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
-	id = thinkos_alloc_lo(thinkos_rt.th_alloc, id);
+	id = __thinkos_alloc_lo(thinkos_rt.th_alloc, id);
 #else
 	if (id >= THINKOS_THREADS_MAX)
 		id = THINKOS_THREADS_MAX - 1;
@@ -99,8 +99,11 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	thinkos_rt.active = id;
 	thinkos_rt.wq_ready = 1 << id;
 
-	DCC_LOG3(LOG_TRACE, "<%d> threads_max=%d ready=%08x", 
-			 id, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
+	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
+			 id + 1, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
+#if THINKOS_ENABLE_THREAD_ALLOC
+	DCC_LOG1(LOG_TRACE, "     th_alloc=%08x", thinkos_rt.th_alloc[0]);
+#endif
 
 #if THINKOS_ENABLE_PAUSE
 	if (__PAUSED(opt)) {
@@ -373,7 +376,6 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 	.paused = 0
 };
 #endif
-
 
 const char * const thinkos_svc_link = thinkos_svc_nm;
 const char * const thinkos_xcp_link = thinkos_xcp_nm;

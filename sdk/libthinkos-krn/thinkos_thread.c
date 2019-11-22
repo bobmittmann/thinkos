@@ -142,18 +142,19 @@ void thinkos_thread_create_svc(int32_t * arg)
 	DCC_LOG1(LOG_INFO, "thinkos_rt.th_alloc=0x%08x", thinkos_rt.th_alloc[0]);
 
 	if (target_id >= THINKOS_THREADS_MAX) {
-		thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, THINKOS_THREADS_MAX);
+		thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, 
+									   THINKOS_THREADS_MAX);
 		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", target_id, 
 				 thread_id);
 	} else {
 		/* Look for the next available slot */
 		if (target_id < 0)
 			target_id = 0;
-		thread_id = thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
+		thread_id = __thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
 		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", 
 				 target_id, thread_id);
 		if (thread_id < 0) {
-			thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
+			thread_id = __thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
 			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
 					 target_id, thread_id);
 		}
@@ -242,5 +243,4 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__dbgmon_signal_thread_create(thread_id);
 #endif
 }
-
 

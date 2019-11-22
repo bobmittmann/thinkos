@@ -753,34 +753,6 @@ thinkos_bit_clr(void * bmp, unsigned int bit)
 	__bit_mem_wr(bmp, bit, 0);  
 }
 
-static inline int __attribute__((always_inline)) 
-thinkos_alloc_lo(uint32_t * ptr, int start) {
-	int idx;
-	/* Look for an empty bit MSB first */
-	idx = __clz(__rbit(~(*ptr >> start))) + start;
-	if (idx >= 32)
-		return -1;
-	/* Mark as used */
-	__bit_mem_wr(ptr, idx, 1);  
-	return idx;
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_alloc_hi(uint32_t * ptr, int start) {
-	int idx;
-
-	if (start > 31)
-		start = 31;
-
-	/* Look for an empty bit LSB first */
-	idx = start - __clz(~(*ptr << (31 - start)));
-	if (idx < 0)
-		return -1;
-	/* Mark as used */
-	__bit_mem_wr(ptr, idx, 1);  
-	return idx;
-}
-
 /* flags a deferred execution of the scheduler */
 static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
@@ -1000,6 +972,10 @@ int thinkos_obj_type_get(unsigned int oid);
 void __thinkos_bmp_init(uint32_t bmp[], int bits);
 
 int __thinkos_bmp_alloc(uint32_t bmp[], int bits);
+
+int __thinkos_alloc_lo(uint32_t * ptr, int start);
+
+int __thinkos_alloc_hi(uint32_t * ptr, int start);
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
 											   uint32_t sp, 

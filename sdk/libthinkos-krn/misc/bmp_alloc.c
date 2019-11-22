@@ -51,6 +51,7 @@ int __thinkos_bmp_alloc(uint32_t bmp[], int bits)
 void __thinkos_bmp_init(uint32_t bmp[], int bits) 
 {
 	int i;
+
 	for (i = 0; i < bits / 32; ++i)
 		bmp[i] = 0;
 	if (bits % 32)
@@ -58,3 +59,38 @@ void __thinkos_bmp_init(uint32_t bmp[], int bits)
 }
 #endif
 
+
+#if THINKOS_ENABLE_THREAD_ALLOC 
+int __thinkos_alloc_lo(uint32_t * ptr, int start) 
+{
+	int idx;
+
+	if (start < 0)
+		start = 0;
+
+	/* Look for an empty bit MSB first */
+	idx = __clz(__rbit(~(*ptr >> start))) + start;
+	if (idx >= 32)
+		return -1;
+	/* Mark as used */
+	__bit_mem_wr(ptr, idx, 1);  
+	return idx;
+}
+
+int __thinkos_alloc_hi(uint32_t * ptr, int start) 
+{
+	int idx;
+
+	if (start > 31)
+		start = 31;
+
+	/* Look for an empty bit LSB first */
+	idx = start - __clz(~(*ptr << (31 - start)));
+	if (idx < 0)
+		return -1;
+	/* Mark as used */
+	__bit_mem_wr(ptr, idx, 1);  
+	return idx;
+}
+
+#endif
