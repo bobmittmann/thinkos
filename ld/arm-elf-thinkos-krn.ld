@@ -37,6 +37,8 @@ _stack_limit = ORIGIN(STACK);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
+__firmware_end = ORIGIN(CODE) + LENGTH(CODE);
+
 EXTERN(_stack)
 EXTERN(_reset)
 EXTERN(ice_comm_blk)
@@ -143,7 +145,7 @@ SECTIONS
 
 	.image :
 	{
-		. = . + 512000;
+		. = . + 500000;
 		PROVIDE (__image_end = . );
 	} >"CODE"
 

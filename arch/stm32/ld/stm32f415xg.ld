@@ -38,13 +38,10 @@ MEMORY
 
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram1);
+REGION_ALIAS("HEAP", sram1);
 REGION_ALIAS("STACK", ccm);
 REGION_ALIAS("LOG", dcclog);
-REGION_ALIAS("HEAP", sram1);
 
-/* Device Vectors */
+/* Device family vectors */
 INCLUDE stm32f4xx.ld
-/* ARM ThinkOS common */
-/* INCLUDE arm-elf-thinkos-eabi.ld
-*/
 
