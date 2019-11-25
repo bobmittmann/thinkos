@@ -107,7 +107,7 @@ int main(int argc, char ** argv)
 #if DEBUG
 	udelay(256);
 #endif
-	thinkos_mpu_init(BOOT_MEM_RESERVED);
+	thinkos_krn_mpu_init(0, BOOT_MEM_RESERVED);
 
 	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
 #if DEBUG

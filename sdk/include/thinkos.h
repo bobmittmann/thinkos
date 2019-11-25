@@ -256,8 +256,11 @@ int	thinkos_nrt_init(void);
 
 /** @brief Initializes the Cortex-M MPU.
  *
+ * @param krn_offs  Kernel memory offset
+ * @param krn_size  KErnel memory size
+ * 
  */
-void thinkos_mpu_init(unsigned int size);
+void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
 
 /** @brief Switch processor to user mode.
  *

@@ -33,7 +33,6 @@
 
 struct mpu_mem_block thinkos_mpu_kernel_mem;
 
-
 #define STRONGLY_ORDERED MPU_RASR_TEX(0) 
 #define SHARED_DEVICE    MPU_RASR_TEX(0) | MPU_RASR_B
 #define WRITE_THROUGH    MPU_RASR_TEX(0) | MPU_RASR_C
@@ -92,18 +91,22 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
  * Initializes the Cortex-M MPU.
  *
  */
-void thinkos_mpu_init(uint32_t offs, unsigned int size)
+void thinkos_krn_mpu_init(uint32_t offs, unsigned int size)
 {
 	struct cm3_mpu * mpu = CM3_MPU;
+	uint32_t sram_base = 0x20000000;
 	uint32_t bmp;
 	unsigned int n;
 
-	DCC_LOG(LOG_MSG, "configuring MPU ...");
+/* FIXME: more flexibility in defining the memory regions ..
+ */
 
 	/* align kernel offset to 1K block region */
 	offs &= 0xffffffff << 10;
 	/* how many kernel 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
+
+	DCC_LOG3(LOG_TRACE, "MPU offs=%08x size=%d blocks=%d.", offs, size, n);
 
 	/* save the kernel reserved memory */
 	thinkos_mpu_kernel_mem.offs = offs;
@@ -113,7 +116,7 @@ void thinkos_mpu_init(uint32_t offs, unsigned int size)
 	bmp = 0xffffffff << n;
 
 	/* SRAM */
-	mpu_region_cfg(0, 0x20000000, 
+	mpu_region_cfg(0, sram_base, 
 				   M_SRAM | USER_RW | 
 				   MPU_RASR_SIZE_512K | 
 				   MPU_RASR_SRD(0x00) |
@@ -123,14 +126,14 @@ void thinkos_mpu_init(uint32_t offs, unsigned int size)
 
 	/* SRAM */
 	/* 8 * 1K blocks low */
-	mpu_region_cfg(1, 0x20000000, 
+	mpu_region_cfg(1, sram_base, 
 				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
 				   MPU_RASR_SRD(bmp & 0xff) |
 				   MPU_RASR_ENABLE);
 
 	/* 8 * 1K blocks high*/
-	mpu_region_cfg(2, 0x20000000 + 8 * 1024, 
+	mpu_region_cfg(2, sram_base + 8 * 1024, 
 				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
 				   MPU_RASR_SRD((bmp >> 8) & 0xff) |
