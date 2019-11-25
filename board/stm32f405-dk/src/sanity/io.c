@@ -50,68 +50,136 @@ const struct stm32f_io led_io[] = {
 
 #define UNLOCKED -1
 
+#define LED_CNT (sizeof(led_io) / sizeof(struct stm32f_io))
+
 struct {
 	int lock;
-	uint8_t tmr[sizeof(led_io) / sizeof(struct stm32f_io)];
+	int mutex;
+	uint8_t tmr[LED_CNT];
+
+	volatile uint8_t req[LED_CNT];
+	volatile uint8_t ack[LED_CNT];
+	volatile uint8_t itv[LED_CNT];
+	volatile uint8_t on[LED_CNT];
 } led_drv;
 
 void led_on(int id)
 {
+	uint8_t req;
+
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	stm32_gpio_set(led_io[id].gpio, led_io[id].pin);
+	if ((req = led_drv.req[id]) != led_drv.ack[id]) {
+		thinkos_bkpt(1);
+		/* pending request */
+		return;
+	}
+
+	led_drv.itv[id] = 0;
+	led_drv.on[id] = 1;
+	led_drv.req[id] = req + 1;
 }
 
 void led_off(int id)
 {
+	uint8_t req;
+
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	stm32_gpio_clr(led_io[id].gpio, led_io[id].pin);
+	if ((req = led_drv.req[id]) != led_drv.ack[id]) {
+		thinkos_bkpt(1);
+		/* pending request */
+		return;
+	}
+
+	led_drv.itv[id] = 0;
+	led_drv.on[id] = 0;
+
+	led_drv.req[id] = req + 1;
 }
 
 void led_flash(int id, int ms)
 {
+	uint8_t on;
+	uint8_t req;
+
+	on = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
+
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	led_drv.tmr[id] = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
-	stm32_gpio_set(led_io[id].gpio, led_io[id].pin);
+	if ((req = led_drv.req[id]) != led_drv.ack[id]) {
+		thinkos_bkpt(1);
+		/* pending request */
+		return;
+	}
+
+	led_drv.itv[id] = 0;
+	led_drv.on[id] = on;
+	led_drv.req[id] = req + 1;
+}
+
+void led_blink(int id, int on_ms, int off_ms)
+{
+	uint8_t off;
+	uint8_t on;
+	uint8_t req;
+
+	on = (on_ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
+	off = (off_ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
+
+//	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
+//		return;
+
+	if ((req = led_drv.req[id]) != led_drv.ack[id]) {
+		thinkos_bkpt(1);
+		/* pending request */
+		return;
+	}
+
+	led_drv.itv[id] = on + off;
+	led_drv.on[id] = on;
+	led_drv.req[id] = req + 1;
 }
 
 void leds_all_off(void)
 {
-	unsigned int i;
+	unsigned int id;
 
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i)
-		stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
+	for (id = 0; id < LED_CNT; ++id) {
+	}
 }
 
 void leds_all_on(void)
 {
 	unsigned int i;
 
-	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
-		return;
+//	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
+//		return;
 
-	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i)
+	for (i = 0; i < LED_CNT; ++i)
 		stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
 }
 
 void leds_all_flash(int ms)
 {
 	unsigned int i;
+	uint8_t on;
+
+	on = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
 
 //	if ((led_drv.lock != UNLOCKED) && (led_drv.lock != thinkos_thread_self()))
 //		return;
 
-	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i) {
-		led_drv.tmr[i] = (ms * (65536 / POLL_PERIOD_MS) + 32768) / 65536;
-		stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
+	/* FIXME: atomic request */
+	for (i = 0; i < LED_CNT; ++i) {
+		led_drv.itv[i] = 0;
+		led_drv.on[i] = on;
 	}
 }
 
@@ -138,12 +206,22 @@ static void leds_init(void)
 
 	led_drv.lock = UNLOCKED;
 
-	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i) {
+	for (i = 0; i < LED_CNT; ++i) {
 		stm32_gpio_mode(led_io[i].gpio, led_io[i].pin,
 						 OUTPUT, PUSH_PULL | SPEED_LOW);
 
 		stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
 	}
+
+	for (i = 0; i < LED_CNT; ++i) {
+		led_drv.tmr[i] = 0;
+		led_drv.on[i] = 0;
+		led_drv.itv[i] = 0;
+		led_drv.req[i] = 0;
+		led_drv.ack[i] = 0;
+	}
+
+	led_drv.mutex = thinkos_mutex_alloc();
 }
 
 
@@ -304,24 +382,56 @@ void stm32_tim2_isr(void)
 	tim->sr = 0;
 
 	/* process led timers */
-	for (i = 0; i < sizeof(led_io) / sizeof(struct stm32f_io); ++i) {
+	for (i = 0; i < LED_CNT; ++i) {
+		uint8_t itv;
+		uint8_t on;
+		uint8_t ack;
+		uint8_t req;
+
+		/* Attention: the reading order is important */
+		ack = led_drv.ack[i];
+		itv = led_drv.itv[i];
+		on = led_drv.on[i];
+		req = led_drv.req[i];
+
+		if (req != ack) {
+			/* process request */
+			if (on)
+				stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
+			else
+				stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
+
+			led_drv.tmr[i] = on;
+
+			/* acknowledge request */
+			led_drv.ack[i] = ack + 1;
+
+			continue;
+		}
+
 		if (led_drv.tmr[i] == 0)
 			continue;
-		if (--led_drv.tmr[i] == 0) 
+
+		if (--led_drv.tmr[i] == 0) {
 			stm32_gpio_clr(led_io[i].gpio, led_io[i].pin);
+		    led_drv.tmr[i] = itv;
+		} else if (led_drv.tmr[i] == on) {
+			stm32_gpio_set(led_io[i].gpio, led_io[i].pin);
+		}
+
 	}
 
 	if ((btn_drv.tmr) && (--btn_drv.tmr == 0)) {
 		/* process button timer */
 		btn_drv.event = BTN_TIMEOUT;
-//		thinkos_flag_give(btn_drv.flag);
+		thinkos_flag_give(btn_drv.flag);
 	} else {
 		/* process push button */
 		st = stm32_gpio_stat(PUSH_BTN) ? 0 : 1;
 		if (btn_drv.st != st) {
 			btn_drv.st = st;
 			btn_drv.event = st ? BTN_PRESSED : BTN_RELEASED;
-//			thinkos_flag_give(btn_drv.flag);
+			thinkos_flag_give(btn_drv.flag);
 		}
 	}
 }

@@ -71,6 +71,8 @@ void led_on(int id);
 
 void led_flash(int id, int ms);
 
+void led_blink(int id, int on_ms, int off_ms);
+
 void leds_all_flash(int ms);
 
 void leds_lock(void);

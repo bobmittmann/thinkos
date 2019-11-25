@@ -66,14 +66,43 @@ int main(int argc, char **argv)
 	thinkos_sleep(100);
 
 	io_init();
+
+	led_flash(1, 500);
+	led_blink(2, 200, 200);
+
 	for (i = 0; i < 200; ++i) {
-		asm volatile ("nop\n");
-		asm volatile ("nop\n");
-		asm volatile ("nop\n");
-		asm volatile ("nop\n");
-		asm volatile ("nop\n");
-		thinkos_sleep(100);
-		printf("%2d  ", i);
+		int ev;
+
+		ev = btn_event_wait();
+		switch (ev) {
+		case EVENT_NONE:
+			printf("NONE\n");
+			break;
+
+		case EVENT_CLICK:
+			printf("CLICK\n");
+			break;
+
+		case EVENT_DBL_CLICK:
+			printf("DBL_CLICK\n");
+			break;
+
+		case EVENT_HOLD1:
+			printf("HOLD1\n");
+			break;
+
+		case EVENT_CLICK_N_HOLD:
+			printf("CLICK_N_HOLD\n");
+			break;
+
+		case EVENT_HOLD2:
+			printf("HOLD2\n");
+			break;
+
+		default:
+			printf("?\n");
+
+		}
 	}
 
 
