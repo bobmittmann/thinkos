@@ -22,10 +22,6 @@
 __code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
 __data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
 
-_stack_top = ORIGIN(STACK) + LENGTH(STACK);
-_stack_limit = ORIGIN(STACK);
-__heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
-
 EXTERN(_reset)
 ENTRY(_reset)
 
@@ -120,6 +116,13 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__heap_base = . );
+
+	.stack :
+	{
+		PROVIDE (__stack_start = . );
+		/* all .stack sections  */
+		*(.stack .stack*)
+	} >"STACK"
 
 	/* Backed up control section */
 	.bkpctl :

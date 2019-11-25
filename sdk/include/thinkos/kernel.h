@@ -468,8 +468,6 @@ struct thinkos_rt {
 		};
 	};
 
-//	uint32_t wq_end[0]; /* end of queue list placeholder */
-
 #if THINKOS_ENABLE_THREAD_STAT
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
 #endif
@@ -1080,6 +1078,8 @@ void __profile(void);
 
 void __thinkos_exec(int thread_id, void (* func)(void *), 
 					void * arg, bool paused);
+
+bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size);
 
 #ifdef __cplusplus
 }

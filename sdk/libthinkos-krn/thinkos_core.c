@@ -188,8 +188,23 @@ void __thinkos_system_reset(void)
 	cm3_cpsie_i();
 }
 
+
 bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
 {
+	uint32_t sram_base = 0x20000000;
+	uint32_t krn_base = sram_base + thinkos_mpu_kernel_mem.offs;
+	uint32_t krn_size = thinkos_mpu_kernel_mem.size;
+
+	DCC_LOG4(LOG_TRACE, "krn=%08x(%d) mem=%08x(%d)",
+			 krn_base, krn_size, addr, size);
+	
+	/* FIXME: this is a minimum implementation just to avoid
+	   invalid accesses to the kernel memory */
+
+	if ((addr < (krn_base + krn_size)) && ((addr + size) > krn_base)) {
+		return false;
+	}
+
 	return true;
 }
 
