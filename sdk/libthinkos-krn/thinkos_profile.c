@@ -126,6 +126,7 @@ const struct thinkos_profile thinkos_profile = {
 		.deadlock_check  = THINKOS_ENABLE_DEADLOCK_CHECK,
 		.sanity_check    = THINKOS_ENABLE_SANITY_CHECK,
 		.stack_init      = THINKOS_ENABLE_STACK_INIT,
+		.memory_clear    = THINKOS_ENABLE_MEMORY_CLEAR,
 	},
 
 	.except = {
@@ -308,6 +309,8 @@ void __profile(void)
 			 p->security.sanity_check);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_INIT      = %d", 
 			 p->security.stack_init);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEMORY_CLEAR    = %d", 
+			 p->security.memory_clear);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPTIONS      = %d", 
 			 p->except.exceptions);

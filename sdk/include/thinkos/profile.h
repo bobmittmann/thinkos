@@ -369,6 +369,12 @@
 #define THINKOS_ENABLE_STACK_INIT       1
 #endif
 
+/* Kernel Zeros all the memory blocks and datastructures on alocation
+   or initialization */
+#ifndef THINKOS_ENABLE_MEMORY_CLEAR
+#define THINKOS_ENABLE_MEMORY_CLEAR     1
+#endif
+
 #ifndef THINKOS_ENABLE_THREAD_VOID 
 #define THINKOS_ENABLE_THREAD_VOID      1
 #endif
@@ -773,6 +779,7 @@ struct thinkos_profile {
 			uint32_t deadlock_check  :1;
 			uint32_t sanity_check    :1;
 			uint32_t stack_init      :1;
+			uint32_t memory_clear    :1;
 		};
 	} security;
 

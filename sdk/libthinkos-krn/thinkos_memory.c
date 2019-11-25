@@ -39,7 +39,7 @@
  * Memory auxiliary functions 
  * ------------------------------------------------------------------------- */
 
-bool thinkoos_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr)
+bool thinkos_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr)
 {
 	uint32_t size;
 	int32_t off;
@@ -66,8 +66,9 @@ bool thinkoos_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr)
 	return true;
 }
 
-const struct thinkos_mem_desc * thinkoos_mem_lookup(const struct thinkos_mem_desc * const lst[], 
-										  unsigned int cnt, uint32_t addr)
+const struct thinkos_mem_desc * thinkos_mem_lookup(
+	const struct thinkos_mem_desc * const lst[], 
+	unsigned int cnt, uint32_t addr)
 {
 	unsigned int j;
 
@@ -75,7 +76,7 @@ const struct thinkos_mem_desc * thinkoos_mem_lookup(const struct thinkos_mem_des
 		const struct thinkos_mem_desc * mem = lst[j];
 		if (mem == NULL)
 			continue;
-		if (thinkoos_mem_belong(mem, addr))
+		if (thinkos_mem_belong(mem, addr))
 			return mem;
 	}
 
@@ -84,8 +85,8 @@ const struct thinkos_mem_desc * thinkoos_mem_lookup(const struct thinkos_mem_des
 
 
 /* Safe read and write operations to avoid faults in the debugger */
-bool thinkoos_mem_wr32(const struct thinkos_mem_desc * mem, 
-					 uint32_t addr, uint32_t val)
+bool thinkos_mem_wr32(const struct thinkos_mem_desc * mem, 
+					  uint32_t addr, uint32_t val)
 {
 	uint32_t base;
 	uint32_t size;
@@ -108,7 +109,7 @@ bool thinkoos_mem_wr32(const struct thinkos_mem_desc * mem,
 	return false;
 }
 
-bool thinkoos_mem_rd32(const struct thinkos_mem_desc * mem, 
+bool thinkos_mem_rd32(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint32_t * val)
 {
 	uint32_t base;
@@ -130,7 +131,7 @@ bool thinkoos_mem_rd32(const struct thinkos_mem_desc * mem,
 	return false;
 }
 
-bool thinkoos_mem_wr64(const struct thinkos_mem_desc * mem, 
+bool thinkos_mem_wr64(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint64_t val)
 {
 	uint32_t base;
@@ -154,7 +155,7 @@ bool thinkoos_mem_wr64(const struct thinkos_mem_desc * mem,
 	return false;
 }
 
-bool thinkoos_mem_rd64(const struct thinkos_mem_desc * mem, 
+bool thinkos_mem_rd64(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint64_t * val)
 {
 	uint32_t base;
@@ -178,7 +179,7 @@ bool thinkoos_mem_rd64(const struct thinkos_mem_desc * mem,
 
 /* 32bits access memory read */
 
-int thinkoos_mem_read(const struct thinkos_mem_desc * mem,
+int thinkos_mem_read(const struct thinkos_mem_desc * mem,
 					uint32_t addr, void * ptr, unsigned int len)
 {
 	uint8_t * dst = (uint8_t *)ptr;
@@ -279,4 +280,5 @@ int thinkoos_mem_read(const struct thinkos_mem_desc * mem,
 
 	return len - rem;
 }
+
 

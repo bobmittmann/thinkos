@@ -136,6 +136,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 #if THINKOS_ENABLE_THREAD_INFO
 	struct thinkos_thread_inf * inf = init->inf;
 #endif
+	uint32_t stack_base = (uint32_t)init->stack_ptr;
+	uint32_t stack_size = init->opt.stack_size;
 	int thread_id;
 	uint32_t sp;
 
@@ -165,20 +167,32 @@ void thinkos_thread_create_svc(int32_t * arg)
 
 #endif
 
-	sp = (uint32_t)init->stack_ptr + init->opt.stack_size;
+	sp = stack_base + stack_size;
 
 #if THINKOS_ENABLE_SANITY_CHECK
-	if (init->opt.stack_size < sizeof(struct thinkos_context)) {
-		DCC_LOG1(LOG_INFO, "stack too small. size=%d", init->opt.stack_size);
+	if (!__thinkos_mem_usr_rw_chk(stack_base, stack_size)) {
+		DCC_LOG2(LOG_WARNING, "stack address invalid! base=%08x size=%d", 
+				 stack_base, stack_size);
+		__THINKOS_ERROR(THINKOS_ERR_THREAD_STACKADDR);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
+
+	if (stack_size < sizeof(struct thinkos_context)) {
+		DCC_LOG1(LOG_WARNING, "stack too small. size=%d", stack_size);
 		__THINKOS_ERROR(THINKOS_ERR_THREAD_SMALLSTACK);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
+	DCC_LOG2(LOG_INFO, "stack base=%08x size=%d", stack_base, stack_size);
+
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize stack */
-	__thinkos_memset32(init->stack_ptr, 0xdeadbeef, init->opt.stack_size);
+	__thinkos_memset32((void *)stack_base, 0xdeadbeef, stack_size);
+#elif THINKOS_ENABLE_MEMORY_CLEAR
+	__thinkos_memset32(stack_base, 0, stack_size);
 #endif
 
 #if THINKOS_NRT_THREADS_MAX > 0

@@ -186,12 +186,17 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	/* disable interrupts */
 	cm3_cpsid_i();
 
+#if THINKOS_ENABLE_MEMORY_CLEAR
 	/* clear the ThinkOS runtime structure */
 	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
+#endif
 
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize exception stack */
 	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
+					   sizeof(thinkos_except_stack));
+#elif THINKOS_ENABLE_MEMORY_CLEAR
+	__thinkos_memset32(thinkos_except_stack, 0, 
 					   sizeof(thinkos_except_stack));
 #endif
 

@@ -111,6 +111,7 @@ struct thinkos_memory_map {
 extern "C" {
 #endif
 
+bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size);
 
 #ifdef __cplusplus
 }

@@ -40,48 +40,38 @@
 
 struct thinkos_rt thinkos_rt;
 
-uint32_t __attribute__((aligned(8))) thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
+uint32_t __attribute__((aligned(8))) 
+	thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-
-void thinkos_sched_dbg(struct thinkos_context * __ctx, 
-					   uint32_t __new_thread_id,
-					   uint32_t __prev_thread_id, 
-					   uint32_t __sp); 
-
-void __tdump(void);
-
-bool thinkos_sched_active(void)
+void __thinkos_kill_all(void) 
 {
-	return (CM3_SCB->shcsr & SCB_SHCSR_PENDSVACT) ? true : false;
-}
-	
-bool thinkos_syscall_active(void)
-{
-	return (CM3_SCB->shcsr & SCB_SHCSR_SVCALLACT) ? true : false;
+	int i;
 
-}
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
+		thinkos_rt.wq_lst[i] = 0x00000000;
 
-bool thinkos_clock_active(void)
-{
-	return (CM3_SCB->shcsr & SCB_SHCSR_SYSTICKACT) ? true : false;
+#if THINKOS_ENABLE_THREAD_VOID 
+	/* discard current thread context */
+	if (thinkos_rt.active != THINKOS_THREAD_IDLE)
+		thinkos_rt.active = THINKOS_THREAD_VOID;
+#else
+	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
+#endif
+	/* signal the scheduler ... */
+	__thinkos_defer_sched();
 }
 
-bool thinkos_dbgmon_active(void)
-{
-	return (CM3_SCB->shcsr & SCB_SHCSR_MONITORACT) ? true : false;
-}
-
-bool thinkos_kernel_active(void)
-{
-	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
-							  SCB_SHCSR_SVCALLACT)) ? true : false;
-}
 
 void __thinkos_core_reset(void)
 {
 	int i;
+
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
+		thinkos_rt.wq_lst[i] = 0x00000000;
 
 	/* clear all threads excpet NULL */
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
@@ -94,9 +84,6 @@ void __thinkos_core_reset(void)
 #endif
 	}
 
-	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_CNT; ++i)
-		thinkos_rt.wq_lst[i] = 0x00000000;
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
@@ -182,9 +169,6 @@ void __thinkos_core_reset(void)
 void __thinkos_system_reset(void)
 {
 	DCC_LOG(LOG_WARNING, "/!\\ System reset in progress...");
-	/* Return to the Monitor applet with the SOFTRST signal set.
-	   The applet should clear the hardware and restore the core interrups.
-	   Next context_swap() will continue in __do_soft_reset() ... */
 
 	DCC_LOG(LOG_TRACE, "1. ThinkOS core reset...");
 	__thinkos_core_reset();
@@ -195,31 +179,44 @@ void __thinkos_system_reset(void)
 #endif
 
 #if THINKOS_ENABLE_MONITOR
-	DCC_LOG(LOG_TRACE, "5. reset debug monitor...");
+	DCC_LOG(LOG_TRACE, "3. reset debug monitor...");
 	thinkos_dbgmon_reset();
 #endif
 
 	/* Enable Interrupts */
-	DCC_LOG(LOG_TRACE, "6. enablig interrupts...");
+	DCC_LOG(LOG_TRACE, "4. enablig interrupts...");
 	cm3_cpsie_i();
 }
 
-void __thinkos_kill_all(void) 
+bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
 {
-	int i;
-
-	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_CNT; ++i)
-		thinkos_rt.wq_lst[i] = 0x00000000;
-
-#if THINKOS_ENABLE_THREAD_VOID 
-	/* discard current thread context */
-	if (thinkos_rt.active != THINKOS_THREAD_IDLE)
-		thinkos_rt.active = THINKOS_THREAD_VOID;
-#else
-	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
-#endif
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	return true;
 }
 
+
+bool thinkos_sched_active(void)
+{
+	return (CM3_SCB->shcsr & SCB_SHCSR_PENDSVACT) ? true : false;
+}
+	
+bool thinkos_syscall_active(void)
+{
+	return (CM3_SCB->shcsr & SCB_SHCSR_SVCALLACT) ? true : false;
+
+}
+
+bool thinkos_clock_active(void)
+{
+	return (CM3_SCB->shcsr & SCB_SHCSR_SYSTICKACT) ? true : false;
+}
+
+bool thinkos_dbgmon_active(void)
+{
+	return (CM3_SCB->shcsr & SCB_SHCSR_MONITORACT) ? true : false;
+}
+
+bool thinkos_kernel_active(void)
+{
+	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
+							  SCB_SHCSR_SVCALLACT)) ? true : false;
+}
