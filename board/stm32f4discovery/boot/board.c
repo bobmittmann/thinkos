@@ -1,97 +1,152 @@
-/* 
- * File:	 usb-test.c
- * Author:   Robinson Mittmann (bobmittmann@gmail.com)
- * Target:
- * Comment:
- * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+/* board.c - bootloader descriptor and hardware initialization
+ * -------
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ *   ************************************************************************
+ *   **            Company Confidential - For Internal Use Only            **
+ *   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
+ *   **                                                                    **
+ *   **   This information is confidential and the exclusive property of   **
+ *   ** Mircom.  It is intended for internal use and only for the purposes **
+ *   **   provided,  and may not be disclosed to any third party without   **
+ *   **                prior written permission from Mircom.               **
+ *   **                                                                    **
+ *   **                        Copyright 2017-2018                         **
+ *   ************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_DMON__
-#include <thinkos_dmon.h>
+/** 
+ * @file board.c
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ * @brief Bootloader descriptor and hardware initialization
+ * 
+ */
+
+#include <sys/stm32f.h>
+#include <sys/delay.h>
+#include <sys/dcclog.h>
+#define __THINKOS_DBGMON__
+#include <thinkos/dbgmon.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
+#include <thinkos.h>
+#include <trace.h>
+#include <vt100.h>
+
 #include "board.h"
+#include "version.h"
 
-/* GPIO pin description */ 
-struct stm32f_io {
-	struct stm32_gpio * gpio;
-	uint8_t pin;
+extern const uint8_t otg_xflash_pic[];
+extern const unsigned int sizeof_otg_xflash_pic;
+
+/* Receives a file using YMODEM protocol and writes into Flash. */
+static int yflash(uint32_t blk_offs, uint32_t blk_size,
+		   const struct magic_blk * magic)
+{
+	uintptr_t yflash_code = (uintptr_t)(0x20001000);
+	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *);
+	uintptr_t thumb;
+	int ret;
+
+	cm3_primask_set(1);
+	__thinkos_memcpy((void *)yflash_code, otg_xflash_pic, 
+					 sizeof_otg_xflash_pic);
+
+	thumb = yflash_code | 0x00000001; /* thumb call */
+	yflash_ram = (int (*)(uint32_t, uint32_t, const struct magic_blk *))thumb;
+	ret = yflash_ram(blk_offs, blk_size, magic);
+
+	return ret;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+static const struct magic_blk bootloader_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 2
+	},
+	.rec = {
+		{  0xffff0000, 0x10010000 },
+		{  0xffff0000, 0x08000000 },
+	}
 };
+#pragma GCC diagnostic pop
 
-/* ----------------------------------------------------------------------
- * LEDs 
- * ----------------------------------------------------------------------
- */
-
-const struct stm32f_io led_io[] = {
-	{ IO_LED3 }, /* LED3 */
-	{ IO_LED5 }, /* LED5 */
-	{ IO_LED6 }, /* LED6 */
-	{ IO_LED4 }, /* LED4 */
-};
-
-#define LED_COUNT (sizeof(led_io) / sizeof(struct stm32f_io))
-
-void led_on(unsigned int id)
+static void bootloader_yflash(const struct dbgmon_comm * comm)
 {
-	__led_on(led_io[id].gpio, led_io[id].pin);
+
+	stm32_gpio_clr(IO_LED3);
+	stm32_gpio_clr(IO_LED4);
+
+	yflash(0, 32768, &bootloader_magic);
 }
 
-void led_off(unsigned int id)
+
+void __puts(const char *s)
 {
-	__led_off(led_io[id].gpio, led_io[id].pin);
+	int rem = __thinkos_strlen(s, 64);
+
+	while (rem) {
+		int n = thinkos_console_write(s, rem);
+		s += n;
+		rem -= n;
+	}
 }
 
-#if 0
-void led_toggle(unsigned int id)
-{
-	__led_toggle(led_io[id].gpio, led_io[id].pin);
-}
-#endif
-
-static void io_init(void)
+void io_init(void)
 {
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
+	/* - USB ----------------------------------------------------*/
+	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_DM, GPIO_AF10);
+	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
+
+	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
+
+	/* - LEDs ---------------------------------------------------------*/
 	stm32_gpio_mode(IO_LED3, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED5, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED6, OUTPUT, PUSH_PULL | SPEED_LOW);
 }
 
-bool board_init(void)
-{
-	io_init();
-
-	led_on(0);
-
-	return true;
-}
-
-void board_softreset(void)
+void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
+//	struct stm32f_spi * spi = ICE40_SPI;
+
+	/* disable all peripherals clock sources except USB_FS, 
+	   GPIOA and GPIOB */
+	DCC_LOG1(LOG_TRACE, "ahb1enr=0x%08x", rcc->ahb1enr);
+	DCC_LOG1(LOG_TRACE, "ahb2enr=0x%08x", rcc->ahb2enr);
+	DCC_LOG1(LOG_TRACE, "apb1enr=0x%08x", rcc->apb1enr);
+	DCC_LOG1(LOG_TRACE, "apb2enr=0x%08x", rcc->apb2enr);
+
+	/* Reset all peripherals except USB_FS, GPIOA and FLASH */
+
+	/* disable all peripherals clock sources except USB_FS, 
+	   GPIOA and GPIOB */
+	rcc->ahb1enr |= (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+	rcc->ahb2enr |= (1 << RCC_OTGFS);
+	rcc->ahb3enr = 0;
+	rcc->apb1enr = 0;
+	rcc->apb2enr = 0;
 
 	/* Reset all peripherals except USB_OTG and GPIOA */
-	rcc->ahb1rstr = ~(1 << RCC_GPIOA); 
+	rcc->ahb1rstr = ~((1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) |
+					  (1 << RCC_GPIOB) | (1 << RCC_GPIOC)); 
 	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
 	rcc->ahb3rstr = ~(0);
 	rcc->apb1rstr = ~(0);
 	rcc->apb2rstr = ~(0);
-
 
 	rcc->ahb1rstr = 0;
 	rcc->ahb2rstr = 0;
@@ -100,7 +155,8 @@ void board_softreset(void)
 	rcc->apb2rstr = 0;
 
 	/* disable all peripherals clock sources except USB_OTG and GPIOA */
-	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA); 
+	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
 	rcc->ahb2enr = (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
@@ -109,120 +165,204 @@ void board_softreset(void)
 	/* reinitialize IO's */
 	io_init();
 
+	/* Adjust USB OTG FS interrupts priority */
+	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 }
 
-bool board_autoboot(uint32_t tick)
+int board_init(void)
 {
-	led_off(~(tick - 1) & 0x7);
-	led_on(~tick & 0x7);
+	board_on_softreset();
+
+	stm32_gpio_set(IO_LED3);
+	stm32_gpio_set(IO_LED4);
+
+	return 0;
+}
+
+/* ----------------------------------------------------------------------------
+ * Preboot: this task runs once at power up only.
+ * It's used to delay booting up the application ... 
+ * ----------------------------------------------------------------------------
+ */
+
+#define PREBOOT_TIME_SEC 5
+
+int board_preboot_task(void *ptr)
+{
+	uint32_t tick;
+
+	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
-	return (tick < 40) ? false : true;
-}
+	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
+		thinkos_sleep(250);
 
-void board_on_appload(void)
-{
-	int i;
+		__puts(".");
 
-	for (i = 0; i < LED_COUNT; ++i) 
-		led_off(i);
-}
-
-bool board_configure(struct dmon_comm * comm)
-{
-	return true;
-}
-
-extern const uint8_t otg_xflash_pic[];
-extern const unsigned int sizeof_otg_xflash_pic;
-
-struct magic {
-	uint32_t cnt;
-	struct {
-		uint32_t addr;
-		uint32_t mask;
-		uint32_t comp;
-	} rec[];
-};
-
-const struct magic bootloader_magic = {
-	.cnt = 4,
-	.rec = {
-		{  0x08000000, 0xffffffff, 0x10010000 },
-		{  0x08000004, 0xffff0000, 0x08000000 },
-		{  0x08000008, 0xffff0000, 0x08000000 },
-		{  0x0800000c, 0xffff0000, 0x08000000 }
+		switch (tick & 0x3) {
+		case 0:
+			stm32_gpio_clr(IO_LED3);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED4);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED3);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED4);
+			break;
+		}
 	}
+
+	thinkos_sleep(250);
+	stm32_gpio_clr(IO_LED3);
+	stm32_gpio_clr(IO_LED4);
+
+	return 0;
+}
+
+int board_configure_task(void *ptr)
+{
+	__puts("- board configuration\r\n");
+	return 0;
+}
+
+int board_selftest_task(void *ptr)
+{
+	__puts("- board self test\r\n");
+	return 0;
+}
+
+/* ----------------------------------------------------------------------------
+ * This function runs as the main thread's task when the bootloader 
+ * fails to run the application ... 
+ * ----------------------------------------------------------------------------
+ */
+
+int board_default_task(void *ptr)
+{
+	uint32_t tick;
+
+	__puts("- board default\r\n");
+
+	for (tick = 0;; ++tick) {
+		thinkos_sleep(128);
+
+		switch (tick & 0x7) {
+		case 0:
+			stm32_gpio_clr(IO_LED6);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED5);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED6);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED5);
+			break;
+		case 4:
+			stm32_gpio_clr(IO_LED3);
+			break;
+		case 5:
+			stm32_gpio_clr(IO_LED4);
+			break;
+		case 6:
+			stm32_gpio_set(IO_LED3);
+			break;
+		case 7:
+			stm32_gpio_set(IO_LED4);
+			break;
+		}
+	}
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
+const struct magic_blk thinkos_10_app_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 3},
+	.rec = {
+		{0xffffffff, 0x0a0de004},
+		{0xffffffff, 0x6e696854},
+		{0xffffffff, 0x00534f6b},
+		{0x00000000, 0x00000000}
+		}
 };
 
-void board_upgrade(struct dmon_comm * comm)
-{
-	uint32_t * xflash_code = (uint32_t *)(0x20001000);
-	int (* xflash_ram)(uint32_t, uint32_t, const struct magic *) = 
-		((void *)xflash_code) + 1;
-
-	cm3_cpsid_f();
-	__thinkos_memcpy(xflash_code, otg_xflash_pic, sizeof_otg_xflash_pic);
-	xflash_ram(0, 65536, &bootloader_magic);
-}
+/* Bootloader board description  
+   Bootloader and debugger, memory description  
+ */
 
 const struct mem_desc sram_desc = {
-	.name = "RAM",
+	.tag = "RAM",
 	.blk = {
-		{ 0x10000000, BLK_RW, SZ_64K,  1 }, /*  CCM - Main Stack */
+		{"STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
+		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
+		{"DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
+		{"SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
+		{"SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
 
-		{ 0x20000000, BLK_RO, SZ_4K,   1 }, /* Bootloader: 4KiB */
-		{ 0x20001000, BLK_RW, SZ_4K,  27 }, /* Application: 108KiB */
-		{ 0x2001c000, BLK_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
-
-		{ 0x22000000, BLK_RO, SZ_512K, 1 }, /* Bootloader - bitband */
-		{ 0x22080000, BLK_RW, SZ_512K, 27}, /* Application - bitband */
-		{ 0x22e00000, BLK_RW, SZ_2M,   1 }, /* SRAM 2 - bitband */
-
-#ifdef ENABLE_PRIPHERAL_MEM
-		{ 0x40000000, BLK_RO, SZ_1M,   1 },  /* Peripheral */
-		{ 0x42000000, BLK_RO, SZ_128M, 1 },  /* Peripheral - bitband */
-#endif
-
-		{ 0x00000000, 0, 0, 0 }
-	}
-}; 
+		{"", 0x00000000, 0, 0, 0}
+		}
+};
 
 const struct mem_desc flash_desc = {
-	.name = "FLASH",
+	.tag = "FLASH",
 	.blk = {
-		{ 0x08000000, BLK_RO, SZ_16K,  4 }, /* Bootloader */
-		{ 0x08010000, BLK_RW, SZ_64K,  1 }, /* Application */
-		{ 0x08020000, BLK_RW, SZ_128K, 7 }, /* Application */
-		{ 0x00000000, 0, 0, 0 }
-	}
-}; 
-
-const struct thinkos_board this_board = {
-	.name = "STM32F4Discovery",
-	.hw_ver = {
-		.major = 0,
-		.minor = 1,
-	},
-	.sw_ver = {
-		.major = 0,
-		.minor = 1,
-	},
-	.memory = {
-		.ram = &sram_desc,
-		.flash = &flash_desc
-	},
-	.application = {
-		.start_addr = 0x08010000,
-		.block_size = (64 + 7 * 128) * 1024
-	},
-	.init = board_init,
-	.softreset = board_softreset,
-	.autoboot = board_autoboot,
-	.configure = board_configure,
-	.upgrade = board_upgrade,
-	.on_appload = board_on_appload
+		{"BOOT", 0x08000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
+		{"CONF", 0x08010000, M_RO, SZ_64K, 1},	/* Configuration: 64 KiB */
+		{"APP",  0x08020000, M_RW, SZ_128K, 7},	/* Application:  */
+		{"", 0x00000000, 0, 0, 0}
+		}
 };
+
+const struct mem_desc peripheral_desc = {
+	.tag = "PERIPH",
+	.blk = {
+		{"RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
+		{"", 0x00000000, 0, 0, 0}
+		}
+};
+
+/* Bootloader board description  */
+const struct thinkos_board this_board = {
+	.name = "STM32F405-DK",
+	.desc = "STM32F405 Development Kit",
+	.hw = {
+	       .tag = "32F405DK",
+	       .ver = {.major = 0,.minor = 1}
+	       },
+	.sw = {
+	       .tag = "ThinkOS",
+	       .ver = {
+		       .major = VERSION_MAJOR,
+		       .minor = VERSION_MINOR,
+		       .build = VERSION_BUILD}
+	       },
+	.memory = {
+		   .cnt = 3,
+		   .flash = &flash_desc,
+		   .ram = &sram_desc,
+		   .periph = &peripheral_desc},
+	.application = {
+			.tag = "",
+			.start_addr = 0x08020000,
+			.block_size = (128 * 3) * 1024,
+			.magic = &thinkos_10_app_magic},
+	.init = board_init,
+	.softreset = board_on_softreset,
+	.upgrade = bootloader_yflash,
+	.preboot_task = board_preboot_task,
+	.configure_task = board_configure_task,
+	.selftest_task = board_selftest_task,
+	.default_task = board_default_task
+};
+
+#pragma GCC diagnostic pop
 

@@ -400,6 +400,7 @@ static void monitor_on_bkpt(struct monitor * mon)
 
 	thread_id = dbgmon_thread_break_get();
 	dbgmon_thread_inf_get(thread_id, &inf);
+	__thinkos_pause_all();
 
 	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id + 1, inf.pc);
 
@@ -424,6 +425,7 @@ static void monitor_on_step(struct monitor * mon)
 
 	thread_id = dbgmon_thread_step_get();
 	dbgmon_thread_inf_get(thread_id, &inf);
+	__thinkos_pause_all();
 
 	if (dbgmon_comm_isconnected(comm)) {
 		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, inf.pc);

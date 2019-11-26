@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 
 		case EVENT_CLICK_N_HOLD:
 			printf("CLICK_N_HOLD\n");
+			thinkos_bkpt(12);
 			break;
 
 		case EVENT_HOLD2:

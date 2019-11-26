@@ -30,13 +30,6 @@
 #define IO_LED5	    STM32_GPIOD, 14 /* LED5 */
 #define IO_LED6	    STM32_GPIOD, 15 /* LED6 */
 
-#define IO_PUSH_BTN STM32_GPIOA, 0  /* Push button B1 */
-
-#define IO_LIS302_MISO  STM32_GPIOA, 6
-#define IO_LIS302_MOSI  STM32_GPIOA, 7
-#define IO_LIS302_SCK   STM32_GPIOA, 5
-#define IO_LIS302_CS    STM32_GPIOE, 3
-
 /* low level led on/off functions */
 static inline void __led_on(struct stm32_gpio *__gpio, int __pin) {
 	stm32_gpio_set(__gpio, __pin);
@@ -52,6 +45,22 @@ static inline void __led_toggle(struct stm32_gpio *__gpio, int __pin) {
 	else
 		stm32_gpio_set(__gpio, __pin);
 }
+
+/**************************************************************************
+ * USB
+ **************************************************************************/
+#define OTG_FS_DP   STM32_GPIOA, 12
+#define OTG_FS_DM   STM32_GPIOA, 11
+#define OTG_FS_VBUS STM32_GPIOA, 9
+
+
+#define IO_PUSH_BTN     STM32_GPIOA, 0  /* Push button B1 */
+
+#define IO_LIS302_MISO  STM32_GPIOA, 6
+#define IO_LIS302_MOSI  STM32_GPIOA, 7
+#define IO_LIS302_SCK   STM32_GPIOA, 5
+#define IO_LIS302_CS    STM32_GPIOE, 3
+
 
 #ifdef __cplusplus
 extern "C" {

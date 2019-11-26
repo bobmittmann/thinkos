@@ -19,25 +19,34 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+PROJECT_ROOT = ..
+THINKOS_DIR = $(PROJECT_ROOT)/../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-SDK = ../../../sdk
+VERSION_DATE = "2019-11-09"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "0"
 
-PROG = thinkos
+PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c otg_xflash_pic.c
+CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
+		 otg_xflash_pic.c board.c
 
-LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libgdb
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
+		  $(SDK_DIR)/libgdbrsp $(SDK_DIR)/libice-comm 
 
-LIBS = cm3 stm32f util thinkos gdb gcc 
+LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc gdbrsp ice-comm 
 
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDK_DIR)/include ../include
 
-CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections 
+CDEFS = CONFIG_H 
 
-MACH = stm32f405
-HSE_HZ = 8000000
-include ../../../mk/stm32f4xx.mk
+CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+OPTIONS = -g -mno-unaligned-access 
+
+MACH = stm32f415xg
+include $(ARCH_DIR)/mk/stm32.mk
 

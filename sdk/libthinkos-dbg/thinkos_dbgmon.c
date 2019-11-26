@@ -927,6 +927,9 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 			/* this is a breakpoint instruction */
 			if (insn == 0xbe00) {
 				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+					/* Skip breakpoint intruction, by adjusting
+					   the call stack...*/
+					frm->pc += 2;
 					/* Breakpoint on a thread */
 					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
 							 " SOFT BKPT: %2d " _NORMAL_ _FG_GREEN_

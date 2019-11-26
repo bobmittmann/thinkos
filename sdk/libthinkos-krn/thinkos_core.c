@@ -191,6 +191,7 @@ void __thinkos_system_reset(void)
 
 bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
 {
+#if (THINKOS_ENABLE_MPU)
 	uint32_t sram_base = 0x20000000;
 	uint32_t krn_base = sram_base + thinkos_mpu_kernel_mem.offs;
 	uint32_t krn_size = thinkos_mpu_kernel_mem.size;
@@ -204,7 +205,7 @@ bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
 	if ((addr < (krn_base + krn_size)) && ((addr + size) > krn_base)) {
 		return false;
 	}
-
+#endif
 	return true;
 }
 
