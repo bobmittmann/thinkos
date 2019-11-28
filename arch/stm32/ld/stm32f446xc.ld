@@ -1,5 +1,5 @@
 /* 
- * stm32f446xe.ld
+ * stm32f446xc.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -45,9 +45,10 @@ MEMORY
 
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram1);
+REGION_ALIAS("HEAP", sram1);
 REGION_ALIAS("STACK", sram2);
 REGION_ALIAS("LOG", dcclog);
-REGION_ALIAS("HEAP", sram1);
 
+/* Device family vectors */
 INCLUDE stm32f446x.ld
 

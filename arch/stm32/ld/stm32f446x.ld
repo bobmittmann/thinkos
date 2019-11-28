@@ -1,5 +1,5 @@
 /* 
- * stm32f4xx.ld
+ * stm32f446x.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,28 +19,6 @@
  * http://www.gnu.org/
  */
 
-__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
-__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
-
-_stack_top = ORIGIN(STACK) + LENGTH(STACK);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(STACK);
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
-__heap_end = _stack;
-
-EXTERN(_stack)
-EXTERN(_reset)
-EXTERN(ice_comm_blk)
-
-EXTERN(cm3_nmi_isr)
-EXTERN(cm3_hard_fault_isr)
-EXTERN(cm3_mem_manage_isr)
-EXTERN(cm3_bus_fault_isr)
-EXTERN(cm3_usage_fault_isr)
-EXTERN(cm3_svc_isr)
-EXTERN(cm3_debug_mon_isr)
-EXTERN(cm3_pendsv_isr)
-EXTERN(cm3_systick_isr)
 EXTERN(stm32f_wwdg_isr)
 EXTERN(stm32f_pvd_isr)
 EXTERN(stm32f_tamp_stamp_isr)
@@ -138,5 +116,4 @@ EXTERN(stm32f_cec_isr)
 EXTERN(stm32f_spdif_rx_isr)
 EXTERN(stm32f_fmpi2c1_isr)
 EXTERN(stm32f_fmpi2c1_err_isr)
-
 

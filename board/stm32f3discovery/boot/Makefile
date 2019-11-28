@@ -19,28 +19,34 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-VERSION_DATE = "2016-02-13"
+PROJECT_ROOT = ..
+THINKOS_DIR = $(PROJECT_ROOT)/../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
+
+VERSION_DATE = "2019-11-28"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "38"
+VERSION_MINOR = "39"
 
-THINKOSDIR = ../../..
-SDKDIR = $(THINKOSDIR)/sdk
+PROG = stm32f373-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-PROG = thinkos
+CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
+		 otg_xflash_pic.c board.c
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c board.c test.c
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
+		  $(SDK_DIR)/libgdbrsp $(SDK_DIR)/libice-comm 
 
-LIBDIRS = $(SDKDIR)/libcm3 $(SDKDIR)/libstm32f $(SDKDIR)/libutil \
-		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libgdb
+LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc gdbrsp ice-comm 
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb gcc 
-
-INCPATH = $(SDKDIR)/include ../include
+INCPATH = $(SDK_DIR)/include ../include
 
 CDEFS = CONFIG_H CM3_RAM_VECTORS
-CFLAGS = -g -Os -Wall -Wdouble-promotion 
-OPTIONS = -mno-unaligned-access 
 
-MACH = stm32f303xc
-include $(THINKOSDIR)/mk/stm32.mk
+CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+OPTIONS = -g -mno-unaligned-access 
+
+MACH = stm32f373xg
+include $(ARCH_DIR)/mk/stm32.mk
 

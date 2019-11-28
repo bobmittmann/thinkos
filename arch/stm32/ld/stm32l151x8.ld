@@ -1,5 +1,5 @@
 /* 
- * stm32f103xb.ld
+ * stm32l151x8.ld
  *
  * Copyright(C) 2013 Robinson Mittmann. All Rights Reserved.
  * 
@@ -30,12 +30,19 @@ SEARCH_DIR(.)
 
 MEMORY
 {
-	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+	vectors (r) : ORIGIN = 0x00000000, LENGTH = 1K
+	flash  (rx) : ORIGIN = 0x08000000, LENGTH = 64K
 	eeprom (rx) : ORIGIN = 0x08080000, LENGTH = 4K
-	sram (rw) : ORIGIN = 0x20000000, LENGTH = 10K
-	dcclog (r) : ORIGIN = 0x40000000, LENGTH = 1024K
+	sram   (rw) : ORIGIN = 0x20000000, LENGTH = 10K
+	dcclog  (r) : ORIGIN = 0x4ff00000, LENGTH = 1024K
 }
 
+REGION_ALIAS("CODE", flash);
+REGION_ALIAS("DATA", sram1);
+REGION_ALIAS("HEAP", sram1);
+REGION_ALIAS("STACK", sram2);
+REGION_ALIAS("LOG", dcclog);
+
+/* Device family vectors */
 INCLUDE stm32l1xx.ld
 

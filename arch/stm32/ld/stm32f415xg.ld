@@ -1,5 +1,5 @@
 /* 
- * stm32f207.ld
+ * stm32f415xg.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -17,6 +17,13 @@
  * 
  * You can receive a copy of the GNU Lesser General Public License from 
  * http://www.gnu.org/
+ */
+
+/* Devices:
+   STM32F415OG 
+   STM32F415RG 
+   STM32F415VG 
+   STM32F415ZG 
  */
 
 OUTPUT_FORMAT ("elf32-littlearm")

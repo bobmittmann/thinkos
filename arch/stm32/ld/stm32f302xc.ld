@@ -19,8 +19,6 @@
  * http://www.gnu.org/
  */
 
-/* */
-
 OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
@@ -29,10 +27,16 @@ MEMORY
 {
 	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
 	flash (rx) : ORIGIN = 0x08000000, LENGTH = 256K 
-	sram0 (rw) : ORIGIN = 0x20000000, LENGTH = 32K
-	sram1 (rw) : ORIGIN = 0x10000000, LENGTH = 8K
-	dcclog (r) : ORIGIN = 0x40000000, LENGTH = 1024K
+	sram  (rw) : ORIGIN = 0x20000000, LENGTH = 32K
+	ccm   (rw) : ORIGIN = 0x10000000, LENGTH = 8K
+	dcclog (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
+	alloc  (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
+
+REGION_ALIAS("CODE", flash);
+REGION_ALIAS("DATA", sram);
+REGION_ALIAS("STACK", ccm);
+REGION_ALIAS("LOG", dcclog);
 
 INCLUDE stm32f3xx.ld
 
