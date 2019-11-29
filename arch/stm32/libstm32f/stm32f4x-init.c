@@ -190,6 +190,21 @@
   #define PLLR 0
 #endif
 
+#if (STM32_HCLK_HZ == 180000000) && (STM32_HSE_HZ == 8000000)
+  /* PLLVCO = 360.000000 MHz */
+  #define PLLM         4
+  #define PLLN       180
+  #define PLLR         2 /*     PLLCLK -> 180.000000 MHz */
+  #define PLLQ         7 /* PLL48M1CLK ->  51.428571 MHz */
+  #define PLLPDIV     15 /* PLLSAI2CLK ->  24.000000 MHz */
+
+  /* PLLSAIVCO = 8.000000 MHz */
+  #define PLLSAIN      1
+  #define PLLSAIPDIV   1 /* PLLSAI2CLK ->   8.000000 MHz */
+  #define PLLSAIQ      0 /* PLL48M2CLK ->   0.000000 MHz */
+  #define PLLSAIR      0 /*  PLLADCCLK ->   0.000000 MHz */
+#endif
+
 #if (STM32_HCLK_HZ == 180006400) && (STM32_HSE_HZ == 11289600)
   /* PLLVCO = 360.012800 MHz */
   #define PLLM         9

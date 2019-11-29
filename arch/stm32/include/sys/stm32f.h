@@ -26,7 +26,7 @@
 #ifndef __SYS_STM32F_H__
 #define __SYS_STM32F_H__
 
-#ifdef STM32F429
+#if defined(STM32F429XE) || defined(STM32F429XG) || defined(STM32F429XI)
 #include <arch/stm32f429.h>
 #endif
 
