@@ -22,7 +22,7 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-include ../../mk/config.mk
+include ../../../mk/config.mk
 
 LIB_STATIC = stm32drv
 
@@ -59,11 +59,10 @@ ifneq ($(findstring $(STM32), stm32f2, stm32f4),)
 		   stm32f-ethif.c stm32f-bkp_sram.c \
 		   $(addprefix serial/,$(SERIAL_CFILES)) \
 		   $(addprefix i2s/,$(I2S_CFILES))
+
 endif
 
+override INCPATH += ./include
 
-override INCPATH += ./include ../libtcpip/include
-
-include ../../mk/lib.mk
-
+include ../../../mk/lib.mk
 
