@@ -62,7 +62,7 @@ struct thinkos_board {
 	char name[16];
 	char desc[38];
 	struct {
-		char tag[8];
+		char tag[12];
 		struct {
 			uint8_t minor;
 			uint8_t major;
@@ -70,7 +70,7 @@ struct thinkos_board {
 	} hw;
 
 	struct {
-		char tag[8];
+		char tag[10];
 		struct {
 			uint8_t minor;
 			uint8_t major;

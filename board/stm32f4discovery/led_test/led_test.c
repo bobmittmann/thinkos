@@ -81,8 +81,6 @@ int main(int argc, char ** argv)
 	
 	io_init();
 
-	thinkos_init(THINKOS_OPT_PRIORITY(3) | THINKOS_OPT_ID(3));
-
 	for (i = 0; ; ++i) {
 		led_off((i - 2) & 0x3);
 		led_on(i & 0x3);

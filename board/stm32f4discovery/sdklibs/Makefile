@@ -19,20 +19,24 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-SDK = ../../../sdk
+BOARD_ROOT = ..
+THINKOS_DIR = $(BOARD_ROOT)/../..
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+SDK_DIR = $(THINKOS_DIR)/sdk
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-LIBDIRS =  $(SDK)/libcm3 $(SDK)/libstm32f $(SDK)/libstm32drv \
-		   $(SDK)/libutil $(SDK)/libc $(SDK)/libconsole \
-		   $(SDK)/libtty $(SDK)/libshell $(SDK)/libtrace \
-		   $(SDK)/libcrc 
-
-INCPATH = $(SDK)/include ../include
+LIBDIRS = $(ARCH_DIR)/libstm32f $(ARCH_DIR)/libstm32drv \
+		  $(SDK_DIR)/libcm3 $(SDK_DIR)/libthinkos-usr \
+		  $(SDK_DIR)/libutil $(SDK_DIR)/libc \
+		  $(SDK_DIR)/libtty $(SDK_DIR)/libshell \
+		  $(SDK_DIR)/libtrace \
 
 CDEFS = CONFIG_H
-CFLAGS = -g -O1 -Wall
-O := Debug
+INCPATH = ../include $(SDK_DIR)/libtcpip/include
 
-THINKAPP = 1
-MACH = stm32f405
-HSE_HZ = 8000000
-include ../../../mk/stm32f4xx.mk
+CFLAGS = -g -O1 -Wall
+
+MACH = stm32f407xg
+THINKAPP = 0x08020000
+include $(ARCH_DIR)/mk/stm32.mk
+

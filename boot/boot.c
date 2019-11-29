@@ -46,14 +46,14 @@ void monitor_task(const struct dbgmon_comm * comm, void * arg);
 #define BOOT_MEM_RESERVED 0x1000
 #endif
 
+#undef DEBUG
+
 int main(int argc, char ** argv)
 {
 	const struct dbgmon_comm * comm;
 
-#if DEBUG
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
-#endif
 
 #ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");

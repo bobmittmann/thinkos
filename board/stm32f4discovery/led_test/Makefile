@@ -19,27 +19,27 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+BOARD_ROOT = ..
+THINKOS_DIR = $(BOARD_ROOT)/../..
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+SDK_DIR = $(THINKOS_DIR)/sdk
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
 PROG = led_test
 
 CFILES = led_test.c
 
-SDK = ../../../sdk
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
+		  $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-usr
 
-LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos 
-
-LIBS = cm3 stm32f thinkos util
-
-INCPATH = $(SDK)/include ../include
-
-LIBPATH = ../sdklibs/Debug
-
-CDEFS =
+LIBS = cm3 stm32f thinkos-usr util
 
 CFLAGS = -g -O1 -Wall
 
-MACH = stm32f405
-HSE_HZ = 8000000
-include ../../../mk/stm32f4xx.mk
+MACH = stm32f407xg
+THINKAPP := 0x08020000
+LDCODE := $(THINKAPP)
+LDDATA := 0x20001000
+include $(ARCH_DIR)/mk/stm32.mk
 

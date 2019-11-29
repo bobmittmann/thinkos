@@ -99,28 +99,39 @@ void io_init(void)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOD);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
 	/* - USB ----------------------------------------------------*/
-	stm32_gpio_af(OTG_FS_DP, GPIO_AF10);
-	stm32_gpio_af(OTG_FS_DM, GPIO_AF10);
-	stm32_gpio_af(OTG_FS_VBUS, GPIO_AF10);
+	stm32_gpio_af(IO_OTG_FS_DP, GPIO_AF10);
+	stm32_gpio_af(IO_OTG_FS_DM, GPIO_AF10);
+	stm32_gpio_af(IO_OTG_FS_VBUS, GPIO_AF10);
+	stm32_gpio_af(IO_OTG_FS_ID, GPIO_AF10);
 
-	stm32_gpio_mode(OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_mode(OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
+	stm32_gpio_mode(IO_OTG_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_OTG_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_mode(IO_OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
+	stm32_gpio_mode(IO_OTG_FS_ID, ALT_FUNC, SPEED_LOW);
+
+	stm32_gpio_set(IO_OTG_PWR_SW);
+	stm32_gpio_mode(IO_OTG_PWR_SW, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_mode(IO_OTG_PWR_OVR, INPUT, SPEED_LOW);
 
 	/* - LEDs ---------------------------------------------------------*/
 	stm32_gpio_mode(IO_LED3, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED5, OUTPUT, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(IO_LED6, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_set(IO_LED3);
+	stm32_gpio_set(IO_LED4);
+	stm32_gpio_set(IO_LED5);
+	stm32_gpio_set(IO_LED6);
 }
 
 void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
-//	struct stm32f_spi * spi = ICE40_SPI;
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
@@ -128,8 +139,6 @@ void board_on_softreset(void)
 	DCC_LOG1(LOG_TRACE, "ahb2enr=0x%08x", rcc->ahb2enr);
 	DCC_LOG1(LOG_TRACE, "apb1enr=0x%08x", rcc->apb1enr);
 	DCC_LOG1(LOG_TRACE, "apb2enr=0x%08x", rcc->apb2enr);
-
-	/* Reset all peripherals except USB_FS, GPIOA and FLASH */
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
@@ -154,7 +163,7 @@ void board_on_softreset(void)
 	rcc->apb1rstr = 0;
 	rcc->apb2rstr = 0;
 
-	/* disable all peripherals clock sources except USB_OTG and GPIOA */
+	/* Enable USB_OTG and GPIOA, GPIOB and GPIOC */
 	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
 		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
 	rcc->ahb2enr = (1 << RCC_OTGFS);
@@ -332,11 +341,11 @@ const struct mem_desc peripheral_desc = {
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
-	.name = "STM32F405-DK",
-	.desc = "STM32F405 Development Kit",
+	.name = "STM32F4DISCOVERY",
+	.desc = "STM32F407VGT6 Microcontroller Kit",
 	.hw = {
-	       .tag = "32F405DK",
-	       .ver = {.major = 0,.minor = 1}
+	       .tag = "STM32F4DISC1",
+	       .ver = {.major = 0, .minor = 1}
 	       },
 	.sw = {
 	       .tag = "ThinkOS",
@@ -353,7 +362,7 @@ const struct thinkos_board this_board = {
 	.application = {
 			.tag = "",
 			.start_addr = 0x08020000,
-			.block_size = (128 * 3) * 1024,
+			.block_size = (128 * 7) * 1024,
 			.magic = &thinkos_10_app_magic},
 	.init = board_init,
 	.softreset = board_on_softreset,

@@ -40,13 +40,14 @@
 #if (THINKOS_ENABLE_EXCEPTIONS)
 
 #if (DEBUG)
+/*
   #ifndef LOG_LEVEL
     #define LOG_LEVEL LOG_TRACE
   #elif LOG_LEVEL < LOG_TRACE
     #undef LOG_LEVEL 
     #define LOG_LEVEL LOG_TRACE
   #endif
-
+*/
   #undef THINKOS_SYSRST_ONFAULT
   #define THINKOS_SYSRST_ONFAULT    0
   #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)

@@ -124,7 +124,7 @@
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 #define THINKOS_ENABLE_IDLE_MSP         1
-#define THINKOS_ENABLE_SCHED_DEBUG      1
+#define THINKOS_ENABLE_SCHED_DEBUG      0
 
 /* -------------------------------------------------------------------------
  * delay
