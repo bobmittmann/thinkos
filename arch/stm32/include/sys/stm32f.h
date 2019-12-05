@@ -26,6 +26,10 @@
 #ifndef __SYS_STM32F_H__
 #define __SYS_STM32F_H__
 
+#if defined(STM32F072X8) || defined(STM32F072XB)
+#include <arch/stm32f072.h>
+#endif
+
 #if defined(STM32F429XE) || defined(STM32F429XG) || defined(STM32F429XI)
 #include <arch/stm32f429.h>
 #endif
@@ -148,8 +152,7 @@ static inline uint32_t * dma_ifcr_bitband(struct stm32f_dma * dma,
 #endif
 
 #if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X) \
-	|| defined(STM32L4X)
-
+	|| defined(STM32L4X) || defined(STM32F0X)
 struct stm32_dmactl {
 	/* DMA Stream ID */
 	uint8_t id;

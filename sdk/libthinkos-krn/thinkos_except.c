@@ -29,7 +29,6 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 
-#include <sys/stm32f.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -56,8 +55,6 @@
 #endif
 
 #include <sys/dcclog.h>
-
-#if (THINKOS_UNROLL_EXCEPTIONS) 
 
 void __attribute__((noreturn))
 thinkos_sched_context_restore(struct thinkos_context * __ctx, 
@@ -132,6 +129,8 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 	thinkos_sched_context_restore(ctx, THINKOS_THREAD_IDLE,
 								  xcpt->active, xcpt->msp);
 }
+
+#if (THINKOS_UNROLL_EXCEPTIONS) 
 
 static int __xcpt_active_irq(void)
 {

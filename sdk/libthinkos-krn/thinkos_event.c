@@ -74,7 +74,7 @@ void thinkos_ev_wait_svc(int32_t * arg, int self)
 again:
 	/* check for any pending unmasked event */
 	pend = __ldrex(&thinkos_rt.ev[no].pend);
-	if ((ev = __clz(__rbit(pend & mask))) < 32) {
+	if ((ev = __thinkos_ffs(pend & mask)) < 32) {
 		pend &= ~(1 << ev);
 		DCC_LOG2(LOG_MSG, "set=0x%08x msk=0x%08x", 
 				 thinkos_rt.ev[no].pend, thinkos_rt.ev[no].mask);
@@ -106,7 +106,7 @@ again:
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
 	pend = (volatile uint32_t)thinkos_rt.ev[no].pend;
-	if (((ev = __clz(__rbit(pend & mask))) < 32) || 
+	if (((ev = __thinkos_ffs(pend & mask)) < 32) || 
 		(__strex(&thinkos_rt.wq_lst[wq], queue))) {
 		/* roll back */
 #if THINKOS_ENABLE_THREAD_STAT
@@ -159,7 +159,7 @@ void thinkos_ev_timedwait_svc(int32_t * arg, int self)
 again:
 	/* check for any pending unmasked event */
 	pend = __ldrex(&thinkos_rt.ev[no].pend);
-	if ((ev = __clz(__rbit(pend & mask))) < 32) {
+	if ((ev = __thinkos_ffs(pend & mask)) < 32) {
 		pend &= ~(1 << ev);
 		DCC_LOG2(LOG_MSG, "set=0x%08x msk=0x%08x", 
 				 thinkos_rt.ev[no].pend, thinkos_rt.ev[no].mask);
@@ -182,7 +182,7 @@ again:
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
 	pend = (volatile uint32_t)thinkos_rt.ev[no].pend;
-	if (((ev = __clz(__rbit(pend & mask))) < 32) || 
+	if (((ev = __thinkos_ffs(pend & mask)) < 32) || 
 		(__strex(&thinkos_rt.wq_lst[wq], queue))) {
 		/* roll back */
 #if THINKOS_ENABLE_THREAD_STAT
@@ -224,7 +224,7 @@ void __thinkos_ev_raise_i(uint32_t wq, int ev)
 		/* insert into the event wait queue */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the event set, mark the event as pending */
 			DCC_LOG2(LOG_INFO, "pending event %d.%d", wq, ev);
 			__bit_mem_wr(&thinkos_rt.ev[no].pend, ev, 1);  
@@ -352,7 +352,7 @@ again:
 		/* get the event wait queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting */
 			__clrex();
 			/* set the mask bit on the mask bitmap */

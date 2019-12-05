@@ -60,7 +60,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
 			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
-			req = __clz(__rbit(map));
+			req = __thinkos_ffs(map);
 			if (map != 0) {
 				uint32_t y;
 

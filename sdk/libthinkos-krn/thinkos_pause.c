@@ -167,8 +167,8 @@ static bool evset_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
 
 	/* check for any pending unmasked event */
-	if ((ev = __clz(__rbit(thinkos_rt.ev[no].pend & 
-						   thinkos_rt.ev[no].mask))) < 32) {
+	if ((ev = __thinkos_ffs(thinkos_rt.ev[no].pend & 
+						   thinkos_rt.ev[no].mask)) < 32) {
 		__bit_mem_wr(&thinkos_rt.ev[no].pend, ev, 0);  
 		/* insert the thread into ready queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);

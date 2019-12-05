@@ -263,7 +263,7 @@ void __thinkos_sem_post_i(uint32_t wq)
 		/* insert into the event wait queue */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			int sem = wq - THINKOS_SEM_BASE;
 			uint32_t sem_val;
 

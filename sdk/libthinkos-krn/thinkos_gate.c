@@ -314,7 +314,7 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				gates = __ldrex(gates_bmp);
@@ -389,7 +389,7 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				gates = __ldrex(gates_bmp);

@@ -46,6 +46,10 @@ void monitor_task(const struct dbgmon_comm * comm, void * arg);
 #define BOOT_MEM_RESERVED 0x1000
 #endif
 
+#ifndef BOOT_ENABLE_CUSTOM_COMM
+#define BOOT_ENABLE_CUSTOM_COMM 0
+#endif
+
 #undef DEBUG
 
 int main(int argc, char ** argv)
@@ -81,7 +85,8 @@ int main(int argc, char ** argv)
 #if DEBUG
 	udelay(256);
 #endif
-#if BOOT_COMM_CUSTOM_ENABLE
+
+#if BOOT_ENABLE_CUSTOM_COMM
 	comm = custom_comm_init();
 #elif STM32_ENABLE_OTG_FS
 	comm = usb_comm_init(&stm32f_otg_fs_dev);

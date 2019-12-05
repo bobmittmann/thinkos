@@ -35,7 +35,7 @@ int __thinkos_bmp_alloc(uint32_t bmp[], int bits)
 
 	for (i = 0; i < ((bits + 31) / 32); ++i) {
 		/* Look for an empty bit MSB first */
-		if ((j = __clz(__rbit(~(bmp[i])))) < 32) {
+		if ((j = __thinkos_ffs(~(bmp[i]))) < 32) {
 			/* Mark as used */
 			__bit_mem_wr(&bmp[i], j, 1);  
 			return 32 * i + j;;
@@ -70,7 +70,7 @@ static int __thinkos_alloc_lo(uint32_t * ptr, int start)
 		start = 0;
 
 	/* Look for an empty bit MSB first */
-	idx = __clz(__rbit(~(*ptr >> start))) + start;
+	idx = __thinkos_ffs(~(*ptr >> start)) + start;
 	if (idx >= 32)
 		return -1;
 	/* Mark as used */

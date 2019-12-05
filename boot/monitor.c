@@ -45,6 +45,10 @@
 
 #include <sys/dcclog.h>
 
+#ifndef BOOT_ENABLE_MONITOR
+#define BOOT_ENABLE_MONITOR 1
+#endif
+
 /* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
    dbgmon library */
 
@@ -189,6 +193,7 @@ struct monitor {
 #endif
 };
 
+#if (BOOT_ENABLE_MONITOR)
 static const char monitor_menu[] = 
 "  \r\n"
 " Debug/Monitor shortcuts:\r\n"
@@ -254,7 +259,6 @@ static const char monitor_menu[] =
 #endif
 ;
 
-static const char s_crlf[] =  "\r\n";
 static const char s_hr[] = 
 "-----------------------------------------------------------------------\r\n";
 
@@ -280,6 +284,7 @@ static void monitor_show_help(const struct dbgmon_comm * comm)
 	dbgmon_printf(comm, monitor_menu);
 	dbgmon_printf(comm, s_hr);
 }
+#endif
 
 #if (MONITOR_SELFTEST_ENABLE)
 static void monitor_req_selftest(void) 
@@ -305,6 +310,7 @@ static void monitor_req_upgrade(void)
 }
 #endif
 
+#if (BOOT_ENABLE_MONITOR)
 static void monitor_thread_exec(int (* task)(void *), void * arg) 
 {
 	int thread_id;
@@ -314,6 +320,7 @@ static void monitor_thread_exec(int (* task)(void *), void * arg)
 		dbgmon_thread_resume(thread_id);
 	}
 }
+#endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct dbgmon_comm * comm)
@@ -322,6 +329,8 @@ static void monitor_print_fault(const struct dbgmon_comm * comm)
 
 	dbgmon_print_exception(comm, xcpt);
 }
+
+static const char s_crlf[] =  "\r\n";
 
 static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 {
@@ -458,6 +467,7 @@ static void monitor_resume_all(const struct dbgmon_comm * comm)
 }
 #endif
 
+#if (BOOT_ENABLE_MONITOR)
 static bool monitor_ymodem_recv(const struct dbgmon_comm * comm, 
 								uint32_t addr, unsigned int size)
 {
@@ -469,6 +479,7 @@ static bool monitor_ymodem_recv(const struct dbgmon_comm * comm,
 	dbgmon_printf(comm, "\r\nOK\r\n");
 	return true;
 }
+#endif
 
 #if (MONITOR_APPWIPE_ENABLE)
 static void monitor_app_erase(const struct dbgmon_comm * comm, 
@@ -636,6 +647,7 @@ static void monitor_board_info(const struct dbgmon_comm * comm)
 }
 #endif
 
+#if (BOOT_ENABLE_MONITOR)
 static bool monitor_process_input(struct monitor * mon, int c)
 {
 	const struct dbgmon_comm * comm = mon->comm;
@@ -789,6 +801,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 
 	return true;
 }
+#endif
 
 /*
    Default Monitor Task
@@ -796,6 +809,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 											void * arg)
 {
+#if (BOOT_ENABLE_MONITOR)
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 #if (THINKOS_ENABLE_CONSOLE)
@@ -1276,6 +1290,9 @@ is_connected:
 		}
 		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
+#else
+	for (;;);
+#endif
 }
 
 

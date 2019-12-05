@@ -3351,6 +3351,8 @@ struct stm32_clk {
  * Clocks
  *---------------------------------------------------------------------*/
 extern const uint32_t stm32f_ahb_hz;
+extern const uint32_t stm32f_ahb2_hz;
+extern const uint32_t stm32f_ahb3_hz;
 extern const uint32_t stm32f_apb1_hz;
 extern const uint32_t stm32f_tim1_hz;
 extern const uint32_t stm32f_apb2_hz;

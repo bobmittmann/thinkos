@@ -80,6 +80,16 @@ ifneq ($(findstring $(MACH), stm32l433xc stm32l433xb),)
   STM32 = stm32l4
 endif
 
+ifneq ($(findstring $(MACH), stm32f031x4 stm32f031x6),)
+  CPU = cortex-m0
+  STM32 = stm32f0
+endif
+
+ifneq ($(findstring $(MACH), stm32f072x8 stm32f072xb),)
+  CPU = cortex-m0
+  STM32 = stm32f0
+endif
+
 ifndef CPU
   $(error "Unsupported machine type: MACH=$(MACH)")
 endif

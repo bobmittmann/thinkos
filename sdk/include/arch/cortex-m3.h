@@ -1009,7 +1009,7 @@ struct cm3_fpb {
 #define CM3_DWT ((struct cm3_dwt *) CM3_DWT_BASE) 
 #define CM3_FPB ((struct cm3_fpb *) CM3_FPB_BASE) 
 
-/* this constant must be privided by the BSP */
+/* this constant must be provided by the BSP */
 extern const uint32_t cm3_systick_load_1ms;
 
 struct cm4_fpu {
@@ -1211,6 +1211,16 @@ static inline void __attribute__((always_inline)) cm3_lr_set(uint32_t lr) {
 	asm volatile ("mov lr, %0\n" : : "r" (lr));
 }
 
+#if (__ARM_ARCH == 6)
+
+extern uint32_t __clz(uint32_t val);
+extern uint32_t __rbit(uint32_t val);
+
+extern uint32_t __ldrex(uint32_t * addr);
+extern uint32_t __strex(uint32_t * addr, uint32_t val);
+
+#else
+
 static inline uint32_t __attribute__((always_inline)) __clz(uint32_t val) {
 	register uint32_t ret;
 	asm volatile ("clz %0, %1\n" : "=r" (ret) : "r" (val));
@@ -1265,6 +1275,8 @@ static inline uint32_t __attribute__((always_inline)) __strex(uint32_t * addr,
 static inline void __attribute__((always_inline)) __clrex(void) {
 	asm volatile ("clrex" : );
 }
+
+#endif
 
 static inline void __attribute__((always_inline)) __dsb(void) {
 	asm volatile ("dsb" : );

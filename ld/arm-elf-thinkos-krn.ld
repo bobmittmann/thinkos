@@ -142,13 +142,13 @@ SECTIONS
 	} >"DATA" AT >"CODE"
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-
+/*
 	.image :
 	{
 		. = . + 500000;
 		PROVIDE (__image_end = . );
 	} >"CODE"
-
+*/
 	.bss :
 	{
 		/* define a global symbol marking the start of the .bss section */
@@ -178,7 +178,7 @@ SECTIONS
 		PROVIDE (__bkpctl_start = . );
 		*(.bkpctl .bkpctl*)
 		PROVIDE (__bkpctl_end = . );
-	} >"rtcbkr"
+	} >"BKPCTL"
 
 	/* Backed up data section */
 	.bkpdat :
@@ -186,7 +186,7 @@ SECTIONS
 		PROVIDE (__bkpdat_start = . );
 		*(.bkpdat .bkpdat*)
 		PROVIDE (__bkpdat_end = . );
-	} >"bkpsram"
+	} >"BKPDAT"
 
 }
 

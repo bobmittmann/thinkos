@@ -105,5 +105,17 @@ CFILES = stm32f1x-init.c stm32f-gpio.c stm32f-eth.c\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
 endif
 
+ifeq ($(STM32), stm32f0)
+SFILES = stm32f-vec.S
+
+CFILES = stm32f0x-init.c stm32f-gpio.c \
+		 stm32f-spi.c stm32f-exti.c stm32f-mco.c\
+		 stm32f-dma.c stm32f1x-flash.c stm32f-rtc.c\
+		 stm32-crc.c\
+		 $(addprefix usart/,$(USART_CFILES))\
+		 $(addprefix usb_fs/,$(USB_FS_CFILES))
+endif
+
+
 include ../../../mk/lib.mk
 

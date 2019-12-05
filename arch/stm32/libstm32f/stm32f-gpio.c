@@ -74,6 +74,10 @@ void stm32_gpio_clk_en(struct stm32_gpio * gpio)
 	rcc->apb2enr |= 1 << (stm32_gpio_id(gpio) + 2);
 #endif
 
+#if defined(STM32F0X) 
+	rcc->ahbenr |= 1 << (stm32_gpio_id(gpio) + 17);
+#endif
+
 }
 #endif
 
@@ -81,8 +85,7 @@ void stm32_gpio_mode(struct stm32_gpio * gpio,
 					  unsigned int pin, unsigned int mode, unsigned int opt)
 {
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X) || defined(STM32L4X)
-
+	defined(STM32L1X) || defined(STM32L4X) || defined(STM32F0X) 
 	uint32_t tmp;
 	uint32_t moder; 
 
@@ -179,13 +182,11 @@ void stm32_gpio_mode(struct stm32_gpio * gpio,
 		gpio->crh &= ~(0xf << ((pin - 8) * 4));
 		gpio->crh |= ((cnf << 2) | mod) << ((pin - 8) * 4);
 	}
-
 #endif
-
 }
 
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X) || defined(STM32L4X)
+	defined(STM32L1X) || defined(STM32L4X) || defined(STM32F0X) 
 void stm32_gpio_af(struct stm32_gpio * gpio, int pin, int af)
 {
 	uint32_t tmp;

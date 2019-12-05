@@ -751,6 +751,17 @@ thinkos_bit_clr(void * bmp, unsigned int bit)
 	__bit_mem_wr(bmp, bit, 0);  
 }
 
+extern uint32_t thinkos_ffs(uint32_t x);
+
+static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
+{
+#if (__ARM_ARCH == 6)
+	return thinkos_ffs(x);
+#else
+	return __clz(__rbit(x));
+#endif
+}
+
 /* flags a deferred execution of the scheduler */
 static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
@@ -819,7 +830,7 @@ static inline int __attribute__((always_inline)) __wq_idx(uint32_t * ptr) {
 static inline int __attribute__((always_inline)) 
 __thinkos_wq_head(unsigned int wq) {
 	/* get a thread from the queue bitmap */
-	return __clz(__rbit(thinkos_rt.wq_lst[wq]));
+	return __thinkos_ffs(thinkos_rt.wq_lst[wq]);
 }
 
 static inline void __attribute__((always_inline)) 

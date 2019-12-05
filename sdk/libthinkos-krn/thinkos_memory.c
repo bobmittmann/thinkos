@@ -28,7 +28,6 @@
 #include <stdbool.h>
 
 #include <sys/dcclog.h>
-#include <sys/stm32f.h>
 #include <sys/param.h>
 
 #define __THINKOS_KERNEL__

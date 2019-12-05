@@ -222,7 +222,7 @@ void __thinkos_flag_give_i(uint32_t wq)
 		/* insert into the event wait queue */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __clz(__rbit(queue))) == THINKOS_THREAD_NULL) {
+		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the flag, . */ 
 			do {
 				flags = __ldrex(flags_bmp);

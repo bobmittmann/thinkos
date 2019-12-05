@@ -307,7 +307,7 @@
 #include <stdbool.h>
 
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X) || defined(STM32L4X)
+	defined(STM32L1X) || defined(STM32L4X) || defined(STM32F0X)
 struct stm32_gpio {
 	volatile uint32_t moder;
 	volatile uint32_t otyper;
@@ -369,7 +369,7 @@ extern "C" {
 #endif
 
 #if defined(STM32F2X) || defined(STM32F3X) || defined(STM32F4X) || \
-	defined(STM32L1X) || defined(STM32L4X)
+	defined(STM32L1X) || defined(STM32L4X) || defined(STM32F0X)
 static inline void stm32_gpio_mode_out(struct stm32_gpio * __gpio, 
 									   unsigned int __pin) {
 	uint32_t tmp = __gpio->moder & ~GPIO_MODE_MASK(__pin);
