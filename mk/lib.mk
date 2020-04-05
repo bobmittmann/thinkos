@@ -37,6 +37,9 @@ ifndef CFLAGS
   CFLAGS := -g -O1
 endif
 
+override SFLAGS += $(addprefix -D,$(CDEFS))
+override CFLAGS += $(addprefix -D,$(CDEFS))
+
 include $(SCRPTDIR)/cross.mk
 
 #------------------------------------------------------------------------------ 
@@ -200,6 +203,9 @@ $(call trace3,LIB_INC = '$(LIB_INC)')
 $(call trace3,CLEAN_ODIRS = '$(CLEAN_ODIRS)')
 $(call trace3,VERSION_H = '$(VERSION_H)')
 $(call trace3,CFILES_OUT = '$(CFILES_OUT)')
+$(call trace3,CDEFS= '$(CDEFS)')
+$(call trace3,LIB_CDEFS= '$(LIB_CDEFS)')
+$(call trace3,CFLAGS= '$(CFLAGS)')
 #$(info OS = '$(OS)')
 #$(info HOST = '$(HOST)')
 #$(info DIRMODE = '$(DIRMODE)')

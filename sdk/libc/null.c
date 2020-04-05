@@ -47,7 +47,6 @@ int null_flush(void * arg)
 
 int null_close(void * arg)
 {
-	DCC_LOG(LOG_TRACE, "...");
 	return 0;
 }
 

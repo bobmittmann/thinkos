@@ -63,11 +63,11 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #endif
 
 #ifndef MONITOR_CONFIGURE_ENABLE
-#define MONITOR_CONFIGURE_ENABLE   1
+#define MONITOR_CONFIGURE_ENABLE   0
 #endif
 
 #ifndef MONITOR_PREBOOT_ENABLE
-#define MONITOR_PREBOOT_ENABLE     1
+#define MONITOR_PREBOOT_ENABLE     0
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
@@ -83,7 +83,7 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
-#define MONITOR_UPGRADE_ENABLE     1
+#define MONITOR_UPGRADE_ENABLE     0
 #endif
 
 #ifndef MONITOR_STACKUSAGE_ENABLE
@@ -153,6 +153,14 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #if (MONITOR_THREAD_STEP_ENABLE)
   #undef MONITOR_THREADINFO_ENABLE
   #define MONITOR_THREADINFO_ENABLE  1
+#endif
+
+#if !(THINKOS_ENABLE_MONITOR_THREADS)
+#error "Need THINKOS_ENABLE_MONITOR_THREADS"
+#endif
+
+#if !(THINKOS_ENABLE_IDLE_HOOKS)
+#error "Need THINKOS_ENABLE_IDLE_HOOKS"
 #endif
 
 /* ---------------------------------------------------------------------------

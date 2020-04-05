@@ -42,6 +42,23 @@ ifndef CFLAGS
   CFLAGS := -g -O1
 endif
 
+#------------------------------------------------------------------------------ 
+# compiler flags
+#------------------------------------------------------------------------------ 
+
+ifneq ($(dbg_level),0) 
+  CDEFS := $(CDEFS) DEBUG=$(dbg_level)
+#  CFLAGS += -g
+endif
+
+SFLAGS := $(OPTIONS) -Wall $(SFLAGS) 
+SFLAGS += $(addprefix -D,$(CDEFS))
+
+CFLAGS := $(OPTIONS) -Wall $(CFLAGS) 
+CFLAGS += $(addprefix -D,$(CDEFS))
+
+LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space)--defsym=,$(SYMDEFS))
+
 include $(SCRPTDIR)/cross.mk
 
 #------------------------------------------------------------------------------ 

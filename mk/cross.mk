@@ -66,19 +66,3 @@ OBJCOPY := $(strip $(CROSS_COMPILE))objcopy
 OBJDUMP := $(strip $(CROSS_COMPILE))objdump
 STRIP := $(strip $(CROSS_COMPILE))strip
 
-#------------------------------------------------------------------------------ 
-# compiler flags
-#------------------------------------------------------------------------------ 
-
-ifneq ($(dbg_level),0) 
-  CDEFS := $(CDEFS) DEBUG=$(dbg_level)
-#  CFLAGS += -g
-endif
-
-#INCPATH	:= $(OUTDIR) $(abspath $(INCPATH))
-#INCPATH += $(OUTDIR)
-SFLAGS := $(OPTIONS) -Wall $(SFLAGS) $(addprefix -D,$(CDEFS))
-CFLAGS := $(OPTIONS) -Wall $(CFLAGS) $(addprefix -D,$(CDEFS))
-LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space)--defsym=,$(SYMDEFS))
-
-

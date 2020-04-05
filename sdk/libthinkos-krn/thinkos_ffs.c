@@ -28,7 +28,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-const uint8_t thinkos_ffs_lut[32] = {
+const uint8_t thinkos_ffs_lut[33] = {
 	32, 0, 27, 1, 28, 13, 23, 2, 29, 21, 19, 14, 24, 16, 3, 7,
 	30, 26, 12, 22, 20, 18, 15, 6, 25, 11, 17, 5, 10, 4, 9, 8, 31
 };
