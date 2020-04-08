@@ -40,12 +40,6 @@ MEMORY
 	dcclog  (r) : ORIGIN = 0x4ff00000, LENGTH = 1024K
 }
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("HEAP", sram1);
-REGION_ALIAS("STACK", sram2);
-REGION_ALIAS("LOG", dcclog);
-
 /* Device family vectors */
 INCLUDE stm32l4xx.ld
 

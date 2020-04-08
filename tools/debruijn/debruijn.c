@@ -57,6 +57,20 @@ void parse_err(char * prog, char * opt)
 	exit(1);
 }
 
+static inline uint64_t ror(uint64_t x, int b, int n)
+{
+	uint64_t msk = UINT64_MAX >> (64 - b);
+
+	return ((x << (b - n)) & msk) | (x >> n);
+}
+
+static inline uint64_t rol(uint64_t x, int b, int n)
+{
+	uint64_t msk = UINT64_MAX >> (64 - b);
+
+	return ((x << n) & msk) | (x >> (b - n));
+}
+
 int _bin_debruijn_seq(unsigned int n)
 {
 	int64_t i;
@@ -90,52 +104,175 @@ int _bin_debruijn_seq(unsigned int n)
 	return 0;
 }
 
-void seq_print(int64_t seq, int b)
+void seq_print(uint64_t seq, int b, int n)
 {
-	int64_t msk;
+	int len = (1 << b);
+	uint64_t msk;
 	int j;
-	int n;
+	int q;
 
-//		printf("%08I64x\n", seq);
-	n = b - 1;
-	/* Bit shift */
-	msk = (31LL << n);
-	/* New value of the sequence (0 shift)  */
-	
+	q = len - 1;
+	msk = ((uint64_t)q);
 
-	for (j = n; j >= 0; --j) {
+	for (j = 0; j < n; ++j) {
 		int x;
 
-		x = (int)((seq & msk) >> n);
+		x = (int)((seq & msk));
 		printf(" %2d", x);
 
-		seq <<= 1;
+		seq = ror(seq, len, 1);
+//		printf(",%04I64x ", seq);
+	}
+}
+
+void seq_lookup_print(uint64_t seq, int b, int n, int m)
+{
+	uint64_t msk;
+	int8_t lut[64];
+	int len = (1 << b);
+	int j;
+	int q;
+
+	q = len - 1;
+	msk = ((uint64_t)q);
+
+	for (j = 0; j < sizeof(lut); ++j)
+		lut[j] = -1;
+
+
+	for (j = 0; j < n; ++j) {
+		int x;
+
+		x = (int)((seq & msk));
+		lut[x] = j;
+
+		seq = ror(seq, len, 1);
 	}
 
-	printf("\n");
+	for (j = 0; j < len; ++j) {
+		int x;
+
+		x = lut[j];
+		printf(" %2d", x);
+	}
+}
+
+
+void _seq_lookup_print(uint64_t seq, int b, int n, int m)
+{
+	uint64_t msk;
+	int8_t lut[256];
+//	int len = (1 << b);
+	int j;
+	int mb = ceil(log2(m));
+
+	msk = (uint64_t)(mb - 1);
+	//msk = (uint64_t)(len - 1);
+	//printf(" mb=%d", mb);
+
+	for (j = 0; j < sizeof(lut); ++j)
+		lut[j] = -1;
+
+	for (j = 0; j < (1 << mb); ++j) {
+		int x;
+
+		x = (int)((seq & msk));
+		lut[x] = j;
+
+	//	seq = ror(seq, len, 1);
+		seq >>= 1;
+	}
+
+	for (j = 0; j < m; ++j) {
+		int x;
+
+		x = lut[j];
+		printf(" %2d", x);
+	}
+
 }
 
 int seq_k = 0;
 
-static void seq_lookup(int64_t seq, int n)
+struct seq_meta {
+	uint8_t b;
+	uint8_t n;
+	uint8_t m;
+	uint32_t cnt;
+	void (* on_find)(uint64_t seq, int b, int n, int m);
+};
+
+void subseq_find(uint64_t seq, int lvl, struct seq_meta * meta)
 {
-	if (n == 0) {
-		seq_print(seq, 32);
-		seq_k += 1;
+	int b = meta->b;
+	int len = (1 << b);
+
+
+	if (lvl == 0) {
+		meta->on_find(seq, b, meta->n, meta->m); 
 	} else {
-		int64_t msk;
-		int64_t x;
+		uint32_t msk;
+		uint32_t y;
+		uint32_t x;
 		int j;
 
-		n--;
+		lvl--;
 
-		/* Bit shift */
-		msk = (31LL << n);
+		msk = (uint32_t)(len - 1);
+		/* New value of the sequence (0 shift)  */
+		x = (uint64_t)(seq >> lvl) & msk;
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl + 1; j < len; ++j) {
+			y = (uint64_t)(seq >> j) & msk;
+			if (y == x) {
+				break;
+			}
+		}
+
+		if (j == len)
+			subseq_find(seq, lvl, meta);
+
+		/* New value of the sequence (1 shift) */
+		seq |= (1LL << lvl);
+		x = (uint64_t)(seq >> lvl) & msk;
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl + 1; j < len; ++j) {
+			y = (uint64_t)(seq >> j) & msk;
+			if (y == x) {
+				break;
+			}
+		}
+
+		if (j == len)
+			subseq_find(seq, lvl, meta);
+	}
+}
+
+void _subseq_find(uint64_t seq, int lvl, struct seq_meta * meta)
+{
+	int b = meta->b;
+	int len = (1 << b);
+
+
+	if (lvl == 0) {
+		meta->on_find(seq, b, meta->n, meta->m); 
+	} else {
+		uint64_t msk;
+		uint64_t x;
+		int j;
+		int q;
+
+		q = len - 1;
+		lvl--;
+
+		msk = (((uint64_t)q) << lvl);
 		/* New value of the sequence (0 shift)  */
 		x = seq & msk;
 
 		/* Compare the new value (y) with previous in the sequence */
-		for (j = n; j < (32 - 1); ++j) {
+		for (j = lvl + 1; j < len; ++j) {
 			msk <<= 1;
 			x <<= 1;
 			if ((seq & msk) == x) {
@@ -144,46 +281,186 @@ static void seq_lookup(int64_t seq, int n)
 //			printf("msk = %015I64x\n", msk);
 		}
 
-		if (j == (32 - 1))
-			seq_lookup(seq, n);
+		if (j == len)
+			_subseq_find(seq, lvl, meta);
 
 		/* New value of the sequence (1 shift) */
-		/* Bit shift */
-		msk = (31LL << n);
+		msk = (((uint64_t)q) << lvl);
 		/* New value of the sequence (0 shift)  */
-		seq |= (1LL << n);
+		seq |= (1LL << lvl);
 		x = seq & msk;
 
 		/* Compare the new value (y) with previous in the sequence */
-		for (j = n; j < (32 - 1); ++j) {
+		for (j = lvl + 1; j < len; ++j) {
 			msk <<= 1;
 			x <<= 1;
 			if ((seq & msk) == x)
 				break;
 		}
 
-		if (j == (32 - 1))
-			seq_lookup(seq, n);
+		if (j == len)
+			_subseq_find(seq, lvl, meta);
 	}
 }
 
-int bin_debruijn_seq(unsigned int n)
+void __subseq_find(uint64_t seq, int lvl, struct seq_meta * meta)
 {
-	int x;
+	int b = meta->b;
+	int len = (1 << b);
 
-	if (n > 8)
+	lvl--;
+
+	if (lvl == 0) {
+		meta->on_find(seq, b, meta->n, meta->m); 
+	} else {
+		uint64_t msk;
+		uint64_t x;
+		uint64_t y;
+		int j;
+
+		msk = (uint64_t)(len - 1);
+		//msk = (uint64_t)(len - 1) << lvl;
+
+		/* New value of the sequence (0 shift)  */
+		seq = seq << 1;
+		x = seq & msk;
+		y = seq;
+
+		printf("lvl=%d seq=[", lvl);
+		seq_print(seq, b, len);
+
+		printf("] x=%2d y=[", (int)x);
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl; j < len; ++j) {
+			y = ror(y, len, 1);
+			printf(" %2d", (int)(y & msk));
+			if ((y & msk) == x) {
+				break;
+			}
+		}
+
+		printf("]\n");
+		if (j == len)
+			__subseq_find(seq, lvl, meta);
+
+		/* New value of the sequence (1 shift) */
+		seq = seq | 1;
+		//seq |= (1LL << lvl);
+		x = seq & msk;
+		y = seq;
+
+//		printf("seq=%04I64x lvl=%d x=%2d", seq, lvl, (int)x);
+		printf("lvl=%d ", lvl);
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl + 1; j < len; ++j) {
+			y = ror(y, len, 1);
+			printf(" %2d", (int)(y & msk));
+			if ((y & msk) == x) {
+				break;
+			}
+		}
+
+		printf("\n");
+		if (j == len)
+			__subseq_find(seq, lvl, meta);
+	}
+}
+
+void ___subseq_find(uint64_t seq, int lvl, struct seq_meta * meta)
+{
+	int b = meta->b;
+	int len = (1 << b);
+
+
+	if (lvl == 0) {
+		meta->on_find(seq, b, meta->n, meta->m); 
+	} else {
+		uint64_t msk;
+		uint64_t x;
+		int j;
+		int q;
+
+		q = len - 1;
+		lvl--;
+
+//		msk = (((uint64_t)q) << lvl);
+		msk = rol((uint64_t)q, len, lvl);
+		/* New value of the sequence (0 shift)  */
+		x = seq & msk;
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl + 1; j < len; ++j) {
+			msk = rol(msk, len, 1);
+			x = rol(x, len, 1);
+			if ((seq & msk) == x) {
+				break;
+			}
+//			printf("msk = %015I64x\n", msk);
+		}
+
+		if (j == len)
+			___subseq_find(seq, lvl, meta);
+
+		/* New value of the sequence (1 shift) */
+//		msk = (((uint64_t)q) << lvl);
+		msk = rol((uint64_t)q, len, lvl);
+		/* New value of the sequence (0 shift)  */
+		seq |= (1LL << lvl);
+		x = seq & msk;
+
+		/* Compare the new value (y) with previous in the sequence */
+		for (j = lvl + 1; j < len; ++j) {
+			msk = rol(msk, len, 1);
+			x = rol(x, len, 1);
+			if ((seq & msk) == x)
+				break;
+		}
+
+		if (j == len)
+			___subseq_find(seq, lvl, meta);
+	}
+}
+
+
+void on_find(uint64_t seq, int b, int n, int m)
+{
+//	seq_print(seq, b, n);
+//	printf(" :");
+	seq_lookup_print(seq, b, n, m);
+	printf("\n");
+	seq_k += 1;
+}
+
+int bin_debruijn_seq(unsigned int b, unsigned int n, unsigned int m)
+{
+	struct seq_meta meta;
+    uint64_t seq;
+	int x;
+	int q;
+
+	if (b > 6)
 		return 1;
 
 	seq_k = 0;
+	q = (1 << b) - 1;
+	
+	meta.b = b;
+	meta.n = n;
+	meta.m = m;
+	meta.on_find = on_find;
 
-	for (x = 0; x < 32; ++x) {
-	    int64_t seq = (int64_t)x << (32 - 1);
+	printf("\nb=%d n=%d m=%d q=%d\n", b, n, m, q);
 
-		seq_lookup(seq, 32);
+	for (x = 0; x < (1 << b); ++x) {
+//	for (x = 0; x < 1; ++x) {
+	    seq = (uint64_t)x << (q);
+
+		subseq_find(seq, (1 << b), &meta);
 	}
 
-
-	printf("\nk=%d\n", seq_k);
+	printf("k=%d\n", seq_k);
 
 	return 0;
 }
@@ -194,8 +471,10 @@ int main(int argc, char *argv[])
 	extern int optind;	/* getopt */
 	int verbose = 0;
 	char * prog;
+	int n = 0;
+	int m = 0;
+	int b = 5;
 	int c;
-	int n = 5;
 
 	/* the prog name start just after the last lash */
 	if ((prog = (char *)strrchr(argv[0], '/')) == NULL)
@@ -204,7 +483,7 @@ int main(int argc, char *argv[])
 		prog++;
 
 	/* parse the command line options */
-	while ((c = getopt(argc, argv, "V?vn:")) > 0) {
+	while ((c = getopt(argc, argv, "V?vb:n:m:")) > 0) {
 		switch (c) {
 			case 'V':
 				version(prog);
@@ -218,8 +497,16 @@ int main(int argc, char *argv[])
 				verbose++;
 				break;
 
+			case 'm':
+				m = atoi(optarg);
+				break;
+
 			case 'n':
 				n = atoi(optarg);
+				break;
+
+			case 'b':
+				b = atoi(optarg);
 				break;
 
 			default:
@@ -231,7 +518,15 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "%s: extra arguments.\n\n", prog);
 		usage(prog);
 	}
+
+	if ((n == 0) || (n > (1 << b))) {
+		n = (1 << b);
+	}
+
+	if (m == 0) {
+		m = n;
+	}
 	
-	return bin_debruijn_seq(n);
+	return bin_debruijn_seq(b, n, m);
 }
 

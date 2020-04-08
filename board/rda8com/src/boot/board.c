@@ -28,7 +28,7 @@ void io_init(void)
 	/* Port A */
 	gpioa->afrl = GPIO_AFRL_SET(1, GPIO_AF5);	/* SPI SCK and SS */
 	gpioa->afrh = GPIO_AFRH_SET(8, GPIO_AF0) |	/* MCO */
-	    GPIO_AFRH_SET(11, GPIO_AF10) | GPIO_AFRH_SET(12, GPIO_AF10) |	/* USB */
+	    GPIO_AFRH_SET(11, GPIO_AF10) | GPIO_AFRH_SET(12, GPIO_AF10) | /* USB */
 	    GPIO_AFRH_SET(13, GPIO_AF0) | GPIO_AFRH_SET(14, GPIO_AF0) |	/* JTAG */
 	    GPIO_AFRH_SET(15, GPIO_AF0);	/* JTAG */
 
@@ -61,24 +61,19 @@ void io_init(void)
 	gpioa->odr = 0;
 
 	/* Port B */
-	gpiob->afrl = GPIO_AFRL_SET(5, GPIO_AF5) |	/* SPI */
-	    GPIO_AFRL_SET(3, GPIO_AF0) | GPIO_AFRL_SET(4, GPIO_AF0);	/* JTAG */
+	gpiob->afrl = GPIO_AFRL_SET(5, GPIO_AF5) | /* SPI */
+	    GPIO_AFRL_SET(3, GPIO_AF0) | GPIO_AFRL_SET(4, GPIO_AF0); /* JTAG */
 	gpiob->afrh = 0;
 
-	gpiob->moder = GPIO_MODE_ALT_FUNC(5) |	/* SPI */
-	    GPIO_MODE_ALT_FUNC(3) | GPIO_MODE_ALT_FUNC(4) |	/* JTAG */
-	    GPIO_MODE_OUTPUT(8) | GPIO_MODE_OUTPUT(12);	/* IO */
+	gpiob->moder = GPIO_MODE_ALT_FUNC(5) | /* SPI */
+	    GPIO_MODE_ALT_FUNC(3) | GPIO_MODE_ALT_FUNC(4); /* JTAG */
 
-	gpiob->otyper = GPIO_PUSH_PULL(5) |	/* SPI */
-	    GPIO_PUSH_PULL(8) | GPIO_PUSH_PULL(12);	/* IO */
+	gpiob->otyper = GPIO_PUSH_PULL(5); /* SPI */
 
-	gpiob->ospeedr = GPIO_OSPEED_HIGH(5) |	/* SPI */
-	    GPIO_OSPEED_HIGH(3) | GPIO_OSPEED_HIGH(4) |	/* JTAG */
-	    GPIO_OSPEED_LOW(8) | GPIO_OSPEED_LOW(12);	/* IO */
+	gpiob->ospeedr = GPIO_OSPEED_HIGH(5) | /* SPI */
+	    GPIO_OSPEED_HIGH(3) | GPIO_OSPEED_HIGH(4); /* JTAG */
 
 	gpiob->pupdr = GPIO_PULL_UP(4);	/* JTAG */
-
-	gpioa->odr = GPIO_SET(8) | GPIO_SET(12);	/* IO */
 }
 
 #ifndef SOFTRESET_DISABLE_DMA
@@ -247,7 +242,7 @@ const struct mem_desc flash_desc = {
 	.tag = "FLASH",
 	.blk = {
 		{"BOOT", 0x08000000, M_RO, SZ_2K, 32},	/* Bootloader: 64 KiB */
-		{"APP", 0x08010000, M_RW, SZ_2K, 96},	/* Application:  */
+		{"APP", 0x08010000, M_RW, SZ_2K, 96},	/* Application: 192 KiB */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };

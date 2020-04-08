@@ -46,7 +46,7 @@
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
-#define THINKOS_THREADS_MAX             32
+#define THINKOS_THREADS_MAX             16
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 
 /* These settings are used when its desireable
@@ -114,7 +114,13 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
+
 #define THINKOS_ENABLE_CONSOLE          1
+#define THINKOS_ENABLE_CONSOLE_MISC     0 
+#define THINKOS_ENABLE_CONSOLE_BREAK    0
+#define THINKOS_ENABLE_CONSOLE_OPEN     0
+#define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
+#define THINKOS_ENABLE_CONSOLE_DRAIN    0
 
 #define THINKOS_EXCEPT_STACK_SIZE       (384 + 128)
 #define THINKOS_ENABLE_EXCEPTIONS       1
@@ -163,6 +169,9 @@
 #define THINKOS_ENABLE_IDLE_MSP         1
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 
+#define THINKOS_ENABLE_CONSOLE_MODE     0
+#define THINKOS_ENABLE_KRN_TRACE        0
+
 /* -------------------------------------------------------------------------
    RCC 
    -------------------------------------------------------------------------- */
@@ -195,8 +204,9 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_MEM_RESERVED          0x1000
-#define BOOT_ENABLE_GDB            1
 #define BOOT_ENABLE_THIRD          0
+  
+#define BOOT_ENABLE_GDB            0
 #define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_BREAKPOINT_ENABLE  1

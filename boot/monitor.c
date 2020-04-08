@@ -925,9 +925,9 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 
 		case DBGMON_APP_EXEC:
 			dbgmon_clear(DBGMON_APP_EXEC);
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
+#if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_console_raw_mode_set(raw_mode = false);
-  #endif
+#endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			dbgmon_printf(comm, "Starting application @ 0x%08x\r\n",
 						  (uint32_t)this_board.application.start_addr);

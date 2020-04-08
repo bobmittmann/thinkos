@@ -19,6 +19,14 @@
  * http://www.gnu.org/
  */
 
+REGION_ALIAS("CODE", flash);
+REGION_ALIAS("DATA", sram1);
+REGION_ALIAS("HEAP", sram1);
+REGION_ALIAS("STACK", sram2);
+REGION_ALIAS("LOG", dcclog);
+REGION_ALIAS("BKPCTL", sram1);
+REGION_ALIAS("BKPDAT", sram1);
+
 EXTERN(stm32_wwdg_isr)
 EXTERN(stm32_pvd_isr)
 EXTERN(stm32_tamp_stamp_isr)

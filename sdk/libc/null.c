@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <sys/dcclog.h>
-
 int null_write(void * arg, const void * buf, size_t len)
 {
 	return len;

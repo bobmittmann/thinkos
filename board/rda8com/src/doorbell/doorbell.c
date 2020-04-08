@@ -41,10 +41,7 @@
 void io_init(void)
 {
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
-	stm32_gpio_mode(IO_JTDO, INPUT, SPEED_MED);
 
-	/* I/O pins config */
-	stm32_gpio_mode(IO_DAC1, ANALOG, 0);
 
 	/* Rotary Switch */
 	stm32_gpio_set(IO_SW0);
@@ -58,6 +55,10 @@ void io_init(void)
 
 	/* DAC */
 	stm32_gpio_mode(IO_DAC1, ANALOG, 0);
+
+	/* I/O pins config */
+//	stm32_gpio_mode(IO_JTDO, INPUT, SPEED_MED);
+
 }
 
 unsigned int io_sw_val(void)
@@ -139,9 +140,13 @@ int main(int argc, char ** argv)
 	int32_t sw = 0;
 	int32_t gain;
 
-	//stdio_init();
+	stdio_init();
 
-	//printf("Starting Door-bell...\n");
+//	printf("Starting Door-bell...\n");
+
+//	for (;;) {
+//		thinkos_sleep(100);
+//	};
 
 	io_init();
 
@@ -167,8 +172,4 @@ int main(int argc, char ** argv)
 	}
 	return 0;
 }
-
-
-
-
 

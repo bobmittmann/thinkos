@@ -78,7 +78,7 @@
  * ThinkOS application address
  * ------------------------------------------------------------------------- */
 #define FLASH_BLK_THINKOS_OFFS      0x00000000
-#define FLASH_BLK_THINKOS_SIZE      (32 * 1024)
+#define FLASH_BLK_THINKOS_SIZE      (64 * 1024)
 
 #define THINKOS_APP_ADDR ((uintptr_t)STM32_MEM_FLASH + \
 						  FLASH_BLK_THINKOS_OFFS)
