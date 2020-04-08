@@ -234,7 +234,7 @@ int setgid(gid_t __gid);
 /* Clone the calling process, creating an exact copy.
    Return -1 for errors, 0 to the new process,
    and the process ID of the new process to the old process.  */
-pid_t fork(void);
+int fork(void);
 
 /* Return the pathname of the terminal FD is open on, or NULL on errors.
    The returned storage is good only until the next call to this function.  */

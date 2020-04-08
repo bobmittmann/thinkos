@@ -34,7 +34,6 @@
 #include <errno.h>
 
 #define TRACE_LEVEL TRACE_LVL_ERR
-//#define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
 #define SOH  0x01
@@ -244,7 +243,7 @@ int ymodem_snd_start(struct ymodem_snd * sy, const char * fname,
 
 	for (;;) {
 
-		// Wait for NAK or 'C'
+		/* Wait for NAK or 'C' */
 		if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
 									 1, sy->tmout_ms)) <= 0) {
 			/*
@@ -401,7 +400,7 @@ static int ymodem_eot(struct ymodem_snd * sy)
 		buf[0] = EOT;
 		ret = sy->comm->op.send(sy->comm->arg, buf, 1);
 
-		// Wait for ACK
+		/* Wait for ACK */
 		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
 									 1, sy->tmout_ms)) == 0) {
 				WARNS("YS: ret==0");
@@ -490,10 +489,10 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 int ymodem_snd_done(struct ymodem_snd * sy)
 {
 	unsigned int dmax;
+	unsigned int i;
 	uint8_t pkt[8];
 	uint8_t * buf;
 	int ret;
-	int i;
 
 	for (;;) {
 		int c;
@@ -525,7 +524,7 @@ int ymodem_snd_done(struct ymodem_snd * sy)
 	/* NULL packet */
 	dmax = 128;
 	buf = (uint8_t *)sy->pkt.data;
-	for (i = 0; dmax; ++i)
+	for (i = 0; i < dmax; ++i)
 			buf[i] = '\0';
 
 	INFS("YS: NULL");
