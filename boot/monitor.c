@@ -199,9 +199,20 @@ static const char monitor_menu[] =
 #if (MONITOR_APPTERM_ENABLE)
 "   Ctrl+C - Stop/terminate the application\r\n"
 #endif
+#if (MONITOR_DUMPMEM_ENABLE)
+"   Ctrl+D - Show memory region content\r\n"
+#endif
 #if (MONITOR_SELFTEST_ENABLE)
 "   Ctrl+E - Execute the system selftest/diagnostic applet\r\n"
 #endif
+#if (MONITOR_BREAKPOINT_ENABLE)
+"   Ctrl+F - Set breakpoint\r\n"
+#endif
+
+#if (MONITOR_EXCEPTION_ENABLE)
+"   Ctrl+G - Show Exception info\r\n"
+#endif
+
 #if (MONITOR_CONFIGURE_ENABLE)
 "   Ctrl+K - Execute the board configuration applet\r\n"
 #endif
@@ -220,9 +231,6 @@ static const char monitor_menu[] =
 #if (MONITOR_OS_RESUME)
 "   Ctrl+R - Resume all threads\r\n"
 #endif
-#if (MONITOR_DUMPMEM_ENABLE)
-"   Ctrl+D - Show memory region content\r\n"
-#endif
 #if (MONITOR_THREAD_STEP_ENABLE)
 "   Ctrl+S - Single step thread execution \r\n"
 #endif
@@ -236,9 +244,6 @@ static const char monitor_menu[] =
 #if (MONITOR_APPWIPE_ENABLE)
 "   Ctrl+W - Wipe/Erase application\r\n"
 #endif
-#if (MONITOR_EXCEPTION_ENABLE)
-"   Ctrl+X - Show Exception info\r\n"
-#endif
 "   Ctrl+Y - YMODEM application upload\r\n"
 #if (MONITOR_APPRESTART_ENABLE)
 "   Ctrl+Z - Restart application\r\n"
@@ -249,8 +254,9 @@ static const char monitor_menu[] =
 #if (MONITOR_WATCHPOINT_ENABLE)
 "   Ctrl+] - Set watchpoint\r\n"
 #endif
-#if (MONITOR_BREAKPOINT_ENABLE)
-"   Ctrl+F - Set breakpoint\r\n"
+#if 0
+"   Ctrl+^ - \r\n"
+"   Ctrl+_ - \r\n"
 #endif
 ;
 
@@ -736,7 +742,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_show_help(comm);
 		break;
 #if (MONITOR_FAULT_ENABLE)
-	case CTRL_X:
+	case CTRL_G:
 		monitor_print_fault(comm);
 		break;
 #endif
