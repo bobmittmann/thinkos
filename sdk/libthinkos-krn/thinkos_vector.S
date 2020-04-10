@@ -40,7 +40,7 @@
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
  * --------------------------------------------------------------------------*/
-#if THINKOS_ENABLE_EXCEPTIONS
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	.thumb
 	.text
 	.align	2
@@ -136,8 +136,10 @@ xcpt_collect:
 	mov    lr, r2
 	mov    r2, r7
 	ldmia  r3, {r4-r11} /* r4..r11 */
+
 	/* XXX: enable interrupts */
 	cpsie   i
+
 	/* return to the original handler */
 	bx     r2
 
@@ -153,21 +155,7 @@ xcpt_collect:
 
 	.size   xcpt_collect, . - xcpt_collect
 
-
-	.thumb
-	.text
-	.align	2
-	.global	xcpt_collect
-	.thumb
-	.thumb_func
-	.type	xcpt_collect, %function
-	/* Arguments:
-	     r1: except number
-	     r2: return (lr) 
-	   Return:
-	     r0: exception buffer */
-
-#if	THINKOS_ENABLE_BUSFAULT 
+#if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb
 	.text
 	.align	2
@@ -183,7 +171,7 @@ cm3_bus_fault_isr:
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
-#if	THINKOS_ENABLE_USAGEFAULT 
+#if	(THINKOS_ENABLE_USAGEFAULT) 
 	.align	2
 	.global	cm3_usage_fault_isr
 	.thumb
@@ -197,7 +185,7 @@ cm3_usage_fault_isr:
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif
 
-#if	THINKOS_ENABLE_MEMFAULT
+#if	(THINKOS_ENABLE_MEMFAULT)
 	.align	2
 	.global	cm3_mem_manage_isr
 	.thumb
@@ -224,7 +212,7 @@ cm3_hard_fault_isr:
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
-#if THINKOS_ENABLE_MONITOR
+#if (THINKOS_ENABLE_MONITOR)
 	.align  2
 	.global cm3_debug_mon_isr
 	.thumb
@@ -269,7 +257,7 @@ cm3_debug_mon_isr:
 cm3_svc_isr:
 	ldr     r3, .L_thinkos_rt_1
 	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 	ldr     r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
 	adds    r0, r1, #1
 	lsrs    r2, r0
@@ -294,15 +282,15 @@ cm3_svc_isr:
 	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
 	ldrb    r2, [r2, #-2]
+	/* call the service handler demultiplexer */
 	b       thinkos_svc_isr
+
 	.align  2
 .L_thinkos_rt_1:
 	.word   thinkos_rt
 .L_cm3_scb_1:
 	.word   CM3_SCB_BASE
 	.size   cm3_svc_isr, . - cm3_svc_isr
-
-
 	.align  2
 	.global thinkos_vec_nm
 	.section .rodata,"a",%progbits
@@ -310,4 +298,5 @@ cm3_svc_isr:
 	.size   thinkos_vec_nm, 4
 thinkos_vec_nm:
 	.ascii  "VEC\000"
+
 

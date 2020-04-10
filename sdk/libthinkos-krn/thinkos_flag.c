@@ -250,12 +250,14 @@ void __thinkos_flag_give_i(uint32_t wq)
 #endif
 }
 
+#if (THINKOS_ENABLE_I_CALLS)
 void cm3_except10_isr(uint32_t wq)
 {
 	__thinkos_flag_give_i(wq);
 	/* signal the scheduler ... */
 	__thinkos_preempt();
 }
+#endif /* THINKOS_ENABLE_I_CALLS */
 
 /* wakeup a single thread waiting on the flag OR set the flag */
 void thinkos_flag_give_svc(int32_t * arg)

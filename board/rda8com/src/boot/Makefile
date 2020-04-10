@@ -25,11 +25,11 @@ SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
-VERSION_DATE = "2017-05-18"
+VERSION_DATE = "2020-04-08"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "1"
+VERSION_MINOR = "2"
 
-PROG = rda8c0m-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
 		 board.c
@@ -44,10 +44,9 @@ INCPATH = $(SDK_DIR)/include ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32l433xc
-HSE_HZ = 11289600
 include $(ARCH_DIR)/mk/stm32.mk
 

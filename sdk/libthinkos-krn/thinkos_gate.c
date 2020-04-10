@@ -353,7 +353,6 @@ again:
 	__thinkos_defer_sched();
 }
 
-
 void __thinkos_gate_open_i(uint32_t wq)
 {
 	unsigned int idx = wq - THINKOS_GATE_BASE;
@@ -427,6 +426,7 @@ again:
 #endif
 }
 
+#if (THINKOS_ENABLE_I_CALLS)
 void cm3_except13_isr(uint32_t wq)
 {
 	/* open the gate */
@@ -434,6 +434,7 @@ void cm3_except13_isr(uint32_t wq)
 	/* signal the scheduler ... */
 	__thinkos_preempt();
 }
+#endif /* THINKOS_ENABLE_I_CALLS */
 
 void thinkos_gate_open_svc(int32_t * arg)
 {

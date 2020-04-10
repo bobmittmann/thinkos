@@ -46,7 +46,7 @@
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
-#define THINKOS_THREADS_MAX             16
+#define THINKOS_THREADS_MAX             32
 #define THINKOS_ENABLE_THREAD_ALLOC     1
 
 /* These settings are used when its desireable
@@ -58,16 +58,16 @@
 #define THINKOS_ENABLE_CANCEL           1
 #define THINKOS_ENABLE_EXIT             1
 
-#define THINKOS_MUTEX_MAX               8
+#define THINKOS_MUTEX_MAX               16
 #define THINKOS_ENABLE_MUTEX_ALLOC      1
 
-#define THINKOS_COND_MAX                4
+#define THINKOS_COND_MAX                8
 #define THINKOS_ENABLE_COND_ALLOC       1
 
 #define THINKOS_SEMAPHORE_MAX           8
 #define THINKOS_ENABLE_SEM_ALLOC        1
 
-#define THINKOS_EVENT_MAX               4
+#define THINKOS_EVENT_MAX               8
 #define THINKOS_ENABLE_EVENT_ALLOC      1
 
 #define THINKOS_FLAG_MAX                8
@@ -76,8 +76,8 @@
  watching a flag in a given instant.*/
 #define THINKOS_ENABLE_FLAG_WATCH       0
 
-#define THINKOS_GATE_MAX                2
-#define THINKOS_ENABLE_GATE_ALLOC       1
+#define THINKOS_GATE_MAX                0
+#define THINKOS_ENABLE_GATE_ALLOC       0
 
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
@@ -100,7 +100,11 @@
 #endif
 
 /* Enable scheduler stack error detection */
+#if DEBUG
 #define THINKOS_ENABLE_SCHED_ERROR      1
+#else
+#define THINKOS_ENABLE_SCHED_ERROR      0
+#endif
 
 /* Enable the rt_snapshot() service to get
    the state of the kernel */
@@ -124,7 +128,7 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE       (384 + 128)
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       1
+#define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
@@ -132,9 +136,9 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          1
 #define THINKOS_STDERR_FAULT_DUMP       0
-#define THINKOS_ENABLE_DEBUG_BKPT       1
-#define THINKOS_ENABLE_DEBUG_WPT        1
-#define THINKOS_ENABLE_DEBUG_STEP       1
+#define THINKOS_ENABLE_DEBUG_BKPT       0
+#define THINKOS_ENABLE_DEBUG_WPT        0
+#define THINKOS_ENABLE_DEBUG_STEP       0
 #define THINKOS_ENABLE_DEBUG_FAULT      1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
@@ -148,7 +152,7 @@
 #define THINKOS_ENABLE_STACK_INIT       1
 #define THINKOS_ENABLE_DMCLOCK          1
 
-#define THINKOS_ENABLE_CTL              1
+#define THINKOS_ENABLE_CTL              0
 
 #ifdef DEBUG
 #define THINKOS_ENABLE_IDLE_WFI         0
@@ -171,6 +175,10 @@
 
 #define THINKOS_ENABLE_CONSOLE_MODE     0
 #define THINKOS_ENABLE_KRN_TRACE        0
+#define THINKOS_ENABLE_I_CALLS          0
+#define THINKOS_ENABLE_THREAD_INFO      1
+
+#define THINKOS_ENABLE_MEMORY_CLEAR     1
 
 /* -------------------------------------------------------------------------
    RCC 
@@ -207,11 +215,11 @@
 #define BOOT_ENABLE_THIRD          0
   
 #define BOOT_ENABLE_GDB            0
-#define MONITOR_DUMPMEM_ENABLE     1
+#define MONITOR_DUMPMEM_ENABLE     0
 #define MONITOR_WATCHPOINT_ENABLE  0
-#define MONITOR_BREAKPOINT_ENABLE  1
-#define MONITOR_THREAD_STEP_ENABLE 1
-#define MONITOR_SELFTEST_ENABLE    1
+#define MONITOR_BREAKPOINT_ENABLE  0
+#define MONITOR_THREAD_STEP_ENABLE 0
+#define MONITOR_SELFTEST_ENABLE    0
 #define MONITOR_CONFIGURE_ENABLE   0
 #define MONITOR_UPGRADE_ENABLE     0
 #define MONITOR_STACKUSAGE_ENABLE  1
@@ -222,9 +230,9 @@
 #define MONITOR_APPRESTART_ENABLE  1
 #define MONITOR_EXCEPTION_ENABLE   1
 #define MONITOR_FAULT_ENABLE       1
-#define MONITOR_OS_PAUSE           1
-#define MONITOR_OS_RESUME          1
-#define MONITOR_RESTART_MONITOR    1
+#define MONITOR_OS_PAUSE           0
+#define MONITOR_OS_RESUME          0
+#define MONITOR_RESTART_MONITOR    0
 
 /* -------------------------------------------------------------------------
  * Serial
@@ -254,3 +262,4 @@
 #define PKT_POOL_SIZE 128
 
 #endif				/* __CONFIG_H__ */
+

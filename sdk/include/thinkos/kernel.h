@@ -773,10 +773,7 @@ static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 /* flags a deferred execution of the scheduler */
 static inline void __attribute__((always_inline)) __thinkos_preempt(void) {
 #if (THINKOS_ENABLE_PREEMPTION)
-#if (THINKOS_ENABLE_CRITICAL)
-	if (thinkos_rt.critical_cnt == 0)
-#endif
-		__thinkos_defer_sched();
+	__thinkos_defer_sched();
 #endif
 }
 
@@ -1032,6 +1029,14 @@ void __thinkos_system_reset(void);
 
 void __thinkos_sched_stop(void);
 
+/* -------------------------------------------------------------------------- 
+ * Scheduler 
+ * --------------------------------------------------------------------------*/
+void __attribute__((noreturn))
+	thinkos_sched_context_restore(struct thinkos_context * __ctx, 
+								  uint32_t __new_thread_id,
+								  uint32_t __prev_thread_id, 
+								  uint32_t __sp);
 
 /* -------------------------------------------------------------------------- 
  * Console Kernel API

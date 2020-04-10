@@ -103,7 +103,7 @@ static void __dbgmon_irq_disable_all(void)
 }
 
 
-#if THINKOS_DBGMON_ENABLE_RST_VEC
+#if (THINKOS_DBGMON_ENABLE_RST_VEC)
 
 /**
  * __reset_ram_vectors:
@@ -286,7 +286,7 @@ int dbgmon_expect(int sig)
 int dbgmon_sleep(unsigned int ms)
 {
 	dbgmon_clear(DBGMON_ALARM);
-#if THINKOS_ENABLE_DMCLOCK
+#if (THINKOS_ENABLE_DMCLOCK)
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
@@ -299,7 +299,7 @@ void dbgmon_alarm(unsigned int ms)
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	dbgmon_clear(DBGMON_ALARM);
 	dbgmon_unmask(DBGMON_ALARM);
-#if THINKOS_ENABLE_DMCLOCK
+#if (THINKOS_ENABLE_DMCLOCK)
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
@@ -307,7 +307,7 @@ void dbgmon_alarm(unsigned int ms)
 
 void dbgmon_alarm_stop(void)
 {
-#if THINKOS_ENABLE_DMCLOCK
+#if (THINKOS_ENABLE_DMCLOCK)
 	/* set the clock in the past so it won't generate a signal */
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
@@ -454,8 +454,6 @@ int dbgmon_errno_get(void)
 	return  thinkos_dbgmon_rt.errno;
 }
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
-
 int dbgmon_thread_break_get(void)
 {
 	struct thinkos_context * ctx;
@@ -474,6 +472,8 @@ void dbgmon_thread_break_clr(void)
 	thinkos_dbgmon_rt.break_id = -1;
 	thinkos_dbgmon_rt.errno = 0;
 }
+
+#if (THINKOS_ENABLE_DEBUG_BKPT) || (THINKOS_ENABLE_DEBUG_WPT)
 
 /* -------------------------------------------------------------------------
  * Debug Breakpoint
@@ -581,10 +581,7 @@ void dbgmon_breakpoint_clear_all(void)
 
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
 
-
-
-
-#if THINKOS_ENABLE_DEBUG_WPT
+#if (THINKOS_ENABLE_DEBUG_WPT)
 
 /* -------------------------------------------------------------------------
  * Debug Watchpoint
@@ -729,11 +726,7 @@ void dbgmon_watchpoint_clear_all(void)
 
 #endif /* THINKOS_ENABLE_DEBUG_WPT */
 
-
-
-
-
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 
 /* -------------------------------------------------------------------------
  * Thread stepping
@@ -834,7 +827,7 @@ static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 	
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
-#if THINKOS_ENABLE_DMCLOCK
+#if (THINKOS_ENABLE_DMCLOCK)
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 
@@ -868,7 +861,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
-#if THINKOS_ENABLE_DEBUG_BKPT
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 	uint32_t xpsr = frm->xpsr;
 	uint32_t dfsr;
 
@@ -893,7 +886,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				 demcr & DCB_DEMCR_MON_REQ ? '1' : '0',
 				 demcr & DCB_DEMCR_MON_PEND ? '1' : '0',
 				 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
-#if THINKOS_ENABLE_FPU_LS 
+#if (THINKOS_ENABLE_FPU_LS)
 		DCC_LOG3(LOG_TRACE, "FPCCR=%08x FPCAR=%08x CTRL=%01x",
 				 CM3_SCB->fpccr, CM3_SCB->fpcar, 
 				 cm3_control_get()); 
@@ -1109,7 +1102,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 		}
 #endif /* THINKOS_ENABLE_DEBUG_WPT */
 
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 		if (dfsr & SCB_DFSR_HALTED) {
 			unsigned int thread_id = thinkos_rt.step_id;
 
@@ -1239,7 +1232,7 @@ void dbgmon_soft_reset(void)
 			"3. Core reset..."   _ATTR_POP_); 
 	__thinkos_core_reset();
 
-#if THINKOS_ENABLE_EXCEPTIONS
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"4. Except reset..."   _ATTR_POP_); 
 	__exception_reset();
@@ -1262,12 +1255,12 @@ void dbgmon_soft_reset(void)
 
 void thinkos_dbgmon_reset(void)
 {
-#if THINKOS_ENABLE_DEBUG_BKPT
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 	DCC_LOG(LOG_TRACE, "1. clear all breakpoints...");
 	dbgmon_breakpoint_clear_all();
 #endif
 
-#if THINKOS_DBGMON_ENABLE_RST_VEC
+#if (THINKOS_DBGMON_ENABLE_RST_VEC)
 	DCC_LOG(LOG_TRACE, "2. reset RAM vectors...");
 	__reset_ram_vectors();
 #endif
@@ -1290,11 +1283,11 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 		DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
 		thinkos_dbgmon_reset();
-#if THINKOS_ENABLE_STACK_INIT
+#if (THINKOS_ENABLE_STACK_INIT)
 		__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
 						   sizeof(thinkos_dbgmon_stack));
 #endif
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 		/* clear the step request */
 		demcr &= ~DCB_DEMCR_MON_STEP;
 		/* enable the FPB unit */

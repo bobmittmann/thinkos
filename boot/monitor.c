@@ -163,6 +163,19 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #error "Need THINKOS_ENABLE_IDLE_HOOKS"
 #endif
 
+#if (MONITOR_THREAD_STEP_ENABLE) & !(THINKOS_ENABLE_DEBUG_STEP)
+#error "MONITOR_THREAD_STEP_ENABLE requires THINKOS_ENABLE_DEBUG_STEP"
+#endif
+
+#if (MONITOR_BREAKPOINT_ENABLE) & !(THINKOS_ENABLE_DEBUG_BKPT)
+#error "MONITOR_BREAKPOINT_ENABLE requires THINKOS_ENABLE_DEBUG_BKPT"
+#endif
+
+#if (MONITOR_WATCHPOINT_ENABLE) & !(THINKOS_ENABLE_DEBUG_WPT)
+#error "MONITOR_WATCHPOINT_ENABLErequires THINKOS_ENABLE_DEBUG_WPT"
+#endif
+
+
 /* ---------------------------------------------------------------------------
  * 
  */

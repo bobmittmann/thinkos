@@ -32,21 +32,21 @@
  ****************************************************************************/
 
 /* SysTick Control / Status Register */
-#define SYSTICK_CSR_COUNTFLAG  (0x01 << 16)
-#define SYSTICK_CSR_CLKSOURCE  (0x01 << 2)
-#define SYSTICK_CSR_TICKINT    (0x01 << 1)
-#define SYSTICK_CSR_ENABLE     (0x01 << 0)
+#define SYSTICK_CSR_COUNTFLAG       (0x01 << 16)
+#define SYSTICK_CSR_CLKSOURCE       (0x01 << 2)
+#define SYSTICK_CSR_TICKINT         (0x01 << 1)
+#define SYSTICK_CSR_ENABLE          (0x01 << 0)
 
 /* SysTick Reload Register */
-#define SYSTICK_LOAD_RELOAD (0x00ffffff)
+#define SYSTICK_LOAD_RELOAD         (0x00ffffff)
 
 /* SysTick Current Register */
-#define SYSTICK_VAL_CURRENT (0x00ffffff)
+#define SYSTICK_VAL_CURRENT         (0x00ffffff)
 
 /* SysTick Calibration Register */
-#define SYSTICK_CALIB_NOREF (0x01 << 31)
-#define SYSTICK_CALIB_SKEW (0x01 << 30)
-#define SYSTICK_CALIB_TENMS(CALIB) ((CALIB) & 0x00ffffff)
+#define SYSTICK_CALIB_NOREF         (0x01 << 31)
+#define SYSTICK_CALIB_SKEW          (0x01 << 30)
+#define SYSTICK_CALIB_TENMS(CALIB)  ((CALIB) & 0x00ffffff)
 
 /****************************************************************************
   CM3 SCB
@@ -71,125 +71,125 @@
 #define SCB_CPACR   0x88
 
 /* SCB CPUID Register */
-#define SCB_CPUID_IMPLEMENTER (0xff << 24)
-#define SCB_CPUID_VARIANT (0xf << 20)
-#define SCB_CPUID_PARTNO (0xfff << 4)
-#define SCB_CPUID_REVISION (0xf << 0)
+#define SCB_CPUID_IMPLEMENTER       (0xff << 24)
+#define SCB_CPUID_VARIANT           (0xf << 20)
+#define SCB_CPUID_PARTNO            (0xfff << 4)
+#define SCB_CPUID_REVISION          (0xf << 0)
 
 /* SCB Interrupt Control State Register */
-#define SCB_ICSR_NMIPENDSET (1 << 31)
-#define SCB_ICSR_PENDSVSET (1 << 28)
-#define SCB_ICSR_PENDSVCLR (1 << 27)
-#define SCB_ICSR_PENDSTSET (1 << 26)
-#define SCB_ICSR_PENDSTCLR (1 << 25)
-#define SCB_ICSR_ISRPREEMPT (1 << 23)
-#define SCB_ICSR_ISRPENDING (1 << 22)
-#define SCB_ICSR_VECTPENDING (0x3ff << 12)
-#define SCB_ICSR_RETTOBASE (1 << 11)
-#define SCB_ICSR_VECTACTIVE (0x1ff << 0)
+#define SCB_ICSR_NMIPENDSET         (1 << 31)
+#define SCB_ICSR_PENDSVSET          (1 << 28)
+#define SCB_ICSR_PENDSVCLR          (1 << 27)
+#define SCB_ICSR_PENDSTSET          (1 << 26)
+#define SCB_ICSR_PENDSTCLR          (1 << 25)
+#define SCB_ICSR_ISRPREEMPT         (1 << 23)
+#define SCB_ICSR_ISRPENDING         (1 << 22)
+#define SCB_ICSR_VECTPENDING        (0x3ff << 12)
+#define SCB_ICSR_RETTOBASE          (1 << 11)
+#define SCB_ICSR_VECTACTIVE         (0x1ff << 0)
 
 /* SCB Interrupt Control State Register Definitions */
-#define SCB_VTOR_TBLBASE (0x7 << 29)
-#define SCB_VTOR_TBLOFF (0x3fffff << 7)
+#define SCB_VTOR_TBLBASE            (0x7 << 29)
+#define SCB_VTOR_TBLOFF             (0x3fffff << 7)
 
 /* SCB Application Interrupt and Reset Control Register */
-#define SCB_AIRCR_VECTKEY (0x05fa << 16)
-#define SCB_AIRCR_VECTKEYSTAT (0xffff << 16)
-#define SCB_AIRCR_ENDIANESS (1 << 15)
-#define SCB_AIRCR_PRIGROUP (7 << 8)
-#define SCB_AIRCR_SYSRESETREQ (1 << 2)
-#define SCB_AIRCR_VECTCLRACTIVE (1 << 1)
-#define SCB_AIRCR_VECTRESET (1 << 0)
+#define SCB_AIRCR_VECTKEY           (0x05fa << 16)
+#define SCB_AIRCR_VECTKEYSTAT       (0xffff << 16)
+#define SCB_AIRCR_ENDIANESS         (1 << 15)
+#define SCB_AIRCR_PRIGROUP          (7 << 8)
+#define SCB_AIRCR_SYSRESETREQ       (1 << 2)
+#define SCB_AIRCR_VECTCLRACTIVE     (1 << 1)
+#define SCB_AIRCR_VECTRESET         (1 << 0)
 
 /* SCB System Control Register */
-#define SCB_SCR_SEVONPEND (1 << 4)
-#define SCB_SCR_SLEEPDEEP (1 << 2)
-#define SCB_SCR_SLEEPONEXIT (1 << 1)
+#define SCB_SCR_SEVONPEND           (1 << 4)
+#define SCB_SCR_SLEEPDEEP           (1 << 2)
+#define SCB_SCR_SLEEPONEXIT         (1 << 1)
 
 /* SCB Configuration Control Register */
-#define SCB_CCR_STKALIGN (1 << 9)
-#define SCB_CCR_BFHFNMIGN (1 << 8)
-#define SCB_CCR_DIV_0_TRP (1 << 4)
-#define SCB_CCR_UNALIGN_TRP (1 << 3)
-#define SCB_CCR_USERSETMPEND (1 << 1)
-#define SCB_CCR_NONBASETHRDENA (1 << 0)
+#define SCB_CCR_STKALIGN            (1 << 9)
+#define SCB_CCR_BFHFNMIGN           (1 << 8)
+#define SCB_CCR_DIV_0_TRP           (1 << 4)
+#define SCB_CCR_UNALIGN_TRP         (1 << 3)
+#define SCB_CCR_USERSETMPEND        (1 << 1)
+#define SCB_CCR_NONBASETHRDENA      (1 << 0)
 
 /* SCB System Handler Control and State Register */
-#define SCB_SHCSR_USGFAULTENA (1 << 18)
-#define SCB_SHCSR_BUSFAULTENA (1 << 17)
-#define SCB_SHCSR_MEMFAULTENA (1 << 16)
-#define SCB_SHCSR_SVCALLPENDED (1 << 15)
-#define SCB_SHCSR_BUSFAULTPENDED (1 << 14)
-#define SCB_SHCSR_MEMFAULTPENDED (1 << 13)
-#define SCB_SHCSR_USGFAULTPENDED (1 << 12)
-#define SCB_SHCSR_SYSTICKACT (1 << 11)
-#define SCB_SHCSR_PENDSVACT (1 << 10)
-#define SCB_SHCSR_MONITORACT (1 << 8)
-#define SCB_SHCSR_SVCALLACT (1 << 7)
-#define SCB_SHCSR_USGFAULTACT (1 << 3)
-#define SCB_SHCSR_BUSFAULTACT (1 << 1)
-#define SCB_SHCSR_MEMFAULTACT (1 << 0)
+#define SCB_SHCSR_USGFAULTENA       (1 << 18)
+#define SCB_SHCSR_BUSFAULTENA       (1 << 17)
+#define SCB_SHCSR_MEMFAULTENA       (1 << 16)
+#define SCB_SHCSR_SVCALLPENDED      (1 << 15)
+#define SCB_SHCSR_BUSFAULTPENDED    (1 << 14)
+#define SCB_SHCSR_MEMFAULTPENDED    (1 << 13)
+#define SCB_SHCSR_USGFAULTPENDED    (1 << 12)
+#define SCB_SHCSR_SYSTICKACT        (1 << 11)
+#define SCB_SHCSR_PENDSVACT         (1 << 10)
+#define SCB_SHCSR_MONITORACT        (1 << 8)
+#define SCB_SHCSR_SVCALLACT         (1 << 7)
+#define SCB_SHCSR_USGFAULTACT       (1 << 3)
+#define SCB_SHCSR_BUSFAULTACT       (1 << 1)
+#define SCB_SHCSR_MEMFAULTACT       (1 << 0)
 
 /* SCB Configurable Fault Status Registers */
-#define SCB_CFSR_USGFAULTSR (0xffff << 16)
-#define SCB_CFSR_UFSR_GET(CFSR) (((CFSR) >> 16) & 0xffff)
+#define SCB_CFSR_USGFAULTSR         (0xffff << 16)
+#define SCB_CFSR_UFSR_GET(CFSR)     (((CFSR) >> 16) & 0xffff)
 
-#define UFSR_DIVBYZERO  (1 << 9)
-#define UFSR_UNALIGNED  (1 << 8)
-#define UFSR_NOCP       (1 << 3)
-#define UFSR_INVPC      (1 << 2)
-#define UFSR_INVSTATE   (1 << 1)
-#define UFSR_UNDEFINSTR (1 << 0)
+#define UFSR_DIVBYZERO      (1 << 9)
+#define UFSR_UNALIGNED      (1 << 8)
+#define UFSR_NOCP           (1 << 3)
+#define UFSR_INVPC          (1 << 2)
+#define UFSR_INVSTATE       (1 << 1)
+#define UFSR_UNDEFINSTR     (1 << 0)
 
 #define SCB_CFSR_BUSFAULTSR (0xff << 8)
 #define SCB_CFSR_BFSR_GET(CFSR) (((CFSR) >> 8) & 0xff)
 
-#define BFSR_BFARVALID   (1 << 7)
-#define BFSR_LSPERR      (1 << 5)
-#define BFSR_STKERR      (1 << 4)
-#define BFSR_UNSTKERR    (1 << 3)
-#define BFSR_IMPRECISERR (1 << 2)
-#define BFSR_PRECISERR   (1 << 1)
-#define BFSR_IBUSERR     (1 << 0)
+#define BFSR_BFARVALID      (1 << 7)
+#define BFSR_LSPERR         (1 << 5)
+#define BFSR_STKERR         (1 << 4)
+#define BFSR_UNSTKERR       (1 << 3)
+#define BFSR_IMPRECISERR    (1 << 2)
+#define BFSR_PRECISERR      (1 << 1)
+#define BFSR_IBUSERR        (1 << 0)
 
 #define SCB_CFSR_MEMFAULTSR (0xff << 0)
 #define SCB_CFSR_MMFSR_GET(CFSR) ((CFSR) & 0xff)
 
-#define MMFSR_MMARVALID (1 << 7)
-#define MMFSR_MLSPERR   (1 << 5)
-#define MMFSR_MSTKERR   (1 << 4)
-#define MMFSR_MUNSTKERR (1 << 3)
-#define MMFSR_DACCVIOL  (1 << 1)
-#define MMFSR_IACCVIOL  (1 << 0)
+#define MMFSR_MMARVALID     (1 << 7)
+#define MMFSR_MLSPERR       (1 << 5)
+#define MMFSR_MSTKERR       (1 << 4)
+#define MMFSR_MUNSTKERR     (1 << 3)
+#define MMFSR_DACCVIOL      (1 << 1)
+#define MMFSR_IACCVIOL      (1 << 0)
 
 /* SCB Hard Fault Status Register */
-#define SCB_HFSR_DEBUGEVT (1 << 31)
-#define SCB_HFSR_FORCED   (1 << 30)
-#define SCB_HFSR_VECTTBL  (1 << 1)
+#define SCB_HFSR_DEBUGEVT   (1 << 31)
+#define SCB_HFSR_FORCED     (1 << 30)
+#define SCB_HFSR_VECTTBL    (1 << 1)
 
 /* SCB Debug Fault Status Register */
-#define SCB_DFSR_EXTERNAL (1 << 4)
-#define SCB_DFSR_VCATCH   (1 << 3)
-#define SCB_DFSR_DWTTRAP  (1 << 2)
-#define SCB_DFSR_BKPT     (1 << 1)
-#define SCB_DFSR_HALTED   (1 << 0)
+#define SCB_DFSR_EXTERNAL   (1 << 4)
+#define SCB_DFSR_VCATCH     (1 << 3)
+#define SCB_DFSR_DWTTRAP    (1 << 2)
+#define SCB_DFSR_BKPT       (1 << 1)
+#define SCB_DFSR_HALTED     (1 << 0)
 
 /* SCB Coprocessor Access Control Register, CPACR */
-#define SCB_CPACR_CP11    (0x3 << 22)
-#define SCB_CPACR_CP10    (0x3 << 20)
-#define CP11_SET(X) ((X) << 22)
-#define CP10_SET(X) ((X) << 20)
+#define SCB_CPACR_CP11      (0x3 << 22)
+#define SCB_CPACR_CP10      (0x3 << 20)
+#define CP11_SET(X)         ((X) << 22)
+#define CP10_SET(X)         ((X) << 20)
 
 /* SCB Floating Point Context Control Register, FPCCR */
-#define SCB_FPCCR_ASPEN  (1 << 31)
-#define SCB_FPCCR_LSPEN  (1 << 30)
-#define SCB_FPCCR_MONRDY (1 << 8)
-#define SCB_FPCCR_BFRDY  (1 << 6)
-#define SCB_FPCCR_MMRDY  (1 << 5)
-#define SCB_FPCCR_HFRDY  (1 << 4)
-#define SCB_FPCCR_THREAD (1 << 3)
-#define SCB_FPCCR_USER   (1 << 1)
-#define SCB_FPCCR_LSPACT (1 << 0)
+#define SCB_FPCCR_ASPEN     (1 << 31)
+#define SCB_FPCCR_LSPEN     (1 << 30)
+#define SCB_FPCCR_MONRDY    (1 << 8)
+#define SCB_FPCCR_BFRDY     (1 << 6)
+#define SCB_FPCCR_MMRDY     (1 << 5)
+#define SCB_FPCCR_HFRDY     (1 << 4)
+#define SCB_FPCCR_THREAD    (1 << 3)
+#define SCB_FPCCR_USER      (1 << 1)
+#define SCB_FPCCR_LSPACT    (1 << 0)
 
 /****************************************************************************
   CM3 DCB (Debug Control Block)
@@ -237,74 +237,112 @@
   CM3 NVIC
  ****************************************************************************/
 
-#define NVIC_ISER0  0x100
-#define NVIC_ISER1  0x104
-#define NVIC_ISER2  0x108
-#define NVIC_ISER3  0x10c
-#define NVIC_ISER4  0x110
-#define NVIC_ISER5  0x114
-#define NVIC_ISER6  0x118
-#define NVIC_ISER7  0x11c
-#define NVIC_ISER8  0x120
-#define NVIC_ISER9  0x124
-#define NVIC_ISER10 0x128
-#define NVIC_ISER11 0x12c
-#define NVIC_ISER12 0x130
-#define NVIC_ISER13 0x134
-#define NVIC_ISER14 0x138
-#define NVIC_ISER15 0x13c
+/* Interrupt Set Enable */
+#define NVIC_ISER0  0x000 /*   0 ..  31 */
+#define NVIC_ISER1  0x004 /*  32 ..  63 */
+#define NVIC_ISER2  0x008 /*  64 ..  95 */
+#define NVIC_ISER3  0x00c /*  96 .. 127 */
+#define NVIC_ISER4  0x010 /* 128 .. 159 */
+#define NVIC_ISER5  0x014 /* 160 .. 191 */
+#define NVIC_ISER6  0x018 /* 192 .. 223 */
+#define NVIC_ISER7  0x01c /* 224 .. 256 */ 
 
-#define NVIC_ICER0  0x180
-#define NVIC_ICER1  0x184
-#define NVIC_ICER2  0x188
-#define NVIC_ICER3  0x18c
-#define NVIC_ICER4  0x190
-#define NVIC_ICER5  0x194
-#define NVIC_ICER6  0x198
-#define NVIC_ICER7  0x19c
-#define NVIC_ICER8  0x1a0
-#define NVIC_ICER9  0x1a4
-#define NVIC_ICER10 0x1a8
-#define NVIC_ICER11 0x1ac
-#define NVIC_ICER12 0x1b0
-#define NVIC_ICER13 0x1b4
-#define NVIC_ICER14 0x1b8
-#define NVIC_ICER15 0x1bc
+/* Interrupt Clear Enable */
+#define NVIC_ICER0  0x080
+#define NVIC_ICER1  0x084
+#define NVIC_ICER2  0x088
+#define NVIC_ICER3  0x08c
+#define NVIC_ICER4  0x090
+#define NVIC_ICER5  0x094
+#define NVIC_ICER6  0x098
+#define NVIC_ICER7  0x09c
+
+/* Interrupt Set Pending */
+#define NVIC_ISPR0  0x100
+#define NVIC_ISPR1  0x104
+#define NVIC_ISPR2  0x108
+#define NVIC_ISPR3  0x10c
+#define NVIC_ISPR4  0x110
+#define NVIC_ISPR5  0x114
+#define NVIC_ISPR6  0x118
+#define NVIC_ISPR7  0x11c
+
+/* Interrupt Clear Pending */
+#define NVIC_ICPR0  0x180
+#define NVIC_ICPR1  0x184
+#define NVIC_ICPR2  0x188
+#define NVIC_ICPR3  0x18c
+#define NVIC_ICPR4  0x190
+#define NVIC_ICPR5  0x194
+#define NVIC_ICPR6  0x198
+#define NVIC_ICPR7  0x19c
+
+/* Interrupt Active bit */
+#define NVIC_IABR0  0x200
+#define NVIC_IABR1  0x204
+#define NVIC_IABR2  0x208
+#define NVIC_IABR3  0x20c
+#define NVIC_IABR4  0x210
+#define NVIC_IABR5  0x214
+#define NVIC_IABR6  0x218
+#define NVIC_IABR7  0x21c
+
+/* Interrupt Priority */
+#define NVIC_IP0    0x300
+#define NVIC_IP1    0x301
+#define NVIC_IP2    0x302
+#define NVIC_IP3    0x303
+#define NVIC_IP4    0x304
+#define NVIC_IP5    0x305
+#define NVIC_IP6    0x306
+#define NVIC_IP7    0x307
+
+/* Software Trigger Interrupt */
+#define NVIC_STIR0  0xe00
 
 /****************************************************************************
   CM3 ITM  (Instrumentation Trace Macrocell)
  ****************************************************************************/
 
 /* ITM Trace Privilege Register */
-#define ITM_TPR_PRIVMASK (0xF << 0)
+#define ITM_TPR_PRIVMASK        (0x0f << 0)
 
 /* ITM Trace Control Register */
-#define ITM_TCR_BUSY (1 << 23)
-#define ITM_TCR_ATBID (0x7f << 16)
-#define ITM_TCR_TSPrescale (3 << 8)
-#define ITM_TCR_SWOENA (1 << 4)
-#define ITM_TCR_DWTENA (1 << 3)
-#define ITM_TCR_SYNCENA (1 << 2)
-#define ITM_TCR_TSENA (1 << 1)
-#define ITM_TCR_ITMENA (1 << 0)
+#define ITM_TCR_BUSY            (1 << 23)
+#define ITM_TCR_ATBID           (0x7f << 16)
+#define ITM_TCR_TSPrescale      (3 << 8)
+#define ITM_TCR_SWOENA          (1 << 4)
+#define ITM_TCR_DWTENA          (1 << 3)
+#define ITM_TCR_SYNCENA         (1 << 2)
+#define ITM_TCR_TSENA           (1 << 1)
+#define ITM_TCR_ITMENA          (1 << 0)
 
 /* ITM Integration Write Register */
-#define ITM_IWR_ATVALIDM (1 << 0)
+#define ITM_IWR_ATVALIDM        (1 << 0)
 
 /* ITM Integration Read Register */
-#define ITM_IRR_ATREADYM (1 << 0)
+#define ITM_IRR_ATREADYM        (1 << 0)
 
 /* ITM Integration Mode Control Register */
-#define ITM_IMCR_INTEGRATION (1 << 0)
+#define ITM_IMCR_INTEGRATION    (1 << 0)
 
 /* ITM Lock Status Register */
-#define ITM_LSR_BYTEACC (1 << 2)
-#define ITM_LSR_ACCESS (1 << 1)
-#define ITM_LSR_PRESENT (1 << 0)
+#define ITM_LSR_BYTEACC         (1 << 2)
+#define ITM_LSR_ACCESS          (1 << 1)
+#define ITM_LSR_PRESENT         (1 << 0)
 
 /****************************************************************************
   CM3 DWT (Data Watchpoint and Trace Unit)
  ****************************************************************************/
+
+#define DWT_CTRL      0x0000 /* RW - Control Register */
+#define DWT_CYCCNT    0x0004 /* RW - Cycle Count Register */
+#define DWT_CPICNT    0x0008 /* RW - CPI Count Register */
+#define DWT_EXCCNT    0x000c /* RW - Exception Overhead Count Register */
+#define DWT_SLEEPCNT  0x0010 /* RW - Sleep Count Register */
+#define DWT_LSUCNT    0x0014 /* RW - LSU Count Register */
+#define DWT_FOLDCNT   0x0018 /* RW - Folded-instruction Count Register */
+#define DWT_PCSR      0x001c /* RO - Program Counter Sample Register */
 
 /* DWT Control Register */
 
@@ -581,11 +619,11 @@
   CM3 Base addresses
  ****************************************************************************/
 
-#define CM3_SCS_BASE     (0xe000e000) /* System Control Space Base Address */
 #define CM3_ITM_BASE     (0xe0000000) /* ITM Base Address */
 #define CM3_DCB_BASE     (0xe000edf0) /* Core Debug Base Address */
 #define CM3_DWT_BASE     (0xe0001000) /* DWT Base Address */
 #define CM3_FPB_BASE     (0xe0002000) /* Flash Patch and Bkpt Base Address */
+#define CM3_SCS_BASE     (0xe000e000) /* System Control Space Base Address */
 #define CM3_SYSTICK_BASE (CM3_SCS_BASE + 0x0010)
 #define CM3_NVIC_BASE    (CM3_SCS_BASE + 0x0100)
 #define CM3_SCB_BASE     (CM3_SCS_BASE + 0x0d00)
@@ -950,9 +988,9 @@ struct cm3_dwt {
 	address comparators supported. If this field is zero, the implementation 
 	does not support literal comparators. */
 
-#define FP_KEY (1 << 1)
-#define FP_ENABLE (1 << 0)
-#define FP_DISABLE (0 << 0)
+#define FP_KEY          (1 << 1)
+#define FP_ENABLE       (1 << 0)
+#define FP_DISABLE      (0 << 0)
 
 /* ----------------------------------------------------------------------- */
 /* FP_REMAP FlashPatch Remap register */
@@ -992,7 +1030,7 @@ from the Code memory region.
 #define COMP_BP_HIGH (2 << 30)
 #define COMP_BP_WORD (3 << 30)
 
-#define COMP_ENABLE (1 << 0)
+#define COMP_ENABLE  (1 << 0)
 
 struct cm3_fpb {
 	uint32_t ctrl;
@@ -1001,13 +1039,13 @@ struct cm3_fpb {
 };
 
 #define CM3_SYSTICK ((struct cm3_systick *) CM3_SYSTICK_BASE) 
-#define CM3_SCB ((struct cm3_scb *) CM3_SCB_BASE) 
-#define CM3_NVIC ((struct cm3_nvic *) CM3_NVIC_BASE) 
-#define CM3_DCB ((struct cm3_dcb *) CM3_DCB_BASE) 
-#define CM3_ITM ((struct cm3_itm *) CM3_ITM_BASE) 
-#define CM3_MPU ((struct cm3_mpu *) CM3_MPU_BASE) 
-#define CM3_DWT ((struct cm3_dwt *) CM3_DWT_BASE) 
-#define CM3_FPB ((struct cm3_fpb *) CM3_FPB_BASE) 
+#define CM3_SCB     ((struct cm3_scb *) CM3_SCB_BASE) 
+#define CM3_NVIC    ((struct cm3_nvic *) CM3_NVIC_BASE) 
+#define CM3_DCB     ((struct cm3_dcb *) CM3_DCB_BASE) 
+#define CM3_ITM     ((struct cm3_itm *) CM3_ITM_BASE) 
+#define CM3_MPU     ((struct cm3_mpu *) CM3_MPU_BASE) 
+#define CM3_DWT     ((struct cm3_dwt *) CM3_DWT_BASE) 
+#define CM3_FPB     ((struct cm3_fpb *) CM3_FPB_BASE) 
 
 /* this constant must be provided by the BSP */
 extern const uint32_t cm3_systick_load_1ms;
@@ -1018,7 +1056,7 @@ struct cm4_fpu {
 	uint32_t fpdscr;
 };
 
-#define CM4_FPU ((struct cm4_fpu *) CM4_FPU_BASE) 
+#define CM4_FPU     ((struct cm4_fpu *) CM4_FPU_BASE) 
 
 #ifdef __cplusplus
 extern "C" {
@@ -1095,12 +1133,12 @@ static inline void __attribute__((always_inline)) __bit_mem_wr(void * ptr, int32
 #define CONTROL_THREAD_PRIV (0 << 0)
 #define CONTROL_THREAD_USER (1 << 0)
 
-#define CONTROL_THREAD_MSP (0 << 1)
-#define CONTROL_THREAD_PSP (1 << 1)
+#define CONTROL_THREAD_MSP  (0 << 1)
+#define CONTROL_THREAD_PSP  (1 << 1)
 
-#define CONTROL_nPRIV      (1 << 0)
-#define CONTROL_SPSEL      (1 << 1)
-#define CONTROL_FPCA       (1 << 2)
+#define CONTROL_nPRIV       (1 << 0)
+#define CONTROL_SPSEL       (1 << 1)
+#define CONTROL_FPCA        (1 << 2)
 
 static inline void __attribute__((always_inline)) cm3_control_set(uint32_t val) {
 	asm volatile ("msr CONTROL, %0\n"

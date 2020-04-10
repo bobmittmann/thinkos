@@ -21,6 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_IRQ__
+#include <thinkos/irq.h>
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -142,7 +144,7 @@ void thinkos_trace_ctl_svc(int32_t * arg, int self);
 
 void thinkos_flash_mem_svc(int32_t * arg, int self);
 
-#if THINKOS_ENABLE_ESCALATE
+#if (THINKOS_ENABLE_ESCALATE)
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg, int self)
 {
@@ -159,7 +161,7 @@ static void thinkos_nosys(int32_t * arg, int self)
 	arg[0] = THINKOS_ENOSYS;
 }
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 static void thinkos_clock_svc(int32_t * arg, int self)
 {
 	arg[0] = thinkos_rt.ticks;
@@ -173,13 +175,11 @@ static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 	arg[0] = self + 1;
 }
 
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_CRITICAL)
 void thinkos_critical_enter_svc(int32_t * arg, int self)
 {
-	struct cm3_scb * scb = CM3_SCB;
 	if (++thinkos_rt.critical_cnt) {
-		/* clear possibly pending service interrupt */
-		scb->icsr = SCB_ICSR_PENDSVCLR;
+		thinkos_sched_off();
 	}
 }
 
@@ -189,7 +189,7 @@ void thinkos_critical_exit_svc(int32_t * arg, int self)
 		__THINKOS_ERROR(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
-		__thinkos_defer_sched();
+		thinkos_sched_on();
 	}
 }
 #endif
@@ -568,7 +568,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_IRQ_TIMEDWAIT_CLEANUP:
-#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
+#if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
 		thinkos_irq_timedwait_cleanup_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -576,7 +576,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_IRQ_CTL:
-#if THINKOS_ENABLE_IRQ_CTL
+#if (THINKOS_ENABLE_IRQ_CTL)
 		thinkos_irq_ctl_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -600,7 +600,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_JOIN:
-#if THINKOS_ENABLE_JOIN
+#if (THINKOS_ENABLE_JOIN)
 		thinkos_join_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -608,7 +608,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_PAUSE:
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 		thinkos_pause_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -616,7 +616,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_RESUME:
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 		thinkos_resume_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -624,7 +624,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_CANCEL:
-#if THINKOS_ENABLE_CANCEL
+#if (THINKOS_ENABLE_CANCEL)
 		thinkos_cancel_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -632,7 +632,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_EXIT:
-#if THINKOS_ENABLE_EXIT
+#if (THINKOS_ENABLE_EXIT)
 		thinkos_exit_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -640,7 +640,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_TERMINATE:
-#if THINKOS_ENABLE_TERMINATE
+#if (THINKOS_ENABLE_TERMINATE)
 		thinkos_terminate_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -656,7 +656,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_ESCALATE:
-#if THINKOS_ENABLE_ESCALATE
+#if (THINKOS_ENABLE_ESCALATE)
 		thinkos_escalate_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -664,7 +664,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_CRITICAL_ENTER:
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_CRITICAL)
 		thinkos_critical_enter_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -672,7 +672,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_CRITICAL_EXIT:
-#if THINKOS_ENABLE_CRITICAL
+#if (THINKOS_ENABLE_CRITICAL)
 		thinkos_critical_exit_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -685,7 +685,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
  * --------------------------------------------- */
 
 	case THINKOS_COMM:
-#if THINKOS_ENABLE_COMM
+#if (THINKOS_ENABLE_COMM)
 		thinkos_comm_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -693,7 +693,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_DBGMON:
-#if THINKOS_ENABLE_MONITOR
+#if (THINKOS_ENABLE_MONITOR)
 		thinkos_dbgmon_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -701,7 +701,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_TRACE:
-#if THINKOS_ENABLE_TRACE    
+#if (THINKOS_ENABLE_TRACE)
 		thinkos_trace_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -709,7 +709,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_TRACE_CTL:
-#if THINKOS_ENABLE_TRACE    
+#if (THINKOS_ENABLE_TRACE)
 		thinkos_trace_ctl_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);
@@ -721,7 +721,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
  * --------------------------------------------- */
 
 	case THINKOS_FLASH_MEM:
-#if THINKOS_ENABLE_FLASH_MEM
+#if (THINKOS_ENABLE_FLASH_MEM)
 		thinkos_flash_mem_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);

@@ -452,6 +452,21 @@
 #define THINKOS_ENABLE_KRN_TRACE         0
 #endif
 
+/* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
+   handlers only. These functions are suffixed by _i.
+   */
+#ifndef THINKOS_ENABLE_I_CALLS
+#define THINKOS_ENABLE_I_CALLS           1
+#endif
+
+/* THINKOS_ENABLE_IRQ_ASM_FAST - Enable generation of faster assembler 
+   interrupt handlers stubs. This will generate one stub per IRQ as oposed 
+ to a single stub shared by all. */
+#ifndef THINKOS_ENABLE_IRQ_ASM_FAST
+#define THINKOS_ENABLE_IRQ_ASM_FAST     0
+#endif
+
+
 /* Deprecated options, to be removed in the future 
  */
 
@@ -590,30 +605,28 @@
 #define THINKOS_ENABLE_MEMFAULT 0
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 #undef THINKOS_ENABLE_PREEMPTION
 #define THINKOS_ENABLE_PREEMPTION 1
 #undef THINKOS_ENABLE_CLOCK
 #define THINKOS_ENABLE_CLOCK 1
 #endif
 
-#if !THINKOS_ENABLE_PREEMPTION
+#if !(THINKOS_ENABLE_PREEMPTION)
 #undef THINKOS_ENABLE_CRITICAL
 #define THINKOS_ENABLE_CRITICAL 0
 #endif
 
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
   #undef THINKOS_ENABLE_MEMFAULT
   #undef THINKOS_ENABLE_BUSFAULT
   #undef THINKOS_ENABLE_USAGEFAULT 
-  #undef THINKOS_UNROLL_EXCEPTIONS 
   #define THINKOS_ENABLE_USAGEFAULT 1
   #define THINKOS_ENABLE_MEMFAULT   1
   #define THINKOS_ENABLE_BUSFAULT   1
-  #define THINKOS_UNROLL_EXCEPTIONS 1
 #endif
 
-#if !THINKOS_ENABLE_CONSOLE
+#if !(THINKOS_ENABLE_CONSOLE)
   #undef THINKOS_ENABLE_CONSOLE_BREAK
   #undef THINKOS_ENABLE_CONSOLE_NONBLOCK
   #undef THINKOS_ENABLE_CONSOLE_MODE

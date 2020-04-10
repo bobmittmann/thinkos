@@ -294,12 +294,14 @@ void __thinkos_sem_post_i(uint32_t wq)
 #endif
 }
 
+#if (THINKOS_ENABLE_I_CALLS)
 void cm3_except7_isr(uint32_t wq)
 {
 	__thinkos_sem_post_i(wq); 
 	/* signal the scheduler ... */
 	__thinkos_preempt();
 }
+#endif /* THINKOS_ENABLE_I_CALLS */
 
 void thinkos_sem_post_svc(int32_t * arg)
 {	
