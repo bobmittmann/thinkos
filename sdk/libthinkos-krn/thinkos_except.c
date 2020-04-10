@@ -56,12 +56,6 @@
 
 #include <sys/dcclog.h>
 
-void __attribute__((noreturn))
-thinkos_sched_context_restore(struct thinkos_context * __ctx, 
-							  uint32_t __new_thread_id,
-							  uint32_t __prev_thread_id, 
-							  uint32_t __sp);
-
 void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 {
 	struct thinkos_context * ctx = &xcpt->ctx.core;
@@ -77,7 +71,7 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		if ((xcpt->active > 0) && (xcpt->active <= THINKOS_THREADS_MAX)) {
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 			/* flag the thread as faulty */
 			__thinkos_thread_fault_set(thinkos_rt.active);
 #endif
@@ -181,7 +175,7 @@ static void __attribute__((noreturn))
 	/* increment reentry counter */
 	if (++xcpt->unroll > 8) {
 		DCC_LOG(LOG_ERROR, "too many reentries...");
-#if THINKOS_SYSRST_ONFAULT
+#if (THINKOS_SYSRST_ONFAULT)
 		cm3_sysrst();
 #endif
 		DCC_LOG(LOG_ERROR, "system halt!!");
@@ -263,7 +257,7 @@ static void __attribute__((noreturn))
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 
 
-#if THINKOS_STDERR_FAULT_DUMP
+#if (THINKOS_STDERR_FAULT_DUMP)
 void __show_ctrl(uint32_t ctrl)
 {
 	fprintf(stderr, "[%s ", (ctrl & (1 << 25)) ? "PSP" : "MSP");
@@ -372,27 +366,23 @@ static void __dump_ufsr(uint32_t cfsr)
    Fault handlers 
    ------------------------------------------------------------------------- */
 
-void thinkos_xcpt_process(struct thinkos_except * xcpt)
+void thinkos_kernel_fault(struct thinkos_except * xcpt)
 {
-	/* Disable Iterrutps */
-	cm3_cpsid_i();
-
 #if (THINKOS_UNROLL_EXCEPTIONS) 
 	/* Unroll exception chain */
 	__xcpt_unroll(xcpt, xcpt->ctx.core.xpsr);
-#else /* THINKOS_UNROLL_EXCEPTIONS */
 	/* increment reentry counter */
 	xcpt->unroll++;
-	/* call exception handler */
-#if 0
-	thinkos_exception_dsr(xcpt);
-#endif
-	__THINKOS_ERROR(THINKOS_ERR_KRN_PANIC);
-  #if THINKOS_SYSRST_ONFAULT
+#else /* THINKOS_UNROLL_EXCEPTIONS */
+
+	__THINKOS_ERROR(THINKOS_ERR_KERNEL_PANIC);
+
+	__xcpt_return(xcpt);
+
+  #if (THINKOS_SYSRST_ONFAULT)
 	DCC_LOG(LOG_WARNING, "system reset...");
 	cm3_sysrst();
   #endif
-	__xcpt_return(xcpt);
 #endif /* THINKOS_UNROLL_EXCEPTIONS */
 }
 
@@ -461,7 +451,7 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 	}
 #endif
 
-#if THINKOS_STDERR_FAULT_DUMP
+#if (THINKOS_STDERR_FAULT_DUMP)
 	fprintf(stderr, "\n---\n");
 	fprintf(stderr, "Hard fault:");
 
@@ -490,7 +480,7 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 #endif
 
 	if (xcpt->unroll) {
-#if THINKOS_SYSRST_ONFAULT
+#if (THINKOS_SYSRST_ONFAULT)
 		cm3_sysrst();
 #endif
 		DCC_LOG(LOG_PANIC, "system halt!!");
@@ -500,12 +490,12 @@ void __attribute__((noreturn)) thinkos_hard_fault(struct thinkos_except * xcpt)
 	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
 		__THINKOS_ERROR(THINKOS_ERR_HARD_FAULT);
 	} else { 
-		thinkos_xcpt_process(xcpt);
+		thinkos_kernel_fault(xcpt);
 	}
 	for(;;);
 }
 
-#if	THINKOS_ENABLE_BUSFAULT 
+#if	(THINKOS_ENABLE_BUSFAULT)
 void thinkos_bus_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
@@ -525,7 +515,7 @@ void thinkos_bus_fault(struct thinkos_except * xcpt)
 #endif
 	DCC_EXCEPT_DUMP(xcpt);
 
-#if THINKOS_STDERR_FAULT_DUMP
+#if (THINKOS_STDERR_FAULT_DUMP)
 	fprintf(stderr, "\n---\n");
 	fprintf(stderr, "Bus fault:");
 
@@ -539,12 +529,12 @@ void thinkos_bus_fault(struct thinkos_except * xcpt)
 	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
 		__THINKOS_ERROR(THINKOS_ERR_BUS_FAULT);
 	} else {
-		thinkos_xcpt_process(xcpt);
+		thinkos_kernel_fault(xcpt);
 	}
 }
 #endif /* THINKOS_ENABLE_BUSFAULT  */
 
-#if	THINKOS_ENABLE_USAGEFAULT 
+#if	(THINKOS_ENABLE_USAGEFAULT) 
 void thinkos_usage_fault(struct thinkos_except * xcpt)
 {
 #if DEBUG
@@ -566,7 +556,7 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 
 	DCC_EXCEPT_DUMP(xcpt);
 
-#if THINKOS_STDERR_FAULT_DUMP
+#if (THINKOS_STDERR_FAULT_DUMP)
 	fprintf(stderr, "\n---\n");
 	fprintf(stderr, "Usage fault:");
 
@@ -580,12 +570,12 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 	if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
 		__THINKOS_ERROR(THINKOS_ERR_USAGE_FAULT);
 	} else {
-		thinkos_xcpt_process(xcpt);
+		thinkos_kernel_fault(xcpt);
 	}
 }
 #endif /* THINKOS_ENABLE_USAGEFAULT  */
 
-#if THINKOS_ENABLE_MEMFAULT
+#if (THINKOS_ENABLE_MEMFAULT)
 void thinkos_mem_manage(struct thinkos_except * xcpt)
 {
 
@@ -620,7 +610,7 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 	if (xcpt->icsr & SCB_ICSR_RETTOBASE) {
 		__THINKOS_ERROR(THINKOS_ERR_MEM_MANAGE);
 	} else {
-		thinkos_xcpt_process(xcpt);
+		thinkos_kernel_fault(xcpt);
 	}
 }
 #endif
@@ -639,7 +629,7 @@ struct thinkos_except * __thinkos_except_buf(void)
 
 void __exception_reset(void)
 {
-#if THINKOS_ENABLE_EXCEPT_CLEAR
+#if (THINKOS_ENABLE_EXCEPT_CLEAR)
 	DCC_LOG1(LOG_TRACE, "/!\\ clearing buffer: %08x!", &thinkos_except_buf);
 	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
 					   sizeof(struct thinkos_except));
@@ -657,13 +647,13 @@ void thinkos_exception_init(void)
 	struct cm3_scb * scb = CM3_SCB;
 
 	scb->shcsr = 0
-#if	THINKOS_ENABLE_USAGEFAULT 
+#if	(THINKOS_ENABLE_USAGEFAULT)
 		| SCB_SHCSR_USGFAULTENA 
 #endif
-#if	THINKOS_ENABLE_BUSFAULT 
+#if	(THINKOS_ENABLE_BUSFAULT)
 		| SCB_SHCSR_BUSFAULTENA
 #endif
-#if THINKOS_ENABLE_MEMFAULT
+#if (THINKOS_ENABLE_MEMFAULT)
 		| SCB_SHCSR_MEMFAULTENA
 #endif
 		;
@@ -673,7 +663,7 @@ void thinkos_exception_init(void)
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */
 
-#if THINKOS_SYSRST_ONFAULT
+#if (THINKOS_SYSRST_ONFAULT)
 void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 {
 	cm3_sysrst();

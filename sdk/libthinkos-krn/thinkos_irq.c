@@ -31,7 +31,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX > 0)
 void __thinkos_irq_reset_all(void)
 {
 	int irq;
@@ -43,18 +43,14 @@ void __thinkos_irq_reset_all(void)
 }
 #endif
 
-#if THINKOS_IRQ_MAX > 0
-void cm3_default_isr(unsigned int irq) 
+#if (THINKOS_IRQ_MAX > 0)
+#if (THINKOS_ENABLE_IRQ_CYCCNT)
+void thinkos_default_isr(uint32_t irq, uint32_t cyccnt) 
+#else
+void thinkos_default_isr(uint32_t irq) 
+#endif
 {
 	unsigned int th;
-
-#if (THINKOS_ENABLE_IRQ_CYCCNT)
-	/* set the thread's return value to cyle count */
-	uint32_t cyccnt = CM3_DWT->cyccnt;
-#endif
-
-	/* disable this interrupt source */
-	cm3_irq_disable(irq);
 
 	th = thinkos_rt.irq_th[irq];
 	thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
@@ -74,7 +70,6 @@ void cm3_default_isr(unsigned int irq)
 	/* remove from the wait queue */
 	__thinkos_wq_remove(THINKOS_WQ_IRQ, th);  
 #endif
-
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value */

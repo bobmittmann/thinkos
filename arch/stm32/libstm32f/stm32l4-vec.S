@@ -20,11 +20,13 @@
  */
 
 #include <sys/stm32f.h>
+#include <arch/cortex-m3.h>
 
 	.syntax unified
 	.cpu cortex-m3
 
 	.extern _reset
+	.extern thinkos_isr0
 
 	/* ---------------------------------------------------------------------
 	 * Generate the vectors table 
@@ -87,7 +89,7 @@
 	.word	stm32_tim2_isr           /* 28 TIM2 */
 	.word	stm32_tim3_isr           /* 29 TIM3 */
 
-	.word	0
+	.word	_fault                   /* 30 Reserved */
 
 	.word	stm32_i2c1_ev_isr        /* 31 I2C1 Event */
 	.word	stm32_i2c1_er_isr        /* 32 I2C1 Error */
@@ -211,18 +213,6 @@ __sizeof_ram_vectors:
 
 	.text
 	.align  2
-	.global _isr
-	.thumb
-	.thumb_func
-	.type   _isr, %function
-_isr:
-	mrs     r0, IPSR
-	subs    r0, #16
-	b       cm3_default_isr
-	.size   _isr, . - _isr
-
-	.text
-	.align  2
 	.global _fault
 	.thumb
 	.thumb_func
@@ -281,222 +271,224 @@ _fault:
 	.thumb_set  cm3_systick_isr,_fault
 
 	.weak       stm32_wwdg_isr
-	.thumb_set  stm32_wwdg_isr,_fault
+	.thumb_set  stm32_wwdg_isr,thinkos_isr0
 
 	.weak       stm32_pvd_isr
-	.thumb_set  stm32_pvd_isr,_isr
+	.thumb_set  stm32_pvd_isr,thinkos_isr1
 
 	.weak       stm32_tamp_stamp_isr
-	.thumb_set  stm32_tamp_stamp_isr,_isr
+	.thumb_set  stm32_tamp_stamp_isr,thinkos_isr2
 
 	.weak       stm32_rtc_wkup_isr
-	.thumb_set  stm32_rtc_wkup_isr,_isr
+	.thumb_set  stm32_rtc_wkup_isr,thinkos_isr3
 
 	.weak       stm32_flash_isr
-	.thumb_set  stm32_flash_isr,_isr
+	.thumb_set  stm32_flash_isr,thinkos_isr4
 
 	.weak       stm32_rcc_isr
-	.thumb_set  stm32_rcc_isr,_isr
+	.thumb_set  stm32_rcc_isr,thinkos_isr5
 
 	.weak       stm32_exti0_isr
-	.thumb_set  stm32_exti0_isr,_isr
+	.thumb_set  stm32_exti0_isr,thinkos_isr6
 
 	.weak       stm32_exti1_isr
-	.thumb_set  stm32_exti1_isr,_isr
+	.thumb_set  stm32_exti1_isr,thinkos_isr7
 
 	.weak       stm32_exti2_isr
-	.thumb_set  stm32_exti2_isr,_isr
+	.thumb_set  stm32_exti2_isr,thinkos_isr8
 
 	.weak       stm32_exti3_isr
-	.thumb_set  stm32_exti3_isr,_isr
+	.thumb_set  stm32_exti3_isr,thinkos_isr9
 
 	.weak       stm32_exti4_isr
-	.thumb_set  stm32_exti4_isr,_isr
+	.thumb_set  stm32_exti4_isr,thinkos_isr10
 
 	.weak       stm32_dma1_channel1_isr
-	.thumb_set  stm32_dma1_channel1_isr,_isr
+	.thumb_set  stm32_dma1_channel1_isr,thinkos_dma_isr11
 
 	.weak       stm32_dma1_channel2_isr
-	.thumb_set  stm32_dma1_channel2_isr,_isr
+	.thumb_set  stm32_dma1_channel2_isr,thinkos_dma_isr12
 
 	.weak       stm32_dma1_channel3_isr
-	.thumb_set  stm32_dma1_channel3_isr,_isr
+	.thumb_set  stm32_dma1_channel3_isr,thinkos_dma_isr13
 
 	.weak       stm32_dma1_channel4_isr
-	.thumb_set  stm32_dma1_channel4_isr,_isr
+	.thumb_set  stm32_dma1_channel4_isr,thinkos_dma_isr14
 
 	.weak       stm32_dma1_channel5_isr
-	.thumb_set  stm32_dma1_channel5_isr,_isr
+	.thumb_set  stm32_dma1_channel5_isr,thinkos_dma_isr15
 
 	.weak       stm32_dma1_channel6_isr
-	.thumb_set  stm32_dma1_channel6_isr,_isr
+	.thumb_set  stm32_dma1_channel6_isr,thinkos_dma_isr16
 
 	.weak       stm32_dma1_channel7_isr
-	.thumb_set  stm32_dma1_channel7_isr,_isr
+	.thumb_set  stm32_dma1_channel7_isr,thinkos_dma_isr17
 
 	.weak       stm32_adc_isr
-	.thumb_set  stm32_adc_isr,_isr
+	.thumb_set  stm32_adc_isr,thinkos_isr18
 
 	.weak       stm32_can1_tx_isr
-	.thumb_set  stm32_can1_tx_isr,_isr
+	.thumb_set  stm32_can1_tx_isr,thinkos_isr19
 
 	.weak       stm32_can1_rx0_isr
-	.thumb_set  stm32_can1_rx0_isr,_isr
+	.thumb_set  stm32_can1_rx0_isr,thinkos_isr20
 
 	.weak       stm32_can1_rx1_isr
-	.thumb_set  stm32_can1_rx1_isr,_isr
+	.thumb_set  stm32_can1_rx1_isr,thinkos_isr21
 
 	.weak       stm32_can1_sce_isr
-	.thumb_set  stm32_can1_sce_isr,_isr
+	.thumb_set  stm32_can1_sce_isr,thinkos_isr22
 
 	.weak       stm32_exti9_5_isr
-	.thumb_set  stm32_exti9_5_isr,_isr
+	.thumb_set  stm32_exti9_5_isr,thinkos_isr23
 
 	.weak       stm32_tim1_brk_tim15_isr
-	.thumb_set  stm32_tim1_brk_tim15_isr,_isr
+	.thumb_set  stm32_tim1_brk_tim15_isr,thinkos_isr24
 
 	.weak       stm32_tim1_up_tim16_isr
-	.thumb_set  stm32_tim1_up_tim16_isr,_isr
+	.thumb_set  stm32_tim1_up_tim16_isr,thinkos_isr25
 
 	.weak       stm32_tim1_trg_com_isr
-	.thumb_set  stm32_tim1_trg_com_isr,_isr
+	.thumb_set  stm32_tim1_trg_com_isr,thinkos_isr26
 
 	.weak       stm32_tim1_cc_isr
-	.thumb_set  stm32_tim1_cc_isr,_isr
+	.thumb_set  stm32_tim1_cc_isr,thinkos_isr27
 
 	.weak       stm32_tim2_isr
-	.thumb_set  stm32_tim2_isr,_isr
+	.thumb_set  stm32_tim2_isr,thinkos_isr28
 
 	.weak       stm32_tim3_isr
-	.thumb_set  stm32_tim3_isr,_isr
+	.thumb_set  stm32_tim3_isr,thinkos_isr29
 
 	.weak       stm32_i2c1_ev_isr
-	.thumb_set  stm32_i2c1_ev_isr,_isr
+	.thumb_set  stm32_i2c1_ev_isr,thinkos_isr31
 
 	.weak       stm32_i2c1_er_isr
-	.thumb_set  stm32_i2c1_er_isr,_isr
+	.thumb_set  stm32_i2c1_er_isr,thinkos_isr32
 
 	.weak       stm32_i2c2_ev_isr
-	.thumb_set  stm32_i2c2_ev_isr,_isr
+	.thumb_set  stm32_i2c2_ev_isr,thinkos_isr33
 
 	.weak       stm32_i2c2_er_isr
-	.thumb_set  stm32_i2c2_er_isr,_isr
+	.thumb_set  stm32_i2c2_er_isr,thinkos_isr34
 
 	.weak       stm32_spi1_isr
-	.thumb_set  stm32_spi1_isr,_isr
+	.thumb_set  stm32_spi1_isr,thinkos_isr35
 
 	.weak       stm32_spi2_isr
-	.thumb_set  stm32_spi2_isr,_isr
+	.thumb_set  stm32_spi2_isr,thinkos_isr36
 
 	.weak       stm32_usart1_isr
-	.thumb_set  stm32_usart1_isr,_isr
+	.thumb_set  stm32_usart1_isr,thinkos_isr37
 
 	.weak       stm32_usart2_isr
-	.thumb_set  stm32_usart2_isr,_isr
+	.thumb_set  stm32_usart2_isr,thinkos_isr38
 
 	.weak       stm32_usart3_isr
-	.thumb_set  stm32_usart3_isr,_isr
+	.thumb_set  stm32_usart3_isr,thinkos_isr39
 
 	.weak       stm32_exti15_10_isr
-	.thumb_set  stm32_exti15_10_isr,_isr
+	.thumb_set  stm32_exti15_10_isr,thinkos_isr40
 
 	.weak       stm32_rtc_alarm_isr
-	.thumb_set  stm32_rtc_alarm_isr,_isr
+	.thumb_set  stm32_rtc_alarm_isr,thinkos_isr41
 
 	.weak       stm32_sdmmc1_isr
-	.thumb_set  stm32_sdmmc1_isr,_isr
+	.thumb_set  stm32_sdmmc1_isr,thinkos_isr49
 
 	.weak       stm32_spi3_isr
-	.thumb_set  stm32_spi3_isr,_isr
+	.thumb_set  stm32_spi3_isr,thinkos_isr51
 
 	.weak       stm32_uart4_isr
-	.thumb_set  stm32_uart4_isr,_isr
+	.thumb_set  stm32_uart4_isr,thinkos_isr52
 
 	.weak       stm32_tim6_dac_isr
-	.thumb_set  stm32_tim6_dac_isr,_isr
+	.thumb_set  stm32_tim6_dac_isr,thinkos_isr54
 
 	.weak       stm32_tim7_isr
-	.thumb_set  stm32_tim7_isr,_isr
+	.thumb_set  stm32_tim7_isr,thinkos_isr55
 
 	.weak       stm32_dma2_channel1_isr
-	.thumb_set  stm32_dma2_channel1_isr,_isr
+	.thumb_set  stm32_dma2_channel1_isr,thinkos_dma_isr56
 
 	.weak       stm32_dma2_channel2_isr
-	.thumb_set  stm32_dma2_channel2_isr,_isr
+	.thumb_set  stm32_dma2_channel2_isr,thinkos_dma_isr57
 
 	.weak       stm32_dma2_channel3_isr
-	.thumb_set  stm32_dma2_channel3_isr,_isr
+	.thumb_set  stm32_dma2_channel3_isr,thinkos_dma_isr58
 
 	.weak       stm32_dma2_channel4_isr
-	.thumb_set  stm32_dma2_channel4_isr,_isr
+	.thumb_set  stm32_dma2_channel4_isr,thinkos_dma_isr59
 
 	.weak       stm32_dma2_channel5_isr
-	.thumb_set  stm32_dma2_channel5_isr,_isr
+	.thumb_set  stm32_dma2_channel5_isr,thinkos_dma_isr60
 
 	.weak       stm32_dfsdm1_flt0
-	.thumb_set  stm32_dfsdm1_flt0,_isr
+	.thumb_set  stm32_dfsdm1_flt0,thinkos_isr61
 
 	.weak       stm32_dfsdm1_flt1
-	.thumb_set  stm32_dfsdm1_flt1,_isr
+	.thumb_set  stm32_dfsdm1_flt1,thinkos_isr62
 
 	.weak       stm32_comp_isr
-	.thumb_set  stm32_comp_isr,_isr
+	.thumb_set  stm32_comp_isr,thinkos_isr64
 
 	.weak       stm32_lptim1_isr
-	.thumb_set  stm32_lptim1_isr,_isr
+	.thumb_set  stm32_lptim1_isr,thinkos_isr65
 
 	.weak       stm32_lptim2_isr
-	.thumb_set  stm32_lptim2_isr,_isr
+	.thumb_set  stm32_lptim2_isr,thinkos_isr66
 
 	.weak       stm32_usb_fs_isr
-	.thumb_set  stm32_usb_fs_isr,_isr
+	.thumb_set  stm32_usb_fs_isr,thinkos_isr67
 
 	.weak       stm32_dma2_channel6_isr
-	.thumb_set  stm32_dma2_channel6_isr,_isr
+	.thumb_set  stm32_dma2_channel6_isr,thinkos_dma_isr68
 
 	.weak       stm32_dma2_channel7_isr
-	.thumb_set  stm32_dma2_channel7_isr,_isr
+	.thumb_set  stm32_dma2_channel7_isr,thinkos_dma_isr69
 
 	.weak       stm32_lpuart1_isr
-	.thumb_set  stm32_lpuart1_isr,_isr
+	.thumb_set  stm32_lpuart1_isr,thinkos_isr70
 
 	.weak       stm32_qspi_isr
-	.thumb_set  stm32_qspi_isr,_isr
+	.thumb_set  stm32_qspi_isr,thinkos_isr71
 
 	.weak       stm32_i2c3_ev_isr
-	.thumb_set  stm32_i2c3_ev_isr,_isr
+	.thumb_set  stm32_i2c3_ev_isr,thinkos_isr72
 
 	.weak       stm32_i2c3_er_isr
-	.thumb_set  stm32_i2c3_er_isr,_isr
+	.thumb_set  stm32_i2c3_er_isr,thinkos_isr73
 
 	.weak       stm32_sai1_isr
-	.thumb_set  stm32_sai1_isr,_isr
+	.thumb_set  stm32_sai1_isr,thinkos_isr74
 
 	.weak       stm32_swpmi_isr
-	.thumb_set  stm32_swpmi_isr,_isr
+	.thumb_set  stm32_swpmi_isr,thinkos_isr76
 
 	.weak       stm32_tsc_isr
-	.thumb_set  stm32_tsc_isr,_isr
+	.thumb_set  stm32_tsc_isr,thinkos_isr77
 
 	.weak       stm32_lcd_isr
-	.thumb_set  stm32_lcd_isr,_isr
+	.thumb_set  stm32_lcd_isr,thinkos_isr78
 
 	.weak       stm32_aes_isr
-	.thumb_set  stm32_aes_isr,_isr
+	.thumb_set  stm32_aes_isr,thinkos_isr79
 
 	.weak       stm32_hash_rng_isr
-	.thumb_set  stm32_hash_rng_isr,_isr
+	.thumb_set  stm32_hash_rng_isr,thinkos_isr80
 	
 	.weak       stm32_fpu_isr
-	.thumb_set  stm32_fpu_isr,_isr
+	.thumb_set  stm32_fpu_isr,thinkos_isr81
 
 	.weak       stm32_cec_isr
-	.thumb_set  stm32_cec_isr,_isr
+	.thumb_set  stm32_cec_isr,thinkos_isr82
 
 	.weak       stm32_i2c4_ev_isr
-	.thumb_set  stm32_i2c4_ev_isr,_isr
+	.thumb_set  stm32_i2c4_ev_isr,thinkos_isr83
 
 	.weak       stm32_i2c4_er_isr
-	.thumb_set  stm32_i2c4_er_isr,_isr
+	.thumb_set  stm32_i2c4_er_isr,thinkos_isr84
 
 	.end
+
+

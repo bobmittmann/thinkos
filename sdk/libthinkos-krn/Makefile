@@ -43,7 +43,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_mem.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
-SFILES = thinkos_sched.S thinkos_vector.S 
+SFILES = thinkos_sched.S thinkos_vector.S thinkos_isr.S 
 
 include ../../mk/lib.mk
 
