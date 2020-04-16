@@ -482,7 +482,7 @@ const struct thinkos_thread_inf io_thread_inf = {
 	.priority = 28,
 	.thread_id = 28,
 	.paused = 0,
-	.tag = "RATEGEN"
+	.tag = "IO"
 };
 
 void io_init(void)

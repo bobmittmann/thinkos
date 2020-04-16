@@ -57,9 +57,7 @@ int main(int argc, char **argv)
 	/* load udelay calibration factor from OS */
 	thinkos_udelay_factor(&udelay_factor);
 
-	/* Initializes stdio so we can use printf and such.
-	   Attention: It's not recommended to use stdio calls inside of 
-	   any code meant for release, except for shell utilities.  */
+	/* Initializes stdio so we can use printf and such. */
 	stdio_init();
 
 	printf("Test..\n");

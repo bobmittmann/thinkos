@@ -30,70 +30,100 @@
    ThinkOS configuration
    -------------------------------------------------------------------------- */
 
+/* Maximum IRQ for this board */
 #define THINKOS_IRQ_MAX                 80
+/* Enable thinkos_irq_ctl system call */
 #define THINKOS_ENABLE_IRQ_CTL          1
+#define THINKOS_ENABLE_IRQ_RESTORE      0
+#define THINKOS_ENABLE_IRQ_CYCCNT       0
+#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
+#define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
+#define THINKOS_ENABLE_WQ_IRQ           0
 
-#define THINKOS_ENABLE_IDLE_WFI         1
+#define THINKOS_ENABLE_CLOCK            1
+#define THINKOS_ENABLE_ALARM            1
+#define THINKOS_ENABLE_SLEEP            1
 
 #define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             32
-#define THINKOS_ENABLE_THREAD_ALLOC     1
 
+/* These settings are used when its desireable
+   to create and destroy threads dinamically */
 #define THINKOS_ENABLE_JOIN             1
+/* Allow for pausing and resuming a thread execution.
+   This is needed for GDB and debug monitor. */
 #define THINKOS_ENABLE_PAUSE            1
 #define THINKOS_ENABLE_CANCEL           1
 #define THINKOS_ENABLE_EXIT             1
 
 #define THINKOS_MUTEX_MAX               32
-#define THINKOS_ENABLE_MUTEX_ALLOC      1
 
-#define THINKOS_COND_MAX                64
-#define THINKOS_ENABLE_COND_ALLOC       1
+#define THINKOS_COND_MAX                32
 
-#define THINKOS_SEMAPHORE_MAX           24
-#define THINKOS_ENABLE_SEM_ALLOC        1
+#define THINKOS_SEMAPHORE_MAX           32
 
-#define THINKOS_EVENT_MAX               4
-#define THINKOS_ENABLE_EVENT_ALLOC      1
+#define THINKOS_EVENT_MAX               32
 
 #define THINKOS_FLAG_MAX                32
-#define THINKOS_ENABLE_FLAG_ALLOC       1
+/* Enable Rendez vous synchronization. Wakes up all threads
+ watching a flag in a given instant.*/
 #define THINKOS_ENABLE_FLAG_WATCH       1
 
 #define THINKOS_GATE_MAX                16
-#define THINKOS_ENABLE_GATE_ALLOC       1
 
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
-#define THINKOS_ENABLE_ALARM            1
-#define THINKOS_ENABLE_SLEEP            1
-#define THINKOS_ENABLE_BREAK            1
-
+/* Check the validity of arguments to system calls */
 #define THINKOS_ENABLE_ARG_CHECK        1
+/* Check if a thread tries to lock a mutex which it
+   has previously locked. */
 #define THINKOS_ENABLE_DEADLOCK_CHECK   1
+/* Check if athread tries to unlock a mutex which is
+   not his own. Also check for minimum stack size on 
+ thread creation. */
 #define THINKOS_ENABLE_SANITY_CHECK     1
 
-#define THINKOS_ENABLE_CTL              1
-#define THINKOS_ENABLE_CRITICAL         1
-#define THINKOS_ENABLE_PREEMPTION       1
+/* Enable scheduler trace calls */
+#if DEBUG
+#define THINKOS_ENABLE_SCHED_DEBUG      1
+#else
+#define THINKOS_ENABLE_SCHED_DEBUG      0
+#endif
 
-#define THINKOS_ENABLE_OBJ_ALLOC        1
-#define THINKOS_ENABLE_OBJ_FREE         1
+/* Enable scheduler stack error detection */
+#if DEBUG
+#define THINKOS_ENABLE_SCHED_ERROR      1
+#else
+#define THINKOS_ENABLE_SCHED_ERROR      0
+#endif
 
+/* Allow to interrupt a system call */
+#define THINKOS_ENABLE_BREAK            0
+
+/* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING        1
 
+/* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
-#define THINKOS_ENABLE_DMCLOCK          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
+#define THINKOS_ENABLE_DMCLOCK          1
 
 #define THINKOS_ENABLE_CONSOLE          1
+#define THINKOS_ENABLE_CONSOLE_MISC     0 
+#define THINKOS_ENABLE_CONSOLE_BREAK    0
+#define THINKOS_ENABLE_CONSOLE_OPEN     0
+#define THINKOS_ENABLE_CONSOLE_NONBLOCK 0
+#define THINKOS_ENABLE_CONSOLE_DRAIN    0
+#define THINKOS_ENABLE_CONSOLE_MODE     0
+#define THINKOS_CONSOLE_RX_FIFO_LEN     64
+#define THINKOS_CONSOLE_TX_FIFO_LEN     128
 
-#define THINKOS_EXCEPT_STACK_SIZE       320
+#define THINKOS_EXCEPT_STACK_SIZE       (320  + 128)
+#define THINKOS_ENABLE_ERROR_TRAP       1
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
@@ -101,34 +131,61 @@
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_SYSRST_ONFAULT          0
 #define THINKOS_ENABLE_DEBUG_FAULT      1
+#if DEBUG
+  #define THINKOS_SYSRST_ONFAULT        0
+#else
+  #define THINKOS_SYSRST_ONFAULT        1
+#endif
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
-#define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         1
+#define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
 #define THINKOS_DBGMON_STACK_SIZE       1024
-
 #define THINKOS_ENABLE_STACK_INIT       1
 
-#define THINKOS_CONSOLE_RX_FIFO_LEN     64
-#define THINKOS_CONSOLE_TX_FIFO_LEN     128
+#define THINKOS_ENABLE_CTL              1
+#define THINKOS_ENABLE_CRITICAL         1
+#define THINKOS_ENABLE_PREEMPTION       1
+
+#ifdef DEBUG
+  #define THINKOS_ENABLE_IDLE_WFI       0
+#else
+  #define THINKOS_ENABLE_IDLE_WFI       1
+#endif
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 #define THINKOS_ENABLE_IDLE_MSP         1
-#define THINKOS_ENABLE_SCHED_DEBUG      1
+
+#define THINKOS_ENABLE_KRN_TRACE        0
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#define THINKOS_ENABLE_OBJ_FREE         1
+
+#define THINKOS_ENABLE_I_CALLS          0
+#define THINKOS_ENABLE_THREAD_INFO      1
+
+#define THINKOS_ENABLE_MEMORY_CLEAR     1
+#define THINKOS_ENABLE_FLASH_MEM        1
+
+/* Enable the rt_snapshot() service to get
+   the state of the kernel */
+#define THINKOS_ENABLE_RT_DEBUG         0
+
+#define THINKOS_STDERR_FAULT_DUMP       0
+#define THINKOS_ASM_SCHEDULER           1
+#define THINKOS_ENABLE_OFAST            1
+
+#define THINKOS_ENABLE_RESET_RAM_VECTORS 0
 
 /* -------------------------------------------------------------------------
- * delay
- * ------------------------------------------------------------------------- */
+   RCC 
+   -------------------------------------------------------------------------- */
 
 #define STM32_HCLK_HZ       168000000 /* HBA bus frequency */
 #define STM32_HSE_HZ        12000000 /* External oscillator frequency */
@@ -138,10 +195,6 @@
 #define STM32_ENABLE_PLLI2S 1 /* Enable SAI PLL */
 #define STM32_ENABLE_PLLSAI 0 /* Disable SAI PLL */
 
-#define THINKOS_ENABLE_IRQ_CYCCNT     1
-#define THINKOS_ENABLE_IRQ_PRIORITY_0 1
-#define THINKOS_ENABLE_IRQ_TIMEDWAIT  1
-#define THINKOS_ENABLE_WQ_IRQ         1 
 
 /* -------------------------------------------------------------------------
    USB 

@@ -582,8 +582,7 @@
 
 /* flash mem depend on idle hooks */
 #if (THINKOS_ENABLE_FLASH_MEM) && !(THINKOS_ENABLE_IDLE_HOOKS)
-#undef THINKOS_ENABLE_IDLE_HOOKS
-#define THINKOS_ENABLE_IDLE_HOOKS 1
+#error "THINKOS_ENABLE_FLASH_MEMdepends on THINKOS_ENABLE_IDLE_HOOKS"
 #endif
 
 /* timed calls, cancel, pause and debug step depend on thread status */

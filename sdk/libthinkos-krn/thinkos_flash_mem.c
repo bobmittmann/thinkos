@@ -32,125 +32,167 @@
    to kernel... */
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+
+#define __THINKOS_FLASH__
+#include <thinkos/flash.h>
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Os\")")
 #endif
 #include <thinkos.h>
 
+#include <sys/flash-dev.h>
 #include <sys/param.h>
+#include <sys/dcclog.h>
 #include <stdbool.h>
+
 
 #if (THINKOS_ENABLE_FLASH_MEM)
 
+extern const struct flash_dev * board_flash_dev;
 
+struct flash_op_req {
+	volatile uint32_t seq;
+	volatile uint32_t ack;
+	uint16_t req;
+	uint16_t mem;
+	uint16_t off;
+	uint16_t len;
+	void * buf;
+	uint16_t sector;
+	uint16_t block;
+	int ret;
+};
+
+/*
+*/
+
+struct thinkos_flash_drv {
+	struct thinkos_flash_dev * dev;
+#if (THINKOS_ENABLE_MONITOR)
+	struct flash_op_req krn_req;
+#endif
+};
+
+struct thinkos_flash_drv thinkos_flash_drv_rt;
+
+/*
+   Process FLASH memory events.
+   These events can be a request either from the kernel or from user
+   space / notification of completion in case interrups are being used.
+
+	FIXME: add support for interrupts
+
+   */
 void thinkos_flash_mem_hook(void)
 {
+	struct thinkos_flash_drv * drv = &thinkos_flash_drv_rt;
+	const struct flash_dev * dev = board_flash_dev;
+//	const struct thinkos_flash_memory  * mem;
+	const struct flash_dev_ops * op = dev->op;
+	void * ptr = dev->priv;
 	unsigned int wq = THINKOS_WQ_FLASH_MEM;
-	uint32_t * arg;
-	int th;
 	unsigned int req;
-	int mem;
+	int mem_id;
+	int th;
 	void * buf;
 	off_t off;
 	size_t len;
+	int ret;
 
-	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+	(void)drv;
+
+	th = __thinkos_wq_head(wq);
+
+#if (THINKOS_ENABLE_MONITOR)
+	/* Check for pending request from the kernel */
+	if (drv->krn_req.seq != drv->krn_req.ack) {
+			req = drv->krn_req.req;
+			mem_id = drv->krn_req.mem;
+			buf =  drv->krn_req.buf;
+			off = drv->krn_req.off;
+			len = drv->krn_req.len;
+	} else 
+#endif
+	if (th != THINKOS_THREAD_NULL) {
+			uint32_t * arg;
+			arg = &thinkos_rt.ctx[th]->r0;
+			req = arg[0];
+			mem_id = arg[1];
+			buf = (void *)arg[2];
+			off = (off_t)arg[2];
+			len = (size_t)arg[3];
+	} else {
+		DCC_LOG(LOG_WARNING, "flash_drv: no waiting threads!");
 		return;
 	}
 
-#if THINKOS_ENABLE_ARG_CHECK
-#endif
-	arg = &thinkos_rt.ctx[th]->r0;
-	req = arg[0];
-	mem = arg[1];
-	buf = (void *)arg[2];
-	off= (off_t)arg[2];
-	len = (size_t)arg[3];
-
-//	clk = thinkos_clock();
-//	__stm32_flash_erase(0x40000, 0x20000);
-//	DCC_LOG2(LOG_TRACE, "<%d> dt=%d", th + 1, 
-//			 thinkos_clock() - clk);
-
-//	DCC_LOG2(LOG_TRACE, "<%d> flash mem req=%d", th + 1, req);
-//	__stm32_flash_write(0x40000, "Test", 100);
-//	DCC_LOG2(LOG_TRACE, "<%d> flash mem req=%d", th + 1, req);
+//	mem = &board_flash_mem[mem_id];
+	(void)mem_id;
 
 	switch (req) {
 	case THINKOS_FLASH_MEM_OPEN:
 		DCC_LOG1(LOG_TRACE, "<%d> open", th + 1);
-		arg[0] = board_flash_mem_open(mem);
+		ret = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_FLASH_MEM_CLOSE:
 		DCC_LOG1(LOG_TRACE, "<%d> close", th + 1);
-		arg[0] = board_flash_mem_close(mem);
+		ret = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_FLASH_MEM_READ:
 		DCC_LOG1(LOG_TRACE, "<%d> read", th + 1);
-		arg[0] = board_flash_mem_read(mem, buf, len);
+		ret = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_FLASH_MEM_WRITE:
 		DCC_LOG1(LOG_TRACE, "<%d> write", th + 1);
-		arg[0] = board_flash_mem_write(mem, buf, len);
-		break;
-
-	case THINKOS_FLASH_MEM_SEEK:
-		DCC_LOG1(LOG_TRACE, "<%d> seek", th + 1);
-		arg[0] = board_flash_mem_seek(mem, off);
+		ret = op->write(ptr, off, buf, len);
 		break;
 
 	case THINKOS_FLASH_MEM_ERASE:
 		DCC_LOG1(LOG_TRACE, "<%d> erase", th + 1);
-		arg[0] = board_flash_mem_erase(mem, off, len);
+		ret = op->erase(ptr, off, len);
 		break;
 
 	case THINKOS_FLASH_MEM_LOCK:
 		DCC_LOG1(LOG_TRACE, "<%d> lock", th + 1);
-		arg[0] = board_flash_mem_lock(mem, off, len);
+		ret = op->lock(ptr, off, len);
 		break;
 
 	case THINKOS_FLASH_MEM_UNLOCK:
 		DCC_LOG1(LOG_TRACE, "<%d> unlock", th + 1);
-		arg[0] = board_flash_mem_unlock(mem, off, len);
+		ret = op->unlock(ptr, off, len);
 		break;
 
 	default:
-		arg[0] = THINKOS_EINVAL;
-		break;
+		ret = THINKOS_EINVAL;
 	}
-#if  0
-	uint32_t pc;
 
-	pc = thinkos_rt.ctx[th]->pc;
-	thinkos_rt.ctx[th]->r1 = pc;
-	pc = (uint32_t)thinkos_flash_mem_cont;
-	pc |= 1;	
-	thinkos_rt.ctx[th]->pc = pc;
+#if (THINKOS_ENABLE_MONITOR)
+	if (drv->krn_req.seq != drv->krn_req.ack) {
+			drv->krn_req.ack++;
+			drv->krn_req.ret = ret;
+			/* Notify the debug/monitor */
+			dbgmon_signal(DBGMON_FLASH_DRV); 
+	} else 
 #endif
+	if (th != THINKOS_THREAD_NULL) {
+		uint32_t * arg;
 
-	/* wakeup from the mutex wait queue */
-	__thinkos_wakeup(wq, th);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+		arg = &thinkos_rt.ctx[th]->r0;
+		arg[0] = ret;
+		/* wakeup from the mutex wait queue */
+		__thinkos_wakeup(wq, th);
+		/* signal the scheduler ... */
+		__thinkos_defer_sched();
+	}
 }
-
 
 void thinkos_flash_mem_svc(int32_t * arg, int self)
 {
-//	struct armv7m_basic_frame * frm = (struct armv7m_basic_frame *)arg;
 	unsigned int wq = THINKOS_WQ_FLASH_MEM;
-	/*
-	uint32_t pc;
-
-	pc = frm->pc;
-	frm->r2 = pc;
-	pc = (uint32_t)thinkos_flash_mem_cont;
-	pc |= 1;	
-	frm->pc = pc;
-*/
 	
 #if THINKOS_ENABLE_ARG_CHECK
 #endif
@@ -159,11 +201,10 @@ void thinkos_flash_mem_svc(int32_t * arg, int self)
 	__thinkos_wq_insert(wq, self);
 	DCC_LOG2(LOG_TRACE , "<%d> waiting on flash mem %d...", self, wq);
 
-	//arg[0] = 0;
 	/* (1) suspend the thread by removing it from the
 	   ready wait queue. The __thinkos_suspend() call cannot be nested
 	   inside a LDREX/STREX pair as it may use the exclusive access 
-	   itself, in case we have anabled the time sharing option. */
+	   itself, in case we have enabled the time sharing option. */
 	__thinkos_suspend(self);
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
@@ -174,32 +215,6 @@ void thinkos_flash_mem_svc(int32_t * arg, int self)
 	__idle_hook_req(IDLE_HOOK_FLASH_MEM);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
-#if 0
-	switch (req) {
-	case THINKOS_FLASH_MEM_OPEN:
-		if (thinkos_flash_rt.open) {
-			arg[0] = THINKOS_EINVAL;
-			break;
-		}
-
-		thinkos_flash_rt.open = 1;
-		arg[0] = THINKOS_OK;
-		break;
-
-	case THINKOS_FLASH_MEM_CLOSE:
-		if (!thinkos_flash_rt.open) {
-			arg[0] = THINKOS_EINVAL;
-			break;
-		}
-		thinkos_flash_rt.open = 0;
-		arg[0] = THINKOS_OK;
-		break;
-
-	default:
-		arg[0] = THINKOS_EINVAL;
-		break;
-	}
-#endif
 }
 
 const char thinkos_flash_mem_nm[] = "FMM";

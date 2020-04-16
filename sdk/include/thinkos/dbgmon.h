@@ -137,7 +137,7 @@ enum dbgmon_event {
 	DBGMON_USER_EVENT4     = 28,
 	DBGMON_USER_EVENT5     = 29,
 	DBGMON_USER_EVENT6     = 30,
-	DBGMON_USER_EVENT7     = 31,
+	DBGMON_FLASH_DRV       = 31,
 	/*  */
 	DBGMON_NONE            = 32
 };

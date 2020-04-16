@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-cdc.c
+ * File:	 app_erase-cdc.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:

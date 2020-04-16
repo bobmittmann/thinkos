@@ -48,6 +48,8 @@ REGION_ALIAS("DATA", sram1);
 REGION_ALIAS("HEAP", sram1);
 REGION_ALIAS("STACK", ccm);
 REGION_ALIAS("LOG", dcclog);
+REGION_ALIAS("BKPCTL", rtcbkr);
+REGION_ALIAS("BKPDAT", bkpsram);
 
 /* Device family vectors */
 INCLUDE stm32f4xx.ld

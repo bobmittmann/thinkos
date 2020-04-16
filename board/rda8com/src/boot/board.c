@@ -289,5 +289,9 @@ const struct thinkos_board this_board = {
 	.default_task = board_default_task
 };
 
+extern const struct flash_dev stm32l4x_flash_dev;
+
+const struct flash_dev * board_flash_dev = &stm32l4x_flash_dev;
+
 #pragma GCC diagnostic pop
 

@@ -25,6 +25,7 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
+#include <sys/flash-dev.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
@@ -371,6 +372,10 @@ const struct thinkos_board this_board = {
 	.selftest_task = board_selftest_task,
 	.default_task = board_default_task
 };
+
+extern const struct flash_dev stm32f4x_flash_dev;
+
+const struct flash_dev * board_flash_dev = &stm32f4x_flash_dev;
 
 #pragma GCC diagnostic pop
 

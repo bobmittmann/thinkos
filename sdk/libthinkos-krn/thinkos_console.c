@@ -607,12 +607,12 @@ wr_again:
 			}
 #endif
 			/* Set the return value to ZERO. The calling thread 
-			   shuould retry sending data. */
+			   should retry sending data. */
 			arg[0] = 0;
 			/* (1) suspend the thread by removing it from the
 			   ready wait queue. The __thinkos_suspend() call cannot be nested
 			   inside a LDREX/STREX pair as it may use the exclusive access 
-			   itself, in case we have anabled the time sharing option. */
+			   itself, in case we have enabled the time sharing option. */
 			__thinkos_suspend(self);
 			/* update the thread status in preparation for event wait */
 #if THINKOS_ENABLE_THREAD_STAT

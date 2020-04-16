@@ -39,7 +39,7 @@ GDB_CFILES = dbgmon_gdb.c
 CFILES = thinkos_dbgmon.c \
 	 dbgmon_thread.c dbgmon_memory.c \
 	 dbgmon_console_task.c \
-	 app_exec.c flash_erase.c flash_ymodem.c \
+	 app_exec.c app_erase.c flash_ymodem.c \
 	 $(addprefix comm/,$(COMM_CFILES)) \
 	 $(addprefix commio/,$(COMMIO_CFILES)) \
 	 $(addprefix gdb/,$(GDB_CFILES)) 

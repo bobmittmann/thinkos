@@ -31,15 +31,6 @@
 
 #if (THINKOS_ENABLE_FLASH_MEM)
 
-int board_flash_mem_close(int mem);
-int board_flash_mem_open(int mem);
-int board_flash_mem_read(int mem, void * buf, size_t len);
-int board_flash_mem_write(int mem, const void * buf, size_t len);
-int board_flash_mem_seek(int mem, off_t offset);
-int board_flash_mem_erase(int mem, off_t offset, size_t len);
-int board_flash_mem_lock(int mem, off_t offset, size_t len);
-int board_flash_mem_unlock(int mem, off_t offset, size_t len);
-
 struct {
 	int8_t thread;
 	uint8_t open;

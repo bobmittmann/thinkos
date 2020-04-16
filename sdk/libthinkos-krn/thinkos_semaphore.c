@@ -136,7 +136,7 @@ again:
 	/* (1) suspend the thread by removing it from the
 	   ready wait queue. The __thinkos_suspend() call cannot be nested
 	   inside a LDREX/STREX pair as it may use the exclusive access itself,
-	   in case we have anabled the time sharing option.
+	   in case we have enabled the time sharing option.
 	   It is not a problem having a thread not contained in any waiting
 	   queue inside a system call. 
 	 */
