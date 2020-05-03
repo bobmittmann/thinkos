@@ -171,6 +171,9 @@ static inline void dbgmon_req_app_upload(void) {
 	dbgmon_signal(DBGMON_APP_UPLOAD);
 }
 
+extern const struct thinkos_flash_desc board_flash_desc;
+extern struct thinkos_flash_drv board_flash_drv;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

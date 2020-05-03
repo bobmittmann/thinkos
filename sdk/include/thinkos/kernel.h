@@ -369,6 +369,11 @@ struct thinkos_rt {
   #endif
 #endif
 
+#if (THINKOS_ENABLE_PROFILING)
+	/* Reference cycle state ... */
+	uint32_t cycref;
+#endif
+
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
 							 thread preemption is disabled */
@@ -377,16 +382,11 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
-	int8_t   res;  /* thread stopped by a breakpoint or step request */
+	int8_t   res;  /* reserved */
   #if THINKOS_ENABLE_DEBUG_STEP
 	uint32_t step_svc;  /* step at service call bitmap */
 	uint32_t step_req;  /* step request bitmap */
   #endif
-#endif
-
-#if (THINKOS_ENABLE_PROFILING)
-	/* Reference cycle state ... */
-	uint32_t cycref;
 #endif
 
 	uint32_t active; /* current active thread */
@@ -762,6 +762,13 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
 #endif
 }
 
+static inline void __attribute__((always_inline)) __thinkos_cancel_sched(void) {
+	struct cm3_scb * scb = CM3_SCB;
+	/* removes the pending status of the PendSV exception */
+	scb->icsr = SCB_ICSR_PENDSVCLR;
+	asm volatile ("dsb\n"); /* Data synchronization barrier */
+}
+
 /* flags a deferred execution of the scheduler */
 static inline void __attribute__((always_inline)) __thinkos_defer_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
@@ -1034,9 +1041,7 @@ void __thinkos_sched_stop(void);
  * --------------------------------------------------------------------------*/
 void __attribute__((noreturn))
 	thinkos_sched_context_restore(struct thinkos_context * __ctx, 
-								  uint32_t __new_thread_id,
-								  uint32_t __prev_thread_id, 
-								  uint32_t __sp);
+								  uint32_t __new_thread_id);
 
 /* -------------------------------------------------------------------------- 
  * Console Kernel API

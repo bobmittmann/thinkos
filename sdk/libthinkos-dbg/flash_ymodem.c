@@ -51,7 +51,7 @@ static unsigned long dec2int(const char * __s)
 
 /* Receive a file and write it into the flash using the YMODEM preotocol */
 int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
-					  uint32_t addr, unsigned int size)
+						uint32_t addr, unsigned int size)
 {
 	/* FIXME: generalize the application load by removing the low
 	   level flash calls dependency */
@@ -60,8 +60,6 @@ int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 	   the stack, make sure there is no app running before 
 	   calling the dbgmon_ymodem_flash()! */
 	struct ymodem_rcv * ry = ((struct ymodem_rcv *)thinkos_main_stack) - 1;
-	uint32_t base = (uint32_t)STM32_FLASH_MEM;
-	uint32_t offs = addr - base;
 	int ret;
 
 	DCC_LOG2(LOG_MSG, "sp=%p ry=%p", cm3_sp_get(), ry);
@@ -112,10 +110,10 @@ int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 		} else {
 			if (ry->pktno == 2) {
 				DCC_LOG1(LOG_TRACE, "Erasing %d bytes...", ry->fsize);
-				stm32_flash_erase(offs, ry->fsize);
+				dbgmon_flash_erase(addr, ry->fsize);
 			}	
-			stm32_flash_write(offs, ry->pkt.data, len);
-			offs += len;
+			dbgmon_flash_write(addr, ry->pkt.data, len);
+			addr += len;
 		}
 	}
 

@@ -27,39 +27,49 @@
 #error "Never use <thinkos/flash.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#define __THINKOS_MEMORY__
-#include <thinkos/memory.h>
+#include <sys/memory.h>
+#include <sys/flash-dev.h>
 
-struct thinkos_flash_memory {
-	const struct thinkos_mem_sct * sect;
+struct thinkos_flash_desc {
+	const struct mem_desc * mem;
+	const struct flash_dev * dev;
 };
 
-struct thinkos_flash_op {
-	const struct thinkos_mem_sct * sect;
-	int (* write)(const struct thinkos_flash_memory * mem,
-				  const void * buf, size_t count);
-	int (* read)(const struct thinkos_flash_memory * mem, 
-				 void * buf, size_t count, unsigned int tmo);
-	int (* seek)(const struct thinkos_flash_memory * mem,
-				 off_t offs);
-	int (* erase)(const struct thinkos_flash_memory * mem,
-				 off_t offs, size_t count);
-	int (* lock)(const struct thinkos_flash_memory * mem,
-				 off_t offs, size_t count);
-	int (* unlock)(const struct thinkos_flash_memory * mem,
-				 off_t offs, size_t count);
-	int (* open)(const struct thinkos_flash_memory * mem);
-	int (* close)(const struct thinkos_flash_memory * mem);
+struct flash_op_req {
+	volatile uint32_t opc;
+	uint32_t key;
+	union {
+		off_t offset;
+		size_t size;
+		int ret;
+	};
+	union {
+		void * buf;
+		const char * tag;
+	};
 };
 
-struct thinkos_flash_dev {
-	struct thinkos_flash_memory * mem;
-	const struct thinkos_flash_op * op;
+struct thinkos_flash_drv {
+	uint8_t ropen;
+	uint8_t wopen;
+	uint16_t key;
+	uint32_t off;
+	uint32_t pos;
+	uint32_t size;
+#if (THINKOS_ENABLE_MONITOR)
+	struct flash_op_req krn_req;
+#endif
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv, 
+							  struct flash_op_req * req);
+
+void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv, 
+							   const struct thinkos_flash_desc * desc);
 
 #ifdef __cplusplus
 }

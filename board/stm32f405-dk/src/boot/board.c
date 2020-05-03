@@ -25,7 +25,8 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
-#include <sys/flash-dev.h>
+#define __THINKOS_FLASH__
+#include <thinkos/flash.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
@@ -196,7 +197,7 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 5
+#define PREBOOT_TIME_SEC 1
 
 int board_preboot_task(void *ptr)
 {
@@ -253,11 +254,12 @@ int board_selftest_task(void *ptr)
 
 int board_default_task(void *ptr)
 {
+	char buf[128];
 	uint32_t tick;
-
+	int x;
 	__puts("- board default\r\n");
 
-	for (tick = 0;; ++tick) {
+	for (tick = 0; tick < 8; ++tick) {
 		thinkos_sleep(128);
 
 		switch (tick & 0x7) {
@@ -287,6 +289,32 @@ int board_default_task(void *ptr)
 			break;
 		}
 	}
+
+	__puts("- FLASH test\r\n");
+	x = thinkos_flash_mem_open("BOOT");
+	thinkos_flash_mem_read(x, buf, 14);
+	thinkos_flash_mem_close(x);
+
+	__puts(buf);
+
+	x = thinkos_flash_mem_open("BOOT");
+	thinkos_flash_mem_write(x, "Hello world!", 14);
+	thinkos_flash_mem_close(x);
+
+
+	x = thinkos_flash_mem_open("CONF");
+	thinkos_flash_mem_write(x, "Hello world!", 16);
+	thinkos_flash_mem_seek(x, 0);
+	thinkos_flash_mem_read(x, buf, 16);
+	thinkos_flash_mem_close(x);
+
+	__puts(buf);
+
+	x = thinkos_flash_mem_open("CONF");
+	thinkos_flash_mem_erase(x, 16);
+	thinkos_flash_mem_close(x);
+
+	return 0;
 }
 
 #pragma GCC diagnostic push
@@ -308,8 +336,10 @@ const struct magic_blk thinkos_10_app_magic = {
    Bootloader and debugger, memory description  
  */
 
-const struct mem_desc sram_desc = {
+const struct mem_desc sram_mem = {
 	.tag = "RAM",
+	.base = 0x00000000,
+	.cnt = 5,
 	.blk = {
 		{"STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
 		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
@@ -321,18 +351,22 @@ const struct mem_desc sram_desc = {
 		}
 };
 
-const struct mem_desc flash_desc = {
+const struct mem_desc flash_mem = {
 	.tag = "FLASH",
+	.base = 0x08000000,
+	.cnt = 3,
 	.blk = {
-		{"BOOT", 0x08000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
-		{"CONF", 0x08010000, M_RO, SZ_64K, 1},	/* Configuration: 64 KiB */
-		{"APP",  0x08020000, M_RW, SZ_128K, 7},	/* Application:  */
+		{"BOOT", 0x00000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
+		{"CONF", 0x00010000, M_RW, SZ_64K, 1},	/* Configuration: 64 KiB */
+		{"APP",  0x00020000, M_RW, SZ_128K, 7},	/* Application:  */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };
 
-const struct mem_desc peripheral_desc = {
+const struct mem_desc peripheral_mem = {
 	.tag = "PERIPH",
+	.base = 0,
+	.cnt = 1,
 	.blk = {
 		{"RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
 		{"", 0x00000000, 0, 0, 0}
@@ -356,9 +390,9 @@ const struct thinkos_board this_board = {
 	       },
 	.memory = {
 		   .cnt = 3,
-		   .flash = &flash_desc,
-		   .ram = &sram_desc,
-		   .periph = &peripheral_desc},
+		   .flash = &flash_mem,
+		   .ram = &sram_mem,
+		   .periph = &peripheral_mem},
 	.application = {
 			.tag = "",
 			.start_addr = 0x08020000,
@@ -375,7 +409,12 @@ const struct thinkos_board this_board = {
 
 extern const struct flash_dev stm32f4x_flash_dev;
 
-const struct flash_dev * board_flash_dev = &stm32f4x_flash_dev;
+const struct thinkos_flash_desc board_flash_desc = {
+	.mem = &flash_mem,
+	.dev = &stm32f4x_flash_dev
+};
+
+struct thinkos_flash_drv board_flash_drv;
 
 #pragma GCC diagnostic pop
 

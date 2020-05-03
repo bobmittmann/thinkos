@@ -26,10 +26,11 @@ SEARCH_DIR(.)
 __code_init = ORIGIN(CODE);
 __data_init = ORIGIN(DATA);
 
-/*
-__code_end = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
-__data_end = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
-*/
+__krn_data_init = ORIGIN(DATA);
+__krn_data_end = ORIGIN(DATA) + __krn_data_size;
+
+__krn_code_init = ORIGIN(CODE);
+__krn_code_end = ORIGIN(CODE) + __krn_code_size;
 
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 _stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
@@ -39,19 +40,20 @@ __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
+
 EXTERN(_stack)
 EXTERN(_reset)
 EXTERN(ice_comm_blk)
 
-EXTERN(cm3_nmi_isr)
-EXTERN(cm3_hard_fault_isr)
-EXTERN(cm3_mem_manage_isr)
-EXTERN(cm3_bus_fault_isr)
-EXTERN(cm3_usage_fault_isr)
-EXTERN(cm3_svc_isr)
-EXTERN(cm3_debug_mon_isr)
-EXTERN(cm3_pendsv_isr)
-EXTERN(cm3_systick_isr)
+EXTERN(arm_nmi_isr)
+EXTERN(arm_hard_fault_isr)
+EXTERN(arm_mem_manage_isr)
+EXTERN(arm_bus_fault_isr)
+EXTERN(arm_usage_fault_isr)
+EXTERN(arm_svc_isr)
+EXTERN(arm_debug_mon_isr)
+EXTERN(arm_pendsv_isr)
+EXTERN(arm_systick_isr)
 
 SECTIONS
 {
@@ -160,6 +162,17 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
+
+	.krn_stack :
+	{
+		. = ALIGN(4);
+		PROVIDE (__krn_stack_start = . );
+		/* all .krn_stack sections  */
+		*(.krn_stack .krn_stack*)
+		/* define a global symbol marking the end of the .krn_stack section  */
+		. = ALIGN(4);
+		PROVIDE (__krn_stack_end = . );
+	} >"DATA"
 
 	.heap :
 	{

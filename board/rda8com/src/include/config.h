@@ -136,7 +136,7 @@
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
-  #define THINKOS_SYSRST_ONFAULT        1
+  #define THINKOS_SYSRST_ONFAULT        0
 #endif
 #define THINKOS_ENABLE_DEBUG_BKPT       0
 #define THINKOS_ENABLE_DEBUG_WPT        0
@@ -148,7 +148,7 @@
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DBGMON_STACK_SIZE       (1024 + 512)
+#define THINKOS_DBGMON_STACK_SIZE       (1024 + 384)
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              0
@@ -158,7 +158,7 @@
 #ifdef DEBUG
   #define THINKOS_ENABLE_IDLE_WFI       0
 #else
-  #define THINKOS_ENABLE_IDLE_WFI       1
+  #define THINKOS_ENABLE_IDLE_WFI       0
 #endif
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
@@ -183,8 +183,6 @@
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
-
-
 
 /* -------------------------------------------------------------------------
    RCC 
@@ -239,6 +237,7 @@
 #define MONITOR_OS_PAUSE           0
 #define MONITOR_OS_RESUME          0
 #define MONITOR_RESTART_MONITOR    0
+#define MONITOR_PREBOOT_ENABLE     1
 
 /* -------------------------------------------------------------------------
  * Serial

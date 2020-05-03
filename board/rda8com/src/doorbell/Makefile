@@ -33,13 +33,14 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG = doorbell
 
-CFILES = doorbell.c iodrv.c dac.c casa.c amora.c batatinha.c entre.c bell1.c vaembora.c
+CFILES = doorbell.c iodrv.c dac.c spi.c \
+		 casa.c amora.c batatinha.c entre.c bell1.c vaembora.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
 		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libtty $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libc $(SDK_DIR)/libtrace $(SDK_DIR)/libfixpt $(LIBMAD_DIR)
 
-LIBS = gcc m cm3 stm32f util c thinkos-usr fixpt tty mad
+LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt tty mad
 
 INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
 

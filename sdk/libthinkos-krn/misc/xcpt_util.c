@@ -213,20 +213,28 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
-	icsr = xcpt->icsr;
-	DCC_LOG8(LOG_ERROR, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
-				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
-				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
-				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
-				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
-				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
-				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
-				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
-				 (icsr & SCB_ICSR_VECTACTIVE));
-
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 xcpt->active + 1,
 			 thinkos_rt.active + 1); 
+#if 0
+	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
+			(scr & SCR_SEVONPEND) ? " SEVONPEND" : "",
+			(scr & SCR_SLEEPDEEP) ? " SLEEPDEEP" : "",
+			(scr & SCR_SLEEPONEXIT) ? " SLEEPONEXIT" : "");
+#endif
+
+#if 0
+	DCC_LOG3(LOG_ERROR, " *   CCR={%s%s%s }", 
+			(ccr & CCR_BP) ? " BP" : "",
+			(ccr & CCR_IC) ? " IC" : "",
+			(ccr & CCR_DC) ? " DC" : "",
+			(ccr & CCR_STKALIGN) ? " STKALIGN" : "",
+			(ccr & CCR_BFHFNMIGN) ? " BFHFNMIGN" : "",
+			(ccr & CCR_DIV_0_TRP) ? " DIV_0_TRP" : "",
+			(ccr & CCR_UNALIGN_TRP) ? " UNALIGN_TRP" : "",
+			(ccr & CCR_USERSETMPEND) ? " USERSETMPEND" : "");
+			(ccr & CCR_NONBASETHRDENA) ? " NONBASETHRDENA" : "");
+#endif
 
 #if (THINKOS_ENABLE_MONITOR)
 	DCC_LOG2(LOG_ERROR, "DMON stack free: %d/%6d", 
@@ -236,6 +244,7 @@ void __xdump(struct thinkos_except * xcpt)
 			 __scan_stack(thinkos_except_stack, thinkos_except_stack_size),
 			 thinkos_except_stack_size); 
 #endif
+	DCC_LOG1(LOG_ERROR, "exceptions count: %d", xcpt->count); 
 
 #endif
 }

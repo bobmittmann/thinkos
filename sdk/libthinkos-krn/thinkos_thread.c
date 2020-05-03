@@ -30,7 +30,7 @@
 #include <sys/dcclog.h>
 
 
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 int __thinkos_thread_fault_code(unsigned int thread_id)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -83,7 +83,7 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 
 	ctx->r0 = (uint32_t)arg;
 	ctx->pc = pc;
-#if THINKOS_ENABLE_EXIT
+#if (THINKOS_ENABLE_EXIT)
 	ctx->lr = (uint32_t)__thinkos_thread_exit_stub;
 #else
 	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
@@ -94,11 +94,11 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 	ctx->ret = CM3_EXC_RET_THREAD_PSP;
 #endif
 
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 	__thinkos_thread_pause_set(thread_id);
 #endif
 
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_DEBUG_FAULT)
 	__thinkos_thread_fault_clr(thread_id);
 #endif
 
@@ -115,7 +115,7 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 	return ctx;
 }
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 void __thinkos_thread_inf_set(unsigned int thread_id, 
 							  const struct thinkos_thread_inf * inf)
 {
@@ -133,7 +133,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	int target_id = init->opt.id - 1;
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 	struct thinkos_thread_inf * inf = init->inf;
 #endif
 	uint32_t stack_base = (uint32_t)init->stack_ptr;
@@ -141,7 +141,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	int thread_id;
 	uint32_t sp;
 
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	thread_id = __thinkos_thread_alloc(target_id);
 
 	if (thread_id < 0) {
@@ -169,7 +169,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 
 	sp = stack_base + stack_size;
 
-#if THINKOS_ENABLE_SANITY_CHECK
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__thinkos_mem_usr_rw_chk(stack_base, stack_size)) {
 		DCC_LOG2(LOG_WARNING, "stack address invalid! base=%08x size=%d", 
 				 stack_base, stack_size);
@@ -188,14 +188,14 @@ void thinkos_thread_create_svc(int32_t * arg)
 
 	DCC_LOG2(LOG_INFO, "stack base=%08x size=%d", stack_base, stack_size);
 
-#if THINKOS_ENABLE_STACK_INIT
+#if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize stack */
 	__thinkos_memset32((void *)stack_base, 0xdeadbeef, stack_size);
 #elif THINKOS_ENABLE_MEMORY_CLEAR
 	__thinkos_memset32(stack_base, 0, stack_size);
 #endif
 
-#if THINKOS_NRT_THREADS_MAX > 0
+#if (THINKOS_NRT_THREADS_MAX > 0)
 	if (thread_id >= (THINKOS_THREADS_MAX)){
 		arg[0] = __thinkos_nrt_thread_init(thread_id);
 		return;
@@ -204,7 +204,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 
 	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.sched_pri[thread_id] = init->opt.priority;
 	if (thinkos_rt.sched_pri[thread_id] > THINKOS_SCHED_LIMIT_MAX)
 		thinkos_rt.sched_pri[thread_id] = THINKOS_SCHED_LIMIT_MAX;
@@ -216,12 +216,12 @@ void thinkos_thread_create_svc(int32_t * arg)
 	thinkos_rt.sched_val[thread_id] = thinkos_rt.sched_limit / 2;
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
 	__thinkos_thread_inf_set(thread_id, inf);
 #endif
 
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 	if (!init->opt.paused)
 #endif
 	{
@@ -234,7 +234,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	   thread numbers start form one ... */
 	arg[0] = thread_id + 1;
 
-#if THINKOS_ENABLE_MONITOR_THREADS
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* Notify the debug/monitor */
 	__dbgmon_signal_thread_create(thread_id);
 #endif

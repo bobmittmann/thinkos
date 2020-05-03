@@ -47,13 +47,13 @@ extern "C" {
 #endif
 
 static inline void 
-__attribute__((always_inline)) thinkos_sched_off(void)  {
+__attribute__((always_inline)) thinkos_krn_sched_off(void)  {
 	/* rise the BASEPRI to stop the scheduler */
 	cm3_basepri_set(SCHED_PRIORITY); 
 }
 
 static inline void 
-__attribute__((always_inline)) thinkos_sched_on(void)  {
+__attribute__((always_inline)) thinkos_krn_sched_on(void)  {
 	/* return the BASEPRI to the default to reenable the scheduler. */
 	cm3_basepri_set(0x00);
 }

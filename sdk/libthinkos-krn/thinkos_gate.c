@@ -21,13 +21,13 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_GATE_MAX > 0
+#if (THINKOS_GATE_MAX > 0)
 
 /* --------------------------------------------------------------------------
  * 
@@ -45,14 +45,14 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 	uint32_t gates;
 	uint32_t queue;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
@@ -62,7 +62,7 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 #endif
 #endif
 
-#if THINKOS_GATE_MAX < 16
+#if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &thinkos_rt.gate[0];
 #else
 	gates_bmp = &thinkos_rt.gate[idx / 16];
@@ -95,7 +95,7 @@ again:
 	 */
 	__thinkos_suspend(self);
 	/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	thinkos_rt.th_stat[self] = wq << 1;
 #endif
 	/* (2) Save the context pointer. In case an interrupt wakes up
@@ -110,7 +110,7 @@ again:
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 		thinkos_rt.th_stat[self] = 0;
 #endif
 		/* insert into the ready wait queue */
@@ -124,7 +124,7 @@ again:
 	__thinkos_defer_sched(); 
 }
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int wq = arg[0];
@@ -134,14 +134,14 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 	uint32_t gates;
 	uint32_t queue;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
@@ -152,7 +152,7 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 #endif
 
 
-#if THINKOS_GATE_MAX < 16
+#if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &thinkos_rt.gate[0];
 #else
 	gates_bmp = &thinkos_rt.gate[idx / 16];
@@ -192,7 +192,7 @@ again:
 	 */
 	__thinkos_suspend(self);
 	/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	thinkos_rt.th_stat[self] = (wq << 1) + 1;
 #endif
@@ -208,7 +208,7 @@ again:
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 		thinkos_rt.th_stat[self] = 0;
 #endif
 		/* insert into the ready wait queue */
@@ -243,14 +243,14 @@ void thinkos_gate_exit_svc(int32_t * arg)
 	uint32_t queue;
 	int th;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
@@ -260,7 +260,7 @@ void thinkos_gate_exit_svc(int32_t * arg)
 #endif
 #endif
 
-#if THINKOS_ENABLE_SANITY_CHECK
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__bit_mem_rd(thinkos_rt.gate, idx * 2 + 1)) {
 		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", 
 				 thinkos_rt.active, wq);
@@ -270,7 +270,7 @@ void thinkos_gate_exit_svc(int32_t * arg)
 	}
 #endif
 
-#if THINKOS_GATE_MAX < 16
+#if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &thinkos_rt.gate[0];
 #else
 	gates_bmp = &thinkos_rt.gate[idx / 16];
@@ -339,13 +339,13 @@ again:
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 	/* set the thread's return value */
 	thinkos_rt.ctx[th]->r0 = 0;
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
@@ -361,7 +361,7 @@ void __thinkos_gate_open_i(uint32_t wq)
 	uint32_t queue;
 	int th;
 
-#if THINKOS_GATE_MAX < 16
+#if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &thinkos_rt.gate[0];
 #else
 	gates_bmp = &thinkos_rt.gate[idx / 16];
@@ -414,13 +414,13 @@ again:
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
 	/* set the thread's return value */
 	thinkos_rt.ctx[th]->r0 = 0;
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
 #endif
@@ -440,7 +440,7 @@ void thinkos_gate_open_svc(int32_t * arg)
 {
 	unsigned int wq = arg[0];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	unsigned int idx = wq - THINKOS_GATE_BASE;
 
 	if (idx >= THINKOS_GATE_MAX) {
@@ -449,7 +449,7 @@ void thinkos_gate_open_svc(int32_t * arg)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
@@ -473,7 +473,7 @@ void thinkos_gate_close_svc(int32_t * arg)
 	unsigned int wq = arg[0];
 	unsigned int idx = wq - THINKOS_GATE_BASE;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
@@ -481,7 +481,7 @@ void thinkos_gate_close_svc(int32_t * arg)
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);

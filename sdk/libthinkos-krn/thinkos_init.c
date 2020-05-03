@@ -313,7 +313,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	systick->csr = SYSTICK_CSR_ENABLE;
 #endif
 
-	/* Set the initial thread as idle. */
+	/* Set the initial thread */
 	thinkos_rt.active = THINKOS_THREAD_IDLE;
 
 	/* Configure the thread stack ?? 
@@ -335,8 +335,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 #endif
 
 	ctx = (struct thinkos_context *)sp - 1;
-	if ((thread_id = __thinkos_init_main(ctx, opt)) < 0)
-		return thread_id;
+	thread_id = __thinkos_init_main(ctx, opt);
 
 	/* everything good with the main thread, we need to configure 
 	   idle thread and exceptions. ... */

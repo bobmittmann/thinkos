@@ -21,6 +21,7 @@
 
 #include <sys/stm32f.h>
 
+#ifndef THINKAPP
 	.syntax unified
 	.cpu cortex-m3
 
@@ -500,3 +501,5 @@ _fault:
 	.thumb_set  stm32_i2c4_er_isr,_default_isr
 
 	.end
+
+#endif /* THINKAPP */

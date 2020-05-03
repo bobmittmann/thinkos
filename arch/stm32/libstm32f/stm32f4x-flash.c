@@ -28,6 +28,7 @@
 #include <sys/flash-dev.h>
 #include <sys/dcclog.h>
 
+
 #if defined(STM32F4X)
 
 #define FLASH_ERR (FLASH_PGSERR | FLASH_PGPERR | FLASH_PGAERR | FLASH_WRPERR | \
@@ -55,14 +56,14 @@ int stm32f4x_flash_lock(struct stm32_flash * flash, off_t offs, size_t len)
 }
 
 uint32_t __attribute__((section (".data#"), noinline)) 
-	stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
-						 uint32_t volatile * addr, uint32_t data)
+stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
+					uint32_t volatile * addr, uint32_t data)
 {
 	uint32_t sr;
 
 	flash->cr = cr;
 	*addr = data;
-	
+
 	do {
 		sr = flash->sr;
 	} while (sr & FLASH_BSY);
@@ -131,7 +132,7 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 }
 
 int stm32f4x_flash_write(struct stm32_flash * flash, 
-						off_t offs, const void * buf, size_t len)
+						 off_t offs, const void * buf, size_t len)
 {
 	uint32_t data;
 	uint32_t * addr;
@@ -167,37 +168,23 @@ int stm32f4x_flash_write(struct stm32_flash * flash,
 		ptr += 4;
 		addr++;
 	}
-	
+
 	return n * 4;
 }
+
+void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n);
 
 int stm32f4x_flash_read(struct stm32_flash * flash, 
 						off_t offs, const void * buf, size_t len)
 {
-	uint32_t data;
-	uint32_t * addr;
-	uint8_t * ptr;
-	int n;
-	int i;
+	uint8_t * src;
+	uint8_t * dst;
 
-	n = (len + 3) / 4;
+	dst = (uint8_t *)buf;
+	src = (uint8_t *)((uint32_t)STM32_FLASH_MEM + offs);
+	__thinkos_memcpy(dst, src,  len);
 
-	ptr = (uint8_t *)buf;
-	addr = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
-
-	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
-
-	for (i = 0; i < n; i++) {
-		data = *addr;
-		ptr[0] = data;
-		ptr[1] = data << 8;
-		ptr[2] = data << 16;
-		ptr[3] = data << 24;
-		ptr += 4;
-		addr++;
-	}
-
-	return n * 4;
+	return len;
 }
 
 const struct flash_dev_ops stm32f4x_flash_dev_ops = {
@@ -214,10 +201,10 @@ const struct flash_dev stm32f4x_flash_dev = {
 	.op = &stm32f4x_flash_dev_ops
 };
 
-
+#if 0
 /* FIXME: these should be obsoleted and all calls should be replaced by 
    the corresponding device operations methods ... 
-   */
+ */
 
 int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 {
@@ -253,6 +240,7 @@ void stm32_flash_unlock(void)
 
 	stm32f4x_flash_unlock(flash, 0, 0x80000000);
 }
+#endif
 
 #endif
 

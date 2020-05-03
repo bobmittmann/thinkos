@@ -8,6 +8,8 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
+#define __THINKOS_FLASH__
+#include <thinkos/flash.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
@@ -19,6 +21,17 @@
 #include "board.h"
 #include "version.h"
 
+void __puts(const char *s)
+{
+	int rem = __thinkos_strlen(s, 64);
+
+	while (rem) {
+		int n = thinkos_console_write(s, rem);
+		s += n;
+		rem -= n;
+	}
+}
+
 void io_init(void)
 {
 	struct stm32_gpio *gpioa = STM32_GPIOA;
@@ -26,54 +39,97 @@ void io_init(void)
 
 	/* select alternate functions to USB and SPI1 pins ... */
 	/* Port A */
-	gpioa->afrl = GPIO_AFRL_SET(1, GPIO_AF5);	/* SPI SCK and SS */
+	gpioa->afrl = GPIO_AFRL_SET(1, GPIO_AF5); /* SPI SCK */
 	gpioa->afrh = GPIO_AFRH_SET(8, GPIO_AF0) |	/* MCO */
 	    GPIO_AFRH_SET(11, GPIO_AF10) | GPIO_AFRH_SET(12, GPIO_AF10) | /* USB */
 	    GPIO_AFRH_SET(13, GPIO_AF0) | GPIO_AFRH_SET(14, GPIO_AF0) |	/* JTAG */
 	    GPIO_AFRH_SET(15, GPIO_AF0);	/* JTAG */
 
-	gpioa->moder = GPIO_MODE_ALT_FUNC(1) | GPIO_MODE_OUTPUT(4) |	/* SPI */
-	    GPIO_MODE_ALT_FUNC(8) |	/* MCO */
-	    GPIO_MODE_OUTPUT(9) |	/* CRESET */
-	    GPIO_MODE_INPUT(10) |	/* CDONE */
-	    GPIO_MODE_ALT_FUNC(11) | GPIO_MODE_ALT_FUNC(12) |	/* USB */
-	    GPIO_MODE_ALT_FUNC(13) | GPIO_MODE_ALT_FUNC(14) |	/* JTAG */
-	    GPIO_MODE_ALT_FUNC(15);	/* JTAG */
-
-	gpioa->otyper = GPIO_PUSH_PULL(1) | GPIO_OPEN_DRAIN(4) |	/* SPI */
-	    GPIO_PUSH_PULL(8) |	/* MCO */
-	    GPIO_PUSH_PULL(9) |	/* CRESET */
-	    GPIO_PUSH_PULL(11) | GPIO_MODE_OUTPUT(12);	/* USB */
-
-	gpioa->ospeedr = GPIO_OSPEED_HIGH(1) | GPIO_OSPEED_HIGH(4) |	/* SPI */
-	    GPIO_OSPEED_HIGH(8) |	/* MCO */
-	    GPIO_OSPEED_LOW(9) |	/* CRESET */
-	    GPIO_OSPEED_HIGH(11) | GPIO_OSPEED_HIGH(12);	/* USB */
-
-	gpioa->pupdr = GPIO_PULL_UP(4) |	/* SPI SS */
-	    GPIO_PULL_UP(10) |	/* CDONE */
-	    GPIO_PULL_UP(13) | GPIO_PULL_DOWN(14) |	/* JTAG */
-	    GPIO_PULL_UP(15);	/* JTAG */
-#if 0
-	gpioa->dor = GPIO_SET(4) |	/* SPI SS */
-	    GPIO_SET(9);	/* CRESET */
+	gpioa->moder = GPIO_MODE_ALT_FUNC(1) /* SPI SCK */
+	    | GPIO_MODE_ALT_FUNC(8) /* MCO */
+	    | GPIO_MODE_ALT_FUNC(11)| GPIO_MODE_ALT_FUNC(12) /* USB */
+	    | GPIO_MODE_ALT_FUNC(13) | GPIO_MODE_ALT_FUNC(14) /* JTAG */
+	    | GPIO_MODE_ALT_FUNC(15)	/* JTAG */
+#if (HWREV > 0)
+		| GPIO_MODE_OUTPUT(4) /* CSEL */
+		| GPIO_MODE_OUTPUT(9) /* CRESET */
+        | GPIO_MODE_INPUT (10) /* CDONE */
 #endif
-	gpioa->odr = 0;
+		;
+
+	gpioa->otyper = GPIO_PUSH_PULL(1) /* SPI */
+	    | GPIO_PUSH_PULL(8) /* MCO */
+	    | GPIO_PUSH_PULL(11) | GPIO_MODE_OUTPUT(12) /* USB */
+#if (HWREV > 0)
+        | GPIO_PUSH_PULL(4) /* CSEL */
+		| GPIO_PUSH_PULL(9) /* CRESET */
+#endif
+	;
+
+	gpioa->ospeedr = GPIO_OSPEED_HIGH(1) /* SPI */
+	    | GPIO_OSPEED_HIGH(8) /* MCO */
+	    | GPIO_OSPEED_HIGH(11) | GPIO_OSPEED_HIGH(12) /* USB */
+#if (HWREV > 0)
+        | GPIO_OSPEED_LOW(4) /* CSEL */
+		| GPIO_OSPEED_LOW(9) /* CRESET */
+#endif
+	;
+
+	gpioa->pupdr = GPIO_PULL_UP(13) | GPIO_PULL_DOWN(14) /* JTAG */
+	    | GPIO_PULL_UP(15) /* JTAG */
+#if (HWREV > 0)
+		| GPIO_PULL_UP(10) /* CDONE */
+#endif
+	;
+
+	gpioa->odr = 0
+#if (HWREV > 0)
+		| GPIO_SET(4) /* CSEL */
+		| GPIO_SET(9) /* CRESET */
+#endif
+	;
 
 	/* Port B */
-	gpiob->afrl = GPIO_AFRL_SET(5, GPIO_AF5) | /* SPI */
+	gpiob->afrl = GPIO_AFRL_SET(5, GPIO_AF5) | /* SPI MOSI */
 	    GPIO_AFRL_SET(3, GPIO_AF0) | GPIO_AFRL_SET(4, GPIO_AF0); /* JTAG */
 	gpiob->afrh = 0;
 
-	gpiob->moder = GPIO_MODE_ALT_FUNC(5) | /* SPI */
-	    GPIO_MODE_ALT_FUNC(3) | GPIO_MODE_ALT_FUNC(4); /* JTAG */
+	gpiob->moder = GPIO_MODE_ALT_FUNC(5) /* SPI MOSI */
+		| GPIO_MODE_ALT_FUNC(3) | GPIO_MODE_ALT_FUNC(4) /* JTAG */
+#if (HWREV == 0)
+        | GPIO_MODE_INPUT (7) /* CDONE */
+		| GPIO_MODE_OUTPUT(8) /* CSEL */
+		| GPIO_MODE_OUTPUT(9) /* CRESET */
+#endif
+	;
 
-	gpiob->otyper = GPIO_PUSH_PULL(5); /* SPI */
+	gpiob->otyper = GPIO_PUSH_PULL(5) /* SPI MOSI */
+#if (HWREV == 0)
+        | GPIO_PUSH_PULL(8) /* CSEL */
+		| GPIO_PUSH_PULL(9) /* CRESET */
+#endif
+	;
 
-	gpiob->ospeedr = GPIO_OSPEED_HIGH(5) | /* SPI */
-	    GPIO_OSPEED_HIGH(3) | GPIO_OSPEED_HIGH(4); /* JTAG */
+	gpiob->ospeedr = GPIO_OSPEED_HIGH(5) /* SPI MOSI */
+	    | GPIO_OSPEED_HIGH(3) | GPIO_OSPEED_HIGH(4) /* JTAG */
+#if (HWREV == 0)
+        | GPIO_OSPEED_LOW(8) /* CSEL */
+		| GPIO_OSPEED_LOW(9) /* CRESET */
+#endif
+	;
 
-	gpiob->pupdr = GPIO_PULL_UP(4);	/* JTAG */
+	gpiob->pupdr = GPIO_PULL_UP(4) /* JTAG */
+#if (HWREV == 0)
+		| GPIO_PULL_UP(7)	/* CDONE */
+#endif
+	;
+
+	gpiob->odr = 0
+#if (HWREV == 0)
+		| GPIO_SET(8) /* CSEL */
+		| GPIO_SET(9) /* CRESET */
+#endif
+	;
 }
 
 #ifndef SOFTRESET_DISABLE_DMA
@@ -111,8 +167,8 @@ void board_on_softreset(void)
 		while (dma->ch[j].ccr & DMA_EN);
 	}
 #endif
-	/* Reset all peripherals except USB_FS, GPIOA, FLASH and RTC */
-	rcc->ahb1rstr = ~(1 << RCC_FLASH) | (1 << RCC_RTC);
+	/* Reset all peripherals except USB_FS, GPIOA, GPIOB, FLASH and RTC */
+	rcc->ahb1rstr = ~((1 << RCC_FLASH) | (1 << RCC_RTC));
 	rcc->ahb2rstr = ~((1 << RCC_GPIOA) | (1 << RCC_GPIOB));
 	rcc->ahb3rstr = ~(0);
 	rcc->apb1rstr1 = ~((1 << RCC_USBFS) | (1 << RCC_PWR));
@@ -144,9 +200,23 @@ void board_on_softreset(void)
 	cm3_irq_enable(STM32_IRQ_USB_FS);
 }
 
+int fpga_configure(void);
+
 int board_init(void)
 {
+	int ret;
+
 	board_on_softreset();
+
+//#ifndef DEBUG
+	DCC_LOG(LOG_TRACE, "Configuring FPGA...");
+
+	if ((ret = fpga_configure()) < 0) {
+		DCC_LOG1(LOG_ERROR, VT_PSH VT_FRD VT_BRI 
+				 "FPGA configuration error %d!" VT_POP, ret);
+		return ret;
+	}
+	//#endif
 
 	return 0;
 }
@@ -167,6 +237,8 @@ int board_preboot_task(void *ptr)
 	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
 		thinkos_sleep(250);
 
+		__puts(".");
+
 		switch (tick & 0x3) {
 		case 0:
 			break;
@@ -180,6 +252,8 @@ int board_preboot_task(void *ptr)
 	}
 
 	thinkos_sleep(250);
+
+	__puts(".\r\n");
 
 	return 0;
 }
@@ -230,6 +304,8 @@ const struct magic_blk thinkos_10_app_magic = {
 
 const struct mem_desc sram_desc = {
 	.tag = "RAM",
+	.base = 0,
+	.cnt = 3,
 	.blk = {
 		{"STACK", 0x10000000, M_RW, SZ_1K, 16},	/*  CCM - Main Stack */
 		{"BOOT", 0x20000000, M_RO, SZ_1K, 4},	/* Bootloader: 4KiB */
@@ -238,17 +314,21 @@ const struct mem_desc sram_desc = {
 		}
 };
 
-const struct mem_desc flash_desc = {
+const struct mem_desc flash_mem = {
 	.tag = "FLASH",
+	.base = 0x08000000,
+	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x08000000, M_RO, SZ_2K, 32},	/* Bootloader: 64 KiB */
-		{"APP", 0x08010000, M_RW, SZ_2K, 96},	/* Application: 192 KiB */
+		{"BOOT", 0x00000000, M_RO, SZ_2K, 32},	/* Bootloader: 64 KiB */
+		{"APP", 0x00010000, M_RW, SZ_2K, 96},	/* Application: 192 KiB */
 		{"", 0x00000000, 0, 0, 0}
 		}
 };
 
 const struct mem_desc peripheral_desc = {
 	.tag = "PERIPH",
+	.base = 0,
+	.cnt = 1,
 	.blk = {
 		{"RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
 		{"", 0x00000000, 0, 0, 0}
@@ -272,7 +352,7 @@ const struct thinkos_board this_board = {
 	       },
 	.memory = {
 		   .cnt = 3,
-		   .flash = &flash_desc,
+		   .flash = &flash_mem,
 		   .ram = &sram_desc,
 		   .periph = &peripheral_desc},
 	.application = {
@@ -289,9 +369,15 @@ const struct thinkos_board this_board = {
 	.default_task = board_default_task
 };
 
+
 extern const struct flash_dev stm32l4x_flash_dev;
 
-const struct flash_dev * board_flash_dev = &stm32l4x_flash_dev;
+const struct thinkos_flash_desc board_flash_desc = {
+	.mem = &flash_mem,
+	.dev = &stm32l4x_flash_dev
+};
+
+struct thinkos_flash_drv board_flash_drv;
 
 #pragma GCC diagnostic pop
 

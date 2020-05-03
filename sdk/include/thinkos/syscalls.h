@@ -161,14 +161,15 @@
 #define THINKOS_TRACE_GETNEXT          5
 
 /* THINKOS_FLASH_MEM options */
-#define THINKOS_FLASH_MEM_CLOSE        0
+#define THINKOS_FLASH_MEM_NOP          0
 #define THINKOS_FLASH_MEM_OPEN         1
-#define THINKOS_FLASH_MEM_READ         2
-#define THINKOS_FLASH_MEM_WRITE        3
-#define THINKOS_FLASH_MEM_SEEK         4
-#define THINKOS_FLASH_MEM_ERASE        5
-#define THINKOS_FLASH_MEM_LOCK         6
-#define THINKOS_FLASH_MEM_UNLOCK       7
+#define THINKOS_FLASH_MEM_CLOSE        2
+#define THINKOS_FLASH_MEM_READ         3
+#define THINKOS_FLASH_MEM_WRITE        4
+#define THINKOS_FLASH_MEM_SEEK         5
+#define THINKOS_FLASH_MEM_ERASE        6
+#define THINKOS_FLASH_MEM_LOCK         7
+#define THINKOS_FLASH_MEM_UNLOCK       8
 
 #ifndef __ASSEMBLER__
 
@@ -791,50 +792,50 @@ thinkos_trace_getnext(int id, struct trace_entry * entry) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_close(int mem) {
-	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_CLOSE, mem, 
-							0, 0);
+	return THINKOS_SYSCALL2(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_CLOSE, 
+							mem);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_open(const char * tag) {
 	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_OPEN, 
-							tag, 0, 0);
+							0, 0, tag);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_read(int mem, void * buf, size_t len) {
 	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_READ, 
-							mem, buf, len);
+							mem, len, buf);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_write(int mem, const void * buf, size_t len) {
 	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_WRITE, 
-							mem, buf, len);
+							mem, len, buf);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_seek(int mem, off_t offset) {
-	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_SEEK, 
-							mem, offset, 0);
+	return THINKOS_SYSCALL3(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_SEEK, 
+							mem, offset);
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_flash_mem_erase(int mem, off_t offset, size_t len) {
-	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_ERASE, mem, 
-							offset, len);
+thinkos_flash_mem_erase(int mem, size_t len) {
+	return THINKOS_SYSCALL3(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_ERASE, 
+							mem, len);
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_flash_mem_lock(int mem, off_t offset, size_t len) {
-	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_LOCK, mem, 
-							offset, len);
+thinkos_flash_mem_lock(int mem, size_t len) {
+	return THINKOS_SYSCALL3(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_LOCK, 
+							mem, len);
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_flash_mem_unlock(int mem, off_t offset, size_t len) {
-	return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_UNLOCK, mem, 
-							offset, len);
+thinkos_flash_mem_unlock(int mem, size_t len) {
+	return THINKOS_SYSCALL3(THINKOS_FLASH_MEM, THINKOS_FLASH_MEM_UNLOCK, 
+							mem, len);
 }
 
 /* ---------------------------------------------------------------------------

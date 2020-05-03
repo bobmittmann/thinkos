@@ -52,7 +52,6 @@ void __thinkos_kill_all(void)
 	/* clear all wait queues */
 	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		thinkos_rt.wq_lst[i] = 0x00000000;
-
 #if THINKOS_ENABLE_THREAD_VOID 
 	/* discard current thread context */
 	if (thinkos_rt.active != THINKOS_THREAD_IDLE)
@@ -63,7 +62,6 @@ void __thinkos_kill_all(void)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
-
 
 void __thinkos_core_reset(void)
 {
@@ -83,7 +81,6 @@ void __thinkos_core_reset(void)
 		thinkos_rt.th_inf[i] = NULL; 
 #endif
 	}
-
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */

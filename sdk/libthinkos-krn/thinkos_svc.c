@@ -179,7 +179,7 @@ static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 void thinkos_critical_enter_svc(int32_t * arg, int self)
 {
 	if (++thinkos_rt.critical_cnt) {
-		thinkos_sched_off();
+		thinkos_krn_sched_off();
 	}
 }
 
@@ -189,7 +189,7 @@ void thinkos_critical_exit_svc(int32_t * arg, int self)
 		__THINKOS_ERROR(THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
-		thinkos_sched_on();
+		thinkos_krn_sched_on();
 	}
 }
 #endif

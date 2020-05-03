@@ -23,14 +23,15 @@
 #include <sys/stm32f.h>
 #include <sys/delay.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <thinkos.h>
 
 #include "board.h"
 #include "iodrv.h"
 
-#define POLL_PERIOD_MS 16
+#define POLL_PERIOD_MS 10
 
-#define IO_PUSH_BTN STM32_GPIOB, 3
+#define IO_PUSH_BTN STM32_GPIOB, 11
 
 /* GPIO pin description */ 
 struct stm32f_io {
@@ -193,34 +194,41 @@ static void btn_init(void)
  * ----------------------------------------------------------------------
  */
 
-void stm32_tim2_isr(void)
-{
-	struct stm32f_tim * tim = STM32F_TIM2;
-	int st;
-
-	/* Clear interrupt flags */
-	tim->sr = 0;
-
-	if ((btn_drv.tmr) && (--btn_drv.tmr == 0)) {
-		/* process button timer */
-		btn_drv.event = BTN_TIMEOUT;
-		thinkos_flag_give(btn_drv.flag);
-	} else {
-		/* process push button */
-		st = stm32_gpio_stat(IO_PUSH_BTN) ? 0 : 1;
-		if (btn_drv.st != st) {
-			btn_drv.st = st;
-			btn_drv.event = st ? BTN_PRESSED : BTN_RELEASED;
-			thinkos_flag_give(btn_drv.flag);
-		}
-	}
-}
-
 void __attribute__((noreturn)) io_task(void * arg)
 {
+	struct stm32f_tim * tim = STM32F_TIM2;
+	uint32_t seq = 0;
+
 	for (;;) {
-		thinkos_irq_wait(STM32_IRQ_TIM2);
-		stm32_tim2_isr();
+		int st;
+
+		while ((tim->sr & TIM_UIF) == 0) {
+			thinkos_irq_wait(STM32_IRQ_TIM2);
+		}
+		/* Clear interrupt flags */
+		tim->sr = 0;
+
+		if ((btn_drv.tmr) && (--btn_drv.tmr == 0)) {
+			/* process button timer */
+			btn_drv.event = BTN_TIMEOUT;
+			thinkos_flag_give(btn_drv.flag);
+		} else {
+			/* process push button */
+			st = stm32_gpio_stat(IO_PUSH_BTN) ? 0 : 1;
+			if (btn_drv.st != st) {
+				btn_drv.st = st;
+				btn_drv.event = st ? BTN_PRESSED : BTN_RELEASED;
+//				printf("BTN: %d", st ? 1: 0);
+				thinkos_flag_give(btn_drv.flag);
+			}
+		}
+
+		if (seq & 64) {
+			stm32_gpio_clr(STM32_GPIOB, 10);
+		} else {
+			stm32_gpio_set(STM32_GPIOB, 10);
+		}
+		seq++;
 	}
 }
 
@@ -241,16 +249,19 @@ static void io_timer_init(uint32_t freq)
 	/* Timer clock enable */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM2);
 	
+	tim->cr1 = 0;		/* Disable the counter */
 	/* Timer configuration */
 	tim->psc = pre - 1;
-	tim->arr = n - 1;
+	tim->arr = n / 2;
 	tim->cnt = 0;
 	tim->egr = 0;
 	tim->dier = TIM_UIE; /* Update interrupt enable */
-	tim->ccmr1 = TIM_OC1M_PWM_MODE1;
-	tim->ccr1 = tim->arr / 2;
-
+	tim->ccmr1 = 0;
+	tim->ccr1 = 0;
+	tim->cr2 = 0;
+	tim->sr = 0;
 	tim->cr1 = TIM_URS | TIM_CEN; /* Enable counter */
+
 }
 
 uint32_t io_stack[64] __attribute__ ((aligned(8), section(".stack")));
@@ -268,6 +279,8 @@ void iodrv_init(void)
 {
 	/* Enable IO clocks */
 	stm32_gpio_mode(IO_PUSH_BTN, INPUT, PULL_UP);
+	stm32_gpio_mode(STM32_GPIOB, 10, OUTPUT, PUSH_PULL);
+	stm32_gpio_clr(STM32_GPIOB, 10);
 
 	btn_init();
 

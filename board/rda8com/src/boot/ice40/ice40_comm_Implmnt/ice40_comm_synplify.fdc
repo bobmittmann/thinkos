@@ -1,0 +1,5 @@
+
+#1001 : create_clock -period 12.50 -name MCLK [get_ports MCLK]
+# line 12 in c:/devel/yard-ice/thinkos/board/rda8com/src/boot/ice40/ice40_comm.sdc
+
+create_clock -period {12.500} -name {MCLK} [get_ports {MCLK}]

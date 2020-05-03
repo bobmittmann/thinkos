@@ -37,6 +37,7 @@
 #include "dac.h"
 #include "iodrv.h"
 #include "mp3lib.h"
+#include "spi.h"
 
 void io_init(void)
 {
@@ -151,6 +152,8 @@ int main(int argc, char ** argv)
 	io_init();
 
 	iodrv_init();
+
+	spidev_init();
 
 	dac_init();
 

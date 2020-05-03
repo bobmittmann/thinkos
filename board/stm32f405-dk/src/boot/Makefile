@@ -32,7 +32,7 @@ VERSION_MINOR = "0"
 PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 otg_xflash_pic.c board.c
+		 board.c otg_xflash_pic.c 
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
@@ -48,5 +48,7 @@ CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-par
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f415xg
+KRN_DATA_SIZE = 4096
+KRN_CODE_SIZE = 65536
 include $(ARCH_DIR)/mk/stm32.mk
 

@@ -43,23 +43,24 @@
 
 bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr)
 {
+	uint32_t base = mem->base;
 	uint32_t size;
 	int i;
 
 	DCC_LOG2(LOG_MSG, "addr=0x%08x mem='%s'", addr, mem->tag);
 
-	if ((mem->blk[0].cnt == 0) || addr < mem->blk[0].ref)
+	if ((mem->blk[0].cnt == 0) || addr < base + mem->blk[0].off)
 		return false;
 
 	for (i = 0; mem->blk[i + 1].cnt != 0; ++i);
 	
 	size = mem->blk[i].cnt << mem->blk[i].siz;
 
-	if (addr >= (mem->blk[i].ref + size))
+	if (addr >= (base + mem->blk[i].off + size))
 		return false;
 
 	DCC_LOG4(LOG_MSG, "addr=0x%08x match: '%s' 0x%08x - 0x%08x", 
-			 addr, mem->tag, mem->blk[0].ref, mem->blk[i].ref + size - 1); 
+			 addr, mem->tag, base + mem->blk[0].off, base + mem->blk[i].off + size - 1); 
 
 	return true;
 }
@@ -94,7 +95,7 @@ bool dbgmon_mem_wr32(const struct mem_desc * mem,
 
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
+		base = mem->base + mem->blk[i].off;
 		if ((addr >= base) && (addr < (base + size - 4))) {
 			uint32_t * dst = (uint32_t *)addr;
 			if (mem->blk[i].opt == M_RO)
@@ -118,7 +119,7 @@ bool dbgmon_mem_rd32(const struct mem_desc * mem,
 
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
+		base = mem->base + mem->blk[i].off;
 		if ((addr >= base) && (addr <= (base + size - 4))) {
 			uint32_t * src = (uint32_t *)addr;
 			*val = *src;
@@ -140,7 +141,7 @@ bool dbgmon_mem_wr64(const struct mem_desc * mem,
 
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
+		base = mem->base + mem->blk[i].off;
 		if ((addr >= base) && (addr < (base + size - 8))) {
 			uint64_t * dst = (uint64_t *)addr;
 			if (mem->blk[i].opt == M_RO)
@@ -164,7 +165,7 @@ bool dbgmon_mem_rd64(const struct mem_desc * mem,
 
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
+		base = mem->base + mem->blk[i].off;
 		if ((addr >= base) && (addr <= (base + size - 8))) {
 			uint64_t * src = (uint64_t *)addr;
 			*val = *src;
@@ -202,7 +203,7 @@ int dbgmon_mem_read(const struct mem_desc * mem,
 			break;
 		}
 
-		if ((base = mem->blk[j].ref) > addr) {
+		if ((base = mem->base + mem->blk[j].off) > addr) {
 			/* address out of bounds */
 			break;
 		}

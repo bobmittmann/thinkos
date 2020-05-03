@@ -198,34 +198,21 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	return n * 8;
 }
 
+void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n);
+
 int stm32l4x_flash_read(struct stm32_flash * flash, 
 						off_t offs, const void * buf, size_t len)
 {
-	uint32_t data;
-	uint32_t * addr;
-	uint8_t * ptr;
-	int n;
-	int i;
+	uint8_t * src;
+	uint8_t * dst;
 
-	n = (len + 3) / 4;
+	dst = (uint8_t *)buf;
+	src = (uint8_t *)((uint32_t)STM32_FLASH_MEM + offs);
+	__thinkos_memcpy(dst, src,  len);
 
-	ptr = (uint8_t *)buf;
-	addr = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
-
-	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
-
-	for (i = 0; i < n; i++) {
-		data = *addr;
-		ptr[0] = data;
-		ptr[1] = data << 8;
-		ptr[2] = data << 16;
-		ptr[3] = data << 24;
-		ptr += 4;
-		addr++;
-	}
-
-	return n * 4;
+	return len;
 }
+
 
 const struct flash_dev_ops stm32l4x_flash_dev_ops = {
 	.write = (int (*)(void *, off_t, const void *, size_t))stm32l4x_flash_write,
@@ -241,7 +228,7 @@ const struct flash_dev stm32l4x_flash_dev = {
 	.op = &stm32l4x_flash_dev_ops
 };
 
-
+#if 0
 /* FIXME: these should be obsoleted and all calls should be replaced by 
    the corresponding device operations methods ... 
    */
@@ -280,6 +267,8 @@ void stm32_flash_unlock(void)
 
 	stm32l4x_flash_unlock(flash, 0, 0x80000000);
 }
+
+#endif
 
 #endif
 

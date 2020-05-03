@@ -130,6 +130,14 @@ ifdef LDDATA
   SYMDEFS += __lddata=$(LDDATA)
 endif
 
+ifdef KRN_DATA_SIZE
+  SYMDEFS += __krn_data_size=$(KRN_DATA_SIZE)
+endif
+
+ifdef KRN_CODE_SIZE
+  SYMDEFS += __krn_code_size=$(KRN_CODE_SIZE)
+endif
+
 ifndef APPADDR
   APPADDR := 0x08010000
 endif
@@ -146,15 +154,19 @@ endif
 ifdef PROG
   ifdef LDSCRIPT
     LDFLAGS += -Wl,--gc-sections -nostdlib -T $(LDSCRIPT)
+    include $(__THINKOS_DIR)/mk/prog.mk
   else
     ifdef THINKAPP
       LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-app.ld
+      include $(__THINKOS_DIR)/mk/prog.mk
     else
-      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
+      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-boot.ld
+#      LDFLAGS += -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
+#      include $(__THINKOS_DIR)/mk/kernel.mk
+      include $(__THINKOS_DIR)/mk/prog.mk
     endif
+    include $(__THINKOS_DIR)/mk/jtag.mk
   endif
-  include $(__THINKOS_DIR)/mk/prog.mk
-  include $(__THINKOS_DIR)/mk/jtag.mk
 else
   include $(__THINKOS_DIR)/mk/prog.mk
 endif

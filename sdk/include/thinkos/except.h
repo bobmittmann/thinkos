@@ -60,14 +60,15 @@ struct armv7m_extended_frame {
 };
 
 struct thinkos_except {
-	uint8_t  errno;  /* exception error code */
-	uint8_t  unroll; /* unroll count */
-	uint8_t  ret;   /* */
-	uint8_t  primask;    /* PRIMASK */
-	uint8_t  faultmask;    /* FAULTMASK */
-	uint8_t  basepri;    /* BASEPRI */
-	uint8_t  ipsr;   /* IPSR */
-	uint8_t  ctrl;   /* CONTROL */
+	uint8_t  errno;     /* exception error code */
+	uint8_t  count;     /* number of exceptions since except_reset() */
+	uint8_t  ret;       /* exception return code low byte  */
+	uint8_t  primask;   /* PRIMASK */
+
+	uint8_t  faultmask; /* FAULTMASK */
+	uint8_t  basepri;   /* BASEPRI */
+	uint8_t  ipsr;      /* IPSR */
+	uint8_t  ctrl;      /* CONTROL */
 
 #if (THINKOS_ENABLE_FPU) 
 	struct thinkos_fp_context ctx;

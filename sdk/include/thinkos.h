@@ -1014,7 +1014,7 @@ int thinkos_flash_mem_seek(int mem, off_t offset);
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_erase(int mem, off_t offset, size_t len);
+int thinkos_flash_mem_erase(int mem, size_t len);
 
 /** @brief lock flash blocks of a memory partition
  *
@@ -1024,7 +1024,7 @@ int thinkos_flash_mem_erase(int mem, off_t offset, size_t len);
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_lock(int mem, off_t offset, size_t len);
+int thinkos_flash_mem_lock(int mem, size_t len);
 
 /** @brief unlock flash blocks of a memory partition
  *
@@ -1034,7 +1034,7 @@ int thinkos_flash_mem_lock(int mem, off_t offset, size_t len);
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_unlock(int mem, off_t offset, size_t len);
+int thinkos_flash_mem_unlock(int mem, size_t len);
 
 #ifdef __cplusplus
 }

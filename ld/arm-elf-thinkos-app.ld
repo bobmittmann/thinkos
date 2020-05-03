@@ -130,7 +130,7 @@ SECTIONS
 		PROVIDE (__bkpctl_start = . );
 		*(.bkpctl .bkpctl*)
 		PROVIDE (__bkpctl_end = . );
-	} >"rtcbkr"
+	} >"BKPCTL"
 
 	/* Backed up data section */
 	.bkpdat :
@@ -138,7 +138,7 @@ SECTIONS
 		PROVIDE (__bkpdat_start = . );
 		*(.bkpdat .bkpdat*)
 		PROVIDE (__bkpdat_end = . );
-	} >"bkpsram"
+	} >"BKPDAT"
 
 }
 

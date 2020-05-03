@@ -24,6 +24,9 @@ THINKOS_DIR = $(PROJECT_ROOT)/../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
+BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+LZ77 = /c/opt/bin/lz77
+LZ_WINDOW_SIZE = 32768
 
 VERSION_DATE = "2020-04-08"
 VERSION_MAJOR = "0"
@@ -32,7 +35,7 @@ VERSION_MINOR = "2"
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 board.c
+		 board.c fpga.c ice40hx1k.c 
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
@@ -42,11 +45,31 @@ LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc gdbrsp ice-comm
 
 INCPATH = $(SDK_DIR)/include ../include
 
-CDEFS = CONFIG_H 
+CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=0
 
 CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32l433xc
+KRN_CODE_SIZE = 32768
+KRN_DATA_SIZE = 4096
 include $(ARCH_DIR)/mk/stm32.mk
+
+ICE40_DIR = ice40/ice40_comm_Implmnt
+ICE40_BIN = $(ICE40_DIR)/sbt/outputs/bitmap/ice40_comm_bitmap.bin
+# Uncomment ICE40_C to make changes in FPGA
+ICE40_LZ = $(OUTDIR)/ice40hx1k.lz
+ICE40_C = $(SRCDIR)/ice40hx1k.c
+ICE40_H = $(SRCDIR)/ice40hx1k.h
+
+$(ICE40_LZ): $(ICE40_BIN)
+	$(LZ77) -w $(LZ_WINDOW_SIZE) -c -o $@ $<
+
+$(ICE40_C): $(ICE40_LZ)
+	$(BIN2HEX) -H ice40hx1k.h -n ice40hx1k_bin -o $@ $<
+
+#$(ICE40_C): $(ICE40_BIN)
+#	$(BIN2HEX) -H ice40hx1k.h -n ice40hx1k_bin -o $@ $<
+
+$(ICE40_H): $(ICE40_C)
 

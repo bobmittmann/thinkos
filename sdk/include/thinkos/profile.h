@@ -580,9 +580,8 @@
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* flash mem depend on idle hooks */
-#if (THINKOS_ENABLE_FLASH_MEM) && !(THINKOS_ENABLE_IDLE_HOOKS)
-#error "THINKOS_ENABLE_FLASH_MEMdepends on THINKOS_ENABLE_IDLE_HOOKS"
+#if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
 
 /* timed calls, cancel, pause and debug step depend on thread status */

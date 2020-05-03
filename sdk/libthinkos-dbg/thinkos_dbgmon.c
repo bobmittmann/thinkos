@@ -25,7 +25,7 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
@@ -104,7 +104,6 @@ static void __dbgmon_irq_disable_all(void)
 
 
 #if (THINKOS_DBGMON_ENABLE_RST_VEC)
-
 /**
  * __reset_ram_vectors:
  *
@@ -133,7 +132,7 @@ void __reset_ram_vectors(void)
 	DCC_LOG3(LOG_MSG, "dst=%08x src=%08x size=%d", dst, src, size); 
 	__thinkos_memcpy32(dst, src, size); 
 }
-#endif
+#endif /* THINKOS_DBGMON_ENABLE_RST_VEC */
 
 /* -------------------------------------------------------------------------
  * Debug Monitor API
@@ -861,13 +860,11 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
 	uint32_t xpsr = frm->xpsr;
 	uint32_t dfsr;
 
 	/* read SCB Debug Fault Status Register */
 	if ((dfsr = CM3_SCB->dfsr) != 0) {
-		uint32_t demcr;
 
 		/* clear the fault */
 		CM3_SCB->dfsr = dfsr;
@@ -880,12 +877,6 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				 dfsr & SCB_DFSR_BKPT ? '1' : '0',
 				 dfsr & SCB_DFSR_HALTED ? '1' : '0');
 	
-		demcr = CM3_DCB->demcr;
-
-		DCC_LOG3(LOG_INFO, "DEMCR=(REQ=%c)(PEND=%c)(STEP=%c)", 
-				 demcr & DCB_DEMCR_MON_REQ ? '1' : '0',
-				 demcr & DCB_DEMCR_MON_PEND ? '1' : '0',
-				 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
 #if (THINKOS_ENABLE_FPU_LS)
 		DCC_LOG3(LOG_TRACE, "FPCCR=%08x FPCAR=%08x CTRL=%01x",
 				 CM3_SCB->fpccr, CM3_SCB->fpcar, 
@@ -904,7 +895,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 		}
 #endif
 
-		if (dfsr & SCB_DFSR_BKPT) {
+		if (dfsr & SCB_DFSR_BKPT) do {
 			unsigned int thread_id = thinkos_rt.active;
 			unsigned int insn;
 			unsigned int code; 
@@ -912,17 +903,20 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 			int ipsr;
 
 			ipsr = xpsr & 0x1ff;
+			(void) ipsr;
 			pc = (uint16_t *)frm->pc;
 			insn = pc[0];
 			code = insn & 0x00ff;
+			(void)code;
 			insn &= 0xff00;
 
 			/* this is a breakpoint instruction */
 			if (insn == 0xbe00) {
+				/* Skip breakpoint intruction, by adjusting
+				   the call stack...*/
+				frm->pc += 2;
 				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
-					/* Skip breakpoint intruction, by adjusting
-					   the call stack...*/
-					frm->pc += 2;
+#if (THINKOS_ENABLE_DEBUG_BKPT)
 					/* Breakpoint on a thread */
 					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
 							 " SOFT BKPT: %2d " _NORMAL_ _FG_GREEN_
@@ -938,128 +932,140 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					dbgmon_signal(DBGMON_BREAKPOINT); 
 					/* run scheduler */
 					__thinkos_defer_sched();
-				} else {
-					/* Breakpoint on a system call */
-					/* Skip breakpoint intruction, by adjusting
-					   the call stack...*/
-					frm->pc += 2;
-					if (code > THINKOS_BKPT_EXCEPT_OFF) {
-						unsigned int err = code - THINKOS_BKPT_EXCEPT_OFF;
-						(void)err;
-
-						/* XXX: a breakpoint is used to indicate a fault or 
-						   wrong usage of a system call in ThinkOS. */
-						DCC_LOG5(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-								 " ERROR %d: %2d " _NORMAL_ _FG_YELLOW_
-								 " PC=%08x SP=%08x IPSR=%d"
-								 _ATTR_POP_, err,
-								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
-
-						/* suspend all threads */
-						__thinkos_pause_all();
-						/* record the break thread id */
-						thinkos_dbgmon_rt.break_id = thread_id;
-						thinkos_dbgmon_rt.errno = err;
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-						/* flag the thread as faulty */
-						__thinkos_thread_fault_set(thread_id);
 #endif
-						/* delivers a thread fault on next round */
-						dbgmon_signal(DBGMON_THREAD_FAULT); 
-						/* run scheduler */
-						__thinkos_defer_sched();
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-					} else if (code == DBGMON_BKPT_ON_THREAD_CREATE) {
-						DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-								 " THREAD CREATE" _NORMAL_ _FG_YELLOW_
-								 " PC=%08x LR=%08x R0=%d" _ATTR_POP_, 
-								 frm->pc, frm->lr, frm->r0);
-						thinkos_dbgmon_rt.thread_id = frm->r0;
-						thinkos_dbgmon_rt.code = 0;
-						dbgmon_signal(DBGMON_THREAD_CREATE);
-					} else if (code == DBGMON_BKPT_ON_THREAD_TERMINATE) {
-						DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-								 " THREAD TERMINATE" _NORMAL_ _FG_YELLOW_
-								 " PC=%08x LR=%08x R0=%d R1=%d" _ATTR_POP_, 
-								 frm->pc, frm->lr, frm->r0, frm->r1);
-						thinkos_dbgmon_rt.thread_id = frm->r0;
-						thinkos_dbgmon_rt.code = frm->r1;
-						dbgmon_signal(DBGMON_THREAD_TERMINATE);
-#endif
+					break;
+				} 
 
-					} else {
-						DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-								 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
-								 " PC=%08x SP=%08x IPSR=%d"
-								 " Breakpoint on service call"
-								 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
-						__thinkos_pause_all();
-						/* record the break thread id */
-						thinkos_dbgmon_rt.break_id = thread_id;
-						/* save the current state of IPSR */
-						thinkos_rt.xcpt_ipsr = ipsr;
-						/* delivers a kernel exception on next round */
-						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
-					}
-				}
-			} else {
-				if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
-					if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
-						DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
-								 " BREAKPOINT: %2d " _NORMAL_ _FG_GREEN_
-								 " PC=%08x SP=%08x IPSR=%d"
-								 _ATTR_POP_,
-								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
-						/* suspend the current thread */
-						__thinkos_thread_pause(thread_id);
-						/* disable this breakpoint */
-						dbgmon_breakpoint_disable(frm->pc);
-						/* record the break thread id */
-						thinkos_dbgmon_rt.break_id = thread_id;
-						/* run scheduler */
-						__thinkos_defer_sched();
-						/* delivers a breakpoint swignal on next round */
-						thinkos_dbgmon_rt.events |= (1 << DBGMON_BREAKPOINT);
-					} else {
-						DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-								 " BREAKPOINT: %2d " _NORMAL_ 
-								 " PC=%08x SP=%08x IPSR=%d Invalid thread!!"
-								 _ATTR_POP_,
-								 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
-						/* suspend all threads */
-						__thinkos_pause_all();
-						/* diasble all breakpoints */
-						dbgmon_breakpoint_clear_all();
-						/* XXX: use IDLE as break thread id */
-						thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
-						/* delivers a thread fault on next round */
-						thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
-					} 
-				} else {
-					struct thinkos_except * xcpt = __thinkos_except_buf();
+				/* Breakpoint on a system call */
+#if (THINKOS_ENABLE_ERROR_TRAP)
+				if (code > THINKOS_BKPT_EXCEPT_OFF) {
+					unsigned int err = code - THINKOS_BKPT_EXCEPT_OFF;
+					(void)err;
 
-					/* FIXME: add support for breakpoints on IRQ */
-					DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-							 " IRQ BKPT " _NORMAL_ _FG_RED_
+					/* XXX: a breakpoint is used to indicate a fault or 
+					   wrong usage of a system call in ThinkOS. */
+					DCC_LOG5(LOG_TRACE,_ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+							 " ERROR %d: %2d " _NORMAL_ _FG_YELLOW_
 							 " PC=%08x SP=%08x IPSR=%d"
-							 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
+							 _ATTR_POP_, err,
+							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+
 					/* suspend all threads */
 					__thinkos_pause_all();
-					/* diasble all breakpoints */
-					dbgmon_breakpoint_clear_all();
 					/* record the break thread id */
 					thinkos_dbgmon_rt.break_id = thread_id;
-					/* save the current state of IPSR */
-					thinkos_rt.xcpt_ipsr = ipsr;
-					/* Copy cuurent stack frame into exception
-					   buffer */
-					__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
-									   sizeof(struct armv7m_basic_frame));
-					/* delivers a kernel exception on next round */
-					thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
-				}
+					thinkos_dbgmon_rt.errno = err;
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+					/* flag the thread as faulty */
+					__thinkos_thread_fault_set(thread_id);
+#endif
+					/* delivers a thread fault on next round */
+					dbgmon_signal(DBGMON_THREAD_FAULT); 
+					/* run scheduler */
+					__thinkos_defer_sched();
+					break;
+				} 
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
+
+#if (THINKOS_ENABLE_MONITOR_THREADS)
+				if (code == DBGMON_BKPT_ON_THREAD_CREATE) {
+					DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+							 " THREAD CREATE" _NORMAL_ _FG_YELLOW_
+							 " PC=%08x LR=%08x R0=%d" _ATTR_POP_, 
+							 frm->pc, frm->lr, frm->r0);
+					thinkos_dbgmon_rt.thread_id = frm->r0;
+					thinkos_dbgmon_rt.code = 0;
+					dbgmon_signal(DBGMON_THREAD_CREATE);
+					break;
+				} 
+				if (code == DBGMON_BKPT_ON_THREAD_TERMINATE) {
+					DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+							 " THREAD TERMINATE" _NORMAL_ _FG_YELLOW_
+							 " PC=%08x LR=%08x R0=%d R1=%d" _ATTR_POP_, 
+							 frm->pc, frm->lr, frm->r0, frm->r1);
+					thinkos_dbgmon_rt.thread_id = frm->r0;
+					thinkos_dbgmon_rt.code = frm->r1;
+					dbgmon_signal(DBGMON_THREAD_TERMINATE);
+					break;
+				} 
+#endif /* THINKOS_ENABLE_MONITOR_THREADS */
+				DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+						 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
+						 " PC=%08x SP=%08x IPSR=%d"
+						 " Bkpt %d on service call"
+						 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr, code);
+				__thinkos_pause_all();
+				/* record the break thread id */
+				thinkos_dbgmon_rt.break_id = thread_id;
+				/* save the current state of IPSR */
+//				thinkos_rt.xcpt_ipsr = ipsr;
+				/* delivers a kernel exception on next round */
+				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+				break;
 			}
-		}
+
+			if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+				if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
+					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
+							 " BREAKPOINT: %2d " _NORMAL_ _FG_GREEN_
+							 " PC=%08x SP=%08x IPSR=%d"
+							 _ATTR_POP_,
+							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+					/* suspend the current thread */
+					__thinkos_thread_pause(thread_id);
+					/* disable this breakpoint */
+					dbgmon_breakpoint_disable(frm->pc);
+					/* record the break thread id */
+					thinkos_dbgmon_rt.break_id = thread_id;
+					/* run scheduler */
+					__thinkos_defer_sched();
+					/* delivers a breakpoint swignal on next round */
+					thinkos_dbgmon_rt.events |= (1 << DBGMON_BREAKPOINT);
+					break;
+				} 
+
+				DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+						 " BREAKPOINT: %2d " _NORMAL_ 
+						 " PC=%08x SP=%08x IPSR=%d Invalid thread!!"
+						 _ATTR_POP_,
+						 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
+				/* suspend all threads */
+				__thinkos_pause_all();
+				/* diasble all breakpoints */
+				dbgmon_breakpoint_clear_all();
+				/* XXX: use IDLE as break thread id */
+				thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
+				/* delivers a thread fault on next round */
+				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+#endif /* THINKOS_ENABLE_DEBUG_BKPT */
+			} else {
+				struct thinkos_except * xcpt = __thinkos_except_buf();
+
+				/* FIXME: add support for breakpoints on IRQ */
+				DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
+						 " IRQ BKPT " _NORMAL_ _FG_RED_
+						 " PC=%08x SP=%08x IPSR=%d"
+						 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
+				/* suspend all threads */
+				__thinkos_pause_all();
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+				/* diasble all breakpoints */
+				dbgmon_breakpoint_clear_all();
+#endif
+				/* record the break thread id */
+				thinkos_dbgmon_rt.break_id = thread_id;
+				/* save the current state of IPSR */
+//				thinkos_rt.xcpt_ipsr = ipsr;
+				/* Copy cuurent stack frame into exception
+				   buffer */
+				__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
+								   sizeof(struct armv7m_basic_frame));
+				/* delivers a kernel exception on next round */
+				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+			}
+		} while (0);
+		 /* (dfsr & SCB_DFSR_BKPT) */
 
 #if (THINKOS_ENABLE_DEBUG_WPT)
 		if (dfsr & SCB_DFSR_DWTTRAP) {
@@ -1105,6 +1111,15 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 		if (dfsr & SCB_DFSR_HALTED) {
 			unsigned int thread_id = thinkos_rt.step_id;
+
+			uint32_t demcr;
+
+			demcr = CM3_DCB->demcr;
+
+			DCC_LOG3(LOG_INFO, "DEMCR=(REQ=%c)(PEND=%c)(STEP=%c)", 
+					 demcr & DCB_DEMCR_MON_REQ ? '1' : '0',
+					 demcr & DCB_DEMCR_MON_PEND ? '1' : '0',
+					 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
 
 			if (demcr & DCB_DEMCR_MON_STEP) {
 				int ipsr = (xpsr & 0x1ff);
@@ -1154,7 +1169,6 @@ step_done:
 		}
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 	}
-#endif /* THINKOS_ENABLE_DEBUG_BKPT */
 
 	if (sigset & (1 << DBGMON_RESET)) {
 		uint32_t * sp;
@@ -1224,9 +1238,9 @@ void dbgmon_soft_reset(void)
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
 	__dbgmon_irq_disable_all();
 
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"2. Kill all threads"  _ATTR_POP_); 
-	__thinkos_kill_all(); 
+	//DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
+	//		"2. Kill all threads"  _ATTR_POP_); 
+	//__thinkos_kill_all(); 
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"3. Core reset..."   _ATTR_POP_); 
@@ -1238,10 +1252,12 @@ void dbgmon_soft_reset(void)
 	__exception_reset();
 #endif
 
+#if 0
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"5. Wait IDLE signal..."   _ATTR_POP_); 
 	dbgmon_wait_idle();
+#endif
 #endif
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_

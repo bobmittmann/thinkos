@@ -58,6 +58,14 @@ int main(int argc, char ** argv)
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
+#if DEBUG
+	udelay(8192);
+	udelay(8192);
+	udelay(8192);
+	udelay(8192);
+	udelay(8192);
+	udelay(8192);
+#endif
 
 #ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");

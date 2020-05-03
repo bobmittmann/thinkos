@@ -25,6 +25,10 @@
 
 #include <sys/stm32f.h>
 
+#ifndef HWREV
+#define HWREV 0
+#endif
+
 /* -------------------------------------------------------------------------
  * USB 
  * ------------------------------------------------------------------------- */
@@ -41,20 +45,28 @@
 #define IO_JTCK           STM32_GPIOA, 14
 #define IO_JNRST          STM32_GPIOB, 4
 
-/**************************************************************************
- * Lattice FPGA (iCE40LP384) connections
- **************************************************************************/
-
+/* -------------------------------------------------------------------------
+ * Lattice FPGA (iCE40HX1K) 
+ * ------------------------------------------------------------------------- */
 #define IO_ICE40_SPI_SCK  STM32_GPIOA, 1
 #define IO_ICE40_SPI_SDO  STM32_GPIOB, 4
 #define IO_ICE40_SPI_SDI  STM32_GPIOB, 5
-#define IO_ICE40_SPI_SS   STM32_GPIOB, 8
-#define ICE40_SPI         STM32F_SPI1
-#define ICE40_CLK_SPI     STM32_CLK_SPI1
-#define ICE4_SPI_AF       GPIO_AF5
+#define IO_ICE40_SPI_SS   STM32_GPIOA, 4
 
-#define IO_ICE40_CRESET   STM32_GPIOB, 9
-#define IO_ICE40_CDONE    STM32_GPIOB, 7
+#if (HWREV == 0)
+  #define IO_ICE40_CSEL     STM32_GPIOB, 8
+  #define IO_ICE40_CRESET   STM32_GPIOB, 9
+  #define IO_ICE40_CDONE    STM32_GPIOB, 7
+#else
+  #define IO_ICE40_CSEL     STM32_GPIOA, 4
+  #define IO_ICE40_CRESET   STM32_GPIOA, 9
+  #define IO_ICE40_CDONE    STM32_GPIOA, 10
+#endif
+
+#define ICE40_SPI           STM32F_SPI1    /* SPI peripheral */
+#define ICE40_CLK_SPI       STM32_CLK_SPI1 /* SPI peripheral clock id */
+#define ICE40_SPI_AF        GPIO_AF5       /* SPI GPIO alternate function */
+
 
 /* -------------------------------------------------------------------------
  * FPGA

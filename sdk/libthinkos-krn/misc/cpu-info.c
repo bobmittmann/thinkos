@@ -475,8 +475,12 @@ void csb_misc_info(FILE * f, struct thinkos_krn_map * map)
 	fprintf(f, " * AIRCR = 0x%08x\n", aircr);
 
 	thinkos_krn_rd32(map, ARMV7M_SCR, &scr);
-	fprintf(f, " *   SCR = 0x%08x\n", scr);
-
+	fprintf(f, " *   SCR = 0x%08x:", scr);
+/*	fprintf(f, "%s%s%s\n", 
+			(scr & SCR_SEVONPEND) ? " SEVONPEND" : "",
+			(scr & SCR_SLEEPDEEP) ? " SLEEPDEEP" : "",
+			(scr & SCR_SLEEPONEXIT) ? " SLEEPONEXIT" : "");
+*/
 	thinkos_krn_rd32(map, ARMV7M_CCR, &ccr);
 	fprintf(f, " *   CCR = 0x%08x\n", ccr);
 

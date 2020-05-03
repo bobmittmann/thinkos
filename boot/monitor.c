@@ -176,6 +176,10 @@ void gdb_stub_task(const struct dbgmon_comm * comm);
 #endif
 
 
+#if (MONITOR_BREAKPOINT_ENABLE) & !(THINKOS_ENABLE_DEBUG_BKPT)
+#error "MONITOR_BREAKPOINT_ENABLE requires THINKOS_ENABLE_DEBUG_BKPT"
+#endif
+
 /* ---------------------------------------------------------------------------
  * 
  */
@@ -367,6 +371,7 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 	/* get the last thread known to be at fault */
 	thread_id = dbgmon_thread_break_get();
 	dbgmon_thread_inf_get(thread_id, &inf);
+	__thinkos_pause_all();
 
 	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
@@ -386,17 +391,23 @@ static void monitor_on_thread_fault(const struct dbgmon_comm * comm)
 		else
 			dbgmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
+
 	}
+
+	/* turn the scheduler back on */
+	//thinkos_krn_sched_on();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
+
+#endif
 
 static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 {
 	struct dbgmon_thread_inf inf;
 	int thread_id;
 
-	DCC_LOG(LOG_TRACE, "dbgmon_wait_idle()...");
+	mdelay(500);
 
 	/* get the last thread known to be at fault */
 	thread_id = dbgmon_thread_break_get();
@@ -420,12 +431,15 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 
 		dbgmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
+	} else {
 	}
 
+	mdelay(500);
+
+	dbgmon_soft_reset();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
-#endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 static void monitor_on_bkpt(struct monitor * mon)
@@ -623,7 +637,7 @@ static void show_mem_info(const struct dbgmon_comm * comm,
 	for (i = 0; mem->blk[i].cnt != 0; ++i) {
 		tag = mem->blk[i].tag;
 		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->blk[i].ref;
+		base = mem->base + mem->blk[i].off;
 		ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
 		align = ((mem->blk[i].opt & 3) + 1) * 8;
 
@@ -1053,6 +1067,7 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 			monitor_on_thread_fault(comm);
 			break;
 
+#endif
 		case DBGMON_KRN_EXCEPT:
 			dbgmon_clear(DBGMON_KRN_EXCEPT);
 			DCC_LOG(LOG_TRACE, "System exception.");
@@ -1061,7 +1076,6 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
   #endif
 			monitor_on_krn_except(comm);
 			break;
-#endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 		case DBGMON_BREAKPOINT:

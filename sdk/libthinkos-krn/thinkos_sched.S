@@ -53,9 +53,9 @@ cm3_pendsv_isr:
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 	.thumb_func
-thinkos_scheduler:
-	.global thinkos_scheduler
-	.type   thinkos_scheduler, %function
+thinkos_krn_scheduler:
+	.global thinkos_krn_scheduler
+	.type   thinkos_krn_scheduler, %function
 
 	/* store context */
 
@@ -166,17 +166,17 @@ thinkos_sched_step_req_check:
 	bne.n   thinkos_sched_step
 #endif
 
+	.thumb_func
+thinkos_krn_sched_ctx_restore:
+	.global thinkos_krn_sched_ctx_restore
+	.type   thinkos_krn_sched_ctx_restore, %function
+
 .L_save_active_and_restore:
 	/* r0: new thread stack
 	   r1: new active thread
+	   r2: old active thread
 	   r3: thinkos_rt */
 	str     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-
-	.thumb_func
-thinkos_sched_context_restore:
-	.global thinkos_sched_context_restore
-	.type   thinkos_sched_context_restore, %function
-	.size   thinkos_sched_context_restore, . - thinkos_sched_context_restore
 
 #if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
 	mov     r3, r0
@@ -221,8 +221,8 @@ thinkos_sched_context_restore:
 .L_cm_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 
-	.size   thinkos_scheduler, . - thinkos_scheduler
-
+	.size   thinkos_krn_sched_ctx_restore, . - thinkos_krn_sched_ctx_restore
+	.size   thinkos_krn_scheduler, . - thinkos_krn_scheduler
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	.thumb_func

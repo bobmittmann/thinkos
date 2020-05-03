@@ -38,6 +38,8 @@
 
 #include <thinkos.h>
 
+#include <sys/memory.h>
+
 /*
 #ifndef __THINKOS_CONFIG_H__
 #error "Need <thinkos/config.h>"
@@ -146,22 +148,6 @@ enum dbgmon_event {
 #define SIG_CLR(SIGSET, SIG) SIGSET &= ~(1 << (SIG))
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
-
-/* Memory block descriptor */
-struct blk_desc {
-	char tag[8];
-	uint32_t ref;
-	uint8_t  opt;
-	uint8_t  siz;
-	uint16_t cnt;
-};
-
-/* Memory region/type descriptor */
-struct mem_desc {
-	char tag[8];
-	uint8_t cnt; /* number of entries in the block list */
-	struct blk_desc blk[]; /* sorted block list */
-};
 
 struct dbgmon_thread_inf {
 	int8_t thread_id;
@@ -332,6 +318,14 @@ bool dbgmon_mem_belong(const struct mem_desc * mem, uint32_t addr);
 
 const struct mem_desc * dbgmon_mem_lookup(const struct mem_desc * const lst[], 
                                           unsigned int cnt, uint32_t addr);
+
+/* ----------------------------------------------------------------------------
+ *  Debug/Monitor FLASH memory
+ * ----------------------------------------------------------------------------
+ */
+int dbgmon_flash_write(uint32_t addr, const void * buf, size_t len);
+
+int dbgmon_flash_erase(uint32_t addr, size_t size);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface

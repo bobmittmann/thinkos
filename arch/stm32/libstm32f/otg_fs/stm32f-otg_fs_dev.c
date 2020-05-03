@@ -20,7 +20,7 @@
 
 /** 
  * @file stm32f-otg_fs_dev.c
- * @brief YARD-ICE UART console
+ * @brief STM32F OTG USB driver
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 

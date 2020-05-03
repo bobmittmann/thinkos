@@ -25,9 +25,15 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
+#define __THINKOS_FLASH__
+#include <thinkos/flash.h>
 #include <thinkos.h>
 #include <vt100.h>
 #include <sys/dcclog.h>
+/* FIXME: platform memory map should move from DBGMON and bootloader 
+   to kernel... */
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 
 /* -------------------------------------------------------------------------- 
  * Idle task
@@ -39,12 +45,10 @@
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void thinkos_flash_mem_hook(void);
-
-struct thinkos_idle_rt thinkos_idle_rt;
 #endif
 
-void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
+void __attribute__((noreturn, naked)) thinkos_idle_task(
+	struct thinkos_idle_rt * idle)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	uint32_t map;
@@ -59,23 +63,23 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 		do {
-			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
+			map = __ldrex((uint32_t *)&idle->req_map);
 			req = __thinkos_ffs(map);
 			if (map != 0) {
 				uint32_t y;
 
 				y = map & ~(1 << req);
 
-				DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ 
+				DCC_LOG3(LOG_YAP, _ATTR_PUSH_ _FG_CYAN_ 
 						 "map=%08x y=%08x req=%d" _ATTR_POP_ , 
 						 map, y, req);
 				map = y;
 			}
-		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
+		} while (__strex((uint32_t *)&idle->req_map, map));
 
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:
-				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
+				DCC_LOG(LOG_YAP, _ATTR_PUSH_ _FG_RED_
 						"IDLE_HOOK_NOTIFY_DBGMON" _ATTR_POP_ );
 				/* Notify the debug/monitor */
 				dbgmon_signal(DBGMON_IDLE); 
@@ -107,9 +111,10 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 
 #if (THINKOS_ENABLE_FLASH_MEM)
 			case IDLE_HOOK_FLASH_MEM:
-				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+				DCC_LOG(LOG_YAP, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
-				thinkos_flash_mem_hook();
+				thinkos_flash_drv_tasklet(&board_flash_drv, 
+										  &board_flash_desc);
 				break;
 #endif
 
@@ -139,11 +144,6 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void * arg)
 }
 
 #if (THINKOS_ENABLE_IDLE_MSP) 
-
-void __thinkos_idle_bootstrap(void * arg)
-{
-	DCC_LOG(LOG_TRACE, "ThinkOS Idle bootstrap.... main()"); 
-}
 
 #define THINKOS_IDLE_STACK_SIZE (sizeof(thinkos_except_stack))
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_except_stack
@@ -194,14 +194,25 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 	return ctx;
 }
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+struct thinkos_idle_rt thinkos_idle_rt;
+#endif
+
 /* resets the idle thread and context */
-uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
+struct thinkos_context * thinkos_krn_idle_reset(void)
 {
 	struct thinkos_context * ctx;
 
 	ctx  = __thinkos_idle_ctx();
 
-	ctx->r0 = (uint32_t)arg;
+	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_BLUE_
+			"ctx=%08x" _ATTR_POP_, ctx);
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	/* clear all hook requests */
+	thinkos_idle_rt.req_map = 0;
+	ctx->r0 = (uint32_t)&thinkos_idle_rt;
+#endif
 #if DEBUG
 	ctx->r1 = (uint32_t)0x11111111;
 	ctx->r2 = (uint32_t)0x22222222;
@@ -216,7 +227,7 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 	ctx->r11 = (uint32_t)0xbbbbbbbb;
 	ctx->r12 = (uint32_t)0xcccccccc;
 #endif
-	ctx->pc = (uint32_t)task_ptr & ~1;
+	ctx->pc = (uint32_t)thinkos_idle_task;
 	ctx->lr = (uint32_t)thinkos_idle_task; 
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
@@ -236,7 +247,7 @@ uint32_t __thinkos_idle_reset(void (* task_ptr)(void *), void * arg)
 
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = ctx;
 
-	return (uintptr_t)ctx;
+	return ctx;
 }
 
 /* initialize the idle thread */
@@ -248,6 +259,6 @@ void __thinkos_idle_init(void)
 					   THINKOS_IDLE_STACK_SIZE);
 #endif
 
- 	__thinkos_idle_reset(thinkos_idle_task, NULL);
+ 	thinkos_krn_idle_reset();
 }
 

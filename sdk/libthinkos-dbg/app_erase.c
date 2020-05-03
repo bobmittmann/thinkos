@@ -32,16 +32,7 @@
 bool dbgmon_app_erase(const struct dbgmon_comm * comm, 
 					uint32_t addr, unsigned int size)
 {
-	/* FIXME: generalize the application load by removing the low
-	   level flash calls dependency */
-#ifdef STM32_FLASH_MEM
-	uint32_t base = (uint32_t)STM32_FLASH_MEM;
-	uint32_t offs = addr - base;
-
-	return (stm32_flash_erase(offs, size) < 0) ? false : true;
-#else
-	return false;
-#endif
+	return (dbgmon_flash_erase(addr, size) < 0) ? false : true;
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */
