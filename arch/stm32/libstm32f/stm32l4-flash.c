@@ -97,46 +97,37 @@ uint32_t __attribute__((section (".data#"), noinline))
 
 int stm32l4x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len)
 {
-	unsigned int size;
-	unsigned int cnt;
+	unsigned int size = 2048;
+	unsigned int page;
 	uint32_t pri;
 	uint32_t cr;
 	uint32_t sr;
 
 	pri = cm3_primask_get();
 
-	cnt = 0;
-	size = 2048;
-	while (cnt < len) {
-		unsigned int page;
+	page = offs >> 11;
+	if ((page << 11) != (offs)) {
+		DCC_LOG(LOG_ERROR, "offset must be a aligned to a page boundary.");
+		return -2;
+	};
 
-		page = offs >> 11;
-		if ((page << 11) != (offs)) {
-			DCC_LOG(LOG_ERROR, "offset must be a aligned to a page boundary.");
-			return -2;
-		};
+	DCC_LOG2(LOG_TRACE, "page=%d size=%d", page, size);
 
-		DCC_LOG2(LOG_TRACE, "page=%d size=%d", page, size);
+	/* Clear errors */
+	flash->sr = FLASH_ERR;
 
-		/* Clear errors */
-		flash->sr = FLASH_ERR;
+	cr = FLASH_STRT | FLASH_PER | FLASH_PNB(page);
+	cm3_primask_set(1);
+	sr = stm32l4x_flash_page_erase(flash, cr);
+	cm3_primask_set(pri);
 
-		cr = FLASH_STRT | FLASH_PER | FLASH_PNB(page);
-		cm3_primask_set(1);
-		sr = stm32l4x_flash_page_erase(flash, cr);
-		cm3_primask_set(pri);
-
-		if (sr & FLASH_ERR) {
-			DCC_LOG1(LOG_WARNING, "stm32f2x_flash_sect_erase() failed"
-					 " sr=%08x!", sr);
-			return -1;
-		}
-
-		cnt += size;
-		offs += size;
+	if (sr & FLASH_ERR) {
+		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_sect_erase() failed"
+				 " sr=%08x!", sr);
+		return -1;
 	}
 
-	return cnt;
+	return size;
 }
 
 uint32_t __attribute__((section (".data#"), noinline)) 
@@ -166,8 +157,6 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	uint8_t * ptr;
 	uint32_t sr;
 	uint32_t pri;
-	int n;
-	int i;
 
 	ptr = (uint8_t *)buf;
 	addr = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
@@ -175,27 +164,18 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
 
 	pri = cm3_primask_get();
-	n = len / 8;
-	for (i = 0; i < n; ++i) {
-		data0 = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
-		data1 = ptr[4] | (ptr[5] << 8) | (ptr[6] << 16) | (ptr[7] << 24);
-		DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
-		cm3_primask_set(1);
-		sr = stm32l4x_flash_wr64(flash, addr, data0, data1);
-		cm3_primask_set(pri);
-		if (sr & FLASH_ERR) {
-			DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
-			return -1;
-		}
-		ptr += 8;
-		addr += 2;
-	}
-	n = len % 8;
-	DCC_LOG1(LOG_TRACE, "residual: %d bytes", n);
-	for (i = 0; i < n; ++i) {
+	data0 = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
+	data1 = ptr[4] | (ptr[5] << 8) | (ptr[6] << 16) | (ptr[7] << 24);
+	DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
+	cm3_primask_set(1);
+	sr = stm32l4x_flash_wr64(flash, addr, data0, data1);
+	cm3_primask_set(pri);
+	if (sr & FLASH_ERR) {
+		DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
+		return -1;
 	}
 	
-	return n * 8;
+	return 8;
 }
 
 void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n);
@@ -227,48 +207,6 @@ const struct flash_dev stm32l4x_flash_dev = {
 	.priv = (void *)STM32_FLASH,
 	.op = &stm32l4x_flash_dev_ops
 };
-
-#if 0
-/* FIXME: these should be obsoleted and all calls should be replaced by 
-   the corresponding device operations methods ... 
-   */
-
-int stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
-{
-	struct stm32_flash * flash = STM32_FLASH;
-
-	if (offs & 0x00000003) {
-		DCC_LOG(LOG_ERROR, "offset must be 32bits aligned!");
-		return -1;
-	}
-
-	stm32l4x_flash_unlock(flash, offs, len);
-
-	return stm32l4x_flash_write(flash, offs, buf, len);
-}
-
-int stm32_flash_erase(unsigned int offs, unsigned int len)
-{
-	struct stm32_flash * flash = STM32_FLASH;
-
-	if (offs & 0x00000003) {
-		DCC_LOG(LOG_ERROR, "offset must be 32bits aligned!");
-		return -1;
-	}
-
-	stm32l4x_flash_unlock(flash, offs, len);
-
-	return stm32l4x_flash_erase(flash, offs, len);
-}
-
-void stm32_flash_unlock(void)
-{
-	struct stm32_flash * flash = STM32_FLASH;
-
-	stm32l4x_flash_unlock(flash, 0, 0x80000000);
-}
-
-#endif
 
 #endif
 

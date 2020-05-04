@@ -527,10 +527,12 @@ static void monitor_app_erase(const struct dbgmon_comm * comm,
 							  uint32_t addr, unsigned int size)
 {
 	dbgmon_printf(comm, "\r\nErasing application block (%08x)... ", addr);
-	if (dbgmon_app_erase(comm, addr, size))
-		dbgmon_printf(comm, "done.\r\n");
-	else	
+	dbgmon_flash_open("APP");
+	if (dbgmon_flash_erase(addr, size) < 0 )
 		dbgmon_printf(comm, "failed!\r\n");
+	else	
+		dbgmon_printf(comm, "done.\r\n");
+	dbgmon_flash_close();
 }
 #endif
 
@@ -949,11 +951,13 @@ void __attribute__((noreturn)) monitor_task(const struct dbgmon_comm * comm,
 		case DBGMON_APP_UPLOAD:
 			dbgmon_clear(DBGMON_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
+			dbgmon_flash_open("APP");
 			if (monitor_ymodem_recv(comm, this_board.application.start_addr, 
 								this_board.application.block_size)) {
 				/* Request app exec */
 				dbgmon_req_app_exec(); 
 			}
+			dbgmon_flash_close();
 			break;
 
 		case DBGMON_APP_EXEC:

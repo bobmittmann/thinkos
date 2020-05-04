@@ -246,6 +246,20 @@ int board_selftest_task(void *ptr)
 	return 0;
 }
 
+void write_fault(void)
+{
+	volatile uint32_t * ptr = (uint32_t *)(0x0);
+	uint32_t x = 0;
+	int i;
+
+	for (i = 0; i < (16 << 4); ++i) {
+		*ptr = x;
+		ptr += 0x10000000 / (2 << 4);
+	}
+}
+
+
+
 /* ----------------------------------------------------------------------------
  * This function runs as the main thread's task when the bootloader 
  * fails to run the application ... 
@@ -254,9 +268,8 @@ int board_selftest_task(void *ptr)
 
 int board_default_task(void *ptr)
 {
-	char buf[128];
 	uint32_t tick;
-	int x;
+
 	__puts("- board default\r\n");
 
 	for (tick = 0; tick < 8; ++tick) {
@@ -290,30 +303,36 @@ int board_default_task(void *ptr)
 		}
 	}
 
+	int x;
+	x = thinkos_flash_mem_open("BOOT");
+	thinkos_flash_mem_close(x);
+
+#if 0
+	char buf[128];
+
 	__puts("- FLASH test\r\n");
 	x = thinkos_flash_mem_open("BOOT");
-	thinkos_flash_mem_read(x, buf, 14);
+	thinkos_flash_mem_read(x, 0, buf, 14);
 	thinkos_flash_mem_close(x);
 
 	__puts(buf);
 
 	x = thinkos_flash_mem_open("BOOT");
-	thinkos_flash_mem_write(x, "Hello world!", 14);
+	thinkos_flash_mem_write(x, 0, "Hello world!", 14);
 	thinkos_flash_mem_close(x);
 
 
 	x = thinkos_flash_mem_open("CONF");
-	thinkos_flash_mem_write(x, "Hello world!", 16);
-	thinkos_flash_mem_seek(x, 0);
-	thinkos_flash_mem_read(x, buf, 16);
+	thinkos_flash_mem_write(x, 0, "Hello world!", 16);
+	thinkos_flash_mem_read(x, 0, buf, 16);
 	thinkos_flash_mem_close(x);
 
 	__puts(buf);
 
 	x = thinkos_flash_mem_open("CONF");
-	thinkos_flash_mem_erase(x, 16);
+	thinkos_flash_mem_erase(x, 0, 16);
 	thinkos_flash_mem_close(x);
-
+#endif
 	return 0;
 }
 

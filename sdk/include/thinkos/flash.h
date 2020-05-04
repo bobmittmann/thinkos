@@ -36,16 +36,18 @@ struct thinkos_flash_desc {
 };
 
 struct flash_op_req {
-	volatile uint32_t opc;
-	uint32_t key;
-	union {
-		off_t offset;
-		size_t size;
-		int ret;
+	struct {
+		volatile uint16_t opc;
+		uint16_t key;
 	};
 	union {
-		void * buf;
+		uint32_t offset;
+		int ret;
+	};
+	uint32_t size;
+	union {
 		const char * tag;
+		void * buf;
 	};
 };
 
@@ -53,9 +55,10 @@ struct thinkos_flash_drv {
 	uint8_t ropen;
 	uint8_t wopen;
 	uint16_t key;
-	uint32_t off;
-	uint32_t pos;
-	uint32_t size;
+	struct {
+		uint32_t offset;
+		uint32_t size;
+	} partition;
 #if (THINKOS_ENABLE_MONITOR)
 	struct flash_op_req krn_req;
 #endif
@@ -70,6 +73,9 @@ int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv,
 
 void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv, 
 							   const struct thinkos_flash_desc * desc);
+
+void thinkos_flash_drv_init(struct thinkos_flash_drv * drv, 
+							const struct thinkos_flash_desc * desc);
 
 #ifdef __cplusplus
 }

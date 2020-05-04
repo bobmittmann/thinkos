@@ -965,76 +965,67 @@ int thinkos_console_wr_nonblock(unsigned int enable);
 
 /** @brief close the flash memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
-int thinkos_flash_mem_close(int mem);
+int thinkos_flash_mem_close(int key);
 
 /** @brief open the flash memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
 int thinkos_flash_mem_open(const char * tag);
 
 /** @brief reads from a flash memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @param buf buffer pointer 
  * @param len maximum number of bytes to be read from the partition  
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes read is returned.
  */
-int thinkos_flash_mem_read(int mem, void * buf, size_t len);
+int thinkos_flash_mem_read(int key, off_t offset, void * buf, size_t size);
 
 /** @brief writes to a flash memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @param buf buffer pointer
  * @param len number of bytes to transfer to the partition.
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_write(int mem, const void * buf, size_t len);
-
-/** @brief repositions the offset of the flash memory partition descriptor
- *
- * @param mem memory partition id
- * @param offset position from the start of partition
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes written is returned.
- */
-int thinkos_flash_mem_seek(int mem, off_t offset);
+int thinkos_flash_mem_write(int key, off_t offset, const void * buf, size_t size);
 
 /** @brief erase flash blocks of a memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @param offset position from the start of partition
  * @param len size of the erase area
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_erase(int mem, size_t len);
+int thinkos_flash_mem_erase(int key, off_t offset, size_t size);
 
 /** @brief lock flash blocks of a memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @param offset position from the start of partition
  * @param len size of the locking area
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_lock(int mem, size_t len);
+int thinkos_flash_mem_lock(int key, off_t offset, size_t size);
 
 /** @brief unlock flash blocks of a memory partition
  *
- * @param mem memory partition id
+ * @param key memory partition key
  * @param offset position from the start of partition
  * @param len size of the locking area
  * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
  of bytes written is returned.
  */
-int thinkos_flash_mem_unlock(int mem, size_t len);
+int thinkos_flash_mem_unlock(int key, off_t offset, size_t size);
 
 #ifdef __cplusplus
 }

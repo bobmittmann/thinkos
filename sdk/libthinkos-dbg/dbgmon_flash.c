@@ -51,6 +51,8 @@ int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv,
 	int ret;
 
 	while (req->opc != THINKOS_FLASH_MEM_NOP) {
+
+		DCC_LOG(LOG_TRACE, "FLASH_DRV tasklet request");
 		__idle_hook_req(IDLE_HOOK_FLASH_MEM);
 
 		if ((ret = dbgmon_expect(DBGMON_FLASH_DRV)) < 0) {
@@ -59,7 +61,10 @@ int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv,
 		}
 	}
 
-	return req->ret;
+	ret = req->ret;
+	DCC_LOG1(LOG_TRACE, "ret=%d", ret);
+
+	return ret;
 }
 
 int dbgmon_flash_write(uint32_t addr, const void * buf, size_t size)
@@ -67,20 +72,15 @@ int dbgmon_flash_write(uint32_t addr, const void * buf, size_t size)
 	const struct mem_desc * mem = board_flash_desc.mem;
 	struct thinkos_flash_drv * drv = &board_flash_drv;
 	struct flash_op_req * req = &drv->krn_req;
-	off_t offs;
-	int ret;
 
+	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
 
-	offs = addr - mem->base;
-	(void)offs;
-
-	req->buf = (void *)buf;
+	req->offset = addr - (mem->base + drv->partition.offset);
 	req->size = size;
+	req->buf = (void *)buf;
 	req->opc = THINKOS_FLASH_MEM_WRITE;
 
-	ret = thinkos_krn_mem_flash_req(drv, req);
-
-	return ret;
+	return thinkos_krn_mem_flash_req(drv, req);
 }
 
 int dbgmon_flash_erase(uint32_t addr, size_t size)
@@ -88,16 +88,42 @@ int dbgmon_flash_erase(uint32_t addr, size_t size)
 	const struct mem_desc * mem = board_flash_desc.mem;
 	struct thinkos_flash_drv * drv = &board_flash_drv;
 	struct flash_op_req * req = &drv->krn_req;
-	off_t offs;
-	int ret;
 
-	offs = addr - mem->base;
-	(void)offs;
+	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
 
+	req->offset = addr - (mem->base + drv->partition.offset);
 	req->size = size;
 	req->opc = THINKOS_FLASH_MEM_ERASE;
 
+	return thinkos_krn_mem_flash_req(drv, req);
+}
+
+int dbgmon_flash_open(const char * tag)
+{
+	struct thinkos_flash_drv * drv = &board_flash_drv;
+	struct flash_op_req * req = &drv->krn_req;
+	int ret;
+
+	req->tag = tag;
+	req->opc = THINKOS_FLASH_MEM_OPEN;
+
 	ret = thinkos_krn_mem_flash_req(drv, req);
+
+	if (ret >= 0) {
+		/* store key for subsequent requests */
+		req->key = ret;
+	}
 
 	return ret;
 }
+
+int dbgmon_flash_close(void)
+{
+	struct thinkos_flash_drv * drv = &board_flash_drv;
+	struct flash_op_req * req = &drv->krn_req;
+
+	req->opc = THINKOS_FLASH_MEM_CLOSE;
+
+	return thinkos_krn_mem_flash_req(drv, req);
+}
+

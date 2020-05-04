@@ -43,3 +43,6 @@ docs/pycparser/
 docs/gtkdoc/
 
 docs/sphinx/build/
+/board/rda8com/src/boot/ice40/spi_slave/spi_slave_tb
+/board/rda8com/src/boot/ice40/spi_slave/spi_slave_tb.vcd
+/board/rda8com/src/boot/ice40/clkdiv/clkdiv_tb

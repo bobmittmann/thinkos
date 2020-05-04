@@ -48,6 +48,7 @@
 #endif
 
 void __attribute__((noreturn, naked)) thinkos_idle_task(
+//void __attribute__((noreturn)) thinkos_idle_task(
 	struct thinkos_idle_rt * idle)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
@@ -79,7 +80,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(
 
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_DBGMON:
-				DCC_LOG(LOG_YAP, _ATTR_PUSH_ _FG_RED_
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
 						"IDLE_HOOK_NOTIFY_DBGMON" _ATTR_POP_ );
 				/* Notify the debug/monitor */
 				dbgmon_signal(DBGMON_IDLE); 
@@ -111,7 +112,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(
 
 #if (THINKOS_ENABLE_FLASH_MEM)
 			case IDLE_HOOK_FLASH_MEM:
-				DCC_LOG(LOG_YAP, _ATTR_PUSH_ _FG_GREEN_ 
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(&board_flash_drv, 
 										  &board_flash_desc);
@@ -213,6 +214,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	thinkos_idle_rt.req_map = 0;
 	ctx->r0 = (uint32_t)&thinkos_idle_rt;
 #endif
+
 #if DEBUG
 	ctx->r1 = (uint32_t)0x11111111;
 	ctx->r2 = (uint32_t)0x22222222;
@@ -257,6 +259,10 @@ void __thinkos_idle_init(void)
 	/* initialize idle stack */
 	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 
 					   THINKOS_IDLE_STACK_SIZE);
+#endif
+
+#if (THINKOS_ENABLE_FLASH_MEM)
+	thinkos_flash_drv_init(&board_flash_drv, &board_flash_desc);
 #endif
 
  	thinkos_krn_idle_reset();

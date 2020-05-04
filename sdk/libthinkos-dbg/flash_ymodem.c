@@ -63,7 +63,6 @@ int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 	int ret;
 
 	DCC_LOG2(LOG_MSG, "sp=%p ry=%p", cm3_sp_get(), ry);
-	DCC_LOG2(LOG_MSG, "offs=0x%08x size=%d", offs, size);
 	dbgmon_ymodem_rcv_init(ry, true, false);
 	ry->fsize = size;
 
@@ -121,6 +120,7 @@ int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 #else
 	return -1;
 #endif
+
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */

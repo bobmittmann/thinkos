@@ -327,6 +327,10 @@ int dbgmon_flash_write(uint32_t addr, const void * buf, size_t len);
 
 int dbgmon_flash_erase(uint32_t addr, size_t size);
 
+int dbgmon_flash_open(const char * tag);
+
+int dbgmon_flash_close(void);
+
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
  * ----------------------------------------------------------------------------
