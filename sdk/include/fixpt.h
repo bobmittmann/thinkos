@@ -117,8 +117,8 @@
  Q2.30 format: -2.0 ... 1.9999999
  */
  
-#define Q30_MAX ((int32_t)2147483647)
-#define Q30_MIN ((int32_t)-2147483648)
+#define Q30_MAX ((int32_t)1073741823)
+#define Q30_MIN ((int32_t)-1073741824)
 
 /* Q30 Saturation */
 #define Q30_SAT(X) (((int64_t)(X) < (int64_t)Q30_MIN) ? Q30_MIN : \
