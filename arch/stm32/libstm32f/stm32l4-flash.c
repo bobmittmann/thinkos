@@ -153,22 +153,22 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 {
 	uint32_t data0;
 	uint32_t data1;
-	uint32_t * addr;
-	uint8_t * ptr;
+	uint32_t * dst;
+	uint8_t * src;
 	uint32_t sr;
 	uint32_t pri;
 
-	ptr = (uint8_t *)buf;
-	addr = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
+	src = (uint8_t *)buf;
+	dst = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
 
 	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
 
 	pri = cm3_primask_get();
-	data0 = ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
-	data1 = ptr[4] | (ptr[5] << 8) | (ptr[6] << 16) | (ptr[7] << 24);
+	data0 = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
+	data1 = src[4] | (src[5] << 8) | (src[6] << 16) | (src[7] << 24);
 	DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
 	cm3_primask_set(1);
-	sr = stm32l4x_flash_wr64(flash, addr, data0, data1);
+	sr = stm32l4x_flash_wr64(flash, dst, data0, data1);
 	cm3_primask_set(pri);
 	if (sr & FLASH_ERR) {
 		DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
@@ -178,21 +178,24 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	return 8;
 }
 
-void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n);
-
 int stm32l4x_flash_read(struct stm32_flash * flash, 
 						off_t offs, const void * buf, size_t len)
 {
-	uint8_t * src;
+	uint32_t data;
+	uint32_t * src;
 	uint8_t * dst;
 
+	src = (uint32_t *)(((uint32_t)STM32_FLASH_MEM + offs) & 0xfffffffc);
 	dst = (uint8_t *)buf;
-	src = (uint8_t *)((uint32_t)STM32_FLASH_MEM + offs);
-	__thinkos_memcpy(dst, src,  len);
 
-	return len;
+	data = src[0];
+	dst[0] = data;
+	dst[1] = data >> 8;
+	dst[2] = data >> 16;
+	dst[3] = data >> 24;
+
+	return 4;
 }
-
 
 const struct flash_dev_ops stm32l4x_flash_dev_ops = {
 	.write = (int (*)(void *, off_t, const void *, size_t))stm32l4x_flash_write,

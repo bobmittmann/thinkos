@@ -53,6 +53,16 @@ void write_fault(void)
 	}
 }
 
+void stack_fault(uint32_t * ptr)
+{
+	uint32_t x = 0x20000800;
+	int i;
+
+	for (i = 0; i < 8192; ++i) {
+		ptr[i] = x;
+	}
+}
+
 /*--------------------------------------------------------------------------
   Interrupt handlers  
   --------------------------------------------------------------------------*/
@@ -190,6 +200,38 @@ void timer5_init(uint32_t period_ms)
 //	cm3_irq_enable(STM32F_IRQ_TIM5);
 }
 
+volatile uint32_t heap[128];
+
+
+int test1_task(void * arg)
+{
+	uint32_t * x = (uint32_t *)heap;
+	int i;
+
+	for (i = 0; i < 32; ++i) {
+		x[i] = 4 * i;
+	}
+	thinkos_sleep(200);
+
+	for (i = 0; i < 32; ++i) {
+		x[i] = 2 * i;
+	}
+	thinkos_sleep(200);
+
+	return 0;
+}
+
+uint32_t test1_stack[1024] __attribute__ ((aligned(8), section(".stack")));
+
+const struct thinkos_thread_inf test1_thread_init = {
+	.stack_ptr = test1_stack,
+	.stack_size = sizeof(test1_stack),
+	.priority = 16,
+	.thread_id = 16,
+	.paused = false,
+	.tag = "TASK1"
+};
+
 /* ---------------------------------------------------------------------------
  * Application main function
  * ---------------------------------------------------------------------------
@@ -205,8 +247,9 @@ int main(int argc, char **argv)
 	/* Initializes stdio so we can use printf and such. */
 	stdio_init();
 
-	printf("Test..\n");
-	thinkos_sleep(100);
+	printf("1. wait..\n");
+	thinkos_sleep(1000);
+	printf("2. new task..\n");
 
 //	timer5_init(200);
 //	timer4_init(400);
@@ -225,7 +268,20 @@ int main(int argc, char **argv)
 		"cmp r0, #0\n"
 		"bne 1b\n"); 
 */
+	/* Start the main application thread */
+	thinkos_thread_create_inf((int (*)(void *))test1_task, (void *)stdout,
+							&test1_thread_init);
 
+	printf("3. switch..\n");
+	thinkos_sleep(100);
+
+	printf("4. destroy..\n");
+	stack_fault(test1_stack);
+
+	printf("5. wait..\n");
+	thinkos_sleep(500);
+
+	printf("6. read..\n");
 	read_fault();
 
 	return 0;

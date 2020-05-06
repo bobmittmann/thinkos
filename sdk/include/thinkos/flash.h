@@ -68,8 +68,9 @@ struct thinkos_flash_drv {
 extern "C" {
 #endif
 
-int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv, 
-							  struct flash_op_req * req);
+int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
+						  const struct thinkos_flash_desc * desc,
+						  struct flash_op_req * req);
 
 void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv, 
 							   const struct thinkos_flash_desc * desc);

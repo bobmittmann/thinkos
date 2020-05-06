@@ -261,9 +261,7 @@ void __thinkos_idle_init(void)
 					   THINKOS_IDLE_STACK_SIZE);
 #endif
 
-#if (THINKOS_ENABLE_FLASH_MEM)
 	thinkos_flash_drv_init(&board_flash_drv, &board_flash_desc);
-#endif
 
  	thinkos_krn_idle_reset();
 }

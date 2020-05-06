@@ -40,7 +40,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
 		 thinkos_console.c thinkos_systmr.c thinkos_ffs.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
-		 thinkos_dma.c thinkos_alloc.c thinkos_flash_mem.c \
+		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 SFILES = thinkos_sched.S thinkos_vector.S thinkos_isr.S 

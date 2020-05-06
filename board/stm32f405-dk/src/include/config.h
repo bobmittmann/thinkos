@@ -171,7 +171,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        1
+#define THINKOS_ENABLE_FLASH_MEM        0
 
 /* Enable the rt_snapshot() service to get
    the state of the kernel */

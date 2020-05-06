@@ -45,8 +45,10 @@
  * Flash memory auxiliary functions 
  * ------------------------------------------------------------------------- */
 
-int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv, 
-							  struct flash_op_req * req)
+#if (THINKOS_ENABLE_FLASH_MEM)
+static int dbgmon_flash_req(struct thinkos_flash_drv * drv, 
+							const struct thinkos_flash_desc * desc,
+							struct flash_op_req * req)
 {
 	int ret;
 
@@ -66,11 +68,22 @@ int thinkos_krn_mem_flash_req(struct thinkos_flash_drv * drv,
 
 	return ret;
 }
+#else
+static int dbgmon_flash_req(struct thinkos_flash_drv * drv, 
+							  const struct thinkos_flash_desc * desc,
+							  struct flash_op_req * req) {
+	return thinkos_flash_drv_req(drv, desc,req);
+}
+#endif
 
 int dbgmon_flash_write(uint32_t addr, const void * buf, size_t size)
 {
-	const struct mem_desc * mem = board_flash_desc.mem;
+
+
+
 	struct thinkos_flash_drv * drv = &board_flash_drv;
+	const struct thinkos_flash_desc * desc = &board_flash_desc;
+	const struct mem_desc * mem = desc->mem;
 	struct flash_op_req * req = &drv->krn_req;
 
 	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
@@ -80,13 +93,14 @@ int dbgmon_flash_write(uint32_t addr, const void * buf, size_t size)
 	req->buf = (void *)buf;
 	req->opc = THINKOS_FLASH_MEM_WRITE;
 
-	return thinkos_krn_mem_flash_req(drv, req);
+	return dbgmon_flash_req(drv, desc, req);
 }
 
 int dbgmon_flash_erase(uint32_t addr, size_t size)
 {
-	const struct mem_desc * mem = board_flash_desc.mem;
 	struct thinkos_flash_drv * drv = &board_flash_drv;
+	const struct thinkos_flash_desc * desc = &board_flash_desc;
+	const struct mem_desc * mem = desc->mem;
 	struct flash_op_req * req = &drv->krn_req;
 
 	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
@@ -95,19 +109,20 @@ int dbgmon_flash_erase(uint32_t addr, size_t size)
 	req->size = size;
 	req->opc = THINKOS_FLASH_MEM_ERASE;
 
-	return thinkos_krn_mem_flash_req(drv, req);
+	return dbgmon_flash_req(drv, desc, req);
 }
 
 int dbgmon_flash_open(const char * tag)
 {
 	struct thinkos_flash_drv * drv = &board_flash_drv;
+	const struct thinkos_flash_desc * desc = &board_flash_desc;
 	struct flash_op_req * req = &drv->krn_req;
 	int ret;
 
 	req->tag = tag;
 	req->opc = THINKOS_FLASH_MEM_OPEN;
 
-	ret = thinkos_krn_mem_flash_req(drv, req);
+	ret = dbgmon_flash_req(drv, desc, req);
 
 	if (ret >= 0) {
 		/* store key for subsequent requests */
@@ -120,10 +135,11 @@ int dbgmon_flash_open(const char * tag)
 int dbgmon_flash_close(void)
 {
 	struct thinkos_flash_drv * drv = &board_flash_drv;
+	const struct thinkos_flash_desc * desc = &board_flash_desc;
 	struct flash_op_req * req = &drv->krn_req;
 
 	req->opc = THINKOS_FLASH_MEM_CLOSE;
 
-	return thinkos_krn_mem_flash_req(drv, req);
+	return dbgmon_flash_req(drv, desc, req);
 }
 

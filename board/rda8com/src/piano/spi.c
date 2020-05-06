@@ -153,20 +153,19 @@ int spi_io_task(struct spi_ctrl * dev)
 	ctrl = dev->ctrl;
 	for (;;) {
 		ctrl = dev->ctrl;
-		ctrl = dev->seq;
 
 		stat = __spi_io_xfer16(ctrl);
 		diff = stat ^ dev->stat;
 		if (diff != 0) {
-			printf("IO: stat=0x%02x diff=0x%02x\n", stat, diff);
+//			printf("IO: stat=0x%02x diff=0x%02x\n", stat, diff);
 			dev->stat = stat;
+			dev->seq++;
+			thinkos_flag_give(dev->flag);
 		}
-		dev->seq++;
-		thinkos_flag_give(dev->flag);
 	}
 }
 
-uint32_t spi_io_stack[128] __attribute__ ((aligned(8), section(".stack")));
+uint32_t spi_io_stack[64] __attribute__ ((aligned(8), section(".stack")));
 
 const struct thinkos_thread_inf spi_io_thread_inf = {
 	.stack_ptr = spi_io_stack,
