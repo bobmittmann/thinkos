@@ -33,7 +33,7 @@
 #include <crc.h>
 #include <errno.h>
 
-#define TRACE_LEVEL TRACE_LVL_ERR
+#define TRACE_LEVEL TRACE_LVL_WARN
 #include <trace.h>
 
 #define SOH  0x01
@@ -215,7 +215,6 @@ error:
 	return ret;
 }
 
-
 int ymodem_snd_start(struct ymodem_snd * sy, const char * fname, 
 					 unsigned int fsize)
 {
@@ -231,17 +230,12 @@ int ymodem_snd_start(struct ymodem_snd * sy, const char * fname,
 
 	retry = 0;
 
-	while (sy->comm->op.recv(sy->comm->arg, sy->pkt.data, 1024, 200) > 0); 
-
-	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 0;
 	sy->ack = 0;
-	sy->state = YMODEM_SND_IDLE;
 
-	INFS("YS: IDLE...");
-
-	for (;;) {
+	while (sy->state == YMODEM_SND_IDLE) {
+		INFS("YS: IDLE...");
 
 		/* Wait for NAK or 'C' */
 		if ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
@@ -316,7 +310,6 @@ int ymodem_snd_start(struct ymodem_snd * sy, const char * fname,
 	return 0;
 }
 
-
 int ymodem_snd_loop(struct ymodem_snd * sy, const void * data, int len)
 {
 	uint8_t * src = (uint8_t *)data;
@@ -366,9 +359,8 @@ static int ymodem_eot(struct ymodem_snd * sy)
 	int again = 5;
 	int ret;
 
-
 	while ((int8_t)(sy->seq - sy->ack) > 0) {
-		// Wait for ACK
+		/* Wait for ACK */
 		while ((ret = sy->comm->op.recv(sy->comm->arg, pkt, 
 									 1, sy->tmout_ms)) == 0) {
 				WARNS("YS: ret==0");
@@ -414,10 +406,12 @@ static int ymodem_eot(struct ymodem_snd * sy)
 			if (c == ACK) {
 				INFS("YS: ACK");
 				sy->ack++;
+				sy->state = YMODEM_SND_IDLE;
 				if (sy->ack == sy->seq)
 					return 0;
 			} else if (c == NAK) {
-				WARNS("YS: NAK");
+				WARNS("YS: NAK.");
+				again--;
 			} else {
 				WARN("YS: %02x", c);
 			}
@@ -476,11 +470,9 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 	INFS("ymodem_snd_eot: sending EOT...");
 	ymodem_eot(sy);
 
-	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 0;
 	sy->ack = 0;
-	sy->state = YMODEM_SND_IDLE;
 
 	return 0;
 }
@@ -561,7 +553,6 @@ int ymodem_snd_done(struct ymodem_snd * sy)
 
 	WARNS("YS: ret==0");
 	sy->state = YMODEM_SND_IDLE;
-	sy->data_max = (sy->mode == XMODEM_SND_1K) ? 1024 : 128;
 	sy->data_len = 0;
 	sy->seq = 0;
 	sy->ack = 0;
