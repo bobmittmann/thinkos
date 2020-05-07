@@ -38,6 +38,10 @@
 #include "iodrv.h"
 #include "mp3lib.h"
 #include "spi.h"
+#include "tonegen.h"
+#include "encoder.h"
+
+float f32sin(int32_t x);
 
 void io_init(void)
 {
@@ -82,35 +86,166 @@ void stdio_init(void)
 	stdin = f;
 }
 
+struct tonegen tonegen[16];
+
+const struct dac_stream_op tonegen_op = {
+		.encode = (int (*)(void *, float *, unsigned int))tonegen_pcm_encode,
+		.reset = (int (*)(void *))tonegen_reset
+};
+
+const struct dac_stream tone[16] = {
+	[0] = {
+		.arg = &tonegen[0],
+		.op = tonegen_op
+	},
+	[1] = {
+		.arg = &tonegen[1],
+		.op = tonegen_op
+	},
+	[2] = {
+		.arg = &tonegen[2],
+		.op = tonegen_op
+	},
+	[3] = {
+		.arg = &tonegen[3],
+		.op = tonegen_op
+	},
+	[4] = {
+		.arg = &tonegen[4],
+		.op = tonegen_op
+	},
+	[5] = {
+		.arg = &tonegen[5],
+		.op = tonegen_op
+	},
+	[6] = {
+		.arg = &tonegen[6],
+		.op = tonegen_op
+	},
+	[7] = {
+		.arg = &tonegen[7],
+		.op = tonegen_op
+	},
+	[8] = {
+		.arg = &tonegen[8],
+		.op = tonegen_op
+	},
+	[9] = {
+		.arg = &tonegen[9],
+		.op = tonegen_op
+	},
+	[10] = {
+		.arg = &tonegen[10],
+		.op = tonegen_op
+	},
+	[11] = {
+		.arg = &tonegen[11],
+		.op = tonegen_op
+	},
+	[12] = {
+		.arg = &tonegen[12],
+		.op = tonegen_op
+	},
+	[13] = {
+		.arg = &tonegen[13],
+		.op = tonegen_op
+	},
+	[14] = {
+		.arg = &tonegen[14],
+		.op = tonegen_op
+	},
+	[15] = {
+		.arg = &tonegen[15],
+		.op = tonegen_op
+	},
+};
+
+/* White keys */
+#define NOTE_C4_FREQ (float)261.6265
+#define NOTE_D4_FREQ (float)293.6648
+#define NOTE_E4_FREQ (float)392.6276
+#define NOTE_F4_FREQ (float)349.2282
+
+#define NOTE_G4_FREQ (float)391.9954
+#define NOTE_A4_FREQ (float)440.0000
+#define NOTE_B4_FREQ (float)493.8833
+#define NOTE_C5_FREQ (float)523.2511
+
+#define NOTE_D5_FREQ (float)587.3295
+#define NOTE_E5_FREQ (float)659.2551
+#define NOTE_F5_FREQ (float)698.4565
+#define NOTE_G5_FREQ (float)783.9909
+
+#define NOTE_A5_FREQ (float)880.0000
+#define NOTE_B5_FREQ (float)987.7666
+#define NOTE_C6_FREQ (float)1046.502
+#define NOTE_D6_FREQ (float)1174.659
+
+#define NOTE_E6_FREQ (float)659.2551
+#define NOTE_F6_FREQ (float)698.4565
+#define NOTE_G6_FREQ (float)783.9909
+#define NOTE_A6_FREQ (float)880.0000
+
+#define NOTE_B6_FREQ (float)987.7666
+#define NOTE_C7_FREQ (float)1046.502
+#define NOTE_D7_FREQ (float)1174.659
+
+void note_play(int id)
+{
+	dac_stream_reset(&tone[id]);
+	dac_stream_play(&tone[id], 0.25);
+}
+
 int play_task(void *arg)
 {
+	struct encoder enc0;
+	struct encoder enc1;
+	uint32_t k1 = 4;
+	uint32_t k2 = 48;
 	int32_t stat;
+	int i;
+
+	encoder_init(&enc0, k1, 1, 1024);
+	encoder_init(&enc1, k2, 1, 1024);
+
+	for (i = 0; i < 16; ++i) {
+		dac_stream_set(i, &tone[i]);
+		tonegen_env_set(&tonegen[i], k1, k2);
+	} 
 
 	stat = spidev_rd();
 
 	for (;;) {
 		int32_t tmp;
+		int32_t diff;
 		int32_t down;
 
 		tmp = spidev_rd();
 
-		down = (stat ^ tmp) & tmp;
-		stat = tmp;
+		diff = (stat ^ tmp);
+		if (diff) {
+			stat = tmp;
 
-		if (down & (1 << 0)) { 
-			printf("0\n");
-		} else if (down & (1 << 1)) {
-			printf("1\n");
-		} else if (down & (1 << 2)) {
-			printf("2\n");
-		} else if (down & (1 << 3)) {
-			printf("3\n");
-		} else if (down & (1 << 4)) {
-			printf("4\n");
-		} else if (down & (1 << 5)) {
-			printf("5\n");
-		} else if (down & (1 << 6)) {
-			printf("6\n");
+			down = diff & stat;
+			for (i = 4; i < 16; ++i) {
+				if (down & (1 << i)) { 
+					dac_stream_reset(&tone[i]);
+				}
+			} 
+
+			if (diff & (3 << 0)) { 
+				k1 = encoder_decode(&enc0, stat);
+			} 
+
+			if (diff & (3 << 2)) { 
+				k2 = encoder_decode(&enc1, stat >> 2);
+			} 
+
+			if (diff & (7 << 0)) { 
+				for (i = 0; i < 16; ++i) {
+					tonegen_env_set(&tonegen[i], k1, k2);
+				} 
+			}
 		}
 	}
 
@@ -130,19 +265,22 @@ const struct thinkos_thread_inf play_thread_inf = {
 
 void play_init(void)
 {
-	thinkos_thread_create_inf((void *)play_task, (void *)NULL,
+	thinkos_thread_create_inf((int (*)(void *))play_task, (void *)NULL,
 				  &play_thread_inf);
 }
 
 int main(int argc, char ** argv)
 {
 	int32_t sw = 0;
-	int32_t gain;
+	float gain;
+	float ampl;
+	int32_t k1;
+	int32_t k2;
+	int i;
 
 	stdio_init();
 
-	printf("Starting piano...\n");
-
+//	printf("Starting piano...\n");
 //	for (;;) {
 //		thinkos_sleep(100);
 //	};
@@ -157,6 +295,34 @@ int main(int argc, char ** argv)
 
 	play_init();
 
+	for (i = 0; i < 16; ++i) {
+		tonegen_init(&tonegen[i], DAC_SAMPLERATE, 1);
+	}
+
+	ampl = 0.33;
+	k1 = 4;
+	k2 = 64;
+
+	tonegen_set(&tonegen[0], NOTE_C4_FREQ, ampl, k1, k2);
+	tonegen_set(&tonegen[1], NOTE_D4_FREQ, ampl, k1, k2);
+	tonegen_set(&tonegen[2], NOTE_E4_FREQ, ampl, k1, k2);
+	tonegen_set(&tonegen[3], NOTE_F4_FREQ, ampl, k1, k2);
+
+	tonegen_set(&tonegen[4], NOTE_G4_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[5], NOTE_A4_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[6], NOTE_B4_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[7], NOTE_C5_FREQ , ampl, k1, k2);
+
+	tonegen_set(&tonegen[8], NOTE_D5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[9], NOTE_E5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[10], NOTE_F5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[11], NOTE_G5_FREQ , ampl, k1, k2);
+
+	tonegen_set(&tonegen[12], NOTE_A5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[13], NOTE_B5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[14], NOTE_C6_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[15], NOTE_D6_FREQ , ampl, k1, k2);
+
 	for (;;) {
 		int32_t tmp;
 
@@ -165,7 +331,8 @@ int main(int argc, char ** argv)
 		if (tmp != sw) {
 			sw = tmp;
 
-			gain = (sw * 32765) / 10;
+			gain = ((float)sw) / 9;
+			printf("gain=%f", (double)gain);
 			dac_gain_set(gain);
 		}
 	}

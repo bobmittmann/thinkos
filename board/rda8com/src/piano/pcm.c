@@ -34,77 +34,58 @@
 
 #include "board.h"
 #include "dac.h"
+#include "mad.h"
 
 #define SHRT_MAX 32767
+
+#ifndef DAC_FRAME_SIZE
+#define DAC_FRAME_SIZE 64
+#endif
+
+#ifndef DAC_SAMPLERATE
+#define DAC_SAMPLERATE 22050
+#endif
 
 #define DAC2_GPIO STM32_GPIOA, 5
 #define DAC2_DMA_CHAN STM32_DMA_CHANNEL4
 
 const int16_t dac_silence[DAC_FRAME_SIZE] = { 0, }; 
 
-/* 16 bit pcm encoding */
-int silence_pcm_encode(void * arg, float pcm[], unsigned int len)
-{
-	unsigned int i;
-
-	for (i = 0; i < len; ++i) {
-		pcm[i] = 0;
-	}
-
-	return len;
-}
-
-int silence_reset(void * arg)
-{
-	return 0;
-}
-
-const struct dac_stream_op silence_gen_op = {
-	.encode = (int (*)(void *, float*, unsigned int))silence_pcm_encode,
-	.reset = (int (*)(void *))silence_reset
-};
-
-const struct dac_stream silence = {
-	.arg = NULL,
-	.op = silence_gen_op
-};
-
 struct {
 	uint16_t dma_buf[2][DAC_FRAME_SIZE];
-	volatile float gain;
+	volatile int32_t offs;
+	volatile int32_t gain;
+	volatile uint32_t samp_cnt;
 	volatile uint32_t clk;
+	int16_t * volatile src_ptr;
 	volatile uint8_t enabled;
 	uint8_t flag;
-	struct {
-		const struct dac_stream * s;
-	} voice[16];
 } dac_rt;
 
 int dac_task(void *arg)
 {
 	struct stm32f_dma *dma = STM32F_DMA1;
 
+	dac_rt.samp_cnt = 0;
+	dac_rt.clk = 0;
+
 	for (;;) {
-		float pcm[DAC_FRAME_SIZE];
-		uint16_t * dst;
+		uint16_t *dst;
+		int16_t *src;
 		uint32_t isr;
-		int32_t y;
-		float gain;
+		int32_t gain = dac_rt.gain;
+		int32_t offs = dac_rt.offs;
 		int i;
-		int j;
 
 		/* Wait for ADC convertion to finish */
 		thinkos_irq_wait(STM32_IRQ_DMA1_CH4);
 		isr = dma->isr;
 		if (isr & DMA_TEIF4) {
-//			printf("!");
 			/* clear the DMA transfer error flag */
 			dma->ifcr = DMA_CTEIF4;
 		}
-		if ((isr & (DMA_TCIF4 | DMA_CHTIF4)) == 0) {
-//			printf(".");
+		if ((isr & (DMA_TCIF4 | DMA_CHTIF4)) == 0)
 			continue;
-		}
 
 		/* clear the DMA transfer complete flags */
 		dma->ifcr = DMA_TCIF4 | DMA_CHTIF4;
@@ -115,74 +96,64 @@ int dac_task(void *arg)
 			dst = dac_rt.dma_buf[1];
 		}
 
-		gain = dac_rt.gain * 32767;
+		src = dac_rt.src_ptr;
 
-		for (i = 0; i < DAC_FRAME_SIZE; ++i)
-			pcm[i] = 0;
-
-		for (j = 0; j < 16; ++j) {
-			const struct dac_stream * s = dac_rt.voice[j].s;
-
-			s->op.encode(s->arg, pcm, DAC_FRAME_SIZE);
-		}
 		for (i = 0; i < DAC_FRAME_SIZE; ++i) {
-			y = gain * pcm[i];
-			dst[i] = __SSAT(y, 16) + 32768;
+			int32_t xi;
+			int32_t yi;
+
+			xi = src[i];
+
+			yi = Q15_MUL(xi, gain);
+
+			dst[i] = __SSAT((int32_t) yi, 16) + offs;
 		}
-
+		
 		dac_rt.clk += DAC_FRAME_SIZE;
-
 		thinkos_flag_give(dac_rt.flag);
 	}
 
 	return 0;
 }
 
-void dac_dma_init(void *src, unsigned int ndt)
+void dac_pcm8_play(const uint8_t pcm[], unsigned int len)
 {
-	struct stm32f_dac *dac = STM32F_DAC1;
-	struct stm32f_dma *dma = STM32F_DMA1;
-	uint32_t cselr;
+	int16_t buf[DAC_FRAME_SIZE];
+	uint32_t clk;
+	unsigned int j;
+	
 
-	/* DMA clock enable */
-	stm32_clk_enable(STM32_RCC, STM32_CLK_DMA1);
+	thinkos_flag_take(dac_rt.flag);
+	clk = dac_rt.clk;
+	thinkos_flag_take(dac_rt.flag);
+	clk = dac_rt.clk;
 
-	/* DMA Disable */
-	dma->ch[DAC2_DMA_CHAN].ccr = 0;
-	/* Wait for the channel to be ready .. */
-	while (dma->ch[DAC2_DMA_CHAN].ccr & DMA_EN) ;
+	j = 0;
+	while (j < len) {
+		int rem;
+		int n;
+		int i;
 
-	/* Channel select */
-	cselr = dma->cselr & ~(DMA1_C4S_MSK);
-	dma->cselr = cselr | DMA1_C4S_TIM7_UP_DAC2;
+		rem = len - j;
+		n = MIN(rem, DAC_FRAME_SIZE);
 
-	/* Peripheral address */
-	dma->ch[DAC2_DMA_CHAN].cpar = &dac->dhr12l2;
-//      dma->ch[DAC2_DMA_CHAN].cpar = &dac->dhr12r2;
-	/* Memory pointer */
-	dma->ch[DAC2_DMA_CHAN].cmar = (void *)src;
-	/* Number of data items to transfer */
-	dma->ch[DAC2_DMA_CHAN].cndtr = ndt;
-	/* Configuration for double buffer circular, 
-	   half-transfer interrupt  */
-	dma->ch[DAC2_DMA_CHAN].ccr = DMA_MSIZE_16 | DMA_PSIZE_16 |
-	    DMA_MINC | DMA_CIRC | DMA_DIR_MTP;
-	/* enable DAC DMA */
-	dma->ch[DAC2_DMA_CHAN].ccr |= DMA_HTIE | DMA_TCIE | DMA_TEIE | DMA_EN;
+		for (i = 0; i < n; ++i)
+			buf[i] = (pcm[j++] - 128) * 256;
+
+		for (; i < DAC_FRAME_SIZE; ++i)
+			buf[i] = 0;
+
+
+		clk += DAC_FRAME_SIZE;
+		thinkos_flag_take(dac_rt.flag);
+		dac_rt.src_ptr = buf;
+	}
+
+	thinkos_flag_take(dac_rt.flag);
+	dac_rt.src_ptr = (int16_t *)dac_silence;
 }
 
-uint32_t dac_stack[64 + 2* DAC_FRAME_SIZE] __attribute__ ((aligned(8), section(".stack")));
-
-const struct thinkos_thread_inf dac_thread_inf = {
-	.stack_ptr = dac_stack,
-	.stack_size = sizeof(dac_stack),
-	.priority = 2,
-	.thread_id = 2,
-	.paused = 0,
-	.tag = "DAC"
-};
-
-static void tim7_init(uint32_t freq)
+void tim7_init(uint32_t freq)
 {
 	struct stm32f_tim *tim = STM32F_TIM7;
 	uint32_t div;
@@ -218,10 +189,53 @@ static void tim7_init(uint32_t freq)
 	tim->cr1 = TIM_URS | TIM_CEN;	/* Enable counter */
 }
 
+void dac_dma_init(void *src, unsigned int ndt)
+{
+	struct stm32f_dac *dac = STM32F_DAC1;
+	struct stm32f_dma *dma = STM32F_DMA1;
+	uint32_t cselr;
+
+	/* DMA clock enable */
+	stm32_clk_enable(STM32_RCC, STM32_CLK_DMA1);
+
+	/* DMA Disable */
+	dma->ch[DAC2_DMA_CHAN].ccr = 0;
+	/* Wait for the channel to be ready .. */
+	while (dma->ch[DAC2_DMA_CHAN].ccr & DMA_EN) ;
+
+	/* Channel select */
+	cselr = dma->cselr & ~(DMA1_C4S_MSK);
+	dma->cselr = cselr | DMA1_C4S_TIM7_UP_DAC2;
+
+	/* Peripheral address */
+	dma->ch[DAC2_DMA_CHAN].cpar = &dac->dhr12l2;
+//      dma->ch[DAC2_DMA_CHAN].cpar = &dac->dhr12r2;
+	/* Memory pointer */
+	dma->ch[DAC2_DMA_CHAN].cmar = (void *)src;
+	/* Number of data items to transfer */
+	dma->ch[DAC2_DMA_CHAN].cndtr = ndt;
+	/* Configuration for double buffer circular, 
+	   half-transfer interrupt  */
+	dma->ch[DAC2_DMA_CHAN].ccr = DMA_MSIZE_16 | DMA_PSIZE_16 |
+	    DMA_MINC | DMA_CIRC | DMA_DIR_MTP;
+	/* enable DAC DMA */
+	dma->ch[DAC2_DMA_CHAN].ccr |= DMA_HTIE | DMA_TCIE | DMA_TEIE | DMA_EN;
+}
+
+uint32_t dac_stack[64] __attribute__ ((aligned(8), section(".stack")));
+
+const struct thinkos_thread_inf dac_thread_inf = {
+	.stack_ptr = dac_stack,
+	.stack_size = sizeof(dac_stack),
+	.priority = 2,
+	.thread_id = 2,
+	.paused = 0,
+	.tag = "DAC"
+};
+
 void dac_init(void)
 {
 	struct stm32f_dac *dac = STM32F_DAC1;
-	int j;
 
 	/* DAC clock enable */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_DAC1);
@@ -240,13 +254,11 @@ void dac_init(void)
 
 	dac_rt.flag = thinkos_flag_alloc();
 	dac_rt.enabled = 0;
-	dac_rt.gain = 1;
+	dac_rt.src_ptr = (int16_t *)dac_silence;
+	dac_rt.offs = 32768;
+	dac_rt.gain = Q15(0.08);
 
-	for (j = 0; j < 16; ++j) { 
-		dac_rt.voice[j].s = &silence; 
-	}
-
-	thinkos_thread_create_inf((int (*)(void *))dac_task, (void *)NULL,
+	thinkos_thread_create_inf((void *)dac_task, (void *)NULL,
 				  &dac_thread_inf);
 }
 
@@ -264,21 +276,7 @@ void dac_stop(void)
 	dac->cr &= ~DAC_EN2;
 }
 
-void dac_gain_set(float gain)
+void dac_gain_set(int32_t gain)
 {
 	dac_rt.gain = gain;
 }
-
-void dac_stream_set(int id, const struct dac_stream * s)
-{
-	if (id > 16)
-		return;
-
-	dac_rt.voice[id].s = s;
-}
-
-void dac_stream_reset(const struct dac_stream * s)
-{
-	s->op.reset(s->arg);
-}
-

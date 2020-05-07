@@ -20,51 +20,46 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __DAC_H__
-#define __DAC_H__
+#ifndef __TONEGEN_H__
+#define __TONEGEN_H__
 
-#ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 64
-#endif
+#include <stdint.h>
 
-#ifndef DAC_SAMPLERATE
-#define DAC_SAMPLERATE 22050
-#endif
-
-struct dac_stream_op {
-	int (* encode)(void *, float pcm[], unsigned int len);
-	int (* reset)(void *);
-};
-
-struct dac_stream {
-	void * arg;
-	const struct dac_stream_op op;
+struct tonegen {
+	float a;
+	float t;
+	struct {
+		volatile int32_t p;
+		int32_t dp;
+	} osc;
+	struct {
+		float e0;
+		volatile float e1;
+		volatile float e2;
+		float c1;
+		float c2;
+	} env;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void dac_init(void);
 
-void dac_pcm8_play(const uint8_t pcm[], unsigned int len);
+int tonegen_init(struct tonegen *tone, float samplerate, float ampl);
 
-int dac_mp3_play(const uint8_t data[], unsigned int len);
+int tonegen_reset(struct tonegen *tone);
 
-void dac_start(void);
+int tonegen_set(struct tonegen *tone, float freq, 
+				float ampl, uint32_t k1, uint32_t k2);
 
-void dac_stop(void);
+int tonegen_env_set(struct tonegen *tone, uint32_t k1, uint32_t k2);
 
-void dac_gain_set(float gain);
-
-void dac_stream_play(const struct dac_stream * s, float t);
-
-void dac_stream_reset(const struct dac_stream * s);
-
-void dac_stream_set(int id, const struct dac_stream * s);
+int tonegen_pcm_encode(struct tonegen *tone, 
+					   float pcm[], unsigned int len);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __DAC_H__ */
+#endif /* __TONEGEN_H__ */
 

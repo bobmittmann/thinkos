@@ -20,51 +20,33 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __DAC_H__
-#define __DAC_H__
+#ifndef __ENCODER_H__
+#define __ENCODER_H__
 
-#ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 64
-#endif
+#include <stdint.h>
 
-#ifndef DAC_SAMPLERATE
-#define DAC_SAMPLERATE 22050
-#endif
-
-struct dac_stream_op {
-	int (* encode)(void *, float pcm[], unsigned int len);
-	int (* reset)(void *);
-};
-
-struct dac_stream {
-	void * arg;
-	const struct dac_stream_op op;
+struct encoder {
+	uint32_t code;
+	uint32_t val;
+	uint32_t min;
+	uint32_t max;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void dac_init(void);
 
-void dac_pcm8_play(const uint8_t pcm[], unsigned int len);
+void encoder_init(struct encoder * enc, uint32_t val, 
+				  uint32_t min, uint32_t max);
 
-int dac_mp3_play(const uint8_t data[], unsigned int len);
+uint32_t encoder_decode(struct encoder * enc, 
+						unsigned int code);
 
-void dac_start(void);
-
-void dac_stop(void);
-
-void dac_gain_set(float gain);
-
-void dac_stream_play(const struct dac_stream * s, float t);
-
-void dac_stream_reset(const struct dac_stream * s);
-
-void dac_stream_set(int id, const struct dac_stream * s);
+uint32_t encoder_val(struct encoder * enc);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __DAC_H__ */
+#endif /* __ENCODER_H__ */
 

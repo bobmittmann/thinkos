@@ -33,8 +33,8 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG = piano
 
-CFILES = piano.c dac.c spi.c \
-		 casa.c amora.c batatinha.c entre.c bell1.c vaembora.c
+CFILES = piano.c dac.c spi.c f32sin.c\
+		 encoder.c tonegen.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
 		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libtty $(SDK_DIR)/libutil \
@@ -45,7 +45,7 @@ LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt tty mad
 INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
 
 CDEFS = CONFIG_H 
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
+CFLAGS = -Ofast -fomit-frame-pointer -Werror -Wall -Wdouble-promotion -Wno-unused-parameter -Wextra -Wpedantic 
 OPTIONS = -g -mno-unaligned-access 
 LDFLAGS = -Wl,--gc-sections 
 
