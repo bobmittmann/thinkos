@@ -21,7 +21,7 @@ function Q31(x::Float64)
 end
 
 function Q31F(x::Int64)
-	y::Float64 = 0
+	y::Float32 = 0
 	y = x * (1.0 / (1 << 31))
 	return y
 end
@@ -61,115 +61,41 @@ function Q31ADD(x::Int32, y::Int32)
 	return Q31SAT(xx + yy)
 end
 
-function q31sin_lookup(i::Int32)
-	LOG2_N::Int32 = Int32(log2(N_SIN))
-	MASK_N::Int32 = (1 << LOG2_N) - 1
-	y::Int32 = 0
-	s::Int32 = 0
 
-	s = ((i >>> LOG2_N) == 1) ? -1 : 1
-	y = sintab[(i & MASK_N) + 1] * s
-
-	return y
-end
-
-function _q31sin(x::Int32, poly::Int=2)
-	LOG2_N::Int32 = Int32(log2(N_SIN))
-	MASK_N::Int32 = (1 << LOG2_N) - 1
-	DX::Int32 = 1 << (31 - LOG2_N)
-	n::Int32 = N_SIN
-	dy321::Int32 = 0
-	dy32::Int32 = 0
-	dy21::Int32 = 0
-	y2::Int32 = 0
-	y1::Int32 = 0
-	y::Int32 = 0
-	x1::Int32 = 0
-	x2::Int32 = 0
-	x3::Int32 = 0
-	qx1::Int32 = 0
-	dx2::Int32 = 0
-	i::Int32 = 0
-	acc::Int64 = 0
-
-	i = x >>> (31 - LOG2_N)
-
-	x1 = i << (31 - LOG2_N)
-	y1 = sintab[(i & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
-
-	x2 = x1 + DX
-	y2 = sintab[((i + 1) & MASK_N) + 1] * ((x2 < 0) ? -1 : 1)
-
-	x3 = x2 + DX
-	y3 = sintab[((i + 2) & MASK_N) + 1] * ((x3 < 0) ? -1 : 1)
-
-	dy21 = (y2 - y1)
-	dy32 = (y3 - y2)
-	dy321 = div(dy32 - dy21, 2)
-#	@printf("y21=%d y32=%d y321=%d\n", dy21, dy32, dy321)
-	qx1 = Q31DIV(x - x1, DX)
-	dx2 = Q31DIV(x - x2, DX)
-#	@printf("x1=%d x2=%d x12=%d ", qx1, dx2, Q31DIV(Q31MUL(qx1, dx2), DX+DX))
-
-#	@printf("y=%d dy=%d ddy=%d\n", y1,
-#			Q31DIV(Q31MUL(qx1, dy21), DX),
-#			Q31DIV(Q31MUL(Q31DIV(Q31MUL(qx1, dx2), (DX + DX)), dy321), DX))
-
-	acc = y1
-	if (poly > 0)
-		acc += Q31MUL(qx1, dy21)
-		if (poly > 1)
-			acc += Q31MUL(Q31MUL(qx1, dx2), dy321)
-		end
-	end
-	y = Q31SAT(acc)
-#	@printf("<%6.3f,%6.3f>\n", Q31F(x), Q31F(y))
-
-	return y
-end	
-
-function q31sin(x::Int32, poly::Int=2)
+function f32sin(x::Int32, poly::Int=2)
 	LOG2_N::Int32 = Int32(log2(N_SIN))
 	MASK_N::Int32 = (1 << LOG2_N) - 1
 	DX::Int32 = 1 << (31 - LOG2_N)
 	Q31_ONE = Int32(Q31(1.0) - 1)
-	dy10::Int32 = 0
-	y2::Int32 = 0
-	y1::Int32 = 0
-	y::Int32 = 0
+	dy10::Float32 = 0
+	y2::Float32 = 0
+	y1::Float32 = 0
+	y::Float32 = 0
 	x0::Int32 = 0
 	x1::Int32 = 0
 	x2::Int32 = 0
 	x3::Int32 = 0
-	qx0::Int32 = 0
-	acc::Int64 = 0
-	sin_x0::Int32 = 0
-	cos_x0::Int32 = 0
-	sin_x1::Int32 = 0
-	cos_x1::Int32 = 0
-	sin_fx::Int32 = 0
-	cos_fx::Int32 = 0
-	ffx::Int32 = 0
-	sin_fx0::Int32 = 0
-	cos_fx0::Int32 = 0
+	qx0::Float32 = 0
+	acc::Float32 = 0
+	sin_x0::Float32 = 0
+	cos_x0::Float32 = 0
+	sin_x1::Float32 = 0
+	cos_x1::Float32 = 0
+	sin_fx::Float32 = 0
+	cos_fx::Float32 = 0
+	sin_fx0::Float32 = 0
+	cos_fx0::Float32 = 0
 	fx::Int32 = 0
+	ffx::Int32 = 0
 	i::Int32 = 0
 	j::Int32 = 0
 
 	i = x >>> (31 - LOG2_N)
-
 	x0 = i << (31 - LOG2_N)
 	sin_x0 = qsintab[(i & MASK_N) + 1] * ((x0 < 0) ? -1 : 1)
 
-#	@printf("y21=%d y32=%d y321=%d\n", dy21, dy32, dy321)
-#	@printf("x1=%d x2=%d x12=%d ", qx1, dx2, Q31DIV(Q31MUL(qx1, dx2), DX+DX))
-
-#	@printf("y=%d dy=%d ddy=%d\n", y1,
-#			Q31DIV(Q31MUL(qx1, dy21), DX),
-#			Q31DIV(Q31MUL(Q31DIV(Q31MUL(qx1, dx2), (DX + DX)), dy321), DX))
-
 	if (poly == 1)
-		qx0 = Q31DIV(x - x0, DX)
+		qx0 = Q31F(x - x0) / Q31F(DX)
 
 		x1 = x0 + DX
 		sin_x1 = qsintab[((i + 1) & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
@@ -177,12 +103,12 @@ function q31sin(x::Int32, poly::Int=2)
 		dy10 = (sin_x1 - sin_x0)
 
 		acc = sin_x0
-		acc += Q31MUL(qx0, dy10)
+		acc += qx0 * dy10
 	elseif (poly == 2)
-		dy20::Int32 = 0
-		dy21::Int32 = 0
-		qx1::Int32 = 0
-		sin_x2::Int32 = 0
+		dy20::Float32 = 0
+		dy21::Float32 = 0
+		qx1::Float32 = 0
+		sin_x2::Float32 = 0
 
 		x1 = x0 + DX
 		sin_x1 = qsintab[((i + 1) & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
@@ -190,19 +116,19 @@ function q31sin(x::Int32, poly::Int=2)
 		x2 = x1 + DX
 		sin_x2 = qsintab[((i + 2) & MASK_N) + 1] * ((x2 < 0) ? -1 : 1)
 
-		qx0 = Q31DIV(x - x0, DX)
-		qx1 = Q31DIV(x - x1, DX)
+		qx0 = Q31F(x - x0) / Q31F(DX)
+		qx1 = Q31F(x - x1) / Q31F(DX)
 
 		dy10 = (sin_x1 - sin_x0)
 		dy21 = (sin_x2 - sin_x1)
-		dy20 = div(dy21 - dy10, 2)
+		dy20 = (dy21 - dy10) / 2
 
 		acc = sin_x0
-		acc += Q31MUL(qx0, dy10)
-		acc += Q31MUL(Q31MUL(qx0, qx1), dy20)
+		acc += qx0 * dy10
+		acc += qx0 * qx1 * dy20
 	elseif (poly == 3)
-		sin_ffx::Int32 = 0
-		cos_ffx::Int32 = 0
+		sin_ffx::Float32 = 0
+		cos_ffx::Float32 = 0
 
 		x1 = x0 + Int32(Q31(0.5))
 		i = x1 >>> (31 - LOG2_N)
@@ -215,19 +141,19 @@ function q31sin(x::Int32, poly::Int=2)
 		sin_fx0 = fsintab[j + 1];
 		cos_fx0 = fcostab[j + 1];
 
-		sin_ffx = ffx
-		cos_ffx = Q31_ONE - div(Q31MUL(ffx, ffx), 2)
+		sin_ffx = Q31F(ffx)
+		cos_ffx = Float32(1) - ((ffx * ffx) / 2)
 	 
 		sin_fx = sin_fx0# - Q31MUL(cos_fx0, sin_ffx)
 		cos_fx = cos_fx0# + Q31MUL(sin_fx0, sin_ffx)
 
-		acc = Q31MUL(sin_x0, cos_fx)
-		acc += Q31MUL(cos_x0, sin_fx)
+		acc = sin_x0 * cos_fx
+		acc += cos_x0 * sin_fx
 	elseif (poly == 4)
-		sin_fx1::Int32 = 0
-		cos_fx1::Int32 = 0
-		qfx::Int32 = 0
-		sfx::Int32 = 0
+		sin_fx1::Float32 = 0
+		cos_fx1::Float32 = 0
+		qfx::Float32 = 0
+		sfx::Float32 = 0
 		DFX::Int32 = 1 << (31 - 2*LOG2_N)
 	
 
@@ -238,27 +164,22 @@ function q31sin(x::Int32, poly::Int=2)
 		fx = (x - x0)
 		i = fx >>> (31 - 2*LOG2_N)
 		ffx = fx - (i << (31 - 2*LOG2_N))
-		qfx = Q31DIV(ffx, DFX)
-		sfx = ffx * Int32(1 << LOG2_N)
-		sfx = sfx * Int32(1 << LOG2_N)
-		if (qfx != sfx)
-			@printf("ffx=%08x qfx=%08x sfx=%08x\n", ffx, qfx, sfx)
-		end
+		qfx = Q31F(ffx) * (Float32(1.0) / Q31F(DFX))
 
 		sin_fx0 = fsintab[i + 1] 
 		sin_fx1 = fsintab[i + 2] 
-		sin_fx = sin_fx0 + Q31MUL(sin_fx1 - sin_fx0, qfx)
+		sin_fx = sin_fx0 + (sin_fx1 - sin_fx0) * qfx
 
 		cos_fx0 = fcostab[i + 1]
 		cos_fx1 = fcostab[i + 2]
-		cos_fx = cos_fx0 + Q31MUL(cos_fx1 - cos_fx0, qfx)
+		cos_fx = cos_fx0 + (cos_fx1 - cos_fx0) * qfx
 
-		acc = Q31MUL(sin_x0, cos_fx)
-		acc += Q31MUL(cos_x0, sin_fx)
+		acc = sin_x0 * cos_fx
+		acc += cos_x0 * sin_fx
 	elseif (poly == 5)
-		a::Int32 = 0;
-		a2::Int32 = 0;
-		a3::Int32 = 0;
+		a::Float32 = 0;
+		a2::Float32 = 0;
+		a3::Float32 = 0;
 
 		x1 = x0 + DX
 		sin_x1 = qsintab[((i + 1) & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
@@ -271,15 +192,15 @@ function q31sin(x::Int32, poly::Int=2)
 		cos_x1 = qsintab[((j + 1) & MASK_N) + 1] * ((x2 < 0) ? -1 : 1)
 
 		dx0 = x - x0
-		a = Q31DIV(dx0, DX)
-		a2 = Q31DIV(Q31MUL(dx0, dx0), Q31MUL(DX, DX))
-		a3 = Q31MUL(a2, a)
+		a = Q31F(dx0) / Q31F(DX)
+		a2 = (dx0 * dx0) / (Q31F(DX) * Q31F(DX))
+		a3 = a2 * a
 
 		acc = sin_x0
-		acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0)
-		acc += Q31MUL(Int32(3*a2 - 2*a3), sin_x1)
-		acc += Q31MUL(Int32(a - 2*a2 + a3), cos_x0)
-		acc += Q31MUL(Int32(a3 - a2), cos_x1)
+		acc += (2*a3 - 3*a2) * sin_x0
+		acc += (3*a2 - 2*a3) * sin_x1
+		acc += (a - 2*a2 + a3) * cos_x0
+		acc += (a3 - a2) * cos_x1
 #	acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0 - sin_x1)
 #	acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0 - sin_x1)
 #		acc += Q31MUL(a - a2, cos_x0)
@@ -288,18 +209,12 @@ function q31sin(x::Int32, poly::Int=2)
 		acc = sin_x0
 	end
 
-	y = Q31SAT(acc)
-#	@printf("<%6.3f,%6.3f>\n", Q31F(x), Q31F(y))
-
-	return y
+	return acc
 end	
 
-function q31sin(x::Int64, poly::Int=2)
-	return q31sin(Q31SAT(x), poly)
+function f32sin(x::Int64, poly::Int=2)
+	return f32sin(Q31SAT(x), poly)
 end	
-
-export filt2c_common_header
-export filt2c_gcc_header 
 
 function mk_c_head(n::Int)
 	txt = AbstractString[
@@ -335,16 +250,17 @@ function mk_c_head(n::Int)
 	return txt
 end
 
-function q31_table_entry(i::Int, x::Float64)
+function f32_table_entry(i::Int, x::Float64)
 	y = convert(Int64, round(x * Float64(0x7fffffff)))
 	return @sprintf("\t0x%08x, /* %3d -> %13.10f */", y & 0xffffffff, i, Q31F(y))
 end
 
-q31_qsin_table_entry(i::Int, n::Int) = q31_table_entry(i, sin(π*i/n))
+f32_qsin_table_entry(i::Int, n::Int) = f32_table_entry(i, sin(π*i/n))
 
-q31_fsin_table_entry(i::Int, n::Int) = q31_table_entry(i, sin(π*i/(n*n)))
+f32_fsin_table_entry(i::Int, n::Int) = f32_table_entry(i, sin(π*i/(n*n)))
 
-q31_fcos_table_entry(i::Int, n::Int) = q31_table_entry(i, cos(π*i/(n*n)))
+f32_fcos_table_entry(i::Int, n::Int) = f32_table_entry(i, cos(π*i/(n*n)))
+
 
 function mk_c_qsintab(n::Int)
 	txt1 = AbstractString[
@@ -352,7 +268,7 @@ function mk_c_qsintab(n::Int)
 	]
 
 	txt2 = AbstractString[
-	q31_qsin_table_entry(i, n) for i in 0:n-1
+	f32_qsin_table_entry(i, n) for i in 0:n-1
 	]
 
 	txt3 = AbstractString[
@@ -371,7 +287,7 @@ function mk_c_frac_tabs(n::Int)
 	]
 
 	txt2 = AbstractString[
-	q31_fsin_table_entry(i, n) for i in 0:n
+	f32_fsin_table_entry(i, n) for i in 0:n
 	]
 
 	txt3 = AbstractString[
@@ -381,7 +297,7 @@ function mk_c_frac_tabs(n::Int)
 	]
 
 	txt4 = AbstractString[
-	q31_fcos_table_entry(i, n) for i in 0:n
+	f32_fcos_table_entry(i, n) for i in 0:n
 	]
 
 	txt5 = AbstractString[
@@ -395,12 +311,12 @@ function mk_c_frac_tabs(n::Int)
 end
 
 # Polynomial interpolation version
-function mk_c_q31sin_poly(n::Int64)
+function mk_c_f32sin_poly(n::Int64)
 	txt = AbstractString[
 	""
 	"#if (FIXPT_SINCOS_INTRPL_POLY) || (FIXPT_SINCOS_INTRPL_POLY2)"
 	"/* Polynomial interpolation version */"
-	"int32_t q31sin(int32_t x)"
+	"int32_t f32sin(int32_t x)"
 	"{"
 	"#if (FIXPT_SINCOS_INTRPL_POLY2)"
 	"\tint32_t y321;"
@@ -453,14 +369,14 @@ function mk_c_q31sin_poly(n::Int64)
 	return txt
 end
 
-function mk_c_q31sin_trig(n::Int64)
+function mk_c_f32sin_trig(n::Int64)
 	txt = AbstractString[
 	""
 	"#if (FIXPT_SINCOS_INTRPL_TRIG)"
 	"/* Circular interpolation version, using the trigonometric "
 	"   identity: sin(a + b) = sin(a)*cos(b) + cos(a)*sin(b) "
 	"*/"
-	"int32_t q31sin(int32_t x)"
+	"int32_t f32sin(int32_t x)"
 	"{"
 	"\tint32_t x0;"
 	"\tint32_t x1;"
@@ -512,13 +428,13 @@ function mk_c_q31sin_trig(n::Int64)
 	]
 end	
 
-function mk_q31sin(prefix, n::Int)
+function mk_f32sin(prefix, n::Int)
 
 	c_lines = vcat(mk_c_head(n) , 
 				   mk_c_qsintab(n),
 				   mk_c_frac_tabs(n),
-				   mk_c_q31sin_poly(n),
-				   mk_c_q31sin_trig(n)
+				   mk_c_f32sin_poly(n),
+				   mk_c_f32sin_trig(n)
 				   )
 
 	out_dir = ".."
@@ -534,6 +450,85 @@ function mk_q31sin(prefix, n::Int)
 	close(f)
 end
 
+function float32_table_entry(i::Int, x::Float64)
+	y = convert(Float32, x)
+	return @sprintf("\t%a,", y)
+end
+
+float32_qsin_table_entry(i::Int, n::Int) = float32_table_entry(i, sin(π*i/n))
+
+float32_fsin_table_entry(i::Int, n::Int) = float32_table_entry(i, sin(π*i/(n*n)))
+
+float32_fcos_table_entry(i::Int, n::Int) = float32_table_entry(i, cos(π*i/(n*n)))
+
+function mk_c_float32_qsintab(n::Int)
+	txt1 = AbstractString[
+	"const float sintab[] = {"
+	]
+
+	txt2 = AbstractString[
+	float32_qsin_table_entry(i, n) for i in 0:n-1
+	]
+
+	txt3 = AbstractString[
+	"};"
+	""
+	"#define DX ((int32_t)(1 << (31 - LOG2_N)))"
+	""
+	]
+
+	return vcat(txt1, txt2, txt3)
+end
+
+function mk_c_float32_ftabs(n::Int)
+	txt1 = AbstractString[
+	"const float fsintab[] = {"
+	]
+
+	txt2 = AbstractString[
+	float32_fsin_table_entry(i, n) for i in 0:n
+	]
+
+	txt3 = AbstractString[
+	"};"
+	""
+	"const float fcostab[] = {"
+	]
+
+	txt4 = AbstractString[
+	float32_fcos_table_entry(i, n) for i in 0:n
+	]
+
+	txt5 = AbstractString[
+	"};"
+	""
+	"#define DFX ((int32_t)(1 << (31 - 2*LOG2_N)))"
+	""
+	]
+
+	return vcat(txt1, txt2, txt3, txt4, txt5)
+end
+
+
+function mk_float32_sin(prefix, n::Int)
+
+	c_lines = vcat(mk_c_head(n) , 
+				   mk_c_float32_qsintab(n),
+				   mk_c_float32_ftabs(n)
+				   )
+
+	out_dir = "."
+	fname = @sprintf("%s/%s.c", out_dir, prefix)
+
+	@printf("\nWriting to file: \"%s\"...\n", fname)
+
+	f = open(fname, "w")
+	for s in c_lines
+		write(f, s * "\n")
+	end
+
+	close(f)
+end
 
 function dss_test(freq::Float64, samplerate=88200)
 	dw::Int32 = Q31(freq / samplerate)
@@ -546,35 +541,33 @@ function dss_test(freq::Float64, samplerate=88200)
 
 	y = zeros(Int32, length(t))
 	for i in 1:length(t)
-		y[i] = q31sin(w, 2)
+		y[i] = f32sin(w, 2)
 		w += dw
 	end
 	
 	return (t, y)
 end
 
-Q31S(x::Float64) = convert(Int32, round(x * Float64(0x7fffffff)))
-
-qsintab = zeros(Int32, N_SIN)
-fsintab = zeros(Int32, N_SIN + 1)
-fcostab = zeros(Int32, N_SIN + 1)
+qsintab = zeros(Float32, N_SIN)
+fsintab = zeros(Float32, N_SIN + 1)
+fcostab = zeros(Float32, N_SIN + 1)
 
 for i in 0:N_SIN-1
 	θ = π*i/N_SIN
 	x = sin(θ)
-	qsintab[i + 1] = Q31S(x)
+	qsintab[i + 1] = convert(Float32, x)
 end
 
 for i in 0:N_SIN
 	θ = π*i/(N_SIN * N_SIN)
 	x = sin(θ)
-	fsintab[i + 1] = Q31S(x)
+	fsintab[i + 1] = convert(Float32, x)
 	x = cos(θ)
-	fcostab[i + 1] = Q31S(x)
+	fcostab[i + 1] = convert(Float32, x)
 end
 
 println("Creating output file...");
-mk_q31sin("q31sin", N_SIN)
+mk_f32sin("f32sin", N_SIN)
 
 println("Calculating error...");
 
@@ -582,12 +575,12 @@ w = collect(0.0 :1/(1024*32):0.5)
 #w = [-.500003, -.5, -.499997]
 y = sin.(π .* w)
 x = [Q31(a) for a in w]
-y0 = [Q31F(q31sin(a, 0)) for a in x]
-y1 = [Q31F(q31sin(a, 1)) for a in x]
-y2 = [Q31F(q31sin(a, 2)) for a in x]
-y3 = [Q31F(q31sin(a, 3)) for a in x]
-y4 = [Q31F(q31sin(a, 4)) for a in x]
-y5 = [Q31F(q31sin(a, 5)) for a in x]
+y0 = [f32sin(a, 0) for a in x]
+y1 = [f32sin(a, 1) for a in x]
+y2 = [f32sin(a, 2) for a in x]
+y3 = [f32sin(a, 3) for a in x]
+y4 = [f32sin(a, 4) for a in x]
+y5 = [f32sin(a, 5) for a in x]
 
 dy0 = (y - y0)
 dy1 = (y - y1)
@@ -620,7 +613,7 @@ plotly()
 p1 = plot((x, dy1.*1e9), linetype = :steppre)
 p2 = plot((x, dy2.*1e9), linetype = :steppre)
 p3 = plot((x, dy3.*1e9))
-p4 = plot((x, dy4.*1e9))
+p4 = plot((x, dy5.*1e9))
 
 
 #=

@@ -24,11 +24,11 @@
 #define __DAC_H__
 
 #ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 64
+#define DAC_FRAME_SIZE 128
 #endif
 
 #ifndef DAC_SAMPLERATE
-#define DAC_SAMPLERATE 22050
+#define DAC_SAMPLERATE 44100
 #endif
 
 struct dac_stream_op {

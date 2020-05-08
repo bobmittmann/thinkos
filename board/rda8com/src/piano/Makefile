@@ -33,8 +33,7 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG = piano
 
-CFILES = piano.c dac.c spi.c f32sin.c\
-		 encoder.c tonegen.c
+CFILES = piano.c dac.c spi.c encoder.c tonegen.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
 		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libtty $(SDK_DIR)/libutil \

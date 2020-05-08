@@ -181,14 +181,14 @@ const struct dac_stream tone[16] = {
 #define NOTE_C6_FREQ (float)1046.502
 #define NOTE_D6_FREQ (float)1174.659
 
-#define NOTE_E6_FREQ (float)659.2551
-#define NOTE_F6_FREQ (float)698.4565
-#define NOTE_G6_FREQ (float)783.9909
-#define NOTE_A6_FREQ (float)880.0000
+#define NOTE_E6_FREQ (float)1318.510
+#define NOTE_F6_FREQ (float)1396.913
+#define NOTE_G6_FREQ (float)1567.982
+#define NOTE_A6_FREQ (float)1760.0000
 
-#define NOTE_B6_FREQ (float)987.7666
-#define NOTE_C7_FREQ (float)1046.502
-#define NOTE_D7_FREQ (float)1174.659
+#define NOTE_B6_FREQ (float)1975.655
+#define NOTE_C7_FREQ (float)2093.005
+#define NOTE_D7_FREQ (float)2349.318
 
 void note_play(int id)
 {
@@ -200,14 +200,19 @@ int play_task(void *arg)
 {
 	struct encoder enc0;
 	struct encoder enc1;
-	uint32_t k1 = 4;
-	uint32_t k2 = 48;
+	uint32_t k1;
+	uint32_t clk[16];
+	uint32_t k2;
+	uint32_t l1 = 8;
+	uint32_t l2 = 8;
 	int32_t stat;
 	int i;
 
-	encoder_init(&enc0, k1, 1, 1024);
-	encoder_init(&enc1, k2, 1, 1024);
+	encoder_init(&enc0, l1, 1, 32);
+	encoder_init(&enc1, l2, 1, 32);
 
+	k1 = l1;
+	k2 = 2 * l2 * l1;
 	for (i = 0; i < 16; ++i) {
 		dac_stream_set(i, &tone[i]);
 		tonegen_env_set(&tonegen[i], k1, k2);
@@ -219,6 +224,7 @@ int play_task(void *arg)
 		int32_t tmp;
 		int32_t diff;
 		int32_t down;
+		int32_t up;
 
 		tmp = spidev_rd();
 
@@ -226,25 +232,35 @@ int play_task(void *arg)
 		if (diff) {
 			stat = tmp;
 
-			down = diff & stat;
+			up = diff & stat;
+			down = (diff & ~stat) & ~;
 			for (i = 4; i < 16; ++i) {
 				if (down & (1 << i)) { 
 					dac_stream_reset(&tone[i]);
 				}
+				if (up & (1 << i)) { 
+					printf("up %d\n", i);
+					tonegen_release(&tonegen[i]);
+				}
 			} 
 
-			if (diff & (3 << 0)) { 
-				k1 = encoder_decode(&enc0, stat);
-			} 
-
-			if (diff & (3 << 2)) { 
-				k2 = encoder_decode(&enc1, stat >> 2);
-			} 
-
-			if (diff & (7 << 0)) { 
-				for (i = 0; i < 16; ++i) {
-					tonegen_env_set(&tonegen[i], k1, k2);
+			if (diff & (0x0f << 0)) { 
+				if (diff & (3 << 0)) { 
+					l1 = encoder_decode(&enc0, stat);
 				} 
+
+				if (diff & (3 << 2)) { 
+					l2 = encoder_decode(&enc1, stat >> 2);
+				} 
+
+				if ((l1 != k1) || (l2 != k2)) { 
+					k1 = l1;
+					k2 = 2 * l2 * l1;
+					printf("k1=%d k2=%d\n", k1, k2);
+					for (i = 0; i < 16; ++i) {
+						tonegen_env_set(&tonegen[i], k1, k2);
+					} 
+				}
 			}
 		}
 	}
@@ -299,9 +315,9 @@ int main(int argc, char ** argv)
 		tonegen_init(&tonegen[i], DAC_SAMPLERATE, 1);
 	}
 
-	ampl = 0.33;
-	k1 = 4;
-	k2 = 64;
+	ampl = 0.5;
+	k1 = 16;
+	k2 = 512;
 
 	tonegen_set(&tonegen[0], NOTE_C4_FREQ, ampl, k1, k2);
 	tonegen_set(&tonegen[1], NOTE_D4_FREQ, ampl, k1, k2);
@@ -313,15 +329,15 @@ int main(int argc, char ** argv)
 	tonegen_set(&tonegen[6], NOTE_B4_FREQ , ampl, k1, k2);
 	tonegen_set(&tonegen[7], NOTE_C5_FREQ , ampl, k1, k2);
 
-	tonegen_set(&tonegen[8], NOTE_D5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[9], NOTE_E5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[10], NOTE_F5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[11], NOTE_G5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[8], NOTE_C5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[9], NOTE_D5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[10], NOTE_E5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[11], NOTE_F5_FREQ , ampl, k1, k2);
 
-	tonegen_set(&tonegen[12], NOTE_A5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[13], NOTE_B5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[14], NOTE_C6_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[15], NOTE_D6_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[12], NOTE_G5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[13], NOTE_A5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[14], NOTE_B5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[15], NOTE_C6_FREQ , ampl, k1, k2);
 
 	for (;;) {
 		int32_t tmp;

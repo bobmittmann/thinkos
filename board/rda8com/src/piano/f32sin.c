@@ -7,12 +7,12 @@
 
 /* Enable polynomial interpolation */
 #ifndef FIXPT_SINCOS_INTRPL_POLY
-#define FIXPT_SINCOS_INTRPL_POLY 1
+#define FIXPT_SINCOS_INTRPL_POLY 0
 #endif
 
 /* Enable trigonometric interpolation */
 #ifndef FIXPT_SINCOS_INTRPL_TRIG
-#define FIXPT_SINCOS_INTRPL_TRIG 0
+#define FIXPT_SINCOS_INTRPL_TRIG 1
 #endif
 
 #include <fixpt.h>
@@ -856,16 +856,10 @@ float f32sin(int32_t x)
 	int32_t x0;
 	int32_t x1;
 	int32_t fx;
-	int32_t ffx;
 	float sin_x0;
 	float cos_x0;
-	float sin_fx0;
-	float sin_fx1;
 	float sin_fx;
-	float cos_fx0;
-	float cos_fx1;
 	float cos_fx;
-	float qfx;
 	float y;
 	int32_t i;
 
@@ -881,16 +875,9 @@ float f32sin(int32_t x)
 	fx = (x - x0);
 	i = fx >> (31 - 2*LOG2_N);
 
-	ffx = fx - (i << (31 - 2*LOG2_N));
-	qfx = ffx * (float)(1.0 / DFX);
+	sin_fx = fsintab[i];
 
-	sin_fx0 = fsintab[i];
-	sin_fx1 = fsintab[i + 1];
-	sin_fx = sin_fx0 + (sin_fx1 - sin_fx0) * qfx;
-
-	cos_fx0 = fcostab[i];
-	cos_fx1 = fcostab[i + 1];
-	cos_fx = cos_fx0 + (cos_fx1 - cos_fx0) * qfx;
+	cos_fx = fcostab[i];
 
 	y = sin_x0 * cos_fx + cos_x0 * sin_fx;
 

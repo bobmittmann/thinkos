@@ -36,8 +36,10 @@ struct tonegen {
 		float e0;
 		volatile float e1;
 		volatile float e2;
-		float c1;
-		float c2;
+		volatile float e3;
+		volatile float c1;
+		volatile float c2;
+		volatile float c3;
 	} env;
 };
 
@@ -49,6 +51,8 @@ extern "C" {
 int tonegen_init(struct tonegen *tone, float samplerate, float ampl);
 
 int tonegen_reset(struct tonegen *tone);
+
+int tonegen_release(struct tonegen *tone);
 
 int tonegen_set(struct tonegen *tone, float freq, 
 				float ampl, uint32_t k1, uint32_t k2);

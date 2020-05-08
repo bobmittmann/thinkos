@@ -46,19 +46,45 @@ void encoder_init(struct encoder * enc, uint32_t val,
 	enc->val = val;
 }
 
+uint32_t bit2hex(uint32_t code)
+{
+	uint32_t ret;
+
+
+	ret =  (code <<  (0 - 0)) & (1 << 0);
+	ret += (code <<  (4 - 1)) & (1 << 4);
+	ret += (code <<  (8 - 2)) & (1 << 8);
+	ret += (code << (12 - 3)) & (1 << 12);
+	ret += (code << (16 - 4)) & (1 << 16);
+	ret += (code << (20 - 5)) & (1 << 20);
+	ret += (code << (24 - 6)) & (1 << 24);
+	ret += (code << (28 - 7)) & (1 << 28);
+
+	return ret;
+}
+
 uint32_t encoder_decode(struct encoder * enc, uint32_t code)
 {
+	uint32_t prev = enc->code;
+
 	code = code & 3;
 
-	if ((enc->code & 3) == 3) {
-		if ((code == 1) && (enc->val > enc->min)) {
-				enc->val--;
-		} else if ((code == 0) && (enc->val < enc->max)) {
+	switch (prev & 0x0f) {
+	case 0x0c:
+		if (enc->val > enc->min) {
+			enc->val--;
+		}
+		break;
+	case 0x03:
+		if (enc->val < enc->max) {
 				enc->val++;
 		}
+		break;
 	}
 
 	enc->code = (enc->code << 2) | code;
+	//printf("code: %08x --> %08x diff %02x\n", bit2hex(prev), 
+	//	   bit2hex(enc->code), bit2hex(diff));
 
 	return enc->val;
 }

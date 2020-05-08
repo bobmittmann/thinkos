@@ -74,7 +74,7 @@ static int __spi_master_init(unsigned int freq)
 		br = 7;
 
 	freq = stm32_clk_hz(ICE40_CLK_SPI) / (2 << br);
-	printf("SPI: freq=%d Hz\n", freq);
+	printf("SPI: freq=%d Hz %d Sps\n", freq, freq / 16);
 
 	spi->cr1 = 0;
 	spi->i2scfgr = 0;
@@ -144,22 +144,27 @@ static inline uint32_t __spi_io_xfer8(uint32_t txd)
 
 int spi_io_task(struct spi_ctrl * dev)
 {
-	uint32_t stat;
+	uint32_t stat[1];
 	uint32_t ctrl;
 	uint32_t diff;
 
 	__spi_enable();
 
 	ctrl = dev->ctrl;
+	stat[1] = 0xffff;
 	for (;;) {
+		thinkos_sleep(1);
 		ctrl = dev->ctrl;
-
-		stat = __spi_io_xfer16(ctrl);
-		diff = stat ^ dev->stat;
+		stat[0] = stat[1];
+		stat[1] = __spi_io_xfer16(ctrl);
+		if (stat[1] != stat[0]) {
+			/* deboucing */
+			continue;
+		}
+		diff = stat[1] ^ dev->stat;
 		if (diff != 0) {
 //			printf("IO: stat=0x%02x diff=0x%02x\n", stat, diff);
-			dev->stat = stat;
-			dev->seq++;
+			dev->stat = stat[1];
 			thinkos_flag_give(dev->flag);
 		}
 	}
@@ -181,29 +186,21 @@ static struct spi_ctrl spi_ctrl_rt;
 void spidev_wr(int dat)
 {
 	struct spi_ctrl * dev = &spi_ctrl_rt;
-	uint32_t seq;
 
 	thinkos_mutex_lock(dev->mutex);
+	thinkos_flag_take(dev->flag);
 	dev->ctrl = dat;
-	seq = dev->seq;
-	while (seq == dev->seq)
-		thinkos_flag_take(dev->flag);
-
 	thinkos_mutex_unlock(dev->mutex);
 }
 
 int spidev_rd(void)
 {
 	struct spi_ctrl * dev = &spi_ctrl_rt;
-	uint32_t seq;
 	int stat;
 
 	thinkos_mutex_lock(dev->mutex);
 
-	seq = dev->seq;
-	while (seq == dev->seq)
-		thinkos_flag_take(dev->flag);
-
+	thinkos_flag_take(dev->flag);
 	stat = dev->stat;
 
 	thinkos_mutex_unlock(dev->mutex);
@@ -215,7 +212,7 @@ void spidev_init(void)
 {
 	struct spi_ctrl * dev = &spi_ctrl_rt;
 
-	__spi_master_init(11025*16/8);
+	__spi_master_init(11025*31);
 	dev->mutex = thinkos_mutex_alloc();
 
 	dev->flag = thinkos_flag_alloc();
