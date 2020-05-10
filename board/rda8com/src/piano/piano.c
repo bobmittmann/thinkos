@@ -169,6 +169,7 @@ const struct dac_stream tone[16] = {
 #define NOTE_G4_FREQ (float)391.9954
 #define NOTE_A4_FREQ (float)440.0000
 #define NOTE_B4_FREQ (float)493.8833
+
 #define NOTE_C5_FREQ (float)523.2511
 
 #define NOTE_D5_FREQ (float)587.3295
@@ -200,15 +201,16 @@ int play_task(void *arg)
 {
 	struct encoder enc0;
 	struct encoder enc1;
+	int32_t wait = 0;
 	uint32_t k1;
 	uint32_t clk[16];
 	uint32_t k2;
 	uint32_t l1 = 8;
-	uint32_t l2 = 8;
+	uint32_t l2 = 32;
 	int32_t stat;
 	int i;
 
-	encoder_init(&enc0, l1, 1, 32);
+	encoder_init(&enc0, l1, 2, 32);
 	encoder_init(&enc1, l2, 1, 32);
 
 	k1 = l1;
@@ -216,11 +218,13 @@ int play_task(void *arg)
 	for (i = 0; i < 16; ++i) {
 		dac_stream_set(i, &tone[i]);
 		tonegen_env_set(&tonegen[i], k1, k2);
+		clk[i] = 0;
 	} 
 
 	stat = spidev_rd();
 
 	for (;;) {
+		uint32_t now;
 		int32_t tmp;
 		int32_t diff;
 		int32_t down;
@@ -228,19 +232,36 @@ int play_task(void *arg)
 
 		tmp = spidev_rd();
 
+		now = thinkos_clock();
+		for (i = 0; i < 16; ++i) {
+			if ((wait & (1 << i)) && ((int32_t)(clk[i] - now) < 0)) {
+				wait &= ~(1 << i);
+				printf("tmo %d\n", i);
+			}
+		}
+
+
 		diff = (stat ^ tmp);
 		if (diff) {
 			stat = tmp;
 
 			up = diff & stat;
-			down = (diff & ~stat) & ~;
+			down = (diff & ~stat);
 			for (i = 4; i < 16; ++i) {
 				if (down & (1 << i)) { 
-					dac_stream_reset(&tone[i]);
+					printf("dwn %d\n", i);
+					if ((wait & (1 << i)) == 0) { 
+						dac_stream_reset(&tone[i]);
+						printf("play %d\n", i);
+						wait |= (1 << i);
+					}
+					clk[i] = now + 125;
 				}
 				if (up & (1 << i)) { 
+				//	clk[i] = now + 125;
+				//	wait |= (1 << i);
 					printf("up %d\n", i);
-					tonegen_release(&tonegen[i]);
+				//	tonegen_release(&tonegen[i]);
 				}
 			} 
 
@@ -273,8 +294,8 @@ uint32_t play_stack[2500] __attribute__ ((aligned(8), section(".stack")));
 const struct thinkos_thread_inf play_thread_inf = {
 	.stack_ptr = play_stack,
 	.stack_size = sizeof(play_stack),
-	.priority = 16,
-	.thread_id = 16,
+	.priority = 4,
+	.thread_id = 4,
 	.paused = false,
 	.tag = "PLAY"
 };
@@ -296,7 +317,8 @@ int main(int argc, char ** argv)
 
 	stdio_init();
 
-//	printf("Starting piano...\n");
+	printf("-----------------\n");
+	printf("Xilofone da JUJU!\n");
 //	for (;;) {
 //		thinkos_sleep(100);
 //	};
@@ -334,10 +356,10 @@ int main(int argc, char ** argv)
 	tonegen_set(&tonegen[10], NOTE_E5_FREQ , ampl, k1, k2);
 	tonegen_set(&tonegen[11], NOTE_F5_FREQ , ampl, k1, k2);
 
-	tonegen_set(&tonegen[12], NOTE_G5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[13], NOTE_A5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[14], NOTE_B5_FREQ , ampl, k1, k2);
-	tonegen_set(&tonegen[15], NOTE_C6_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[15], NOTE_G5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[12], NOTE_A5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[13], NOTE_B5_FREQ , ampl, k1, k2);
+	tonegen_set(&tonegen[14], NOTE_C6_FREQ , ampl, k1, k2);
 
 	for (;;) {
 		int32_t tmp;

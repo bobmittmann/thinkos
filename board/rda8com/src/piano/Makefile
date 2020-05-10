@@ -28,18 +28,17 @@ THINKOS_DIR = $(PROJECT_ROOT)/../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
-LIBMAD_DIR = $(PROJECT_ROOT)/src/libmad
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG = piano
 
-CFILES = piano.c dac.c spi.c encoder.c tonegen.c
+CFILES = piano.c dac.c spi.c encoder.c tonegen.c f32sin.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
-		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libtty $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libc $(SDK_DIR)/libtrace $(SDK_DIR)/libfixpt $(LIBMAD_DIR)
+		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libc $(SDK_DIR)/libfixpt 
 
-LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt tty mad
+LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt#
 
 INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
 

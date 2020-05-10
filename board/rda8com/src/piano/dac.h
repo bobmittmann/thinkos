@@ -24,7 +24,7 @@
 #define __DAC_H__
 
 #ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 128
+#define DAC_FRAME_SIZE 256
 #endif
 
 #ifndef DAC_SAMPLERATE
