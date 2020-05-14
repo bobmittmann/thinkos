@@ -24,32 +24,42 @@
 #define __DAC_H__
 
 #ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 256
+#define DAC_FRAME_SIZE 128
 #endif
 
-#ifndef DAC_SAMPLERATE
-#define DAC_SAMPLERATE 44100
+#ifndef DAC_SAMPLE_RATE
+#define DAC_SAMPLE_RATE 44100
+#endif
+
+#ifndef DAC_VOICES_MAX 
+#define DAC_VOICES_MAX 8
+#endif
+
+#ifndef DAC_PIPELINE_MAX 
+#define DAC_PIPELINE_MAX 2
 #endif
 
 struct dac_stream_op {
-	int (* encode)(void *, float pcm[], unsigned int len);
-	int (* reset)(void *);
+	int (* encode)(void *, float pcm[], unsigned int len, uint32_t clk);
+	int (* reset)(void *, uint32_t clk);
 };
 
 struct dac_stream {
 	void * arg;
-	const struct dac_stream_op op;
+	struct dac_stream_op op;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void dac_init(void);
+int dac_init(void);
 
 void dac_pcm8_play(const uint8_t pcm[], unsigned int len);
 
 int dac_mp3_play(const uint8_t data[], unsigned int len);
+
+uint32_t dac_clock(void);
 
 void dac_start(void);
 
@@ -62,6 +72,9 @@ void dac_stream_play(const struct dac_stream * s, float t);
 void dac_stream_reset(const struct dac_stream * s);
 
 void dac_stream_set(int id, const struct dac_stream * s);
+
+int dac_voice_op_set(int id, int step, void * arg, 
+				      const struct dac_stream_op * op);
 
 #ifdef __cplusplus
 }

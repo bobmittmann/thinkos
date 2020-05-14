@@ -1,6 +1,6 @@
 /* 
- * File:	 spi.c
- * Author:   Vijaykumar Trambadia (vtrambadia@mircomgroup.com)
+ * File:	 spidrv.c
+ * Author:   
  * Target:
  * Comment:
  * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
@@ -22,23 +22,20 @@
 
 _Pragma("GCC optimize (\"Ofast\")")
 
+#include <stdio.h>
+#include <fixpt.h>
 #include <sys/stm32f.h>
 #include <thinkos.h>
 
-#include <stdio.h>
-#include <fixpt.h>
-
 #include "board.h"
 
-#define IRQ_ICE40_SPI STM32_IRQ_SPI1
+#ifndef SPIDRV_ENABLE_POLLING_TASK 
+#define SPIDRV_ENABLE_POLLING_TASK 0
+#endif
 
-struct spi_ctrl {
-	int16_t mutex;
-	int16_t flag;
-	volatile uint32_t ctrl;
-	volatile uint32_t stat;
-	volatile uint32_t seq;
-};
+#ifndef SPIDRV_ENABLE_GPIO_INIT
+#define SPIDRV_ENABLE_GPIO_INIT 0
+#endif
 
 /* Chip select high */
 static inline void __spi_cs_set(void) {
@@ -50,20 +47,10 @@ static inline void __spi_cs_clr(void) {
 	stm32_gpio_clr(IO_ICE40_SPI_SS);
 }
 
-static int __spi_master_init(unsigned int freq)
+static int __spi_master_init(struct stm32f_spi *spi, unsigned int freq)
 {
-	struct stm32f_spi *spi = ICE40_SPI;
 	unsigned int div;
 	unsigned int br;
-
-	stm32_gpio_mode(IO_ICE40_SPI_SS, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_af(IO_ICE40_SPI_SS, ICE40_SPI_AF);
-	stm32_gpio_mode(IO_ICE40_SPI_SCK, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_af(IO_ICE40_SPI_SCK, ICE40_SPI_AF);
-	stm32_gpio_mode(IO_ICE40_SPI_SDI, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_af(IO_ICE40_SPI_SDI, ICE40_SPI_AF);
-	stm32_gpio_mode(IO_ICE40_SPI_SDO, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_af(IO_ICE40_SPI_SDO, ICE40_SPI_AF);
 
 	/* Configure SPI */
 	div = (stm32_clk_hz(ICE40_CLK_SPI) / 2) / freq;
@@ -74,7 +61,6 @@ static int __spi_master_init(unsigned int freq)
 		br = 7;
 
 	freq = stm32_clk_hz(ICE40_CLK_SPI) / (2 << br);
-	printf("SPI: freq=%d Hz %d Sps\n", freq, freq / 16);
 
 	spi->cr1 = 0;
 	spi->i2scfgr = 0;
@@ -90,9 +76,8 @@ static int __spi_master_init(unsigned int freq)
 	return 0;
 }
 
-static inline void __spi_enable(void)
+static inline void __spi_enable(struct stm32f_spi *spi)
 {
-	struct stm32f_spi *spi = ICE40_SPI;
 	uint32_t dummy;
 	uint32_t sr;
 
@@ -112,60 +97,67 @@ static inline void __spi_enable(void)
 	spi->cr1 |= SPI_SPE;
 }
 
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Ofast\")")
-#endif
-
-static inline uint32_t __spi_io_xfer16(uint32_t txd)
+static inline uint32_t __spi_io_xfer16(struct stm32f_spi *spi, 
+									   int irq, uint32_t txd)
 {
-	struct stm32f_spi *spi = ICE40_SPI;
 	uint32_t sr;
 
 	/* send data */
 	spi->dr = txd;
 	/* wait for incoming data */
 	while (!((sr = spi->sr) & SPI_RXNE))
-		thinkos_irq_wait(IRQ_ICE40_SPI);
+		thinkos_irq_wait(irq);
+
 	return spi->dr;
 }
 
-static inline uint32_t __spi_io_xfer8(uint32_t txd)
+static inline uint32_t __spi_io_xfer8(struct stm32f_spi *spi, 
+									  int irq, uint32_t txd)
 {
-	struct stm32f_spi *spi = ICE40_SPI;
 	uint32_t sr;
 
 	/* send data */
 	spi->dr = (txd & 0xff);// | (txd << 8);
 	/* wait for incoming data */
 	while (!((sr = spi->sr) & SPI_RXNE))
-		thinkos_irq_wait(IRQ_ICE40_SPI);
+		thinkos_irq_wait(irq);
 	return spi->dr & 0xff;
 }
 
-int spi_io_task(struct spi_ctrl * dev)
+#if SPIDRV_ENABLE_POLLING_TASK
+
+struct spidrv {
+	int16_t mutex;
+	int16_t flag;
+	volatile uint32_t ctrl;
+	volatile uint32_t stat;
+};
+
+int spi_io_task(struct spidrv * drv)
 {
+	struct stm32f_spi *spi = STM32F_SPI1;
 	uint32_t stat[1];
 	uint32_t ctrl;
 	uint32_t diff;
 
-	__spi_enable();
+	__spi_enable(spi);
 
-	ctrl = dev->ctrl;
+	ctrl = drv->ctrl;
 	stat[1] = 0xffff;
 	for (;;) {
 		thinkos_sleep(1);
-		ctrl = dev->ctrl;
+		ctrl = drv->ctrl;
 		stat[0] = stat[1];
-		stat[1] = __spi_io_xfer16(ctrl);
+		stat[1] = __spi_io_xfer16(spi, STM32_IRQ_SPI1, ctrl);
 		if (stat[1] != stat[0]) {
-			/* deboucing */
+			/* debouncing */
 			continue;
 		}
-		diff = stat[1] ^ dev->stat;
+		diff = stat[1] ^ drv->stat;
 		if (diff != 0) {
 //			printf("IO: stat=0x%02x diff=0x%02x\n", stat, diff);
-			dev->stat = stat[1];
-			thinkos_flag_give(dev->flag);
+			drv->stat = stat[1];
+			thinkos_flag_give(drv->flag);
 		}
 	}
 }
@@ -181,45 +173,64 @@ const struct thinkos_thread_inf spi_io_thread_inf = {
 	.tag = "SPI-IO"
 };
 
-static struct spi_ctrl spi_ctrl_rt;
+static struct spidrv spidrv_rt;
 
-void spidev_wr(int dat)
+void spidrv_wr(int dat)
 {
-	struct spi_ctrl * dev = &spi_ctrl_rt;
+	struct spidrv * drv = &spidrv_rt;
 
-	thinkos_mutex_lock(dev->mutex);
-	thinkos_flag_take(dev->flag);
-	dev->ctrl = dat;
-	thinkos_mutex_unlock(dev->mutex);
+	thinkos_mutex_lock(drv->mutex);
+	thinkos_flag_take(drv->flag);
+	drv->ctrl = dat;
+	thinkos_mutex_unlock(drv->mutex);
 }
 
-int spidev_rd(void)
+int spidrv_rd(void)
 {
-	struct spi_ctrl * dev = &spi_ctrl_rt;
+	struct spidrv * drv = &spidrv_rt;
 	int stat;
 
-	thinkos_mutex_lock(dev->mutex);
+	thinkos_mutex_lock(drv->mutex);
 
-	thinkos_flag_take(dev->flag);
-	stat = dev->stat;
+	thinkos_flag_take(drv->flag);
+	stat = drv->stat;
 
-	thinkos_mutex_unlock(dev->mutex);
+	thinkos_mutex_unlock(drv->mutex);
 
 	return stat;
 }
 
-void spidev_init(void)
+#else  /* SPIDRV_ENABLE_POLLING_TASK */
+
+uint32_t spidrv_xfer(uint32_t data) 
 {
-	struct spi_ctrl * dev = &spi_ctrl_rt;
+	struct stm32f_spi *spi = STM32F_SPI1;
 
-	__spi_master_init(11025*31);
-	dev->mutex = thinkos_mutex_alloc();
+	return __spi_io_xfer16(spi, STM32_IRQ_SPI1, data);
+}
 
-	dev->flag = thinkos_flag_alloc();
-	dev->stat = 0;
-	dev->ctrl = 0;
+#endif /* SPIDRV_ENABLE_POLLING_TASK */
 
-	thinkos_thread_create_inf((int (*)(void *))spi_io_task, (void *)dev, 
+void spidrv_master_init(unsigned int freq)
+{
+	struct stm32f_spi *spi = STM32F_SPI1;
+#if SPIDRV_ENABLE_POLLING_TASK 
+	struct spidrv * drv = &spidrv_rt;
+#endif
+
+	__spi_master_init(spi, freq);
+
+#if SPIDRV_ENABLE_POLLING_TASK 
+	drv->mutex = thinkos_mutex_alloc();
+
+	drv->flag = thinkos_flag_alloc();
+	drv->stat = 0;
+	drv->ctrl = 0;
+
+	thinkos_thread_create_inf((int (*)(void *))spi_io_task, (void *)drv, 
 							  &spi_io_thread_inf);
+#else
+	__spi_enable(spi);
+#endif /* SPIDRV_ENABLE_POLLING_TASK */
 }
 

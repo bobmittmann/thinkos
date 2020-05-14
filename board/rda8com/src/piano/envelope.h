@@ -1,5 +1,5 @@
 /* 
- * File:	 spi.h
+ * File:	 envelope.h
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -20,21 +20,44 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __SPIDEV_H__
-#define __SPIDEV_H__
+#ifndef __ENVELOPE_H__
+#define __ENVELOPE_H__
+
+#include <stdint.h>
+
+struct exp_envelope {
+	int32_t id;
+	uint32_t clk;
+	float c2attack;
+	float c1hold;
+	float c1decay;
+	float c1release;
+	float e1;
+	float e2;
+	float c1;
+	float c2;
+};
+
+struct exp_envelope_cfg {
+	int id;
+	int16_t k1;
+	int16_t k2;
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void spidev_init(void);
+int exp_envelope_config(struct exp_envelope *env, float dt, 
+						struct exp_envelope_cfg cfg);
 
-void spidev_wr(int dat);
+int exp_envelope_pcm_encode(struct exp_envelope *env, float pcm[], 
+                            unsigned int len, uint32_t clk);
 
-int spidev_rd(void);
+int exp_envelope_reset(struct exp_envelope *env, uint32_t clk);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __SPIDEV_H__ */
+#endif /* __ENVELOPE_H__ */
 

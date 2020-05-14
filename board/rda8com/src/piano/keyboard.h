@@ -1,5 +1,5 @@
 /* 
- * File:	 dac.h
+ * File:	 keyboard.h
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -20,50 +20,52 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __TONEGEN_H__
-#define __TONEGEN_H__
+#ifndef __KEYBOARD_H__
+#define __KEYBOARD_H__
 
 #include <stdint.h>
 
-struct tonegen {
-	float a;
-	float t;
+#define KBD_EV_KEY_ON      0x01
+#define KBD_EV_KEY_OFF     0x07
+#define KBD_EV_SWITCH_ON   0x08
+#define KBD_EV_SWITCH_OFF  0x09
+#define KBD_EV_ENCODER_INC 0x08
+#define KBD_EV_ENCODER_DEC 0x09
+
+#define KBD_EVENT_OPC(__EV) (((__EV) >> 8) & 0xff)
+#define KBD_EVENT_ARG(__EV) ((__EV) & 0xff)
+
+#define KBD_EVENT_ENCODE(__OPC, __ARG) ((((__OPC) & 0xff) << 8) | \
+                                        ((__ARG) & 0xff))
+
+struct keyboard;
+
+/*
+	DAHDSR (delay, attack, hold, decay, sustain, release)
+*/
+
+struct keyboard_cfg {
+	uint8_t keymap_cnt;
 	struct {
-		volatile int32_t p;
-		int32_t dp;
-	} osc;
-	struct {
-		float e0;
-		volatile float e1;
-		volatile float e2;
-		volatile float e3;
-		volatile float c1;
-		volatile float c2;
-		volatile float c3;
-	} env;
+		uint8_t key;
+		uint8_t code;
+	} keymap[];
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int keyboard_init(void);
 
-int tonegen_init(struct tonegen *tone, float samplerate, float ampl);
+int keyboard_event_wait(void);
 
-int tonegen_reset(struct tonegen *tone);
+int keyboard_keymap(unsigned int key, unsigned int code);
 
-int tonegen_release(struct tonegen *tone);
-
-int tonegen_set(struct tonegen *tone, float freq, 
-				float ampl, uint32_t k1, uint32_t k2);
-
-int tonegen_env_set(struct tonegen *tone, uint32_t k1, uint32_t k2);
-
-int tonegen_pcm_encode(struct tonegen *tone, 
-					   float pcm[], unsigned int len);
+int keyboard_config(const struct keyboard_cfg * cfg);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __TONEGEN_H__ */
+#endif /* __KEYBOARD_H__ */
 

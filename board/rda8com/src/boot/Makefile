@@ -28,9 +28,9 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 LZ77 = /c/opt/bin/lz77
 LZ_WINDOW_SIZE = 32768
 
-VERSION_DATE = "2020-04-08"
+VERSION_DATE = "2020-05-18"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "2"
+VERSION_MINOR = "3"
 
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -59,7 +59,7 @@ ICE40_DIR = ice40/ice40_comm_Implmnt
 ICE40_BIN = $(ICE40_DIR)/sbt/outputs/bitmap/ice40_comm_bitmap.bin
 # Uncomment ICE40_C to make changes in FPGA
 ICE40_LZ = $(OUTDIR)/ice40hx1k.lz
-ICE40_C = $(SRCDIR)/ice40hx1k.c
+#ICE40_C = $(SRCDIR)/ice40hx1k.c
 ICE40_H = $(SRCDIR)/ice40hx1k.h
 
 $(ICE40_LZ): $(ICE40_BIN)
