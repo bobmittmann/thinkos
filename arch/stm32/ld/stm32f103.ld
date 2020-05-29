@@ -19,30 +19,14 @@
  * http://www.gnu.org/
  */
 
-_stack_limit = ORIGIN(sram);
-_stack_top = ORIGIN(sram) + LENGTH(sram);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50 - !DEFINED(thinkos_idle_ctx) * 0x40;
+REGION_ALIAS("CODE", flash);
+REGION_ALIAS("DATA", sram);
+REGION_ALIAS("HEAP", sram);
+REGION_ALIAS("STACK", sram);
+REGION_ALIAS("LOG", dcclog);
+REGION_ALIAS("BKPCTL", sram);
+REGION_ALIAS("BKPDAT", sram);
 
-ice_comm_blk = (_stack_top - 0x50) * DEFINED(ice_trace_init);
-
-thinkos_idle_stack = _stack * !DEFINED(thinkos_idle_ctx);
-
-__heap_end = ORIGIN(sram) + LENGTH(sram) - 256;
-
-EXTERN(_stack)
-EXTERN(_reset)
-EXTERN(ice_comm_blk)
-EXTERN(thinkos_idle_stack)
-
-EXTERN(cm3_nmi_isr)
-EXTERN(cm3_hard_fault_isr)
-EXTERN(cm3_mem_manage_isr)
-EXTERN(cm3_bus_fault_isr)
-EXTERN(cm3_usage_fault_isr)
-EXTERN(cm3_svc_isr)
-EXTERN(cm3_debug_mon_isr)
-EXTERN(cm3_pendsv_isr)
-EXTERN(cm3_systick_isr)
 EXTERN(stm32f_wwdg_isr)
 EXTERN(stm32f_pvd_isr)
 EXTERN(stm32f_tamp_stamp_isr)
@@ -97,85 +81,3 @@ EXTERN(stm32f_dma2_stream1_isr)
 EXTERN(stm32f_dma2_stream2_isr)
 EXTERN(stm32f_dma2_stream3_isr)
 
-SECTIONS
-{
-	. = 0;
-
-	.dcclog :
-	{
-		. = ALIGN(4);
-		KEEP(*(.dcclog))
-	} >dcclog
-
-	.dccdata :
-	{
-		. = ALIGN(4);
-		KEEP(*(.rodata.__FUNCTION__*))
-		KEEP(*(.dccdata))
-	} >dcclog
-
-	.init :
-	{
-		KEEP (*(.rom_vectors))
-		KEEP (*(.boot))
-		KEEP (*(.init))
-	} >flash = 0xffffffff
-
-	.text :
-	{
-		/* all .text sections (code)  */
-		*(.text .text.* .gnu.linkonce.t.*)
-		/* all .glue_7t sections (interworking thumb helpers) */
-		*(.glue_7) *(.glue_7t) *(.vfp11_veneer) *(.v4_bx)
-		/* all .rodata sections (constants, strings, etc.)  */
-		*(.rodata .rodata.* .gnu.linkonce.r.*)
-		. = ALIGN(4);
-		/* constructors */
-		PROVIDE(__ctors_start = .);
-		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
-		KEEP (*(.init_array))
-		KEEP(*(SORT(.ctors.*)))
-		KEEP(*(.ctors))
-		PROVIDE(__ctors_end = .);
-		/* define a global symbol marking the end of read only data sections */
-		. = ALIGN(8); 
-		PROVIDE(__text_end = .);
-	} >flash = 0xffffffff
-
-	.data :
-	{
-		. = ALIGN(4);
-		/* create a global symbol marking the start of the .data section  */
-		PROVIDE (__data_start = . );
-		/* all .data sections  */
-		*(.data .data*)
-		/* define a global symbol marking the end of the .data section  */
-		. = ALIGN(4);
-		PROVIDE (__data_end = . );
-	} >sram AT >flash
-
-	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-
-	.bss :
-	{
-		/* define a global symbol marking the start of the .bss section */
-		PROVIDE (__bss_start = . );
-		/* all .bss sections  */
-		*(.bss .bss*)
-	} >sram
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__bss_end = . );
-
-	.heap :
-	{
-		PROVIDE (__heap_start = . );
-		/* all .heap sections  */
-		*(.heap .heap*)
-	} >sram
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__heap_base = . );
-}

@@ -19,28 +19,14 @@
  * http://www.gnu.org/
  */
 
-__code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
-__data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+REGION_ALIAS("CODE", flash);
+REGION_ALIAS("DATA", sram1);
+REGION_ALIAS("HEAP", sram1);
+REGION_ALIAS("STACK", sram2);
+REGION_ALIAS("LOG", dcclog);
+REGION_ALIAS("BKPCTL", rtcbkr);
+REGION_ALIAS("BKPDAT", bkpsram);
 
-_stack_top = ORIGIN(sram2) + LENGTH(sram2);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(sram2);
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
-__heap_end = _stack;
-
-EXTERN(_stack)
-EXTERN(_reset)
-EXTERN(ice_comm_blk)
-
-EXTERN(cm3_nmi_isr)
-EXTERN(cm3_hard_fault_isr)
-EXTERN(cm3_mem_manage_isr)
-EXTERN(cm3_bus_fault_isr)
-EXTERN(cm3_usage_fault_isr)
-EXTERN(cm3_svc_isr)
-EXTERN(cm3_debug_mon_isr)
-EXTERN(cm3_pendsv_isr)
-EXTERN(cm3_systick_isr)
 EXTERN(stm32f_wwdg_isr)
 EXTERN(stm32f_pvd_isr)
 EXTERN(stm32f_tamp_stamp_isr)
@@ -122,147 +108,4 @@ EXTERN(stm32f_otg_hs_isr)
 EXTERN(stm32f_dcmi_isr)
 EXTERN(stm32f_cryp_isr)
 EXTERN(stm32f_hash_rng_isr)
-
-ENTRY(_reset)
-/* STARTUP(crt0.o) */
-
-SECTIONS
-{
-	. = 0;
-
-	.init __code_init :
-	{
-		KEEP (*(.rom_vectors))
-		KEEP (*(.boot))
-		KEEP (*(.init))
-	} >"CODE" = 0xffffffff
-
-	.text :
-	{
-		/* all .text sections (code)  */
-		*(.text .text.* .gnu.linkonce.t.*)
-		/* all .glue_7t sections (interworking thumb helpers) */
-		*(.glue_7) *(.glue_7t) *(.vfp11_veneer) *(.v4_bx)
-		/* all .rodata sections (constants, strings, etc.)  */
-		*(.rodata)
-		*(.rodata.__func__.*)
-
-		. = ALIGN(4);
-		/* kernel traces */
-		PROVIDE(__trace_krn_tab = .);
-		KEEP(*(SORT(.rodata.trace_krn.*)))
-		PROVIDE(__trace_krn_end = .);
-
-		. = ALIGN(4);
-		/* user traces */
-		PROVIDE(__trace_usr_tab = .);
-		KEEP(*(SORT(.rodata.trace.*)))
-		PROVIDE(__trace_usr_end = .);
-
-		*(.rodata.* .gnu.linkonce.r.*)
-		*(.rodata1)
-
-		. = ALIGN(4);
-		/* constructors */
-		PROVIDE(__ctors_start = .);
-		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
-		KEEP (*(.init_array))
-		KEEP(*(SORT(.ctors.*)))
-		KEEP(*(.ctors))
-		PROVIDE(__ctors_end = .);
-		. = ALIGN(8);
-	} >"CODE" = 0xffffffff
-
-	.ARM.extab : 
-	{ 
-		*(.ARM.extab* .gnu.linkonce.armextab.*) 
-	} >"CODE" = 0xffffffff
-	PROVIDE_HIDDEN (__exidx_start = .);
-
-	.ARM.exidx : 
-	{ 
-		*(.ARM.exidx* .gnu.linkonce.armexidx.*) 
-	} >"CODE" = 0xffffffff
-	PROVIDE_HIDDEN (__exidx_end = .);
-
-	/* define a global symbol marking the end of read only data sections */
-	PROVIDE(__text_end = .);
-
-	.data __data_init :
-	{
-		. = ALIGN(4);
-		/* create a global symbol marking the start of the .data section  */
-		PROVIDE (__data_start = . );
-		KEEP (*(.ram_vectors))
-		/* all .data sections  */
-		*(.data .data*)
-		/* define a global symbol marking the end of the .data section  */
-		. = ALIGN(4);
-		PROVIDE (__data_end = . );
-	} >"DATA" AT >"CODE"
-
-	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-
-	.bss :
-	{
-		/* define a global symbol marking the start of the .bss section */
-		PROVIDE (__bss_start = . );
-		/* all .bss sections  */
-		*(.bss .bss*)
-	} >"DATA"
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__bss_end = . );
-
-	.heap :
-	{
-		PROVIDE (__heap_start = . );
-		/* all .heap sections  */
-		*(.heap .heap*)
-	} >"DATA"
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__heap_base = . );
-
-   .sram2 :
-    {
-        /* define a global symbol marking the start of the .sram2 section */
-        PROVIDE (__sram2_start = . );
-        PROVIDE (__heap_end = . );
-        *(.sram2 .sram2*)
-        *(.stack .stack*)
-    } >"STACK"
-
-	/* Backed up control section */
-	.bkpctl :
-	{
-		PROVIDE (__bkpctl_start = . );
-		*(.bkpctl .bkpctl*)
-		PROVIDE (__bkpctl_end = . );
-	} >"rtcbkr"
-
-	/* Backed up data section */
-	.bkpdat :
-	{
-		PROVIDE (__bkpdat_start = . );
-		*(.bkpdat .bkpdat*)
-		PROVIDE (__bkpdat_end = . );
-	} >"bkpsram"
-
-	.dcclog :
-	{
-		. = ALIGN(4);
-		KEEP(*(.dcclog))
-	} >dcclog
-
-	.dccdata :
-	{
-		. = ALIGN(4);
-		KEEP(*(.rodata.__FUNCTION__*))
-		KEEP(*(.dccdata))
-	} >dcclog
-
-}
 

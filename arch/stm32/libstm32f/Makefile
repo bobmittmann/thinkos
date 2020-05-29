@@ -103,8 +103,7 @@ CFILES = stm32f1x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-dma.c stm32f1x-flash.c stm32f-rtc.c\
 		 stm32-crc.c stm32f-rcc.c\
 		 $(addprefix usart/,$(USART_CFILES))\
-		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
-		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
+		 $(addprefix usb_fs/,$(USB_FS_CFILES))
 endif
 
 ifeq ($(STM32), stm32f0)

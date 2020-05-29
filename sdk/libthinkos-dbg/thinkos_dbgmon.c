@@ -386,7 +386,7 @@ void __attribute__((naked))
 
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 	unsigned int errno = THINKOS_NO_ERROR;
 	struct thinkos_context * ctx;
 	unsigned int thread_id = id;
@@ -1040,7 +1040,8 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
 			} else {
-				struct thinkos_except * xcpt = __thinkos_except_buf();
+#if (THINKOS_ENABLE_EXCEPTIONS)
+				struct thinkos_except * xcpt = &thinkos_except_buf;
 
 				/* FIXME: add support for breakpoints on IRQ */
 				DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
@@ -1063,6 +1064,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 								   sizeof(struct armv7m_basic_frame));
 				/* delivers a kernel exception on next round */
 				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+#endif
 			}
 		} while (0);
 		 /* (dfsr & SCB_DFSR_BKPT) */

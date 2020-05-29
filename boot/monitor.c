@@ -347,7 +347,11 @@ static void monitor_thread_exec(int (* task)(void *), void * arg)
 	int thread_id;
 
 	if (task != NULL) {
+#if (THINKOS_ENABLE_THREAD_INFO)
 		thread_id = dbgmon_thread_create(task, arg, &thinkos_main_inf);
+#else
+		thread_id = dbgmon_thread_create(task, arg, 0);
+#endif
 		dbgmon_thread_resume(thread_id);
 	}
 }
@@ -429,8 +433,10 @@ static void monitor_on_krn_except(const struct dbgmon_comm * comm)
 			dbgmon_printf(comm, "Exception!!!\r\n");
 		}
 
+#if (MONITOR_FAULT_ENABLE)
 		dbgmon_print_thread(comm, thread_id);
 		dbgmon_printf(comm, s_hr);
+#endif
 	} else {
 	}
 

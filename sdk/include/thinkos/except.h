@@ -142,8 +142,6 @@ void __xcpt_systick_int_enable(void);
 
 void __exception_reset(void);
 
-struct thinkos_except * __thinkos_except_buf(void);
-
 const char * __retstr(uint32_t __ret);
 
 #ifdef __cplusplus

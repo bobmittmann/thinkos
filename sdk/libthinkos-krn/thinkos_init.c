@@ -368,9 +368,9 @@ extern int _stack;
   #define THINKOS_MAIN_STACK_SIZE 4096
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
 uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
 
+#if THINKOS_ENABLE_THREAD_INFO
 const struct thinkos_thread_inf thinkos_main_inf = {
 	.tag = "MAIN",
 	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,

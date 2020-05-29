@@ -47,9 +47,11 @@
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 #endif
 
-void __attribute__((noreturn, naked)) thinkos_idle_task(
-//void __attribute__((noreturn)) thinkos_idle_task(
-	struct thinkos_idle_rt * idle)
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_idle_rt * idle)
+#else
+void __attribute__((noreturn, naked)) thinkos_idle_task(void)
+#endif
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	uint32_t map;
@@ -261,7 +263,9 @@ void __thinkos_idle_init(void)
 					   THINKOS_IDLE_STACK_SIZE);
 #endif
 
+#if (THINKOS_ENABLE_FLASH_MEM)
 	thinkos_flash_drv_init(&board_flash_drv, &board_flash_desc);
+#endif
 
  	thinkos_krn_idle_reset();
 }

@@ -26,10 +26,6 @@
    STM32L433VC 
  */
 
-OUTPUT_FORMAT ("elf32-littlearm")
-ENTRY(_reset)
-SEARCH_DIR(.)
-
 MEMORY
 {
 	vectors (r) : ORIGIN = 0x00000000, LENGTH = 1K
