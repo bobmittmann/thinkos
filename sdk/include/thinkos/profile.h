@@ -40,6 +40,10 @@
  * Default configuration options
  * --------------------------------------------------------------------------*/
 
+#ifndef THINKOS_ENABLE_OBJ_ALLOC
+#define THINKOS_ENABLE_OBJ_ALLOC        1
+#endif
+
 #ifndef THINKOS_THREADS_MAX 
 #define THINKOS_THREADS_MAX             8
 #endif
@@ -49,7 +53,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_THREAD_ALLOC
-#define THINKOS_ENABLE_THREAD_ALLOC     1
+#define THINKOS_ENABLE_THREAD_ALLOC     (THINKOS_ENABLE_OBJ_ALLOC) 
 #endif
 
 #ifndef THINKOS_ENABLE_THREAD_INFO
@@ -101,7 +105,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_MUTEX_ALLOC
-#define THINKOS_ENABLE_MUTEX_ALLOC      0
+#define THINKOS_ENABLE_MUTEX_ALLOC      (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_COND_MAX
@@ -109,7 +113,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_COND_ALLOC
-#define THINKOS_ENABLE_COND_ALLOC       0
+#define THINKOS_ENABLE_COND_ALLOC       (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_SEMAPHORE_MAX
@@ -117,7 +121,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_SEM_ALLOC
-#define THINKOS_ENABLE_SEM_ALLOC        0
+#define THINKOS_ENABLE_SEM_ALLOC        (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_EVENT_MAX
@@ -125,7 +129,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_EVENT_ALLOC
-#define THINKOS_ENABLE_EVENT_ALLOC      0
+#define THINKOS_ENABLE_EVENT_ALLOC      (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_FLAG_MAX
@@ -133,7 +137,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_FLAG_ALLOC
-#define THINKOS_ENABLE_FLAG_ALLOC       0
+#define THINKOS_ENABLE_FLAG_ALLOC       (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_ENABLE_FLAG_WATCH
@@ -145,7 +149,7 @@
 #endif
 
 #ifndef THINKOS_ENABLE_GATE_ALLOC
-#define THINKOS_ENABLE_GATE_ALLOC       0
+#define THINKOS_ENABLE_GATE_ALLOC       (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
 #ifndef THINKOS_ENABLE_CLOCK
@@ -212,10 +216,6 @@
 
 #ifndef THINKOS_ENABLE_CONSOLE
 #define THINKOS_ENABLE_CONSOLE          0
-#endif
-
-#ifndef THINKOS_ENABLE_OBJ_ALLOC
-#define THINKOS_ENABLE_OBJ_ALLOC        1
 #endif
 
 #ifndef THINKOS_ENABLE_OBJ_FREE
