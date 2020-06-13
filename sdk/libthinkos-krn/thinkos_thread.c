@@ -33,7 +33,7 @@
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 int __thinkos_thread_fault_code(unsigned int thread_id)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 	unsigned int insn;
 	uint16_t * pc;
 	int code;
@@ -53,7 +53,7 @@ int __thinkos_thread_fault_code(unsigned int thread_id)
 
 struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_except * xcpt = &thinkos_except_buf;
 
 	if (xcpt->active == thread_id)
 		return &xcpt->ctx.core;

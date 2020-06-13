@@ -19,10 +19,6 @@
  * http://www.gnu.org/
  */
 
-OUTPUT_FORMAT ("elf32-littlearm")
-ENTRY(_reset)
-SEARCH_DIR(.)
-
 MEMORY
 {
 	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
@@ -34,12 +30,6 @@ MEMORY
 	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
 	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
-
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("HEAP", sram1);
-REGION_ALIAS("STACK", sram2);
-REGION_ALIAS("LOG", dcclog);
 
 /* Device family vectors */
 INCLUDE stm32f2xx.ld

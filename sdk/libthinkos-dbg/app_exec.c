@@ -82,9 +82,14 @@ bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused)
 
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
+#if (THINKOS_ENABLE_THREAD_INFO)
 	thread_id = dbgmon_thread_create((int (*)(void *))app, 
 									 (void *)app_argv, 
 									 &thinkos_main_inf);
+#else
+	thread_id = dbgmon_thread_create((int (*)(void *))app, 
+									 (void *)app_argv, 0);
+#endif
 
 	if (!paused)
 		dbgmon_thread_resume(thread_id);
