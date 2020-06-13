@@ -71,11 +71,12 @@ int addsynth_voice_osc_set(struct addsynth_voice * voice, float dt,
 }
 
 int addsynth_voice_env_set(struct addsynth_voice * voice, float dt,
-						   union env_cfg cfg)
+						   const struct envelope_cfg * cfg)
 {
-	struct exp_envelope *env = &voice->env.exp;
+//	struct exp_envelope *env = &voice->env.exp;
 
-	return exp_envelope_config(env, dt, cfg.exp);
+//	return exp_envelope_config(env, dt, &cfg);
+	return 0;
 }
 
 int addsynth_voice_init(struct addsynth_voice *synth) 
@@ -1148,9 +1149,6 @@ static inline float __fsin(uint32_t x)
 	return y;
 }
 
-//#undef ADDSYNTH_OSC_MAX
-//#define ADDSYNTH_OSC_MAX 6
-
 /* float PCM encoding */
 int addsynth_voice_pcm_encode(struct addsynth_voice  * voice, 
 							  float pcm[], unsigned int len, uint32_t clk)
@@ -1236,191 +1234,4 @@ int addsynth_voice_note_off(struct addsynth_voice * voice,
 	return 0;
 }
 
-int addsynth_voice_on(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->e1 = 1.0;
-	env->e2 = 1.0;
-	env->c1 = 1.0;
-	env->c2 = 1.0;
-
-	return 0;
-}
-
-static inline uint32_t dac_ms2samples(uint32_t ms)
-{
-	uint32_t x;
-
-	x = ((DAC_SAMPLE_RATE * ms) + DAC_FRAME_SIZE - 1) / (DAC_FRAME_SIZE * 1000);
-	return x * DAC_FRAME_SIZE;
-}
-
-float __powfu32(float x, uint32_t n) 
-{
-	float y = 1;
-
-	while (n > 0) {
-		if (n % 2 == 1) 
-			y *= x;
-		x *= x;
-		n /= 2;
-	}
-
-	return y;
-}
-
-int addsynth_voice_env_config(struct addsynth_voice * voice,
-							  struct addsynth_envelope_cfg cfg)
-{
-	struct exp_envelope *env = &voice->env.exp;
-	float sustain_lvl;
-	float e1;
-	float e2;
-	float c1;
-	float c2;
-	uint32_t nattack;
-	uint32_t nhold;
-	uint32_t ndecay;
-	uint32_t nrelease;
-	uint32_t n;
-	float c2attack;
-	float c1hold;
-	float c1decay;
-	float c1release;
-	float b;
-	float y;
-/*
-	c2 = ((e1.*c1^dn - yn) / e2) .^ (1 / dn)
-	c1 = ((e2.*c2^dn + yn) / e1) .^ (1 / dn)
-
-*/
-	nattack = dac_ms2samples(cfg.attack_itv_ms);
-	nhold = dac_ms2samples(cfg.hold_itv_ms);
-	ndecay = dac_ms2samples(cfg.guard_itv_ms + cfg.decay_itv_ms);
-	nrelease = dac_ms2samples(cfg.release_itv_ms);
-	sustain_lvl = cfg.sustain_lvl;
-/*
-	printf("  sustain_lvl=%f\n", (double)sustain_lvl); 
-	printf("attack=%d c1hold=%d\n", 
-		   cfg.attack_itv_ms,cfg.hold_itv_ms);
-*/
-	e1 = 1;
-	e2 = 1;
-	c1 = 1;
-	c2 = 1;
-	y = 0.99;
-	n = nattack;
-	if ((n = nattack) > 0) {
-		b = ((float)1.0 - y) / e2;
-		c2 = powf(b, (float)1.0 / n);
-	} else {
-		c2 = .125;
-	}	
-	c2attack = c2;
-	e1 = __powfu32(c1, n);
-	e2 = __powfu32(c2, n);
-/*
-	printf("1.\n"); 
-*/
-	if ((n = nhold) > 0) {
-		b = (e2 * __powfu32(c2, n) + y) / e1;
-		c1 = powf(b, (float)1.0 / n);
-	}
-	c1hold = c1;
-	e1 = __powfu32(c1, n);
-	e2 = __powfu32(c2, n);
-
-//	printf("2. c2=%f e1=%f e2=%f\n", (double)c2, (double)e1, (double)e2);
-	if ((n = ndecay) > 0) {
-		y = sustain_lvl;
-		b = (e2 * __powfu32(c2, n) + y) / e1;
-		c1 = powf(b, (float)1.0 / n);
-	} else {
-		c1 = .125;
-	}
-	c1decay = c1;
-	e1 = __powfu32(c1, n);
-	e2 = __powfu32(c2, n);
-
-//	printf("3. c1=%f c2=%f e1=%f e2=%f\n", (double)c1, (double)c2,
-//		   (double)e1, (double)e2);
-	y = 0.01;
-	if ((n = nrelease) > 0) {
-		b = (e2 * __powfu32(c2, n) + y) / e1;
-//		printf("5. b=%f\n", (double)b); 
-		c1 = powf(b, (float)1.0 / n);
-	} else {
-		c1 = .5;
-	}
-	c1release = c1;
-
-//	printf("attack=%d hold=%d ndecay%d nrelease=%d\n", 
-//		   nattack, nhold, ndecay, nrelease);
-//	printf("c2attack=%10.8f c1hold=%10.8f c1decay=%10.8f c1release=%10.8f\n", 
-//		   (double)c2attack, (double)c1hold, 
-//		   (double)c1decay, (double)c1release);
-//	thinkos_sleep(10);
-
-	env->c2attack = c2attack;
-	env->c1hold = c1hold;
-	env->c1decay = c1decay;
-	env->c1release = c1release;
-
-	return 0;
-};
-
-int addsynth_voice_attack(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c2 = env->c2attack;
-
-	return 0;
-}
-
-int addsynth_voice_hold(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c1 = env->c1hold;
-
-	return 0;
-}
-
-int addsynth_voice_decay(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c1 = env->c1decay;
-
-	return 0;
-}
-
-int addsynth_voice_sustain(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c1 = 1;
-
-	return 0;
-}
-
-int addsynth_voice_release(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c1 = env->c1release;
-
-	return 0;
-}
-
-int addsynth_voice_off(struct addsynth_voice * voice, uint32_t clk)
-{
-	struct exp_envelope *env = &voice->env.exp;
-
-	env->c1 = 0;
-
-	return 0;
-}
 

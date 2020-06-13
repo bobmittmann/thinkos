@@ -28,15 +28,11 @@
 #include "envelope.h"
 #include <midi.h>
 
-#define ADDSYNTH_OSC_MAX 6
+#define ADDSYNTH_OSC_MAX 9
 
 struct osc_cfg {
 	float freq;
 	float ampl;
-};
-
-union env_cfg {
-	struct exp_envelope_cfg exp;
 };
 
 #define ADDSYNTH_NOTE_TAG_MAX 6
@@ -44,27 +40,15 @@ union env_cfg {
 struct addsynth_note_cfg {
 	int8_t midi;
 	char tag[ADDSYNTH_NOTE_TAG_MAX + 1];
-	union env_cfg env;
+	struct envelope_cfg env;
 	struct osc_cfg osc[8];
 };
 
 #define ADDSYNTH_INSTRUMENT_NOTE_MAX 32
-
-struct addsynth_envelope_cfg {
-	uint16_t guard_itv_ms;
-	uint16_t delay_itv_ms;
-	uint16_t attack_itv_ms;
-	uint16_t hold_itv_ms;
-	uint16_t decay_itv_ms;
-	uint16_t release_itv_ms;
-	float sustain_lvl;
-};
-
 #define ADDSYNTH_INSTR_TAG_MAX 15
 
 struct addsynth_instrument_cfg {
 	char tag[ADDSYNTH_INSTR_TAG_MAX + 1];
-	struct addsynth_envelope_cfg envelope;
 	unsigned int note_cnt;
 	struct addsynth_note_cfg note[ADDSYNTH_INSTRUMENT_NOTE_MAX];
 };
@@ -76,7 +60,7 @@ struct addsynth_osc {
 	float a;
 };
 
-union addsynth_envelope {
+struct addsynth_envelope {
 	struct exp_envelope exp;
 };
 
@@ -88,12 +72,13 @@ struct addsynth_voice {
 	uint8_t code;
 	uint8_t idx;
 	char tag[ADDSYNTH_NOTE_TAG_MAX + 1];
-	union addsynth_envelope env;
+	struct addsynth_envelope env;
 	struct {
 		uint32_t p;
 		uint32_t dp;
 		float a;
 	} osc[ADDSYNTH_OSC_MAX];
+	const struct addsynth_note_cfg * cfg;
 };
 
 #define ADDSYNTH_INSTRUMENT_VOICE_MAX 16
@@ -108,12 +93,12 @@ struct addsynth_instrument {
 	uint8_t flag;
 	float dt;
 	volatile uint32_t note_stat;
-	struct addsynth_envelope_cfg envelope;
-	const struct addsynth_instrument_cfg *cfg;
+	const struct addsynth_instrument_cfg * cfg;
 	struct addsynth_voice voice[ADDSYNTH_INSTRUMENT_VOICE_MAX];
 };
 
 extern const struct addsynth_instrument_cfg addsynth_piano_cfg;
+extern const struct addsynth_instrument_cfg addsynth_xilofone_cfg;
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,7 +113,7 @@ int addsynth_voice_osc_set(struct addsynth_voice * voice, float dt,
                            const struct osc_cfg cfg[], unsigned int cnt);
 
 int addsynth_voice_env_set(struct addsynth_voice * voice, float dt,
-                           union env_cfg cfg);
+                           const struct envelope_cfg * cfg);
 
 int addsynth_voice_pcm_encode(struct addsynth_voice  * voice, 
                               float pcm[], unsigned int len, uint32_t clk);
@@ -141,15 +126,6 @@ int addsynth_voice_note_on(struct addsynth_voice * voice,
 int addsynth_voice_note_off(struct addsynth_voice * voice, 
 							int32_t vel, uint32_t clk);
 
-int addsynth_voice_env_config(struct addsynth_voice * voice,
-							  struct addsynth_envelope_cfg cfg);
-int addsynth_voice_on(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_attack(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_hold(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_decay(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_sustain(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_release(struct addsynth_voice * voice, uint32_t clk);
-int addsynth_voice_off(struct addsynth_voice * voice, uint32_t clk);
 
 int addsynth_instr_note_on(struct addsynth_instrument * instr, 
 						   int32_t code, int32_t vel);

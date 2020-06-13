@@ -33,8 +33,9 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 PROG = piano
 
 CFILES = ../common/spidrv.c ../common/encoder.c \
-		 piano.c dac.c keyboard.c addsynth-voice.c \
-		 addsynth-instr.c addsynth-piano.c exp_envelope.c
+		 piano.c dac.c keyboard.c addsynth-voice.c exp_envelope.c \
+		 addsynth-instr.c \
+		 addsynth-piano.c addsynth-xilophone.c 
 
 #tonegen.c 
 #f32sin.c
@@ -52,13 +53,6 @@ CFLAGS = -Ofast -fomit-frame-pointer -Werror -Wall -Wdouble-promotion -Wno-unuse
 #-Wpedantic 
 OPTIONS = -g -mno-unaligned-access 
 LDFLAGS = -Wl,--gc-sections 
-
-RELEASE_DIR := Release
-DEBUG_DIR := Debug
-#LIBPATH = ../sdklibs/Debug
-#LIBPATH = ../sdklibs/Release
-
-LIBPATH += $(MAD_LIB_DIR)
 
 MACH = stm32l433xc
 THINKAPP  = 0x08010000

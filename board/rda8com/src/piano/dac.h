@@ -23,8 +23,10 @@
 #ifndef __DAC_H__
 #define __DAC_H__
 
+#include <stdint.h> 
+
 #ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 128
+#define DAC_FRAME_SIZE 256
 #endif
 
 #ifndef DAC_SAMPLE_RATE
@@ -46,7 +48,7 @@ struct dac_stream_op {
 
 struct dac_stream {
 	void * arg;
-	struct dac_stream_op op;
+	const struct dac_stream_op * op;
 };
 
 #ifdef __cplusplus

@@ -42,10 +42,16 @@
 
 #define KBD_POLL_ITV_MS 2
 
+#define KBD_TMR_CNT 1
+
 struct keyboard_drv {
 	uint8_t flag; 
 	uint8_t mutex;
 	uint8_t keycode[KBD_KEY_CNT];
+	struct {
+		volatile uint32_t en;
+		uint16_t itv[KBD_TMR_CNT];
+	} tmr;
 	struct {
 		volatile uint8_t head;
 		volatile uint8_t tail;
@@ -81,6 +87,7 @@ static inline uint32_t __kbd_io_poll(void)
 
 int keyboard_task(struct keyboard_drv * drv)
 {
+	uint32_t tmr_clk[KBD_TMR_CNT];
 	uint32_t key_filt;
 	uint32_t key_stat;
 	uint32_t clk;
@@ -91,6 +98,9 @@ int keyboard_task(struct keyboard_drv * drv)
 
 	/* Initialize timers */
 	clk = thinkos_clock();
+	for (j = 0; j < KBD_TMR_CNT; j++) {
+		tmr_clk[j] = clk;
+	}
 
 	thinkos_mutex_lock(drv->mutex);
 
@@ -103,9 +113,19 @@ int keyboard_task(struct keyboard_drv * drv)
 		thinkos_mutex_unlock(drv->mutex);
 
 		/* periodic task, wait for alarm clock */
+		clk += KBD_POLL_ITV_MS;
 		/* update next alarm */
-		clk += KBD_POLL_ITV_MS; 
 		thinkos_alarm(clk);
+
+		bmp = __rbit(drv->tmr.en);
+		while ((j = __clz(bmp)) < 32) {
+			bmp &= ~(0x80000000 >> j);  
+
+			if ((int32_t)(tmr_clk[j] - clk) <= 0) {
+				__kbd_ev_put(drv, KBD_EV_TIMEOUT, j);
+				tmr_clk[j] += drv->tmr.itv[j];
+			}
+		}
 
 		/* IO polling */
 		prev = key_filt;
@@ -200,6 +220,11 @@ int keyboard_init(void)
 	for (i = 0; i < KBD_KEY_CNT; ++i) {
 		__kbd_keymap(drv, i, 0x80 + i);
 	}
+
+	for (i = 0; i < KBD_TMR_CNT; ++i) {
+		drv->tmr.itv[i] = 0;
+	}
+	drv->tmr.en = 0;
 	
 	drv->fifo.head = 0;
 	drv->fifo.tail = 0;
@@ -263,6 +288,61 @@ int keyboard_config(const struct keyboard_cfg * cfg)
 		__kbd_keymap(drv, idx, cfg->keymap[i].code);
 	}
 	
+	thinkos_mutex_unlock(drv->mutex);
+
+	return ret;
+}
+
+int keyboard_timer_set(unsigned int timer_id, uint32_t itv_ms)
+{
+	struct keyboard_drv * drv = &keyboard_drv_rt;
+	unsigned int idx;
+	int ret = -1;
+
+	thinkos_mutex_lock(drv->mutex);
+
+	if ((idx = timer_id - 1) < KBD_TMR_CNT) {
+		drv->tmr.itv[idx] = itv_ms;
+//		drv->tmr.en |= (1 << idx);
+		ret = 0;
+	}
+
+	thinkos_mutex_unlock(drv->mutex);
+
+	return ret;
+}
+
+int keyboard_timer_enable(unsigned int timer_id)
+{
+	struct keyboard_drv * drv = &keyboard_drv_rt;
+	unsigned int idx;
+	int ret = -1;
+
+	thinkos_mutex_lock(drv->mutex);
+
+	if ((idx = timer_id - 1) < KBD_TMR_CNT) {
+		drv->tmr.en |= (1 << idx);
+		ret = 0;
+	}
+
+	thinkos_mutex_unlock(drv->mutex);
+
+	return ret;
+}
+
+int keyboard_timer_disable(unsigned int timer_id)
+{
+	struct keyboard_drv * drv = &keyboard_drv_rt;
+	unsigned int idx;
+	int ret = -1;
+
+	thinkos_mutex_lock(drv->mutex);
+
+	if ((idx = timer_id - 1) < KBD_TMR_CNT) {
+		drv->tmr.en &= ~(1 << idx);
+		ret = 0;
+	}
+
 	thinkos_mutex_unlock(drv->mutex);
 
 	return ret;

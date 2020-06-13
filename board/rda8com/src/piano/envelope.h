@@ -24,6 +24,21 @@
 #define __ENVELOPE_H__
 
 #include <stdint.h>
+/* 
+   DAHDSR (delay, attack, hold, decay, sustain, release) envelopes. 
+ */
+
+struct envelope_cfg {
+	uint32_t id; 
+	uint16_t guard_itv_ms;
+	uint16_t delay_itv_ms;
+	uint16_t attack_itv_ms;
+	uint16_t hold_itv_ms;
+	uint16_t decay_itv_ms;
+	uint16_t release_itv_ms;
+	float sustain_lvl;
+};
+
 
 struct exp_envelope {
 	int32_t id;
@@ -38,18 +53,20 @@ struct exp_envelope {
 	float c2;
 };
 
-struct exp_envelope_cfg {
-	int id;
-	int16_t k1;
-	int16_t k2;
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int exp_envelope_on(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_attack(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_hold(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_decay(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_sustain(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_release(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_off(struct exp_envelope * env, uint32_t clk);
+
 int exp_envelope_config(struct exp_envelope *env, float dt, 
-						struct exp_envelope_cfg cfg);
+						const struct envelope_cfg * cfg);
 
 int exp_envelope_pcm_encode(struct exp_envelope *env, float pcm[], 
                             unsigned int len, uint32_t clk);

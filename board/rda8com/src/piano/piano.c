@@ -118,6 +118,95 @@ const struct keyboard_cfg keyboard_piano_cfg = {
 	}
 };
 
+uint32_t x;
+
+uint32_t __attribute__((noinline)) test(uint32_t r0, uint32_t r1, uint32_t r2)
+{
+	uint32_t r3;
+
+
+	r3 = r0 & 0x7;
+	r0 = r0 & ~0x7;
+
+	switch (r3) {
+		case 0:
+			x = r1 + r2;
+		break;
+
+		case 1:
+			x = r1 - r2;
+		break;
+
+		case 2:
+			x = r1 * r2;
+		break;
+
+		case 3:
+			x = r1 / r2;
+		break;
+
+		case 4:
+			x = 3 * r1  + r2;
+		break;
+
+		case 5:
+			x = r1  + 7 * r2;
+		break;
+
+		case 6:
+			x = 17 * r1  + 11 * r2;
+		break;
+	}
+
+	return r0;
+}
+
+void cpu_usage_report(FILE * f)
+{
+	const struct thinkos_thread_inf *infbuf[33];
+	uint32_t cycbuf[33];
+	uint32_t cycsum = 0;
+	uint32_t cycbusy;
+	uint32_t cycidle;
+	uint32_t cycdiv;
+	uint32_t idle;
+	uint32_t busy;
+	int i;
+	int cnt;
+
+
+	/* The cycle counter and thread info must be collected with no 
+	   interruptions when threads are created/destroyed at runtime. */
+	thinkos_critical_enter();
+	cnt = thinkos_thread_inf(infbuf, 33);
+	thinkos_thread_cyccnt(cycbuf, cnt);
+	thinkos_critical_exit();
+
+	fprintf(f, "\n");
+
+	cycsum = 0;
+	for (i = 0; i < cnt; ++i)
+		cycsum += cycbuf[i];
+	cycidle = cycbuf[cnt - 1];	/* The last item is IDLE */
+	cycbusy = cycsum - cycidle;
+	cycdiv = (cycsum + 5000) / 10000;
+	busy = (cycbusy + (cycdiv / 2)) / cycdiv;
+	idle = 1000 - busy;
+	fprintf(f, "CPU usage: %d.%02d%% busy, %d.%02d%% idle\r\n",
+			busy / 100, busy % 100, idle / 100, idle % 100);
+
+	for (i = 0; i < cnt; ++i) {
+		const struct thinkos_thread_inf *inf;
+		if (((inf = infbuf[i]) != NULL) && (cycbuf[i] != 0)) {
+			uint32_t usage;
+			usage = (cycbuf[i] + cycdiv / 2) / cycdiv;
+			fprintf(f, "%2d %7s %3d.%02d%%\r\n", i, inf->tag,
+					usage / 100, usage % 100);
+		}
+	}
+
+}
+
 int main(int argc, char ** argv)
 {
 	struct addsynth_instrument * instr;
@@ -129,6 +218,8 @@ int main(int argc, char ** argv)
 	printf("  JUJU Synthesizer \n");
 	printf("-------------------\n");
 	printf("\n\r");
+
+	test(10, 11, 22);
 
 	io_init();
 
@@ -161,6 +252,10 @@ int main(int argc, char ** argv)
 
 	printf("------------------------------------------------------------\n\r");
 	thinkos_sleep(10);
+
+	keyboard_timer_set(1, 10000);
+	keyboard_timer_enable(1);
+
 	/* sequencer */
 	for (;;) {
 		int event;
@@ -191,6 +286,11 @@ int main(int argc, char ** argv)
 
 		case KBD_EV_SWITCH_OFF:
 			printf("<%2d> SWITCH OFF\n", arg);
+			break;
+
+		case KBD_EV_TIMEOUT:
+			printf("timeout\n");
+//			cpu_usage_report(stdout);
 			break;
 		}
 	}

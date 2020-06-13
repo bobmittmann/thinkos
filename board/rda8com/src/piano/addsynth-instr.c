@@ -115,14 +115,15 @@ int addsynth_instr_config(struct addsynth_instrument * instr,
 		voice->idx = idx;
 		voice->code = note->midi;
 		strcpy(voice->tag, note->tag);
+		voice->cfg = note;
 
 		addsynth_voice_osc_set(voice, dt, note->osc, ADDSYNTH_OSC_MAX);
-		addsynth_voice_env_set(voice, dt, note->env);
+//		addsynth_voice_env_set(voice, dt, voice->cfg);
 
 		dac_voice_op_set(idx + 1, 1, voice, &addsynth_osc_op);
 		dac_voice_op_set(idx + 1, 2, &voice->env.exp, &exp_envelope_op);
 
-		addsynth_voice_env_config(voice, cfg->envelope);
+		exp_envelope_config(&voice->env.exp, dt, &voice->cfg->env);
 	}
 
 	for (; j < ADDSYNTH_INSTRUMENT_VOICE_MAX; ++j) {
@@ -130,8 +131,7 @@ int addsynth_instr_config(struct addsynth_instrument * instr,
 	}
 
 
-	instr->envelope = cfg->envelope;
-	instr->cfg = cfg;
+//	instr->cfg = cfg;
 
 	thinkos_mutex_unlock(instr->mutex);
 
@@ -245,25 +245,13 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 	thinkos_mutex_lock(instr->mutex);
 
 	for (;;) {
-		int32_t guard_itv_ms;
-		int32_t delay_itv_ms;
-		int32_t attack_itv_ms;
-		int32_t hold_itv_ms;
-		int32_t decay_itv_ms;
-		int32_t release_itv_ms;
 		int32_t min = INSTR_POLL_ITV_MS;
 		int32_t key_down = 0;
 		int32_t key_up = 0;
+		struct addsynth_voice * voice;
 		uint32_t bmp;
 		int32_t diff;
-		struct addsynth_voice * voice;
 		int32_t prev;
-
-		(void)guard_itv_ms;
-		(void)delay_itv_ms;
-		(void)attack_itv_ms;
-		(void)hold_itv_ms;
-		(void)decay_itv_ms;
 
 		thinkos_mutex_unlock(instr->mutex);
 
@@ -272,13 +260,6 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 		clk = thinkos_clock();
 
 		thinkos_mutex_lock(instr->mutex);
-
-		guard_itv_ms = instr->envelope.guard_itv_ms;
-		delay_itv_ms = instr->envelope.delay_itv_ms;
-		attack_itv_ms = instr->envelope.attack_itv_ms;
-		hold_itv_ms = instr->envelope.hold_itv_ms;
-		decay_itv_ms = instr->envelope.decay_itv_ms;
-		release_itv_ms = instr->envelope.release_itv_ms;
 
 		/* Key press polling */
 		prev = key_stat;
@@ -296,8 +277,12 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 			if ((diff = (int32_t)(tmr_clk[j] - clk)) <= 0) {
 				if (j == INSTR_TMR_KEY_POLL) {
 				} else { /* Key timeout */
+					const struct addsynth_note_cfg * cfg;
+					struct addsynth_envelope * env;
 
 					voice = &instr->voice[j];
+					env = &voice->env;
+					cfg = voice->cfg;
 
 					switch (env_state[j]) {
 					case ENV_IDLE:
@@ -308,38 +293,38 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 					case ENV_DELAY:
 						env_state[j] = ENV_ATTACK;
 //						printf("[%d] ATTACK\n", j + 1);
-						tmr_clk[j] += attack_itv_ms;
-						addsynth_voice_attack(voice, clk);
+						tmr_clk[j] += cfg->env.attack_itv_ms;
+						exp_envelope_attack(&env->exp, clk);
 						break;
 					case ENV_ATTACK:
 						env_state[j] = ENV_HOLD;
 //						printf("[%d] HOLD\n", j + 1);
-						tmr_clk[j] += hold_itv_ms;
-						addsynth_voice_hold(voice, clk);
+						tmr_clk[j] += cfg->env.hold_itv_ms;
+						exp_envelope_hold(&env->exp, clk);
 						break;
 					case ENV_HOLD:
 						env_state[j] = ENV_GUARD;
 //						printf("[%d] GUARD %d ms\n", j + 1,  guard_itv_ms);
-						tmr_clk[j] += guard_itv_ms;
-						addsynth_voice_decay(voice, clk);
+						tmr_clk[j] += cfg->env.guard_itv_ms;
+						exp_envelope_decay(&env->exp, clk);
 						break;
 					case ENV_GUARD:
 						env_state[j] = ENV_DECAY;
 //						printf("[%d] DECAY %d ms\n", j + 1, decay_itv_ms);
-						tmr_clk[j] += decay_itv_ms;
+						tmr_clk[j] += cfg->env.decay_itv_ms;
 						break;
 					case ENV_DECAY:
 						if (key_stat & (1 << j)) {
 							env_state[j] = ENV_SUSTAIN;
 //							printf("[%d] SUSTAIN\n", j + 1);
-							addsynth_voice_sustain(voice, clk);
+							exp_envelope_sustain(&env->exp, clk);
 							/* disable timer */
 							tmr_en &= ~(1 << j);
 						} else {
 							env_state[j] = ENV_RELEASE;
 //							printf("[%d] RELEASE\n", j + 1);
-							tmr_clk[j] = clk + release_itv_ms;
-							addsynth_voice_release(voice, clk);
+							tmr_clk[j] = clk + cfg->env.release_itv_ms;
+							exp_envelope_release(&env->exp, clk);
 						}
 						break;
 					case ENV_SUSTAIN:
@@ -351,7 +336,7 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 //						printf("[%d] OFF\n", j + 1);
 						/* disable timer */
 						tmr_en &= ~(1 << j);
-						addsynth_voice_off(voice, clk);
+						exp_envelope_off(&env->exp, clk);
 						break;
 					}
 
@@ -369,11 +354,15 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 		if (key_down) {
 			bmp = __rbit(key_down);
 			while ((j = __clz(bmp)) < 32) {
+				const struct addsynth_note_cfg * cfg;
+				struct addsynth_envelope * env;
 				int32_t diff;
 
 				bmp &= ~(0x80000000 >> j);  
 
 				voice = &instr->voice[j];
+				env = &voice->env;
+				cfg = voice->cfg;
 
 				switch (env_state[j]) {
 				case ENV_IDLE:
@@ -382,14 +371,14 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 				case ENV_RELEASE:
 					env_state[j] = ENV_DELAY;
 //					printf("[%d] DELAY\n", j + 1);
-					tmr_clk[j] = clk + delay_itv_ms;
+					tmr_clk[j] = clk + cfg->env.delay_itv_ms;
 					tmr_en |= (1 << j);
 					diff = clk - tmr_clk[j];
 					if (diff < min) 
 						min = diff;
 
 					printf(" %s", voice->tag);
-					addsynth_voice_on(voice, clk);
+					exp_envelope_on(&env->exp, clk);
 					break;
 				case ENV_DELAY:
 					break;
@@ -400,7 +389,7 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 				case ENV_GUARD:
 					/* schedule timer blocker */
 //					printf("[%d] ++guard\n", j + 1);
-					tmr_clk[j] = clk + guard_itv_ms;
+					tmr_clk[j] = clk + cfg->env.guard_itv_ms;
 					tmr_en |= (1 << j);
 					diff = clk - tmr_clk[j];
 					if (diff < min) 
@@ -414,11 +403,15 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 		if (key_up) {
 			bmp = __rbit(key_up);
 			while ((j = __clz(bmp)) < 32) {
+				const struct addsynth_note_cfg * cfg;
+				struct addsynth_envelope * env;
 				int32_t diff;
 
 				bmp &= ~(0x80000000 >> j);  
 
 				voice = &instr->voice[j];
+				env = &voice->env;
+				cfg = voice->cfg;
 
 				switch (env_state[j]) {
 				case ENV_IDLE:
@@ -437,12 +430,12 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 				case ENV_SUSTAIN:
 					env_state[j] = ENV_RELEASE;
 //					printf("[%d] RELEASE\n", j + 1);
-					tmr_clk[j] = clk + release_itv_ms;
+					tmr_clk[j] = clk + cfg->env.release_itv_ms;
 					tmr_en |= (1 << j);
 					diff = clk - tmr_clk[j];
 					if (diff < min) 
 						min = diff;
-					addsynth_voice_release(voice, clk);
+					exp_envelope_release(&env->exp, clk);
 					break;
 				case ENV_RELEASE:
 					break;
@@ -476,15 +469,6 @@ int addsynth_instr_init(struct addsynth_instrument * instr)
 
 	instr->mutex = thinkos_mutex_alloc();
 	instr->flag = thinkos_flag_alloc();
-
-	/* default values */
-	instr->envelope.guard_itv_ms = 5;
-	instr->envelope.delay_itv_ms = 5;
-	instr->envelope.attack_itv_ms = 5;
-	instr->envelope.hold_itv_ms = 5;
-	instr->envelope.decay_itv_ms = 5;
-	instr->envelope.release_itv_ms = 5;
-	instr->envelope.sustain_lvl = 0.5;
 
 	thinkos_thread_create_inf((int (*)(void *))addsynth_instr_task, 
 							  (void *)instr,

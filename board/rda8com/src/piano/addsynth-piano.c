@@ -31,15 +31,6 @@
 
 const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 	.tag = "Piano",
-	.envelope = {
-		.guard_itv_ms = 50,
-		.delay_itv_ms = 0,
-		.attack_itv_ms = 25,
-		.hold_itv_ms = 0,
-		.decay_itv_ms = 0,
-		.release_itv_ms = 125,
-		.sustain_lvl = 0.75
-	},
 	.note_cnt = 16,
 	.note = {
 		[0] = {
@@ -53,10 +44,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_C4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_C4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 1,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 		},
 		[1] = {
@@ -70,12 +65,15 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_D4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_D4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 2,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
-
 		},
 		[2] = {
 			.tag = "E4",
@@ -88,10 +86,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_E4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_E4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 3,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -106,10 +108,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_F4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_F4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 4,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -124,10 +130,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_G4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_G4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 5,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -142,10 +152,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_A4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_A4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 6,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -160,10 +174,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_B4_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_B4_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 7,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -178,10 +196,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_C5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_C5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 8,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -196,10 +218,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_D5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_D5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 9,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -214,10 +240,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_E5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_E5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 10,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -232,10 +262,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_F5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_F5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 11,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -250,10 +284,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_G5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_G5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 12,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -268,10 +306,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_A5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_A5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 13,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -286,10 +328,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_B5_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_B5_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 14,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -304,10 +350,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_C6_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_C6_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 15,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},
@@ -322,10 +372,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[4] = { .freq = MIDI_D6_FREQ * 5, .ampl = 0.133 },
 				[5] = { .freq = MIDI_D6_FREQ * 6, .ampl = 0.01 }
 			},
-			.env.exp = {
-				.id = 16,
-				.k1 = 8,
-				.k2 = 64
+			.env = {
+				.guard_itv_ms = 50,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 25,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 0,
+				.release_itv_ms = 125,
+				.sustain_lvl = 0.75
 			}
 
 		},

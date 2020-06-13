@@ -26,11 +26,12 @@
 #include <stdint.h>
 
 #define KBD_EV_KEY_ON      0x01
-#define KBD_EV_KEY_OFF     0x07
-#define KBD_EV_SWITCH_ON   0x08
-#define KBD_EV_SWITCH_OFF  0x09
-#define KBD_EV_ENCODER_INC 0x08
-#define KBD_EV_ENCODER_DEC 0x09
+#define KBD_EV_KEY_OFF     0x02
+#define KBD_EV_SWITCH_ON   0x03
+#define KBD_EV_SWITCH_OFF  0x04
+#define KBD_EV_ENCODER_INC 0x05
+#define KBD_EV_ENCODER_DEC 0x06
+#define KBD_EV_TIMEOUT     0x80
 
 #define KBD_EVENT_OPC(__EV) (((__EV) >> 8) & 0xff)
 #define KBD_EVENT_ARG(__EV) ((__EV) & 0xff)
@@ -63,6 +64,10 @@ int keyboard_event_wait(void);
 int keyboard_keymap(unsigned int key, unsigned int code);
 
 int keyboard_config(const struct keyboard_cfg * cfg);
+
+int keyboard_timer_set(unsigned int timer_id, uint32_t itv_ms);
+int keyboard_timer_enable(unsigned int timer_id);
+int keyboard_timer_disable(unsigned int timer_id);
 
 #ifdef __cplusplus
 }

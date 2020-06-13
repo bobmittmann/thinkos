@@ -59,15 +59,15 @@ int silence_reset(void * arg, uint32_t clk)
 	return 0;
 }
 
-const struct dac_stream_op silence_gen_op = {
+static const struct dac_stream_op silence_gen_op = {
 	.encode = (int (*)(void *, float*, unsigned int, uint32_t))
 		silence_pcm_encode,
 	.reset = (int (*)(void *, uint32_t))silence_reset
 };
 
-const struct dac_stream silence = {
+static const struct dac_stream silence = {
 	.arg = NULL,
-	.op = silence_gen_op
+	.op = &silence_gen_op
 };
 
 struct dac_voice {
@@ -358,7 +358,7 @@ int dac_init(void)
 
 	for (j = 0; j < DAC_VOICES_MAX; ++j) { 
 		for (i = 0; i < DAC_PIPELINE_MAX; ++i) { 
-			dac_rt.voice[j].lvl[i].encode = silence.op.encode; 
+			dac_rt.voice[j].lvl[i].encode = silence.op->encode; 
 		}
 	}
 
@@ -392,7 +392,7 @@ void dac_gain_set(float gain)
 }
 
 int dac_voice_op_set(int vid, int lid, 
-					  void * arg, const struct dac_stream_op * op)
+	void * arg, const struct dac_stream_op * op)
 {
 	unsigned int vj = vid - 1;
 	unsigned int li = lid - 1;
