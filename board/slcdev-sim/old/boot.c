@@ -18,8 +18,8 @@
  */
 
 /** 
- * @file yard-ice.c
- * @brief YARD-ICE application main
+ * @file boot.c
+ * @brief Bootloader main
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 

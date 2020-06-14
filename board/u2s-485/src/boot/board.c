@@ -83,12 +83,6 @@ void board_on_softreset(void)
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
-	DCC_LOG1(LOG_TRACE, "ahb1enr =0x%08x", rcc->ahb1enr);
-	DCC_LOG1(LOG_TRACE, "ahb2enr =0x%08x", rcc->ahb2enr);
-	DCC_LOG1(LOG_TRACE, "ahb3enr =0x%08x", rcc->ahb3enr);
-	DCC_LOG1(LOG_TRACE, "apb1enr1=0x%08x", rcc->apb1enr1);
-	DCC_LOG1(LOG_TRACE, "apb1enr2=0x%08x", rcc->apb1enr2);
-	DCC_LOG1(LOG_TRACE, "apb2enr =0x%08x", rcc->apb2enr);
 
 #if SOFTRESET_DISABLE_DMA
 	dma = STM32F_DMA1;

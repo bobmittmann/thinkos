@@ -84,7 +84,6 @@ void stm32_dmactl_init(struct stm32_dmactl * ctl, struct stm32f_dma * dma,
 #endif
 
 #if defined(STM32F1X) || defined(STM32F3X) || defined(STM32L1X)
-
 const uint8_t stm32f_dma1_irqnum_lut[] = {
 	STM32_IRQ_DMA1_CH1,
 	STM32_IRQ_DMA1_CH2,
@@ -94,7 +93,9 @@ const uint8_t stm32f_dma1_irqnum_lut[] = {
 	STM32_IRQ_DMA1_CH6,
 	STM32_IRQ_DMA1_CH7
 };
+#endif
 
+#if defined(STM32F1X) || defined(STM32F3X) 
 const uint8_t stm32f_dma2_irqnum_lut[] = {
 #ifdef STM32_IRQ_DMA2_CH1
 	STM32_IRQ_DMA2_CH1,

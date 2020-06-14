@@ -257,14 +257,14 @@ void dbgmon_watchpoint_clear_all(void);
  */
 static inline void __dbgmon_signal_thread_create(int thread_id) {
 	register int r0 asm("r0") = (int)thread_id;
-	asm volatile ("bkpt %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_CREATE), 
+	asm volatile ("udf %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_CREATE), 
 				  "r"(r0) : );
 }
 
 static inline void __dbgmon_signal_thread_terminate(int thread_id, int code) {
 	register int r0 asm("r0") = (int)thread_id;
 	register int r1 asm("r1") = (int)code;
-	asm volatile ("bkpt %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_TERMINATE), 
+	asm volatile ("udf %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_TERMINATE), 
 				  "r"(r0), "r"(r1) );
 }
 

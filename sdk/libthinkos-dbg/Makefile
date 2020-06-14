@@ -36,7 +36,7 @@ COMMIO_CFILES = dbgmon_putc.c dbgmon_puts.c \
 
 GDB_CFILES = dbgmon_gdb.c
 
-CFILES = thinkos_dbgmon.c \
+CFILES = thinkos_dbgmon.c thinkos_usagefault.c \
 	 dbgmon_thread.c dbgmon_memory.c \
 	 dbgmon_console_task.c \
 	 app_exec.c app_erase.c flash_ymodem.c \

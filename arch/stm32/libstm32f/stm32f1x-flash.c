@@ -154,23 +154,18 @@ int stm32f1x_flash_write(struct stm32_flash * flash,
 	uint32_t pri;
 
 	if (offs & 0x00000001) {
-		DCC_LOG(LOG_ERROR, "offset must be 16bits aligned!");
 		return -1;
 	}
 
 	src = (uint8_t *)buf;
 	dst = (uint16_t *)((uint32_t)STM32_FLASH_MEM + offs);
 
-	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
-
 	pri = cm3_primask_get();
 	data = src[0] | (src[1] << 8);
-	DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
 	cm3_primask_set(1);
 	sr = stm32f10x_flash_wr16(flash, dst, data);
 	cm3_primask_set(pri);
 	if (sr & FLASH_ERR) {
-		DCC_LOG(LOG_WARNING, "stm32f10x_flash_wr16() failed!");
 		return -1;
 	}
 	

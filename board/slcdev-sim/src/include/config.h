@@ -33,7 +33,7 @@
    ThinkOS configuration
    -------------------------------------------------------------------------- */
 
-#define THINKOS_IRQ_MAX                 60
+#define THINKOS_IRQ_MAX                 44
 #define THINKOS_ENABLE_IRQ_CTL          1
 #define THINKOS_ENABLE_IRQ_RESTORE      0
 #define THINKOS_ENABLE_IRQ_CYCCNT       0
@@ -194,18 +194,6 @@
 #define STM32_ENABLE_HSE        1 /* Use external oscillator */
 #define STM32_ENABLE_PLL        1 /* Enable PLL */
 #define STM32_ENABLE_HSI        0 /* Don't use internal oscillator */
-
-/* -------------------------------------------------------------------------
-   USB 
-   -------------------------------------------------------------------------- */
-
-#define STM32_ENABLE_USB_FS         1
-#define STM32_USB_FS_VBUS_CTRL      0
-#define STM32_USB_FS_EP_MAX         4
-#define STM32_USB_FS_IO_INIT        0
-#define STM32_USB_FS_IRQ_ENABLE     0
-#define STM32_USB_FS_VBUS_ENABLE    1
-#define STM32_USB_FS_SUSPEND        0
 
 /* -------------------------------------------------------------------------
    GDB

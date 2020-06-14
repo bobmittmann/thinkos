@@ -24,10 +24,6 @@
    or 128 KB Flash, USB, CAN, 7 timers, 2 ADCs, 9 com. interfaces
 */
 
-OUTPUT_FORMAT ("elf32-littlearm")
-ENTRY(_reset)
-SEARCH_DIR(.)
-
 MEMORY
 {
 	vectors (r) : ORIGIN = 0x00000000, LENGTH = 1K
@@ -37,11 +33,6 @@ MEMORY
 	dcclog  (r) : ORIGIN = 0x4ff00000, LENGTH = 1024K
 }
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("HEAP", sram1);
-REGION_ALIAS("STACK", sram2);
-REGION_ALIAS("LOG", dcclog);
 
 /* Device family vectors */
 INCLUDE stm32l1xx.ld

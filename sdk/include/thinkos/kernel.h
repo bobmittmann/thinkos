@@ -732,7 +732,7 @@ void __thinkos_thread_abort(unsigned int thread_id);
 #if (THINKOS_ENABLE_ERROR_TRAP)
   #define __THINKOS_ERROR(__CODE) \
 	  asm volatile ("nop\n" \
-					"bkpt %0\n" : : "I" (THINKOS_ERROR_BKPT(__CODE)))
+					"udf %0\n" : : "I" (THINKOS_ERROR_BKPT(__CODE)))
 #else
   #define __THINKOS_ERROR(__CODE)
 #endif

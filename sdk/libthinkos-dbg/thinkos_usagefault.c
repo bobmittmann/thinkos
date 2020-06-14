@@ -37,7 +37,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/dcclog.h>
 #include <vt100.h>
 
-#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_USAGEFAULT_MONITOR)
+#if (THINKOS_ENABLE_MONITOR) && (THINKOS_ENABLE_USAGEFAULT_MONITOR)
 
 #ifdef THINKOS_DBGMON_ENABLE_IRQ_MGMT
 #warning "Deprecated THINKOS_DBGMON_ENABLE_IRQ_MGMT"
@@ -140,20 +140,13 @@ void __reset_ram_vectors(void)
 
 void dbgmon_signal(int sig) 
 {
-	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t evset;
-	uint32_t demcr;
 	
 	do {
 		/* avoid possible race condition on dbgmon.events */
 		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
 		evset |= (1 << sig);
 	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-
-	do {
-		demcr = __ldrex((uint32_t *)&dcb->demcr);
-		demcr |= DCB_DEMCR_MON_PEND;
-	} while (__strex((uint32_t *)&dcb->demcr, demcr));
 
 	asm volatile ("isb\n" :  :  : );
 }
@@ -472,334 +465,6 @@ void dbgmon_thread_break_clr(void)
 	thinkos_dbgmon_rt.errno = 0;
 }
 
-#if (THINKOS_ENABLE_DEBUG_BKPT) || (THINKOS_ENABLE_DEBUG_WPT)
-
-/* -------------------------------------------------------------------------
- * Debug Breakpoint
- * ------------------------------------------------------------------------- */
-#define BP_DEFSZ 2
-/* (Flash Patch) Number of instruction address comparators */
-#define CM3_FP_NUM_CODE 6
-/* (Flash Patch) Number of literal address comparators */
-#define CM3_FP_NUM_LIT  2
-
-bool dbgmon_breakpoint_set(uint32_t addr, uint32_t size)
-{
-	struct cm3_fpb * fpb = CM3_FPB;
-	uint32_t comp;
-	int i;
-
-	for (i = 0; i < CM3_FP_NUM_CODE; ++i) {
-		if ((fpb->comp[i] & COMP_ENABLE) == 0) 
-			break;
-	}
-
-	if (i == CM3_FP_NUM_CODE) {
-		DCC_LOG(LOG_WARNING, "no more breakpoints");
-		return false;
-	}
-
-	/* use default size if zero */
-	size = (size == 0) ? BP_DEFSZ : size;
-
-	if (size == 2) {
-		if (addr & 0x00000002) {
-			comp = COMP_BP_HIGH | (addr & 0x0ffffffc) | COMP_ENABLE;
-		} else {
-			comp = COMP_BP_LOW | (addr & 0x0ffffffc) | COMP_ENABLE;
-		}
-	} else {
-		comp = COMP_BP_WORD | (addr & 0x0ffffffc) | COMP_ENABLE;
-	}
-
-	fpb->comp[i] = comp;
-
-	DCC_LOG4(LOG_INFO, "bp=%d addr=0x%08x size=%d comp=0x%08x ", i, addr, 
-			 size, fpb->comp[i]);
-
-	return true;
-}
-
-bool dbgmon_breakpoint_clear(uint32_t addr, uint32_t size)
-{
-	struct cm3_fpb * fpb = CM3_FPB;
-	uint32_t comp;
-	int i;
-
-	size = (size == 0) ? BP_DEFSZ : size;
-
-	if (size == 2) {
-		if (addr & 0x00000002) {
-			comp = COMP_BP_HIGH | (addr & 0x0ffffffc) | COMP_ENABLE;
-		} else {
-			comp = COMP_BP_LOW | (addr & 0x0ffffffc) | COMP_ENABLE;
-		}
-	} else {
-		comp = COMP_BP_WORD | (addr & 0x0ffffffc) | COMP_ENABLE;
-	}
-
-	DCC_LOG2(LOG_INFO, "addr=0x%08x size=%d", addr, size);
-
-	for (i = 0; i < CM3_FP_NUM_CODE; ++i) {
-		if ((fpb->comp[i] | COMP_ENABLE) == comp) {
-			fpb->comp[i] = 0;
-			return true;
-		}
-	}
-
-	DCC_LOG1(LOG_WARNING, "breakpoint 0x%08x not found!", addr);
-
-	return false;
-}
-
-bool dbgmon_breakpoint_disable(uint32_t addr)
-{
-	struct cm3_fpb * fpb = CM3_FPB;
-	int i;
-
-	for (i = 0; i < CM3_FP_NUM_CODE; ++i) {
-		if ((fpb->comp[i] & 0x0ffffffc) == (addr & 0x0ffffffc)) {
-			DCC_LOG2(LOG_WARNING, "breakpoint %d at 0x%08x disabled!", 
-					 i, addr);
-			fpb->comp[i] &= ~COMP_ENABLE;
-			return true;
-		}
-	}
-
-	DCC_LOG1(LOG_WARNING, "breakpoint 0x%08x not found!", addr);
-
-	return false;
-}
-
-void dbgmon_breakpoint_clear_all(void)
-{
-	struct cm3_fpb * fpb = CM3_FPB;
-
-	__thinkos_memset32(fpb->comp, 0, (CM3_FP_NUM_CODE + CM3_FP_NUM_LIT) * 4);
-}
-
-#endif /* THINKOS_ENABLE_DEBUG_BKPT */
-
-#if (THINKOS_ENABLE_DEBUG_WPT)
-
-/* -------------------------------------------------------------------------
- * Debug Watchpoint
- * ------------------------------------------------------------------------- */
-
-#define DWT_MATCHED            (1 << 24)
-
-#define DWT_DATAVADDR1(ADDR)   ((ADDR) << 16)
-#define DWT_DATAVADDR0(ADDR)   ((ADDR) << 12)
-
-#define DWT_DATAVSIZE_BYTE     (0 << 10)
-#define DWT_DATAVSIZE_HALFWORD (1 << 10)
-#define DWT_DATAVSIZE_WORD     (2 << 10)
-
-#define DWT_LNK1ENA            (1 << 9)
-#define DWT_DATAVMATCH         (1 << 8)
-#define DWT_CYCMATCH           (1 << 7)
-#define DWT_EMITRANGE          (1 << 5)
-
-#define DWT_FUNCTION           (0xf << 0)
-
-#define DWT_DATAV_RO_BKP       (5 << 0)
-#define DWT_DATAV_WO_BKP       (6 << 0)
-#define DWT_DATAV_RW_BKP       (7 << 0)
-
-#define DWT_DATAV_RO_CMP       (9 << 0)
-#define DWT_DATAV_WO_CMP       (10 << 0)
-#define DWT_DATAV_RW_CMP       (11 << 0)
-
-#define CM3_DWT_NUMCOMP 4
-
-bool dbgmon_watchpoint_set(uint32_t addr, uint32_t size, int access)
-{
-	struct cm3_dwt * dwt = CM3_DWT;
-	uint32_t func;
-	int i;
-
-	for (i = 0; i < CM3_DWT_NUMCOMP; ++i) {
-		if ((dwt->wp[i].function & DWT_FUNCTION) == 0) 
-			break;
-	}
-
-	if (i == CM3_DWT_NUMCOMP) {
-		DCC_LOG(LOG_WARNING, "no more watchpoints");
-		return false;
-	}
-
-	if (size == 0)
-		return false;
-
-	if (size > 4) {
-		/* FIXME: implement ranges... */
-		return false;
-	}
-
-	dwt->wp[i].comp = addr;
-
-	if (size == 4) {
-		func = DWT_DATAVSIZE_WORD;
-		dwt->wp[i].mask = 2;
-	} else if (size == 2) {
-		func = DWT_DATAVSIZE_HALFWORD;
-		dwt->wp[i].mask = 1;
-	} else {
-		func = DWT_DATAVSIZE_BYTE;
-		dwt->wp[i].mask = 0;
-	}
-
-	if (access == 1) {
-		func |= DWT_DATAV_RO_BKP;
-	} else if (access == 2) {
-		func |= DWT_DATAV_WO_BKP;
-	} else {
-		func |= DWT_DATAV_RW_BKP;
-	}
-
-	dwt->wp[i].function = func;
-
-	DCC_LOG3(LOG_TRACE, "wp=%d addr=0x%08x size=%d", i, addr, size);
-
-	return true;
-}
-
-bool dbgmon_watchpoint_clear(uint32_t addr, uint32_t size)
-{
-	struct cm3_dwt * dwt = CM3_DWT;
-	int i;
-
-	DCC_LOG2(LOG_INFO, "addr=0x%08x size=%d", addr, size);
-
-	for (i = 0; i < CM3_DWT_NUMCOMP; ++i) {
-		if (((dwt->wp[i].function & DWT_FUNCTION) != 0) && 
-			dwt->wp[i].comp == addr) { 
-			dwt->wp[i].function = 0;
-			dwt->wp[i].comp = 0;
-			return true;
-		}
-	}
-
-	DCC_LOG1(LOG_WARNING, "watchpoint 0x%08x not found!", addr);
-
-	return false;
-}
-
-
-#define DWT_MATCHED            (1 << 24)
-
-#define DWT_DATAVADDR1(ADDR)   ((ADDR) << 16)
-#define DWT_DATAVADDR0(ADDR)   ((ADDR) << 12)
-
-#define DWT_DATAVSIZE_BYTE     (0 << 10)
-#define DWT_DATAVSIZE_HALFWORD (1 << 10)
-#define DWT_DATAVSIZE_WORD     (2 << 10)
-
-#define DWT_LNK1ENA            (1 << 9)
-#define DWT_DATAVMATCH         (1 << 8)
-#define DWT_CYCMATCH           (1 << 7)
-#define DWT_EMITRANGE          (1 << 5)
-
-#define DWT_DATAV_RO_BKP       (5 << 0)
-#define DWT_DATAV_WO_BKP       (6 << 0)
-#define DWT_DATAV_RW_BKP       (7 << 0)
-
-#define DWT_DATAV_RO_CMP       (9 << 0)
-#define DWT_DATAV_WO_CMP       (10 << 0)
-#define DWT_DATAV_RW_CMP       (11 << 0)
-
-
-void dbgmon_watchpoint_clear_all(void)
-{
-	struct cm3_dwt * dwt = CM3_DWT;
-	int i;
-	int n;
-
-	n = (dwt->ctrl & DWT_CTRL_NUMCOMP) >> 28;
-
-	DCC_LOG1(LOG_TRACE, "TWD NUMCOMP=%d.", n);
-
-	for (i = 0; i < n; ++i)
-		dwt->wp[i].function = 0;
-}
-
-#endif /* THINKOS_ENABLE_DEBUG_WPT */
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-
-/* -------------------------------------------------------------------------
- * Thread stepping
- * ------------------------------------------------------------------------- */
-
-int dbgmon_thread_step(unsigned int thread_id, bool sync)
-{
-	int ret;
-
-	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-			 "step_req=%08x thread_id=%d"
-			 _ATTR_POP_, 
-			 thinkos_rt.step_req, thread_id + 1);
-
-	if (CM3_DCB->dhcsr & DCB_DHCSR_C_DEBUGEN) {
-		DCC_LOG(LOG_ERROR, "can't step: DCB_DHCSR_C_DEBUGEN !!");
-		return -1;
-	}
-
-	if (thread_id == THINKOS_THREAD_LAST) {
-		DCC_LOG(LOG_ERROR, "void thread, IRQ step!");
-		return -1;
-	} else {
-		if (thread_id >= THINKOS_THREADS_MAX) {
-			DCC_LOG1(LOG_ERROR, "thread %d is invalid!", thread_id + 1);
-			return -1;
-		}
-
-		if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
-			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", 
-					 thread_id + 1);
-			return -1;
-		}
-
-		DCC_LOG(LOG_MSG, "setting the step_req bit");
-		/* request stepping the thread  */
-		__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
-		/* resume the thread */
-		__thinkos_thread_resume(thread_id);
-		/* make sure to run the scheduler */
-		__thinkos_defer_sched();
-	}
-
-	if (sync) {
-		DCC_LOG(LOG_MSG, "synchronous step, waiting for signal...");
-		if ((ret = dbgmon_expect(DBGMON_THREAD_STEP)) < 0)
-			return ret;
-	}
-
-	return 0;
-}
-
-int dbgmon_thread_step_get(void)
-{
-	struct thinkos_context * ctx;
-	int thread_id;
-
-	if ((thread_id = thinkos_rt.step_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
-			return -1;
-	}
-
-	return thread_id;
-}
-
-void dbgmon_thread_step_clr(void)
-{
-	thinkos_rt.step_id = -1;
-}
-
-#endif /* THINKOS_ENABLE_DEBUG_STEP */
-
-
-
 /* -------------------------------------------------------------------------
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
@@ -1050,10 +715,6 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 						 _ATTR_POP_, frm->pc, cm3_msp_get(), ipsr);
 				/* suspend all threads */
 				__thinkos_pause_all();
-#if (THINKOS_ENABLE_DEBUG_BKPT)
-				/* diasble all breakpoints */
-				dbgmon_breakpoint_clear_all();
-#endif
 				/* record the break thread id */
 				thinkos_dbgmon_rt.break_id = thread_id;
 				/* save the current state of IPSR */
@@ -1069,107 +730,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 		} while (0);
 		 /* (dfsr & SCB_DFSR_BKPT) */
 
-#if (THINKOS_ENABLE_DEBUG_WPT)
-		if (dfsr & SCB_DFSR_DWTTRAP) {
-			unsigned int thread_id = thinkos_rt.active;
 
-			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
-				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: exception=%d pc=%08x", 
-						 xpsr & 0x1ff, frm->pc);
-				DCC_LOG(LOG_ERROR, "invalid breakpoint on exception!!!");
-				/* FIXME: add support for breakpoints on IRQ */
-				/* record the break thread id */
-				thinkos_dbgmon_rt.break_id = thread_id;
-				__thinkos_pause_all();
-
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-			} else if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
-				DCC_LOG2(LOG_TRACE, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thread_id + 1, frm->pc);
-				/* suspend the current thread */
-				__thinkos_thread_pause(thread_id);
-				/* record the break thread id */
-				thinkos_dbgmon_rt.break_id = thread_id;
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-				__thinkos_defer_sched();
-			} else {
-				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
-						 thread_id + 1, frm->pc);
-				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
-				/* record the break thread id */
-				thinkos_dbgmon_rt.break_id = thread_id;
-				__thinkos_pause_all();
-			}
-		}
-#endif /* THINKOS_ENABLE_DEBUG_WPT */
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-		if (dfsr & SCB_DFSR_HALTED) {
-			unsigned int thread_id = thinkos_rt.step_id;
-
-			uint32_t demcr;
-
-			demcr = CM3_DCB->demcr;
-
-			DCC_LOG3(LOG_INFO, "DEMCR=(REQ=%c)(PEND=%c)(STEP=%c)", 
-					 demcr & DCB_DEMCR_MON_REQ ? '1' : '0',
-					 demcr & DCB_DEMCR_MON_PEND ? '1' : '0',
-					 demcr & DCB_DEMCR_MON_STEP ? '1' : '0');
-
-			if (demcr & DCB_DEMCR_MON_STEP) {
-				int ipsr = (xpsr & 0x1ff);
-				/* Restore interrupts. The base priority was
-				   set in the scheduler to perform a single step.  */
-				cm3_basepri_set(0);
-
-				if ((unsigned int)thread_id < THINKOS_THREADS_MAX) {
-					DCC_LOG4(LOG_TRACE,_ATTR_PUSH_ _FG_GREEN_ _REVERSE_
-							 " STEP: %2d " _NORMAL_ _FG_GREEN_
-							 " PC=%08x SP=%08x IPSR=%d"
-							 _ATTR_POP_,
-							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
-
-					if (ipsr != 0) {
-						DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-								 " STEP: %2d " _NORMAL_ _FG_RED_
-								 " PC=%08x SP=%08x IPSR=%d"
-								 " Invalid step on exception!!"
-								 _ATTR_POP_,
-								 thread_id + 1, frm->pc, cm3_msp_get(), ipsr);
-						goto step_done;
-					}
-
-					/* suspend the thread, this will clear the 
-					   step request flag */
-					__thinkos_thread_pause(thread_id);
-					/* signal the monitor */
-					sigset |= (1 << DBGMON_THREAD_STEP);
-					sigmsk |= (1 << DBGMON_THREAD_STEP);
-					thinkos_dbgmon_rt.events = sigset;
-					__thinkos_defer_sched();
-				} else {
-					DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
-							 " STEP: %2d " _NORMAL_ _FG_RED_
-							 " PC=%08x SP=%08x IPSR=%d Invalid thread!!"
-							 _ATTR_POP_,
-							 thread_id + 1, frm->pc, cm3_psp_get(), ipsr);
-
-				}
-				thinkos_dbgmon_rt.break_id = thread_id;
-step_done:
-				CM3_DCB->demcr = demcr & ~DCB_DEMCR_MON_STEP;
-			} else {
-				DCC_LOG(LOG_WARNING, "/!\\ SCB_DFSR_HALTED /!\\");
-			}
-		}
-#endif /* THINKOS_ENABLE_DEBUG_STEP */
 	}
 
 	if (sigset & (1 << DBGMON_RESET)) {
@@ -1294,41 +855,9 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 		(void (*)(const struct dbgmon_comm *, void *))arg[0];
 	struct dbgmon_comm * comm = (void *)arg[1];
 	void * param = (void *)arg[2];
-	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t demcr; 
 
-	if (((demcr = dcb->demcr) & DCB_DEMCR_MON_EN) == 0) {
-		DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
-		thinkos_dbgmon_reset();
-#if (THINKOS_ENABLE_STACK_INIT)
-		__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
-						   sizeof(thinkos_dbgmon_stack));
-#endif
-#if (THINKOS_ENABLE_DEBUG_STEP)
-		/* clear the step request */
-		demcr &= ~DCB_DEMCR_MON_STEP;
-		/* enable the FPB unit */
-		CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
-#endif
-		/* set the startup signal */
-		thinkos_dbgmon_rt.events = (1 << DBGMON_STARTUP);
-
-	/* XXX: enabling all vector catch? Not sure if this is
-	   really necessary. At least the breakpoint somehow depends
-	   on this on certain Cortex-M4 processors !!!!... */
-//	demcr |= DCB_DEMCR_VC_HARDERR | DCB_DEMCR_VC_INTERR | DCB_DEMCR_VC_BUSERR |
-//		DCB_DEMCR_VC_STATERR | DCB_DEMCR_VC_CHKERR | DCB_DEMCR_VC_NOCPERR |
-//		DCB_DEMCR_VC_MMERR | DCB_DEMCR_VC_CORERESET;
-
-		/* clear semaphore */
-		demcr &= ~(DCB_DEMCR_MON_REQ );
-	} 
-	
-	/* disable monitor and clear semaphore */
-	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
-
-	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
+	/* set the startup signal */
+	thinkos_dbgmon_rt.events = (1 << DBGMON_STARTUP);
 
 	/* Set the persistent signals */
 	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
@@ -1344,11 +873,8 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 
 	thinkos_dbgmon_rt.param = param;
 	thinkos_dbgmon_rt.ctx = 0;
-
-	/* enable monitor and send the reset event */
-	dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 }
 
-#endif /* THINKOS_ENABLE_MONITOR && !THINKOS_ENABLE_USAGEFAULT_MONITOR */
+#endif /* THINKOS_ENABLE_MONITOR && THINKOS_ENABLE_USAGEFAULT_MONITOR */
 
 

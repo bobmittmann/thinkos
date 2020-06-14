@@ -466,6 +466,9 @@
 #define THINKOS_ENABLE_IRQ_ASM_FAST     0
 #endif
 
+#ifndef THINKOS_ENABLE_USAGEFAULT_MONITOR
+#define THINKOS_ENABLE_USAGEFAULT_MONITOR 0
+#endif
 
 /* Deprecated options, to be removed in the future 
  */

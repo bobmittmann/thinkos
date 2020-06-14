@@ -53,9 +53,6 @@ static unsigned long dec2int(const char * __s)
 int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 						uint32_t addr, unsigned int size)
 {
-	/* FIXME: generalize the application load by removing the low
-	   level flash calls dependency */
-#ifdef STM32_FLASH_MEM
 	/* The YMODEM state machine is allocated at the top of 
 	   the stack, make sure there is no app running before 
 	   calling the dbgmon_ymodem_flash()! */
@@ -116,11 +113,7 @@ int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
 		}
 	}
 
-	return ret;
-#else
 	return -1;
-#endif
-
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */

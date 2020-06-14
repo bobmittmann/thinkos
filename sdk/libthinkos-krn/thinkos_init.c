@@ -387,3 +387,4 @@ const char * const thinkos_vec_link = thinkos_vec_nm;
 const char * const thinkos_sch_link = thinkos_sch_nm;
 const char * const thinkos_irq_link = thinkos_irq_nm;
 const char * const thinkos_clk_link = thinkos_clk_nm;
+
