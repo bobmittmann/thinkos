@@ -29,8 +29,8 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
-#define __THINKOS_USB__
-#include <thinkos/bootldr.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -89,44 +89,32 @@ int main(int argc, char ** argv)
 #endif
 	this_board.init();
 
-	DCC_LOG(LOG_TRACE, "5. usb_comm_init()");
+	DCC_LOG(LOG_TRACE, "5. board.dbgmon_comm_init()");
 #if DEBUG
 	udelay(256);
 #endif
-
-#if BOOT_ENABLE_CUSTOM_COMM
-	comm = custom_comm_init();
-#elif STM32_ENABLE_OTG_FS
-	comm = usb_comm_init(&stm32f_otg_fs_dev);
-#elif STM32_ENABLE_OTG_HS
-	comm = usb_comm_init(&stm32f_otg_hs_dev);
-#elif STM32_ENABLE_USB_FS
-	comm = usb_comm_init(&stm32f_usb_fs_dev);
-#else
-    /* Undefined debug monitor comm port! */
-	comm = NULL;
-#endif
+	comm = this_board.dbgmon_comm_init();
 
 #if THINKOS_ENABLE_CONSOLE
-	DCC_LOG(LOG_TRACE, "5. thinkos_console_init()");
+	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
 #if DEBUG
 	udelay(256);
 #endif
-	thinkos_console_init();
+	thinkos_krn_console_init();
 #endif
 
 #if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
+	DCC_LOG(LOG_TRACE, "6. thinkos_krn_mpu_init()");
 #if DEBUG
 	udelay(256);
 #endif
 	thinkos_krn_mpu_init(0, BOOT_MEM_RESERVED);
 
-	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
+	DCC_LOG(LOG_TRACE, "7. thinkos_krn_userland()");
 #if DEBUG
 	udelay(256);
 #endif
-	thinkos_userland();
+	thinkos_krn_userland();
 #endif
 
 	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");

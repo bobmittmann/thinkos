@@ -19,6 +19,8 @@
  * http://www.gnu.org/
  */
 
+/* Memory regions */
+
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram1);
 REGION_ALIAS("HEAP", sram1);
@@ -26,6 +28,8 @@ REGION_ALIAS("STACK", ccm);
 REGION_ALIAS("LOG", dcclog);
 REGION_ALIAS("BKPCTL", rtcbkr);
 REGION_ALIAS("BKPDAT", bkpsram);
+
+/* Interrupt vectors */
 
 EXTERN(stm32f_wwdg_isr)
 EXTERN(stm32f_pvd_isr)

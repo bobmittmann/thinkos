@@ -1,5 +1,5 @@
 /* 
- * stm324xx.ld
+ * stm32l4xx.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,6 +19,8 @@
  * http://www.gnu.org/
  */
 
+/* Memory regions */
+
 REGION_ALIAS("CODE", flash);
 REGION_ALIAS("DATA", sram1);
 REGION_ALIAS("HEAP", sram1);
@@ -26,6 +28,8 @@ REGION_ALIAS("STACK", sram2);
 REGION_ALIAS("LOG", dcclog);
 REGION_ALIAS("BKPCTL", sram1);
 REGION_ALIAS("BKPDAT", sram1);
+
+/* Interrupt vectors */
 
 EXTERN(stm32_wwdg_isr)
 EXTERN(stm32_pvd_isr)

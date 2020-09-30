@@ -23,6 +23,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>
@@ -53,7 +55,7 @@ void dbgmon_console_task(const struct dbgmon_comm * comm, void * param)
 			sigmask &= ~((1 << DBGMON_COMM_EOT) | 
 						 (1 << DBGMON_COMM_RCV) |
 						 (1 << DBGMON_RX_PIPE));
-			thinkos_console_connect_set(connected);
+			thinkos_krn_console_connect_set(connected);
 			if (connected) {
 				DCC_LOG(LOG_TRACE, "Comm connected.");
 				sigmask |= (1 << DBGMON_COMM_EOT) |

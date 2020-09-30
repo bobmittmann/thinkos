@@ -40,6 +40,8 @@
 #include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 #include <thinkos.h>
 #include <vt100.h>
 
@@ -1198,9 +1200,9 @@ raw_mode_recv:
 is_connected:
 			{
 				connected = dbgmon_comm_isconnected(comm);
-				thinkos_console_connect_set(connected);
+				thinkos_krn_console_connect_set(connected);
 #if (THINKOS_ENABLE_CONSOLE_MODE)
-				raw_mode = thinkos_console_is_raw_mode();
+				raw_mode = thinkos_krn_console_is_raw_mode();
 #endif /* THINKOS_ENABLE_CONSOLE_MODE */
 
 				sigmask &= ~((1 << DBGMON_COMM_EOT) | 

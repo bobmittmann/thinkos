@@ -252,12 +252,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
  * Sratrts the NRT scheduler and return it's thread id.
  * @return THINKOS_OK
  */
-int	thinkos_nrt_init(void);
+int	thinkos_krn_nrt_init(void);
 
-/** @brief Initializes the Cortex-M MPU.
- *
- * @param krn_offs  Kernel memory offset
- * @param krn_size  KErnel memory size
+/** @brief Initializes non real-time module.
  * 
  */
 void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
@@ -265,7 +262,7 @@ void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
 /** @brief Switch processor to user mode.
  *
  */
-void thinkos_userland(void);
+void thinkos_krn_userland(void);
 
 /** @brief Allocate a kernel object.
  *

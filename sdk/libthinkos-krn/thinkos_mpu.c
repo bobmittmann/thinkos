@@ -188,10 +188,5 @@ void thinkos_krn_mpu_init(uint32_t offs, unsigned int size)
 //	__mpudump();
 }
 
-void thinkos_userland(void)
-{
-	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_USER);
-}
-
 #endif /* THINKOS_ENABLE_MPU */
 

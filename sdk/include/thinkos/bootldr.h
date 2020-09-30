@@ -95,6 +95,7 @@ struct thinkos_board {
 	int (* init)(void);
 	void (* softreset)(void);
 	void (* upgrade)(const struct dbgmon_comm *);
+	const struct dbgmon_comm * (* dbgmon_comm_init)(void);
 
 	int (* preboot_task)(void * );
 	/* ThinkOS task: monitor will run this task by request */
@@ -104,6 +105,7 @@ struct thinkos_board {
 	/* ThinkOS task: monitor will run this task if fails to load 
 	   the application */
 	int (* default_task)(void *);
+
 };
 
 /* Board description instance */

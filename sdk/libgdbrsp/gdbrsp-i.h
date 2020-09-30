@@ -39,6 +39,8 @@
 
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 

@@ -752,25 +752,25 @@ drain_again:
 }
 
 #if (THINKOS_ENABLE_CONSOLE_MODE)
-bool thinkos_console_is_raw_mode(void) 
+bool thinkos_krn_console_is_raw_mode(void) 
 {
 	return thinkos_console_rt.raw_mode ? true : false;
 }
 
-void thinkos_console_raw_mode_set(bool val) 
+void thinkos_krn_console_raw_mode_set(bool val) 
 {
 	DCC_LOG1(LOG_TRACE, "raw_mode=%s", val ? "true" : "false");
 	thinkos_console_rt.raw_mode = val;
 }
 #endif
 
-void thinkos_console_connect_set(bool val) 
+void thinkos_krn_console_connect_set(bool val) 
 {
 	DCC_LOG1(LOG_TRACE, "connected=%s", val ? "true" : "false");
 	thinkos_console_rt.connected = val;
 }
 
-void thinkos_console_init(void)
+void thinkos_krn_console_init(void)
 {
 	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 

@@ -63,7 +63,7 @@ int dbgmon_thread_create(int (* func)(void *), void * arg,
 
 	/* FIXME: This call is not safe  */
 	/* Avoid race condition with kernel handlers */
-	while (thinkos_kernel_active()){
+	while (thinkos_kernel_active()) {
 		DCC_LOG(LOG_TRACE, "kernel is active, wait for IDLE!!");
 		dbgmon_wait_idle();
 	}

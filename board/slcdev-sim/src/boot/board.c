@@ -626,18 +626,17 @@ const struct mem_desc flash_mem = {
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_2K, 8},	/* Bootloader: 16 KiB */
-		{"APP", 0x00002000, M_RW, SZ_2K, 56},	/* Application: 112 KiB */
+		{"BOOT", 0x00000000, M_RO, SZ_256, 64}, /* Bootloader: 16 KiB */
+		{"APP", 0x00002000, M_RW, SZ_256, 448},	/* Application: 112 KiB */
 		}
 };
 
-
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
-	.name = "RDA8COM",
-	.desc = "Digital Audio Comm Interface",
+	.name = "ISINK",
+	.desc = "Current Sink Device",
 	.hw = {
-	       .tag = "RDA8",
+	       .tag = "ISINK",
 	       .ver = {.major = 0,.minor = 1}
 	       },
 	.sw = {

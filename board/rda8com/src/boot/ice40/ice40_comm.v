@@ -83,6 +83,7 @@ module ice40_comm (
 
 	assign clk = MCLK;
 	assign rst = 0;
+	wire brg_clk1;
 
 /*	clkdiv #(
 		.DIV(16)
@@ -117,6 +118,16 @@ module ice40_comm (
 		.data_o(ctrl)
 	);
 
+	pfracbrg #(.CLK_HZ(8000000),
+			  .BAUDRATE(2666666),
+			  .OVERSAMPLE(1),
+			  .RESOLUTION(16),
+			  .BLOCKSIZE(2))
+		u1 (.clk_i(clk), 
+			.rst_i(rst),
+			.clr_i(0),
+			.brg_clk_o(brg_clk1));
+
 	assign stat[0] = SEL1;
 	assign stat[1] = SEL2;
 	assign stat[2] = SEL3;
@@ -124,8 +135,8 @@ module ice40_comm (
 	assign stat[7] = CTL1;
 	assign stat[4] = COMM1;
 	assign stat[5] = TDMDAT1;
-	assign stat[6] = TDMFS1;
-	assign TDMCK1 = ctrl[0];
+	assign stat[6] = brg_clk1;
+//	assign TDMCK1 = ctrl[0];
 
 	assign stat[8] = SEL5;
 	assign stat[9] = SEL6;

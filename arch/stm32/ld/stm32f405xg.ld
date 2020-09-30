@@ -1,5 +1,5 @@
 /* 
- * stm32f207.ld
+ * stm32f405xg.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

@@ -26,6 +26,8 @@
 #include <gdbrsp.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 
 #include <sys/dcclog.h>
 #include <vt100.h>
@@ -177,7 +179,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 //			thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			   by __console_reset(). */
-			thinkos_console_connect_set(dbgmon_comm_isconnected(comm));
+			thinkos_krn_console_connect_set(dbgmon_comm_isconnected(comm));
 #endif
 			break;
 

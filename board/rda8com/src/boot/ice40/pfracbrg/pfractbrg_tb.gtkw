@@ -1,0 +1,51 @@
+[*]
+[*] GTKWave Analyzer v3.3.71 (w)1999-2016 BSI
+[*] Sun Sep 20 14:53:39 2020
+[*]
+[dumpfile] "C:\devel\fpgalib\pfracbrg\pfracbrg_tb.vcd"
+[dumpfile_mtime] "Sun Sep 20 14:51:26 2020"
+[dumpfile_size] 5656395
+[savefile] "C:\devel\fpgalib\pfracbrg\pfractbrg_tb.gtkw"
+[timestart] 0
+[size] 1536 801
+[pos] -1 -1
+*-17.092064 786360 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] pfracbrg_tb.
+[treeopen] pfracbrg_tb.u1.
+[treeopen] pfracbrg_tb.u1.genblk2[0].
+[treeopen] pfracbrg_tb.u2.
+[sst_width] 197
+[signals_width] 134
+[sst_expanded] 1
+[sst_vpaned_height] 224
+@28
+pfracbrg_tb.brg_clk1
+pfracbrg_tb.brg_clk2
+@8022
+pfracbrg_tb.count1[7:0]
+@20000
+-
+-
+-
+-
+-
+-
+-
+-
+-
+@8022
+pfracbrg_tb.count2[7:0]
+@20000
+-
+-
+-
+-
+-
+-
+@20001
+-
+@20000
+-
+-
+[pattern_trace] 1
+[pattern_trace] 0
