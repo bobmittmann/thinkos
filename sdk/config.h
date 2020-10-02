@@ -118,7 +118,7 @@
 
 #define THINKOS_ENABLE_MONITOR          1
 
-#define THINKOS_ENABLE_DMCLOCK          1
+#define THINKOS_ENABLE_KRNMON_CLOCK          1
 
 #define THINKOS_ENABLE_DEBUG_STEP       1
 

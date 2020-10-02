@@ -105,7 +105,7 @@
 #define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
-#define THINKOS_ENABLE_DMCLOCK          0
+#define THINKOS_ENABLE_KRNMON_CLOCK          0
 
 #define THINKOS_ENABLE_CTL              0
 

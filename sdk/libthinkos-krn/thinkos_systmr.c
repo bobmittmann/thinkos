@@ -101,7 +101,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		}
 	}
 
-#if THINKOS_ENABLE_DMCLOCK
+#if THINKOS_ENABLE_KRNMON_CLOCK
 	if ((int32_t)(thinkos_rt.dmclock - ticks) == 0) {
 		dbgmon_signal(DBGMON_ALARM);
 	}

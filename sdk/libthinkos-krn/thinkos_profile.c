@@ -142,7 +142,7 @@ const struct thinkos_profile thinkos_profile = {
 
 	.dbgmon = {
 		.monitor         = THINKOS_ENABLE_MONITOR,
-		.dmclock         = THINKOS_ENABLE_DMCLOCK,
+		.dmclock         = THINKOS_ENABLE_KRNMON_CLOCK,
 		.debug_step      = THINKOS_ENABLE_DEBUG_STEP,
 		.debug_bkpt      = THINKOS_ENABLE_DEBUG_BKPT,
 		.debug_wpt       = THINKOS_ENABLE_DEBUG_WPT,
@@ -331,7 +331,7 @@ void __profile(void)
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR         = %d", 
 			 p->dbgmon.monitor);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DMCLOCK         = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_KRNMON_CLOCK         = %d", 
 			 p->dbgmon.dmclock);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
 			 p->dbgmon.debug_step);

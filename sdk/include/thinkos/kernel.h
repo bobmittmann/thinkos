@@ -113,7 +113,7 @@
 
 #if (THINKOS_ENABLE_CLOCK)
   #define SIZEOF_TICKS     4
-  #if THINKOS_ENABLE_DMCLOCK
+  #if THINKOS_ENABLE_KRNMON_CLOCK
     #define SIZEOF_DMCLOCK 4
   #else
     #define SIZEOF_DMCLOCK 0
@@ -488,7 +488,7 @@ struct thinkos_rt {
 		uint32_t ticks;
 		/* This fields are used for time wait (e.g. sleep()) */
 		uint32_t clock[THINKOS_THREADS_MAX];
-  #if THINKOS_ENABLE_DMCLOCK
+  #if THINKOS_ENABLE_KRNMON_CLOCK
 		/* monitor timer */
 		uint32_t dmclock;
   #endif

@@ -278,7 +278,7 @@ int dbgmon_expect(int sig)
 int dbgmon_sleep(unsigned int ms)
 {
 	dbgmon_clear(DBGMON_ALARM);
-#if (THINKOS_ENABLE_DMCLOCK)
+#if (THINKOS_ENABLE_KRNMON_CLOCK)
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
@@ -291,7 +291,7 @@ void dbgmon_alarm(unsigned int ms)
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	dbgmon_clear(DBGMON_ALARM);
 	dbgmon_unmask(DBGMON_ALARM);
-#if (THINKOS_ENABLE_DMCLOCK)
+#if (THINKOS_ENABLE_KRNMON_CLOCK)
 	/* set the clock */
 	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
 #endif
@@ -299,7 +299,7 @@ void dbgmon_alarm(unsigned int ms)
 
 void dbgmon_alarm_stop(void)
 {
-#if (THINKOS_ENABLE_DMCLOCK)
+#if (THINKOS_ENABLE_KRNMON_CLOCK)
 	/* set the clock in the past so it won't generate a signal */
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
@@ -491,7 +491,7 @@ static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 	
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
-#if (THINKOS_ENABLE_DMCLOCK)
+#if (THINKOS_ENABLE_KRNMON_CLOCK)
 	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
 #endif
 

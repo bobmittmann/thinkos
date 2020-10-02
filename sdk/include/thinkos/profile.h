@@ -394,9 +394,11 @@
 
    Some modules or user defined monitor can use it to implement
    timers.
+
+   Requires the clock module to be enabled.
    */
-#ifndef THINKOS_ENABLE_DMCLOCK
-#define THINKOS_ENABLE_DMCLOCK          (THINKOS_ENABLE_CLOCK)
+#ifndef THINKOS_ENABLE_KRNMON_CLOCK
+#define THINKOS_ENABLE_KRNMON_CLOCK     0
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
@@ -584,8 +586,8 @@
 #error "THINKOS_ENABLE_ALARM depends on THINKOS_ENABLE_CLOCK"
 #endif
 
-#if (THINKOS_ENABLE_DMCLOCK) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_DMCLOCK depends on THINKOS_ENABLE_CLOCK"
+#if (THINKOS_ENABLE_KRNMON_CLOCK) && !(THINKOS_ENABLE_CLOCK)
+#error "THINKOS_ENABLE_KRNMON_CLOCK depends on THINKOS_ENABLE_CLOCK"
 #endif
 
 #if (THINKOS_ENABLE_KRNSVC) && !(THINKOS_ENABLE_USAGEFAULT)

@@ -86,7 +86,7 @@
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1
-#define THINKOS_ENABLE_DMCLOCK          1
+#define THINKOS_ENABLE_KRNMON_CLOCK          1
 
 #define THINKOS_ENABLE_CONSOLE          1
 
