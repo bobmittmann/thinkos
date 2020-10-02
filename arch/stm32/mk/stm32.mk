@@ -30,22 +30,22 @@ ifndef MACH
   $(error "Missing MACH definition...")
 endif
 
-ifneq ($(findstring $(MACH), stm32f407 stm32f427),)
-  CPU = cortex-m4
-  STM32 = stm32f4
-endif
-
 ifneq ($(findstring $(MACH), stm32f446xc stm32f446xe),)
   CPU = cortex-m4
   STM32 = stm32f4
 endif
 
-ifneq ($(findstring $(MACH), stm32f405xg, stm32f407xg, stm32f407xe),)
+ifneq ($(findstring $(MACH), stm32f405xg stm32f407xg stm32f407xe),)
   CPU = cortex-m4
   STM32 = stm32f4
 endif
 
-ifneq ($(findstring $(MACH), stm32f429xg, stm32f429xe stm32f429xi),)
+ifneq ($(findstring $(MACH), stm32f427xg stm32f427xi),)
+  CPU = cortex-m4
+  STM32 = stm32f4
+endif
+
+ifneq ($(findstring $(MACH), stm32f429xg stm32f429xe stm32f429xi),)
   CPU = cortex-m4
   STM32 = stm32f4
 endif

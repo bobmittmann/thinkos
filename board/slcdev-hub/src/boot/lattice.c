@@ -43,7 +43,7 @@ static int lattice_ice40_io_init(unsigned int freq)
 {
 	struct stm32f_spi * spi = ICE40_SPI;
 	unsigned int div;
-	int br;
+	unsigned int br;
 
 	/* Enable peripheral clock */;
 	stm32_clk_enable(STM32_RCC, ICE40_CLK_SPI);
@@ -69,7 +69,7 @@ static int lattice_ice40_io_init(unsigned int freq)
 	/* Configure SPI */
 	div = stm32_clk_hz(ICE40_CLK_SPI) / freq / 2;
 	br = 31 - __clz(div);
-	if (div > (1 << br))
+	if (div > (unsigned int)(1 << br))
 		br++;
 
     DCC_LOG3(LOG_TRACE, "SPI freq=%d div=%d br=%d", freq, div, br);
@@ -134,9 +134,9 @@ static void conf_wr(int c)
  */
 int lattice_ice40_configure(const uint8_t * buf, unsigned int max)
 {
+	unsigned int n;
+	unsigned int i;
 	int ret;
-	int n;
-	int i;
 
 	lattice_ice40_io_init(50000);
 	

@@ -211,30 +211,6 @@
 #define CDC_EP_INT_MAX_PKT_SIZE      8
 
 /* -------------------------------------------------------------------------
- * TCP/IP
- * ------------------------------------------------------------------------- */
-
-#define MBUF_POOL_SIZE               64
-#define PKTBUF_LEN                   (1500 + 16)
-
-#define TCP_MAX_RCV_QUEUE            (1460 * 2)
-#define TCP_MAX_SND_QUEUE            (1460 * 2)
-
-#define TCP_DEFAULT_MSL_SEC          1
-#define TCP_IDLE_DET_SEC             10
-#define TCP_KEEP_ALIVE_PROBE_SEC     10
-#define TCP_MAX_IDLE_SEC             15
-
-#define TCP_ENABLE_TIMEWAIT          1
-#define TCP_ENABLE_HEADER_PREDICTION 1
-#define NET_TCP_PCB_ACTIVE_MAX       8
-#define NET_UDP_PCB_ACTIVE_MAX       1
-
-/* use hardware checksum */
-#define  ENABLE_NET_TCP_CHECKSUM     0
-#define  ENABLE_NET_UDP_CHECKSUM     0
-
-/* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
 #define BOOT_MEM_RESERVED          0x1000

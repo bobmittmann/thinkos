@@ -1,5 +1,5 @@
 /* 
- * stm32f415xg.ld
+ * stm32f427xi.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,24 +19,31 @@
  * http://www.gnu.org/
  */
 
-/* Devices:
-   STM32F415OG 
-   STM32F415RG 
-   STM32F415VG 
-   STM32F415ZG 
- */
-
 OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
+/* Devices:
+   STM32F427VI 
+   STM32F427ZI 
+   STM32F427II 
+   STM32F427AI 
+ */
+
 MEMORY
 {
 	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
+	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 2048K
 	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
 	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
+	sram3   (rw) : ORIGIN = 0x20020000, LENGTH = 64K
 	ccm     (rw) : ORIGIN = 0x10000000, LENGTH = 64K
+	fmc1    (rw) : ORIGIN = 0x60000000, LENGTH = 256M
+	fmc2    (rw) : ORIGIN = 0x70000000, LENGTH = 256M
+	fmc3    (rw) : ORIGIN = 0x80000000, LENGTH = 256M
+	fmc4    (rw) : ORIGIN = 0x90000000, LENGTH = 256M
+	fmc5    (rw) : ORIGIN = 0xC0000000, LENGTH = 256M
+	fmc6    (rw) : ORIGIN = 0xD0000000, LENGTH = 256M
 	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
 	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
 	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K

@@ -34,7 +34,7 @@
 #include <arch/stm32f429.h>
 #endif
 
-#ifdef STM32F427
+#if defined(STM32F427XG) || defined(STM32F427XI)
 #include <arch/stm32f427.h>
 #endif
 

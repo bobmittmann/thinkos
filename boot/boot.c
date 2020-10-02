@@ -112,20 +112,20 @@ int main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, "7. thinkos_krn_userland()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_krn_userland();
 #endif
 
 	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_dbgmon(monitor_task, comm, NULL);
 
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_thread_abort(0);
 

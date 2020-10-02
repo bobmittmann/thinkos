@@ -251,6 +251,8 @@ bool dbgmon_watchpoint_clear(uint32_t addr, uint32_t size);
 
 void dbgmon_watchpoint_clear_all(void);
 
+bool dbgmon_breakpoint_disable(uint32_t addr);
+
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor thread API
  * ----------------------------------------------------------------------------

@@ -1,20 +1,39 @@
 #!/bin/sh
 
 PYTHON=python
-JTAGTOOL_ADDR=192.168.10.51
-BUILD_NAME=thinkos
-TOOLS_DIR=../../../tools
+TOOLS_DIR=../../../../tools
+
+if [ -z "$JTAGTOOL_ADDR" ]; then
+	JTAGTOOL_ADDR=192.168.10.50
+fi
+
+if [ -z "$JTAGTOOL_ADDR" ]; then
+	JTAGTOOL_ADDR=192.168.10.51
+fi
+
+# Collect ".bin" files in the positional parameters
+set -- `ls debug/*.bin`
+# Get the last one
+for PROG_BIN; do true; done
+# The corresponding .elf
+PROG_ELF=${PROG_BIN%%.bin}.elf
 
 ${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r -a 0x08000000 \
-		-h ${JTAGTOOL_ADDR} debug/${BUILD_NAME}.bin 
+	-h ${JTAGTOOL_ADDR} ${PROG_BIN} 
 
 if [ $? = 0 ] ; then
 	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
-	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \
-		'disable poll' 'let dhcsr 0xa05f0000' 'enable poll' 'sleep 100' 'reset' 
-fi
+#	'connect' 'sleep 10''disable debug' 'run' 
+# 'tgt 9 f c' 'sleep 10' 'connect' 'sleep 10''disable debug' 'run' 
+	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
+#	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \
+#		'disable poll' 'let dhcsr 0xa05f0000' 'enable poll'
 
-if [ $? = 0 ] ; then
-	${TOOLS_DIR}/dcclog -h ${JTAGTOOL_ADDR} debug/${BUILD_NAME}.elf | tee dbg.log
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \
+		'nrst' 'tgt 9 f c' 'run' 'disable debug'
+	if [ $? = 0 ] ; then
+		# Trace
+		${TOOLS_DIR}/dcclog -h ${JTAGTOOL_ADDR} ${PROG_ELF} | tee dbg.log
+	fi
 fi
 

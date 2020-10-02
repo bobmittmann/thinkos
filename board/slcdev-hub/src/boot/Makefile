@@ -19,34 +19,35 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+PROJECT_ROOT = ../../
+THINKOS_DIR = $(PROJECT_ROOT)/../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-PROG = thinkos
+VERSION_DATE = "2020-04-16"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "0"
 
-CFILES = ../../../boot/boot.c ../../../boot/monitor.c \
-		 board.c otg_xflash_pic.c lattice.c \
-		 ice40lp384.c
+PROG = slcdevhub-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-SDK = ../../../sdk
+CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
+		 board.c lattice.c ice40lp384.c otg_xflash_pic.c 
 
-LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libthinkos $(SDK)/libice-comm $(SDK)/libgdb \
-		  $(SDK)/libthird
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libice-comm 
 
-LIBS = cm3 stm32f util thinkos ice-comm gdb third gcc 
+LIBS = gcc cm3 stm32f util thinkos-krn ice-comm 
 
-INCPATH = $(SDK)/include ../include
+INCPATH = $(SDK_DIR)/include ../include
 
-CDEFS = CONFIG_H CM3_RAM_VECTORS
+CDEFS = CONFIG_H 
 
-VERSION_DATE = "2016-02-08"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "9"
+CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
+OPTIONS = -g -mno-unaligned-access 
 
-#CFLAGS = -g -O2 -Wall
-CFLAGS = -g -Os -Wall -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections
-
-JTAGTOOL_ADDR = 192.168.10.51
-MACH = stm32f407
-include ../../../mk/stm32f4xx.mk
+MACH = stm32f427xi
+KRN_DATA_SIZE = 8192
+KRN_CODE_SIZE = 65536
+include $(ARCH_DIR)/mk/stm32.mk
 

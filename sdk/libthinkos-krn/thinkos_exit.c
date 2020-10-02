@@ -21,6 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #include <thinkos.h>

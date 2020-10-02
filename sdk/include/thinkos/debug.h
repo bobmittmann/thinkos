@@ -1,5 +1,5 @@
 /* 
- * stm32f415xg.ld
+ * /thinkos/debug.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,30 +19,37 @@
  * http://www.gnu.org/
  */
 
-/* Devices:
-   STM32F415OG 
-   STM32F415RG 
-   STM32F415VG 
-   STM32F415ZG 
- */
 
-OUTPUT_FORMAT ("elf32-littlearm")
-ENTRY(_reset)
-SEARCH_DIR(.)
+#ifndef __THINKOS_DEBUG_H__
+#define __THINKOS_DEBUG_H__
 
-MEMORY
+#ifndef __THINKOS_DEBUG__
+#error "Never use <thinkos/debug.h> on user code, this is for kenel debug."
+#endif 
+
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* -------------------------------------------------------------------------
+ * Exception API 
+ * ------------------------------------------------------------------------- */
+
+static inline void __attribute__((always_inline)) __thinkos_dbg_halt(void) 
 {
-	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
-	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
-	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
-	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
-	ccm     (rw) : ORIGIN = 0x10000000, LENGTH = 64K
-	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
-	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
-	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
-	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
+	register uint32_t tst= 1;
+
+	asm volatile ("1:\n" 
+				  "cmp %0, #0\n" 
+				  "bne 1b\n" : "=r"(tst) : "r"(tst));
 }
 
-/* Device family vectors */
-INCLUDE stm32f4xx.ld
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __THINKOS_DEBUG_H__ */
 

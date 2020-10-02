@@ -29,6 +29,7 @@ REGION_ALIAS("LOG", dcclog);
 REGION_ALIAS("BKPCTL", rtcbkr);
 REGION_ALIAS("BKPDAT", bkpsram);
 
+
 /* Interrupt vectors */
 
 EXTERN(stm32f_wwdg_isr)

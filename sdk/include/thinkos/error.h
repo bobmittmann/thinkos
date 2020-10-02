@@ -48,8 +48,8 @@
 #define THINKOS_ERR_DMA_INVALID        36
 #define THINKOS_ERR_SP_INVALID         37
 #define THINKOS_ERR_USER               38
-#define THINKOS_ERR_MAX                38
 #define THINKOS_ERR_THREAD_STACKADDR   39
+#define THINKOS_ERR_MAX                39
 
 #ifndef __ASSEMBLER__
 

@@ -37,7 +37,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/dcclog.h>
 #include <vt100.h>
 
-#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_USAGEFAULT_MONITOR)
+#if (THINKOS_ENABLE_MONITOR) 
 
 #ifdef THINKOS_DBGMON_ENABLE_IRQ_MGMT
 #warning "Deprecated THINKOS_DBGMON_ENABLE_IRQ_MGMT"

@@ -30,6 +30,7 @@
 #include <thinkos.h>
 #include <vt100.h>
 #include <sys/dcclog.h>
+#include <sys/delay.h>
 /* FIXME: platform memory map should move from DBGMON and bootloader 
    to kernel... */
 #define __THINKOS_BOOTLDR__
@@ -73,7 +74,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 
 				y = map & ~(1 << req);
 
-				DCC_LOG3(LOG_YAP, _ATTR_PUSH_ _FG_CYAN_ 
+				DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ 
 						 "map=%08x y=%08x req=%d" _ATTR_POP_ , 
 						 map, y, req);
 				map = y;
@@ -208,9 +209,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 	ctx  = __thinkos_idle_ctx();
 
-	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_BLUE_
-			"ctx=%08x" _ATTR_POP_, ctx);
-
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
 	thinkos_idle_rt.req_map = 0;
@@ -249,6 +247,12 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf;
 #endif
 
+#if DEBUG
+	udelay(0x8000);
+	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
+			"IDE ctx=%08x" _ATTR_POP_, ctx);
+#endif
+
 	thinkos_rt.ctx[THINKOS_THREAD_IDLE] = ctx;
 
 	return ctx;
@@ -257,6 +261,9 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 /* initialize the idle thread */
 void __thinkos_idle_init(void)
 {
+	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
+			"IDLE stack=%08x" _ATTR_POP_, THINKOS_IDLE_STACK_BASE);
+
 #if THINKOS_ENABLE_STACK_INIT
 	/* initialize idle stack */
 	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 

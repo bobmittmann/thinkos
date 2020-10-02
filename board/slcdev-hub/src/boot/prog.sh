@@ -1,15 +1,20 @@
 #!/bin/sh
 
-JTAGTOOL_ADDR=192.168.10.50
-BUILD_NAME=thinkos
-TOOLS_DIR=../../../tools
+TOOLS_DIR=../../../../tools
+PYTHON=python
+if [ -z "$JTAGTOOL_ADDR" ]; then
+	JTAGTOOL_ADDR=192.168.10.50
+fi
+# Collect ".bin" files in the positional parameters
+set -- `ls release/*.bin`
+# Get the last one
+for PROG_BIN; do true; done
 
-${TOOLS_DIR}/tftp_load.py -q -i -e -r  -a 0x08000000 -h ${JTAGTOOL_ADDR} \
-		release/${BUILD_NAME}.bin 
+${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r  -a 0x08000000 \
+	-h ${JTAGTOOL_ADDR} ${PROG_BIN} 
 
 if [ $? = 0 ] ; then
 	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
-	${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \
-		'disable poll' 'let dhcsr 0xa05f0000' 'enable poll'
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} 'disable debug'
 fi
 

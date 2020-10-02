@@ -52,12 +52,6 @@ MEMORY
 	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("HEAP", sram1);
-REGION_ALIAS("STACK", ccm);
-REGION_ALIAS("LOG", dcclog);
-
 /* Device family vectors */
 INCLUDE stm32f4xx.ld
 

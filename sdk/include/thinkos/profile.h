@@ -337,16 +337,66 @@
 #define THINKOS_EXCEPT_STACK_SIZE       320
 #endif
 
+/* THINKOS_ENABLE_OFAST - enable the GCC compiler flag: -Ofast on
+ critical kernel code. */
+#ifndef THINKOS_ENABLE_OFAST
+#define THINKOS_ENABLE_OFAST            1
+#endif
+
+/* THINKOS_ENABLE_ALIGN - enable the GCC compiler flag: -mno-unaligned-access */
+#ifndef THINKOS_ENABLE_ALIGN
+#define THINKOS_ENABLE_ALIGN            1
+#endif
+
+/* Kernel Zeros all the memory blocks and data-structures on allocation
+   or initialization */
+#ifndef THINKOS_ENABLE_MEMORY_CLEAR
+#define THINKOS_ENABLE_MEMORY_CLEAR     1
+#endif
+
+#ifndef THINKOS_ENABLE_THREAD_VOID 
+#define THINKOS_ENABLE_THREAD_VOID      1
+#endif
+
+/* THINKOS_ENABLE_IDLE_WFI - enable the WFI instruction on the IDLE loop.
+   In normal circumstances this flag should be enabled.
+   Some platforms will go into a deep sleep state disabling the debug
+   susbsystem. It may be desirable to disable this option when debugging
+   the kernel on such cases. . */
+#ifndef THINKOS_ENABLE_IDLE_WFI
+#define THINKOS_ENABLE_IDLE_WFI         1
+#endif
+
+/* THINKOS_ENABLE_MONITOR: Enable the kernel monitor (KRNMON) framework.
+   It's used to implement the bootloader and basic console, flash
+   read/write and firmware upload. 
+   Basic debuging facility like: start, stop, 
+   resume, error report operations as well.
+   Requires the kernel services (KRNSVC) to be enabled.
+   */
 #ifndef THINKOS_ENABLE_MONITOR
 #define THINKOS_ENABLE_MONITOR          0
 #endif
 
-#ifndef THINKOS_ENABLE_DMCLOCK
-#define THINKOS_ENABLE_DMCLOCK          (THINKOS_ENABLE_CLOCK)
-#endif
-
+/* THINKOS_ENABLE_MONITOR_THREADS: Monitors the creation and termination of 
+   threads. It's used by the bootloader to sequence the system initialization 
+   also the monitor can use it to profile the user application. 
+ 
+   Requires the kernel monitor to be enabled.
+ */
 #ifndef THINKOS_ENABLE_MONITOR_THREADS 
 #define THINKOS_ENABLE_MONITOR_THREADS  0
+#endif
+
+/* THINKOS_ENABLE_KRNMON_CLOCK: Enable the kernel monitor clock.
+   This is a kernel clock dedicated to the kernel monitor (KRNMON)
+   susbsystem.
+
+   Some modules or user defined monitor can use it to implement
+   timers.
+   */
+#ifndef THINKOS_ENABLE_DMCLOCK
+#define THINKOS_ENABLE_DMCLOCK          (THINKOS_ENABLE_CLOCK)
 #endif
 
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
@@ -369,41 +419,15 @@
 #define THINKOS_ENABLE_STACK_INIT       1
 #endif
 
-/* Kernel Zeros all the memory blocks and datastructures on alocation
-   or initialization */
-#ifndef THINKOS_ENABLE_MEMORY_CLEAR
-#define THINKOS_ENABLE_MEMORY_CLEAR     1
-#endif
 
-#ifndef THINKOS_ENABLE_THREAD_VOID 
-#define THINKOS_ENABLE_THREAD_VOID      1
-#endif
-
-#ifndef THINKOS_ENABLE_IDLE_WFI
-#define THINKOS_ENABLE_IDLE_WFI         1
-#endif
-
+/* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
 #ifndef THINKOS_ENABLE_SCHED_DEBUG
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 #endif
 
-/* Enable stack check on scheduler */
+/* THINKOS_ENABLE_SCHED_ERROR - Enable stack check on scheduler */
 #ifndef THINKOS_ENABLE_SCHED_ERROR
 #define THINKOS_ENABLE_SCHED_ERROR      0
-#endif
-
-/* Compiler flag: 
-
-   -Ofast  */
-#ifndef THINKOS_ENABLE_OFAST
-#define THINKOS_ENABLE_OFAST            1
-#endif
-
-/* Compiler flag:
-
-   -mno-unaligned-access */
-#ifndef THINKOS_ENABLE_ALIGN
-#define THINKOS_ENABLE_ALIGN            1
 #endif
 
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
@@ -422,15 +446,32 @@
 #define THINKOS_ENABLE_IDLE_MSP          0
 #endif
 
+/* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
+   handlers only. These functions are suffixed by _i.
+   */
+#ifndef THINKOS_ENABLE_I_CALLS
+#define THINKOS_ENABLE_I_CALLS           1
+#endif
+
+
 /* -------------------------------------------------------------------------- 
- * Default configuration options
+ * Experimental configuration options
+ *
  * Non implemented/Planned options, should not be used in 
  *   production code.
  */
 
-/* THINKOS_ENABLE_FLASH_MEM - enable the kernel to handle low-level
-   flash memory erase read and write operations.
+/* THINKOS_ENABLE_KRNSVC - Enable kernel services. Provides a
+   framework for high priority drivers and debug.
+   It uses the undefined instruction UDF opcode. It will 
+   cause a usage fault exception which handles the calls.
  */
+#ifndef THINKOS_ENABLE_KRNSVC
+#define THINKOS_ENABLE_KRNSVC           0
+#endif
+
+/* THINKOS_ENABLE_FLASH_MEM - enable the kernel to handle low-level
+   flash memory erase read and write operations. */
 
 #ifndef THINKOS_ENABLE_FLASH_MEM
 #define THINKOS_ENABLE_FLASH_MEM         0
@@ -438,6 +479,10 @@
 
 #ifndef THINKOS_ENABLE_MEM_MAP
 #define THINKOS_ENABLE_MEM_MAP           0
+#endif
+
+#ifndef THINKOS_ENABLE_KRN_TRACE
+#define THINKOS_ENABLE_KRN_TRACE         0
 #endif
 
 #ifndef THINKOS_DMA_MAX 
@@ -448,16 +493,6 @@
 #define THINKOS_QUEUE_MAX                0
 #endif
 
-#ifndef THINKOS_ENABLE_KRN_TRACE
-#define THINKOS_ENABLE_KRN_TRACE         0
-#endif
-
-/* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
-   handlers only. These functions are suffixed by _i.
-   */
-#ifndef THINKOS_ENABLE_I_CALLS
-#define THINKOS_ENABLE_I_CALLS           1
-#endif
 
 /* THINKOS_ENABLE_IRQ_ASM_FAST - Enable generation of faster assembler 
    interrupt handlers stubs. This will generate one stub per IRQ as oposed 
@@ -466,9 +501,6 @@
 #define THINKOS_ENABLE_IRQ_ASM_FAST     0
 #endif
 
-#ifndef THINKOS_ENABLE_USAGEFAULT_MONITOR
-#define THINKOS_ENABLE_USAGEFAULT_MONITOR 0
-#endif
 
 /* Deprecated options, to be removed in the future 
  */
@@ -556,27 +588,28 @@
 #error "THINKOS_ENABLE_DMCLOCK depends on THINKOS_ENABLE_CLOCK"
 #endif
 
+#if (THINKOS_ENABLE_KRNSVC) && !(THINKOS_ENABLE_USAGEFAULT)
+#error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
+#endif
+
 /* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)
-#undef THINKOS_ENABLE_DEBUG_BKPT
-#define THINKOS_ENABLE_DEBUG_BKPT 1
+#error "THINKOS_ENABLE_DEBUG_STEP depends on THINKOS_ENABLE_DEBUG_BKPT"
 #endif
 
 /* debug watchpoint depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_WPT) && !(THINKOS_ENABLE_DEBUG_BKPT)
-#undef THINKOS_ENABLE_DEBUG_BKPT
-#define THINKOS_ENABLE_DEBUG_BKPT 1
+#error "THINKOS_ENABLE_DEBUG_WPT depends on THINKOS_ENABLE_DEBUG_BKPT"
 #endif
 
 /* debug breakpoint depends on monitor */
 #if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_MONITOR)
-#undef THINKOS_ENABLE_MONITOR
-#define THINKOS_ENABLE_MONITOR 1
+#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* debug monitor depend on idle hooks */
-#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_IDLE_HOOKS)
-//#error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_IDLE_HOOKS"
+/* debug monitor depend on kernel services hooks */
+#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_KRNSVC)
+#error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_KRNSVC"
 #endif
 
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)

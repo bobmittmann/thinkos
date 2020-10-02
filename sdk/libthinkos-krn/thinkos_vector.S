@@ -256,6 +256,8 @@ cm3_bus_fault_isr:
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
+#define CFSR_UNDEFINSTR (UFSR_UNDEFINSTR << 16)
+
 #if	(THINKOS_ENABLE_USAGEFAULT) 
 	.align	2
 	.global	cm3_usage_fault_isr
@@ -264,7 +266,31 @@ cm3_bus_fault_isr:
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
 	movs   r1, #THINKOS_ERR_USAGE_FAULT
-	b      xcpt_collect
+
+	ldr    r3, .L_cm3_scb
+	ldr    r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	tst    r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
+	beq    xcpt_collect
+
+	/* Undefined instruction -------------------------------------------- */
+
+	/* Code running from the process stack (non-privileged) causes a fault.
+	   (Select the context stack according to the content of LR */
+	tst     lr, #4
+	bne     xcpt_collect
+	
+	/* Get the call frame stack */
+	mov    r0, sp
+	/* Get PC from the stack */
+	ldr     r3, [r0, #(6 * 4)] 
+	/* Read the Krn SVC number from the instruction */
+	ldrb    r1, [r3, #0]
+	/* Skip undefined instruction, by adjusting the call stack (PC = PC + 2) */
+	adds    r3, r3, #2
+	str     r3, [r0, #(6 * 4)] 
+
+	b       thinkos_krnsvc_isr
+	
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif
 
