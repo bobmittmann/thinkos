@@ -24,10 +24,10 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
-/* FIXME: platform memory map should move from DBGMON and bootloader 
+/* FIXME: platform memory map should move from MONITOR and bootloader 
    to kernel... */
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 
 #define __THINKOS_FLASH__
 #include <thinkos/flash.h>
@@ -230,7 +230,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 			req->ret = thinkos_flash_drv_req(drv, desc, req);
 			req->opc = THINKOS_FLASH_MEM_NOP;
 			/* Notify the debug/monitor */
-			dbgmon_signal(DBGMON_FLASH_DRV); 
+			monitor_signal(MONITOR_FLASH_DRV); 
 			return;
 	}
 #endif 

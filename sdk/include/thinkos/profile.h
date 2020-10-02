@@ -338,6 +338,10 @@
 #define THINKOS_EXCEPT_STACK_SIZE       320
 #endif
 
+#ifndef THINKOS_MONITOR_STACK_SIZE
+#define THINKOS_MONITOR_STACK_SIZE      (960 + 16)
+#endif
+
 /* THINKOS_ENABLE_OFAST - enable the GCC compiler flag: -Ofast on
  critical kernel code. */
 #ifndef THINKOS_ENABLE_OFAST
@@ -869,13 +873,16 @@ struct thinkos_profile {
 		};
 	} except;
 
-	union {
-		uint32_t flags;
-		struct {
-			uint32_t enabled        :1;
-			uint32_t clock          :1;
-			uint32_t threads        :1;
+	struct {
+		union {
+			uint16_t flags;
+			struct {
+				uint16_t enabled        :1;
+				uint16_t clock          :1;
+				uint16_t threads        :1;
+			};
 		};
+		uint16_t stack_size;
 	} monitor;
 
 	union {

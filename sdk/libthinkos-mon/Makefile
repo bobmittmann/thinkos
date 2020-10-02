@@ -25,16 +25,17 @@ LIB_STATIC = thinkos-mon
 
 COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
 
-COMMIO_CFILES = dbgmon_putc.c dbgmon_puts.c \
-		dbgmon_getc.c dbgmon_gets.c \
-		dbgmon_printf.c dbgmon_scanf.c \
-		dbgmon_ymodem.c dbgmon_send_misc.c \
+COMMIO_CFILES = monitor_putc.c monitor_puts.c \
+		monitor_getc.c monitor_gets.c \
+		monitor_printf.c monitor_scanf.c \
+		monitor_ymodem.c monitor_send_misc.c \
 		print_osinfo.c print_alloc.c print_thread.c \
 		print_context.c print_stack_usage.c \
 		print_exception.c print_profile.c  \
-		dbgmon_hexdump.c
+		monitor_hexdump.c
 
 CFILES = thinkos_monitor.c monitor_thread.c monitor_memory.c \
+	 thinkos_console.c \
 	 monitor_flash.c \
 	 app_exec.c app_erase.c flash_ymodem.c \
 	 $(addprefix comm/,$(COMM_CFILES)) \

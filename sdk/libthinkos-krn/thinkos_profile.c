@@ -339,6 +339,8 @@ void __profile(void)
 			 p->monitor.clock);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_THREADS = %d", 
 			 p->monitor.threads);
+	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE      = %d", 
+			 p->monitor.stack_size);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG           = %d", 
 			 p->monitor.enabled);

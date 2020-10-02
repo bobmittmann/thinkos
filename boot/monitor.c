@@ -59,7 +59,7 @@
 #endif
 
 /* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
-   monitor library */
+   debug library */
 
 void gdb_stub_task(const struct monitor_comm * comm);
 
@@ -72,23 +72,15 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_CONFIGURE_ENABLE
-#define MONITOR_CONFIGURE_ENABLE   0
+#define MONITOR_CONFIGURE_ENABLE   1
 #endif
 
 #ifndef MONITOR_PREBOOT_ENABLE
-#define MONITOR_PREBOOT_ENABLE     0
+#define MONITOR_PREBOOT_ENABLE     1
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
 #define MONITOR_DUMPMEM_ENABLE     1
-#endif
-
-#ifndef MONITOR_WATCHPOINT_ENABLE
-#define MONITOR_WATCHPOINT_ENABLE  1
-#endif
-
-#ifndef MONITOR_BREAKPOINT_ENABLE
-#define MONITOR_BREAKPOINT_ENABLE  1
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
@@ -127,10 +119,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #define MONITOR_EXCEPTION_ENABLE   THINKOS_ENABLE_EXCEPTIONS
 #endif
 
-#ifndef BOOT_ENABLE_GDB
-#define BOOT_ENABLE_GDB 0
-#endif
-
 #ifndef BOOT_ENABLE_THIRD
 #define BOOT_ENABLE_THIRD 0
 #endif
@@ -154,6 +142,19 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #ifndef MONITOR_BOARDINFO_ENABLE
 #define MONITOR_BOARDINFO_ENABLE 1
 #endif
+
+#ifndef MONITOR_WATCHPOINT_ENABLE
+#define MONITOR_WATCHPOINT_ENABLE  0
+#endif
+
+#ifndef BOOT_ENABLE_GDB
+#define BOOT_ENABLE_GDB 0
+#endif
+
+#ifndef MONITOR_BREAKPOINT_ENABLE
+#define MONITOR_BREAKPOINT_ENABLE  0
+#endif
+
 
 /* ---------------------------------------------------------------------------
  * Configuration options sanity check
@@ -222,7 +223,6 @@ struct monitor {
 #endif
 };
 
-#if (BOOT_ENABLE_MONITOR)
 static const char monitor_menu[] = 
 "  \r\n"
 " Debug/Monitor shortcuts:\r\n"
@@ -319,7 +319,6 @@ static void monitor_show_help(const struct monitor_comm * comm)
 	monitor_printf(comm, monitor_menu);
 	monitor_printf(comm, s_hr);
 }
-#endif
 
 #if (MONITOR_SELFTEST_ENABLE)
 static void monitor_req_selftest(void) 
@@ -345,7 +344,6 @@ static void monitor_req_upgrade(void)
 }
 #endif
 
-#if (BOOT_ENABLE_MONITOR)
 static void monitor_thread_exec(int (* task)(void *), void * arg) 
 {
 	int thread_id;
@@ -359,7 +357,6 @@ static void monitor_thread_exec(int (* task)(void *), void * arg)
 		monitor_thread_resume(thread_id);
 	}
 }
-#endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct monitor_comm * comm)
@@ -518,7 +515,6 @@ static void monitor_resume_all(const struct monitor_comm * comm)
 }
 #endif
 
-#if (BOOT_ENABLE_MONITOR)
 static bool monitor_ymodem_recv(const struct monitor_comm * comm, 
 								uint32_t addr, unsigned int size)
 {
@@ -530,7 +526,6 @@ static bool monitor_ymodem_recv(const struct monitor_comm * comm,
 	monitor_printf(comm, "\r\nOK\r\n");
 	return true;
 }
-#endif
 
 #if (MONITOR_APPWIPE_ENABLE)
 static void monitor_app_erase(const struct monitor_comm * comm, 
@@ -700,7 +695,6 @@ static void monitor_board_info(const struct monitor_comm * comm)
 }
 #endif
 
-#if (BOOT_ENABLE_MONITOR)
 static bool monitor_process_input(struct monitor * mon, int c)
 {
 	const struct monitor_comm * comm = mon->comm;
@@ -854,7 +848,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 
 	return true;
 }
-#endif
 
 /*
    Default Monitor Task
@@ -862,7 +855,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 											void * arg)
 {
-#if (BOOT_ENABLE_MONITOR)
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 #if (THINKOS_ENABLE_CONSOLE)
@@ -937,6 +929,10 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_THREAD_CREATE);
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 
+#if 0
+	sigmask |= (1 << MONITOR_ALARM);
+	monitor_alarm(1000);
+#endif
 
 	for(;;) {
 		switch ((sig = monitor_select(sigmask))) {
@@ -1342,12 +1338,17 @@ is_connected:
 			}
 			break;
 #endif
+
+#if 0
+		case MONITOR_ALARM:
+			DCC_LOG(LOG_TRACE, "Alarm !");
+			monitor_alarm(1000);
+			break;
+#endif
 		}
 		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
-#else
-	for (;;);
-#endif
+
 }
 
 

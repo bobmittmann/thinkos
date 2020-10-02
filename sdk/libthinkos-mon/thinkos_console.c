@@ -24,8 +24,8 @@
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 
 #include <sys/param.h>
@@ -277,7 +277,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	thinkos_console_rt.tx_pipe.tail = tail;
 	if (tail == thinkos_console_rt.tx_pipe.head) {
 		DCC_LOG(LOG_TRACE, "TX_PIPE empty");
-		dbgmon_clear(DBGMON_TX_PIPE);
+		monitor_clear(MONITOR_TX_PIPE);
 	}
 
 	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
@@ -337,7 +337,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 	if (head == (thinkos_console_rt.rx_pipe.tail + 
 				 THINKOS_CONSOLE_RX_FIFO_LEN)) {
 		DCC_LOG(LOG_MSG, "RX_PIPE full");
-		dbgmon_clear(DBGMON_RX_PIPE);
+		monitor_clear(MONITOR_RX_PIPE);
 	}
 
 	DCC_LOG2(LOG_INFO, "wq=%d -> 0x%08x", wq, thinkos_rt.wq_lst[wq]);
@@ -387,7 +387,7 @@ void thinkos_console_wr_resume(unsigned int th, unsigned int wq, bool tmw)
 {
 	if (!tx_pipe_isempty()) {
 		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
-		dbgmon_signal(DBGMON_TX_PIPE);
+		monitor_signal(MONITOR_TX_PIPE);
 	} else {
 		DCC_LOG1(LOG_TRACE, "PC=%08x ...........", thinkos_rt.ctx[th]->pc); 
 	}
@@ -493,7 +493,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 			arg[0] = THINKOS_OK;
 			/* FIXME: the raw mode console mechanism has a circular dependency 
 			   between console and debug monitor */
-			dbgmon_signal(DBGMON_COMM_CTL);
+			monitor_signal(MONITOR_COMM_CTL);
 		}
 		break;
 #endif
@@ -536,7 +536,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 
 			if ((n = rx_pipe_read(buf, len)) > 0) {
 				DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
-				dbgmon_signal(DBGMON_RX_PIPE);
+				monitor_signal(MONITOR_RX_PIPE);
 				arg[0] = n;
 				break;
 			}
@@ -569,7 +569,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 		len = arg[2];
 		DCC_LOG1(LOG_INFO, "Console read: len=%d", len);
 		if ((n = rx_pipe_read(buf, len)) > 0) {
-			dbgmon_signal(DBGMON_RX_PIPE);
+			monitor_signal(MONITOR_RX_PIPE);
 			arg[0] = n;
 			break;
 		}
@@ -597,7 +597,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 wr_again:
 		if ((n = tx_pipe_write(buf, len)) > 0) {
 			DCC_LOG1(LOG_INFO, "tx_pipe_write: n=%d", n);
-			dbgmon_signal(DBGMON_TX_PIPE);
+			monitor_signal(MONITOR_TX_PIPE);
 			arg[0] = n;
 		} else {
 #if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
@@ -775,8 +775,8 @@ void thinkos_krn_console_init(void)
 	DCC_LOG(LOG_WARNING, "clearing pipes and signals.");
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
 					 sizeof(thinkos_console_rt));
-	dbgmon_clear(DBGMON_TX_PIPE);
-	dbgmon_clear(DBGMON_RX_PIPE);
+	monitor_clear(MONITOR_TX_PIPE);
+	monitor_clear(MONITOR_RX_PIPE);
 }
 
 #endif /* THINKOS_ENABLE_CONSOLE */

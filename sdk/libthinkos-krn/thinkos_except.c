@@ -22,8 +22,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #define __THINKOS_IDLE__
@@ -215,7 +215,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
 //	thinkos_krn_sched_off();
 
 	/* signal the monitor */
-	dbgmon_signal(DBGMON_THREAD_FAULT);
+	monitor_signal(MONITOR_THREAD_FAULT);
 }
 
 
