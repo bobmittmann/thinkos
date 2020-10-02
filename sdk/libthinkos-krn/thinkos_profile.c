@@ -140,14 +140,18 @@ const struct thinkos_profile thinkos_profile = {
 		.sysrst_onfault  = THINKOS_SYSRST_ONFAULT
 	},
 
-	.dbgmon = {
-		.monitor         = THINKOS_ENABLE_MONITOR,
-		.dmclock         = THINKOS_ENABLE_KRNMON_CLOCK,
-		.debug_step      = THINKOS_ENABLE_DEBUG_STEP,
-		.debug_bkpt      = THINKOS_ENABLE_DEBUG_BKPT,
-		.debug_wpt       = THINKOS_ENABLE_DEBUG_WPT,
-		.debug_fault     = THINKOS_ENABLE_DEBUG_FAULT,
-		.monitor_threads = THINKOS_ENABLE_MONITOR_THREADS
+	.monitor = {
+		.enabled         = THINKOS_ENABLE_MONITOR,
+		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
+		.threads         = THINKOS_ENABLE_MONITOR_THREADS
+	},
+
+	.debug = {
+		.enabled         = THINKOS_ENABLE_DEBUG,
+		.step            = THINKOS_ENABLE_DEBUG_STEP,
+		.bkpt            = THINKOS_ENABLE_DEBUG_BKPT,
+		.wpt             = THINKOS_ENABLE_DEBUG_WPT,
+		.fault           = THINKOS_ENABLE_DEBUG_FAULT,
 	},
 
 	.misc = {
@@ -330,19 +334,22 @@ void __profile(void)
 			 p->except.sysrst_onfault);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR         = %d", 
-			 p->dbgmon.monitor);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_KRNMON_CLOCK         = %d", 
-			 p->dbgmon.dmclock);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
-			 p->dbgmon.debug_step);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BKPT      = %d", 
-			 p->dbgmon.debug_bkpt);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_WPT       = %d", 
-			 p->dbgmon.debug_wpt);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
-			 p->dbgmon.debug_fault);
+			 p->monitor.enabled);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_CLOCK   = %d", 
+			 p->monitor.clock);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_THREADS = %d", 
-			 p->dbgmon.monitor_threads);
+			 p->monitor.threads);
+
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG           = %d", 
+			 p->monitor.enabled);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
+			 p->debug.step);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BKPT      = %d", 
+			 p->debug.bkpt);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_WPT       = %d", 
+			 p->debug.wpt);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
+			 p->debug.fault);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_VOID     = %d", 
 			 p->misc.thread_void);

@@ -113,14 +113,14 @@
 
 #if (THINKOS_ENABLE_CLOCK)
   #define SIZEOF_TICKS     4
-  #if THINKOS_ENABLE_KRNMON_CLOCK
-    #define SIZEOF_DMCLOCK 4
+  #if THINKOS_ENABLE_MONITOR_CLOCK
+    #define SIZEOF_MONITOR_CLOCK 4
   #else
-    #define SIZEOF_DMCLOCK 0
+    #define SIZEOF_MONITOR_CLOCK 0
   #endif
 #else
   #define SIZEOF_TICKS     0
-  #define SIZEOF_DMCLOCK   0
+  #define SIZEOF_MONITOR_CLOCK 0
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
@@ -488,9 +488,9 @@ struct thinkos_rt {
 		uint32_t ticks;
 		/* This fields are used for time wait (e.g. sleep()) */
 		uint32_t clock[THINKOS_THREADS_MAX];
-  #if THINKOS_ENABLE_KRNMON_CLOCK
+  #if THINKOS_ENABLE_MONITOR_CLOCK
 		/* monitor timer */
-		uint32_t dmclock;
+		uint32_t monitor_clock;
   #endif
 	};
 #endif
@@ -784,14 +784,6 @@ static inline void __attribute__((always_inline)) __thinkos_preempt(void) {
 #endif
 }
 
-/* flags a deferred queued syscall */
-static inline void __attribute__((always_inline)) __thinkos_defer_svc(void) {
-	struct cm3_scb * scb = CM3_SCB;
-	/* rise a pending systick interrupt */
-	scb->icsr = SCB_ICSR_PENDSTSET;
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
-}
-
 static inline void __attribute__((always_inline)) __thinkos_ready_clr(void) {
 	thinkos_rt.wq_ready = 0;
 #if (THINKOS_ENABLE_TIMESHARE)
@@ -1079,6 +1071,11 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 					void * arg, bool paused);
 
 bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size);
+
+/* -------------------------------------------------------------------------
+ * System timer 
+ * ------------------------------------------------------------------------- */
+void __krn_systick_init(void);
 
 #ifdef __cplusplus
 }

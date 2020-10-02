@@ -267,18 +267,18 @@ cm3_bus_fault_isr:
 cm3_usage_fault_isr:
 	movs   r1, #THINKOS_ERR_USAGE_FAULT
 
+#if	(THINKOS_ENABLE_KRNSVC) 
+	/* Kernel services -------------------------------------------- */
+
+	/* Check for undefined instruction flag on UFSR */
 	ldr    r3, .L_cm3_scb
 	ldr    r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
 	tst    r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
 	beq    xcpt_collect
-
-	/* Undefined instruction -------------------------------------------- */
-
 	/* Code running from the process stack (non-privileged) causes a fault.
 	   (Select the context stack according to the content of LR */
 	tst     lr, #4
 	bne     xcpt_collect
-	
 	/* Get the call frame stack */
 	mov    r0, sp
 	/* Get PC from the stack */
@@ -288,9 +288,12 @@ cm3_usage_fault_isr:
 	/* Skip undefined instruction, by adjusting the call stack (PC = PC + 2) */
 	adds    r3, r3, #2
 	str     r3, [r0, #(6 * 4)] 
-
+	/* Call the kernel service demultiplexer */
 	b       thinkos_krnsvc_isr
-	
+#else
+	b      xcpt_collect
+#endif
+
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif
 
@@ -317,7 +320,7 @@ cm3_hard_fault_isr:
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
-#if (THINKOS_ENABLE_MONITOR)
+#if (THINKOS_ENABLE_DBGMON)
 	.align  2
 	.global cm3_debug_mon_isr
 	.thumb
@@ -352,7 +355,7 @@ cm3_debug_mon_isr:
 	.word   CM3_DCB_BASE /* Core Debug Base Address */
 #endif
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
-#endif /* THINKOS_ENABLE_MONITOR */
+#endif /* THINKOS_ENABLE_DBGMON */
 
 	.align  2
 	.global cm3_svc_isr

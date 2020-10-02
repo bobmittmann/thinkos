@@ -152,6 +152,7 @@
 #define THINKOS_ENABLE_GATE_ALLOC       (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
+/* THINKOS_ENABLE_CLOCK: Enable the support for system timer */
 #ifndef THINKOS_ENABLE_CLOCK
 #define THINKOS_ENABLE_CLOCK            1
 #endif
@@ -367,7 +368,14 @@
 #define THINKOS_ENABLE_IDLE_WFI         1
 #endif
 
-/* THINKOS_ENABLE_MONITOR: Enable the kernel monitor (KRNMON) framework.
+/* THINKOS_ENABLE_STACK_INIT: Fill the thread stacks with a test pattern 
+   easily recognizeable: 0xDEADBEEF
+   */
+#ifndef THINKOS_ENABLE_STACK_INIT
+#define THINKOS_ENABLE_STACK_INIT       1
+#endif
+
+/* THINKOS_ENABLE_MONITOR: Enable the kernel monitor (MONITOR) framework.
    It's used to implement the bootloader and basic console, flash
    read/write and firmware upload. 
    Basic debuging facility like: start, stop, 
@@ -388,8 +396,8 @@
 #define THINKOS_ENABLE_MONITOR_THREADS  0
 #endif
 
-/* THINKOS_ENABLE_KRNMON_CLOCK: Enable the kernel monitor clock.
-   This is a kernel clock dedicated to the kernel monitor (KRNMON)
+/* THINKOS_ENABLE_MONITOR_CLOCK: Enable the kernel monitor clock.
+   This is a kernel clock dedicated to the kernel monitor (MONITOR)
    susbsystem.
 
    Some modules or user defined monitor can use it to implement
@@ -397,30 +405,45 @@
 
    Requires the clock module to be enabled.
    */
-#ifndef THINKOS_ENABLE_KRNMON_CLOCK
-#define THINKOS_ENABLE_KRNMON_CLOCK     0
+#ifndef THINKOS_ENABLE_MONITOR_CLOCK
+#define THINKOS_ENABLE_MONITOR_CLOCK     0
 #endif
 
+/* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
+   Requires the DebugMonitor fault to be present on the platform.
+   */
+#ifndef THINKOS_ENABLE_DEBUG
+#define THINKOS_ENABLE_DEBUG            0
+#endif
+
+/* THINKOS_ENABLE_DEBUG_STEP - Step by step excecution
+   Requires the the debug subsystem.
+   */
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
 #define THINKOS_ENABLE_DEBUG_STEP       0
 #endif
 
+/* THINKOS_ENABLE_DEBUG_BKPT - Support for breakpoints 
+   Requires the the debug subsystem.
+   */
 #ifndef THINKOS_ENABLE_DEBUG_BKPT
 #define THINKOS_ENABLE_DEBUG_BKPT       0
 #endif
 
+/* THINKOS_ENABLE_DEBUG_WPT - Support for watchpoints
+   Requires the the debug subsystem.
+   */
 #ifndef THINKOS_ENABLE_DEBUG_WPT 
 #define THINKOS_ENABLE_DEBUG_WPT        0
 #endif
 
+/* THINKOS_ENABLE_DEBUG_FAULT - Support for faults being
+   trapped by the debug subsystem.
+   Requires the the debug subsystem.
+   */
 #ifndef THINKOS_ENABLE_DEBUG_FAULT
 #define THINKOS_ENABLE_DEBUG_FAULT      0
 #endif
-
-#ifndef THINKOS_ENABLE_STACK_INIT
-#define THINKOS_ENABLE_STACK_INIT       1
-#endif
-
 
 /* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
 #ifndef THINKOS_ENABLE_SCHED_DEBUG
@@ -586,8 +609,8 @@
 #error "THINKOS_ENABLE_ALARM depends on THINKOS_ENABLE_CLOCK"
 #endif
 
-#if (THINKOS_ENABLE_KRNMON_CLOCK) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_KRNMON_CLOCK depends on THINKOS_ENABLE_CLOCK"
+#if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_CLOCK)
+#error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_CLOCK"
 #endif
 
 #if (THINKOS_ENABLE_KRNSVC) && !(THINKOS_ENABLE_USAGEFAULT)
@@ -849,15 +872,22 @@ struct thinkos_profile {
 	union {
 		uint32_t flags;
 		struct {
-			uint32_t monitor         :1;
-			uint32_t dmclock         :1;
-			uint32_t debug_step      :1;
-			uint32_t debug_bkpt      :1;
-			uint32_t debug_wpt       :1;
-			uint32_t debug_fault     :1;
-			uint32_t monitor_threads :1;
+			uint32_t enabled        :1;
+			uint32_t clock          :1;
+			uint32_t threads        :1;
 		};
-	} dbgmon;
+	} monitor;
+
+	union {
+		uint32_t flags;
+		struct {
+			uint32_t enabled   :1;
+			uint32_t step      :1;
+			uint32_t bkpt      :1;
+			uint32_t wpt       :1;
+			uint32_t fault     :1;
+		};
+	} debug;
 
 	union {
 		uint32_t misc_flags;

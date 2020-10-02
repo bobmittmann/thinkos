@@ -125,7 +125,6 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
-	struct cm3_systick * systick = CM3_SYSTICK;
 	struct thinkos_context * ctx;
 	uint32_t sp;
 	uint32_t ctrl;
@@ -303,14 +302,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 	thinkos_rt.cycref = CM3_DWT->cyccnt;
 #endif
 
-	DCC_LOG(LOG_INFO, "Initialize the SysTick"); 
-	/* Initialize the SysTick module */
-	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
-	systick->cvr = 0;
 #if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
-	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
-#else
-	systick->csr = SYSTICK_CSR_ENABLE;
+	DCC_LOG(LOG_INFO, "Initializes system timer..."); 
+	__krn_systick_init();
 #endif
 
 	/* Set the initial thread */

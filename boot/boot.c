@@ -25,8 +25,8 @@
 
 #include "board.h"
 
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #define __THINKOS_CONSOLE__
@@ -40,7 +40,7 @@
 
 #include <sys/dcclog.h>
 
-void monitor_task(const struct dbgmon_comm * comm, void * arg);
+void monitor_task(const struct monitor_comm * comm, void * arg);
 
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
@@ -54,7 +54,7 @@ void monitor_task(const struct dbgmon_comm * comm, void * arg);
 
 int main(int argc, char ** argv)
 {
-	const struct dbgmon_comm * comm;
+	const struct monitor_comm * comm;
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
@@ -89,11 +89,11 @@ int main(int argc, char ** argv)
 #endif
 	this_board.init();
 
-	DCC_LOG(LOG_TRACE, "5. board.dbgmon_comm_init()");
+	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
 #if DEBUG
 	udelay(256);
 #endif
-	comm = this_board.dbgmon_comm_init();
+	comm = this_board.monitor_comm_init();
 
 #if THINKOS_ENABLE_CONSOLE
 	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
@@ -117,11 +117,11 @@ int main(int argc, char ** argv)
 	thinkos_krn_userland();
 #endif
 
-	DCC_LOG(LOG_TRACE, "8. thinkos_dbgmon()");
+	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
 #if DEBUG
 	udelay(0x8000);
 #endif
-	thinkos_dbgmon(monitor_task, comm, NULL);
+	thinkos_monitor(monitor_task, comm, NULL);
 
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 #if DEBUG

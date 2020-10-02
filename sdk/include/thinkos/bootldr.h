@@ -27,6 +27,9 @@
 #error "Never use <thinkos/bootldr.h> directly; include <thinkos.h> instead."
 #endif 
 
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
+
 #include <thinkos/board.h>
 
 /* File identification magic block 
@@ -48,7 +51,7 @@ struct magic_blk {
 };
 
 /* application block descriptor */
-struct dbgmon_app_desc {
+struct monitor_app_desc {
 	char tag[8];
 	uint32_t start_addr; /* Application memory block start address */
 	uint32_t block_size; /* Size of the memory block in bytes */
@@ -90,12 +93,12 @@ struct thinkos_board {
 		};
 	} memory;
 
-	struct dbgmon_app_desc application;
+	struct monitor_app_desc application;
 
 	int (* init)(void);
 	void (* softreset)(void);
-	void (* upgrade)(const struct dbgmon_comm *);
-	const struct dbgmon_comm * (* dbgmon_comm_init)(void);
+	void (* upgrade)(const struct monitor_comm *);
+	const struct monitor_comm * (* monitor_comm_init)(void);
 
 	int (* preboot_task)(void * );
 	/* ThinkOS task: monitor will run this task by request */
@@ -145,32 +148,32 @@ struct ymodem_rcv {
 	} pkt;
 };
 
-static inline void dbgmon_req_app_stop(void) {
-	dbgmon_signal(DBGMON_APP_STOP);
+static inline void monitor_req_app_stop(void) {
+	monitor_signal(MONITOR_APP_STOP);
 }
 
-static inline void dbgmon_req_app_resume(void) {
-	dbgmon_signal(DBGMON_APP_RESUME);
+static inline void monitor_req_app_resume(void) {
+	monitor_signal(MONITOR_APP_RESUME);
 }
 
-static inline void dbgmon_req_app_term(void) {
-	dbgmon_soft_reset();
-	dbgmon_signal(DBGMON_APP_TERM);
+static inline void monitor_req_app_term(void) {
+	monitor_soft_reset();
+	monitor_signal(MONITOR_APP_TERM);
 }
 
-static inline void dbgmon_req_app_erase(void) {
-	dbgmon_soft_reset();
-	dbgmon_signal(DBGMON_APP_ERASE);
+static inline void monitor_req_app_erase(void) {
+	monitor_soft_reset();
+	monitor_signal(MONITOR_APP_ERASE);
 }
 
-static inline void dbgmon_req_app_exec(void) {
-	dbgmon_soft_reset();
-	dbgmon_signal(DBGMON_APP_EXEC);
+static inline void monitor_req_app_exec(void) {
+	monitor_soft_reset();
+	monitor_signal(MONITOR_APP_EXEC);
 }
 
-static inline void dbgmon_req_app_upload(void) {
-	dbgmon_soft_reset();
-	dbgmon_signal(DBGMON_APP_UPLOAD);
+static inline void monitor_req_app_upload(void) {
+	monitor_soft_reset();
+	monitor_signal(MONITOR_APP_UPLOAD);
 }
 
 extern const struct thinkos_flash_desc board_flash_desc;
@@ -180,42 +183,39 @@ extern struct thinkos_flash_drv board_flash_drv;
 extern "C" {
 #endif
 
-int dbgmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
+int monitor_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 
-int dbgmon_ymodem_rcv_pkt(const struct dbgmon_comm * comm, 
+int monitor_ymodem_rcv_pkt(const struct monitor_comm * comm, 
 						struct ymodem_rcv * rx);
 
-void dbgmon_console_io_task(const struct dbgmon_comm * comm);
+void monitor_console_io_task(const struct monitor_comm * comm);
 
-void dbgmon_print_thread(const struct dbgmon_comm * comm, 
+void monitor_print_thread(const struct monitor_comm * comm, 
 					   unsigned int thread_id);
 
-void dbgmon_print_context(const struct dbgmon_comm * comm, 
+void monitor_print_context(const struct monitor_comm * comm, 
 						const struct thinkos_context * ctx, 
 						uint32_t sp);
 
-void dbgmon_print_exception(const struct dbgmon_comm * comm, 
+void monitor_print_exception(const struct monitor_comm * comm, 
 						  struct thinkos_except * xcpt);
 
-int dbgmon_print_osinfo(const struct dbgmon_comm * comm);
+int monitor_print_osinfo(const struct monitor_comm * comm);
 
-void dbgmon_print_alloc(const struct dbgmon_comm * comm);
+void monitor_print_alloc(const struct monitor_comm * comm);
 
-void dbgmon_print_stack_usage(const struct dbgmon_comm * comm);
+void monitor_print_stack_usage(const struct monitor_comm * comm);
 
-void dbgmon_thread_exec(void (* func)(void *), void * arg);
 
-bool dbgmon_app_erase(const struct dbgmon_comm * comm, 
-					  uint32_t addr, unsigned int size);
 
-int dbgmon_ymodem_flash(const struct dbgmon_comm * comm,
+int monitor_ymodem_flash(const struct monitor_comm * comm,
 						uint32_t addr, unsigned int size);
 
-bool dbgmon_app_suspend(void);
+bool monitor_app_suspend(void);
 
-bool dbgmon_app_continue(void);
+bool monitor_app_continue(void);
 
-bool dbgmon_app_exec(const struct dbgmon_app_desc * desc, bool paused);
+bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused);
 
 #ifdef __cplusplus
 }

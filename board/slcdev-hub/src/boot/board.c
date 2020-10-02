@@ -96,7 +96,7 @@ static const struct magic_blk bootloader_magic = {
 };
 #pragma GCC diagnostic pop
 
-static void bootloader_yflash(const struct dbgmon_comm * comm)
+static void bootloader_yflash(const struct monitor_comm * comm)
 {
 
 //	stm32_gpio_clr(IO_LED1);
@@ -382,7 +382,7 @@ int board_default_task(void *ptr)
 	return 0;
 }
 
-const struct dbgmon_comm * board_comm_init(void)
+const struct monitor_comm * board_comm_init(void)
 {
 	DCC_LOG(LOG_TRACE, "USB comm init");
 
@@ -477,7 +477,7 @@ const struct thinkos_board this_board = {
 	.configure_task = board_configure_task,
 	.selftest_task = board_selftest_task,
 	.default_task = board_default_task,
-	.dbgmon_comm_init = board_comm_init
+	.monitor_comm_init = board_comm_init
 };
 
 extern const struct flash_dev stm32f4x_flash_dev;

@@ -26,14 +26,12 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 static void __thinkos_time_wakeup(int thread_id) 
 {
 #if THINKOS_ENABLE_THREAD_STAT
@@ -53,7 +51,7 @@ static void __thinkos_time_wakeup(int thread_id)
 }
 #endif /* THINKOS_ENABLE_CLOCK */
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 static void __thinkos_timeshare(void) 
 {
 	int32_t idx;
@@ -82,38 +80,66 @@ static void __thinkos_timeshare(void)
  * ThinkOS - system timer
  * --------------------------------------------------------------------------*/
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
-	uint32_t ticks;
-	uint32_t wq;
-	int j;
+#if (THINKOS_ENABLE_MONITOR)
+	struct cm3_systick * systick = CM3_SYSTICK;
+	
+	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
+#endif
+#if (THINKOS_ENABLE_CLOCK)
+	{
+		uint32_t ticks;
+		uint32_t wq;
+		int j;
 
-	ticks = thinkos_rt.ticks; 
-	ticks++;
-	thinkos_rt.ticks = ticks; 
+		ticks = thinkos_rt.ticks; 
+		ticks++;
+		thinkos_rt.ticks = ticks; 
 
-	wq = __rbit(thinkos_rt.wq_clock);
-	while ((j = __clz(wq)) < 32) {
-		wq &= ~(0x80000000 >> j);  
-		if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
-			__thinkos_time_wakeup(j); 
+		wq = __rbit(thinkos_rt.wq_clock);
+		while ((j = __clz(wq)) < 32) {
+			wq &= ~(0x80000000 >> j);  
+			if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
+				__thinkos_time_wakeup(j); 
+			}
 		}
-	}
 
-#if THINKOS_ENABLE_KRNMON_CLOCK
-	if ((int32_t)(thinkos_rt.dmclock - ticks) == 0) {
-		dbgmon_signal(DBGMON_ALARM);
-	}
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
+		if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
+			monitor_signal(MONITOR_ALARM);
+		}
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
-	__thinkos_timeshare(); 
+#if (THINKOS_ENABLE_TIMESHARE)
+		__thinkos_timeshare(); 
 #endif /* THINKOS_ENABLE_TIMESHARE */
+	}
+#endif /* THINKOS_ENABLE_CLOCK */
 
+#if (THINKOS_ENABLE_MONITOR)
+	__thinkos_monitor_isr();
+#endif /* THINKOS_ENABLE_MONITOR */
+}
+
+void __krn_systick_init(void)
+{
+	struct cm3_systick * systick = CM3_SYSTICK;
+
+	DCC_LOG(LOG_INFO, "Initialize the SysTick"); 
+	/* Initialize the SysTick module */
+	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
+	systick->cvr = 0;
+
+#if (THINKOS_ENABLE_CLOCK) 
+	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
+#else
+	systick->csr = SYSTICK_CSR_ENABLE;
+#endif
 }
 
 const char thinkos_clk_nm[] = "CLK";
 
-#endif /* THINKOS_ENABLE_CLOCK */
+#endif /* THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_MONITOR */
 

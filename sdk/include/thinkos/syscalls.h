@@ -106,7 +106,7 @@
 
 #define THINKOS_CRITICAL_EXIT         53
 
-#define THINKOS_DBGMON                54
+#define THINKOS_MONITOR                54
 
 #define THINKOS_TRACE                 55
 #define THINKOS_TRACE_CTL             56
@@ -705,12 +705,12 @@ static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {
 		return THINKOS_SYSCALL1(THINKOS_CTL, THINKOS_CTL_CYCCNT);
 	}
 
-struct dbgmon_comm;
+struct monitor_comm;
 
 static inline int __attribute__((always_inline)) 
-	thinkos_dbgmon(void (* task)(const struct dbgmon_comm *, void *), 
-				   const struct dbgmon_comm * comm, void * param) {
-	return THINKOS_SYSCALL3(THINKOS_DBGMON, task, comm, param);
+	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
+				   const struct monitor_comm * comm, void * param) {
+	return THINKOS_SYSCALL3(THINKOS_MONITOR, task, comm, param);
 }
 
 static inline int __attribute__((always_inline)) 

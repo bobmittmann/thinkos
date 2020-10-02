@@ -138,7 +138,7 @@ void dbgmon_print_profile(const struct dbgmon_comm * comm,
 	/* DbgMon */
 
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MONITOR", p->dbgmon.monitor);
-	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRNMON_CLOCK", p->dbgmon.dmclock);
+	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MONITOR_CLOCK", p->dbgmon.mon_clock);
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DEBUG_STEP", p->dbgmon.debug_step);
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DEBUG_BKPT", p->dbgmon.debug_bkpt);
 	dbgmon_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DEBUG_WPT", p->dbgmon.debug_wpt);

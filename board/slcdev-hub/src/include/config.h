@@ -110,7 +110,7 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
-#define THINKOS_ENABLE_KRNMON_CLOCK          1
+#define THINKOS_ENABLE_MONITOR_CLOCK          1
 
 #define THINKOS_ENABLE_CONSOLE          1
 #define THINKOS_ENABLE_CONSOLE_MISC     0 

@@ -334,19 +334,6 @@ int dbgmon_flash_open(const char * tag);
 int dbgmon_flash_close(void);
 
 /* ----------------------------------------------------------------------------
- *  Debug/Monitor communication interface
- * ----------------------------------------------------------------------------
- */
-
-#include <sys/usb-dev.h>
-
-const struct dbgmon_comm * usb_comm_init(const usb_dev_t * usb);
-const struct dbgmon_comm * usb_comm_getinstance(void);
-
-const struct dbgmon_comm * custom_comm_init(void);
-const struct dbgmon_comm * custom_comm_getinstance(void);
-
-/* ----------------------------------------------------------------------------
  *  Debug/Monitor COMM IO API
  * ----------------------------------------------------------------------------
  */

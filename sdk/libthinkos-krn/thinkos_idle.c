@@ -21,8 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 #define __THINKOS_FLASH__
@@ -31,7 +31,7 @@
 #include <vt100.h>
 #include <sys/dcclog.h>
 #include <sys/delay.h>
-/* FIXME: platform memory map should move from DBGMON and bootloader 
+/* FIXME: platform memory map should move from MONITOR and bootloader 
    to kernel... */
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
@@ -82,11 +82,11 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 		} while (__strex((uint32_t *)&idle->req_map, map));
 
 		switch (req) {
-			case IDLE_HOOK_NOTIFY_DBGMON:
+			case IDLE_HOOK_NOTIFY_MONITOR:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
-						"IDLE_HOOK_NOTIFY_DBGMON" _ATTR_POP_ );
+						"IDLE_HOOK_NOTIFY_MONITOR" _ATTR_POP_ );
 				/* Notify the debug/monitor */
-				dbgmon_signal(DBGMON_IDLE); 
+				monitor_signal(MONITOR_IDLE); 
 				break;
 
 #if 0 
@@ -99,7 +99,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 			case IDLE_HOOK_SOFTRST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_SOFTRST" _ATTR_POP_ );
-				dbgmon_signal(DBGMON_SOFTRST); 
+				monitor_signal(MONITOR_SOFTRST); 
 				break;
 
 #if THINKOS_ENABLE_EXCEPTIONS

@@ -68,8 +68,8 @@ struct thinkos_dbgmon {
 struct thinkos_dbgmon thinkos_dbgmon_rt;
 
 uint32_t __attribute__((aligned(8))) 
-	thinkos_dbgmon_stack[THINKOS_DBGMON_STACK_SIZE / 4];
-const uint16_t thinkos_dbgmon_stack_size = sizeof(thinkos_dbgmon_stack);
+	thinkos_monitor_stack[THINKOS_DBGMON_STACK_SIZE / 4];
+const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
 
 int dbgmon_context_swap(uint32_t ** pctx); 
 
@@ -285,9 +285,9 @@ int dbgmon_expect(int sig)
 int dbgmon_sleep(unsigned int ms)
 {
 	dbgmon_clear(DBGMON_ALARM);
-#if (THINKOS_ENABLE_KRNMON_CLOCK)
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock */
-	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
+	thinkos_rt.mon_clock = thinkos_rt.ticks + ms;
 #endif
 	/* wait for signal */
 	return dbgmon_expect(DBGMON_ALARM);
@@ -298,17 +298,17 @@ void dbgmon_alarm(unsigned int ms)
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	dbgmon_clear(DBGMON_ALARM);
 	dbgmon_unmask(DBGMON_ALARM);
-#if (THINKOS_ENABLE_KRNMON_CLOCK)
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock */
-	thinkos_rt.dmclock = thinkos_rt.ticks + ms;
+	thinkos_rt.mon_clock = thinkos_rt.ticks + ms;
 #endif
 }
 
 void dbgmon_alarm_stop(void)
 {
-#if (THINKOS_ENABLE_KRNMON_CLOCK)
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock in the past so it won't generate a signal */
-	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
+	thinkos_rt.mon_clock = thinkos_rt.ticks - 1;
 #endif
 	/* make sure the signal is cleared */
 	dbgmon_clear(DBGMON_ALARM);
@@ -826,8 +826,8 @@ static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
 	
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
-#if (THINKOS_ENABLE_KRNMON_CLOCK)
-	thinkos_rt.dmclock = thinkos_rt.ticks - 1;
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
+	thinkos_rt.mon_clock = thinkos_rt.ticks - 1;
 #endif
 
 	dbgmon_task(comm, param);
@@ -1175,7 +1175,7 @@ step_done:
 	if (sigset & (1 << DBGMON_RESET)) {
 		uint32_t * sp;
 		DCC_LOG(LOG_TRACE, "DBGMON_RESET");
-		sp = &thinkos_dbgmon_stack[(sizeof(thinkos_dbgmon_stack) / 4) - 10];
+		sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
 		sp[0] = CM_EPSR_T + CM3_EXCEPT_DEBUG_MONITOR; /* CPSR */
 		sp[9] = ((uint32_t)dbgmon_bootstrap) | 1; /* LR */
 		thinkos_dbgmon_rt.ctx = sp;
@@ -1192,10 +1192,10 @@ step_done:
 		/* TODO: this stack check is very usefull... 
 		   Some sort of error to the developer should be raised or
 		 force a fault */
-		if (thinkos_dbgmon_rt.ctx < thinkos_dbgmon_stack) {
+		if (thinkos_dbgmon_rt.ctx < thinkos_monitor_stack) {
 			DCC_LOG(LOG_PANIC, "stack overflow!");
 			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x dbgmon.stack=%08x", 
-					 thinkos_dbgmon_rt.ctx, thinkos_dbgmon_stack);
+					 thinkos_dbgmon_rt.ctx, thinkos_monitor_stack);
 			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
 		}
 #endif
@@ -1302,8 +1302,8 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
 		thinkos_dbgmon_reset();
 #if (THINKOS_ENABLE_STACK_INIT)
-		__thinkos_memset32(thinkos_dbgmon_stack, 0xdeadbeef, 
-						   sizeof(thinkos_dbgmon_stack));
+		__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
+						   sizeof(thinkos_monitor_stack));
 #endif
 #if (THINKOS_ENABLE_DEBUG_STEP)
 		/* clear the step request */
