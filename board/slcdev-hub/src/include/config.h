@@ -110,7 +110,8 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
-#define THINKOS_ENABLE_MONITOR_CLOCK          1
+#define THINKOS_ENABLE_MONITOR_CLOCK    1
+#define THINKOS_MONITOR_STACK_SIZE      888
 
 #define THINKOS_ENABLE_CONSOLE          1
 #define THINKOS_ENABLE_CONSOLE_MISC     0 
@@ -131,15 +132,18 @@
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
+
 #define THINKOS_ENABLE_DEBUG_FAULT      1
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
   #define THINKOS_SYSRST_ONFAULT        1
 #endif
-#define THINKOS_ENABLE_DEBUG_BKPT       1
-#define THINKOS_ENABLE_DEBUG_WPT        1
-#define THINKOS_ENABLE_DEBUG_STEP       1
+
+#define THINKOS_ENABLE_DEBUG            0
+#define THINKOS_ENABLE_DEBUG_BKPT       0
+#define THINKOS_ENABLE_DEBUG_WPT        0
+#define THINKOS_ENABLE_DEBUG_STEP       0
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         0
@@ -147,7 +151,6 @@
 
 #define THINKOS_ENABLE_THREAD_VOID      1
 
-#define THINKOS_DBGMON_STACK_SIZE       888
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              1
@@ -171,7 +174,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        0
+#define THINKOS_ENABLE_FLASH_MEM        1
 
 /* Enable the rt_snapshot() service to get
    the state of the kernel */
@@ -220,7 +223,7 @@
 #define BOOT_ENABLE_THIRD          0
 #define BOOT_CUSTOM_COMM           1
 
-#define MONITOR_BOARDINFO_ENABLE   0
+#define MONITOR_BOARDINFO_ENABLE   1
 #define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_THREAD_STEP_ENABLE 0
