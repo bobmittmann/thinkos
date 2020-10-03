@@ -140,10 +140,10 @@
   #define THINKOS_SYSRST_ONFAULT        1
 #endif
 
-#define THINKOS_ENABLE_DEBUG            0
-#define THINKOS_ENABLE_DEBUG_BKPT       0
-#define THINKOS_ENABLE_DEBUG_WPT        0
-#define THINKOS_ENABLE_DEBUG_STEP       0
+#define THINKOS_ENABLE_DEBUG            1
+#define THINKOS_ENABLE_DEBUG_BKPT       1
+#define THINKOS_ENABLE_DEBUG_WPT        1
+#define THINKOS_ENABLE_DEBUG_STEP       1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         0

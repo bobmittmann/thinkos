@@ -23,30 +23,11 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-dbg
 
-COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
+GDB_CFILES = dbgmon_gdb.c 
+#gdb-cortex-m.c
 
-COMMIO_CFILES = dbgmon_putc.c dbgmon_puts.c \
-		dbgmon_getc.c dbgmon_gets.c \
-		dbgmon_printf.c dbgmon_scanf.c \
-		dbgmon_ymodem.c dbgmon_send_misc.c \
-		print_osinfo.c print_alloc.c print_thread.c \
-		print_context.c print_stack_usage.c \
-		print_exception.c print_profile.c  \
-		dbgmon_hexdump.c
-
-GDB_CFILES = dbgmon_gdb.c
-
-CFILES = thinkos_dbgmon.c thinkos_usagefault.c \
-	 dbgmon_thread.c dbgmon_memory.c \
-	 dbgmon_console_task.c \
-	 app_exec.c app_erase.c flash_ymodem.c \
-	 dbgmon_flash.c \
-	 $(addprefix comm/,$(COMM_CFILES)) \
-	 $(addprefix commio/,$(COMMIO_CFILES)) \
-	 $(addprefix gdb/,$(GDB_CFILES)) 
-
-
-SFILES = dbgmon_swap.S
+CFILES = thinkos_dbgmon.c \
+	$(addprefix gdb/,$(GDB_CFILES)) 
 
 include ../../mk/lib.mk
 

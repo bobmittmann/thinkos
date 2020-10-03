@@ -20,6 +20,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_IDLE__
@@ -37,7 +39,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/dcclog.h>
 #include <vt100.h>
 
-#if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_DEBUG) 
 
 #ifdef THINKOS_DBGMON_ENABLE_IRQ_MGMT
 #warning "Deprecated THINKOS_DBGMON_ENABLE_IRQ_MGMT"
@@ -47,31 +49,16 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #error "Need THINKOS_ENABLE_THREAD_VOID"
 #endif
 
-#define DBGMON_PERISTENT_MASK ((1 << DBGMON_RESET) | \
-							   (1 << DBGMON_SOFTRST))
-
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
-	uint32_t * ctx;           /* monitor context */
-	struct dbgmon_comm * comm;
-	volatile uint32_t mask;   /* events mask */
-	volatile uint32_t events; /* events bitmap */
-	void * param;             /* user supplied parameter */
 	int8_t thread_id;
 	int8_t break_id;
 	uint8_t errno;
 	int32_t code;
-	void (* task)(const struct dbgmon_comm *, void *);
 };
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
-
-uint32_t __attribute__((aligned(8))) 
-	thinkos_monitor_stack[THINKOS_DBGMON_STACK_SIZE / 4];
-const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
-
-int dbgmon_context_swap(uint32_t ** pctx); 
 
 /**
   * __dbgmon_irq_disable_all:
@@ -137,246 +124,6 @@ void __reset_ram_vectors(void)
 /* -------------------------------------------------------------------------
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
-
-void dbgmon_signal(int sig) 
-{
-	struct cm3_dcb * dcb = CM3_DCB;
-	uint32_t evset;
-	uint32_t demcr;
-	
-	do {
-		/* avoid possible race condition on dbgmon.events */
-		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
-		evset |= (1 << sig);
-	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-
-	do {
-		demcr = __ldrex((uint32_t *)&dcb->demcr);
-		demcr |= DCB_DEMCR_MON_PEND;
-	} while (__strex((uint32_t *)&dcb->demcr, demcr));
-
-	asm volatile ("isb\n" :  :  : );
-}
-
-bool dbgmon_is_set(int sig) 
-{
-	return thinkos_dbgmon_rt.events &  (1 << sig) ? true : false;
-}
-
-void dbgmon_unmask(int sig)
-{
-	uint32_t mask;
-
-	do {
-		mask = __ldrex((uint32_t *)&thinkos_dbgmon_rt.mask);
-		mask |= (1 << sig);
-	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.mask, mask));
-}
-
-void dbgmon_mask(int sig)
-{
-	uint32_t mask;
-
-	do {
-		mask = __ldrex((uint32_t *)&thinkos_dbgmon_rt.mask);
-		mask &= ~(1 << sig);
-	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.mask, mask));
-}
-
-void dbgmon_clear(int sig)
-{
-	uint32_t evact;
-	uint32_t evset;
-
-	do {
-		/* avoid possible race condition on dbgmon.events */
-		evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
-		evact = evset & (1 << sig);
-		evset ^= evact;
-	} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-}
-
-/* wait for multiple events, return the highest priority (smaller number)
-   don't clear the event upon exiting. */
-int dbgmon_select(uint32_t evmsk)
-{
-	int evset;
-	uint32_t save;
-	int sig;
-
-	save = thinkos_dbgmon_rt.mask;
-	/* set the local mask */
-	evmsk |= save | DBGMON_PERISTENT_MASK;
-	DCC_LOG1(LOG_MSG, "evmask=%08x ........ ", evmsk);
-	thinkos_dbgmon_rt.mask = evmsk;
-	for(;;) {
-		evset = thinkos_dbgmon_rt.events;
-		/* apply local and global masks, 
-		   making sure not to mask non maskable events */
-		evset &= evmsk;
-		/* select the event with highest priority */
-		sig = __clz(__rbit(evset & evmsk));
-
-		if (sig < 32)
-			break;
-
-		DCC_LOG1(LOG_MSG, "waiting for events evmsk=%08x sleeping...", evmsk);
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		DCC_LOG(LOG_MSG, "wakeup...");
-	} 
-	thinkos_dbgmon_rt.mask = save;
-
-	DCC_LOG1(LOG_MSG, "event=%d", sig);
-
-	return sig;
-}
-
-
-/* wait for a single event and clear the event */
-int dbgmon_expect(int sig)
-{
-	uint32_t save;
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t result;
-
-	save = thinkos_dbgmon_rt.mask;
-	/* set the local mask */
-	evmsk = save | (1 << sig) | DBGMON_PERISTENT_MASK;
-	thinkos_dbgmon_rt.mask = evmsk;
-
-	for (;;) {
-		/* avoid possible race condition on dbgmon.events */
-		do {
-			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
-			/* apply local and global masks, 
-			   making sure not to mask non maskable events */
-			result = evset;
-			result &= evmsk;
-			if (result & (1 << sig))
-				evset &= ~(1 << sig); /* clear the event */
-		} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-
-		if (result != 0)
-			break;
-
-		if (evset != 0) {
-			DCC_LOG3(LOG_MSG, "expected %08x got %08x/%08x, sleeping...", 
-					 (1 << sig), evset, evmsk);
-		}
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		if (evset != 0) {
-			DCC_LOG(LOG_MSG, "wakeup...");
-		}
-	}
-
-	thinkos_dbgmon_rt.mask = save;
-
-	if ((result & (1 << sig)) == 0) {
-		/* unexpected event received */
-		sig = -1;
-		DCC_LOG3(LOG_WARNING, "expected %08x got %08x/%08x, sleeping...", 
-				 (1 << sig), result, evmsk);
-	}
-
-	return sig;
-}
-
-int dbgmon_sleep(unsigned int ms)
-{
-	dbgmon_clear(DBGMON_ALARM);
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
-	/* set the clock */
-	thinkos_rt.mon_clock = thinkos_rt.ticks + ms;
-#endif
-	/* wait for signal */
-	return dbgmon_expect(DBGMON_ALARM);
-}
-
-void dbgmon_alarm(unsigned int ms)
-{
-	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
-	dbgmon_clear(DBGMON_ALARM);
-	dbgmon_unmask(DBGMON_ALARM);
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
-	/* set the clock */
-	thinkos_rt.mon_clock = thinkos_rt.ticks + ms;
-#endif
-}
-
-void dbgmon_alarm_stop(void)
-{
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
-	/* set the clock in the past so it won't generate a signal */
-	thinkos_rt.mon_clock = thinkos_rt.ticks - 1;
-#endif
-	/* make sure the signal is cleared */
-	dbgmon_clear(DBGMON_ALARM);
-	/* mask the signal */
-	dbgmon_mask(DBGMON_ALARM);
-}
-
-int dbgmon_wait_idle(void)
-{
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	uint32_t save;
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t result;
-
-	/* Issue an idle hook request */
-	__idle_hook_req(IDLE_HOOK_NOTIFY_DBGMON);
-
-	save = thinkos_dbgmon_rt.mask;
-
-	/* set the local mask */
-	evmsk = (1 << DBGMON_IDLE);
-	thinkos_dbgmon_rt.mask = evmsk;
-	
-	do {
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-		do { /* avoid possible race condition on dbgmon.events */
-			evset = __ldrex((uint32_t *)&thinkos_dbgmon_rt.events);
-			result = evset;
-			evset &= evmsk; /* clear the event */
-		} while (__strex((uint32_t *)&thinkos_dbgmon_rt.events, evset));
-	} while (result == 0);
-	thinkos_dbgmon_rt.mask = save;
-
-	return (result == evmsk) ? 0 : -1;
-#else
-	return 0;
-#endif
-}
-
-int dbgmon_thread_terminate_get(int * code)
-{
-	int thread_id;
-
-	if ((thread_id = thinkos_dbgmon_rt.thread_id) >= 0) {
-		if (code != NULL) {
-			*code = thinkos_dbgmon_rt.code;
-		}
-	}
-
-	return thread_id;
-}
-
-static inline void __dbgmon_task_reset(void)
-{
-	dbgmon_signal(DBGMON_RESET);
-	dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-}
-
-void __attribute__((naked)) 
-	dbgmon_exec(void (* task)(const struct dbgmon_comm *, void *), 
-				void * param)
-{
-	DCC_LOG1(LOG_TRACE, "task=%p", task);
-	thinkos_dbgmon_rt.task = task;
-	thinkos_dbgmon_rt.param = param;
-	__dbgmon_task_reset();
-}
 
 #if (THINKOS_ENABLE_THREAD_VOID)
   #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 2)
@@ -771,7 +518,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 
 	if (sync) {
 		DCC_LOG(LOG_MSG, "synchronous step, waiting for signal...");
-		if ((ret = dbgmon_expect(DBGMON_THREAD_STEP)) < 0)
+		if ((ret = monitor_expect(MONITOR_THREAD_STEP)) < 0)
 			return ret;
 	}
 
@@ -804,39 +551,6 @@ void dbgmon_thread_step_clr(void)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
-void dbgmon_null_task(const struct dbgmon_comm * comm, void * param)
-{
-	for (;;) {
-		dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-	}
-}
-
-static void __attribute__((naked, noreturn)) dbgmon_bootstrap(void)
-{
-	const struct dbgmon_comm * comm = thinkos_dbgmon_rt.comm; 
-	void (* dbgmon_task)(const struct dbgmon_comm *, void *);
-	void * param = thinkos_dbgmon_rt.param; 
-
-	param = thinkos_dbgmon_rt.param; 
-
-	/* Get the new task */
-	dbgmon_task = thinkos_dbgmon_rt.task; 
-	/* Set the new task to NULL */
-	thinkos_dbgmon_rt.task = dbgmon_null_task;
-	
-	/* set the clock in the past so it won't generate signals in 
-	 the near future */
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
-	thinkos_rt.mon_clock = thinkos_rt.ticks - 1;
-#endif
-
-	dbgmon_task(comm, param);
-
-	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
-
-	__dbgmon_task_reset();
-}
-
 void __except_ctx_cpy(struct thinkos_context * ctx)
 {
 	uint32_t * dst = (uint32_t *)&thinkos_except_buf.ctx.core;
@@ -855,11 +569,6 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 
 int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {
-	uint32_t sigset = thinkos_dbgmon_rt.events;
-	uint32_t sigmsk = thinkos_dbgmon_rt.mask;
-
-	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
-
 	uint32_t xpsr = frm->xpsr;
 	uint32_t dfsr;
 
@@ -929,7 +638,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					thinkos_dbgmon_rt.break_id = thread_id;
 					thinkos_dbgmon_rt.errno = THINKOS_NO_ERROR;
 					/* delivers a thread breakpoint on next round */
-					dbgmon_signal(DBGMON_BREAKPOINT); 
+					monitor_signal(MONITOR_BREAKPOINT); 
 					/* run scheduler */
 					__thinkos_defer_sched();
 #endif
@@ -960,7 +669,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					__thinkos_thread_fault_set(thread_id);
 #endif
 					/* delivers a thread fault on next round */
-					dbgmon_signal(DBGMON_THREAD_FAULT); 
+					monitor_signal(MONITOR_THREAD_FAULT); 
 					/* run scheduler */
 					__thinkos_defer_sched();
 					break;
@@ -975,17 +684,17 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 							 frm->pc, frm->lr, frm->r0);
 					thinkos_dbgmon_rt.thread_id = frm->r0;
 					thinkos_dbgmon_rt.code = 0;
-					dbgmon_signal(DBGMON_THREAD_CREATE);
+					monitor_signal(MONITOR_THREAD_CREATE);
 					break;
 				} 
-				if (code == DBGMON_BKPT_ON_THREAD_TERMINATE) {
+				if (code == MONITOR_BKPT_ON_THREAD_TERMINATE) {
 					DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 							 " THREAD TERMINATE" _NORMAL_ _FG_YELLOW_
 							 " PC=%08x LR=%08x R0=%d R1=%d" _ATTR_POP_, 
 							 frm->pc, frm->lr, frm->r0, frm->r1);
 					thinkos_dbgmon_rt.thread_id = frm->r0;
 					thinkos_dbgmon_rt.code = frm->r1;
-					dbgmon_signal(DBGMON_THREAD_TERMINATE);
+					monitor_signal(MONITOR_THREAD_TERMINATE);
 					break;
 				} 
 #endif /* THINKOS_ENABLE_MONITOR_THREADS */
@@ -1000,7 +709,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				/* save the current state of IPSR */
 //				thinkos_rt.xcpt_ipsr = ipsr;
 				/* delivers a kernel exception on next round */
-				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_EXCEPT);
 				break;
 			}
 
@@ -1021,7 +730,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* run scheduler */
 					__thinkos_defer_sched();
 					/* delivers a breakpoint swignal on next round */
-					thinkos_dbgmon_rt.events |= (1 << DBGMON_BREAKPOINT);
+					monitor_signal(MONITOR_BREAKPOINT);
 					break;
 				} 
 
@@ -1037,7 +746,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				/* XXX: use IDLE as break thread id */
 				thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
 				/* delivers a thread fault on next round */
-				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_EXCEPT);
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
 			} else {
 #if (THINKOS_ENABLE_EXCEPTIONS)
@@ -1063,7 +772,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
 								   sizeof(struct armv7m_basic_frame));
 				/* delivers a kernel exception on next round */
-				thinkos_dbgmon_rt.events |= (1 << DBGMON_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_EXCEPT);
 #endif
 			}
 		} while (0);
@@ -1082,9 +791,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();
 
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
+				monitor_signal(MONITOR_BREAKPOINT); 
 			} else if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
 				DCC_LOG2(LOG_TRACE, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
 						 thread_id + 1, frm->pc);
@@ -1092,17 +799,13 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				__thinkos_thread_pause(thread_id);
 				/* record the break thread id */
 				thinkos_dbgmon_rt.break_id = thread_id;
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
+				monitor_signal(MONITOR_BREAKPOINT); 
 				__thinkos_defer_sched();
 			} else {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
 						 thread_id + 1, frm->pc);
 				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
-				sigset |= (1 << DBGMON_BREAKPOINT);
-				sigmsk |= (1 << DBGMON_BREAKPOINT);
-				thinkos_dbgmon_rt.events = sigset;
+				monitor_signal(MONITOR_BREAKPOINT); 
 				/* record the break thread id */
 				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();
@@ -1150,9 +853,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					   step request flag */
 					__thinkos_thread_pause(thread_id);
 					/* signal the monitor */
-					sigset |= (1 << DBGMON_THREAD_STEP);
-					sigmsk |= (1 << DBGMON_THREAD_STEP);
-					thinkos_dbgmon_rt.events = sigset;
+					monitor_signal(MONITOR_THREAD_STEP); 
 					__thinkos_defer_sched();
 				} else {
 					DCC_LOG4(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_
@@ -1172,38 +873,6 @@ step_done:
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 	}
 
-	if (sigset & (1 << DBGMON_RESET)) {
-		uint32_t * sp;
-		DCC_LOG(LOG_TRACE, "DBGMON_RESET");
-		sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
-		sp[0] = CM_EPSR_T + CM3_EXCEPT_DEBUG_MONITOR; /* CPSR */
-		sp[9] = ((uint32_t)dbgmon_bootstrap) | 1; /* LR */
-		thinkos_dbgmon_rt.ctx = sp;
-		/* clear the RESET event */
-		thinkos_dbgmon_rt.events = sigset & ~(1 << DBGMON_RESET);
-		/* make sure the RESET event is not masked */
-		sigmsk |= (1 << DBGMON_RESET);
-	}
-
-	/* Process monitor events */
-	if ((sigset & sigmsk) != 0) {
-		DCC_LOG1(LOG_MSG, "monitor ctx=%08x", thinkos_dbgmon_rt.ctx);
-#if DEBUG
-		/* TODO: this stack check is very usefull... 
-		   Some sort of error to the developer should be raised or
-		 force a fault */
-		if (thinkos_dbgmon_rt.ctx < thinkos_monitor_stack) {
-			DCC_LOG(LOG_PANIC, "stack overflow!");
-			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x dbgmon.stack=%08x", 
-					 thinkos_dbgmon_rt.ctx, thinkos_monitor_stack);
-			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
-		}
-#endif
-		return dbgmon_context_swap(&thinkos_dbgmon_rt.ctx); 
-	}
-
-	DCC_LOG2(LOG_MSG, "Unhandled signal sigset=%08x sigmsk=%08x", 
-			 sigset, sigmsk);
 	return 0;
 }
 
@@ -1264,7 +933,7 @@ void dbgmon_soft_reset(void)
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"6. Send soft reset signal"  _ATTR_POP_);
-	dbgmon_signal(DBGMON_SOFTRST); 
+	monitor_signal(MONITOR_SOFTRST); 
 }
 
 /* -------------------------------------------------------------------------
@@ -1288,12 +957,8 @@ void thinkos_dbgmon_reset(void)
 	thinkos_dbgmon_rt.code = 0;
 }
 
-void thinkos_dbgmon_svc(int32_t arg[], int self)
+void __thinkos_dbgmon_init(void)
 {
-	void (* task)(const struct dbgmon_comm *, void *) = 
-		(void (*)(const struct dbgmon_comm *, void *))arg[0];
-	struct dbgmon_comm * comm = (void *)arg[1];
-	void * param = (void *)arg[2];
 	struct cm3_dcb * dcb = CM3_DCB;
 	uint32_t demcr; 
 
@@ -1301,18 +966,12 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 		DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 		" ==== Debug/Monitor startup ==== "_ATTR_POP_);
 		thinkos_dbgmon_reset();
-#if (THINKOS_ENABLE_STACK_INIT)
-		__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
-						   sizeof(thinkos_monitor_stack));
-#endif
 #if (THINKOS_ENABLE_DEBUG_STEP)
 		/* clear the step request */
 		demcr &= ~DCB_DEMCR_MON_STEP;
 		/* enable the FPB unit */
 		CM3_FPB->ctrl = FP_KEY | FP_ENABLE;
 #endif
-		/* set the startup signal */
-		thinkos_dbgmon_rt.events = (1 << DBGMON_STARTUP);
 
 	/* XXX: enabling all vector catch? Not sure if this is
 	   really necessary. At least the breakpoint somehow depends
@@ -1327,23 +986,6 @@ void thinkos_dbgmon_svc(int32_t arg[], int self)
 	
 	/* disable monitor and clear semaphore */
 	dcb->demcr = demcr & ~(DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND);
-
-	DCC_LOG2(LOG_TRACE, "comm=%p task=%p", comm, task);
-
-	/* Set the persistent signals */
-	thinkos_dbgmon_rt.events |= (1 << DBGMON_RESET);
-	thinkos_dbgmon_rt.mask = DBGMON_PERISTENT_MASK | (1 << DBGMON_STARTUP);
-	thinkos_dbgmon_rt.comm = comm;
-
-	arg[0] = (uint32_t)thinkos_dbgmon_rt.task;
-	if (task == NULL)
-		/* Set the new task to NULL */
-		thinkos_dbgmon_rt.task = dbgmon_null_task;
-	else
-		thinkos_dbgmon_rt.task = task;
-
-	thinkos_dbgmon_rt.param = param;
-	thinkos_dbgmon_rt.ctx = 0;
 
 	/* enable monitor and send the reset event */
 	dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;

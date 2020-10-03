@@ -36,7 +36,7 @@ CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-ksv \
-		  $(SDK_DIR)/libthinkos-mon \
+		  $(SDK_DIR)/libthinkos-mon $(SDK_DIR)/libthinkos-dbg \
 		  $(SDK_DIR)/libice-comm 
 
 LIBS = gcc cm3 stm32f util thinkos-krn thinkos-ksv thinkos-mon ice-comm 
