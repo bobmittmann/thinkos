@@ -1,5 +1,5 @@
 /* 
- * thikos_sched.S
+ * thinkos_sched.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

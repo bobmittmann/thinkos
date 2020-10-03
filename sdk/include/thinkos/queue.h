@@ -1,5 +1,5 @@
 /* 
- * thikos_queue.h
+ * thinkos_queue.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

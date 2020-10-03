@@ -1,5 +1,5 @@
 /* 
- * thikos_dma.h
+ * thinkos_dma.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

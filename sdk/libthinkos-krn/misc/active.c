@@ -1,5 +1,5 @@
 /* 
- * __thikos_active.c
+ * __thinkos_active.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
