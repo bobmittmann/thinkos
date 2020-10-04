@@ -29,7 +29,8 @@ int __thinkos_thread_get(unsigned int thread_id,
 {
 	struct thinkos_rt * rt = &thinkos_rt;
 
-	if ((thread_id >= THINKOS_THREADS_MAX) || (rt->ctx[thread_id] == NULL)) {
+	if ((thread_id >= THINKOS_THREADS_MAX) || 
+		!__thinkos_thread_ctx_is_valid(thread_id)) {
 		return -1;
 	}
 
@@ -91,7 +92,8 @@ int __thinkos_thread_get(unsigned int thread_id,
 #endif
 
 	if (ctx != NULL) {
-		struct thinkos_context * src = rt->ctx[thread_id];
+		struct thinkos_context * src;
+		src = __thinkos_thread_ctx_get(thread_id);
 
 		ctx->r0 = src->r0;
 		ctx->r1 = src->r1;

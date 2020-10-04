@@ -28,7 +28,7 @@ void __thinkos_resume_all(void)
 	int32_t th;
 
 	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
-		if (thinkos_rt.ctx[th] != NULL) {
+		if (__thinkos_thread_ctx_is_valid(th)) {
 			__thinkos_thread_resume(th);
 		}
 	}

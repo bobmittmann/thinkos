@@ -406,7 +406,7 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 		pc = ctx->pc;
 		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
 	} else {
-		ctx = thinkos_rt.ctx[thread_id];
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (thread_id == (unsigned int)thinkos_monitor_rt.break_id)
 			errno = thinkos_monitor_rt.errno;
 
@@ -449,7 +449,7 @@ int monitor_thread_break_get(void)
 	int thread_id;
 
 	if ((thread_id = thinkos_monitor_rt.break_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
+		if ((ctx = __thinkos_thread_ctx_get(thread_id)) == NULL)
 			return -1;
 	}
 
@@ -774,7 +774,7 @@ int monitor_thread_step_get(void)
 	int thread_id;
 
 	if ((thread_id = thinkos_rt.step_id) >= 0) {
-		if ((ctx = thinkos_rt.ctx[thread_id]) == NULL)
+		if ((ctx = __thinkos_thread_ctx_get(thread_id)) == NULL)
 			return -1;
 	}
 

@@ -28,7 +28,7 @@ bool __thinkos_active(void)
 	unsigned int thread_id;
 
 	for (thread_id = 0; thread_id < THINKOS_THREADS_MAX; ++thread_id) {
-		if (thinkos_rt.ctx[thread_id] != NULL)
+		if (__thinkos_thread_ctx_is_valid(thread_id))
 			return true;
 	}
 

@@ -27,7 +27,7 @@ bool __thinkos_suspended(void)
 	unsigned int th;
 
 	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
-		if (thinkos_rt.ctx[th] != NULL) {
+		if (__thinkos_thread_ctx_is_valid(th)) {
 			bool suspended = false;
 #if THINKOS_ENABLE_JOIN
 			suspended |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);

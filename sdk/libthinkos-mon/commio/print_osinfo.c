@@ -117,7 +117,7 @@ int monitor_print_osinfo(struct monitor_comm * comm)
 #endif
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		if (rt->ctx[i] != NULL) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 			int oid;
 			int type;
 			bool tmw;

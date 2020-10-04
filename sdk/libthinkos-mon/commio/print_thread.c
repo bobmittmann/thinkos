@@ -32,7 +32,8 @@ int __thinkos_thread_wq_get(unsigned int thread_id)
 	struct thinkos_rt * rt = &thinkos_rt;
 	int wq;
 
-	if ((thread_id >= THINKOS_THREADS_MAX) || (rt->ctx[thread_id] == NULL)) {
+	if ((thread_id >= THINKOS_THREADS_MAX) || 
+		!__thinkos_thread_ctx_is_valid(thread_id)) {
 		return -1;
 	}
 
@@ -55,6 +56,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 						 unsigned int thread_id)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
+	struct thinkos_context * ctx;
 	int32_t timeout;
 	uint32_t cyccnt;
 #if THINKOS_ENABLE_TIMESHARE
@@ -68,7 +70,8 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	int i;
 #endif
 
-	if ((thread_id >= THINKOS_THREADS_MAX) || (rt->ctx[thread_id] == NULL)) {
+	if ((thread_id >= THINKOS_THREADS_MAX) || 
+		!__thinkos_thread_ctx_is_valid(thread_id)) {
 		return;
 	}
 
@@ -151,8 +154,8 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	monitor_printf(comm, " - timeout=%8d ms", timeout); 
 	monitor_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
-	monitor_print_context(comm, rt->ctx[thread_id], 
-						 (uint32_t)rt->ctx[thread_id]);
+	ctx = __thinkos_thread_ctx_get(thread_id);
+	monitor_print_context(comm, ctx, (uint32_t)ctx);
 
 	monitor_printf(comm, "\r\n");
 }

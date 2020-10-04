@@ -30,6 +30,7 @@
 #define CONTROL_SPSEL      (1 << 1)
 #define CONTROL_FPCA       (1 << 2)
 
+#define EXC_RETURN_THREAD  (1 << 1)
 #define EXC_RETURN_SPSEL   (1 << 2)
 #define EXC_RETURN_nFPCA   (1 << 4)
 
@@ -39,8 +40,6 @@
 
 	.syntax unified
 	.cpu cortex-m3
-
-#if (THINKOS_ASM_SCHEDULER)
 
 	.text
 	.align	4
@@ -67,74 +66,11 @@ thinkos_sched_get_active:
 	/* r1: ready, */
 	/* r2: active, (thread status) */
 
-#if !(THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
-	mrs     r0, PSP
-thinkos_sched_context_save:
-	stmdb   r0!, {r4-r11}
-#elif (THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_IDLE_MSP)
-	mrs     r0, PSP
-	mov     r12, r0
-thinkos_sched_context_save:
-	stmdb   r0!, {r4-r12,lr}
-	tst     lr, #EXC_RETURN_nFPCA
-	itt     eq
-	moveq   r7, r0
-	vstmdbeq r7!, {s16-s31}
-#elif !(THINKOS_ENABLE_FPU) && (THINKOS_ENABLE_IDLE_MSP)
-	tst     lr, #EXC_RETURN_SPSEL
-	itte    eq
-	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
-	mrsne   r0, PSP
-	movs    r12, r0
-thinkos_sched_context_save:
-	stmdb   r0!, {r4-r12,lr}
-#else
-	tst     lr, #EXC_RETURN_SPSEL
-	itte    eq
-	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
-	mrsne   r0, PSP
-	movs    r12, r0
-thinkos_sched_context_save:
-	stmdb   r0!, {r4-r12,lr}
-	tst     lr, #EXC_RETURN_nFPCA
-	itt     eq
-	moveq   r7, r0
-	vstmdbeq r7!, {s16-s31}
+#if 0
+	/* invalid thread id */
+	ands      r0, r2, #0x001f
+	beq       r0, thinkos_krn_sched_ctx_get
 #endif
-
-#if (THINKOS_ENABLE_PROFILING)
-thinkos_sched_update_cyccnt:
-	/* DWT.SYCCNT */
-	ldr.n   r6, .L_cm_dwt
-	/* r6: cyccnt = CM3_DWT->cyccnt */
-	ldr.n   r6, [r6, #4]
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	/* r5: cycref */
-	ldrd	r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #else
-	/* r5: cycref */
-	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]
-  #endif
-	/* update the reference */
-	/* thinkos_rt.cycref = cyccnt */
-	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
-	/* r6: delta =  cyccnt - cycref */	
-	subs    r6, r6, r5
-	/* update thread's cycle counter */
-	adds    r7, r2, #(SIZEOF_CTX / 4)
-	ldr     r5, [r3, r7, lsl #2]
-	/* thinkos_rt.cyccnt[old_thread_id] += delta */
-	adds    r5, r6
-	str     r5, [r3, r7, lsl #2]
-#else
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	ldr.w	r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #endif
-#endif /* THINKOS_ENABLE_PROFILING */
 
 thinkos_sched_select_ready:
 	/* r1 - ready queue
@@ -148,23 +84,72 @@ thinkos_sched_select_ready:
 	rbit    r1, r1
  	clz     r1, r1
 
+#if 0
+	/* fast return */
+	cmp     r1, r2
+	it      eq
+	bxeq    lr
+
+#endif
+
+	tst     lr, #EXC_RETURN_SPSEL
+	itte    eq
+	moveq   r0, sp
+	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
+	mrsne   r0, PSP
+	movs    r12, r0
+thinkos_sched_context_save:
+	stmdb   r0!, {r4-r12, lr}
+	tst     lr, #EXC_RETURN_nFPCA
+	itt     eq
+	moveq   r7, r0
+	vstmdbeq r7!, {s16-s31}
+
+thinkos_sched_update_cyccnt:
+	/* DWT.SYCCNT */
+	ldr.n   r6, .L_cm_dwt
+	/* r6: cyccnt = CM3_DWT->cyccnt */
+	ldr.n   r6, [r6, #4]
+	/* update the reference */
+	/* thinkos_rt.cycref = cyccnt */
+	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
+  #if (THINKOS_ENABLE_DEBUG_STEP)
+	/* r4: step_req */
+	/* r5: cycref */
+	ldrd	r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
+  #else
+	/* r5: cycref */
+	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]
+  #endif
+	/* r6: delta =  cyccnt - cycref */	
+	subs    r6, r6, r5
+	/* update thread's cycle counter */
+	adds    r7, r2, #(SIZEOF_CTX / 4)
+	ldr     r5, [r3, r7, lsl #2]
+	/* thinkos_rt.cyccnt[old_thread_id] += delta */
+	adds    r5, r6
+	str     r5, [r3, r7, lsl #2]
+
+
+	mrs     r7, CONTROL
+	/* Alternatively get the control (3bits) from the context */
+	orrs    r0, r7
 thinkos_sched_swap:
 	/* r0: thread stack
 	   r1: next active thread 
 	   r3: thinkos_rt */
 	/* store the old context pointer into the context vector */
 	str.w	r0, [r3, r2, lsl #2]
+#if 0
+	/* store the new control register */
+	adds    r6, r2, #THINKOS_RT_CONTROL_OFFS
+	strb	r7, [r3, r6]
+#endif
+
+thinkos_krn_sched_ctx_get:
+
 	/* load the new context pointer from the context vector */
 	ldr.w	r0, [r3, r1, lsl #2]
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-thinkos_sched_step_req_check:
-	/* check if the step request bit is set for this thread */
-	movs	r5, #1
-	lsls	r5, r1
-	tst     r5, r4
-	bne.n   thinkos_sched_step
-#endif
 
 	.thumb_func
 thinkos_krn_sched_ctx_restore:
@@ -175,45 +160,65 @@ thinkos_krn_sched_ctx_restore:
 	/* r0: new thread stack
 	   r1: new active thread
 	   r2: old active thread
-	   r3: thinkos_rt */
+	   r3: thinkos_rt 
+	   r4: new control register */
 	str     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	mov     r3, r0
-	ldmia   r0!, {r4-r12,lr}
-  #if (THINKOS_ENABLE_SCHED_ERROR) 
-	cmp     r0, r12
-	beq     .L_restore
-	bkpt    THINKOS_ERROR_BKPT(THINKOS_ERR_SP_INVALID)
-.L_restore:
-  #endif	
-#else
-	ldmia   r0!, {r4-r11}
+	
+#if 0
+	/* load the new control register */
+	adds    r4, r1, #THINKOS_RT_CONTROL_OFFS
+	ldrb	r4, [r3, r4]
 #endif
-#if (THINKOS_ENABLE_FPU)
-	tst     lr, #EXC_RETURN_nFPCA
-	it      eq
-	vldmdbeq  r3!, {s16-s31}
-#endif
-#if (THINKOS_ENABLE_IDLE_MSP)
-	tst     lr, #EXC_RETURN_SPSEL
-	ittee   ne
-	msrne   PSP, r0
-	movne   r3, #CONTROL_nPRIV | CONTROL_SPSEL /* non-privileged mode */
-	moveq   sp, r0
-	moveq   r3, #0 /* privileged mode MSP */
-	msr     CONTROL, r3
+	/* Alternatively get the control (3bits) from the context */
+	ands    r4, r0, #0x07
+	bics    r0, r0, #0x07
+	/* restore the control register */
+	msr     CONTROL, r4
 	isb
-#else
-	msr     PSP, r0
-#endif
+
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+
+	/* restore FP context */
+	tst      r4, #CONTROL_FPCA
+	ittt     ne
+	movne    r3, r0
+	vldmdbne r3!, {s16-s31}
+//	subnes      lr, lr, #EXC_RETURN_nFPCA 
+	movne      lr, #CM3_EXC_RET_THREAD_PSP_EXT
+
+
+	/* select stack */
+	tst      r4, #CONTROL_SPSEL
+	beq      .L_idle_sanity_check
+	msr      PSP, r0
+	ldmia    r0!, {r4-r12, lr}
+
+
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	sub     r0, r0, #((CTX_R0) * 4)
-	mov     r3, sp
-	b       thinkos_sched_dbg
+	sub      r0, r0, #((CTX_R0) * 4)
+	mov      r3, sp
+	b        thinkos_sched_dbg
 #else
-	bx      lr
+	bx       lr
 #endif
+
+.L_idle_sanity_check:
+	cmp      sp, r0
+	bne      .L_idle_stack_fault
+
+	ldmia    sp!, {r4-r12, lr}
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	mov      r3, sp
+	b        thinkos_sched_dbg
+#else
+	bx       lr
+#endif
+
+
+.L_idle_stack_fault:
+	b        .L_idle_stack_fault
 
 	.align  0
 .L_thinkos_rt:
@@ -322,6 +327,4 @@ thinkos_sched_step:
 thinkos_sch_nm:
 	.ascii	"SCH\000"
 
-
-#endif /* THINKOS_ASM_SCHEDULER */
 

@@ -30,7 +30,7 @@ int __thinkos_thread_getnext(int th)
 	idx = (th < 0) ? 0 : th + 1;
 	
 	for (; idx < THINKOS_THREADS_MAX; ++idx) {
-		if (thinkos_rt.ctx[idx] != NULL)
+		if (__thinkos_thread_ctx_is_valid(idx))
 			return idx;
 	}
 

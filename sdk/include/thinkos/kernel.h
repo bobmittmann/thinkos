@@ -80,19 +80,25 @@
  * ThinkOS RT structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/
 #if (THINKOS_ENABLE_THREAD_VOID)
-  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 2)
+  #define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 2)
   #define SIZEOF_VOID_CTX  4
   #define SIZEOF_CTX (((THINKOS_THREADS_MAX) + 2) * 4)
 #else
-  #define THINKOS_CTX_LEN ((THINKOS_THREADS_MAX) + 1)
+  #define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 1)
   #define SIZEOF_VOID_CTX  0
   #define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
 #endif
 
 #define SIZEOF_NRT_CTX     ((THINKOS_NRT_THREADS_MAX) * 4)
 
+#if (THINKOS_ENABLE_FPU)
+  #define SIZEOF_CONTROL   ((THINKOS_CTX_CNT + 3) & ~3)
+#else
+  #define SIZEOF_CONTROL   0
+#endif
+
 #if (THINKOS_ENABLE_PROFILING)
-  #define SIZEOF_CYCCNT    (THINKOS_CTX_LEN * 4)
+  #define SIZEOF_CYCCNT    (THINKOS_CTX_CNT * 4)
   #define SIZEOF_CYCREF    4
 #else
   #define SIZEOF_CYCCNT    0
@@ -147,7 +153,9 @@
 
 #define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
 
-#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
+#define THINKOS_RT_CONTROL_OFFS    (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
+
+#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_CONTROL_OFFS + SIZEOF_CONTROL)
 #define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
 #define THINKOS_RT_XCPT_IPSR_OFFS  (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
 #define THINKOS_RT_STEP_ID_OFFS    (THINKOS_RT_XCPT_IPSR_OFFS + SIZEOF_XCPT_IPSR)
@@ -353,10 +361,15 @@ struct thinkos_rt {
 	   and their order and sizes must not be changed.
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
-	struct thinkos_context * ctx[THINKOS_CTX_LEN]; 
+//	struct thinkos_context * ctx[THINKOS_CTX_CNT]; 
+	uintptr_t ctx[THINKOS_CTX_CNT]; 
 
 #if (THINKOS_NRT_THREADS_MAX > 0)
 	struct thinkos_context * nrt_ctx[THINKOS_NRT_THREADS_MAX]; 
+#endif
+
+#if (THINKOS_ENABLE_FPU)
+	uint8_t control[SIZEOF_CONTROL];
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -762,6 +775,57 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
 #endif
 }
 
+static inline bool __attribute__((always_inline)) 
+__thinkos_thread_ctx_is_valid(unsigned int th) {
+	return (void *)(thinkos_rt.ctx[th] & ~0x3) == NULL ? true : false;
+}
+
+static inline struct thinkos_context * __attribute__((always_inline)) 
+__thinkos_thread_ctx_get(unsigned int th) {
+	return (struct thinkos_context *)(thinkos_rt.ctx[th] & ~0x3);
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thinkos_thread_r0_get(unsigned int th) {
+	return __thinkos_thread_ctx_get(th)->r0;
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thinkos_thread_pc_get(unsigned int th) {
+	return __thinkos_thread_ctx_get(th)->pc;
+}
+
+static inline void  __attribute__((always_inline)) 
+__thinkos_thread_ctx_set(unsigned int th, struct thinkos_context * __ctx) {
+	thinkos_rt.ctx[th] = (uintptr_t)__ctx;
+}
+
+static inline void  __attribute__((always_inline)) 
+__thinkos_thread_ctx_clr(unsigned int th) {
+	thinkos_rt.ctx[th] = (uintptr_t)0;
+}
+
+static inline void __attribute__((always_inline)) 
+__thinkos_thread_r0_set(unsigned int th, uint32_t val) {
+	__thinkos_thread_ctx_get(th)->r0 = val;
+}
+
+static inline void __attribute__((always_inline)) 
+__thinkos_thread_pc_set(unsigned int th, uintptr_t val) {
+	__thinkos_thread_ctx_get(th)->pc = (uint32_t)val;
+}
+
+static inline void __attribute__((always_inline)) 
+__thinkos_thread_r1_set(unsigned int th, uint32_t val) {
+	__thinkos_thread_ctx_get(th)->r1 = val;
+}
+
+#if THINKOS_ENABLE_THREAD_INFO
+static inline const struct thinkos_thread_inf * 
+__thinkos_thread_inf_get(unsigned int th) {
+	return thinkos_rt.th_inf[th];
+}
+
 static inline void __attribute__((always_inline)) __thinkos_cancel_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* removes the pending status of the PendSV exception */
@@ -892,7 +956,7 @@ __thinkos_wakeup(unsigned int wq, unsigned int th) {
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r0 = 0;
+	__thinkos_thread_ctx_get(th)->r0 = 0;
 #endif
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
@@ -915,7 +979,7 @@ __thinkos_wakeup_return(unsigned int wq, unsigned int th, int ret) {
 	thinkos_rt.th_stat[th] = 0;
 #endif
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r0 = ret;
+	__thinkos_thread_ctx_get(th)->r0 = ret;
 }
 
 #if (THINKOS_ENABLE_CLOCK)
@@ -955,19 +1019,6 @@ static inline void __thinkos_thread_pause_clr(unsigned int th) {
 }
 #endif
 
-static inline void __thinkos_thread_ctx_set(unsigned int th, 
-											struct thinkos_context * __ctx) {
-	thinkos_rt.ctx[th] = __ctx;
-}
-
-static inline struct thinkos_context * __thinkos_thread_ctx_get(unsigned int th) {
-	return thinkos_rt.ctx[th];
-}
-
-#if THINKOS_ENABLE_THREAD_INFO
-static inline const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int th) {
-	return thinkos_rt.th_inf[th];
-}
 #endif
 
 void thinkos_trace_rt(struct thinkos_rt * rt);

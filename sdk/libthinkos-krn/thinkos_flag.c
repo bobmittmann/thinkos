@@ -242,7 +242,7 @@ void __thinkos_flag_give_i(uint32_t wq)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r0 = 0;
+	__thinkos_thread_r0_set(th, 0);
 #endif
 #if THINKOS_ENABLE_THREAD_STAT
 	/* update status */

@@ -35,7 +35,7 @@ void monitor_thread_destroy(int thread_id)
 {
 	thread_id = (thread_id > 0) ? thread_id - 1 : 0;
 
-	if (thinkos_rt.ctx[thread_id] == NULL) {
+	if (!__thinkos_thread_ctx_is_valid(thread_id)) {
 		return;
 	}
 
@@ -52,7 +52,7 @@ int monitor_thread_create(int (* func)(void *), void * arg,
 	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
 	struct thinkos_context * ctx;
 
-	if (thinkos_rt.ctx[thread_id] != NULL) {
+	if (__thinkos_thread_ctx_is_valid(thread_id)) {
 		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
 				 thread_id + 1, thinkos_rt.ctx[thread_id]);
 

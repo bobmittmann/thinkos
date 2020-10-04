@@ -28,7 +28,7 @@ bool __thinkos_thread_isfaulty(unsigned int th)
 	if (th >= THINKOS_THREADS_MAX)
 		return false;
 
-	if (thinkos_rt.ctx[th] == NULL)
+	if (!__thinkos_thread_ctx_is_valid(th))
 		return false;
 
 	return __bit_mem_rd(&thinkos_rt.wq_fault, th);

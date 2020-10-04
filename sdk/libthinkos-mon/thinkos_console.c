@@ -621,7 +621,7 @@ wr_again:
 			/* (2) Save the context pointer. In case an interrupt wakes up
 			   this thread before the scheduler is called, this will allow
 			   the interrupt handler to locate the return value (r0) address. */
-			thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+			__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
 
 			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 			
@@ -702,7 +702,7 @@ drain_again:
 			/* (2) Save the context pointer. In case an interrupt wakes up
 			   this thread before the scheduler is called, this will allow
 			   the interrupt handler to locate the return value (r0) address. */
-			thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+			__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
 
 			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 

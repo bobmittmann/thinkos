@@ -100,7 +100,7 @@ again:
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
 
 	/* insert into the event wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
@@ -120,9 +120,9 @@ again:
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG2(LOG_INFO, "<%d> waiting for event on %d", self, wq);
 	DCC_LOG3(LOG_INFO, "<%d> sp=%08x ctx=%p", 
-			 self, cm3_psp_get(), thinkos_rt.ctx[self]);
+			 self, cm3_psp_get(), __thinkos_thread_ctx_get(self));
 	DCC_LOG3(LOG_INFO, "<%d> ctx=%p pc=%p", 
-			 self, thinkos_rt.ctx[self], arg[6]);
+			 self, __thinkos_thread_ctx_get(self), arg[6]);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched(); 
 }
@@ -178,7 +178,7 @@ again:
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
 	pend = (volatile uint32_t)thinkos_rt.ev[no].pend;
@@ -243,7 +243,7 @@ void __thinkos_ev_raise_i(uint32_t wq, int ev)
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r0 = ev;
+	__thinkos_thread_r0_set(th, ev);
 #if THINKOS_ENABLE_THREAD_STAT
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;
@@ -376,7 +376,7 @@ again:
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r0 = ev;
+	__thinkos_thread_r0_set(th, ev);
 #if THINKOS_ENABLE_THREAD_STAT
 	/* update status */
 	thinkos_rt.th_stat[th] = 0;

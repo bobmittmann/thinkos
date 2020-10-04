@@ -39,7 +39,7 @@ void __thinkos_thread_abort(unsigned int thread_id)
 		for (j = 0; j < THINKOS_THREADS_MAX; ++j) {
 			if (j == thread_id)
 				continue;
-			if (thinkos_rt.ctx[j] == NULL)
+			if (!__thinkos_thread_ctx_is_valid(j))
 				continue;
 			/* schedule limit reevaluation */
 			if (thinkos_rt.sched_limit < thinkos_rt.sched_pri[j])
@@ -74,7 +74,7 @@ void __thinkos_thread_abort(unsigned int thread_id)
 	}
 
 	/* clear context. */
-	thinkos_rt.ctx[thread_id] = NULL;
+	__thinkos_thread_ctx_clr(thread_id);
 
 	__thinkos_suspend(thread_id);
 
@@ -156,12 +156,12 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 			DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
 			/* wakeup from the join wait queue */
 			__thinkos_wakeup(wq, th);
-			thinkos_rt.ctx[th]->r0 = code;
+			__thinkos_thread_r0_set(th, code);
 			/* wakeup all remaining threads */
 			while ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
 				DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
 				__thinkos_wakeup(wq, th);
-				thinkos_rt.ctx[th]->r0 = code;
+				__thinkos_thread_r0_set(th, code);
 			}
 			/* signal the scheduler ... */
 			__thinkos_defer_sched();

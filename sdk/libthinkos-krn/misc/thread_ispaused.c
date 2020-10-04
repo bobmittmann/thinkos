@@ -31,7 +31,7 @@ bool __thinkos_thread_ispaused(unsigned int th)
 		return false;
 	}
 
-	if (thinkos_rt.ctx[th] == NULL) {
+	if (!__thinkos_thread_ctx_is_valid(th)) {
 		DCC_LOG1(LOG_WARNING, "invalid thread %d!", th);
 		return false;
 	}

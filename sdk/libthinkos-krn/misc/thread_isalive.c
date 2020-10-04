@@ -30,7 +30,7 @@ bool __thinkos_thread_isalive(unsigned int th)
 	if (th > THINKOS_THREAD_VOID)
 		return false;
 
-	if (thinkos_rt.ctx[th] == NULL)
+	if (!__thinkos_thread_ctx_is_valid(th))
 		return false;
 #if 0
 	dead = false;

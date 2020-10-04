@@ -44,7 +44,7 @@ int __thinkos_thread_fault_code(unsigned int thread_id)
 	if (xcpt->active == thread_id)
 		return xcpt->errno;
 
-	pc = (uint16_t *)&thinkos_rt.ctx[thread_id]->pc;
+	pc = (uint16_t *)__thinkos_thread_pc_get(thread_id);
 	insn = pc[0];
 	code = insn & 0x00ff;
 
@@ -58,7 +58,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 	if (xcpt->active == thread_id)
 		return &xcpt->ctx.core;
 
-	return thinkos_rt.ctx[thread_id];
+	return __thinkos_thread_ctx_get(thread_id);
 }
 #endif
 
@@ -102,7 +102,7 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 	__thinkos_thread_fault_clr(thread_id);
 #endif
 
-	thinkos_rt.ctx[thread_id] = ctx;
+	__thinkos_thread_ctx_set(thread_id, ctx);
 
 #if 1
 	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
@@ -119,7 +119,7 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 void __thinkos_thread_inf_set(unsigned int thread_id, 
 							  const struct thinkos_thread_inf * inf)
 {
-	if (thinkos_rt.ctx[thread_id] != NULL)
+	if (__thinkos_thread_ctx_is_valid(thread_id))
 		thinkos_rt.th_inf[thread_id] = (struct thinkos_thread_inf *)inf;
 }
 #endif
@@ -157,9 +157,9 @@ void thinkos_thread_create_svc(int32_t * arg)
 		return;
 	}
 #if (THINKOS_ENABLE_SANITY_CHECK)
-	if (thinkos_rt.ctx[thread_id] != NULL) {
+	if (__thinkos_thread_ctx_is_valid(thread_id)) {
 		DCC_LOG3(LOG_ERROR, "thread %d already exists, ctx=%08x", 
-				 thread_id + 1, thinkos_rt.ctx[thread_id]);
+				 thread_id + 1, __thinkos_thread_ctx_get(thread_id));
 		return false;
 	}
 #endif 

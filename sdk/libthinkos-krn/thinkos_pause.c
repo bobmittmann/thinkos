@@ -31,7 +31,7 @@ extern const uint8_t thinkos_obj_type_lut[];
 static bool ready_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
-			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 	return true;
 }
@@ -44,7 +44,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
 			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "PC=%08x IRQ=%d ......", 
-						 thinkos_rt.ctx[thread_id]->pc, irq); 
+						 __thinkos_thread_pc_get(thread_id), irq); 
 				/* disable this interrupt source */
 				cm3_irq_enable(irq);
 				break;
@@ -52,7 +52,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		}
 	}
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
-			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_CLOCK
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
@@ -65,7 +65,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 static bool tmshare_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
-			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 
 	return true;
@@ -77,14 +77,14 @@ static bool clock_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 {
 //	if ((int32_t)(thinkos_rt.clock[thread_id] - thinkos_rt.ticks) <= 0) {
 		/* thread's clock is in the past, wakeup now. */
-//		DCC_LOG1(LOG_INFO, "timeout PC=%08x .......", thinkos_rt.ctx[thread_id]->pc); 
+//		DCC_LOG1(LOG_INFO, "timeout PC=%08x .......", __thinkos_thread_pc_get(thread_id)); 
 		/* update the thread status */
 //		thinkos_rt.th_stat[thread_id] = 0;
 		/* insert into the ready wait queue */
 //		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
 //	} else {
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
-			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 1);
 //	}
 	return true;
@@ -96,7 +96,7 @@ static bool mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 {
 	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
 
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	if (thinkos_rt.lock[mutex] == -1) {
 		thinkos_rt.lock[mutex] = thread_id;
@@ -104,7 +104,7 @@ static bool mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 		/* set the thread's return value */
-		thinkos_rt.ctx[thread_id]->r0 = 0;
+		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
 		thinkos_rt.th_stat[thread_id] = 0;
@@ -121,7 +121,7 @@ static bool mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #if THINKOS_COND_MAX > 0
 static bool cond_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
@@ -136,7 +136,7 @@ static bool semaphore_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 {
 	unsigned int sem = wq - THINKOS_SEM_BASE;
 
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	if (thinkos_rt.sem_val[sem] > 0) {
 		thinkos_rt.sem_val[sem]--;
@@ -144,7 +144,7 @@ static bool semaphore_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 		/* set the thread's return value */
-		thinkos_rt.ctx[thread_id]->r0 = 0;
+		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
 		thinkos_rt.th_stat[thread_id] = 0;
@@ -164,7 +164,7 @@ static bool evset_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	unsigned int no = wq - THINKOS_EVENT_BASE;
 	unsigned int ev;
 
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	/* check for any pending unmasked event */
 	if ((ev = __thinkos_ffs(thinkos_rt.ev[no].pend & 
@@ -174,7 +174,7 @@ static bool evset_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 		/* set the thread's return value */
-		thinkos_rt.ctx[thread_id]->r0 = 0;
+		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
 		thinkos_rt.th_stat[thread_id] = 0;
@@ -193,7 +193,7 @@ static bool flag_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 {
 	unsigned int idx = wq - THINKOS_FLAG_BASE;
 
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	if (__bit_mem_rd(thinkos_rt.flag, idx)) {
 		/* clear the signal */
@@ -202,7 +202,7 @@ static bool flag_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 		/* set the thread's return value */
-		thinkos_rt.ctx[thread_id]->r0 = 0;
+		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
 		thinkos_rt.th_stat[thread_id] = 0;
@@ -227,7 +227,7 @@ static bool gate_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	lock = __bit_mem_rd(thinkos_rt.gate, idx * 2 + 1); 
 
 	DCC_LOG3(LOG_INFO, "PC=%08x open=%d lock=%d...........", 
-			 thinkos_rt.ctx[thread_id]->pc, open, lock);
+			 __thinkos_thread_pc_get(thread_id), open, lock);
 
 	/* THINKOS_GATE_SIGNALED */
 	if (open && !lock) {
@@ -239,7 +239,7 @@ static bool gate_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 		/* set the thread's return value */
-		thinkos_rt.ctx[thread_id]->r0 = 0;
+		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
 		thinkos_rt.th_stat[thread_id] = 0;
@@ -256,7 +256,7 @@ static bool gate_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #if THINKOS_ENABLE_JOIN
 static bool join_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 	return true;
@@ -273,7 +273,7 @@ bool thinkos_console_wr_resume(unsigned int thread_id,
 #if THINKOS_ENABLE_COMM
 static bool comm_recv_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 	/* wakeup from the comm recv wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__thinkos_wakeup_return(wq, thread_id, 0);
@@ -282,7 +282,7 @@ static bool comm_recv_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 
 static bool comm_send_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 	/* wakeup from the comm send wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__thinkos_wakeup_return(wq, thread_id, 0);
@@ -293,7 +293,7 @@ static bool comm_send_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #if THINKOS_ENABLE_JOIN
 static bool canceled_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 	return true;
@@ -304,7 +304,7 @@ static bool canceled_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 static bool paused_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "invalid state: thread_id=%d PC=%08x !!!!!!",
-			 thread_id, thinkos_rt.ctx[thread_id]->pc); 
+			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 	return false;
 }
 #endif
@@ -312,7 +312,7 @@ static bool paused_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", thinkos_rt.ctx[thread_id]->pc); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
 	return false;
 }
 #endif
@@ -504,7 +504,7 @@ void thinkos_resume_svc(int32_t * arg)
 #endif
 
 #if THINKOS_ENABLE_SANITY_CHECK
-	if (thinkos_rt.ctx[thread_id] == NULL) {
+	if (!__thinkos_thread_ctx_is_valid(thread_id)) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -546,11 +546,13 @@ void thinkos_pause_svc(int32_t * arg, int self)
 #endif
 #endif
 
-	if (thinkos_rt.ctx[thread_id] == NULL) {
+#if THINKOS_ENABLE_SANITY_CHECK
+	if (!__thinkos_thread_ctx_is_valid(thread_id)) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+#endif
 
 	arg[0] = 0;
 

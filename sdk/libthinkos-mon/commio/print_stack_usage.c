@@ -47,7 +47,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	monitor_printf(comm, "\r\n");
 
 	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
-		if (rt->ctx[i] != NULL) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			monitor_printf(comm, "%3d", i + 1);
