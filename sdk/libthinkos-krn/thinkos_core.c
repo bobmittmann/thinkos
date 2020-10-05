@@ -73,12 +73,12 @@ void __thinkos_core_reset(void)
 
 	/* clear all threads excpet NULL */
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		thinkos_rt.ctx[i] = 0x00000000;
+		__thinkos_thread_ctx_clr(i);
 #if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[i] = 0; 
+		__thinkos_thread_stat_clr(i);
 #endif
 #if THINKOS_ENABLE_THREAD_INFO
-		thinkos_rt.th_inf[i] = NULL; 
+		__thinkos_thread_inf_clr(i);
 #endif
 	}
 
@@ -229,8 +229,11 @@ bool thinkos_dbgmon_active(void)
 
 bool thinkos_kernel_active(void)
 {
+#if 0
 	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
 							  SCB_SHCSR_SVCALLACT)) ? true : false;
+#endif
+	return (CM3_SCB->shcsr & (SCB_SHCSR_PENDSVACT | SCB_SHCSR_SVCALLACT)) ? true : false;
 }
 
 void thinkos_krn_userland(void)

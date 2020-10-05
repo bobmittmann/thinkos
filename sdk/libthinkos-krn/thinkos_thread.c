@@ -23,12 +23,11 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_NRT__
 #include <thinkos/nrt.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
-
 
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 int __thinkos_thread_fault_code(unsigned int thread_id)
@@ -102,7 +101,7 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 	__thinkos_thread_fault_clr(thread_id);
 #endif
 
-	__thinkos_thread_ctx_set(thread_id, ctx);
+	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
 
 #if 1
 	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
@@ -114,16 +113,6 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 #endif
 	return ctx;
 }
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-void __thinkos_thread_inf_set(unsigned int thread_id, 
-							  const struct thinkos_thread_inf * inf)
-{
-	if (__thinkos_thread_ctx_is_valid(thread_id))
-		thinkos_rt.th_inf[thread_id] = (struct thinkos_thread_inf *)inf;
-}
-#endif
-
 
 /* initialize a thread context */
 void thinkos_thread_create_svc(int32_t * arg)
@@ -235,8 +224,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 	arg[0] = thread_id + 1;
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
-	/* Notify the debug/monitor */
-	__dbgmon_signal_thread_create(thread_id);
+	/* Notify the monitor */
+	__monitor_signal_thread_create(thread_id);
 #endif
 }
 

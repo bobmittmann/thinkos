@@ -99,9 +99,7 @@ again:
 	if (((volatile uint32_t)*flags_bmp & (1 << idx)) ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		goto again;
@@ -181,9 +179,7 @@ again:
 	if (((volatile uint32_t)*flags_bmp & (1 << idx)) ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		goto again;
@@ -244,10 +240,7 @@ void __thinkos_flag_give_i(uint32_t wq)
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
-	/* update status */
-	thinkos_rt.th_stat[th] = 0;
-#endif
+	__thinkos_thread_stat_clr(th);
 }
 
 #if (THINKOS_ENABLE_I_CALLS)

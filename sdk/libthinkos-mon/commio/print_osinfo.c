@@ -31,10 +31,10 @@
 #define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
 #endif
 
-int monitor_print_osinfo(struct monitor_comm * comm)
+void monitor_print_osinfo(const struct monitor_comm * comm)
 {
 	struct thinkos_rt * rt = &thinkos_rt;
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	uint32_t cycbuf[CYCCNT_MAX];
 	uint32_t cyccnt;
 	int32_t delta;
@@ -44,7 +44,7 @@ int monitor_print_osinfo(struct monitor_comm * comm)
 	int i;
 	int j;
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	cyccnt = CM3_DWT->cyccnt;
 	delta = cyccnt - rt->cycref;
 	/* update the reference */
@@ -56,8 +56,6 @@ int monitor_print_osinfo(struct monitor_comm * comm)
 	/* reset cycle counters */
 	__thinkos_memset32(rt->cyccnt, 0, sizeof(cycbuf));
 #endif
-
-//	__thinkos_memcpy32(rt, &thinkos_rt, sizeof(struct thinkos_rt));
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -134,7 +132,7 @@ int monitor_print_osinfo(struct monitor_comm * comm)
 				monitor_printf(comm, " |      ..."); 
 			}
 #endif
-			monitor_printf(comm, " | %08x", (uint32_t)rt->ctx[i]); 
+			monitor_printf(comm, " | %08x", __thinkos_thread_sp_get(i)); 
 
 #if THINKOS_ENABLE_THREAD_STAT
 			oid = thinkos_rt.th_stat[i] >> 1;
@@ -236,7 +234,5 @@ int monitor_print_osinfo(struct monitor_comm * comm)
 			monitor_printf(comm, "\r\n");
 		}
 	}
-
-	return 0;
 }
 

@@ -28,8 +28,8 @@
 #include <sys/dcclog.h>
 #define __THINKOS_FLASH__
 #include <thinkos/flash.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
@@ -223,12 +223,13 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 1
+#define PREBOOT_TIME_SEC 2
 
 int board_preboot_task(void *ptr)
 {
 	uint32_t tick;
 
+	DCC_LOG(LOG_TRACE, "board preboot");
 	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
@@ -256,6 +257,12 @@ int board_preboot_task(void *ptr)
 
 int board_configure_task(void *ptr)
 {
+	DCC_LOG(LOG_TRACE, "board configuration");
+
+	while (!thinkos_console_is_connected())  {
+		thinkos_sleep(100);
+	}
+
 	__puts("- board configuration\r\n");
 #if 0
 	uint32_t offs = 0x0c000 + 0x4000 - 0x100;
@@ -273,6 +280,9 @@ int board_configure_task(void *ptr)
 				 IP4_ADDR4(cfg->ip_addr));
 		return false;
 	}
+
+
+
 	do {
 		dmprintf(comm, "MS/TP address > ");
 		n = dmscanf(comm, "%d", &buf.mstp_addr);
@@ -300,7 +310,15 @@ int board_configure_task(void *ptr)
 
 int board_selftest_task(void *ptr)
 {
-	__puts("- board self test\r\n");
+	DCC_LOG(LOG_TRACE, "board self test");
+//	__puts("- board self test\r\n");
+//	__thinkos_dbg_halt();
+	thinkos_sleep(100);
+	DCC_LOG(LOG_TRACE, "sleep...");
+	thinkos_sleep(100);
+	DCC_LOG(LOG_TRACE, "sleep...");
+	thinkos_sleep(100);
+
 	return 0;
 }
 
@@ -328,6 +346,7 @@ int board_default_task(void *ptr)
 {
 	uint32_t tick;
 
+	DCC_LOG(LOG_TRACE, "board default");
 	__puts("- board default\r\n");
 
 	for (tick = 0; tick < 8; ++tick) {

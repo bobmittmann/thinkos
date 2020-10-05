@@ -131,10 +131,11 @@ void __thinkos(struct thinkos_rt * rt)
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		struct thinkos_context * ctx;
 
-		if ((ctx = rt->ctx[i]) != NULL) {
+		if ((ctx = __thread_ctx_get(rt, i)) != NULL) {
 #if (THINKOS_ENABLE_THREAD_STAT)
 			DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", 
-					 i + 1, rt->th_stat[i] >> 1, (uint32_t)ctx, ctx->lr, ctx->pc);
+					 i + 1, rt->th_stat[i] >> 1, (uint32_t)ctx, 
+					 ctx->lr, ctx->pc);
 #else
 			DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", 
 					 i + 1, (uint32_t)ctx, ctx->lr, ctx->pc);

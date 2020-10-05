@@ -59,6 +59,12 @@ thinkos_krn_scheduler:
 	/* store context */
 
 thinkos_sched_get_active:
+#if 0
+	mov       r2, 1
+1:  cmp       r2, #0
+	bne       1b
+#endif
+
 	/* r3: thinkos_rt */
 	ldr.n     r3, .L_thinkos_rt
 	/* get the active (current) thread and the ready bitmap */
@@ -170,12 +176,12 @@ thinkos_krn_sched_ctx_restore:
 .L_exit_tab:
 	.byte    ((.L_exit_krn - .L_exit_tab)/2) /* 0 */
 	.byte    ((.L_exit_usr - .L_exit_tab)/2) /* 1 */
-	.byte    ((.L_exit_err - .L_exit_tab)/2) /* 2 */
-	.byte    ((.L_exit_err - .L_exit_tab)/2) /* 3 */
-	.byte    ((.L_exit_err - .L_exit_tab)/2) /* 4 */
-	.byte    ((.L_exit_usr - .L_exit_tab)/2) /* 5 */
-	.byte    ((.L_exit_err - .L_exit_tab)/2) /* 6 */
-	.byte    ((.L_exit_err - .L_exit_tab)/2) /* 7 */
+	.byte    ((.L_exit_err2 - .L_exit_tab)/2) /* 2 */
+	.byte    ((.L_exit_usr - .L_exit_tab)/2) /* 3 */
+	.byte    ((.L_exit_err4 - .L_exit_tab)/2) /* 4 */
+	.byte    ((.L_exit_err5 - .L_exit_tab)/2) /* 5 */
+	.byte    ((.L_exit_err6 - .L_exit_tab)/2) /* 6 */
+	.byte    ((.L_exit_ufp - .L_exit_tab)/2) /* 7 */
 
 	.align	 1
 .L_exit_ufp:
@@ -238,13 +244,28 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_idle_stack_fault:
-	nop
+	mov      lr, r0
 	b        .L_idle_stack_fault
 
-.L_exit_err:
-	nop
-	nop
-	b        .L_exit_err
+.L_exit_err1:
+	mov      lr, r1
+	b        .L_exit_err1
+
+.L_exit_err2:
+	mov      lr, r2
+	b        .L_exit_err2
+
+.L_exit_err4:
+	mov      lr, r4
+	b        .L_exit_err4
+
+.L_exit_err5:
+	mov      lr, r5
+	b        .L_exit_err5
+
+.L_exit_err6:
+	mov      lr, r6
+	b        .L_exit_err6
 
 	.align  0
 .L_thinkos_rt:

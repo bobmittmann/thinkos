@@ -832,7 +832,7 @@ void __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 	uint32_t sigset = thinkos_monitor_rt.events;
 	uint32_t sigmsk = thinkos_monitor_rt.mask;
 
-	DCC_LOG1(LOG_MSG, "sigset=%08x", sigset);
+	DCC_LOG1(LOG_JABBER, "sigset=%08x", sigset);
 
 	/* read SCB Debug Fault Status Register */
 

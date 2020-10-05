@@ -101,7 +101,8 @@ again:
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 	/* insert into the gate wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
@@ -110,9 +111,7 @@ again:
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		goto again;
@@ -199,7 +198,8 @@ again:
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 	/* insert into the gate wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
@@ -208,9 +208,7 @@ again:
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		DCC_LOG1(LOG_INFO, "<%d> again.", self);
@@ -345,10 +343,8 @@ again:
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);
 #endif
-#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
-	thinkos_rt.th_stat[th] = 0;
-#endif
+	__thinkos_thread_stat_clr(th);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
@@ -420,10 +416,8 @@ again:
 #endif
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);
-#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
-	thinkos_rt.th_stat[th] = 0;
-#endif
+	__thinkos_thread_stat_clr(th);
 }
 
 #if (THINKOS_ENABLE_I_CALLS)

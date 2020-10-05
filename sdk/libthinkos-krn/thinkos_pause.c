@@ -79,7 +79,7 @@ static bool clock_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		/* thread's clock is in the past, wakeup now. */
 //		DCC_LOG1(LOG_INFO, "timeout PC=%08x .......", __thinkos_thread_pc_get(thread_id)); 
 		/* update the thread status */
-//		thinkos_rt.th_stat[thread_id] = 0;
+//		__thinkos_thread_stat_clr(thread_id);
 		/* insert into the ready wait queue */
 //		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
 //	} else {
@@ -107,7 +107,7 @@ static bool mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
@@ -147,7 +147,7 @@ static bool semaphore_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_CLOCK
@@ -177,7 +177,7 @@ static bool evset_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
@@ -205,7 +205,7 @@ static bool flag_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 	} else { 
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
@@ -242,7 +242,7 @@ static bool gate_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_r0_set(thread_id, 0);
 #endif
 		/* update status */
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 	} else { 
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
 #if THINKOS_ENABLE_TIMED_CALLS

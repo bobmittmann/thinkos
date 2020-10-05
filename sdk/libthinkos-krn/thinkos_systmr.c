@@ -35,12 +35,12 @@ _Pragma ("GCC optimize (\"Ofast\")")
 static void __thinkos_time_wakeup(int thread_id) 
 {
 #if THINKOS_ENABLE_THREAD_STAT
-	int stat;
+	int wq;
 	/* update the thread status */
-	stat = thinkos_rt.th_stat[thread_id];
-	thinkos_rt.th_stat[thread_id] = 0;
+	wq = __thinkos_thread_stat_wq_get(thread_id);
+	__thinkos_thread_stat_clr(thread_id);
 	/* remove from other wait queue, if any */
-	__bit_mem_wr(&thinkos_rt.wq_lst[stat >> 1], thread_id, 0);  
+	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);  
 #endif
 	/* remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);  

@@ -409,7 +409,7 @@ void __tdump(void)
 
 	DCC_LOG1(LOG_TRACE, "active thread: %d", thinkos_rt.active + 1);
 	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
-		if (thinkos_rt.ctx[i] == NULL)
+		if (!__thinkos_thread_ctx_is_valid(i))
 			continue;
 #if THINKOS_ENABLE_THREAD_INFO
 		if (thinkos_rt.th_inf[i] != NULL) {
@@ -441,13 +441,13 @@ void __tdump(void)
 		DCC_LOG5(LOG_TRACE, "....... (%2d %3d) SP=%08x PC=%08x LR=%08x", 
 				 i + 1, thinkos_rt.th_stat[i] >> 1,
 				 thinkos_rt.ctx[i], 
-				 thinkos_rt.ctx[i]->pc, 
-				 thinkos_rt.ctx[i]->lr);
+				 __thinkos_thread_pc_get(i), 
+				 __thinkos_thread_lr_get(i)); 
 #else
 		DCC_LOG4(LOG_TRACE, "....... (%2d) SP=%08x PC=%08x LR=%08x", 
 				 i + 1, thinkos_rt.ctx[i], 
-				 thinkos_rt.ctx[i]->pc, 
-				 thinkos_rt.ctx[i]->lr);
+				 __thinkos_thread_pc_get(i), 
+				 __thinkos_thread_lr_get(i)); 
 #endif
 
 

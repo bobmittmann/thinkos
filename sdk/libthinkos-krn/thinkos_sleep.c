@@ -26,9 +26,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
 #include <sys/delay.h>
-#include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_SLEEP
+#if (THINKOS_ENABLE_SLEEP)
 void thinkos_sleep_svc(int32_t * arg, int self)
 {
 	uint32_t ms = (uint32_t)arg[0];
@@ -37,26 +36,19 @@ void thinkos_sleep_svc(int32_t * arg, int self)
 	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
-
-#if THINKOS_ENABLE_THREAD_STAT
 	/* mark the thread clock enable bit */
-	thinkos_rt.th_stat[self] = (THINKOS_WQ_CLOCK << 1) + 1;
-#endif
-
-	DCC_LOG2(LOG_MSG, "<%d> waiting %d milliseconds...", self, ms);
-
+	__thinkos_thread_stat_set(self, THINKOS_WQ_CLOCK, true);
 	/* wait for event */
 	__thinkos_suspend(self);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 #else
-	DCC_LOG1(LOG_MSG, "busy wait: %d milliseconds...", ms);
 	udelay(1000 * ms);
 #endif
 }
 #endif
 
-#if THINKOS_ENABLE_ALARM
+#if (THINKOS_ENABLE_ALARM)
 void thinkos_alarm_svc(int32_t * arg, int self)
 {
 	uint32_t ms = (uint32_t)arg[0];
@@ -65,10 +57,8 @@ void thinkos_alarm_svc(int32_t * arg, int self)
 	thinkos_rt.clock[self] = ms;
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
-#if THINKOS_ENABLE_THREAD_STAT
 	/* mark the thread clock enable bit */
-	thinkos_rt.th_stat[self] = (THINKOS_WQ_CLOCK << 1) + 1;
-#endif
+	__thinkos_thread_stat_set(self, THINKOS_WQ_CLOCK, true);
 	/* wait for event */
 	__thinkos_suspend(self);
 	/* signal the scheduler ... */

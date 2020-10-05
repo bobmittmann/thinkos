@@ -377,7 +377,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 #if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
 void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_TRACE, "PC=%08x ...........", thinkos_rt.ctx[th]->pc); 
+	DCC_LOG1(LOG_TRACE, "PC=%08x ...........", __thinkos_thread_pc_get(th)); 
 	/* wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__thinkos_wakeup_return(wq, th, 0);
@@ -386,10 +386,12 @@ void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 void thinkos_console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
 	if (!tx_pipe_isempty()) {
-		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..", thinkos_rt.ctx[th]->pc); 
+		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..",  
+				 __thinkos_thread_pc_get(th)); 
 		monitor_signal(MONITOR_TX_PIPE);
 	} else {
-		DCC_LOG1(LOG_TRACE, "PC=%08x ...........", thinkos_rt.ctx[th]->pc); 
+		DCC_LOG1(LOG_TRACE, "PC=%08x ...........",
+				 __thinkos_thread_pc_get(th)); 
 	}
 	/* wakeup from the console write wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
@@ -615,13 +617,15 @@ wr_again:
 			   itself, in case we have enabled the time sharing option. */
 			__thinkos_suspend(self);
 			/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 			thinkos_rt.th_stat[self] = wq << 1;
 #endif
 			/* (2) Save the context pointer. In case an interrupt wakes up
 			   this thread before the scheduler is called, this will allow
 			   the interrupt handler to locate the return value (r0) address. */
-			__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+			__thinkos_thread_ctx_set(self, 
+									 (struct thinkos_context *)&arg[-CTX_R0],
+									 CONTROL_SPSEL | CONTROL_nPRIV);
 
 			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 			
@@ -629,7 +633,7 @@ wr_again:
 			   If this is the case roll back and restart. */
 			if (!tx_pipe_isfull()) {
 				/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 				thinkos_rt.th_stat[self] = 0;
 #endif
 				/* insert into the ready wait queue */
@@ -644,7 +648,7 @@ wr_again:
 			   If this is the case roll back and restart. */
 			if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
 				/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 				thinkos_rt.th_stat[self] = 0;
 #endif
 				/* insert into the ready wait queue */

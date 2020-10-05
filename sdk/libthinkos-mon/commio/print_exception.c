@@ -45,6 +45,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #endif
 	uint32_t sp;
 	uint32_t ret;
+	uint32_t ctrl;
 	int ipsr;
 
 	monitor_printf(comm, " Error %d at ", xcpt->errno);
@@ -80,8 +81,9 @@ void monitor_print_exception(const struct monitor_comm * comm,
 	ret = 0xffffff00 | (xcpt->ret & 0xff);
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 #endif
+	ctrl = xcpt->ctrl;
 
-	monitor_print_context(comm, &xcpt->ctx.core, sp);
+	monitor_print_context(comm, &xcpt->ctx.core, sp, ctrl);
 						
 	monitor_printf(comm, " ret=%08x [ %s ] PSP=%08x MSP=%08x\r\n", 
 				  ret, __retstr(ret), xcpt->psp, xcpt->msp);

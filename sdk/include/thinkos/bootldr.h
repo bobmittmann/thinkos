@@ -190,24 +190,6 @@ int monitor_ymodem_rcv_pkt(const struct monitor_comm * comm,
 
 void monitor_console_io_task(const struct monitor_comm * comm);
 
-void monitor_print_thread(const struct monitor_comm * comm, 
-					   unsigned int thread_id);
-
-void monitor_print_context(const struct monitor_comm * comm, 
-						const struct thinkos_context * ctx, 
-						uint32_t sp);
-
-void monitor_print_exception(const struct monitor_comm * comm, 
-						  struct thinkos_except * xcpt);
-
-int monitor_print_osinfo(const struct monitor_comm * comm);
-
-void monitor_print_alloc(const struct monitor_comm * comm);
-
-void monitor_print_stack_usage(const struct monitor_comm * comm);
-
-
-
 int monitor_ymodem_flash(const struct monitor_comm * comm,
 						uint32_t addr, unsigned int size);
 

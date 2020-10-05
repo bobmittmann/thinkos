@@ -148,7 +148,8 @@ again:
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 
 	/* insert into the event wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
@@ -157,9 +158,7 @@ again:
 	 If this is the case roll back and restart. */
 	if ((volatile uint32_t)thinkos_rt.sem_val[sem] > 0) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		DCC_LOG2(LOG_WARNING, "<%d> rollback 1 %d...", self, wq);
@@ -169,9 +168,7 @@ again:
 	queue |= (1 << self);
 	if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		DCC_LOG2(LOG_WARNING, "<%d> rollback 2 %d...", self, wq);
@@ -226,15 +223,14 @@ again:
 	/* update status, mark the thread clock enable bit */
 	thinkos_rt.th_stat[self] = (wq << 1) + 1;
 #endif
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 	queue |= (1 << self);
 	if (((volatile uint32_t)thinkos_rt.sem_val[sem] > 0) ||
 		__strex(&thinkos_rt.wq_lst[wq], queue)) {
 		/* roll back */
-#if THINKOS_ENABLE_THREAD_STAT
-		thinkos_rt.th_stat[self] = 0;
-#endif
+		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
 		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
 		goto again;
@@ -288,10 +284,8 @@ void __thinkos_sem_post_i(uint32_t wq)
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);
 #endif
-#if THINKOS_ENABLE_THREAD_STAT
 	/* update status */
-	thinkos_rt.th_stat[th] = 0;
-#endif
+	__thinkos_thread_stat_clr(th);
 }
 
 #if (THINKOS_ENABLE_I_CALLS)

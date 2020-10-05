@@ -30,7 +30,7 @@ extern const char __xcpt_name_lut[16][12];
 
 void monitor_print_context(const struct monitor_comm * comm, 
 						  const struct thinkos_context * ctx, 
-						  uint32_t sp)
+						  uint32_t sp, uint32_t ctrl)
 {
 	uint32_t xpsr = ctx->xpsr;
 	int ipsr;
@@ -59,7 +59,7 @@ void monitor_print_context(const struct monitor_comm * comm,
 				 ipsr, __xcpt_name_lut[ipsr]);
 	} else {
 		monitor_printf(comm, " xpsr=%08x [N=%c Z=%c C=%c V=%c Q=%c "
-				 "ICI/IT=%02x GE=%d IPSR=%d (IRQ %d) ]\r\n", 
+				 "ICI/IT=%02x GE=%d IPSR=%d (IRQ %d)]\r\n", 
 				 xpsr,
 				 ((xpsr >> 31) & 0x01) + '0',
 				 ((xpsr >> 30) & 0x01) + '0',
@@ -70,6 +70,18 @@ void monitor_print_context(const struct monitor_comm * comm,
 				 ((xpsr >> 16) & 0x0f),
 				 ipsr, ipsr - 16);
 	}
+#if (THINKOS_ENABLE_FPU) 
+	monitor_printf(comm, " control=%08x [FPCA=%c SPSEL=%c nPRIV=%c]\r\n",
+				   ctrl,
+				   ((ctrl >> 2) & 0x01) + '0',
+				   ((ctrl >> 1) & 0x01) + '0',
+				   ((ctrl >> 0) & 0x01) + '0');
+#else
+	monitor_printf(comm, " control=%08x [SPSEL=%c nPRIV=%c]\r\n",
+				   ctrl,
+				   ((ctrl >> 1) & 0x01) + '0',
+				   ((ctrl >> 0) & 0x01) + '0');
+#endif
 }
 
 

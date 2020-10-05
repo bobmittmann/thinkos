@@ -23,8 +23,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_DEBUG__
 #include <thinkos/debug.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
@@ -133,7 +133,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		/* update the thread status */
 		stat = thinkos_rt.th_stat[thread_id];
 		DCC_LOG1(LOG_INFO, "wq=%d", stat >> 1); 
-		thinkos_rt.th_stat[thread_id] = 0;
+		__thinkos_thread_stat_clr(thread_id);
 		/* remove from other wait queue, if any */
 		__bit_mem_wr(&thinkos_rt.wq_lst[stat >> 1], thread_id, 0);  
 	}
@@ -172,7 +172,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	__thinkos_thread_abort(thread_id);
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
-	__dbgmon_signal_thread_terminate(thread_id, code);
+	__monitor_signal_thread_terminate(thread_id, code);
 #endif
 }
 #endif /* THINKOS_ENABLE_TERMINATE */

@@ -1348,7 +1348,6 @@ is_connected:
 		}
 		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
-
 }
 
 

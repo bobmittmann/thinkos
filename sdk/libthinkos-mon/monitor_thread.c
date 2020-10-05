@@ -54,7 +54,7 @@ int monitor_thread_create(int (* func)(void *), void * arg,
 
 	if (__thinkos_thread_ctx_is_valid(thread_id)) {
 		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
-				 thread_id + 1, thinkos_rt.ctx[thread_id]);
+				 thread_id + 1, __thinkos_thread_ctx_get(thread_id));
 
 		DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
 		__thinkos_thread_abort(thread_id);

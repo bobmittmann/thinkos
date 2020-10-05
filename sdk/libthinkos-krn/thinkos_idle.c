@@ -253,7 +253,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 			"IDE ctx=%08x" _ATTR_POP_, ctx);
 #endif
 
-	__thinkos_thread_ctx_set(THINKOS_THREAD_IDLE, ctx);
+	__thinkos_thread_ctx_set(THINKOS_THREAD_IDLE, ctx, 0);
 
 	return ctx;
 }

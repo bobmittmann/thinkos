@@ -112,7 +112,7 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	} 
 #endif
 
-	__thinkos_thread_ctx_set(id, ctx);
+	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
 
 #if 0
 	/* Invoke the scheduler */

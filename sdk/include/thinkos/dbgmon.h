@@ -257,21 +257,6 @@ bool dbgmon_breakpoint_disable(uint32_t addr);
  *  Debug/Monitor thread API
  * ----------------------------------------------------------------------------
  */
-static inline void __dbgmon_signal_thread_create(int thread_id) {
-	register int r0 asm("r0") = (int)thread_id;
-	asm volatile ("udf %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_CREATE), 
-				  "r"(r0) : );
-}
-
-static inline void __dbgmon_signal_thread_terminate(int thread_id, int code) {
-	register int r0 asm("r0") = (int)thread_id;
-	register int r1 asm("r1") = (int)code;
-	asm volatile ("udf %0 \n" : : "I" (DBGMON_BKPT_ON_THREAD_TERMINATE), 
-				  "r"(r0), "r"(r1) );
-}
-
-int dbgmon_thread_terminate_get(int * code);
-
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf);
 
 int dbgmon_thread_break_get(void);

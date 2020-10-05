@@ -245,7 +245,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 			req = (struct flash_op_req *)__thinkos_thread_r0_get(th);
 			opc = req->opc;
 			DCC_LOG2(LOG_TRACE, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
-					 thinkos_rt.ctx[th]->r0);
+					 __thinkos_thread_r0_get(th));
 
 			if ((opc == THINKOS_FLASH_MEM_OPEN) && (drv->ropen || drv->wopen)) {
 				DCC_LOG(LOG_WARNING, "already open");
@@ -292,7 +292,8 @@ void thinkos_flash_mem_svc(int32_t * arg, int self)
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0]);
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 

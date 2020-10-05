@@ -234,16 +234,18 @@ bool monitor_breakpoint_disable(uint32_t addr);
  * ----------------------------------------------------------------------------
  */
 static inline void __monitor_signal_thread_create(int thread_id) {
-	register int r0 asm("r0") = (int)thread_id;
-	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_CREATE), 
-				  "r"(r0) : );
+//	register int r0 asm("r0") = (int)thread_id;
+	monitor_signal(MONITOR_THREAD_CREATE);
+//	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_CREATE), 
+//				  "r"(r0) : );
 }
 
 static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
-	register int r0 asm("r0") = (int)thread_id;
-	register int r1 asm("r1") = (int)code;
-	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_TERMINATE), 
-				  "r"(r0), "r"(r1) );
+//	register int r0 asm("r0") = (int)thread_id;
+//	register int r1 asm("r1") = (int)code;
+	monitor_signal(MONITOR_THREAD_TERMINATE);
+//	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_TERMINATE), 
+//				  "r"(r0), "r"(r1) );
 }
 
 /* flags the monitor schedule */
@@ -379,9 +381,14 @@ void monitor_hexdump(const struct monitor_comm * comm,
                     const struct mem_desc * mem,
                     uint32_t addr, unsigned int size);
 
+void monitor_print_osinfo(const struct monitor_comm * comm);
+
+void monitor_print_thread(const struct monitor_comm * comm, 
+						 unsigned int thread_id);
+
 void monitor_print_context(const struct monitor_comm * comm, 
-                          const struct thinkos_context * ctx, 
-                          uint32_t sp);
+						  const struct thinkos_context * ctx, 
+						  uint32_t sp, uint32_t ctrl);
 
 void monitor_print_exception(const struct monitor_comm * comm, 
                             struct thinkos_except * xcpt);
@@ -390,6 +397,8 @@ void monitor_print_profile(const struct monitor_comm * comm,
                           const struct thinkos_profile * p);
 
 void monitor_print_alloc(const struct monitor_comm * comm);
+
+void monitor_print_stack_usage(const struct monitor_comm * comm);
 
 void __thinkos_monitor_isr(void);
 

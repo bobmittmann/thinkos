@@ -63,6 +63,8 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	int sched_val;
 	int sched_pri;
 #endif
+	uint32_t ctrl;
+	uint32_t sp;
 	int type;
 	int tmw;
 	int wq;
@@ -155,7 +157,9 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	monitor_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
 	ctx = __thinkos_thread_ctx_get(thread_id);
-	monitor_print_context(comm, ctx, (uint32_t)ctx);
+	sp = __thinkos_thread_sp_get(thread_id);
+	ctrl = __thinkos_thread_ctrl_get(thread_id);
+	monitor_print_context(comm, ctx, sp, ctrl);
 
 	monitor_printf(comm, "\r\n");
 }
