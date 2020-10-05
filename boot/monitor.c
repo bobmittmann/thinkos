@@ -969,7 +969,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 		case MONITOR_APP_EXEC:
 			monitor_clear(MONITOR_APP_EXEC);
 #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_console_raw_mode_set(raw_mode = false);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			monitor_printf(comm, "Starting application @ 0x%08x\r\n",
@@ -1002,7 +1002,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 		case MONITOR_APP_TERM:
 			monitor_clear(MONITOR_APP_TERM);
   #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_console_raw_mode_set(raw_mode = false);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
 			break;
@@ -1057,7 +1057,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 				preboot = true;
 				monitor_signal(MONITOR_USER_EVENT2);
 			} else if (preboot) {
-				DCC_LOG(LOG_TRACE, "/!\\ Preboot !!!");
+				DCC_LOG1(LOG_TRACE, "/!\\ Preboot, code=%d !!!", code);
 				preboot = false;
 #endif
 				if (code >= 0) {
@@ -1072,7 +1072,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_clear(MONITOR_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault.");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_console_raw_mode_set(raw_mode = false);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			monitor_on_thread_fault(comm);
 			break;
@@ -1082,7 +1082,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_clear(MONITOR_KRN_EXCEPT);
 			DCC_LOG(LOG_TRACE, "System exception.");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_console_raw_mode_set(raw_mode = false);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			monitor_on_krn_except(comm);
 			break;
@@ -1091,7 +1091,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 		case MONITOR_BREAKPOINT:
 			monitor_clear(MONITOR_BREAKPOINT);
   #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_console_raw_mode_set(raw_mode = false);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			monitor_on_bkpt(&monitor);
 			break;
@@ -1109,7 +1109,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			DCC_LOG(LOG_MSG, "COMM_RCV: +++++++++++++++++");
 #if (THINKOS_ENABLE_CONSOLE)
   #if (THINKOS_ENABLE_CONSOLE_MODE)
-			raw_mode = thinkos_console_is_raw_mode();
+			raw_mode = thinkos_krn_console_is_raw_mode();
 			if (raw_mode) {
 				goto raw_mode_recv;
 			}

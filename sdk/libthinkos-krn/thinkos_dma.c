@@ -209,7 +209,8 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the cycle counter (r1) address. */
-	thinkos_rt.ctx[self] = (struct thinkos_context *)&arg[-CTX_R0];
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+							 CONTROL_SPSEL | CONTROL_nPRIV);
 #endif
 
 	/* remove from ready Q */

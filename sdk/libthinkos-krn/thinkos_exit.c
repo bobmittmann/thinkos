@@ -172,7 +172,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	__thinkos_thread_abort(thread_id);
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
-	__monitor_signal_thread_terminate(thread_id, code);
+	monitor_signal_thread_terminate(thread_id, code);
 #endif
 }
 #endif /* THINKOS_ENABLE_TERMINATE */
@@ -214,5 +214,4 @@ void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
 }
 
 #endif /* THINKOS_ENABLE_EXIT */
-
 

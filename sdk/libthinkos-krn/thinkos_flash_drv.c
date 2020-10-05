@@ -36,10 +36,11 @@
 _Pragma ("GCC optimize (\"Os\")")
 #endif
 #include <thinkos.h>
-
-#include <sys/param.h>
-#include <sys/dcclog.h>
 #include <stdbool.h>
+#include <sys/param.h>
+#include <sys/delay.h>
+
+#include <sys/dcclog.h>
 
 #if 0
 int32_t genkey_lcg24(int32_t key)
@@ -122,6 +123,9 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 
 	opc = req->opc;
 	DCC_LOG1(LOG_TRACE, "opc=%d!", opc);
+#if DEBUG
+	udelay(0x8000);
+#endif
 
 	if (opc == THINKOS_FLASH_MEM_OPEN) {
 		int ret;
@@ -136,9 +140,6 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 		drv->partition.size = (1 << blk->siz) * blk->cnt;
 		drv->wopen = (blk->opt & M_RO) ? 0 : 1;
 		drv->ropen = 1;
-		//		asm("movs r3, #1\n"
-		//			"1: cmp r3, #0\n"
-		//			"bne 1b\n" : : : "r3");
 		DCC_LOG2(LOG_TRACE, "open(tag=\"%s\") --> key=%d", req->tag, ret);
 		return ret;
 	} 
@@ -207,7 +208,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 void thinkos_flash_drv_init(struct thinkos_flash_drv * drv, 
 							const struct thinkos_flash_desc * desc)
 {
-	DCC_LOG(LOG_TRACE, "flash_drv init...");
+	DCC_LOG2(LOG_TRACE, "flash_drv_init(drv=%08x desc=%08x)...", drv, desc);
 
 	drv->wopen = 0;
 	drv->ropen = 0;
@@ -226,6 +227,9 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 			req = &drv->krn_req;
 
 			DCC_LOG1(LOG_TRACE, "flash_drv tasklet kernel req=%08x .", req);
+#if DEBUG
+			udelay(0x8000);
+#endif
 
 			req->ret = thinkos_flash_drv_req(drv, desc, req);
 			req->opc = THINKOS_FLASH_MEM_NOP;
@@ -234,6 +238,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 			return;
 	}
 #endif 
+
 	{
 		unsigned int wq = THINKOS_WQ_FLASH_MEM;
 		int th = __thinkos_wq_head(wq);
@@ -242,10 +247,13 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 		if (th != THINKOS_THREAD_NULL) {
 			int opc;
 
-			req = (struct flash_op_req *)__thinkos_thread_r0_get(th);
-			opc = req->opc;
-			DCC_LOG2(LOG_TRACE, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
+			DCC_LOG2(LOG_YAP, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
 					 __thinkos_thread_r0_get(th));
+
+			req = (struct flash_op_req *)__thinkos_thread_frame_get(th);
+			opc = req->opc;
+
+			DCC_LOG2(LOG_TRACE, "<%d> opc=%d", th + 1, opc);
 
 			if ((opc == THINKOS_FLASH_MEM_OPEN) && (drv->ropen || drv->wopen)) {
 				DCC_LOG(LOG_WARNING, "already open");
@@ -257,20 +265,23 @@ void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv,
 			} else if ((opc == THINKOS_FLASH_MEM_READ) && (!drv->ropen)) {
 				DCC_LOG(LOG_WARNING, "not open for read");
 				ret = THINKOS_EPERM;
-			} else if (!drv->wopen) {
+			} else if ((opc == THINKOS_FLASH_MEM_WRITE) && (!drv->wopen)) {
 				DCC_LOG(LOG_WARNING, "not open for write");
 				ret = THINKOS_EPERM;
 			} else {
 				ret = thinkos_flash_drv_req(drv, desc, req);
 			}
 
-			/* wakeup from the mutex wait queue */
+			/* wakeup from the flash wait queue */
 			__thinkos_wakeup_return(wq, th, ret);
 			/* signal the scheduler ... */
 			__thinkos_defer_sched();
 		} else {
-			DCC_LOG(LOG_YAP, "flash_drv: no waiting threads!");
+			DCC_LOG(LOG_TRACE, "flash_drv: no waiting threads!");
 		}
+#if DEBUG
+		udelay(0x8000);
+#endif
 	}
 }
 
@@ -280,6 +291,8 @@ void thinkos_flash_mem_svc(int32_t * arg, int self)
 	
 #if THINKOS_ENABLE_ARG_CHECK
 #endif
+	DCC_LOG2(LOG_YAP, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
+
 	/* schedule the IDLE hook ... */
 	__idle_hook_req(IDLE_HOOK_FLASH_MEM);
 	/* insert into the flash wait queue */
@@ -296,10 +309,6 @@ void thinkos_flash_mem_svc(int32_t * arg, int self)
 							 CONTROL_SPSEL | CONTROL_nPRIV);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
-
-	asm("movs r3, #1\n"
-		"1: cmp r3, #0\n"
-		"bne 1b\n" : : : "r3");
 }
 
 const char thinkos_flash_mem_nm[] = "FMM";

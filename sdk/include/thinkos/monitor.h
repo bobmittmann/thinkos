@@ -256,6 +256,8 @@ static inline void __attribute__((always_inline)) __thinkos_monitor_setpend(void
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
+void monitor_signal_thread_terminate(int thread_id, int code);
+
 int monitor_thread_terminate_get(int * code);
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);

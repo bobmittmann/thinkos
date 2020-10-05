@@ -853,6 +853,11 @@ __thinkos_thread_r0_get(unsigned int th) {
 	return __thinkos_thread_ctx_get(th)->r0;
 }
 
+static inline uint32_t * __attribute__((always_inline)) 
+__thinkos_thread_frame_get(unsigned int th) {
+	return (uint32_t *)&__thinkos_thread_ctx_get(th)->r0;
+}
+
 static inline uint32_t __attribute__((always_inline)) 
 __thinkos_thread_pc_get(unsigned int th) {
 	return __thinkos_thread_ctx_get(th)->pc;

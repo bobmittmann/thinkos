@@ -346,11 +346,24 @@ int monitor_thread_terminate_get(int * code)
 	if ((thread_id = thinkos_monitor_rt.thread_id) >= 0) {
 		if (code != NULL) {
 			*code = thinkos_monitor_rt.code;
+
 		}
 	}
 
 	return thread_id;
 }
+ 
+void monitor_signal_thread_terminate(int thread_id, int code) 
+{
+//	register int r0 asm("r0") = (int)thread_id;
+//	register int r1 asm("r1") = (int)code;
+	thinkos_monitor_rt.thread_id = thread_id;
+	thinkos_monitor_rt.code = code;
+	monitor_signal(MONITOR_THREAD_TERMINATE);
+//	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_TERMINATE), 
+//				  "r"(r0), "r"(r1) );
+}
+
 
 static inline void __monitor_task_reset(void)
 {

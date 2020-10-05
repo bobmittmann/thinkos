@@ -99,8 +99,8 @@ static const struct magic_blk bootloader_magic = {
 static void bootloader_yflash(const struct monitor_comm * comm)
 {
 
-//	stm32_gpio_clr(IO_LED1);
-//	stm32_gpio_clr(IO_LED2);
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_clr(IO_LED2);
 
 	yflash(0, 32768, &bootloader_magic);
 }
@@ -135,11 +135,11 @@ void io_init(void)
 	stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
 
 	/* - LEDs ---------------------------------------------------------*/
-//	stm32_gpio_clr(IO_LED1);
-//	stm32_gpio_mode(IO_LED1, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_mode(IO_LED1, OUTPUT, PUSH_PULL | SPEED_LOW);
 
-//	stm32_gpio_clr(IO_LED2);
-//	stm32_gpio_mode(IO_LED2, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_LED2);
+	stm32_gpio_mode(IO_LED2, OUTPUT, PUSH_PULL | SPEED_LOW);
 
 	/* - LEDs ---------------------------------------------------------*/
     stm32_gpio_mode(IO_RS485_RX, INPUT, PULL_UP);
@@ -223,35 +223,42 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 2
+#define PREBOOT_TIME_SEC 1
 
 int board_preboot_task(void *ptr)
 {
+#if 0
 	uint32_t tick;
 
 	DCC_LOG(LOG_TRACE, "board preboot");
 	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
-	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
-		thinkos_sleep(250);
+	for (tick = 0; tick < 8*PREBOOT_TIME_SEC; ++tick) {
+		thinkos_sleep(125);
 
 		__puts(".");
 
-		switch (tick & 0x3) {
+		switch (tick & 0x7) {
 		case 0:
-//			stm32_gpio_clr(IO_LED1);
+			stm32_gpio_clr(IO_LED1);
 			break;
 		case 1:
-//			stm32_gpio_clr(IO_LED2);
+			stm32_gpio_clr(IO_LED2);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED1);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED2);
 			break;
 		}
 	}
 
 	thinkos_sleep(250);
-//	stm32_gpio_clr(IO_LED1);
-//	stm32_gpio_clr(IO_LED2);
-
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_clr(IO_LED2);
+#endif
 	return 0;
 }
 
@@ -344,35 +351,15 @@ void write_fault(void)
 
 int board_default_task(void *ptr)
 {
-	uint32_t tick;
-
-	DCC_LOG(LOG_TRACE, "board default");
-	__puts("- board default\r\n");
-
-	for (tick = 0; tick < 8; ++tick) {
-		thinkos_sleep(128);
-
-		switch (tick & 0x7) {
-		case 0:
-			stm32_gpio_clr(IO_LED1);
-			break;
-		case 1:
-			stm32_gpio_clr(IO_LED2);
-			break;
-		case 2:
-			stm32_gpio_set(IO_LED1);
-			break;
-		case 3:
-			stm32_gpio_set(IO_LED2);
-			break;
-		}
-	}
-
 	int x;
+
+	DCC_LOG(LOG_TRACE, "thinkos_flash_mem_open");
 	x = thinkos_flash_mem_open("BOOT");
+	
+	DCC_LOG(LOG_TRACE, "thinkos_flash_mem_close");
 	thinkos_flash_mem_close(x);
 
-#if 0
+#if 1
 	char buf[128];
 
 	__puts("- FLASH test\r\n");

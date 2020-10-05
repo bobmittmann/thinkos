@@ -27,6 +27,9 @@
 #error "Never use <thinkos/flash.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
+#define __THINKOS_PROFILE__
+#include <thinkos/profile.h>
+
 #include <sys/memory.h>
 #include <sys/flash-dev.h>
 

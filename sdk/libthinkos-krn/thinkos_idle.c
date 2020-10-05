@@ -46,9 +46,6 @@
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-#endif
-
-#if (THINKOS_ENABLE_IDLE_HOOKS)
 void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_idle_rt * idle)
 #else
 void __attribute__((noreturn, naked)) thinkos_idle_task(void)
@@ -264,7 +261,7 @@ void __thinkos_idle_init(void)
 	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 			"IDLE stack=%08x" _ATTR_POP_, THINKOS_IDLE_STACK_BASE);
 
-#if THINKOS_ENABLE_STACK_INIT
+#if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize idle stack */
 	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 
 					   THINKOS_IDLE_STACK_SIZE);
