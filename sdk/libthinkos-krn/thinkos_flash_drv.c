@@ -123,8 +123,8 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
 	uint32_t start_ticks;
 	int32_t dt;
 
-	seq = *dev->op->erase_seq.seq;
-	stat = flash_dev_erase_prep(dev, off, count);
+	seq = *dev->op->erase.seq;
+	stat = flash_dev_erase_init(dev, off, count);
 
 	if (stat < 0)
 		return stat;

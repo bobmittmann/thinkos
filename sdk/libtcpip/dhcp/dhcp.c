@@ -492,6 +492,7 @@ static inline void tmo_reply_set(struct dhcp * dhcp)
 static void dhcp_create_request(const struct dhcp * dhcp, struct dhcp_msg * msg)
 {
 	uint16_t i;
+	uint32_t ciaddr;	/* client IP#, for BOUND, RENEW and REBINDING states */
 
 	msg->op = BOOTP_BOOTREQUEST;
 	/* TODO: make link layer independent */
@@ -507,7 +508,8 @@ static void dhcp_create_request(const struct dhcp * dhcp, struct dhcp_msg * msg)
 	case DHCP_BOUND:
 	case DHCP_RENEWING:
 	case DHCP_REBINDING:
-		ifn_ipv4_get(dhcp->ifn, &msg->ciaddr, NULL);
+		ifn_ipv4_get(dhcp->ifn, &ciaddr, NULL);
+		msg->ciaddr = ciaddr;
 		msg->flags = 0;
 		break;
 	default:

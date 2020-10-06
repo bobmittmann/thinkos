@@ -22,21 +22,27 @@
 
 PROG = tcp_test
 
+THINKOS_DIR = ../../../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
+
 CFILES = tcp_test.c zarathustra.c
 
-SDK = ../../../sdk
+LIBDIRS = $(ARCH_DIR)/libstm32f $(ARCH_DIR)/libstm32drv $(SDK_DIR)/libcm3 \
+		  $(SDK_DIR)/libc $(SDK_DIR)/libtcpip \
+		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libtty $(SDK_DIR)/libcrc 
 
-LIBDIRS = $(SDK)/libstm32f $(SDK)/libcm3 $(SDK)/libutil \
-		  $(SDK)/libc $(SDK)/libtcpip $(SDK)/libdrv \
-		  $(SDK)/libtty $(SDK)/libcrc $(SDK)/libconsole
+LIBS = gcc m util c cm3 stm32f stm32drv thinkos-usr crc tcpip tty 
 
-LIBS = cm3 stm32f util c crc drv tcpip tty console
+INCPATH = ../include .
 
-INCPATH = $(SDK)/include ..
+CDEFS = CONFIG_H 
 
-CDEFS = CONFIG_H
-CFLAGS = -g -O1 -Wall
+MACH = stm32f427xi
+LDCODE := 0x08020000
+LDDATA := 0x20001000
+THINKAPP := $(LDCODE)
+include $(ARCH_DIR)/mk/stm32.mk
 
-MACH = stm32f429
-THINKOS = 1
-include ../../../mk/stm32f4xx.mk

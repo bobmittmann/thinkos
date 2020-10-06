@@ -351,6 +351,7 @@ void write_fault(void)
 
 int board_default_task(void *ptr)
 {
+#if 0
 	int x;
 
 	DCC_LOG(LOG_TRACE, "thinkos_flash_mem_open");
@@ -359,7 +360,6 @@ int board_default_task(void *ptr)
 	DCC_LOG(LOG_TRACE, "thinkos_flash_mem_close");
 	thinkos_flash_mem_close(x);
 
-#if 1
 	char buf[128];
 
 	__puts("- FLASH test\r\n");
@@ -420,10 +420,10 @@ const struct mem_desc sram_mem = {
 	.cnt = 5,
 	.blk = {
 		{"STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
-		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
+		{"KERN",   0x20000000, M_RO, SZ_4K,  1},	 /* Bootloader: 4KiB */
 		{"DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
-		{"SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
-		{"SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
+		{"SRAM2",  0x2001c000, M_RW, SZ_16K, 1}, /* SRAM 2: 16KiB */
+		{"SRAM3",  0x20020000, M_RW, SZ_64K, 1}, /* SRAM 3: 64KiB */
 
 		{"", 0x00000000, 0, 0, 0}
 		}
@@ -434,8 +434,8 @@ const struct mem_desc flash_mem = {
 	.base = 0x08000000,
 	.cnt = 3,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
-		{"CONF", 0x00010000, M_RW, SZ_64K, 1},	/* Configuration: 64 KiB */
+		{"BOOT", 0x00000000, M_RO, SZ_16K,  4},	/* Bootloader: 64 KiB */
+		{"CONF", 0x00010000, M_RW, SZ_64K,  1},	/* Configuration: 64 KiB */
 		{"APP",  0x00020000, M_RW, SZ_128K, 7},	/* Application:  */
 		{"", 0x00000000, 0, 0, 0}
 		}

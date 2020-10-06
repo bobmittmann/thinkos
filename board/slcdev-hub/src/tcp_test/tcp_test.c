@@ -62,7 +62,7 @@ extern const char zarathustra_8[];
 extern const char zarathustra_9[];
 extern const char zarathustra_10[];
 
-const char const * zarathustra[] = {
+const char * const zarathustra[] = {
 	zarathustra_0,
 	zarathustra_1,
 	zarathustra_2,

@@ -40,6 +40,14 @@ Kernel Doc
 	:internal:
 
 
+ARM Cortex-M
+------------
+
+.. toctree::
+	:maxdepth: 2
+
+	arm_cortex-m.rst
+
 README
 ------
 
