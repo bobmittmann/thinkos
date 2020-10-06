@@ -19,30 +19,33 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+VERSION_DATE = "2020-04-05"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "1"
 
-PROG = mstp_test
-
-CFILES = freq_gen.c 
-
-THINKOS_DIR = ../../..
+PROJECT_ROOT = ../../
+THINKOS_DIR = $(PROJECT_ROOT)/../..
 SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-LIBDIRS = $(SDK_DIR)/libcm3 $(SDK_DIR)/libstm32f $(SDK_DIR)/libutil \
-	$(SDK_DIR)/libc $(SDK_DIR)/libtrace $(SDK_DIR)/libconsole \
-	$(SDK_DIR)/libstm32drv
+PROG = freq_gen
 
-LIBS = cm3 stm32f util c trace console stm32drv
-LIBPATH = ..
+CFILES = freq_gen.c
 
-INCPATH = $(SDK_DIR)/include ../include
+LIBDIRS = $(ARCH_DIR)/libstm32f $(ARCH_DIR)/libstm32drv $(SDK_DIR)/libcm3 \
+		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libc 
 
-CDEFS = CONFIG_H NDEBUG
-CFLAGS = -g -Os -Wall -fomit-frame-pointer -ffunction-sections -fdata-sections
-LDFLAGS = -Wl,--gc-sections 
+LIBS = gcc m util c cm3 stm32f stm32drv thinkos-usr 
 
-MACH = stm32f407
-THINKAPP = 1
-THINKAPP := 0x08010000
-LDSCRIPT = slcdev-hub.ld
-include $(THINKOS_DIR)/mk/stm32.mk
+INCPATH = $(PROJECT_ROOT)/src/include .
+
+CDEFS = CONFIG_H 
+
+MACH = stm32f427xi
+LDCODE := 0x08020000
+LDDATA := 0x20001000
+THINKAPP := $(LDCODE)
+include $(ARCH_DIR)/mk/stm32.mk
 

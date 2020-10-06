@@ -45,8 +45,6 @@ struct serial_dev * stm32f_uart5_serial_init(unsigned int baudrate,
 {
 	struct stm32f_serial_drv * drv = &uart5_serial_drv;
 
-	DCC_LOG(LOG_TRACE, "IDLE!");
-
 	stm32f_serial_init(drv, baudrate, flags);
 
 #ifdef THINKAPP

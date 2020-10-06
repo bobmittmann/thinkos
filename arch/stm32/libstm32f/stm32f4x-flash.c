@@ -85,7 +85,7 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 
 	page = offs >> 14;
 	if ((page << 14) != (offs)) {
-		DCC_LOG(LOG_ERROR, "offset must be a aligned to a page boundary.");
+		DCC_LOG(LOG_ERROR, "offset must be aligned to a page boundary.");
 		return -2;
 	};
 
@@ -99,7 +99,7 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 		sect = ((page - 7) / 8) + 5;
 		size = 131072;
 	} else {
-		DCC_LOG(LOG_ERROR, "offset must be a aligned to a "
+		DCC_LOG(LOG_ERROR, "offset must be aligned to a "
 				"sector boundary.");
 		return -3;
 	}
@@ -122,6 +122,8 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 
 	return size;
 }
+
+
 
 int stm32f4x_flash_write(struct stm32_flash * flash, 
 						 off_t offs, const void * buf, size_t len)
@@ -174,12 +176,97 @@ int stm32f4x_flash_read(struct stm32_flash * flash,
 	return 4;
 }
 
+struct stm32f4x_seq_state {
+	uint32_t addr;
+	uint32_t data;
+	uint32_t cr;
+};
+
+uint32_t __attribute__((section (".data#"), noinline)) 
+stm32f4x_flash_start(uint32_t cr, struct stm32_flash * flash)
+{
+	flash->cr = cr;
+
+	return flash->sr & FLASH_BSY;
+}
+
+uint32_t __attribute__((section (".data#"), noinline)) 
+stm32f4x_flash_status(uint32_t cr, struct stm32_flash * flash)
+{
+	return flash->sr & FLASH_BSY;
+}
+
+uint32_t __attribute__((section (".data#"), noinline)) 
+stm32f4x_flash_stop(uint32_t cr, struct stm32_flash * flash)
+{
+	return flash->sr & FLASH_BSY;
+}
+
+uint32_t __attribute__((section (".data#"), noinline)) 
+stm32f4x_flash_finish(uint32_t cr, struct stm32_flash * flash)
+{
+	return flash->sr & FLASH_BSY;
+}
+
+
+intptr_t stm32f4x_flash_erase_prep(struct stm32_flash * flash, 
+						 unsigned int offs, unsigned int len)
+{
+	unsigned int page;
+	unsigned int sect;
+	unsigned int size;
+	uint32_t cr;
+
+	page = offs >> 14;
+	if ((page << 14) != (offs)) {
+		DCC_LOG(LOG_ERROR, "offset must be aligned to a page boundary.");
+		return -2;
+	};
+
+	if (page < 4) {
+		sect = page;
+		size = 16384;
+	} else if (page == 4) {
+		sect = 4;
+		size = 65536;
+	} else if ((page % 8) == 0) {
+		sect = ((page - 7) / 8) + 5;
+		size = 131072;
+	} else {
+		DCC_LOG(LOG_ERROR, "offset must be aligned to a "
+				"sector boundary.");
+		return -3;
+	}
+
+	/* Clear errors */
+	flash->sr = FLASH_ERR;
+
+	DCC_LOG1(LOG_TRACE, "sector %d", sect);
+	cr = FLASH_STRT | FLASH_SER | FLASH_SNB(sect);
+
+	(void)size;
+
+	return cr;
+}
+
+
+const struct flash_dev_seq stm32f4x_flash_dev_erase_seq  = {
+	.start = (intptr_t (*)(intptr_t, void *))stm32f4x_flash_start,
+	.status = (intptr_t (*)(intptr_t, void *))stm32f4x_flash_status,
+	.stop = (intptr_t (*)(intptr_t, void *))stm32f4x_flash_stop,
+	.finish = (intptr_t (*)(intptr_t, void *))stm32f4x_flash_finish
+};
+
 const struct flash_dev_ops stm32f4x_flash_dev_ops = {
 	.write = (int (*)(void *, off_t, const void *, size_t))stm32f4x_flash_write,
 	.read = (int (*)(void *, off_t, void *, size_t))stm32f4x_flash_read,
-	.erase = (int (*)(void *, off_t, size_t count))stm32f4x_flash_erase,
-	.lock = (int (*)(void *, off_t, size_t count))stm32f4x_flash_lock,
-	.unlock = (int (*)(void *, off_t, size_t count))stm32f4x_flash_unlock
+	.erase = (int (*)(void *, off_t, size_t ))stm32f4x_flash_erase,
+	.lock = (int (*)(void *, off_t, size_t))stm32f4x_flash_lock,
+	.unlock = (int (*)(void *, off_t, size_t))stm32f4x_flash_unlock,
+	.erase_seq = {
+		.prep = (intptr_t (*)(void *, off_t, size_t)) stm32f4x_flash_erase_prep,
+		.seq = &stm32f4x_flash_dev_erase_seq
+	}
 };
 
 /* FLASH memory device object */

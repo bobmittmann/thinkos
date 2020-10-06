@@ -89,12 +89,12 @@ void io_init(void)
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOE);
 
     /* USART5 TX */
-    stm32_gpio_mode(UART5_TX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-    stm32_gpio_af(UART5_TX, GPIO_AF8);
+    stm32_gpio_mode(IO_UART5_TX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+    stm32_gpio_af(IO_UART5_TX, GPIO_AF8);
 
     /* USART5 RX */
-    stm32_gpio_mode(UART5_RX, ALT_FUNC, PULL_UP);
-    stm32_gpio_af(UART5_RX, GPIO_AF8);
+    stm32_gpio_mode(IO_UART5_RX, ALT_FUNC, PULL_UP);
+    stm32_gpio_af(IO_UART5_RX, GPIO_AF8);
 
 //    stm32_gpio_mode(UART5_TX, OUTPUT, PUSH_PULL | SPEED_LOW);
  //   stm32_gpio_set(UART5_TX);

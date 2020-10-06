@@ -160,7 +160,7 @@ ifdef PROG
       LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-app.ld
       include $(__THINKOS_DIR)/mk/prog.mk
     else
-      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-boot.ld
+      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T $(STM32)-vec.ld -T arm-elf-thinkos-boot.ld
 #      LDFLAGS += -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
 #      include $(__THINKOS_DIR)/mk/kernel.mk
       include $(__THINKOS_DIR)/mk/prog.mk

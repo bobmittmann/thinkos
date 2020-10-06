@@ -28,12 +28,23 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+struct flash_dev_seq {
+	intptr_t (* start)(intptr_t status, void * priv);
+	intptr_t (* status)(intptr_t status, void * priv);
+	intptr_t (* stop)(intptr_t status, void * priv);
+	intptr_t (* finish)(intptr_t status, void * priv);
+};
+
 struct flash_dev_ops {
 	int (* write)(void * priv, off_t offs, const void * buf, size_t count);
 	int (* read)(void * priv, off_t offs, void * buf, size_t count);
 	int (* erase)(void * priv, off_t offs, size_t count);
 	int (* lock)(void * priv, off_t offs, size_t count);
 	int (* unlock)(void * priv, off_t offs, size_t count);
+	struct {
+		intptr_t (* prep)(void * priv, off_t offs, size_t count);
+		const struct flash_dev_seq * seq;
+	} erase_seq;
 };
 
 /* FLASH memory device object */
@@ -70,6 +81,12 @@ static inline int flash_dev_unlock(const struct flash_dev * dev,
 								  off_t off, size_t count)
 {
 	return dev->op->unlock(dev->priv, off, count);
+}
+
+static inline uintptr_t flash_dev_erase_prep(const struct flash_dev * dev, 
+											 off_t off, size_t count)
+{
+	return dev->op->erase_seq.prep(dev->priv, off, count);
 }
 
 #ifdef __cplusplus

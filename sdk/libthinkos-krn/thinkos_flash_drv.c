@@ -32,9 +32,6 @@
 #define __THINKOS_FLASH__
 #include <thinkos/flash.h>
 
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
-#endif
 #include <thinkos.h>
 #include <stdbool.h>
 #include <sys/param.h>
@@ -98,6 +95,54 @@ static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem,
 	return NULL;
 }
 
+int32_t __attribute__((section (".data#"), noinline)) 
+thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
+{
+	struct cm3_systick * systick = CM3_SYSTICK;
+	uint32_t ticks;
+
+	ticks = thinkos_rt.ticks; 
+	status = seq->start(status, dev);
+	while (status > 0) {
+		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
+			ticks++;
+		status = seq->status(status, dev);
+	}
+	thinkos_rt.ticks = ticks; 
+
+	status = seq->finish(status, dev);
+	return status;
+}
+
+int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t 
+							off, size_t count)
+{
+	struct flash_dev_seq seq;
+	intptr_t stat;
+	uint32_t pri;
+	uint32_t start_ticks;
+	int32_t dt;
+
+	seq = *dev->op->erase_seq.seq;
+	stat = flash_dev_erase_prep(dev, off, count);
+
+	if (stat < 0)
+		return stat;
+
+	start_ticks = thinkos_rt.ticks; 
+
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+	stat = thinkos_flash_seq(stat, dev->priv, &seq);
+	cm3_primask_set(pri);
+
+	dt = (int32_t)(thinkos_rt.ticks - start_ticks);
+	(void)dt;
+	DCC_LOG1(LOG_TRACE, "dt = %dms", dt);
+
+	/* FIXME: experimental */
+	return count;
+}
 
 /*
    Process FLASH memory requests.
@@ -181,7 +226,8 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			break;
 		case THINKOS_FLASH_MEM_ERASE:
 			DCC_LOG2(LOG_YAP, "erase off=0x%08x rem=%d", off, rem);
-			ret = flash_dev_erase(dev, off, rem);
+			//ret = flash_dev_erase(dev, off, rem);
+			ret = thinkos_flash_drv_erase(dev, off, rem);
 			break;
 		case THINKOS_FLASH_MEM_LOCK:
 			DCC_LOG2(LOG_YAP, "lock off=0x%08x rem=%d", off, rem);
