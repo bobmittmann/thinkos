@@ -1,0 +1,8 @@
+.. -*- coding: utf-8; mode: rst -*-
+..
+..  common hyperlink targets
+
+.. _`COPYING`: https://github.com/torvalds/linux/blob/master/COPYING
+.. _`ThinkOS`: http://github.com/bobmittmann/thinkos
+.. _`ARM`: http://arm.com
+

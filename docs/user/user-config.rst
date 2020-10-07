@@ -1,6 +1,6 @@
-
-Configuration
-=============
+========================
+ User API Configuration
+========================
 
 .. default-domain:: c
 

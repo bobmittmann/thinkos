@@ -1,3 +1,5 @@
+/* parse-markup: reST */
+  
 /* 
  * thinkos.h
  *
@@ -19,7 +21,7 @@
  * http://www.gnu.org/
  */
 
-/** 
+/* 
  * @file thinkos.h
  * @brief ThinkOS API
  * @author Robinson Mittmann <bobmittmann@gmail.com>
@@ -46,8 +48,7 @@
 #include <stdint.h>
 
 /** 
- * enum thinkos_err - System call and library error codes. 
- *
+ * enum thinkos_err - System call and library error codes
  * @THINKOS_OK: No error 
  * @THINKOS_EPERM: Invalid permission 
  * @THINKOS_ENOSYS: Invalid or not implemented system call 
@@ -57,6 +58,7 @@
  * @THINKOS_EINTR: System call interrupted out 
  * @THINKOS_EINVAL: Invalid argument 
  * @THINKOS_EAGAIN: Non blocking call failed 
+ * @THINKOS_EBADF: Closing console if not open
  * @THINKOS_EDEADLK: Deadlock condition detected 
  */
 enum thinkos_err {
@@ -75,7 +77,6 @@ enum thinkos_err {
 
 /** 
  * enum thinkos_obj_kind - Kernel object class. 
- *
  * @THINKOS_OBJ_READY: Ready queue
  * @THINKOS_OBJ_TMSHARE: time share waiting queue 
  * @THINKOS_OBJ_CLOCK: clock waiting queue 
@@ -188,7 +189,6 @@ struct thinkos_thread_inf {
 
 /** 
  * struct thinkos_thread_attr - Thread attributes. 
- *
  * @stack_addr: Pointer to the base of the stack.
  * @stack_size: Size of the stak in bytes 
  * @priority: Round robin thread priority (only used if timeshared is enabled)
@@ -211,18 +211,15 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int id);
 
 /** 
  * struct thinkos_thread_init - Thread initializer. 
- *
  * @task: Task startup function.
  * @arg: Parameter to the task
  * @attr: Static thread attributes.
  */
-/*
 struct thinkos_thread_init {
 	thinkos_task_t task;
 	void * arg;
 	struct thinkos_thread_attr attr;
 };
-*/
 
 #include <thinkos/syscalls.h>
 #define __THINKOS_MEMORY__
@@ -232,132 +229,194 @@ struct thinkos_thread_init {
 extern "C" {
 #endif
 
-/** @brief thinkos_krn_init() - Initializes the @b ThinkOS kernel.
- *
- * @param opt  Optional arguments
- * @param map  Optional Memory Map
- * @param lst  Optional initial thread list
+/* ---------------------------------------------------------------------------
+ *  Kernel 
+ * ---------------------------------------------------------------------------
+ */
+
+/** 
+ * thinkos_krn_init() - Initializes the ThinkOS_ kernel.
+ * @opt:  Optional arguments
+ * @map:  Optional Memory Map
+ * @lst:  Optional initial thread list
  * 
+ * Return:
+ * %THINKOS_EFAULT in case of a hardware initialization 
+ * issue. Otherwise the thread id (number) is returned.
+ *
  * On return the current program execution thread turns into the first 
  * thread of the system. 
  *
- * @return  %THINKOS_EFAULT in case of a hardware initialization 
- * issue. Otherwise the thread id (number) is returned.
  */
+
 int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 					 const struct thinkos_thread_attr * lst[]);
 
-/** @brief Initializes the @b ThinkOS non-real-time extension.
+/**
+ * thinkos_krn_nrt_init() - Initializes the ThinkOS non-real-time extension.
  *
- * Sratrts the NRT scheduler and return it's thread id.
- * @return THINKOS_OK
+ * Starts the NRT scheduler and return it's thread id.
+ * Return:
+ * %THINKOS_OK
  */
 int	thinkos_krn_nrt_init(void);
 
-/** @brief Initializes non real-time module.
+/**
+ * thinkos_krn_mpu_init() - Initializes Memory Protection Unit (MPU).
+ * @krn_offs: Kernel RAM memory reserved space address
+ * @krn_size:  Kernel RAM memory reserved space size
  * 
  */
 void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
 
-/** @brief Switch processor to user mode.
+/**
+ * thinkos_krn_userland() - Switch processor to user mode.
  *
  */
 void thinkos_krn_userland(void);
 
-/** @brief Allocate a kernel object.
+
+/* ---------------------------------------------------------------------------
+ *  Object Allocation
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * thinkos_obj_alloc() - Allocate a kernel object.
+ * @kind: specify the objcet type.
  *
- * @return #THINKOS_ENOSYS if call is not implemented. Otherwwise a positive
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
  * integer value corresponding to the object id (handler).
  */
 int thinkos_obj_alloc(int kind);
 
-/** @brief Release a kernel object.
- *
+/**
+ * thinkos_obj_free() - Release a kernel object.
+ * @obj: the object handler.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_obj_free(int obj);
 
-/** @defgroup threads Threads
- *
- * @{
+
+/* ---------------------------------------------------------------------------
+ *  Threads
+ * ---------------------------------------------------------------------------
  */
 
-/** @brief create a new thread
+/**
+ * thinkos_thread_create() - Create a new thread
  *
- * @param task_ptr
- * @param task_arg
- * @param stack_ptr
- * @param opt 
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * @task_ptr: thread's entry point function
+ * @task_arg: argument to be passed to the entry function
+ * @stack_ptr: pointer to a stack memory block
+ * @opt: thread options 
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_thread_create(int (* task_ptr)(void *), 
-						  void * task_arg, void * stack_ptr,
-						  unsigned int opt);
+int thinkos_thread_create(thinkos_task_t task_ptr, void * task_arg, 
+						  void * stack_ptr, unsigned int opt);
 
-/** @brief create a new thread with extend information
+
+/**
+ * thinkos_thread_create_inf() - create a new thread with extend information.
+ * @task_ptr: thread's entry point function
+ * @task_arg: argument to be passed to the entry function
+ * @inf: thread information block
  *
- * @param task_ptr
- * @param task_arg
- * @param inf
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_thread_create_inf(int (* task_ptr)(void *), void * task_arg,
+int thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
 							  const struct thinkos_thread_inf * inf);
 
-/** @brief obtaind a handler for the calling thread
+
+/**
+ * thinkos_thread_self() - obtaind a handler for the calling thread.
  *
- * @return This function always succeeds, returning the calling thread's ID.
+ * Return:
+ * This function always succeeds, returning the calling thread's ID.
  */
 int thinkos_thread_self(void);
 
-/** @brief request a thread to terminate
- *
- * @param thread_id thread handler
- * @param code return code
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+/**
+ * thinkos_cancel() - request a thread to terminate.
+ * @thread_id: thread handler
+ * @code: the thread return code
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cancel(unsigned int thread_id, int code);
 
-/** @brief cause the thread to terminate
+/**
+ * thinkos_exit() - cause the calling thread to terminate.
+ * @code: the thread return code.
  *
- * @param code return code
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_exit(int code);
 
-/** @brief join with a terminated thread
+/**
+ * thinkos_abort() - abort the current thread.
  *
+ * Return:
+ * This function does not return.
+ */
+void __attribute__((noreturn)) thinkos_abort(void);
+
+/**
+ * thinkos_thread_abort() - abort the thread.
+ * @thread_id: thread handler
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ */
+int thinkos_thread_abort(unsigned int thread);
+
+
+/**
+ * thinkos_join() - join with a terminated thread.
+ * @thread_id: thread handler
+ *
+ * Description:
  * The thinkos_join() function waits for the thread specified by @p thread_id 
  * to terminate. If that thread has already terminated, then 
  * thinkos_join() returns immediately.
  *
- * @param thread_id thread handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_join(unsigned int thread_id);
 
-/** @brief pause the thread execution
+/**
+ * thinkos_pause() - pause the thread execution.
  *
- * @param thread_id thread handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * @thread_id: thread handler
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_pause(unsigned int thread_id);
 
-/** @brief resume a thread operation
+/**
+ * thinkos_resume() - resume a thread previously paused.
  *
- * @param thread_id thread handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * @thread_id: thread handler
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_resume(unsigned int thread_id);
 
 
-/** @brief causes the calling thread to relinquish the CPU.
+/**
+ * thinkos_yield() - causes the calling thread to relinquish the CPU.
+ *
  * The thread is moved to the end of the queue for its static priority 
  * and a new thread gets to run.
  */
 void thinkos_yield(void);
-
-
-/**@}*/
 
 
 /** @defgroup time Time related calls
@@ -365,338 +424,417 @@ void thinkos_yield(void);
  * @{
  */
 
-/** @brief pause for a specified amount of time
+/**
+ * thinkos_sleep() - pause for a specified amount of time.
+ * @ms: waiting time in milliseconds
  *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ *
+ * Description:
  * The thinkos_sleep() function suspends execution of the calling thread 
  * for (at least) ms milliseconds. The sleep may be lengthened slightly by 
  * any system activity or by the time spent processing the call or by the 
  * granularity of system timer.
  *
- * @param ms waiting time in milliseconds
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
 int thinkos_sleep(unsigned int ms);
 
-/** @brief retrieve the ThikOS clock time
+/**
+ * thinkos_clock() - retrieve the ThikOS clock time.
  *
+ * Return:
+ * the ThinkOS monotonic clock.
+ *
+ * Description:
  * The ThikOS clock is a tick counter with a resolution of 1 milisecond, 
  * which cannot be set and is allways running.
  * It represents monotonic time since the system power up.
-
- * @return the ThinkOS monotonic clock.
  */
 uint32_t thinkos_clock(void);
 
-/** @brief pause until a specified alarm time
+/**
+ * thinkos_alarm() - wait for an absolute clock time.
+ * @clock: time for the thread to be waked up.
  *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ *
+ * Description:
  * This function should be used in conjucntion with thinkos_clock().
- * ... 
  *
- * @param clock time for the thread to be waked up.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
  */
 int thinkos_alarm(uint32_t clock);
 
-/**@}*/
 
 
-/** @defgroup mutex Mutexes
+/** 
+ * DOC: Mutexes
  *
- * @{
+ *
  */
 
-/** @brief alloc a mutex
+/**
+ * thinkos_mutex_alloc() - alloc a mutex object.
  *
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
  */
 int thinkos_mutex_alloc(void);
 
-/** @brief release a mutex
+/**
+ * thinkos_mutex_free() - release a mutex object.
+ * @mutex: mutual exclusion handler
  *
- * @param mutex mutual exclusion handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_mutex_free(int mutex);
 
-/** @brief lock a mutex, blocking if already locked.
+/**
+ * thinkos_mutex_lock() - lock a mutex, blocking if already locked.
+ * @mutex: mutual exclusion handler
  *
- * @param mutex mutual exclusion handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_mutex_lock(int mutex);
 
-/** @brief try to lock a mutex, non blocking.
+/**
+ * thinkos_mutex_trylock() - try to lock a mutex, non blocking.
+ * @mutex: mutual exclusion handler
  *
- * @param mutex mutual exclusion handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_mutex_trylock(int mutex);
 
-/** @brief lock a mutex, blocking for limited time.
+/**
+ * thinkos_mutex_timedlock() - lock a mutex, blocking for limited time.
+ * @mutex: mutual exclusion handler
+ * @ms: waiting time in milliseconds
  *
- * @param mutex mutual exclusion handler
- * @param ms waiting time in milliseconds
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_mutex_timedlock(int mutex, unsigned int ms);
 
-/** @brief unlock the mutex
+/**
+ * thinkos_mutex_unlock() - unlock the mutex.
  *
- * @param mutex mutual exclusion handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * @mutex: mutual exclusion handler
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_mutex_unlock(int mutex);
 
-/**@}*/
 
 
-/** @defgroup cond Conditional Variables
+/** 
+ * DOC: Conditional Variables
  *
- * @{
  */
 
-/** @brief alloc a conditional variable
+/**
+ * thinkos_cond_alloc() - alloc a conditional variable.
  *
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cond_alloc(void);
 
-/** @brief release a conditional variable
+/**
+ * thinkos_cond_free() - release a conditional variable.
+ * @cond: conditional variable handler
  *
- * @param cond conditional variable handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
  */
 int thinkos_cond_free(int cond);
 
-/** @brief wait for a conditional variable
+/**
+ * thinkos_cond_wait() - wait for a conditional variable.
+ * @cond: conditional variable handler
+ * @mutex: mutex handler
  *
- * @param cond conditional variable handler
- * @param mutex mutex handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cond_wait(int cond, int mutex);
 
-/** @brief wait for a conditional variable or timeout
+/**
+ * thinkos_cond_timedwait() - wait for a conditional variable or timeout.
+ * @cond: conditional variable handler
+ * @mutex: mutex handler
+ * @ms: waiting time in milliseconds
  *
- * @param cond conditional variable handler
- * @param mutex mutex handler
- * @param ms waiting time in milliseconds
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cond_timedwait(int cond, int mutex, unsigned int ms);
 
-/** @brief signal a conditional variable wake a single thread
+/**
+ * thinkos_cond_signal() - signal a conditional variable wake a single thread.
+ * @cond: conditional variable handler
  *
- * @param cond conditional variable handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cond_signal(int cond);
 
-/** @brief signal a conditional variable wake all waiting threads
+/**
+ * thinkos_cond_broadcast() - signal a conditional variable wake all 
+ * waiting threads.
+ * @cond: conditional variable handler
  *
- * @param cond conditional variable handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_cond_broadcast(int cond);
 
-/**@}*/
 
-
-/** @defgroup sem Semaphores
- *
- * @{
+/* ---------------------------------------------------------------------------
+ * Semaphores
+ * ---------------------------------------------------------------------------
  */
 
-/** @brief alloc a semaphore
+/**
+ * thinkos_sem_alloc() - alloc a semaphore.
+ * @val: initial semaphore value
  *
- * @param val initial semaphore value
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_sem_alloc(unsigned int val);
 
-/** @brief release a semaphore
+/**
+ * thinkos_sem_free() - release a semaphore.
+ * @sem: semaphore handler
  *
- * @param sem semaphore handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
  */
 int thinkos_sem_free(int sem);
 
-/** @brief set the initial value of a semaphore
+/**
+ * thinkos_sem_init() - set the initial value of a semaphore.
+ * @sem: semaphore handler
+ * @val: initial semaphore value
  *
- * @param sem semaphore handler
- * @param val
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_sem_init(int sem, unsigned int val);
 
-/** @brief wait for a semaphore to be signaled
+/**
+ * thinkos_sem_wait() - wait for a semaphore to be signaled.
+ * @sem: semaphore handler
  *
- * @param sem semaphore handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_sem_wait(int sem);
 
-/** @brief wait for a semaphore to be signaled or timeout
+/**
+ * thinkos_sem_timedwait() - wait for a semaphore to be signaled or timeout.
+ * @sem: semaphore handler
+ * @ms: time to wait in milliseconds
  *
- * @param sem semaphore handler
- * @param ms
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_sem_timedwait(int sem, unsigned int ms);
 
-/** @brief signal a semaphore 
+/**
+ * thinkos_sem_post() - signal a semaphore.
+ * @sem: semaphore handler
  *
- * @param sem semaphore handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_sem_post(int sem);
 
-/** @brief signal a semaphore inside an interrupt handler
- *
- * @param sem semaphore handler
+/**
+ * thinkos_sem_post_i() - signal a semaphore inside an interrupt handler.
+ * @sem: semaphore handler
  */
 void thinkos_sem_post_i(int sem);
 
-/**@}*/
 
-
-/** @defgroup evset Event sets
- *
- * @{
+/* ---------------------------------------------------------------------------
+ * Event sets
+ * ---------------------------------------------------------------------------
  */
 
-/** @brief alloc an event set
+/**
+ * thinkos_ev_alloc() - alloc an event set.
  *
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
  */
 int thinkos_ev_alloc(void);
 
-/** @brief release an event set
+/**
+ * thinkos_ev_free() - release an event set.
+ * @set: event set handler
  *
- * @param set event set handler
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_ev_free(int set);
 
-/** @brief wait for an event 
+/**
+ * thinkos_ev_wait() - wait for an event.
+ * @set: event set handler
  *
- * @param set event set handler
- * @return #THINKOS_ENOSYS if call is not implemented, an event otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, an event otherwise. 
  */
 int thinkos_ev_wait(int set);
 
-/** @brief wait for an event or timeout
+/**
+ * thinkos_ev_timedwait() - wait for an event or timeout.
+ * @set: event set handler
+ * @ms: time to wait in milliseconds
  *
- * @param set event set handler
- * @param ms time to wait in milliseconds
- * @return #THINKOS_ENOSYS if call is not implemented, an event otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, an event otherwise. 
  */
 int thinkos_ev_timedwait(int set, unsigned int ms);
 
-/** @brief signal an event
+/**
+ * thinkos_ev_raise() - signal an event.
+ * @set: event set handler
+ * @ev: event identifier
  *
- * @param set event set handler
- * @param ev event identifier
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_ev_raise(int set, int ev);
 
-/** @brief signal an event from inside an interrupt handler
+/**
+ * thinkos_ev_raise_i() - signal an event from inside an interrupt handler.
  *
- * @param set event set handler
- * @param ev event identifier
+ * @set: event set handler
+ * @ev: event identifier
  */
 void thinkos_ev_raise_i(int set, int ev);
 
-/** @brief mask/unmask an event
+/**
+ * thinkos_ev_mask() - mask/unmask an event.
+ * @set: event set handler
+ * @ev: event identifier
+ * @val: mask value. 1 enable the event, 0 disable the event.
+ * Return:
  *
- * @param set event set handler
- * @param ev event identifier
- * @param val mask value. 1 enable the event, 0 disable the event.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_ev_mask(int set, int ev, int val);
 
-/** @brief clear an event
+/**
+ * thinkos_ev_clear() - clear an event.
+ * @set: event set handler
+ * @ev: event identifier
  *
- * @param set event set handler
- * @param ev event identifier
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_ev_clear(int set, int ev);
 
-/**@}*/
 
 
-/** @defgroup flag Flags
+/** 
+ * Flags
  *
- * @{
  */
 
-/** @brief alloc a flag 
- *
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+/**
+ * thinkos_flag_alloc() - alloc a flag.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_alloc(void);
 
-/** @brief release a flag
- *
- * @param flag
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+/**
+ * thinkos_flag_free() - release a flag
+ * @flag: flag object handler
+ * Return:
+ * %THINKOS_ENOSYS_ if call is not implemented. Otherwwise a positive
+ * integer value corresponding to the object id (handler).
  */
 int thinkos_flag_free(int flag);
 
-/** @brief return the flag value
+/**
+ * thinkos_flag_val() - return the flag value.
+ * @flag: flag object handler
  *
- * @param flag
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_val(int flag);
 
-/** @brief set a flag 
+/**
+ * thinkos_flag_set() - set a flag.
+ * @flag: flag object handler
  *
- * @param flag
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_set(int flag);
 
-/** @brief clear a flag 
+/**
+ * thinkos_flag_clr() - clear a flag.
+ * @flag: flag object handler
  *
- * @param flag
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_clr(int flag);
 
-/** @brief signal a flag 
+/**
+ * thinkos_flag_give() - signal a flag.
+ * @flag: flag object handler
  *
- * @param flag
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_give(int flag);
 
-/** @brief signal a flag form inside an interrupt handler
+/**
+ * thinkos_flag_give_i() - signal a flag form inside an interrupt handler.
+ * @flag: flag object handler
  *
- * @param flag
  */
 void thinkos_flag_give_i(int flag);
 
-/** @brief wait for flag to be signaled
+/**
+ * thinkos_flag_take() - wait for flag to be signaled.
+ * @flag: flag object handler
  *
- * @param flag
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_take(int flag);
 
-/** @brief wait for flag or timeout
+/**
+ * thinkos_flag_timedtake() - wait for flag or timeout.
+ * @flag: flag object handler
+ * @ms: timeout in milliseconds 
  *
- * @param flag
- * @param ms 
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flag_timedtake(int flag, unsigned int ms);
 /**@}*/
 
 
-/** @defgroup gates Gates
+/** 
+ * DOC: Gates
+ *
  * Gates are syncronization objects which provide a convenient way of 
  * creating mutual exclusion acess to 
  * code blocks signaled by interrupt handlers...
@@ -713,58 +851,75 @@ int thinkos_flag_timedtake(int flag, unsigned int ms);
  * @{
  */
 
-/** @brief Alloc a gate synchronization object.
+/**
+ * thinkos_gate_alloc() - Alloc a gate synchronization object.
  *
- * @return return a handler for a new gate object, or a negative value if
+ * Return:
+ * return a handler for a new gate object, or a negative value if
  * an error ocurred.
  *
  * Errors:
- * - #THINKOS_ENOSYS if the system call is not enabled.
- * - #THINKOS_ENOMEM no gates left in the gate pool.
+ * - %THINKOS_ENOSYS if the system call is not enabled.
+ * - %THINKOS_ENOMEM no gates left in the gate pool.
  */
 int thinkos_gate_alloc(void);
 
-/** @brief Frees the gate synchronization object.
- *
- * @param gate handler for a gate object which must have been returned by 
+/**
+ * thinkos_gate_free() - Frees the gate synchronization object.
+ * @gate: handler for a gate object which must have been returned by 
  * a previous call to @c thinkos_gate_alloc().
- * @return returns #THINKOS_OK on sucess. On error a negative code value is returned.
+ *
+ * Return:
+ * returns %THINKOS_OK on sucess. On error a negative code value is returned.
  * an error ocurred.
  *
  * Errors:
- * - #THINKOS_EINVAL @p gate is not a valid gate handler.
- * - #THINKOS_ENOSYS not implemented.
+ * - %THINKOS_EINVAL @p gate is not a valid gate handler.
+ * - %THINKOS_ENOSYS not implemented.
  */
 int thinkos_gate_free(int gate);
 
-/** @brief Wait for a gate to open.
+/**
+ * thinkos_gate_wait() - Wait for a gate to open.
+ * @gate: The gate descriptor.
  *
+ * Return:
+ * %THINKOS_EINVAL if @p gate is invalid, %THINKOS_OK otherwise. 
+ *
+ * Description:
  * If the gate is open this function return imediatelly, otherwise it will
  * block the calling thread.
  *
- * @param gate The gate descriptor.
- * @return #THINKOS_EINVAL if @p gate is invalid, #THINKOS_OK otherwise. 
  */
 int thinkos_gate_wait(int gate);
 
-/** @brief Wait for a gate to open or a timeout.
+/**
+ * thinkos_gate_timedwait() - Wait for a gate to open or a timeout.
+ * @gate: The gate descriptor.
+ * @ms: Timeout ins milliseconds.
+ * Return:
+ * - %THINKOS_OK is returned on sucess. On error a negative code value 
+ * is returned.
+ * - %THINKOS_EINVAL: @p gate is not a valid handler.
+ * - %THINKOS_ETIMEDOUT: timer expired before the @p gate opens.
+ * - %THINKOS_ENOSYS: syscall not implemented.
  *
+ *
+ * Description:
  * If the gate is open this function return imediatelly, otherwise it will
  * block the calling thread.
  *
- * @param gate The gate descriptor.
- * @param ms Timeout ins milliseconds.
- * @return 
- * - #THINKOS_OK is returned on sucess. On error a negative code value 
- * is returned.
- * - #THINKOS_EINVAL: @p gate is not a valid handler.
- * - #THINKOS_ETIMEDOUT: timer expired before the @p gate opens.
- * - #THINKOS_ENOSYS: syscall not implemented.
  */
 int thinkos_gate_timedwait(int gate, unsigned int ms);
 
-/** @brief Open or signal the gate.
+/**
+ * thinkos_gate_open() - Open or signal the gate.
+ * @gate: The gate descriptor.
+ *
+ * Return:
+ * %THINKOS_EINVAL if @p gate is invalid, %THINKOS_OK otherwise. 
  * 
+ * Description:
  * The resulting gate's state will depend on the current gate state and 
  * whether there are threads waiting at the gate. There are four possible
  * scenarios ... :
@@ -775,41 +930,43 @@ int thinkos_gate_timedwait(int gate, unsigned int ms);
  * the thread to cross the gate, in this case the gate will be locked.
  * -# a thread crossed the gate (gate state is @b LOCKED), then the gate
  * will be signaled to open when the gate is unlocked.
- *
- * @param gate The gate descriptor.
- * @return #THINKOS_EINVAL if @p gate is invalid, #THINKOS_OK otherwise. 
  */
 int thinkos_gate_open(int gate);
 
-/** @brief Open or signal the gate from inside an interrupt handler.
- * 
- * This call is similar to the @c thinkos_gate_open() except that it
+/**
+ * thinkos_gate_open_i() - Open or signal the gate from inside an 
+ *                         interrupt handler.
+ * @gate: The gate descriptor.
+ *
+ * Description:
+ * This call is similar to the thinkos_gate_open() except that it
  * is safe to ba called from inside an interrupt handler.
  *
- * @param gate The gate descriptor.
- *
- * @b Warning: no argument validation is performed. 
+ * Warning: no argument validation is performed. 
  */
 void thinkos_gate_open_i(int gate);
 
 
-/** @brief Close the gate if the gate is @b OPEN or 
+/**
+ * thinkos_gate_close() - Close the gate if the gate is @b OPEN or 
  * remove pending signaling if the gate is @ LOCKED.
- *
- * @param gate The gate descriptor.
- * @return #THINKOS_EINVAL if @p gate is invalid, #THINKOS_OK otherwise. 
+ * @gate: The gate descriptor.
+ * Return:
+ * %THINKOS_EINVAL if @p gate is invalid, %THINKOS_OK otherwise. 
  */
 int thinkos_gate_close(int gate);
 
-/** @brief Exit the gate, optionally leaving it open or closed.
- *
- * @param gate The gate descriptor.
- * @param open Indicate the state of the gate on exit. 
+/**
+ * thinkos_gate_exit() - Exit the gate, optionally leaving it open or closed.
+ * @gate: The gate descriptor.
+ * @open: Indicate the state of the gate on exit. 
  * - @p open > 0, the gate will be left open, allowing for another thread 
  * to enter the gate.
  * - @p open == 0, the gate will stay closed if not signaled, in wich case
  * it will open accordingly.
- * @return #THINKOS_EINVAL if @p gate is invalid, #THINKOS_OK otherwise. 
+ *
+ * Return:
+ * %THINKOS_EINVAL if @p gate is invalid, %THINKOS_OK otherwise. 
  */
 int thinkos_gate_exit(int gate, unsigned int open);
 
@@ -821,30 +978,36 @@ int thinkos_gate_exit(int gate, unsigned int open);
  * @{
  */
 
-/** @brief wait for interrupt
+/**
+ * thinkos_irq_wait() - wait for interrupt.
+ * @irq: interrupt request number
  *
- * @param irq
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_irq_wait(int irq);
 
-/** @brief wait for interrupt or timeout
+/**
+ * thinkos_irq_timedwait() - wait for interrupt or timeout.
+ * @irq: interrupt request number
+ * @ms: timeout time in milliseconds.
  *
- * @param irq
- * @param ms timeout time in milliseconds.
- * - #THINKOS_OK is returned on sucess. 
- * - #THINKOS_EINVAL: @p irq is not valid handler.
- * - #THINKOS_ETIMEDOUT: timer expired before the @p gate opens.
- * - #THINKOS_ENOSYS: syscall not implemented.
+ * Return:
+ * - %THINKOS_OK is returned on sucess. 
+ * - %THINKOS_EINVAL: @p irq is not valid handler.
+ * - %THINKOS_ETIMEDOUT: timer expired before the @p gate opens.
+ * - %THINKOS_ENOSYS: syscall not implemented.
  */
 int thinkos_irq_timedwait(int irq, unsigned int ms);
 
-/** @brief reqister an interrupt handler
+/**
+ * thinkos_irq_register() - reqister an interrupt handler.
+ * @irq: interrupt request number
+ * @pri: pirority
+ * @isr: interrupt service routine
  *
- * @param irq
- * @param pri 
- * @param isr 
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
 /**@}*/
@@ -858,25 +1021,23 @@ int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
  * @{
  */
 
-/** @brief get hardware clocks frequencies 
+/**
+ * thinkos_clocks() - get hardware clocks frequencies. 
+ * @clk:[] pointer to an array to receive the clocks frequency list.
  *
- * @param clk[] pointer to an array to receive the clocks frequency list.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_clocks(uint32_t * clk[]);
 
-/** @brief get udelay calibration factor
+/**
+ * thinkos_udelay_factor() - get udelay calibration factor.
+ * @factor: pointer to an integer
  *
- * @param factor pointer to an integer. 
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_udelay_factor(int32_t * factor);
-
-/** @brief abort the operating system.
- *
- * @return This function does not return.
- */
-void __attribute__((noreturn)) thinkos_abort(void);
 
 int thinkos_critical_enter(void);
 
@@ -884,9 +1045,6 @@ int thinkos_critical_exit(void);
 
 int thinkos_escalate(int (* call)(void *), void * arg);
 
-int thinkos_thread_abort(unsigned int thread);
-
-/**@}*/
 
 /** @defgroup trace Real-time trace kernel support
  *
@@ -917,29 +1075,35 @@ int thinkos_trace_getnext(int id, struct trace_entry * entry);
 
 /**@}*/
 
-/** @brief write into to console driver
+/**
+ * thinkos_console_write() - write into to console driver.
+ * @buf: pointer to an block of data to be transferred. 
+ * @len: size of the data block in octets.
  *
- * @param buf pointer to an block of data to be transferred. 
- * @param len size of the data block in octets.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int  thinkos_console_write(const void * buf, unsigned int len);
+int thinkos_console_write(const void * buf, unsigned int len);
 
-/** @brief read from console driver
+/**
+ * thinkos_console_read() -  read from console driver.
+ * @buf: pointer to a memory for data to be transferred. 
+ * @len: size of the data block in octets.
  *
- * @param buf pointer to a memory for data to be transferred. 
- * @param len size of the data block in octets.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_console_read(void * buf, unsigned int len);
 
-/** @brief read from console driver with timeout
+/**
+ * thinkos_console_timedread() - read from console driver with timeout.
+ * @buf: pointer to a memory for data to be transferred. 
+ * @len: size of the data block in octets.
+ * @ms: timeout time in milliseconds.
  *
- * @param buf pointer to a memory for data to be transferred. 
- * @param len size of the data block in octets.
- * @param ms timeout time in milliseconds.
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_ETIMEDOUT if
- * it times out, OK #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_ETIMEDOUT if
+ * it times out, OK %THINKOS_OK otherwise. 
  */
 int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
 
@@ -960,67 +1124,86 @@ int thinkos_console_wr_nonblock(unsigned int enable);
 
 
 
-/** @brief close the flash memory partition
+/**
+ * thinkos_flash_mem_close() - close the flash memory partition.
+ * @key: memory partition key
  *
- * @param key memory partition key
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
 int thinkos_flash_mem_close(int key);
 
-/** @brief open the flash memory partition
+/**
+ * thinkos_flash_mem_open() - open the flash memory partition.
+ * @tag: memory partition label
  *
- * @param key memory partition key
- * @return #THINKOS_ENOSYS if call is not implemented, #THINKOS_OK otherwise. 
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. 
+ * %THINKOS_EINVAL if the partition does not exist.
+ * A key (handler) for the partition is returned.
  */
 int thinkos_flash_mem_open(const char * tag);
 
-/** @brief reads from a flash memory partition
+/**
+ * thinkos_flash_mem_read() - reads from a flash memory partition.
+ * @key: memory partition key
+ * @offset: distance from the partition's start
+ * @buf: buffer pointer 
+ * @size: maximum number of bytes to be read from the partition  
  *
- * @param key memory partition key
- * @param buf buffer pointer 
- * @param len maximum number of bytes to be read from the partition  
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes read is returned.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. On success, the number 
+ * of bytes read is returned.
  */
 int thinkos_flash_mem_read(int key, off_t offset, void * buf, size_t size);
 
-/** @brief writes to a flash memory partition
+/**
+ * thinkos_flash_mem_write() - writes to a flash memory partition.
+ * @key: memory partition key
+ * @offset: distance from the partition's start
+ * @buf: buffer pointer
+ * @size: number of bytes to transfer to the partition.
  *
- * @param key memory partition key
- * @param buf buffer pointer
- * @param len number of bytes to transfer to the partition.
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes written is returned.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. On success, the number 
+ * of bytes written is returned.
  */
-int thinkos_flash_mem_write(int key, off_t offset, const void * buf, size_t size);
+int thinkos_flash_mem_write(int key, off_t offset, 
+							const void * buf, size_t size);
 
-/** @brief erase flash blocks of a memory partition
+/**
+ * thinkos_flash_mem_erase() - erase flash blocks of a memory partition.
+ * @key: memory partition key
+ * @offset: position from the start of partition
+ * @size: size of the erase area
  *
- * @param key memory partition key
- * @param offset position from the start of partition
- * @param len size of the erase area
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes written is returned.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. On success, the number 
+ * of bytes written is returned.
  */
 int thinkos_flash_mem_erase(int key, off_t offset, size_t size);
 
-/** @brief lock flash blocks of a memory partition
+/**
+ * thinkos_flash_mem_lock() - lock flash blocks of a memory partition.
+ * @key: memory partition key
+ * @offset: position from the start of partition
+ * @size: size of the locking area
  *
- * @param key memory partition key
- * @param offset position from the start of partition
- * @param len size of the locking area
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes written is returned.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. On success, the number 
+ * of bytes written is returned.
  */
 int thinkos_flash_mem_lock(int key, off_t offset, size_t size);
 
-/** @brief unlock flash blocks of a memory partition
+/**
+ * thinkos_flash_mem_unlock() - unlock flash blocks of a memory partition.
+ * @key: memory partition key
+ * @offset: position from the start of partition
+ * @size: size of the locking area
  *
- * @param key memory partition key
- * @param offset position from the start of partition
- * @param len size of the locking area
- * @return #THINKOS_ENOSYS if call is not implemented. On success, the number 
- of bytes written is returned.
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented. On success, the number 
+ * of bytes written is returned.
  */
 int thinkos_flash_mem_unlock(int key, off_t offset, size_t size);
 

@@ -13,6 +13,7 @@ kernel-render:: DOT
 
    digraph foo {
     "bar" -> "baz";
+
    }
 
 

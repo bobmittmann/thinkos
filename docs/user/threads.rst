@@ -11,58 +11,6 @@ Error Codes
 
 Most of system and libraries will return either c:member:`THINKOS_OK` or a positive value upon success. In case of failuere the call can either retun one of errors described in c:type:`enum thinkos_err` or raise an exception wich will be hadled by the debug monitor if configured with this option. 
 
-.. c:type:: enum thinkos_err
-
-	.. list-table::
-		:widths: 50 10 100
-		:header-rows: 1
-		:align: left 
-
-		*	- Member
-			- Value
-			- Description
-
-		*	- .. c:member:: THINKOS_OK        
-			- 0
-			- No error
-
-		*	- .. c:member:: HINKOS_ETIMEDOUT
-			- -1
-			- System call timed out
-
-		*	- .. c:member:: THINKOS_EINTR
-			- -2
-			- System call interrupted
-
-		*	- .. c:member:: THINKOS_EINVAL
-			- -3
-			- Invalid argument
-
-		*	- .. c:member:: THINKOS_EAGAIN
-			- -4
-			- Non blocking call failed
-
-		*	- .. c:member:: THINKOS_EDEADLK
-			- -5
-			- Deadlock condition detected
-
-		*	- .. c:member:: THINKOS_EPERM
-			- -6
-			- Invalid permission 
-
-		*	- .. c:member:: THINKOS_ENOSYS
-			- -7
-			- Invalid system call
-
-		*	- .. c:member:: THINKOS_EFAULT
-			- -8
-			- Internal System Fault 
-
-		*	- .. c:member:: THINKOS_ENOMEM
-			- -9
-			- Resource pool exausted
-
-.. c:type:: struct cortex_m_context
 
 	Cortex-M context
 
@@ -99,13 +47,6 @@ Most of system and libraries will return either c:member:`THINKOS_OK` or a posit
 .. c:macro:: WORLD
 
 	This macro says world
-
-.. c:function:: int ioctl( int fd, int request )
-
-	The C domain of the kernel-doc has some additional features. E.g. you can
-	*rename* the reference name of a function with a common name like ``open`` 
-	or ``ioctl``:
-
 
 .. c:function:: int ioctl( int fd, int request ) 
 
@@ -144,26 +85,4 @@ an ftrace_ops with ftrace:
 Both .flags and .private are optional. Only .func is required.
 
 To enable tracing call:
-
-.. c:function::  register_ftrace_function(&ops);
-
-To disable tracing call:
-
-.. c:function::  unregister_ftrace_function(&ops);
-
-The above is defined by including the header:
-
-.. c:function:: #include <linux/ftrace.h>
-
-The registered callback will start being called some time after the
-register_ftrace_function() is called and before it returns. The exact time
-that callbacks start being called is dependent upon architecture and scheduling
-of services. The callback itself will have to handle any synchronization if it
-must begin at an exact moment.
-
-The unregister_ftrace_function() will guarantee that the callback is
-no longer being called by functions after the unregister_ftrace_function()
-returns. Note that to perform this guarantee, the unregister_ftrace_function()
-may take some time to finish.
-
 
