@@ -81,7 +81,10 @@
 
 /* Memory block descriptor */
 struct blk_desc {
-	char tag[8];
+	union {
+		char tag[8];
+		uint64_t hash;
+	};
 	uint32_t off;
 	uint8_t  opt;
 	uint8_t  siz;

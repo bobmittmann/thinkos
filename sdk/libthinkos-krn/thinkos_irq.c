@@ -81,7 +81,7 @@ void cm3_default_isr(unsigned int irq)
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value */
-	thinkos_rt.ctx[th]->r1 = cyccnt;
+	__thinkos_thread_r1_set(th, cyccnt);
 #endif
 
 	/* signal the scheduler ... */

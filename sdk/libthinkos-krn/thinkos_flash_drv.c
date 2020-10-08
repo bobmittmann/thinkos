@@ -72,7 +72,7 @@ static uint64_t tag2hash(const char * tag)
 
 static inline uint64_t mem_blk_hash(const struct blk_desc * blk)
 {
-	return *(uint64_t *)blk->tag;
+	return blk->hash;
 }
 
 static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem, 

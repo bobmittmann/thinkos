@@ -903,6 +903,21 @@ __thinkos_thread_r0_set(unsigned int th, uint32_t val) {
 }
 
 static inline void __attribute__((always_inline)) 
+__thinkos_thread_r1_set(unsigned int th, uint32_t val) {
+	__thinkos_thread_ctx_get(th)->r1 = val;
+}
+
+static inline void __attribute__((always_inline)) 
+__thinkos_thread_r2_set(unsigned int th, uint32_t val) {
+	__thinkos_thread_ctx_get(th)->r2 = val;
+}
+
+static inline void __attribute__((always_inline)) 
+__thinkos_thread_r3_set(unsigned int th, uint32_t val) {
+	__thinkos_thread_ctx_get(th)->r3 = val;
+}
+
+static inline void __attribute__((always_inline)) 
 __thinkos_thread_pc_set(unsigned int th, uintptr_t val) {
 	__thinkos_thread_ctx_get(th)->pc = (uint32_t)val;
 }
@@ -910,11 +925,6 @@ __thinkos_thread_pc_set(unsigned int th, uintptr_t val) {
 static inline void __attribute__((always_inline)) 
 __thinkos_thread_lr_set(unsigned int th, uintptr_t val) {
 	__thinkos_thread_ctx_get(th)->lr = (uint32_t)val;
-}
-
-static inline void __attribute__((always_inline)) 
-__thinkos_thread_r1_set(unsigned int th, uint32_t val) {
-	__thinkos_thread_ctx_get(th)->r1 = val;
 }
 
 /* -------------------------------------------------------------------------- 

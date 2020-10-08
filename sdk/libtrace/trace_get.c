@@ -52,7 +52,7 @@ int trace_krn_getfirst(struct trace_iterator * it)
 	return ret;
 }
 
-extern const struct trace_ref __trace_usr_tab[];
+extern const struct trace_ref __trace_usr_start[];
 extern const struct trace_ref __trace_usr_end;
 
 int trace_krn_getnext(struct trace_iterator * it)
@@ -71,7 +71,7 @@ int trace_krn_getnext(struct trace_iterator * it)
 		uint32_t dt;
 
 		ref = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ref;
-		if ((ref >= __trace_usr_tab) && (ref < &__trace_usr_end)) {
+		if ((ref >= __trace_usr_start) && (ref < &__trace_usr_end)) {
 			entry->ref = ref;
 			ts = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].ts;
 			dt = ts - (entry->tm & 0xffffffff);
