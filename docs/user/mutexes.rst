@@ -4,7 +4,7 @@
 .. _thinkos_usr_mutexes:
 
 =========
- Mutexes
+ MUTEXes
 =========
 
 A mutex is a MUTual EXclusion device, and is useful for protecting shared data 
@@ -17,7 +17,7 @@ simultaneously. A thread attempting to lock a mutex that is already locked by
 another thread is suspended until the owning thread unlocks the mutex first.
 
 
-Using MutExes
+Using MUTEXes
 =============
 
 A call to :c:func:`thinkos_mutex_lock` locks the given mutex. If the mutex is 
