@@ -4,5 +4,14 @@
 
 .. _`COPYING`: https://github.com/torvalds/linux/blob/master/COPYING
 .. _`ThinkOS`: http://github.com/bobmittmann/thinkos
+.. _`ThinkOSGitHTTPS`: https://github.com/bobmittmann/thinkos.git
 .. _`ARM`: http://arm.com
+.. _`RTOS`: https://en.wikipedia.org/wiki
+.. _`GNU`: https://www.gnu.org/gnu/thegnuproject.en.html
+.. _`GCC`: https://gcc.gnu.org
+.. _`MSYS2`: https://github.com/msys2/msys2/wiki
+.. _`Git`: https://git-scm.com/downloads
+.. _`LKCodingStile`: https://www.kernel.org/doc/html/v4.10/process/coding-style.html
+.. _`YardICE`: https://github.com/bobmittmann/yard-ice
+
 

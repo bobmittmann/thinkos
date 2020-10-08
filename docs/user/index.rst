@@ -14,9 +14,26 @@ the ThinkOS_ interface as seen by application developers.
 .. toctree::
 	:maxdepth: 2
 
+	introduction.rst
+	quickstart.rst
 	threads.rst
+	timewait.rst
+	mutexes.rst
+	semaphores.rst
+	condvars.rst
+	flags.rst
+	events.rst
+	gates.rst
+	trace.rst
+	console.rst
+	interrupts.rst
+	flahsmem.rst
 	user-api.rst
-	user-config.rst
+	libraries.rst
+	tcpip.rst
+	configuration.rst
+	developer.rst
+	tools.rst
 
 Indices and tables
 ==================
