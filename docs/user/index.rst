@@ -15,6 +15,9 @@ the ThinkOS_ interface as seen by application developers.
 	:maxdepth: 2
 
 	threads.rst
+	mutexes.rst
+	semaphores.rst
+	timewait.rst
 	user-api.rst
 	user-config.rst
 
