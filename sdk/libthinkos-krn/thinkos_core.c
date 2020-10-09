@@ -23,8 +23,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #define __THINKOS_IDLE__
@@ -173,11 +173,6 @@ void __thinkos_system_reset(void)
 #if THINKOS_ENABLE_EXCEPTIONS
 	DCC_LOG(LOG_TRACE, "2. exception reset...");
 	__exception_reset();
-#endif
-
-#if THINKOS_ENABLE_MONITOR
-	DCC_LOG(LOG_TRACE, "3. reset debug monitor...");
-	thinkos_dbgmon_reset();
 #endif
 
 	/* Enable Interrupts */
