@@ -38,13 +38,16 @@ struct flash_dev_seq {
 struct flash_dev_ops {
 	int (* write)(void * priv, off_t offs, const void * buf, size_t count);
 	int (* read)(void * priv, off_t offs, void * buf, size_t count);
-//	int (* erase)(void * priv, off_t offs, size_t count);
-	int (* lock)(void * priv, off_t offs, size_t count);
-	int (* unlock)(void * priv, off_t offs, size_t count);
+#if 0
 	struct {
 		intptr_t (* init)(void * priv, off_t offs, size_t count);
 		const struct flash_dev_seq * seq;
 	} erase;
+#else
+	int (* erase)(void * priv, off_t offs, size_t count);
+#endif
+	int (* lock)(void * priv, off_t offs, size_t count);
+	int (* unlock)(void * priv, off_t offs, size_t count);
 };
 
 /* FLASH memory device object */
@@ -65,14 +68,6 @@ static inline int flash_dev_read(const struct flash_dev * dev,
 	return dev->op->read(dev->priv, off, buf, count);
 }
 
-#if 0
-static inline int flash_dev_erase(const struct flash_dev * dev, 
-								  off_t off, size_t count)
-{
-	return dev->op->erase(dev->priv, off, count);
-}
-#endif
-
 static inline int flash_dev_lock(const struct flash_dev * dev, 
 								  off_t off, size_t count)
 {
@@ -85,11 +80,19 @@ static inline int flash_dev_unlock(const struct flash_dev * dev,
 	return dev->op->unlock(dev->priv, off, count);
 }
 
+#if 1
+static inline int flash_dev_erase(const struct flash_dev * dev, 
+								  off_t off, size_t count)
+{
+	return dev->op->erase(dev->priv, off, count);
+}
+#else
 static inline uintptr_t flash_dev_erase_init(const struct flash_dev * dev, 
 											 off_t off, size_t count)
 {
 	return dev->op->erase.init(dev->priv, off, count);
 }
+#endif
 
 #ifdef __cplusplus
 extern "C" {
