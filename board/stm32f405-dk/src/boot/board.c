@@ -28,8 +28,8 @@
 #include <sys/dcclog.h>
 #define __THINKOS_FLASH__
 #include <thinkos/flash.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
@@ -76,7 +76,7 @@ static const struct magic_blk bootloader_magic = {
 };
 #pragma GCC diagnostic pop
 
-static void bootloader_yflash(const struct dbgmon_comm * comm)
+void bootloader_yflash(const struct monitor_comm * comm)
 {
 
 	stm32_gpio_clr(IO_LED1);
@@ -361,13 +361,12 @@ const struct mem_desc sram_mem = {
 	.base = 0x00000000,
 	.cnt = 5,
 	.blk = {
-		{"STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
-		{"KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
-		{"DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
-		{"SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
-		{"SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
-
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
+		{.tag = "KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
+		{.tag = "DATA",   0x20001000, M_RW, SZ_4K, 27}, /* App: 108KiB */
+		{.tag = "SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
+		{.tag = "SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 
@@ -376,10 +375,10 @@ const struct mem_desc flash_mem = {
 	.base = 0x08000000,
 	.cnt = 3,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_16K, 4},	/* Bootloader: 64 KiB */
-		{"CONF", 0x00010000, M_RW, SZ_64K, 1},	/* Configuration: 64 KiB */
-		{"APP",  0x00020000, M_RW, SZ_128K, 7},	/* Application:  */
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "BOOT", 0x00000000, M_RO, SZ_16K, 4}, /* Bootloader: 64 KiB */
+		{.tag = "CONF", 0x00010000, M_RW, SZ_64K, 1}, /* Config: 64 KiB */
+		{.tag = "APP",  0x00020000, M_RW, SZ_128K, 7}, /* Application:  */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 
@@ -388,8 +387,8 @@ const struct mem_desc peripheral_mem = {
 	.base = 0,
 	.cnt = 1,
 	.blk = {
-		{"RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 
@@ -420,7 +419,7 @@ const struct thinkos_board this_board = {
 			.magic = &thinkos_10_app_magic},
 	.init = board_init,
 	.softreset = board_on_softreset,
-	.upgrade = bootloader_yflash,
+//	.upgrade = bootloader_yflash,
 	.preboot_task = board_preboot_task,
 	.configure_task = board_configure_task,
 	.selftest_task = board_selftest_task,
