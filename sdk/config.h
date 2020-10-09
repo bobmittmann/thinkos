@@ -112,8 +112,6 @@
 
 #define THINKOS_ENABLE_SCHED_DEBUG      1
 
-#define THINKOS_ENABLE_RT_DEBUG         1
-
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1

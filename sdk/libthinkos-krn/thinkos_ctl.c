@@ -31,41 +31,6 @@
 
 #if THINKOS_ENABLE_CTL
 
-#if THINKOS_ENABLE_RT_DEBUG
-static void rt_snapshot(uint32_t * dst)
-{
-	uint32_t pri = cm3_primask_get();
-	uint32_t * src;
-	unsigned int i;
-
-	cm3_primask_set(1);
-#if THINKOS_ENABLE_PROFILING
-	{
-		int self = thinkos_rt.active;
-		uint32_t cyccnt = CM3_DWT->cyccnt;
-		int32_t delta = cyccnt - thinkos_rt.cycref;
-		/* update the reference */
-		thinkos_rt.cycref = cyccnt;
-		/* update thread's cycle counter */
-		thinkos_rt.cyccnt[self] += delta; 
-	}
-#endif
-
-	src = (uint32_t *)&thinkos_rt;
-
-	for (i = 0; i < (sizeof(struct thinkos_rt) / 4); ++i)
-		dst[i] = src[i];
-
-#if THINKOS_ENABLE_PROFILING
-	/* Reset cycle counters */
-	for (i = 0; i < THINKOS_THREADS_MAX + 1; i++)
-		thinkos_rt.cyccnt[i] = 0; 
-#endif
-
-	cm3_primask_set(pri);
-}
-#endif
-
 
 #if THINKOS_ENABLE_PROFILING
 static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
@@ -136,12 +101,6 @@ void thinkos_ctl_svc(int32_t * arg)
 		udelay(32768);
 		cm3_sysrst();
 		break;
-
-#if THINKOS_ENABLE_RT_DEBUG
-	case THINKOS_CTL_SNAPSHOT:
-		rt_snapshot((uint32_t *)arg[1]);
-		break;
-#endif
 
 #if THINKOS_ENABLE_THREAD_INFO
 	case THINKOS_CTL_THREAD_INF: {

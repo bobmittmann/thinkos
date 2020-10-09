@@ -72,8 +72,5 @@
 #define THINKOS_SYSRST_ONFAULT 0
 #define THINKOS_EXCEPT_STACK_SIZE 384
 
-
-#define THINKOS_ENABLE_RT_DEBUG 1
-
 #endif /* __CONFIG_H__ */
 

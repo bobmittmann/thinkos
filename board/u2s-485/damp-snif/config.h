@@ -119,7 +119,6 @@
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
-#define THINKOS_ENABLE_RT_DEBUG         0
 
 /* -------------------------------------------------------------------------
  * USB device and CDC-ACM 

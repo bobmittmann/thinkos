@@ -85,8 +85,6 @@
 
 #define THINKOS_STDERR_FAULT_DUMP 1
 
-#define THINKOS_ENABLE_RT_DEBUG 0
-
 #define THINKOS_ENABLE_PROFILING 0
 
 /* -------------------------------------------------------------------------

@@ -57,7 +57,7 @@ SFLAGS += $(addprefix -D,$(CDEFS))
 CFLAGS := $(OPTIONS) -Wall $(CFLAGS) 
 CFLAGS += $(addprefix -D,$(CDEFS))
 
-LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space)--defsym=,$(SYMDEFS))
+LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space) --defsym=,$(SYMDEFS))
 
 include $(SCRPTDIR)/cross.mk
 

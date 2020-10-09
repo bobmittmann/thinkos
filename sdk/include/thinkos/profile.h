@@ -538,10 +538,6 @@
 #define THINKOS_ASM_SCHEDULER           1
 #endif
 
-#ifndef THINKOS_ENABLE_RT_DEBUG
-#define THINKOS_ENABLE_RT_DEBUG         0
-#endif
-
 #ifndef THINKOS_STDERR_FAULT_DUMP
 #define THINKOS_STDERR_FAULT_DUMP       0
 #endif
@@ -913,7 +909,6 @@ struct thinkos_profile {
 		uint32_t flags;
 		struct {
 			uint32_t asm_scheduler       :1;
-			uint32_t rt_debug            :1;
 			uint32_t unroll_exceptions   :1;
 			uint32_t stderr_fault_dump   :1;
 		};

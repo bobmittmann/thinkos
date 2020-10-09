@@ -76,8 +76,6 @@
 
 #define THINKOS_ENABLE_SCHED_DEBUG 0
 
-#define THINKOS_ENABLE_RT_DEBUG 1
-
 #define THINKOS_ENABLE_BREAK 1
 
 #endif /* __CONFIG_H__ */

@@ -174,10 +174,6 @@
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
 #define THINKOS_ENABLE_FLASH_MEM        0
 
-/* Enable the rt_snapshot() service to get
-   the state of the kernel */
-#define THINKOS_ENABLE_RT_DEBUG         0
-
 #define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ASM_SCHEDULER           1
 #define THINKOS_ENABLE_OFAST            1

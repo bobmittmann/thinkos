@@ -166,7 +166,6 @@ const struct thinkos_profile thinkos_profile = {
 
 	.deprecated = {
 		.asm_scheduler       = THINKOS_ASM_SCHEDULER,
-		.rt_debug            = THINKOS_ENABLE_RT_DEBUG,
 		.unroll_exceptions   = THINKOS_UNROLL_EXCEPTIONS,
 		.stderr_fault_dump   = THINKOS_STDERR_FAULT_DUMP
 	}
