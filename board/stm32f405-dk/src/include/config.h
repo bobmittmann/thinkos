@@ -87,6 +87,8 @@
  thread creation. */
 #define THINKOS_ENABLE_SANITY_CHECK     1
 
+#define THINKOS_ENABLE_DEBUG            1
+
 /* Enable scheduler trace calls */
 #if DEBUG
 #define THINKOS_ENABLE_SCHED_DEBUG      1

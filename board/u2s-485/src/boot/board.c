@@ -225,8 +225,8 @@ const struct mem_desc sram_desc = {
 	.base = 0,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x20000000, M_RO, SZ_1K, 2},	/* Bootloader: 2KiB */
-		{"APP", 0x20000800, M_RW, SZ_1K, 8},	/* Application: 8KiB */
+		{.tag = "BOOT", 0x20000000, M_RO, SZ_1K, 2},	/* Bootloader: 2KiB */
+		{.tag = "APP", 0x20000800, M_RW, SZ_1K, 8},	/* Application: 8KiB */
 		}
 };
 
@@ -235,8 +235,8 @@ const struct mem_desc flash_mem = {
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_2K, 8},	/* Bootloader: 16 KiB */
-		{"APP", 0x00002000, M_RW, SZ_2K, 8},	/* Application: 16 KiB */
+		{.tag = "BOOT", 0x00000000, M_RO, SZ_2K, 8},	/* Bootloader: 16 KiB */
+		{.tag = "APP", 0x00002000, M_RW, SZ_2K, 8},	/* Application: 16 KiB */
 		}
 };
 

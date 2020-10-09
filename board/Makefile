@@ -21,22 +21,29 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-all: boot
+BOARDS = rda8com slcdev-hub stm32f405-dk u2s-485
 
-clean:
+OUTDIR := $(abspath ../build)
 
-boot: rda8com-boot slcdev-hub-boot stm32f405-dk-boot
+all: boot-all
 
-%-boot: 
-	cd $(@:%-boot=%)/src/boot && $(MAKE) 
+clean: boot-clean
 
-#	$(ACTION) "Building : $@ --> $(@:%-boot=%)" 
-# Q)$(MAKE) release
+boot-all: $(BOARDS:=-boot-all)
+
+boot-clean: $(BOARDS:=-boot-clean)
+
+%-boot-all: 
+	$(MAKE) -C $(@:%-boot-all=%)/src/boot O=$(OUTDIR)/$(@:%-boot-all=%)/boot all
+
+%-boot-clean:
+	$(MAKE) -C $(@:%-boot-clean=%)/src/boot O=$(OUTDIR)/$(@:%-boot-clean=%)/boot clean
 
 help:
 	@echo 'Targets:'
 	@echo
-	@echo '  all        - Build sdk-test'
+	@echo '  all        - Build all boards'
+	@echo '  clean      - Clean all boards'
 	@echo
 
 .PHONY: help

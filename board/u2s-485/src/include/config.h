@@ -108,6 +108,7 @@
 /* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING        0
 
+#define THINKOS_ENABLE_KRNSVC           1
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
