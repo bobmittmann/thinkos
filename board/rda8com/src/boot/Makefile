@@ -39,9 +39,10 @@ CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
+		  $(SDK_DIR)/libthinkos-mon \
 		  $(SDK_DIR)/libgdbrsp $(SDK_DIR)/libice-comm 
 
-LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc gdbrsp ice-comm 
+LIBS = cm3 stm32f util thinkos-krn thinkos-mon thinkos-dbg gcc gdbrsp ice-comm 
 
 INCPATH = $(SDK_DIR)/include ../include
 

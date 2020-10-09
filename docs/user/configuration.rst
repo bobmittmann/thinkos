@@ -1,11 +1,15 @@
-========================
- User API Configuration
-========================
+.. -*- coding: utf-8; mode: rst -*-
+.. include:: refs.txt
 
-.. default-domain:: c
+.. _thinkos_usr_config:
+
+===============
+ Configuration
+===============
 
 .. describe:: #ifndef __THINKOS_KERNEL__
 	#include <thinkos/kernel.h>
+
 
 Configuration Options
 ---------------------
@@ -57,5 +61,8 @@ The ThinkOS kernel and all other libraries distributed are configured by selecti
 
 How to configure
 ----------------
+
+Makefiles
+---------
 
 

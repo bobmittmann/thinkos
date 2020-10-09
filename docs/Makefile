@@ -2,49 +2,70 @@
 #
 #
 
-#$(srctree)
-srctree := $(abspath ./..)
-
-# You can set these variables from the command line.
-LSPHINXOPTS    =
-BUILDDIR = build
-SPHINXBUILD   = sphinx-build
-PDFLATEX      = xelatex
-LATEXOPTS     = -interaction=batchmode
-#AUTODOC_FOLDER := $(abspath ./thinkos)
-KERNELDOC       = $(srctree)/scripts/kernel-doc
-#KERNELDOC_CONF  = -D kerneldoc_srctree=$(srctree) -D kerneldoc_bin=$(KERNELDOC)
-#KERNELDOC_CONF  = -D kerneldoc_srctree=$(srctree) 
-#KERNELDOC_CONF  = -D srctree=$(srctree) 
-ALLSPHINXOPTS   =  $(KERNELDOC_CONF) $(SPHINXOPTS)
 #
-
+# LinuxDOC source code base path 
+srctree := $(abspath ./..)
 export srctree 
 
-all: arm-html user-html
+SPHINXOPTS =
+BUILDDIR = build
+SPHINXBUILD = sphinx-build
+PDFLATEX = xelatex
+LATEXOPTS = -interaction=batchmode
 
-html: user-html kernel-html arm-html
+all: html 
 
-pdf: arm.pdf
-
-user-html:
-	$(SPHINXBUILD) -M html "user" "$(BUILDDIR)/user" $(ALLSPHINXOPTS) $(O)
-
-kernel-html:
-	@$(SPHINXBUILD) -M html "kernel" "$(BUILDDIR)/kernel" $(SPHINXOPTS) $(O)
-	
-arm-html:
-	@$(SPHINXBUILD) -M html "arm" "$(BUILDDIR)/arm" $(SPHINXOPTS) $(O)
-
-# Put it first so that "make" without argument is like "make help".
 help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Please use 'make target' where target is one of"
+	@echo "    html        to make standalone HTML files"
+	@echo "    htmlhelp    to make HTML files and an HTML help project"
+	@echo "    devhelp     to make HTML files and a Devhelp project"
+	@echo "    epub        to make an epub"
+	@echo "    man         to make manual pages"
+	@echo "    texinfo     to make Texinfo files"
+	@echo "    latex       to make LaTeX files"
+	@echo "    pdf         to make PDF documents"
 
-latex:
-	@$(SPHINXBUILD) -M latex "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+html: user-html arm-html
 
-pdf: latex
-	$(MAKE) PDFLATEX=$(PDFLATEX) LATEXOPTS="$(LATEXOPTS)" -C $(BUILDDIR)/latex
+htmlhelp: arm-htmlhelp user-htmlhelp
+
+devhelp: arm-devhelp user-devhelp
+
+man: arm-man user-man
+
+texinfo: arm-texinfo user-texinfo
+
+epub: arm-epub user-epub
+
+latex: arm-latex user-latex
+
+pdf: arm-pdf user-pdf
+
+%-html:
+	@$(SPHINXBUILD) -M html "$(@:%-html=%)" "$(BUILDDIR)/$(@:%-html=%)" $(SPHINXOPTS) $(O)
+
+%-htmlhelp:
+	@$(SPHINXBUILD) -M htmlhelp "$(@:%-htmlhelp=%)" "$(BUILDDIR)/$(@:%-htmlhelp=%)" $(SPHINXOPTS) $(O)
+
+%-devhelp:
+	@$(SPHINXBUILD) -M devhelp "$(@:%-devhelp=%)" "$(BUILDDIR)/$(@:%-devhelp=%)" $(SPHINXOPTS) $(O)
+
+%-epub:
+	@$(SPHINXBUILD) -M epub "$(@:%-epub=%)" "$(BUILDDIR)/$(@:%-epub=%)" $(SPHINXOPTS) $(O)
+
+%-man:
+	@$(SPHINXBUILD) -M man "$(@:%-man=%)" "$(BUILDDIR)/$(@:%-man=%)" $(SPHINXOPTS) $(O)
+
+%-texinfo:
+	@$(SPHINXBUILD) -M texinfo "$(@:%-texinfo=%)" "$(BUILDDIR)/$(@:%-texinfo=%)" $(SPHINXOPTS) $(O)
+
+%-latex:
+	@$(SPHINXBUILD) -M latex "$(@:%-latex=%)" "$(BUILDDIR)/$(@:%-latex=%)" $(SPHINXOPTS) $(O)
+
+%-pdf: %-latex
+	$(MAKE) PDFLATEX=$(PDFLATEX) LATEXOPTS="$(LATEXOPTS)" -C $(BUILDDIR)/$(@:%-pdf=%)/latex
+
 
 .PHONY: help Makefile
 

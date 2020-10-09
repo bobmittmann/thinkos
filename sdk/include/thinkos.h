@@ -259,7 +259,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
  * Return:
  * %THINKOS_OK
  */
-int	thinkos_krn_nrt_init(void);
 
 /**
  * thinkos_krn_mpu_init() - Initializes Memory Protection Unit (MPU).

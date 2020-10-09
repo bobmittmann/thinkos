@@ -38,16 +38,26 @@ struct flash_dev_seq {
 struct flash_dev_ops {
 	int (* write)(void * priv, off_t offs, const void * buf, size_t count);
 	int (* read)(void * priv, off_t offs, void * buf, size_t count);
+<<<<<<< HEAD
+=======
+	int (* erase)(void * priv, off_t offs, size_t count);
+	int (* lock)(void * priv, off_t offs, size_t count);
+	int (* unlock)(void * priv, off_t offs, size_t count);
+>>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 #if 0
 	struct {
 		intptr_t (* init)(void * priv, off_t offs, size_t count);
 		const struct flash_dev_seq * seq;
 	} erase;
+<<<<<<< HEAD
 #else
 	int (* erase)(void * priv, off_t offs, size_t count);
 #endif
 	int (* lock)(void * priv, off_t offs, size_t count);
 	int (* unlock)(void * priv, off_t offs, size_t count);
+=======
+#endif
+>>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 };
 
 /* FLASH memory device object */
@@ -80,6 +90,7 @@ static inline int flash_dev_unlock(const struct flash_dev * dev,
 	return dev->op->unlock(dev->priv, off, count);
 }
 
+<<<<<<< HEAD
 #if 1
 static inline int flash_dev_erase(const struct flash_dev * dev, 
 								  off_t off, size_t count)
@@ -87,12 +98,26 @@ static inline int flash_dev_erase(const struct flash_dev * dev,
 	return dev->op->erase(dev->priv, off, count);
 }
 #else
+=======
+#if 0
+>>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 static inline uintptr_t flash_dev_erase_init(const struct flash_dev * dev, 
 											 off_t off, size_t count)
 {
 	return dev->op->erase.init(dev->priv, off, count);
 }
+<<<<<<< HEAD
 #endif
+=======
+#else
+static inline int flash_dev_erase(const struct flash_dev * dev, 
+								  off_t off, size_t count)
+{
+	return dev->op->erase(dev->priv, off, count);
+}
+#endif
+
+>>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 
 #ifdef __cplusplus
 extern "C" {

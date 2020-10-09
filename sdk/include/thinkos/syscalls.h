@@ -138,7 +138,6 @@
 #define THINKOS_CTL_ABORT              0
 #define THINKOS_CTL_UDELAY_FACTOR      1
 #define THINKOS_CTL_CLOCKS             2
-#define THINKOS_CTL_SNAPSHOT           3
 #define THINKOS_CTL_TRACE              4
 #define THINKOS_CTL_THREAD_INF         5
 #define THINKOS_CTL_THREAD_CYCCNT      6
@@ -255,15 +254,16 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_thread_create(int (* task)(void *), 
+thinkos_thread_create(thinkos_task_t task, 
 					  void * arg, void * stack_ptr,
 					  unsigned int opt) {
 	return THINKOS_SYSCALL5(THINKOS_THREAD_CREATE, task, arg, 
 							 stack_ptr, opt, 0);
 }
 
+
 static inline int __attribute__((always_inline)) 
-thinkos_thread_create_inf(int (* task)(void *), void * arg, 
+thinkos_thread_create_inf(thinkos_task_t task, void * arg, 
 						  const struct thinkos_thread_inf * inf) {
 	return THINKOS_SYSCALL5(THINKOS_THREAD_CREATE, task, arg, 
 							 inf->stack_ptr, inf->opt, inf);
@@ -683,11 +683,6 @@ static inline int __attribute__((always_inline))
 static inline int __attribute__((always_inline))
 	thinkos_reboot(uint32_t key) {
 		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_REBOOT, key);
-	}
-
-static inline int __attribute__((always_inline)) 
-	thinkos_rt_snapshot(void * rt) {
-		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_SNAPSHOT, rt);
 	}
 
 static inline int __attribute__((always_inline)) 

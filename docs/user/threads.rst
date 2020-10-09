@@ -1,88 +1,67 @@
+.. -*- coding: utf-8; mode: rst -*-
+.. include:: refs.txt
 
-Threads
-=======
+.. _thinkos_usr_threads:
 
-.. describe:: #include <thinkos.h>
+=========
+ Threads
+=========
 
-.. default-domain:: c
+ThinkOS_ is a preemptive time-sharing kernel. Each thread has its own stack and a timer. This timer is used to block the thread's execution for a certain period of time as in \lstinline{thinkos_sleep()}.
 
-Error Codes
------------
+The ThinkOS_'s kernel holds minimum information about a thread, only what is neccessary for the proper system operation, thus reducing the memory footprint. Tha absolute bare minimum configuration only the thread's stack pointer is managed by the kernel.
 
-Most of system and libraries will return either c:member:`THINKOS_OK` or a positive value upon success. In case of failuere the call can either retun one of errors described in c:type:`enum thinkos_err` or raise an exception wich will be hadled by the debug monitor if configured with this option. 
-
-
-	Cortex-M context
-
-	.. code-block:: c
-
-		struct cortex_m_context {
-			uint32_t r0;
-			uint32_t r1;
-			uint32_t r2;
-			uint32_t r3;
-
-			uint32_t r4;
-			uint32_t r5;
-			uint32_t r6;
-			uint32_t r7;
-
-			uint32_t r8;
-			uint32_t r9;
-			uint32_t r10;
-			uint32_t r11;
-
-			uint32_t r12;
-			uint32_t sp;
-			uint32_t lr;
-			uint32_t pc;
-
-			uint32_t xpsr;
-		};
-
-.. c:macro:: HELLO
-
-	This macro says hello
-
-.. c:macro:: WORLD
-
-	This macro says world
-
-.. c:function:: int ioctl( int fd, int request ) 
-
-	The func-name (e.g. ioctl) remains in the output but the ref-name changed 
-	from ``ioctl`` to ``VIDIOC_LOG_STATUS``. The index entry for this function 
-	is also changed to ``VIDIOC_LOG_STATUS`` and the function can now 
-	referenced by.
-
-	:param priority: The priority of the message, can be a set to :c:macro:`HELLO` or :c:macro:`WORLD`
-
-	:param test: :type:`uint32_t` The priority of the message, can be a number 1-5
+Using threads
+=============
 
 
-	:returns: :type:`reference` to the first item in the string_view
+Creating a thread
+-----------------
 
-
-The ftrace_ops structure
-------------------------
-
-To register a function callback, a ftrace_ops is required. This structure
-is used to tell ftrace what function should be called as the callback
-as well as what protections the callback will perform and not require
-ftrace to handle.
-
-There is only one field that is needed to be set when registering
-an ftrace_ops with ftrace:
+The easiest way to create and run a thread is to call :c:func:`thinkos_thread_create`. Here is an example: 
 
 .. code-block:: c
 
-	struct ftrace_ops ops = {
-		.func			= my_callback_func,
-		.flags			= MY_FTRACE_FLAGS
-		.private			= any_private_data_structure,
-		};
+    static int my_task(void * arg)
+    {
+        for (;;) {
+            /* do something ... */
+             thinkos_sleep(50);
+        }
+        return 0;
+    }
 
-Both .flags and .private are optional. Only .func is required.
+    static uint32_t my_stack[256]; /* 1KB of stack */
 
-To enable tracing call:
+    void my_module_init(void)
+    {
+        thinkos_thread_create(my_task, NULL, my_stack, sizeof(my_stack));
+    }
+
+
+In this example we define a function to be the entry point of the thread, in 
+this case :c:func:`my_task()`. We also define an array of 32bit words, 
+amounting to 1KiB, to be used as stack for the thread ``my_stack``. 
+
+We then call :c:func:`thinkos_thread_create` which will allocate and run 
+the thread. The return of this call function is the `thread id` or a negative 
+error code in case something goes wrong.
+
+
+.. note:: return 
+    All the functions in this section will return one of the error codes
+    defined in :c:enum:`enum thinkos_err`.
+
+-------------------------------------------------------------------------------
+
+
+
+Thread Functions
+================
+
+.. kernel-doc:: sdk/include/thinkos.h
+    :functions: thinkos_thread_create thinkos_thread_create_inf 
+        thinkos_thread_self thinkos_cancel thinkos_exit 
+        thinkos_join thinkos_pause thinkos_resume
+        thinkos_yield thinkos_thread_abort
 

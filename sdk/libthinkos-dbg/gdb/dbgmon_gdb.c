@@ -26,6 +26,8 @@
 #include <gdbrsp.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
 
@@ -53,12 +55,12 @@
 //struct gdbrspd gdbrspd;
 int dbgmon_gdbrsp_comm_send(void * attr, const void * buf, size_t len)
 {
-	return dbgmon_comm_send(attr, buf, len);
+	return monitor_comm_send(attr, buf, len);
 }
 
 int dbgmon_gdbrsp_comm_recv(void * attr, void * buf, size_t len)
 {
-	return dbgmon_comm_recv(attr, buf, len);
+	return monitor_comm_recv(attr, buf, len);
 }
 
 const struct gdbrsp_comm_op dbgmon_gdbrsp_comm_op  = {
@@ -98,7 +100,7 @@ const struct gdbrsp_target_op dbgmon_gdbrsp_target_op  = {
 	.watchpoint_clear = (int (*)(void *, uint32_t addr, unsigned int size)) NULL
 };
 
-void gdb_stub_task(struct dbgmon_comm * comm)
+void gdb_stub_task(struct monitor_comm * comm)
 {
 //	struct gdbrsp * gdb = &gdbrspd;
 	struct gdbrsp_comm * gdb_comm;
@@ -131,70 +133,70 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 	//	DCC_LOG(LOG_INFO, "Comm connected..");
 
-	sigmask = (1 << DBGMON_KRN_EXCEPT);
-	sigmask |= (1 << DBGMON_THREAD_FAULT);
-	sigmask |= (1 << DBGMON_THREAD_STEP);
-	sigmask |= (1 << DBGMON_BREAKPOINT);
-	sigmask |= (1 << DBGMON_APP_STOP);
-	sigmask |= (1 << DBGMON_APP_EXEC);
-	sigmask |= (1 << DBGMON_APP_UPLOAD);
-	sigmask |= (1 << DBGMON_APP_ERASE);
-	sigmask |= (1 << DBGMON_APP_TERM);
-	sigmask |= (1 << DBGMON_APP_RESUME);
-	sigmask |= (1 << DBGMON_COMM_RCV);
-	sigmask |= (1 << DBGMON_COMM_CTL);
+	sigmask = (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_THREAD_FAULT);
+	sigmask |= (1 << MONITOR_THREAD_STEP);
+	sigmask |= (1 << MONITOR_BREAKPOINT);
+	sigmask |= (1 << MONITOR_APP_STOP);
+	sigmask |= (1 << MONITOR_APP_EXEC);
+	sigmask |= (1 << MONITOR_APP_UPLOAD);
+	sigmask |= (1 << MONITOR_APP_ERASE);
+	sigmask |= (1 << MONITOR_APP_TERM);
+	sigmask |= (1 << MONITOR_APP_RESUME);
+	sigmask |= (1 << MONITOR_COMM_RCV);
+	sigmask |= (1 << MONITOR_COMM_CTL);
 #if (THINKOS_ENABLE_CONSOLE)
-	sigmask |= (1 << DBGMON_TX_PIPE);
-	sigmask |= (1 << DBGMON_RX_PIPE);
+	sigmask |= (1 << MONITOR_TX_PIPE);
+	sigmask |= (1 << MONITOR_RX_PIPE);
 #endif
-	sigmask |= (1 << DBGMON_SOFTRST);
-	sigmask |= (1 << DBGMON_THREAD_CREATE);
-	sigmask |= (1 << DBGMON_THREAD_TERMINATE);
-	sigmask |= (1 << DBGMON_ALARM);
+	sigmask |= (1 << MONITOR_SOFTRST);
+	sigmask |= (1 << MONITOR_THREAD_CREATE);
+	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+	sigmask |= (1 << MONITOR_ALARM);
 
 
 #if (GDB_IDLE_TIMEOUT_MS > 0)
-	dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+	monitor_alarm(GDB_IDLE_TIMEOUT_MS);
 #endif		
 
 	for(;;) {
-		DCC_LOG(LOG_MSG, "dbgmon_select()...");
-		sig = dbgmon_select(sigmask);
+		DCC_LOG(LOG_MSG, "monitor_select()...");
+		sig = monitor_select(sigmask);
 		DCC_LOG1(LOG_INFO, "sig=%d", sig);
 
 		switch (sig) {
 
 #if (GDB_IDLE_TIMEOUT_MS > 0)
-		case DBGMON_ALARM:
+		case MONITOR_ALARM:
 			DCC_LOG(LOG_INFO, "alarm!");
-			dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+			monitor_alarm(GDB_IDLE_TIMEOUT_MS);
 		break;
 #endif
 
-		case DBGMON_SOFTRST:
+		case MONITOR_SOFTRST:
 			DCC_LOG(LOG_INFO, "Soft reset.");
 //			this_board.softreset();
-			dbgmon_clear(DBGMON_SOFTRST);
+			monitor_clear(MONITOR_SOFTRST);
 #if THINKOS_ENABLE_CONSOLE
 //			thinkos_console_reset();
 			/* Update the console connection flag which was cleared
 			   by __console_reset(). */
-			thinkos_krn_console_connect_set(dbgmon_comm_isconnected(comm));
+			thinkos_krn_console_connect_set(monitor_comm_isconnected(comm));
 #endif
 			break;
 
-		case DBGMON_APP_UPLOAD:
-			dbgmon_clear(DBGMON_APP_UPLOAD);
+		case MONITOR_APP_UPLOAD:
+			monitor_clear(MONITOR_APP_UPLOAD);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
 			break;
 
 
-		case DBGMON_APP_EXEC:
-			dbgmon_clear(DBGMON_APP_EXEC);
+		case MONITOR_APP_EXEC:
+			monitor_clear(MONITOR_APP_EXEC);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 #if 0
-			if (!dbgmon_app_exec(&this_board.application, true)) {
-				DCC_LOG(LOG_ERROR, "/!\\ dbgmon_app_exec() failed!");
+			if (!monitor_app_exec(&this_board.application, true)) {
+				DCC_LOG(LOG_ERROR, "/!\\ monitor_app_exec() failed!");
 				gdb->active_app = false;
 			} else {
 				gdb->active_app = true;
@@ -202,76 +204,76 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 #endif
 			break;
 
-		case DBGMON_APP_ERASE:
-			dbgmon_clear(DBGMON_APP_ERASE);
+		case MONITOR_APP_ERASE:
+			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
 			break;
 
-		case DBGMON_APP_TERM:
-			dbgmon_clear(DBGMON_APP_TERM);
+		case MONITOR_APP_TERM:
+			monitor_clear(MONITOR_APP_TERM);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
 			break;
 
-		case DBGMON_APP_STOP:
-			dbgmon_clear(DBGMON_APP_STOP);
+		case MONITOR_APP_STOP:
+			monitor_clear(MONITOR_APP_STOP);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
 			break;
 
-		case DBGMON_APP_RESUME:
-			dbgmon_clear(DBGMON_APP_RESUME);
+		case MONITOR_APP_RESUME:
+			monitor_clear(MONITOR_APP_RESUME);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
 			break;
 
-		case DBGMON_KRN_EXCEPT:
+		case MONITOR_KRN_EXCEPT:
 			DCC_LOG(LOG_INFO, "Exception.");
-			dbgmon_clear(DBGMON_KRN_EXCEPT);
+			monitor_clear(MONITOR_KRN_EXCEPT);
 //			gdbrsp_on_fault(gdb, pkt);
 			break;
 
-		case DBGMON_THREAD_FAULT:
+		case MONITOR_THREAD_FAULT:
 			DCC_LOG(LOG_INFO, "Thread fault.");
-			dbgmon_clear(DBGMON_THREAD_FAULT);
+			monitor_clear(MONITOR_THREAD_FAULT);
 //			gdbrsp_on_fault(gdb, pkt);
 			break;
 
-		case DBGMON_THREAD_STEP:
-			DCC_LOG(LOG_INFO, "DBGMON_THREAD_STEP");
-			dbgmon_clear(DBGMON_THREAD_STEP);
+		case MONITOR_THREAD_STEP:
+			DCC_LOG(LOG_INFO, "MONITOR_THREAD_STEP");
+			monitor_clear(MONITOR_THREAD_STEP);
 //			gdbrsp_on_step(gdb, pkt);
 			break;
 
-		case DBGMON_BREAKPOINT:
-			DCC_LOG(LOG_INFO, "DBGMON_BREAKPOINT");
-			dbgmon_clear(DBGMON_BREAKPOINT);
+		case MONITOR_BREAKPOINT:
+			DCC_LOG(LOG_INFO, "MONITOR_BREAKPOINT");
+			monitor_clear(MONITOR_BREAKPOINT);
 //			gdbrsp_on_breakpoint(gdb, pkt);
 			break;
 
-		case DBGMON_THREAD_CREATE:
-			dbgmon_clear(DBGMON_THREAD_CREATE);
+		case MONITOR_THREAD_CREATE:
+			monitor_clear(MONITOR_THREAD_CREATE);
 			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
 			break;
 
-		case DBGMON_THREAD_TERMINATE:
-			dbgmon_clear(DBGMON_THREAD_TERMINATE);
+		case MONITOR_THREAD_TERMINATE:
+			monitor_clear(MONITOR_THREAD_TERMINATE);
 			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
 			break;
 
 
-		case DBGMON_COMM_CTL:
+		case MONITOR_COMM_CTL:
 			DCC_LOG(LOG_INFO, "Comm Ctl.");
-			dbgmon_clear(DBGMON_COMM_CTL);
-			if (!dbgmon_comm_isconnected(comm)) {
+			monitor_clear(MONITOR_COMM_CTL);
+			if (!monitor_comm_isconnected(comm)) {
 				DCC_LOG(LOG_WARNING, "Debug Monitor Comm closed!");
 				return;
 			}
 			break;
 
 #if (THINKOS_ENABLE_CONSOLE)
-		case DBGMON_COMM_EOT:
+		case MONITOR_COMM_EOT:
 			DCC_LOG(LOG_MSG, "COMM_EOT");
 			/* FALLTHROUGH */
 
-		case DBGMON_TX_PIPE:
+		case MONITOR_TX_PIPE:
 			DCC_LOG(LOG_MSG, "TX Pipe.");
 			if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
 #if 0
@@ -282,36 +284,36 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 					/* enable COMM_EOT event to continue sending 
 					   data */
-					sigmask |= (1 << DBGMON_COMM_EOT);
+					sigmask |= (1 << MONITOR_COMM_EOT);
 					thinkos_console_tx_pipe_commit(n); 
 				} else {
 					DCC_LOG(LOG_WARNING, "rsp_console_output() failed!!!");
-					dbgmon_clear(DBGMON_TX_PIPE);
-					sigmask &= ~(1 << DBGMON_COMM_EOT);
+					monitor_clear(MONITOR_TX_PIPE);
+					sigmask &= ~(1 << MONITOR_COMM_EOT);
 				}
 #endif
 			} else {
 				DCC_LOG(LOG_MSG, "TX Pipe empty!!!");
-				dbgmon_clear(DBGMON_TX_PIPE);
-				sigmask &= ~(1 << DBGMON_COMM_EOT);
+				monitor_clear(MONITOR_TX_PIPE);
+				sigmask &= ~(1 << MONITOR_COMM_EOT);
 			}
 			break;
 #endif
 
 #if (THINKOS_ENABLE_CONSOLE)
-		case DBGMON_RX_PIPE:
-			dbgmon_clear(DBGMON_RX_PIPE);
+		case MONITOR_RX_PIPE:
+			monitor_clear(MONITOR_RX_PIPE);
 			DCC_LOG(LOG_WARNING, "RX Pipe empty!!!");
 			break;
 #endif
 
-		case DBGMON_COMM_RCV:
-			DCC_LOG(LOG_MSG, "DBGMON_COMM_RCV +++++++++++");
-			if (dbgmon_comm_recv(comm, buf, 1) != 1) {
-				DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
+		case MONITOR_COMM_RCV:
+			DCC_LOG(LOG_MSG, "MONITOR_COMM_RCV +++++++++++");
+			if (monitor_comm_recv(comm, buf, 1) != 1) {
+				DCC_LOG(LOG_WARNING, "monitor_comm_recv() failed!");
 				continue;
 			}
-			DCC_LOG(LOG_MSG, "DBGMON_COMM_RCV --------");
+			DCC_LOG(LOG_MSG, "MONITOR_COMM_RCV --------");
 
 			switch (buf[0]) {
 
@@ -330,9 +332,9 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 
 			case '$':
 				DCC_LOG(LOG_MSG, "Comm RX: '$'");
-				dbgmon_alarm(1000);
+				monitor_alarm(1000);
 				len = gdbrsp_pkt_recv(gdb_comm, pkt, RSP_BUFFER_LEN);
-				dbgmon_alarm_stop();
+				monitor_alarm_stop();
 				if (len <= 0) {
 //					if (!gdb->noack_mode)
 //						gdbrsp_ack(gdb);
@@ -353,7 +355,7 @@ void gdb_stub_task(struct dbgmon_comm * comm)
 			}
 
 #if (GDB_IDLE_TIMEOUT_MS > 0)
-			dbgmon_alarm(GDB_IDLE_TIMEOUT_MS);
+			monitor_alarm(GDB_IDLE_TIMEOUT_MS);
 #endif
 			break;
 		}

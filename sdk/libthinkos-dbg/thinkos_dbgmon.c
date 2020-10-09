@@ -676,28 +676,6 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				} 
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
 
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-				if (code == DBGMON_BKPT_ON_THREAD_CREATE) {
-					DCC_LOG3(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-							 " THREAD CREATE" _NORMAL_ _FG_YELLOW_
-							 " PC=%08x LR=%08x R0=%d" _ATTR_POP_, 
-							 frm->pc, frm->lr, frm->r0);
-					thinkos_dbgmon_rt.thread_id = frm->r0;
-					thinkos_dbgmon_rt.code = 0;
-					monitor_signal(MONITOR_THREAD_CREATE);
-					break;
-				} 
-				if (code == MONITOR_BKPT_ON_THREAD_TERMINATE) {
-					DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
-							 " THREAD TERMINATE" _NORMAL_ _FG_YELLOW_
-							 " PC=%08x LR=%08x R0=%d R1=%d" _ATTR_POP_, 
-							 frm->pc, frm->lr, frm->r0, frm->r1);
-					thinkos_dbgmon_rt.thread_id = frm->r0;
-					thinkos_dbgmon_rt.code = frm->r1;
-					monitor_signal(MONITOR_THREAD_TERMINATE);
-					break;
-				} 
-#endif /* THINKOS_ENABLE_MONITOR_THREADS */
 				DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 						 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
 						 " PC=%08x SP=%08x IPSR=%d"

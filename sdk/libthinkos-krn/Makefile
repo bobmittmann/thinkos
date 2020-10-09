@@ -41,11 +41,16 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_systmr.c thinkos_ffs.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
+		 thinkos_krnsvc.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
-#SFILES = thinkos_sched.S thinkos_vector.S thinkos_isr.S 
-SFILES = thinkos_vector.S thinkos_isr.S \
-	cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
+ifeq ($(CPU), cortex-m4)
+  SFILES = thinkos_vector.S thinkos_isr.S \
+		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
+else
+  SFILES = thinkos_vector.S thinkos_isr.S \
+		   thinkos_sched.S 
+endif
 
 include ../../mk/lib.mk
 

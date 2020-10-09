@@ -307,10 +307,10 @@ const struct mem_desc sram_desc = {
 	.base = 0,
 	.cnt = 3,
 	.blk = {
-		{"STACK", 0x10000000, M_RW, SZ_1K, 16},	/*  CCM - Main Stack */
-		{"BOOT", 0x20000000, M_RO, SZ_1K, 4},	/* Bootloader: 4KiB */
-		{"APP", 0x20001000, M_RW, SZ_1K, 44},	/* Application: 44KiB */
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "STACK", 0x10000000, M_RW, SZ_1K, 16}, /*  CCM - Main Stack */
+		{.tag = "BOOT", 0x20000000, M_RO, SZ_1K, 4},   /* Bootloader: 4KiB */
+		{.tag = "APP", 0x20001000, M_RW, SZ_1K, 44},   /* Application: 44KiB */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 
@@ -319,9 +319,9 @@ const struct mem_desc flash_mem = {
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_2K, 32},	/* Bootloader: 64 KiB */
-		{"APP", 0x00010000, M_RW, SZ_2K, 96},	/* Application: 192 KiB */
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "BOOT", 0x00000000, M_RO, SZ_2K, 32}, /* Bootloader: 64 KiB */
+		{.tag = "APP", 0x00010000, M_RW, SZ_2K, 96},  /* Application: 192 KiB */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 
@@ -330,8 +330,8 @@ const struct mem_desc peripheral_desc = {
 	.base = 0,
 	.cnt = 1,
 	.blk = {
-		{"RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
-		{"", 0x00000000, 0, 0, 0}
+		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
+		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
 

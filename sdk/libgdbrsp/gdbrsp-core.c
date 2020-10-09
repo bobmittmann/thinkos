@@ -41,12 +41,12 @@ static int target_sync_reset(void)
 {
 	int ret;
 
-	dbgmon_soft_reset();
-	if ((ret = dbgmon_expect(DBGMON_SOFTRST)) < 0) {
-		DCC_LOG(LOG_WARNING, "dbgmon_expect()!");
+	monitor_soft_reset();
+	if ((ret = monitor_expect(MONITOR_SOFTRST)) < 0) {
+		DCC_LOG(LOG_WARNING, "monitor_expect()!");
 		return ret;
 	}
-	dbgmon_clear(DBGMON_SOFTRST);
+	monitor_clear(MONITOR_SOFTRST);
 	this_board.softreset();
 	return 0;
 }
@@ -55,10 +55,10 @@ static int target_sync_reset(void)
 static bool target_appc_run(struct gdbrsp_agent * gdb) 
 {
 	if (!gdb->active_app) {
-		if (dbgmon_app_exec(&this_board.application, true)) {
+		if (monitor_app_exec(&this_board.application, true)) {
 			gdb->active_app = true;
 		} else {
-			DCC_LOG(LOG_ERROR, "/!\\ dbgmon_app_exec() failed!");
+			DCC_LOG(LOG_ERROR, "/!\\ monitor_app_exec() failed!");
 		}
 	}
 
@@ -119,9 +119,9 @@ static inline int rsp_ack(struct gdbrsp_agent * gdb)
 }
 
 #if 0
-static int rsp_nack(struct dbgmon_comm * comm)
+static int rsp_nack(struct monitor_comm * comm)
 {
-	return dbgmon_comm_send(gdb, "-", 1);
+	return monitor_comm_send(gdb, "-", 1);
 }
 #endif
 
@@ -392,7 +392,7 @@ void print_stack_usage(struct gdbrsp_agent * gdb, char * pkt)
 	rsp_monitor_write(gdb, pkt, str, n); 
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		if (rt->ctx[i] != NULL) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 			cp = str;
 			cp += uint2dec(cp, i);
 			cp += str2str(cp, " | ");
@@ -430,7 +430,7 @@ int rsp_cmd(struct gdbrsp_agent * gdb, char * pkt)
 	DCC_LOGSTR(LOG_INFO, "cmd=\"%s\"", s);
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
-		dbgmon_req_app_exec(); 
+		monitor_req_app_exec(); 
 	} else if (prefix(s, "os")) {
 	} else if (prefix(s, "si")) {
 		print_stack_usage(gdb, pkt);
@@ -576,8 +576,8 @@ static int rsp_query(struct gdbrsp_agent * gdb, char * pkt)
 		/* XXX: if there is no active application */
 		if (!gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "no active application, "
-					"calling dbgmon_app_exec()!");
-			if (!dbgmon_app_exec(&this_board.application, true)) {
+					"calling monitor_app_exec()!");
+			if (!monitor_app_exec(&this_board.application, true)) {
 				n = str2str(pkt, "$1");
 			} else {
 				gdb->active_app = true;
@@ -1243,8 +1243,8 @@ static int rsp_v_packet(struct gdbrsp_agent * gdb, char * pkt, unsigned int len)
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
 						DCC_LOG(LOG_WARNING, "no active application, "
-								"calling dbgmon_app_exec()!");
-						if (!dbgmon_app_exec(&this_board.application, true)) {
+								"calling monitor_app_exec()!");
+						if (!monitor_app_exec(&this_board.application, true)) {
 							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
 						gdb->active_app = true; 
@@ -1524,12 +1524,12 @@ int gdbrsp_pkt_recv(struct gdbrsp_comm * comm, char * pkt, int max)
 	sum = 0;
 	pos = 0;
 
-	dbgmon_alarm(1000);
+	monitor_alarm(1000);
 
 	for (;;) {
 		cp = &pkt[pos];
 		if ((n = comm->op->recv(comm->drv, cp, rem)) < 0) {
-			DCC_LOG(LOG_WARNING, "dbgmon_comm_recv() failed!");
+			DCC_LOG(LOG_WARNING, "monitor_comm_recv() failed!");
 			ret = n;
 			break;
 		}
@@ -1554,7 +1554,7 @@ int gdbrsp_pkt_recv(struct gdbrsp_comm * comm, char * pkt, int max)
 				cp[j++] = c;
 			} else if (state == RSP_SUM) {
 				cp[j++] = c;
-				dbgmon_alarm_stop();
+				monitor_alarm_stop();
 				/* FIXME: check the sum!!! */
 				pos += j;
 				pkt[pos] = '\0';
@@ -1579,7 +1579,7 @@ int gdbrsp_pkt_recv(struct gdbrsp_comm * comm, char * pkt, int max)
 		}
 	}
 
-	dbgmon_alarm_stop();
+	monitor_alarm_stop();
 	return ret;
 }
 

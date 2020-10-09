@@ -72,7 +72,7 @@ static uint64_t tag2hash(const char * tag)
 
 static inline uint64_t mem_blk_hash(const struct blk_desc * blk)
 {
-	return *(uint64_t *)blk->tag;
+	return blk->hash;
 }
 
 static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem, 
@@ -95,6 +95,7 @@ static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem,
 	return NULL;
 }
 
+#if 0
 int32_t __attribute__((section (".data#"), noinline)) 
 thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
 {
@@ -143,6 +144,7 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
 	/* FIXME: experimental */
 	return count;
 }
+#endif
 
 /*
    Process FLASH memory requests.
@@ -226,8 +228,10 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			break;
 		case THINKOS_FLASH_MEM_ERASE:
 			DCC_LOG2(LOG_YAP, "erase off=0x%08x rem=%d", off, rem);
-			//ret = flash_dev_erase(dev, off, rem);
+			ret = flash_dev_erase(dev, off, rem);
+#if 0
 			ret = thinkos_flash_drv_erase(dev, off, rem);
+#endif
 			break;
 		case THINKOS_FLASH_MEM_LOCK:
 			DCC_LOG2(LOG_YAP, "lock off=0x%08x rem=%d", off, rem);

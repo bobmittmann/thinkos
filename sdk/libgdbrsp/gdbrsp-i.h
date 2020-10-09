@@ -37,6 +37,8 @@
 
 #include <gdbrsp.h>
 
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_CONSOLE__

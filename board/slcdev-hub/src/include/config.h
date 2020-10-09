@@ -35,10 +35,10 @@
 /* Enable thinkos_irq_ctl system call */
 #define THINKOS_ENABLE_IRQ_CTL          1
 #define THINKOS_ENABLE_IRQ_RESTORE      0
-#define THINKOS_ENABLE_IRQ_CYCCNT       0
+#define THINKOS_ENABLE_IRQ_CYCCNT       1
 #define THINKOS_ENABLE_IRQ_PRIORITY_0   0
-#define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
-#define THINKOS_ENABLE_WQ_IRQ           0
+#define THINKOS_ENABLE_IRQ_TIMEDWAIT    1
+#define THINKOS_ENABLE_WQ_IRQ           1
 
 #define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
@@ -166,19 +166,15 @@
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 #define THINKOS_ENABLE_IDLE_MSP         1
 
-#define THINKOS_ENABLE_KRN_TRACE        0
+#define THINKOS_ENABLE_KRN_TRACE        1
 #define THINKOS_ENABLE_OBJ_ALLOC        1
 #define THINKOS_ENABLE_OBJ_FREE         1
 
-#define THINKOS_ENABLE_I_CALLS          0
+#define THINKOS_ENABLE_I_CALLS          1
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        0
-
-/* Enable the rt_snapshot() service to get
-   the state of the kernel */
-#define THINKOS_ENABLE_RT_DEBUG         0
+#define THINKOS_ENABLE_FLASH_MEM        1
 
 #define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ASM_SCHEDULER           1
