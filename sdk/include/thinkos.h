@@ -207,7 +207,35 @@ struct thinkos_thread_attr {
 	char tag[8];
 };
 
+/** 
+ * typedef thinkos_task_t - Thread task function type.
+ * Thread entry function template.
+ *
+ */
+
 typedef int (* thinkos_task_t)(void * arg, unsigned int id);
+
+/* ThinkOS Thread Task type cast macro */
+#define C_TASK(__FUN) (int (*)(void *, unsigned int))(uintptr_t)(__FUN)
+/* ThinkOS Thread Argument type cast macro */
+#define C_ARG(__PTR) (void *)(uintptr_t)(__PTR)
+
+/* ThinkOS Thread Stack Declaration cast macro */
+#define THINKOS_THREAD_STACK(__SYM, __LEN, __SEC) \
+	uint32_t __SYM[(((__LEN) + 7) /8)] \
+	__attribute_ ((aligned(8), section(__SEC)))
+
+/*
+ * usage:
+ *
+ * Declare 1024 bytes of stack in the ccm region.
+ * THINKOS_THREAD_STACK(my_stack, 1024, "ccm");
+ *
+ * thinkos_thread_create(TT_TASK(my_task), TT_ARG(my_arg), 
+ *                       TT_STACK(my_stak), sizeof(my_stack));
+ *    
+ *
+ */
 
 /** 
  * struct thinkos_thread_init - Thread initializer. 

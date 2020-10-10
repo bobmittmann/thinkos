@@ -48,6 +48,17 @@ struct iphdr {
     uint32_t saddr;
     uint32_t daddr;
     /*The options start here. */
+};
+
+/*
+ * FIXME: error: ISO C forbids zero-size array 'op t' [-Werror=pedantic]
+ *  Workaround: #pragma GCC diagnostic ignored "-Wpedantic"
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic pop
+struct iphdr_opt {
+	struct iphdr hdr;
 	uint8_t opt[];
 };
 

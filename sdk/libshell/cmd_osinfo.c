@@ -33,6 +33,8 @@
 #include <thinkos/kernel.h>
 #include <sys/dcclog.h>
 
+#if 0
+
 #if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \
 	THINKOS_ENABLE_COND_ALLOC | THINKOS_ENABLE_SEM_ALLOC | \
 	THINKOS_ENABLE_EVENT_ALLOC | THINKOS_ENABLE_FLAG_ALLOC
@@ -279,6 +281,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 	return 0;
 }
 
+
 int cmd_thread(FILE * f, int argc, char ** argv)
 {
 	uint8_t lst[THINKOS_THREADS_MAX];
@@ -442,4 +445,5 @@ int cmd_oscheck(FILE * f, int argc, char ** argv)
 
 	return 0;
 }
+#endif
 
