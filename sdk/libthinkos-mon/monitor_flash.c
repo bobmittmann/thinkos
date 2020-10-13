@@ -72,14 +72,18 @@ static int monitor_flash_req(struct thinkos_flash_drv * drv,
 static int monitor_flash_req(struct thinkos_flash_drv * drv, 
 							  const struct thinkos_flash_desc * desc,
 							  struct flash_op_req * req) {
-	return thinkos_flash_drv_req(drv, desc,req);
+	int ret;
+
+	ret = thinkos_flash_drv_req(drv, desc, req);
+
+	DCC_LOG1(LOG_TRACE, "ret=%d", ret);
+
+	return ret;
 }
 #endif
 
 int monitor_flash_write(uint32_t addr, const void * buf, size_t size)
 {
-
-
 
 	struct thinkos_flash_drv * drv = &board_flash_drv;
 	const struct thinkos_flash_desc * desc = &board_flash_desc;

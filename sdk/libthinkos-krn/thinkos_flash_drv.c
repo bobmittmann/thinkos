@@ -223,7 +223,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			ret = flash_dev_read(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_WRITE:
-			DCC_LOG2(LOG_YAP, "write off=0x%08x rem=%d", off, rem);
+			DCC_LOG2(LOG_MSG, "write off=0x%08x rem=%d", off, rem);
 			ret = flash_dev_write(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_ERASE:

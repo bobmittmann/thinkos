@@ -30,6 +30,17 @@
 #include <sys/stm32f.h>
 #include <crc.h>
 
+/**
+ * MONITOR_YMODEM_ENABLE_AUTOERASE - call monitor_flash_erase() to 
+ * erase the flash needed for the file. This may cause timeout
+ * in the protocol if the block is too large or the memory operation
+ * too slow.
+ *
+ */
+#ifndef MONITOR_YMODEM_ENABLE_AUTOERASE
+#define MONITOR_YMODEM_ENABLE_AUTOERASE 0
+#endif
+
 #if (THINKOS_ENABLE_MONITOR)
 
 static unsigned long dec2int(const char * __s)
@@ -49,7 +60,7 @@ static unsigned long dec2int(const char * __s)
 	return val;
 }
 
-/* Receive a file and write it into the flash using the YMODEM preotocol */
+/* Receive a file and write it into the flash using the YMODEM protocol */
 int monitor_ymodem_flash(const struct monitor_comm * comm,
 						uint32_t addr, unsigned int size)
 {
@@ -68,14 +79,15 @@ int monitor_ymodem_flash(const struct monitor_comm * comm,
 		int len = ret;
 		int i;
 
-		if ((ret == 0) && (ry->xmodem) )
+		if ((ret == 0) && ((ry->xmodem) || (ry->pktno == 0))) {
 			break;
+		}
 
 		if (ry->pktno == 1) {
 			char * cp;
 			int fsize;
 
-			DCC_LOG1(LOG_MSG, "YMODEM pkt, len=%d...", len);
+			DCC_LOG1(LOG_INFO, "YMODEM pkt=1, len=%d...", len);
 			DCC_XXD(LOG_MSG, "YModem pkt", ry->pkt.data, len);
 
 			cp = (char *)ry->pkt.data;
@@ -104,16 +116,24 @@ int monitor_ymodem_flash(const struct monitor_comm * comm,
 			DCC_LOG(LOG_MSG, "YMODEM first packet...");
 			/* skip null */
 		} else {
+			DCC_LOG2(LOG_INFO, "YMODEM pkt=%d, len=%d...", ry->pktno, len);
+
 			if (ry->pktno == 2) {
+#if (MONITOR_YMODEM_ENABLE_AUTOERASE)
 				DCC_LOG1(LOG_TRACE, "Erasing %d bytes...", ry->fsize);
 				monitor_flash_erase(addr, ry->fsize);
+#endif
+
 			}	
+			DCC_LOG1(LOG_TRACE, "Writing %d bytes...", len);
 			monitor_flash_write(addr, ry->pkt.data, len);
 			addr += len;
 		}
 	}
 
-	return -1;
+	DCC_LOG(LOG_TRACE, "done.");
+
+	return ret;
 }
 
 #endif /* THINKOS_ENABLE_MONITOR */

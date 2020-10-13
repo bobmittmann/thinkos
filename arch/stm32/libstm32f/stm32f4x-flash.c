@@ -38,6 +38,9 @@ int stm32f4x_flash_unlock(struct stm32_flash * flash, off_t offs, size_t len)
 {
 	uint32_t cr;
 
+	if (len == 0)
+		return 0;
+
 	cr = flash->cr;
 	if (cr & FLASH_LOCK) {
 		DCC_LOG(LOG_TRACE, "unlocking flash...");
@@ -51,6 +54,8 @@ int stm32f4x_flash_unlock(struct stm32_flash * flash, off_t offs, size_t len)
 
 int stm32f4x_flash_lock(struct stm32_flash * flash, off_t offs, size_t len)
 {
+	if (len == 0)
+		return 0;
 
 	return 0;
 }
@@ -71,8 +76,6 @@ stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
 	return sr;
 }
 
-
-
 int stm32f4x_flash_write(struct stm32_flash * flash, 
 						 off_t offs, const void * buf, size_t len)
 {
@@ -82,6 +85,9 @@ int stm32f4x_flash_write(struct stm32_flash * flash,
 	uint32_t cr;
 	uint32_t sr;
 	uint32_t pri;
+
+	if (len == 0)
+		return 0;
 
 	src = (uint8_t *)buf;
 	dst = (uint32_t *)(((uint32_t)STM32_FLASH_MEM + offs) & 0xfffffffc);
@@ -102,7 +108,7 @@ int stm32f4x_flash_write(struct stm32_flash * flash,
 		return -1;
 	}
 
-	return 4;
+	return (len >= 4 ? 4 : len);
 }
 
 int stm32f4x_flash_read(struct stm32_flash * flash, 
@@ -111,6 +117,9 @@ int stm32f4x_flash_read(struct stm32_flash * flash,
 	uint32_t data;
 	uint32_t * src;
 	uint8_t * dst;
+
+	if (len == 0)
+		return 0;
 
 	src = (uint32_t *)(((uint32_t)STM32_FLASH_MEM + offs) & 0xfffffffc);
 	dst = (uint8_t *)buf;
@@ -121,7 +130,7 @@ int stm32f4x_flash_read(struct stm32_flash * flash,
 	dst[2] = data >> 16;
 	dst[3] = data >> 24;
 
-	return 4;
+	return (len >= 4 ? 4 : len);
 }
 
 struct stm32f4x_seq_state {
@@ -209,6 +218,9 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 	uint32_t pri;
 	uint32_t cr;
 	uint32_t sr;
+
+	if (len == 0)
+		return 0;
 
 	page = offs >> 14;
 	if ((page << 14) != (offs)) {
