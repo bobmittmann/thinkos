@@ -266,12 +266,12 @@ int board_configure_task(void *ptr)
 {
 	DCC_LOG(LOG_TRACE, "board configuration");
 
+#if 0
 	while (!thinkos_console_is_connected())  {
 		thinkos_sleep(100);
 	}
 
 	__puts("- board configuration\r\n");
-#if 0
 	uint32_t offs = 0x0c000 + 0x4000 - 0x100;
 	struct board_cfg * cfg = (struct board_cfg *)(0x08000000 + offs);
 	struct board_cfg buf;
@@ -315,17 +315,24 @@ int board_configure_task(void *ptr)
 	return 0;
 }
 
-int board_selftest_task(void *ptr)
-{
-	DCC_LOG(LOG_TRACE, "board self test");
-//	__puts("- board self test\r\n");
-//	__thinkos_dbg_halt();
-	thinkos_sleep(100);
-	DCC_LOG(LOG_TRACE, "sleep...");
-	thinkos_sleep(100);
-	DCC_LOG(LOG_TRACE, "sleep...");
-	thinkos_sleep(100);
+int console_ymodem_recv(uint32_t addr, unsigned int size);
+int console_ymodem_recv_flash(const char * tag);
 
+
+int board_selftest_task(void * ptr)
+{
+	intptr_t code = (intptr_t)ptr;
+	(void)code;
+
+	DCC_LOG1(LOG_TRACE, "board self test code=%d", code);
+/*
+	if (code > 1) {
+		__puts("- Loading application\r\n");
+		console_ymodem_recv_flash("APP");
+
+	//	console_ymodem_recv(0, 1024);
+	}
+*/
 	return 0;
 }
 
@@ -351,6 +358,7 @@ void write_fault(void)
 
 int board_default_task(void *ptr)
 {
+
 #if 0
 	int x;
 
@@ -385,6 +393,7 @@ int board_default_task(void *ptr)
 	thinkos_flash_mem_erase(x, 0, 16);
 	thinkos_flash_mem_close(x);
 #endif
+
 	return 0;
 }
 
@@ -394,6 +403,7 @@ const struct monitor_comm * board_comm_init(void)
 
 	return usb_comm_init(&stm32f_otg_fs_dev);
 }
+
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"

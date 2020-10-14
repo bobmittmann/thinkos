@@ -45,12 +45,13 @@ enum idle_hook_signal {
 	IDLE_HOOK_EXCEPT_DONE = 3,
 	/* The higest priority goes to the Debug/Monitor */
 	IDLE_HOOK_FLASH_MEM = 30,
-	kDLE_HOOK_STACK_SCAN = 31
+	IDLE_HOOK_STACK_SCAN = 31
 };
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 struct thinkos_idle_rt {
 	volatile uint32_t req_map;
+	volatile uint32_t ack_map;
 };
 
 extern struct thinkos_idle_rt thinkos_idle_rt;

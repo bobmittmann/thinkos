@@ -206,6 +206,9 @@ const void * heap_base = &__heap_base;
 
 struct monitor {
 	const struct monitor_comm * comm;
+#if (MONITOR_SELFTEST_ENABLE)
+	intptr_t test_status; 
+#endif
 #if (MONITOR_THREADINFO_ENABLE)
 	int8_t thread_id;
 #endif
@@ -516,34 +519,6 @@ static void monitor_resume_all(const struct monitor_comm * comm)
 	monitor_printf(comm, "\r\nResuming all threads...\r\n");
 	__thinkos_resume_all();
 	monitor_printf(comm, "Restarting...\r\n");
-}
-#endif
-
-#if (MONITOR_APPUPLOAD_ENABLE)
-static bool monitor_ymodem_recv(const struct monitor_comm * comm, 
-								uint32_t addr, unsigned int size)
-{
-	monitor_printf(comm, "\r\nYMODEM receive (^X to cancel) ... ");
-	if (monitor_ymodem_flash(comm, addr, size) < 0) {
-		monitor_printf(comm, "\r\n#ERROR: YMODEM failed!\r\n"); 
-		return false;
-	}	
-	monitor_printf(comm, "\r\nOK\r\n");
-	return true;
-}
-#endif
-
-#if (MONITOR_APPWIPE_ENABLE)
-static void monitor_app_erase(const struct monitor_comm * comm, 
-							  uint32_t addr, unsigned int size)
-{
-	monitor_printf(comm, "\r\nErasing application block (%08x)... ", addr);
-	monitor_flash_open("APP");
-	if (monitor_flash_erase(addr, size) < 0 )
-		monitor_printf(comm, "failed!\r\n");
-	else	
-		monitor_printf(comm, "done.\r\n");
-	monitor_flash_close();
 }
 #endif
 
@@ -964,13 +939,10 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_clear(MONITOR_APP_UPLOAD);
 #if (MONITOR_APPUPLOAD_ENABLE)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			monitor_flash_open("APP");
-			if (monitor_ymodem_recv(comm, this_board.application.start_addr, 
-								this_board.application.block_size)) {
+			if (monitor_flash_ymodem_recv(comm, "APP") >= 0) {
 				/* Request app exec */
 				monitor_req_app_exec(); 
 			}
-			monitor_flash_close();
 #endif
 			break;
 
@@ -1002,8 +974,9 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 		case MONITOR_APP_ERASE:
 			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			monitor_app_erase(comm, this_board.application.start_addr, 
-							  this_board.application.block_size);
+			monitor_printf(comm, "\r\nErasing...");
+			monitor_flash_erase_all(comm, "APP");
+			monitor_printf(comm, " ok.\r\n");
 			break;
 #endif
 
@@ -1049,6 +1022,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 				DCC_LOG(LOG_TRACE, "/!\\ Startup !!!");
 #if (MONITOR_SELFTEST_ENABLE)
 				selftest = true;
+				monitor.test_status = 0;
 				monitor_signal(MONITOR_USER_EVENT0);
 			} else if (selftest) {
 				selftest = false;
@@ -1312,8 +1286,10 @@ is_connected:
 #if (MONITOR_SELFTEST_ENABLE)
 		case MONITOR_USER_EVENT0:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT0: self test!");
+			monitor.test_status++;
 			monitor_clear(MONITOR_USER_EVENT0);
-			monitor_thread_exec(this_board.selftest_task, NULL);
+			monitor_thread_exec(this_board.selftest_task, 
+								(void *)monitor.test_status);
 			break;
 #endif
 
@@ -1357,5 +1333,4 @@ is_connected:
 		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
 }
-
 

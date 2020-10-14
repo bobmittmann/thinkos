@@ -260,20 +260,40 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 		- trapping of divide by zero and unaligned accesses
 		- access to the STIR by unprivileged software.
 		*/
-#if THINKOS_ENABLE_ALIGN
-	CM3_SCB->ccr = SCB_CCR_USERSETMPEND | SCB_CCR_STKALIGN | \
-				   SCB_CCR_UNALIGN_TRP;
-#else
 	CM3_SCB->ccr = SCB_CCR_USERSETMPEND;
+/*	USERSETMPEND, bit[1]
+    Controls whether unprivileged software can access the Software 
+	Triggered Interrupt Register (STIR):
+    - 0 Unprivileged software cannot access the STIR.
+    - 1 Unprivileged software can access the STIR. */
+
+/*	NONBASETHRDENA, bit[0]
+    Controls whether the processor can enter Thread mode with 
+	exceptions active:
+    - 0 Any attempt to enter Thread mode with exceptions active faults.
+    - 1 The processor can enter Thread mode with exceptions active because 
+	of a controlled return value. */
+
+#if (THINKOS_ENABLE_STACK_ALIGN)
+	CM3_SCB->ccr |= SCB_CCR_STKALIGN;
+/*	Determines whether the exception entry sequence guarantees 8-byte 
+	stack frame alignment, adjusting the SP if necessary before saving state:
+    - 0 Guaranteed SP alignment is 4-byte, no SP adjustment is performed.
+    - 1 8-byte alignment guaranteed, SP adjusted if necessary. */
+
+#endif
+#if (THINKOS_ENABLE_UNALIGN_TRAP)
+	CM3_SCB->ccr |= SCB_CCR_UNALIGN_TRP;
+/* Controls the trapping of unaligned word or halfword accesses:
+   - 0 Trapping disabled.
+   - 1 Trapping enabled.
+   Unaligned load-store multiples and word or halfword exclusive accesses 
+   always fault. */
+#endif
+#if (THINKOS_ENABLE_DIV0_TRAP)
+	CM3_SCB->ccr |= SCB_CCR_DIV_0_TRP;
 #endif
 	DCC_LOG1(LOG_INFO, "SCB->CCR=0x%08x", CM3_SCB->ccr); 
-//		| SCB_CCR_NONBASETHRDENA;
-	/*  NONBASETHRDENA
-		Indicates how the processor enters Thread mode:
-		0 = processor can enter Thread mode only when no exception is active.
-		1 = processor can enter Thread mode from any level under the 
-		control of an
-		EXC_RETURN value, see Exception return on page 2-28. */
 
 	/* Configure FPU */
 #if (THINKOS_ENABLE_FPU) 
@@ -359,7 +379,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
 extern int _stack;
 #define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
 #ifndef THINKOS_MAIN_STACK_SIZE
-  #define THINKOS_MAIN_STACK_SIZE 4096
+  #define THINKOS_MAIN_STACK_SIZE 8192
 #endif
 
 uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;

@@ -46,7 +46,6 @@ int monitor_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem)
 	rx->crc_mode = crc_mode;
 	rx->xmodem = xmodem;
 	rx->sync = rx->crc_mode ? 'C' : NAK;
-	rx->xmodem = 0;
 	rx->retry = 30;
 	rx->fsize = 1024 * 1024;
 	rx->count = 0;

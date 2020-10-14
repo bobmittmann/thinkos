@@ -348,11 +348,6 @@
 #define THINKOS_ENABLE_OFAST            1
 #endif
 
-/* THINKOS_ENABLE_ALIGN - enable the GCC compiler flag: -mno-unaligned-access */
-#ifndef THINKOS_ENABLE_ALIGN
-#define THINKOS_ENABLE_ALIGN            1
-#endif
-
 /* Kernel Zeros all the memory blocks and data-structures on allocation
    or initialization */
 #ifndef THINKOS_ENABLE_MEMORY_CLEAR
@@ -377,6 +372,23 @@
    */
 #ifndef THINKOS_ENABLE_STACK_INIT
 #define THINKOS_ENABLE_STACK_INIT       1
+#endif
+
+/* THINKOS_ENABLE_STACK_ALIGN - enable 64bits stack alignment. */
+#ifndef THINKOS_ENABLE_STACK_ALIGN
+#define THINKOS_ENABLE_STACK_ALIGN      1
+#endif
+
+/* THINKOS_ENABLE_UNALIGN_TRAP - Enable unaligned memory access fault. 
+ The GCC compiler flag: -mno-unaligned-access must
+ be enabled to avoid generating unaligned code. */
+#ifndef THINKOS_ENABLE_UNALIGN_TRAP
+#define THINKOS_ENABLE_UNALIGN_TRAP     1
+#endif
+
+/* Enable division by zero trap */
+#ifndef THINKOS_ENABLE_DIV0_TRAP
+#define THINKOS_ENABLE_DIV0_TRAP        1
 #endif
 
 /* THINKOS_ENABLE_MONITOR: Enable the kernel monitor (MONITOR) framework.
@@ -899,7 +911,9 @@ struct thinkos_profile {
 			uint32_t idle_wfi        :1;
 			uint32_t sched_debug     :1;
 			uint32_t ofast           :1;
-			uint32_t align           :1;
+			uint32_t stack_align     :1;
+			uint32_t unalign_trap    :1;
+			uint32_t div0_trap       :1;
 			uint32_t idle_hooks      :1;
 			uint32_t idle_msp        :1;
 		};

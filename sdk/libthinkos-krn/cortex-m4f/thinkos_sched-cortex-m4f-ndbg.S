@@ -95,21 +95,52 @@ thinkos_sched_select_ready:
 	cmp     r1, r2
 	it      eq
 	bxeq    lr
-
 #endif
+	lsr      lr, lr, #2
+	and      lr, lr, #7
+	tbb      [pc, lr]
+.L_entry_tab:
+	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 0 */
+	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 1 */
+	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 2 */
+	.byte    ((.L_entry_fpu - .L_entry_tab)/2) /* 3 */
+	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 4 */
+	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 5 */
+	.byte    ((.L_entry_krn - .L_entry_tab)/2) /* 6 */
+	.byte    ((.L_entry_usr - .L_entry_tab)/2) /* 7 */
+	.align	 1
+/*
+=========== ============== ============= ============ ===== ===== =====
+ EXC_RETURN    Return to   Return stack   Frame type  Priv   Ctrl  Op
+=========== ============== ============= ============ ===== ===== =====
+ 0xFFFFFFE1  Handler mode          Main     Extended  Err    xxx   0 28
+ 0xFFFFFFE9   Thread mode          Main     Extended  Err    xxx   2 20  
+ 0xFFFFFFED   Thread mode       Process     Extended  Ufp    101   3 16
+ 0xFFFFFFF1  Handler mode          Main        Basic  Err    xxx   4 12
+ 0xFFFFFFF9   Thread mode          Main        Basic  Krn    000   6  4
+ 0xFFFFFFFD   Thread mode       Process        Basic  Usr    001   7  0
+=========== ============== ============= ============ ===== ===== =====
+*/
+.L_entry_krn:
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
+	stmdb    sp!, {r4-r12, lr}
+	mov      r0, sp
+	b        thinkos_sched_update_cyccnt
 
-	tst     lr, #EXC_RETURN_SPSEL
-	itte    eq
-	moveq   r0, sp
-	subeq   sp, sp, #(CTX_R0 * 4) /* reserve space on MSP stack */
-	mrsne   r0, PSP
-	movs    r12, r0
-thinkos_sched_context_save:
-	stmdb   r0!, {r4-r12, lr}
-	tst     lr, #EXC_RETURN_nFPCA
-	itt     eq
-	moveq   r7, r0
-	vstmdbeq r7!, {s16-s31}
+.L_entry_fpu:
+	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
+	mrs      r0, PSP
+	stmdb    r0!, {r4-r12, lr}
+	mov      r7, r0
+	vstmdb   r7!, {s16-s31}
+	orrs     r0, #(CONTROL_nPRIV | CONTROL_FPCA)
+	b        thinkos_sched_update_cyccnt
+
+.L_entry_usr:
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+	mrs      r0, PSP
+	stmdb    r0!, {r4-r12, lr}
+	orrs     r0, #(CONTROL_nPRIV)
 
 thinkos_sched_update_cyccnt:
 	/* DWT.SYCCNT */
@@ -130,21 +161,12 @@ thinkos_sched_update_cyccnt:
 	adds    r5, r6
 	str     r5, [r3, r7, lsl #2]
 
-
-	mrs     r7, CONTROL
-	/* Alternatively get the control (3bits) from the context */
-	orrs    r0, r7
 thinkos_sched_swap:
 	/* r0: thread stack
 	   r1: next active thread 
 	   r3: thinkos_rt */
 	/* store the old context pointer into the context vector */
 	str.w	r0, [r3, r2, lsl #2]
-#if 0
-	/* store the new control register */
-	adds    r6, r2, #THINKOS_RT_CONTROL_OFFS
-	strb	r7, [r3, r6]
-#endif
 
 thinkos_krn_sched_ctx_get:
 
@@ -159,34 +181,46 @@ thinkos_krn_sched_ctx_restore:
 	/* r0: new thread stack
 	   r1: new active thread
 	   r2: old active thread
-	   r3: thinkos_rt 
-	   r4: new control register */
-	str     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+	   r3: thinkos_rt */
+	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	
-#if 0
-	/* load the new control register */
-	adds    r4, r1, #THINKOS_RT_CONTROL_OFFS
-	ldrb	r4, [r3, r4]
-#endif
-	/* Alternatively get the control (3bits) from the context */
-	ands    r3, r0, #0x07
-	bics    r0, r0, #0x07
+	/* get the control (3bits) from the context */
+	ands     r7, r0, #0x07
+	/* restore the control register */
+	msr      CONTROL, r7
+	isb
+	bics     r0, r0, #0x07
 
-	tbb      [pc, r3]
+	tbb      [pc, r7]
 .L_exit_tab:
 	.byte    ((.L_exit_krn - .L_exit_tab)/2) /* 0 */
 	.byte    ((.L_exit_usr - .L_exit_tab)/2) /* 1 */
 	.byte    ((.L_exit_err2 - .L_exit_tab)/2) /* 2 */
 	.byte    ((.L_exit_usr - .L_exit_tab)/2) /* 3 */
 	.byte    ((.L_exit_err4 - .L_exit_tab)/2) /* 4 */
-	.byte    ((.L_exit_err5 - .L_exit_tab)/2) /* 5 */
+	.byte    ((.L_exit_ufp - .L_exit_tab)/2) /* 5 */
 	.byte    ((.L_exit_err6 - .L_exit_tab)/2) /* 6 */
-	.byte    ((.L_exit_ufp - .L_exit_tab)/2) /* 7 */
+	.byte    ((.L_exit_err7 - .L_exit_tab)/2) /* 7 */
+
+
+.L_exit_usr:
+	/* restore core context */
+	ldmia    r0!, {r4-r12, lr}
+	/* restore stack pointer */
+	msr      PSP, r0
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+	/* return */
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	sub      r0, r0, #((CTX_R0) * 4)
+	mov      r3, sp
+	b        thinkos_sched_dbg
+#else
+	bx       lr
+#endif
 
 	.align	 1
 .L_exit_ufp:
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	/* restore FP context */
 	mov      r7, r0
 	vldmdb   r7!, {s16-s31}
@@ -194,47 +228,25 @@ thinkos_krn_sched_ctx_restore:
 	ldmia    r0!, {r4-r12, lr}
 	/* restore stack pointer */
 	msr      PSP, r0
-	/* restore the control register */
-	msr      CONTROL, r3
-	isb
-	/* return */
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	sub      r0, r0, #((CTX_R0) * 4)
-	mov      r3, sp
-	b        thinkos_sched_dbg
-#else
-
-	bx       lr
-#endif
-
-.L_exit_usr:
 	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_PSP
-	/* restore core context */
-	ldmia    r0!, {r4-r12, lr}
-	/* restore stack pointer */
-	msr      PSP, r0
-	/* restore the control register */
-	msr      CONTROL, r3
-	isb
+	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	sub      r0, r0, #((CTX_R0) * 4)
 	mov      r3, sp
 	b        thinkos_sched_dbg
 #else
+
 	bx       lr
 #endif
 
 .L_exit_krn:
 	cmp      sp, r0
 	bne      .L_idle_stack_fault
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* restore core context */
 	ldmia    sp!, {r4-r12, lr}
-	/* restore the control register */
-	msr      CONTROL, r3
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
@@ -243,29 +255,45 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
+.L_entry_err:
+	mov      r12, #1
+	b        .L_entry_err
+
 .L_idle_stack_fault:
-	mov      lr, r0
+	mov      r12, #0
 	b        .L_idle_stack_fault
 
 .L_exit_err1:
-	mov      lr, r1
+	mov      r12, #1
 	b        .L_exit_err1
 
 .L_exit_err2:
-	mov      lr, r2
+	mov      r12, #2
 	b        .L_exit_err2
 
 .L_exit_err4:
-	mov      lr, r4
+	mov      r12, #3
 	b        .L_exit_err4
 
-.L_exit_err5:
-	mov      lr, r5
-	b        .L_exit_err5
-
 .L_exit_err6:
-	mov      lr, r6
+	mov      r12, #4
 	b        .L_exit_err6
+
+.L_exit_err7:
+	mov      r12, #5
+	b        .L_exit_err7
+
+.L_stack_align_error:
+	mov      r12, #6
+	b        .L_stack_align_error
+
+.L_stack_fpca_error:
+	mov      r12, #7
+	b        .L_stack_fpca_error
+
+.L_control_error:
+	mov      r12, #8
+	b        .L_control_error
 
 	.align  0
 .L_thinkos_rt:

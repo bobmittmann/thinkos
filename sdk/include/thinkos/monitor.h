@@ -321,6 +321,14 @@ int monitor_flash_open(const char * tag);
 
 int monitor_flash_close(void);
 
+
+
+int monitor_flash_ymodem_recv(const struct monitor_comm * comm,
+							  const char * tag);
+
+int monitor_flash_erase_all(const struct monitor_comm * comm,
+							const char * tag);
+
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
  * ----------------------------------------------------------------------------

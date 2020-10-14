@@ -107,6 +107,23 @@ struct xmodem_snd {
 };
 
 
+#define YMODEM_FNAME_LEN_MAX 120
+
+enum {
+	YMODEM_RCV_CKS = 0,
+	YMODEM_RCV_CRC = 1,
+};
+
+enum yr_state {
+	YR_CAN = -2,
+	YR_ERR = -1,
+	YR_UND = 0,
+	YR_EOT = 1,
+	YR_IDL = 2,
+	YR_HDR = 3,
+	YR_DAT = 4
+};
+
 struct ymodem_rcv {
 	const struct comm_dev * comm;
 
@@ -114,6 +131,7 @@ struct ymodem_rcv {
 	unsigned int fsize;
 	unsigned int count;
 
+	char state;
 	char crc_mode;
 	char xmodem;
 	unsigned char sync;
@@ -263,13 +281,15 @@ int xmodem_snd_cancel(struct xmodem_snd * sx);
 
 int xmodem_snd_eot(struct xmodem_snd * sx);
 
+int xmodem_snd_start(struct xmodem_snd * sx);
 
 
 int ymodem_rcv_init(struct ymodem_rcv * ry, 
 					const struct comm_dev * comm, 
 					unsigned int mode);
 
-int xmodem_snd_start(struct xmodem_snd * sx);
+int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname, 
+					 unsigned int * pfsize);
 
 int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len);
 

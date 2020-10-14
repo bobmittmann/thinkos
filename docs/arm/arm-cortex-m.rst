@@ -55,7 +55,7 @@ An exception return where HardFault is active and NMI is inactive always makes H
 
 
 =========== ======= ====== =======
- Ret Codes    Value  Inv    ^e1
+ Ret Codes    Value  Inv    ^0XFFFFFFE1
 =========== ======= ====== =======
  0xFFFFFFFD      -3     2       7
  0xFFFFFFF9      -7     6       6
@@ -66,16 +66,16 @@ An exception return where HardFault is active and NMI is inactive always makes H
 =========== ======= ====== =======
 
 
-=========== ============== ============= ============ ===== =====
- EXC_RETURN    Return to   Return stack   Frame type  Priv   Ctrl
-=========== ============== ============= ============ ===== =====
- 0xFFFFFFE1  Handler mode          Main     Extended          xxx
- 0xFFFFFFE9   Thread mode          Main     Extended  Err     xxx
- 0xFFFFFFED   Thread mode       Process     Extended  Usr     101
- 0xFFFFFFF1  Handler mode          Main        Basic          xxx
- 0xFFFFFFF9   Thread mode          Main        Basic  Krn     000
- 0xFFFFFFFD   Thread mode       Process        Basic  Usr     001
-=========== ============== ============= ============ ===== =====
+=========== ============== ============= ============ ===== ===== =====
+ EXC_RETURN    Return to   Return stack   Frame type  Priv   Ctrl  Op
+=========== ============== ============= ============ ===== ===== =====
+ 0xFFFFFFE1  Handler mode          Main     Extended         xxx     0
+ 0xFFFFFFE9   Thread mode          Main     Extended  Err    xxx     2  
+ 0xFFFFFFED   Thread mode       Process     Extended  Usr    101     3
+ 0xFFFFFFF1  Handler mode          Main        Basic         xxx     4
+ 0xFFFFFFF9   Thread mode          Main        Basic  Krn    000     6
+ 0xFFFFFFFD   Thread mode       Process        Basic  Usr    001     7
+=========== ============== ============= ============ ===== ===== =====
 
 The special-purpose CONTROL register
 ====================================

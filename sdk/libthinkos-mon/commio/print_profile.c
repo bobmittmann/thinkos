@@ -162,8 +162,14 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_THREAD_VOID", p->misc.thread_void);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_WFI", p->misc.idle_wfi);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SCHED_DEBUG", p->misc.sched_debug);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_OFAST", p->misc.ofast);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ALIGN", p->misc.align);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_OFAST", 
+				   p->misc.ofast);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_UNALIGN_TRAP", 
+				   p->misc.unalign_trap);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DIV0_TRAP", 
+				   p->misc.div0_trap);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_STACK_ALIGN", 
+				   p->misc.stack_align);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_HOOKS", p->misc.idle_hooks);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_MSP", p->misc.idle_msp);
 

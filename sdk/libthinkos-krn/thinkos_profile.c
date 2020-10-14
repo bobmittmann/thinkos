@@ -159,7 +159,9 @@ const struct thinkos_profile thinkos_profile = {
 		.idle_wfi        = THINKOS_ENABLE_IDLE_WFI,
 		.sched_debug     = THINKOS_ENABLE_SCHED_DEBUG,
 		.ofast           = THINKOS_ENABLE_OFAST,
-		.align           = THINKOS_ENABLE_ALIGN,
+		.stack_align     = THINKOS_ENABLE_STACK_ALIGN,
+		.unalign_trap    = THINKOS_ENABLE_UNALIGN_TRAP,
+		.div0_trap       = THINKOS_ENABLE_DIV0_TRAP,
 		.idle_hooks      = THINKOS_ENABLE_IDLE_HOOKS,
 		.idle_msp        = THINKOS_ENABLE_IDLE_MSP,
 	},
@@ -360,8 +362,13 @@ void __profile(void)
 			 p->misc.sched_debug);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_OFAST           = %d", 
 			 p->misc.ofast);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ALIGN           = %d", 
-			 p->misc.align);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_ALIGN     = %d", 
+			 p->misc.stack_align);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_UNALIGN_TRAP    = %d", 
+			 p->misc.unalign_trap);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DIV0_TRAP       = %d", 
+			 p->misc.div0_trap);
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_HOOKS      = %d", 
 			 p->misc.idle_hooks);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_MSP        = %d", 

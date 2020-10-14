@@ -31,7 +31,9 @@ VERSION_MINOR = "0"
 
 PROG = slcdevhub-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
+BOOT_CFILES = boot.c monitor.c events.c console_ymodem_recv.c 
+
+CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
 		 board.c lattice.c ice40lp384.c otg_xflash_pic.c 
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
@@ -39,8 +41,7 @@ LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-mon $(SDK_DIR)/libthinkos-dbg \
 		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem \
 		  $(SDK_DIR)/libtrace
-		  
-		  
+
 LIBS = gcc cm3 stm32f util thinkos-krn thinkos-mon ice-comm \
 	   xmodem trace
 

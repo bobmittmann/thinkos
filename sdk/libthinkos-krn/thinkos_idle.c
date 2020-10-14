@@ -57,26 +57,21 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #endif
 
 	for (;;) {
+
 		/* Chek for threads in the ready queue. */
 #if (THINKOS_ENABLE_IDLE_WFI)
 		asm volatile ("wfi\n"); /* wait for interrupt */
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-		do {
-			map = __ldrex((uint32_t *)&idle->req_map);
-			req = __thinkos_ffs(map);
-			if (map != 0) {
-				uint32_t y;
+		map = __ldrex((uint32_t *)&idle->req_map);
+		if (map == 0) 
+			continue;
 
-				y = map & ~(1 << req);
-
-				DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_CYAN_ 
-						 "map=%08x y=%08x req=%d" _ATTR_POP_ , 
-						 map, y, req);
-				map = y;
-			}
-		} while (__strex((uint32_t *)&idle->req_map, map));
+		req = __thinkos_ffs(map);
+		map &= ~(1 << req);
+		if (__strex((uint32_t *)&idle->req_map, map))
+			continue;
 
 		switch (req) {
 			case IDLE_HOOK_NOTIFY_MONITOR:

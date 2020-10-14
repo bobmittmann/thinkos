@@ -127,6 +127,10 @@ int main(int argc, char ** argv)
 #if DEBUG
 	udelay(0x8000);
 #endif
+
+	/* sanity check */
+	thinkos_sleep(10);
+
 	thinkos_thread_abort(0);
 
 	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
