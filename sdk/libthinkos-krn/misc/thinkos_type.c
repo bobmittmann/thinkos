@@ -314,7 +314,7 @@ const char thinkos_type_prefix_lut[] = {
 	[THINKOS_OBJ_COMMRECV]  = '<',
 	[THINKOS_OBJ_IRQ]       = 'I',
 	[THINKOS_OBJ_DMA]       = 'D',
-	[THINKOS_OBJ_FLASH_MEM] = 'Y',
+	[THINKOS_OBJ_FLASH_MEM] = 'A',
 	[THINKOS_OBJ_FAULT]     = '!',
 	[THINKOS_OBJ_INVALID]   = '?'
 };

@@ -106,7 +106,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #endif
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
-			case IDLE_HOOK_FLASH_MEM:
+			case IDLE_HOOK_FLASH_MEM0:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(0, &thinkos_rt.flash_drv[0]);
@@ -123,6 +123,13 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(2, &thinkos_rt.flash_drv[2]);
+				break;
+#endif
+#if (THINKOS_FLASH_MEM_MAX > 3)
+			case IDLE_HOOK_FLASH_MEM3:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
+				thinkos_flash_drv_tasklet(3, &thinkos_rt.flash_drv[3]);
 				break;
 #endif
 #endif

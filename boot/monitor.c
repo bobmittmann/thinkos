@@ -327,30 +327,6 @@ static void monitor_show_help(const struct monitor_comm * comm)
 	monitor_printf(comm, s_hr);
 }
 
-#if (MONITOR_SELFTEST_ENABLE)
-static void monitor_req_selftest(void) 
-{
-	monitor_soft_reset();
-	monitor_signal(MONITOR_USER_EVENT0);
-}
-#endif
-
-#if (MONITOR_CONFIGURE_ENABLE)
-static void monitor_req_configure(void) 
-{
-	monitor_soft_reset();
-	monitor_signal(MONITOR_USER_EVENT1);
-}
-#endif
-
-#if (MONITOR_UPGRADE_ENABLE)
-static void monitor_req_upgrade(void) 
-{
-	monitor_soft_reset();
-	monitor_signal(MONITOR_USER_EVENT3);
-}
-#endif
-
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct monitor_comm * comm)
 {
@@ -698,7 +674,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_SELFTEST_ENABLE)
 	case CTRL_E:
 		monitor_printf(comm, "^E\r\n");
-		monitor_req_selftest();
 		break;
 #endif
 #if (MONITOR_BREAKPOINT_ENABLE)
@@ -780,6 +755,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_Y:
 		monitor_printf(comm, "^Y\r\nUpload application [y]? ");
 		if (monitor_getc(comm) == 'y') {
+			monitor_printf(comm, "\r\nYMODEM receive (Ctrl+X to cancel)... ");
 			/* Request app upload */
 			monitor_req_app_upload();
 		} else {
@@ -832,19 +808,9 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	int cnt;
 #endif
 	bool startup = false;
-#if (MONITOR_SELFTEST_ENABLE)
-	bool selftest = false;
-#endif
-#if (MONITOR_CONFIGURE_ENABLE)
-	bool config = false;
-#endif
-#if (MONITOR_PREBOOT_ENABLE)
-	bool preboot = false;
-#endif
 	uint8_t buf[1];
 	int sig;
-	bool connected = false;
-	
+
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
 	monitor.thread_id = -1;
@@ -881,18 +847,6 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 #if (MONITOR_THREAD_STEP_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_STEP);
 #endif
-#if (MONITOR_SELFTEST_ENABLE)
-	sigmask |= (1 << MONITOR_USER_EVENT0);
-#endif
-#if (MONITOR_CONFIGURE_ENABLE)
-	sigmask |= (1 << MONITOR_USER_EVENT1);
-#endif
-#if (MONITOR_PREBOOT_ENABLE)
-	sigmask |= (1 << MONITOR_USER_EVENT2);
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
-	sigmask |= (1 << MONITOR_USER_EVENT3);
-#endif
 	sigmask |= (1 << MONITOR_THREAD_CREATE);
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 
@@ -926,8 +880,11 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 #if (MONITOR_APPUPLOAD_ENABLE)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
 			if (monitor_flash_ymodem_recv(comm, "APP") >= 0) {
+				monitor_printf(comm, "\r\nOk.\r\n");
 				/* Request app exec */
 				monitor_req_app_exec(); 
+			} else {
+				monitor_printf(comm, "\r\nfailed!\r\n");
 			}
 #endif
 			break;
@@ -993,48 +950,61 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
 			break;
 
-		case MONITOR_THREAD_TERMINATE: {
-			int thread_id;
-			int code;
+		case MONITOR_THREAD_TERMINATE:
+			if (!startup) {
+				int thread_id;
+				int code;
 
-			monitor_clear(MONITOR_THREAD_TERMINATE);
-			thread_id = monitor_thread_terminate_get(&code);
-			(void)thread_id; 
-			(void)code; 
-			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
-					thread_id, code);
+				monitor_clear(MONITOR_THREAD_TERMINATE);
+				thread_id = monitor_thread_terminate_get(&code);
+				(void)thread_id; 
+				(void)code; 
+				DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE id=%d code=%d",
+						 thread_id, code);
+				break;
+			}
 
-			if (startup) {
-				startup = false;
-				DCC_LOG(LOG_TRACE, "/!\\ Startup !!!");
+			startup = false;
+			DCC_LOG(LOG_TRACE, "/!\\ Startup !!!");
+
+
 #if (MONITOR_SELFTEST_ENABLE)
-				selftest = true;
-				monitor.test_status = 0;
-				monitor_signal(MONITOR_USER_EVENT0);
-			} else if (selftest) {
-				selftest = false;
-				DCC_LOG(LOG_TRACE, "/!\\ Selftest !!!");
+			if (monitor_thread_exec(comm, C_TASK(this_board.selftest_task),
+								C_ARG(monitor.test_status)) < 0) {
+				DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
+				break;
+			}
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
-				config = true;
-				monitor_signal(MONITOR_USER_EVENT1);
-			} else if (config) {
-				config = false;
-				DCC_LOG(LOG_TRACE, "/!\\ Config !!!");
+			if (monitor_thread_exec(comm, C_TASK(this_board.configure_task), 
+								C_ARG(monitor.test_status)) < 0) {
+				DCC_LOG(LOG_TRACE, "/!\\ configuration failed!!!");
+				break;
+			}
 #endif
 #if (MONITOR_PREBOOT_ENABLE)
-				preboot = true;
-				monitor_signal(MONITOR_USER_EVENT2);
-			} else if (preboot) {
-				DCC_LOG1(LOG_TRACE, "/!\\ Preboot, code=%d !!!", code);
-				preboot = false;
-#endif
-				if (code >= 0) {
-					monitor_req_app_exec();
-				}
+			if (monitor_thread_exec(comm, C_TASK(this_board.preboot_task), 
+								C_ARG(monitor.test_status)) < 0) {
+				DCC_LOG(LOG_TRACE, "/!\\ preboot failed!!!");
+				break;
 			}
-		}
+#endif
+			monitor_req_app_exec();
 			break;
+
+#if (MONITOR_UPGRADE_ENABLE)
+		case MONITOR_USER_EVENT3:
+			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
+			monitor_clear(MONITOR_USER_EVENT3);
+			monitor_printf(comm, "Confirm [y]? ");
+			if (monitor_getc(comm) == 'y') {
+				this_board.upgrade(comm);
+				monitor_printf(comm, "Failed !!!\r\n");
+			} else {
+				monitor_printf(comm, "\r\n");
+			}
+			break;
+#endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 		case MONITOR_THREAD_FAULT:
@@ -1075,12 +1045,12 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 #endif
 
 		case MONITOR_COMM_RCV:
-			DCC_LOG(LOG_MSG, "COMM_RCV: +++++++++++++++++");
 #if (THINKOS_ENABLE_CONSOLE)
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			raw_mode = thinkos_krn_console_is_raw_mode();
 			if (raw_mode) {
-				goto raw_mode_recv;
+				sigmask = monitor_on_comm_rcv(comm, sigmask);
+				break;
 			}
   #endif /* THINKOS_ENABLE_CONSOLE_MODE */
 
@@ -1108,207 +1078,31 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 				}
 			}
 			break;
-
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
-raw_mode_recv:
-			/* get a pointer to the head of the pipe.
-			   thinkos_console_rx_pipe_ptr() will return the number of 
-			   consecutive spaces in the buffer. */
-			if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
-				int n;
-			
-				DCC_LOG1(LOG_MSG, "Raw mode RX, cnt=%d", cnt);
-
-				/* receive from the COMM driver */
-				if ((n = monitor_comm_recv(comm, ptr, cnt)) > 0) {
-					/* commit the fifo head */
-					thinkos_console_rx_pipe_commit(n);
-					if (n == cnt) {
-						/* Wait for RX_PIPE */
-						DCC_LOG(LOG_TRACE, "Wait for RX_PIPE && COMM_RECV");
-						sigmask |= (1 << MONITOR_COMM_RCV);
-						sigmask &=  ~(1 << MONITOR_RX_PIPE);
-						//sigmask &=  ~(1 << MONITOR_RX_PIPE);
-					} else {
-						/* Wait for COMM_RECV */
-						DCC_LOG(LOG_TRACE, "Wait for COMM_RECV");
-						sigmask |= (1 << MONITOR_COMM_RCV);
-						sigmask &=  ~(1 << MONITOR_RX_PIPE);
-					}
-				} else {
-					DCC_LOG1(LOG_ERROR, "monitor_comm_recv n=%d", n);
-					/* Wait for COMM_RECV */
-					sigmask |= (1 << MONITOR_COMM_RCV);
-					sigmask &=  ~(1 << MONITOR_RX_PIPE);
-				}
-			} else {
-				DCC_LOG(LOG_TRACE, "Raw mode RX wait RX_PIPE");
-				/* Wait for RX_PIPE */
-				sigmask &= ~(1 << MONITOR_COMM_RCV);
-				sigmask |= (1 << MONITOR_RX_PIPE);
-			}
-			break;
-
-  #endif /* THINKOS_ENABLE_CONSOLE_MODE */
 #else
 			if (monitor_comm_recv(comm, buf, 1) > 0) {
 				/* process the input character */
 				monitor_process_input(&monitor, buf[0]);
 			}
 #endif /* THINKOS_ENABLE_CONSOLE */
-
-			DCC_LOG(LOG_TRACE, "COMM_RCV: ----------------");
 			break;
 
 #if (THINKOS_ENABLE_CONSOLE)
 		case MONITOR_COMM_CTL:
 			monitor_clear(MONITOR_COMM_CTL);
-			DCC_LOG(LOG_TRACE, "COMM_CTL !!!!!");
 is_connected:
-			{
-				connected = monitor_comm_isconnected(comm);
-				thinkos_krn_console_connect_set(connected);
-#if (THINKOS_ENABLE_CONSOLE_MODE)
-				raw_mode = thinkos_krn_console_is_raw_mode();
-#endif /* THINKOS_ENABLE_CONSOLE_MODE */
-
-				sigmask &= ~((1 << MONITOR_COMM_EOT) | 
-							 (1 << MONITOR_COMM_RCV) |
-							 (1 << MONITOR_RX_PIPE));
-				if (connected) {
-					sigmask |= ((1 << MONITOR_COMM_EOT) |
-								(1 << MONITOR_COMM_RCV));
-#if (THINKOS_ENABLE_CONSOLE_MODE)
-					if (raw_mode) {
-						DCC_LOG(LOG_TRACE, "Comm connected raw mode!");
-					} else 
-#endif /* THINKOS_ENABLE_CONSOLE_MODE */
-					{
-						DCC_LOG(LOG_TRACE, "Comm connected.");
-					}
-				} else {
-					DCC_LOG(LOG_TRACE, "Comm not connected!");
-				}
-
-				sigmask |= (1 << MONITOR_TX_PIPE);
-			}
+			sigmask = monitor_on_comm_ctl(comm, sigmask);
 			break;
-
-#if 0
-		case MONITOR_RX_PIPE:
-			monitor_clear(MONITOR_RX_PIPE);
-			DCC_LOG(LOG_TRACE, "RX Pipe!");
-			break;
-#endif
 
 		case MONITOR_COMM_EOT:
-			DCC_LOG(LOG_TRACE, "COMM_EOT");
 			/* FALLTHROUGH */
 		case MONITOR_TX_PIPE:
-			if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
-				int n;
-				DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, send...", cnt);
-				if ((n = monitor_comm_send(comm, ptr, cnt)) > 0) {
-					thinkos_console_tx_pipe_commit(n);
-					if (n == cnt) {
-						/* Wait for TX_PIPE */
-						sigmask |= (1 << MONITOR_TX_PIPE);
-						sigmask &= ~(1 << MONITOR_COMM_EOT);
-					} else {
-						/* Wait for COMM_EOT */
-						sigmask |= (1 << MONITOR_COMM_EOT);
-						sigmask &= ~(1 << MONITOR_TX_PIPE);
-					}
-				} else {
-					/* Wait for COMM_EOT */
-					sigmask |= (1 << MONITOR_COMM_EOT);
-					sigmask &=  ~(1 << MONITOR_TX_PIPE);
-				}
-			} else {
-				/* Wait for TX_PIPE */
-				DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, wait....", cnt);
-				sigmask |= (1 << MONITOR_TX_PIPE);
-				sigmask &= ~(1 << MONITOR_COMM_EOT);
-			}
+			sigmask = monitor_on_tx_pipe(comm, sigmask);
 			break;
 
 		case MONITOR_RX_PIPE:
-			/* get a pointer to the head of the pipe.
-			   thinkos_console_rx_pipe_ptr() will return the number of 
-			   consecutive spaces in the buffer. */
-			if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
-				int n;
-			
-				/* receive from the COMM driver */
-				if ((n = monitor_comm_recv(comm, ptr, cnt)) > 0) {
-					/* commit the fifo head */
-					thinkos_console_rx_pipe_commit(n);
-					if (n == cnt) {
-						/* Wait for RX_PIPE */
-						DCC_LOG(LOG_TRACE, 
-								"RX_PIPE: Wait for RX_PIPE && COMM_RECV");
-						sigmask |= (1 << MONITOR_COMM_RCV);
-						sigmask &=  ~(1 << MONITOR_RX_PIPE);
-					} else {
-						DCC_LOG(LOG_TRACE, "RX_PIPE: Wait for COMM_RECV");
-						/* Wait for COMM_RECV */
-						sigmask |= (1 << MONITOR_COMM_RCV);
-						sigmask &=  ~(1 << MONITOR_RX_PIPE);
-					}
-				} else {
-					/* Wait for COMM_RECV */
-					DCC_LOG(LOG_ERROR, "RX_PIPE: Wait for COMM_RECV");
-					sigmask |= (1 << MONITOR_COMM_RCV);
-					sigmask &=  ~(1 << MONITOR_RX_PIPE);
-				}
-			} else {
-				DCC_LOG1(LOG_ERROR, "RX_PIPE: RX, cnt=%d", cnt);
-				/* Wait for RX_PIPE */
-				sigmask &= ~(1 << MONITOR_COMM_RCV);
-				sigmask |= (1 << MONITOR_RX_PIPE);
-			}
+			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 #endif /* THINKOS_ENABLE_CONSOLE */
-
-#if (MONITOR_SELFTEST_ENABLE)
-		case MONITOR_USER_EVENT0:
-			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT0: self test!");
-			monitor.test_status++;
-			monitor_clear(MONITOR_USER_EVENT0);
-			monitor_thread_exec(comm, C_TASK(this_board.selftest_task),
-								C_ARG(monitor.test_status));
-			break;
-#endif
-
-#if (MONITOR_CONFIGURE_ENABLE)
-		case MONITOR_USER_EVENT1:
-			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT1: configure!");
-			monitor_clear(MONITOR_USER_EVENT1);
-			monitor_thread_exec(comm, C_TASK(this_board.configure_task), NULL);
-			break;
-#endif
-
-#if (MONITOR_PREBOOT_ENABLE)
-		case MONITOR_USER_EVENT2:
-			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
-			monitor_clear(MONITOR_USER_EVENT2);
-			preboot	= true;
-			monitor_thread_exec(comm, C_TASK(this_board.preboot_task), NULL);
-			break;
-#endif
-#if (MONITOR_UPGRADE_ENABLE)
-		case MONITOR_USER_EVENT3:
-			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
-			monitor_clear(MONITOR_USER_EVENT3);
-			monitor_printf(comm, "Confirm [y]? ");
-			if (monitor_getc(comm) == 'y') {
-				this_board.upgrade(comm);
-				monitor_printf(comm, "Failed !!!\r\n");
-			} else {
-				monitor_printf(comm, "\r\n");
-			}
-			break;
-#endif
 
 #if 0
 		case MONITOR_ALARM:

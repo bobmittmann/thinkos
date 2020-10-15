@@ -42,7 +42,10 @@ enum idle_hook_signal {
 	IDLE_HOOK_SOFTRST = 2,
 	IDLE_HOOK_EXCEPT_DONE = 3,
 	/* The higest priority goes to the Debug/Monitor */
-	IDLE_HOOK_FLASH_MEM = 30,
+	IDLE_HOOK_FLASH_MEM0 = 27,
+	IDLE_HOOK_FLASH_MEM1 = 28,
+	IDLE_HOOK_FLASH_MEM2 = 29,
+	IDLE_HOOK_FLASH_MEM3 = 30,
 	IDLE_HOOK_STACK_SCAN = 31
 };
 

@@ -364,7 +364,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	DCC_LOG2(LOG_TRACE, "flash_drv: wq=%d idx=%d", wq, idx);
 
 	/* schedule the IDLE hook ... */
-	__idle_hook_req(IDLE_HOOK_FLASH_MEM);
+	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
 	__thinkos_wq_insert(wq, self);
 	/* (1) suspend the thread by removing it from the
