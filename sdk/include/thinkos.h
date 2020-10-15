@@ -27,9 +27,11 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-
 #ifndef __THINKOS_H__
 #define __THINKOS_H__
+
+#define __THINKOS_VERSION__
+#include <thinkos/version.h>
 
 #define IRQ_PRIORITY_HIGHEST   (1 << 5)
 #define IRQ_PRIORITY_VERY_HIGH (2 << 5)
@@ -60,6 +62,7 @@
  * @THINKOS_EAGAIN: Non blocking call failed 
  * @THINKOS_EBADF: Closing console if not open
  * @THINKOS_EDEADLK: Deadlock condition detected 
+ * @THINKOS_EBUSY: Device driver busy
  */
 enum thinkos_err {
 	THINKOS_OK        =  0, /**< No error */
@@ -72,7 +75,8 @@ enum thinkos_err {
 	THINKOS_ENOSYS    = -7, /**< Invalid system call */
 	THINKOS_EFAULT    = -8,        
 	THINKOS_ENOMEM    = -9,  /**< Resource pool exausted */ 
-	THINKOS_EBADF     = -10  /**< Closing console if not open */ 
+	THINKOS_EBADF     = -10,  /**< Closing console if not open */ 
+	THINKOS_EBUSY     = -11  /**< Closing console if not open */ 
 };
 
 /** 
@@ -249,6 +253,7 @@ struct thinkos_thread_init {
 	struct thinkos_thread_attr attr;
 };
 
+#define __THINKOS_SYSCALLS__
 #include <thinkos/syscalls.h>
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>

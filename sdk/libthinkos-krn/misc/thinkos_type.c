@@ -78,8 +78,8 @@ const struct {
 #if THINKOS_DMA_MAX > 0
 			uint8_t wq_dma;
 #endif
-#if THINKOS_ENABLE_FLASH_MEM
-			uint8_t wq_flash_mem;
+#if THINKOS_FLASH_MEM_MAX > 0
+			uint8_t wq_flash_mem[THINKOS_FLASH_MEM_MAX];
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
 			uint8_t wq_fault;
@@ -135,8 +135,9 @@ const struct {
 #if THINKOS_DMA_MAX > 0
 	.wq_irq = THINKOS_OBJ_DMA,
 #endif
-#if THINKOS_ENABLE_FLASH_MEM
-	.wq_flash_mem = THINKOS_OBJ_FLASH_MEM,
+#if THINKOS_FLASH_MEM_MAX > 0
+	.wq_flash_mem = { [0 ... (THINKOS_FLASH_MEM_MAX - 1)] = 
+		THINKOS_OBJ_FLASH_MEM },
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
 	.wq_fault = THINKOS_OBJ_FAULT
@@ -261,8 +262,8 @@ const uint16_t thinkos_wq_base_lut[] = {
 #if THINKOS_ENABLE_WQ_DMA > 0
 	[THINKOS_OBJ_DMA] = THINKOS_WQ_DMA,
 #endif
-#if THINKOS_ENABLE_FLASH_MEM
-	[THINKOS_OBJ_FLASH_MEM] = THINKOS_WQ_FLASH_MEM,
+#if THINKOS_FLASH_MEM_MAX > 0
+	[THINKOS_OBJ_FLASH_MEM] = THINKOS_FLASH_MEM_BASE,
 #endif
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 	[THINKOS_OBJ_FAULT] = THINKOS_WQ_FAULT,

@@ -64,8 +64,8 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
                                                uint32_t sp, 
-                                               int (* task)(void *), 
-                                               void * arg)
+											   uintptr_t task,
+											   uintptr_t arg)
 {
 	struct thinkos_context * ctx;
 	uint32_t pc;
@@ -191,7 +191,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 	}
 #endif
 
-	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
+	__thinkos_thread_init(thread_id, sp, (uintptr_t)init->task, 
+						  (uintptr_t)init->arg);
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.sched_pri[thread_id] = init->opt.priority;

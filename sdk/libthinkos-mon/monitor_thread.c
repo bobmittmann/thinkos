@@ -45,7 +45,7 @@ void monitor_thread_destroy(int thread_id)
 	monitor_wait_idle();
 }
 
-int monitor_thread_create(int (* func)(void *), void * arg, 
+int monitor_thread_create(int (* func)(void *, unsigned int), void * arg, 
 						 const struct thinkos_thread_inf * inf)
 {
 	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
@@ -74,7 +74,7 @@ int monitor_thread_create(int (* func)(void *), void * arg,
 #endif
 
 	DCC_LOG2(LOG_TRACE, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	ctx = __thinkos_thread_init(thread_id, sp, func, arg);
+	ctx = __thinkos_thread_init(thread_id, sp, (uintptr_t)func, (uintptr_t)arg);
 	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 	DCC_LOG3(LOG_TRACE, "PC=%08X R0=%08x LR=%08x", ctx->pc, ctx->r0, ctx->lr);
 
@@ -92,4 +92,65 @@ void monitor_thread_resume(int thread_id)
 		__thinkos_defer_sched();
 } 
 
+
+/*
+   Exec a thread and wait for termination
+ */
+int monitor_thread_exec(const struct monitor_comm * comm, 
+						int (* task)(void *, unsigned int), void * arg) 
+{
+	uint32_t sigmask = 0;
+	int thread_id;
+	int sig;
+
+#if (THINKOS_ENABLE_THREAD_INFO)
+	thread_id = monitor_thread_create(task, arg, &thinkos_main_inf);
+#else
+	thread_id = monitor_thread_create(task, arg, 0);
+#endif
+	monitor_thread_resume(thread_id);
+
+	sigmask |= (1 << MONITOR_COMM_RCV);
+	sigmask |= (1 << MONITOR_COMM_CTL);
+	sigmask |= (1 << MONITOR_TX_PIPE);
+	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+
+	for(;;) {
+		switch ((sig = monitor_select(sigmask))) {
+
+		case MONITOR_COMM_RCV:
+			sigmask = monitor_on_comm_rcv(comm, sigmask);
+			break;
+
+		case MONITOR_COMM_CTL:
+			sigmask = monitor_on_comm_ctl(comm, sigmask);
+			break;
+
+		case MONITOR_COMM_EOT:
+			DCC_LOG(LOG_TRACE, "COMM_EOT");
+			/* FALLTHROUGH */
+		case MONITOR_TX_PIPE:
+			sigmask = monitor_on_tx_pipe(comm, sigmask);
+			break;
+
+		case MONITOR_RX_PIPE:
+			sigmask = monitor_on_rx_pipe(comm, sigmask);
+			break;
+
+		case MONITOR_THREAD_TERMINATE: {
+			int code;
+
+			monitor_clear(MONITOR_THREAD_TERMINATE);
+			thread_id = monitor_thread_terminate_get(&code);
+			(void)code; 
+			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
+					thread_id, code);
+			return code;
+		}
+
+		default:
+			return -1;
+		}
+	}
+}
 

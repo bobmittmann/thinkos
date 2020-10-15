@@ -105,13 +105,27 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #endif
 #endif
 
-#if (THINKOS_ENABLE_FLASH_MEM)
+#if (THINKOS_FLASH_MEM_MAX > 0)
 			case IDLE_HOOK_FLASH_MEM:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(&board_flash_drv, 
-										  &board_flash_desc);
+				thinkos_flash_drv_tasklet(0, &thinkos_rt.flash_drv[0]);
 				break;
+
+#if (THINKOS_FLASH_MEM_MAX > 1)
+			case IDLE_HOOK_FLASH_MEM1:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_FLASH_MEM1" _ATTR_POP_ );
+				thinkos_flash_drv_tasklet(1, &thinkos_rt.flash_drv[1]);
+				break;
+#if (THINKOS_FLASH_MEM_MAX > 2)
+			case IDLE_HOOK_FLASH_MEM2:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
+				thinkos_flash_drv_tasklet(2, &thinkos_rt.flash_drv[2]);
+				break;
+#endif
+#endif
 #endif
 
 			case 32:
@@ -190,10 +204,6 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 	return ctx;
 }
 
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-struct thinkos_idle_rt thinkos_idle_rt;
-#endif
-
 /* resets the idle thread and context */
 struct thinkos_context * thinkos_krn_idle_reset(void)
 {
@@ -203,8 +213,8 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
-	thinkos_idle_rt.req_map = 0;
-	ctx->r0 = (uint32_t)&thinkos_idle_rt;
+	thinkos_rt.idle_hooks.req_map = 0;
+	ctx->r0 = (uint32_t)&thinkos_rt.idle_hooks;
 #endif
 
 #if DEBUG
@@ -262,10 +272,27 @@ void __thinkos_idle_init(void)
 					   THINKOS_IDLE_STACK_SIZE);
 #endif
 
-#if (THINKOS_ENABLE_FLASH_MEM)
-	thinkos_flash_drv_init(&board_flash_drv, &board_flash_desc);
-#endif
-
  	thinkos_krn_idle_reset();
 }
+
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+void __idle_hook_req(unsigned int req) 
+{
+	uint32_t map;
+	do {
+		map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+		map |= (1 << req);
+	} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+}
+
+void __idle_hook_clr(unsigned int req) 
+{
+	uint32_t map;
+	do {
+		map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+		map &= ~(1 << req);
+	} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+}
+#endif
 

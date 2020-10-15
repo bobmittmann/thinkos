@@ -117,7 +117,6 @@ const struct thinkos_profile thinkos_profile = {
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
 		.profiling       = THINKOS_ENABLE_PROFILING,
 		.mem_map         = THINKOS_ENABLE_MEM_MAP,
-		.flash_mem       = THINKOS_ENABLE_FLASH_MEM,
 		.krn_trace       = THINKOS_ENABLE_KRN_TRACE
 	},
 
@@ -211,6 +210,8 @@ void __profile(void)
 			 p->limit.irq_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_DMA_MAX                = %d", 
 			 p->limit.dma_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_FLASH_MAX              = %d", 
+			 p->limit.flash_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_EXCEPT_STACK_SIZE      = %d", 
 			 p->limit.except_stack_size);
 
@@ -301,8 +302,6 @@ void __profile(void)
 			 p->feature.profiling);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEM_MAP         = %d", 
 			 p->feature.mem_map);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FLASH_MEM       = %d", 
-			 p->feature.flash_mem);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_KRN_TRACE       = %d", 
 			 p->feature.krn_trace);
 

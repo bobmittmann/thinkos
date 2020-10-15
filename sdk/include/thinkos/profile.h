@@ -511,12 +511,12 @@
 #define THINKOS_ENABLE_KRNSVC           0
 #endif
 
-/* THINKOS_ENABLE_FLASH_MEM - enable the kernel to handle low-level
+/* THINKOS_FLASH_MEM_MAX - enable the kernel to handle low-level
    flash memory erase read and write operations. */
 
-#ifndef THINKOS_ENABLE_FLASH_MEM
-#define THINKOS_ENABLE_FLASH_MEM         0
-#endif
+#ifndef THINKOS_FLASH_MEM_MAX
+#define THINKOS_FLASH_MEM_MAX            0
+#endif 
 
 #ifndef THINKOS_ENABLE_MEM_MAP
 #define THINKOS_ENABLE_MEM_MAP           0
@@ -791,6 +791,8 @@ struct thinkos_profile {
 		uint32_t queue_max           :8;
 		uint32_t irq_max             :8;
 		uint32_t dma_max             :8;
+		uint32_t flash_max           :8;
+
 		uint32_t except_stack_size   :16;
 	} limit;
 
@@ -851,7 +853,6 @@ struct thinkos_profile {
 			uint32_t fpu_ls             :1;
 			uint32_t profiling          :1;
 			uint32_t mem_map            :1;
-			uint32_t flash_mem          :1;
 			uint32_t krn_trace          :1;
 		};
 	} feature;

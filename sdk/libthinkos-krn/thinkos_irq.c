@@ -172,8 +172,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the cycle counter (r1) address. */
-	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
-							 CONTROL_SPSEL | CONTROL_nPRIV);
+	__thinkos_thread_ctx_flush(arg, self);
 #endif
 
 	/* remove from ready Q */

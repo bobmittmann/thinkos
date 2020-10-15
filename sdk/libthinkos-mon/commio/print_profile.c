@@ -61,6 +61,8 @@ void monitor_print_profile(const struct monitor_comm * comm,
 				  p->limit.queue_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_IRQ_MAX", p->limit.irq_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_DMA_MAX", p->limit.dma_max);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_FLASH_MEM_MAX", 
+				   p->limit.flash_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_EXCEPT_STACK_SIZE", 
 				  p->limit.except_stack_size);
 
@@ -114,7 +116,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU_LS", p->feature.fpu_ls);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_PROFILING", p->feature.profiling);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEM_MAP", p->feature.mem_map);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FLASH_MEM", p->feature.flash_mem);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_TRACE", p->feature.krn_trace);
 
 	/* Security */

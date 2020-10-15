@@ -49,7 +49,8 @@
 #define THINKOS_ERR_SP_INVALID         37
 #define THINKOS_ERR_USER               38
 #define THINKOS_ERR_THREAD_STACKADDR   39
-#define THINKOS_ERR_MAX                39
+#define THINKOS_ERR_FLASH_INVALID      40
+#define THINKOS_ERR_MAX                40
 
 #ifndef __ASSEMBLER__
 

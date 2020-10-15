@@ -71,11 +71,11 @@ bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused)
 	void * ptr = (void *)desc->start_addr;
 	uintptr_t thumb_call = (uintptr_t)ptr | 1;
 //	int (* app)(int argc, char ** argv);
-	int (* app)(void *);
+	int (* app)(void *, unsigned int);
 	int thread_id;
 
 //	app = (int (*)(int argc, char ** argv))thumb_call;
-	app = (int (*)(void *))thumb_call;
+	app = C_TASK(thumb_call);
 
 	if (!magic_match(desc->magic, ptr))
 		return false;
@@ -83,12 +83,9 @@ bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused)
 	DCC_LOG1(LOG_TRACE, "app=%p", app);
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	thread_id = monitor_thread_create((int (*)(void *))app, 
-									 (void *)app_argv, 
-									 &thinkos_main_inf);
+	thread_id = monitor_thread_create(app, C_ARG(app_argv), &thinkos_main_inf);
 #else
-	thread_id = monitor_thread_create((int (*)(void *))app, 
-									 (void *)app_argv, 0);
+	thread_id = monitor_thread_create(app, C_ARG(app_argv), 0);
 #endif
 
 	if (!paused)

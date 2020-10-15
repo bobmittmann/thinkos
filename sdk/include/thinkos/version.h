@@ -23,7 +23,7 @@
 #define __THINKOS_VERSION_H__
 
 #ifndef __THINKOS_VERSION__
-#error "Never use <thinkos/idle.h> directly; include <thinkos.h> instead."
+#error "Never use <thinkos/version.h> directly; include <thinkos.h> instead."
 #endif 
 
 /* ----------------------------------------------------------------------------

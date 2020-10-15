@@ -1,149 +1,204 @@
 /* 
- * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
- * 
- * This file is part of the YARD-ICE.
+ * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3.0 of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You can receive a copy of the GNU Lesser General Public License from 
- * http://www.gnu.org/
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 /** 
- * @file gdb-rsp.c
- * @brief YARD-ICE
+ * @file console_ymodem_recv.c
+ * @brief 
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <sys/dcclog.h>
-#include <sys/stm32f.h>
-#include <sys/param.h>
-
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#define __THINKOS_FLASH__
-#include <thinkos/flash.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
+
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
+
+#include <sys/delay.h>
+#include <sys/dcclog.h>
 #include <thinkos.h>
+#include <trace.h>
+#include <vt100.h>
+#include <xmodem.h>
+#include <alloca.h>
 
-/* -------------------------------------------------------------------------
- * Flash memory auxiliary functions 
- * ------------------------------------------------------------------------- */
+#include "board.h"
+#include "version.h"
 
-#if (THINKOS_ENABLE_FLASH_MEM)
-static int monitor_flash_req(struct thinkos_flash_drv * drv, 
-							const struct thinkos_flash_desc * desc,
-							struct flash_op_req * req)
+#include <thinkos.h>
+#include <vt100.h>
+
+#include <sys/dcclog.h>
+
+
+static int __console_comm_send(void * dev, const void * buf, unsigned int len) 
 {
+	uint8_t * cp = (uint8_t *)buf;
+	unsigned int rem = len;
+	int n;
+
+	while (rem) {
+		n = thinkos_console_write(cp, rem);
+		cp += n;
+		rem -= n;
+	}
+
+	return len;
+}
+
+static int __console_comm_recv(void * dev, void * buf, 
+					  unsigned int len, unsigned int msec) 
+{
+	int ret = 0;
+
+	do {
+		ret = thinkos_console_timedread(buf, len, msec);
+	} while (ret == 0);
+
+	return ret;
+}
+
+static const struct comm_dev console_comm_dev = {
+	.arg = NULL,
+	.op = {
+		.send = __console_comm_send,
+		.recv = __console_comm_recv
+	}
+};
+
+/* Receive a file and discad using the YMODEM protocol */
+int __ymodem_rcv_task(uint32_t addr, unsigned int size)
+{
+	struct ymodem_rcv ry;
+	unsigned int fsize;
+	uint8_t buf[1024];
+	char * fname;
 	int ret;
 
-	while (req->opc != THINKOS_FLASH_MEM_NOP) {
+	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
-		DCC_LOG(LOG_TRACE, "FLASH_DRV tasklet request");
-		__idle_hook_req(IDLE_HOOK_FLASH_MEM);
+	thinkos_console_raw_mode(true);
+	
+	fname = (char *)buf;
+	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
 
-		if ((ret = monitor_expect(MONITOR_FLASH_DRV)) < 0) {
-			DCC_LOG(LOG_WARNING, "monitor_expect()!");
-			return ret;
+		DCC_LOG(LOG_TRACE, "ymodem_rcv_loop()");
+
+		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
+			//		int len = ret;
+			DCC_LOG1(LOG_TRACE, "len=%d", ret);
+		}
+	} else {
+		DCC_LOG1(LOG_TRACE, "ret=%d", ret);
+	}
+
+	thinkos_console_raw_mode(false);
+
+	return ret;
+}
+
+/* Receive a file and write it into the flash using the YMODEM protocol */
+int __flash_ymodem_rcv_task(const char * tag)
+{
+	struct ymodem_rcv ry;
+	unsigned int fsize;
+	uint32_t offs = 0;
+	uint8_t buf[1024];
+	char * fname;
+	int ret;
+	int key;
+
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
+		return key;
+	}
+
+	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
+		thinkos_flash_mem_close(key);
+		return ret;
+	}
+
+	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
+	//thinkos_console_raw_mode(true);
+
+	fname = (char *)buf;
+	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
+
+		DCC_LOGSTR(LOG_TRACE, "fname='%s'", fname);
+		DCC_LOG1(LOG_TRACE, "fsize=%d'", fsize);
+
+		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
+			int cnt = ret;
+			DCC_LOG1(LOG_TRACE, "cnt=%d", cnt);
+			if ((ret = thinkos_flash_mem_write(key, offs, buf, cnt)) < 0) {
+				break;
+			}
+			offs += cnt;
 		}
 	}
 
-	ret = req->ret;
 	DCC_LOG1(LOG_TRACE, "ret=%d", ret);
+
+	//thinkos_console_raw_mode(false);
+
+	thinkos_flash_mem_close(key);
 
 	return ret;
 }
-#else
-static int monitor_flash_req(struct thinkos_flash_drv * drv, 
-							  const struct thinkos_flash_desc * desc,
-							  struct flash_op_req * req) {
+
+/* Erase a flash partition */
+static int __flash_erase_all_task(const char * tag)
+{
+	uint32_t offs = 0;
 	int ret;
+	int key;
 
-	ret = thinkos_flash_drv_req(drv, desc, req);
-
-	DCC_LOG1(LOG_TRACE, "ret=%d", ret);
-
-	return ret;
-}
-#endif
-
-int monitor_flash_write(uint32_t addr, const void * buf, size_t size)
-{
-
-	struct thinkos_flash_drv * drv = &board_flash_drv;
-	const struct thinkos_flash_desc * desc = &board_flash_desc;
-	const struct mem_desc * mem = desc->mem;
-	struct flash_op_req * req = &drv->krn_req;
-
-	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
-
-	req->offset = addr - (mem->base + drv->partition.offset);
-	req->size = size;
-	req->buf = (void *)buf;
-	req->opc = THINKOS_FLASH_MEM_WRITE;
-
-	return monitor_flash_req(drv, desc, req);
-}
-
-int monitor_flash_erase(uint32_t addr, size_t size)
-{
-	struct thinkos_flash_drv * drv = &board_flash_drv;
-	const struct thinkos_flash_desc * desc = &board_flash_desc;
-	const struct mem_desc * mem = desc->mem;
-	struct flash_op_req * req = &drv->krn_req;
-
-	DCC_LOG2(LOG_TRACE, "addr=0x%08x size=%d", addr, size);
-
-	req->offset = addr - (mem->base + drv->partition.offset);
-	req->size = size;
-	req->opc = THINKOS_FLASH_MEM_ERASE;
-
-	return monitor_flash_req(drv, desc, req);
-}
-
-int monitor_flash_open(const char * tag)
-{
-	struct thinkos_flash_drv * drv = &board_flash_drv;
-	const struct thinkos_flash_desc * desc = &board_flash_desc;
-	struct flash_op_req * req = &drv->krn_req;
-	int ret;
-
-	req->tag = tag;
-	req->opc = THINKOS_FLASH_MEM_OPEN;
-
-	ret = monitor_flash_req(drv, desc, req);
-
-	if (ret >= 0) {
-		/* store key for subsequent requests */
-		req->key = ret;
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
+		return key;
 	}
 
+	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
+	}
+
+	thinkos_flash_mem_close(key);
+
 	return ret;
 }
 
-int monitor_flash_close(void)
+
+int console_flash_ry_task(const char * tag);
+
+int monitor_flash_ymodem_recv(const struct monitor_comm * comm, 
+							 const char * tag)
 {
-	struct thinkos_flash_drv * drv = &board_flash_drv;
-	const struct thinkos_flash_desc * desc = &board_flash_desc;
-	struct flash_op_req * req = &drv->krn_req;
+	return monitor_thread_exec(comm, C_TASK(__flash_ymodem_rcv_task), 
+							   C_ARG(tag));
 
-	req->opc = THINKOS_FLASH_MEM_CLOSE;
+}
 
-	return monitor_flash_req(drv, desc, req);
+int console_flash_erase_all_task(const char * tag);
+
+int monitor_flash_erase_all(const struct monitor_comm * comm, 
+						const char * tag)
+{
+	return monitor_thread_exec(comm, C_TASK(__flash_erase_all_task),
+							   C_ARG(tag));
 }
 

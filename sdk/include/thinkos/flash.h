@@ -30,6 +30,8 @@
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>
 
+#ifndef __ASSEMBLER__
+
 #include <sys/memory.h>
 #include <sys/flash-dev.h>
 
@@ -39,22 +41,27 @@ struct thinkos_flash_desc {
 };
 
 struct flash_op_req {
-	struct {
-		volatile uint16_t opc;
-		uint16_t key;
+	union {
+		struct {
+			uint16_t wq;
+			uint8_t arg;
+			uint8_t opc;
+		};
+		int ret;
 	};
 	union {
 		uint32_t offset;
-		int ret;
+		const char * tag;
 	};
 	uint32_t size;
 	union {
-		const char * tag;
 		void * buf;
 	};
 };
 
 struct thinkos_flash_drv {
+	const struct mem_desc * mem;
+	const struct flash_dev * dev;
 	uint8_t ropen;
 	uint8_t wopen;
 	uint16_t key;
@@ -62,9 +69,6 @@ struct thinkos_flash_drv {
 		uint32_t offset;
 		uint32_t size;
 	} partition;
-#if (THINKOS_ENABLE_MONITOR)
-	struct flash_op_req krn_req;
-#endif
 };
 
 #ifdef __cplusplus
@@ -72,18 +76,19 @@ extern "C" {
 #endif
 
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
-						  const struct thinkos_flash_desc * desc,
 						  struct flash_op_req * req);
 
-void thinkos_flash_drv_tasklet(struct thinkos_flash_drv * drv, 
-							   const struct thinkos_flash_desc * desc);
+void thinkos_flash_drv_tasklet(unsigned int idx, 
+							   struct thinkos_flash_drv * drv);
 
-void thinkos_flash_drv_init(struct thinkos_flash_drv * drv, 
-							const struct thinkos_flash_desc * desc);
+int thinkos_flash_drv_init(unsigned int idx, 
+						   const struct thinkos_flash_desc * desc);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* __THINKOS_FLASH_H__ */
 

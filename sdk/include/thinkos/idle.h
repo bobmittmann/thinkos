@@ -23,12 +23,10 @@
 #define __THINKOS_IDLE_H__
 
 #ifndef __THINKOS_IDLE__
-#error "Never use <thinkos/idle.h> directly; include <thinkos.h> instead."
+#error "Never use <thinkos/idle.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#ifndef __THINKOS_KERNEL_H__
-#error "Need <thinkos/kernel.h>"
-#endif 
+#ifndef __ASSEMBLER__
 
 /* ----------------------------------------------------------------------------
  *  Idle hooks signals 
@@ -48,49 +46,36 @@ enum idle_hook_signal {
 	IDLE_HOOK_STACK_SCAN = 31
 };
 
+#if THINKOS_ENABLE_THREAD_INFO
+extern const struct thinkos_thread_inf thinkos_idle_inf;
+#endif
+
+/* -------------------------------------------------------------------------- 
+ * Idle hooks
+ * --------------------------------------------------------------------------*/
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 struct thinkos_idle_rt {
 	volatile uint32_t req_map;
 	volatile uint32_t ack_map;
 };
-
-extern struct thinkos_idle_rt thinkos_idle_rt;
-#endif
-
-#if THINKOS_ENABLE_THREAD_INFO
-extern const struct thinkos_thread_inf thinkos_idle_inf;
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-static inline void __idle_hook_req(unsigned int req) {
-		uint32_t map;
-		do {
-			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
-			map |= (1 << req);
-		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
-	}
-
-static inline void __idle_hook_clr(unsigned int req) {
-		uint32_t map;
-		do {
-			map = __ldrex((uint32_t *)&thinkos_idle_rt.req_map);
-			map &= ~(1 << req);
-		} while (__strex((uint32_t *)&thinkos_idle_rt.req_map, map));
-	}
-#endif
-
 void __thinkos_idle_init(void);
 void __thinkos_idle_reset(void);
+void __idle_hook_req(unsigned int req);
+void __idle_hook_clr(unsigned int req);
 
 struct thinkos_context * __thinkos_idle_ctx(void);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* __THINKOS_IDLE_H__ */
 

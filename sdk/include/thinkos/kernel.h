@@ -26,11 +26,19 @@
 #error "Never use <thinkos/kernel.h> directly; include <thinkos.h> instead."
 #endif 
 
+#include <arch/cortex-m3.h>
+
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>
 
 #define __THINKOS_ERROR__
 #include <thinkos/error.h>
+
+#define __THINKOS_FLASH__
+#include <thinkos/flash.h>
+
+#define __THINKOS_IDLE__
+#include <thinkos/idle.h>
 
 
 /* Enable kernel support for real time trace. The kernel hold the trace
@@ -258,8 +266,8 @@
   #define THINKOS_WQ_DMA_CNT 0 
 #endif
 
-#if (THINKOS_ENABLE_FLASH_MEM)
-  #define THINKOS_WQ_FLASH_MEM_CNT 1
+#if (THINKOS_FLASH_MEM_MAX > 0)
+  #define THINKOS_WQ_FLASH_MEM_CNT (THINKOS_FLASH_MEM_MAX)
 #else
   #define THINKOS_WQ_FLASH_MEM_CNT 0 
 #endif
@@ -298,7 +306,6 @@
 
 #ifndef __ASSEMBLER__
 
-#include <arch/cortex-m3.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -471,8 +478,8 @@ struct thinkos_rt {
 			uint32_t wq_dma;
 #endif
 
-#if THINKOS_ENABLE_FLASH_MEM
-			uint32_t wq_flash_mem;
+#if (THINKOS_FLASH_MEM_MAX > 0) 
+			uint32_t wq_flash_mem[THINKOS_FLASH_MEM_MAX];
 #endif
 
 #if THINKOS_ENABLE_DEBUG_FAULT
@@ -508,33 +515,33 @@ struct thinkos_rt {
 	};
 #endif
 
-#if THINKOS_SEMAPHORE_MAX > 0
+#if (THINKOS_SEMAPHORE_MAX > 0)
 	uint32_t sem_val[THINKOS_SEMAPHORE_MAX];
 #endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
-#if THINKOS_EVENT_MAX > 0
+#if (THINKOS_EVENT_MAX > 0)
 	struct {
 		uint32_t pend; /* event set pending bitmap */
 		uint32_t mask; /* event set mask */
 	} ev[THINKOS_EVENT_MAX];
 #endif /* THINKOS_EVENT_MAX > 0 */
 
-#if THINKOS_FLAG_MAX > 0
+#if (THINKOS_FLAG_MAX > 0)
 	uint32_t flag[(THINKOS_FLAG_MAX + 31) / 32]; /* flag signal */
 #endif /* THINKOS_FLAG_MAX > 0 */
 
-#if THINKOS_GATE_MAX > 0
+#if (THINKOS_GATE_MAX > 0)
 	/* gate bitmap, each gate takes two bits: 
 	   1 - signal the gate is open or signaled to be open, 
 	   2 - the gate is locked and can't be oepn. */
 	uint32_t gate[(THINKOS_GATE_MAX + 15) / 16]; /* gates states */
 #endif /* THINKOS_GATE_MAX > 0 */
 
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX > 0)
 	int8_t lock[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX > 0)
 	int8_t irq_th[THINKOS_IRQ_MAX];
 #endif /* THINKOS_IRQ_MAX */
 
@@ -575,6 +582,12 @@ struct thinkos_rt {
 	const struct thinkos_thread_inf * th_inf[(THINKOS_THREADS_MAX) +
 		(THINKOS_NRT_THREADS_MAX) + 1]; 
   #endif
+#endif
+#if (THINKOS_FLASH_MEM_MAX > 0)
+	struct thinkos_flash_drv flash_drv[THINKOS_FLASH_MEM_MAX];
+#endif
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	struct thinkos_idle_rt idle_hooks;
 #endif
 };
 
@@ -662,7 +675,7 @@ extern struct mpu_mem_block thinkos_mpu_kernel_mem;
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_FLASH_MEM ((offsetof(struct thinkos_rt, wq_flash_mem) \
+#define THINKOS_FLASH_MEM_BASE ((offsetof(struct thinkos_rt, wq_flash_mem) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
 
@@ -680,6 +693,7 @@ extern struct mpu_mem_block thinkos_mpu_kernel_mem;
 #define THINKOS_EVENT_DESC(_ID) (THINKOS_EVENT_BASE + (_ID))
 #define THINKOS_FLAG_DESC(_ID)  (THINKOS_FLAG_BASE + (_ID))
 #define THINKOS_GATE_DESC(_ID)  (THINKOS_GATE_BASE + (_ID))
+#define THINKOS_FLASH_MEM_DESC(_ID)  (THINKOS_FLASH_MEM_BASE + (_ID))
 
 /* -------------------------------------------------------------------------- 
  * Thread initialization 
@@ -700,10 +714,10 @@ struct thinkos_thread_create_args {
 	struct thinkos_thread_inf * inf; /* R4 */
 };
 
-/* Offset in the error assignment to allow for system exceptions */
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
 
+/* Offset in the error assignment to allow for system exceptions */
 #define THINKOS_ERR_OFF    16
 
 /* -------------------------------------------------------------------------- 
@@ -884,12 +898,26 @@ static inline void  __attribute__((always_inline))
 __thinkos_thread_ctx_set(unsigned int th, struct thinkos_context * __ctx) {
 	thinkos_rt.ctx[th] = (uintptr_t)__ctx;
 }
+
+void thinkos_flash_mem_svc(int32_t arg[], int self)
+	thinkos_rt.ctx[th] = (uintptr_t)__ctx;
+	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
+
 #endif
+
 
 static inline void  __attribute__((always_inline)) 
 __thinkos_thread_ctx_set(unsigned int th, struct thinkos_context * __ctx,
 						 unsigned int ctrl) {
 	thinkos_rt.ctx[th] = ((uintptr_t)__ctx) | (ctrl & 0x7);
+	
+}
+
+static inline void  __attribute__((always_inline)) 
+__thinkos_thread_ctx_flush(int32_t arg[], unsigned int th) {
+	uintptr_t ctx = (uintptr_t)(thinkos_rt.ctx[th]);
+	uintptr_t sp = (uintptr_t)&arg[-CTX_R0];
+	thinkos_rt.ctx[th] = sp + (ctx & 0x7);
 }
 
 static inline void  __attribute__((always_inline)) 
@@ -1170,8 +1198,8 @@ int __thinkos_thread_alloc(int target_id);
 
 struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
                                                uint32_t sp, 
-                                               int (* task)(void *), 
-                                               void * arg);
+                                               uintptr_t task,
+                                               uintptr_t arg);
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 

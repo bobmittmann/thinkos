@@ -351,20 +351,6 @@ static void monitor_req_upgrade(void)
 }
 #endif
 
-static void monitor_thread_exec(int (* task)(void *), void * arg) 
-{
-	int thread_id;
-
-	if (task != NULL) {
-#if (THINKOS_ENABLE_THREAD_INFO)
-		thread_id = monitor_thread_create(task, arg, &thinkos_main_inf);
-#else
-		thread_id = monitor_thread_create(task, arg, 0);
-#endif
-		monitor_thread_resume(thread_id);
-	}
-}
-
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct monitor_comm * comm)
 {
@@ -963,7 +949,8 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (this_board.default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_exec(this_board.default_task, NULL);
+					monitor_thread_exec(comm, C_TASK(this_board.default_task), 
+										C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
 				}
@@ -1288,8 +1275,8 @@ is_connected:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT0: self test!");
 			monitor.test_status++;
 			monitor_clear(MONITOR_USER_EVENT0);
-			monitor_thread_exec(this_board.selftest_task, 
-								(void *)monitor.test_status);
+			monitor_thread_exec(comm, C_TASK(this_board.selftest_task),
+								C_ARG(monitor.test_status));
 			break;
 #endif
 
@@ -1297,7 +1284,7 @@ is_connected:
 		case MONITOR_USER_EVENT1:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT1: configure!");
 			monitor_clear(MONITOR_USER_EVENT1);
-			monitor_thread_exec(this_board.configure_task, NULL);
+			monitor_thread_exec(comm, C_TASK(this_board.configure_task), NULL);
 			break;
 #endif
 
@@ -1306,7 +1293,7 @@ is_connected:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
 			monitor_clear(MONITOR_USER_EVENT2);
 			preboot	= true;
-			monitor_thread_exec(this_board.preboot_task, NULL);
+			monitor_thread_exec(comm, C_TASK(this_board.preboot_task), NULL);
 			break;
 #endif
 #if (MONITOR_UPGRADE_ENABLE)

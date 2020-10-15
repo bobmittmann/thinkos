@@ -29,8 +29,6 @@
 #include <sys/param.h>
 #include <stdbool.h>
 
-#if (THINKOS_ENABLE_FLASH_MEM)
-
 struct {
 	int8_t thread;
 	uint8_t open;
@@ -239,6 +237,4 @@ int __stm32_flash_erase(unsigned int offs, unsigned int len)
 
 	return cnt;
 }
-
-#endif /* THINKOS_ENABLE_FLASH_MEM */
 

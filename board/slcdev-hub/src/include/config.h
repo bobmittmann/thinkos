@@ -174,7 +174,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        1
+#define THINKOS_FLASH_MEM_MAX           1
 
 #define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ASM_SCHEDULER           1

@@ -40,6 +40,71 @@
 #include "version.h"
 #include "lattice.h"
 
+/* ----------------------------------------------------------------------------
+ * Memory map
+ * ----------------------------------------------------------------------------
+ */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+const struct mem_desc sram_mem = {
+	.tag = "RAM",
+	.base = 0x00000000,
+	.cnt = 5,
+	.blk = {
+		{ .tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
+		{ .tag = "KERN",   0x20000000, M_RO, SZ_4K,  1},	 /* Bootloader: 4KiB */
+		{ .tag = "DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
+		{ .tag = "SRAM2",  0x2001c000, M_RW, SZ_16K, 1}, /* SRAM 2: 16KiB */
+		{ .tag = "SRAM3",  0x20020000, M_RW, SZ_64K, 1}, /* SRAM 3: 64KiB */
+
+		{ .tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+const struct mem_desc flash_mem = {
+	.tag = "FLASH",
+	.base = 0x08000000,
+	.cnt = 3,
+	.blk = {
+		{.tag = "BOOT", 0x00000000, M_RO, SZ_16K,  4},	/* Bootloader: 64 KiB */
+		{ .tag = "CONF", 0x00010000, M_RW, SZ_64K,  1},	/* Configuration: 64 KiB */
+		{ .tag = "APP",  0x00020000, M_RW, SZ_128K, 7},	/* Application:  */
+		{ .tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+const struct mem_desc peripheral_mem = {
+	.tag = "PERIPH",
+	.base = 0,
+	.cnt = 1,
+	.blk = {
+		{ .tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
+		{ .tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+const struct magic_blk thinkos_10_app_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 3},
+	.rec = {
+		{0xffffffff, 0x0a0de004},
+		{0xffffffff, 0x6e696854},
+		{0xffffffff, 0x00534f6b},
+		{0x00000000, 0x00000000}
+		}
+};
+#pragma GCC diagnostic pop
+
+extern const struct flash_dev stm32f4x_flash_dev;
+
+const struct thinkos_flash_desc board_flash_desc = {
+	.mem = &flash_mem,
+	.dev = &stm32f4x_flash_dev
+};
+
+
 extern const uint8_t ice40lp384_bin[];
 extern const unsigned int sizeof_ice40lp384_bin;
 
@@ -211,6 +276,10 @@ int board_init(void)
 {
 	board_on_softreset();
 
+#if (THINKOS_FLASH_MEM_MAX > 0)
+	thinkos_flash_drv_init(0, &board_flash_desc);
+#endif
+
 	stm32_gpio_set(IO_LED1);
 	stm32_gpio_set(IO_LED2);
 
@@ -315,24 +384,13 @@ int board_configure_task(void *ptr)
 	return 0;
 }
 
-int console_ymodem_recv(uint32_t addr, unsigned int size);
-int console_ymodem_recv_flash(const char * tag);
-
-
 int board_selftest_task(void * ptr)
 {
 	intptr_t code = (intptr_t)ptr;
 	(void)code;
 
 	DCC_LOG1(LOG_TRACE, "board self test code=%d", code);
-/*
-	if (code > 1) {
-		__puts("- Loading application\r\n");
-		console_ymodem_recv_flash("APP");
 
-	//	console_ymodem_recv(0, 1024);
-	}
-*/
 	return 0;
 }
 
@@ -405,61 +463,6 @@ const struct monitor_comm * board_comm_init(void)
 }
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-
-const struct magic_blk thinkos_10_app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 3},
-	.rec = {
-		{0xffffffff, 0x0a0de004},
-		{0xffffffff, 0x6e696854},
-		{0xffffffff, 0x00534f6b},
-		{0x00000000, 0x00000000}
-		}
-};
-
-/* Bootloader board description  
-   Bootloader and debugger, memory description  
- */
-
-const struct mem_desc sram_mem = {
-	.tag = "RAM",
-	.base = 0x00000000,
-	.cnt = 5,
-	.blk = {
-		{ .tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
-		{ .tag = "KERN",   0x20000000, M_RO, SZ_4K,  1},	 /* Bootloader: 4KiB */
-		{ .tag = "DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
-		{ .tag = "SRAM2",  0x2001c000, M_RW, SZ_16K, 1}, /* SRAM 2: 16KiB */
-		{ .tag = "SRAM3",  0x20020000, M_RW, SZ_64K, 1}, /* SRAM 3: 64KiB */
-
-		{ .tag = "", 0x00000000, 0, 0, 0}
-		}
-};
-
-const struct mem_desc flash_mem = {
-	.tag = "FLASH",
-	.base = 0x08000000,
-	.cnt = 3,
-	.blk = {
-		{.tag = "BOOT", 0x00000000, M_RO, SZ_16K,  4},	/* Bootloader: 64 KiB */
-		{ .tag = "CONF", 0x00010000, M_RW, SZ_64K,  1},	/* Configuration: 64 KiB */
-		{ .tag = "APP",  0x00020000, M_RW, SZ_128K, 7},	/* Application:  */
-		{ .tag = "", 0x00000000, 0, 0, 0}
-		}
-};
-
-const struct mem_desc peripheral_mem = {
-	.tag = "PERIPH",
-	.base = 0,
-	.cnt = 1,
-	.blk = {
-		{ .tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
-		{ .tag = "", 0x00000000, 0, 0, 0}
-		}
-};
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
@@ -496,14 +499,4 @@ const struct thinkos_board this_board = {
 	.monitor_comm_init = board_comm_init
 };
 
-extern const struct flash_dev stm32f4x_flash_dev;
-
-const struct thinkos_flash_desc board_flash_desc = {
-	.mem = &flash_mem,
-	.dev = &stm32f4x_flash_dev
-};
-
-struct thinkos_flash_drv board_flash_drv;
-
-#pragma GCC diagnostic pop
 

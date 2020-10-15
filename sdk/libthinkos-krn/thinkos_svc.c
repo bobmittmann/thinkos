@@ -721,7 +721,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
  * --------------------------------------------- */
 
 	case THINKOS_FLASH_MEM:
-#if (THINKOS_ENABLE_FLASH_MEM)
+#if (THINKOS_FLASH_MEM_MAX > 0)
 		thinkos_flash_mem_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);

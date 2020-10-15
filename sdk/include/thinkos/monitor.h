@@ -271,7 +271,7 @@ int monitor_thread_step(unsigned int id, bool block);
 
 int monitor_thread_last_fault_get(uint32_t * addr);
 
-int monitor_thread_create(int (* func)(void *), void * arg, 
+int monitor_thread_create(int (* func)(void *, unsigned int), void * arg, 
                          const struct thinkos_thread_inf * inf);
 
 void monitor_thread_resume(int thread_id);
@@ -411,6 +411,25 @@ void monitor_print_alloc(const struct monitor_comm * comm);
 void monitor_print_stack_usage(const struct monitor_comm * comm);
 
 void __thinkos_monitor_isr(void);
+
+/* ----------------------------------------------------------------------------
+ * Default Monitor comm event handler
+ * ----------------------------------------------------------------------------
+ */
+uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm, 
+							 uint32_t sigmask);
+
+uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm, 
+							 uint32_t sigmask);
+
+uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm, 
+							uint32_t sigmask);
+
+uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm, 
+							uint32_t sigmask);
+
+int monitor_thread_exec(const struct monitor_comm * comm, 
+						int (* task)(void *, unsigned int), void * arg);
 
 #ifdef __cplusplus
 }

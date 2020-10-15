@@ -27,8 +27,7 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
+
 #include <sys/delay.h>
 #include <thinkos.h>
 #include <vt100.h>
