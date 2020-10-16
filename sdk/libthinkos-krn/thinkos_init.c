@@ -122,7 +122,7 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	return id;
 }
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
+int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
 	struct thinkos_context * ctx;

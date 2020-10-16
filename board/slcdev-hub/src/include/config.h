@@ -174,7 +174,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_FLASH_MEM_MAX           1
+#define THINKOS_FLASH_MEM_MAX           2
 
 #define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ASM_SCHEDULER           1
@@ -182,7 +182,7 @@
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
 
-#define THINKOS_ENABLE_KRNSVC           1
+#define THINKOS_ENABLE_KRNSVC           0
 
 /* -------------------------------------------------------------------------
    RCC 

@@ -63,7 +63,7 @@ struct monitor_app_desc {
 /* Board description */
 struct thinkos_board {
 	char name[16];
-	char desc[38];
+	char desc[32];
 	struct {
 		char tag[12];
 		struct {
@@ -75,44 +75,38 @@ struct thinkos_board {
 	struct {
 		char tag[10];
 		struct {
+			uint16_t build;
 			uint8_t minor;
 			uint8_t major;
-			uint16_t build;
 		} ver;
 	} sw;
 
-	struct {
-		uint8_t cnt;
-		union {
-			struct {
-				const struct mem_desc * flash;
-				const struct mem_desc * ram;
-				const struct mem_desc * periph;
-			};
-			const struct mem_desc * lst[3];
-		};
-	} memory;
-
-	struct monitor_app_desc application;
-
-	int (* init)(void);
-	void (* softreset)(void);
 	void (* upgrade)(const struct monitor_comm *);
 	const struct monitor_comm * (* monitor_comm_init)(void);
+	struct monitor_app_desc application;
+	void * arg;
 
-	int (* preboot_task)(void * );
-	/* ThinkOS task: monitor will run this task by request */
+	/* System initialization - runs once when the system powers up */
+	int (* init)(void);
+	/* Soft reset */
+	void (* softreset)(void);
+
 	int (* configure_task)(void *);
-	/* ThinkOS task: monitor will run this task by request */
 	int (* selftest_task)(void *);
-	/* ThinkOS task: monitor will run this task if fails to load 
-	   the application */
+	/* ThinkOS task: monitor will run this task prior to run
+	 the application. It should implement configuration
+	 application integrity check etc... 
+	 The return code indicates wether is ok or not to call the
+	 application task. */
+	int (* preboot_task)(void *);
+	/* ThinkOS task: application loader . */
+	int (* app_task)(void *);
+	/* ThinkOS task: monitor will run this task if the application
+	   returns.  */
 	int (* default_task)(void *);
 
+	const struct thinkos_mem_map * memory;
 };
-
-/* Board description instance */
-extern const struct thinkos_board this_board;
 
 /* Boot options */
 /* Enble the debug monitor comm port initialization, Ex. USB */
@@ -182,6 +176,8 @@ extern struct thinkos_flash_drv board_flash_drv;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int thinkos_boot(const struct thinkos_board * board);
 
 int monitor_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 

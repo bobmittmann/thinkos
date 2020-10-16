@@ -639,20 +639,12 @@
 #error "THINKOS_ENABLE_DEBUG_WPT depends on THINKOS_ENABLE_DEBUG_BKPT"
 #endif
 
-/* debug breakpoint depends on monitor */
-#if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_MONITOR)
+/* debug breakpoint depends on debug */
+#if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG)
 #error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* debug monitor depend on kernel services hooks */
-#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_KRNSVC)
-#error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_KRNSVC"
-#endif
-
-#if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
-#error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
-#endif
-
+/* thread monitoring depends on monitor */
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif

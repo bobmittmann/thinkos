@@ -282,7 +282,7 @@ extern "C" {
  *
  */
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_memory_map * map,
+int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[]);
 
 /**

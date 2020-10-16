@@ -234,18 +234,11 @@ bool monitor_breakpoint_disable(uint32_t addr);
  * ----------------------------------------------------------------------------
  */
 static inline void __monitor_signal_thread_create(int thread_id) {
-//	register int r0 asm("r0") = (int)thread_id;
 	monitor_signal(MONITOR_THREAD_CREATE);
-//	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_CREATE), 
-//				  "r"(r0) : );
 }
 
 static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
-//	register int r0 asm("r0") = (int)thread_id;
-//	register int r1 asm("r1") = (int)code;
 	monitor_signal(MONITOR_THREAD_TERMINATE);
-//	asm volatile ("udf %0 \n" : : "I" (MONITOR_BKPT_ON_THREAD_TERMINATE), 
-//				  "r"(r0), "r"(r1) );
 }
 
 /* flags the monitor schedule */
@@ -289,25 +282,26 @@ void __attribute__((noreturn)) monitor_exec(void (* task)
 
 /* Safe read and write operations to avoid faults in the debugger */
 
-bool monitor_mem_wr32(const struct mem_desc * mem, 
+bool monitor_mem_wr32(const struct thinkos_mem_desc * mem, 
                      uint32_t addr, uint32_t val);
 
-bool monitor_mem_rd32(const struct mem_desc * mem, 
+bool monitor_mem_rd32(const struct thinkos_mem_desc * mem, 
                      uint32_t addr, uint32_t * val);
 
-bool monitor_mem_rd64(const struct mem_desc * mem, 
+bool monitor_mem_rd64(const struct thinkos_mem_desc * mem, 
                      uint32_t addr, uint64_t * val);
 
-bool monitor_mem_wr64(const struct mem_desc * mem, 
+bool monitor_mem_wr64(const struct thinkos_mem_desc * mem, 
                      uint32_t addr, uint64_t val);
 
-int monitor_mem_read(const struct mem_desc * mem, uint32_t addr, 
+int monitor_mem_read(const struct thinkos_mem_desc * mem, uint32_t addr, 
                     void * ptr, unsigned int len);
 
-bool monitor_mem_belong(const struct mem_desc * mem, uint32_t addr);
+bool monitor_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr);
 
-const struct mem_desc * monitor_mem_lookup(const struct mem_desc * const lst[], 
-                                          unsigned int cnt, uint32_t addr);
+const struct thinkos_mem_desc * monitor_mem_lookup(
+	const struct thinkos_mem_desc * const lst[], 
+	unsigned int cnt, uint32_t addr);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor FLASH memory
@@ -388,7 +382,7 @@ int monitor_scanf(const struct monitor_comm * comm, const char *fmt, ... );
 
 /* Formats and sends a memory buffer formatted as hexadecimal */
 void monitor_hexdump(const struct monitor_comm * comm, 
-                    const struct mem_desc * mem,
+                    const struct thinkos_mem_desc * mem,
                     uint32_t addr, unsigned int size);
 
 void monitor_print_osinfo(const struct monitor_comm * comm);

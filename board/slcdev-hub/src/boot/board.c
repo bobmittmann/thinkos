@@ -47,13 +47,13 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-const struct mem_desc sram_mem = {
+const struct thinkos_mem_desc sram_mem = {
 	.tag = "RAM",
 	.base = 0x00000000,
 	.cnt = 5,
 	.blk = {
-		{ .tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
-		{ .tag = "KERN",   0x20000000, M_RO, SZ_4K,  1},	 /* Bootloader: 4KiB */
+		{ .tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /* CCM - Main Stack */
+		{ .tag = "KERN",   0x20000000, M_RO, SZ_4K,  1}, /* Bootloader: 4KiB */
 		{ .tag = "DATA",   0x20001000, M_RW, SZ_4K, 27}, /* Application: 108KiB */
 		{ .tag = "SRAM2",  0x2001c000, M_RW, SZ_16K, 1}, /* SRAM 2: 16KiB */
 		{ .tag = "SRAM3",  0x20020000, M_RW, SZ_64K, 1}, /* SRAM 3: 64KiB */
@@ -62,7 +62,7 @@ const struct mem_desc sram_mem = {
 		}
 };
 
-const struct mem_desc flash_mem = {
+const struct thinkos_mem_desc flash_mem = {
 	.tag = "FLASH",
 	.base = 0x08000000,
 	.cnt = 3,
@@ -74,7 +74,7 @@ const struct mem_desc flash_mem = {
 		}
 };
 
-const struct mem_desc peripheral_mem = {
+const struct thinkos_mem_desc peripheral_mem = {
 	.tag = "PERIPH",
 	.base = 0,
 	.cnt = 1,
@@ -82,6 +82,16 @@ const struct mem_desc peripheral_mem = {
 		{ .tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}, /* RTC - 1K */
 		{ .tag = "", 0x00000000, 0, 0, 0}
 		}
+};
+
+struct thinkos_mem_map mem_map = {
+	.tag = "MEM",
+	.cnt = 3,
+	.desc = {
+		 &flash_mem,
+		 &sram_mem,
+		 &peripheral_mem
+	}
 };
 
 const struct magic_blk thinkos_10_app_magic = {
@@ -100,7 +110,7 @@ const struct magic_blk thinkos_10_app_magic = {
 extern const struct flash_dev stm32f4x_flash_dev;
 
 const struct thinkos_flash_desc board_flash_desc = {
-	.mem = &flash_mem,
+	.mem = (struct mem_desc *)&flash_mem,
 	.dev = &stm32f4x_flash_dev
 };
 
@@ -463,7 +473,6 @@ const struct monitor_comm * board_comm_init(void)
 }
 
 
-
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
 	.name = "SLCDEV-HUB",
@@ -479,11 +488,6 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.memory = {
-		   .cnt = 3,
-		   .flash = &flash_mem,
-		   .ram = &sram_mem,
-		   .periph = &peripheral_mem},
 	.application = {
 			.tag = "",
 			.start_addr = 0x08020000,
@@ -496,7 +500,13 @@ const struct thinkos_board this_board = {
 	.configure_task = board_configure_task,
 	.selftest_task = board_selftest_task,
 	.default_task = board_default_task,
-	.monitor_comm_init = board_comm_init
+	.monitor_comm_init = board_comm_init,
+	.memory = &mem_map
 };
 
+
+int main(int argc, char ** argv)
+{
+	return thinkos_boot(&this_board);
+}
 

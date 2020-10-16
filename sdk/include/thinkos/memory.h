@@ -38,7 +38,10 @@
 #include <sys/memory.h>
 
 struct thinkos_mem_blk {
-	char tag[8];
+	union {
+		char tag[8];
+		uint64_t hash;
+	};
 	uint32_t off; /* offset */
 	uint8_t  opt; /* flags */
 	uint8_t  siz; /* coded block size */
@@ -47,17 +50,22 @@ struct thinkos_mem_blk {
 
 /* Memory descriptor */
 struct thinkos_mem_desc {
-	char tag[8]; /* sector tag */
+	union {
+		char tag[8];
+		uint64_t hash;
+	};
 	uint32_t base; /* Base address */
-	uint8_t cnt; /* number of blocks in the list */
-	struct thinkos_mem_blk blk[]; /* sorted block list */
+	uint8_t dev;   /* Device Access */
+	uint8_t typ;   /* Type */
+	uint8_t opt;   /* Flags */
+	uint8_t cnt;   /* Number of entries in the list of memory blocks */
+	struct thinkos_mem_blk blk[]; /* SORTED list of blocks */
 };
 
-struct thinkos_memory_map {
-	const struct thinkos_mem_sct * flash;
-	const struct thinkos_mem_sct * ram;
-	const struct thinkos_mem_sct * periph;
-	const struct thinkos_mem_sct * stack;
+struct thinkos_mem_map {
+	char tag[7];
+	uint8_t cnt; /* Number of entries in the list of memory descriptors */
+	const struct thinkos_mem_desc * desc[]; /* Sorted list of descriptors */
 };
 
 #ifdef __cplusplus

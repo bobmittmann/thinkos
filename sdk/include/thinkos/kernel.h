@@ -359,6 +359,13 @@ struct thinkos_fp_context {
 };
 #endif
 
+#if THINKOS_ENABLE_MPU
+struct thinkos_mpu_block {
+	uint16_t offs;
+	uint16_t size;
+};
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Run Time RTOS block
  * --------------------------------------------------------------------------*/
@@ -589,17 +596,15 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	struct thinkos_idle_rt idle_hooks;
 #endif
-};
-
-#if THINKOS_ENABLE_MPU
-struct mpu_mem_block {
-	uint16_t offs;
-	uint16_t size;
-};
-
-/* Kernel protected memory block descriptor */
-extern struct mpu_mem_block thinkos_mpu_kernel_mem;
+#if (THINKOS_ENABLE_MPU)
+	struct { 
+		/* Kernel protected memory block descriptor */
+		struct thinkos_mpu_block kernel_mem;
+	} mpu;
 #endif
+
+};
+
 
 /* -------------------------------------------------------------------------- 
  * Base indexes for the wait queue list (wq_lst[])

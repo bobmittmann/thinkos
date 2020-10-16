@@ -40,7 +40,7 @@
 
 #include <sys/dcclog.h>
 
-void monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
@@ -52,7 +52,7 @@ void monitor_task(const struct monitor_comm * comm, void * arg);
 
 #undef DEBUG
 
-int main(int argc, char ** argv)
+int thinkos_boot(const struct thinkos_board * board)
 {
 	const struct monitor_comm * comm;
 
@@ -87,13 +87,13 @@ int main(int argc, char ** argv)
 #if DEBUG
 	udelay(256);
 #endif
-	this_board.init();
+	board->init();
 
 	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
 #if DEBUG
 	udelay(256);
 #endif
-	comm = this_board.monitor_comm_init();
+	comm = board->monitor_comm_init();
 
 #if THINKOS_ENABLE_CONSOLE
 	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
@@ -121,7 +121,7 @@ int main(int argc, char ** argv)
 #if DEBUG
 	udelay(0x8000);
 #endif
-	thinkos_monitor(monitor_task, comm, NULL);
+	thinkos_monitor(boot_monitor_task, comm, (void *)board);
 
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 #if DEBUG

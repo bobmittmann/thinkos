@@ -41,7 +41,7 @@ int long2hex_le(char * s, unsigned long val);
 int char2hex(char * s, int c);
 
 void monitor_hexdump(const struct monitor_comm * comm, 
-					const struct mem_desc * mem,
+					const struct thinkos_mem_desc * mem,
 					uint32_t addr, unsigned int size)
 {
 	char buf[14 + 16 * 3 + 18];

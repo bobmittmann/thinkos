@@ -26,12 +26,11 @@
 #include <string.h>
 #include <sys/dcclog.h>
 
-/* 
-
-  */
-#if THINKOS_ENABLE_MPU
-
-struct mpu_mem_block thinkos_mpu_kernel_mem;
+/* -------------------------------------------------------------------------- 
+ * Memory Protection Unit
+ * --------------------------------------------------------------------------
+ */
+#if (THINKOS_ENABLE_MPU)
 
 #define STRONGLY_ORDERED MPU_RASR_TEX(0) 
 #define SHARED_DEVICE    MPU_RASR_TEX(0) | MPU_RASR_B
@@ -51,7 +50,6 @@ struct mpu_mem_block thinkos_mpu_kernel_mem;
 #define USER_RW          MPU_RASR_AP_USER_RW
 #define PRIV_RO          MPU_RASR_AP_PRIV_RO
 #define READ_ONLY        MPU_RASR_AP_READ_ONLY
-
 
 /* Normal memory, Non-shareable, write-through */
 #define M_FLASH         (WRITE_THROUGH)
@@ -89,6 +87,8 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
  * @size: size of the kernel protected memory block
  *
  * Initializes the Cortex-M MPU.
+ * 
+ * 
  *
  */
 void thinkos_krn_mpu_init(uint32_t offs, unsigned int size)
@@ -109,8 +109,8 @@ void thinkos_krn_mpu_init(uint32_t offs, unsigned int size)
 	DCC_LOG3(LOG_TRACE, "MPU offs=%08x size=%d blocks=%d.", offs, size, n);
 
 	/* save the kernel reserved memory */
-	thinkos_mpu_kernel_mem.offs = offs;
-	thinkos_mpu_kernel_mem.size = n * 1024;
+	thinkos_rt.mpu.kernel_mem.offs = offs;
+	thinkos_rt.mpu.kernel_mem.size = n * 1024;
 
 	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;

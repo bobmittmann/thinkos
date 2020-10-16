@@ -38,21 +38,28 @@
 /* Board description */
 struct thinkos_board_desc {
 	char name[16];
-	char desc[38];
+	char desc[32];
 	struct {
-		char tag[8];
+		union {
+			char tag[8];
+			uint64_t hash;
+		};
 		struct {
+			uint8_t extra[6];
 			uint8_t minor;
 			uint8_t major;
-		} ver;
+		} rev;
 	} hw;
 
 	struct {
-		char tag[8];
+		union {
+			char tag[8];
+			uint64_t hash;
+		};
 		struct {
+			uint8_t extra[6];
 			uint8_t minor;
 			uint8_t major;
-			uint16_t build;
 		} ver;
 	} sw;
 
@@ -61,21 +68,18 @@ struct thinkos_board_desc {
 		uint32_t id;
 	} cpu;
 
+	int (* init)(void *);
+	int (* reset)(void *);
+	int (* sleep)(void *);
+	int (* wakeup)(void *);
+	int (* app)(void *);
+
 	struct {
 		uint8_t cnt;
 		union {
-			struct {
-				const struct mem_desc * flash;
-				const struct mem_desc * ram;
-				const struct mem_desc * periph;
-			};
 			const struct mem_desc * lst[3];
 		};
 	} memory;
-
-	int (* init)(void);
-	int (* reset)(void);
-	int (* sleep)(void);
 };
 
 #ifdef __cplusplus

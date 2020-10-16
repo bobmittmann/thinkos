@@ -205,6 +205,7 @@ extern int __heap_base;
 const void * heap_base = &__heap_base; 
 
 struct monitor {
+	const struct thinkos_board * board;
 	const struct monitor_comm * comm;
 #if (MONITOR_SELFTEST_ENABLE)
 	intptr_t test_status; 
@@ -310,7 +311,8 @@ static const char s_bottom[] =
 	VT100_ATTR_NORMAL  VT100_GOTO(199,199) "\r\n";
 #endif
 
-static void monitor_show_help(const struct monitor_comm * comm)
+static void monitor_show_help(const struct monitor_comm * comm,
+							  const struct thinkos_board * board)
 {
 #if (MONITOR_VT100_ENABLE)
 	monitor_printf(comm, s_bottom);
@@ -318,11 +320,11 @@ static void monitor_show_help(const struct monitor_comm * comm)
 	DCC_LOG2(LOG_TRACE, "sp=0x%08x comm=0x%08x", cm3_sp_get(), comm);
 	monitor_printf(comm, s_hr);
 	monitor_printf(comm, "%s-%d.%d.%d (%s):\r\n", 
-			 this_board.sw.tag,
-			 this_board.sw.ver.major,
-			 this_board.sw.ver.minor,
-			 this_board.sw.ver.build,
-			 this_board.name);
+			 board->sw.tag,
+			 board->sw.ver.major,
+			 board->sw.ver.minor,
+			 board->sw.ver.build,
+			 board->name);
 	monitor_printf(comm, monitor_menu);
 	monitor_printf(comm, s_hr);
 }
@@ -485,18 +487,19 @@ static void monitor_resume_all(const struct monitor_comm * comm)
 #endif
 
 #if (MONITOR_DUMPMEM_ENABLE)
-void monitor_show_mem(struct monitor * mon)
+void monitor_show_mem(struct monitor * mon,
+					  const struct thinkos_board * board)
 {
 	uint32_t addr = mon->memdump.addr;
 	unsigned int size = mon->memdump.size;
-	const struct mem_desc * mem;
+	const struct thinkos_mem_desc * mem;
 
 	monitor_printf(mon->comm, "Addr (0x%08x): ", addr);
 	monitor_scanf(mon->comm, "%x", &addr);
 	monitor_printf(mon->comm, "Size (%d): ", size);
 	monitor_scanf(mon->comm, "%u", &size);
 
-	mem = monitor_mem_lookup(this_board.memory.lst, 3, addr);
+	mem = monitor_mem_lookup(board->memory->desc, board->memory->cnt, addr);
 	monitor_hexdump(mon->comm, mem, addr, size);
 	mon->memdump.addr = addr;
 	mon->memdump.size = size;
@@ -544,7 +547,7 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-void monitor_task(const struct monitor_comm *, void * arg);
+void boot_monitor_task(const struct monitor_comm *, void * arg);
 
 #if (BOOT_ENABLE_GDB)
 void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm, 
@@ -552,7 +555,7 @@ void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm,
 {
 	DCC_LOG1(LOG_TRACE, "sp=0x%08x", cm3_sp_get());
 	gdb_stub_task(comm);
-	monitor_exec(monitor_task, arg);
+	monitor_exec(boot_monitor_task, arg);
 }
 #endif
 
@@ -565,13 +568,13 @@ void __attribute__((naked)) third_bootstrap(const struct monitor_comm * comm,
 	/* call the THIRD stub task */
 	third_stub_task(comm);
 	/* return to the monitor */
-	monitor_exec(monitor_task, arg);
+	monitor_exec(boot_monitor_task, arg);
 }
 #endif
 
 #if (MONITOR_BOARDINFO_ENABLE)
 static void show_mem_info(const struct monitor_comm * comm, 
-						  const struct mem_desc * mem)
+						  const struct thinkos_mem_desc * mem)
 {
 	const char * tag;
 	uint32_t base;
@@ -598,23 +601,26 @@ static void show_mem_info(const struct monitor_comm * comm,
 
 }
 
-static void monitor_board_info(const struct monitor_comm * comm)
+static void monitor_board_info(const struct monitor_comm * comm, 
+							   const struct thinkos_board * board)
 {
+	unsigned int i;
+
 	monitor_printf(comm, s_hr);
 	monitor_printf(comm, "Board: %s <%s>\r\n",
-				  this_board.name, this_board.desc);
+				  board->name, board->desc);
 	monitor_printf(comm, "Hardware: %s revision %d.%d\r\n",
-				  this_board.hw.tag, 
-				  this_board.hw.ver.major, 
-				  this_board.hw.ver.minor
+				  board->hw.tag, 
+				  board->hw.ver.major, 
+				  board->hw.ver.minor
 				  );
 	/* preprocessor running date and time */
 	monitor_printf(comm, "Firmware: %s-%d.%d.%d (%s) " __DATE__ 
 				  ", " __TIME__ "\r\n",
-				  this_board.sw.tag, 
-				  this_board.sw.ver.major, 
-				  this_board.sw.ver.minor, 
-				  this_board.sw.ver.build,
+				  board->sw.tag, 
+				  board->sw.ver.major, 
+				  board->sw.ver.minor, 
+				  board->sw.ver.build,
 #if DEBUG
 				  "debug"
 #else
@@ -629,9 +635,9 @@ static void monitor_board_info(const struct monitor_comm * comm)
 	monitor_printf(comm, "         Tag       Adress span"
 				  "     Size  Flags  Align \r\n");
 
-	show_mem_info(comm, this_board.memory.flash);
-	show_mem_info(comm, this_board.memory.ram);
-	show_mem_info(comm, this_board.memory.periph);
+	for (i = 0; i < board->memory->cnt; ++i) {
+		show_mem_info(comm, board->memory->desc[i]);
+	}
 
 	monitor_printf(comm, "\r\nKernel Profile:\r\n");
 	monitor_print_profile(comm, &thinkos_profile);
@@ -641,6 +647,7 @@ static void monitor_board_info(const struct monitor_comm * comm)
 static bool monitor_process_input(struct monitor * mon, int c)
 {
 	const struct monitor_comm * comm = mon->comm;
+	const struct thinkos_board * board = mon->board;
 
 	switch (c) {
 #if (BOOT_ENABLE_GDB)
@@ -656,7 +663,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_BOARDINFO_ENABLE)
    	case CTRL_B:
 		monitor_printf(comm, "^B\r\n");
-		monitor_board_info(comm);
+		monitor_board_info(comm, board);
 		break;
 #endif
 #if (MONITOR_APPTERM_ENABLE)
@@ -668,7 +675,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_DUMPMEM_ENABLE)
 	case CTRL_D:
 		monitor_printf(comm, "^D\r\n");
-		monitor_show_mem(mon);
+		monitor_show_mem(mon, board);
 		break;
 #endif
 #if (MONITOR_SELFTEST_ENABLE)
@@ -718,7 +725,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_RESTART_MONITOR)
 	case CTRL_Q:
 		monitor_printf(comm, "^Q\r\n");
-		monitor_exec(monitor_task, NULL);
+		monitor_exec(boot_monitor_task, NULL);
 		break;
 #endif
 #if (MONITOR_OS_RESUME)
@@ -745,7 +752,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 	case CTRL_V:
-		monitor_show_help(comm);
+		monitor_show_help(comm, board);
 		break;
 #if (MONITOR_FAULT_ENABLE)
 	case CTRL_G:
@@ -795,9 +802,10 @@ static bool monitor_process_input(struct monitor * mon, int c)
 /*
    Default Monitor Task
  */
-void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
-											void * arg)
+void __attribute__((noreturn)) 
+boot_monitor_task(const struct monitor_comm * comm, void * arg)
 {
+	const struct thinkos_board * board;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
 #if (THINKOS_ENABLE_CONSOLE)
@@ -811,13 +819,15 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	uint8_t buf[1];
 	int sig;
 
+	board = (const struct thinkos_board *)arg;
+	monitor.board = board;
 	monitor.comm = comm;
 #if (MONITOR_THREADINFO_ENABLE)
 	monitor.thread_id = -1;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-	monitor.memdump.addr = this_board.application.start_addr;
-	monitor.memdump.size = this_board.application.block_size;
+	monitor.memdump.addr = board->application.start_addr;
+	monitor.memdump.size = board->application.block_size;
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
@@ -869,7 +879,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			this_board.softreset();
+			board->softreset();
 #if (THINKOS_ENABLE_CONSOLE)
 			goto is_connected;
 #endif
@@ -896,17 +906,17 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 			monitor_printf(comm, "Starting application @ 0x%08x\r\n",
-						  (uint32_t)this_board.application.start_addr);
+						  (uint32_t)board->application.start_addr);
 
-			if (!monitor_app_exec(&this_board.application, false)) {
+			if (!monitor_app_exec(&board->application, false)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (this_board.default_task != NULL) {
+				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_exec(comm, C_TASK(this_board.default_task), 
+					monitor_thread_exec(comm, C_TASK(board->default_task), 
 										C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
@@ -969,21 +979,21 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 
 
 #if (MONITOR_SELFTEST_ENABLE)
-			if (monitor_thread_exec(comm, C_TASK(this_board.selftest_task),
+			if (monitor_thread_exec(comm, C_TASK(board->selftest_task),
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
 				break;
 			}
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
-			if (monitor_thread_exec(comm, C_TASK(this_board.configure_task), 
+			if (monitor_thread_exec(comm, C_TASK(board->configure_task), 
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ configuration failed!!!");
 				break;
 			}
 #endif
 #if (MONITOR_PREBOOT_ENABLE)
-			if (monitor_thread_exec(comm, C_TASK(this_board.preboot_task), 
+			if (monitor_thread_exec(comm, C_TASK(board->preboot_task), 
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ preboot failed!!!");
 				break;
@@ -998,7 +1008,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_clear(MONITOR_USER_EVENT3);
 			monitor_printf(comm, "Confirm [y]? ");
 			if (monitor_getc(comm) == 'y') {
-				this_board.upgrade(comm);
+				board->upgrade(comm);
 				monitor_printf(comm, "Failed !!!\r\n");
 			} else {
 				monitor_printf(comm, "\r\n");

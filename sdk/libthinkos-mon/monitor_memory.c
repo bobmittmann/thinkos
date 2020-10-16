@@ -41,7 +41,7 @@
  * Memory auxiliary functions 
  * ------------------------------------------------------------------------- */
 
-bool monitor_mem_belong(const struct mem_desc * mem, uint32_t addr)
+bool monitor_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr)
 {
 	uint32_t base = mem->base;
 	uint32_t size;
@@ -65,13 +65,14 @@ bool monitor_mem_belong(const struct mem_desc * mem, uint32_t addr)
 	return true;
 }
 
-const struct mem_desc * monitor_mem_lookup(const struct mem_desc * const lst[], 
-										  unsigned int cnt, uint32_t addr)
+const struct thinkos_mem_desc * monitor_mem_lookup(
+	const struct thinkos_mem_desc * const lst[], 
+	unsigned int cnt, uint32_t addr)
 {
 	unsigned int j;
 
 	for (j = 0; j < cnt; ++j) {
-		const struct mem_desc * mem = lst[j];
+		const struct thinkos_mem_desc * mem = lst[j];
 		if (mem == NULL)
 			continue;
 		if (monitor_mem_belong(mem, addr))
@@ -83,7 +84,7 @@ const struct mem_desc * monitor_mem_lookup(const struct mem_desc * const lst[],
 
 
 /* Safe read and write operations to avoid faults in the debugger */
-bool monitor_mem_wr32(const struct mem_desc * mem, 
+bool monitor_mem_wr32(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint32_t val)
 {
 	uint32_t base;
@@ -107,7 +108,7 @@ bool monitor_mem_wr32(const struct mem_desc * mem,
 	return false;
 }
 
-bool monitor_mem_rd32(const struct mem_desc * mem, 
+bool monitor_mem_rd32(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint32_t * val)
 {
 	uint32_t base;
@@ -129,7 +130,7 @@ bool monitor_mem_rd32(const struct mem_desc * mem,
 	return false;
 }
 
-bool monitor_mem_wr64(const struct mem_desc * mem, 
+bool monitor_mem_wr64(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint64_t val)
 {
 	uint32_t base;
@@ -153,7 +154,7 @@ bool monitor_mem_wr64(const struct mem_desc * mem,
 	return false;
 }
 
-bool monitor_mem_rd64(const struct mem_desc * mem, 
+bool monitor_mem_rd64(const struct thinkos_mem_desc * mem, 
 					 uint32_t addr, uint64_t * val)
 {
 	uint32_t base;
@@ -177,7 +178,7 @@ bool monitor_mem_rd64(const struct mem_desc * mem,
 
 /* 32bits access memory read */
 
-int monitor_mem_read(const struct mem_desc * mem,
+int monitor_mem_read(const struct thinkos_mem_desc * mem,
 					uint32_t addr, void * ptr, unsigned int len)
 {
 	uint8_t * dst = (uint8_t *)ptr;
