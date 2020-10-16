@@ -215,7 +215,7 @@ void __xdump(struct thinkos_except * xcpt)
 
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 xcpt->active + 1,
-			 thinkos_rt.active + 1); 
+			 __thinkos_active_get() + 1); 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
 			(scr & SCR_SEVONPEND) ? " SEVONPEND" : "",
@@ -407,7 +407,7 @@ void __tdump(void)
 
 	int i;
 
-	DCC_LOG1(LOG_TRACE, "active thread: %d", thinkos_rt.active + 1);
+	DCC_LOG1(LOG_TRACE, "active thread: %d", __thinkos_active_get() + 1);
 	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
 		if (!__thinkos_thread_ctx_is_valid(i))
 			continue;

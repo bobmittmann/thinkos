@@ -605,7 +605,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 #endif
 
 		if (dfsr & SCB_DFSR_BKPT) do {
-			unsigned int thread_id = thinkos_rt.active;
+			unsigned int thread_id = __thinkos_active_get();
 			unsigned int insn;
 			unsigned int code; 
 			uint16_t * pc;
@@ -758,7 +758,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 #if (THINKOS_ENABLE_DEBUG_WPT)
 		if (dfsr & SCB_DFSR_DWTTRAP) {
-			unsigned int thread_id = thinkos_rt.active;
+			unsigned int thread_id = __thinkos_active_get();
 
 			if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) == 0) {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: exception=%d pc=%08x", 

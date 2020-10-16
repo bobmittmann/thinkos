@@ -229,7 +229,7 @@ again:
 }
 #endif
 
-void thinkos_gate_exit_svc(int32_t * arg)
+void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int open = arg[1];
@@ -258,8 +258,7 @@ void thinkos_gate_exit_svc(int32_t * arg)
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__bit_mem_rd(thinkos_rt.gate, idx * 2 + 1)) {
-		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", 
-				 thinkos_rt.active, wq);
+		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, wq);
 		__THINKOS_ERROR(THINKOS_ERR_GATE_UNLOCKED);
 		arg[0] = THINKOS_EPERM;
 		return;
@@ -287,8 +286,7 @@ void thinkos_gate_exit_svc(int32_t * arg)
 			gates = __ldrex(gates_bmp);
 			gates |= (__GATE_SIGNALED << idx);
 		} while (__strex(gates_bmp, gates));
-		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", 
-				 thinkos_rt.active, wq);
+		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self, wq);
 	} else { /* (open == 0) */
 again:
 		gates = __ldrex(gates_bmp);
@@ -297,12 +295,11 @@ again:
 			gates &= ~(__GATE_LOCKED << idx);
 			if (__strex(gates_bmp, gates))
 				goto again;
-			DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave closed.", 
-					 thinkos_rt.active, wq);
+			DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave closed.", self, wq);
 			return;
 		}
 		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open due to signal.", 
-				 thinkos_rt.active, wq);
+				 self, wq);
 	}
 
 	/* At this point the gate is garanteed to be signaled and locked! */
@@ -316,7 +313,7 @@ again:
 				gates = __ldrex(gates_bmp);
 				gates &= ~(__GATE_LOCKED << idx);
 			} while (__strex(gates_bmp, gates));
-			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", thinkos_rt.active, wq);
+			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self, wq);
 			return;
 		} 
 		/* remove from the wait queue */
@@ -388,7 +385,7 @@ again:
 				gates = __ldrex(gates_bmp);
 				gates &= ~(__GATE_LOCKED << idx);
 			} while (__strex(gates_bmp, gates));
-			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", thinkos_rt.active, wq);
+			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", th, wq);
 			return;
 		} 
 		/* remove from the wait queue */

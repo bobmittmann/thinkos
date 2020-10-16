@@ -99,10 +99,10 @@ bool monitor_app_suspend(void)
 {
 	__thinkos_pause_all();
 
-	if (thinkos_rt.active == THINKOS_THREADS_MAX) {
+	if (__thinkos_active_get() == THINKOS_THREADS_MAX) {
 		DCC_LOG(LOG_INFO, "Current is Idle!");
 	} else {
-		DCC_LOG1(LOG_INFO, "current_thread=%d", thinkos_rt.active);
+		DCC_LOG1(LOG_INFO, "current_thread=%d", __thinkos_active_get());
 	}
 
 	/* Make sure the communication channel interrupts are enabled. */

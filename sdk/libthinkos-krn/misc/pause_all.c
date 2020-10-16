@@ -34,7 +34,7 @@ void __thinkos_pause_all(void)
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, "active=%d", thinkos_rt.active + 1);
+	DCC_LOG1(LOG_TRACE, "active=%d", __thinkos_active_get() + 1);
 //	__thinkos_defer_sched();
 }
 

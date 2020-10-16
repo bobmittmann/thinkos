@@ -204,7 +204,7 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 	   does not own the lock */
 	if (thinkos_rt.lock[mutex] != self) {
 		DCC_LOG3(LOG_ERROR, "<%d> mutex %d is locked by <%d>!", 
-				 thinkos_rt.active, wq, thinkos_rt.lock[mutex]);
+				 self, wq, thinkos_rt.lock[mutex]);
 		__THINKOS_ERROR(THINKOS_ERR_MUTEX_NOTMINE);
 		arg[0] = THINKOS_EPERM;
 		return;
@@ -213,12 +213,12 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 
 	arg[0] = 0;
 
-	DCC_LOG2(LOG_MSG, "<%d> mutex %d unlocked.", thinkos_rt.active, wq);
+	DCC_LOG2(LOG_MSG, "<%d> mutex %d unlocked.", self, wq);
 
 	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
 		/* no threads waiting on the lock, just release
 		   the lock */
-		DCC_LOG2(LOG_MSG, "<%d> mutex %d released", thinkos_rt.active, wq);
+		DCC_LOG2(LOG_MSG, "<%d> mutex %d released", self, wq);
 		thinkos_rt.lock[mutex] = -1;
 	} else {
 		/* set the mutex ownership to the new thread */

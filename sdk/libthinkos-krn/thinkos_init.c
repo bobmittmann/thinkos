@@ -95,10 +95,6 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 		thinkos_rt.sched_limit = THINKOS_SCHED_LIMIT_MIN;
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
-	/* set the active thread */
-	thinkos_rt.active = id;
-	thinkos_rt.wq_ready = 1 << id;
-
 	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
 			 id + 1, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -327,9 +323,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	__krn_systick_init();
 #endif
 
-	/* Set the initial thread */
-	thinkos_rt.active = THINKOS_THREAD_IDLE;
-
 	/* Configure the thread stack ?? 
 	   If we already using the PSP nothing changes, if on the other 
 	   hand MSP is our stack we will move it to PSP 
@@ -350,6 +343,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 
 	ctx = (struct thinkos_context *)sp - 1;
 	thread_id = __thinkos_init_main(ctx, opt);
+
+	/* Set the initial thread */
+	thinkos_rt._active = thread_id;
+	/* add to the ready queue */
+	thinkos_rt.wq_ready = 1 << thread_id;
 
 	/* everything good with the main thread, we need to configure 
 	   idle thread and exceptions. ... */

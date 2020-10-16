@@ -416,7 +416,7 @@ struct thinkos_rt {
   #endif
 #endif
 
-	uint32_t active; /* current active thread */
+	uint32_t _active; /* current active thread */
 
 	union {
 		uint32_t wq_lst[THINKOS_WQ_CNT]; /* queue list */
@@ -792,6 +792,24 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
 #else
 	return __clz(__rbit(x));
 #endif
+}
+
+/* -------------------------------------------------------------------------- 
+ * ThinkOS run time access functions
+ * --------------------------------------------------------------------------*/
+
+static inline void __attribute__((always_inline)) 
+__thinkos_active_set(unsigned int th) {
+	thinkos_rt._active = th;
+}
+static inline unsigned int __attribute__((always_inline)) 
+__thinkos_rt_active_get(struct thinkos_rt * rt) {
+	return rt->_active & 0x3f;
+}
+
+static inline unsigned int __attribute__((always_inline)) 
+__thinkos_active_get() {
+	return thinkos_rt._active & 0x3f;
 }
 
 /* -------------------------------------------------------------------------- 

@@ -60,17 +60,17 @@ void __thinkos_thread_abort(unsigned int thread_id)
 	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 0);
 #endif
 
-	if (thread_id == thinkos_rt.active) {
+	if (thread_id == __thinkos_active_get()) {
 #if (THINKOS_ENABLE_THREAD_VOID)
 		DCC_LOG(LOG_INFO, "set active thread to void!"); 
 		/* discard current thread context */
-		thinkos_rt.active = THINKOS_THREAD_VOID;
+		__thinkos_active_set(THINKOS_THREAD_VOID);
 #else
 		DCC_LOG(LOG_WARNING, "void thread not enabled!"); 
 		DCC_LOG(LOG_WARNING, "aborting current thread won't clear context!"); 
 #endif
 	} else {
-		DCC_LOG1(LOG_INFO, "active thread=%d", thinkos_rt.active); 
+		DCC_LOG1(LOG_INFO, "active thread=%d", __thinkos_active_get()); 
 	}
 
 	/* clear context. */
@@ -188,8 +188,7 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 #if (THINKOS_ENABLE_EXIT)
 void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
-	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", 
-			 thinkos_rt.active + 1, ctx->r0); 
+	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self + 1, ctx->r0); 
 
 #if (THINKOS_ENABLE_JOIN)
 	if (thinkos_rt.wq_join[self] == 0) {

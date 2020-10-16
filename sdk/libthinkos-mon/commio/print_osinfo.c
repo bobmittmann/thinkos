@@ -41,16 +41,18 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 	uint32_t cycdiv;
 	uint32_t busy;
 #endif
+	uint32_t active;
 	int i;
 	int j;
 
+	active = __thinkos_active_get();
 #if (THINKOS_ENABLE_PROFILING)
 	cyccnt = CM3_DWT->cyccnt;
 	delta = cyccnt - rt->cycref;
 	/* update the reference */
 	rt->cycref = cyccnt;
 	/* update active thread's cycle counter */
-	rt->cyccnt[rt->active] += delta; 
+	rt->cyccnt[active] += delta; 
 	/* copy the thread counters to a buffer */
 	__thinkos_memcpy32(cycbuf, rt->cyccnt, sizeof(cycbuf));
 	/* reset cycle counters */
@@ -59,7 +61,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	monitor_printf(comm, " Active: %d", rt->active + 1);
+	monitor_printf(comm, " Active: %d", active + 1);
 
 #if THINKOS_ENABLE_CLOCK
 	monitor_printf(comm, ", Clock: %u", rt->ticks);

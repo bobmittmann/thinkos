@@ -53,8 +53,8 @@ void __thinkos_kill_all(void)
 		thinkos_rt.wq_lst[i] = 0x00000000;
 #if THINKOS_ENABLE_THREAD_VOID 
 	/* discard current thread context */
-	if (thinkos_rt.active != THINKOS_THREAD_IDLE)
-		thinkos_rt.active = THINKOS_THREAD_VOID;
+	if (__thinkos_active_get() != THINKOS_THREAD_IDLE)
+		__thinkos_active_set(THINKOS_THREAD_VOID);
 #else
 	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
 #endif
