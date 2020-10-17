@@ -58,6 +58,11 @@
 #define BOOT_ENABLE_MONITOR 1
 #endif
 
+static inline void monitor_req_upgrade(void) {
+	monitor_soft_reset();
+	monitor_signal(MONITOR_USER_EVENT3);
+}
+
 /* FIXME: the GDB framework for the dbg monitor should be inside a thinkos
    debug library */
 
@@ -140,7 +145,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_THREAD_STEP_ENABLE
-#define MONITOR_THREAD_STEP_ENABLE 1
+#define MONITOR_THREAD_STEP_ENABLE 0
 #endif
 
 #ifndef MONITOR_BOARDINFO_ENABLE

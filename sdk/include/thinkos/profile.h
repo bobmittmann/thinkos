@@ -654,7 +654,7 @@
 
 /* debug breakpoint depends on debug */
 #if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG)
-#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_MONITOR"
+#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG"
 #endif
 
 /* monitor clock depends on monitor and clock */
