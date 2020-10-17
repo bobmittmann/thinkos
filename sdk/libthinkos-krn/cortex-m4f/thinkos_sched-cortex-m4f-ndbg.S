@@ -96,9 +96,9 @@ thinkos_sched_select_ready:
 	it      eq
 	bxeq    lr
 #endif
-	lsr      lr, lr, #2
-	and      lr, lr, #7
-	tbb      [pc, lr]
+	lsrs     r0, lr, #2
+	ands     r0, #7
+	tbb      [pc, r0]
 .L_entry_tab:
 	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 0 */
 	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 1 */
@@ -122,14 +122,31 @@ thinkos_sched_select_ready:
 =========== ============== ============= ============ ===== ===== =====
 */
 .L_entry_krn:
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* check the stack limit */
+	cmp      sp, r2
+	ble      .L_stack_err 
+	/* get the thread id */
+	ands     r2, r2, #0x3f
+	/* check the thrad identity */
+	cmp      r2, #THINKOS_THREAD_IDLE
+	bne      .L_krn_entry_err 
+#endif
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	stmdb    sp!, {r4-r12, lr}
 	mov      r0, sp
 	b        thinkos_sched_update_cyccnt
 
 .L_entry_fpu:
-	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	mrs      r0, PSP
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* check the stack limit */
+	cmp      r0, r2
+	ble      .L_stack_err 
+	/* get the thread id */
+	ands     r2, r2, #0x3f
+#endif
+	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	stmdb    r0!, {r4-r12, lr}
 	mov      r7, r0
 	vstmdb   r7!, {s16-s31}
@@ -137,12 +154,20 @@ thinkos_sched_select_ready:
 	b        thinkos_sched_update_cyccnt
 
 .L_entry_usr:
-	mov      lr, #CM3_EXC_RET_THREAD_PSP
 	mrs      r0, PSP
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* check the stack limit */
+	cmp      r0, r2
+	ble      .L_stack_err 
+	/* get the thread id */
+	ands     r2, r2, #0x3f
+#endif
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
 	stmdb    r0!, {r4-r12, lr}
 	orrs     r0, #(CONTROL_nPRIV)
 
 thinkos_sched_update_cyccnt:
+#if 0
 	/* DWT.SYCCNT */
 	ldr.n   r6, .L_cm_dwt
 	/* r6: cyccnt = CM3_DWT->cyccnt */
@@ -155,11 +180,12 @@ thinkos_sched_update_cyccnt:
 	/* r6: delta =  cyccnt - cycref */	
 	subs    r6, r6, r5
 	/* update thread's cycle counter */
-	adds    r7, r2, #(SIZEOF_CTX / 4)
-	ldr     r5, [r3, r7, lsl #2]
+	adds    r7, r3, #THINKOS_RT_CYCCNT_OFFS
+	ldr     r5, [r7, r2, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds    r5, r6
-	str     r5, [r3, r7, lsl #2]
+	str     r5, [r7, r2, lsl #2]
+#endif
 
 thinkos_sched_swap:
 	/* r0: thread stack
@@ -170,19 +196,33 @@ thinkos_sched_swap:
 
 thinkos_krn_sched_ctx_get:
 
+#if !(THINKOS_ENABLE_STACK_LIMIT)
 	/* load the new context pointer from the context vector */
 	ldr.w	r0, [r3, r1, lsl #2]
+#endif
 
 	.thumb_func
 thinkos_krn_sched_ctx_restore:
 	.global thinkos_krn_sched_ctx_restore
 	.type   thinkos_krn_sched_ctx_restore, %function
 
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* load the new thread id and stack limit */
+	adds    r7, r3, #THINKOS_RT_TH_SL_OFFS
+	ldr.w	r1, [r7, r1, lsl #2]
+#endif
+
 	/* r0: new thread stack
-	   r1: new active thread
-	   r2: old active thread
+	   r1: new active thread id and stack limit
+	   r2: old active thread id 
 	   r3: thinkos_rt */
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* get the effective thread id */
+	ands     r1, r1, #0x3f
+	/* load the new context pointer from the context vector */
+	ldr      r0, [r3, r1, lsl #2]
+#endif
 	
 	/* get the control (3bits) from the context */
 	ands     r7, r0, #0x07
@@ -255,9 +295,17 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
+.L_krn_entry_err:
+	mov      r12, #32
+	b        .L_krn_entry_err 
+
 .L_entry_err:
 	mov      r12, #1
 	b        .L_entry_err
+
+.L_stack_err:
+	mov      r12, #20
+	b        .L_idle_stack_fault
 
 .L_idle_stack_fault:
 	mov      r12, #0

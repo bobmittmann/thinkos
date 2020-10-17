@@ -34,7 +34,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_CLOCK)
 static void __thinkos_time_wakeup(int thread_id) 
 {
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	int wq;
 	/* update the thread status */
 	wq = __thinkos_thread_stat_wq_get(thread_id);
@@ -56,7 +56,7 @@ static void __thinkos_timeshare(void)
 {
 	int32_t idx;
 
-	idx = thinkos_rt.active;
+	idx = __thinkos_active_get();
 
 	/*  */
 	thinkos_rt.sched_val[idx] -= thinkos_rt.sched_pri[idx];
@@ -85,42 +85,43 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
-	
-	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
+	do {
+		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 #endif
 #if (THINKOS_ENABLE_CLOCK)
-	{
-		uint32_t ticks;
-		uint32_t wq;
-		int j;
+		{
+			uint32_t ticks;
+			uint32_t wq;
+			int j;
 
-		ticks = thinkos_rt.ticks; 
-		ticks++;
-		thinkos_rt.ticks = ticks; 
+			ticks = thinkos_rt.ticks; 
+			ticks++;
+			thinkos_rt.ticks = ticks; 
 
-		wq = __rbit(thinkos_rt.wq_clock);
-		while ((j = __clz(wq)) < 32) {
-			wq &= ~(0x80000000 >> j);  
-			if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
-				__thinkos_time_wakeup(j); 
+			wq = __rbit(thinkos_rt.wq_clock);
+			while ((j = __clz(wq)) < 32) {
+				wq &= ~(0x80000000 >> j);  
+				if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
+					__thinkos_time_wakeup(j); 
+				}
 			}
-		}
 
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-		if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
-			monitor_signal(MONITOR_ALARM);
-		}
+			if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
+				monitor_signal(MONITOR_ALARM);
+			}
 #endif
 
 #if (THINKOS_ENABLE_TIMESHARE)
-		__thinkos_timeshare(); 
+			__thinkos_timeshare(); 
 #endif /* THINKOS_ENABLE_TIMESHARE */
-	}
+		}
 #endif /* THINKOS_ENABLE_CLOCK */
 
 #if (THINKOS_ENABLE_MONITOR)
-	__thinkos_monitor_isr();
+	} while (__thinkos_monitor_isr());
 #endif /* THINKOS_ENABLE_MONITOR */
+
 }
 
 void __krn_systick_init(void)

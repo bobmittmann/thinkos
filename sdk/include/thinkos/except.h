@@ -112,6 +112,16 @@ extern const char thinkos_except_nm[];
 extern "C" {
 #endif
 
+#if (THINKOS_ENABLE_STACK_LIMIT)
+static inline unsigned int __xcpt_active_get(struct thinkos_except * xcpt) {
+	return xcpt->active & 0x3f;
+}
+#else
+static inline unsigned int __xcpt_active_get(struct thinkos_except * xcpt) {
+	return xcpt->active; 
+}
+#endif
+
 /* -------------------------------------------------------------------------
  * Exception API 
  * ------------------------------------------------------------------------- */

@@ -70,17 +70,17 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 
 	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
-		if ((xcpt->active > 0) && (xcpt->active <= THINKOS_THREADS_MAX)) {
+		if ((__xcpt_active_get(xcpt) > 0) && (__xcpt_active_get(xcpt) <= THINKOS_THREADS_MAX)) {
 #if (THINKOS_ENABLE_DEBUG_FAULT)
 			/* flag the thread as faulty */
-			__thinkos_thread_fault_set(thinkos_rt.active);
+			__thinkos_thread_fault_set(__thinkos_active_get());
 #endif
 
 #if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
 			DCC_LOG5(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
 					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
-					 xcpt->active + 1, 
+					 __xcpt_active_get(xcpt) + 1, 
 					 ctx->sp, 
 					 xcpt->psp,
 					 xcpt->msp, xcpt->psp);
@@ -88,7 +88,7 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 			DCC_LOG4(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
 					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
-					 xcpt->active + 1, 
+					 __xcpt_active_get(xcpt) + 1, 
 					 xcpt->psp,
 					 xcpt->msp, xcpt->psp);
 #endif
@@ -563,7 +563,7 @@ void thinkos_usage_fault(struct thinkos_except * xcpt)
 #endif
 
 	if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE) {
-		if (xcpt->active == THINKOS_THREAD_IDLE) {
+		if (__xcpt_active_get(xcpt) == THINKOS_THREAD_IDLE) {
 			/* Error on IDLE thread, this is a kernel fault!!! */
 			__thinkos_idle_reset();
 			dbgmon_signal(DBGMON_KRN_EXCEPT);
@@ -610,7 +610,7 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 #endif
 
 	if ((CM3_SCB->icsr & SCB_ICSR_RETTOBASE) && 
-		(xcpt->active != THINKOS_THREAD_IDLE)) {
+		(__xcpt_active_get(xcpt) != THINKOS_THREAD_IDLE)) {
 		__THINKOS_ERROR(THINKOS_ERR_MEM_MANAGE);
 	} else {
 		thinkos_kernel_fault(xcpt);

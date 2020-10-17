@@ -174,7 +174,9 @@ extern "C" {
 
 void thinkos_monitor_svc(int32_t arg[], int self);
 
-void thinkos_monitor_reset(void);
+void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
+                     void (* task)(const struct monitor_comm *, void *),
+					 void * param);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events/signals 
@@ -404,7 +406,7 @@ void monitor_print_alloc(const struct monitor_comm * comm);
 
 void monitor_print_stack_usage(const struct monitor_comm * comm);
 
-void __thinkos_monitor_isr(void);
+uint32_t __thinkos_monitor_isr(void);
 
 /* ----------------------------------------------------------------------------
  * Default Monitor comm event handler

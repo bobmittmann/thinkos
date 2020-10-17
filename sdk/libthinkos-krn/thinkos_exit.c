@@ -172,6 +172,8 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	__thinkos_thread_abort(thread_id);
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
+	DCC_LOG2(LOG_WARNING, "monitor_signal_terminate: <%2d>, code=%d!", 
+			 thread_id + 1, code);
 	monitor_signal_thread_terminate(thread_id, code);
 #endif
 }

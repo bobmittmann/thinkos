@@ -693,7 +693,7 @@ void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
 		break;
 
 	case THINKOS_MONITOR:
-#if (THINKOS_ENABLE_MONITOR)
+#if (THINKOS_ENABLE_MONITOR_SYSCALL) 
 		thinkos_monitor_svc(arg, self);
 #else
 		thinkos_nosys(arg, self);

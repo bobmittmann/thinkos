@@ -40,7 +40,7 @@ int __thinkos_thread_fault_code(unsigned int thread_id)
 	if (!__thinkos_thread_isfaulty(thread_id))
 		return 0;
 
-	if (xcpt->active == thread_id)
+	if (__xcpt_active_get(xcpt) == thread_id)
 		return xcpt->errno;
 
 	pc = (uint16_t *)__thinkos_thread_pc_get(thread_id);
@@ -54,29 +54,30 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 {
 	struct thinkos_except * xcpt = &thinkos_except_buf;
 
-	if (xcpt->active == thread_id)
+	if (__xcpt_active_get(xcpt) == thread_id)
 		return &xcpt->ctx.core;
 
 	return __thinkos_thread_ctx_get(thread_id);
 }
 #endif
 
-
-struct thinkos_context * __thinkos_thread_init(unsigned int thread_id, 
-                                               uint32_t sp, 
-											   uintptr_t task,
-											   uintptr_t arg)
+/* Initilize a context at SP 
+ Return a context structure */
+struct thinkos_context * __thinkos_thread_ctx_init(unsigned int thread_id, 
+												   uintptr_t sp, 
+												   uintptr_t task,
+												   uintptr_t arg)
 {
 	struct thinkos_context * ctx;
 	uint32_t pc;
 
 	pc = (uint32_t)task & 0xfffffffe;
-	sp &= 0xfffffff8; /* 64bits alignemnt */
+	sp &= 0xfffffff0; /* 64bits alignemnt */
 
 	sp -= sizeof(struct thinkos_context);
 	ctx = (struct thinkos_context *)sp;
 
-#if (THINKOS_ENABLE_STACK_INIT)
+#if (THINKOS_ENABLE_STACK_INIT) && (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 #endif
 
@@ -92,16 +93,6 @@ struct thinkos_context * __thinkos_thread_init(unsigned int thread_id,
 	ctx->sp = (uintptr_t)&ctx->r0;
 	ctx->ret = CM3_EXC_RET_THREAD_PSP;
 #endif
-
-#if (THINKOS_ENABLE_PAUSE)
-	__thinkos_thread_pause_set(thread_id);
-#endif
-
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-	__thinkos_thread_fault_clr(thread_id);
-#endif
-
-	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
 
 #if 1
 	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
@@ -127,6 +118,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 #endif
 	uint32_t stack_base = (uint32_t)init->stack_ptr;
 	uint32_t stack_size = init->opt.stack_size;
+	struct thinkos_context * ctx;
 	int thread_id;
 	uint32_t sp;
 
@@ -180,7 +172,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 #if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize stack */
 	__thinkos_memset32((void *)stack_base, 0xdeadbeef, stack_size);
-#elif THINKOS_ENABLE_MEMORY_CLEAR
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32(stack_base, 0, stack_size);
 #endif
 
@@ -191,8 +183,20 @@ void thinkos_thread_create_svc(int32_t * arg)
 	}
 #endif
 
-	__thinkos_thread_init(thread_id, sp, (uintptr_t)init->task, 
+	ctx = __thinkos_thread_ctx_init(thread_id, sp, (uintptr_t)init->task, 
 						  (uintptr_t)init->arg);
+
+#if (THINKOS_ENABLE_PAUSE)
+	__thinkos_thread_pause_set(thread_id);
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+	__thinkos_thread_fault_clr(thread_id);
+#endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	__thinkos_thread_sl_set(thread_id, stack_base);
+#endif
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	thinkos_rt.sched_pri[thread_id] = init->opt.priority;
@@ -211,6 +215,9 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__thinkos_thread_inf_set(thread_id, inf);
 #endif
 
+	/* commit the context to the kernel */ 
+	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
+
 #if (THINKOS_ENABLE_PAUSE)
 	if (!init->opt.paused)
 #endif
@@ -219,6 +226,8 @@ void thinkos_thread_create_svc(int32_t * arg)
 		if (__thinkos_thread_resume(thread_id))
 			__thinkos_defer_sched();
 	}
+
+
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */

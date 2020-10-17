@@ -48,14 +48,18 @@ extern const char thinkos_clk_nm[];
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
 
 
-static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
+static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 {
+	struct thinkos_context *ctx;
 #if THINKOS_ENABLE_TIMESHARE
 	int priority = __PRIORITY(opt);
 #endif
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	int id = __ID(opt) - 1;
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	uintptr_t sl = sp - __STACK_SIZE(opt);
+#endif
 
 	if (id < 0)
 		id = 0;
@@ -66,11 +70,6 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 #else
 	if (id >= THINKOS_THREADS_MAX)
 		id = THINKOS_THREADS_MAX - 1;
-#endif
-
-	/* initialize the main thread */ 
-#if THINKOS_ENABLE_THREAD_INFO
-	thinkos_rt.th_inf[id] = (struct thinkos_thread_inf *)&thinkos_main_inf;
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
@@ -108,7 +107,21 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 	} 
 #endif
 
-	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	__thinkos_thread_sl_set(id, (uintptr_t)sl);
+	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[id]);
+#endif
+
+#if (THINKOS_ENABLE_THREAD_INFO)
+	__thinkos_thread_inf_set(id, (struct thinkos_thread_inf *)
+							 &thinkos_main_inf);
+#endif
+
+	ctx = (struct thinkos_context *)sp - 1;
+
+	/* commit the context to the kernel */ 
+//	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
+	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL);
 
 #if 0
 	/* Invoke the scheduler */
@@ -121,7 +134,6 @@ static int __thinkos_init_main(struct thinkos_context *ctx, uint32_t opt)
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
-	struct thinkos_context * ctx;
 	uint32_t sp;
 	uint32_t ctrl;
 	int thread_id;
@@ -341,25 +353,29 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 			 ctrl & CONTROL_FPCA? 1 : 0);
 #endif
 
-	ctx = (struct thinkos_context *)sp - 1;
-	thread_id = __thinkos_init_main(ctx, opt);
-
-	/* Set the initial thread */
-	thinkos_rt._active = thread_id;
-	/* add to the ready queue */
-	thinkos_rt.wq_ready = 1 << thread_id;
-
-	/* everything good with the main thread, we need to configure 
-	   idle thread and exceptions. ... */
-	DCC_LOG(LOG_INFO, "6. Idle thread init..."); 
-	__thinkos_idle_init();
-
 	/* configure the main stack */
 	cm3_msp_set((uintptr_t)__thinkos_xcpt_stack_top());
 
 #if THINKOS_ENABLE_EXCEPTIONS
 	thinkos_exception_init();
 #endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_THREAD_VOID)
+	__thinkos_thread_sl_set(THINKOS_THREAD_VOID, 0);
+	DCC_LOG1(LOG_TRACE, "VOID sl=%08x", thinkos_rt.th_sl[THINKOS_THREAD_VOID]);
+#endif
+
+	/* everything good with the main thread, we need to configure 
+	   idle thread and exceptions. ... */
+	DCC_LOG(LOG_INFO, "6. Idle thread init..."); 
+	__thinkos_idle_init();
+
+	thread_id = __thinkos_init_main(sp, opt);
+
+	/* Set the initial thread */
+	__thinkos_active_set(thread_id);
+	/* add to the ready queue */
+	thinkos_rt.wq_ready = 1 << thread_id;
 
 	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());

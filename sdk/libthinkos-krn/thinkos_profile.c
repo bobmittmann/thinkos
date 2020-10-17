@@ -85,7 +85,8 @@ const struct thinkos_profile thinkos_profile = {
 		.console      = THINKOS_ENABLE_CONSOLE,
 		.flag_watch   = THINKOS_ENABLE_FLAG_WATCH,
 		.timed_calls  = THINKOS_ENABLE_TIMED_CALLS,
-		.irq_timedwait = THINKOS_ENABLE_IRQ_TIMEDWAIT
+		.irq_timedwait = THINKOS_ENABLE_IRQ_TIMEDWAIT,
+		.monitor      = THINKOS_ENABLE_MONITOR_SYSCALL
 	},
 
 	.alloc = {
@@ -126,6 +127,7 @@ const struct thinkos_profile thinkos_profile = {
 		.sanity_check    = THINKOS_ENABLE_SANITY_CHECK,
 		.stack_init      = THINKOS_ENABLE_STACK_INIT,
 		.memory_clear    = THINKOS_ENABLE_MEMORY_CLEAR,
+		.stack_limit     = THINKOS_ENABLE_STACK_LIMIT
 	},
 
 	.except = {
@@ -250,6 +252,8 @@ void __profile(void)
 			 p->syscall.timed_calls);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_TIMEDWAIT   = %d", 
 			 p->syscall.irq_timedwait);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_SYSCALL = %d", 
+			 p->syscall.monitor);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_ALLOC    = %d", 
 			 p->alloc.thread_alloc);
@@ -315,7 +319,8 @@ void __profile(void)
 			 p->security.stack_init);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEMORY_CLEAR    = %d", 
 			 p->security.memory_clear);
-
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_LIMIT     = %d", 
+			 p->security.stack_limit);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPTIONS      = %d", 
 			 p->except.exceptions);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_BUSFAULT        = %d", 

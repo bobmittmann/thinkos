@@ -81,7 +81,8 @@ int thinkos_boot(const struct thinkos_board * board)
 #if DEBUG
 	udelay(256);
 #endif
-	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0), NULL, NULL);
+	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) | 
+					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 #if DEBUG
@@ -103,6 +104,12 @@ int thinkos_boot(const struct thinkos_board * board)
 	thinkos_krn_console_init();
 #endif
 
+	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
+#if DEBUG
+	udelay(0x8000);
+#endif
+	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)board);
+
 #if THINKOS_ENABLE_MPU
 	DCC_LOG(LOG_TRACE, "6. thinkos_krn_mpu_init()");
 #if DEBUG
@@ -116,12 +123,6 @@ int thinkos_boot(const struct thinkos_board * board)
 #endif
 	thinkos_krn_userland();
 #endif
-
-	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
-#if DEBUG
-	udelay(0x8000);
-#endif
-	thinkos_monitor(boot_monitor_task, comm, (void *)board);
 
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 #if DEBUG
@@ -137,5 +138,4 @@ int thinkos_boot(const struct thinkos_board * board)
 
 	return 0;
 }
-
 

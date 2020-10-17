@@ -961,6 +961,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_THREAD_TERMINATE:
+			monitor_wait_idle();
+
 			if (!startup) {
 				int thread_id;
 				int code;
@@ -975,10 +977,11 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			}
 
 			startup = false;
-			DCC_LOG(LOG_TRACE, "/!\\ Startup !!!");
-
+			DCC_LOG(LOG_TRACE, "THREAD_TERMINATE");
+			monitor.test_status = 1;
 
 #if (MONITOR_SELFTEST_ENABLE)
+			DCC_LOG(LOG_TRACE, "thread_exec(selftest_task)");
 			if (monitor_thread_exec(comm, C_TASK(board->selftest_task),
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
@@ -986,6 +989,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			}
 #endif
 #if (MONITOR_CONFIGURE_ENABLE)
+			DCC_LOG(LOG_TRACE, "thread_exec(configure_task)");
 			if (monitor_thread_exec(comm, C_TASK(board->configure_task), 
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ configuration failed!!!");
@@ -993,12 +997,15 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			}
 #endif
 #if (MONITOR_PREBOOT_ENABLE)
+			DCC_LOG(LOG_TRACE, "thread_exec(preboot_task)");
 			if (monitor_thread_exec(comm, C_TASK(board->preboot_task), 
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ preboot failed!!!");
 				break;
 			}
 #endif
+
+			DCC_LOG(LOG_TRACE, "APP exec request");
 			monitor_req_app_exec();
 			break;
 
@@ -1124,4 +1131,5 @@ is_connected:
 		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
 }
+
 

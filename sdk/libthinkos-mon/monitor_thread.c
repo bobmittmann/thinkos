@@ -49,7 +49,8 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
 						 const struct thinkos_thread_inf * inf)
 {
 	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
-	uint32_t sp = (uint32_t)inf->stack_ptr + inf->stack_size;
+	uint32_t sl = (uint32_t)inf->stack_ptr;
+	uint32_t sp = sl + inf->stack_size;
 	struct thinkos_context * ctx;
 
 	if (__thinkos_thread_ctx_is_valid(thread_id)) {
@@ -73,15 +74,30 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
 	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 1);
 #endif
 
-	DCC_LOG2(LOG_TRACE, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	ctx = __thinkos_thread_init(thread_id, sp, (uintptr_t)func, (uintptr_t)arg);
+	DCC_LOG2(LOG_TRACE, "__thinkos_thread_ctx_init(func=%p arg=%p)", func, arg);
+	ctx = __thinkos_thread_ctx_init(thread_id, sp, 
+									(uintptr_t)func, (uintptr_t)arg);
 	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 	DCC_LOG3(LOG_TRACE, "PC=%08X R0=%08x LR=%08x", ctx->pc, ctx->r0, ctx->lr);
 
 #if THINKOS_ENABLE_THREAD_INFO
-	DCC_LOG(LOG_TRACE, "__thinkos_thread_inf_set()");
 	__thinkos_thread_inf_set(thread_id, inf);
 #endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	__thinkos_thread_sl_set(thread_id, sl);
+#endif
+
+#if (THINKOS_ENABLE_PAUSE)
+	__thinkos_thread_pause_set(thread_id);
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_FAULT)
+	__thinkos_thread_fault_clr(thread_id);
+#endif
+
+	/* commit the context to the kernel */ 
+	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
 
 	return thread_id;
 }
@@ -108,6 +124,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 #else
 	thread_id = monitor_thread_create(task, arg, 0);
 #endif
+
 	monitor_thread_resume(thread_id);
 
 	sigmask |= (1 << MONITOR_COMM_RCV);
@@ -149,6 +166,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 		}
 
 		default:
+			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 			return -1;
 		}
 	}

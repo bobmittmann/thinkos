@@ -124,6 +124,7 @@
 #define THINKOS_CONSOLE_TX_FIFO_LEN     128
 
 #define THINKOS_EXCEPT_STACK_SIZE       384
+#define THINKOS_ENABLE_KRNSVC           1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_UNROLL_EXCEPTIONS       0
@@ -182,7 +183,7 @@
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
 
-#define THINKOS_ENABLE_KRNSVC           0
+#define THINKOS_ENABLE_STACK_LIMIT      1 
 
 /* -------------------------------------------------------------------------
    RCC 

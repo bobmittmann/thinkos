@@ -101,80 +101,84 @@ xcpt_collect:
 	   Return:
 	     r0: exception buffer */
 
-	mrs    r3, PRIMASK
+	mrs     r3, PRIMASK
 	/* disable interrupts */
 	cpsid   i
-	ldr    r0, .L_xcpt_buf
-	strb   r1, [r0, #0] /* errno */
-	ldrb   r2, [r0, #1] /* count */
-	adds   r2, r2, #1
-	strb   r2, [r0, #1] /* count */
-	strb   lr, [r0, #2] /* return (lr) */
-	strb   r3, [r0, #3] /* PRIMASK */
-	mrs    r3, FAULTMASK
-	strb   r3, [r0, #4] /* FAULTMASK */
-	mrs    r3, BASEPRI 
-	strb   r3, [r0, #5] /* BASEPRI */
-	mrs    r3, CONTROL
-	strb   r3, [r0, #6] /* CONTROL */
-	mrs    r3, IPSR
-	strb   r3, [r0, #7] /* IPSR */
+	ldr     r0, .L_xcpt_buf
+	strb    r1, [r0, #0] /* errno */
+	ldrb    r2, [r0, #1] /* count */
+	adds    r2, r2, #1
+	strb    r2, [r0, #1] /* count */
+	strb    lr, [r0, #2] /* return (lr) */
+	strb    r3, [r0, #3] /* PRIMASK */
+	mrs     r3, FAULTMASK
+	strb    r3, [r0, #4] /* FAULTMASK */
+	mrs     r3, BASEPRI 
+	strb    r3, [r0, #5] /* BASEPRI */
+	mrs     r3, CONTROL
+	strb    r3, [r0, #6] /* CONTROL */
+	mrs     r3, IPSR
+	strb    r3, [r0, #7] /* IPSR */
 
-	adds   r3, r0, #8
+	adds    r3, r0, #8
 #if (THINKOS_ENABLE_FPU)
 	/* collect FP data */ 
-	vstmia r3!, {s16-s31}
+	vstmia  r3!, {s16-s31}
 #endif
-	stmia  r3!, {r4-r11} /* r4..r11 */
-	tst    lr, #CM3_EXC_RET_SPSEL
-	ite    eq 
-	mrseq  r4, MSP 
-	mrsne  r4, PSP 
+	stmia   r3!, {r4-r11} /* r4..r11 */
+	tst     lr, #CM3_EXC_RET_SPSEL
+	ite     eq 
+	mrseq   r4, MSP 
+	mrsne   r4, PSP 
 #if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-	str    r4, [r3, #0] /* sp */
-	str    lr, [r3, #4] /* ret */
-	adds   r3, r3, #8
+	str     r4, [r3, #0] /* sp */
+	str     lr, [r3, #4] /* ret */
+	adds    r3, r3, #8
 #endif
-	ldmia  r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-	stmia  r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+	ldmia   r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 #if (THINKOS_ENABLE_FPU)
-	vstmia r3!, {s0-s15}
-	vmrs   r4, FPSCR
-	stmia  r3!, {r4-r5}
+	vstmia  r3!, {s0-s15}
+	vmrs    r4, FPSCR
+	stmia   r3!, {r4-r5}
 #endif
-	mrs    r5, MSP 
-	mrs    r6, PSP 
-	stmia  r3!, {R5, R6} /* msp, psp */
+	mrs     r5, MSP 
+	mrs     r6, PSP 
+	stmia   r3!, {R5, R6} /* msp, psp */
 
-	ldr    r7, .L_cm3_scb
+	ldr     r7, .L_cm3_scb
 
-	ldr    r4, [r7, #SCB_ICSR_OFFS] /* Interrupt Control State */
-	ldr    r6, [r7, #SCB_SHCSR_OFFS] /* System Handler Control and State */
-	stmia  r3!, {R4, R6} /* icsr, shcsr */
+	ldr     r4, [r7, #SCB_ICSR_OFFS] /* Interrupt Control State */
+	ldr     r6, [r7, #SCB_SHCSR_OFFS] /* System Handler Control and State */
+	stmia   r3!, {R4, R6} /* icsr, shcsr */
 	/* r4 = ICSR */
 
-	ldr    r5, [r7, #SCB_CFSR_OFFS] /* Configurable Fault Status */
-	ldr    r6, [r7, #SCB_HFSR_OFF] /* Hard Fault Status */
-	stmia  r3!, {R5, R6} /* cfsr, hfsr*/
+	ldr     r5, [r7, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	ldr     r6, [r7, #SCB_HFSR_OFF] /* Hard Fault Status */
+	stmia   r3!, {R5, R6} /* cfsr, hfsr*/
 
-	ldr    r5, [r7, #SCB_MMFAR_OFFS] /* Mem Manage Address */
-	ldr    r6, [r7, #SCB_BFAR_OFFS] /* Bus Fault Address */
-	stmia  r3!, {R5, R6} /* mmfar, bfar */
+	ldr     r5, [r7, #SCB_MMFAR_OFFS] /* Mem Manage Address */
+	ldr     r6, [r7, #SCB_BFAR_OFFS] /* Bus Fault Address */
+	stmia   r3!, {R5, R6} /* mmfar, bfar */
 
-	ldr    r7, .L_thinkos_rt
+	ldr     r7, .L_thinkos_rt
 #if (THINKOS_ENABLE_PROFILING)
 	/* DWT.SYCCNT */
-	ldr.n  r5, .L_cm3_dwt
-	/* r6: cyccnt = CM3_DWT->cyccnt */
-	ldr.n  r5, [r5, #4]
-	ldr    r6, [r7, #THINKOS_RT_CYCREF_OFFS]
-	stmia  r3!, {R5, R6} /* cyccnt, cycref */
+	ldr.n   r5, .L_cm3_dwt
+	/* r6:  cyccnt = CM3_DWT->cyccnt */
+	ldr.n   r5, [r5, #4]
+	ldr     r6, [r7, #THINKOS_RT_CYCREF_OFFS]
+	stmia   r3!, {R5, R6} /* cyccnt, cycref */
 #endif
 
-	ldr    r5, [r7, #THINKOS_RT_ACTIVE_OFFS]
-	ldr    r6, [r7, #THINKOS_RT_READY_OFFS]
-	stmia  r3!, {R5, R6}
+	ldr     r5, [r7, #THINKOS_RT_ACTIVE_OFFS]
+	ldr     r6, [r7, #THINKOS_RT_READY_OFFS]
+	stmia   r3!, {R5, R6}
 
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* get the effective thread id */
+	ands    r5, r5, #0x3f
+#endif
 	/* r4 = ICSR */
 	/* r5 = active thread */
 	/* r6 = ready bitmap */
@@ -365,6 +369,11 @@ cm3_debug_mon_isr:
 cm3_svc_isr:
 	ldr     r3, .L_thinkos_rt_1
 	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* get the effective thread id */
+	ands    r1, r1, #0x3f
+#endif
+
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	ldr     r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
 	adds    r0, r1, #1

@@ -425,6 +425,12 @@
 #define THINKOS_ENABLE_MONITOR_CLOCK     0
 #endif
 
+/* THINKOS_ENABLE_MONITOR_SYSCALL: Enable user syscall to install
+   a monitor. */
+#ifndef THINKOS_ENABLE_MONITOR_SYSCALL
+#define THINKOS_ENABLE_MONITOR_SYSCALL  0
+#endif
+
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
    Requires the DebugMonitor fault to be present on the platform.
    */
@@ -534,6 +540,13 @@
 #define THINKOS_QUEUE_MAX                0
 #endif
 
+/* THINKOS_ENABLE_STACK_LIMIT - Enable thread stack limit check on
+   scheduler. With this option enabled the kernel verify if the thread
+   stack goes out of bounds and signal a fault condition to the monitor.
+*/
+#ifndef THINKOS_ENABLE_STACK_LIMIT
+#define THINKOS_ENABLE_STACK_LIMIT       0 
+#endif
 
 /* THINKOS_ENABLE_IRQ_ASM_FAST - Enable generation of faster assembler 
    interrupt handlers stubs. This will generate one stub per IRQ as oposed 
@@ -621,12 +634,12 @@
 #error "THINKOS_ENABLE_ALARM depends on THINKOS_ENABLE_CLOCK"
 #endif
 
-#if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_CLOCK"
-#endif
-
 #if (THINKOS_ENABLE_KRNSVC) && !(THINKOS_ENABLE_USAGEFAULT)
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
+#endif
+
+#if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_KRNSVC)
+#error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_KRNSVC"
 #endif
 
 /* debug step depends on debug breakpoint */
@@ -642,6 +655,19 @@
 /* debug breakpoint depends on debug */
 #if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG)
 #error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+/* monitor clock depends on monitor and clock */
+#if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_CLOCK)
+#error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_CLOCK"
+#endif
+#if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+/* user monitor requesty depends on monitor */
+#if (THINKOS_ENABLE_MONITOR_SYSCALL) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_MONITOR_SYSCALL depends on THINKOS_ENABLE_MONITOR"
 #endif
 
 /* thread monitoring depends on monitor */
@@ -808,6 +834,7 @@ struct thinkos_profile {
 			uint32_t flag_watch      :1;
 			uint32_t timed_calls     :1;
 			uint32_t irq_timedwait   :1;
+			uint32_t monitor         :1;
 		};
 	} syscall;
 
@@ -857,6 +884,7 @@ struct thinkos_profile {
 			uint32_t sanity_check    :1;
 			uint32_t stack_init      :1;
 			uint32_t memory_clear    :1;
+			uint32_t stack_limit     :1;
 		};
 	} security;
 

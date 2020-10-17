@@ -214,7 +214,7 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
-			 xcpt->active + 1,
+			 __xcpt_active_get(xcpt) + 1,
 			 __thinkos_active_get() + 1); 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 

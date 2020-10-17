@@ -306,7 +306,8 @@ int board_init(void)
 
 int board_preboot_task(void *ptr)
 {
-#if 0
+	DCC_LOG(LOG_TRACE, "board preboot");
+#if 1
 	uint32_t tick;
 
 	DCC_LOG(LOG_TRACE, "board preboot");
@@ -509,4 +510,5 @@ int main(int argc, char ** argv)
 {
 	return thinkos_boot(&this_board);
 }
+
 

@@ -215,15 +215,22 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 struct thinkos_context * thinkos_krn_idle_reset(void)
 {
 	struct thinkos_context * ctx;
+	uintptr_t arg;
+	uintptr_t sp;
+	uintptr_t sl;
 
-	ctx  = __thinkos_idle_ctx();
+	sl = (uintptr_t)THINKOS_IDLE_STACK_BASE;
+	sp = sl + THINKOS_IDLE_STACK_SIZE;
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
 	thinkos_rt.idle_hooks.req_map = 0;
-	ctx->r0 = (uint32_t)&thinkos_rt.idle_hooks;
+	arg = (uintptr_t)&thinkos_rt.idle_hooks;
 #endif
 
+	ctx = __thinkos_thread_ctx_init(THINKOS_THREAD_IDLE, sp, 
+									(uintptr_t)thinkos_idle_task,
+									arg);
 #if DEBUG
 	ctx->r1 = (uint32_t)0x11111111;
 	ctx->r2 = (uint32_t)0x22222222;
@@ -238,22 +245,19 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	ctx->r11 = (uint32_t)0xbbbbbbbb;
 	ctx->r12 = (uint32_t)0xcccccccc;
 #endif
-	ctx->pc = (uint32_t)thinkos_idle_task;
-	ctx->lr = (uint32_t)thinkos_idle_task; 
-	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	ctx->sp = (uintptr_t)&ctx->r0;
-  #if (THINKOS_ENABLE_IDLE_MSP) 
-	ctx->ret = CM3_EXC_RET_THREAD_MSP;
-  #else
-	ctx->ret = CM3_EXC_RET_THREAD_PSP;
-  #endif
-#endif
 
 #if (THINKOS_ENABLE_THREAD_INFO)
 	/* set the IDLE thread info */
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf;
+#endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	__thinkos_thread_sl_set(THINKOS_THREAD_IDLE, sl);
+	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[THINKOS_THREAD_IDLE]);
+#endif
+
+#if (THINKOS_ENABLE_THREAD_INFO)
+	__thinkos_thread_inf_set(THINKOS_THREAD_IDLE, &thinkos_idle_inf);
 #endif
 
 #if DEBUG
@@ -262,6 +266,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 			"IDE ctx=%08x" _ATTR_POP_, ctx);
 #endif
 
+	/* commit the context to the kernel */ 
 	__thinkos_thread_ctx_set(THINKOS_THREAD_IDLE, ctx, 0);
 
 	return ctx;
