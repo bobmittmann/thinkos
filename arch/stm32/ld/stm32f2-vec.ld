@@ -1,5 +1,5 @@
 /* 
- * stm32f4-vec.ld
+ * stm32f2-vec.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -103,20 +103,4 @@ EXTERN(stm32f_otg_hs_isr)
 EXTERN(stm32f_dcmi_isr)
 EXTERN(stm32f_cryp_isr)
 EXTERN(stm32f_hash_rng_isr)
-EXTERN(stm32f_fpu_isr)
-EXTERN(stm32f_uart7_isr)
-EXTERN(stm32f_uart8_isr)
-EXTERN(stm32f_spi4_isr)
-EXTERN(stm32f_spi5_isr)
-EXTERN(stm32f_spi6_isr)
-EXTERN(stm32f_sai1_isr)
-EXTERN(stm32f_lcd_isr)
-EXTERN(stm32f_lcd_err_isr)
-EXTERN(stm32f_dma2d_isr)
-EXTERN(stm32f_sai2_isr)
-EXTERN(stm32f_qspi_isr)
-EXTERN(stm32f_cec_isr)
-EXTERN(stm32f_spdif_rx_isr)
-EXTERN(stm32f_fmpi2c1_isr)
-EXTERN(stm32f_fmpi2c1_err_isr)
 

@@ -1,5 +1,5 @@
 /* 
- * stm32f2xx.ld
+ * stm32f207xe.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,13 +19,24 @@
  * http://www.gnu.org/
  */
 
-/* Memory regions */
+/* Devices:
+   STM32F207VG 
+   STM32F207ZG 
+   STM32F207IG 
+ */
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram1);
-REGION_ALIAS("HEAP", sram1);
-REGION_ALIAS("STACK", sram2);
-REGION_ALIAS("LOG", dcclog);
-REGION_ALIAS("BKPCTL", rtcbkr);
-REGION_ALIAS("BKPDAT", bkpsram);
+MEMORY
+{
+	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
+	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
+	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
+	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
+	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
+	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
+	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
+	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
+}
+
+/* Device family vectors */
+INCLUDE stm32f2xx.ld
 

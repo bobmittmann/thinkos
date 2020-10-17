@@ -128,7 +128,7 @@ thinkos_sched_select_ready:
 	ble      .L_stack_err 
 	/* get the thread id */
 	ands     r2, r2, #0x3f
-	/* check the thrad identity */
+	/* check the thread identity */
 	cmp      r2, #THINKOS_THREAD_IDLE
 	bne      .L_krn_entry_err 
 #endif

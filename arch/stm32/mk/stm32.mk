@@ -65,7 +65,7 @@ ifneq ($(findstring $(MACH), stm32f100 stm32f103 stm32f103x6),)
   STM32 = stm32f1
 endif
 
-ifneq ($(findstring $(MACH), stm32f205 stm32f207),)
+ifneq ($(findstring $(MACH), stm32f207xe stm32f207xg),)
   CPU = cortex-m3
   STM32 = stm32f2
 endif

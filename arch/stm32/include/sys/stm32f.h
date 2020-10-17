@@ -50,7 +50,7 @@
 #include <arch/stm32f415.h>
 #endif
 
-#ifdef STM32F207
+#if defined(STM32F207XE) || defined(STM32F207XG)
 #include <arch/stm32f207.h>
 #endif
 

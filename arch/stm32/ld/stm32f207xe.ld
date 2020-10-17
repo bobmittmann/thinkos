@@ -1,5 +1,5 @@
 /* 
- * stm32f407.ld
+ * stm32f207xe.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -17,6 +17,12 @@
  * 
  * You can receive a copy of the GNU Lesser General Public License from 
  * http://www.gnu.org/
+ */
+
+/* Devices:
+   STM32F207VE 
+   STM32F207ZE 
+   STM32F207IE 
  */
 
 MEMORY
