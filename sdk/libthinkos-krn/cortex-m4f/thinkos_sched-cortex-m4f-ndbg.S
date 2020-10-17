@@ -167,7 +167,7 @@ thinkos_sched_select_ready:
 	orrs     r0, #(CONTROL_nPRIV)
 
 thinkos_sched_update_cyccnt:
-#if 0
+#if (THINKOS_ENABLE_PROFILING)
 	/* DWT.SYCCNT */
 	ldr.n   r6, .L_cm_dwt
 	/* r6: cyccnt = CM3_DWT->cyccnt */
@@ -175,8 +175,14 @@ thinkos_sched_update_cyccnt:
 	/* update the reference */
 	/* thinkos_rt.cycref = cyccnt */
 	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
+  #if (THINKOS_ENABLE_DEBUG_STEP)
+	/* r4: step_req */
+	/* r5: cycref */
+	ldrd	r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
+  #else
 	/* r5: cycref */
 	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]
+  #endif
 	/* r6: delta =  cyccnt - cycref */	
 	subs    r6, r6, r5
 	/* update thread's cycle counter */

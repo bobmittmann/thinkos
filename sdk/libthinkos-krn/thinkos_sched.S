@@ -124,11 +124,11 @@ thinkos_sched_update_cyccnt:
 	/* r6: delta =  cyccnt - cycref */	
 	subs    r6, r6, r5
 	/* update thread's cycle counter */
-	adds    r7, r2, #(SIZEOF_CTX / 4)
-	ldr     r5, [r3, r7, lsl #2]
+	adds    r7, r3, #THINKOS_RT_CYCCNT_OFFS
+	ldr     r5, [r7, r2, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds    r5, r6
-	str     r5, [r3, r7, lsl #2]
+	str     r5, [r7, r2, lsl #2]
 #else
   #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* r4: step_req */

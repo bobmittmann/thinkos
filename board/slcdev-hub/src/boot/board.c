@@ -84,7 +84,7 @@ const struct thinkos_mem_desc peripheral_mem = {
 		}
 };
 
-struct thinkos_mem_map mem_map = {
+const struct thinkos_mem_map mem_map = {
 	.tag = "MEM",
 	.cnt = 3,
 	.desc = {
@@ -467,6 +467,7 @@ int board_default_task(void *ptr)
 }
 
 const struct monitor_comm * board_comm_init(void)
+
 {
 	DCC_LOG(LOG_TRACE, "USB comm init");
 
@@ -510,5 +511,4 @@ int main(int argc, char ** argv)
 {
 	return thinkos_boot(&this_board);
 }
-
 

@@ -207,9 +207,7 @@ const void * heap_base = &__heap_base;
 struct monitor {
 	const struct thinkos_board * board;
 	const struct monitor_comm * comm;
-#if (MONITOR_SELFTEST_ENABLE)
 	intptr_t test_status; 
-#endif
 #if (MONITOR_THREADINFO_ENABLE)
 	int8_t thread_id;
 #endif

@@ -47,7 +47,7 @@ static int target_sync_reset(void)
 		return ret;
 	}
 	monitor_clear(MONITOR_SOFTRST);
-	this_board.softreset();
+//	this_board.softreset();
 	return 0;
 }
 
@@ -577,9 +577,12 @@ static int rsp_query(struct gdbrsp_agent * gdb, char * pkt)
 		if (!gdb->active_app) {
 			DCC_LOG(LOG_WARNING, "no active application, "
 					"calling monitor_app_exec()!");
+#if 0
 			if (!monitor_app_exec(&this_board.application, true)) {
 				n = str2str(pkt, "$1");
-			} else {
+			} else 
+#endif
+			{
 				gdb->active_app = true;
 				n = str2str(pkt, "$0");
 			}
@@ -1242,12 +1245,14 @@ static int rsp_v_packet(struct gdbrsp_agent * gdb, char * pkt, unsigned int len)
 					DCC_LOG(LOG_INFO, "Continue all!");
 					/* XXX: if there is no active application run  */
 					if (!gdb->active_app) {
+#if 0
 						DCC_LOG(LOG_WARNING, "no active application, "
 								"calling monitor_app_exec()!");
 						if (!monitor_app_exec(&this_board.application, true)) {
 							return rsp_error(gdb, GDB_ERR_APP_EXEC_FAIL);
 						}
 						gdb->active_app = true; 
+#endif
 					}
 					if (gdb->target.op->cpu_continue(gdb->target.drv)) {
 						gdb->stopped = false;

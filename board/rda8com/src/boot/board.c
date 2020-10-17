@@ -21,6 +21,77 @@
 #include "board.h"
 #include "version.h"
 
+/* ----------------------------------------------------------------------------
+ * Memory map
+ * ----------------------------------------------------------------------------
+ */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+const struct thinkos_mem_desc sram_desc = {
+	.tag = "RAM",
+	.base = 0,
+	.cnt = 3,
+	.blk = {
+		{.tag = "STACK", 0x10000000, M_RW, SZ_1K, 16}, /*  CCM - Main Stack */
+		{.tag = "BOOT", 0x20000000, M_RO, SZ_1K, 4},   /* Bootloader: 4KiB */
+		{.tag = "APP", 0x20001000, M_RW, SZ_1K, 44},   /* Application: 44KiB */
+		{.tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+const struct thinkos_mem_desc flash_desc = {
+	.tag = "FLASH",
+	.base = 0x08000000,
+	.cnt = 2,
+	.blk = {
+		{.tag = "BOOT", 0x00000000, M_RO, SZ_2K, 32}, /* Bootloader: 64 KiB */
+		{.tag = "APP", 0x00010000, M_RW, SZ_2K, 96},  /* Application: 192 KiB */
+		{.tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+const struct thinkos_mem_desc peripheral_desc = {
+	.tag = "PERIPH",
+	.base = 0,
+	.cnt = 1,
+	.blk = {
+		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
+		{.tag = "", 0x00000000, 0, 0, 0}
+		}
+};
+
+struct thinkos_mem_map mem_map = {
+	.tag = "MEM",
+	.cnt = 3,
+	.desc = {
+		 &flash_desc,
+		 &sram_desc,
+		 &peripheral_desc
+	}
+};
+
+const struct magic_blk thinkos_10_app_magic = {
+	.hdr = {
+		.pos = 0,
+		.cnt = 3},
+	.rec = {
+		{0xffffffff, 0x0a0de004},
+		{0xffffffff, 0x6e696854},
+		{0xffffffff, 0x00534f6b},
+		{0x00000000, 0x00000000}
+		}
+};
+#pragma GCC diagnostic pop
+
+extern const struct flash_dev stm32l4x_flash_dev;
+
+const struct thinkos_flash_desc board_flash_desc = {
+	.mem = (struct mem_desc *)&flash_desc,
+	.dev = &stm32l4x_flash_dev
+};
+
+
 void __puts(const char *s)
 {
 	int rem = __thinkos_strlen(s, 64);
@@ -216,7 +287,11 @@ int board_init(void)
 				 "FPGA configuration error %d!" VT_POP, ret);
 		return ret;
 	}
-	//#endif
+//#endif
+
+#if (THINKOS_FLASH_MEM_MAX > 0)
+	thinkos_flash_drv_init(0, &board_flash_desc);
+#endif
 
 	return 0;
 }
@@ -283,57 +358,16 @@ int board_default_task(void *ptr)
 	}
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
+const struct monitor_comm * board_comm_init(void)
+{
+	DCC_LOG(LOG_TRACE, "USB comm init");
 
-const struct magic_blk thinkos_10_app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 3},
-	.rec = {
-		{0xffffffff, 0x0a0de004},
-		{0xffffffff, 0x6e696854},
-		{0xffffffff, 0x00534f6b},
-		{0x00000000, 0x00000000}
-		}
-};
+	return usb_comm_init(&stm32f_otg_fs_dev);
+}
 
 /* Bootloader board description  
    Bootloader and debugger, memory description  
  */
-
-const struct mem_desc sram_desc = {
-	.tag = "RAM",
-	.base = 0,
-	.cnt = 3,
-	.blk = {
-		{.tag = "STACK", 0x10000000, M_RW, SZ_1K, 16}, /*  CCM - Main Stack */
-		{.tag = "BOOT", 0x20000000, M_RO, SZ_1K, 4},   /* Bootloader: 4KiB */
-		{.tag = "APP", 0x20001000, M_RW, SZ_1K, 44},   /* Application: 44KiB */
-		{.tag = "", 0x00000000, 0, 0, 0}
-		}
-};
-
-const struct mem_desc flash_mem = {
-	.tag = "FLASH",
-	.base = 0x08000000,
-	.cnt = 2,
-	.blk = {
-		{.tag = "BOOT", 0x00000000, M_RO, SZ_2K, 32}, /* Bootloader: 64 KiB */
-		{.tag = "APP", 0x00010000, M_RW, SZ_2K, 96},  /* Application: 192 KiB */
-		{.tag = "", 0x00000000, 0, 0, 0}
-		}
-};
-
-const struct mem_desc peripheral_desc = {
-	.tag = "PERIPH",
-	.base = 0,
-	.cnt = 1,
-	.blk = {
-		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
-		{.tag = "", 0x00000000, 0, 0, 0}
-		}
-};
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
@@ -350,11 +384,6 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.memory = {
-		   .cnt = 3,
-		   .flash = &flash_mem,
-		   .ram = &sram_desc,
-		   .periph = &peripheral_desc},
 	.application = {
 			.tag = "",
 			.start_addr = 0x08010000,
@@ -366,18 +395,13 @@ const struct thinkos_board this_board = {
 	.preboot_task = board_preboot_task,
 	.configure_task = board_configure_task,
 	.selftest_task = board_selftest_task,
-	.default_task = board_default_task
+	.default_task = board_default_task,
+	.monitor_comm_init = board_comm_init,
+	.memory = &mem_map
 };
 
-
-extern const struct flash_dev stm32l4x_flash_dev;
-
-const struct thinkos_flash_desc board_flash_desc = {
-	.mem = &flash_mem,
-	.dev = &stm32l4x_flash_dev
-};
-
-struct thinkos_flash_drv board_flash_drv;
-
-#pragma GCC diagnostic pop
+int main(int argc, char ** argv)
+{
+	return thinkos_boot(&this_board);
+}
 
