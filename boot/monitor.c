@@ -76,10 +76,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #define MONITOR_SELFTEST_ENABLE    0
 #endif
 
-#ifndef MONITOR_CONFIGURE_ENABLE
-#define MONITOR_CONFIGURE_ENABLE   1
-#endif
-
 #ifndef MONITOR_PREBOOT_ENABLE
 #define MONITOR_PREBOOT_ENABLE     1
 #endif
@@ -258,9 +254,6 @@ static const char monitor_menu[] =
 "   Ctrl+G - Show Exception info\r\n"
 #endif
 
-#if (MONITOR_CONFIGURE_ENABLE)
-"   Ctrl+K - Execute the board configuration applet\r\n"
-#endif
 #if (MONITOR_THREADINFO_ENABLE)
 "   Ctrl+N - Select Next Thread\r\n"
 #endif
@@ -692,12 +685,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_breakpoint(mon);
 		break;
 #endif
-#if (MONITOR_CONFIGURE_ENABLE)
-	case CTRL_K:
-		monitor_printf(comm, "^K\r\n");
-		monitor_req_configure();
-		break;
-#endif
 #if (MONITOR_UPGRADE_ENABLE)
 	case CTRL_FS:
 		monitor_printf(comm, "^\\\r\n");
@@ -988,14 +975,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			if (monitor_thread_exec(comm, C_TASK(board->selftest_task),
 								C_ARG(monitor.test_status)) < 0) {
 				DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
-				break;
-			}
-#endif
-#if (MONITOR_CONFIGURE_ENABLE)
-			DCC_LOG(LOG_TRACE, "thread_exec(configure_task)");
-			if (monitor_thread_exec(comm, C_TASK(board->configure_task), 
-								C_ARG(monitor.test_status)) < 0) {
-				DCC_LOG(LOG_TRACE, "/!\\ configuration failed!!!");
 				break;
 			}
 #endif

@@ -431,6 +431,7 @@ struct usb_cdc_acm_dev {
 
 	uint8_t rx_paused;
 	uint8_t configured;
+	volatile uint8_t tx_break; /* line break */
 	volatile uint8_t acm_ctrl; /* modem control lines */
 
 	uint32_t ctl_buf[CDC_CTL_BUF_LEN / 4];
@@ -784,6 +785,13 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		monitor_signal(MONITOR_COMM_CTL);
 		break;
 
+	case SEND_BREAK:
+		dev->tx_break = value;
+		DCC_LOG1(LOG_TRACE, "CDC Send Break value=%d", value);
+		/* signal monitor */
+		monitor_signal(MONITOR_COMM_CTL);
+		break;
+
 	default:
 		DCC_LOG5(LOG_WARNING, "CDC t=%x r=%x v=%x i=%d l=%d",
 				req->type, req->request, value, req->index, len);
@@ -1038,6 +1046,7 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->rx_seq = 0;
 	dev->rx_ack = 0;
 	dev->rx_paused = false;
+	dev->tx_break = false;
 	dev->configured = 0;
 
 	DCC_LOG(LOG_TRACE, "usb_dev_init()");
