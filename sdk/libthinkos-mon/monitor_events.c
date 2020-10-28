@@ -103,6 +103,8 @@ uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm,
 {
 	bool connected;
 
+	DCC_LOG1(LOG_MSG, "comm=%08x", comm);
+
 	monitor_clear(MONITOR_COMM_CTL);
 
 	connected = monitor_comm_isconnected(comm);

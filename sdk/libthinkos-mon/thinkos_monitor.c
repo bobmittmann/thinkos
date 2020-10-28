@@ -24,6 +24,8 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -68,7 +70,7 @@ struct thinkos_monitor {
 
 struct thinkos_monitor thinkos_monitor_rt;
 
-uint32_t __attribute__((aligned(8))) 
+uint32_t __attribute__((aligned(16))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
 const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
 
@@ -218,9 +220,10 @@ int monitor_select(uint32_t evmsk)
 		if (sig < 32)
 			break;
 
-		DCC_LOG1(LOG_MSG, "waiting for events evmsk=%08x sleeping...", evmsk);
+		DCC_LOG2(LOG_MSG, "waiting evmsk=%08x, sp=%08x sleeping...", 
+				 evmsk, cm3_sp_get());
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
-		DCC_LOG(LOG_MSG, "wakeup...");
+		DCC_LOG1(LOG_MSG, "wakeup, sp=%08x ...", cm3_sp_get());
 	} 
 	thinkos_rt.monitor.mask = save;
 
@@ -522,6 +525,7 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
 #endif
 
+	DCC_LOG2(LOG_TRACE, "PC=%08x SP=0x%08x!", monitor_task, cm3_sp_get());
 	monitor_task(comm, param);
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
@@ -539,7 +543,6 @@ static void __thinkos_monitor_on_reset(void)
 	sp[0] = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* CPSR */
 	sp[9] = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
 	thinkos_monitor_rt.ctx = sp;
-			DCC_LOG(LOG_TRACE, "MONITOR_RESET");
 }
 
 uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
@@ -556,11 +559,12 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 	if (sigact != 0) {
 		if (sigact & (1 << MONITOR_RESET)) {
 			__thinkos_monitor_on_reset();
+
 			/* clear the RESET event */
 			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
 		}
 
-#if DEBUG
+#if 0
 		/* TODO: this stack check is very usefull... 
 		   Some sort of error to the developer should be raised or
 		 force a fault */
@@ -570,8 +574,8 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 					 thinkos_monitor_rt.ctx, thinkos_monitor_stack);
 			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
 		}
+		DCC_LOG1(LOG_TRACE, "sigset %08x", sigset);
 #endif
-		DCC_LOG1(LOG_TRACE, "sigset ctx=%08x", sigset);
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
 	}
 

@@ -855,7 +855,10 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	monitor_alarm(1000);
 #endif
 
+	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
+
 	for(;;) {
+		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
 		case MONITOR_STARTUP:
@@ -951,6 +954,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_THREAD_TERMINATE:
+			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE");
+
 			monitor_wait_idle();
 
 			if (!startup) {
@@ -967,7 +972,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			}
 
 			startup = false;
-			DCC_LOG(LOG_TRACE, "THREAD_TERMINATE");
 			monitor.test_status = 1;
 
 #if (MONITOR_SELFTEST_ENABLE)
@@ -1087,9 +1091,11 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 
 #if (THINKOS_ENABLE_CONSOLE)
 		case MONITOR_COMM_CTL:
+			DCC_LOG(LOG_MSG, "/!\\ MONITOR_COMM_CTL");
 			monitor_clear(MONITOR_COMM_CTL);
 is_connected:
 			sigmask = monitor_on_comm_ctl(comm, sigmask);
+			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);
 			break;
 
 		case MONITOR_COMM_EOT:
@@ -1109,8 +1115,10 @@ is_connected:
 			monitor_alarm(1000);
 			break;
 #endif
+		default:
+			DCC_LOG1(LOG_WARNING, "unhandled SIG %d!", sig);
+			break;
 		}
-		DCC_LOG1(LOG_JABBER, "SIG %d!", sig);
 	}
 }
 

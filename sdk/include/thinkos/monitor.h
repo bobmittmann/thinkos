@@ -138,11 +138,22 @@ struct monitor_thread_inf {
  * ----------------------------------------------------------------------------
  */
 
+/* Status bits */
+#define COMM_ST_BREAK_REQ (1 << 0)
+#define COMM_ST_CONNECTED (1 << 1)
+
+/* Control operations */
+enum monitor_comm_ctrl {
+	COMM_CTRL_STATUS_GET = 0,
+	COMM_CTRL_CONNECT = 1,
+	COMM_CTRL_DISCONNECT = 2,
+	COMM_CTRL_BREAK_ACK = 3
+};
+
 struct monitor_comm_op {
 	int (*send)(const void * dev, const void * buf, unsigned int len);
 	int (*recv)(const void * dev, void * buf, unsigned int len);
-	int (* connect)(const void * dev);
-	bool (* isconnected)(const void * dev);
+	int (*ctrl)(const void * dev, unsigned int opc);
 };
 
 struct monitor_comm {
@@ -161,11 +172,24 @@ static inline int monitor_comm_recv(const struct monitor_comm * comm,
 }
 
 static inline int monitor_comm_connect(const struct monitor_comm * comm) {
-	return comm->op->connect(comm->dev);
+	return comm->op->ctrl(comm->dev, COMM_CTRL_CONNECT);
+}
+
+static inline int monitor_comm_disconnect(const struct monitor_comm * comm) {
+	return comm->op->ctrl(comm->dev, COMM_CTRL_DISCONNECT);
+}
+
+static inline int monitor_comm_break_ack(const struct monitor_comm * comm) {
+	return comm->op->ctrl(comm->dev, COMM_CTRL_BREAK_ACK);
+}
+
+static inline int monitor_comm_status_get(const struct monitor_comm * comm) {
+	return comm->op->ctrl(comm->dev, COMM_CTRL_STATUS_GET);
 }
 
 static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
-	return comm->op->isconnected(comm->dev);
+	return (comm->op->ctrl(comm->dev, COMM_CTRL_STATUS_GET) & 
+	        COMM_ST_CONNECTED) ? true : false;
 }
 
 #ifdef __cplusplus

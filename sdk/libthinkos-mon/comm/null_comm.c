@@ -42,25 +42,15 @@ int null_comm_recv(const void * arg, void * buf, unsigned int len)
 	return 0;
 }
 
-int null_comm_connect(const void * arg)
+int null_comm_ctrl(const void * arg, unsigned int opt)
 {
 	return 0;
-}
-
-bool null_comm_isconnected(const void * arg)
-{
-	return false;
-}
-
-void null_comm_rxflowctrl(const void * arg, bool stop)
-{
 }
 
 static const struct monitor_comm_op null_comm_op = {
 	.send = null_comm_send,
 	.recv = null_comm_recv,
-	.connect = null_comm_connect,
-	.isconnected = null_comm_isconnected
+	.ctrl = null_comm_ctrl
 };
 
 static const struct monitor_comm null_comm_instance = {
