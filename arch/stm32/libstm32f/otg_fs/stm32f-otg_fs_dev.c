@@ -1299,7 +1299,7 @@ static void stm32f_otg_dev_ep0_setup(struct stm32f_otg_drv * drv)
 		ep->xfr_len = req->length;
 		ep->xfr_cnt = 0;
 
-		DCC_LOG1(LOG_INFO, "EP0 [SETUP] OUT Dev->Host (%d)", req->length);
+		DCC_LOG1(LOG_INFO, "EP0 [SETUP] OUT Host->Dev (%d)", req->length);
 
 		if (ep->xfr_len < ep->xfr_max) {
 			/* last and only transfer */

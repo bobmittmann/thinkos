@@ -805,10 +805,9 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	return cnt;
 }
 
-static int usb_comm_connect(const void * comm)
+static int usb_comm_ctrl(const void * comm, unsigned int opc)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-
 	int ret;
 
 	while ((dev->acm_ctrl & CDC_DTE_PRESENT) == 0) {
@@ -820,19 +819,6 @@ static int usb_comm_connect(const void * comm)
 	}
 
 	return 0;
-}
-
-static bool usb_comm_isconnected(const void * comm)
-{
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-
-	/* Pending data on fifo, resignal .. */
-	if ((int32_t)(dev->rx_seq - dev->rx_ack) > 0) {
-		DCC_LOG(LOG_WARNING, "signal MONITOR_COMM_RCV!");
-		monitor_signal(MONITOR_COMM_RCV);
-	}
-
-	return (dev->acm_ctrl & CDC_DTE_PRESENT) ? true : false;
 }
 
 static struct usb_class_if usb_class_if_instance;
@@ -847,8 +833,7 @@ static const usb_class_events_t usb_mon_ev = {
 static const struct monitor_comm_op usb_cdc_comm_op = {
 	.send = usb_comm_send,
 	.recv = usb_comm_recv,
-	.connect = usb_comm_connect,
-	.isconnected = usb_comm_isconnected
+	.ctrl = usb_comm_ctrl
 };
 
 static const struct monitor_comm usb_comm_instance = {

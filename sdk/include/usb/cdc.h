@@ -332,6 +332,7 @@ struct serial_state {
 #define SET_LINE_CODING               0x2021
 #define GET_LINE_CODING               0x21a1
 #define SET_CONTROL_LINE_STATE        0x2221
+#define SEND_BREAK                    0x2321
 
 #endif /* __USB_CDC_H__ */
 
