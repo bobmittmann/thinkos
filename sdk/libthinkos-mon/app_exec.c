@@ -114,7 +114,7 @@ bool monitor_app_suspend(void)
 
 bool monitor_app_continue(void)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 
 	if (xcpt->errno == 0) {
 		DCC_LOG(LOG_TRACE, "....");

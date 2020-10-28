@@ -400,7 +400,7 @@ void __attribute__((naked))
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 	unsigned int errno = THINKOS_NO_ERROR;
 	struct thinkos_context * ctx;
 	unsigned int thread_id = id;

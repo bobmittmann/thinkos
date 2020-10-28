@@ -39,7 +39,11 @@
 
 struct thinkos_rt thinkos_rt;
 
-uint32_t __attribute__((aligned(8))) 
+#if ((THINKOS_EXCEPT_STACK_SIZE & 0x0000003f) != 0)
+#error "THINKOS_EXCEPT_STACK_SIZE must be a multiple 0f 64"
+#endif 
+
+uint32_t __attribute__((aligned(64))) 
 	thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);

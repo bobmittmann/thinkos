@@ -335,7 +335,7 @@ static void monitor_show_help(const struct monitor_comm * comm,
 #if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_print_fault(const struct monitor_comm * comm)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 
 	monitor_print_exception(comm, xcpt);
 }
@@ -355,7 +355,7 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
 	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = &thinkos_except_buf;
+		struct thinkos_except * xcpt = __thinkos_except_buf();
 
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		monitor_printf(comm, s_crlf);
@@ -395,7 +395,7 @@ static void monitor_on_krn_except(const struct monitor_comm * comm)
 	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
 	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = &thinkos_except_buf;
+		struct thinkos_except * xcpt = __thinkos_except_buf();
 
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		monitor_printf(comm, s_hr);

@@ -56,8 +56,6 @@ thinkos_krn_scheduler:
 	.global thinkos_krn_scheduler
 	.type   thinkos_krn_scheduler, %function
 
-	/* store context */
-
 thinkos_sched_get_active:
 #if 0
 	mov       r2, 1
@@ -71,12 +69,6 @@ thinkos_sched_get_active:
 	ldrd      r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* r1: ready, */
 	/* r2: active, (thread status) */
-
-#if 0
-	/* invalid thread id */
-	ands      r0, r2, #0x001f
-	beq       r0, thinkos_krn_sched_ctx_get
-#endif
 
 thinkos_sched_select_ready:
 	/* r1 - ready queue
@@ -96,8 +88,8 @@ thinkos_sched_select_ready:
 	it      eq
 	bxeq    lr
 #endif
-	lsrs     r0, lr, #2
-	ands     r0, #7
+	lsr      r0, lr, #2
+	and      r0, #7
 	tbb      [pc, r0]
 .L_entry_tab:
 	.byte    ((.L_entry_err - .L_entry_tab)/2) /* 0 */
@@ -121,13 +113,14 @@ thinkos_sched_select_ready:
  0xFFFFFFFD   Thread mode       Process        Basic  Usr    001   7  0
 =========== ============== ============= ============ ===== ===== =====
 */
+	.align	 1
 .L_entry_krn:
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
 	cmp      sp, r2
 	ble      .L_stack_err 
 	/* get the thread id */
-	ands     r2, r2, #0x3f
+	and      r2, #0x3f
 	/* check the thread identity */
 	cmp      r2, #THINKOS_THREAD_IDLE
 	bne      .L_krn_entry_err 
@@ -137,6 +130,7 @@ thinkos_sched_select_ready:
 	mov      r0, sp
 	b        thinkos_sched_update_cyccnt
 
+	.align	 1
 .L_entry_fpu:
 	mrs      r0, PSP
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -144,15 +138,16 @@ thinkos_sched_select_ready:
 	cmp      r0, r2
 	ble      .L_stack_err 
 	/* get the thread id */
-	ands     r2, r2, #0x3f
+	and      r2, r2, #0x3f
 #endif
 	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	stmdb    r0!, {r4-r12, lr}
 	mov      r7, r0
 	vstmdb   r7!, {s16-s31}
-	orrs     r0, #(CONTROL_nPRIV | CONTROL_FPCA)
+	orr      r0, #(CONTROL_nPRIV | CONTROL_FPCA)
 	b        thinkos_sched_update_cyccnt
 
+	.align	 1
 .L_entry_usr:
 	mrs      r0, PSP
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -160,11 +155,11 @@ thinkos_sched_select_ready:
 	cmp      r0, r2
 	ble      .L_stack_err 
 	/* get the thread id */
-	ands     r2, r2, #0x3f
+	and      r2, r2, #0x3f
 #endif
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 	stmdb    r0!, {r4-r12, lr}
-	orrs     r0, #(CONTROL_nPRIV)
+	orr      r0, #(CONTROL_nPRIV)
 
 thinkos_sched_update_cyccnt:
 #if (THINKOS_ENABLE_PROFILING)
@@ -173,8 +168,6 @@ thinkos_sched_update_cyccnt:
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n   r6, [r6, #4]
 	/* update the reference */
-	/* thinkos_rt.cycref = cyccnt */
-	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
   #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* r4: step_req */
 	/* r5: cycref */
@@ -183,10 +176,12 @@ thinkos_sched_update_cyccnt:
 	/* r5: cycref */
 	ldr     r5, [r3, #THINKOS_RT_CYCREF_OFFS]
   #endif
+	/* thinkos_rt.cycref = cyccnt */
+	str     r6, [r3, #THINKOS_RT_CYCREF_OFFS]
 	/* r6: delta =  cyccnt - cycref */	
 	subs    r6, r6, r5
 	/* update thread's cycle counter */
-	adds    r7, r3, #THINKOS_RT_CYCCNT_OFFS
+	add     r7, r3, #THINKOS_RT_CYCCNT_OFFS
 	ldr     r5, [r7, r2, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds    r5, r6
@@ -249,6 +244,7 @@ thinkos_krn_sched_ctx_restore:
 	.byte    ((.L_exit_err7 - .L_exit_tab)/2) /* 7 */
 
 
+	.align	 1
 .L_exit_usr:
 	/* restore core context */
 	ldmia    r0!, {r4-r12, lr}
@@ -287,8 +283,9 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_exit_krn:
-	cmp      sp, r0
-	bne      .L_idle_stack_fault
+//	cmp      sp, r0
+//	bne      .L_idle_stack_fault
+	mov      sp, r0
 	/* restore core context */
 	ldmia    sp!, {r4-r12, lr}
 	/* Synthesizes exception return */
@@ -311,7 +308,7 @@ thinkos_krn_sched_ctx_restore:
 
 .L_stack_err:
 	mov      r12, #20
-	b        .L_idle_stack_fault
+	b        .L_stack_err
 
 .L_idle_stack_fault:
 	mov      r12, #0

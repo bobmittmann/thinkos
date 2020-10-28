@@ -675,6 +675,11 @@
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
 
+/* thread monitoring depends on monitor */
+#if (THINKOS_ENABLE_STACK_LIMIT) && !(THINKOS_ENABLE_IDLE_MSP)
+#error "THINKOS_ENABLE_STACK_LIMIT depends on THINKOS_ENABLE_IDLE_MSP"
+#endif
+
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if THINKOS_ENABLE_TIMED_CALLS || THINKOS_ENABLE_PAUSE || \
 	THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_DEBUG_STEP 

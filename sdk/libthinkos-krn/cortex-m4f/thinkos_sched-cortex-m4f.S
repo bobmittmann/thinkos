@@ -25,6 +25,9 @@
 
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
 
+#if !((THINKOS_ENABLE_FPU) && (THINKOS_ENABLE_IDLE_MSP))
+#error "This module requires THINKOS_ENABLE_FPU and THINKOS_ENABLE_IDLE_MSP"
+#endif
 
 #define CONTROL_nPRIV      (1 << 0)
 #define CONTROL_SPSEL      (1 << 1)

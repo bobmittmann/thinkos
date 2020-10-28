@@ -100,8 +100,6 @@ struct thinkos_except {
 	uint32_t  ready; /* ready bitmap */
 };
 
-extern struct thinkos_except thinkos_except_buf;
-
 extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 
 extern const uint16_t thinkos_except_stack_size;
@@ -131,6 +129,8 @@ void thinkos_exception_init(void);
 void thinkos_exception_dsr(struct thinkos_except * xcpt);
 
 uint32_t * __thinkos_xcpt_stack_top(void);
+
+struct thinkos_except * __thinkos_except_buf(void);
 
 /* -------------------------------------------------------------------------
  * Exception handling utility functions

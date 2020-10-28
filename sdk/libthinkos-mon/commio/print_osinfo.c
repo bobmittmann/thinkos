@@ -145,7 +145,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 #endif
 #if THINKOS_ENABLE_DEBUG_FAULT
 			if (oid == THINKOS_WQ_FAULT) {
-				struct thinkos_except * xcpt = &thinkos_except_buf;
+				struct thinkos_except * xcpt = __thinkos_except_buf();
 				monitor_printf(comm, " | ERR %2d", xcpt->errno);
 			} else 
 #endif

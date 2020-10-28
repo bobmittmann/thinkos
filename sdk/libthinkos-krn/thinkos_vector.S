@@ -233,8 +233,8 @@ xcpt_collect:
 	b      .L_return_to_idle
 
 	.align  2
-.L_xcpt_buf:
-	.word	thinkos_except_buf
+.L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
+//	.word	thinkos_except_buf
 .L_xcpt_stack:
 	.word   thinkos_except_stack
 .L_thinkos_rt:

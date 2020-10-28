@@ -223,27 +223,33 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
    Application fault defered handler 
    ------------------------------------------------------------------------- */
 
-struct thinkos_except thinkos_except_buf 
-	__attribute__((section(".heap"), aligned(8)));
+//struct thinkos_except thinkos_except_buf; 
+//struct thinkos_except thinkos_except_buf __attribute__((alias("thinkos_except_stack")));
+//__thinkos_except_buf __attribute__((alias("thinkos_except_bufstack")));
+
 
 struct thinkos_except * __thinkos_except_buf(void)
 {
-	return &thinkos_except_buf;
+	uintptr_t xcpt= (uintptr_t)thinkos_except_stack;
+
+	return (struct thinkos_except *)xcpt;
+//	struct thinkos_except * xcpt = __thinkos_except_buf;
 }
 
 void __exception_reset(void)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
 #if (THINKOS_ENABLE_EXCEPT_CLEAR)
-	DCC_LOG1(LOG_TRACE, "/!\\ clearing buffer: %08x!", &thinkos_except_buf);
-	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
+	__thinkos_memset32(xcpt, 0x00000000,
 					   sizeof(struct thinkos_except));
 #else
-	thinkos_except_buf.ipsr = 0;
-	thinkos_except_buf.errno = 0;
-	thinkos_except_buf.count = 0;
+	xcpt->ipsr = 0;
+	xcpt->errno = 0;
+	xcpt->count = 0;
 #endif
 	DCC_LOG(LOG_TRACE, "/!\\ clearing active thread in exception buffer!");
-	thinkos_except_buf.active = -1;
+	xcpt->active = -1;
 }
 
 void thinkos_exception_init(void)
