@@ -31,7 +31,7 @@
 
 #ifndef __ASSEMBLER__
 
-#define MONITOR_PRIORITY        (0 << 5)
+#define DEBUGGER_PRIORITY       (0 << 5)
 #define EXCEPT_PRIORITY         (1 << 5)
 #define IRQ_VERY_HIGH_PRIORITY  (2 << 5)
 #define IRQ_HIGH_PRIORITY       (3 << 5)
@@ -41,6 +41,13 @@
 #define CLOCK_PRIORITY          ((7 << 5) + 0x07)
 #define SYSCALL_PRIORITY        ((7 << 5) + 0x0f)
 #define SCHED_PRIORITY          ((7 << 5) + 0x1f)
+
+
+#if (THINKOS_ENABLE_DEBUG)
+  #define MONITOR_PRIORITY      (DEBUGGER_PRIORITY)
+#else
+  #define MONITOR_PRIORITY      (CLOCK_PRIORITY)
+#endif
 
 #ifdef __cplusplus
 extern "C" {

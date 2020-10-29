@@ -58,6 +58,8 @@
 #define BOOT_ENABLE_MONITOR 1
 #endif
 
+void __attribute__((noreturn)) app_task(void *, unsigned int);
+
 static inline void monitor_req_upgrade(void) {
 	monitor_soft_reset();
 	monitor_signal(MONITOR_USER_EVENT3);
@@ -70,14 +72,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 
 #ifndef MONITOR_VT100_ENABLE
 #define MONITOR_VT100_ENABLE       1
-#endif
-
-#ifndef MONITOR_SELFTEST_ENABLE
-#define MONITOR_SELFTEST_ENABLE    0
-#endif
-
-#ifndef MONITOR_PREBOOT_ENABLE
-#define MONITOR_PREBOOT_ENABLE     1
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
@@ -858,7 +852,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
 
 	for(;;) {
-		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
+//		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
 		case MONITOR_STARTUP:
@@ -867,6 +861,14 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			monitor_clear(MONITOR_STARTUP);
 			startup = true;
 			break;
+
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		case MONITOR_RESET:
+			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
+					 cm3_sp_get());
+			monitor_clear(MONITOR_RESET);
+			break;
+#endif
 
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
@@ -928,11 +930,11 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 
 		case MONITOR_APP_TERM:
+			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
 			monitor_clear(MONITOR_APP_TERM);
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
-			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
 			break;
 
 		case MONITOR_APP_STOP:
@@ -973,23 +975,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 
 			startup = false;
 			monitor.test_status = 1;
-
-#if (MONITOR_SELFTEST_ENABLE)
-			DCC_LOG(LOG_TRACE, "thread_exec(selftest_task)");
-			if (monitor_thread_exec(comm, C_TASK(board->selftest_task),
-								C_ARG(monitor.test_status)) < 0) {
-				DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
-				break;
-			}
-#endif
-#if (MONITOR_PREBOOT_ENABLE)
-			DCC_LOG(LOG_TRACE, "thread_exec(preboot_task)");
-			if (monitor_thread_exec(comm, C_TASK(board->preboot_task), 
-								C_ARG(monitor.test_status)) < 0) {
-				DCC_LOG(LOG_TRACE, "/!\\ preboot failed!!!");
-				break;
-			}
-#endif
 
 			DCC_LOG(LOG_TRACE, "APP exec request");
 			monitor_req_app_exec();

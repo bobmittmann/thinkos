@@ -147,20 +147,12 @@ except ImportError:
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-<<<<<<< HEAD
-html_logo = img/thinkos_logo.svg
-=======
 html_logo = '../img/thinkos_logo.svg'
->>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-<<<<<<< HEAD
-html_favicon = img/thinkos_icon.odf
-=======
 html_favicon = '../img/thinkos_icon.png'
->>>>>>> 0f921e6d9853322b9c078127c8f1543d7dd4b370
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

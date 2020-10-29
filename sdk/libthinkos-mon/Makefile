@@ -41,7 +41,7 @@ CFILES = thinkos_monitor.c monitor_thread.c monitor_memory.c \
 	 $(addprefix comm/,$(COMM_CFILES)) \
 	 $(addprefix commio/,$(COMMIO_CFILES))
 
-SFILES = monitor_swap.S
+SFILES = monitor_swap.S monitor_sched.S
 
 include ../../mk/lib.mk
 

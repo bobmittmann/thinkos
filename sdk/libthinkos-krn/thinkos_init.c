@@ -23,8 +23,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 #define __THINKOS_IDLE__
@@ -50,7 +50,6 @@ extern const char thinkos_clk_nm[];
 
 static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 {
-	struct thinkos_context *ctx;
 #if THINKOS_ENABLE_TIMESHARE
 	int priority = __PRIORITY(opt);
 #endif
@@ -117,15 +116,16 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 							 &thinkos_main_inf);
 #endif
 
-	ctx = (struct thinkos_context *)sp - 1;
-
-	/* commit the context to the kernel */ 
-//	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
-	__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL);
-
 #if 0
-	/* Invoke the scheduler */
-	__thinkos_defer_sched();
+	/* The main thread is the current one so no need to commit
+	 just now */ 
+	{
+		struct thinkos_context *ctx;
+
+		ctx = (struct thinkos_context *)sp - 1;
+		/* commit the context to the kernel */ 
+		__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL);
+	}
 #endif
 
 	return id;
@@ -136,6 +136,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 {
 	uint32_t sp;
 	uint32_t ctrl;
+	uint32_t ccr;
 	int thread_id;
 
 	(void)map;
@@ -248,10 +249,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #if THINKOS_ENABLE_MPU
 	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
 #endif
-#if THINKOS_ENABLE_MONITOR 
-	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, MONITOR_PRIORITY);
+#if THINKOS_ENABLE_DEBUG
+	cm3_except_pri_set(CM3_EXCEPT_DEBUG_MONITOR, DEBUGGER_PRIORITY);
 #endif
-
 
 	/* Cortex-M configuration */
 	DCC_LOG(LOG_INFO, "Cortex-M configuration:"); 
@@ -268,12 +268,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		- trapping of divide by zero and unaligned accesses
 		- access to the STIR by unprivileged software.
 		*/
-	CM3_SCB->ccr = SCB_CCR_USERSETMPEND;
-/*	USERSETMPEND, bit[1]
-    Controls whether unprivileged software can access the Software 
-	Triggered Interrupt Register (STIR):
-    - 0 Unprivileged software cannot access the STIR.
-    - 1 Unprivileged software can access the STIR. */
+	ccr = 0;
 
 /*	NONBASETHRDENA, bit[0]
     Controls whether the processor can enter Thread mode with 
@@ -281,9 +276,22 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
     - 0 Any attempt to enter Thread mode with exceptions active faults.
     - 1 The processor can enter Thread mode with exceptions active because 
 	of a controlled return value. */
+#if (THINKOS_ENABLE_MONITOR)
+	ccr |= SCB_CCR_NONBASETHRDENA;
+#endif
+
+/*	USERSETMPEND, bit[1]
+    Controls whether unprivileged software can access the Software 
+	Triggered Interrupt Register (STIR):
+    - 0 Unprivileged software cannot access the STIR.
+    - 1 Unprivileged software can access the STIR. */
+#if 1
+	/* FIXME: disable this by default... */
+	ccr |= SCB_CCR_USERSETMPEND;
+#endif
 
 #if (THINKOS_ENABLE_STACK_ALIGN)
-	CM3_SCB->ccr |= SCB_CCR_STKALIGN;
+	ccr |= SCB_CCR_STKALIGN;
 /*	Determines whether the exception entry sequence guarantees 8-byte 
 	stack frame alignment, adjusting the SP if necessary before saving state:
     - 0 Guaranteed SP alignment is 4-byte, no SP adjustment is performed.
@@ -291,7 +299,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 
 #endif
 #if (THINKOS_ENABLE_UNALIGN_TRAP)
-	CM3_SCB->ccr |= SCB_CCR_UNALIGN_TRP;
+	ccr |= SCB_CCR_UNALIGN_TRP;
 /* Controls the trapping of unaligned word or halfword accesses:
    - 0 Trapping disabled.
    - 1 Trapping enabled.
@@ -299,9 +307,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
    always fault. */
 #endif
 #if (THINKOS_ENABLE_DIV0_TRAP)
-	CM3_SCB->ccr |= SCB_CCR_DIV_0_TRP;
+	ccr |= SCB_CCR_DIV_0_TRP;
 #endif
-	DCC_LOG1(LOG_INFO, "SCB->CCR=0x%08x", CM3_SCB->ccr); 
+
+	DCC_LOG1(LOG_INFO, "SCB->CCR=0x%08x", ccr); 
+
+	CM3_SCB->ccr = ccr;
 
 	/* Configure FPU */
 #if (THINKOS_ENABLE_FPU) 
@@ -378,14 +389,14 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_rt.wq_ready = 1 << thread_id;
 
 	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-			 thread_id, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
-
-	DCC_LOG(LOG_INFO, "7. Enabling interrupts!");
-	cm3_cpsie_i();
+			 thread_id + 1, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
 
 #if DEBUG
 	__profile();
 #endif
+
+	DCC_LOG(LOG_TRACE, "7. Enabling interrupts!");
+	cm3_cpsie_i();
 
 	return thread_id + 1;
 }

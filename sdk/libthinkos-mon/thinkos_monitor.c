@@ -46,7 +46,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
-struct thinkos_monitor {
+struct {
 	uint32_t * ctx;           /* monitor context */
 	/* task entry point */
 	void (* task)(const struct monitor_comm *, void *);
@@ -66,15 +66,29 @@ struct thinkos_monitor {
 	int8_t ret_thread_id;
 	/* entry/exit signal thread exit code */
 	int32_t ret_code;
-};
-
-struct thinkos_monitor thinkos_monitor_rt;
+} thinkos_monitor_rt;
 
 uint32_t __attribute__((aligned(16))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
 const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
 
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+void __attribute__((noinline))__monitor_wait(struct thinkos_monitor * mon)
+{
+	struct cm3_scb * scb = CM3_SCB;
+
+//	__thinkos_dbg_halt();
+
+	/* set the state to WAITING */
+	mon->ctl = 1;
+
+	/* rise a pending systick interrupt */
+	scb->icsr = SCB_ICSR_PENDSTSET;
+}
+
+#else
 void __monitor_context_swap(uint32_t ** pctx); 
+#endif
 
 /**
   * __monitor_irq_disable_all:
@@ -205,9 +219,10 @@ int monitor_select(uint32_t evmsk)
 	int sig;
 
 	save = thinkos_rt.monitor.mask;
-	/* set the local mask */
+	/* adjust the local mask */
 	evmsk |= save | MONITOR_PERISTENT_MASK;
 	DCC_LOG1(LOG_MSG, "evmask=%08x ........ ", evmsk);
+	/* set the global mask */
 	thinkos_rt.monitor.mask = evmsk;
 	for(;;) {
 		evset = thinkos_rt.monitor.events;
@@ -220,11 +235,16 @@ int monitor_select(uint32_t evmsk)
 		if (sig < 32)
 			break;
 
-		DCC_LOG2(LOG_MSG, "waiting evmsk=%08x, sp=%08x sleeping...", 
+		DCC_LOG2(LOG_INFO, "waiting evmsk=%08x, sp=%08x sleeping...", 
 				 evmsk, cm3_sp_get());
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
-		DCC_LOG1(LOG_MSG, "wakeup, sp=%08x ...", cm3_sp_get());
+#endif
+		DCC_LOG1(LOG_INFO, "wakeup, sp=%08x ...", cm3_sp_get());
 	} 
+	/* restore the global mask */
 	thinkos_rt.monitor.mask = save;
 
 	DCC_LOG1(LOG_MSG, "event=%d", sig);
@@ -265,7 +285,11 @@ int monitor_expect(int sig)
 			DCC_LOG3(LOG_MSG, "expected %08x got %08x/%08x, sleeping...", 
 					 (1 << sig), evset, evmsk);
 		}
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+#endif
 		if (evset != 0) {
 			DCC_LOG(LOG_MSG, "wakeup...");
 		}
@@ -335,7 +359,11 @@ int monitor_wait_idle(void)
 	thinkos_rt.monitor.mask = evmsk;
 	
 	do {
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+#endif
 		do { /* avoid possible race condition on monitor.events */
 			evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
 			result = evset;
@@ -382,7 +410,11 @@ void monitor_signal_error(int thread_id, int errno)
 static inline void __monitor_task_reset(void)
 {
 	monitor_signal(MONITOR_RESET);
-	__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
+		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+#endif
 }
 
 void __attribute__((naked)) 
@@ -496,10 +528,15 @@ void monitor_thread_break_clr(void)
 void monitor_null_task(const struct monitor_comm * comm, void * param)
 {
 	for (;;) {
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
 		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+#endif
 	}
 }
 
+#if !(THINKOS_ENABLE_MONITOR_SCHED)
 /*
  * This is a wrapper for the monitor entry function (task).
  * It's pourpose is to get the arguments to the monitor entry function
@@ -533,8 +570,7 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 	__monitor_task_reset();
 }
 
-/* Prepare the execution environment to invoke the new monitor 
- task. */
+/* Prepare the execution environment to invoke the new monitor task. */
 static void __thinkos_monitor_on_reset(void)
 {
 	uint32_t * sp;
@@ -581,6 +617,7 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 	return sigact;
 }
+#endif
 
 
 /**
@@ -647,6 +684,57 @@ void thinkos_krn_monitor_reset(void)
 	thinkos_monitor_rt.err_code = THINKOS_NO_ERROR;
 }
 
+
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+struct monitor_context * __monitor_base_ctx(void)
+{
+	struct monitor_context * ctx;
+	uintptr_t sp;
+
+	sp = (uintptr_t)&thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4)];
+	sp &= 0xfffffff0; /* 64bits alignemnt */
+
+	sp -= sizeof(struct thinkos_context);
+	ctx = (struct monitor_context *)sp;
+
+	return ctx;
+}
+
+void __attribute__((noreturn)) __monitor_exit_stub(int code)
+{
+	DCC_LOG(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
+			"monitor task return!!!"  _ATTR_POP_);
+	for(;;);
+}
+
+struct monitor_context * __monitor_ctx_init(uintptr_t task,
+											uintptr_t comm,
+											uintptr_t arg)
+{
+	struct monitor_context * ctx;
+
+	ctx = __monitor_base_ctx();
+
+#if (THINKOS_ENABLE_STACK_INIT) && (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(ctx, 0, sizeof(struct monitor_context));
+#endif
+
+	ctx->r0 = (uint32_t)comm;
+	ctx->r1 = (uint32_t)arg;
+	ctx->pc = task;
+	ctx->lr = (uint32_t)__monitor_exit_stub;
+	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
+
+#if 1
+	DCC_LOG4(LOG_TRACE, "ctx=%d r0=%08x lr=%08x pc=%08x", 
+			 ctx, ctx->r0,  ctx->lr, ctx->pc);
+	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
+			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
+#endif
+	return ctx;
+}
+#endif
+
 void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
                      void (* task)(const struct monitor_comm *, void *),
 					 void * param)
@@ -675,6 +763,15 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 	/* set the startup and reset signals */
 	thinkos_rt.monitor.events = (1 << MONITOR_STARTUP) | (1 << MONITOR_RESET);
 	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK | (1 << MONITOR_STARTUP);
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+	{
+		struct monitor_context * ctx;
+
+		ctx = __monitor_ctx_init((uintptr_t)task, (uintptr_t)comm,
+								 (uintptr_t)param);
+		thinkos_rt.monitor.ctl = (uintptr_t)ctx;
+	}
+#endif
 }
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL)

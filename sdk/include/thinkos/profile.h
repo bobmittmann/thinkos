@@ -431,6 +431,11 @@
 #define THINKOS_ENABLE_MONITOR_SYSCALL  0
 #endif
 
+/* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler. */
+#ifndef THINKOS_ENABLE_MONITOR_SCHED
+#define THINKOS_ENABLE_MONITOR_SCHED    0
+#endif
+
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
    Requires the DebugMonitor fault to be present on the platform.
    */
@@ -665,7 +670,7 @@
 #error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* user monitor requesty depends on monitor */
+/* user monitor request (syscall) depends on monitor */
 #if (THINKOS_ENABLE_MONITOR_SYSCALL) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_SYSCALL depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -673,6 +678,15 @@
 /* thread monitoring depends on monitor */
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+/* monitor thread scheduler depends on monitor */
+#if (THINKOS_ENABLE_MONITOR_SCHED) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_MONITOR_SCHED depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+#if (THINKOS_ENABLE_MONITOR) && ((THINKOS_MONITOR_STACK_SIZE) < (16 * 4))
+#error "THINKOS_MONITOR_STACK_SIZE too small"
 #endif
 
 /* thread monitoring depends on monitor */
@@ -911,9 +925,10 @@ struct thinkos_profile {
 		union {
 			uint16_t flags;
 			struct {
-				uint16_t enabled        :1;
-				uint16_t clock          :1;
-				uint16_t threads        :1;
+				uint16_t enabled     :1;
+				uint16_t clock       :1;
+				uint16_t threads     :1;
+				uint16_t sched       :1;
 			};
 		};
 		uint16_t stack_size;

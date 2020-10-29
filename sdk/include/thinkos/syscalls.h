@@ -289,9 +289,12 @@ __attribute__((always_inline)) thinkos_terminate(unsigned int thread, int code) 
 	return THINKOS_SYSCALL2(THINKOS_TERMINATE, thread, code);
 }
 
-static inline int 
-__attribute__((always_inline)) thinkos_thread_abort(unsigned int thread) {
-	return THINKOS_SYSCALL2(THINKOS_TERMINATE, thread, THINKOS_THREAD_ABORTED);
+static inline void __attribute__((always_inline, noreturn)) 
+	thinkos_thread_abort(int code) {
+	register uint32_t r0 asm("r0") = 0;
+	register int32_t r1 asm("r1") = code;
+	asm volatile (ARM_SVC(THINKOS_TERMINATE) : : "r"(r0), "r"(r1));
+	for(;;);
 }
 
 static inline int 

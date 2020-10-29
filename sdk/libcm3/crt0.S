@@ -137,6 +137,7 @@ _reset:
 	/* go to C main function */
 	b       main
 
+	.align  2
 /* section of initialized data at ROM */
 .L_idata_start:
 	.word	__text_end

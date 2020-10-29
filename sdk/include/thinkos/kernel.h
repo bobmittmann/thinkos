@@ -85,6 +85,13 @@
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
 
 /* -------------------------------------------------------------------------- 
+ * Monitor structure offsets (used in assembler code)
+  * --------------------------------------------------------------------------*/
+#define MONITOR_CTX_OFFS  (0) 
+#define MONITOR_EVS_OFFS  (MONITOR_CTX_OFFS  + 4) 
+#define MONITOR_MSK_OFFS  (MONITOR_EVS_OFFS  + 4) 
+
+/* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/
 #if (THINKOS_ENABLE_THREAD_VOID)
@@ -127,7 +134,7 @@
 
 #if (THINKOS_ENABLE_CLOCK)
   #define SIZEOF_TICKS     4
-  #if THINKOS_ENABLE_MONITOR_CLOCK
+  #if (THINKOS_ENABLE_MONITOR_CLOCK)
     #define SIZEOF_MONITOR_CLOCK 4
   #else
     #define SIZEOF_MONITOR_CLOCK 0
@@ -135,6 +142,12 @@
 #else
   #define SIZEOF_TICKS     0
   #define SIZEOF_MONITOR_CLOCK 0
+#endif
+
+#if (THINKOS_ENABLE_MONITOR)
+  #define SIZEOF_MONITOR   (4 * 3)
+#else
+  #define SIZEOF_MONITOR   0
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
@@ -171,8 +184,6 @@
 #define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_STEP_REQ_OFFS + SIZEOF_STEP_REQ)
 #define THINKOS_RT_ACTIVE_OFFS     ((THINKOS_RT_CYCREF_OFFS) + SIZEOF_CYCREF)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
-
-
 
 #if (THINKOS_ENABLE_TIMESHARE)
   #define THINKOS_WQ_TIMESHARE_CNT 1
@@ -307,6 +318,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+/* -------------------------------------------------------------------------- 
+ * Monitor control structure
+ * --------------------------------------------------------------------------*/
+
+struct thinkos_monitor { 
+	volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
+	volatile uint32_t events;  /* event set bitmap */
+	volatile uint32_t mask;  /* events mask */
+};
 
 /* -------------------------------------------------------------------------- 
  * Thread context layout
@@ -493,6 +514,18 @@ struct thinkos_rt {
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
 #endif
 
+#if (THINKOS_ENABLE_CLOCK)
+	struct {
+		uint32_t ticks;
+		/* This fields are used for time wait (e.g. sleep()) */
+		uint32_t clock[THINKOS_THREADS_MAX];
+  #if (THINKOS_ENABLE_MONITOR_CLOCK)
+		/* monitor timer */
+		uint32_t monitor_clock;
+  #endif
+	};
+#endif
+
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* This fields are used for time sharing (round robin) schedule only */
 	struct {
@@ -504,17 +537,6 @@ struct thinkos_rt {
 	};
 #endif
 
-#if (THINKOS_ENABLE_CLOCK)
-	struct {
-		uint32_t ticks;
-		/* This fields are used for time wait (e.g. sleep()) */
-		uint32_t clock[THINKOS_THREADS_MAX];
-  #if THINKOS_ENABLE_MONITOR_CLOCK
-		/* monitor timer */
-		uint32_t monitor_clock;
-  #endif
-	};
-#endif
 
 #if (THINKOS_SEMAPHORE_MAX > 0)
 	uint32_t sem_val[THINKOS_SEMAPHORE_MAX];
@@ -589,12 +611,8 @@ struct thinkos_rt {
 		struct thinkos_mpu_block kernel_mem;
 	} mpu;
 #endif
-
 #if (THINKOS_ENABLE_MONITOR)
-	struct { 
-		volatile uint32_t mask;   /* events mask */
-		volatile uint32_t events; /* events bitmap */
-	} monitor;
+	struct thinkos_monitor monitor;
 #endif
 };
 

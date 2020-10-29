@@ -177,7 +177,7 @@ extern struct thinkos_flash_drv board_flash_drv;
 extern "C" {
 #endif
 
-int thinkos_boot(const struct thinkos_board * board);
+void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board);
 
 int monitor_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
 

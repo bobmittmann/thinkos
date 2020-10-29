@@ -22,6 +22,8 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
 #define __THINKOS_DBGMON__
 #include <thinkos/dbgmon.h>
 #define __THINKOS_IDLE__
@@ -133,7 +135,7 @@ void __reset_ram_vectors(void)
 
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
-	struct thinkos_except * xcpt = &thinkos_except_buf;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 	unsigned int errno = THINKOS_NO_ERROR;
 	struct thinkos_context * ctx;
 	unsigned int thread_id = id;
@@ -553,7 +555,8 @@ void dbgmon_thread_step_clr(void)
 
 void __except_ctx_cpy(struct thinkos_context * ctx)
 {
-	uint32_t * dst = (uint32_t *)&thinkos_except_buf.ctx.core;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+	uint32_t * dst = (uint32_t *)&xcpt->ctx.core;
 	uint32_t * src = (uint32_t *)ctx;
 	unsigned int sz = sizeof(struct thinkos_context);
 #if (THINKOS_ENABLE_FPU) 
@@ -728,7 +731,8 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
 			} else {
 #if (THINKOS_ENABLE_EXCEPTIONS)
-				struct thinkos_except * xcpt = &thinkos_except_buf;
+				struct thinkos_except * xcpt;
+			       xcpt = __thinkos_except_buf();
 
 				/* FIXME: add support for breakpoints on IRQ */
 				DCC_LOG3(LOG_ERROR,_ATTR_PUSH_ _FG_RED_ _REVERSE_

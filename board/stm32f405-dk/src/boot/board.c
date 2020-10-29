@@ -258,6 +258,7 @@ void board_on_softreset(void)
 
 	/* Adjust USB OTG FS interrupts priority */
 	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
+
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 }
@@ -355,9 +356,11 @@ int board_default_task(void *ptr)
 {
 	uint32_t tick;
 
+	DCC_LOG1(LOG_TRACE, "ptr=0x%08x", ptr);
+
 	__puts("- board default\r\n");
 
-	for (tick = 0; tick < 8; ++tick) {
+	for (tick = 0; tick < 10000000; ++tick) {
 		thinkos_sleep(128);
 
 		switch (tick & 0x7) {
@@ -388,11 +391,11 @@ int board_default_task(void *ptr)
 		}
 	}
 
+#if 0
 	int x;
 	x = thinkos_flash_mem_open("BOOT");
 	thinkos_flash_mem_close(x);
 
-#if 0
 	char buf[128];
 
 	__puts("- FLASH test\r\n");
@@ -461,9 +464,9 @@ const struct thinkos_board this_board = {
 };
 
 
-int main(int argc, char ** argv)
+void __attribute((noreturn)) main(int argc, char ** argv)
 {
-	return thinkos_boot(&this_board);
+	thinkos_boot(&this_board);
 }
 
 

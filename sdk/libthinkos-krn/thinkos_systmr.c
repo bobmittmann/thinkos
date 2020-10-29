@@ -79,16 +79,57 @@ static void __thinkos_timeshare(void)
 /* --------------------------------------------------------------------------
  * ThinkOS - system timer
  * --------------------------------------------------------------------------*/
-
 #if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
+
+#if (THINKOS_ENABLE_MONITOR_SCHED)
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
-#if (THINKOS_ENABLE_MONITOR)
+	struct cm3_systick * systick = CM3_SYSTICK;
+
+  #if (THINKOS_ENABLE_CLOCK)
+	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
+	{
+		uint32_t ticks;
+		uint32_t wq;
+		int j;
+
+		ticks = thinkos_rt.ticks; 
+		ticks++;
+		thinkos_rt.ticks = ticks; 
+
+		wq = __rbit(thinkos_rt.wq_clock);
+		while ((j = __clz(wq)) < 32) {
+			wq &= ~(0x80000000 >> j);  
+			if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
+				__thinkos_time_wakeup(j); 
+			}
+		}
+
+    #if (THINKOS_ENABLE_MONITOR_CLOCK)
+		if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
+			monitor_signal(MONITOR_ALARM);
+		}
+    #endif
+
+    #if (THINKOS_ENABLE_TIMESHARE)
+		__thinkos_timeshare(); 
+    #endif /* THINKOS_ENABLE_TIMESHARE */
+	}
+  #endif /* THINKOS_ENABLE_CLOCK */
+
+	__thinkos_monitor_sched(&thinkos_rt.monitor);
+}
+
+#else /* THINKOS_ENABLE_MONITOR_SCHED */
+
+void __attribute__((aligned(16))) cm3_systick_isr(void)
+{
+  #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	do {
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
-#endif
-#if (THINKOS_ENABLE_CLOCK)
+  #endif
+  #if (THINKOS_ENABLE_CLOCK)
 		{
 			uint32_t ticks;
 			uint32_t wq;
@@ -106,23 +147,23 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 				}
 			}
 
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
+    #if (THINKOS_ENABLE_MONITOR_CLOCK)
 			if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
 				monitor_signal(MONITOR_ALARM);
 			}
-#endif
+    #endif
 
-#if (THINKOS_ENABLE_TIMESHARE)
+    #if (THINKOS_ENABLE_TIMESHARE)
 			__thinkos_timeshare(); 
-#endif /* THINKOS_ENABLE_TIMESHARE */
+    #endif /* THINKOS_ENABLE_TIMESHARE */
 		}
-#endif /* THINKOS_ENABLE_CLOCK */
+  #endif /* THINKOS_ENABLE_CLOCK */
 
-#if (THINKOS_ENABLE_MONITOR)
+  #if (THINKOS_ENABLE_MONITOR)
 	} while (__thinkos_monitor_isr());
-#endif /* THINKOS_ENABLE_MONITOR */
-
+  #endif /* THINKOS_ENABLE_MONITOR */
 }
+#endif /* !THINKOS_ENABLE_MONITOR_SCHED */
 
 void __krn_systick_init(void)
 {

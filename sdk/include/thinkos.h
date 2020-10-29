@@ -128,11 +128,6 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_INVALID
 };
 
-enum thinkos_thread_status {
-	THINKOS_THREAD_CANCELED = 0x7ffffffe,
-	THINKOS_THREAD_ABORTED  = 0x7fffffff
-};
-
 /* -------------------------------------------------------------------------- 
  * Flattened thread state structure
  * --------------------------------------------------------------------------*/
@@ -392,21 +387,42 @@ int thinkos_cancel(unsigned int thread_id, int code);
 int thinkos_exit(int code);
 
 /**
- * thinkos_abort() - abort the current thread.
+ * thinkos_abort() - abort all threads.
+ * 
+ * This call stops the user threads. It can be used in conjunction with 
+ * the ThinkOS Monitor.
  *
  * Return:
- * This function does not return.
+ * This call does not return.
  */
 void __attribute__((noreturn)) thinkos_abort(void);
 
 /**
- * thinkos_thread_abort() - abort the thread.
+ * thinkos_terminate() - cause the thread to terminate.
  * @thread_id: thread handler
+ * @code: the thread return code.
+ *
+ * If the thread_id is 0 then the current thread is terminated. In which
+ * case the call will not return.
+ * 
+ * Return:
+ * If thread_id is the current thread or 0 the call will not return.
+ * %THINKOS_EINVAL if the thread does not exist.
+ * %THINKOS_ENOSYS if call is not implemented. 
+ * %THINKOS_OK otherwise.
+ *  
+ */
+int thinkos_terminate(unsigned int thread, int code);
+
+/**
+ * thinkos_thread_abort() - cause the current thread to terminate 
+ * imediatelly.
+ * @code: the thread return code.
  *
  * Return:
- * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ * This call does not return.
  */
-int thinkos_thread_abort(unsigned int thread);
+void __attribute__((noreturn)) thinkos_thread_abort(int code);
 
 
 /**
@@ -414,7 +430,7 @@ int thinkos_thread_abort(unsigned int thread);
  * @thread_id: thread handler
  *
  * Description:
- * The thinkos_join() function waits for the thread specified by @p thread_id 
+ * The thinkos_join() function waits for the thread specified by thread_id 
  * to terminate. If that thread has already terminated, then 
  * thinkos_join() returns immediately.
  *

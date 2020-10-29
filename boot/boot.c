@@ -50,21 +50,77 @@ void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 #define BOOT_ENABLE_CUSTOM_COMM 0
 #endif
 
-#undef DEBUG
+#ifndef BOOT_SELFTEST_ENABLE
+#define BOOT_SELFTEST_ENABLE    0
+#endif
 
-int thinkos_boot(const struct thinkos_board * board)
+#ifndef BOOT_PREBOOT_ENABLE
+#define BOOT_PREBOOT_ENABLE 0
+#endif
+
+#ifndef BOOT_MONITOR_ENABLE
+#define BOOT_MONITOR_ENABLE 1
+#endif
+
+
+static bool magic_match(const struct magic_blk * magic, uintptr_t addr)
 {
+	uint32_t * mem = (uint32_t *)addr;
+	int k;
+	int j;
+
+	k = magic->hdr.pos;
+	for (j = 0; j < magic->hdr.cnt; ++j) {
+		if ((mem[k++] & magic->rec[j].mask) != magic->rec[j].comp)
+			return false;
+	}	
+
+	return true;
+}
+
+void __attribute__((noreturn)) app_task(const struct thinkos_board * board) 
+{
+	const struct monitor_app_desc * desc = &board->application;
+	uintptr_t app_entry = (uintptr_t)desc->start_addr;
+
+	if (!magic_match(desc->magic, app_entry)) {
+		DCC_LOG(LOG_WARNING, "Invalid ThinkOS app.");
+	} else {
+		int (* app_main)(int argc, const char * argv[]);
+		const char * app_argc[1];
+		int ret;
+
+		app_entry |= 0x00000001; /* thumb call */
+		app_main = (int (*)(int, const char **))app_entry;
+		app_argc[0] = board->application.tag;
+
+#if DEBUG
+		udelay(32768);
+#endif
+		DCC_LOG(LOG_TRACE, "Running ThinkOS App...");
+		ret = app_main(1, app_argc);
+		(void)ret;
+		DCC_LOG1(LOG_WARNING, "thinkos_app() returned with code %d.", ret);
+	}
+
+	board->default_task((void *)board);
+	for(;;);
+}
+
+
+void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
+{
+#if (BOOT_MONITOR_ENABLE)
 	const struct monitor_comm * comm;
+#endif
+#if (BOOT_SELFTEST_ENABLE) || (BOOT_PREBOOT_ENABLE)
+	int ret;
+#endif
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 #if DEBUG
-	udelay(8192);
-	udelay(8192);
-	udelay(8192);
-	udelay(8192);
-	udelay(8192);
-	udelay(8192);
+	udelay(32768);
 #endif
 
 #ifndef UDELAY_FACTOR 
@@ -94,9 +150,11 @@ int thinkos_boot(const struct thinkos_board * board)
 #if DEBUG
 	udelay(256);
 #endif
+#if (BOOT_MONITOR_ENABLE)
 	comm = board->monitor_comm_init();
+#endif
 
-#if THINKOS_ENABLE_CONSOLE
+#if (THINKOS_ENABLE_CONSOLE)
 	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
 #if DEBUG
 	udelay(256);
@@ -104,38 +162,50 @@ int thinkos_boot(const struct thinkos_board * board)
 	thinkos_krn_console_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
-#if DEBUG
-	udelay(0x8000);
-#endif
-	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)board);
-
-#if THINKOS_ENABLE_MPU
+#if (THINKOS_ENABLE_MPU)
 	DCC_LOG(LOG_TRACE, "6. thinkos_krn_mpu_init()");
 #if DEBUG
 	udelay(256);
 #endif
 	thinkos_krn_mpu_init(0, BOOT_MEM_RESERVED);
+#endif
 
-	DCC_LOG(LOG_TRACE, "7. thinkos_krn_userland()");
+#if (BOOT_MONITOR_ENABLE)
+	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
 #if DEBUG
 	udelay(0x8000);
 #endif
-	thinkos_krn_userland();
+	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)board);
 #endif
 
+#if (BOOT_SELFTEST_ENABLE)
+	/* This callback is used as an environment self check. */
+	DCC_LOG(LOG_TRACE, "board->selftest_task()");
+	if ((ret = board->selftest_task(arg)) < 0) {
+		DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
+		thinkos_thread_abort(ret);
+	}
+#endif
+#if (BOOT_PREBOOT_ENABLE)
+	/* This callback is used as a validation.
+	   - prevent the application to automatically run. Ex:
+	     - using a switch in the board
+		 - receiving a break on the serial line */
+	if ((ret = board->board_preboot_task(arg)) < 0) {
+		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
+		thinkos_thread_abort(ret);
+	}
+#endif
+
+#if DEBUG
+	udelay(0x8000);
+#endif
+#if (BOOT_MONITOR_ENABLE)
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
-#if DEBUG
-	udelay(0x8000);
-#endif
-
-	/* sanity check */
-	thinkos_sleep(10);
-
 	thinkos_thread_abort(0);
-
-	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
-
-	return 0;
+#else
+	DCC_LOG(LOG_TRACE, "10. app_task()");
+	app_task(board);
+#endif
 }
 

@@ -144,7 +144,9 @@ const struct thinkos_profile thinkos_profile = {
 	.monitor = {
 		.enabled         = THINKOS_ENABLE_MONITOR,
 		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
-		.threads         = THINKOS_ENABLE_MONITOR_THREADS
+		.threads         = THINKOS_ENABLE_MONITOR_THREADS,
+		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
+		.stack_size      = THINKOS_MONITOR_STACK_SIZE
 	},
 
 	.debug = {
@@ -344,7 +346,9 @@ void __profile(void)
 			 p->monitor.clock);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_THREADS = %d", 
 			 p->monitor.threads);
-	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE      = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_SCHED   = %d", 
+			 p->monitor.sched);
+	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE     = %d", 
 			 p->monitor.stack_size);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG           = %d", 
