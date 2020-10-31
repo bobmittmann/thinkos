@@ -1340,8 +1340,8 @@ bool thinkos_kernel_active(void);
  * Kernel Debug
  * ------------------------------------------------------------------------- */
 
-void __context(struct thinkos_context * __ctx, uint32_t __thread_id);
-void __trace(struct thinkos_context * __ctx, uint32_t __thread_id);
+void __context(uintptr_t __sp_ctl, uint32_t __thread_id);
+void __trace(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __thinkos(struct thinkos_rt * rt);
 void __profile(void);
 

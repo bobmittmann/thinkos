@@ -852,7 +852,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
 
 	for(;;) {
-//		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
+		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
 		case MONITOR_STARTUP:
@@ -900,8 +900,9 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			monitor_printf(comm, "Starting application @ 0x%08x\r\n",
-						  (uint32_t)board->application.start_addr);
+		//	monitor_printf(comm, "Starting application @ 0x%08x\r\n",
+		//				  (uint32_t)board->application.start_addr);
+
 
 			if (!monitor_app_exec(&board->application, false)) {
 				monitor_printf(comm, "Can't run application!\r\n");
@@ -911,12 +912,13 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_exec(comm, C_TASK(board->default_task), 
-										C_ARG(NULL));
+					monitor_thread_start(C_TASK(board->default_task), 
+										 C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
 				}
 			}
+			DCC_LOG(LOG_TRACE, "APP_EXEC done");
 			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
@@ -1042,11 +1044,13 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			}
   #endif /* THINKOS_ENABLE_CONSOLE_MODE */
 
+			DCC_LOG(LOG_INFO, "COMM_RCV...");
+
 			/* receive from the COMM driver one byte at the time */
 			if ((cnt = monitor_comm_recv(comm, buf, 1)) > 0) {
 				int c = buf[0];
 
-				DCC_LOG1(LOG_MSG, "COMM_RCV: c=0x%02x", c);
+				DCC_LOG1(LOG_INFO, "COMM_RCV: c=0x%02x", c);
 				/* process the input character */
 				if (!monitor_process_input(&monitor, c)) {
 					int n;
@@ -1064,6 +1068,9 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 						/* discard */
 					}
 				}
+
+			} else {
+				DCC_LOG1(LOG_INFO, "monitor_comm_recv() = %d", cnt);
 			}
 			break;
 #else

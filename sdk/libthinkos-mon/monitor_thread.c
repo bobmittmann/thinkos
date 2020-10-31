@@ -108,6 +108,20 @@ void monitor_thread_resume(int thread_id)
 		__thinkos_defer_sched();
 } 
 
+int monitor_thread_start(int (* task)(void *, unsigned int), void * arg) 
+{
+	int thread_id;
+
+#if (THINKOS_ENABLE_THREAD_INFO)
+	thread_id = monitor_thread_create(task, arg, &thinkos_main_inf);
+#else
+	thread_id = monitor_thread_create(task, arg, 0);
+#endif
+
+	monitor_thread_resume(thread_id);
+
+	return thread_id;
+}
 
 /*
    Exec a thread and wait for termination
@@ -119,13 +133,8 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	int thread_id;
 	int sig;
 
-#if (THINKOS_ENABLE_THREAD_INFO)
-	thread_id = monitor_thread_create(task, arg, &thinkos_main_inf);
-#else
-	thread_id = monitor_thread_create(task, arg, 0);
-#endif
-
-	monitor_thread_resume(thread_id);
+	thread_id = monitor_thread_start(task, arg);
+	(void)thread_id;
 
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_CTL);

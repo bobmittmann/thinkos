@@ -357,11 +357,12 @@ int board_default_task(void *ptr)
 	uint32_t tick;
 
 	DCC_LOG1(LOG_TRACE, "ptr=0x%08x", ptr);
-
+#if 0
 	__puts("- board default\r\n");
+#endif
 
 	for (tick = 0; tick < 10000000; ++tick) {
-		thinkos_sleep(128);
+		thinkos_sleep(20000);
 
 		switch (tick & 0x7) {
 		case 0:
@@ -389,6 +390,8 @@ int board_default_task(void *ptr)
 			stm32_gpio_set(IO_LED4);
 			break;
 		}
+	
+//		__puts("- tick\r\n");
 	}
 
 #if 0

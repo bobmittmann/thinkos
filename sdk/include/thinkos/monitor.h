@@ -475,6 +475,8 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 int monitor_thread_exec(const struct monitor_comm * comm, 
 						int (* task)(void *, unsigned int), void * arg);
 
+int monitor_thread_start(int (* task)(void *, unsigned int), void * arg); 
+
 #ifdef __cplusplus
 }
 #endif

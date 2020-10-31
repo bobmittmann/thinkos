@@ -113,6 +113,27 @@ void __thinkos(struct thinkos_rt * rt)
 			case THINKOS_OBJ_JOIN:
 				DCC_LOG2(LOG_TRACE, "JOIN %d: 0x%08x", oid, *wq);
 				break;
+			case THINKOS_OBJ_CONREAD:
+				DCC_LOG2(LOG_TRACE, "CON RD %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_CONWRITE:
+				DCC_LOG2(LOG_TRACE, "CON WR %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_COMMSEND:
+				DCC_LOG2(LOG_TRACE, "COMM TX %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_COMMRECV:
+				DCC_LOG2(LOG_TRACE, "COMM RX %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_IRQ:
+				DCC_LOG2(LOG_TRACE, "IRQ %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_DMA:
+				DCC_LOG2(LOG_TRACE, "DMA %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_FLASH_MEM:
+				DCC_LOG2(LOG_TRACE, "FLASH %d: 0x%08x", oid, *wq);
+				break;
 			case THINKOS_OBJ_FAULT:
 				DCC_LOG2(LOG_TRACE, "FAULT %d: 0x%08x", oid, *wq);
 				break;
@@ -146,25 +167,40 @@ void __thinkos(struct thinkos_rt * rt)
 
 }
 
-void __context(struct thinkos_context * __ctx, uint32_t __thread_id)
+static uint32_t __ret_lut[8] = {
+	[0] = CM3_EXC_RET_THREAD_MSP, /* kernel */
+	[1] = CM3_EXC_RET_THREAD_PSP, /* user */
+	[2] = 0, /* invalid */
+	[3] = CM3_EXC_RET_THREAD_MSP, /* user */
+	[4] = 0, /* invalid */
+	[5] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp */
+	[6] = 0, /* invalid */
+	[7] = 0 /* invalid */
+};
+
+
+void __context(uintptr_t __sp_ctl, uint32_t __thread_id)
 {
+	struct thinkos_context * ctx;
+	uint32_t ctrl = 0;
+	uint32_t ret;
+
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
+	(void)ret;
+
 	DCC_LOG4(LOG_TRACE, "  r0=%08x  r1=%08x  r2=%08x  r3=%08x", 
-			 __ctx->r0, __ctx->r1, __ctx->r2, __ctx->r3);
+			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
 	DCC_LOG4(LOG_TRACE, "  r4=%08x  r5=%08x  r6=%08x  r7=%08x", 
-			 __ctx->r4, __ctx->r7, __ctx->r6, __ctx->r7);
+			 ctx->r4, ctx->r7, ctx->r6, ctx->r7);
 	DCC_LOG4(LOG_TRACE, "  r8=%08x  r9=%08x r10=%08x r11=%08x", 
-			 __ctx->r8, __ctx->r9, __ctx->r10, __ctx->r11);
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
+			 ctx->r8, ctx->r9, ctx->r10, ctx->r11);
 	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
-			 __ctx->r12, __ctx->sp, __ctx->lr, __ctx->pc);
-	DCC_LOG4(LOG_TRACE, "xpsr=%08x ret=%08x ctx=%08x th=%d", 
-			 __ctx->xpsr, __ctx->ret, __ctx, __thread_id + 1);
-#else
-	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
-			 __ctx->r12, __ctx, __ctx->lr, __ctx->pc);
-	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", __ctx->xpsr, __thread_id + 1);
-#endif
+			 ctx->r12, ctx, ctx->lr, ctx->pc);
+	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", ctx->xpsr, __thread_id + 1);
 }
+
 
 /*
    0xFFFFFFE1 | Handler mode | Main         | Extended
@@ -175,40 +211,37 @@ void __context(struct thinkos_context * __ctx, uint32_t __thread_id)
    0xFFFFFFFD | Thread mode  | Process      | Basic
    */
 
-void SCHED(struct thinkos_context * __ctx, 
-			 uint32_t __new_thread_id,
-			 uint32_t __prev_thread_id, 
-			 uint32_t __sp) 
+void SCHED(uintptr_t __sp_ctl, 
+		   uint32_t __new_thread_id,
+		   uint32_t __prev_thread_id, 
+		   uint32_t __sp) 
 {
-	uint32_t ctrl = cm3_control_get();
+	struct thinkos_context * ctx;
 	uint32_t msp = cm3_msp_get();
-	uint32_t psp = cm3_psp_get();
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	uint32_t ret = __ctx->ret;
-#else
-	uint32_t ret = 0xfffffffd;
-#endif
+	uint32_t ctrl = 0;
+	uint32_t ret;
 
-	if (ctrl & CONTROL_SPSEL)
-		psp = __sp;
-	else
-		msp = __sp;
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
 
-	(void)ctrl;
-	(void)msp;
-	(void)psp;
-	(void)ret;
+	if (ret == 0) {
+		/* invalid */
+		DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ 
+				" CONTROL=%d invalid!!!" _ATTR_POP_, ctrl);
+	}
+
 
 	if (__prev_thread_id == THINKOS_THREAD_IDLE) {
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
 				 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-				 __new_thread_id + 1, __ctx, __ctx->pc, 
+				 __new_thread_id + 1, ctx, ctx->pc, 
 				 msp, __retstr(ret));
 #if THINKOS_ENABLE_THREAD_VOID
 	} else if (__prev_thread_id == THINKOS_THREAD_VOID) {
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
 				 "VOID -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_, 
-				 __new_thread_id + 1, __ctx, __ctx->pc, 
+				 __new_thread_id + 1, ctx, ctx->pc, 
 				 msp, __retstr(ret));
 #endif
 	} else {
@@ -216,7 +249,7 @@ void SCHED(struct thinkos_context * __ctx,
 				 "<%2d> -> <%2d> " 
 				 "CTX=%08x PC=%08x MSP=%08x %s",
 				 __prev_thread_id + 1, __new_thread_id + 1, 
-				 __ctx, __ctx->pc, msp, __retstr(ret));
+				 ctx, ctx->pc, msp, __retstr(ret));
 	}
 #if 0
 	DCC_LOG6(LOG_TRACE, "MSP=%08x PSP=%08x CTRL={%s%s%s } RDY=%08x",
@@ -229,89 +262,99 @@ void SCHED(struct thinkos_context * __ctx,
 #endif
 }
 
-void _IDLE(struct thinkos_context * __ctx, 
-			 uint32_t __new_thread_id,
-			 uint32_t __prev_thread_id, 
-			 uint32_t __sp) 
+void _IDLE(uintptr_t __sp_ctl, 
+		   uint32_t __new_thread_id,
+		   uint32_t __prev_thread_id, 
+		   uint32_t __sp) 
 {
 #if DEBUG
+	struct thinkos_context * ctx;
 	uint32_t psp = cm3_psp_get();
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	uint32_t ret = __ctx->ret;
-#else
-	uint32_t ret = 0xfffffffd;
-#endif
+	uint32_t ctrl = 0;
+	uint32_t ret;
+
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
 
 	if (__prev_thread_id == THINKOS_THREAD_IDLE)
 		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ _DIM_
 				 "IDLE -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 #if THINKOS_ENABLE_THREAD_VOID
 	else if (__prev_thread_id == THINKOS_THREAD_VOID)
 		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 				 "VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 #endif
 	else
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __prev_thread_id + 1, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 #endif
 }
 
 void __tdump(void);
 
-void ERROR(struct thinkos_context * __ctx, 
-			 uint32_t __new_thread_id,
-			 uint32_t __prev_thread_id, 
-			 uint32_t __sp) 
+void ERROR(uintptr_t __sp_ctl, 
+		   uint32_t __new_thread_id,
+		   uint32_t __prev_thread_id, 
+		   uint32_t __sp) 
 {
 #if DEBUG
+	struct thinkos_context * ctx;
 	uint32_t msp = cm3_msp_get();
 	uint32_t psp = cm3_psp_get();
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	uint32_t ret = __ctx->ret;
-#else
-	uint32_t ret = 0xfffffffd;
-#endif
+	uint32_t ctrl = 0;
+	uint32_t ret;
+
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
+
+	if (ret == 0) {
+		/* invalid */
+		DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ 
+				" CONTROL=%d invalid!!!" _ATTR_POP_, ctrl);
+	}
 
 	if (__prev_thread_id == THINKOS_THREAD_IDLE)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
 				 "IDLE -> <%2d> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __new_thread_id + 1, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 #if THINKOS_ENABLE_THREAD_VOID
 	else if (__prev_thread_id == THINKOS_THREAD_VOID)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
 				 "VOID -> <%2d> CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __new_thread_id + 1, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 	else if (__new_thread_id == THINKOS_THREAD_VOID)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
 				 "<%2d> VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __prev_thread_id + 1, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 #endif
 	else if (__new_thread_id == THINKOS_THREAD_IDLE)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __prev_thread_id + 1, 
-				 __ctx, __ctx->pc, psp, __retstr(ret));
+				 ctx, ctx->pc, psp, __retstr(ret));
 	else
 		DCC_LOG6(LOG_ERROR,  _ATTR_PUSH_ _FG_RED_ 
 				 "<%2d> -> <%2d> " 
 				 "CTX=%08x PC=%08x MSP=%08x %s"  _ATTR_POP_,
 				 __prev_thread_id + 1, __new_thread_id + 1, 
-				 __ctx, __ctx->pc, msp, __retstr(ret));
+				 ctx, ctx->pc, msp, __retstr(ret));
 
-	__context(__ctx, __new_thread_id); 
+	__context(__sp_ctl, __new_thread_id); 
 	__thinkos(&thinkos_rt);
 	__tdump();
 #endif
 }
 
-void thinkos_sched_dbg(struct thinkos_context * __ctx, 
+void thinkos_sched_dbg(uintptr_t __sp_ctl, 
 					   uint32_t __new_thread_id,
 					   uint32_t __prev_thread_id, 
 					   uint32_t __sp) 
@@ -322,34 +365,36 @@ void thinkos_sched_dbg(struct thinkos_context * __ctx,
 #else
 	if (__new_thread_id > THINKOS_THREAD_IDLE) {
 #endif
-		ERROR(__ctx, __new_thread_id, __prev_thread_id, __sp);
+		ERROR(__sp_ctl, __new_thread_id, __prev_thread_id, __sp);
 	} else if (__new_thread_id == THINKOS_THREAD_IDLE) {
 		if (__prev_thread_id != THINKOS_THREAD_IDLE) {
-			_IDLE(__ctx, __new_thread_id, __prev_thread_id, __sp);
+			_IDLE(__sp_ctl, __new_thread_id, __prev_thread_id, __sp);
 		} else {
-			_IDLE(__ctx, __new_thread_id, __prev_thread_id, __sp);
+			_IDLE(__sp_ctl, __new_thread_id, __prev_thread_id, __sp);
 		}
 	} else {
-		SCHED(__ctx, __new_thread_id, __prev_thread_id, __sp);
+		SCHED(__sp_ctl, __new_thread_id, __prev_thread_id, __sp);
 	}
 }
 
-void thinkos_sched_step_dbg(struct thinkos_context * __ctx, 
+void thinkos_sched_step_dbg(uintptr_t __sp_ctl, 
 							 uint32_t __new_thread_id,
 							 uint32_t __prev_thread_id, 
 							 uint32_t __sp) 
 {
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
+	struct thinkos_context * ctx;
+	uint32_t ctrl = 0;
+	uint32_t ret;
+
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
+	(void)ret;
+
 	DCC_LOG3(LOG_WARNING,  _ATTR_PUSH_ _FG_GREEN_ 
 			 "<%2d> STEP " 
 			 "PC=%08x SP=%08x"  _ATTR_POP_, 
-			 __new_thread_id + 1, __ctx->pc, __ctx->sp);
-#else
-	DCC_LOG3(LOG_WARNING,  _ATTR_PUSH_ _FG_GREEN_ 
-			 "<%2d> STEP " 
-			 "PC=%08x SP=%08x"  _ATTR_POP_, 
-			 __new_thread_id + 1, __ctx->pc, (uintptr_t)__ctx);
-#endif
+			 __new_thread_id + 1, ctx->pc, (uintptr_t)ctx);
 }
 
 #endif

@@ -77,8 +77,6 @@ void __attribute__((noinline))__monitor_wait(struct thinkos_monitor * mon)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
-//	__thinkos_dbg_halt();
-
 	/* set the state to WAITING */
 	mon->ctl = 1;
 
