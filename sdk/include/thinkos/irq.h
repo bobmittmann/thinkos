@@ -38,8 +38,8 @@
 #define IRQ_DEF_PRIORITY        (4 << 5)
 #define IRQ_LOW_PRIORITY        (5 << 5)
 #define IRQ_VERY_LOW_PRIORITY   (6 << 5)
-#define CLOCK_PRIORITY          ((7 << 5) + 0x07)
-#define SYSCALL_PRIORITY        ((7 << 5) + 0x0f)
+#define CLOCK_PRIORITY          ((7 << 5) + 0x1d)
+#define SYSCALL_PRIORITY        ((7 << 5) + 0x1e)
 #define SCHED_PRIORITY          ((7 << 5) + 0x1f)
 
 

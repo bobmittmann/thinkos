@@ -1,5 +1,5 @@
 /* 
- * thinkos/config.h
+ * thinkos/profile.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -354,9 +354,6 @@
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
 #endif
 
-#ifndef THINKOS_ENABLE_THREAD_VOID 
-#define THINKOS_ENABLE_THREAD_VOID      1
-#endif
 
 /* THINKOS_ENABLE_IDLE_WFI - enable the WFI instruction on the IDLE loop.
    In normal circumstances this flag should be enabled.
@@ -490,14 +487,6 @@
 #define THINKOS_ENABLE_IDLE_HOOKS        0
 #endif
 
-/* THINKOS_ENABLE_IDLE_MSP - IDLE thread and exceptions use the same
-   stack (MSP) all the remaining threads (non privileged) make use of
-   the PSP instead.
- */
-#ifndef THINKOS_ENABLE_IDLE_MSP
-#define THINKOS_ENABLE_IDLE_MSP          0
-#endif
-
 /* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
    handlers only. These functions are suffixed by _i.
    */
@@ -560,6 +549,10 @@
 #define THINKOS_ENABLE_IRQ_ASM_FAST     0
 #endif
 
+/* THINKOS_ENABLE_PRIV_THREAD - Enable privileged thread */
+#ifndef THINKOS_ENABLE_PRIV_THREAD
+#define THINKOS_ENABLE_PRIV_THREAD      0
+#endif
 
 /* Deprecated options, to be removed in the future 
  */
@@ -689,11 +682,10 @@
 #error "THINKOS_MONITOR_STACK_SIZE too small"
 #endif
 
-/* thread monitoring depends on monitor */
-#if (THINKOS_ENABLE_STACK_LIMIT) && !(THINKOS_ENABLE_IDLE_MSP)
-#error "THINKOS_ENABLE_STACK_LIMIT depends on THINKOS_ENABLE_IDLE_MSP"
+#if (THINKOS_ENABLE_FPU) && !(THINKOS_ENABLE_STACK_ALIGN)
+#error "THINKOS_ENABLE_FPU depends on THINKOS_ENABLE_STACK_ALIGN"
 #endif
-
+ 
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if THINKOS_ENABLE_TIMED_CALLS || THINKOS_ENABLE_PAUSE || \
 	THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_DEBUG_STEP 
@@ -702,8 +694,6 @@
 #endif
 
 #if THINKOS_ENABLE_EXIT  || THINKOS_ENABLE_CANCEL || THINKOS_ENABLE_JOIN
-#undef THINKOS_ENABLE_THREAD_VOID
-#define THINKOS_ENABLE_THREAD_VOID 1
 #undef THINKOS_ENABLE_TERMINATE
 #define THINKOS_ENABLE_TERMINATE 1
 #endif
@@ -758,6 +748,22 @@
 
 #if THINKOS_ENABLE_FPU_LS 
 #error "THINKOS_ENABLE_FPU_LS depends on THINKOS_ENABLE_FPU"
+#endif
+
+/* -------------------------------------------------------------------------- 
+ * Deprecated options
+ * --------------------------------------------------------------------------*/
+
+/* THINKOS_ENABLE_IDLE_MSP - IDLE thread and exceptions use the same
+   stack (MSP) all the remaining threads (non privileged) make use of
+   the PSP instead.
+ */
+#ifdef THINKOS_ENABLE_IDLE_MSP
+#error "THINKOS_ENABLE_IDLE_MSP is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_THREAD_VOID 
+#error "THINKOS_ENABLE_THREAD_VOID      is deprecated"
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -948,7 +954,6 @@ struct thinkos_profile {
 	union {
 		uint32_t misc_flags;
 		struct {
-			uint32_t thread_void     :1;
 			uint32_t idle_wfi        :1;
 			uint32_t sched_debug     :1;
 			uint32_t ofast           :1;
@@ -956,7 +961,6 @@ struct thinkos_profile {
 			uint32_t unalign_trap    :1;
 			uint32_t div0_trap       :1;
 			uint32_t idle_hooks      :1;
-			uint32_t idle_msp        :1;
 		};
 	} misc;
 

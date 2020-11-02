@@ -55,13 +55,9 @@ void __thinkos_kill_all(void)
 	/* clear all wait queues */
 	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		thinkos_rt.wq_lst[i] = 0x00000000;
-#if THINKOS_ENABLE_THREAD_VOID 
 	/* discard current thread context */
 	if (__thinkos_active_get() != THINKOS_THREAD_IDLE)
 		__thinkos_active_set(THINKOS_THREAD_VOID);
-#else
-	DCC_LOG(LOG_PANIC, "can't set current thread to void!"); 
-#endif
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }

@@ -109,14 +109,15 @@
 /* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING        1
 
-#define THINKOS_ENABLE_KRNSVC           1
+#define THINKOS_ENABLE_KRNSVC           0
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
 #define THINKOS_ENABLE_MONITOR_CLOCK    0
-#define THINKOS_ENABLE_MONITOR_SCHED    1
+#define THINKOS_ENABLE_MONITOR_SCHED    0
 #define THINKOS_ENABLE_MONITOR_SYSCALL  0
 #define THINKOS_MONITOR_STACK_SIZE      512
+#define THINKOS_ENABLE_STACK_LIMIT      0
 
 #define THINKOS_ENABLE_CONSOLE          1
 #define THINKOS_ENABLE_CONSOLE_MISC     0 
@@ -129,7 +130,7 @@
 #define THINKOS_CONSOLE_TX_FIFO_LEN     128
 
 #define THINKOS_EXCEPT_STACK_SIZE       (384)
-#define THINKOS_ENABLE_ERROR_TRAP       1
+#define THINKOS_ENABLE_ERROR_TRAP       0
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
@@ -151,8 +152,6 @@
 #define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              1
 
-#define THINKOS_ENABLE_THREAD_VOID      1
-
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              1
@@ -166,7 +165,6 @@
 #endif
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
-#define THINKOS_ENABLE_IDLE_MSP         1
 
 #define THINKOS_ENABLE_KRN_TRACE        0
 #define THINKOS_ENABLE_OBJ_ALLOC        1

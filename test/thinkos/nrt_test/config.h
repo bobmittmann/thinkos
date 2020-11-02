@@ -104,8 +104,7 @@
 #define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              0
 
-#define THINKOS_ENABLE_THREAD_VOID      1
-#define THINKOS_ENABLE_MONITOR_CLOCK          0
+#define THINKOS_ENABLE_MONITOR_CLOCK    0
 
 #define THINKOS_ENABLE_CTL              0
 

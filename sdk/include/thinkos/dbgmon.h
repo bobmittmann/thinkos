@@ -46,6 +46,7 @@
 struct dbgmon_thread_inf {
 	int8_t thread_id;
 	uint8_t errno;
+	uint8_t ctrl;
 	uint32_t pc;
 	uint32_t sp;
 	struct thinkos_context * ctx;

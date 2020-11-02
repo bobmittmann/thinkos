@@ -21,9 +21,9 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-BOARDS = rda8com slcdev-hub stm32f405-dk u2s-485
+BOARDS = slcdev-hub stm32f405-dk u2s-485 rda8com 
 
-OUTDIR := $(abspath ../build)
+OUTDIR := $(abspath build)
 
 all: boot-all
 

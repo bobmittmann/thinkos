@@ -130,11 +130,6 @@ xcpt_collect:
 	ite     eq 
 	mrseq   r4, MSP 
 	mrsne   r4, PSP 
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-	str     r4, [r3, #0] /* sp */
-	str     lr, [r3, #4] /* ret */
-	adds    r3, r3, #8
-#endif
 	ldmia   r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 #if (THINKOS_ENABLE_FPU)
@@ -371,7 +366,7 @@ cm3_svc_isr:
 	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* get the effective thread id */
-	ands    r1, r1, #0x3f
+	ands    r1, #0x3f
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
@@ -385,16 +380,10 @@ cm3_svc_isr:
 1:
 #endif
 
-#if (THINKOS_ENABLE_IDLE_MSP)
-	/* select the context stack according to the content of LR */
-	tst     lr, #4
-	ite     eq
-	mrseq   r0, MSP
-	mrsne   r0, PSP
-#else
+	/* The IDLE thread is the only using the main stack MSP, all
+	   other threads use the PSP. No exception is allowed to call
+	   SVC */
 	mrs     r0, PSP
-#endif
-
 	/* Get PC from the stack */
 	ldr     r2, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */

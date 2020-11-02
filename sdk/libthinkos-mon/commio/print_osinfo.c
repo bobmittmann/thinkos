@@ -25,11 +25,7 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_THREAD_VOID
-#define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 2) /* extra slot for void thread */
-#else
 #define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
-#endif
 
 void monitor_print_osinfo(const struct monitor_comm * comm)
 {

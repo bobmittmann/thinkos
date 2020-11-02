@@ -30,7 +30,7 @@
 
 void __thinkos_thread_abort(unsigned int thread_id)
 {
-	DCC_LOG1(LOG_TRACE, "<%2d> ....", thread_id + 1); 
+	DCC_LOG1(LOG_TRACE, "(thread=%d)", thread_id + 1); 
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	{
@@ -61,14 +61,9 @@ void __thinkos_thread_abort(unsigned int thread_id)
 #endif
 
 	if (thread_id == __thinkos_active_get()) {
-#if (THINKOS_ENABLE_THREAD_VOID)
 		DCC_LOG(LOG_INFO, "set active thread to void!"); 
 		/* discard current thread context */
 		__thinkos_active_set(THINKOS_THREAD_VOID);
-#else
-		DCC_LOG(LOG_WARNING, "void thread not enabled!"); 
-		DCC_LOG(LOG_WARNING, "aborting current thread won't clear context!"); 
-#endif
 	} else {
 		DCC_LOG1(LOG_INFO, "active thread=%d", __thinkos_active_get()); 
 	}
@@ -80,6 +75,8 @@ void __thinkos_thread_abort(unsigned int thread_id)
 
 	DCC_LOG1(LOG_INFO, "ready=%08x", thinkos_rt.wq_ready);
 
+	/*  */
+//	__thinkos_dbg_halt();
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
@@ -88,19 +85,17 @@ void __thinkos_thread_abort(unsigned int thread_id)
 /* Terminate the target thread */
 void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 {
-	unsigned int thread = (unsigned int)ctx->r0;
-	int code = ctx->r1;
 	unsigned int thread_id;
+	int code = ctx->r1;
 
-	DCC_LOG3(LOG_TRACE, "<0x%0x8> r0=0x%08x r1=0x%08x", self, thread, code); 
-
-	if (thread == 0)
+	if ((unsigned int)ctx->r0 == 0) {
 		thread_id = self;
-	else
-		thread_id = thread - 1;
-
-	(void)code;
-	DCC_LOG2(LOG_TRACE, "<%2d> code=%d", thread_id + 1, code); 
+		DCC_LOG2(LOG_WARNING, "<%d> terminate(0, %d)", self + 1 , code); 
+	} else {
+		thread_id = ctx->r0 - 1;
+		DCC_LOG3(LOG_WARNING, "<%d> terminate(%d, %d)", self + 1, 
+				 thread_id + 1, code); 
+	}
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (thread_id >= THINKOS_THREADS_MAX) {
@@ -172,7 +167,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	__thinkos_thread_abort(thread_id);
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
-	DCC_LOG2(LOG_WARNING, "monitor_signal_terminate: <%2d>, code=%d!", 
+	DCC_LOG2(LOG_WARNING, "monitor_signal_terminate: thread=%d code=%d", 
 			 thread_id + 1, code);
 	monitor_signal_thread_terminate(thread_id, code);
 #endif
@@ -215,4 +210,3 @@ void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
 }
 
 #endif /* THINKOS_ENABLE_EXIT */
-

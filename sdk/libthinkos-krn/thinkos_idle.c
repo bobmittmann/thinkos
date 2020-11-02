@@ -160,23 +160,8 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 	}
 }
 
-#if (THINKOS_ENABLE_IDLE_MSP) 
-
 #define THINKOS_IDLE_STACK_SIZE (sizeof(thinkos_except_stack))
 #define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_except_stack
-
-#else
-
-#ifndef THINKOS_IDLE_STACK_SIZE 
-#define THINKOS_IDLE_STACK_SIZE (sizeof(struct thinkos_context) + 128)
-#endif
-
-uint32_t thinkos_idle_stack[THINKOS_IDLE_STACK_SIZE / 4]  
-	__attribute__((aligned(8)));
-#define THINKOS_IDLE_STACK_BASE (uint32_t *)thinkos_idle_stack
-
-#endif
-
 
 #if (THINKOS_ENABLE_THREAD_INFO)
 const struct thinkos_thread_inf thinkos_idle_inf = {
@@ -262,8 +247,9 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 #if DEBUG
 	udelay(0x8000);
-	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
-			"IDE ctx=%08x" _ATTR_POP_, ctx);
+	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
+			 "IDLE ctx=%08x except=%08x" _ATTR_POP_, ctx,
+			 __thinkos_xcpt_stack_top());
 #endif
 
 	/* commit the context to the kernel */ 

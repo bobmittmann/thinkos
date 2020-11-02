@@ -120,7 +120,7 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 #if DEBUG
-	udelay(32768);
+	udelay(0x8000);
 #endif
 
 #ifndef UDELAY_FACTOR 
@@ -130,25 +130,25 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 
 	DCC_LOG1(LOG_MSG, "udelay_factor=%d.", udelay_factor);
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) | 
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	board->init();
 
 	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 #if (BOOT_MONITOR_ENABLE)
 	comm = board->monitor_comm_init();
@@ -157,7 +157,7 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 #if (THINKOS_ENABLE_CONSOLE)
 	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_krn_console_init();
 #endif
@@ -165,7 +165,7 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 #if (THINKOS_ENABLE_MPU)
 	DCC_LOG(LOG_TRACE, "6. thinkos_krn_mpu_init()");
 #if DEBUG
-	udelay(256);
+	udelay(0x8000);
 #endif
 	thinkos_krn_mpu_init(0, BOOT_MEM_RESERVED);
 #endif
@@ -208,4 +208,5 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 	app_task(board);
 #endif
 }
+
 

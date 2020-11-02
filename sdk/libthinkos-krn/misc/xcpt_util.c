@@ -111,11 +111,8 @@ void __xdump(struct thinkos_except * xcpt)
 		}
 	}
 
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FP)
-	ret = xcpt->ctx.core.ret;
-#else
 	ret  = 0xffffff00 | (xcpt->ret & 0xff);
-#endif
+
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 	DCC_LOG1(LOG_INFO, "ret=%08x", ret); 
 
@@ -161,7 +158,7 @@ void __xdump(struct thinkos_except * xcpt)
 	}
 
 #if (THINKOS_ENABLE_FPU)
-	if ((xcpt->ctx.core.ret & CM3_EXC_RET_nFPCA) == 0) {
+	if ((xcpt->ret & CM3_EXC_RET_nFPCA) == 0) {
 		DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
 		xcpt->ctx.s0[0], xcpt->ctx.s0[1], xcpt->ctx.s0[2], xcpt->ctx.s0[3]);
 		DCC_LOG4(LOG_ERROR, "   S4=%08x  S5=%08x  S6=%08x  S7=%08x", 
@@ -452,10 +449,6 @@ void __tdump(void)
 
 
 	}
-#if THINKOS_ENABLE_EXIT || THINKOS_ENABLE_JOIN
-	DCC_LOG2(LOG_TRACE, "<VOID>  (%2d) SP=%08x", i + 1, 
-			 thinkos_rt.ctx[THINKOS_THREAD_VOID]);
-#endif
 	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", thinkos_rt.wq_ready);
 #if THINKOS_ENABLE_TIMESHARE
 	DCC_LOG1(LOG_TRACE, "wq_tmshare=%08x", thinkos_rt.wq_tmshare);

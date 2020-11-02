@@ -341,6 +341,8 @@ void monitor_alarm_stop(void)
 
 int monitor_wait_idle(void)
 {
+	DCC_LOG(LOG_INFO, "IDLE wait...");
+
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	uint32_t save;
 	uint32_t evset;
@@ -425,11 +427,7 @@ void __attribute__((naked))
 	__monitor_task_reset();
 }
 
-#if (THINKOS_ENABLE_THREAD_VOID)
-  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 2)
-#else
-  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
-#endif
+#define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {
@@ -439,49 +437,36 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 	unsigned int thread_id = id;
 	uint32_t pc = 0;
 	uint32_t sp = 0;
+	uint32_t ctrl = 0;
 
 	if (thread_id > THINKOS_THREAD_LAST) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
 		return -1;
 	}
 
-	if (thread_id == xcpt->active) {
-		ctx = &xcpt->ctx.core;
-		errno = xcpt->errno;
-		pc = ctx->pc;
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-		sp = (uint32_t)ctx->sp;
-		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
-		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
-				 thread_id + 1, sp, __retstr(ctx->ret));				
-#else
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-#endif
+	if (thread_id == THINKOS_THREAD_VOID) {
+		ctx  = NULL;
+		pc = 0;
+		sp = 0;
+		ctrl = 0;
 	} else if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx  = __thinkos_idle_ctx();
 		pc = ctx->pc;
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+		sp = xcpt->msp;
+	} else if (thread_id == xcpt->active) {
+		ctx = &xcpt->ctx.core;
+		errno = xcpt->errno;
+		pc = ctx->pc;
+		sp = xcpt->psp;
 	} else {
 		ctx = __thinkos_thread_ctx_get(thread_id);
-		if (thread_id == (unsigned int)thinkos_monitor_rt.brk_thread_id)
-			errno = thinkos_monitor_rt.err_code;
-
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG2(LOG_ERROR, "<%d> context 0x%08x invalid!!!", 
 					 thread_id + 1, ctx);
 			return -1;
 		}
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-		sp = (uint32_t)ctx->sp;
-		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
-		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
-				 thread_id + 1, sp, __retstr(ctx->ret));				
-#else
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-#endif
-		pc = ctx->pc;
+		ctrl = __thinkos_thread_ctrl_get(thread_id);
+		sp = __thinkos_thread_sp_get(thread_id);
 	}
 
 	if (inf != NULL) {
@@ -489,6 +474,7 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 		inf->sp = sp;
 		inf->errno = errno;
 		inf->thread_id = id;
+		inf->ctrl = ctrl;
 		inf->ctx = ctx;
 	}
 
@@ -724,7 +710,7 @@ struct monitor_context * __monitor_ctx_init(uintptr_t task,
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
 
 #if 1
-	DCC_LOG4(LOG_TRACE, "ctx=%d r0=%08x lr=%08x pc=%08x", 
+	DCC_LOG4(LOG_TRACE, "ctx=%08x r0=%08x lr=%08x pc=%08x", 
 			 ctx, ctx->r0,  ctx->lr, ctx->pc);
 	DCC_LOG3(LOG_TRACE, "msp=%08x psp=%08x ctrl=%02x", 
 			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());

@@ -347,7 +347,7 @@ int thread_register_set(unsigned int gdb_thread_id, int reg, uint64_t val)
 
 	if (reg == 13) { /*sp */
 		uint32_t sp = val;
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
+#if (THINKOS_ENABLE_FPU)
 		sp -= (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
 		DCC_LOG3(LOG_MSG, _ATTR_PUSH_ _FG_GREEN_ 
 				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 

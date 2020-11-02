@@ -47,10 +47,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #warning "Deprecated THINKOS_DBGMON_ENABLE_IRQ_MGMT"
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BKPT && !THINKOS_ENABLE_THREAD_VOID)
-#error "Need THINKOS_ENABLE_THREAD_VOID"
-#endif
-
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct thinkos_dbgmon {
@@ -127,11 +123,7 @@ void __reset_ram_vectors(void)
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-#if (THINKOS_ENABLE_THREAD_VOID)
-  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 2)
-#else
-  #define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
-#endif
+#define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
 
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
@@ -141,6 +133,7 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 	unsigned int thread_id = id;
 	uint32_t pc = 0;
 	uint32_t sp = 0;
+	uint32_t ctrl = 0;
 
 	if (thread_id > THINKOS_THREAD_LAST) {
 		DCC_LOG(LOG_ERROR, "Invalid thread!");
@@ -151,39 +144,23 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 		ctx = &xcpt->ctx.core;
 		errno = xcpt->errno;
 		pc = ctx->pc;
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-		sp = (uint32_t)ctx->sp;
-		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
-		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
-				 thread_id + 1, sp, __retstr(ctx->ret));				
-#else
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-#endif
+		sp = xcpt->psp;
 	} else if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx  = __thinkos_idle_ctx();
 		pc = ctx->pc;
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
+		sp = xcpt->msp;
 	} else {
-		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (thread_id == (unsigned int)thinkos_dbgmon_rt.break_id)
 			errno = thinkos_dbgmon_rt.errno;
 
+		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
 			DCC_LOG2(LOG_ERROR, "<%d> context 0x%08x invalid!!!", 
 					 thread_id + 1, ctx);
 			return -1;
 		}
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-		sp = (uint32_t)ctx->sp;
-		sp += (ctx->ret & CM3_EXC_RET_nFPCA) ? (8*4) : (26*4);
-		DCC_LOG3(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-				 "<%d> SP=%08x! RET=[%s]!" _ATTR_POP_, 
-				 thread_id + 1, sp, __retstr(ctx->ret));				
-#else
-		sp = (uint32_t)ctx + sizeof(struct thinkos_context);
-#endif
-		pc = ctx->pc;
+		ctrl = __thinkos_thread_ctrl_get(thread_id);
+		sp = __thinkos_thread_sp_get(thread_id);
 	}
 
 	if (inf != NULL) {
@@ -191,6 +168,7 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 		inf->sp = sp;
 		inf->errno = errno;
 		inf->thread_id = id;
+		inf->ctrl = ctrl;
 		inf->ctx = ctx;
 	}
 
@@ -553,6 +531,7 @@ void dbgmon_thread_step_clr(void)
  * Debug Monitor Core
  * ------------------------------------------------------------------------- */
 
+#if 0
 void __except_ctx_cpy(struct thinkos_context * ctx)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -569,6 +548,7 @@ void __except_ctx_cpy(struct thinkos_context * ctx)
 
 	__thinkos_memcpy32(dst, src, sz);
 }
+#endif
 
 int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 {

@@ -150,28 +150,23 @@ void __thinkos(struct thinkos_rt * rt)
 	DCC_LOG1(LOG_TRACE, "Active = %d", __thinkos_rt_active_get(rt));
 
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		struct thinkos_context * ctx;
-
-		if ((ctx = __thread_ctx_get(rt, i)) != NULL) {
 #if (THINKOS_ENABLE_THREAD_STAT)
-			DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", 
-					 i + 1, rt->th_stat[i] >> 1, (uint32_t)ctx, 
-					 ctx->lr, ctx->pc);
+		DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", i + 1, 
+				 __thread_stat_get(rt, i), __thread_sp_get(rt, i), 
+				 __thread_lr_get(rt, i), __thread_pc_get(rt, i));
 #else
-			DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", 
-					 i + 1, (uint32_t)ctx, ctx->lr, ctx->pc);
+		DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", i + 1, 
+				 __thread_sp_get(rt, i), __thread_lr_get(rt, i), 
+				 __thread_pc_get(rt, i));
 #endif
-		}
 	}
-
-
 }
 
 static uint32_t __ret_lut[8] = {
 	[0] = CM3_EXC_RET_THREAD_MSP, /* kernel */
-	[1] = CM3_EXC_RET_THREAD_PSP, /* user */
+	[1] = CM3_EXC_RET_THREAD_MSP, /* user */
 	[2] = 0, /* invalid */
-	[3] = CM3_EXC_RET_THREAD_MSP, /* user */
+	[3] = CM3_EXC_RET_THREAD_PSP, /* user */
 	[4] = 0, /* invalid */
 	[5] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp */
 	[6] = 0, /* invalid */
@@ -237,13 +232,6 @@ void SCHED(uintptr_t __sp_ctl,
 				 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
 				 __new_thread_id + 1, ctx, ctx->pc, 
 				 msp, __retstr(ret));
-#if THINKOS_ENABLE_THREAD_VOID
-	} else if (__prev_thread_id == THINKOS_THREAD_VOID) {
-		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
-				 "VOID -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_, 
-				 __new_thread_id + 1, ctx, ctx->pc, 
-				 msp, __retstr(ret));
-#endif
 	} else {
 		DCC_LOG6(LOG_TRACE, 
 				 "<%2d> -> <%2d> " 
@@ -281,12 +269,6 @@ void _IDLE(uintptr_t __sp_ctl,
 		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ _DIM_
 				 "IDLE -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 ctx, ctx->pc, psp, __retstr(ret));
-#if THINKOS_ENABLE_THREAD_VOID
-	else if (__prev_thread_id == THINKOS_THREAD_VOID)
-		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
-				 "VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 ctx, ctx->pc, psp, __retstr(ret));
-#endif
 	else
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
@@ -324,18 +306,6 @@ void ERROR(uintptr_t __sp_ctl,
 				 "IDLE -> <%2d> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 __new_thread_id + 1, 
 				 ctx, ctx->pc, psp, __retstr(ret));
-#if THINKOS_ENABLE_THREAD_VOID
-	else if (__prev_thread_id == THINKOS_THREAD_VOID)
-		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
-				 "VOID -> <%2d> CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __new_thread_id + 1, 
-				 ctx, ctx->pc, psp, __retstr(ret));
-	else if (__new_thread_id == THINKOS_THREAD_VOID)
-		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_
-				 "<%2d> VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __prev_thread_id + 1, 
-				 ctx, ctx->pc, psp, __retstr(ret));
-#endif
 	else if (__new_thread_id == THINKOS_THREAD_IDLE)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
@@ -359,12 +329,7 @@ void thinkos_sched_dbg(uintptr_t __sp_ctl,
 					   uint32_t __prev_thread_id, 
 					   uint32_t __sp) 
 {
-#if THINKOS_ENABLE_THREAD_VOID
-	if ((__prev_thread_id > THINKOS_THREAD_VOID) || 
-		(__new_thread_id > THINKOS_THREAD_IDLE)) {
-#else
 	if (__new_thread_id > THINKOS_THREAD_IDLE) {
-#endif
 		ERROR(__sp_ctl, __new_thread_id, __prev_thread_id, __sp);
 	} else if (__new_thread_id == THINKOS_THREAD_IDLE) {
 		if (__prev_thread_id != THINKOS_THREAD_IDLE) {

@@ -164,12 +164,20 @@ __monitor_wakeup:
 	bne      1b
 #endif
 
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	mrs      r2, MSP
+	mrs      r3, PSP
+	push     {r0, r1, lr}
+	bl       monitor_sched_dbg
+	pop      {r0, r1, lr}
+#endif
 
     /* The processor at this point is executing an interrupt handler. 
 	   Save at MSP the current execution environment. */
 	mrs      r12, PSP
 	mrs      r3, CONTROL
 	push     {r3, r4-r12, lr}
+
 	/* restore Monitor context */
 	ldmia    r1!, {r4-r11}
 	/* restore PSP stack pointer */
@@ -196,21 +204,30 @@ __monitor_waiting:
 	bne      1b
 #endif
 
-	mrs      r1, PSP
+	mrs      r2, PSP
 	/* save Monitor context */
-	stmdb    r1!, {r4-r11}
+	stmdb    r2!, {r4-r11}
 	/* set to SLEEPING */
-	str      r1, [r0]
+	str      r2, [r0]
+
 	/* restore Handler context */
 	pop      {r3, r4-r12, lr}
 	msr      CONTROL, r3
 	isb
 	msr      PSP, r12
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	mrs      r2, MSP
+	mrs      r3, PSP
+	b        monitor_sched_dbg
+#else
 	bx       lr
+#endif
+
 
 .L_set_busy_and_return:
 	mov      r1, #0
 	str      r1, [r0]
+
 	bx       lr
 
 	.size   __thinkos_monitor_sched , . - __thinkos_monitor_sched 

@@ -1,5 +1,5 @@
 /* 
- * thinkos_core.c
+ * thinkos_init.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -276,7 +276,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
     - 0 Any attempt to enter Thread mode with exceptions active faults.
     - 1 The processor can enter Thread mode with exceptions active because 
 	of a controlled return value. */
-#if (THINKOS_ENABLE_MONITOR)
+#if (THINKOS_ENABLE_MONITOR_SCHED)
 	ccr |= SCB_CCR_NONBASETHRDENA;
 #endif
 
@@ -285,7 +285,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	Triggered Interrupt Register (STIR):
     - 0 Unprivileged software cannot access the STIR.
     - 1 Unprivileged software can access the STIR. */
-#if 1
+#if 0
 	/* FIXME: disable this by default... */
 	ccr |= SCB_CCR_USERSETMPEND;
 #endif
@@ -369,11 +369,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 
 #if THINKOS_ENABLE_EXCEPTIONS
 	thinkos_exception_init();
-#endif
-
-#if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_THREAD_VOID)
-	__thinkos_thread_sl_set(THINKOS_THREAD_VOID, 0);
-	DCC_LOG1(LOG_TRACE, "VOID sl=%08x", thinkos_rt.th_sl[THINKOS_THREAD_VOID]);
 #endif
 
 	/* everything good with the main thread, we need to configure 

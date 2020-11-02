@@ -74,13 +74,9 @@ void monitor_print_exception(const struct monitor_comm * comm,
 
 	monitor_printf(comm, ": %s\r\n", thinkos_err_name_lut[xcpt->errno]);
 
-#if ((THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU))
-	sp = xcpt->ctx.core.sp;
-	ret = xcpt->ctx.core.ret;
-#else
+	/* FIXME: access function.. */
 	ret = 0xffffff00 | (xcpt->ret & 0xff);
 	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
-#endif
 	ctrl = xcpt->ctrl;
 
 	monitor_print_context(comm, &xcpt->ctx.core, sp, ctrl);

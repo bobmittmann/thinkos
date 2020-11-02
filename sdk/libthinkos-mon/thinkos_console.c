@@ -31,16 +31,13 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/param.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_CONSOLE
+#if (THINKOS_ENABLE_CONSOLE) && (THINKOS_ENABLE_MONITOR)
 
 /* Console lockout debug ... */
 #ifndef ENABLE_CONSOLE_DEBUG
 #define ENABLE_CONSOLE_DEBUG 0
 #endif
 
-#if (!THINKOS_ENABLE_MONITOR)
-#error "Need THINKOS_ENABLE_MONITOR!"
-#endif
 
 #ifndef THINKOS_CONSOLE_FIFO_LEN
 #define THINKOS_CONSOLE_FIFO_LEN 64
@@ -784,4 +781,38 @@ void thinkos_krn_console_init(void)
 }
 
 #endif /* THINKOS_ENABLE_CONSOLE */
+
+#if (THINKOS_ENABLE_CONSOLE) && (!THINKOS_ENABLE_MONITOR)
+
+
+void thinkos_console_svc(int32_t * arg, int self)
+{
+	unsigned int req = arg[0];
+	
+	switch (req) {
+
+	case CONSOLE_READ:
+		__thinkos_suspend(self);
+		__thinkos_wq_insert(THINKOS_WQ_CONSOLE_RD, self);
+		__thinkos_defer_sched(); 
+		break;
+
+	case CONSOLE_WRITE:
+		__thinkos_suspend(self);
+		__thinkos_wq_insert(THINKOS_WQ_CONSOLE_WR, self);
+		__thinkos_defer_sched(); 
+		break;
+
+	default:
+		arg[0] = THINKOS_EINVAL;
+		break;
+	}
+}
+
+
+void thinkos_krn_console_init(void)
+{
+}
+
+#endif
 

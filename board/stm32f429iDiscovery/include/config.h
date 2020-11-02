@@ -113,8 +113,6 @@
 #define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              1
 
-#define THINKOS_ENABLE_THREAD_VOID      1
-
 #define THINKOS_DBGMON_STACK_SIZE       1024
 
 #define THINKOS_ENABLE_STACK_INIT       1
@@ -123,7 +121,6 @@
 #define THINKOS_CONSOLE_TX_FIFO_LEN     128
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
-#define THINKOS_ENABLE_IDLE_MSP         1
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 
 /* -------------------------------------------------------------------------

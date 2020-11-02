@@ -76,22 +76,12 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 			__thinkos_thread_fault_set(__thinkos_active_get());
 #endif
 
-#if (THINKOS_ENABLE_IDLE_MSP) || (THINKOS_ENABLE_FPU)
-			DCC_LOG5(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
-					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
-					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
-					 __xcpt_active_get(xcpt) + 1, 
-					 ctx->sp, 
-					 xcpt->psp,
-					 xcpt->msp, xcpt->psp);
-#else
 			DCC_LOG4(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "<%2d> SP=" _BRIGHT_ "%08x" _DIM_ 
 					 " MSP=%08x PSP=%08x"  _ATTR_POP_,
 					 __xcpt_active_get(xcpt) + 1, 
 					 xcpt->psp,
 					 xcpt->msp, xcpt->psp);
-#endif
 			DCC_LOG3(LOG_ERROR,  _ATTR_PUSH_ _FG_YELLOW_ 
 					 "   IPSR=%02x "  
 					 "CTRL=%02x RDY=%08x"  _ATTR_POP_,
@@ -158,10 +148,6 @@ static void __attribute__((noreturn))
 
 	icsr = CM3_SCB->icsr;
 	if (icsr & SCB_ICSR_RETTOBASE) {
-#if (THINKOS_ENABLE_IDLE_MSP)
-		DCC_LOG(LOG_ERROR, "return from exception...");
-		__xcpt_return(xcpt);
-#endif
 		for(;;);
 	}
 

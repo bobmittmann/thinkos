@@ -158,15 +158,13 @@ const struct thinkos_profile thinkos_profile = {
 	},
 
 	.misc = {
-		.thread_void     = THINKOS_ENABLE_THREAD_VOID,
 		.idle_wfi        = THINKOS_ENABLE_IDLE_WFI,
 		.sched_debug     = THINKOS_ENABLE_SCHED_DEBUG,
 		.ofast           = THINKOS_ENABLE_OFAST,
 		.stack_align     = THINKOS_ENABLE_STACK_ALIGN,
 		.unalign_trap    = THINKOS_ENABLE_UNALIGN_TRAP,
 		.div0_trap       = THINKOS_ENABLE_DIV0_TRAP,
-		.idle_hooks      = THINKOS_ENABLE_IDLE_HOOKS,
-		.idle_msp        = THINKOS_ENABLE_IDLE_MSP,
+		.idle_hooks      = THINKOS_ENABLE_IDLE_HOOKS
 	},
 
 	.deprecated = {
@@ -362,8 +360,6 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
 			 p->debug.fault);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_VOID     = %d", 
-			 p->misc.thread_void);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_WFI        = %d", 
 			 p->misc.idle_wfi);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SCHED_DEBUG     = %d", 
@@ -379,8 +375,6 @@ void __profile(void)
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_HOOKS      = %d", 
 			 p->misc.idle_hooks);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_MSP        = %d", 
-			 p->misc.idle_msp);
 
 }
 #endif

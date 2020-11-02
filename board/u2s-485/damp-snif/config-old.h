@@ -88,7 +88,6 @@
 #define THINKOS_ENABLE_CTL            0
 #define THINKOS_ENABLE_COMM           0
 #define THINKOS_ENABLE_STACK_INIT     1
-#define THINKOS_ENABLE_THREAD_VOID    0
 
 /* -------------------------------------------------------------------------
  * USB device and CDC-ACM 

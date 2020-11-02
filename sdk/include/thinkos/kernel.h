@@ -52,18 +52,17 @@
  * context register offsets
  * --------------------------------------------------------------------------*/
 
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-/* Position of register R0 in the context */
-  #define CTX_R0 10
-  #define CTX_PC 16
-  #define CTX_SIZE (18 * 4)
+#if (THINKOS_ENABLE_STACK_ALIGN)
+  #define CONTROL_MSK 0x07
 #else
-/* Position of register R0 in the context */
-  #define CTX_R0 8
-/* Position of register PC in the context */
-  #define CTX_PC 14
-  #define CTX_SIZE (16 * 4)
+  #define CONTROL_MSK 0x03
 #endif
+
+/* Position of register R0 in the context */
+#define CTX_R0 8
+/* Position of register PC in the context */
+#define CTX_PC 14
+#define CTX_SIZE (16 * 4)
 
 /* -------------------------------------------------------------------------- 
  * Static trhead references
@@ -72,15 +71,7 @@
 #define THINKOS_THREAD_NULL (32)
 #define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
 
-#if (THINKOS_ENABLE_THREAD_VOID)
-  #define THINKOS_THREAD_VOID ((THINKOS_THREADS_MAX) + 1)
-#endif
-
-#if (THINKOS_ENABLE_THREAD_VOID)
-#define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 2)
-#else
-#define THINKOS_NRT_THREAD0 (THINKOS_THREADS_MAX + 1)
-#endif
+#define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + THINKOS_NRT_THREADS_MAX + 1)
 
 #define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
 
@@ -94,15 +85,9 @@
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/
-#if (THINKOS_ENABLE_THREAD_VOID)
-  #define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 2)
-  #define SIZEOF_VOID_CTX  4
-  #define SIZEOF_CTX (((THINKOS_THREADS_MAX) + 2) * 4)
-#else
-  #define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 1)
-  #define SIZEOF_VOID_CTX  0
-  #define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
-#endif
+#define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 1)
+#define SIZEOF_VOID_CTX  0
+#define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
 
 #define SIZEOF_NRT_CTX     ((THINKOS_NRT_THREADS_MAX) * 4)
 
@@ -344,11 +329,6 @@ struct thinkos_context {
 	uint32_t r9;
 	uint32_t r10;
 	uint32_t r11;
-
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	uint32_t sp; /* 8 bytes alignment (used for sanity check) */
-	uint32_t ret; /* return value <LR> */
-#endif
 
 	/* automatic saved context - exception frame */
 	uint32_t r0;
@@ -812,7 +792,10 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
 static inline void __attribute__((always_inline)) 
 __thinkos_active_set(unsigned int th) {
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	thinkos_rt.active = thinkos_rt.th_sl[th];
+	if (th < THINKOS_THREAD_IDLE)
+		thinkos_rt.active = thinkos_rt.th_sl[th];
+	else
+		thinkos_rt.active = th;
 #else
 	thinkos_rt.active = th;
 #endif
@@ -900,15 +883,15 @@ __thinkos_thread_sl_set(unsigned int th, uint32_t addr) {
 	thinkos_rt.th_sl[th] = (addr & 0xffffffc0) + th;
 }
 #endif /* THINKOS_ENABLE_STACK_LIMIT */
-
+  
 /* -------------------------------------------------------------------------- 
  * context structure access methods 
  * --------------------------------------------------------------------------*/
 
 static inline struct thinkos_context * __attribute__((always_inline)) 
 __thread_ctx_get(struct thinkos_rt * rt, unsigned int id) {
-		uint32_t x = rt->ctx[id] & ~0x07;
-		return (struct thinkos_context *)x;
+		uintptr_t ptr = rt->ctx[id] & ~CONTROL_MSK;
+		return (struct thinkos_context *)ptr;
 }
 
 static inline int __attribute__((always_inline)) 
@@ -916,111 +899,173 @@ __thread_stat_get(struct thinkos_rt * rt, unsigned int id) {
 		return rt->th_stat[id] >> 1;
 }
 
+static inline uint32_t __attribute__((always_inline)) 
+__thread_lr_get(struct thinkos_rt * rt, unsigned int id) {
+	return __thread_ctx_get(rt, id)->lr;
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_pc_get(struct thinkos_rt * rt, unsigned int id) {
+	return __thread_ctx_get(rt, id)->pc;
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_sp_get(struct thinkos_rt * rt, unsigned int id) {
+	uint32_t sp_ctrl = rt->ctx[id];
+	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
+	uint32_t sp = sp_ctrl & ~CONTROL_MSK;
+#if (THINKOS_ENABLE_FPU)
+	return sp += (ctrl & CONTROL_FPCA) ? (8*4) : (26*4);
+#else
+	return sp += (8*4);
+#endif 
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_ctrl_get(struct thinkos_rt * rt, unsigned int id) {
+	uint32_t sp_ctrl = rt->ctx[id];
+	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
+	return ctrl;
+}
+
+/*
+=========== ============== ============= ============ ===== =====
+ EXC_RETURN    Return to   Return stack   Frame type  Priv   Ctrl
+=========== ============== ============= ============ ===== =====
+ 0xFFFFFFE1  Handler mode          Main     Extended  Err    xxx 
+ 0xFFFFFFE9   Thread mode          Main     Extended  Err    xxx 
+ 0xFFFFFFED   Thread mode       Process     Extended  Ufp    101 
+ 0xFFFFFFF1  Handler mode          Main        Basic  Err    xxx 
+ 0xFFFFFFF9   Thread mode          Main        Basic  Krn    000 
+ 0xFFFFFFFD   Thread mode       Process        Basic  Usr    001 
+=========== ============== ============= ============ ===== =====
+*/
+
+#define CONTROL_nPRIV       (1 << 0)
+#define CONTROL_SPSEL       (1 << 1)
+#define CONTROL_FPCA        (1 << 2)
+
+#define EXEC_RET_THREAD      (1 << 1)
+#define EXEC_RET_SPSEL       (1 << 2)
+#define EXEC_RET_nFPCA       (1 << 4)
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_exec_ret_get(struct thinkos_rt * rt, unsigned int id) {
+	uint32_t sp_ctrl = rt->ctx[id];
+	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
+#if (THINKOS_ENABLE_FPU)
+	return 0xffffffe1 | EXEC_RET_THREAD | 
+		((ctrl & CONTROL_FPCA) ? 0 : EXEC_RET_nFPCA) | 
+		((ctrl & CONTROL_SPSEL) ? EXEC_RET_SPSEL : 0);
+#else
+	return 0xfffffff1 | EXEC_RET_THREAD | 
+		((ctrl & CONTROL_SPSEL) ? EXEC_RET_SPSEL : 0);
+#endif
+}
+
 /* -------------------------------------------------------------------------- 
- * thread context access methods 
+ * thinkos runtime thread context access methods 
  * --------------------------------------------------------------------------*/
 
 static inline bool __attribute__((always_inline)) 
-__thinkos_thread_ctx_is_valid(unsigned int th) {
-	return (thinkos_rt.ctx[th] & ~0x7) == 0 ? false : true;
+__thinkos_thread_ctx_is_valid(unsigned int id) {
+	return (thinkos_rt.ctx[id] & ~CONTROL_MSK) == 0 ? false : true;
 }
 
-static inline struct thinkos_context * __attribute__((always_inline)) 
-__thinkos_thread_ctx_get(unsigned int th) {
-	return (struct thinkos_context *)(thinkos_rt.ctx[th] & ~0x7);
+static inline struct thinkos_context * 
+__thinkos_thread_ctx_get(unsigned int id) {
+	return __thread_ctx_get(&thinkos_rt, id);
 }
 
-static inline uint32_t __attribute__((always_inline)) 
-__thinkos_thread_r0_get(unsigned int th) {
-	return __thinkos_thread_ctx_get(th)->r0;
+static inline uint32_t __thinkos_thread_r0_get(unsigned int id) {
+	return __thread_ctx_get(&thinkos_rt, id)->r0;
 }
 
-static inline uint32_t * __attribute__((always_inline)) 
-__thinkos_thread_frame_get(unsigned int th) {
-	return (uint32_t *)&__thinkos_thread_ctx_get(th)->r0;
+static inline uint32_t * __thinkos_thread_frame_get(unsigned int id) {
+	return (uint32_t *)&__thread_ctx_get(&thinkos_rt, id)->r0;
 }
 
-static inline uint32_t __attribute__((always_inline)) 
-__thinkos_thread_pc_get(unsigned int th) {
-	return __thinkos_thread_ctx_get(th)->pc;
+static inline uint32_t __thinkos_thread_pc_get(unsigned int id) {
+	return __thread_pc_get(&thinkos_rt, id); 
 }
 
-static inline uint32_t __attribute__((always_inline)) 
-__thinkos_thread_lr_get(unsigned int th) {
-	return __thinkos_thread_ctx_get(th)->pc;
+static inline uint32_t __thinkos_thread_lr_get(unsigned int id) {
+	return __thread_lr_get(&thinkos_rt, id); 
 }
 
-static inline uint32_t __attribute__((always_inline)) 
-__thinkos_thread_sp_get(unsigned int th) {
-	return thinkos_rt.ctx[th] & ~0x7;
+static inline uint32_t __thinkos_thread_sp_get(unsigned int id) {
+	return __thread_sp_get(&thinkos_rt, id); 
 }
 
-static inline uint32_t __attribute__((always_inline)) 
-__thinkos_thread_ctrl_get(unsigned int th) {
-	return thinkos_rt.ctx[th] & 0x7;
+static inline uint32_t __thinkos_thread_ctrl_get(unsigned int id) {
+	return __thread_ctrl_get(&thinkos_rt, id); 
+}
+
+static inline uint32_t __thinkos_thread_exec_ret_get(unsigned int id) {
+	return __thread_exec_ret_get(&thinkos_rt, id); 
 }
 
 
 #if 0
 static inline void  __attribute__((always_inline)) 
-__thinkos_thread_ctx_set(unsigned int th, struct thinkos_context * __ctx) {
-	thinkos_rt.ctx[th] = (uintptr_t)__ctx;
+__thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * __ctx) {
+	thinkos_rt.ctx[id] = (uintptr_t)__ctx;
 }
 
 void thinkos_flash_mem_svc(int32_t arg[], int self)
-	thinkos_rt.ctx[th] = (uintptr_t)__ctx;
+	thinkos_rt.ctx[id] = (uintptr_t)__ctx;
 	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
 
 #endif
 
 
 static inline void  __attribute__((always_inline)) 
-__thinkos_thread_ctx_set(unsigned int th, struct thinkos_context * __ctx,
+__thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * __ctx,
 						 unsigned int ctrl) {
-	thinkos_rt.ctx[th] = ((uintptr_t)__ctx) | (ctrl & 0x7);
+	thinkos_rt.ctx[id] = ((uintptr_t)__ctx) | (ctrl & CONTROL_MSK);
 	
 }
 
 static inline void  __attribute__((always_inline)) 
-__thinkos_thread_ctx_flush(int32_t arg[], unsigned int th) {
-	uintptr_t ctx = (uintptr_t)(thinkos_rt.ctx[th]);
+__thinkos_thread_ctx_flush(int32_t arg[], unsigned int id) {
+	uintptr_t ctx = (uintptr_t)(thinkos_rt.ctx[id]);
 	uintptr_t sp = (uintptr_t)&arg[-CTX_R0];
-	thinkos_rt.ctx[th] = sp + (ctx & 0x7);
+	thinkos_rt.ctx[id] = sp + (ctx & CONTROL_MSK);
 }
 
 static inline void  __attribute__((always_inline)) 
-__thinkos_thread_ctx_clr(unsigned int th) {
-	thinkos_rt.ctx[th] = (uintptr_t)0;
+__thinkos_thread_ctx_clr(unsigned int id) {
+	thinkos_rt.ctx[id] = (uintptr_t)0;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_r0_set(unsigned int th, uint32_t val) {
-	__thinkos_thread_ctx_get(th)->r0 = val;
+__thinkos_thread_r0_set(unsigned int id, uint32_t val) {
+	__thinkos_thread_ctx_get(id)->r0 = val;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_r1_set(unsigned int th, uint32_t val) {
-	__thinkos_thread_ctx_get(th)->r1 = val;
+__thinkos_thread_r1_set(unsigned int id, uint32_t val) {
+	__thinkos_thread_ctx_get(id)->r1 = val;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_r2_set(unsigned int th, uint32_t val) {
-	__thinkos_thread_ctx_get(th)->r2 = val;
+__thinkos_thread_r2_set(unsigned int id, uint32_t val) {
+	__thinkos_thread_ctx_get(id)->r2 = val;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_r3_set(unsigned int th, uint32_t val) {
-	__thinkos_thread_ctx_get(th)->r3 = val;
+__thinkos_thread_r3_set(unsigned int id, uint32_t val) {
+	__thinkos_thread_ctx_get(id)->r3 = val;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_pc_set(unsigned int th, uintptr_t val) {
-	__thinkos_thread_ctx_get(th)->pc = (uint32_t)val;
+__thinkos_thread_pc_set(unsigned int id, uintptr_t val) {
+	__thinkos_thread_ctx_get(id)->pc = (uint32_t)val;
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_lr_set(unsigned int th, uintptr_t val) {
-	__thinkos_thread_ctx_get(th)->lr = (uint32_t)val;
+__thinkos_thread_lr_set(unsigned int id, uintptr_t val) {
+	__thinkos_thread_ctx_get(id)->lr = (uint32_t)val;
 }
 
 /* -------------------------------------------------------------------------- 
@@ -1029,33 +1074,33 @@ __thinkos_thread_lr_set(unsigned int th, uintptr_t val) {
 
 #if THINKOS_ENABLE_THREAD_INFO
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_inf_clr(unsigned int th) {
-	thinkos_rt.th_inf[th] = NULL;
+__thinkos_thread_inf_clr(unsigned int id) {
+	thinkos_rt.th_inf[id] = NULL;
 }
 
 static inline void __attribute__((always_inline))
-__thinkos_thread_inf_set(unsigned int th, 
+__thinkos_thread_inf_set(unsigned int id, 
 						 const struct thinkos_thread_inf * inf) {
-	if (__thinkos_thread_ctx_is_valid(th))
-		thinkos_rt.th_inf[th] = inf;
+	if (__thinkos_thread_ctx_is_valid(id))
+		thinkos_rt.th_inf[id] = inf;
 }
 
 static inline const struct thinkos_thread_inf * __attribute__((always_inline))  
-__thinkos_thread_inf_get(unsigned int th) {
-	return thinkos_rt.th_inf[th];
+__thinkos_thread_inf_get(unsigned int id) {
+	return thinkos_rt.th_inf[id];
 }
 #else /* THINKOS_ENABLE_THREAD_INFO */
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_inf_clr(unsigned int th) {
+__thinkos_thread_inf_clr(unsigned int id) {
 }
 
 static inline void __attribute__((always_inline))
-__thinkos_thread_inf_set(unsigned int th, 
+__thinkos_thread_inf_set(unsigned int id, 
 						 const struct thinkos_thread_inf * inf) {
 }
 
 static inline const struct thinkos_thread_inf * __attribute__((always_inline))  
-__thinkos_thread_inf_get(unsigned int th) {
+__thinkos_thread_inf_get(unsigned int id) {
 	return NULL;
 }
 #endif /* THINKOS_ENABLE_THREAD_INFO */

@@ -37,7 +37,7 @@ COMMIO_CFILES = monitor_putc.c monitor_puts.c \
 CFILES = thinkos_monitor.c monitor_thread.c monitor_memory.c \
 	 thinkos_console.c monitor_console_task.c \
 	 monitor_flash.c monitor_events.c \
-	 app_exec.c \
+	 app_exec.c mon_sched_dbg.c \
 	 $(addprefix comm/,$(COMM_CFILES)) \
 	 $(addprefix commio/,$(COMMIO_CFILES))
 

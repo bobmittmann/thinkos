@@ -89,10 +89,6 @@ struct thinkos_context * __thinkos_thread_ctx_init(unsigned int thread_id,
 	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
 #endif
 	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-#if (THINKOS_ENABLE_FPU) || (THINKOS_ENABLE_IDLE_MSP) 
-	ctx->sp = (uintptr_t)&ctx->r0;
-	ctx->ret = CM3_EXC_RET_THREAD_PSP;
-#endif
 
 #if 1
 	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
