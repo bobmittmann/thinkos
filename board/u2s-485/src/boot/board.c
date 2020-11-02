@@ -304,8 +304,8 @@ const struct thinkos_board this_board = {
 	.memory = &mem_map
 };
 
-int main(int argc, char ** argv)
+void __attribute((noreturn)) main(int argc, char ** argv)
 {
-	return thinkos_boot(&this_board);
+	thinkos_boot(&this_board);
 }
 

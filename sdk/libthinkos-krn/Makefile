@@ -46,15 +46,14 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 
 ifeq ($(CPU), cortex-m4)
   SFILES = thinkos_vector.S thinkos_isr.S \
-		   cortex-m4f/thinkos_sched-cortex-m4f-full.S
-#		   cortex-m3/thinkos_sched-cortex-m3-basic.S
+		   cortex-m4f/thinkos_sched-cortex-m4f.S
 #		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
 endif
 
 ifeq ($(CPU), cortex-m3)
   SFILES = thinkos_vector.S thinkos_isr.S \
-#		   cortex-m3/thinkos_sched-cortex-m3.S
-		   cortex-m3/thinkos_sched-cortex-m3-basic.S
+		   cortex-m3/thinkos_sched-cortex-m3.S
+#		   cortex-m3/thinkos_sched-cortex-m3-basic.S
 endif
 
 include ../../mk/lib.mk

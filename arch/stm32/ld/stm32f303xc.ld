@@ -33,10 +33,6 @@ MEMORY
 	alloc  (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
 
-REGION_ALIAS("CODE", flash);
-REGION_ALIAS("DATA", sram);
-REGION_ALIAS("STACK", ccm);
-REGION_ALIAS("LOG", dcclog);
-
+/* Device family */
 INCLUDE stm32f3xx.ld
 

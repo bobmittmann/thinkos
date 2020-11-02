@@ -43,6 +43,6 @@ MEMORY
 	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
 }
 
-/* Device family vectors */
+/* Device family */
 INCLUDE stm32f4xx.ld
 

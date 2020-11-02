@@ -1,5 +1,5 @@
 /* 
- * thinkos_sched-corte-m4f-ndbg.S
+ * thinkos_sched-cortex-m4f-ndbg.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 

@@ -912,9 +912,9 @@ __thread_pc_get(struct thinkos_rt * rt, unsigned int id) {
 static inline uint32_t __attribute__((always_inline)) 
 __thread_sp_get(struct thinkos_rt * rt, unsigned int id) {
 	uint32_t sp_ctrl = rt->ctx[id];
-	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
 	uint32_t sp = sp_ctrl & ~CONTROL_MSK;
 #if (THINKOS_ENABLE_FPU)
+	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
 	return sp += (ctrl & CONTROL_FPCA) ? (8*4) : (26*4);
 #else
 	return sp += (8*4);

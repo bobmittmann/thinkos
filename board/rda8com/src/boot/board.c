@@ -362,7 +362,7 @@ const struct monitor_comm * board_comm_init(void)
 {
 	DCC_LOG(LOG_TRACE, "USB comm init");
 
-	return usb_comm_init(&stm32f_otg_fs_dev);
+	return usb_comm_init(&stm32f_usb_fs_dev);
 }
 
 /* Bootloader board description  
