@@ -98,8 +98,6 @@
 
 #define THINKOS_SYSRST_ONFAULT          1
 
-#define THINKOS_STDERR_FAULT_DUMP       1
-
 #define THINKOS_ENABLE_BUSFAULT         1
 
 #define THINKOS_ENABLE_USAGEFAULT       1
@@ -107,8 +105,6 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 
 #define THINKOS_ENABLE_HARDFAULT        1
-
-#define THINKOS_UNROLL_EXCEPTIONS       1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      1
 
@@ -143,8 +139,6 @@
 #define THINKOS_ENABLE_ESCALATE         1
 
 #define THINKOS_ENABLE_IDLE_WFI         1
-
-#define THINKOS_ASM_SCHEDULER           1
 
 #endif /* __CONFIG_H__ */
 

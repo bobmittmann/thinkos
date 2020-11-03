@@ -35,7 +35,7 @@ VERSION_MINOR = "3"
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 board.c fpga.c ice40hx1k.c 
+		 $(THINKOS_DIR)/boot/standby.c board.c fpga.c ice40hx1k.c 
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \

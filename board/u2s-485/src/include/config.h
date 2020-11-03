@@ -146,7 +146,7 @@
 #define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              0
 
-#define THINKOS_DBGMON_STACK_SIZE       (1024 + 384)
+#define THINKOS_MONITOR_STACK_SIZE       (1024 + 384)
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              0
@@ -171,15 +171,12 @@
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
 #define THINKOS_ENABLE_FLASH_MEM        0
 
-#define THINKOS_STDERR_FAULT_DUMP       0
-#define THINKOS_ASM_SCHEDULER           1
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
 
 #define THINKOS_ENABLE_USAGEFAULT_MONITOR 1
 
-#define THINKOS_UNROLL_EXCEPTIONS       0
 /* -------------------------------------------------------------------------
    RCC 
    -------------------------------------------------------------------------- */

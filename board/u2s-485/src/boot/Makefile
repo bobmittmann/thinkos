@@ -32,7 +32,7 @@ VERSION_MINOR = "3"
 PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 board.c 
+		 $(THINKOS_DIR)/boot/standby.c board.c 
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \

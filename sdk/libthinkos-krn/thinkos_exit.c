@@ -88,6 +88,8 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 	unsigned int thread_id;
 	int code = ctx->r1;
 
+	(void)code;
+
 	if ((unsigned int)ctx->r0 == 0) {
 		thread_id = self;
 		DCC_LOG2(LOG_WARNING, "<%d> terminate(0, %d)", self + 1 , code); 

@@ -96,9 +96,7 @@
 #else
   #define THINKOS_ENABLE_EXCEPTIONS     0
 #endif
-#define THINKOS_UNROLL_EXCEPTIONS       0
 #define THINKOS_ENABLE_EXCEPT_CLEAR     0
-#define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ENABLE_BUSFAULT         0
 #define THINKOS_ENABLE_USAGEFAULT       0
 #define THINKOS_ENABLE_MEMFAULT         0
@@ -117,7 +115,6 @@
 
 #define THINKOS_ENABLE_STACK_INIT       0
 
-#define THINKOS_ASM_SCHEDULER           1
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0

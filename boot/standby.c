@@ -129,9 +129,6 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 
 		case MONITOR_APP_EXEC:
 			monitor_clear(MONITOR_APP_EXEC);
-#if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_krn_console_raw_mode_set(raw_mode = false);
-#endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 

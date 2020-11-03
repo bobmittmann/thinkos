@@ -165,13 +165,8 @@ const struct thinkos_profile thinkos_profile = {
 		.unalign_trap    = THINKOS_ENABLE_UNALIGN_TRAP,
 		.div0_trap       = THINKOS_ENABLE_DIV0_TRAP,
 		.idle_hooks      = THINKOS_ENABLE_IDLE_HOOKS
-	},
-
-	.deprecated = {
-		.asm_scheduler       = THINKOS_ASM_SCHEDULER,
-		.unroll_exceptions   = THINKOS_UNROLL_EXCEPTIONS,
-		.stderr_fault_dump   = THINKOS_STDERR_FAULT_DUMP
 	}
+
 };
 
 #if DEBUG

@@ -302,10 +302,6 @@
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #endif
 
-#ifndef THINKOS_UNROLL_EXCEPTIONS 
-#define THINKOS_UNROLL_EXCEPTIONS       0
-#endif
-
 #ifndef THINKOS_ENABLE_EXCEPT_CLEAR
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #endif
@@ -549,20 +545,9 @@
 #define THINKOS_ENABLE_IRQ_ASM_FAST     0
 #endif
 
-/* THINKOS_ENABLE_PRIV_THREAD - Enable privileged thread */
-#ifndef THINKOS_ENABLE_PRIV_THREAD
-#define THINKOS_ENABLE_PRIV_THREAD      0
-#endif
-
-/* Deprecated options, to be removed in the future 
- */
-
-#ifndef THINKOS_ASM_SCHEDULER
-#define THINKOS_ASM_SCHEDULER           1
-#endif
-
-#ifndef THINKOS_STDERR_FAULT_DUMP
-#define THINKOS_STDERR_FAULT_DUMP       0
+/* THINKOS_ENABLE_PRIVILEGED_THREAD - Enable privileged thread */
+#ifndef THINKOS_ENABLE_PRIVILEGED_THREAD
+#define THINKOS_ENABLE_PRIVILEGED_THREAD 0
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -763,7 +748,35 @@
 #endif
 
 #ifdef THINKOS_ENABLE_THREAD_VOID 
-#error "THINKOS_ENABLE_THREAD_VOID      is deprecated"
+#error "THINKOS_ENABLE_THREAD_VOID is deprecated"
+#endif
+
+#ifdef THINKOS_ASM_SCHEDULER
+#error "THINKOS_ASM_SCHEDULER is deprecated"
+#endif
+
+#ifdef THINKOS_STDERR_FAULT_DUMP
+#error "THINKOS_STDERR_FAULT_DUMP is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_RT_DEBUG
+#error "THINKOS_ENABLE_RT_DEBUG is deprecated"
+#endif
+
+#ifdef THINKOS_DBGMON_STACK_SIZE
+#error "THINKOS_DBGMON_STACK_SIZE is deprecated"
+#endif
+
+#ifdef THINKOS_DBGMON_ENABLE_RST_VEC 
+#error "THINKOS_DBGMON_ENABLE_RST_VEC is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_DMCLOCK 
+#error "THINKOS_ENABLE_DMCLOCK is deprecated"
+#endif
+
+#ifdef THINKOS_UNROLL_EXCEPTIONS
+#error "THINKOS_UNROLL_EXCEPTIONS is deprecated"
 #endif
 
 /* -------------------------------------------------------------------------- 

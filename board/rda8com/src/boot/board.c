@@ -402,6 +402,6 @@ const struct thinkos_board this_board = {
 
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
-	thinkos_boot(&this_board);
+	thinkos_boot(&this_board, standby_monitor_task);
 }
 

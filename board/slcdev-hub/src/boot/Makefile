@@ -31,7 +31,7 @@ VERSION_MINOR = "0"
 
 PROG = slcdevhub-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-BOOT_CFILES = boot.c monitor.c 
+BOOT_CFILES = boot.c monitor.c standby.c
 
 CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
 		 board.c lattice.c ice40lp384.c otg_xflash_pic.c 
