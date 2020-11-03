@@ -211,6 +211,8 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	/* clear all hook requests */
 	thinkos_rt.idle_hooks.req_map = 0;
 	arg = (uintptr_t)&thinkos_rt.idle_hooks;
+#else
+	arg = 0;
 #endif
 
 	ctx = __thinkos_thread_ctx_init(THINKOS_THREAD_IDLE, sp, 

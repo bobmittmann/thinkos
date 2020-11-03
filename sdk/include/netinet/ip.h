@@ -48,6 +48,7 @@ struct iphdr {
     uint32_t saddr;
     uint32_t daddr;
     /*The options start here. */
+	uint8_t opt[];
 };
 
 /*

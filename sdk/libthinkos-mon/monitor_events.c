@@ -102,12 +102,21 @@ uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm,
 							 uint32_t sigmask)
 {
 	bool connected;
+	int status;
 
 	DCC_LOG1(LOG_MSG, "comm=%08x", comm);
 
 	monitor_clear(MONITOR_COMM_CTL);
 
-	connected = monitor_comm_isconnected(comm);
+	status = monitor_comm_status_get(comm);
+	if (status & COMM_ST_CONNECTED) {
+		DCC_LOG(LOG_TRACE, "connected....");
+	}
+	if (status & COMM_ST_BREAK_REQ ) {
+		monitor_comm_break_ack(comm);
+		DCC_LOG(LOG_TRACE, "break_req....");
+	}
+	connected = (status & COMM_ST_CONNECTED) ? true : false;
 	thinkos_krn_console_connect_set(connected);
 
 	sigmask &= ~((1 << MONITOR_COMM_EOT) | 

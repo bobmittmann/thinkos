@@ -487,7 +487,7 @@
    handlers only. These functions are suffixed by _i.
    */
 #ifndef THINKOS_ENABLE_I_CALLS
-#define THINKOS_ENABLE_I_CALLS           1
+#define THINKOS_ENABLE_I_CALLS           0
 #endif
 
 
