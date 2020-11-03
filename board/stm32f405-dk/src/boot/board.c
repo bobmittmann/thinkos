@@ -467,9 +467,12 @@ const struct thinkos_board this_board = {
 };
 
 
+void standby_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
-	thinkos_boot(&this_board);
+	thinkos_boot(&this_board, &standby_monitor_task);
 }
 
 

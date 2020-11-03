@@ -1085,6 +1085,19 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		case MONITOR_COMM_CTL:
 			DCC_LOG(LOG_MSG, "/!\\ MONITOR_COMM_CTL");
 			monitor_clear(MONITOR_COMM_CTL);
+			{
+				int status = monitor_comm_status_get(comm);
+
+	        	if (status & COMM_ST_CONNECTED) {
+					DCC_LOG(LOG_TRACE, "connected....");
+				}
+
+	        	if (status & COMM_ST_BREAK_REQ ) {
+					monitor_comm_break_ack(comm);
+					DCC_LOG(LOG_TRACE, "break_req....");
+				}
+			}
+
 is_connected:
 			sigmask = monitor_on_comm_ctl(comm, sigmask);
 			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);

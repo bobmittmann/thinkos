@@ -38,7 +38,7 @@
  */
 
 #define THINKOS_KERNEL_VERSION_MAJOR 0
-#define THINKOS_KERNEL_VERSION_MINOR 16
+#define THINKOS_KERNEL_VERSION_MINOR 17
 
 /* -------------------------------------------------------------------------- 
  * Profile version 

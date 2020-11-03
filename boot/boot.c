@@ -40,7 +40,6 @@
 
 #include <sys/dcclog.h>
 
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 
 #ifndef BOOT_MEM_RESERVED 
 #define BOOT_MEM_RESERVED 0x1000
@@ -108,7 +107,8 @@ void __attribute__((noreturn)) app_task(const struct thinkos_board * board)
 }
 
 
-void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
+void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
+	void (monitor)(const struct monitor_comm *, void *))
 {
 #if (BOOT_MONITOR_ENABLE)
 	const struct monitor_comm * comm;
@@ -175,7 +175,7 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board)
 #if DEBUG
 	udelay(0x8000);
 #endif
-	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)board);
+	thinkos_krn_monitor_init(comm, monitor, (void *)board);
 #endif
 
 #if (BOOT_SELFTEST_ENABLE)
