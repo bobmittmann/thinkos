@@ -695,6 +695,8 @@ close:
 
 		/* TODO: tcp reassembly
 		tcp_reass(tp); */
+
+		/* FALL-THROUGH */ 
 	case TCPS_ESTABLISHED:
 	case TCPS_FIN_WAIT_1:
 	case TCPS_FIN_WAIT_2:

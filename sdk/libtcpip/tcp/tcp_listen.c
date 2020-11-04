@@ -27,7 +27,7 @@
 #include <sys/tcp.h>
 #include <errno.h>
 
-int tcp_listen(struct tcp_pcb * __mux, int __backlog)
+int tcp_listen(struct tcp_pcb * __mux, unsigned int __backlog)
 {
 	struct tcp_listen_pcb * tp = (struct tcp_listen_pcb *)__mux;
 

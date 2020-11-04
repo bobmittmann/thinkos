@@ -118,8 +118,6 @@
 
 #define THINKOS_ENABLE_DEBUG_FAULT      1
 
-#define THINKOS_ENABLE_EXCEPT_CLEAR     1
-
 #define THINKOS_ENABLE_MPU              1
 
 #define THINKOS_ENABLE_FPU              1

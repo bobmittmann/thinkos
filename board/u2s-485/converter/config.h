@@ -96,7 +96,6 @@
 #else
   #define THINKOS_ENABLE_EXCEPTIONS     0
 #endif
-#define THINKOS_ENABLE_EXCEPT_CLEAR     0
 #define THINKOS_ENABLE_BUSFAULT         0
 #define THINKOS_ENABLE_USAGEFAULT       0
 #define THINKOS_ENABLE_MEMFAULT         0

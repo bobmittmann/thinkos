@@ -83,7 +83,6 @@
 #define THINKOS_ENABLE_EXCEPTIONS     1
 #define THINKOS_ENABLE_HARDFAULT      1
 
-#define THINKOS_ENABLE_EXCEPT_CLEAR   0
 #define THINKOS_ENABLE_MPU            0
 #define THINKOS_ENABLE_FPU            0
 #define THINKOS_ENABLE_CTL            0

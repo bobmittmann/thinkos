@@ -22,7 +22,7 @@
 	.syntax unified
 	.cpu cortex-m3
 
-	.align  0
+	.align  2
 	.thumb
 	.section .init
 

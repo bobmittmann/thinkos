@@ -227,11 +227,12 @@ bool thinkos_kernel_active(void)
 	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
 							  SCB_SHCSR_SVCALLACT)) ? true : false;
 #endif
-	return (CM3_SCB->shcsr & (SCB_SHCSR_PENDSVACT | SCB_SHCSR_SVCALLACT)) ? true : false;
+	return (CM3_SCB->shcsr & (SCB_SHCSR_PENDSVACT | 
+							  SCB_SHCSR_SVCALLACT)) ? true : false;
 }
 
 void thinkos_krn_userland(void)
 {
-	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_USER);
+	cm3_control_set(CONTROL_SPSEL | CONTROL_nPRIV);
 }
 

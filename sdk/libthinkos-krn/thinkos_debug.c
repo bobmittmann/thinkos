@@ -66,6 +66,16 @@ const char * __retstr(uint32_t __ret)
 	return s;
 }
 
+void __thinkos_obj_kind(void)
+{
+	int kind;
+
+	for (kind = 0; kind < THINKOS_OBJ_INVALID; kind++) {
+		DCC_LOG2(LOG_TRACE, "%s --> %d", 
+				 thinkos_type_name_lut[kind], thinkos_wq_base_lut[kind]);
+	}
+}
+
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 void __thinkos(struct thinkos_rt * rt)
 {
@@ -140,6 +150,8 @@ void __thinkos(struct thinkos_rt * rt)
 			case THINKOS_OBJ_INVALID:
 				DCC_LOG2(LOG_TRACE, "INVALID %d: 0x%08x", oid, *wq);
 				break;
+			default:
+				DCC_LOG2(LOG_WARNING, "ERROR %d: 0x%08x", oid, *wq);
 			}
 		}
 	}
@@ -149,28 +161,33 @@ void __thinkos(struct thinkos_rt * rt)
 #endif
 	DCC_LOG1(LOG_TRACE, "Active = %d", __thinkos_rt_active_get(rt));
 
+	DCC_LOG1(LOG_TRACE, "Alloc = %d", thinkos_rt.th_alloc[0]);
+
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 #if (THINKOS_ENABLE_THREAD_STAT)
 		DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", i + 1, 
-				 __thread_stat_get(rt, i), __thread_sp_get(rt, i), 
+				 __thread_wq_get(rt, i), __thread_sp_get(rt, i), 
 				 __thread_lr_get(rt, i), __thread_pc_get(rt, i));
 #else
 		DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", i + 1, 
 				 __thread_sp_get(rt, i), __thread_lr_get(rt, i), 
 				 __thread_pc_get(rt, i));
 #endif
+		}
 	}
+
 }
 
 static uint32_t __ret_lut[8] = {
 	[0] = CM3_EXC_RET_THREAD_MSP, /* kernel */
-	[1] = CM3_EXC_RET_THREAD_MSP, /* user */
-	[2] = 0, /* invalid */
+	[1] = 0, /* invalid */
+	[2] = CM3_EXC_RET_THREAD_PSP, /* user privileged */
 	[3] = CM3_EXC_RET_THREAD_PSP, /* user */
 	[4] = 0, /* invalid */
 	[5] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp */
 	[6] = 0, /* invalid */
-	[7] = 0 /* invalid */
+	[7] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp privileged */
 };
 
 
@@ -226,12 +243,18 @@ void SCHED(uintptr_t __sp_ctl,
 				" CONTROL=%d invalid!!!" _ATTR_POP_, ctrl);
 	}
 
-
 	if (__prev_thread_id == THINKOS_THREAD_IDLE) {
-		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
-				 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-				 __new_thread_id + 1, ctx, ctx->pc, 
-				 msp, __retstr(ret));
+		if (ctrl & CONTROL_nPRIV) {
+			DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
+					 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
+					 __new_thread_id + 1, ctx, ctx->pc, 
+					 msp, __retstr(ret));
+		} else {
+			DCC_LOG5(LOG_TRACE,  _ATTR_PUSH_ _FG_MAGENTA_ 
+					 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
+					 __new_thread_id + 1, ctx, ctx->pc, 
+					 msp, __retstr(ret));
+		}
 	} else {
 		DCC_LOG6(LOG_TRACE, 
 				 "<%2d> -> <%2d> " 
@@ -343,6 +366,26 @@ void thinkos_sched_dbg(uintptr_t __sp_ctl,
 }
 
 void thinkos_sched_step_dbg(uintptr_t __sp_ctl, 
+							 uint32_t __new_thread_id,
+							 uint32_t __prev_thread_id, 
+							 uint32_t __sp) 
+{
+	struct thinkos_context * ctx;
+	uint32_t ctrl = 0;
+	uint32_t ret;
+
+	ctx = (struct thinkos_context *)(__sp_ctl & 0xfffffff8);
+	ctrl = __sp_ctl & 0x000000007; 
+	ret = __ret_lut[ctrl];
+	(void)ret;
+
+	DCC_LOG3(LOG_WARNING,  _ATTR_PUSH_ _FG_GREEN_ 
+			 "<%2d> STEP " 
+			 "PC=%08x SP=%08x"  _ATTR_POP_, 
+			 __new_thread_id + 1, ctx->pc, (uintptr_t)ctx);
+}
+
+void thinkos_stack_limit_dbg(uintptr_t __sp_ctl, 
 							 uint32_t __new_thread_id,
 							 uint32_t __prev_thread_id, 
 							 uint32_t __sp) 

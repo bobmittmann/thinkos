@@ -468,7 +468,7 @@ send:
 	 * Adjust data length if insertion of options will
 	 * bump the packet length beyound the t_maxseg length.
 	 */
-	if (len > (tp->t_maxseg - optlen)) {
+	if (len > (int)(tp->t_maxseg - optlen)) {
 		len = tp->t_maxseg - optlen;
 		sendalot = 1;
 	}

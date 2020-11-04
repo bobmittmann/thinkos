@@ -96,7 +96,7 @@ int etharp_enum(int (* __callback)(struct ipv4_arp *, void *), void * __parm)
 int etharp_ipv4_get(struct ipv4_arp __arp[], unsigned int __max)
 {
 	struct etharp_entry * p;
-	int n;
+	unsigned int n;
 	int i;
 
 	p = __etharp__.tab;
@@ -318,7 +318,7 @@ int etharp_reply(struct ifnet * __if, uint8_t * __dha, in_addr_t __addr)
      1 : ok processed, packet reused, don't release.
 */
 
-int etharp_input(struct ifnet * __if, struct etharp * __arp, int __len)
+int etharp_input(struct ifnet * __if, struct etharp * __arp, unsigned int __len)
 {
 	in_addr_t daddr;
 	in_addr_t saddr;

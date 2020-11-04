@@ -132,7 +132,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_USAGEFAULT", p->except.usagefault);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEMFAULT", p->except.memfault);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_HARDFAULT", p->except.hardfault);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_EXCEPT_CLEAR", p->except.except_clear);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ERROR_TRAP", p->except.error_trap);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_SYSRST_ONFAULT", p->except.sysrst_onfault);
 

@@ -31,8 +31,9 @@ struct tcp_pcb * tcp_accept(const struct tcp_pcb * __mux)
 	struct tcp_listen_pcb * mux = (struct tcp_listen_pcb *)__mux;
 	struct tcp_pcb * tp;
 
-	if (__mux == NULL)
+	if (__mux == NULL)  {
 		DCC_LOG(LOG_WARNING, "NULL pointer");
+	}
 
 	DCC_LOG1(LOG_INFO, "<%04x> waiting...", (int)mux);
 

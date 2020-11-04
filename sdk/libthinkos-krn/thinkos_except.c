@@ -26,8 +26,8 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -56,11 +56,14 @@
 
 #include <sys/dcclog.h>
 
-void thinkos_krn_fatal_except(struct thinkos_except * xcpt)
+void __attribute__((noreturn)) 
+	thinkos_krn_fatal_except(struct thinkos_except * xcpt)
 {
 #if DEBUG
 	struct cm3_scb * scb = CM3_SCB;
 	uint32_t hfsr;
+
+	mdelay(500);
 
 	hfsr = scb->hfsr;
 
@@ -118,101 +121,38 @@ void thinkos_krn_fatal_except(struct thinkos_except * xcpt)
 					 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
 		}
 	}
-#endif
+
+	__pdump();
+
 	DCC_EXCEPT_DUMP(xcpt);
 
-#if DEBUG
 	mdelay(500);
-#endif
+
+	__tdump();
 
 	/* kill all threads */
 	__thinkos_core_reset();
 
-	/* force clearing the ready queue */
-	__thinkos_ready_clr();
-
-	/* cancel pending scheduler */
-	__thinkos_cancel_sched();
-
-	/* turn off the scheduler */
-	//thinkos_krn_sched_off();
+#endif
+#if (THINKOS_SYSRST_ONFAULT)
+	cm3_sysrst();
+#endif
+	for(;;);
 }
 
 void thinkos_krn_thread_except(struct thinkos_except * xcpt)
 {
-#if DEBUG
-	if (xcpt->errno == THINKOS_ERR_BUS_FAULT) {
-		uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		uint32_t mmfar = xcpt->mmfar;
-		DCC_LOG(LOG_ERROR, "!!! Mem Management !!!");
-		DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, xcpt->mmfar);
-		if (mmfsr) {
-			DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
-					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
-					 (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
-					 (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
-					 (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
-					 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
-					 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-		}
-		if ((mmfsr & MMFSR_MMARVALID) && (mmfar == 0))
-			DCC_LOG(LOG_ERROR, "Null pointer!!!");
-	}
+	mdelay(250);
 
-	if (xcpt->errno == THINKOS_ERR_MEM_MANAGE) {
-		uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		uint32_t mmfar = xcpt->mmfar;
-		DCC_LOG(LOG_ERROR, "!!! Mem Management !!!");
-		DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, xcpt->mmfar);
-		if (mmfsr) {
-			DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
-					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
-					 (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
-					 (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
-					 (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
-					 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
-					 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-		}
-		if ((mmfsr & MMFSR_MMARVALID) && (mmfar == 0))
-			DCC_LOG(LOG_ERROR, "Null pointer!!!");
-	}
+	__xinfo(xcpt);
 
-	if (xcpt->errno == THINKOS_ERR_BUS_FAULT) {
-		uint32_t bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		DCC_LOG(LOG_ERROR, "!!! Bus fault !!!");
-		DCC_LOG2(LOG_ERROR, "BFSR=%08X BFAR=%08x", bfsr, xcpt->bfar);
-		if (bfsr) {
-			DCC_LOG7(LOG_ERROR, "BFSR={%s%s%s%s%s%s%s }", 
-					 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
-					 (bfsr & BFSR_LSPERR) ? " LSPERR" : "",
-					 (bfsr & BFSR_STKERR) ? " STKERR" : "",
-					 (bfsr & BFSR_UNSTKERR) ?  " UNSTKERR" : "",
-					 (bfsr & BFSR_IMPRECISERR) ?  " IMPRECISERR" : "",
-					 (bfsr & BFSR_PRECISERR) ?  " PRECISERR" : "",
-					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
-		}
-	}
-
-#endif
+	__pdump();
 
 	DCC_EXCEPT_DUMP(xcpt);
 
-#if DEBUG
 	mdelay(250);
-#endif
 
-	/* suspend all threads */
-//	__thinkos_pause_all();
-
-	/* force clearing the ready queue */
-//	__thinkos_ready_clr();
-
-
-	/* cancel pending scheduler */
-	__thinkos_cancel_sched();
-
-	/* turn off the scheduler */
-//	thinkos_krn_sched_off();
+	__tdump();
 
 	/* signal the monitor */
 	monitor_signal(MONITOR_THREAD_FAULT);
@@ -223,40 +163,34 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
    Application fault defered handler 
    ------------------------------------------------------------------------- */
 
-//struct thinkos_except thinkos_except_buf; 
-//struct thinkos_except thinkos_except_buf __attribute__((alias("thinkos_except_stack")));
-//__thinkos_except_buf __attribute__((alias("thinkos_except_bufstack")));
 
-
-struct thinkos_except * __thinkos_except_buf(void)
-{
-	uintptr_t xcpt= (uintptr_t)thinkos_except_stack;
-
-	return (struct thinkos_except *)xcpt;
-//	struct thinkos_except * xcpt = __thinkos_except_buf;
-}
-
-void __exception_reset(void)
+void thinkos_krn_exception_reset(void)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
-#if (THINKOS_ENABLE_EXCEPT_CLEAR)
 	__thinkos_memset32(xcpt, 0x00000000,
 					   sizeof(struct thinkos_except));
-#else
-	xcpt->ipsr = 0;
-	xcpt->errno = 0;
-	xcpt->count = 0;
-#endif
-	DCC_LOG(LOG_TRACE, "/!\\ clearing active thread in exception buffer!");
-	xcpt->active = -1;
 }
 
-void thinkos_exception_init(void)
+void thinkos_krn_exception_init(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
-	scb->shcsr = 0
+	DCC_LOG(LOG_TRACE, "Initializing exceptions...");
+
+	thinkos_krn_exception_reset();
+
+#if	(THINKOS_ENABLE_USAGEFAULT) 
+	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
+#endif
+#if	(THINKOS_ENABLE_BUSFAULT)
+	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
+#endif
+#if (THINKOS_ENABLE_MPU)
+	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
+#endif
+
+	scb->shcsr = 0 
 #if	(THINKOS_ENABLE_USAGEFAULT)
 		| SCB_SHCSR_USGFAULTENA 
 #endif
@@ -267,8 +201,6 @@ void thinkos_exception_init(void)
 		| SCB_SHCSR_MEMFAULTENA
 #endif
 		;
-
-	__exception_reset();
 }
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */

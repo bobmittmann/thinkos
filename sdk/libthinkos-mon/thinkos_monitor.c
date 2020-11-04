@@ -628,7 +628,7 @@ void monitor_soft_reset(void)
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"4. Except reset..."   _ATTR_POP_); 
-	__exception_reset();
+	thinkos_krn_exception_reset();
 #endif
 
 #if 0

@@ -19,9 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <arch/cortex-m3.h>
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
 
 #define SCB_ICSR_OFFS  0x04
 #define SCB_SHCSR_OFFS 0x24 /* System Handler Control and State */
@@ -39,19 +38,31 @@
 	.syntax unified
 	.cpu cortex-m3
 
+	.text
+	.align	3
+	.thumb
+
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
  * --------------------------------------------------------------------------*/
 #if (THINKOS_ENABLE_EXCEPTIONS)
-	.thumb
-	.text
-	.align	2
-	.global	xcpt_collect
+
+#if (THINKOS_ENABLE_HARDFAULT)
+	.global	cm3_hard_fault_isr
+	.thumb_func
+	.type	cm3_hard_fault_isr, %function
+cm3_hard_fault_isr:
+	movs   r0, #THINKOS_ERR_HARD_FAULT
+	/* Fall-through */
+	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
+#endif
+
+	.global	thinkos_krn_xcpt_raise
 	.thumb
 	.thumb_func
-	.type	xcpt_collect, %function
+	.type	thinkos_krn_xcpt_raise, %function
 
-xcpt_collect:
+thinkos_krn_xcpt_raise:
 /* ThinkOS except processing:
 
 	 1. Collect the special-purpose registers
@@ -96,141 +107,137 @@ xcpt_collect:
 */
 
 	/* Arguments:
-	     r1: except number
-	     r2: return (lr) 
+	     r0: except number
 	   Return:
 	     r0: exception buffer */
 
-	mrs     r3, PRIMASK
+	mrs     r12, PRIMASK
 	/* disable interrupts */
 	cpsid   i
-	ldr     r0, .L_xcpt_buf
-	strb    r1, [r0, #0] /* errno */
-	ldrb    r2, [r0, #1] /* count */
-	adds    r2, r2, #1
-	strb    r2, [r0, #1] /* count */
-	strb    lr, [r0, #2] /* return (lr) */
-	strb    r3, [r0, #3] /* PRIMASK */
-	mrs     r3, FAULTMASK
-	strb    r3, [r0, #4] /* FAULTMASK */
-	mrs     r3, BASEPRI 
-	strb    r3, [r0, #5] /* BASEPRI */
-	mrs     r3, CONTROL
-	strb    r3, [r0, #6] /* CONTROL */
-	mrs     r3, IPSR
-	strb    r3, [r0, #7] /* IPSR */
+	ldr     r3, .L_xcpt_buf
+	strb    r0, [r3, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
+	ldrb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS]  /* sequence */
+	adds    r0, r0, #1  /* increment sequence */
+	strb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS] /* count */
 
-	adds    r3, r0, #8
+	strb    lr, [r3, #THINKOS_EXCEPT_RET_OFFS] /* return (lr) */
+	strb    r12, [r3, #THINKOS_EXCEPT_PRIMASK_OFFS] /* PRIMASK */
+
+	mrs     r0, FAULTMASK
+	strb    r0, [r3, #THINKOS_EXCEPT_FAULTMASK_OFFS] /* FAULTMASK */
+	mrs     r0, BASEPRI 
+	strb    r0, [r3, #THINKOS_EXCEPT_BASEPRI_OFFS] /* BASEPRI */
+	mrs     r0, IPSR
+	strb    r0, [r3, #THINKOS_EXCEPT_IPSR_OFFS] /* IPSR */
+	mrs     r0, CONTROL
+	strb    r0, [r3, #THINKOS_EXCEPT_CTRL_OFFS] /* CONTROL */
+
+	mrs     r0, MSP 
+	mrs     r1, PSP 
+	tst     lr, #CM3_EXC_RET_SPSEL
+	ite     eq 
+	moveq   r12, r0
+	movne   r12, r1
+	str     r0, [r3, #THINKOS_EXCEPT_MSP_OFFS]
+	str     r1, [r3, #THINKOS_EXCEPT_PSP_OFFS] 
+
+	ldr     r2, .L_cm3_scb
+	ldr     r1, [r2, #SCB_ICSR_OFFS] /* Interrupt Control State */
+	str     r1, [r3, #THINKOS_EXCEPT_ICSR_OFFS]
+
+	ldr     r0, [r2, #SCB_SHCSR_OFFS] /* System Handler Control and State */
+	str     r0, [r3, #THINKOS_EXCEPT_SHCSR_OFFS]
+
+	ldr     r0, [r2, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	str     r0, [r3, #THINKOS_EXCEPT_CFSR_OFFS]
+	ldr     r0, [r2, #SCB_HFSR_OFF] /* Hard Fault Status */
+	str     r0, [r3, #THINKOS_EXCEPT_HFSR_OFFS]
+
+	ldr     r0, [r2, #SCB_MMFAR_OFFS] /* Mem Manage Address */
+	str     r0, [r3, #THINKOS_EXCEPT_MMFAR_OFFS]
+	ldr     r0, [r2, #SCB_BFAR_OFFS] /* Bus Fault Address */
+	str     r0, [r3, #THINKOS_EXCEPT_BFAR_OFFS]
+
+	/* removes the pending status of the PendSV exception */
+	movs    r0, #SCB_ICSR_PENDSVCLR;
+	str     r0, [r2, #SCB_ICSR_OFFS]
+
+	ldr     r2, .L_thinkos_rt
+	ldr     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
+	str     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
+
+	ldr     r0, [r2, #THINKOS_RT_READY_OFFS]
+	str     r0, [r3, #THINKOS_EXCEPT_READY_OFFS]
+
+	/* Prepare to return to IDLE */
+	movs    r0, #THINKOS_THREAD_IDLE 
+	str     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
+	/* Force clearing the ready queue */
+	movs    r0, #0
+	str     r0, [r2, #THINKOS_RT_READY_OFFS]
+	/* Set CONTROL to 0 */
+    msr     CONTROL, r0
+    isb
+
+#if (THINKOS_ENABLE_PROFILING)
+	ldr     r0, [r2, #THINKOS_RT_CYCREF_OFFS]
+	str     r0, [r3, #THINKOS_EXCEPT_CYCREF_OFFS] 
+	ldr     r2, .L_cm3_dwt
+	ldr     r0, [r2, #4] /* DWT.SYCCNT */
+	str     r0, [r3, #THINKOS_EXCEPT_CYCCNT_OFFS] 
+#endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+#endif
+
+	movs    r0, r3
+	adds    r3, #THINKOS_EXCEPT_CONTEXT_OFFS
 #if (THINKOS_ENABLE_FPU)
-	/* collect FP data */ 
 	vstmia  r3!, {s16-s31}
 #endif
 	stmia   r3!, {r4-r11} /* r4..r11 */
-	tst     lr, #CM3_EXC_RET_SPSEL
-	ite     eq 
-	mrseq   r4, MSP 
-	mrsne   r4, PSP 
-	ldmia   r4, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+
+	/* Basic information is saved. Next call could cause an exception
+		TODO: check R12 (PSP/MSP) */
+
+	ldmia   r12, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 #if (THINKOS_ENABLE_FPU)
 	vstmia  r3!, {s0-s15}
 	vmrs    r4, FPSCR
 	stmia   r3!, {r4-r5}
 #endif
-	mrs     r5, MSP 
-	mrs     r6, PSP 
-	stmia   r3!, {R5, R6} /* msp, psp */
 
-	ldr     r7, .L_cm3_scb
+	/* Exception on interrupt handler ? */
+	ands    r1, #SCB_ICSR_RETTOBASE 
+	beq     .L_reset_idle
 
-	ldr     r4, [r7, #SCB_ICSR_OFFS] /* Interrupt Control State */
-	ldr     r6, [r7, #SCB_SHCSR_OFFS] /* System Handler Control and State */
-	stmia   r3!, {R4, R6} /* icsr, shcsr */
-	/* r4 = ICSR */
+	/* Exception on idle thread ? */
+	tst     lr, #CM3_EXC_RET_SPSEL
+	beq     .L_reset_idle
 
-	ldr     r5, [r7, #SCB_CFSR_OFFS] /* Configurable Fault Status */
-	ldr     r6, [r7, #SCB_HFSR_OFF] /* Hard Fault Status */
-	stmia   r3!, {R5, R6} /* cfsr, hfsr*/
+	/* Check for stack availability */
+	cmp     sp, r3
+	ble     .L_reset_idle
 
-	ldr     r5, [r7, #SCB_MMFAR_OFFS] /* Mem Manage Address */
-	ldr     r6, [r7, #SCB_BFAR_OFFS] /* Bus Fault Address */
-	stmia   r3!, {R5, R6} /* mmfar, bfar */
-
-	ldr     r7, .L_thinkos_rt
-#if (THINKOS_ENABLE_PROFILING)
-	/* DWT.SYCCNT */
-	ldr.n   r5, .L_cm3_dwt
-	/* r6:  cyccnt = CM3_DWT->cyccnt */
-	ldr.n   r5, [r5, #4]
-	ldr     r6, [r7, #THINKOS_RT_CYCREF_OFFS]
-	stmia   r3!, {R5, R6} /* cyccnt, cycref */
-#endif
-
-	ldr     r5, [r7, #THINKOS_RT_ACTIVE_OFFS]
-	ldr     r6, [r7, #THINKOS_RT_READY_OFFS]
-	stmia   r3!, {R5, R6}
-
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	/* get the effective thread id */
-	ands    r5, r5, #0x3f
-#endif
-	/* r4 = ICSR */
-	/* r5 = active thread */
-	/* r6 = ready bitmap */
-	/* r7 = thinkos_rt */
-	/* if (CM3_SCB->icsr & SCB_ICSR_RETTOBASE)  */
-	ands    r4, #SCB_ICSR_RETTOBASE 
-	beq     .L_fault_on_handler
-	cmp     r5, #THINKOS_THREAD_IDLE 
-	beq     .L_fault_on_idle
-
-.L_thread_except:
+	/* Restore idle core context */
+	pop     {r4-r11}
+	/* Synthesizes exception return */
+	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
-	bl      thinkos_krn_thread_except
+	b       thinkos_krn_thread_except
 
-.L_return_to_idle:
-	/* thinkos_rt */
-	movs    r3, r7
-	/* previous thread */
-	movs    r2, r5
-	/* Prepare to return to IDLE */
-	movs    r1, #THINKOS_THREAD_IDLE 
-	/* load the IDLE context pointer from the context vector */
-	ldr.w	r0, [r3, r1, lsl #2]
-
-	/* enable interrupts */
-	cpsie   i
-	/* restore context */
-	b       thinkos_krn_sched_ctx_restore
-
-.L_fault_on_idle:
-
-	/* Reset IDLE thread */
-	bl     thinkos_krn_idle_reset
+.L_reset_idle:
 	/* Reset the exception stack */
-	bl     __thinkos_xcpt_stack_top
-	subs    r0, r0, #SIZEOF_ARMV7M_BASIC_FRAME 
-	mov     sp, r0
-
-	b      .L_thread_except
-
-.L_fault_on_handler:
-	/* Reset IDLE thread */
-	bl     thinkos_krn_idle_reset
-	/* Reset the exception stack */
-	bl     __thinkos_xcpt_stack_top
-	subs    r0, r0, #SIZEOF_ARMV7M_BASIC_FRAME 
-	mov     sp, r0
-
+	add     r2, r0, #THINKOS_EXCEPT_STACK_SIZE - SIZEOF_THINKOS_BASIC_CONTEXT
+	mov     sp, r2
+	/* Restore idle core context */
+	pop     {r4-r11}
 	/* Call the fatal exception handler */
-	bl     thinkos_krn_fatal_except
-
-	b      .L_return_to_idle
+	b       thinkos_krn_fatal_except
 
 	.align  2
 .L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
-//	.word	thinkos_except_buf
-.L_xcpt_stack:
 	.word   thinkos_except_stack
 .L_thinkos_rt:
 	.word	thinkos_rt
@@ -239,19 +246,18 @@ xcpt_collect:
 .L_cm3_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 
-	.size   xcpt_collect, . - xcpt_collect
+	.size   thinkos_krn_xcpt_raise, . - thinkos_krn_xcpt_raise
 
 #if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb
-	.text
 	.align	2
 	.global	cm3_bus_fault_isr
 	.thumb
 	.thumb_func
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
-	movs   r1, #THINKOS_ERR_BUS_FAULT
-	b      xcpt_collect
+	movs   r0, #THINKOS_ERR_BUS_FAULT
+	b      thinkos_krn_xcpt_raise
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
@@ -264,22 +270,21 @@ cm3_bus_fault_isr:
 	.thumb_func
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
-	movs   r1, #THINKOS_ERR_USAGE_FAULT
-
+	movs   r0, #THINKOS_ERR_USAGE_FAULT
 #if	(THINKOS_ENABLE_KRNSVC) 
 	/* Kernel services -------------------------------------------- */
 
 	/* Check for undefined instruction flag on UFSR */
-	ldr    r3, .L_cm3_scb
-	ldr    r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
-	tst    r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
-	beq    xcpt_collect
+	ldr     r3, .L_cm3_scb
+	ldr     r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	tst     r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
+	beq     thinkos_krn_xcpt_raise
 	/* Code running from the process stack (non-privileged) causes a fault.
 	   (Select the context stack according to the content of LR */
 	tst     lr, #4
-	bne     xcpt_collect
+	bne     thinkos_krn_xcpt_raise
 	/* Get the call frame stack */
-	mov    r0, sp
+	mov     r0, sp
 	/* Get PC from the stack */
 	ldr     r3, [r0, #(6 * 4)] 
 	/* Read the Krn SVC number from the instruction */
@@ -290,7 +295,7 @@ cm3_usage_fault_isr:
 	/* Call the kernel service demultiplexer */
 	b       thinkos_krnsvc_isr
 #else
-	b      xcpt_collect
+	b       thinkos_krn_xcpt_raise
 #endif
 
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
@@ -303,20 +308,11 @@ cm3_usage_fault_isr:
 	.thumb_func
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
-	movs   r1, #THINKOS_ERR_MEM_MANAGE
-	b      xcpt_collect
+	movs   r0, #THINKOS_ERR_MEM_MANAGE
+	b      thinkos_krn_xcpt_raise
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
 
-	.align	2
-	.global	cm3_hard_fault_isr
-	.thumb
-	.thumb_func
-	.type	cm3_hard_fault_isr, %function
-cm3_hard_fault_isr:
-	movs   r1, #THINKOS_ERR_HARD_FAULT
-	b      xcpt_collect
-	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
 #if (THINKOS_ENABLE_DBGMON)

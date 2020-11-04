@@ -120,12 +120,16 @@ thinkos_sched_update_cyccnt:
 
 #if (THINKOS_ENABLE_FPU)
 	tst      lr, #EXC_RETURN_nFPCA
-	itte     eq
-	vstmeq   r0!, {s16-s31}
-	subeq    r0, #((16 * 4) - (CONTROL_FPCA | CONTROL_SPSEL | CONTROL_nPRIV))
-	addne    r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+	it       eq
+	vstmiaeq r0, {s16-s31}
+#endif
+
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	mrs      r7, CONTROL
+	adds     r0, r7
+	adds     r0, #(CONTROL_SPSEL)
 #else
-	adds.n   r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
 #endif
 
 thinkos_sched_swap:
@@ -184,8 +188,6 @@ thinkos_krn_sched_ctx_restore:
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-#else
 	/* get the control (3bits) from the context */
 	ands     r7, r0, #CONTROL_MSK
 	/* restore the control register */
@@ -193,15 +195,13 @@ thinkos_krn_sched_ctx_restore:
 	isb
 	/* restore stack pointer */
 	bics     r12, r0, #CONTROL_MSK
-#endif
 
 .L_exit_usr:
 #if (THINKOS_ENABLE_FPU)
 	tst      r7, #(CONTROL_FPCA)
-	ittte    ne
+	itte     ne
 	/* restore FP context */
-	movne    r6, r12
-	vldmdbne r6!, {s16-s31}
+	vldmiane  r12, {s16-s31}
 	/* Synthesizes exception return */
 	movne    lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	moveq    lr, #CM3_EXC_RET_THREAD_PSP
@@ -221,12 +221,9 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_exit_idle:
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-#else
     /* restore the control register */
     msr      CONTROL, r1
     isb
-#endif
 	movs     r1, #THINKOS_THREAD_IDLE
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if (THINKOS_ENABLE_SCHED_DEBUG)

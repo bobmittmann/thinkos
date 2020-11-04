@@ -39,15 +39,14 @@
 	.cpu cortex-m3
 
 	.text
-	.align	4
+
+	.align	3
 	.thumb
 
 	.thumb_func
 cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
-	nop
-	nop
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 	.thumb_func
@@ -64,19 +63,17 @@ thinkos_krn_scheduler:
 #else
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
+
 	cmp      r2, THINKOS_THREAD_IDLE
 
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	bgt      .L_entry_invalid
-#else
 	/* skip invalid ... */
 	bgt      thinkos_sched_select_ready
-#endif
 .L_entry_idle:
 	ittt     eq
 	pusheq   {r4-r11}
     moveq    r0, sp
 	beq      thinkos_sched_swap
+
 
 	/* r1: ready, */
 	/* r2: active, (thread status) */
@@ -116,7 +113,13 @@ thinkos_sched_update_cyccnt:
 	str      r5, [r7, r2, lsl #2]
 #endif
 
-	adds.n   r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	mrs      r7, CONTROL
+	adds     r0, r7
+	adds     r0, #(CONTROL_SPSEL)
+#else
+	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+#endif
 
 thinkos_sched_swap:
 	/* r0: thread stack
@@ -174,8 +177,6 @@ thinkos_krn_sched_ctx_restore:
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-#else
 	/* get the control (3bits) from the context */
 	ands     r7, r0, #CONTROL_MSK
 	/* restore the control register */
@@ -183,28 +184,23 @@ thinkos_krn_sched_ctx_restore:
 	isb
 	/* restore stack pointer */
 	bics     r12, r0, #CONTROL_MSK
-#endif
 
 .L_exit_usr:
-	mov      lr, #CM3_EXC_RET_THREAD_PSP
 	/* restore core context */
 	ldmia    r12!, {r4-r11}
 	msr      PSP, r12
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
-	b        thinkos_sched_dbg
-#else
-	bx       lr
+	bl        thinkos_sched_dbg
 #endif
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+	bx       lr
 
 .L_exit_idle:
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-#else
-    /* restore the control register */
+    /* set the control register */
     msr      CONTROL, r1
     isb
-#endif
 	movs     r1, #THINKOS_THREAD_IDLE
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if (THINKOS_ENABLE_SCHED_DEBUG)
@@ -215,34 +211,27 @@ thinkos_krn_sched_ctx_restore:
 #endif
 	/* restore core context */
 	pop      {r4-r11}
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
-	b        thinkos_sched_dbg
-#else
+	bl       thinkos_sched_dbg
+#endif
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	bx       lr
-#endif
-
-.L_entry_invalid:
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	/* VOID thread */
-#endif
-	b        thinkos_sched_select_ready
 
 .L_idle_return:
 	bx       lr
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 .L_idle_err: 
-	bkpt     1
-	b        .L_idle_err
+	movs    r0, #THINKOS_ERR_IDLE_STACK
+	b       thinkos_krn_xcpt_raise
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
-	bkpt     1
-	b        .L_stack_err
+	movs    r0, #THINKOS_ERR_STACK_LIMIT
+	b       thinkos_krn_xcpt_raise
 #endif
 
 	.align  0
@@ -342,6 +331,7 @@ thinkos_sched_step:
 	/* Mask low priority interrupts except debug monitor */
 	mov      r5, #(1 << 5)
 	msr      BASEPRI, r5
+	mov      r1, #0
 	b        .L_exit_idle
 
 

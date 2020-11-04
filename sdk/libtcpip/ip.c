@@ -98,11 +98,11 @@ int arp_ping_ipconfig(struct ifnet * __if, struct iphdr * __ip,
      1 : ok processed, packet reused, don't release.
 */
 
-int ip_input(struct ifnet * __if, struct iphdr * __ip, int __len)
+int ip_input(struct ifnet * __if, struct iphdr * __ip, unsigned int __len)
 {
-	int hdr_len;
-	int tot_len;
-	int len;
+	unsigned int hdr_len;
+	unsigned int tot_len;
+	unsigned int len;
 	void * ptr;
 	int ret;
 
@@ -208,9 +208,10 @@ int ip_input(struct ifnet * __if, struct iphdr * __ip, int __len)
 	if (ret < 0) {
 #if (ENABLE_NET_RAW)
 		DCC_LOG(LOG_INFO, "RAW");
-		if ((ret = raw_input(__if, __ip, tot_len)) < 0)
+		if ((ret = raw_input(__if, __ip, tot_len)) < 0) {
 #endif
 			IP_PROTO_STAT_ADD(rx_drop, 1);
+		}
 	}
 
 	return ret;

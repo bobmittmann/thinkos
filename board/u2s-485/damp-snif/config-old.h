@@ -80,7 +80,6 @@
 #define THINKOS_SYSRST_ONFAULT        0
 #define THINKOS_ENABLE_PROFILING      0
 
-#define THINKOS_ENABLE_EXCEPT_CLEAR   0
 #define THINKOS_ENABLE_MPU            0
 #define THINKOS_ENABLE_FPU            0
 #define THINKOS_ENABLE_CTL            0

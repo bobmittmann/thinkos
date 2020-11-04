@@ -618,17 +618,9 @@ struct thinkos_except * __thinkos_except_buf(void)
 
 void __exception_reset(void)
 {
-#if (THINKOS_ENABLE_EXCEPT_CLEAR)
 	DCC_LOG1(LOG_TRACE, "/!\\ clearing buffer: %08x!", &thinkos_except_buf);
 	__thinkos_memset32(&thinkos_except_buf, 0x00000000,
 					   sizeof(struct thinkos_except));
-#else
-	thinkos_except_buf.ipsr = 0;
-	thinkos_except_buf.errno = 0;
-	thinkos_except_buf.unroll = 0;
-#endif
-	DCC_LOG(LOG_TRACE, "/!\\ clearing active thread in exception buffer!");
-	thinkos_except_buf.active = -1;
 }
 
 void thinkos_exception_init(void)

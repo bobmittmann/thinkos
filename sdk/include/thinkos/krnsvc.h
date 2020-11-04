@@ -25,7 +25,6 @@
 
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>
-#include <stdint.h>
 
 /* -------------------------------------------------------------------------- 
  * Kernel Service numbers
@@ -40,27 +39,31 @@
 
 #ifndef __ASSEMBLER__
 
+#include <stdint.h>
+
+#define __ARM_UDF_ASM(N) "udf " #N "\n" 
+#define ARM_UDF(N) __ARM_UDF_ASM(N)
+
 /* ------------------------------------------------------------------------- 
  * C kernel services call macros 
  * ------------------------------------------------------------------------- */
 
 #define __KRNSVC0(N) __extension__({ \
 register int32_t ret asm("r0"); \
-asm volatile ("udf %0 \n" : "=r"(ret) : "I" (OPC), "r"(r0): ); \
+asm volatile (ARM_UDF(OPC) : "=r"(ret) : : ); \
 ret; })
 
 #define __KRNSVC1(OPC, A1) __extension__({ \
 register int32_t ret asm("r0"); \
 register int32_t r0 asm("r0") = (int32_t)A1; \
-asm volatile ("udf %0 \n" : "=r"(ret) : "I" (OPC), "r"(r0): ); \
+asm volatile (ARM_UDF(OPC) : "=r"(ret) : "0"(r0): ); \
 ret; } )
 
 #define __KRNSVC2(OPC, A1, A2) __extension__({ \
 register int32_t ret asm("r0"); \
 register int32_t r0 asm("r0") = (int32_t)A1; \
 register int32_t r1 asm("r1") = (int32_t)A2; \
-asm volatile ("udf %0 \n" : "=r"(ret) : "I" (OPC), \
-			  "r"(r0), "r"(r1): ); \
+asm volatile (ARM_UDF(OPC) : "=r"(ret) : "0"(r0), "r"(r1): ); \
 ret; })
 
 #define __KRNSVC3(OPC, A1, A2, A3) __extension__({ \
@@ -68,8 +71,7 @@ register int32_t ret asm("r0"); \
 register int32_t r0 asm("r0") = (int32_t)A1; \
 register int32_t r1 asm("r1") = (int32_t)A2; \
 register int32_t r2 asm("r2") = (int32_t)A3; \
-asm volatile ("udf %0 \n" : "=r"(ret) : "I" (OPC), \
-			  "r"(r0), "r"(r1), "r"(r2): ); \
+asm volatile (ARM_UDF(OPC) : "=r"(ret) : "0"(r0), "r"(r1), "r"(r2): ); \
 ret; })
 
 #define __KRNSVC4(OPC, A1, A2, A3, A4) __extension__({ \
@@ -78,8 +80,8 @@ register int32_t r0 asm("r0") = (int32_t)A1; \
 register int32_t r1 asm("r1") = (int32_t)A2; \
 register int32_t r2 asm("r2") = (int32_t)A3; \
 register int32_t r2 asm("r3") = (int32_t)A4; \
-asm volatile ("udf %0 \n" : "=r"(ret) : "I" (OPC), \
-			  "r"(r0), "r"(r1), "r"(r2), "r"(r3): ); \
+asm volatile (ARM_UDF(OPC) : "=r"(ret) : "0"(r0), "r"(r1), \
+			  "r"(r2), "r"(r3): ); \
 ret; })
 
 

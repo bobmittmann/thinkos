@@ -88,7 +88,6 @@ void cm3_default_isr(unsigned int irq)
 	__thinkos_preempt();
 }
 
-
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
 void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 	unsigned int irq = arg[0];
@@ -165,7 +164,7 @@ void thinkos_irq_wait_svc(int32_t * arg, int self)
 	}
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
-	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
+	DCC_LOG2(LOG_INFO, "<%d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)

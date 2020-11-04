@@ -136,7 +136,6 @@ const struct thinkos_profile thinkos_profile = {
 		.usagefault      = THINKOS_ENABLE_USAGEFAULT,
 		.memfault        = THINKOS_ENABLE_MEMFAULT,
 		.hardfault       = THINKOS_ENABLE_HARDFAULT,
-		.except_clear    = THINKOS_ENABLE_EXCEPT_CLEAR,
 		.error_trap      = THINKOS_ENABLE_ERROR_TRAP,
 		.sysrst_onfault  = THINKOS_SYSRST_ONFAULT
 	},
@@ -326,8 +325,6 @@ void __profile(void)
 			 p->except.memfault);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_HARDFAULT       = %d", 
 			 p->except.hardfault);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPT_CLEAR    = %d", 
-			 p->except.except_clear);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ERROR_TRAP      = %d", 
 			 p->except.error_trap);
 	DCC_LOG1(LOG_TRACE, "THINKOS_SYSRST_ONFAULT         = %d", 

@@ -27,6 +27,7 @@
 #include <thinkos/error.h>
 #define __THINKOS_KRNSVC__
 #include <thinkos/krnsvc.h>
+#include <vt100.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -51,17 +52,21 @@ void thinkos_krnsvc_isr(uint32_t arg[], uint32_t opc)
 		DCC_LOG1(LOG_WARNING, "Signal: ", arg[0]);
 		break;
 
+	case THINKOS_KRNSVC_ERROR:
+		{
+			int32_t err = arg[0];
+			DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BYW
+					 "/!\\ Error %d [%s] /!\\" VT_POP, 
+					 err, thinkos_err_name_lut[err]);
+		}
+		break;
+
 	case THINKOS_KRNSVC_THREAD_START:
 		DCC_LOG(LOG_WARNING, "Thread create hook!!!");
 		break;
 
 	case THINKOS_KRNSVC_THREAD_STOP:
 		DCC_LOG(LOG_WARNING, "Thread terminate hook!!!");
-		break;
-
-
-	case THINKOS_KRNSVC_ERROR:
-		DCC_LOG1(LOG_ERROR, "Kernel error %d!!!", arg[0]);
 		break;
 
 	default:

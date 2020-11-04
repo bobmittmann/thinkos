@@ -82,6 +82,7 @@ struct thinkos_context * __thinkos_thread_ctx_init(unsigned int thread_id,
 #endif
 
 	ctx->r0 = (uint32_t)arg;
+	ctx->r1 = (uint32_t)thread_id + 1;
 	ctx->pc = pc;
 #if (THINKOS_ENABLE_EXIT)
 	ctx->lr = (uint32_t)__thinkos_thread_exit_stub;
@@ -116,6 +117,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	uint32_t stack_size = init->opt.stack_size;
 	struct thinkos_context * ctx;
 	int thread_id;
+	uint32_t ctrl;
 	uint32_t sp;
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
@@ -207,13 +209,21 @@ void thinkos_thread_create_svc(int32_t * arg)
 #endif
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
+	DCC_LOG2(LOG_TRACE, "__thinkos_thread_inf_set(%08x, %s)", inf, inf->tag);
 	__thinkos_thread_inf_set(thread_id, inf);
 #endif
 
+	/* Set the privilege */
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	ctrl = init->opt.privileged ? CONTROL_SPSEL : 
+		CONTROL_SPSEL | CONTROL_nPRIV;
+#else
+	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+#endif
 	/* commit the context to the kernel */ 
-	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
-
+	DCC_LOG3(LOG_TRACE, "<%d> ctx=%08x ctrl=%d", thread_id + 1, ctx, ctrl);
+	__thinkos_thread_ctx_set(thread_id, ctx, ctrl);
+	
 #if (THINKOS_ENABLE_PAUSE)
 	if (!init->opt.paused)
 #endif
@@ -222,8 +232,6 @@ void thinkos_thread_create_svc(int32_t * arg)
 		if (__thinkos_thread_resume(thread_id))
 			__thinkos_defer_sched();
 	}
-
-
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -234,4 +242,5 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__monitor_signal_thread_create(thread_id);
 #endif
 }
+
 

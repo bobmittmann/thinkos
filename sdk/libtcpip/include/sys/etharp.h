@@ -67,7 +67,8 @@ void etharp_clear(void);
 
 int etharp_add(uint32_t ipaddr, uint8_t * hwaddr);
 
-int etharp_input(struct ifnet * __if, struct etharp * __etharp, int __len);
+int etharp_input(struct ifnet * __if, struct etharp * __etharp, 
+				 unsigned int __len);
 
 int etharp_query(struct ifnet * __if, in_addr_t __addr);
 

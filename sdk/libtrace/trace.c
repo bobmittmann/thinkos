@@ -28,8 +28,17 @@
 
 float doble2float(double val);
 
-struct trace_ctl trace_ctl __attribute__((section(".bkpctl.trace")));
-struct trace_ring trace_ring __attribute__((section(".bkpdat.trace")));
+#ifdef TRACE_CTL_SECTION
+struct trace_ctl trace_ctl __attribute__((section(TRACE_CTL_SECTION))); 
+#else
+struct trace_ctl trace_ctl;
+#endif
+
+#ifdef TRACE_DAT_SECTION
+struct trace_ring trace_ring __attribute__((section(TRACE_DAT_SECTION)));
+#else
+struct trace_ring trace_ring;
+#endif
 
 
 /*---------------------------------------------------------------------------

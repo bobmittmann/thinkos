@@ -47,6 +47,8 @@ static inline void __attribute__((always_inline)) __thinkos_dbg_halt(void)
 				  "bne 1b\n" : "=r"(tst) : "r"(tst));
 }
 
+void __thinkos_obj_kind(void);
+
 #ifdef __cplusplus
 }
 #endif

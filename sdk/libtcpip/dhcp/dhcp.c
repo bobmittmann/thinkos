@@ -252,7 +252,7 @@ int dhcp_free(struct dhcp * __dhcp)
 	return -1;
 }
 
-struct dhcp * dhcp_xid_lookup(int __xid)
+struct dhcp * dhcp_xid_lookup(unsigned int __xid)
 {
 	int i;
 
@@ -609,6 +609,7 @@ static int dhcp_request(struct dhcp * dhcp)
 	case DHCP_INIT_REBOOT:	// MUST: requested IP
 		dhcp_set_state(dhcp, DHCP_REBOOTING);
 		DCC_LOG1(LOG_TRACE, "%s: [DHCP_REBOOTING]", ifn_name(dhcp->ifn));
+		/* FALL-THROUGH */
 	case DHCP_REBOOTING:	// MUST NOT: server ID
 		n += dhcp_option_long(&opt[n], DHCP_OPTION_REQUESTED_IP, 
 							  dhcp->ip);

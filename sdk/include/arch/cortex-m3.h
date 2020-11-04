@@ -1131,12 +1131,6 @@ static inline void __attribute__((always_inline)) __bit_mem_wr(void * ptr, int32
 	bit_addr[bit] = val;
 }
 
-#define CONTROL_THREAD_PRIV (0 << 0)
-#define CONTROL_THREAD_USER (1 << 0)
-
-#define CONTROL_THREAD_MSP  (0 << 1)
-#define CONTROL_THREAD_PSP  (1 << 1)
-
 #define CONTROL_nPRIV       (1 << 0)
 #define CONTROL_SPSEL       (1 << 1)
 #define CONTROL_FPCA        (1 << 2)

@@ -41,7 +41,8 @@
 #define IRQ_PRIORITY_VERY_LOW  (6 << 5)
 
 #define THINKOS_OPT_PRIORITY(VAL)   (((VAL) & 0xff) << 16)
-#define THINKOS_OPT_ID(VAL)         (((VAL) & 0x07f) << 24)
+#define THINKOS_OPT_ID(VAL)         (((VAL) & 0x03f) << 24)
+#define THINKOS_OPT_PRIVILEGED      (1 << 30) /* runs at privileged level*/
 #define THINKOS_OPT_PAUSED          (1 << 31) /* don't run at startup */
 #define THINKOS_OPT_STACK_SIZE(VAL) ((VAL) & 0xffff)
 

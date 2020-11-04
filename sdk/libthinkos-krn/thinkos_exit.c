@@ -57,7 +57,7 @@ void __thinkos_thread_abort(unsigned int thread_id)
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* Releases the thread block */
-	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 0);
+	__bit_mem_wr(&thinkos_rt.th_alloc[0], thread_id, 0);
 #endif
 
 	if (thread_id == __thinkos_active_get()) {
@@ -107,10 +107,9 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		return;
 	}
 #if (THINKOS_ENABLE_THREAD_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
-
+	if (__bit_mem_rd(&thinkos_rt.th_alloc[0], thread_id) == 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> thread not allocated, th_alloc=%08x", 
-				 thread_id + 1, thinkos_rt.th_alloc);
+				 thread_id + 1, thinkos_rt.th_alloc[0]);
 		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
 		ctx->r0 = THINKOS_EINVAL;
 		return;

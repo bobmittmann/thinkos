@@ -27,7 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_BREAK
+#if (THINKOS_ENABLE_BREAK)
 
 extern const uint8_t thinkos_obj_type_lut[];
 

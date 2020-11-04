@@ -50,7 +50,9 @@
 #define THINKOS_ERR_USER               38
 #define THINKOS_ERR_THREAD_STACKADDR   39
 #define THINKOS_ERR_FLASH_INVALID      40
-#define THINKOS_ERR_MAX                40
+#define THINKOS_ERR_STACK_LIMIT        41
+#define THINKOS_ERR_IDLE_STACK         42
+#define THINKOS_ERR_MAX                43
 
 #ifndef __ASSEMBLER__
 

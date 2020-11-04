@@ -45,7 +45,7 @@ extern const uint8_t ip_deftos;
 extern "C" {
 #endif
 
-int ip_input(struct ifnet * __if, struct iphdr * __ip, int __len);
+int ip_input(struct ifnet * __if, struct iphdr * __ip, unsigned int __len);
 
 int ip_output(struct ifnet * __ifn, struct route * __rt, struct iphdr * __ip);
 

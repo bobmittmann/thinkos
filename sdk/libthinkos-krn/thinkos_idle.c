@@ -218,21 +218,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	ctx = __thinkos_thread_ctx_init(THINKOS_THREAD_IDLE, sp, 
 									(uintptr_t)thinkos_idle_task,
 									arg);
-#if DEBUG
-	ctx->r1 = (uint32_t)0x11111111;
-	ctx->r2 = (uint32_t)0x22222222;
-	ctx->r3 = (uint32_t)0x33333333;
-	ctx->r4 = (uint32_t)0x44444444;
-	ctx->r5 = (uint32_t)0x55555555;
-	ctx->r6 = (uint32_t)0x66666666;
-	ctx->r7 = (uint32_t)0x77777777;
-	ctx->r8 = (uint32_t)0x88888888;
-	ctx->r9 = (uint32_t)0x99999999;
-	ctx->r10 = (uint32_t)0xaaaaaaaa;
-	ctx->r11 = (uint32_t)0xbbbbbbbb;
-	ctx->r12 = (uint32_t)0xcccccccc;
-#endif
-
 #if (THINKOS_ENABLE_THREAD_INFO)
 	/* set the IDLE thread info */
 	thinkos_rt.th_inf[THINKOS_THREAD_IDLE] = &thinkos_idle_inf;
@@ -247,21 +232,27 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	__thinkos_thread_inf_set(THINKOS_THREAD_IDLE, &thinkos_idle_inf);
 #endif
 
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	/* commit the context to the kernel */ 
+	__thinkos_thread_ctx_set(THINKOS_THREAD_IDLE, ctx, 0);
+#endif
+
 #if DEBUG
+	ctx->r1 = (uint32_t)0x11111111;
+	ctx->r2 = (uint32_t)0x22222222;
+	ctx->r3 = (uint32_t)0x33333333;
+
 	udelay(0x8000);
 	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 			 "IDLE ctx=%08x except=%08x" _ATTR_POP_, ctx,
 			 __thinkos_xcpt_stack_top());
 #endif
 
-	/* commit the context to the kernel */ 
-	__thinkos_thread_ctx_set(THINKOS_THREAD_IDLE, ctx, 0);
-
 	return ctx;
 }
 
 /* initialize the idle thread */
-void __thinkos_idle_init(void)
+void thinkos_krn_idle_init(void)
 {
 	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 			"IDLE stack=%08x" _ATTR_POP_, THINKOS_IDLE_STACK_BASE);

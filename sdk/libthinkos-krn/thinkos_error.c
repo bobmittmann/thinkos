@@ -39,7 +39,13 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_INVALID_POINTER]   = "PtrInvalid",
 	[THINKOS_ERR_CONSOLE_FAULT]     = "ConFault",
 	[THINKOS_ERR_INVALID_STACK]     = "StkInvalid",
-	[THINKOS_ERR_SP_INVALID]        = "SpInvalid"
+	[THINKOS_ERR_DMA_INVALID]       = "DmaInvalid",
+	[THINKOS_ERR_SP_INVALID]        = "SpInvalid",
+	[THINKOS_ERR_USER]              = "User",
+	[THINKOS_ERR_THREAD_STACKADDR]  = "StackAddr",
+	[THINKOS_ERR_FLASH_INVALID]     = "FlshInvalid",
+	[THINKOS_ERR_STACK_LIMIT]       = "StackLimit",
+	[THINKOS_ERR_IDLE_STACK]        = "IdleStack"
 };
 
 #if 0
