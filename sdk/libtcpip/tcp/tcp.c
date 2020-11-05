@@ -88,6 +88,10 @@ const uint16_t tcp_maxmss = TCP_MAX_MSS;
 
 const uint16_t tcp_max_syn_backlog = TCP_MAX_SYN_BACKLOG;
 
+#ifndef TCP_TMR_PRIORITY
+#define TCP_TMR_PRIORITY 32
+#endif
+
 struct tcp_system __tcp__ = {
 	.closed = { 0},
 	.listen = { 0},
@@ -254,8 +258,8 @@ uint32_t tcp_tmr_stack[96];
 const struct thinkos_thread_inf tcp_tmr_inf = {
 	.stack_ptr = tcp_tmr_stack, 
 	.stack_size = sizeof(tcp_tmr_stack), 
-	.priority = 32,
-	.thread_id = 32, 
+	.priority = TCP_TMR_PRIORITY,
+	.thread_id = TCP_TMR_PRIORITY, 
 	.paused = 0,
 	.tag = "TCP_TMR"
 };

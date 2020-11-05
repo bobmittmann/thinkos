@@ -661,8 +661,8 @@ wr_again:
 		}
 		break;
 
-#if (THINKOS_ENABLE_CONSOLE_DRAIN)
 	case CONSOLE_DRAIN:
+#if (THINKOS_ENABLE_CONSOLE_DRAIN)
 		DCC_LOG(LOG_TRACE, "CONSOLE_DRAIN");
 		wq = THINKOS_WQ_CONSOLE_WR;
 drain_again:
@@ -741,8 +741,10 @@ drain_again:
 			/* signal the scheduler ... */
 			__thinkos_defer_sched(); 
 		}
+#else
+		arg[0] = 0;
+#endif /* THINKOS_ENABLE_CONSOLE_DRAIN */
 		break;
-#endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);

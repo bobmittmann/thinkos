@@ -359,7 +359,7 @@ static inline int __attribute__((always_inline))
 thinkos_cond_wait(int cond, int mutex) {
 	int ret;
 	if ((ret = THINKOS_SYSCALL2(THINKOS_COND_WAIT, 
-								 cond, mutex)) >= THINKOS_ETIMEDOUT) {
+								cond, mutex)) >= THINKOS_ETIMEDOUT) {
 		THINKOS_SYSCALL1(THINKOS_MUTEX_LOCK, mutex);
 	}
 	return ret;

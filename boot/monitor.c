@@ -824,7 +824,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
-//	sigmask |= (1 << MONITOR_RX_PIPE);
 #endif
 	sigmask |= (1 << MONITOR_APP_STOP);
 	sigmask |= (1 << MONITOR_APP_EXEC);
