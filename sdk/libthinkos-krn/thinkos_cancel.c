@@ -28,7 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_CANCEL
+#if (THINKOS_ENABLE_CANCEL)
 void thinkos_cancel_svc(int32_t * arg, int self)
 {
 	/* Internal thread ids start form 0 whereas user

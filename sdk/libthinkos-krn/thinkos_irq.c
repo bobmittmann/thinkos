@@ -53,9 +53,6 @@ void cm3_default_isr(unsigned int irq)
 	uint32_t cyccnt = CM3_DWT->cyccnt;
 #endif
 
-//	irq = cm3_ipsr_get();
-//	irq -= 16;
-
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
@@ -141,10 +138,8 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 
-#if 0
 	/* clear pending interrupt */
 	cm3_irq_pend_clr(irq);
-#endif
 
 	/* enable this interrupt source */
 	cm3_irq_enable(irq);

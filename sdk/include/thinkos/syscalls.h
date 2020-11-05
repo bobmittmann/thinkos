@@ -681,13 +681,6 @@ static inline void __attribute__((always_inline, noreturn))
 		}
 	}
 
-/* XXX: Deprecated 
-static inline int __attribute__((always_inline))
-	thinkos_trace(const char * msg) {
-		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_TRACE, msg);
-	}
- */
-
 static inline int __attribute__((always_inline))
 	thinkos_reboot(uint32_t key) {
 		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_REBOOT, key);

@@ -19,6 +19,8 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 
@@ -187,9 +189,6 @@ thinkos_krn_xcpt_raise:
 	str     r0, [r3, #THINKOS_EXCEPT_CYCCNT_OFFS] 
 #endif
 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-#endif
-
 	movs    r0, r3
 	adds    r3, #THINKOS_EXCEPT_CONTEXT_OFFS
 #if (THINKOS_ENABLE_FPU)
@@ -329,26 +328,6 @@ cm3_debug_mon_isr:
 	mrseq   r0, MSP
 	mrsne   r0, PSP
 	b       thinkos_dbgmon_isr
-#if 0
-	/* FIXME: add suport for step on interrupt */
-	push    {lr}
-	bl      thinkos_dbgmon_isr
-	pop     {lr}
-	cbnz    r0, 1f
-	bx      lr
-1f:
-	/* Disable low priority interrupts */
-	mov     r2, #(1 << 5)
-	msr	    BASEPRI, r2
-	/* Step request */
-	ldr.n   r3, .L_cm_dcb
-	ldr     r1, [r3, #DCB_DEMCR_OFFS]
-	orr     r1, r1, #DCB_DEMCR_MON_STEP
-	str     r1, [r3, #DCB_DEMCR_OFFS]
-	bx      lr
-.L_cm_dcb:
-	.word   CM3_DCB_BASE /* Core Debug Base Address */
-#endif
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 #endif /* THINKOS_ENABLE_DBGMON */
 

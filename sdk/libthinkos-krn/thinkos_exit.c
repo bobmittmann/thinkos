@@ -75,8 +75,6 @@ void __thinkos_thread_abort(unsigned int thread_id)
 
 	DCC_LOG1(LOG_INFO, "ready=%08x", thinkos_rt.wq_ready);
 
-	/*  */
-//	__thinkos_dbg_halt();
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }

@@ -124,8 +124,8 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #endif
 
 #ifndef UDELAY_FACTOR 
-	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate().");
-	cm3_udelay_calibrate();
+	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
+	thinkos_krn_udelay_calibrate();
 #endif
 
 	DCC_LOG1(LOG_MSG, "udelay_factor=%d.", udelay_factor);

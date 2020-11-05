@@ -29,10 +29,13 @@
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_CTL
+#if (THINKOS_ENABLE_CTL)
 
+#ifndef THINKOS_ENABLE_CTL_KRN_INFO
+#define THINKOS_ENABLE_CTL_KRN_INFO 0
+#endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING) && (THINKOS_ENABLE_CTL_KRN_INFO)
 static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 {
 	uint32_t cyccnt;
@@ -55,7 +58,6 @@ static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 	return cnt; 
 }
 #endif
-
 
 extern int32_t udelay_factor;
 
@@ -82,12 +84,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_ABORT:
 		DCC_LOG(LOG_WARNING, "Abort!");
-		__thinkos_pause_all();
-		__thinkos_defer_sched();
-#if THINKOS_ENABLE_MONITOR
-		/* FIXME: hardcoded number */
-	  	asm volatile ("bkpt %0" : : "I" (3));
-#endif
+		thinkos_krn_kill_all(); 
 		break;
 
 /* XXX: Deprecated
@@ -98,11 +95,11 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_REBOOT:
 		DCC_LOG(LOG_WARNING, "Reboot!");
-		udelay(32768);
-		cm3_sysrst();
+		thinkos_krn_sysrst();
 		break;
 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_CTL_KRN_INFO)
+#if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
 		unsigned int cnt;
 
@@ -114,7 +111,7 @@ void thinkos_ctl_svc(int32_t * arg)
 		break;
 #endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
 		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
 		break;
@@ -124,6 +121,7 @@ void thinkos_ctl_svc(int32_t * arg)
 		/* Return the current value of the CPU cycle counter */
 		arg[0] = CM3_DWT->cyccnt;
 		break;
+#endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);

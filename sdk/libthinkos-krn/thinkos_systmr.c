@@ -30,6 +30,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
+#include <sys/delay.h>
 
 #if (THINKOS_ENABLE_CLOCK)
 static void __thinkos_time_wakeup(int thread_id) 
@@ -184,4 +185,32 @@ void __krn_systick_init(void)
 const char thinkos_clk_nm[] = "CLK";
 
 #endif /* THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_MONITOR */
+
+static unsigned int __get_ticks(void)
+{
+	return 0xffffffff - (CM3_SYSTICK->cvr << 8);
+}
+
+void thinkos_krn_udelay_calibrate(void)
+{
+	struct cm3_systick * systick = CM3_SYSTICK;
+	uint32_t ticks1ms;
+	uint32_t rvr;
+	uint32_t csr;
+
+	cm3_cpsid_i();
+	rvr = systick->rvr;
+	csr = systick->csr;
+
+	systick->rvr = 0x00ffffff;
+	systick->csr = SYSTICK_CSR_ENABLE;
+	ticks1ms = cm3_systick_load_1ms << 8;
+
+	udelay_calibrate(ticks1ms, __get_ticks);
+
+	systick->rvr = rvr;
+	systick->csr = csr;
+
+	cm3_cpsie_i();
+}
 

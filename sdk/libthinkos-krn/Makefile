@@ -41,18 +41,20 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_systmr.c thinkos_ffs.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
-		 thinkos_krnsvc.c \
+		 thinkos_krnsvc.c thinkos_sysrst.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
-  SFILES = thinkos_vector.S thinkos_isr.S \
-		   cortex-m4f/thinkos_sched-cortex-m4f.S
+  SFILES = cortex-m4f/thinkos_sched-cortex-m4f.S \
+		   cortex-m3/crt0_cortex-m3.S \
+		   cortex-m3/thinkos_vec_cortex-m3.S
 #		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
 endif
 
 ifeq ($(CPU), cortex-m3)
-  SFILES = thinkos_vector.S thinkos_isr.S \
-		   cortex-m3/thinkos_sched-cortex-m3.S
+  SFILES = cortex-m3/thinkos_sched-cortex-m3.S \
+		   cortex-m3/crt0_cortex-m3.S \
+		   cortex-m3/thinkos_vec_cortex-m3.S
 #		   cortex-m3/thinkos_sched-cortex-m3-basic.S
 endif
 

@@ -1,9 +1,7 @@
 /* 
- * pause_all.c
- *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
- * This file is part of the ThinkOS library.
+ * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -11,7 +9,7 @@
  * version 3.0 of the License, or (at your option) any later version.
  * 
  * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without flagen the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  * 
@@ -19,21 +17,23 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <sys/dcclog.h>
+/** 
+ * @file cm3-sysrst.c
+ * @brief YARD-ICE
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */ 
 
-void __thinkos_pause_all(void)
+
+#include <arch/cortex-m3.h>
+#include <sys/delay.h>
+
+void __attribute__((noreturn)) thinkos_krn_sysrst(void)
 {
-	int32_t th;
-
-	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
-		if (__thinkos_thread_ctx_is_valid(th)) {
-			DCC_LOG1(LOG_JABBER, "th=%d", th);
-			__thinkos_thread_pause(th);
-		}
-	}
-
-	DCC_LOG1(LOG_TRACE, "active=%d", __thinkos_active_get() + 1);
+	/* disable interrupts */
+	cm3_cpsid_i();
+	/* wait a bit */
+	udelay(32768);
+	/* request system reset */
+	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
+	for(;;);
 }
-

@@ -135,7 +135,7 @@ void __attribute__((noreturn))
 
 #endif
 #if (THINKOS_SYSRST_ONFAULT)
-	cm3_sysrst();
+	thinkos_krn_sysrst();
 #endif
 	for(;;);
 }
@@ -208,9 +208,17 @@ void thinkos_krn_exception_init(void)
 #if (THINKOS_SYSRST_ONFAULT)
 void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 {
-	cm3_sysrst();
+	thinkos_krn_sysrst();
 }
 #endif
+
+void __attribute__((naked, noreturn)) thinkos_krn_xcpt_raise(int errno)
+{
+	monitor_signal(MONITOR_THREAD_FAULT);
+#if (THINKOS_SYSRST_ONFAULT)
+	thinkos_krn_sysrst();
+#endif
+}
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 

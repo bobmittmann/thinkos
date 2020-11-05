@@ -321,7 +321,10 @@
  * --------------------------------------------------------------------------*/
 
 struct thinkos_monitor { 
-	volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
+	union{
+		volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
+		uint32_t * ctx;
+	};
 	volatile uint32_t events;  /* event set bitmap */
 	volatile uint32_t mask;  /* events mask */
 };
@@ -1368,7 +1371,7 @@ bool __thinkos_thread_isfaulty(unsigned int thread_id);
 
 void __thinkos_irq_reset_all(void);
 
-void __thinkos_kill_all(void);
+void thinkos_krn_kill_all(void);
 
 void __thinkos_pause_all(void);
 
@@ -1444,6 +1447,14 @@ bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size);
  * System timer 
  * ------------------------------------------------------------------------- */
 void __krn_systick_init(void);
+
+/* -------------------------------------------------------------------------
+ * Misc timer 
+ * ------------------------------------------------------------------------- */
+
+void thinkos_krn_sysrst(void);
+
+void thinkos_krn_udelay_calibrate(void);
 
 #ifdef __cplusplus
 }

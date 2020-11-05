@@ -55,6 +55,7 @@ void thinkos_krnsvc_isr(uint32_t arg[], uint32_t opc)
 	case THINKOS_KRNSVC_ERROR:
 		{
 			int32_t err = arg[0];
+			(void)err;
 			DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BYW
 					 "/!\\ Error %d [%s] /!\\" VT_POP, 
 					 err, thinkos_err_name_lut[err]);

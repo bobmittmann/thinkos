@@ -47,7 +47,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct {
-	uint32_t * ctx;           /* monitor context */
 	/* task entry point */
 	void (* task)(const struct monitor_comm *, void *);
 	const struct monitor_comm * comm;
@@ -238,7 +237,7 @@ int monitor_select(uint32_t evmsk)
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 		DCC_LOG1(LOG_INFO, "wakeup, sp=%08x ...", cm3_sp_get());
 	} 
@@ -286,7 +285,7 @@ int monitor_expect(int sig)
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 		if (evset != 0) {
 			DCC_LOG(LOG_MSG, "wakeup...");
@@ -362,7 +361,7 @@ int monitor_wait_idle(void)
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 		do { /* avoid possible race condition on monitor.events */
 			evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
@@ -413,7 +412,7 @@ static inline void __monitor_task_reset(void)
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 }
 
@@ -515,7 +514,7 @@ void monitor_null_task(const struct monitor_comm * comm, void * param)
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 	}
 }
@@ -562,7 +561,7 @@ static void __thinkos_monitor_on_reset(void)
 	sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
 	sp[0] = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* CPSR */
 	sp[9] = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
-	thinkos_monitor_rt.ctx = sp;
+	thinkos_rt.monitor.ctx = sp;
 }
 
 uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
@@ -596,7 +595,7 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 		}
 		DCC_LOG1(LOG_TRACE, "sigset %08x", sigset);
 #endif
-		__monitor_context_swap(&thinkos_monitor_rt.ctx); 
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 	}
 
 	return sigact;
@@ -617,10 +616,6 @@ void monitor_soft_reset(void)
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
 	__monitor_irq_disable_all();
 
-	//DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-	//		"2. Kill all threads"  _ATTR_POP_); 
-	//__thinkos_kill_all(); 
-
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"3. Core reset..."   _ATTR_POP_); 
 	__thinkos_core_reset();
@@ -629,14 +624,6 @@ void monitor_soft_reset(void)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"4. Except reset..."   _ATTR_POP_); 
 	thinkos_krn_exception_reset();
-#endif
-
-#if 0
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"5. Wait IDLE signal..."   _ATTR_POP_); 
-	monitor_wait_idle();
-#endif
 #endif
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_

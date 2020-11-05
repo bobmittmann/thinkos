@@ -39,10 +39,6 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
-#ifdef THINKOS_MONITOR_ENABLE_FLOWCTL
-#warning "deprecated THINKOS_MONITOR_ENABLE_FLOWCTL"
-#endif
-
 #ifndef THINKOS_MONITOR_ENABLE_COMM_STATS
 #define THINKOS_MONITOR_ENABLE_COMM_STATS 0
 #endif
@@ -346,29 +342,9 @@ const struct usb_descriptor_string monitor_usb_language_english_us = {
 	4, USB_DESCRIPTOR_STRING, { 0x0409 }
 };
 
-const struct usb_descriptor_string monitor_usb_stmicroelectronics_str = {
-	19 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'S', 'T', 'M', 'i', 'c', 'r', 'o', 'e', 'l', 'e', 
-		'c', 't', 'r', 'o', 'n', 'i', 'c', 's', 0 
-	}
-};
-
 const struct usb_descriptor_string monitor_usb_stmicro_str = {
 	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
 		'S', 'T', 'M', 'i', 'c', 'r', 'o', 0
-	}
-};
-
-const struct usb_descriptor_string composite_demo_str = {
-	15 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'C', 'o', 'm', 'p', 'o', 's', 'i', 't', 'e', ' ', 
-		'D', 'e', 'm', 'o', '0'
-	}
-};
-
-const struct usb_descriptor_string atmel_str = {
-	6 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'A', 't', 'm', 'e', 'l', '0'
 	}
 };
 
@@ -379,47 +355,9 @@ const struct usb_descriptor_string monitor_usb_st_vcom_str = {
 	}
 };
 
-/* Product name: "ThinkOS Debug Monitor" */
-const struct usb_descriptor_string thinkos_debug_monitor_str = {
-	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
-		'b', 'u', 'g', ' ', 'M', 'o', 'n', 'i', 't', 'o', 
-		'r', 0
-	}
-};
-
-const struct usb_descriptor_string thinkos_com_str = {
-	17 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'O', 
-		'M', ' ', 'D', 'u', 'a', 'l', 0
-	}
-};
-const struct usb_descriptor_string usb_serial_cdc_device_str = {
-	23 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'U', 'S', 'B', ' ', 'S', 'e', 'r', 'i', 'a', 'l', 
-		' ', '(', 'C', 'D', 'C', ')', 'D', 'e', 'v', 'i',
-		'c', 'e', 0
-	}
-};
-
 const struct usb_descriptor_string monitor_usb_thinkos_str = {
 	8 * 2 + 4, USB_DESCRIPTOR_STRING, {
 		'T', 'h', 'i', 'n', 'k', 'O', 'S', 0
-	}
-};
-
-const struct usb_descriptor_string monitor_usb_debug_monitor_str = {
-	22 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'D', 'e', 
-		'b', 'u', 'g', '/', 'M', 'o', 'n', 'i', 't', 'o', 
-		'r', 0
-	}
-};
-
-const struct usb_descriptor_string console_str = {
-	16 * 2 + 4, USB_DESCRIPTOR_STRING, {
-		'T', 'h', 'i', 'n', 'k', 'O', 'S', ' ', 'C', 'o', 
-		'n', 's', 'o', 'l', 'e', 0
 	}
 };
 
@@ -435,8 +373,6 @@ const struct usb_descriptor_string monitor_usb_serial_num_str = {
 
 static const struct usb_descriptor_string * const monitor_usb_cdc_acm_str[] = {
 	&monitor_usb_language_english_us,
-//	&monitor_usb_stmicroelectronics_str,
-//	&monitor_usb_debug_monitor_str,
 	&monitor_usb_stmicro_str,
 	&monitor_usb_thinkos_str,
 	&monitor_usb_serial_num_str,

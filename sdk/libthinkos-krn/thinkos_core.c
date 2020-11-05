@@ -48,7 +48,7 @@ uint32_t __attribute__((aligned(64)))
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-void __thinkos_kill_all(void) 
+void thinkos_krn_kill_all(void) 
 {
 	int i;
 
@@ -56,8 +56,7 @@ void __thinkos_kill_all(void)
 	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		thinkos_rt.wq_lst[i] = 0x00000000;
 	/* discard current thread context */
-	if (__thinkos_active_get() != THINKOS_THREAD_IDLE)
-		__thinkos_active_set(THINKOS_THREAD_VOID);
+	__thinkos_active_set(THINKOS_THREAD_VOID);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
 }
