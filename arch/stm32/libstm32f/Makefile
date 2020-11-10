@@ -83,6 +83,19 @@ CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
 endif
 
+ifeq ($(STM32), stm32f446x)
+SFILES = stm32f446x-nvic.S
+
+CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
+		 stm32f-spi.c stm32f-fsmc.c stm32f-exti.c stm32f-mco.c\
+		 stm32f-dma.c stm32f4x-flash.c stm32f-rtc.c\
+		 stm32-crc.c stm32f-rcc.c\
+		 $(addprefix usart/,$(USART_CFILES))\
+		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
+		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
+endif
+
+
 ifeq ($(STM32), stm32f2)
 SFILES = stm32f-vec.S
 

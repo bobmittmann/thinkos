@@ -32,7 +32,7 @@ endif
 
 ifneq ($(findstring $(MACH), stm32f446xc stm32f446xe),)
   CPU = cortex-m4
-  STM32 = stm32f4
+  STM32 = stm32f446x
 endif
 
 ifneq ($(findstring $(MACH), stm32f405xg stm32f407xg stm32f407xe),)

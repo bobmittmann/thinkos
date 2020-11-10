@@ -1036,6 +1036,8 @@ static inline int __attribute__((always_inline))
 __thread_errno_get(struct thinkos_rt * rt, unsigned int id) {
 #if (THINKOS_ENABLE_THREAD_FAULT)
 	return rt->th_errno[id];
+#else
+	return 0;
 #endif
 }
 

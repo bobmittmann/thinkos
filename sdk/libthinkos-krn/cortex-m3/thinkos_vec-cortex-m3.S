@@ -40,9 +40,50 @@
 	.syntax unified
 	.cpu cortex-m3
 
+	.section .core_vectors, "ax", %progbits
+	.align	2
+__core_vectors:
+	.global __core_vectors
+	.type __core_vectors, %object
+
+	.word	_stack
+	.word   _reset
+	.word   cm3_nmi_isr
+	.word   cm3_hard_fault_isr
+	.word   cm3_mem_manage_isr
+	.word   cm3_bus_fault_isr
+	.word   cm3_usage_fault_isr
+	.word   cm3_except7_isr
+	.word   ice_comm_blk
+	.word   cm3_except9_isr
+	.word   cm3_except10_isr
+	.word   cm3_svc_isr
+	.word   cm3_debug_mon_isr
+	.word   cm3_except13_isr
+	.word   cm3_pendsv_isr
+	.word   cm3_systick_isr
+
+	.size   __core_vectors, . - __core_vectors
+
 	.text
-	.align	3
+	.align  2
+	.global __sizeof_rom_vectors
+__sizeof_rom_vectors:
+	.type   __sizeof_rom_vectors, %object
+	.word   __rom_vectors_size
+	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
+
+	.text
+	.align	2
+
 	.thumb
+	.global _fault
+	.thumb_func
+	.type   _fault, %function
+_fault:
+	b		.
+	.size   _fault, . - _fault
+
 
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
@@ -344,11 +385,64 @@ cm3_debug_mon_isr:
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 #endif /* THINKOS_ENABLE_DBGMON */
 
-	.align  2
-	.global thinkos_vec_nm
-	.section .rodata,"a",%progbits
-	.type   thinkos_vec_nm, %object
-	.size   thinkos_vec_nm, 4
-thinkos_vec_nm:
-	.ascii  "VEC\000"
- 
+
+
+/* --------------------------------------------------------------------------
+ * ThinkOS - exception handler aliases
+ * --------------------------------------------------------------------------*/
+
+	.weak       cm3_nmi_isr
+	.thumb_set  cm3_nmi_isr,_fault
+
+#if	!(THINKOS_ENABLE_HARDFAULT)
+	.weak       cm3_hard_fault_isr
+	.thumb_set  cm3_hard_fault_isr,_fault
+#endif
+
+#if	!(THINKOS_ENABLE_MEMFAULT)
+	.weak       cm3_mem_manage_isr
+	.thumb_set  cm3_mem_manage_isr,_fault
+#endif
+
+#if	!(THINKOS_ENABLE_USAGEFAULT) 
+	.weak       cm3_bus_fault_isr
+	.thumb_set  cm3_bus_fault_isr,_fault
+#endif
+
+#if	!(THINKOS_ENABLE_BUSFAULT)
+	.weak       cm3_usage_fault_isr
+	.thumb_set  cm3_usage_fault_isr,_fault
+#endif
+
+	.weak       cm3_except7_isr
+	.thumb_set  cm3_except7_isr,_fault
+
+	.weak       ice_comm_blk
+	.set		ice_comm_blk, __core_vectors
+
+	.weak       cm3_except9_isr
+	.thumb_set  cm3_except9_isr,_fault
+
+	.weak       cm3_except10_isr
+	.thumb_set  cm3_except10_isr,_fault
+
+	.extern     cm3_svc_isr
+
+#if !(THINKOS_ENABLE_DBGMON)
+	.weak       cm3_debug_mon_isr
+	.thumb_set  cm3_debug_mon_isr,_fault
+#endif
+
+	.weak       cm3_except13_isr
+	.thumb_set  cm3_except13_isr,_fault
+
+	.extern     cm3_pendsv_isr
+
+#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
+	.extern     cm3_systick_isr
+#else
+	.weak       cm3_systick_isr
+	.thumb_set  cm3_systick_isr,_fault
+#endif
+
+

@@ -1,5 +1,5 @@
 /* 
- * crt0.S
+ * crt0_cortex-m3.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -21,6 +21,9 @@
 
 	.syntax unified
 	.cpu cortex-m3
+
+	.extern  _init
+	.extern main
 
 	.align  2
 	.thumb
@@ -97,26 +100,4 @@ _reset:
     .word   thinkos_main_stack
 
 	.size   _reset, . - _reset
-
-#if 0
-	.global _fault
-	.thumb
-	.thumb_func
-	.type   _fault, %function
-_fault:
-	b		.
-	.size   _fault, . - _fault
-
-	.text
-	.align  2
-	.global _isr
-	.thumb
-	.thumb_func
-	.type   _isr, %function
-_isr:
-	mrs     r0, IPSR
-	subs    r0, #16
-	b       cm3_default_isr
-	.size   _isr, . - _isr
-#endif
 

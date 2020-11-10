@@ -72,9 +72,18 @@ SECTIONS
 		KEEP(*(.dccdata))
 	} >dcclog
 
-	.init __code_init :
+	.vectors __code_init :
 	{
-		KEEP (*(.rom_vectors))
+		. = ALIGN(4);
+		KEEP (*(.core_vectors))
+		KEEP (*(.nvic_vectors))
+	} >"CODE" = 0xffffffff
+
+	PROVIDE(__rom_vectors_size = SIZEOF(.vectors));
+
+	.init :
+	{
+		. = ALIGN(4);
 		KEEP (*(.boot))
 		KEEP (*(.init))
 	} >"CODE" = 0xffffffff

@@ -357,15 +357,3 @@ thinkos_sched_step:
 	.size   thinkos_sched_step, . - thinkos_sched_step
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
 
-
-/* FIXME: this is a hack to force linking this file. 
- The linker then will override the weak alias for the cm3_hard_fault_isr() */
-	.align 4
-	.global	thinkos_sch_nm
-	.section .rodata
-	.type   thinkos_sch_nm, %object
-	.size   thinkos_sch_nm, 4
-thinkos_sch_nm:
-	.ascii	"SCH\000"
-
-

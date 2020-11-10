@@ -234,21 +234,7 @@ __nvic_vectors:
 
 __nvic_vectors_end:
 	.global __nvic_vectors_end
-	.size   __nvic_vectors, . - __rom_vectors
-
-
-
-	.thumb
-	.thumb_func
-	.type   _fault, %function
-#if 1
-	.global _fault
-	.thumb
-	.thumb_func
-	.type   _fault, %function
-_fault:
-	b		.
-	.size   _fault, . - _fault
+	.size   __nvic_vectors, . - __nvic_vectors
 
 	.text
 	.align  2
@@ -261,7 +247,6 @@ _isr:
 	subs    r0, #16
 	b       cm3_default_isr
 	.size   _isr, . - _isr
-#endif
 
 	/***********************************************************************
 	 * Provide weak aliases for each Exception handler to _fault().
@@ -271,50 +256,8 @@ _isr:
 //	.thumb_set  cm3_default_isr,_fault
 
 
-	.weak       cm3_nmi_isr
-	.thumb_set  cm3_nmi_isr,_fault
-
-	.weak       cm3_hard_fault_isr
-	.thumb_set  cm3_hard_fault_isr,_fault
-
-	.weak       cm3_mem_manage_isr
-	.thumb_set  cm3_mem_manage_isr,_fault
-
-	.weak       cm3_bus_fault_isr
-	.thumb_set  cm3_bus_fault_isr,_fault
-
-	.weak       cm3_usage_fault_isr
-	.thumb_set  cm3_usage_fault_isr,_fault
-
-	.weak       cm3_except7_isr
-	.thumb_set  cm3_except7_isr,_fault
-
-	.weak       ice_comm_blk
-	.set		ice_comm_blk, __vectors
-
-	.weak       cm3_except9_isr
-	.thumb_set  cm3_except9_isr,_fault
-
-	.weak       cm3_except10_isr
-	.thumb_set  cm3_except10_isr,_fault
-
-	.weak       cm3_svc_isr
-	.thumb_set  cm3_svc_isr,_fault
-
-	.weak       cm3_debug_mon_isr
-	.thumb_set  cm3_debug_mon_isr,_fault
-
-	.weak       cm3_except13_isr
-	.thumb_set  cm3_except13_isr,_fault
-
-	.weak     	cm3_pendsv_isr
-	.thumb_set  cm3_pendsv_isr,_fault
-
-	.weak       cm3_systick_isr
-	.thumb_set  cm3_systick_isr,_fault
-
 	.weak       stm32f_wwdg_isr
-	.thumb_set  stm32f_wwdg_isr,_fault
+	.thumb_set  stm32f_wwdg_isr,_isr
 
 	.weak       stm32f_pvd_isr
 	.thumb_set  stm32f_pvd_isr,_isr

@@ -43,7 +43,7 @@
 	.cpu cortex-m3
 
 	.text
-	.align	4
+	.align	3
 	.global cm3_svc_isr
 	.thumb
 	.thumb_func
@@ -94,11 +94,4 @@ cm3_svc_isr:
 	.word    CM3_SCB_BASE
 	.size    cm3_svc_isr, . - cm3_svc_isr
 
-	.align   2
-	.global thinkos_svc_nm
-	.section .rodata,"a",%progbits
-	.type   thinkos_svc_nm, %object
-	.size   thinkos_scv_nm, 4
-thinkos_svc_nm:
-	.ascii  "SVC\000"
 
