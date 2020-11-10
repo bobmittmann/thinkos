@@ -428,33 +428,33 @@ endif
 %.elx: %.elf
 	$(ACTION) "XLF: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+	$(Q)$(OBJCOPY) -D -S -j .vect .-j init -j .text -j .data -j .bss $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
-	$(Q)$(OBJCOPY) -D -S -j .init -j .text -j .data -j .bss $< $@
+	$(Q)$(OBJCOPY) -D -S -j .vect -j .init -j .text -j .data -j .bss $< $@
 endif
 
 %.bin: %.elf
 	$(ACTION) "BIN: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $< $@
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $< $@
 endif
 
 %.srec: %.elf
 	$(ACTION) "SREC: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $< $@
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target srec $< $@
 endif
 
 %.hex: %.elf
 	$(ACTION) "IHEX: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
-	$(Q)$(OBJCOPY) -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $< $@
+	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target ihex $< $@
 endif
 
 #------------------------------------------------------------------------------ 

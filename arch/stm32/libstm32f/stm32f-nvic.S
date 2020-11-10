@@ -1,5 +1,5 @@
 /* 
- * stm32f446x-nvic.S
+ * stm32f-crt0.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -25,6 +25,8 @@
 	.syntax unified
 	.cpu cortex-m3
 
+	.extern _reset
+
 	/* ---------------------------------------------------------------------
 	 * Generate the vectors table 
 	 * --------------------------------------------------------------------- */
@@ -43,7 +45,11 @@ __nvic_vectors:
 	.word	stm32f_rcc_isr          /*  5 RCC */
 	.word	stm32f_exti0_isr        /*  6 EXTI Line0 */
 	.word	stm32f_exti1_isr        /*  7 EXTI Line1 */
+#if defined(STM32F3X)
+	.word	stm32f_exti2_tsc_isr    /*  8 EXTI Line2 */
+#else
 	.word	stm32f_exti2_isr        /*  8 EXTI Line2 */
+#endif
 	.word	stm32f_exti3_isr        /*  9 EXTI Line3 */
 	.word	stm32f_exti4_isr        /* 10 EXTI Line4 */
 	.word	stm32f_dma1_stream0_isr /* 11 DMA1 Stream 0 */
@@ -55,46 +61,110 @@ __nvic_vectors:
 	.word	stm32f_dma1_stream6_isr /* 17 DMA1 Stream 6 */
 	.word	stm32f_adc_isr          /* 18 ADC1, ADC2 and ADC3s */
 
+#if defined(STM32F2X) || defined(STM32F4X)
 	.word	stm32f_can1_tx_isr         /* 19 CAN1 TX */
 	.word	stm32f_can1_rx0_isr        /* 20 CAN1 RX0 */
 	.word	stm32f_can1_rx1_isr        /* 21 CAN1 RX1 */
 	.word	stm32f_can1_sce_isr        /* 22 CAN1 SCE */
+#elif defined(STM32F10X) || defined(STM32F3X)
+	.word   stm32f_can1_tx_usb_hp_isr  /* 19 CAN1 TX and USB High Priority */
+	.word   stm32f_can1_rx0_usb_lp_isr /* 20 CAN1 RX0 and and USB 
+										       Low Priority */
+	.word	stm32f_can1_rx1_isr        /* 21 CAN1 RX1 */
+	.word	stm32f_can1_sce_isr        /* 22 CAN1 SCE */
+#elif defined(STM32F100)
+	.word	_fault                      /* 19 Reserved */
+	.word	_fault                      /* 20 Reserved */
+	.word	_fault                      /* 21 Reserved */
+	.word	_fault                      /* 22 Reserved */
+#endif
 
 	.word	stm32f_exti9_5_isr         /* 23 External Lines [9:5] */
 
+#if defined(STM32F2X) || defined(STM32F4X)
 	.word	stm32f_tim1_brk_tim9_isr      /* 24 TIM1 Break and TIM9 */
 	.word	stm32f_tim1_up_tim10_isr      /* 25 TIM1 Update and TIM10 */
 	.word	stm32f_tim1_trg_com_tim11_isr /* 26 TIM1 Trigger and Commutation 
 	                                            and TIM11 */
+#elif defined(STM32F10X)
+	.word	stm32f_tim1_brk_isr           /* 24 TIM1 Break */
+	.word	stm32f_tim1_up_isr            /* 25 TIM1 Update */
+	.word	stm32f_tim1_trg_com_isr       /* 26 TIM1 Trigger and Commutation */
+#elif defined(STM32F100) || defined(STM32F3X)
+	.word	stm32f_tim1_brk_tim15_isr     /* 24 TIM1 Break and TIM15 */
+	.word	stm32f_tim1_up_tim16_isr      /* 25 TIM1 Update and TIM16 */
+	.word	stm32f_tim1_trg_com_tim17_isr /* 26 TIM1 Trigger and Commutation 
+											 and TIM17 */
+#endif
+
 	.word	stm32f_tim1_cc_isr        /* 27 TIM1 Capture Compare */
 	.word	stm32f_tim2_isr           /* 28 TIM2 */
 	.word	stm32f_tim3_isr           /* 29 TIM3 */
 	.word	stm32f_tim4_isr           /* 30 TIM4 */
 
+#if defined(STM32F3X)
+	.word	stm32f_i2c1_ev_exti23_isr /* 31 I2C1 Event */
+	.word	stm32f_i2c1_er_isr        /* 32 I2C1 Error */
+	.word	stm32f_i2c2_ev_exti24_isr /* 33 I2C2 Event */
+	.word	stm32f_i2c2_er_isr        /* 34 I2C2 Error */
+#else
 	.word	stm32f_i2c1_ev_isr        /* 31 I2C1 Event */
 	.word	stm32f_i2c1_er_isr        /* 32 I2C1 Error */
 	.word	stm32f_i2c2_ev_isr        /* 33 I2C2 Event */
 	.word	stm32f_i2c2_er_isr        /* 34 I2C2 Error */
+#endif
 
 	.word	stm32f_spi1_isr           /* 35 SPI1 */
 	.word	stm32f_spi2_isr           /* 36 SPI2 */
 
+#if defined(STM32F3X)
+	.word	stm32f_usart1_exti25_isr  /* 37 USART1 */
+	.word	stm32f_usart2_exti26_isr  /* 38 USART2 */
+	.word	stm32f_usart3_exti28_isr  /* 39 USART3 */
+#else
 	.word	stm32f_usart1_isr         /* 37 USART1 */
 	.word	stm32f_usart2_isr         /* 38 USART2 */
 	.word	stm32f_usart3_isr         /* 39 USART3 */
+#endif
 
 	.word	stm32f_exti15_10_isr      /* 40 External Line[15:10]s */
 	.word	stm32f_rtc_alarm_isr      /* 41 RTC Alarm (A and B) 
 										 through EXTI Line */
+#if defined(STM32F2X) || defined(STM32F4X)
 	.word	stm32f_otg_fs_wkup_isr    /* 42 USB OTG FS Wakeup 
 	                                     through EXTI line */
+#elif defined(STM32F10X) || defined(STM32F3X)
+	.word	stm32f_usb_wkup_isr       /* 42 USB FS Wakeup  */
+#else
+	.word	stm32f_cec_isr            /* 42 CEC Global Interrupt */
+#endif
+
+#if defined(STM32F100)
+	.word	stm32f_tim12_isr          /* 43 TIM12 */
+	.word	stm32f_tim13_isr          /* 44 TIM13 */
+	.word	stm32f_tim14_isr          /* 45 TIM14 */
+#else
 	.word	stm32f_tim8_brk_tim12_isr     /* 43 TIM8 Break and TIM12 */
 	.word	stm32f_tim8_up_tim13_isr      /* 44 TIM8 Update and TIM13 */
 	.word	stm32f_tim8_trg_com_tim14_isr /* 45 TIM8 Trigger and Commutation 
 	                                            and TIM14 */
+#endif
+
+#if defined(STM32F100)
+	.word	_fault                     /* 46 Reserved */
+	.word	_fault                     /* 47 Reserved */
+#else
+	.word	stm32f_tim8_cc_isr        /* 46 TIM8 Capture Compare */
+	.word	stm32f_dma1_stream7_isr   /* 47 DMA1 Stream7 */
+#endif
+
 	.word	stm32f_fsmc_isr           /* 48 FSMC */
 	
+#if defined(STM32F100)
+	.word	_fault                     /* 49 Reserved */
+#else
 	.word	stm32f_sdio_isr           /* 49 SDIO */
+#endif
 
 	.word	stm32f_tim5_isr           /* 50 TIM5 */
 	.word	stm32f_spi3_isr           /* 51 SPI3 */
@@ -107,6 +177,9 @@ __nvic_vectors:
 	.word	stm32f_dma2_stream2_isr   /* 58 DMA2 Stream 2 */
 	.word	stm32f_dma2_stream3_isr   /* 59 DMA2 Stream 3 */
 
+#if defined(STM32F100)
+	.word	stm32f_dma2_stream4_isr   /* 60 DMA2 Stream 4 */
+#elif defined(STM32F2X) || defined(STM32F4X)
 	.word	stm32f_dma2_stream4_isr   /* 60 DMA2 Stream 4 */
 	.word	stm32f_eth_isr            /* 61 Ethernet */
 	.word	stm32f_eth_wkup_isr       /* 62 Ethernet Wakeup through EXTI line */
@@ -128,7 +201,9 @@ __nvic_vectors:
 	.word	stm32f_dcmi_isr           /* 78 DCMI */
 	.word	stm32f_cryp_isr           /* 79 CRYP crypto */
 	.word	stm32f_hash_rng_isr       /* 80 Hash and Rng */
+#endif
 
+#if defined(STM32F4X)
 	.word   stm32f_fpu_isr            /* 81 FPU */
 	.word   stm32f_uart7_isr          /* 82 UART7 */
 	.word   stm32f_uart8_isr          /* 83 UART8 */
@@ -139,13 +214,16 @@ __nvic_vectors:
 	.word   stm32f_lcd_isr            /* 88 LCD-TFT */
 	.word   stm32f_lcd_err_isr        /* 89 LCD-TFT error */
 	.word   stm32f_dma2d_isr          /* 90 DMA2D */
+#endif
 
+#if defined(STM32F446X)
 	.word   stm32f_sai2_isr           /* 91 SAI2 */
 	.word   stm32f_qspi_isr           /* 92 QuadSPI */
 	.word   stm32f_cec_isr            /* 93 HDMI-CEC */
 	.word   stm32f_spdif_rx_isr       /* 94 SPDIF-Rx */
 	.word   stm32f_fmpi2c1_isr        /* 95 FMPI2C1 event */
 	.word   stm32f_fmpi2c1_err_isr    /* 96 FMPI2C1 error */
+#endif
 
 __nvic_vectors_end:
 	.global __nvic_vectors_end
@@ -468,6 +546,7 @@ _isr:
 	.weak       stm32f_hash_rng_isr
 	.thumb_set  stm32f_hash_rng_isr,_isr
 
+#if defined(STM32F4X)
 	.weak       stm32f_fpu_isr
 	.thumb_set  stm32f_fpu_isr,_isr
 
@@ -497,7 +576,9 @@ _isr:
 
 	.weak       stm32f_dma2d_isr
 	.thumb_set  stm32f_dma2d_isr,_isr
+#endif
 
+#if defined(STM32F446X)
 	.weak       stm32f_sai2_isr
 	.thumb_set  stm32f_sai2_isr,_isr
 
@@ -515,6 +596,7 @@ _isr:
 
 	.weak       stm32f_fmpi2c1_err_isr
 	.thumb_set  stm32f_fmpi2c1_err_isr,_isr
+#endif
 
 	.end
 

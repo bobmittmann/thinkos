@@ -72,7 +72,7 @@ CFILES = stm32f1x-init.c stm32f-gpio.c \
 endif
 
 ifeq ($(STM32), stm32f4x)
-SFILES = stm32f4x-vec.S
+SFILES = stm32f4x-nvic.S
 
 CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c stm32f-exti.c stm32f-mco.c\

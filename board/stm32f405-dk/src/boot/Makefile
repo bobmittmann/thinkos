@@ -31,8 +31,9 @@ VERSION_MINOR = "0"
 
 PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 $(THINKOS_DIR)/boot/standby.c board.c
+BOOT_CFILES = boot.c monitor.c standby.c 
+
+CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c
 
 LIBDIRS = $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-dbg $(ARCH_DIR)/libstm32f \
@@ -51,6 +52,7 @@ OPTIONS = -g -mno-unaligned-access
 MACH = stm32f415xg
 KRN_DATA_SIZE = 4096
 KRN_CODE_SIZE = 65536
+LOAD_ADDR = 0x8000000
 include $(ARCH_DIR)/mk/stm32.mk
 
 
