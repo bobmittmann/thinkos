@@ -34,17 +34,17 @@
 #define THINKOS_IRQ_MAX                 80
 /* Enable thinkos_irq_ctl system call */
 #define THINKOS_ENABLE_IRQ_CTL          1
-#define THINKOS_ENABLE_IRQ_RESTORE      0
-#define THINKOS_ENABLE_IRQ_CYCCNT       0
-#define THINKOS_ENABLE_IRQ_PRIORITY_0   0
-#define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
-#define THINKOS_ENABLE_WQ_IRQ           0
+#define THINKOS_ENABLE_IRQ_RESTORE      1
+#define THINKOS_ENABLE_IRQ_CYCCNT       1
+#define THINKOS_ENABLE_IRQ_PRIORITY_0   1
+#define THINKOS_ENABLE_IRQ_TIMEDWAIT    1
+#define THINKOS_ENABLE_WQ_IRQ           1
 
 #define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
-#define THINKOS_ENABLE_TIMESHARE        0
+#define THINKOS_ENABLE_TIMESHARE        1
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
@@ -104,12 +104,11 @@
 #endif
 
 /* Allow to interrupt a system call */
-#define THINKOS_ENABLE_BREAK            0
+#define THINKOS_ENABLE_BREAK            1
 
 /* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING        1
 
-#define THINKOS_ENABLE_KRNSVC           0
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
@@ -117,7 +116,7 @@
 #define THINKOS_ENABLE_MONITOR_SCHED    0
 #define THINKOS_ENABLE_MONITOR_SYSCALL  0
 #define THINKOS_MONITOR_STACK_SIZE      512
-#define THINKOS_ENABLE_STACK_LIMIT      0
+#define THINKOS_ENABLE_STACK_LIMIT      1
 
 #define THINKOS_ENABLE_CONSOLE          1
 #define THINKOS_ENABLE_CONSOLE_MISC     0 
@@ -127,16 +126,17 @@
 #define THINKOS_ENABLE_CONSOLE_DRAIN    0
 #define THINKOS_ENABLE_CONSOLE_MODE     0
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
-#define THINKOS_CONSOLE_TX_FIFO_LEN     128
+#define THINKOS_CONSOLE_TX_FIFO_LEN     512
 
-#define THINKOS_EXCEPT_STACK_SIZE       (384)
-#define THINKOS_ENABLE_ERROR_TRAP       0
+#define THINKOS_EXCEPT_STACK_SIZE       512
+#define THINKOS_ENABLE_KRNSVC           1
+#define THINKOS_ENABLE_ERROR_TRAP       1
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
@@ -164,11 +164,10 @@
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 
-#define THINKOS_ENABLE_KRN_TRACE        0
 #define THINKOS_ENABLE_OBJ_ALLOC        1
 #define THINKOS_ENABLE_OBJ_FREE         1
 
-#define THINKOS_ENABLE_I_CALLS          0
+#define THINKOS_ENABLE_I_CALLS          1
 #define THINKOS_ENABLE_THREAD_INFO      1
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
@@ -177,6 +176,8 @@
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
+
+#define THINKOS_ENABLE_PRIVILEGED_THREAD 1
 
 /* -------------------------------------------------------------------------
    RCC 

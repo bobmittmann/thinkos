@@ -44,7 +44,7 @@ void __thinkos_ev_info(unsigned int wq)
 }
 #endif
 
-void thinkos_ev_wait_svc(int32_t * arg, int self)
+void thinkos_ev_wait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int no = wq - THINKOS_EVENT_BASE;
@@ -56,14 +56,14 @@ void thinkos_ev_wait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -126,7 +126,7 @@ again:
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_ev_timedwait_svc(int32_t * arg, int self)
+void thinkos_ev_timedwait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -139,14 +139,14 @@ void thinkos_ev_timedwait_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -204,7 +204,7 @@ again:
 }
 #endif
 
-void __thinkos_ev_raise_i(uint32_t wq, int ev)
+void __thinkos_ev_raise_i(uint32_t wq, unsigned int ev)
 {
 	unsigned int no = wq - THINKOS_EVENT_BASE;
 	uint32_t queue;
@@ -252,7 +252,7 @@ void cm3_except9_isr(uint32_t wq, int ev)
 	__thinkos_preempt();
 }
 
-void thinkos_ev_raise_svc(int32_t * arg)
+void thinkos_ev_raise_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int ev = arg[1];
@@ -262,20 +262,20 @@ void thinkos_ev_raise_svc(int32_t * arg)
 
 	if (ev > 31) {
 		DCC_LOG1(LOG_ERROR, "event %d is invalid!", ev);
-		__THINKOS_ERROR(THINKOS_ERR_EVENT_OUTOFRANGE);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVENT_OUTOFRANGE);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -288,8 +288,7 @@ void thinkos_ev_raise_svc(int32_t * arg)
 	__thinkos_defer_sched();
 }
 
-
-void thinkos_ev_mask_svc(int32_t * arg)
+void thinkos_ev_mask_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int ev = arg[1];
@@ -302,14 +301,14 @@ void thinkos_ev_mask_svc(int32_t * arg)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -378,7 +377,7 @@ again:
 	__thinkos_defer_sched();
 }
 
-void thinkos_ev_clear_svc(int32_t * arg)
+void thinkos_ev_clear_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int ev = arg[1];
@@ -387,14 +386,14 @@ void thinkos_ev_clear_svc(int32_t * arg)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_EVENT_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_EVSET_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

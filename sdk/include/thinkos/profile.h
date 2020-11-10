@@ -514,10 +514,6 @@
 #define THINKOS_ENABLE_MEM_MAP           0
 #endif
 
-#ifndef THINKOS_ENABLE_KRN_TRACE
-#define THINKOS_ENABLE_KRN_TRACE         0
-#endif
-
 #ifndef THINKOS_DMA_MAX 
 #define THINKOS_DMA_MAX                  0
 #endif
@@ -631,6 +627,10 @@
 
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_KRNSVC)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_KRNSVC"
+#endif
+
+#if (THINKOS_ENABLE_I_CALLS) && !(THINKOS_ENABLE_KRNSVC)
+#error "THINKOS_ENABLE_I_CALLS depends on THINKOS_ENABLE_KRNSVC"
 #endif
 
 /* debug step depends on debug breakpoint */
@@ -795,6 +795,11 @@
 #error "THINKOS_ENABLE_EXCEPT_CLEAR is deprecated"
 #endif
 
+#ifdef THINKOS_ENABLE_KRN_TRACE
+#error "THINKOS_ENABLE_KRN_TRACE is deprecated"
+#endif
+
+
 /* -------------------------------------------------------------------------- 
  * FIXME: ??? Not sure what is the intent here ????
  * --------------------------------------------------------------------------*/
@@ -926,7 +931,6 @@ struct thinkos_profile {
 			uint32_t fpu_ls             :1;
 			uint32_t profiling          :1;
 			uint32_t mem_map            :1;
-			uint32_t krn_trace          :1;
 		};
 	} feature;
 

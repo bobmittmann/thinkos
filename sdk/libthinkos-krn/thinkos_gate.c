@@ -37,7 +37,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define __GATE_SIGNALED 1
 #define __GATE_LOCKED   2
 
-void thinkos_gate_wait_svc(int32_t * arg, int self)
+void thinkos_gate_wait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int idx = wq - THINKOS_GATE_BASE;
@@ -48,14 +48,14 @@ void thinkos_gate_wait_svc(int32_t * arg, int self)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -123,7 +123,7 @@ again:
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
-void thinkos_gate_timedwait_svc(int32_t * arg, int self)
+void thinkos_gate_timedwait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -135,14 +135,14 @@ void thinkos_gate_timedwait_svc(int32_t * arg, int self)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -242,14 +242,14 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -259,7 +259,7 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__bit_mem_rd(thinkos_rt.gate, idx * 2 + 1)) {
 		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_UNLOCKED);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_UNLOCKED);
 		arg[0] = THINKOS_EPERM;
 		return;
 	}
@@ -425,7 +425,7 @@ void cm3_except13_isr(uint32_t wq)
 }
 #endif /* THINKOS_ENABLE_I_CALLS */
 
-void thinkos_gate_open_svc(int32_t * arg)
+void thinkos_gate_open_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 
@@ -434,14 +434,14 @@ void thinkos_gate_open_svc(int32_t * arg)
 
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -457,7 +457,7 @@ void thinkos_gate_open_svc(int32_t * arg)
 	__thinkos_defer_sched();
 }
 
-void thinkos_gate_close_svc(int32_t * arg)
+void thinkos_gate_close_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int wq = arg[0];
 	unsigned int idx = wq - THINKOS_GATE_BASE;
@@ -466,14 +466,14 @@ void thinkos_gate_close_svc(int32_t * arg)
 
 	if (idx >= THINKOS_GATE_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_GATE_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

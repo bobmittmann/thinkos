@@ -545,7 +545,7 @@ void __odump(void)
 #if (THINKOS_ENABLE_JOIN)
 	DCC_LOG1(LOG_TRACE, " canceled: (%2d)", THINKOS_WQ_CANCELED); 
 #endif
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	DCC_LOG1(LOG_TRACE, "    fault: (%2d)", THINKOS_WQ_FAULT); 
 #endif
 
@@ -679,6 +679,29 @@ void __xinfo(struct thinkos_except * xcpt)
 					 (bfsr & BFSR_PRECISERR) ?  " PRECISERR" : "",
 					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
 		}
+	}
+#endif
+}
+
+extern uintptr_t __rom_vectors[];
+
+void __vec(void)
+{
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
+	int i;
+	uintptr_t * vec;
+
+	vec = &__rom_vectors[0];
+
+	for (i = 0; i < 16; ++i) {
+		DCC_LOG2(LOG_ERROR, VT_PSH VT_FRD 
+				 "FAULT %2d - 0x%08x" VT_POP, i, vec[i]);
+	}
+
+	vec = &__rom_vectors[16];
+	for (i = 0; i < THINKOS_IRQ_MAX; ++i) {
+		DCC_LOG2(LOG_ERROR, VT_PSH VT_FCY 
+				 "  IRQ %2d - 0x%08x" VT_POP, i, vec[i]);
 	}
 #endif
 }

@@ -117,8 +117,7 @@ const struct thinkos_profile thinkos_profile = {
 		.fpu             = THINKOS_ENABLE_FPU,
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
 		.profiling       = THINKOS_ENABLE_PROFILING,
-		.mem_map         = THINKOS_ENABLE_MEM_MAP,
-		.krn_trace       = THINKOS_ENABLE_KRN_TRACE
+		.mem_map         = THINKOS_ENABLE_MEM_MAP
 	},
 
 	.security = {
@@ -153,7 +152,7 @@ const struct thinkos_profile thinkos_profile = {
 		.step            = THINKOS_ENABLE_DEBUG_STEP,
 		.bkpt            = THINKOS_ENABLE_DEBUG_BKPT,
 		.wpt             = THINKOS_ENABLE_DEBUG_WPT,
-		.fault           = THINKOS_ENABLE_DEBUG_FAULT,
+		.fault           = THINKOS_ENABLE_THREAD_FAULT,
 	},
 
 	.misc = {
@@ -300,8 +299,6 @@ void __profile(void)
 			 p->feature.profiling);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEM_MAP         = %d", 
 			 p->feature.mem_map);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_KRN_TRACE       = %d", 
-			 p->feature.krn_trace);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ARG_CHECK       = %d", 
 			 p->security.arg_check);
@@ -349,7 +346,7 @@ void __profile(void)
 			 p->debug.bkpt);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_WPT       = %d", 
 			 p->debug.wpt);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_FAULT     = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_THREAD_FAULT    = %d", 
 			 p->debug.fault);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IDLE_WFI        = %d", 

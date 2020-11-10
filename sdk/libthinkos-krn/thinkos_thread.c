@@ -29,7 +29,7 @@
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 int __thinkos_thread_fault_code(unsigned int thread_id)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -103,7 +103,7 @@ struct thinkos_context * __thinkos_thread_ctx_init(unsigned int thread_id,
 }
 
 /* initialize a thread context */
-void thinkos_thread_create_svc(int32_t * arg)
+void thinkos_thread_create_svc(int32_t * arg, unsigned int self)
 {
 	struct thinkos_thread_create_args * init = 
 		(struct thinkos_thread_create_args *)arg;
@@ -124,14 +124,14 @@ void thinkos_thread_create_svc(int32_t * arg)
 	thread_id = __thinkos_thread_alloc(target_id);
 
 	if (thread_id < 0) {
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #else
 	thread_id = target_id;
 	if (thread_id >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -152,14 +152,14 @@ void thinkos_thread_create_svc(int32_t * arg)
 	if (!__thinkos_mem_usr_rw_chk(stack_base, stack_size)) {
 		DCC_LOG2(LOG_WARNING, "stack address invalid! base=%08x size=%d", 
 				 stack_base, stack_size);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_STACKADDR);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_STACKADDR);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 
 	if (stack_size < sizeof(struct thinkos_context)) {
 		DCC_LOG1(LOG_WARNING, "stack too small. size=%d", stack_size);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_SMALLSTACK);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_SMALLSTACK);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -188,7 +188,7 @@ void thinkos_thread_create_svc(int32_t * arg)
 	__thinkos_thread_pause_set(thread_id);
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	__thinkos_thread_fault_clr(thread_id);
 #endif
 

@@ -52,14 +52,9 @@ struct {
 	const struct monitor_comm * comm;
 	/* user supplied parameter */
 	void * param;             
+
 	/* break thread id */
 	int8_t brk_thread_id;
-	uint8_t brk_code;
-
-	/* error thread id */
-	int8_t err_thread_id;
-	/* error code */
-	uint8_t err_code;
 
 	/* entry/exit signal thread id */
 	int8_t ret_thread_id;
@@ -343,35 +338,10 @@ int monitor_wait_idle(void)
 	DCC_LOG(LOG_INFO, "IDLE wait...");
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-	uint32_t save;
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t result;
-
 	/* Issue an idle hook request */
 	__idle_hook_req(IDLE_HOOK_NOTIFY_MONITOR);
 
-	save = thinkos_rt.monitor.mask;
-
-	/* set the local mask */
-	evmsk = (1 << MONITOR_IDLE);
-	thinkos_rt.monitor.mask = evmsk;
-	
-	do {
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
-#else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
-#endif
-		do { /* avoid possible race condition on monitor.events */
-			evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
-			result = evset;
-			evset &= evmsk; /* clear the event */
-		} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
-	} while (result == 0);
-	thinkos_rt.monitor.mask = save;
-
-	return (result == evmsk) ? 0 : -1;
+	return monitor_expect(MONITOR_IDLE);
 #else
 	return 0;
 #endif
@@ -384,49 +354,32 @@ int monitor_thread_terminate_get(int * code)
 	if ((thread_id = thinkos_monitor_rt.ret_thread_id) >= 0) {
 		if (code != NULL) {
 			*code = thinkos_monitor_rt.ret_code;
-
 		}
 	}
 
 	return thread_id;
 }
  
-void monitor_signal_thread_terminate(int thread_id, int code) 
+void monitor_signal_thread_terminate(unsigned int thread_id, int code) 
 {
 	thinkos_monitor_rt.ret_thread_id = thread_id;
 	thinkos_monitor_rt.ret_code = code;
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
-void monitor_signal_error(int thread_id, int errno) 
+void monitor_signal_thread_fault(unsigned int thread_id) 
 {
-	thinkos_monitor_rt.err_thread_id = thread_id;
-	thinkos_monitor_rt.err_code = errno;
-	monitor_signal(MONITOR_THREAD_TERMINATE);
+	thinkos_monitor_rt.brk_thread_id = thread_id;
+	monitor_signal(MONITOR_THREAD_FAULT);
 }
 
-
-static inline void __monitor_task_reset(void)
+void monitor_signal_thread_break(unsigned int thread_id) 
 {
-	monitor_signal(MONITOR_RESET);
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
-#else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
-#endif
+	thinkos_monitor_rt.brk_thread_id = thread_id;
+	monitor_signal(MONITOR_THREAD_BREAK);
 }
 
-void __attribute__((naked)) 
-	monitor_exec(void (* task)(const struct monitor_comm *, void *), 
-				void * param)
-{
-	DCC_LOG1(LOG_TRACE, "task=%p", task);
-	thinkos_monitor_rt.task = task;
-	thinkos_monitor_rt.param = param;
-	__monitor_task_reset();
-}
-
-#define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
+#define THINKOS_THREAD_LAST (THINKOS_THREAD_IDLE)
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {
@@ -443,20 +396,15 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 		return -1;
 	}
 
-	if (thread_id == THINKOS_THREAD_VOID) {
-		ctx  = NULL;
-		pc = 0;
-		sp = 0;
-		ctrl = 0;
-	} else if (thread_id == THINKOS_THREAD_IDLE) {
+	if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx  = __thinkos_idle_ctx();
 		pc = ctx->pc;
 		sp = xcpt->msp;
-	} else if (thread_id == xcpt->active) {
+	} else if ((xcpt->errno != 0) && (thread_id == xcpt->active)) {
 		ctx = &xcpt->ctx.core;
-		errno = xcpt->errno;
 		pc = ctx->pc;
 		sp = xcpt->psp;
+		errno = xcpt->errno;
 	} else {
 		ctx = __thinkos_thread_ctx_get(thread_id);
 		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
@@ -465,7 +413,9 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 			return -1;
 		}
 		ctrl = __thinkos_thread_ctrl_get(thread_id);
+		pc = __thinkos_thread_pc_get(thread_id);
 		sp = __thinkos_thread_sp_get(thread_id);
+		errno = __thinkos_thread_errno_get(thread_id);
 	}
 
 	if (inf != NULL) {
@@ -478,11 +428,6 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 	}
 
 	return 0;
-}
-
-int monitor_errno_get(void)
-{
-	return  thinkos_monitor_rt.err_code;
 }
 
 int monitor_thread_break_get(void)
@@ -501,7 +446,28 @@ int monitor_thread_break_get(void)
 void monitor_thread_break_clr(void)
 {
 	thinkos_monitor_rt.brk_thread_id = -1;
-	thinkos_monitor_rt.brk_code = 0;
+	monitor_signal(MONITOR_THREAD_FAULT);
+}
+ 
+static inline void __monitor_task_reset(void)
+{
+	monitor_signal(MONITOR_RESET);
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		__monitor_wait(&thinkos_rt.monitor); 
+#else
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+#endif
+}
+
+void __attribute__((naked)) 
+	monitor_exec(void (* task)(const struct monitor_comm *, void *), 
+				void * param)
+{
+	DCC_LOG1(LOG_TRACE, "task=%p", task);
+	thinkos_monitor_rt.task = task;
+	thinkos_monitor_rt.param = param;
+	__monitor_task_reset();
+	monitor_signal(MONITOR_THREAD_FAULT);
 }
 
 /* -------------------------------------------------------------------------
@@ -550,7 +516,7 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 
 	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
 
-	__monitor_task_reset();
+//	__monitor_task_reset();
 }
 
 /* Prepare the execution environment to invoke the new monitor task. */
@@ -651,8 +617,7 @@ void thinkos_krn_monitor_reset(void)
 
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
-	thinkos_monitor_rt.err_thread_id = -1;
-	thinkos_monitor_rt.err_code = THINKOS_NO_ERROR;
+	thinkos_monitor_rt.brk_thread_id = -1;
 }
 
 
@@ -717,8 +682,7 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
-	thinkos_monitor_rt.err_thread_id = -1;
-	thinkos_monitor_rt.err_code = THINKOS_NO_ERROR;
+	thinkos_monitor_rt.brk_thread_id = -1;
 
 	/* Set the communication channel */
 	thinkos_monitor_rt.comm = comm; 

@@ -41,6 +41,7 @@
 	.cpu cortex-m3
 
 	.text
+
 	.align	4
 	.thumb
 
@@ -48,14 +49,6 @@
 cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
-	nop
-	nop
-	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
-
-	.thumb_func
-thinkos_krn_scheduler:
-	.global tinkos_krn_scheduler
-	.type   thinkos_krn_scheduler, %function
 
 	/* r3: thinkos_rt */
 	ldr.n    r3, .L_thinkos_rt
@@ -66,19 +59,17 @@ thinkos_krn_scheduler:
 #else
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
+
 	cmp      r2, THINKOS_THREAD_IDLE
 
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	bgt      .L_entry_invalid
-#else
 	/* skip invalid ... */
 	bgt      thinkos_sched_select_ready
-#endif
 .L_entry_idle:
 	ittt     eq
 	pusheq   {r4-r11}
     moveq    r0, sp
 	beq      thinkos_sched_swap
+
 
 	/* r1: ready, */
 	/* r2: active, (thread status) */
@@ -168,6 +159,7 @@ thinkos_sched_step_req_check:
 	tst      r5, r4
 	bne.n    thinkos_sched_step
 #endif
+	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 
 	.thumb_func
@@ -201,7 +193,7 @@ thinkos_krn_sched_ctx_restore:
 	tst      r7, #(CONTROL_FPCA)
 	itte     ne
 	/* restore FP context */
-	vldmiane  r12, {s16-s31}
+	vldmiane r12, {s16-s31}
 	/* Synthesizes exception return */
 	movne    lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	moveq    lr, #CM3_EXC_RET_THREAD_PSP
@@ -221,7 +213,7 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_exit_idle:
-    /* restore the control register */
+    /* set the control register */
     msr      CONTROL, r1
     isb
 	movs     r1, #THINKOS_THREAD_IDLE
@@ -244,24 +236,18 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
-.L_entry_invalid:
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	/* VOID thread */
-#endif
-	b        thinkos_sched_select_ready
-
 .L_idle_return:
 	bx       lr
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 .L_idle_err: 
-	bkpt     1
-	b        .L_idle_err
+	movs    r0, #THINKOS_ERR_IDLE_STACK
+	b       thinkos_krn_xcpt_raise
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
-	bkpt     1
-	b        .L_stack_err
+	movs    r0, #THINKOS_ERR_STACK_LIMIT
+	b       thinkos_krn_xcpt_raise
 #endif
 
 	.align  0
@@ -272,7 +258,6 @@ thinkos_krn_sched_ctx_restore:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 #endif
 	.size   thinkos_krn_sched_ctx_restore, . - thinkos_krn_sched_ctx_restore
-	.size   thinkos_krn_scheduler, . - thinkos_krn_scheduler
 
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
@@ -361,6 +346,7 @@ thinkos_sched_step:
 	/* Mask low priority interrupts except debug monitor */
 	mov      r5, #(1 << 5)
 	msr      BASEPRI, r5
+	mov      r1, #0
 	b        .L_exit_idle
 
 

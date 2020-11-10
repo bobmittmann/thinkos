@@ -32,7 +32,7 @@ bool __thinkos_suspended(void)
 #if THINKOS_ENABLE_JOIN
 			suspended |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);
 #endif
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if THINKOS_ENABLE_THREAD_FAULT
 			suspended |= __bit_mem_rd(&thinkos_rt.wq_fault, th);
 #endif
 #if THINKOS_ENABLE_PAUSE

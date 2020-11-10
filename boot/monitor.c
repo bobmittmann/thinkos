@@ -332,13 +332,14 @@ static const char s_crlf[] =  "\r\n";
 static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
 	struct monitor_thread_inf inf;
-	int thread_id;
+	unsigned int thread_id;
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get();
-	monitor_thread_inf_get(thread_id, &inf);
-	__thinkos_pause_all();
 
+	monitor_thread_inf_get(thread_id, &inf);
+
+	//__thinkos_pause_all();
 	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
 
 	if (monitor_comm_isconnected(comm)) {
@@ -360,8 +361,11 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 	}
 
+	__thinkos_thread_errno_set(thread_id, 0);
+	__thinkos_thread_resume(thread_id);
+
 	/* turn the scheduler back on */
-	//thinkos_krn_sched_on();
+	thinkos_krn_sched_on();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -1125,5 +1129,6 @@ is_connected:
 		}
 	}
 }
+
 
 

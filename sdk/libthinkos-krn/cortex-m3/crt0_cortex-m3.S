@@ -93,10 +93,30 @@ _reset:
 	.word   __ctors_start
 .L_ctors_end:
 	.word   __ctors_end
-#ifndef THINKAPP
 .L_main_stack:
     .word   thinkos_main_stack
-#endif
 
 	.size   _reset, . - _reset
+
+#if 0
+	.global _fault
+	.thumb
+	.thumb_func
+	.type   _fault, %function
+_fault:
+	b		.
+	.size   _fault, . - _fault
+
+	.text
+	.align  2
+	.global _isr
+	.thumb
+	.thumb_func
+	.type   _isr, %function
+_isr:
+	mrs     r0, IPSR
+	subs    r0, #16
+	b       cm3_default_isr
+	.size   _isr, . - _isr
+#endif
 

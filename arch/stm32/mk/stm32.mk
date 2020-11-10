@@ -37,22 +37,22 @@ endif
 
 ifneq ($(findstring $(MACH), stm32f405xg stm32f407xg stm32f407xe),)
   CPU = cortex-m4
-  STM32 = stm32f4
+  STM32 = stm32f4x
 endif
 
 ifneq ($(findstring $(MACH), stm32f427xg stm32f427xi),)
   CPU = cortex-m4
-  STM32 = stm32f4
+  STM32 = stm32f4x
 endif
 
 ifneq ($(findstring $(MACH), stm32f429xg stm32f429xe stm32f429xi),)
   CPU = cortex-m4
-  STM32 = stm32f4
+  STM32 = stm32f4x
 endif
 
 ifneq ($(findstring $(MACH), stm32f415xg),)
   CPU = cortex-m4
-  STM32 = stm32f4
+  STM32 = stm32f4x
 endif
 
 ifneq ($(findstring $(MACH), stm32f302 stm32f303 stm32f303xb stm32f303xc),)
@@ -95,6 +95,7 @@ ifndef CPU
 endif
 
 export STM32
+export CPU
 
 CDEFS += $(call uc,$(MACH))
   ifdef HCLK_HZ

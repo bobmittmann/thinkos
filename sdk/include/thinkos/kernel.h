@@ -279,7 +279,7 @@
 #endif
 
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
   #define THINKOS_WQ_FAULT_CNT 1
 #else
   #define THINKOS_WQ_FAULT_CNT 0 
@@ -499,7 +499,7 @@ struct thinkos_rt {
 			uint32_t wq_flash_mem[THINKOS_FLASH_MEM_MAX];
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 			uint32_t wq_fault; /* fault threads wait queue */
 #endif
 		};
@@ -507,6 +507,9 @@ struct thinkos_rt {
 
 #if (THINKOS_ENABLE_THREAD_STAT)
 	uint16_t th_stat[THINKOS_THREADS_MAX]; /* Per thread status */
+#endif
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	int8_t th_errno[THINKOS_THREADS_MAX]; /* Per thread error code */
 #endif
 
 #if (THINKOS_ENABLE_CLOCK)
@@ -768,11 +771,10 @@ void __thinkos_thread_abort(unsigned int thread_id);
  * Support Functions
  * --------------------------------------------------------------------------*/
 
-void __attribute__((noreturn)) thinkos_krn_xcpt_raise(int code);
+void thinkos_krn_svc_err(unsigned int th, int code);
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
-  #define __THINKOS_ERROR(__CODE) thinkos_krn_xcpt_raise(__CODE)
-//  #define __THINKOS_ERROR(__CODE) THINKOS_KRNSVC1(THINKOS_KRNSVC_ERROR, __CODE)
+  #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_svc_err(__TH, __CODE)
 #else
   #define __THINKOS_ERROR(__CODE)
 #endif
@@ -965,6 +967,12 @@ __thread_sl_get(struct thinkos_rt * rt, unsigned int id) {
 #endif /* THINKOS_ENABLE_STACK_LIMIT */
 }
 
+static inline bool __attribute__((always_inline)) 
+__thread_is_in_wq(struct thinkos_rt * rt, unsigned int id, unsigned int wq) {
+	/* is thread in wait queue */
+	return __bit_mem_rd(&rt->wq_lst[wq], id) ? true : false;  
+}
+
 /*
 =========== ============== ============= ============ ===== =====
  EXC_RETURN    Return to   Return stack   Frame type  Priv   Ctrl
@@ -1000,7 +1008,6 @@ __thread_exec_ret_get(struct thinkos_rt * rt, unsigned int id) {
 #endif
 }
 
-
 static inline const struct thinkos_thread_inf * __attribute__((always_inline))  
 __thread_inf_get(struct thinkos_rt * rt, unsigned int id) {
 #if (THINKOS_ENABLE_THREAD_INFO)
@@ -1010,18 +1017,25 @@ __thread_inf_get(struct thinkos_rt * rt, unsigned int id) {
 #endif
 }
 
-static inline void __attribute__((always_inline)) 
-__thread_inf_clr(struct thinkos_rt * rt, unsigned int id) {
-#if (THINKOS_ENABLE_THREAD_INFO)
-	rt->th_inf[id] = NULL;
-#endif
-}
-
 static inline void __attribute__((always_inline))
 __thread_inf_set(struct thinkos_rt * rt, unsigned int id, 
 				 const struct thinkos_thread_inf * inf) {
 #if (THINKOS_ENABLE_THREAD_INFO)
 	rt->th_inf[id] = inf;
+#endif
+}
+
+static inline void __attribute__((always_inline))
+__thread_errno_set(struct thinkos_rt * rt, unsigned int id, int errno) {
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	rt->th_errno[id] = errno;
+#endif
+}
+
+static inline int __attribute__((always_inline))
+__thread_errno_get(struct thinkos_rt * rt, unsigned int id) {
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	return rt->th_errno[id];
 #endif
 }
 
@@ -1082,7 +1096,19 @@ static inline void  __thinkos_thread_inf_set(unsigned int id,
 }
 
 static inline void __thinkos_thread_inf_clr(unsigned int id) {
-	__thread_inf_clr(&thinkos_rt, id);
+	__thread_inf_set(&thinkos_rt, id, NULL);
+}
+
+static inline int __thinkos_thread_errno_get(unsigned int id) {
+	return __thread_errno_get(&thinkos_rt, id);
+}
+
+static inline void __thinkos_thread_errno_set(unsigned int id, int errno) {
+	__thread_errno_set(&thinkos_rt, id, errno);
+}
+
+static inline void __thinkos_thread_errno_clr(unsigned int id) {
+	__thread_errno_set(&thinkos_rt, id, 0);
 }
 
 
@@ -1151,6 +1177,9 @@ __thinkos_thread_lr_set(unsigned int id, uintptr_t val) {
  * thread info access methods 
  * --------------------------------------------------------------------------*/
 
+static inline bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq) {
+	return __thread_is_in_wq(&thinkos_rt, id, wq);
+}
 
 static inline void __attribute__((always_inline)) __thinkos_cancel_sched(void) {
 	struct cm3_scb * scb = CM3_SCB;
@@ -1313,8 +1342,8 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ticks(void) {
 #endif
 
 /* Set the fault flag */
-#if (THINKOS_ENABLE_DEBUG_FAULT)
-static inline void __thinkos_thread_fault_set(unsigned int th) {
+#if (THINKOS_ENABLE_THREAD_FAULT)
+static inline void __thinkos_thread_fault_set(unsigned int th, int errno) {
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 1);
 #if (THINKOS_ENABLE_THREAD_STAT)
 	thinkos_rt.th_stat[th] = THINKOS_WQ_FAULT << 1;
@@ -1323,10 +1352,20 @@ static inline void __thinkos_thread_fault_set(unsigned int th) {
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
 #endif
+	thinkos_rt.th_errno[th] = errno;
+}
+
+/* get the fault flag */
+static inline bool __thinkos_thread_fault_get(unsigned int th) {
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	return __bit_mem_rd(&thinkos_rt.wq_fault, th) ? true : false;
+#endif
+	return false;
 }
 
 /* Clear the fault flag */
 static inline void __thinkos_thread_fault_clr(unsigned int th) {
+	thinkos_rt.th_errno[th] = 0;
 	__bit_mem_wr(&thinkos_rt.wq_fault, th, 0);
 }
 #endif
@@ -1342,7 +1381,6 @@ static inline void __thinkos_thread_pause_clr(unsigned int th) {
 	__bit_mem_wr(&thinkos_rt.wq_paused, th, 0);
 }
 #endif
-
 
 void thinkos_trace_rt(struct thinkos_rt * rt);
 

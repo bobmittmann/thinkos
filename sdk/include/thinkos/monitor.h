@@ -82,18 +82,20 @@ enum monitor_event {
 	MONITOR_THREAD_CREATE   = 8,
 	/* ThinkOS Thread teminate */
 	MONITOR_THREAD_TERMINATE = 9,
-	/* ThinkOS Thread breakpoint */
-	MONITOR_BREAKPOINT      = 10,
+	/* ThinkOS Thread break (stopre	quest, breakpoint.. ) */
+	MONITOR_THREAD_BREAK    = 10,
+	/* Debug Communication break signal */
+	MONITOR_COMM_BRK        = 11, 
 	/* Debug Communication data received pending */
-	MONITOR_COMM_RCV        = 11, 
-	/* Debug Communication end of transfer */
-	MONITOR_COMM_EOT        = 12,
+	MONITOR_COMM_RCV        = 12, 
+	/* Debug Communication end 3f transfer */
+	MONITOR_COMM_EOT        = 14,
 	/* Debug Communication control signal */
-	MONITOR_COMM_CTL        = 13,
+	MONITOR_COMM_CTL        = 15,
 	/* User console RX pipe data pending */
-	MONITOR_RX_PIPE         = 14,
+	MONITOR_RX_PIPE         = 16,
 	/* User console TX pipe not empty */
-	MONITOR_TX_PIPE         = 15,
+	MONITOR_TX_PIPE         = 17,
 
 	/* ThinkOS application stop request */
 	MONITOR_APP_STOP        = 18,
@@ -298,11 +300,18 @@ static inline void __attribute__((always_inline)) __thinkos_monitor_setpend(void
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
-void monitor_signal_thread_terminate(int thread_id, int code);
+void monitor_signal_thread_terminate(unsigned int thread_id, int code);
+void monitor_signal_thread_break(unsigned int thread_id);
+void monitor_signal_thread_fault(unsigned int thread_id);
 
 int monitor_thread_terminate_get(int * code);
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);
+
+
+
+struct thinkos_context * monitor_thread_erro_get(uint8_t * thread_id, 
+												 int8_t * code);
 
 int monitor_thread_break_get(void);
 void monitor_thread_break_clr(void);

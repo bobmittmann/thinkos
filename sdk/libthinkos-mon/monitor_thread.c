@@ -92,7 +92,7 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
 	__thinkos_thread_pause_set(thread_id);
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	__thinkos_thread_fault_clr(thread_id);
 #endif
 

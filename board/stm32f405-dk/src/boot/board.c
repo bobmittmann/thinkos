@@ -208,10 +208,14 @@ void io_init(void)
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 }
 
+void __vec(void);
+
 void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 //	struct stm32f_spi * spi = ICE40_SPI;
+
+	__vec();
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
@@ -261,6 +265,8 @@ void board_on_softreset(void)
 
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+
+	DCC_LOG1(LOG_TRACE, "IRQ=%d", STM32F_IRQ_OTG_FS);
 }
 
 int board_init(void)
@@ -356,10 +362,43 @@ int board_default_task(void *ptr)
 {
 	uint32_t tick;
 
-#if 0
+#if 1
 	DCC_LOG1(LOG_TRACE, "ptr=0x%08x", ptr);
 	__puts("- board default\r\n");
 #endif
+
+	for (tick = 0; tick < 16; ++tick) {
+		thinkos_sleep(125);
+
+		switch (tick & 0x7) {
+		case 0:
+			stm32_gpio_clr(IO_LED1);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED2);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED1);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED2);
+			break;
+		case 4:
+			stm32_gpio_clr(IO_LED3);
+			break;
+		case 5:
+			stm32_gpio_clr(IO_LED4);
+			break;
+		case 6:
+			stm32_gpio_set(IO_LED3);
+			break;
+		case 7:
+			stm32_gpio_set(IO_LED4);
+			break;
+		}
+	}
+
+	thinkos_escalate(NULL, NULL);
 
 	for (tick = 0; tick < 10000000; ++tick) {
 		thinkos_sleep(1000);
@@ -391,8 +430,9 @@ int board_default_task(void *ptr)
 			break;
 		}
 	
-//		__puts("- tick\r\n");
+		__puts("- tick\r\n");
 	}
+
 
 #if 0
 	int x;

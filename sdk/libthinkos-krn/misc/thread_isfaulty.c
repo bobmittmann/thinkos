@@ -22,7 +22,7 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isfaulty(unsigned int th)
 {
 	if (th >= THINKOS_THREADS_MAX)

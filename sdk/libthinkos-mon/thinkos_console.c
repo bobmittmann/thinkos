@@ -142,7 +142,6 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 #if ENABLE_CONSOLE_DEBUG
 	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 	/* pipe->head is declared as volatile, 
@@ -167,7 +166,6 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
 		DCC_LOG4(LOG_PANIC, "head=%u tail=%u len=%d cnt = %d", 
 			 head, tail, THINKOS_CONSOLE_TX_FIFO_LEN, cnt);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 
@@ -234,7 +232,6 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr)
 #if ENABLE_CONSOLE_DEBUG
 	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 
@@ -266,7 +263,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 #if (THINKOS_ENABLE_SANITY_CHECK)	
 	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_TX_FIFO_LEN)) {
 		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+		return;
 	}
 #endif
 
@@ -325,7 +322,6 @@ void thinkos_console_rx_pipe_commit(int cnt)
 #if (THINKOS_ENABLE_SANITY_CHECK)	
 	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_RX_FIFO_LEN)) {
 		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 
@@ -442,7 +438,7 @@ static int __console_wr_break(void)
 }
 #endif
 
-void thinkos_console_svc(int32_t * arg, int self)
+void thinkos_console_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int req = arg[0];
 	unsigned int wq;
@@ -454,7 +450,7 @@ void thinkos_console_svc(int32_t * arg, int self)
 #if ENABLE_CONSOLE_DEBUG
 	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
 		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+		__THINKOS_ERROR(self, THINKOS_ERR_CONSOLE_FAULT);
 	}
 #endif
 
@@ -668,7 +664,7 @@ wr_again:
 drain_again:
 #if ENABLE_CONSOLE_DEBUG
 		if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
-			__THINKOS_ERROR(THINKOS_ERR_CONSOLE_FAULT);
+			__THINKOS_ERROR(self, THINKOS_ERR_CONSOLE_FAULT);
 		}
 #endif
 		if (tx_pipe_isempty()) {
@@ -748,7 +744,7 @@ drain_again:
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
-		__THINKOS_ERROR(THINKOS_ERR_CONSOLE_REQINV);
+		__THINKOS_ERROR(self, THINKOS_ERR_CONSOLE_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}

@@ -22,7 +22,7 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
-#if THINKOS_ENABLE_JOIN || THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_JOIN) || (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isalive(unsigned int th)
 {
 //	bool dead;
@@ -37,7 +37,7 @@ bool __thinkos_thread_isalive(unsigned int th)
 #if THINKOS_ENABLE_JOIN
 	dead |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);
 #endif
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if THINKOS_ENABLE_THREAD_FAULT
 	dead |= __bit_mem_rd(&thinkos_rt.wq_fault, th);
 #endif
 

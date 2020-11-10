@@ -27,12 +27,6 @@
 #error "Never use <thinkos/syscalls.h> directly; include <thinkos.h> instead."
 #endif 
 
-#define __THINKOS_PROFILE__
-#include <thinkos/profile.h>
-
-#include <stdint.h>
-#include <sys/types.h>
-
 /* -------------------------------------------------------------------------- 
  * Service numbers
  * --------------------------------------------------------------------------*/
@@ -118,6 +112,8 @@
 
 #define THINKOS_FLASH_MEM             57
 
+#define THINKOS_SYSCALL_CNT           58 
+
 /* THINKOS_CONSOLE options */
 #define CONSOLE_WRITE                  0
 #define CONSOLE_READ                   1
@@ -175,6 +171,12 @@
 #define THINKOS_FLASH_MEM_UNLOCK       7
 
 #ifndef __ASSEMBLER__
+
+#define __THINKOS_PROFILE__
+#include <thinkos/profile.h>
+
+#include <stdint.h>
+#include <sys/types.h>
 
 /* ------------------------------------------------------------------------- 
  * C service call macros 

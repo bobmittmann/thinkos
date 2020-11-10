@@ -19,12 +19,18 @@
  * http://www.gnu.org/
  */
 
+
+#include <stdint.h> 
+extern const uint8_t thinkos_obj_type_lut[];
+
+static inline unsigned int __thinkos_obj_kind(unsigned int oid) {
+	return thinkos_obj_type_lut[oid];
+}
+
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
-
-extern const uint8_t thinkos_obj_type_lut[];
 
 #if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
 
@@ -309,11 +315,16 @@ static bool paused_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
-	return false;
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", 
+			 __thinkos_thread_pc_get(thread_id));
+
+	/* Is the thread error condition clear ? */
+	if (__thinkos_thread_errno_get(thread_id) == 0)
+		__thinkos_wakeup(wq, thread_id);
+	return true;
 }
 #endif
 
@@ -367,7 +378,7 @@ static const thread_resume_t thread_resume_lut[] = {
 #if THINKOS_IRQ_MAX > 0
 	[THINKOS_OBJ_IRQ]      = irq_resume,
 #endif
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	[THINKOS_OBJ_FAULT] = fault_resume,
 #endif
 };
@@ -441,46 +452,48 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 
 bool __thinkos_thread_resume(unsigned int thread_id)
 {
-#if THINKOS_ENABLE_PAUSE
-	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) == 0) {
-		DCC_LOG1(LOG_INFO, "thread=%d is not paused!", thread_id);
-		/* not paused, this is not an error condition. */
-		return false;
-	}
-
-	/* remove from the paused queue */
-	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 0);  
+#if !(THINKOS_ENABLE_PAUSE) && !(THINKOS_ENABLE_THREAD_FAULT)
+	return false;
 #endif
 
-#if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
+#if (THINKOS_ENABLE_THREAD_STAT)
 	{
 		bool (* resume)(unsigned int, unsigned int, bool);
 		unsigned int wq;
 		bool tmw;
-		int stat;
 		int type;
 
 		/* reinsert the thread into a waiting queue, including ready  */
-		stat = thinkos_rt.th_stat[thread_id];
-		wq = stat >> 1;
-		tmw = stat & 1;
-		type = thinkos_obj_type_lut[wq];
-		DCC_LOG4(LOG_INFO, "thread=%d wq=%d clk=%d type=%d", 
+		wq = __thread_wq_get(&thinkos_rt, thread_id);
+		tmw = __thread_tmw_get(&thinkos_rt, thread_id);
+		type = __thinkos_obj_kind(wq);
+		DCC_LOG4(LOG_TRACE, "thread=%d wq=%d clk=%d type=%d", 
 				 thread_id, wq, tmw, type);
 		resume = thread_resume_lut[type];
 		return resume(thread_id, wq, tmw);
 	}
 #else
+  #if (THINKOS_ENABLE_PAUSE)
+	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
+		/* remove from the paused queue */
+		__thinkos_thread_pause_clr(thread_id);  
+	} 
+  #endif
+  #if (THINKOS_ENABLE_THREAD_FAULT)
+	if (__bit_mem_rd(&thinkos_rt.wq_fault, thread_id) != 0) {
+		__thinkos_thread_fault_clr(thread_id);
+	}
+  #endif
 	DCC_LOG1(LOG_INFO, "thread=%d [ready]", thread_id);
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
-#endif /* (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT) */
+#endif /* (THINKOS_ENABLE_THREAD_STAT) */
 
 	return true;
 }
 
 #if THINKOS_ENABLE_PAUSE
 
-void thinkos_resume_svc(int32_t * arg)
+void thinkos_resume_svc(int32_t * arg, unsigned int self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -489,14 +502,14 @@ void thinkos_resume_svc(int32_t * arg)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -517,7 +530,7 @@ void thinkos_resume_svc(int32_t * arg)
 		__thinkos_defer_sched();
 }
 
-void thinkos_pause_svc(int32_t * arg, int self)
+void thinkos_pause_svc(int32_t * arg, unsigned int self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -532,14 +545,14 @@ void thinkos_pause_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (thread_id >= THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
 	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -561,4 +574,5 @@ void thinkos_pause_svc(int32_t * arg, int self)
 }
 
 #endif /* THINKOS_ENABLE_PAUSE */
+
 

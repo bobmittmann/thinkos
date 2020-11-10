@@ -60,67 +60,14 @@ void __attribute__((noreturn))
 	thinkos_krn_fatal_except(struct thinkos_except * xcpt)
 {
 #if DEBUG
-	struct cm3_scb * scb = CM3_SCB;
-	uint32_t hfsr;
-
 	mdelay(500);
 
-	hfsr = scb->hfsr;
+	DCC_LOG(LOG_PANIC, "Fatal exception");
 
-	DCC_LOG3(LOG_PANIC, "Hard fault:%s%s%s", 
-			 (hfsr & SCB_HFSR_DEBUGEVT) ? " DEBUGEVT" : "",
-			 (hfsr & SCB_HFSR_FORCED) ?  " FORCED" : "",
-			 (hfsr & SCB_HFSR_VECTTBL) ? " VECTTBL" : "");
-	DCC_LOG1(LOG_PANIC, " HFSR=%08x", scb->hfsr);
-	DCC_LOG1(LOG_PANIC, " CFSR=%08x", xcpt->cfsr);
-	DCC_LOG1(LOG_PANIC, " BFAR=%08x", xcpt->bfar);
-	DCC_LOG1(LOG_PANIC, "MMFAR=%08x", xcpt->mmfar);
+	mdelay(250);
 
-	if (hfsr & SCB_HFSR_FORCED) {
-		uint32_t mmfsr;
-		uint32_t bfsr;
-		uint32_t ufsr;
+	__xinfo(xcpt);
 
-		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
-		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		(void)bfsr;
-		(void)ufsr;
-		(void)mmfsr ;
-
-		DCC_LOG1(LOG_PANIC, "BFSR=%08X", bfsr);
-		if (bfsr) {
-			DCC_LOG7(LOG_PANIC, "    %s%s%s%s%s%s%s", 
-					 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
-					 (bfsr & BFSR_LSPERR) ? " LSPERR" : "",
-					 (bfsr & BFSR_STKERR) ? " STKERR" : "",
-					 (bfsr & BFSR_UNSTKERR) ?  " UNSTKERR" : "",
-					 (bfsr & BFSR_IMPRECISERR) ?  " IMPRECISERR" : "",
-					 (bfsr & BFSR_PRECISERR) ?  " PRECISERR" : "",
-					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
-		}
-
-		DCC_LOG1(LOG_PANIC, "UFSR=%08X", ufsr);
-		if (ufsr) {
-			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
-					 (ufsr & UFSR_DIVBYZERO)  ? " DIVBYZERO" : "",
-					 (ufsr & UFSR_UNALIGNED)  ? " UNALIGNED" : "",
-					 (ufsr & UFSR_NOCP)  ? " NOCP" : "",
-					 (ufsr & UFSR_INVPC)  ? " INVPC" : "",
-					 (ufsr & UFSR_INVSTATE)  ? " INVSTATE" : "",
-					 (ufsr & UFSR_UNDEFINSTR)  ? " UNDEFINSTR" : "");
-		}
-		DCC_LOG1(LOG_PANIC, "MMFSR=%08X", mmfsr);
-		if (mmfsr) {
-			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
-					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
-					 (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
-					 (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
-					 (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
-					 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
-					 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-		}
-	}
 
 	__pdump();
 
@@ -145,8 +92,6 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
 	mdelay(250);
 
 	__xinfo(xcpt);
-
-	__pdump();
 
 	DCC_EXCEPT_DUMP(xcpt);
 

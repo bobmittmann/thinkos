@@ -37,14 +37,14 @@ void thinkos_mutex_lock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -62,7 +62,7 @@ void thinkos_mutex_lock_svc(int32_t * arg, int self)
 	/* Sanity check: the current thread already owns the lock */
 	if (thinkos_rt.lock[mutex] == self) {
 		DCC_LOG2(LOG_WARNING, "<%d> mutex %d, possible deadlock!", self, wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_LOCKED);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
 		arg[0] = THINKOS_EDEADLK;
 		return;
 	}
@@ -87,14 +87,14 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -109,7 +109,7 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_DEADLOCK_CHECK
 		if (thinkos_rt.lock[mutex] == self) {
 			DCC_LOG2(LOG_MSG, "<%d> mutex %d deadlock.", self, wq);
-			__THINKOS_ERROR(THINKOS_ERR_MUTEX_LOCKED);
+			__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
 			arg[0] = THINKOS_EDEADLK;
 		} else
 #endif
@@ -130,14 +130,14 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	if (__bit_mem_rd(&thinkos_rt.mutex_alloc, mutex) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -154,7 +154,7 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_DEADLOCK_CHECK
 	/* Sanity check: the current thread already owns the lock */
 	if (thinkos_rt.lock[mutex] == self) {
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_LOCKED);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
 		arg[0] = THINKOS_EDEADLK;
 		return;
 	}
@@ -185,14 +185,14 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (mutex >= THINKOS_MUTEX_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_MUTEX_ALLOC
 	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -205,7 +205,7 @@ void thinkos_mutex_unlock_svc(int32_t * arg, int self)
 	if (thinkos_rt.lock[mutex] != self) {
 		DCC_LOG3(LOG_ERROR, "<%d> mutex %d is locked by <%d>!", 
 				 self, wq, thinkos_rt.lock[mutex]);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_NOTMINE);
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
 		arg[0] = THINKOS_EPERM;
 		return;
 	}

@@ -71,8 +71,8 @@ CFILES = stm32f1x-init.c stm32f-gpio.c \
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))
 endif
 
-ifeq ($(STM32), stm32f4)
-SFILES = stm32f-vec.S
+ifeq ($(STM32), stm32f4x)
+SFILES = stm32f4x-vec.S
 
 CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c stm32f-exti.c stm32f-mco.c\

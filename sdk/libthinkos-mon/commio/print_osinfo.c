@@ -139,7 +139,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 			oid = THINKOS_WQ_READY; /* FIXME */
 			tmw = (thinkos_rt.wq_clock & (1 << i)) ? true : false;
 #endif
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if THINKOS_ENABLE_THREAD_FAULT
 			if (oid == THINKOS_WQ_FAULT) {
 				struct thinkos_except * xcpt = __thinkos_except_buf();
 				monitor_printf(comm, " | ERR %2d", xcpt->errno);

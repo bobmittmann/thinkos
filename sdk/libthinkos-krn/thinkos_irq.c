@@ -86,13 +86,13 @@ void cm3_default_isr(unsigned int irq)
 }
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
+void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, unsigned int self) {
 	unsigned int irq = arg[0];
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -110,14 +110,14 @@ void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, int self) {
 	}
 }
 
-void thinkos_irq_timedwait_svc(int32_t * arg, int self)
+void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
-		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -146,14 +146,14 @@ void thinkos_irq_timedwait_svc(int32_t * arg, int self)
 }
 #endif
 
-void thinkos_irq_wait_svc(int32_t * arg, int self)
+void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int irq = arg[0];
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -196,7 +196,7 @@ extern int __sizeof_rom_vectors;
 extern void * __ram_vectors[];
 #endif
 
-void thinkos_irq_ctl_svc(int32_t * arg, int self)
+void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
@@ -207,7 +207,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, int self)
 
 	if (irq >= irq_max) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__THINKOS_ERROR(THINKOS_ERR_IRQ_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

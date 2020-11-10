@@ -137,7 +137,8 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #if DEBUG
 	udelay(0x8000);
 #endif
-	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) | 
+	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+					 THINKOS_OPT_PRIVILEGED |
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
 	DCC_LOG(LOG_TRACE, "3. board_init().");

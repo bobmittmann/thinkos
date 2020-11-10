@@ -96,7 +96,7 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1

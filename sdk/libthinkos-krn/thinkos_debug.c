@@ -66,7 +66,7 @@ const char * __retstr(uint32_t __ret)
 	return s;
 }
 
-void __thinkos_obj_kind(void)
+void __objkind(void)
 {
 	int kind;
 
@@ -406,4 +406,5 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 }
 
 #endif
+
 

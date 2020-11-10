@@ -21,6 +21,65 @@
 
 #include <sys/stm32f.h>
 
+void nvic_irq0_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq1_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq2_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq3_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq4_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq5_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq6_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+void nvic_irq7_isr(void) __attribute__((weak, alias("__nvic_irq_isr")));
+
+typedef void (* nvic_isr_t)(void);
+
+void _reset(void);
+extern uintptr_t _stack;
+extern uintptr_t ice_comm_blk;
+
+void nmi_isr(void);
+void hard_fault_isr(void);
+void mem_manage_isr(void);
+void bus_fault_isr(void);
+void usage_fault_isr(void);
+void except7_isr(void);
+void except9_isr(void);
+void except10_isr(void);
+void svc_isr(void);
+void debug_mon_isr(void);
+void except13_isr(void);
+void pendsv_isr(void);
+void systick_isr(void);
+
+
+typedef void (* nvic_isr_t)(void);
+
+uintptr_t fault_vector[] = {
+	(uintptr_t)&_stack,
+	(uintptr_t)_reset,
+	(uintptr_t)cm3_nmi_isr,
+	(uintptr_t)cm3_hard_fault_isr,
+	(uintptr_t)cm3_mem_manage_isr,
+	(uintptr_t)cm3_bus_fault_isr,
+	(uintptr_t)cm3_usage_fault_isr,
+	(uintptr_t)cm3_except7_isr,
+	(uintptr_t)ice_comm_blk,
+	(uintptr_t)cm3_except9_isr,
+	(uintptr_t)cm3_except10_isr,
+	(uintptr_t)cm3_svc_isr,
+	(uintptr_t)cm3_debug_mon_isr,
+	(uintptr_t)cm3_except13_isr,
+	(uintptr_t)cm3_pendsv_isr,
+	(uintptr_t)cm3_systick_isr
+} __attribute__((section(".rom_vectors")))
+
+uintptr_t fault_vector[] = {
+};
+
+void nvic_isr(int irqno)
+{
+
+	nvic_vector[irqno]();
+}
 #ifndef THINKAPP
 	.syntax unified
 	.cpu cortex-m3
@@ -30,24 +89,6 @@
 	/* ---------------------------------------------------------------------
 	 * Generate the vectors table 
 	 * --------------------------------------------------------------------- */
-.macro cortex_m_vectors
-	.word	_stack
-	.word   _reset
-	.word   cm3_nmi_isr
-	.word   cm3_hard_fault_isr
-	.word   cm3_mem_manage_isr
-	.word   cm3_bus_fault_isr
-	.word   cm3_usage_fault_isr
-	.word   cm3_except7_isr
-	.word   ice_comm_blk
-	.word   cm3_except9_isr
-	.word   cm3_except10_isr
-	.word   cm3_svc_isr
-	.word   cm3_debug_mon_isr
-	.word   cm3_except13_isr
-	.word   cm3_pendsv_isr
-	.word   cm3_systick_isr
-.endm
 
 .macro stm32f_irq_vectors
 	.word	stm32f_wwdg_isr         /*  0 Window WatchDog */
@@ -666,7 +707,6 @@ _isr:
 	.weak       stm32f_hash_rng_isr
 	.thumb_set  stm32f_hash_rng_isr,_isr
 
-#if defined(STM32F4X)
 	.weak       stm32f_fpu_isr
 	.thumb_set  stm32f_fpu_isr,_isr
 
@@ -696,27 +736,6 @@ _isr:
 
 	.weak       stm32f_dma2d_isr
 	.thumb_set  stm32f_dma2d_isr,_isr
-#endif
-
-#if defined(STM32F446X)
-	.weak       stm32f_sai2_isr
-	.thumb_set  stm32f_sai2_isr,_isr
-
-	.weak       stm32f_qspi_isr
-	.thumb_set  stm32f_qspi_isr,_isr
-
-	.weak       stm32f_cec_isr
-	.thumb_set  stm32f_cec_isr,_isr
-
-	.weak       stm32f_spdif_rx_isr
-	.thumb_set  stm32f_spdif_rx_isr,_isr
-
-	.weak       stm32f_fmpi2c1_isr
-	.thumb_set  stm32f_fmpi2c1_isr,_isr
-
-	.weak       stm32f_fmpi2c1_err_isr
-	.thumb_set  stm32f_fmpi2c1_err_isr,_isr
-#endif
 
 	.end
 

@@ -171,8 +171,8 @@ thinkos_krn_xcpt_raise:
 	ldr     r0, [r2, #THINKOS_RT_READY_OFFS]
 	str     r0, [r3, #THINKOS_EXCEPT_READY_OFFS]
 
-	/* Prepare to return to IDLE */
-	movs    r0, #THINKOS_THREAD_IDLE 
+	/* Prepare to return */
+	movs    r0, #THINKOS_THREAD_VOID
 	str     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
 	/* Force clearing the ready queue */
 	movs    r0, #0
@@ -211,15 +211,25 @@ thinkos_krn_xcpt_raise:
 	ands    r1, #SCB_ICSR_RETTOBASE 
 	beq     .L_reset_idle
 
-	/* Exception on idle thread ? */
-	tst     lr, #CM3_EXC_RET_SPSEL
+	/* Exception returns to idle thread ? */
+	cmp     lr, #CM3_EXC_RET_THREAD_MSP
 	beq     .L_reset_idle
 
+	/* Exception on idle thread ? */
+	ldr     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
+	cmp     r2, #THINKOS_THREAD_IDLE
+	beq     .L_reset_idle
+
+	/* Load the idle context pointer from the context vector */
+	ldr     r2, .L_thinkos_rt
+	ldr     r7, [r2, #THINKOS_THREAD_IDLE * 4]
 	/* Check for stack availability */
-	cmp     sp, r3
+	cmp     r7, r3
 	ble     .L_reset_idle
 
+
 	/* Restore idle core context */
+	mov     sp, r7
 	pop     {r4-r11}
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
@@ -228,10 +238,13 @@ thinkos_krn_xcpt_raise:
 
 .L_reset_idle:
 	/* Reset the exception stack */
-	add     r2, r0, #THINKOS_EXCEPT_STACK_SIZE - SIZEOF_THINKOS_BASIC_CONTEXT
-	mov     sp, r2
+	bl      thinkos_krn_idle_reset
+	mov     sp, r0
+	ldr     r0, .L_xcpt_buf
 	/* Restore idle core context */
 	pop     {r4-r11}
+	/* Synthesizes exception return */
+	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the fatal exception handler */
 	b       thinkos_krn_fatal_except
 
@@ -332,52 +345,10 @@ cm3_debug_mon_isr:
 #endif /* THINKOS_ENABLE_DBGMON */
 
 	.align  2
-	.global cm3_svc_isr
-	.thumb
-	.thumb_func
-	.type   cm3_svc_isr, %function
-cm3_svc_isr:
-	ldr     r3, .L_thinkos_rt_1
-	ldr     r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	/* get the effective thread id */
-	ands    r1, #0x3f
-#endif
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-	ldr     r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
-	adds    r0, r1, #1
-	lsrs    r2, r0
-	bcc     1f
-	ldr     r3, .L_cm3_scb_1
-	mov     r0, #SCB_ICSR_PENDSVSET
-	str     r0, [r3, #SCB_ICSR_OFFS]
-1:
-#endif
-
-	/* The IDLE thread is the only using the main stack MSP, all
-	   other threads use the PSP. No exception is allowed to call
-	   SVC */
-	mrs     r0, PSP
-	/* Get PC from the stack */
-	ldr     r2, [r0, #(6 * 4)] 
-	/* Read the SVC number from the instruction */
-	ldrb    r2, [r2, #-2]
-	/* call the service handler demultiplexer */
-	b       thinkos_svc_isr
-
-	.align  2
-.L_thinkos_rt_1:
-	.word   thinkos_rt
-.L_cm3_scb_1:
-	.word   CM3_SCB_BASE
-	.size   cm3_svc_isr, . - cm3_svc_isr
-	.align  2
 	.global thinkos_vec_nm
 	.section .rodata,"a",%progbits
 	.type   thinkos_vec_nm, %object
 	.size   thinkos_vec_nm, 4
 thinkos_vec_nm:
 	.ascii  "VEC\000"
-
-
+ 

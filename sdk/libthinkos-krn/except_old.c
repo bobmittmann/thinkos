@@ -71,7 +71,7 @@ void __attribute__((noreturn)) __xcpt_return(struct thinkos_except * xcpt)
 	ipsr = xcpt->ctx.core.xpsr & 0x1ff;
 	if ((ipsr == 0) || (ipsr == CM3_EXCEPT_SVC)) {
 		if ((__xcpt_active_get(xcpt) > 0) && (__xcpt_active_get(xcpt) <= THINKOS_THREADS_MAX)) {
-#if (THINKOS_ENABLE_DEBUG_FAULT)
+#if (THINKOS_ENABLE_THREAD_FAULT)
 			/* flag the thread as faulty */
 			__thinkos_thread_fault_set(__thinkos_active_get());
 #endif

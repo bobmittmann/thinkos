@@ -61,7 +61,7 @@ static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 
 extern int32_t udelay_factor;
 
-void thinkos_ctl_svc(int32_t * arg)
+void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 {
 	unsigned int req = arg[0];
 	int32_t * pval;
@@ -125,7 +125,7 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
-		__THINKOS_ERROR(THINKOS_ERR_CTL_REQINV);
+		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}

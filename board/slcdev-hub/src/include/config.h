@@ -132,7 +132,7 @@
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
 
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
@@ -162,7 +162,6 @@
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 
-#define THINKOS_ENABLE_KRN_TRACE        1
 #define THINKOS_ENABLE_OBJ_ALLOC        1
 #define THINKOS_ENABLE_OBJ_FREE         1
 

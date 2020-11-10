@@ -786,9 +786,11 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* toggle if the bit is not set */
 			toggle = ~(status ^ dev->shadow) & COMM_ST_BREAK_REQ;
 			dev->status = status ^ toggle;
-
+#if 0
 			/* signal monitor */
 			monitor_signal(MONITOR_COMM_CTL);
+#endif
+			monitor_signal(MONITOR_COMM_BRK);
 		}
 
 		break;
@@ -1085,4 +1087,5 @@ const struct monitor_comm * custom_comm_getinstance(void)
 }
 
 #endif
+
 

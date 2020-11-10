@@ -45,16 +45,18 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
-  SFILES = cortex-m4f/thinkos_sched-cortex-m4f.S \
-		   cortex-m3/crt0_cortex-m3.S \
-		   cortex-m3/thinkos_vec_cortex-m3.S
+  SFILES = cortex-m3/crt0_cortex-m3.S \
+		   cortex-m3/thinkos_vec-cortex-m3.S \
+		   cortex-m3/thinkos_svc-cortex-m3.S \
+		   cortex-m4f/thinkos_sched-cortex-m4f.S
 #		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
 endif
 
 ifeq ($(CPU), cortex-m3)
-  SFILES = cortex-m3/thinkos_sched-cortex-m3.S \
-		   cortex-m3/crt0_cortex-m3.S \
-		   cortex-m3/thinkos_vec_cortex-m3.S
+  SFILES = cortex-m3/crt0_cortex-m3.S \
+		   cortex-m3/thinkos_vec_cortex-m3.S \
+		   cortex-m3/thinkos_svc-cortex-m3.S \
+		   cortex-m3/thinkos_sched-cortex-m3.S \
 #		   cortex-m3/thinkos_sched-cortex-m3-basic.S
 endif
 

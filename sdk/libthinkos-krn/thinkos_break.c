@@ -31,7 +31,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 extern const uint8_t thinkos_obj_type_lut[];
 
-void thinkos_break_svc(int32_t * arg)
+void thinkos_break_svc(int32_t * arg, unsigned int self)
 {	
 	unsigned int wq = arg[0];
 	int th;
@@ -42,7 +42,7 @@ void thinkos_break_svc(int32_t * arg)
 	int type;
 
 	if (wq >= THINKOS_WQ_CNT) {
-		__THINKOS_ERROR(THINKOS_ERR_OBJECT_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -55,7 +55,7 @@ void thinkos_break_svc(int32_t * arg)
 
 	if ((alloc != NULL) && __bit_mem_rd(alloc, idx) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_OBJECT_ALLOC);
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
