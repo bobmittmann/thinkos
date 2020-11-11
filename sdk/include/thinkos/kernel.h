@@ -642,6 +642,8 @@ static inline unsigned int __thinkos_obj_kind(unsigned int oid) {
 	return thinkos_obj_kind_lut[oid];
 }
 
+bool __thinkos_obj_alloc_check(unsigned int oid);
+
 void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 
 void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code);

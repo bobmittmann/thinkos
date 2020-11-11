@@ -106,6 +106,36 @@ static const uint8_t thinkos_obj_cnt_lut[] = {
 	[THINKOS_OBJ_GATE]      = THINKOS_WQ_GATE_CNT,
 };
 
+bool __thinkos_obj_alloc_check(unsigned int oid)
+{
+	unsigned int kind;
+	unsigned int idx;
+	uint32_t * bmp;
+	unsigned int max;
+	unsigned int base;
+
+	if (oid >= THINKOS_WQ_CNT) {
+		return false;
+	}
+
+	kind = __thinkos_obj_kind(oid);
+
+	if (kind > THINKOS_OBJ_GATE) {
+		return true;
+	}
+
+	bmp = thinkos_obj_alloc_lut[kind];
+	base = thinkos_wq_base_lut[kind];
+	idx = oid - base;
+	max = thinkos_obj_cnt_lut[kind];
+	if (idx >= max) {
+		return false;
+	}
+
+	return __bit_mem_rd(bmp, idx) ? true : false;
+}
+
+
 #if (THINKOS_ENABLE_OBJ_ALLOC)
 void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 {

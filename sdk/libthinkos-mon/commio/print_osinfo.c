@@ -182,7 +182,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 				/* FIXME: implement some info ...*/
 #endif
 			} else {
-				type = thinkos_obj_type_get(oid);
+				type = __thinkos_obj_kind(oid);
 				monitor_printf(comm, " | %c%c %3d", 
 						 tmw ? 'T' : ' ',
 						 thinkos_type_prefix_lut[type], 
@@ -217,7 +217,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 		int type;
 		wq = rt->wq_lst[j];
 		if (wq) { 
-			type = thinkos_obj_type_get(j);
+			type = __thinkos_obj_kind(j);
 			monitor_printf(comm, "%3d %5s: {", j, thinkos_type_name_lut[type]);
 			for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 				if (wq & (1 << i)) 

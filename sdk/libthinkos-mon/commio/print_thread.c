@@ -112,7 +112,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	cyccnt = 0;
 #endif
 
-	type = thinkos_obj_type_get(wq);
+	type = __thinkos_obj_kind(wq);
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
