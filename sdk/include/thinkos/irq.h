@@ -33,20 +33,20 @@
 
 #define DEBUGGER_PRIORITY       (0 << 5)
 #define EXCEPT_PRIORITY         (1 << 5)
+#define MONITOR_PRIORITY        (2 << 5)
 #define IRQ_VERY_HIGH_PRIORITY  (2 << 5)
 #define IRQ_HIGH_PRIORITY       (3 << 5)
 #define IRQ_DEF_PRIORITY        (4 << 5)
 #define IRQ_LOW_PRIORITY        (5 << 5)
 #define IRQ_VERY_LOW_PRIORITY   (6 << 5)
-#define CLOCK_PRIORITY          ((7 << 5) + 0x1d)
-#define SYSCALL_PRIORITY        ((7 << 5) + 0x1e)
-#define SCHED_PRIORITY          ((7 << 5) + 0x1f)
 
+#define SYSCALL_PRIORITY        (7 << 5)
+#define SCHED_PRIORITY          (7 << 5)
 
-#if (THINKOS_ENABLE_DEBUG)
-  #define MONITOR_PRIORITY      (DEBUGGER_PRIORITY)
+#if (THINKOS_ENABLE_MONITOR)
+  #define CLOCK_PRIORITY          (MONITOR_PRIORITY)
 #else
-  #define MONITOR_PRIORITY      (CLOCK_PRIORITY)
+  #define CLOCK_PRIORITY          (SYSCALL_PRIORITY)
 #endif
 
 #ifdef __cplusplus

@@ -182,21 +182,21 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	 *  0x20 - high priority interrupts
 	 *  0x40   .
 	 *
-	 *  0x60 - SVC
 	 *  0x80 - regular priority interrupts
-	 * 
-	 *  0xa0 - SysTick
-	 *  0xc0 - PendSV (scheduler)
-	 *
 	 *  0xe0 - very low priority interrupts
+
+	 *  0xa0 - SysTick
+	 *  0x60 - SVC
+	 *  0xc0 - PendSV (scheduler)
 	 */
 
-	/* SVC should not be preempted by the scheduler, thus it runs 
-	   at higher priority. */
-	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
-	/* SysTick interrupt has to have a lower priority then SVC,
-	 to not preempt SVC */
+	/* SysTick interrupt has to have a lower priority */ 
 	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
+
+	/* SVC should not be preempted by the scheduler, thus it runs 
+	   at same priority. */
+	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
+
 	/* PendSV interrupt has to have the lowest priority among
 	   regular interrupts (higher number) */
 	cm3_except_pri_set(CM3_EXCEPT_PENDSV, SCHED_PRIORITY);

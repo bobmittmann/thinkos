@@ -65,15 +65,12 @@ thinkos_krn_scheduler:
 #endif
 
 	cmp      r2, THINKOS_THREAD_IDLE
-
 	/* skip invalid ... */
 	bgt      thinkos_sched_select_ready
-.L_entry_idle:
 	ittt     eq
 	pusheq   {r4-r11}
     moveq    r0, sp
-	beq      thinkos_sched_swap
-
+	beq      thinkos_sched_update_cyccnt
 
 	/* r1: ready, */
 	/* r2: active, (thread status) */
@@ -86,16 +83,23 @@ thinkos_krn_scheduler:
 #endif
 	stmdb    r0!, {r4-r11}
 
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	mrs      r7, CONTROL
+	adds     r0, r7
+	adds     r0, #(CONTROL_SPSEL)
+#else
+	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+#endif
+
 thinkos_sched_update_cyccnt:
 #if (THINKOS_ENABLE_PROFILING)
-	/* DWT.SYCCNT */
 	ldr.n    r6, .L_cm_dwt
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n    r6, [r6, #4]
 	/* update the reference */
   #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* r4: step_req */
-	/* r5: cycref */
+	/* r5: th_cycsum */
 	ldrd	 r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
   #else
 	/* r5: cycref */
@@ -111,14 +115,11 @@ thinkos_sched_update_cyccnt:
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
 	str      r5, [r7, r2, lsl #2]
-#endif
-
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-	mrs      r7, CONTROL
-	adds     r0, r7
-	adds     r0, #(CONTROL_SPSEL)
 #else
-	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+  #if (THINKOS_ENABLE_DEBUG_STEP)
+	/* r4: step_req */
+	ldr      r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
+  #endif
 #endif
 
 thinkos_sched_swap:

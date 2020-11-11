@@ -372,12 +372,12 @@
  The GCC compiler flag: -mno-unaligned-access must
  be enabled to avoid generating unaligned code. */
 #ifndef THINKOS_ENABLE_UNALIGN_TRAP
-#define THINKOS_ENABLE_UNALIGN_TRAP     1
+#define THINKOS_ENABLE_UNALIGN_TRAP     0
 #endif
 
 /* Enable division by zero trap */
 #ifndef THINKOS_ENABLE_DIV0_TRAP
-#define THINKOS_ENABLE_DIV0_TRAP        1
+#define THINKOS_ENABLE_DIV0_TRAP        0
 #endif
 
 /* THINKOS_ENABLE_MONITOR: Enable the kernel monitor (MONITOR) framework.
