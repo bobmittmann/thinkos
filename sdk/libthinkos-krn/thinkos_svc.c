@@ -169,7 +169,7 @@ void thinkos_escalate_svc(int32_t * arg, int self)
 }
 #endif
 
-static void thinkos_nosys(int32_t * arg, int self)
+void thinkos_nosys(int32_t * arg, int self)
 {
 	__THINKOS_ERROR(self, THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;

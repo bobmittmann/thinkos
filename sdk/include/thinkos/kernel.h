@@ -182,127 +182,6 @@
 #define THINKOS_RT_ACTIVE_OFFS     ((THINKOS_RT_CYCREF_OFFS) + SIZEOF_CYCREF)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
 
-#if (THINKOS_ENABLE_TIMESHARE)
-  #define THINKOS_WQ_TIMESHARE_CNT 1
-#else
-  #define THINKOS_WQ_TIMESHARE_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_CLOCK)
-  #define THINKOS_WQ_CLOCK_CNT 1
-#else
-  #define THINKOS_WQ_CLOCK_CNT 0 
-#endif
-
-#if ((THINKOS_MUTEX_MAX) > 0)
-  #define THINKOS_WQ_MUTEX_CNT (THINKOS_MUTEX_MAX)
-#else
-  #define THINKOS_WQ_MUTEX_CNT 0 
-#endif
-
-#if ((THINKOS_COND_MAX) > 0)
-  #define THINKOS_WQ_COND_CNT (THINKOS_COND_MAX)
-#else
-  #define THINKOS_WQ_COND_CNT 0 
-#endif
-
-#if ((THINKOS_SEMAPHORE_MAX) > 0)
-  #define THINKOS_WQ_SEMAPHORE_CNT (THINKOS_SEMAPHORE_MAX)
-#else
-  #define THINKOS_WQ_SEMAPHORE_CNT 0 
-#endif
-
-#if ((THINKOS_EVENT_MAX) > 0)
-  #define THINKOS_WQ_EVENT_CNT (THINKOS_EVENT_MAX)
-#else
-  #define THINKOS_WQ_EVENT_CNT 0 
-#endif
-
-#if ((THINKOS_FLAG_MAX) > 0)
-  #define THINKOS_WQ_FLAG_CNT (THINKOS_FLAG_MAX)
-#else
-  #define THINKOS_WQ_FLAG_CNT 0 
-#endif
-
-#if ((THINKOS_GATE_MAX) > 0)
-  #define THINKOS_WQ_GATE_CNT (THINKOS_GATE_MAX)
-#else
-  #define THINKOS_WQ_GATE_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_JOIN)
-  #define THINKOS_WQ_JOIN_CNT (THINKOS_THREADS_MAX)
-#else
-  #define THINKOS_WQ_JOIN_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_CONSOLE)
-  #define THINKOS_WQ_CONSOLE_CNT 2
-#else
-  #define THINKOS_WQ_CONSOLE_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_PAUSE)
-  #define THINKOS_WQ_PAUSED_CNT 1
-#else
-  #define THINKOS_WQ_PAUSED_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_JOIN)
-  #define THINKOS_WQ_CANCELED_CNT 1
-#else
-  #define THINKOS_WQ_CANCELED_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_COMM)
-  #define THINKOS_WQ_COMM_CNT 2
-#else
-  #define THINKOS_WQ_COMM_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_WQ_IRQ)
-  #define THINKOS_WQ_IRQ_CNT 1
-#else
-  #define THINKOS_WQ_IRQ_CNT 0 
-#endif
-
-#if (THINKOS_ENABLE_WQ_DMA)
-  #define THINKOS_WQ_DMA_CNT 1
-#else
-  #define THINKOS_WQ_DMA_CNT 0 
-#endif
-
-#if (THINKOS_FLASH_MEM_MAX > 0)
-  #define THINKOS_WQ_FLASH_MEM_CNT (THINKOS_FLASH_MEM_MAX)
-#else
-  #define THINKOS_WQ_FLASH_MEM_CNT 0 
-#endif
-
-
-#if (THINKOS_ENABLE_THREAD_FAULT)
-  #define THINKOS_WQ_FAULT_CNT 1
-#else
-  #define THINKOS_WQ_FAULT_CNT 0 
-#endif
-
-#define THINKOS_WQ_CNT (1 + \
-  THINKOS_WQ_TIMESHARE_CNT + \
-  THINKOS_WQ_CLOCK_CNT + \
-  THINKOS_WQ_MUTEX_CNT + \
-  THINKOS_WQ_COND_CNT + \
-  THINKOS_WQ_SEMAPHORE_CNT + \
-  THINKOS_WQ_EVENT_CNT + \
-  THINKOS_WQ_FLAG_CNT + \
-  THINKOS_WQ_GATE_CNT + \
-  THINKOS_WQ_JOIN_CNT + \
-  THINKOS_WQ_CONSOLE_CNT + \
-  THINKOS_WQ_PAUSED_CNT + \
-  THINKOS_WQ_CANCELED_CNT + \
-  THINKOS_WQ_COMM_CNT + \
-  THINKOS_WQ_IRQ_CNT + \
-  THINKOS_WQ_DMA_CNT + \
-  THINKOS_WQ_FLASH_MEM_CNT + \
-  THINKOS_WQ_FAULT_CNT)
 
 /* Mark for kernel breakpoint numbers. Breakpoints above this
    number are considered errors. */
@@ -441,33 +320,33 @@ struct thinkos_rt {
 			uint32_t wq_clock;
 #endif
 
-#if (THINKOS_MUTEX_MAX > 0)
-			uint32_t wq_mutex[THINKOS_MUTEX_MAX];
-#endif /* THINKOS_MUTEX_MAX > 0 */
+#if ((THINKOS_MUTEX_MAX) > 0)
+			uint32_t wq_mutex[THINKOS_WQ_MUTEX_CNT];
+#endif
 
-#if (THINKOS_COND_MAX > 0)
-			uint32_t wq_cond[THINKOS_COND_MAX];
-#endif /* THINKOS_COND_MAX > 0 */
+#if ((THINKOS_COND_MAX) > 0)
+			uint32_t wq_cond[THINKOS_WQ_COND_CNT];
+#endif
 
-#if (THINKOS_SEMAPHORE_MAX > 0)
-			uint32_t wq_sem[THINKOS_SEMAPHORE_MAX];
-#endif /* THINKOS_SEMAPHORE_MAX > 0 */
+#if ((THINKOS_SEMAPHORE_MAX) > 0)
+			uint32_t wq_sem[THINKOS_WQ_SEMAPHORE_CNT];
+#endif
 
-#if (THINKOS_EVENT_MAX > 0)
-			uint32_t wq_event[THINKOS_EVENT_MAX]; /* event sets wait queues */
-#endif /* THINKOS_EVENT_MAX > 0 */
+#if ((THINKOS_EVENT_MAX) > 0)
+			uint32_t wq_event[THINKOS_WQ_EVENT_CNT]; 
+#endif
 
-#if (THINKOS_FLAG_MAX > 0)
-			uint32_t wq_flag[THINKOS_FLAG_MAX]; /* flags wait queues */
-#endif /* THINKOS_FLAG_MAX > 0 */
+#if ((THINKOS_FLAG_MAX) > 0)
+			uint32_t wq_flag[THINKOS_WQ_FLAG_CNT]; 
+#endif
 
-#if (THINKOS_GATE_MAX > 0)
-			uint32_t wq_gate[THINKOS_GATE_MAX]; /* gates wait queues */
-#endif /* THINKOS_GATE_MAX > 0 */
+#if ((THINKOS_GATE_MAX) > 0)
+			uint32_t wq_gate[THINKOS_WQ_GATE_CNT]; 
+#endif
 
 #if (THINKOS_ENABLE_JOIN)
-			uint32_t wq_join[THINKOS_THREADS_MAX];
-#endif /* THINKOS_ENABLE_JOIN */
+			uint32_t wq_join[THINKOS_WQ_JOIN_CNT];
+#endif
 
 #if (THINKOS_ENABLE_CONSOLE)
 			uint32_t wq_console_wr;
@@ -479,7 +358,7 @@ struct thinkos_rt {
 #endif
 
 #if (THINKOS_ENABLE_JOIN)
-			uint32_t wq_canceled; /* canceled threads wait queue */
+			uint32_t wq_canceled;
 #endif
 
 #if (THINKOS_ENABLE_COMM)
@@ -495,8 +374,8 @@ struct thinkos_rt {
 			uint32_t wq_dma;
 #endif
 
-#if (THINKOS_FLASH_MEM_MAX > 0) 
-			uint32_t wq_flash_mem[THINKOS_FLASH_MEM_MAX];
+#if ((THINKOS_FLASH_MEM_MAX) > 0) 
+			uint32_t wq_flash_mem[THINKOS_WQ_FLASH_MEM_MAX];
 #endif
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
@@ -741,10 +620,6 @@ struct thinkos_thread_create_args {
 
 extern struct thinkos_rt thinkos_rt;
 
-extern uint32_t * const thinkos_obj_alloc_lut[];
-
-extern const uint16_t thinkos_wq_base_lut[];
-
 extern const char thinkos_type_name_lut[][6];
 
 extern const char thinkos_type_prefix_lut[];
@@ -757,9 +632,15 @@ extern const struct thinkos_thread_inf thinkos_main_inf;
 
 extern uint32_t * const thinkos_main_stack;
 
+extern const uint8_t thinkos_obj_kind_lut[];
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static inline unsigned int __thinkos_obj_kind(unsigned int oid) {
+	return thinkos_obj_kind_lut[oid];
+}
 
 void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code);
 
@@ -776,7 +657,7 @@ void thinkos_krn_svc_err(unsigned int th, int code);
 #if (THINKOS_ENABLE_ERROR_TRAP)
   #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_svc_err(__TH, __CODE)
 #else
-  #define __THINKOS_ERROR(__CODE)
+  #define __THINKOS_ERROR(__TH, __CODE)
 #endif
 
 /* set a bit in a bit map atomically */
@@ -1041,6 +922,13 @@ __thread_errno_get(struct thinkos_rt * rt, unsigned int id) {
 #endif
 }
 
+static inline void __attribute__((always_inline))
+__thread_cyccnt_clr(struct thinkos_rt * rt, unsigned int id) {
+#if (THINKOS_ENABLE_PROFILE)
+	rt->cyccnt[id] = 0;
+#endif
+}
+
 /* -------------------------------------------------------------------------- 
  * thinkos runtime thread context access methods 
  * --------------------------------------------------------------------------*/
@@ -1113,6 +1001,9 @@ static inline void __thinkos_thread_errno_clr(unsigned int id) {
 	__thread_errno_set(&thinkos_rt, id, 0);
 }
 
+static inline void __thinkos_thread_cyccnt_clr(unsigned int id) {
+	__thread_cyccnt_clr(&thinkos_rt, id);
+}
 
 #if 0
 static inline void  __attribute__((always_inline)) 

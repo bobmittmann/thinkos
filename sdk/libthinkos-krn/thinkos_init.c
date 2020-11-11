@@ -192,9 +192,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	 */
 
 	/* SVC should not be preempted by the scheduler, thus it runs 
-	   at higher priority. In order for the regular priority
-	   interrupts to call SVC, they should run at a lower priority
-	   then SVC.*/
+	   at higher priority. */
 	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
 	/* SysTick interrupt has to have a lower priority then SVC,
 	 to not preempt SVC */

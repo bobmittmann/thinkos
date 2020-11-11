@@ -38,23 +38,6 @@
 
 #include <sys/memory.h>
 
-#ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
-  #ifdef CM3_RAM_VECTORS
-    #define THINKOS_ENABLE_RESET_RAM_VECTORS 1
-  #else
-    #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
-  #endif
-#endif
-
-#ifndef THINKOS_MONITOR_ENABLE_RST_VEC
-#define THINKOS_MONITOR_ENABLE_RST_VEC CM3_RAM_VECTORS 
-#endif
-
-/* Mark for debug/monitor breakpoint numbers. */
-#define MONITOR_BKPT_ON_THREAD_CREATE 64
-#define MONITOR_BKPT_ON_THREAD_TERMINATE 65
-
-#define __BKPT(__NO) asm volatile ("bkpt %0\n" : : "I" __NO)
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events
@@ -290,14 +273,6 @@ static inline void __monitor_signal_thread_create(int thread_id) {
 
 static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
-}
-
-/* flags the monitor schedule */
-static inline void __attribute__((always_inline)) __thinkos_monitor_setpend(void) {
-	struct cm3_scb * scb = CM3_SCB;
-	/* rise a pending systick interrupt */
-	scb->icsr = SCB_ICSR_PENDSTSET;
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
 void monitor_signal_thread_terminate(unsigned int thread_id, int code);

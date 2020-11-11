@@ -72,6 +72,8 @@ static inline uint32_t __attribute__((always_inline))
 }
 #endif
 
+void __thinkos_irq_disable_all(void);
+
 #ifdef __cplusplus
 }
 #endif

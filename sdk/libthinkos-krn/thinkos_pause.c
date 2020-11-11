@@ -21,18 +21,14 @@
 
 
 #include <stdint.h> 
-extern const uint8_t thinkos_obj_type_lut[];
-
-static inline unsigned int __thinkos_obj_kind(unsigned int oid) {
-	return thinkos_obj_type_lut[oid];
-}
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT)
+#if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
+		(THINKOS_ENABLE_THREAD_STAT)
 
 static bool ready_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
@@ -222,7 +218,7 @@ static bool flag_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-#if THINKOS_GATE_MAX > 0
+#if (THINKOS_GATE_MAX > 0)
 static bool gate_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 	unsigned int idx = wq - THINKOS_GATE_BASE;
@@ -330,7 +326,7 @@ static bool fault_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 
 typedef  bool (* thread_resume_t)(unsigned int, unsigned int, bool);
 
-//static bool (* thread_resume_lut)(unsigned int, unsigned int, bool)[] = {
+#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
 
 static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
@@ -383,13 +379,13 @@ static const thread_resume_t thread_resume_lut[] = {
 #endif
 };
 
-#endif /* (THINKOS_ENABLE_PAUSE && THINKOS_ENABLE_THREAD_STAT) */
+#endif /* (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) */
 
 bool __thinkos_thread_pause(unsigned int thread_id)
 {
 	unsigned int wq;
 
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
 		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", thread_id+1);
 		/* paused */
@@ -400,7 +396,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 1);
 #endif
 
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	{
 		int stat;
 		/* remove the thread from a waiting queue, including ready  */
@@ -409,7 +405,7 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 		DCC_LOG5(LOG_INFO, "thread=%d stat=0x%02x wq=%d clk=%d, irq_th[irq]=%d", 
 				 thread_id+1, stat, wq, (stat & 1), thinkos_rt.irq_th[53]);
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 		/* possibly remove from the time share wait queue */
 		__bit_mem_wr((uint32_t *)&thinkos_rt.wq_tmshare, thread_id, 0);
 #endif
@@ -449,29 +445,30 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 	return true;
 }
 
+#endif /* ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
+		(THINKOS_ENABLE_THREAD_STAT) */
 
 bool __thinkos_thread_resume(unsigned int thread_id)
 {
-#if !(THINKOS_ENABLE_PAUSE) && !(THINKOS_ENABLE_THREAD_FAULT)
-	return false;
-#endif
+#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
+	bool (* resume)(unsigned int, unsigned int, bool);
+	unsigned int wq;
+	bool tmw;
+	int type;
 
-#if (THINKOS_ENABLE_THREAD_STAT)
-	{
-		bool (* resume)(unsigned int, unsigned int, bool);
-		unsigned int wq;
-		bool tmw;
-		int type;
+	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
+		/* remove from the paused queue */
+		__thinkos_thread_pause_clr(thread_id);  
+	} 
 
-		/* reinsert the thread into a waiting queue, including ready  */
-		wq = __thread_wq_get(&thinkos_rt, thread_id);
-		tmw = __thread_tmw_get(&thinkos_rt, thread_id);
-		type = __thinkos_obj_kind(wq);
-		DCC_LOG4(LOG_TRACE, "thread=%d wq=%d clk=%d type=%d", 
-				 thread_id, wq, tmw, type);
-		resume = thread_resume_lut[type];
-		return resume(thread_id, wq, tmw);
-	}
+	/* reinsert the thread into a waiting queue, including ready  */
+	wq = __thread_wq_get(&thinkos_rt, thread_id);
+	tmw = __thread_tmw_get(&thinkos_rt, thread_id);
+	type = __thinkos_obj_kind(wq);
+	DCC_LOG4(LOG_TRACE, "thread=%d wq=%d clk=%d type=%d", 
+			 thread_id, wq, tmw, type);
+	resume = thread_resume_lut[type];
+	return resume(thread_id, wq, tmw);
 #else
   #if (THINKOS_ENABLE_PAUSE)
 	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
@@ -481,6 +478,7 @@ bool __thinkos_thread_resume(unsigned int thread_id)
   #endif
   #if (THINKOS_ENABLE_THREAD_FAULT)
 	if (__bit_mem_rd(&thinkos_rt.wq_fault, thread_id) != 0) {
+		/* clear the fault flag queue */
 		__thinkos_thread_fault_clr(thread_id);
 	}
   #endif
@@ -490,6 +488,7 @@ bool __thinkos_thread_resume(unsigned int thread_id)
 
 	return true;
 }
+
 
 #if THINKOS_ENABLE_PAUSE
 

@@ -537,11 +537,6 @@ void __attribute__((section(".init"))) _init(void)
 	while (((cr = rcc->cr) & RCC_PLLSAIRDY) == 0);
 #endif
 
-#ifdef CM3_RAM_VECTORS
-	/* Remap the VECTOR table to SRAM 0x20000000  */
-	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
-#endif
-
 }
 
 #endif /* THINKAPP */

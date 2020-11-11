@@ -76,22 +76,20 @@ cm3_svc_isr:
 	/* Read the SVC number from the instruction */
 	ldrb     r2, [r2, #-2]
     cmp      r2, #THINKOS_SYSCALL_CNT
-    bhi      2f
+    bhi      thinkos_nosys
 	ldr      r3, .L_call_tab
 	ldr      pc, [r3, r2, lsl #2]
 	.align   2
 .L_call_tab:
 	.word    thinkos_call_tab
 
-2:
-	movs     r0, THINKOS_ERR_SYSCALL_INVALID
-	b        thinkos_krn_xcpt_raise
-
 	.align   2
 .L_thinkos_rt:
 	.word    thinkos_rt
+#if (THINKOS_ENABLE_DEBUG_STEP)
 .L_cm3_scb:
 	.word    CM3_SCB_BASE
+#endif
 	.size    cm3_svc_isr, . - cm3_svc_isr
 
 

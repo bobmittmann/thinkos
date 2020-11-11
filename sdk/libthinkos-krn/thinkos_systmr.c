@@ -123,11 +123,18 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 #else /* THINKOS_ENABLE_MONITOR_SCHED */
 
+void __thinkos_monitor_on_reset(void);
+void __monitor_context_swap(uint32_t ** pctx); 
+
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
   #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	do {
+		uint32_t sigset;
+		uint32_t sigmsk;
+		uint32_t sigact;
+
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
   #endif
   #if (THINKOS_ENABLE_CLOCK)
@@ -161,7 +168,25 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
   #endif /* THINKOS_ENABLE_CLOCK */
 
   #if (THINKOS_ENABLE_MONITOR)
-	} while (__thinkos_monitor_isr());
+		sigset = thinkos_rt.monitor.events;
+		sigmsk = thinkos_rt.monitor.mask;
+		sigact = sigset & sigmsk;
+
+		/* Process monitor events */
+		if (sigact == 0)
+			break;
+
+		if (sigact & (1 << MONITOR_RESET)) {
+			__thinkos_monitor_on_reset();
+
+			/* clear the RESET event */
+			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
+		}
+
+		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+
+	} while (1);
+
   #endif /* THINKOS_ENABLE_MONITOR */
 }
 #endif /* !THINKOS_ENABLE_MONITOR_SCHED */

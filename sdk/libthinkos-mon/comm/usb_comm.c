@@ -43,6 +43,10 @@
 #define THINKOS_MONITOR_ENABLE_COMM_STATS 0
 #endif
 
+#ifdef THINKOS_MONITOR_ENABLE_COMM_BRK
+#define THINKOS_MONITOR_ENABLE_COMM_BRK    0
+#endif
+
 /* Enable USB2.0 */
 #ifdef THINKOS_MONITOR_ENABLE_USB2_00 
 #define THINKOS_MONITOR_ENABLE_USB2_00 0
@@ -52,6 +56,7 @@
 #ifdef THINKOS_MONITOR_ENABLE_USB_HS
 #define THINKOS_MONITOR_ENABLE_USB_HS 0
 #endif
+
 
 #define EP0_ADDR 0
 
@@ -82,20 +87,29 @@
 #define USB_FEATURE_DEVICE_ENABLED 0
 #endif
 
+#ifndef USB_STATUS_DEVICE_ENABLED
+#define USB_STATUS_DEVICE_ENABLED 0
+#endif
+
 #ifndef USB_FEATURE_INTERFACE_ENABLED
 #define USB_FEATURE_INTERFACE_ENABLED 0
+#endif
+
+#ifndef USB_STATUS_INTERFACE_ENABLED
+#define USB_STATUS_INTERFACE_ENABLED 0
 #endif
 
 #ifndef USB_FEATURE_ENDPOINT_ENABLED
 #define USB_FEATURE_ENDPOINT_ENABLED 0
 #endif
 
-#ifndef USB_STATUS_ENABLED
-#define USB_STATUS_ENABLED 1
+#ifndef USB_STATUS_ENDPOINT_ENABLED
+#define USB_STATUS_ENDPOINT_ENABLED 0
 #endif
 
+
 #ifndef USB_SYNCH_FRAME_ENABLED
-#define USB_SYNCH_FRAME_ENABLED 1
+#define USB_SYNCH_FRAME_ENABLED 0
 #endif
 
 struct cdc_acm_descriptor_config {
@@ -250,8 +264,13 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 			sizeof(struct cdc_descriptor_abstract_control_management),
 		.bDescriptorType = CDC_CS_INTERFACE,
 		.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
-		.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
-			CDC_ACM_SENDBREAK
+		.bmCapabilities = CDC_ACM_COMMFEATURE 
+#if 0
+			+ CDC_ACM_LINE
+#endif
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
+			+ CDC_ACM_SENDBREAK
+#endif
 	},
 	/* Union Functional Descriptor */
 	.un0 = {
@@ -303,7 +322,6 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 	}
 
 };
-
 
 #define CDC_STOP_BITS_1   (0 << 0)
 #define CDC_STOP_BITS_1_5 (1 << 0)
@@ -388,7 +406,7 @@ static const struct cdc_line_coding monitor_usb_usb_cdc_lc = {
     .bDataBits = 8
 };
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_DEVICE_ENABLED)
 static const uint16_t monitor_usb_device_status = 
 	USB_DEVICE_STATUS_SELF_POWERED;
 static const uint16_t monitor_usb_interface_status = 0x0000;
@@ -623,20 +641,20 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		break;
 	}
 
+	case STD_GET_CONFIGURATION:
+		DCC_LOG(LOG_TRACE, "GetCfg");
+		*ptr = (void *)&dev->configured;
+		len = 1;
+		break;
 
-#if (USB_STATUS_ENABLED)
+
+#if (USB_STATUS_DEVICE_ENABLED)
 	case STD_GET_STATUS_DEVICE:
 		DCC_LOG(LOG_TRACE, "GetStatusDev");
 		*ptr = (void *)&monitor_usb_device_status;
 		len = 2;
 		break;
 #endif
-
-	case STD_GET_CONFIGURATION:
-		DCC_LOG(LOG_TRACE, "GetCfg");
-		*ptr = (void *)&dev->configured;
-		len = 1;
-		break;
 
 #if (USB_FEATURE_DEVICE_ENABLED)
 	case STD_CLEAR_FEATURE_DEVICE:
@@ -658,7 +676,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		break;
 #endif
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_INTERFACE_ENABLED)
 	/* Standard Interface Requests */
 	case STD_GET_STATUS_INTERFACE:
 		DCC_LOG1(LOG_TRACE, "GetStatusIf(%d)", index);
@@ -685,7 +703,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		break;
 #endif
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_ENDPOINT_ENABLED)
 	/* Standard Endpoint Requests */
 	case STD_GET_STATUS_ENDPOINT:
 		{
@@ -775,6 +793,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		monitor_signal(MONITOR_COMM_CTL);
 		break;
 
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
 	case SEND_BREAK:
 		DCC_LOG1(LOG_TRACE, "CDC Send Break value=%d", value);
 		if (value != 0) {
@@ -786,14 +805,11 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* toggle if the bit is not set */
 			toggle = ~(status ^ dev->shadow) & COMM_ST_BREAK_REQ;
 			dev->status = status ^ toggle;
-#if 0
-			/* signal monitor */
-			monitor_signal(MONITOR_COMM_CTL);
-#endif
 			monitor_signal(MONITOR_COMM_BRK);
 		}
 
 		break;
+#endif
 
 	default:
 		DCC_LOG5(LOG_WARNING, "CDC t=%x r=%x v=%x i=%d l=%d",
@@ -990,10 +1006,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		}
 		break;
 
-	case COMM_CTRL_DISCONNECT:
-		ret = 0;
-		break;
-
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
 	case COMM_CTRL_BREAK_ACK:
 		{
 			uint32_t status;
@@ -1008,34 +1021,12 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		ret = 0;
 		break;
 
-#if 0
-//	uint32_t buf[4];
-	if ((dev->acm.flags & ACM_CONNECTED) == 0) {
-		dev->acm.flags |= ACM_CONNECTED;
-		pkt = (struct cdc_notification *)buf;
-		/* bmRequestType */
-		pkt->bmRequestType = USB_CDC_NOTIFICATION;
-		/* bNotification */
-		pkt->bNotification = CDC_NOTIFICATION_SERIAL_STATE;
-		/* wValue */
-		pkt->wValue = 0;
-		/* wIndex */
-		pkt->wIndex = 1;
-		/* wLength */
-		pkt->wLength = 2;
-		/* data */
-		pkt->bData[0] = CDC_SERIAL_STATE_TX_CARRIER | 
-			CDC_SERIAL_STATE_RX_CARRIER;
-		pkt->bData[1] = 0;
-
-		ret = usb_dev_ep_pkt_xmit(dev->usb, dev->int_ep, pkt, 
-								  sizeof(struct cdc_notification));
-		if (ret < 0) {
-			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!");
-			return ret;
-		}
-	}
 #endif
+
+	case COMM_CTRL_DISCONNECT:
+	default:
+		ret = 0;
+
 	}
 
 	return ret;

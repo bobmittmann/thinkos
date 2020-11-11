@@ -31,7 +31,13 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_IRQ_MAX > 0
+extern int __sizeof_rom_vectors;
+
+#ifdef CM3_RAM_VECTORS
+extern void * __ram_vectors[];
+#endif
+
+#if (THINKOS_IRQ_MAX) > 0
 void __thinkos_irq_reset_all(void)
 {
 	int irq;
@@ -41,9 +47,38 @@ void __thinkos_irq_reset_all(void)
 		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 	}
 }
+
+#define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
+
+/**
+  * __thinkos_irq_disable_all:
+  *
+  * Disable all interrupts by clearing the interrupt enable bit
+  * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
+  *
+  * Also the interrupt enable backup is cleared to avoid 
+  * interrupts being reenabled by calling __monitor_irq_restore_all().
+  *
+  * The systick interrupt is not disabled.
+  */
+void __thinkos_irq_disable_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
+		/* FIXME: clearing the pending interrupt may have a side effect 
+		   on the comms irq used by the debug monitor. An alternative 
+		   would be to use the force enable list to avoid clearing those
+		   in the list. */
+#if 0
+		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
+#endif
+	}
+}
 #endif
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 void cm3_default_isr(unsigned int irq)
 {
 	unsigned int th;
@@ -190,11 +225,6 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 }
 #endif
 
-extern int __sizeof_rom_vectors;
-
-#ifdef CM3_RAM_VECTORS
-extern void * __ram_vectors[];
-#endif
 
 void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 {
@@ -233,7 +263,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 
 			if (priority > IRQ_PRIORITY_VERY_LOW)
 				priority = IRQ_PRIORITY_VERY_LOW;
-#if (!THINKOS_ENABLE_IRQ_PRIORITY_0)
+#if !(THINKOS_ENABLE_IRQ_PRIORITY_0)
 			else if (priority < IRQ_PRIORITY_VERY_HIGH)
 				priority = IRQ_PRIORITY_VERY_HIGH;
 #endif
@@ -255,7 +285,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 
 			if (priority > IRQ_PRIORITY_VERY_LOW)
 				priority = IRQ_PRIORITY_VERY_LOW;
-#if (!THINKOS_ENABLE_IRQ_PRIORITY_0)
+#if !(THINKOS_ENABLE_IRQ_PRIORITY_0)
 			else if (priority < IRQ_PRIORITY_VERY_HIGH)
 				priority = IRQ_PRIORITY_VERY_HIGH;
 #endif

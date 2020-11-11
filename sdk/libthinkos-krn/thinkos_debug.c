@@ -66,6 +66,7 @@ const char * __retstr(uint32_t __ret)
 	return s;
 }
 
+/*
 void __objkind(void)
 {
 	int kind;
@@ -75,6 +76,7 @@ void __objkind(void)
 				 thinkos_type_name_lut[kind], thinkos_wq_base_lut[kind]);
 	}
 }
+*/
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 void __thinkos(struct thinkos_rt * rt)
@@ -88,7 +90,7 @@ void __thinkos(struct thinkos_rt * rt)
 
 		wq = &rt->wq_lst[oid];
 		if (*wq) { 
-			type = thinkos_obj_type_get(oid);
+			type = __thinkos_obj_kind(oid);
 			switch (type) {
 			case THINKOS_OBJ_READY:
 				DCC_LOG2(LOG_TRACE, "READY %d: 0x%08x", oid, *wq);

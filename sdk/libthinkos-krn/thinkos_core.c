@@ -33,6 +33,13 @@
 #include <vt100.h>
 #include <sys/dcclog.h>
 
+extern void * __rom_vectors[];
+extern int __sizeof_rom_vectors;
+
+#ifdef CM3_RAM_VECTORS
+extern void * __ram_vectors[];
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
@@ -78,45 +85,45 @@ void __thinkos_core_reset(void)
 #if THINKOS_ENABLE_THREAD_INFO
 		__thinkos_thread_inf_clr(i);
 #endif
-	}
-
-#if (THINKOS_ENABLE_PROFILING)
-	/* Per thread cycle count */
-	for (i = 0; i < THINKOS_THREADS_MAX ; ++i)
-		thinkos_rt.cyccnt[i] = 0;
+#if THINKOS_ENABLE_THREAD_FAULT
+		__thinkos_thread_errno_clr(i);
 #endif
+#if (THINKOS_ENABLE_PROFILING)
+		__thinkos_thread_cyccnt_clr(i);
+#endif
+	}
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* initialize the thread allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.th_alloc, THINKOS_THREADS_MAX); 
 #endif
 
-#if (THINKOS_MUTEX_MAX > 0)
-#if THINKOS_ENABLE_MUTEX_ALLOC
+#if (THINKOS_MUTEX_MAX) > 0
 	/* initialize the mutex locks */
 	for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
 		thinkos_rt.lock[i] = -1;
+#if THINKOS_ENABLE_MUTEX_ALLOC
 	/* initialize the mutex allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.mutex_alloc, THINKOS_MUTEX_MAX); 
 #endif
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
-#if THINKOS_SEMAPHORE_MAX > 0
+#if (THINKOS_SEMAPHORE_MAX) > 0
 	for (i = 0; i < THINKOS_SEMAPHORE_MAX; i++) 
 		thinkos_rt.sem_val[i] = 0;
-#if THINKOS_ENABLE_SEM_ALLOC
+#if (THINKOS_ENABLE_SEM_ALLOC)
 	/* initialize the semaphore allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.sem_alloc, THINKOS_SEMAPHORE_MAX); 
 #endif
 #endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
-#if THINKOS_ENABLE_COND_ALLOC
+#if (THINKOS_ENABLE_COND_ALLOC)
 	/* initialize the conditional variable allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.cond_alloc, THINKOS_COND_MAX); 
 #endif
 
-#if THINKOS_FLAG_MAX > 0
-	for (i = 0; i < (THINKOS_FLAG_MAX + 31) / 32; i++) 
+#if (THINKOS_FLAG_MAX) > 0
+	for (i = 0; i < ((THINKOS_FLAG_MAX) + 31) / 32; i++) 
 		thinkos_rt.flag[i] = 0;
 #if THINKOS_ENABLE_FLAG_ALLOC
 	/* initialize the flag allocation bitmap */ 
@@ -124,21 +131,21 @@ void __thinkos_core_reset(void)
 #endif
 #endif /* THINKOS_FLAG_MAX > 0 */
 
-#if THINKOS_EVENT_MAX > 0
-	for (i = 0; i < THINKOS_EVENT_MAX ; i++) {
+#if (THINKOS_EVENT_MAX) > 0
+	for (i = 0; i < (THINKOS_EVENT_MAX) ; i++) {
 		thinkos_rt.ev[i].pend = 0;
 		thinkos_rt.ev[i].mask = 0xffffffff;
 	}
-#if THINKOS_ENABLE_EVENT_ALLOC
+#if (THINKOS_ENABLE_EVENT_ALLOC)
 	/* initialize the event set allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.ev_alloc, THINKOS_EVENT_MAX); 
 #endif
 #endif /* THINKOS_EVENT_MAX > 0 */
 
-#if THINKOS_GATE_MAX > 0
-	for (i = 0; i < ((THINKOS_GATE_MAX + 15) / 16); i++) 
+#if (THINKOS_GATE_MAX) > 0
+	for (i = 0; i < (((THINKOS_GATE_MAX) + 15) / 16); i++) 
 		thinkos_rt.gate[i] = 0;
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	/* initialize the gate allocation bitmap */ 
 	__thinkos_bmp_init(thinkos_rt.gate_alloc, THINKOS_GATE_MAX); 
 #endif
@@ -146,7 +153,7 @@ void __thinkos_core_reset(void)
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 	thinkos_rt.step_id = -1;
-#if THINKOS_ENABLE_DEBUG_STEP
+#if (THINKOS_ENABLE_DEBUG_STEP)
 	thinkos_rt.step_svc = 0;  /* step at service call bitmap */
 	thinkos_rt.step_req = 0;  /* step request bitmap */
 #endif
@@ -156,9 +163,16 @@ void __thinkos_core_reset(void)
 	thinkos_rt.critical_cnt = 0;
 #endif
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 	__thinkos_irq_reset_all();
 #endif
+
+#ifdef CM3_RAM_VECTORS
+	__thinkos_memcpy(__ram_vectors, __rom_vectors, __sizeof_rom_vectors);
+	/* Remap the Vector table to SRAM */
+	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
+#endif
+
 }
 
 void __thinkos_system_reset(void)
@@ -207,7 +221,6 @@ bool thinkos_sched_active(void)
 bool thinkos_syscall_active(void)
 {
 	return (CM3_SCB->shcsr & SCB_SHCSR_SVCALLACT) ? true : false;
-
 }
 
 bool thinkos_clock_active(void)

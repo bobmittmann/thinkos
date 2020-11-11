@@ -41,10 +41,12 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (THINKOS_ENABLE_MONITOR) 
 
+#ifndef THINKOS_ENABLE_MONITOR_NULL_TASK
+#define THINKOS_ENABLE_MONITOR_NULL_TASK 0
+#endif
+
 #define MONITOR_PERISTENT_MASK ((1 << MONITOR_RESET) | \
 							   (1 << MONITOR_SOFTRST))
-
-#define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 struct {
 	/* task entry point */
@@ -56,10 +58,12 @@ struct {
 	/* break thread id */
 	int8_t brk_thread_id;
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* entry/exit signal thread id */
 	int8_t ret_thread_id;
 	/* entry/exit signal thread exit code */
 	int32_t ret_code;
+#endif
 } thinkos_monitor_rt;
 
 uint32_t __attribute__((aligned(16))) 
@@ -82,66 +86,6 @@ void __attribute__((noinline))__monitor_wait(struct thinkos_monitor * mon)
 void __monitor_context_swap(uint32_t ** pctx); 
 #endif
 
-/**
-  * __monitor_irq_disable_all:
-  *
-  * Disable all interrupts by clearing the interrupt enable bit
-  * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
-  *
-  * Also the interrupt enable backup is cleared to avoid 
-  * interrupts being reenabled by calling __monitor_irq_restore_all().
-  *
-  * The systick interrupt is not disabled.
-  */
-static void __monitor_irq_disable_all(void)
-{
-	int i;
-
-	DCC_LOG(LOG_WARNING, "NIVC all interrupts disabled!!!");
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
-		/* FIXME: clearing the pending interrupt may have a side effect 
-		   on the comms irq used by the debug monitor. An alternative 
-		   would be to use the force enable list to avoid clearing those
-		   in the list. */
-#if 0
-		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
-#endif
-	}
-}
-
-
-#if (THINKOS_MONITOR_ENABLE_RST_VEC)
-/**
- * __reset_ram_vectors:
- *
- * Copy the default values for the IRQ vectors from the flash into RAM. 
- * 
- * When the a new application replaces the existing one through the GDB
- * or Ymodem some interrupts can be fired due to wrong sequencig of
- * interrupt programming in the application. To avoid potential system
- * crashes the vectors should be initialized to a default value.
- *
- */
-
-void __reset_ram_vectors(void)
-{
-	/* XXX: 
-	   this function assumes the exception vectors defaults to be located 
-	   just after the .text section! */
-	extern unsigned int __text_end;
-	extern unsigned int __ram_vectors;
-	extern unsigned int __sizeof_ram_vectors;
-
-	unsigned int size = __sizeof_ram_vectors;
-	void * src = &__text_end;
-	void * dst = &__ram_vectors;
-
-	DCC_LOG3(LOG_MSG, "dst=%08x src=%08x size=%d", dst, src, size); 
-	__thinkos_memcpy32(dst, src, size); 
-}
-#endif /* THINKOS_MONITOR_ENABLE_RST_VEC */
 
 /* -------------------------------------------------------------------------
  * Debug Monitor API
@@ -347,6 +291,7 @@ int monitor_wait_idle(void)
 #endif
 }
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 int monitor_thread_terminate_get(int * code)
 {
 	int thread_id;
@@ -366,6 +311,7 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 	thinkos_monitor_rt.ret_code = code;
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
+#endif
 
 void monitor_signal_thread_fault(unsigned int thread_id) 
 {
@@ -453,9 +399,9 @@ static inline void __monitor_task_reset(void)
 {
 	monitor_signal(MONITOR_RESET);
 #if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
+	__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+	__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 }
 
@@ -467,13 +413,13 @@ void __attribute__((naked))
 	thinkos_monitor_rt.task = task;
 	thinkos_monitor_rt.param = param;
 	__monitor_task_reset();
-	monitor_signal(MONITOR_THREAD_FAULT);
 }
 
 /* -------------------------------------------------------------------------
  * ThinkOS Monitor Core
  * ------------------------------------------------------------------------- */
 
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 void monitor_null_task(const struct monitor_comm * comm, void * param)
 {
 	for (;;) {
@@ -484,6 +430,7 @@ void monitor_null_task(const struct monitor_comm * comm, void * param)
 #endif
 	}
 }
+#endif
 
 #if !(THINKOS_ENABLE_MONITOR_SCHED)
 /*
@@ -501,10 +448,13 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 
 	/* Get the new task */
 	monitor_task = thinkos_monitor_rt.task; 
+
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	/* Set the new task to the default NULL in 
 	   case the new task returns; */
 	thinkos_monitor_rt.task = monitor_null_task;
-	
+#endif
+
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
@@ -513,14 +463,11 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 
 	DCC_LOG2(LOG_TRACE, "PC=%08x SP=0x%08x!", monitor_task, cm3_sp_get());
 	monitor_task(comm, param);
-
-	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
-
-//	__monitor_task_reset();
+	__monitor_task_reset();
 }
 
 /* Prepare the execution environment to invoke the new monitor task. */
-static void __thinkos_monitor_on_reset(void)
+void __thinkos_monitor_on_reset(void)
 {
 	uint32_t * sp;
 
@@ -530,6 +477,7 @@ static void __thinkos_monitor_on_reset(void)
 	thinkos_rt.monitor.ctx = sp;
 }
 
+#if 0
 uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 {
 	uint32_t sigset;
@@ -549,23 +497,13 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
 		}
 
-#if 0
-		/* TODO: this stack check is very usefull... 
-		   Some sort of error to the developer should be raised or
-		 force a fault */
-		if (thinkos_monitor_rt.ctx < thinkos_monitor_stack) {
-			DCC_LOG(LOG_PANIC, "stack overflow!");
-			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x monitor.stack=%08x", 
-					 thinkos_monitor_rt.ctx, thinkos_monitor_stack);
-			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
-		}
-		DCC_LOG1(LOG_TRACE, "sigset %08x", sigset);
-#endif
 		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 	}
 
 	return sigact;
 }
+#endif
+
 #endif
 
 
@@ -580,20 +518,20 @@ void monitor_soft_reset(void)
 {
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
-	__monitor_irq_disable_all();
+	__thinkos_irq_disable_all();
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"3. Core reset..."   _ATTR_POP_); 
+			"2. Core reset..."   _ATTR_POP_); 
 	__thinkos_core_reset();
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"4. Except reset..."   _ATTR_POP_); 
+			"3. Except reset..."   _ATTR_POP_); 
 	thinkos_krn_exception_reset();
 #endif
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"6. Send soft reset signal"  _ATTR_POP_);
+			"4. Send soft reset signal"  _ATTR_POP_);
 
 	monitor_signal(MONITOR_SOFTRST); 
 }
@@ -615,8 +553,10 @@ void thinkos_krn_monitor_reset(void)
 	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
 #endif
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
+#endif
 	thinkos_monitor_rt.brk_thread_id = -1;
 }
 
@@ -680,24 +620,28 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 					   sizeof(thinkos_monitor_stack));
 #endif
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
+#endif
 	thinkos_monitor_rt.brk_thread_id = -1;
 
 	/* Set the communication channel */
 	thinkos_monitor_rt.comm = comm; 
 
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	/* Set the new task to default NULL */
 	if (task == NULL)
 		/* Set the new task to NULL */
 		thinkos_monitor_rt.task = monitor_null_task;
 	else
+#endif
 		thinkos_monitor_rt.task = task;
 	thinkos_monitor_rt.param = param;
 	
 	/* set the startup and reset signals */
 	thinkos_rt.monitor.events = (1 << MONITOR_STARTUP) | (1 << MONITOR_RESET);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK | (1 << MONITOR_STARTUP);
+	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	{
 		struct monitor_context * ctx;
@@ -719,13 +663,15 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 
 	/* Set the persistent signals */
 	thinkos_rt.monitor.events |= (1 << MONITOR_RESET);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK | (1 << MONITOR_STARTUP);
+	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 
 	arg[0] = (uint32_t)thinkos_monitor_rt.task;
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	if (task == NULL)
 		/* Set the new task to NULL */
 		thinkos_monitor_rt.task = monitor_null_task;
 	else
+#endif
 		thinkos_monitor_rt.task = task;
 
 	thinkos_monitor_rt.param = param;

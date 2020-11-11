@@ -1,5 +1,5 @@
 /* 
- * arm-elf-thinkos-boot.ld
+ * arm-elf-thinkos-ramvec.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -165,6 +165,8 @@ SECTIONS
 	{
 		/* define a global symbol marking the start of the .bss section */
 		PROVIDE (__bss_start = . );
+		PROVIDE (__ram_vectors = . );
+		. = . + __rom_vectors_size; 
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"

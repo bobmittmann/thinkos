@@ -23,8 +23,8 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_type.c obj_type_get.c \
-			  alloc_bmp_get.c bmp_alloc.c strlen.c \
+MISC_CFILES = thinkos_obj.c \
+			  bmp_alloc.c strlen.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
 			  thread_getnext.c thread_get.c \
 			  thread_isfaulty.c thread_ispaused.c \
@@ -42,6 +42,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
 		 thinkos_krnsvc.c thinkos_sysrst.c \
+		 thinkos_obj_kind_lut.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
@@ -54,9 +55,9 @@ endif
 
 ifeq ($(CPU), cortex-m3)
   SFILES = cortex-m3/crt0_cortex-m3.S \
-		   cortex-m3/thinkos_vec_cortex-m3.S \
+		   cortex-m3/thinkos_vec-cortex-m3.S \
 		   cortex-m3/thinkos_svc-cortex-m3.S \
-		   cortex-m3/thinkos_sched-cortex-m3.S \
+		   cortex-m3/thinkos_sched-cortex-m3.S
 #		   cortex-m3/thinkos_sched-cortex-m3-basic.S
 endif
 

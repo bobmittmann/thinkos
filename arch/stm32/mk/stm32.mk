@@ -1,5 +1,5 @@
 #
-# stm32f4xx.mk 
+# stm32.mk 
 #
 # Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
 # 
@@ -123,6 +123,13 @@ else
   OPTIONS += -mno-unaligned-access
 endif
 
+ifdef RAM_VECTORS
+  CDEFS += CM3_RAM_VECTORS
+  BOOTLD = arm-elf-thinkos-ramvec.ld
+else
+  BOOTLD = arm-elf-thinkos-boot.ld
+endif
+
 ifdef LDCODE
   SYMDEFS += __ldcode=$(LDCODE)
 endif
@@ -161,7 +168,7 @@ ifdef PROG
       LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-app.ld
       include $(__THINKOS_DIR)/mk/prog.mk
     else
-      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T $(STM32)-vec.ld -T arm-elf-thinkos-boot.ld
+      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T $(STM32)-vec.ld -T $(BOOTLD)
 #      LDFLAGS += -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
 #      include $(__THINKOS_DIR)/mk/kernel.mk
       include $(__THINKOS_DIR)/mk/prog.mk
