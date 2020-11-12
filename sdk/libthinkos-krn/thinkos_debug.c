@@ -161,7 +161,7 @@ void __thinkos(struct thinkos_rt * rt)
 #if (THINKOS_ENABLE_CLOCK)
 	DCC_LOG1(LOG_TRACE, "Ticks = %d", rt->ticks);
 #endif
-	DCC_LOG1(LOG_TRACE, "Active = %d", __thinkos_rt_active_get(rt));
+	DCC_LOG1(LOG_TRACE, "Active = %d", __thread_active_get(rt));
 
 	DCC_LOG1(LOG_TRACE, "Alloc = %d", thinkos_rt.th_alloc[0]);
 

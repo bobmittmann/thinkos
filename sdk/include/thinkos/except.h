@@ -33,9 +33,10 @@
 #define THINKOS_EXCEPT_ERRNO_OFFS      0
 #define THINKOS_EXCEPT_SEQ_OFFS        1
 #define THINKOS_EXCEPT_RET_OFFS        2
-#define THINKOS_EXCEPT_PRIMASK_OFFS    3
-#define THINKOS_EXCEPT_FAULTMASK_OFFS  4
-#define THINKOS_EXCEPT_BASEPRI_OFFS    5
+#define THINKOS_EXCEPT_PFMASK_OFFS     3
+
+#define THINKOS_EXCEPT_BASEPRI_OFFS    4
+#define THINKOS_EXCEPT_ACK_OFFS        5
 #define THINKOS_EXCEPT_IPSR_OFFS       6
 #define THINKOS_EXCEPT_CTRL_OFFS       7
 
@@ -97,12 +98,12 @@ struct armv7m_extended_frame {
 
 struct thinkos_except {
 	uint8_t  errno;     /* exception error code */
-	uint8_t  seq;       /* number of exceptions since except_ack() */
+	int8_t   seq;       /* number of exceptions since except_ack() */
 	uint8_t  ret;       /* exception exit return code low byte  */
-	uint8_t  primask;   /* PRIMASK */
+	uint8_t  pfmask;    /* PRIMASK / FAULTMASK */
 
-	uint8_t  faultmask; /* FAULTMASK */
 	uint8_t  basepri;   /* BASEPRI */
+	int8_t   ack;       /* */
 	uint8_t  ipsr;      /* IPSR */
 	uint8_t  ctrl;      /* CONTROL */
 
@@ -138,28 +139,35 @@ struct thinkos_except {
 };
 
 extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
-
 extern const uint16_t thinkos_except_stack_size;
-
-extern const char thinkos_except_nm[];
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-static inline unsigned int __xcpt_active_get(struct thinkos_except * xcpt) {
-	return xcpt->active & 0x3f;
-}
-#else
-static inline unsigned int __xcpt_active_get(struct thinkos_except * xcpt) {
-	return xcpt->active; 
-}
-#endif
-
 static inline struct thinkos_except * __thinkos_except_buf(void) {
 	uintptr_t xcpt= (uintptr_t)thinkos_except_stack;
 	return (struct thinkos_except *)xcpt;
+}
+
+static inline int __xcpt_active_get(struct thinkos_except * xcpt) {
+	uint32_t active = xcpt->active; 
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	active &= 0x3f;
+#endif
+	return (xcpt->seq != xcpt->ack) ? (int32_t)active : -1;
+}
+
+static inline bool __thinkos_xcpt_valid(struct thinkos_except * xcpt) {
+	return (xcpt->seq == xcpt->ack) ? false : true;
+}
+
+static inline int32_t __thinkos_xcpt_cnt(struct thinkos_except * xcpt) {
+	return (int32_t)xcpt->seq - (int32_t)xcpt->ack;
+}
+
+static inline bool __thinkos_xcpt_errno(struct thinkos_except * xcpt) {
+	return (xcpt->seq == xcpt->ack) ? 0 : xcpt->errno;
 }
 
 /* -------------------------------------------------------------------------

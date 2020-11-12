@@ -469,12 +469,15 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 /* Prepare the execution environment to invoke the new monitor task. */
 void __thinkos_monitor_on_reset(void)
 {
+	struct monitor_swap * swap;
 	uint32_t * sp;
 
 	sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
-	sp[0] = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* CPSR */
-	sp[9] = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
 	thinkos_rt.monitor.ctx = sp;
+	
+	swap = (struct monitor_swap *)sp;
+	swap->xpsr = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* XPSR */
+	swap->lr = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
 }
 
 #if 0
@@ -591,7 +594,7 @@ struct monitor_context * __monitor_ctx_init(uintptr_t task,
 
 	ctx = __monitor_base_ctx();
 
-#if (THINKOS_ENABLE_STACK_INIT) && (THINKOS_ENABLE_MEMORY_CLEAR)
+#if (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32(ctx, 0, sizeof(struct monitor_context));
 #endif
 
@@ -617,6 +620,9 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 {
 #if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
+					   sizeof(thinkos_monitor_stack));
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(thinkos_monitor_stack, 0, 
 					   sizeof(thinkos_monitor_stack));
 #endif
 

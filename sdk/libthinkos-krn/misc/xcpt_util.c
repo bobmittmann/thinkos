@@ -26,6 +26,8 @@
 #include <thinkos/except.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/delay.h>
 #include <vt100.h>
@@ -59,24 +61,6 @@ const char __xcpt_name_lut[16][12] = {
 	"PendSV",
 	"SysTick"
 };
-
-int __scan_stack(void * stack, unsigned int size)
-{
-	uint32_t * ptr = (uint32_t *)stack;
-	unsigned int i;
-
-	for (i = 0; i < size / 4; ++i) {
-		if (ptr[i] != 0xdeadbeef)
-			break;
-	}
-
-	return i * 4;
-}
-
-int __scan_stack(void * stack, unsigned int size);
-extern uint32_t thinkos_monitor_stack[];
-extern const uint16_t thinkos_monitor_stack_size;
-extern const uint16_t thinkos_except_stack_size;
 
 /* Exception state dump */
 void __xdump(struct thinkos_except * xcpt)

@@ -109,6 +109,7 @@
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_KRNSVC           1
+#define THINKOS_ENABLE_TERMINATE        1
 
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
@@ -205,7 +206,6 @@
    Bootloader 
    -------------------------------------------------------------------------- */
 
-#define BOOT_MEM_RESERVED          0x1000
 #define BOOT_ENABLE_THIRD          0
   
 #define BOOT_ENABLE_GDB            0

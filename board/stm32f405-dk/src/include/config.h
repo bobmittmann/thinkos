@@ -31,7 +31,7 @@
    -------------------------------------------------------------------------- */
 
 /* Maximum IRQ for this board */
-#define THINKOS_IRQ_MAX                 80
+#define THINKOS_IRQ_MAX                 90
 /* Enable thinkos_irq_ctl system call */
 #define THINKOS_ENABLE_IRQ_CTL          1
 #define THINKOS_ENABLE_IRQ_RESTORE      1
@@ -44,7 +44,7 @@
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
-#define THINKOS_ENABLE_TIMESHARE        1
+#define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
 
@@ -73,7 +73,7 @@
  watching a flag in a given instant.*/
 #define THINKOS_ENABLE_FLAG_WATCH       1
 
-#define THINKOS_GATE_MAX                16
+#define THINKOS_GATE_MAX                32
 
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
@@ -116,7 +116,7 @@
 #define THINKOS_ENABLE_MONITOR_CLOCK    1
 #define THINKOS_ENABLE_MONITOR_SCHED    0
 #define THINKOS_ENABLE_MONITOR_SYSCALL  0
-#define THINKOS_MONITOR_STACK_SIZE      512
+#define THINKOS_MONITOR_STACK_SIZE      1024
 #define THINKOS_ENABLE_STACK_LIMIT      1
 
 #define THINKOS_ENABLE_CONSOLE          1
@@ -126,10 +126,10 @@
 #define THINKOS_ENABLE_CONSOLE_NONBLOCK 1
 #define THINKOS_ENABLE_CONSOLE_DRAIN    1
 #define THINKOS_ENABLE_CONSOLE_MODE     1
-#define THINKOS_CONSOLE_RX_FIFO_LEN     64
-#define THINKOS_CONSOLE_TX_FIFO_LEN     512
+#define THINKOS_CONSOLE_RX_FIFO_LEN     512
+#define THINKOS_CONSOLE_TX_FIFO_LEN     2048
 
-#define THINKOS_EXCEPT_STACK_SIZE       512
+#define THINKOS_EXCEPT_STACK_SIZE       1024
 #define THINKOS_ENABLE_KRNSVC           1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 #define THINKOS_ENABLE_EXCEPTIONS       1
@@ -145,13 +145,11 @@
 #endif
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
-#define THINKOS_ENABLE_DEBUG_STEP       1
+#define THINKOS_ENABLE_DEBUG_STEP       0
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         0
+#define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              1
-
-#define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              1
 #define THINKOS_ENABLE_CRITICAL         1
@@ -171,12 +169,12 @@
 #define THINKOS_ENABLE_I_CALLS          1
 #define THINKOS_ENABLE_THREAD_INFO      1
 
-#define THINKOS_ENABLE_MEMORY_CLEAR     1
+#define THINKOS_ENABLE_STACK_INIT       1
+#define THINKOS_ENABLE_MEMORY_CLEAR     0
 #define THINKOS_ENABLE_FLASH_MEM        1
 
 #define THINKOS_ENABLE_OFAST            1
-
-#define THINKOS_ENABLE_PRIVILEGED_THREAD 0
+#define THINKOS_ENABLE_PRIVILEGED_THREAD 1
 
 /* -------------------------------------------------------------------------
    RCC 
@@ -196,22 +194,22 @@
    -------------------------------------------------------------------------- */
 
 #define STM32_ENABLE_OTG_FS          1
+#define STM32_OTG_FS_INEP_MAX        3
+#define STM32_OTG_FS_OUTEP_MAX       2
 #define STM32_OTG_FS_IO_INIT         0
-#define STM32_OTG_FS_IRQ_ENABLE      0
-#define STM32_OTG_FS_EP_MAX          4
-#define STM32_OTG_FS_VBUS_ENABLE     1
+#define STM32_OTG_FS_VBUS_SENS       0
+#define STM32_OTG_FS_VBUS_CONNECT    0
+#define STM32_OTG_FS_RX_FIFO_SIZE    192
+#define STM32_OTG_FS_BULK_PKTS       6
 
-#define CDC_EP_OUT_MAX_PKT_SIZE      64
 #define CDC_EP_IN_MAX_PKT_SIZE       64
-#define CDC_EP_INT_MAX_PKT_SIZE      8
 
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
-#define BOOT_MEM_RESERVED          0x1000
-#define BOOT_ENABLE_GDB            1
+#define BOOT_ENABLE_GDB            0
 #define BOOT_ENABLE_THIRD          0
-#define BOOT_CUSTOM_COMM           1
+#define BOOT_CUSTOM_COMM           0
 
 #define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  0

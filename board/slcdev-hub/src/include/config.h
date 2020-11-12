@@ -43,6 +43,7 @@
 #define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
+#define THINKOS_ENABLE_TERMINATE        1
 
 #define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
@@ -207,7 +208,6 @@
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
-#define BOOT_MEM_RESERVED          0x1000
 #define BOOT_ENABLE_GDB            0
 #define BOOT_ENABLE_THIRD          0
 #define BOOT_CUSTOM_COMM           1

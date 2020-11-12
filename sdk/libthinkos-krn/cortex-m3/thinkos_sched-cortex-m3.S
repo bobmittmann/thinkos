@@ -93,18 +93,13 @@ thinkos_krn_scheduler:
 
 thinkos_sched_update_cyccnt:
 #if (THINKOS_ENABLE_PROFILING)
+	/* DWT.SYCCNT */
 	ldr.n    r6, .L_cm_dwt
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n    r6, [r6, #4]
 	/* update the reference */
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	/* r5: th_cycsum */
-	ldrd	 r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #else
 	/* r5: cycref */
 	ldr      r5, [r3, #THINKOS_RT_CYCREF_OFFS]
-  #endif
 	/* thinkos_rt.cycref = cyccnt */
 	str      r6, [r3, #THINKOS_RT_CYCREF_OFFS]
 	/* r6: delta =  cyccnt - cycref */	
@@ -115,11 +110,6 @@ thinkos_sched_update_cyccnt:
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
 	str      r5, [r7, r2, lsl #2]
-#else
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	ldr      r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #endif
 #endif
 
 thinkos_sched_swap:
@@ -152,6 +142,8 @@ thinkos_krn_sched_ctx_get:
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
+	/* r4: step_req */
+	ldr      r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
 	/* check if the step request bit is set for this thread */
 	movs	 r5, #1
 	lsls     r5, r1

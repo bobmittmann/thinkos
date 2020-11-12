@@ -191,11 +191,11 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 }
 #endif /* !THINKOS_ENABLE_MONITOR_SCHED */
 
-void __krn_systick_init(void)
+void thinkos_krn_systick_init(void)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 
-	DCC_LOG(LOG_INFO, "Initialize the SysTick"); 
+	DCC_LOG(LOG_TRACE, "Initializing SysTick..."); 
 	/* Initialize the SysTick module */
 	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
 	systick->cvr = 0;

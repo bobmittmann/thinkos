@@ -25,7 +25,7 @@
 #include <thinkos/irq.h>
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #include <thinkos.h>
@@ -169,7 +169,7 @@ void thinkos_escalate_svc(int32_t * arg, int self)
 }
 #endif
 
-void thinkos_nosys(int32_t * arg, int self)
+void thinkos_nosys_svc(int32_t * arg, int self)
 {
 	__THINKOS_ERROR(self, THINKOS_ERR_SYSCALL_INVALID);
 	arg[0] = THINKOS_ENOSYS;
@@ -208,973 +208,376 @@ void thinkos_critical_exit_svc(int32_t * arg, int self)
 }
 #endif
 
-#if 0
-
-void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
-{
-	switch (svc) {
-	case THINKOS_THREAD_SELF:
-		thinkos_thread_self_svc(arg, self);
-		break;
-
-	case THINKOS_THREAD_CREATE:
-		thinkos_thread_create_svc(arg, self);
-		break;
-
-/* ----------------------------------------------
- * Clock related
- * --------------------------------------------- */
-
-	case THINKOS_CLOCK:
-#if THINKOS_ENABLE_CLOCK
-		thinkos_clock_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_ALARM:
-#if THINKOS_ENABLE_ALARM
-		thinkos_alarm_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-		
-	case THINKOS_SLEEP:
-#if THINKOS_ENABLE_SLEEP
-		thinkos_sleep_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Mutex
- * --------------------------------------------- */
-
-	case THINKOS_MUTEX_LOCK:
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_lock_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_MUTEX_TRYLOCK:
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_trylock_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_MUTEX_TIMEDLOCK:
-#if (THINKOS_MUTEX_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_mutex_timedlock_svc(arg, self);
-  #else
-		thinkos_mutex_lock_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_MUTEX_UNLOCK:
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_unlock_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Semaphores
- * --------------------------------------------- */
-
-	case THINKOS_SEM_INIT:
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_init_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_SEM_WAIT:
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_wait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_SEM_TRYWAIT:
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_trywait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_SEM_TIMEDWAIT:
-#if (THINKOS_SEMAPHORE_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_sem_timedwait_svc(arg, self);
-  #else
-		thinkos_sem_wait_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_SEM_POST:
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_post_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-
-/* ----------------------------------------------
- * Conditional Variables
- * --------------------------------------------- */
-
-	case THINKOS_COND_WAIT:
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_wait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_COND_TIMEDWAIT:
-#if (THINKOS_COND_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_cond_timedwait_svc(arg, self);
-  #else
-		thinkos_cond_wait_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_COND_SIGNAL:
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_signal_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_COND_BROADCAST:
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_broadcast_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Single (simple) flags
- * --------------------------------------------- */
-
-	case THINKOS_FLAG_TAKE:
-#if (THINKOS_FLAG_MAX > 0)
-		thinkos_flag_take_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_TIMEDTAKE:
-#if (THINKOS_FLAG_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedtake_svc(arg, self);
-  #else
-		thinkos_flag_take_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_GIVE:
-#if (THINKOS_FLAG_MAX > 0)
-		thinkos_flag_give_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_VAL:
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_val_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_CLR:
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_clr_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_SET:
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_set_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_WATCH:
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_watch_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_FLAG_TIMEDWATCH:
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedwatch_svc(arg, self);
-  #else
-		thinkos_flag_watch_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Gates (locked flags)
- * --------------------------------------------- */
-
-	case THINKOS_GATE_WAIT:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_wait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_GATE_TIMEDWAIT:
-#if (THINKOS_GATE_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_gate_timedwait_svc(arg, self);
-  #else
-		thinkos_gate_wait_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_GATE_EXIT:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_exit_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_GATE_OPEN:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_open_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_GATE_CLOSE:
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_close_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-
-/* ----------------------------------------------
- * Event sets (multiple flags)
- * --------------------------------------------- */
-
-	case THINKOS_EVENT_WAIT:
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_wait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_EVENT_TIMEDWAIT:
-#if (THINKOS_EVENT_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_ev_timedwait_svc(arg, self);
-  #else
-		thinkos_ev_wait_svc(arg, self);
-  #endif
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_EVENT_RAISE:
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_raise_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_EVENT_MASK:
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_mask_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_EVENT_CLEAR:
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_clear_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Console
- * --------------------------------------------- */
-
-	case THINKOS_CONSOLE:
-#if THINKOS_ENABLE_CONSOLE
-		thinkos_console_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Interrupts
- * --------------------------------------------- */
-
-	case THINKOS_IRQ_WAIT:
-#if THINKOS_IRQ_MAX > 0
-		thinkos_irq_wait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_IRQ_MAX > 0 */
-		break;
-
-	case THINKOS_IRQ_TIMEDWAIT:
-#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
-		thinkos_irq_timedwait_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
-		break;
-
-	case THINKOS_IRQ_TIMEDWAIT_CLEANUP:
-#if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-		thinkos_irq_timedwait_cleanup_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
-		break;
-
-	case THINKOS_IRQ_CTL:
-#if (THINKOS_ENABLE_IRQ_CTL)
-		thinkos_irq_ctl_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_ENABLE_IRQ_CTL */
-		break;
-
-#if (THINKOS_ENABLE_OBJ_ALLOC)
-	case THINKOS_OBJ_ALLOC:
-		thinkos_obj_alloc_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_ENABLE_OBJ_ALLOC */
-		break;
-
-#if (THINKOS_ENABLE_OBJ_FREE)
-	case THINKOS_OBJ_FREE:
-		thinkos_obj_free_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif /* THINKOS_ENABLE_OBJ_FREE */
-		break;
-
-	case THINKOS_JOIN:
-#if (THINKOS_ENABLE_JOIN)
-		thinkos_join_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_PAUSE:
-#if (THINKOS_ENABLE_PAUSE)
-		thinkos_pause_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_RESUME:
-#if (THINKOS_ENABLE_PAUSE)
-		thinkos_resume_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_CANCEL:
-#if (THINKOS_ENABLE_CANCEL)
-		thinkos_cancel_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_EXIT:
-#if (THINKOS_ENABLE_EXIT)
-		thinkos_exit_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_TERMINATE:
-#if (THINKOS_ENABLE_TERMINATE)
-		thinkos_terminate_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_CTL:
-#if THINKOS_ENABLE_CTL
-		thinkos_ctl_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_ESCALATE:
-#if (THINKOS_ENABLE_ESCALATE)
-		thinkos_escalate_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_CRITICAL_ENTER:
-#if (THINKOS_ENABLE_CRITICAL)
-		thinkos_critical_enter_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_CRITICAL_EXIT:
-#if (THINKOS_ENABLE_CRITICAL)
-		thinkos_critical_exit_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-
-/* ----------------------------------------------
- * Comm 
- * --------------------------------------------- */
-
-	case THINKOS_COMM:
-#if (THINKOS_ENABLE_COMM)
-		thinkos_comm_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_MONITOR:
-#if (THINKOS_ENABLE_MONITOR_SYSCALL) 
-		thinkos_monitor_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_TRACE:
-#if (THINKOS_ENABLE_TRACE)
-		thinkos_trace_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	case THINKOS_TRACE_CTL:
-#if (THINKOS_ENABLE_TRACE)
-		thinkos_trace_ctl_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-/* ----------------------------------------------
- * Flash memory IO
- * --------------------------------------------- */
-
-	case THINKOS_FLASH_MEM:
-#if (THINKOS_FLASH_MEM_MAX > 0)
-		thinkos_flash_mem_svc(arg, self);
-#else
-		thinkos_nosys(arg, self);
-#endif
-		break;
-
-	default:
-		thinkos_nosys(arg, self);
-		break;
-	}
-}
-
-#else
-
 typedef void (* thinkos_svc_t)(int32_t * arg, int self);
 
-thinkos_svc_t const thinkos_call_tab[] = {
+thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,
 	[THINKOS_THREAD_CREATE] = thinkos_thread_create_svc,
 
-	[THINKOS_CLOCK] =
-#if THINKOS_ENABLE_CLOCK
-		thinkos_clock_svc,
+#if (THINKOS_ENABLE_CLOCK)
+	[THINKOS_CLOCK] = thinkos_clock_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CLOCK] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_ALARM] =
-#if THINKOS_ENABLE_ALARM
-		thinkos_alarm_svc,
+#if (THINKOS_ENABLE_ALARM)
+	[THINKOS_ALARM] = thinkos_alarm_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_ALARM] = thinkos_nosys_svc,
 #endif
 		
-	[THINKOS_SLEEP] =
-#if THINKOS_ENABLE_SLEEP
-		thinkos_sleep_svc,
+#if (THINKOS_ENABLE_SLEEP)
+	[THINKOS_SLEEP] = thinkos_sleep_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_SLEEP] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Mutex
  * --------------------------------------------- */
 
-	[THINKOS_MUTEX_LOCK] =
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_lock_svc,
+#if (THINKOS_MUTEX_MAX) > 0
+	[THINKOS_MUTEX_LOCK] = thinkos_mutex_lock_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_MUTEX_LOCK] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_MUTEX_TRYLOCK] =
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_trylock_svc,
+#if (THINKOS_MUTEX_MAX) > 0
+	[THINKOS_MUTEX_TRYLOCK] = thinkos_mutex_trylock_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_MUTEX_TRYLOCK] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_MUTEX_TIMEDLOCK] =
-#if (THINKOS_MUTEX_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_mutex_timedlock_svc,
+#if (THINKOS_MUTEX_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_MUTEX_TIMEDLOCK] = thinkos_mutex_timedlock_svc,
   #else
-		thinkos_mutex_lock_svc,
+	[THINKOS_MUTEX_TIMEDLOCK] = thinkos_mutex_lock_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_MUTEX_TIMEDLOCK] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_MUTEX_UNLOCK] =
-#if (THINKOS_MUTEX_MAX > 0)
-		thinkos_mutex_unlock_svc,
+#if (THINKOS_MUTEX_MAX) > 0
+	[THINKOS_MUTEX_UNLOCK] = thinkos_mutex_unlock_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_MUTEX_UNLOCK] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Semaphores
  * --------------------------------------------- */
 
-	[THINKOS_SEM_INIT] =
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_init_svc,
+#if (THINKOS_SEMAPHORE_MAX) > 0
+	[THINKOS_SEM_INIT] = thinkos_sem_init_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_SEM_INIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_SEM_WAIT] =
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_wait_svc,
+#if (THINKOS_SEMAPHORE_MAX) > 0
+	[THINKOS_SEM_WAIT] = thinkos_sem_wait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_SEM_WAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_SEM_TRYWAIT] =
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_trywait_svc,
+#if (THINKOS_SEMAPHORE_MAX) > 0
+	[THINKOS_SEM_TRYWAIT] = thinkos_sem_trywait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_SEM_TRYWAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_SEM_TIMEDWAIT] =
-#if (THINKOS_SEMAPHORE_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_sem_timedwait_svc,
+#if (THINKOS_SEMAPHORE_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_SEM_TIMEDWAIT] = thinkos_sem_timedwait_svc,
   #else
-		thinkos_sem_wait_svc,
+	[THINKOS_SEM_TIMEDWAIT] = thinkos_sem_wait_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_SEM_TIMEDWAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_SEM_POST] =
-#if (THINKOS_SEMAPHORE_MAX > 0)
-		thinkos_sem_post_svc,
+#if (THINKOS_SEMAPHORE_MAX) > 0
+	[THINKOS_SEM_POST] = thinkos_sem_post_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_SEM_POST] = thinkos_nosys_svc,
 #endif
-
 
 /* ----------------------------------------------
  * Conditional Variables
  * --------------------------------------------- */
 
-	[THINKOS_COND_WAIT] =
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_wait_svc,
+#if (THINKOS_COND_MAX) > 0
+	[THINKOS_COND_WAIT] = thinkos_cond_wait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_COND_WAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_COND_TIMEDWAIT] =
-#if (THINKOS_COND_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_cond_timedwait_svc,
+#if (THINKOS_COND_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_COND_TIMEDWAIT] = thinkos_cond_timedwait_svc,
   #else
-		thinkos_cond_wait_svc,
+	[THINKOS_COND_TIMEDWAIT] = thinkos_cond_wait_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_COND_TIMEDWAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_COND_SIGNAL] =
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_signal_svc,
+#if (THINKOS_COND_MAX) > 0
+	[THINKOS_COND_SIGNAL] = thinkos_cond_signal_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_COND_SIGNAL] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_COND_BROADCAST] =
-#if (THINKOS_COND_MAX > 0)
-		thinkos_cond_broadcast_svc,
+#if (THINKOS_COND_MAX) > 0
+	[THINKOS_COND_BROADCAST] = thinkos_cond_broadcast_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_COND_BROADCAST] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Single (simple) flags
  * --------------------------------------------- */
 
-	[THINKOS_FLAG_TAKE] =
-#if (THINKOS_FLAG_MAX > 0)
-		thinkos_flag_take_svc,
+#if (THINKOS_FLAG_MAX) > 0
+	[THINKOS_FLAG_TAKE] = thinkos_flag_take_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_TAKE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_TIMEDTAKE] =
-#if (THINKOS_FLAG_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedtake_svc,
+#if (THINKOS_FLAG_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_FLAG_TIMEDTAKE] = thinkos_flag_timedtake_svc,
   #else
-		thinkos_flag_take_svc,
+	[THINKOS_FLAG_TIMEDTAKE] = thinkos_flag_take_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_TIMEDTAKE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_GIVE] =
-#if (THINKOS_FLAG_MAX > 0)
-		thinkos_flag_give_svc,
+#if (THINKOS_FLAG_MAX) > 0
+	[THINKOS_FLAG_GIVE] = thinkos_flag_give_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_GIVE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_VAL] =
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_val_svc,
+#if (THINKOS_FLAG_MAX) > 0 && THINKOS_ENABLE_FLAG_WATCH
+	[THINKOS_FLAG_VAL] = thinkos_flag_val_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_VAL] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_CLR] =
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_clr_svc,
+#if (THINKOS_FLAG_MAX) > 0 && THINKOS_ENABLE_FLAG_WATCH
+	[THINKOS_FLAG_CLR] = thinkos_flag_clr_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_CLR] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_SET] =
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_set_svc,
+#if (THINKOS_FLAG_MAX) > 0 && THINKOS_ENABLE_FLAG_WATCH
+	[THINKOS_FLAG_SET] = thinkos_flag_set_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_SET] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_WATCH] =
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-		thinkos_flag_watch_svc,
+#if (THINKOS_FLAG_MAX) > 0 && THINKOS_ENABLE_FLAG_WATCH
+	[THINKOS_FLAG_WATCH] = thinkos_flag_watch_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_WATCH] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_FLAG_TIMEDWATCH] =
-#if (THINKOS_FLAG_MAX > 0) && THINKOS_ENABLE_FLAG_WATCH
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_flag_timedwatch_svc,
+#if (THINKOS_FLAG_MAX) > 0 && THINKOS_ENABLE_FLAG_WATCH
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_FLAG_TIMEDWATCH] = thinkos_flag_timedwatch_svc,
   #else
-		thinkos_flag_watch_svc,
+	[THINKOS_FLAG_TIMEDWATCH] = thinkos_flag_watch_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_FLAG_TIMEDWATCH] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Gates (locked flags)
  * --------------------------------------------- */
 
-	[THINKOS_GATE_WAIT] =
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_wait_svc,
+#if (THINKOS_GATE_MAX) > 0 
+	[THINKOS_GATE_WAIT] = thinkos_gate_wait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_GATE_WAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_GATE_TIMEDWAIT] =
-#if (THINKOS_GATE_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_gate_timedwait_svc,
+#if (THINKOS_GATE_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_GATE_TIMEDWAIT] = thinkos_gate_timedwait_svc,
   #else
-		thinkos_gate_wait_svc,
+	[THINKOS_GATE_TIMEDWAIT] = thinkos_gate_wait_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_GATE_TIMEDWAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_GATE_EXIT] =
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_exit_svc,
+#if (THINKOS_GATE_MAX) > 0 
+	[THINKOS_GATE_EXIT] = thinkos_gate_exit_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_GATE_EXIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_GATE_OPEN] =
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_open_svc,
+#if (THINKOS_GATE_MAX) > 0 
+	[THINKOS_GATE_OPEN] = thinkos_gate_open_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_GATE_OPEN] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_GATE_CLOSE] =
-#if (THINKOS_GATE_MAX > 0) 
-		thinkos_gate_close_svc,
+#if (THINKOS_GATE_MAX) > 0 
+	[THINKOS_GATE_CLOSE] = thinkos_gate_close_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_GATE_CLOSE] = thinkos_nosys_svc,
 #endif
-
 
 /* ----------------------------------------------
  * Event sets (multiple flags)
  * --------------------------------------------- */
 
-	[THINKOS_EVENT_WAIT] =
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_wait_svc,
+#if (THINKOS_EVENT_MAX) > 0
+	[THINKOS_EVENT_WAIT] = thinkos_ev_wait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_EVENT_WAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_EVENT_TIMEDWAIT] =
-#if (THINKOS_EVENT_MAX > 0)
-  #if THINKOS_ENABLE_TIMED_CALLS
-		thinkos_ev_timedwait_svc,
+#if (THINKOS_EVENT_MAX) > 0
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_EVENT_TIMEDWAIT] = thinkos_ev_timedwait_svc,
   #else
-		thinkos_ev_wait_svc,
+	[THINKOS_EVENT_TIMEDWAIT] = thinkos_ev_wait_svc,
   #endif
 #else
-		thinkos_nosys,
+	[THINKOS_EVENT_TIMEDWAIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_EVENT_RAISE] =
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_raise_svc,
+#if (THINKOS_EVENT_MAX) > 0
+	[THINKOS_EVENT_RAISE] = thinkos_ev_raise_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_EVENT_RAISE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_EVENT_MASK] =
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_mask_svc,
+#if (THINKOS_EVENT_MAX) > 0
+	[THINKOS_EVENT_MASK] = thinkos_ev_mask_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_EVENT_MASK] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_EVENT_CLEAR] =
-#if (THINKOS_EVENT_MAX > 0)
-		thinkos_ev_clear_svc,
+#if (THINKOS_EVENT_MAX) > 0
+	[THINKOS_EVENT_CLEAR] = thinkos_ev_clear_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_EVENT_CLEAR] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Console
  * --------------------------------------------- */
 
-	[THINKOS_CONSOLE] =
-#if THINKOS_ENABLE_CONSOLE
-		thinkos_console_svc,
+#if (THINKOS_ENABLE_CONSOLE)
+	[THINKOS_CONSOLE] = thinkos_console_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CONSOLE] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Interrupts
  * --------------------------------------------- */
 
-	[THINKOS_IRQ_WAIT] =
-#if THINKOS_IRQ_MAX > 0
-		thinkos_irq_wait_svc,
+#if (THINKOS_IRQ_MAX) > 0
+	[THINKOS_IRQ_WAIT] = thinkos_irq_wait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_IRQ_WAIT] = thinkos_nosys_svc,
 #endif /* THINKOS_IRQ_MAX > 0 */
 
-	[THINKOS_IRQ_TIMEDWAIT] =
-#if THINKOS_ENABLE_IRQ_TIMEDWAIT 
-		thinkos_irq_timedwait_svc,
+#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) 
+	[THINKOS_IRQ_TIMEDWAIT] = thinkos_irq_timedwait_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_IRQ_TIMEDWAIT] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] =
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-		thinkos_irq_timedwait_cleanup_svc,
+	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_irq_timedwait_cleanup_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
-	[THINKOS_IRQ_CTL] =
 #if (THINKOS_ENABLE_IRQ_CTL)
-		thinkos_irq_ctl_svc,
+	[THINKOS_IRQ_CTL] = thinkos_irq_ctl_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_IRQ_CTL] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_IRQ_CTL */
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
-	[THINKOS_OBJ_ALLOC] =
-		thinkos_obj_alloc_svc,
+	[THINKOS_OBJ_ALLOC] = thinkos_obj_alloc_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_OBJ_ALLOC] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_OBJ_ALLOC */
 
 #if (THINKOS_ENABLE_OBJ_FREE)
-	[THINKOS_OBJ_FREE] =
-		thinkos_obj_free_svc,
+	[THINKOS_OBJ_FREE] = thinkos_obj_free_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_OBJ_FREE] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_OBJ_FREE */
 
-	[THINKOS_JOIN] =
 #if (THINKOS_ENABLE_JOIN)
-		thinkos_join_svc,
+	[THINKOS_JOIN] = thinkos_join_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_JOIN] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_PAUSE] =
 #if (THINKOS_ENABLE_PAUSE)
-		thinkos_pause_svc,
+	[THINKOS_PAUSE] = thinkos_pause_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_PAUSE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_RESUME] =
 #if (THINKOS_ENABLE_PAUSE)
-		thinkos_resume_svc,
+	[THINKOS_RESUME] = thinkos_resume_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_RESUME] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_CANCEL] =
 #if (THINKOS_ENABLE_CANCEL)
-		thinkos_cancel_svc,
+	[THINKOS_CANCEL] = thinkos_cancel_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CANCEL] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_EXIT] =
 #if (THINKOS_ENABLE_EXIT)
-		thinkos_exit_svc,
+	[THINKOS_EXIT] = thinkos_exit_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_EXIT] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_TERMINATE] =
 #if (THINKOS_ENABLE_TERMINATE)
-		thinkos_terminate_svc,
+	[THINKOS_TERMINATE] = thinkos_terminate_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_TERMINATE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_CTL] =
-#if THINKOS_ENABLE_CTL
-		thinkos_ctl_svc,
+#if (THINKOS_ENABLE_CTL)
+	[THINKOS_CTL] = thinkos_ctl_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CTL] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_ESCALATE] =
 #if (THINKOS_ENABLE_ESCALATE)
-		thinkos_escalate_svc,
+	[THINKOS_ESCALATE] = thinkos_escalate_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_ESCALATE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_CRITICAL_ENTER] =
 #if (THINKOS_ENABLE_CRITICAL)
-		thinkos_critical_enter_svc,
+	[THINKOS_CRITICAL_ENTER] = thinkos_critical_enter_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CRITICAL_ENTER] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_CRITICAL_EXIT] =
 #if (THINKOS_ENABLE_CRITICAL)
-		thinkos_critical_exit_svc,
+	[THINKOS_CRITICAL_EXIT] = thinkos_critical_exit_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_CRITICAL_EXIT] = thinkos_nosys_svc,
 #endif
 
 
@@ -1182,56 +585,41 @@ thinkos_svc_t const thinkos_call_tab[] = {
  * Comm 
  * --------------------------------------------- */
 
-	[THINKOS_COMM] =
 #if (THINKOS_ENABLE_COMM)
-		thinkos_comm_svc,
+	[THINKOS_COMM] = thinkos_comm_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_COMM] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_MONITOR] =
 #if (THINKOS_ENABLE_MONITOR_SYSCALL) 
-		thinkos_monitor_svc,
+	[THINKOS_MONITOR] = thinkos_monitor_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_MONITOR] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_TRACE] =
 #if (THINKOS_ENABLE_TRACE)
-		thinkos_trace_svc,
+	[THINKOS_TRACE] = thinkos_trace_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_TRACE] = thinkos_nosys_svc,
 #endif
 
-	[THINKOS_TRACE_CTL] =
 #if (THINKOS_ENABLE_TRACE)
-		thinkos_trace_ctl_svc,
+	[THINKOS_TRACE_CTL] = thinkos_trace_ctl_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_TRACE_CTL] = thinkos_nosys_svc,
 #endif
 
 /* ----------------------------------------------
  * Flash memory IO
  * --------------------------------------------- */
 
-	[THINKOS_FLASH_MEM] =
-#if (THINKOS_FLASH_MEM_MAX > 0)
-		thinkos_flash_mem_svc,
+#if (THINKOS_FLASH_MEM_MAX) > 0
+	[THINKOS_FLASH_MEM] = thinkos_flash_mem_svc,
 #else
-		thinkos_nosys,
+	[THINKOS_FLASH_MEM] = thinkos_nosys_svc,
 #endif
 
 };
-
-#if 0
-void thinkos_svc_isr(int32_t * arg, int32_t self, uint32_t svc)
-{
-	if (svc < (THINKOS_SYSCALL_CNT)) 
-		thinkos_call_tab[svc](arg, self);
-	else
-		thinkos_nosys(arg, self);
-}
-#endif
 
 void thinkos_krn_svc_err(unsigned int thread_id, int errno)
 {
@@ -1251,6 +639,5 @@ void thinkos_krn_svc_err(unsigned int thread_id, int errno)
 #endif
 }
 
-#endif
 
 

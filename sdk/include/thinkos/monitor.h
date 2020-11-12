@@ -140,6 +140,18 @@ struct monitor_context {
 	uint32_t xpsr;
 };
 
+struct monitor_swap {
+	uint32_t xpsr;
+	uint32_t r4;
+	uint32_t r5;
+	uint32_t r6;
+	uint32_t r7;
+	uint32_t r8;
+	uint32_t r9;
+	uint32_t r10;
+	uint32_t r11;
+	uint32_t lr;
+};
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
@@ -168,6 +180,13 @@ struct monitor_comm {
 	const void * dev;
 	const struct monitor_comm_op * op;
 };
+
+extern uint32_t thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
+extern const uint16_t thinkos_monitor_stack_size;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline int monitor_comm_send(const struct monitor_comm * comm, 
 								   const void * buf, unsigned int len) {
@@ -199,10 +218,6 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	return (comm->op->ctrl(comm->dev, COMM_CTRL_STATUS_GET) & 
 	        COMM_ST_CONNECTED) ? true : false;
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void thinkos_monitor_svc(int32_t arg[], int self);
 
@@ -418,7 +433,9 @@ void monitor_hexdump(const struct monitor_comm * comm,
                     const struct thinkos_mem_desc * mem,
                     uint32_t addr, unsigned int size);
 
-void monitor_print_osinfo(const struct monitor_comm * comm);
+void monitor_print_osinfo(const struct monitor_comm * comm, 
+						  struct thinkos_rt * rt,
+						  uint32_t cycref[]);
 
 void monitor_print_thread(const struct monitor_comm * comm, 
 						 unsigned int thread_id);

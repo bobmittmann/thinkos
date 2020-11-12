@@ -40,7 +40,7 @@ int __thinkos_thread_fault_code(unsigned int thread_id)
 	if (!__thinkos_thread_isfaulty(thread_id))
 		return 0;
 
-	if (__xcpt_active_get(xcpt) == thread_id)
+	if (__xcpt_active_get(xcpt) == (int)thread_id)
 		return xcpt->errno;
 
 	pc = (uint16_t *)__thinkos_thread_pc_get(thread_id);
@@ -54,7 +54,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_id)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
-	if (__xcpt_active_get(xcpt) == thread_id)
+	if (__xcpt_active_get(xcpt) == (int)thread_id)
 		return &xcpt->ctx.core;
 
 	return __thinkos_thread_ctx_get(thread_id);
@@ -72,12 +72,19 @@ struct thinkos_context * __thinkos_thread_ctx_init(unsigned int thread_id,
 	uint32_t pc;
 
 	pc = (uint32_t)task & 0xfffffffe;
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	if (sp & 0x0000000f) {
+		DCC_LOG1(LOG_PANIC, "sp=%08x unaligned", sp); 
+	}
+#else
 	sp &= 0xfffffff0; /* 64bits alignemnt */
+#endif
 
 	sp -= sizeof(struct thinkos_context);
 	ctx = (struct thinkos_context *)sp;
 
-#if (THINKOS_ENABLE_STACK_INIT) && (THINKOS_ENABLE_MEMORY_CLEAR)
+#if (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
 #endif
 
@@ -118,6 +125,7 @@ void thinkos_thread_create_svc(int32_t * arg, unsigned int self)
 	struct thinkos_context * ctx;
 	int thread_id;
 	uint32_t ctrl;
+	uint32_t free;
 	uint32_t sp;
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
@@ -167,11 +175,13 @@ void thinkos_thread_create_svc(int32_t * arg, unsigned int self)
 
 	DCC_LOG2(LOG_INFO, "stack base=%08x size=%d", stack_base, stack_size);
 
+	free = stack_size - sizeof(struct thinkos_context);
+	(void)free;
 #if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize stack */
-	__thinkos_memset32((void *)stack_base, 0xdeadbeef, stack_size);
+	__thinkos_memset32((void *)stack_base, 0xdeadbeef, free);
 #elif (THINKOS_ENABLE_MEMORY_CLEAR)
-	__thinkos_memset32(stack_base, 0, stack_size);
+	__thinkos_memset32(stack_base, 0, free);
 #endif
 
 #if (THINKOS_NRT_THREADS_MAX > 0)

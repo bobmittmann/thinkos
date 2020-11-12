@@ -76,12 +76,12 @@ cm3_svc_isr:
 	/* Read the SVC number from the instruction */
 	ldrb     r2, [r2, #-2]
     cmp      r2, #THINKOS_SYSCALL_CNT
-    bhi      thinkos_nosys
+    bhi      thinkos_nosys_svc
 	ldr      r3, .L_call_tab
 	ldr      pc, [r3, r2, lsl #2]
 	.align   2
 .L_call_tab:
-	.word    thinkos_call_tab
+	.word    thinkos_svc_call_tab
 
 	.align   2
 .L_thinkos_rt:

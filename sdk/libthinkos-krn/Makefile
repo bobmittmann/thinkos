@@ -29,7 +29,7 @@ MISC_CFILES = thinkos_obj.c \
 			  thread_getnext.c thread_get.c \
 			  thread_isfaulty.c thread_ispaused.c \
 			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
-			  cpu-info.c
+			  cpu-info.c scan_stack.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \

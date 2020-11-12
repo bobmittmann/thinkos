@@ -203,6 +203,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	uintptr_t arg;
 	uintptr_t sp;
 	uintptr_t sl;
+	uint32_t free;
 
 	sl = (uintptr_t)THINKOS_IDLE_STACK_BASE;
 	sp = sl + THINKOS_IDLE_STACK_SIZE;
@@ -215,6 +216,15 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	arg = 0;
 #endif
 
+	free = THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
+	(void)free;
+#if (THINKOS_ENABLE_STACK_INIT)
+	/* initialize thread stack */
+	__thinkos_memset32((void *)sl, 0xdeadbeef, free);
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32((void *)sl, 0, free);
+#endif
+
 	ctx = __thinkos_thread_ctx_init(THINKOS_THREAD_IDLE, sp, 
 									(uintptr_t)thinkos_idle_task,
 									arg);
@@ -225,7 +235,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	__thinkos_thread_sl_set(THINKOS_THREAD_IDLE, sl);
-	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[THINKOS_THREAD_IDLE]);
 #endif
 
 #if (THINKOS_ENABLE_THREAD_INFO)
@@ -243,9 +252,11 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	ctx->r3 = (uint32_t)0x33333333;
 
 	udelay(0x8000);
-	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
-			 "IDLE ctx=%08x except=%08x" _ATTR_POP_, ctx,
-			 __thinkos_xcpt_stack_top());
+	DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
+			 "IDLE ctx=%08x except=%08x sl=%08x sp=%08x" _ATTR_POP_, 
+			 ctx, __thinkos_xcpt_stack_top(),
+			 __thinkos_thread_sl_get(THINKOS_THREAD_IDLE),
+			 __thinkos_thread_sp_get(THINKOS_THREAD_IDLE));
 #endif
 
 	return ctx;
@@ -254,15 +265,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 /* initialize the idle thread */
 void thinkos_krn_idle_init(void)
 {
-	DCC_LOG1(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
-			"IDLE stack=%08x" _ATTR_POP_, THINKOS_IDLE_STACK_BASE);
-
-#if (THINKOS_ENABLE_STACK_INIT)
-	/* initialize idle stack */
-	__thinkos_memset32(THINKOS_IDLE_STACK_BASE, 0xdeadbeef, 
-					   THINKOS_IDLE_STACK_SIZE);
-#endif
-
  	thinkos_krn_idle_reset();
 }
 

@@ -73,6 +73,18 @@ __sizeof_rom_vectors:
 	.word   __rom_vectors_size
 	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
 
+	.global __sizeof_krn_data
+__sizeof_krn_data:
+	.type   __sizeof_krn_data, %object
+	.word  __krn_data_size
+	.size   __sizeof_krn_data, . - __sizeof_krn_data
+
+	.global __addrof_krn_data
+__addrof_krn_data:
+	.type   __addrof_krn_data, %object
+	.word  __krn_data_init
+	.size   __addrof_krn_data, . - __addrof_krn_data
+
 	.text
 	.align	2
 
@@ -164,10 +176,11 @@ thinkos_krn_xcpt_raise:
 	strb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS] /* count */
 
 	strb    lr, [r3, #THINKOS_EXCEPT_RET_OFFS] /* return (lr) */
-	strb    r12, [r3, #THINKOS_EXCEPT_PRIMASK_OFFS] /* PRIMASK */
-
 	mrs     r0, FAULTMASK
-	strb    r0, [r3, #THINKOS_EXCEPT_FAULTMASK_OFFS] /* FAULTMASK */
+	lsl     r0, 1
+	and     r0, r12
+	strb    r0, [r3, #THINKOS_EXCEPT_PFMASK_OFFS] /* PRI/FAULT MASK */
+
 	mrs     r0, BASEPRI 
 	strb    r0, [r3, #THINKOS_EXCEPT_BASEPRI_OFFS] /* BASEPRI */
 	mrs     r0, IPSR

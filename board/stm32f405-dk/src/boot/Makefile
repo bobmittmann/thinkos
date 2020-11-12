@@ -50,7 +50,7 @@ CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-par
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f415xg
-KRN_DATA_SIZE = 4096
+KRN_DATA_SIZE = 8192
 KRN_CODE_SIZE = 65536
 LOAD_ADDR = 0x8000000
 include $(ARCH_DIR)/mk/stm32.mk

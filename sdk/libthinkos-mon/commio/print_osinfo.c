@@ -25,34 +25,50 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
-
-void monitor_print_osinfo(const struct monitor_comm * comm)
+void monitor_print_osinfo(const struct monitor_comm * comm, 
+						  struct thinkos_rt * rt,
+						  uint32_t cycref[])
 {
-	struct thinkos_rt * rt = &thinkos_rt;
 #if (THINKOS_ENABLE_PROFILING)
-	uint32_t cycbuf[CYCCNT_MAX];
 	uint32_t cyccnt;
-	int32_t delta;
+	uint32_t cycsum;
+	uint32_t cycbusy;
 	uint32_t cycdiv;
+	uint32_t cyc[THINKOS_CTX_CNT];
 	uint32_t busy;
+	uint32_t idle;
+	uint32_t dif;
 #endif
 	uint32_t active;
 	int i;
 	int j;
 
-	active = __thinkos_active_get();
+
+	active = __thread_active_get(rt);
+	DCC_LOG1(LOG_TRACE, "active=%d", active + 1);
+
 #if (THINKOS_ENABLE_PROFILING)
-	cyccnt = CM3_DWT->cyccnt;
-	delta = cyccnt - rt->cycref;
-	/* update the reference */
-	rt->cycref = cyccnt;
-	/* update active thread's cycle counter */
-	rt->cyccnt[active] += delta; 
-	/* copy the thread counters to a buffer */
-	__thinkos_memcpy32(cycbuf, rt->cyccnt, sizeof(cycbuf));
-	/* reset cycle counters */
-	__thinkos_memset32(rt->cyccnt, 0, sizeof(cycbuf));
+	cyccnt = rt->cycref;
+	cycsum = 0;
+	for (i = 0; i < THINKOS_CTX_CNT; ++i) {
+		uint32_t cnt = rt->cyccnt[i];
+		uint32_t ref = cycref[i];
+		ref = 0;
+
+		rt->cyccnt[i] = 0;
+		cycref[i] = cnt;
+		dif = cnt - ref; 
+		cycsum += dif;
+		cyc[i] = dif;
+	}
+	cycbusy = cycsum - dif;
+	DCC_LOG3(LOG_TRACE, "idle(%u) busy(%u) = sum(%u)", dif, cycbusy, cycsum);
+	cycdiv = (cycsum + 500) / 1000;
+	busy = cycbusy / cycdiv;
+
+	if (busy > 1000)
+		busy  = 1000;
+	idle = 1000 - busy;
 #endif
 
 	/* Internal thread ids start form 0 whereas user
@@ -65,37 +81,19 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 
 #if THINKOS_ENABLE_PROFILING
 	monitor_printf(comm, ", CycCnt: %u\r\n", cyccnt);
-	{
-		uint32_t cycsum = 0;
-		uint32_t cycbusy;
-		uint32_t idle;
-
-		cycsum = 0;
-		for (i = 0; i < THINKOS_THREADS_MAX; ++i)
-			cycsum += cycbuf[i];
-		cycbusy = cycsum;
-		cycsum += cycbuf[THINKOS_CYCCNT_IDLE];
-
-		cycdiv = (cycsum + 500) / 1000;
-		busy = (cycbusy + cycdiv / 2) / cycdiv;
-		idle = 1000 - busy;
-		monitor_printf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
-				cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
-	}
+	monitor_printf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
+				   cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
 
 #endif
 
 	monitor_printf(comm, "\r\n");
 
 	monitor_printf(comm, "  #"); 
-#if THINKOS_ENABLE_THREAD_INFO
 	monitor_printf(comm, " |     Tag"); 
 	monitor_printf(comm, " |    Stack"); 
-#endif
-	monitor_printf(comm, " |  Context"); 
-#if THINKOS_ENABLE_THREAD_STAT
+	monitor_printf(comm, " |       SP"); 
+	monitor_printf(comm, " |       PC"); 
 	monitor_printf(comm, " | Status"); 
-#endif
 #if THINKOS_ENABLE_TIMESHARE
 //	monitor_printf(comm, " |  Val |  Pri"); 
 #endif
@@ -112,8 +110,12 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 	monitor_printf(comm, " |\r\n");
 #endif
 
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
+	for (i = 0; i < THINKOS_CTX_CNT; ++i) {
+		if (__thread_ctx_is_valid(rt, i)) {
+			const char * tag;
+			uint32_t sl;
+			uint32_t sp;
+			uint32_t pc;
 			int oid;
 			int type;
 			bool tmw;
@@ -121,24 +123,16 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			monitor_printf(comm, "%3d", i + 1);
-#if THINKOS_ENABLE_THREAD_INFO
-			if (rt->th_inf[i] != NULL) {
-				monitor_printf(comm, " | %7s", rt->th_inf[i]->tag); 
-				monitor_printf(comm, " | %08x", (uint32_t)rt->th_inf[i]->stack_ptr); 
-			} else {
-				monitor_printf(comm, " |     ..."); 
-				monitor_printf(comm, " |      ..."); 
-			}
-#endif
-			monitor_printf(comm, " | %08x", __thinkos_thread_sp_get(i)); 
+			tag = __thread_tag_get(rt, i);
+			sl = __thread_sl_get(rt, i);
+			sp = __thread_sp_get(rt, i);
+			pc = __thread_pc_get(rt, i);
 
-#if THINKOS_ENABLE_THREAD_STAT
-			oid = thinkos_rt.th_stat[i] >> 1;
-			tmw = thinkos_rt.th_stat[i] & 1;
-#else
-			oid = THINKOS_WQ_READY; /* FIXME */
-			tmw = (thinkos_rt.wq_clock & (1 << i)) ? true : false;
-#endif
+			monitor_printf(comm, " | %7s | %08x | %08x | %08x", 
+						   tag, sl, sp, pc); 
+
+			oid = __thread_stat_wq_get(rt, i);
+			tmw = __thread_stat_tmw_get(rt, i);
 #if THINKOS_ENABLE_THREAD_FAULT
 			if (oid == THINKOS_WQ_FAULT) {
 				struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -150,7 +144,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 				if (i != THINKOS_THREAD_IDLE) {
 					int irq;
 					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-						if (thinkos_rt.irq_th[irq] == i) {
+						if (rt->irq_th[irq] == i) {
 							break;
 						}
 					}
@@ -166,7 +160,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 				if (i != THINKOS_THREAD_IDLE) {
 					int irq;
 					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-						if (thinkos_rt.irq_th[irq] == i) {
+						if (rt->irq_th[irq] == i) {
 							break;
 						}
 					}
@@ -198,7 +192,9 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 			}
 #endif
 #if THINKOS_ENABLE_PROFILING
-			busy = (cycbuf[i] + cycdiv / 2) / cycdiv;
+			busy = (cyc[i] + cycdiv / 2) / cycdiv;
+			if (busy > 1000)
+				busy  = 1000;
 			monitor_printf(comm, " | %3d.%d", busy / 10, busy % 10);
 #endif
 			monitor_printf(comm, " |");

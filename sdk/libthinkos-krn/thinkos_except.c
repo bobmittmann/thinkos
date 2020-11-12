@@ -107,31 +107,34 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
 /* -------------------------------------------------------------------------
    Application fault defered handler 
    ------------------------------------------------------------------------- */
-
-
 void thinkos_krn_exception_reset(void)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	DCC_LOG(LOG_ERROR, "Exception buffer reset...");
 
-	__thinkos_memset32(xcpt, 0x00000000,
+#if (THINKOS_ENABLE_STACK_INIT)
+	/* initialize thread stack */
+	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
 					   sizeof(struct thinkos_except));
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(thinkos_except_stack, 0, 
+					   sizeof(struct thinkos_except));
+#endif
 }
 
 void thinkos_krn_exception_init(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
-	DCC_LOG(LOG_TRACE, "Initializing exceptions...");
-
-	thinkos_krn_exception_reset();
-
 #if	(THINKOS_ENABLE_USAGEFAULT) 
+	DCC_LOG(LOG_TRACE, "Initializing usage fault...");
 	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
 #endif
 #if	(THINKOS_ENABLE_BUSFAULT)
+	DCC_LOG(LOG_TRACE, "Initializing bus fault...");
 	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
 #endif
 #if (THINKOS_ENABLE_MPU)
+	DCC_LOG(LOG_TRACE, "Initializing memory management fault...");
 	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
 #endif
 

@@ -193,7 +193,6 @@
    Bootloader 
    -------------------------------------------------------------------------- */
 
-#define BOOT_MEM_RESERVED          0x0800
 #define BOOT_ENABLE_THIRD          0
   
 #define BOOT_ENABLE_GDB            0

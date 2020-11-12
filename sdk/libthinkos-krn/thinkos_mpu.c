@@ -91,10 +91,12 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
  * 
  *
  */
-void thinkos_krn_mpu_init(uint32_t offs, unsigned int size)
+
+void thinkos_krn_mpu_init(uint32_t addr, uint32_t size)
 {
 	struct cm3_mpu * mpu = CM3_MPU;
 	uint32_t sram_base = 0x20000000;
+	uint32_t offs = addr - sram_base;
 	uint32_t bmp;
 	unsigned int n;
 

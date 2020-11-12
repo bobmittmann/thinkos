@@ -700,8 +700,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		monitor_printf(comm, "^O\r\n");
-		monitor_printf(comm, s_hr);
-		monitor_print_osinfo(comm);
+		monitor_signal(MONITOR_USER_EVENT4);
 		break;
 #endif
 #if (MONITOR_OS_PAUSE)
@@ -793,6 +792,9 @@ static bool monitor_process_input(struct monitor * mon, int c)
 void __attribute__((noreturn)) 
 boot_monitor_task(const struct monitor_comm * comm, void * arg)
 {
+#if (MONITOR_OSINFO_ENABLE)
+	uint32_t cycref[THINKOS_CTX_CNT];
+#endif
 	const struct thinkos_board * board;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
@@ -846,6 +848,9 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 	sigmask |= (1 << MONITOR_THREAD_CREATE);
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+#if (MONITOR_OSINFO_ENABLE)
+	sigmask |= (1 << MONITOR_USER_EVENT4);
+#endif
 
 #if 0
 	sigmask |= (1 << MONITOR_ALARM);
@@ -1116,6 +1121,14 @@ is_connected:
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 #endif /* THINKOS_ENABLE_CONSOLE */
+
+#if (MONITOR_OSINFO_ENABLE)
+		case MONITOR_USER_EVENT4:
+			monitor_clear(MONITOR_USER_EVENT4);
+			monitor_printf(comm, s_hr);
+			monitor_print_osinfo(comm, &thinkos_rt, cycref);
+			break;
+#endif
 
 #if 0
 		case MONITOR_ALARM:

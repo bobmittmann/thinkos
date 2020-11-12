@@ -323,7 +323,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (idx >= THINKOS_FLASH_MEM_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid flash %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_FLASH_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_FLASH_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}

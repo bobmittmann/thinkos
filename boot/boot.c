@@ -41,10 +41,6 @@
 #include <sys/dcclog.h>
 
 
-#ifndef BOOT_MEM_RESERVED 
-#define BOOT_MEM_RESERVED 0x1000
-#endif
-
 #ifndef BOOT_ENABLE_CUSTOM_COMM
 #define BOOT_ENABLE_CUSTOM_COMM 0
 #endif
@@ -106,7 +102,6 @@ void __attribute__((noreturn)) app_task(const struct thinkos_board * board)
 	for(;;);
 }
 
-
 void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	void (monitor)(const struct monitor_comm *, void *))
 {
@@ -119,16 +114,11 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
-#if DEBUG
-	udelay(0x8000);
-#endif
 
-#ifndef UDELAY_FACTOR 
 	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
 	thinkos_krn_udelay_calibrate();
-#endif
 
-	DCC_LOG1(LOG_MSG, "udelay_factor=%d.", udelay_factor);
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 #if DEBUG
 	udelay(0x8000);
 #endif
@@ -153,22 +143,6 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #endif
 #if (BOOT_MONITOR_ENABLE)
 	comm = board->monitor_comm_init();
-#endif
-
-#if (THINKOS_ENABLE_CONSOLE)
-	DCC_LOG(LOG_TRACE, "5. thinkos_krn_console_init()");
-#if DEBUG
-	udelay(0x8000);
-#endif
-	thinkos_krn_console_init();
-#endif
-
-#if (THINKOS_ENABLE_MPU)
-	DCC_LOG(LOG_TRACE, "6. thinkos_krn_mpu_init()");
-#if DEBUG
-	udelay(0x8000);
-#endif
-	thinkos_krn_mpu_init(0, BOOT_MEM_RESERVED);
 #endif
 
 #if (BOOT_MONITOR_ENABLE)
@@ -204,11 +178,11 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #if (BOOT_MONITOR_ENABLE)
 	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
 	thinkos_thread_abort(0);
+//	thinkos_abort();
 #else
 	DCC_LOG(LOG_TRACE, "10. app_task()");
 	app_task(board);
 #endif
 }
-
 
 

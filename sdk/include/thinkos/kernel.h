@@ -79,42 +79,44 @@
 /* -------------------------------------------------------------------------- 
  * Static trhead references
  * --------------------------------------------------------------------------*/
+#define TH_CTX_CNT (THINKOS_THREADS_MAX)
+#define NRT_CTX_CNT (THINKOS_NRT_THREADS_MAX)
+
+/* Total number of threads */
+#define THINKOS_CTX_CNT (TH_CTX_CNT + NRT_CTX_CNT + 1)
 
 #define THINKOS_THREAD_NULL (32)
-#define THINKOS_THREAD_IDLE (THINKOS_THREADS_MAX)
 
-#define THINKOS_THREAD_VOID (THINKOS_THREADS_MAX + THINKOS_NRT_THREADS_MAX + 1)
-
-#define THINKOS_CYCCNT_IDLE (THINKOS_THREADS_MAX)
+#define THINKOS_THREAD_IDLE (TH_CTX_CNT + NRT_CTX_CNT)
+#define THINKOS_THREAD_VOID (TH_CTX_CNT + NRT_CTX_CNT + 1)
 
 /* -------------------------------------------------------------------------- 
  * Monitor structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/
-#define MONITOR_CTX_OFFS  (0) 
-#define MONITOR_EVS_OFFS  (MONITOR_CTX_OFFS  + 4) 
-#define MONITOR_MSK_OFFS  (MONITOR_EVS_OFFS  + 4) 
+#define MONITOR_CTX_OFFS    (0) 
+#define MONITOR_EVS_OFFS    (MONITOR_CTX_OFFS  + 4) 
+#define MONITOR_MSK_OFFS    (MONITOR_EVS_OFFS  + 4) 
 
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/
-#define THINKOS_CTX_CNT ((THINKOS_THREADS_MAX) + 1)
-#define SIZEOF_VOID_CTX  0
-#define SIZEOF_CTX       (((THINKOS_THREADS_MAX) + 1) * 4)
 
-#define SIZEOF_NRT_CTX     ((THINKOS_NRT_THREADS_MAX) * 4)
+#define SIZEOF_TH_CTX       (TH_CTX_CNT * 4)
+#define SIZEOF_NRT_CTX      (NRT_CTX_CNT * 4)
+#define SIZEOF_CTX          ((TH_CTX_CNT + NRT_CTX_CNT + 1) * 4)
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-  #define SIZEOF_TH_SL     (THINKOS_CTX_CNT * 4)
+  #define SIZEOF_TH_SL      (THINKOS_CTX_CNT * 4)
 #else
   #define SIZEOF_TH_SL     0
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
-  #define SIZEOF_CYCCNT    (THINKOS_CTX_CNT * 4)
   #define SIZEOF_CYCREF    4
+  #define SIZEOF_CYCCNT    (THINKOS_CTX_CNT * 4)
 #else
-  #define SIZEOF_CYCCNT    0
   #define SIZEOF_CYCREF    0
+  #define SIZEOF_CYCCNT    0
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -148,9 +150,6 @@
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-  #define SIZEOF_XCPT_IPSR 2
-  #define SIZEOF_STEP_ID   1
-  #define SIZEOF_BREAK_ID  1
   #if THINKOS_ENABLE_DEBUG_STEP
     #define SIZEOF_STEP_REQ  4
     #define SIZEOF_STEP_SVC  4
@@ -158,28 +157,31 @@
     #define SIZEOF_STEP_REQ  0
     #define SIZEOF_STEP_SVC  0
   #endif
+  #define SIZEOF_XCPT_IPSR 2
+  #define SIZEOF_STEP_ID   1
+  #define SIZEOF_BREAK_ID  1
 #else
+  #define SIZEOF_STEP_REQ  0
+  #define SIZEOF_STEP_SVC  0
   #define SIZEOF_XCPT_IPSR 0
   #define SIZEOF_STEP_ID   0
   #define SIZEOF_BREAK_ID  0
-  #define SIZEOF_STEP_REQ  0
-  #define SIZEOF_STEP_SVC  0
 #endif
 
-#define THINKOS_RT_IDLE_CTX_OFFS   (4 * (THINKOS_THREADS_MAX))
-#define THINKOS_RT_VOID_CTX_OFFS   (THINKOS_RT_IDLE_CTX_OFFS + 4)
-#define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
-#define THINKOS_RT_TH_SL_OFFS      (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
-#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_TH_SL_OFFS + SIZEOF_TH_SL)
-#define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
-#define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_CYCREF_OFFS + SIZEOF_CYCREF)
-#define THINKOS_RT_XCPT_IPSR_OFFS  (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
+#define THINKOS_RT_TH_CTX_OFFS         0
+#define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_TH_CTX_OFFS + SIZEOF_TH_CTX)
+#define THINKOS_RT_IDLE_CTX_OFFS   (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
+#define THINKOS_RT_TH_SL_OFFS      (THINKOS_RT_IDLE_CTX_OFFS + 4)
+#define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_TH_SL_OFFS + SIZEOF_TH_SL)
+#define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_CYCREF_OFFS + SIZEOF_CYCREF)
+#define THINKOS_RT_STEP_REQ_OFFS   (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
+#define THINKOS_RT_STEP_SVC_OFFS   (THINKOS_RT_STEP_REQ_OFFS + SIZEOF_STEP_REQ)
+#define THINKOS_RT_XCPT_IPSR_OFFS  (THINKOS_RT_STEP_SVC_OFFS + SIZEOF_STEP_SVC)
 #define THINKOS_RT_STEP_ID_OFFS    (THINKOS_RT_XCPT_IPSR_OFFS + \
 									SIZEOF_XCPT_IPSR)
 #define THINKOS_RT_BREAK_ID_OFFS   (THINKOS_RT_STEP_ID_OFFS + SIZEOF_STEP_ID)
-#define THINKOS_RT_STEP_SVC_OFFS   (THINKOS_RT_BREAK_ID_OFFS + SIZEOF_BREAK_ID)
-#define THINKOS_RT_STEP_REQ_OFFS   (THINKOS_RT_STEP_SVC_OFFS + SIZEOF_STEP_SVC)
-#define THINKOS_RT_ACTIVE_OFFS     (THINKOS_RT_STEP_REQ_OFFS + SIZEOF_STEP_REQ)
+#define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_BREAK_ID_OFFS + SIZEOF_BREAK_ID)
+#define THINKOS_RT_ACTIVE_OFFS     (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
 
 
@@ -191,6 +193,7 @@
 
 #ifndef __ASSEMBLER__
 
+#include <thinkos.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -268,16 +271,25 @@ struct thinkos_rt {
 	   and their order and sizes must not be changed.
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
-//	struct thinkos_context * ctx[THINKOS_CTX_CNT]; 
-	uintptr_t ctx[THINKOS_CTX_CNT]; 
-
-#if (THINKOS_NRT_THREADS_MAX > 0)
-	struct thinkos_context * nrt_ctx[THINKOS_NRT_THREADS_MAX]; 
+	union {
+		uintptr_t ctx[THINKOS_CTX_CNT]; 
+		struct {
+			uintptr_t th_ctx[TH_CTX_CNT]; 
+#if NRT_CTX_CNT > 0
+			uintptr_t nrt_ctx[NRT_CTX_CNT]; 
 #endif
+			uintptr_t idle_ctx;
+		};
+	};
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* Per thread stack limit */
 	uint32_t th_sl[THINKOS_CTX_CNT]; 
+#endif
+	
+#if (THINKOS_ENABLE_PROFILING)
+	/* Reference cycle state ... */
+	uint32_t cycref;
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -285,24 +297,19 @@ struct thinkos_rt {
 	uint32_t cyccnt[THINKOS_CTX_CNT]; 
 #endif
 
-#if (THINKOS_ENABLE_PROFILING)
-	/* Reference cycle state ... */
-	uint32_t cycref;
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_STEP)
+	uint32_t step_req;  /* step request bitmap */
+	uint32_t step_svc;  /* step at service call bitmap */
+#endif
+	uint16_t xcpt_ipsr; /* Exception IPSR */
+	int8_t   step_id;   /* current stepping thread id */
+	int8_t   break_id;  /* reserved */
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
 							 thread preemption is disabled */
-#endif
-
-#if (THINKOS_ENABLE_DEBUG_BKPT)
-	uint16_t xcpt_ipsr; /* Exception IPSR */
-	int8_t   step_id;   /* current stepping thread id */
-	int8_t   break_id;  /* reserved */
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	uint32_t step_svc;  /* step at service call bitmap */
-	uint32_t step_req;  /* step request bitmap */
-  #endif
 #endif
 
 	uint32_t active; /* current active thread */
@@ -375,7 +382,7 @@ struct thinkos_rt {
 #endif
 
 #if ((THINKOS_FLASH_MEM_MAX) > 0) 
-			uint32_t wq_flash_mem[THINKOS_WQ_FLASH_MEM_MAX];
+			uint32_t wq_flash_mem[THINKOS_WQ_FLASH_MEM_CNT];
 #endif
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
@@ -492,7 +499,6 @@ struct thinkos_rt {
 	struct thinkos_monitor monitor;
 #endif
 };
-
 
 /* -------------------------------------------------------------------------- 
  * Base indexes for the wait queue list (wq_lst[])
@@ -691,84 +697,111 @@ static inline uint32_t __attribute__((always_inline)) __thinkos_ffs(uint32_t x)
  * ThinkOS run time access functions
  * --------------------------------------------------------------------------*/
 
-static inline void __attribute__((always_inline)) 
-__thinkos_active_set(unsigned int th) {
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	if (th < THINKOS_THREAD_IDLE)
-		thinkos_rt.active = thinkos_rt.th_sl[th];
-	else
-		thinkos_rt.active = th;
-#else
-	thinkos_rt.active = th;
-#endif
-}
-
+/* Set the active thread and stack limit */
 static inline unsigned int __attribute__((always_inline)) 
-__thinkos_rt_active_get(struct thinkos_rt * rt) {
+__thread_active_get(struct thinkos_rt * rt) {
 	return rt->active & 0x0000003f;
 }
 
-static inline unsigned int __attribute__((always_inline)) 
-__thinkos_active_get() {
-	return thinkos_rt.active & 0x0000003f;
+static inline void __attribute__((always_inline)) 
+__thread_active_set(struct thinkos_rt * rt, unsigned int th) {
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	if (th < THINKOS_THREAD_IDLE)
+		rt->active = rt->th_sl[th];
+	else
+		rt->active = th;
+#else
+	rt->active = th;
+#endif /* THINKOS_ENABLE_STACK_LIMIT */
 }
 
-static inline unsigned int __attribute__((always_inline)) 
-__thinkos_active_sl_get(unsigned th, uint32_t sl) {
-	return thinkos_rt.active & 0xffffffc0;
+static inline uint32_t __attribute__((always_inline)) 
+__thread_active_sl_get(struct thinkos_rt * rt) {
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	return rt->active & 0xffffffc0;
+#else
+	return 0;
+#endif /* THINKOS_ENABLE_STACK_LIMIT */
+}
+
+static inline void __attribute__((always_inline)) 
+__thread_active_sl_set(struct thinkos_rt * rt, uint32_t sl, unsigned int th) {
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	rt->active = (sl & 0xffffffc0) + (th & 0x0000003f);
+#endif /* THINKOS_ENABLE_STACK_LIMIT */
+}
+
+
+static inline void __thinkos_active_set(unsigned int th) {
+	__thread_active_set(&thinkos_rt, th);
+}
+
+static inline unsigned int __thinkos_active_get(void) {
+	return __thread_active_get(&thinkos_rt);
+}
+
+static inline uint32_t __thinkos_active_sl_get(void) {
+	return __thread_active_sl_get(&thinkos_rt);
 }
 
 /* Set the active thread and stack limit */
-static inline void __attribute__((always_inline)) 
-__thinkos_active_sl_set(unsigned int th, uint32_t sl) {
-	thinkos_rt.active = (sl & 0xffffffc0) + th;
+static inline void __thinkos_active_sl_set(unsigned int th, uint32_t sl) {
+	__thread_active_sl_set(&thinkos_rt, th, sl);
 }
 
 /* -------------------------------------------------------------------------- 
  * thread status access methods 
  * --------------------------------------------------------------------------*/
 
+static inline unsigned int __attribute__((always_inline)) 
+__thread_stat_wq_get(struct thinkos_rt * rt, unsigned int th) {
 #if (THINKOS_ENABLE_THREAD_STAT)
-
-static inline void __attribute__((always_inline)) 
-__thinkos_thread_stat_clr(unsigned int th) {
-	thinkos_rt.th_stat[th] = 0;
-}
-
-static inline void __attribute__((always_inline)) 
-__thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd) {
-	thinkos_rt.th_stat[th] = (wq << 1) + (tmd ? 1 : 0);
-}
-
-static inline unsigned int __attribute__((always_inline)) 
-__thinkos_thread_stat_wq_get(unsigned int th) {
-	return (((uint32_t)thinkos_rt.th_stat[th]) >> 1);
+	return (((uint32_t)rt->th_stat[th]) >> 1);
+#else
+	return 0;
+#endif
 }
 
 static inline bool __attribute__((always_inline)) 
-__thinkos_thread_stat_tmw_get(unsigned int th) {
+__thread_stat_tmw_get(struct thinkos_rt * rt, unsigned int th) {
+#if (THINKOS_ENABLE_THREAD_STAT)
 	return (thinkos_rt.th_stat[th] & 1) ? true : false;
+#else
+	return __bit_mem_rd(&rt->wq_clock, th) ? true : false;
+#endif
 }
-#else /* THINKOS_ENABLE_THREAD_STAT */
+
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_stat_clr(unsigned int th) {
+__thread_stat_clr(struct thinkos_rt * rt, unsigned int th) {
+#if (THINKOS_ENABLE_THREAD_STAT)
+	rt->th_stat[th] = 0;
+#endif
 }
 
 static inline void __attribute__((always_inline)) 
-__thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd) {
+__thread_stat_set(struct thinkos_rt * rt, unsigned int th, 
+				  unsigned int wq, bool tmd) {
+#if (THINKOS_ENABLE_THREAD_STAT)
+	rt->th_stat[th] = (wq << 1) + (tmd ? 1 : 0);
+#endif
 }
 
-static inline unsigned int __attribute__((always_inline)) 
-__thinkos_thread_stat_wq_get(unsigned int th) {
-	return 0;
+static inline unsigned int __thinkos_thread_stat_wq_get(unsigned int th) {
+	return __thread_stat_wq_get(&thinkos_rt, th);
 }
 
-static inline bool __attribute__((always_inline)) 
-__thinkos_thread_stat_tmw_get(unsigned int th) {
-	return 0;
+static inline bool __thinkos_thread_stat_tmw_get(unsigned int th) {
+	return __thread_stat_tmw_get(&thinkos_rt, th);
 }
-#endif /* THINKOS_ENABLE_THREAD_STAT */
 
+static inline void __thinkos_thread_stat_clr(unsigned int th) {
+	__thread_stat_clr(&thinkos_rt, th);
+}
+
+static inline void __thinkos_thread_stat_set(unsigned int th, 
+											 unsigned int wq, bool tmd) {
+	__thread_stat_set(&thinkos_rt, th, wq, tmd);
+}
 
 /* -------------------------------------------------------------------------- 
  * thread stack limit access methods 
@@ -814,24 +847,47 @@ __thread_tmw_get(struct thinkos_rt * rt, unsigned int id) {
 
 static inline uint32_t __attribute__((always_inline)) 
 __thread_lr_get(struct thinkos_rt * rt, unsigned int id) {
-	return __thread_ctx_get(rt, id)->lr;
+	uintptr_t lr = __thread_ctx_get(rt, id)->lr;
+	return (uint32_t)lr;
 }
 
 static inline uint32_t __attribute__((always_inline)) 
 __thread_pc_get(struct thinkos_rt * rt, unsigned int id) {
-	return __thread_ctx_get(rt, id)->pc;
+	uintptr_t pc = __thread_ctx_get(rt, id)->pc;
+	return (uint32_t)pc;
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_xpsr_get(struct thinkos_rt * rt, unsigned int id) {
+	uint32_t xpsr = __thread_ctx_get(rt, id)->xpsr;
+	return xpsr;
 }
 
 static inline uint32_t __attribute__((always_inline)) 
 __thread_sp_get(struct thinkos_rt * rt, unsigned int id) {
 	uint32_t sp_ctrl = rt->ctx[id];
-	uint32_t sp = sp_ctrl & ~CONTROL_MSK;
+	uintptr_t sp = sp_ctrl & ~CONTROL_MSK;
 #if (THINKOS_ENABLE_FPU)
 	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
-	return sp += (ctrl & CONTROL_FPCA) ? (8*4) : (26*4);
+	sp += (ctrl & CONTROL_FPCA) ? (26*4) : (8*4);
 #else
-	return sp += (8*4);
+	sp += (8*4);
 #endif 
+	return (uint32_t)sp;
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_sl_get(struct thinkos_rt * rt, unsigned int id) {
+	uintptr_t sl;
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	sl = (uintptr_t)rt->th_sl[id] & 0xffffffc0;
+#elif (THINKOS_ENABLE_THREAD_INFO)
+	const struct thinkos_thread_inf * inf = rt->th_inf[id];
+	sl = (inf != NULL) ? (uintptr_t)inf->stack_ptr : 0;
+#else
+	sl = 0;
+#endif /* THINKOS_ENABLE_STACK_LIMIT */
+	return (uint32_t)sl;
 }
 
 static inline uint32_t __attribute__((always_inline)) 
@@ -839,15 +895,6 @@ __thread_ctrl_get(struct thinkos_rt * rt, unsigned int id) {
 	uint32_t sp_ctrl = rt->ctx[id];
 	uint32_t ctrl = sp_ctrl & CONTROL_MSK;
 	return ctrl;
-}
-
-static inline uint32_t __attribute__((always_inline)) 
-__thread_sl_get(struct thinkos_rt * rt, unsigned int id) {
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	return (rt->th_sl[id] & 0xffffffc0);
-#else
-	return 0;
-#endif /* THINKOS_ENABLE_STACK_LIMIT */
 }
 
 static inline bool __attribute__((always_inline)) 
@@ -908,6 +955,16 @@ __thread_inf_set(struct thinkos_rt * rt, unsigned int id,
 #endif
 }
 
+static inline const char *  __attribute__((always_inline))  
+__thread_tag_get(struct thinkos_rt * rt, unsigned int id) {
+#if (THINKOS_ENABLE_THREAD_INFO)
+	const struct thinkos_thread_inf * inf = rt->th_inf[id];
+	return (inf == NULL) ? "..." : inf->tag;
+#else
+	return "...";
+#endif
+}
+
 static inline void __attribute__((always_inline))
 __thread_errno_set(struct thinkos_rt * rt, unsigned int id, int errno) {
 #if (THINKOS_ENABLE_THREAD_FAULT)
@@ -931,13 +988,17 @@ __thread_cyccnt_clr(struct thinkos_rt * rt, unsigned int id) {
 #endif
 }
 
+static inline bool __attribute__((always_inline)) 
+__thread_ctx_is_valid(struct thinkos_rt * rt, unsigned int id) {
+	return (rt->ctx[id] & ~CONTROL_MSK) == 0 ? false : true;
+}
+
 /* -------------------------------------------------------------------------- 
  * thinkos runtime thread context access methods 
  * --------------------------------------------------------------------------*/
 
-static inline bool __attribute__((always_inline)) 
-__thinkos_thread_ctx_is_valid(unsigned int id) {
-	return (thinkos_rt.ctx[id] & ~CONTROL_MSK) == 0 ? false : true;
+static inline bool __thinkos_thread_ctx_is_valid(unsigned int id) {
+	return __thread_ctx_is_valid(&thinkos_rt, id);
 }
 
 static inline struct thinkos_context * 
@@ -953,7 +1014,7 @@ static inline uint32_t * __thinkos_thread_frame_get(unsigned int id) {
 	return (uint32_t *)&__thread_ctx_get(&thinkos_rt, id)->r0;
 }
 
-static inline uint32_t __thinkos_thread_pc_get(unsigned int id) {
+static inline uintptr_t __thinkos_thread_pc_get(unsigned int id) {
 	return __thread_pc_get(&thinkos_rt, id); 
 }
 
@@ -969,6 +1030,9 @@ static inline uint32_t __thinkos_thread_sl_get(unsigned int id) {
 	return __thread_sl_get(&thinkos_rt, id); 
 }
 
+static inline uint32_t __thinkos_thread_xpsr_get(unsigned int id) {
+	return __thread_xpsr_get(&thinkos_rt, id); 
+}
 static inline uint32_t __thinkos_thread_ctrl_get(unsigned int id) {
 	return __thread_ctrl_get(&thinkos_rt, id); 
 }
@@ -1366,6 +1430,7 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __trace(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __thinkos(struct thinkos_rt * rt);
 void __profile(void);
+int __scan_stack(void * stack, unsigned int size);
 
 /* -------------------------------------------------------------------------
  * Main thread exec
@@ -1379,13 +1444,13 @@ bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size);
 /* -------------------------------------------------------------------------
  * System timer 
  * ------------------------------------------------------------------------- */
-void __krn_systick_init(void);
+void thinkos_krn_systick_init(void);
 
 /* -------------------------------------------------------------------------
  * Misc timer 
  * ------------------------------------------------------------------------- */
 
-void thinkos_krn_sysrst(void);
+void __attribute__((noreturn)) thinkos_krn_sysrst(void);
 
 void thinkos_krn_udelay_calibrate(void);
 

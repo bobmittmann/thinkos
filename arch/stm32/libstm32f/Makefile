@@ -52,7 +52,7 @@ CFILES = stm32l-init.c stm32l-flash.c stm32f-gpio.c stm32l-eeprom.c \
 endif
 
 ifeq ($(STM32), stm32l4)
-SFILES = stm32l4-vec.S
+SFILES = stm32l4-nvic.S
 
 CFILES = stm32l4-init.c stm32l4-flash.c stm32f-gpio.c \
 		 stm32f-dma.c stm32f-spi.c \
@@ -108,7 +108,7 @@ CFILES = stm32f2x-init.c stm32f-gpio.c stm32f-eth.c\
 endif
 
 ifeq ($(STM32), stm32f1)
-SFILES = stm32f-vec.S
+SFILES = stm32f1-nvic.S
 
 CFILES = stm32f1x-init.c stm32f-gpio.c \
 		 stm32f-spi.c stm32f-fsmc.c  stm32f-exti.c stm32f-mco.c\

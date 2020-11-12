@@ -29,25 +29,22 @@
 #include <thinkos/except.h>
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
 #include <stdio.h>
 #include <string.h>
 
-extern const char thinkos_svc_nm[];
-extern const char thinkos_sch_nm[];
-extern const char thinkos_xcp_nm[];
-extern const char thinkos_vec_nm[];
-extern const char thinkos_irq_nm[];
-extern const char thinkos_clk_nm[];
+extern uint32_t * __krn_data_init;
+extern uint16_t __krn_data_size;
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
 #define __ID(OPT)         (((OPT) >> 24) & 0x3f)
 #define __PRIVILEGED(OPT) (((OPT) >> 30) & 0x01)
 #define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
-
 
 static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 {
@@ -122,6 +119,7 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[id]);
 #endif
 
+
 #if (THINKOS_ENABLE_THREAD_INFO)
 	__thinkos_thread_inf_set(id, (struct thinkos_thread_inf *)
 							 &thinkos_main_inf);
@@ -139,36 +137,88 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 	}
 #endif
 
+
 	return id;
 }
+
+extern uint32_t __addrof_krn_data;
+extern uint32_t __sizeof_krn_data;
 
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
-	uint32_t sp;
 	uint32_t ctrl;
 	uint32_t ccr;
+	uint32_t sp;
 	int thread_id;
-
 	(void)map;
 	(void)lst;
 
+	/* Static sanity check: */
+
+	_Static_assert (offsetof(struct thinkos_rt, idle_ctx) == 
+					THINKOS_RT_IDLE_CTX_OFFS, "THINKOS_RT_IDLE_CTX_OFFS");
+
+#if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
+					THINKOS_RT_CYCREF_OFFS, "THINKOS_RT_CYCREF_OFFS");
+
+	_Static_assert (offsetof(struct thinkos_rt, cyccnt) == 
+					THINKOS_RT_CYCCNT_OFFS, "THINKOS_RT_CYCCNT_OFFS");
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_STEP)
+	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
+					THINKOS_RT_STEP_REQ_OFFS, "THINKOS_RT_STEP_REQ_OFFS");
+	_Static_assert (offsetof(struct thinkos_rt, step_svc) == 
+					THINKOS_RT_STEP_SVC_OFFS, "THINKOS_RT_STEP_SVC_OFFS");
+#endif
+	_Static_assert (offsetof(struct thinkos_rt, xcpt_ipsr) == 
+					THINKOS_RT_XCPT_IPSR_OFFS, "THINKOS_RT_XCPT_IPSR_OFFS");
+	_Static_assert (offsetof(struct thinkos_rt, step_id) == 
+					THINKOS_RT_STEP_ID_OFFS, "THINKOS_RT_STEP_ID_OFFS");
+	_Static_assert (offsetof(struct thinkos_rt, break_id) == 
+					THINKOS_RT_BREAK_ID_OFFS, "THINKOS_RT_BREAK_ID_OFFS");
+#endif
+
+#if (THINKOS_ENABLE_CRITICAL)
+	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
+					THINKOS_RT_CRITCNT_OFFS, "THINKOS_RT_CRITCNT_OFFS");
+#endif
+
+
+	_Static_assert (offsetof(struct thinkos_rt, active) == 
+					THINKOS_RT_ACTIVE_OFFS, "THINKOS_RT_ACTIVE_OFFS");
+
+	_Static_assert (offsetof(struct thinkos_rt, wq_ready) == 
+					THINKOS_RT_READY_OFFS, "THINKOS_RT_READY_OFFS");
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	_Static_assert (offsetof(struct thinkos_rt, th_sl) == 
+					THINKOS_RT_TH_SL_OFFS, "THINKOS_RT_TH_SL_OFFS");
+#endif
 
 	/* disable interrupts */
 	cm3_cpsid_i();
 
+	/* sanity check */
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	ctrl = cm3_control_get();
+	if (ctrl & CONTROL_nPRIV) {
+		DCC_LOG(LOG_PANIC, "0. Non privileged ...");
+		return THINKOS_EFAULT; 
+	}
+
+	if (ctrl & CONTROL_SPSEL) {
+		DCC_LOG(LOG_PANIC, "0. Using PSP ...");
+		return THINKOS_EFAULT; 
+	}
+#endif
+
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
 	/* clear the ThinkOS runtime structure */
 	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
-#endif
-
-#if (THINKOS_ENABLE_STACK_INIT)
-	/* initialize exception stack */
-	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
-					   sizeof(thinkos_except_stack));
-#elif (THINKOS_ENABLE_MEMORY_CLEAR)
-	__thinkos_memset32(thinkos_except_stack, 0, 
-					   sizeof(thinkos_except_stack));
 #endif
 
 	__thinkos_core_reset();
@@ -293,10 +343,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_rt.cycref = CM3_DWT->cyccnt;
 #endif
 
-#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
-	__krn_systick_init();
-#endif
-
 	/* Configure the thread stack ?? 
 	   If we already using the PSP nothing changes, if on the other 
 	   hand MSP is our stack we will move it to PSP 
@@ -310,11 +356,23 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	cm3_msp_set((uintptr_t)__thinkos_xcpt_stack_top());
 
 	/* thread, we need to configure 
-	   idle thread and exceptions. ... */
+	   idle thread and then exceptions. */
+	DCC_LOG(LOG_TRACE, "IDLE init...");
 	thinkos_krn_idle_init();
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
+	DCC_LOG(LOG_TRACE, "Exceptions init....");
 	thinkos_krn_exception_init();
+#endif
+
+#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
+	DCC_LOG(LOG_TRACE, "SYysTick init...");
+	thinkos_krn_systick_init();
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE)
+	DCC_LOG(LOG_TRACE, "Console init...");
+	thinkos_krn_console_init();
 #endif
 
 	thread_id = __thinkos_init_main(sp, opt);
@@ -323,6 +381,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	__thinkos_active_set(thread_id);
 	/* add to the ready queue */
 	thinkos_rt.wq_ready = 1 << thread_id;
+
+#if (THINKOS_ENABLE_MPU)
+	DCC_LOG2(LOG_TRACE, "6. thinkos_krn_mpu_init(%08x, %d)", 
+			 __addrof_krn_data, __sizeof_krn_data);
+	thinkos_krn_mpu_init(__addrof_krn_data, __sizeof_krn_data);
+#endif
 
 	/* Adjust privilege */
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
@@ -358,12 +422,4 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 	.paused = 0
 };
 #endif
-
-const char * const thinkos_svc_link = thinkos_svc_nm;
-const char * const thinkos_xcp_link = thinkos_xcp_nm;
-const char * const thinkos_vec_link = thinkos_vec_nm;
-const char * const thinkos_sch_link = thinkos_sch_nm;
-const char * const thinkos_irq_link = thinkos_irq_nm;
-const char * const thinkos_clk_link = thinkos_clk_nm;
-
 

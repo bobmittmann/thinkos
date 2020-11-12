@@ -147,7 +147,6 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_ENABLE_GDB             1
-#define BOOT_MEM_RESERVED           0x1000
 #define MONITOR_CONFIGURE_ENABLE    0
 #define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      0

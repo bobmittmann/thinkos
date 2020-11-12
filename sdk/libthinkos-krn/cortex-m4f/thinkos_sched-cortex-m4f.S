@@ -60,7 +60,7 @@ cm3_pendsv_isr:
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-	cmp      r2, THINKOS_THREAD_IDLE
+	cmp      r2, #(THINKOS_THREAD_IDLE)
 
 	/* skip invalid ... */
 	bgt      thinkos_sched_select_ready
@@ -102,14 +102,8 @@ thinkos_sched_update_cyccnt:
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n    r6, [r6, #4]
 	/* update the reference */
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	/* r5: cycref */
-	ldrd	 r4, r5, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #else
 	/* r5: cycref */
 	ldr      r5, [r3, #THINKOS_RT_CYCREF_OFFS]
-  #endif
 	/* thinkos_rt.cycref = cyccnt */
 	str      r6, [r3, #THINKOS_RT_CYCREF_OFFS]
 	/* r6: delta =  cyccnt - cycref */	
@@ -120,11 +114,6 @@ thinkos_sched_update_cyccnt:
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
 	str      r5, [r7, r2, lsl #2]
-#else
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* r4: step_req */
-	ldr      r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
-  #endif
 #endif
 
 thinkos_sched_swap:
@@ -137,13 +126,25 @@ thinkos_sched_swap:
 thinkos_sched_select_ready:
 	/* r1 - ready queue
 	   r2 - old thread id */
-	cbz      r1, .L_exit_idle
+	cbz      r1, .L_ready_queue_empty
 	/* get a thread from the ready bitmap by counting the
 	leading zeros on the bitmap */
 	rbit     r1, r1
  	clz      r1, r1
 
 thinkos_krn_sched_ctx_get:
+
+#if (THINKOS_ENABLE_DEBUG_STEP)
+thinkos_sched_step_req_check:
+	/* r4: step_req */
+	ldr      r4, [r3, #THINKOS_RT_STEP_REQ_OFFS]
+	/* check if the step request bit is set for this thread */
+	movs	 r5, #1
+	lsls     r5, r1
+	tst      r5, r4
+	bne.n    thinkos_sched_step
+#endif
+	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* load the new thread id and stack limit */
@@ -154,16 +155,6 @@ thinkos_krn_sched_ctx_get:
 #endif
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]
-
-#if (THINKOS_ENABLE_DEBUG_STEP)
-thinkos_sched_step_req_check:
-	/* check if the step request bit is set for this thread */
-	movs	 r5, #1
-	lsls     r5, r1
-	tst      r5, r4
-	bne.n    thinkos_sched_step
-#endif
-	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 
 	.thumb_func
@@ -214,6 +205,19 @@ thinkos_krn_sched_ctx_restore:
 	b        thinkos_sched_dbg
 #else
 	bx       lr
+#endif
+
+.L_ready_queue_empty:
+/* TODO: non realtime threads */
+#if 0
+#if (THINKOS_NRT_THREADS_MAX) > 0
+	mov      r6, r2
+	mov      r7, r3
+	bl       thinkos_krn_nrt_scheduler
+	mov      r2, r6
+	mov      r3, r7
+	cbnz      r1, .L_exit_idle
+#endif /* (THINKOS_NRT_THREADS_MAX) > 0 */
 #endif
 
 .L_exit_idle:
@@ -275,6 +279,17 @@ thinkos_sched_step:
 	/* r2: old thread id */
 	/* r3: thinkos_rt */
 	/* r4: (1 << new_thread_id) */
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* load the new thread id and stack limit */
+	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
+	ldr.w	 r12, [r7, r1, lsl #2]
+	/* get the effective thread id */
+	ands     r1, r12, #0x3f
+#endif
+	/* load the new context pointer from the context vector */
+	ldr.w	 r0, [r3, r1, lsl #2]
+
 	ldr      r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]	
 	/* r6: step_svc */
 	tst      r4, r6

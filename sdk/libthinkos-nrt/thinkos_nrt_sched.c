@@ -92,3 +92,18 @@ int thinkos_nrt_init(void)
 	return ret;
 }
 
+struct sched_info {
+	uint32_t context;
+	uint32_t status;
+};
+
+struct sched_info thinkos_krn_nrt_scheduler(void)
+{
+	struct sched_info inf;
+
+	inf.status = 0;
+	inf.context = 1;
+
+	return inf;
+}
+
