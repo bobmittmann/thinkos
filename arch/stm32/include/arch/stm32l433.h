@@ -83,6 +83,8 @@
 #define STM32_GPIOD  ((struct stm32_gpio *)STM32_BASE_GPIOD)
 #define STM32_GPIOE  ((struct stm32_gpio *)STM32_BASE_GPIOE)
 
+#define STM32_CRC       ((struct stm32_crc *)STM32_BASE_CRC)
+
 //#define STM32_GPIO(N) ((struct stm32_gpio *)(STM32_BASE_GPIOA + (N)*0x400))
 
 #define STM32F_USB_PKTBUF ((struct stm32f_usb_pktbuf *)STM32_BASE_USB_SRAM)

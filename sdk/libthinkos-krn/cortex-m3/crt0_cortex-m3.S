@@ -1,5 +1,5 @@
 /* 
- * crt0_cortex-m3.S
+ * thinkos_crt0_cortex-m3.S
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -25,79 +25,116 @@
 	.extern  _init
 	.extern main
 
-	.align  2
 	.thumb
 	.section .init
 
+	.align  4
+
+	.global __os_tag
+__os_tag:
+	.type   __os_tag, %object
+#ifdef THINKOS_CUSTOM_SYS_TAG
+	.string THINKOS_CUSTOM_SYS_TAG
+#else
+	.string "ThinkOS"
+#endif
+	.p2align  4, 0x00
+	.size   __os_tag, . - __os_tag
+
+	.global __addrof_krn_data
+__addrof_krn_data:
+	.type   __addrof_krn_data, %object
+	.word  __krn_data_init
+	.size   __addrof_krn_data, . - __addrof_krn_data
+
+	.global __sizeof_krn_data
+__sizeof_krn_data:
+	.type   __sizeof_krn_data, %object
+	.word  __krn_data_size
+	.size   __sizeof_krn_data, . - __sizeof_krn_data
+
+	.global __addrof_krn_code
+__addrof_krn_code:
+	.type   __addrof_krn_code, %object
+	.word  __krn_code_init
+	.size   __addrof_krn_code, . - __addrof_krn_code
+
+	.global __sizeof_krn_code
+__sizeof_krn_code:
+	.type   __sizeof_krn_code, %object
+	.word  __krn_code_size
+	.size   __sizeof_krn_code, . - __sizeof_krn_code
+
+	.global __addrof_rom_vectors
+__addrof_rom_vectors:
+	.type   __addrof_rom_vectors, %object
+	.word  __rom_vectors
+	.size   __addrof_rom_vectors, . - __addrof_rom_vectors
+
+	.global __sizeof_rom_vectors
+__sizeof_rom_vectors:
+	.type   __sizeof_rom_vectors, %object
+	.word   __rom_vectors_size
+	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
+
+	.global __init_tab
+__init_tab:
+	.type   __init_tab, %object
+
+	.word	__text_start
+	.word	__text_end
+	.word	__data_start
+	.word	__data_end	
+	.word	__bss_start
+	.word	__bss_end
+	.word   __ctors_start
+	.word   __ctors_end
+
+	.size   __init_tab, . - __init_tab
+
 	.thumb_func
+	.align  2
 _reset:
 	.global _reset
 	.type   _reset, %function
 
-	/* jump to hardware initialization code */
-	bl		_init
+	bl _init
 
-	/* copy initialized variables .data section  (Copy from ROM to RAM) */
-	ldr     r2, .L_data_start
-	ldr     r3, .L_data_end
-	ldr     r4, .L_idata_start
-1:
-	/* while the .data pointer is less then the .bss
-	   copy from .idata to .data */
-	cmp     r2, r3
+	/* load header table */
+    adr     r12, __init_tab
+	ldmia   r12, {r0, r1, r2, r3, r4, r5, r6, r7}
+
+	/* copy initialized variables .data section */
+1:  cmp     r2, r3
 	ittt	lo
-	ldrlo   r7, [r4], #4
-	strlo   r7, [r2], #4
+	ldrlo   r0, [r2], #4
+	strlo   r0, [r1], #4
 	blo     1b
 
 	/* clear .bss  */
-	ldr     r2, .L_bss_start
-	ldr     r3, .L_bss_end
-	mov     r7, #0
-2:
-	cmp     r2, r3
+	mov     r0, #0
+2:  cmp     r4, r5
 	itt		lo
-	strlo   r7, [r2], #4
+	strlo   r0, [r4], #4
 	blo     2b
 
+	/* save lr */
+    mov     r5, lr
 	/* call constructors */
-	ldr     r5, .L_ctors_start
-	ldr     r6, .L_ctors_end
-.L_ctor_loop:
-	cmp     r5, r6
-	beq     .L_ctor_end
-	ldr     r4, [r5], #4
-	blx     r4
-	b       .L_ctor_loop
-.L_ctor_end:
+3:  cmp     r6, r7
+	beq     4f
+	ldr     r0, [r6], #4
+	blx     r0
+	b       3b
+4:
 
 	ldr     r1, .L_main_stack
 	ldr     r0, [r1]
 	mov     sp, r0
 
-	/* go to C main function */
 	b       main
 
-	.align  2
-/* section of initialized data at ROM */
-.L_idata_start:
-	.word	__text_end
-/* section of initialized data at RAM */
-.L_data_start:
-	.word	__data_start
-.L_data_end:
-/* end of initialized data */
-	.word	__data_end	
-.L_bss_start:
-	.word	__bss_start
-.L_bss_end:
-	.word	__bss_end
-.L_ctors_start:
-	.word   __ctors_start
-.L_ctors_end:
-	.word   __ctors_end
 .L_main_stack:
     .word   thinkos_main_stack
 
 	.size   _reset, . - _reset
-

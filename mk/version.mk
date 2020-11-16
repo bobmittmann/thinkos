@@ -78,10 +78,18 @@ $(VERSION_H):
 	$(ACTION) "Creating: $@"
 	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE) > $(VERSION_TAG)
 
+ifeq (Windows,$(HOST))
+  CLEAN_VERSION := $(strip $(subst /,\,$(VERSION_H) $(VERSION_TAG)))
+else
+  CLEAN_VERSION := $(strip $(VERSION_H) $(VERSION_TAG))
+endif
+
 version: 
 	$(Q)$(RMALL) $(VERSION_H) $(VERSION_TAG)
 	$(Q)$(MAKE) $(VERSION_H)
 
-.PHONY: version 
+version-clean: 
+	$(Q)$(RMALL) $(CLEAN_VERSION)
 
+.PHONY: version version-clean
 

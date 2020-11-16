@@ -1254,6 +1254,7 @@ static inline void __attribute__((always_inline)) cm3_lr_set(uint32_t lr) {
 
 extern uint32_t __clz(uint32_t val);
 extern uint32_t __rbit(uint32_t val);
+extern uint32_t __rev(uint32_t val);
 
 extern uint32_t __ldrex(uint32_t * addr);
 extern uint32_t __strex(uint32_t * addr, uint32_t val);
@@ -1263,6 +1264,12 @@ extern uint32_t __strex(uint32_t * addr, uint32_t val);
 static inline uint32_t __attribute__((always_inline)) __clz(uint32_t val) {
 	register uint32_t ret;
 	asm volatile ("clz %0, %1\n" : "=r" (ret) : "r" (val));
+	return ret;
+}
+
+static inline uint32_t __attribute__((always_inline)) __rev(uint32_t val) {
+	register uint32_t ret;
+	asm volatile ("rev %0, %1\n" : "=r" (ret) : "r" (val));
 	return ret;
 }
 

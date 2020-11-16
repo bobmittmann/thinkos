@@ -47,14 +47,14 @@
 enum monitor_event {
 	/* Debug monitor internal reset */
 	MONITOR_RESET           = 0,
-	/* ThinkOS power on startup indication */
-	MONITOR_STARTUP         = 1,
-	/* ThinkOS idle indication */
-	MONITOR_IDLE            = 2,
-	/* Board reset request */
-	MONITOR_SOFTRST         = 3,
 	/* ThinkOS kernel fault */
-	MONITOR_KRN_EXCEPT      = 4,
+	MONITOR_KRN_EXCEPT      = 1,
+	/* ThinkOS kernel reset indication */
+	MONITOR_KRN_ABORT       = 2,
+	/* ThinkOS idle indication */
+	MONITOR_IDLE            = 3,
+	/* Board reset request */
+	MONITOR_SOFTRST         = 4,
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -294,6 +294,7 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code);
 void monitor_signal_thread_break(unsigned int thread_id);
 void monitor_signal_thread_fault(unsigned int thread_id);
 
+
 int monitor_thread_terminate_get(int * code);
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);
@@ -312,8 +313,7 @@ int monitor_thread_step(unsigned int id, bool block);
 
 int monitor_thread_last_fault_get(uint32_t * addr);
 
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg, 
-                         const struct thinkos_thread_inf * inf);
+int monitor_thread_create(int (* func)(void *, unsigned int), void * arg);
 
 void monitor_thread_resume(int thread_id);
 
@@ -476,8 +476,6 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 
 int monitor_thread_exec(const struct monitor_comm * comm, 
 						int (* task)(void *, unsigned int), void * arg);
-
-int monitor_thread_start(int (* task)(void *, unsigned int), void * arg); 
 
 #ifdef __cplusplus
 }

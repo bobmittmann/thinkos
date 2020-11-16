@@ -29,26 +29,10 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_APP__
+#include <thinkos/app.h>
 
 #include <thinkos/board.h>
-
-/* File identification magic block 
-
-   This block is used to guess the type of a memory block or file
-   based on a pattarn located somewhere inside the file.
- 
- */
-struct magic_blk {
-	struct {
-		uint16_t pos; /* Position of the pattern in bytes */
-		uint16_t cnt; /* Number of record entries */
-	} hdr;
-	/* Pattern records */
-	struct {
-	    uint32_t mask; /* Bitmask */
-		uint32_t comp; /* Compare value */
-	} rec[];
-};
 
 /* application block descriptor */
 struct monitor_app_desc {
@@ -196,8 +180,10 @@ bool monitor_app_suspend(void);
 
 bool monitor_app_continue(void);
 
-bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused);
+bool monitor_app_exec(const struct monitor_app_desc * desc);
 
+int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
+						  uintptr_t addr);
 #ifdef __cplusplus
 }
 #endif

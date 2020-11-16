@@ -23,8 +23,7 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_obj.c \
-			  bmp_alloc.c strlen.c \
+MISC_CFILES = thinkos_obj.c strlen.c \
 			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
 			  thread_getnext.c thread_get.c \
 			  thread_isfaulty.c thread_ispaused.c \
@@ -43,6 +42,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
 		 thinkos_krnsvc.c thinkos_sysrst.c \
 		 thinkos_obj_kind_lut.c \
+		 thinkos_app.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)

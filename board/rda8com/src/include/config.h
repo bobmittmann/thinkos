@@ -108,13 +108,18 @@
 /* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING        1
 
-#define THINKOS_ENABLE_KRNSVC           1
+#define THINKOS_ENABLE_KRNSVC           0
 #define THINKOS_ENABLE_TERMINATE        1
 
+#define THINKOS_ENABLE_APP                  1
+#define THINKOS_ENABLE_APP_CRC              1
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
+
 /* Enable the debug monitor for real-time debug */
-#define THINKOS_ENABLE_MONITOR          1
-#define THINKOS_ENABLE_MONITOR_THREADS  1
-#define THINKOS_ENABLE_MONITOR_CLOCK    1
+#define THINKOS_ENABLE_MONITOR              1
+#define THINKOS_ENABLE_MONITOR_THREADS      1
+#define THINKOS_ENABLE_MONITOR_CLOCK        0
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
 
 #define THINKOS_ENABLE_CONSOLE          1
 #define THINKOS_ENABLE_CONSOLE_MISC     0 
@@ -126,14 +131,14 @@
 #define THINKOS_CONSOLE_RX_FIFO_LEN     64
 #define THINKOS_CONSOLE_TX_FIFO_LEN     256
 
-#define THINKOS_EXCEPT_STACK_SIZE       (384 + 128)
+#define THINKOS_EXCEPT_STACK_SIZE       512
 #define THINKOS_ENABLE_ERROR_TRAP       1
 #define THINKOS_ENABLE_EXCEPTIONS       1
 #define THINKOS_ENABLE_HARDFAULT        1
-#define THINKOS_ENABLE_BUSFAULT         1
-#define THINKOS_ENABLE_USAGEFAULT       1
-#define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_ENABLE_THREAD_FAULT     1
+#define THINKOS_ENABLE_BUSFAULT         0
+#define THINKOS_ENABLE_USAGEFAULT       0
+#define THINKOS_ENABLE_MEMFAULT         0
+#define THINKOS_ENABLE_THREAD_FAULT     0
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
@@ -147,7 +152,7 @@
 #define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              1
 
-#define THINKOS_MONITOR_STACK_SIZE      (1024 + 384)
+#define THINKOS_MONITOR_STACK_SIZE      1024
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_CTL              0
@@ -166,14 +171,17 @@
 #define THINKOS_ENABLE_OBJ_FREE         1
 
 #define THINKOS_ENABLE_I_CALLS          0
-#define THINKOS_ENABLE_THREAD_INFO      1
+#define THINKOS_ENABLE_THREAD_INFO          1
 
-#define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        0
+#define THINKOS_ENABLE_MEMORY_CLEAR         0
+#define THINKOS_FLASH_MEM_MAX               1
 
-#define THINKOS_ENABLE_OFAST            1
+#define THINKOS_ENABLE_OFAST                1
 
-#define THINKOS_ENABLE_RESET_RAM_VECTORS 0
+#define THINKOS_APP_TAG                 "RDA8COM"
+#define THINKOS_ENABLE_APP_FLAT         1
+#define THINKOS_ENABLE_APP_ELF          1
+#define THINKOS_ENABLE_APP_CRC          1
 
 /* -------------------------------------------------------------------------
    RCC 

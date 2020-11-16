@@ -167,7 +167,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      0
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     0
-#define THINKOS_ENABLE_FLASH_MEM        0
+#define THINKOS_FLASH_MEM_MAX               1
 
 #define THINKOS_ENABLE_OFAST            0
 

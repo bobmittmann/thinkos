@@ -110,10 +110,6 @@ void thinkos_krn_mpu_init(uint32_t addr, uint32_t size)
 
 	DCC_LOG3(LOG_TRACE, "MPU offs=%08x size=%d blocks=%d.", offs, size, n);
 
-	/* save the kernel reserved memory */
-	thinkos_rt.mpu.kernel_mem.offs = offs;
-	thinkos_rt.mpu.kernel_mem.size = n * 1024;
-
 	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;
 

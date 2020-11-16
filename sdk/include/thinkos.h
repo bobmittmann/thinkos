@@ -42,7 +42,7 @@
 
 #define THINKOS_OPT_PRIORITY(VAL)   (((VAL) & 0xff) << 16)
 #define THINKOS_OPT_ID(VAL)         (((VAL) & 0x03f) << 24)
-#define THINKOS_OPT_PRIVILEGED      (1 << 30) /* runs at privileged level*/
+#define THINKOS_OPT_PRIVILEGED      (1 << 30) /* execution privilege */
 #define THINKOS_OPT_PAUSED          (1 << 31) /* don't run at startup */
 #define THINKOS_OPT_STACK_SIZE(VAL) ((VAL) & 0xffff)
 
@@ -249,10 +249,14 @@ struct thinkos_thread_init {
 	struct thinkos_thread_attr attr;
 };
 
+struct thinkos_thread_initializer;
+
 #define __THINKOS_SYSCALLS__
 #include <thinkos/syscalls.h>
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
+#define __THINKOS_THREAD__
+#include <thinkos/thread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -302,6 +306,15 @@ void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
  *
  */
 void thinkos_krn_userland(void);
+
+/**
+ * thinkos_app_exec() - replace the current thread...
+ * @addr: aplication location
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ */
+int thinkos_app_exec(uint32_t addr);
 
 
 /* ---------------------------------------------------------------------------

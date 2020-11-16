@@ -24,8 +24,10 @@ include ../../mk/config.mk
 LIB_STATIC = thinkos-usr
 
 CONSOLE_CFILES = console.c
+CORTEX_M_SFILES = crt0.S
 
-CFILES = obj_alloc.c $(addprefix console/,$(CONSOLE_CFILES))
+CFILES = obj_alloc.c thread_create.c $(addprefix console/,$(CONSOLE_CFILES))
+SFILES = $(addprefix cortex-m/,$(CORTEX_M_SFILES))
 
 include ../../mk/lib.mk
 

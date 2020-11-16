@@ -42,6 +42,7 @@
 
 	.section .core_vectors, "ax", %progbits
 	.align	2
+__rom_vectors:
 __core_vectors:
 	.global __core_vectors
 	.type __core_vectors, %object
@@ -67,35 +68,6 @@ __core_vectors:
 
 	.text
 	.align  2
-	.global __sizeof_rom_vectors
-__sizeof_rom_vectors:
-	.type   __sizeof_rom_vectors, %object
-	.word   __rom_vectors_size
-	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
-
-	.global __sizeof_krn_data
-__sizeof_krn_data:
-	.type   __sizeof_krn_data, %object
-	.word  __krn_data_size
-	.size   __sizeof_krn_data, . - __sizeof_krn_data
-
-	.global __addrof_krn_data
-__addrof_krn_data:
-	.type   __addrof_krn_data, %object
-	.word  __krn_data_init
-	.size   __addrof_krn_data, . - __addrof_krn_data
-
-	.text
-	.align	2
-
-	.thumb
-	.global _fault
-	.thumb_func
-	.type   _fault, %function
-_fault:
-	b		.
-	.size   _fault, . - _fault
-
 
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
@@ -245,9 +217,6 @@ thinkos_krn_xcpt_raise:
 
 	movs    r0, r3
 	adds    r3, #THINKOS_EXCEPT_CONTEXT_OFFS
-#if (THINKOS_ENABLE_FPU)
-	vstmia  r3!, {s16-s31}
-#endif
 	stmia   r3!, {r4-r11} /* r4..r11 */
 
 	/* Basic information is saved. Next call could cause an exception
@@ -255,11 +224,6 @@ thinkos_krn_xcpt_raise:
 
 	ldmia   r12, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-#if (THINKOS_ENABLE_FPU)
-	vstmia  r3!, {s0-s15}
-	vmrs    r4, FPSCR
-	stmia   r3!, {r4-r5}
-#endif
 
 	/* Exception on interrupt handler ? */
 	ands    r1, #SCB_ICSR_RETTOBASE 
@@ -397,6 +361,18 @@ cm3_debug_mon_isr:
 	b       thinkos_dbgmon_isr
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 #endif /* THINKOS_ENABLE_DBGMON */
+
+
+	.text
+	.align	2
+
+	.thumb
+	.global _fault
+	.thumb_func
+	.type   _fault, %function
+_fault:
+	b		.
+	.size   _fault, . - _fault
 
 
 

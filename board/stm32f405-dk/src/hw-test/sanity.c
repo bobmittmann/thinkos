@@ -60,8 +60,12 @@ int main(int argc, char **argv)
 	/* Initializes stdio so we can use printf and such. */
 	stdio_init();
 
-	printf("Test..\n");
+	printf("\n\n");
+	printf("-------------------------------------------------------\n");
+	printf("STM32F405-DK - hardware sanity test..\n");
+	printf("-------------------------------------------------------\n");
 	thinkos_sleep(100);
+	printf("\n\n");
 
 	io_init();
 

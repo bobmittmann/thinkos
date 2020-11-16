@@ -456,7 +456,7 @@ static void __ep_tx_done(struct stm32f_otg_drv * drv, int idx)
 	ep = &drv->ep[ep_id];
 	diepctl = otg_fs->inep[idx].diepctl;
 	if (ep->state == EP_IN_DATA_ZLP) {
-		DCC_LOG4(LOG_TRACE, VT_PSH VT_FGR
+		DCC_LOG4(LOG_INFO, VT_PSH VT_FGR
 				 "[%d] [IN_DATA_ZLP] -> [IN_ZLP] EPENA=%d NAKSTS=%d DPID=%d." 
 				 VT_POP, idx, 
 				 diepctl & OTG_FS_EPENA ? 1 : 0, 
@@ -570,12 +570,12 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 
 	if ((xfrsiz % mpsiz) == 0) {
 		ep->state = EP_IN_DATA_ZLP; /* data + ZLP */
-		DCC_LOG3(LOG_TRACE, VT_PSH VT_FGR 
+		DCC_LOG3(LOG_INFO, VT_PSH VT_FGR 
 				 "[%d] [IDLE]->[IN_DATA_ZLP]! pktcnt=%d xfrsiz=%d" VT_POP,
 				 idx, pktcnt, xfrsiz);
 	} else {
 		ep->state = EP_IN_DATA;
-		DCC_LOG3(LOG_TRACE, VT_PSH VT_FGR 
+		DCC_LOG3(LOG_INFO, VT_PSH VT_FGR 
 				 "[%d] [IDLE]->[IN_DATA] pktcnt=%d xfrsiz=%d" VT_POP, 
 				 idx, pktcnt, xfrsiz);
 	}
@@ -898,7 +898,7 @@ int stm32f_otg_dev_ep_init(struct stm32f_otg_drv * drv,
 	ep->on_ev = info->on_ev;
 	ep->idx = idx;
 
-	DCC_LOG5(LOG_TRACE, "%s ep_id=%d addr=%d idx=%d mxpktsz=%d", 
+	DCC_LOG5(LOG_INFO, "%s ep_id=%d addr=%d idx=%d mxpktsz=%d", 
 			 (info->addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
 			 ep_id, info->addr & 0x7f, idx, mxpktsz);
 
@@ -1270,7 +1270,7 @@ static void stm32f_otg_dev_ep0_setup(struct stm32f_otg_drv * drv)
 		ep->xfr_len = 0;
 		ep->xfr_cnt = 0;
 
-		DCC_LOG(LOG_TRACE, "EP0 [SETUP] Host->Dev len=0");
+		DCC_LOG(LOG_INFO, "EP0 [SETUP] Host->Dev len=0");
 		if (((req->request << 8) | req->type) == STD_SET_ADDRESS) {
 			DCC_LOG1(LOG_MSG, "address=%d",  req->value);
 			stm32f_otg_fs_addr_set(otg_fs, req->value);
@@ -1279,14 +1279,14 @@ static void stm32f_otg_dev_ep0_setup(struct stm32f_otg_drv * drv)
 		ep->on_setup(drv->cl, req, dummy);
 		__ep_zlp_send(otg_fs, 0);
 		ep->state = EP_IDLE;
-		DCC_LOG(LOG_TRACE, "EP0 [IDLE]");
+		DCC_LOG(LOG_INFO, "EP0 [IDLE]");
 
 		return;
 	}
 
 	if (req->type & 0x80) {
 		/* Control Read SETUP transaction (IN Data Phase) */
-		DCC_LOG1(LOG_TRACE, "EP0 [SETUP] IN Dev->Host (%d)", req->length);
+		DCC_LOG1(LOG_INFO, "EP0 [SETUP] IN Dev->Host (%d)", req->length);
 		ep->xfr_ptr = NULL;
 		len = ep->on_setup(drv->cl, req, (void *)&ep->xfr_ptr);
 		ep->xfr_len = MIN(req->length, len);
@@ -1680,7 +1680,7 @@ void stm32f_otg_fs_isr(void)
 				/* Copy the received setup packet into the setup buffer */
 				__copy_from_pktbuf(&drv->req, &otg_fs->dfifo[0].pop, 8);
 
-				DCC_LOG3(LOG_TRACE, VT_PSH VT_FYW
+				DCC_LOG3(LOG_INFO, VT_PSH VT_FYW
 						"[0] <RXFLVL> <SETUP_UPDT> typ=0x%02x req=0x%02x len=%d"
 						VT_POP, 
 						drv->req.type, drv->req.request, drv->req.length);
@@ -1698,7 +1698,7 @@ void stm32f_otg_fs_isr(void)
 				   OTG_FS_GINTMSK), until it has read the packet from
 				   the receive FIFO. */
 				otg_fs->gintmsk &= ~OTG_FS_RXFLVLM;
-				DCC_LOG(LOG_TRACE, VT_PSH VT_FYW VT_REV 
+				DCC_LOG(LOG_INFO, VT_PSH VT_FYW VT_REV 
 						" FIFO IRQ disabled /!\\ " VT_POP);
 				/* Enable SOF interrupts */
 //				otg_fs->gintmsk |=  OTG_FS_SOFM;
@@ -1737,7 +1737,7 @@ void stm32f_otg_fs_isr(void)
 		/*  Clear global IN NAK */
 		otg_fs->dctl |= OTG_FS_CGINAK;
 
-		DCC_LOG(LOG_TRACE, VT_PSH VT_FYW VT_REV " FIFO IRQ enabled " VT_POP);
+		DCC_LOG(LOG_INFO, VT_PSH VT_FYW VT_REV " FIFO IRQ enabled " VT_POP);
 
 	   /* Wait for the ENUMDNE interrupt in OTG_HS_GINTSTS.
 	   This interrupt indicates the end of reset on the USB. On receiving this 

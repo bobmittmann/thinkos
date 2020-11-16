@@ -34,30 +34,30 @@ ifndef CROSS_COMPILE
   CROSS_COMPILE = $(empty)
 endif	
 
-ifndef CFLAGS
-  CFLAGS := -g -O1
-endif
-
-ifndef CFLAGS
-  CFLAGS := -g -O1
-endif
-
 #------------------------------------------------------------------------------ 
 # compiler flags
 #------------------------------------------------------------------------------ 
 
 ifneq ($(dbg_level),0) 
   CDEFS := $(CDEFS) DEBUG=$(dbg_level)
-#  CFLAGS += -g
 endif
 
-SFLAGS := $(OPTIONS) -Wall $(SFLAGS) 
-SFLAGS += $(addprefix -D,$(CDEFS))
+ifndef OPTIONS
+  OPTIONS := -g
+endif
 
-CFLAGS := $(OPTIONS) -Wall $(CFLAGS) 
+ifndef CFLAGS
+  CFLAGS := $(OPTIONS) -O1
+else
+  CFLAGS := $(OPTIONS) $(CFLAGS) 
+endif
 CFLAGS += $(addprefix -D,$(CDEFS))
 
-LDFLAGS := $(OPTIONS) $(LDFLAGS) $(addprefix -Xlinker$(space) --defsym=,$(SYMDEFS))
+SFLAGS := $(OPTIONS) $(SFLAGS) 
+SFLAGS += $(addprefix -D,$(CDEFS))
+
+LDFLAGS := $(OPTIONS) $(LDFLAGS)
+LDFLAGS += $(addprefix -Xlinker$(space) --defsym=,$(SYMDEFS))
 
 include $(SCRPTDIR)/cross.mk
 
@@ -282,9 +282,9 @@ $(call trace1,----------------------------------------------------- </prog.mk>)
 # targets/recipes 
 #------------------------------------------------------------------------------ 
 
-all: $(LIBDIRS_ALL) $(PROG_BIN) $(PROG_SYM) $(PROG_LST)
+prog-all: libs-all $(PROG_BIN) $(PROG_SYM) $(PROG_LST)
 
-clean:: libs-clean
+clean-all: libs-clean
 ifneq "$(strip $(CLEAN_OFILES))" ""
 	$(Q)$(RMALL) $(CLEAN_OFILES)
 endif
@@ -388,15 +388,14 @@ endif
 
 $(PROG_ELF) $(PROG_MAP): $(LIBDIRS_ALL) $(OFILES) $(OBJ_EXTRA)
 	$(ACTION) "LD: $(PROG_ELF)"
-
-ifdef $(CROSS_COMPILE))
+ifeq ($(strip $(CROSS_COMPILE)),)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
+else
 ifeq ($(HOST),Cygwin)
 	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
 else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--warn-common -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
 endif
-else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
 endif
 
 %.sym: %.elf
@@ -428,9 +427,9 @@ endif
 %.elx: %.elf
 	$(ACTION) "XLF: $@"
 ifeq ($(HOST),Cygwin)
-	$(Q)$(OBJCOPY) -D -S -j .vect .-j init -j .text -j .data -j .bss $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+	$(Q)$(STRIP) -x -o $(subst \,\\,$(shell cygpath -w $@)) $(subst \,\\,$(shell cygpath -w $<)) 
 else
-	$(Q)$(OBJCOPY) -D -S -j .vect -j .init -j .text -j .data -j .bss $< $@
+	$(Q)$(STRIP) -x -o $@ $< 
 endif
 
 %.bin: %.elf
@@ -496,13 +495,5 @@ include $(SCRPTDIR)/cc.mk
 #
 ifneq ($(HOST),Cygwin)
 -include $(DFILES)
-endif
-
-#------------------------------------------------------------------------------ 
-# Extra stuff
-#------------------------------------------------------------------------------ 
-
-ifdef VERSION_MAJOR
-  include $(SCRPTDIR)/version.mk
 endif
 

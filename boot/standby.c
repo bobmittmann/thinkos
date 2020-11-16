@@ -71,16 +71,15 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 {
 	const struct thinkos_board * board;
 	uint32_t sigmask = 0;
-	bool startup = false;
 	int sig;
 
 	board = (const struct thinkos_board *)arg;
 
-	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_STARTUP);
-	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_KRN_ABORT);
+	sigmask |= (1 << MONITOR_SOFTRST);
 	sigmask |= (1 << MONITOR_COMM_BRK);
+
 	sigmask |= (1 << MONITOR_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << MONITOR_COMM_CTL);
@@ -93,6 +92,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 	sigmask |= (1 << MONITOR_APP_ERASE);
 	sigmask |= (1 << MONITOR_APP_TERM);
 	sigmask |= (1 << MONITOR_APP_RESUME);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_THREAD_CREATE);
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 
@@ -107,11 +107,10 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
-		case MONITOR_STARTUP:
-			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
 					 cm3_sp_get());
-			monitor_clear(MONITOR_STARTUP);
-			startup = true;
 			break;
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -134,7 +133,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 
-			if (!monitor_app_exec(&board->application, false)) {
+			if (!monitor_app_exec(&board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
@@ -142,7 +141,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_start(C_TASK(board->default_task), 
+					monitor_thread_create(C_TASK(board->default_task), 
 										 C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
@@ -152,28 +151,8 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_THREAD_TERMINATE:
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE");
-
-			monitor_wait_idle();
-
-			if (!startup) {
-				int thread_id;
-				int code;
-
-				monitor_clear(MONITOR_THREAD_TERMINATE);
-				thread_id = monitor_thread_terminate_get(&code);
-				(void)thread_id; 
-				(void)code; 
-				DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE id=%d code=%d",
-						 thread_id, code);
-				break;
-			}
-
-			startup = false;
-			DCC_LOG(LOG_TRACE, "APP exec request");
-			monitor_req_app_exec();
+			monitor_clear(MONITOR_THREAD_TERMINATE);
 			break;
-
 
 		case MONITOR_COMM_RCV:
 			sigmask = monitor_on_comm_rcv(comm, sigmask);
@@ -213,7 +192,6 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 	board = (const struct thinkos_board *)arg;
 
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_STARTUP);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_KRN_EXCEPT);
 	sigmask |= (1 << MONITOR_COMM_BRK);
@@ -243,10 +221,10 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
-		case MONITOR_STARTUP:
-			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
 					 cm3_sp_get());
-			monitor_clear(MONITOR_STARTUP);
 			break;
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -269,7 +247,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 
-			if (!monitor_app_exec(&board->application, false)) {
+			if (!monitor_app_exec(&board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
@@ -277,7 +255,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_start(C_TASK(board->default_task), 
+					monitor_thread_create(C_TASK(board->default_task), 
 										 C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");

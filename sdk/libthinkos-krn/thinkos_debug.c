@@ -257,7 +257,13 @@ void SCHED(uintptr_t __sp_ctl,
 					 __new_thread_id + 1, ctx, ctx->pc, 
 					 msp, __retstr(ret));
 		}
-	} else {
+	} else if (__prev_thread_id == THINKOS_THREAD_VOID) {
+		DCC_LOG5(LOG_TRACE,  _ATTR_PUSH_ _FG_RED_ 
+				 "VOID -> <%2d> " 
+				 "CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
+				 __new_thread_id + 1, 
+				 ctx, ctx->pc, msp, __retstr(ret));
+	} else if (__prev_thread_id == THINKOS_THREAD_IDLE) {
 		DCC_LOG6(LOG_TRACE, 
 				 "<%2d> -> <%2d> " 
 				 "CTX=%08x PC=%08x MSP=%08x %s",

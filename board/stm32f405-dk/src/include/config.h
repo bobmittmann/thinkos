@@ -120,6 +120,7 @@
 #define THINKOS_ENABLE_STACK_LIMIT      1
 
 #define THINKOS_ENABLE_CONSOLE          1
+#define THINKOS_ENABLE_CONSOLE_READ     1 
 #define THINKOS_ENABLE_CONSOLE_MISC     1 
 #define THINKOS_ENABLE_CONSOLE_BREAK    1
 #define THINKOS_ENABLE_CONSOLE_OPEN     1
@@ -169,12 +170,22 @@
 #define THINKOS_ENABLE_I_CALLS          1
 #define THINKOS_ENABLE_THREAD_INFO      1
 
-#define THINKOS_ENABLE_STACK_INIT       1
-#define THINKOS_ENABLE_MEMORY_CLEAR     0
-#define THINKOS_ENABLE_FLASH_MEM        1
+#define THINKOS_ENABLE_STACK_INIT           1
+#define THINKOS_ENABLE_MEMORY_CLEAR         1
+#define THINKOS_FLASH_MEM_MAX               1
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
 
-#define THINKOS_ENABLE_OFAST            1
-#define THINKOS_ENABLE_PRIVILEGED_THREAD 1
+#define THINKOS_ENABLE_OFAST                1
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    1
+
+#define THINKOS_ENABLE_APP                  1
+#define THINKOS_ENABLE_APP_FLAT             1
+#define THINKOS_ENABLE_APP_ELF              1
+#define THINKOS_ENABLE_APP_CRC              1
+#define THINKOS_MONITOR_ENABLE_COMM_BRK     1
+
+#define THINKOS_APP_TAG                     "S32F405"
+//#define THINKOS_APP_TAG                     {0x334d5453, 0x30344632, 0x004b4435}
 
 /* -------------------------------------------------------------------------
    RCC 

@@ -379,9 +379,9 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
-}
 
-const char thinkos_flash_mem_nm[] = "FMM";
+	DCC_LOG1(LOG_TRACE, "<%2d> sleeping...", self);
+}
 
 #endif /* (THINKOS_FLASH_MEM_MAX > 0) */
 

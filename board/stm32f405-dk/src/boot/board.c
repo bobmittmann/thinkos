@@ -227,7 +227,7 @@ void board_on_softreset(void)
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
 	rcc->ahb1enr |= (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
-		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC);
 	rcc->ahb2enr |= (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
@@ -235,7 +235,7 @@ void board_on_softreset(void)
 
 	/* Reset all peripherals except USB_OTG and GPIOA */
 	rcc->ahb1rstr = ~((1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) |
-					  (1 << RCC_GPIOB) | (1 << RCC_GPIOC)); 
+					  (1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC)); 
 	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
 	rcc->ahb3rstr = ~(0);
 	rcc->apb1rstr = ~(0);
@@ -249,7 +249,7 @@ void board_on_softreset(void)
 
 	/* disable all peripherals clock sources except USB_OTG and GPIOA */
 	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
-		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC); 
 	rcc->ahb2enr = (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
@@ -287,13 +287,11 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 1
+#define PREBOOT_TIME_SEC 3
 
 int board_preboot_task(void *ptr)
 {
 	uint32_t tick;
-
-	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
 	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
@@ -317,7 +315,12 @@ int board_preboot_task(void *ptr)
 		}
 	}
 
+	__puts("\r\n");
+
 	thinkos_sleep(250);
+
+	__puts("Loading application...\r\n");
+
 	stm32_gpio_clr(IO_LED1);
 	stm32_gpio_clr(IO_LED2);
 
@@ -366,6 +369,8 @@ int board_default_task(void *ptr)
 	__puts("- board default\r\n");
 #endif
 
+	thinkos_abort();
+
 	for (tick = 0; tick < 16; ++tick) {
 		thinkos_sleep(125);
 
@@ -396,6 +401,7 @@ int board_default_task(void *ptr)
 			break;
 		}
 	}
+
 
 //	thinkos_escalate(NULL, NULL);
 

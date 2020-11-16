@@ -21,8 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/param.h>
 #include <sys/sysclk.h>
@@ -63,6 +63,7 @@ extern int32_t udelay_factor;
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int req = arg[0];
 	int32_t * pval;
 	const uint32_t ** ptr;
@@ -83,8 +84,8 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 		break;
 
 	case THINKOS_CTL_ABORT:
-		DCC_LOG(LOG_WARNING, "Abort!");
-		thinkos_krn_kill_all(); 
+		DCC_LOG(LOG_WARNING, "System control: !!Abort!!");
+		thinkos_krn_abort(krn);
 		break;
 
 /* XXX: Deprecated

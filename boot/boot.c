@@ -50,7 +50,7 @@
 #endif
 
 #ifndef BOOT_PREBOOT_ENABLE
-#define BOOT_PREBOOT_ENABLE 0
+#define BOOT_PREBOOT_ENABLE 1
 #endif
 
 #ifndef BOOT_MONITOR_ENABLE
@@ -101,6 +101,8 @@ void __attribute__((noreturn)) app_task(const struct thinkos_board * board)
 	board->default_task((void *)board);
 	for(;;);
 }
+
+void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 
 void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	void (monitor)(const struct monitor_comm *, void *))
@@ -156,9 +158,9 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #if (BOOT_SELFTEST_ENABLE)
 	/* This callback is used as an environment self check. */
 	DCC_LOG(LOG_TRACE, "board->selftest_task()");
-	if ((ret = board->selftest_task(arg)) < 0) {
+	if ((ret = board->selftest_task((void *)board)) < 0) {
 		DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
-		thinkos_thread_abort(ret);
+		thinkos_abort();
 	}
 #endif
 #if (BOOT_PREBOOT_ENABLE)
@@ -166,23 +168,32 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	   - prevent the application to automatically run. Ex:
 	     - using a switch in the board
 		 - receiving a break on the serial line */
-	if ((ret = board->board_preboot_task(arg)) < 0) {
+	if ((ret = board->preboot_task((void *)board)) < 0) {
 		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
-		thinkos_thread_abort(ret);
+		thinkos_abort();
 	}
 #endif
 
 #if DEBUG
 	udelay(0x8000);
 #endif
-#if (BOOT_MONITOR_ENABLE)
-	DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
-	thinkos_thread_abort(0);
-//	thinkos_abort();
+
+#if (THINKOS_ENABLE_APP)
+	{
+		uintptr_t addr = board->application.start_addr;
+		thinkos_app_exec(addr);
+		board->default_task((void*)board);
+	}
 #else
-	DCC_LOG(LOG_TRACE, "10. app_task()");
-	app_task(board);
+	#if (BOOT_MONITOR_ENABLE)
+		DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
+		thinkos_abort();
+	#else
+		DCC_LOG(LOG_TRACE, "10. app_task()");
+		app_task(board);
+	#endif
 #endif
+		for(;;);
 }
 
 

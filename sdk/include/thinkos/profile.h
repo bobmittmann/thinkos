@@ -422,52 +422,52 @@
 
 /* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler. */
 #ifndef THINKOS_ENABLE_MONITOR_SCHED
-#define THINKOS_ENABLE_MONITOR_SCHED    0
+#define THINKOS_ENABLE_MONITOR_SCHED        0
 #endif
 
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
    Requires the DebugMonitor fault to be present on the platform.
    */
 #ifndef THINKOS_ENABLE_DEBUG
-#define THINKOS_ENABLE_DEBUG            0
+#define THINKOS_ENABLE_DEBUG                0
 #endif
 
 /* THINKOS_ENABLE_DEBUG_STEP - Step by step excecution
    Requires the the debug subsystem.
    */
 #ifndef THINKOS_ENABLE_DEBUG_STEP 
-#define THINKOS_ENABLE_DEBUG_STEP       0
+#define THINKOS_ENABLE_DEBUG_STEP           0
 #endif
 
 /* THINKOS_ENABLE_DEBUG_BKPT - Support for breakpoints 
    Requires the the debug subsystem.
    */
 #ifndef THINKOS_ENABLE_DEBUG_BKPT
-#define THINKOS_ENABLE_DEBUG_BKPT       0
+#define THINKOS_ENABLE_DEBUG_BKPT           0
 #endif
 
 /* THINKOS_ENABLE_DEBUG_WPT - Support for watchpoints
    Requires the the debug subsystem.
    */
 #ifndef THINKOS_ENABLE_DEBUG_WPT 
-#define THINKOS_ENABLE_DEBUG_WPT        0
+#define THINKOS_ENABLE_DEBUG_WPT            0
 #endif
 
 /* THINKOS_ENABLE_THREAD_FAULT - Support for faults being
    trapped by the kernel.
    */
 #ifndef THINKOS_ENABLE_THREAD_FAULT  
-#define THINKOS_ENABLE_THREAD_FAULT      0
+#define THINKOS_ENABLE_THREAD_FAULT         0 
 #endif
 
 /* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
 #ifndef THINKOS_ENABLE_SCHED_DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG      0
+#define THINKOS_ENABLE_SCHED_DEBUG          0
 #endif
 
 /* THINKOS_ENABLE_SCHED_ERROR - Enable stack check on scheduler */
 #ifndef THINKOS_ENABLE_SCHED_ERROR
-#define THINKOS_ENABLE_SCHED_ERROR      0
+#define THINKOS_ENABLE_SCHED_ERROR          0
 #endif
 
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
@@ -475,14 +475,14 @@
    thread context.
  */
 #ifndef THINKOS_ENABLE_IDLE_HOOKS       
-#define THINKOS_ENABLE_IDLE_HOOKS        0
+#define THINKOS_ENABLE_IDLE_HOOKS            0
 #endif
 
 /* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
    handlers only. These functions are suffixed by _i.
    */
 #ifndef THINKOS_ENABLE_I_CALLS
-#define THINKOS_ENABLE_I_CALLS           0
+#define THINKOS_ENABLE_I_CALLS               0
 #endif
 
 
@@ -499,26 +499,26 @@
    cause a usage fault exception which handles the calls.
  */
 #ifndef THINKOS_ENABLE_KRNSVC
-#define THINKOS_ENABLE_KRNSVC           0
+#define THINKOS_ENABLE_KRNSVC               0
 #endif
 
 /* THINKOS_FLASH_MEM_MAX - enable the kernel to handle low-level
    flash memory erase read and write operations. */
 
 #ifndef THINKOS_FLASH_MEM_MAX
-#define THINKOS_FLASH_MEM_MAX            0
+#define THINKOS_FLASH_MEM_MAX                0
 #endif 
 
 #ifndef THINKOS_ENABLE_MEM_MAP
-#define THINKOS_ENABLE_MEM_MAP           0
+#define THINKOS_ENABLE_MEM_MAP               0
 #endif
 
 #ifndef THINKOS_DMA_MAX 
-#define THINKOS_DMA_MAX                  0
+#define THINKOS_DMA_MAX                      0
 #endif
 
 #ifndef THINKOS_QUEUE_MAX 
-#define THINKOS_QUEUE_MAX                0
+#define THINKOS_QUEUE_MAX                    0
 #endif
 
 /* THINKOS_ENABLE_STACK_LIMIT - Enable thread stack limit check on
@@ -526,19 +526,35 @@
    stack goes out of bounds and signal a fault condition to the monitor.
 */
 #ifndef THINKOS_ENABLE_STACK_LIMIT
-#define THINKOS_ENABLE_STACK_LIMIT       0 
+#define THINKOS_ENABLE_STACK_LIMIT          0     
 #endif
 
 /* THINKOS_ENABLE_IRQ_ASM_FAST - Enable generation of faster assembler 
    interrupt handlers stubs. This will generate one stub per IRQ as oposed 
  to a single stub shared by all. */
 #ifndef THINKOS_ENABLE_IRQ_ASM_FAST
-#define THINKOS_ENABLE_IRQ_ASM_FAST     0
+#define THINKOS_ENABLE_IRQ_ASM_FAST         0
 #endif
 
 /* THINKOS_ENABLE_PRIVILEGED_THREAD - Enable privileged thread */
 #ifndef THINKOS_ENABLE_PRIVILEGED_THREAD
-#define THINKOS_ENABLE_PRIVILEGED_THREAD 0
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
+#endif
+
+/* THINKOS_ENABLE_APP_FLAT          - Enable flat binary application */
+#ifndef THINKOS_ENABLE_APP
+#define THINKOS_ENABLE_APP                  0
+#endif
+
+/* THINKOS_ENABLE_APP_CRC          - Enable flat binary CRC ckeck for applications */
+#ifndef THINKOS_ENABLE_APP_CRC
+#define THINKOS_ENABLE_APP_CRC              0
+#endif
+
+/* THINKOS_ENABLE_UDELAY_CALIBRATE - Enable kernel to calibrate 
+   the delay loop */
+#ifndef THINKOS_ENABLE_UDELAY_CALIBRATE
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -623,9 +639,11 @@
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
 #endif
 
+/*
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_KRNSVC)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_KRNSVC"
 #endif
+*/
 
 /*
 #if (THINKOS_ENABLE_I_CALLS) && !(THINKOS_ENABLE_KRNSVC)
@@ -795,6 +813,11 @@
 #ifdef THINKOS_ENABLE_DEBUG_FAULT 
 #error "THINKOS_ENABLE_DEBUG_FAULT is deprecated"
 #endif
+
+#ifdef THINKOS_ENABLE_RESET_RAM_VECTORS
+#error "THINKOS_ENABLE_RESET_RAM_VECTORS iis deprecated"
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Wait queues sizes

@@ -45,8 +45,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define THINKOS_ENABLE_MONITOR_NULL_TASK 0
 #endif
 
-#define MONITOR_PERISTENT_MASK ((1 << MONITOR_RESET) | \
-							   (1 << MONITOR_SOFTRST))
+#define MONITOR_PERISTENT_MASK (1 << MONITOR_RESET)
 
 struct {
 	/* task entry point */
@@ -646,7 +645,7 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 	thinkos_monitor_rt.param = param;
 	
 	/* set the startup and reset signals */
-	thinkos_rt.monitor.events = (1 << MONITOR_STARTUP) | (1 << MONITOR_RESET);
+	thinkos_rt.monitor.events = (1 << MONITOR_RESET);
 	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	{

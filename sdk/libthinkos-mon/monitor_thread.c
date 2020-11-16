@@ -26,6 +26,7 @@
 #include <thinkos/monitor.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
+#include <sys/delay.h>
 
 /* -------------------------------------------------------------------------
  * Fast thread execution
@@ -45,20 +46,35 @@ void monitor_thread_destroy(int thread_id)
 	monitor_wait_idle();
 }
 
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg, 
-						 const struct thinkos_thread_inf * inf)
+void __attribute__((noreturn)) __monitor_thread_exit_stub(int code)
 {
-	int thread_id = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
-	uint32_t sl = (uint32_t)inf->stack_ptr;
-	uint32_t sp = sl + inf->stack_size;
-	struct thinkos_context * ctx;
+	DCC_LOG1(LOG_WARNING, "code=%d", code);
 
-	if (__thinkos_thread_ctx_is_valid(thread_id)) {
+#if (THINKOS_ENABLE_MONITOR_THREADS)
+//	monitor_signal_thread_terminate(0, code);
+#endif
+
+	thinkos_abort();
+	for(;;);
+}
+
+int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
+{
+	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_thread_initializer init;
+	unsigned int thread_idx;
+	int ret;
+
+	thread_idx = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
+
+#if 1
+	if (__thinkos_thread_ctx_is_valid(thread_idx)) {
 		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
-				 thread_id + 1, __thinkos_thread_ctx_get(thread_id));
+				 thread_idx + 1, __thinkos_thread_ctx_get(thread_idx));
 
 		DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
-		__thinkos_thread_abort(thread_id);
+		__thinkos_thread_abort(thread_idx);
 		monitor_wait_idle();
 	}
 
@@ -68,38 +84,34 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
 		DCC_LOG(LOG_TRACE, "kernel is active, wait for IDLE!!");
 		monitor_wait_idle();
 	}
+#endif
 
 #if THINKOS_ENABLE_THREAD_ALLOC
-	/* allocate the thread block */
-	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 1);
+	/* force allocate the thread block */
+	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
 #endif
 
-	DCC_LOG2(LOG_TRACE, "__thinkos_thread_ctx_init(func=%p arg=%p)", func, arg);
-	ctx = __thinkos_thread_ctx_init(thread_id, sp, 
-									(uintptr_t)func, (uintptr_t)arg);
-	ctx->lr = (uint32_t)__thinkos_thread_terminate_stub;
-	DCC_LOG3(LOG_TRACE, "PC=%08X R0=%08x LR=%08x", ctx->pc, ctx->r0, ctx->lr);
+	init.stack_base = (uintptr_t)inf->stack_ptr;
+	init.stack_size = inf->stack_size;
+	init.task_entry = (uintptr_t)func;
+	init.task_exit = (uintptr_t)__monitor_thread_exit_stub;
+	init.task_arg[0] = (uintptr_t)arg;
+	init.task_arg[1] = 0;
+	init.task_arg[2] = 0;
+	init.task_arg[3] = 0;
+	init.priority = 0;
+	init.paused = false;
+	init.privileged = true;
+	init.inf = inf;
 
-#if THINKOS_ENABLE_THREAD_INFO
-	__thinkos_thread_inf_set(thread_id, inf);
-#endif
+	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
+		__THINKOS_ERROR(THINKOS_THREAD_IDLE, ret);
+		thread_idx = ret;
+	};
 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	__thinkos_thread_sl_set(thread_id, sl);
-#endif
+	DCC_LOG1(LOG_WARNING, "thread=%d", thread_idx + 1);
 
-#if (THINKOS_ENABLE_PAUSE)
-	__thinkos_thread_pause_set(thread_id);
-#endif
-
-#if (THINKOS_ENABLE_THREAD_FAULT)
-	__thinkos_thread_fault_clr(thread_id);
-#endif
-
-	/* commit the context to the kernel */ 
-	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
-
-	return thread_id;
+	return thread_idx;
 }
 
 void monitor_thread_resume(int thread_id)
@@ -107,21 +119,6 @@ void monitor_thread_resume(int thread_id)
 	if (__thinkos_thread_resume(thread_id))
 		__thinkos_defer_sched();
 } 
-
-int monitor_thread_start(int (* task)(void *, unsigned int), void * arg) 
-{
-	int thread_id;
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	thread_id = monitor_thread_create(task, arg, &thinkos_main_inf);
-#else
-	thread_id = monitor_thread_create(task, arg, 0);
-#endif
-
-	monitor_thread_resume(thread_id);
-
-	return thread_id;
-}
 
 /*
    Exec a thread and wait for termination
@@ -133,13 +130,20 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	int thread_id;
 	int sig;
 
-	thread_id = monitor_thread_start(task, arg);
+	thread_id = monitor_thread_create(task, arg);
 	(void)thread_id;
+
+	/* return in case of fault or abort */	
+	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_KRN_ABORT);
+	sigmask |= (1 << MONITOR_THREAD_FAULT);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
+	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+	sigmask |= (1 << MONITOR_COMM_BRK);
 
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
-	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 
 	for(;;) {
 		switch ((sig = monitor_select(sigmask))) {
@@ -162,17 +166,6 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 		case MONITOR_RX_PIPE:
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
-
-		case MONITOR_THREAD_TERMINATE: {
-			int code;
-
-			monitor_clear(MONITOR_THREAD_TERMINATE);
-			thread_id = monitor_thread_terminate_get(&code);
-			(void)code; 
-			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
-					thread_id, code);
-			return code;
-		}
 
 		default:
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);

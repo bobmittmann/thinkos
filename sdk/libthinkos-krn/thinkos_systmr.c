@@ -45,7 +45,7 @@ static void __thinkos_time_wakeup(int thread_id)
 #endif
 	/* remove from the time wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);  
-	DCC_LOG1(LOG_TRACE, "Wakeup %d...", thread_id + 1);
+	DCC_LOG1(LOG_MSG, "Wakeup %d...", thread_id + 1);
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
 	__thinkos_preempt();
@@ -170,6 +170,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
   #if (THINKOS_ENABLE_MONITOR)
 		sigset = thinkos_rt.monitor.events;
 		sigmsk = thinkos_rt.monitor.mask;
+
 		sigact = sigset & sigmsk;
 
 		/* Process monitor events */
@@ -185,7 +186,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 
-	} while (1);
+	} while (0);
 
   #endif /* THINKOS_ENABLE_MONITOR */
 }
@@ -238,4 +239,5 @@ void thinkos_krn_udelay_calibrate(void)
 
 	cm3_cpsie_i();
 }
+
 

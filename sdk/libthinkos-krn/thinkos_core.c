@@ -55,113 +55,107 @@ uint32_t __attribute__((aligned(64)))
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-void thinkos_krn_kill_all(void) 
+void __thinkos_krn_reset(struct thinkos_rt * krn)
 {
-	int i;
+	unsigned int i;
 
-	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_CNT; ++i)
-		thinkos_rt.wq_lst[i] = 0x00000000;
-	/* discard current thread context */
-	__thinkos_active_set(THINKOS_THREAD_VOID);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
-}
-
-void __thinkos_core_reset(void)
-{
-	int i;
-
-	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_CNT; ++i)
-		thinkos_rt.wq_lst[i] = 0x00000000;
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FRD " /!\\ Kernel Reset /!\\ " VT_POP);
 
 	/* clear all threads excpet NULL */
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		__thinkos_thread_ctx_clr(i);
-#if THINKOS_ENABLE_THREAD_STAT
-		__thinkos_thread_stat_clr(i);
-#endif
-#if THINKOS_ENABLE_THREAD_INFO
-		__thinkos_thread_inf_clr(i);
-#endif
-#if THINKOS_ENABLE_THREAD_FAULT
-		__thinkos_thread_errno_clr(i);
-#endif
-#if (THINKOS_ENABLE_PROFILING)
-		__thinkos_thread_cyccnt_clr(i);
-#endif
+		__thread_ctx_clr(krn, i);
+		__thread_stat_clr(krn, i);
+		__thread_inf_clr(krn, i);
+		__thread_fault_clr(krn, i);
+		__thread_errno_clr(krn, i);
+		__thread_cyccnt_clr(krn, i);
 	}
 
-#if THINKOS_ENABLE_THREAD_ALLOC
-	/* initialize the thread allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.th_alloc, THINKOS_THREADS_MAX); 
+#if (THINKOS_ENABLE_OBJ_ALLOC)
+	__krn_alloc_init(krn);
 #endif
 
 #if (THINKOS_MUTEX_MAX) > 0
 	/* initialize the mutex locks */
 	for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
-		thinkos_rt.lock[i] = -1;
-#if THINKOS_ENABLE_MUTEX_ALLOC
-	/* initialize the mutex allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.mutex_alloc, THINKOS_MUTEX_MAX); 
-#endif
+		krn->lock[i] = -1;
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
 #if (THINKOS_SEMAPHORE_MAX) > 0
 	for (i = 0; i < THINKOS_SEMAPHORE_MAX; i++) 
-		thinkos_rt.sem_val[i] = 0;
-#if (THINKOS_ENABLE_SEM_ALLOC)
-	/* initialize the semaphore allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.sem_alloc, THINKOS_SEMAPHORE_MAX); 
-#endif
+		krn->sem_val[i] = 0;
 #endif /* THINKOS_SEMAPHORE_MAX > 0 */
 
-#if (THINKOS_ENABLE_COND_ALLOC)
-	/* initialize the conditional variable allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.cond_alloc, THINKOS_COND_MAX); 
-#endif
 
 #if (THINKOS_FLAG_MAX) > 0
 	for (i = 0; i < ((THINKOS_FLAG_MAX) + 31) / 32; i++) 
-		thinkos_rt.flag[i] = 0;
-#if THINKOS_ENABLE_FLAG_ALLOC
-	/* initialize the flag allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.flag_alloc, THINKOS_FLAG_MAX); 
-#endif
+		krn->flag[i] = 0;
 #endif /* THINKOS_FLAG_MAX > 0 */
 
 #if (THINKOS_EVENT_MAX) > 0
 	for (i = 0; i < (THINKOS_EVENT_MAX) ; i++) {
-		thinkos_rt.ev[i].pend = 0;
-		thinkos_rt.ev[i].mask = 0xffffffff;
+		krn->ev[i].pend = 0;
+		krn->ev[i].mask = 0xffffffff;
 	}
-#if (THINKOS_ENABLE_EVENT_ALLOC)
-	/* initialize the event set allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.ev_alloc, THINKOS_EVENT_MAX); 
-#endif
 #endif /* THINKOS_EVENT_MAX > 0 */
 
 #if (THINKOS_GATE_MAX) > 0
 	for (i = 0; i < (((THINKOS_GATE_MAX) + 15) / 16); i++) 
-		thinkos_rt.gate[i] = 0;
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	/* initialize the gate allocation bitmap */ 
-	__thinkos_bmp_init(thinkos_rt.gate_alloc, THINKOS_GATE_MAX); 
-#endif
+		krn->gate[i] = 0;
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-	thinkos_rt.step_id = -1;
+	krn->step_id = -1;
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	thinkos_rt.step_svc = 0;  /* step at service call bitmap */
-	thinkos_rt.step_req = 0;  /* step request bitmap */
+	krn->step_svc = 0;  /* step at service call bitmap */
+	krn->step_req = 0;  /* step request bitmap */
 #endif
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
-	thinkos_rt.critical_cnt = 0;
+	krn->critical_cnt = 0;
 #endif
+}
+
+void thinkos_krn_kill_all(struct thinkos_rt * krn)
+{
+	int active = __thread_active_get(krn);
+	int i;
+
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_FYW
+			 "<%2d> killing all threads ..." VT_POP, active + 1);
+
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
+		krn->wq_lst[i] = 0x00000000;
+
+	if  (active != THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+	}
+
+	__thinkos_defer_sched();
+}
+
+void thinkos_krn_abort(struct thinkos_rt * krn)
+{
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
+
+	thinkos_krn_kill_all(krn); 
+
+	__thinkos_krn_reset(krn);
+
+#if (THINKOS_ENABLE_MONITOR)
+	monitor_signal(MONITOR_KRN_ABORT);
+#else
+
+#endif
+}
+
+void __thinkos_core_reset(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__thinkos_krn_reset(krn);
 
 #if (THINKOS_IRQ_MAX) > 0
 	__thinkos_irq_reset_all();
@@ -172,7 +166,6 @@ void __thinkos_core_reset(void)
 	/* Remap the Vector table to SRAM */
 	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
 #endif
-
 }
 
 void __thinkos_system_reset(void)
@@ -190,27 +183,6 @@ void __thinkos_system_reset(void)
 	/* Enable Interrupts */
 	DCC_LOG(LOG_TRACE, "4. enablig interrupts...");
 	cm3_cpsie_i();
-}
-
-
-bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
-{
-#if (THINKOS_ENABLE_MPU)
-	uint32_t sram_base = 0x20000000;
-	uint32_t krn_base = sram_base + thinkos_rt.mpu.kernel_mem.offs;
-	uint32_t krn_size = thinkos_rt.mpu.kernel_mem.size;
-
-	DCC_LOG4(LOG_TRACE, "krn=%08x(%d) mem=%08x(%d)",
-			 krn_base, krn_size, addr, size);
-	
-	/* FIXME: this is a minimum implementation just to avoid
-	   invalid accesses to the kernel memory */
-
-	if ((addr < (krn_base + krn_size)) && ((addr + size) > krn_base)) {
-		return false;
-	}
-#endif
-	return true;
 }
 
 bool thinkos_sched_active(void)

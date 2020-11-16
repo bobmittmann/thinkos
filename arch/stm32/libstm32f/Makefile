@@ -56,6 +56,7 @@ SFILES = stm32l4-nvic.S
 
 CFILES = stm32l4-init.c stm32l4-flash.c stm32f-gpio.c \
 		 stm32f-dma.c stm32f-spi.c \
+		 stm32-crc.c \
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
 		 $(addprefix usart/,$(USART_CFILES))
 endif

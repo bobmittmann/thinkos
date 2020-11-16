@@ -474,7 +474,7 @@ static void io_timer_init(uint32_t freq)
 	tim->cr1 = TIM_URS | TIM_CEN; /* Enable counter */
 }
 
-uint32_t io_stack[64] __attribute__ ((aligned(8), section(".stack")));
+uint32_t io_stack[64] __attribute__ ((aligned(8)));
 
 const struct thinkos_thread_inf io_thread_inf = {
 	.stack_ptr = io_stack,

@@ -1,5 +1,10 @@
 #include <thinkos.h>
 
+int thinkos_thread_alloc(int hint) 
+{
+	return thinkos_obj_thread_alloc(hint);
+}
+
 int thinkos_mutex_alloc(void) 
 {
 	return thinkos_obj_alloc(THINKOS_OBJ_MUTEX);

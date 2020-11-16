@@ -281,3 +281,51 @@ int thinkos_mem_read(const struct thinkos_mem_desc * mem,
 }
 
 
+bool __thinkos_mem_usr_rx_chk(uint32_t addr, uint32_t size)
+{
+#if (THINKOS_ENABLE_MPU)
+	uint32_t code_base = thinkos_rt.mem.krn_code.base;
+	uint32_t code_top = thinkos_rt.mem.krn_code.top;
+	uint32_t data_base = thinkos_rt.mem.krn_data.base;
+	uint32_t data_top = thinkos_rt.mem.krn_data.top;
+	uint32_t usr_top = addr + size;
+	uint32_t usr_base = addr;
+
+	DCC_LOG3(LOG_TRACE, "code: %08x-%08x (%d)",
+			 code_base, code_top, code_top - code_base);
+
+	DCC_LOG3(LOG_TRACE, "data: %08x-%08x (%d)",
+			 data_base, data_top, data_top - data_base);
+
+	DCC_LOG3(LOG_TRACE, "user: %08x-%08x (%d)",
+			 usr_base, usr_top, usr_top - usr_base);
+	
+	/* FIXME: this is a minimum implementation just to avoid
+	   invalid accesses to the kernel memory */
+
+	if ((usr_base >= data_base) && (usr_base < data_top)) {
+		return false;
+	}
+	if ((usr_top >= data_base) && (usr_top < data_top)) {
+		return false;
+	}
+	if ((usr_base >= code_base) && (usr_base < code_top)) {
+		return false;
+	}
+	if ((usr_top >= code_base) && (usr_top < code_top)) {
+		return false;
+	}
+#endif
+	return true;
+}
+
+bool __thinkos_mem_usr_rw_chk(uint32_t addr, uint32_t size)
+{
+	return __thinkos_mem_usr_rx_chk(addr, size);
+}
+
+bool __thinkos_mem_usr_rd_chk(uint32_t addr, uint32_t size)
+{
+	return __thinkos_mem_usr_rx_chk(addr, size);
+}
+

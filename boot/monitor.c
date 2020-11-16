@@ -95,7 +95,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_APPUPLOAD_ENABLE
-#define MONITOR_APPUPLOAD_ENABLE   0
+#define MONITOR_APPUPLOAD_ENABLE   1
 #endif
 
 #ifndef MONITOR_APPWIPE_ENABLE
@@ -805,7 +805,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	uint8_t * ptr;
 	int cnt;
 #endif
-	bool startup = false;
 	uint8_t buf[1];
 	int sig;
 
@@ -821,7 +820,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_STARTUP);
+	sigmask |= (1 << MONITOR_KRN_ABORT);
 #if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_KRN_EXCEPT);
@@ -860,14 +859,13 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
 
 	for(;;) {
-		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
+		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
-		case MONITOR_STARTUP:
-			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
 					 cm3_sp_get());
-			monitor_clear(MONITOR_STARTUP);
-			startup = true;
 			break;
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -886,6 +884,13 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #if (THINKOS_ENABLE_CONSOLE)
 			goto is_connected;
 #endif
+			break;
+
+		case MONITOR_COMM_BRK:
+			/* Acknowledge the signal */
+			monitor_clear(MONITOR_COMM_BRK);
+			monitor_comm_break_ack(comm);
+			DCC_LOG(LOG_WARNING, "/!\\ COMM_BREAK signal !");
 			break;
 
 		case MONITOR_APP_UPLOAD:
@@ -912,7 +917,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		//				  (uint32_t)board->application.start_addr);
 
 
-			if (!monitor_app_exec(&board->application, false)) {
+			if (!monitor_app_exec(&board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
@@ -920,7 +925,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_start(C_TASK(board->default_task), 
+					monitor_thread_create(C_TASK(board->default_task), 
 										 C_ARG(NULL));
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
@@ -966,28 +971,13 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_THREAD_TERMINATE:
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE");
+			monitor_clear(MONITOR_THREAD_TERMINATE);
+			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
+			break;
 
-			monitor_wait_idle();
-
-			if (!startup) {
-				int thread_id;
-				int code;
-
-				monitor_clear(MONITOR_THREAD_TERMINATE);
-				thread_id = monitor_thread_terminate_get(&code);
-				(void)thread_id; 
-				(void)code; 
-				DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE id=%d code=%d",
-						 thread_id, code);
-				break;
-			}
-
-			startup = false;
-			monitor.test_status = 1;
-
-			DCC_LOG(LOG_TRACE, "APP exec request");
-			monitor_req_app_exec();
+		case MONITOR_THREAD_BREAK:
+			monitor_clear(MONITOR_THREAD_BREAK);
+			DCC_LOG(LOG_WARNING, "/!\\ THREAD_BREAK signal !");
 			break;
 
 #if (MONITOR_UPGRADE_ENABLE)

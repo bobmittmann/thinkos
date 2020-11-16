@@ -40,11 +40,30 @@
 extern uint32_t * __krn_data_init;
 extern uint16_t __krn_data_size;
 
+extern uint32_t __addrof_krn_data;
+extern uint32_t __sizeof_krn_data;
+
+extern uint32_t * __krn_code_init;
+extern uint16_t __krn_code_size;
+
+extern uint32_t __addrof_krn_code;
+extern uint32_t __sizeof_krn_code;
+
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
 #define __ID(OPT)         (((OPT) >> 24) & 0x3f)
 #define __PRIVILEGED(OPT) (((OPT) >> 30) & 0x01)
 #define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
+
+static void __thinkos_mem_init(struct thinkos_rt * krn)
+{
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	krn->mem.krn_code.base = __addrof_krn_code;
+	krn->mem.krn_code.top = __addrof_krn_code + __sizeof_krn_code;
+	krn->mem.krn_data.base = __addrof_krn_data;
+	krn->mem.krn_data.top = __addrof_krn_data + __sizeof_krn_data;
+#endif
+}
 
 static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 {
@@ -141,9 +160,6 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 	return id;
 }
 
-extern uint32_t __addrof_krn_data;
-extern uint32_t __sizeof_krn_data;
-
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
@@ -217,9 +233,16 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
+	DCC_LOG(LOG_TRACE, "1. cleanup memory().");
 	/* clear the ThinkOS runtime structure */
 	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
 #endif
+
+#if (THINKOS_ENABLE_UDELAY_CALIBRATE)
+	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
+	thinkos_krn_udelay_calibrate();
+#endif
+//	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	__thinkos_core_reset();
 
@@ -381,6 +404,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	__thinkos_active_set(thread_id);
 	/* add to the ready queue */
 	thinkos_rt.wq_ready = 1 << thread_id;
+
+	__thinkos_mem_init(&thinkos_rt);
 
 #if (THINKOS_ENABLE_MPU)
 	DCC_LOG2(LOG_TRACE, "6. thinkos_krn_mpu_init(%08x, %d)", 

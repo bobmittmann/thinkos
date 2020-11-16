@@ -54,6 +54,7 @@ EXTERN(cm3_svc_isr)
 EXTERN(cm3_debug_mon_isr)
 EXTERN(cm3_pendsv_isr)
 EXTERN(cm3_systick_isr)
+EXTERN(__sizeof_rom_vectors)
 
 SECTIONS
 {
@@ -76,6 +77,7 @@ SECTIONS
 	{
 		. = ALIGN(4);
 		PROVIDE (__rom_vectors = .);
+		PROVIDE (__text_start = .);
 		KEEP (*(.core_vectors))
 		KEEP (*(.nvic_vectors))
 	} >"CODE" = 0xffffffff

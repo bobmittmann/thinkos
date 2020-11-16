@@ -202,10 +202,4 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 	ctx->pc = (uint32_t)__thinkos_thread_terminate_stub;
 }
 
-void __attribute__((noreturn)) __thinkos_thread_exit_stub(int code)
-{
-	thinkos_exit(code);
-	for(;;);
-}
-
 #endif /* THINKOS_ENABLE_EXIT */

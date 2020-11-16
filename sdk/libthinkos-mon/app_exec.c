@@ -27,69 +27,21 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-static const char * const app_argv[] = {
-	"thinkos_app"
-};
-
-#if 0
-static int __attribute__((naked, noreturn)) app_bootstrap(void * arg)
-{
-	int (* app_reset)(int argc, char ** argv);
-	uintptr_t thumb_call = (uintptr_t)arg | 1;
-
-	app_reset = (int (*)(int argc, char ** argv))thumb_call;
-
-	for (;;) {
-		DCC_LOG2(LOG_TRACE, "sp=0x%08x app_reset=0x%08x", 
-				 cm3_sp_get(), app_reset);
-		app_reset(1, (char **)app_argv);
-	}
-}
-#endif
-
 /* -------------------------------------------------------------------------
  * Application execution
  * ------------------------------------------------------------------------- */
 
-static bool magic_match(const struct magic_blk * magic, void * ptr)
+bool monitor_app_exec(const struct monitor_app_desc * desc)
 {
-	uint32_t * mem = (uint32_t *)ptr;
-	int k;
-	int j;
+	struct thinkos_rt * krn = &thinkos_rt;
+	uintptr_t addr = (uintptr_t)desc->start_addr;
+	int thread_idx = 0;
+	int ret;
 
-	k = magic->hdr.pos;
-	for (j = 0; j < magic->hdr.cnt; ++j) {
-		if ((mem[k++] & magic->rec[j].mask) != magic->rec[j].comp)
-			return false;
-	}	
-
-	return true;
-}
-
-bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused)
-{
-	void * ptr = (void *)desc->start_addr;
-	uintptr_t thumb_call = (uintptr_t)ptr | 1;
-//	int (* app)(int argc, char ** argv);
-	int (* app)(void *, unsigned int);
-	int thread_id;
-
-//	app = (int (*)(int argc, char ** argv))thumb_call;
-	app = C_TASK(thumb_call);
-
-	if (!magic_match(desc->magic, ptr))
+	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr))) {
+		DCC_LOG1(LOG_ERROR, "Can't start app: err=%d!", ret);
 		return false;
-
-	DCC_LOG1(LOG_TRACE, "app=%p", app);
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	thread_id = monitor_thread_create(app, C_ARG(app_argv), &thinkos_main_inf);
-#else
-	thread_id = monitor_thread_create(app, C_ARG(app_argv), 0);
-#endif
-
-	if (!paused)
-		monitor_thread_resume(thread_id);
+	}
 
 	return true;
 }

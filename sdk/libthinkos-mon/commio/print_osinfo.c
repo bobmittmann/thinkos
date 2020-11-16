@@ -133,10 +133,10 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 
 			oid = __thread_stat_wq_get(rt, i);
 			tmw = __thread_stat_tmw_get(rt, i);
-#if THINKOS_ENABLE_THREAD_FAULT
+#if (THINKOS_ENABLE_THREAD_FAULT)
 			if (oid == THINKOS_WQ_FAULT) {
-				struct thinkos_except * xcpt = __thinkos_except_buf();
-				monitor_printf(comm, " | ERR %2d", xcpt->errno);
+				int errno = __thread_errno_get(rt, i);
+				monitor_printf(comm, " | ERR %2d", errno);
 			} else 
 #endif
 #if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_WQ_IRQ

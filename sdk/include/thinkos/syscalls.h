@@ -32,7 +32,7 @@
  * --------------------------------------------------------------------------*/
 
 #define THINKOS_THREAD_SELF            0
-#define THINKOS_THREAD_CREATE          1
+#define THINKOS_THREAD_INIT            1
 
 #define THINKOS_CLOCK                  2
 #define THINKOS_ALARM                  3
@@ -112,7 +112,9 @@
 
 #define THINKOS_FLASH_MEM             57
 
-#define THINKOS_SYSCALL_CNT           58 
+#define THINKOS_APP_EXEC              58
+
+#define THINKOS_SYSCALL_CNT           59 
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_WRITE                  0
@@ -261,19 +263,9 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_thread_create(thinkos_task_t task, 
-					  void * arg, void * stack_ptr,
-					  unsigned int opt) {
-	return THINKOS_SYSCALL5(THINKOS_THREAD_CREATE, task, arg, 
-							 stack_ptr, opt, 0);
-}
-
-
-static inline int __attribute__((always_inline)) 
-thinkos_thread_create_inf(thinkos_task_t task, void * arg, 
-						  const struct thinkos_thread_inf * inf) {
-	return THINKOS_SYSCALL5(THINKOS_THREAD_CREATE, task, arg, 
-							 inf->stack_ptr, inf->opt, inf);
+thinkos_thread_init(unsigned int thread, 
+					struct thinkos_thread_initializer * ini) {
+	return THINKOS_SYSCALL2(THINKOS_THREAD_INIT, thread, ini);
 }
 
 static inline int 
@@ -319,20 +311,23 @@ __attribute__((always_inline)) thinkos_sleep(unsigned int ms) {
 	return THINKOS_SYSCALL1(THINKOS_SLEEP, ms);
 }
 
-static inline int
-__attribute__((always_inline)) thinkos_alarm(uint32_t clk) {
+static inline int __attribute__((always_inline)) thinkos_alarm(uint32_t clk) {
 	return THINKOS_SYSCALL1(THINKOS_ALARM, clk);
 }
 
-static inline uint32_t __attribute__((always_inline)) thinkos_clock(void) {
+static inline uint32_t  thinkos_clock(void) {
 return THINKOS_SYSCALL0(THINKOS_CLOCK);
 }
 
-static inline int __attribute__((always_inline)) thinkos_obj_alloc(int kind) {
+static inline int  thinkos_obj_alloc(int kind) {
 return THINKOS_SYSCALL1(THINKOS_OBJ_ALLOC, kind);
 }
 
-static inline int __attribute__((always_inline)) thinkos_obj_free(int obj) {
+static inline int thinkos_obj_thread_alloc(int hint) {
+return THINKOS_SYSCALL2(THINKOS_OBJ_ALLOC, THINKOS_OBJ_READY, hint);
+}
+
+static inline int thinkos_obj_free(int obj) {
 	return THINKOS_SYSCALL1(THINKOS_OBJ_FREE, obj);
 }
 
@@ -851,6 +846,15 @@ static inline void thinkos_bkpt(int no) {
 
 static inline int thinkos_escalate(int (* call)(void *), void * arg) {
 	return THINKOS_SYSCALL2(THINKOS_ESCALATE, call, arg);
+}
+
+/* ---------------------------------------------------------------------------
+   Application support
+   ---------------------------------------------------------------------------*/
+
+static inline int __attribute__((always_inline)) 
+thinkos_app_exec(uint32_t addr) {
+	return THINKOS_SYSCALL1(THINKOS_APP_EXEC, addr);
 }
 
 #ifdef __cplusplus

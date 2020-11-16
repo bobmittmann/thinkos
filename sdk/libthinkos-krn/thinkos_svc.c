@@ -42,7 +42,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/dcclog.h>
 
 
-void thinkos_thread_create_svc(int32_t * arg, int self);
+void thinkos_thread_init_svc(int32_t * arg, int self);
 
 void thinkos_pause_svc(int32_t * arg, int self);
 
@@ -158,6 +158,8 @@ void thinkos_trace_ctl_svc(int32_t * arg, int self);
 
 void thinkos_flash_mem_svc(int32_t * arg, int self);
 
+void thinkos_app_exec_svc(int32_t * arg, int self);
+
 #if (THINKOS_ENABLE_ESCALATE)
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg, int self)
@@ -212,7 +214,7 @@ typedef void (* thinkos_svc_t)(int32_t * arg, int self);
 
 thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,
-	[THINKOS_THREAD_CREATE] = thinkos_thread_create_svc,
+	[THINKOS_THREAD_INIT] = thinkos_thread_init_svc,
 
 #if (THINKOS_ENABLE_CLOCK)
 	[THINKOS_CLOCK] = thinkos_clock_svc,
@@ -619,24 +621,38 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_FLASH_MEM] = thinkos_nosys_svc,
 #endif
 
+/* ----------------------------------------------
+ * Application
+ * --------------------------------------------- */
+
+#if (THINKOS_ENABLE_APP)
+	[THINKOS_APP_EXEC] = thinkos_app_exec_svc,
+#else
+	[THINKOS_APP_EXEC] = thinkos_nosys_svc,
+#endif
+
+
 };
 
-void thinkos_krn_svc_err(unsigned int thread_id, int errno)
+void thinkos_krn_svc_err(unsigned int thread_idx, int errno)
 {
-	__thinkos_suspend(thread_id);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
+			 VT_POP, thread_idx + 1, errno);
+
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thinkos_suspend(thread_idx);
+		/* signal the scheduler ... */
+		__thinkos_defer_sched();
 #if (THINKOS_ENABLE_THREAD_FAULT)
-	__thinkos_thread_fault_set(thread_id, errno);
+		__thinkos_thread_fault_set(thread_idx, errno);
 #endif
 #if (THINKOS_ENABLE_MONITOR) 
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ Error %d /!\\"
-			 VT_POP, errno);
-	/* */
-	monitor_signal_thread_fault(thread_id);
+		/* */
+//		monitor_signal_thread_fault(thread_idx);
 #else
-	/* FIXME: issue an exception */
+		/* FIXME: issue an exception */
 #endif
+	}
 }
 
 

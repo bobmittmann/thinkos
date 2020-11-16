@@ -75,6 +75,7 @@ SECTIONS
 	.vect __code_init :
 	{
 		. = ALIGN(4);
+		PROVIDE (__text_start = .);
 		PROVIDE (__rom_vectors = .);
 		KEEP (*(.core_vectors))
 		KEEP (*(.nvic_vectors))

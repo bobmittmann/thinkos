@@ -115,10 +115,6 @@ endif
 
 ifdef THINKAPP
   CDEFS += THINKAPP
-  SYMDEFS += __thinkapp=$(THINKAPP)
-  ifndef APPADDR
-    APPADDR := THINKAPP
-  endif
 else
   OPTIONS += -mno-unaligned-access
 endif
@@ -147,7 +143,7 @@ ifdef KRN_CODE_SIZE
 endif
 
 ifndef APPADDR
-  APPADDR := 0x08010000
+  APPADDR := $(LDCODE)
 endif
 
 CFLAGS += -ffunction-sections -fdata-sections 
@@ -159,16 +155,18 @@ ifndef LOAD_ADDR
   LOAD_ADDR := $(APPADDR)
 endif
 
+LDFLAGS += -Wl,--gc-sections -nostdlib 
+
 ifdef PROG
   ifdef LDSCRIPT
-    LDFLAGS += -Wl,--gc-sections -nostdlib -T $(LDSCRIPT)
+    LDFLAGS += -T $(LDSCRIPT)
     include $(__THINKOS_DIR)/mk/prog.mk
   else
     ifdef THINKAPP
-      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T arm-elf-thinkos-app.ld
+      LDFLAGS += -T $(MACH).ld -T arm-elf-thinkos-app.ld
       include $(__THINKOS_DIR)/mk/prog.mk
     else
-      LDFLAGS += -Wl,--gc-sections -nostdlib -T $(MACH).ld -T $(STM32)-vec.ld -T $(BOOTLD)
+      LDFLAGS += -T $(MACH).ld -T $(STM32)-vec.ld -T $(BOOTLD)
 #      LDFLAGS += -nostdlib -T $(MACH).ld -T arm-elf-thinkos-krn.ld
 #      include $(__THINKOS_DIR)/mk/kernel.mk
       include $(__THINKOS_DIR)/mk/prog.mk
