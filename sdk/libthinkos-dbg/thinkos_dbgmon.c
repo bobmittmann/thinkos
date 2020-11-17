@@ -58,35 +58,6 @@ struct thinkos_dbgmon {
 
 struct thinkos_dbgmon thinkos_dbgmon_rt;
 
-/**
-  * __dbgmon_irq_disable_all:
-  *
-  * Disable all interrupts by clearing the interrupt enable bit
-  * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
-  *
-  * Also the interrupt enable backup is cleared to avoid 
-  * interrupts being reenabled by calling __dbgmon_irq_restore_all().
-  *
-  * The systick interrupt is not disabled.
-  */
-static void __dbgmon_irq_disable_all(void)
-{
-	int i;
-
-	DCC_LOG(LOG_WARNING, "NIVC all interrupts disabled!!!");
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
-		/* FIXME: clearing the pending interrupt may have a side effect 
-		   on the comms irq used by the debug monitor. An alternative 
-		   would be to use the force enable list to avoid clearing those
-		   in the list. */
-#if 0
-		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
-#endif
-	}
-}
-
 
 #if (THINKOS_DBGMON_ENABLE_RST_VEC)
 /**
@@ -670,7 +641,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				/* save the current state of IPSR */
 //				thinkos_rt.xcpt_ipsr = ipsr;
 				/* delivers a kernel exception on next round */
-				monitor_signal(MONITOR_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_FAULT);
 				break;
 			}
 
@@ -707,7 +678,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				/* XXX: use IDLE as break thread id */
 				thinkos_dbgmon_rt.break_id = THINKOS_THREAD_IDLE; 
 				/* delivers a thread fault on next round */
-				monitor_signal(MONITOR_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_FAULT);
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
 			} else {
 #if (THINKOS_ENABLE_EXCEPTIONS)
@@ -734,7 +705,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
 								   sizeof(struct armv7m_basic_frame));
 				/* delivers a kernel exception on next round */
-				monitor_signal(MONITOR_KRN_EXCEPT);
+				monitor_signal(MONITOR_KRN_FAULT);
 #endif
 			}
 		} while (0);
@@ -857,46 +828,6 @@ void __attribute__((noinline, noreturn))
 }
 #endif
 
-
-/**
- * dbgmon_soft_reset:
- *
- * Reinitialize the plataform by reseting all ThinkOS subsystems.
- * 
- */
-
-void dbgmon_soft_reset(void)
-{
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
-	__dbgmon_irq_disable_all();
-
-	//DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-	//		"2. Kill all threads"  _ATTR_POP_); 
-	//__thinkos_kill_all(); 
-
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"3. Core reset..."   _ATTR_POP_); 
-	__thinkos_core_reset();
-
-#if (THINKOS_ENABLE_EXCEPTIONS)
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"4. Except reset..."   _ATTR_POP_); 
-	__exception_reset();
-#endif
-
-#if 0
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"5. Wait IDLE signal..."   _ATTR_POP_); 
-	dbgmon_wait_idle();
-#endif
-#endif
-
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"6. Send soft reset signal"  _ATTR_POP_);
-	monitor_signal(MONITOR_SOFTRST); 
-}
 
 /* -------------------------------------------------------------------------
  * ThinkOS kernel level API

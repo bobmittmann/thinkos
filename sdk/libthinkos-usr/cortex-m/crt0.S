@@ -47,9 +47,9 @@ _hdr_os_tag:
 	.size   _init_hdr, . - _init_hdr
 
 _hdr_sys_tag:
-#ifdef THINKOS_APP_TAG
-	.string THINKOS_APP_TAG
-	.p2align  2, 0x00
+#ifdef THINKOS_CUSTOM_APP_TAG
+	.string THINKOS_CUSTOM_APP_TAG
+	.p2align  3, 0x00
 #else
 	.word 0 
 	.word 0
@@ -90,8 +90,8 @@ _reset:
 	/* copy initialized variables .data section */
 1:  cmp     r2, r3
 	ittt	lo
-	ldrlo   r0, [r2], #4
-	strlo   r0, [r1], #4
+	ldrlo   r0, [r1], #4
+	strlo   r0, [r2], #4
 	blo     1b
 
 	/* clear .bss  */

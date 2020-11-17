@@ -28,8 +28,10 @@
 #define CONTROL_nPRIV      (1 << 0)
 #define CONTROL_SPSEL      (1 << 1)
 
+
 #define EXC_RETURN_THREAD  (1 << 1)
 #define EXC_RETURN_SPSEL   (1 << 2)
+
 
 /* --------------------------------------------------------------------------
  * ThinkOS - Real Time Scheduler 
@@ -47,12 +49,6 @@
 cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
-	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
-
-	.thumb_func
-thinkos_krn_scheduler:
-	.global tinkos_krn_scheduler
-	.type   thinkos_krn_scheduler, %function
 
 	/* r3: thinkos_rt */
 	ldr.n    r3, .L_thinkos_rt
@@ -64,9 +60,11 @@ thinkos_krn_scheduler:
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-	cmp      r2, THINKOS_THREAD_IDLE
+	cmp      r2, #(THINKOS_THREAD_IDLE)
+
 	/* skip invalid ... */
 	bgt      thinkos_sched_select_ready
+.L_entry_idle:
 	ittt     eq
 	pusheq   {r4-r11}
     moveq    r0, sp
@@ -82,6 +80,12 @@ thinkos_krn_scheduler:
 	ble      .L_stack_err 
 #endif
 	stmdb    r0!, {r4-r11}
+
+
+
+
+
+
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	mrs      r7, CONTROL
@@ -122,23 +126,13 @@ thinkos_sched_swap:
 thinkos_sched_select_ready:
 	/* r1 - ready queue
 	   r2 - old thread id */
-	cbz      r1, .L_exit_idle
+	cbz      r1, .L_ready_queue_empty
 	/* get a thread from the ready bitmap by counting the
 	leading zeros on the bitmap */
 	rbit     r1, r1
  	clz      r1, r1
 
 thinkos_krn_sched_ctx_get:
-
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	/* load the new thread id and stack limit */
-	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
-	ldr.w	 r12, [r7, r1, lsl #2]
-	/* get the effective thread id */
-	ands     r1, r12, #0x3f
-#endif
-	/* load the new context pointer from the context vector */
-	ldr.w	 r0, [r3, r1, lsl #2]
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
@@ -151,6 +145,17 @@ thinkos_sched_step_req_check:
 	bne.n    thinkos_sched_step
 #endif
 
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* load the new thread id and stack limit */
+	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
+	ldr.w	 r12, [r7, r1, lsl #2]
+	/* get the effective thread id */
+	ands     r1, r12, #0x3f
+#endif
+	/* load the new context pointer from the context vector */
+	ldr.w	 r0, [r3, r1, lsl #2]
+
+	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 	.thumb_func
 thinkos_krn_sched_ctx_restore:
@@ -179,16 +184,40 @@ thinkos_krn_sched_ctx_restore:
 	bics     r12, r0, #CONTROL_MSK
 
 .L_exit_usr:
+
+
+
+
+
+
+
+
+
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+
 	/* restore core context */
 	ldmia    r12!, {r4-r11}
 	msr      PSP, r12
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
-	bl        thinkos_sched_dbg
-#endif
-	mov      lr, #CM3_EXC_RET_THREAD_PSP
+	b        thinkos_sched_dbg
+#else
 	bx       lr
+#endif
+
+.L_ready_queue_empty:
+
+
+
+
+
+
+
+
+
+
+
 
 .L_exit_idle:
     /* set the control register */
@@ -196,7 +225,7 @@ thinkos_krn_sched_ctx_restore:
     isb
 	movs     r1, #THINKOS_THREAD_IDLE
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-#if (THINKOS_ENABLE_SCHED_DEBUG)
+#if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
     ldr.w    r0, [r3, r1, lsl #2]
     cmp      sp, r0
@@ -204,27 +233,30 @@ thinkos_krn_sched_ctx_restore:
 #endif
 	/* restore core context */
 	pop      {r4-r11}
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
-	bl       thinkos_sched_dbg
-#endif
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_MSP
+	b        thinkos_sched_dbg
+#else
 	bx       lr
+#endif
 
 .L_idle_return:
 	bx       lr
-#if (THINKOS_ENABLE_SCHED_DEBUG)
+#if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_err: 
 	movs    r0, #THINKOS_ERR_IDLE_STACK
-	b       thinkos_krn_xcpt_raise
+	b       thinkos_krn_sched_err
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
+#if (THINKOS_ENABLE_SCHED_ERROR)
 	movs    r0, #THINKOS_ERR_STACK_LIMIT
-	b       thinkos_krn_xcpt_raise
+	b       thinkos_krn_sched_err
+#endif
 #endif
 
 	.align  0
@@ -235,7 +267,6 @@ thinkos_krn_sched_ctx_restore:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 #endif
 	.size   thinkos_krn_sched_ctx_restore, . - thinkos_krn_sched_ctx_restore
-	.size   thinkos_krn_scheduler, . - thinkos_krn_scheduler
 
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
@@ -249,6 +280,17 @@ thinkos_sched_step:
 	/* r2: old thread id */
 	/* r3: thinkos_rt */
 	/* r4: (1 << new_thread_id) */
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* load the new thread id and stack limit */
+	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
+	ldr.w	 r12, [r7, r1, lsl #2]
+	/* get the effective thread id */
+	ands     r1, r12, #0x3f
+#endif
+	/* load the new context pointer from the context vector */
+	ldr.w	 r0, [r3, r1, lsl #2]
+
 	ldr      r6, [r3, #THINKOS_RT_STEP_SVC_OFFS]	
 	/* r6: step_svc */
 	tst      r4, r6
@@ -334,16 +376,4 @@ thinkos_sched_step:
 
 	.size   thinkos_sched_step, . - thinkos_sched_step
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
-
-
-/* FIXME: this is a hack to force linking this file. 
- The linker then will override the weak alias for the cm3_hard_fault_isr() */
-	.align 4
-	.global	thinkos_sch_nm
-	.section .rodata
-	.type   thinkos_sch_nm, %object
-	.size   thinkos_sch_nm, 4
-thinkos_sch_nm:
-	.ascii	"SCH\000"
-
 

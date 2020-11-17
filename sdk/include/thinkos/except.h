@@ -63,8 +63,14 @@
   #define THINKOS_EXCEPT_CONTEXT_OFFS 48
 #endif
 
+/*
 #define SIZEOF_THINKOS_EXCEPT (THINKOS_EXCEPT_CONTEXT_OFFS + \
 							   (SIZEOF_THINKOS_CONTEXT))
+*/
+
+#define SIZEOF_THINKOS_EXCEPT (THINKOS_EXCEPT_CONTEXT_OFFS + \
+							   (SIZEOF_THINKOS_BASIC_CONTEXT))
+
 
 #ifndef __ASSEMBLER__
 /* -------------------------------------------------------------------------- 
@@ -128,13 +134,9 @@ struct thinkos_except {
 	uint32_t  cyccnt;    
 #endif
 
-#if (THINKOS_ENABLE_FPU) 
-	struct thinkos_fp_context ctx;
-#else
 	struct {
 		struct thinkos_context core;
 	} ctx;
-#endif
 
 };
 
@@ -206,8 +208,6 @@ int __xcpt_next_active_irq(int this_irq);
 void __xcpt_systick_int_disable(void);
 
 void __xcpt_systick_int_enable(void);
-
-void __exception_reset(void);
 
 const char * __retstr(uint32_t __ret);
 

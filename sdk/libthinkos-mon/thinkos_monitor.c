@@ -470,8 +470,12 @@ void __thinkos_monitor_on_reset(void)
 {
 	struct monitor_swap * swap;
 	uint32_t * sp;
+	uint32_t idx;
 
-	sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
+	idx = (sizeof(thinkos_monitor_stack) - 
+		   sizeof(struct monitor_swap)) / sizeof(uint32_t);
+
+	sp = &thinkos_monitor_stack[idx];
 	thinkos_rt.monitor.ctx = sp;
 	
 	swap = (struct monitor_swap *)sp;
@@ -518,13 +522,15 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 void monitor_soft_reset(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+#if 0
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
 	__thinkos_irq_disable_all();
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"2. Core reset..."   _ATTR_POP_); 
-	__thinkos_core_reset();
+			"2. Kernel core reset..."   _ATTR_POP_); 
+	__thinkos_krn_core_reset(krn);
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
@@ -534,7 +540,9 @@ void monitor_soft_reset(void)
 
 	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
 			"4. Send soft reset signal"  _ATTR_POP_);
+#endif
 
+	thinkos_krn_core_reset(krn);
 	monitor_signal(MONITOR_SOFTRST); 
 }
 

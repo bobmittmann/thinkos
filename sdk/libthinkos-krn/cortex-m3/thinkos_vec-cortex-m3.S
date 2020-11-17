@@ -37,12 +37,13 @@
 
 #define SIZEOF_ARMV7M_BASIC_FRAME (8 *4)
 
+	.extern _stack
+
 	.syntax unified
 	.cpu cortex-m3
 
 	.section .core_vectors, "ax", %progbits
 	.align	2
-__rom_vectors:
 __core_vectors:
 	.global __core_vectors
 	.type __core_vectors, %object
@@ -84,12 +85,12 @@ cm3_hard_fault_isr:
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
 #endif
 
-	.global	thinkos_krn_xcpt_raise
+	.global	__thinkos_krn_xcpt
 	.thumb
 	.thumb_func
-	.type	thinkos_krn_xcpt_raise, %function
+	.type	__thinkos_krn_xcpt, %function
 
-thinkos_krn_xcpt_raise:
+__thinkos_krn_xcpt:
 /* ThinkOS except processing:
 
 	 1. Collect the special-purpose registers
@@ -191,21 +192,30 @@ thinkos_krn_xcpt_raise:
 	str     r0, [r2, #SCB_ICSR_OFFS]
 
 	ldr     r2, .L_thinkos_rt
-	ldr     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
-	str     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
-
 	ldr     r0, [r2, #THINKOS_RT_READY_OFFS]
 	str     r0, [r3, #THINKOS_EXCEPT_READY_OFFS]
+	ldr     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
+
+	str     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
 
 	/* Prepare to return */
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	ands    r0, #0x3f
+#endif
+	cmp     r0, #THINKOS_THREAD_IDLE
+	beq     .L_idle_fault
+
 	movs    r0, #THINKOS_THREAD_VOID
 	str     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
 	/* Force clearing the ready queue */
 	movs    r0, #0
 	str     r0, [r2, #THINKOS_RT_READY_OFFS]
-	/* Set CONTROL to 0 */
-    msr     CONTROL, r0
-    isb
+#if (THINKOS_ENABLE_TIMESHARE)
+	str     r0, [r2, #THINKOS_RT_WQTMSAHRE_OFFS]
+#endif
+#if (THINKOS_ENABLE_CLOCK)
+	str     r0, [r2, #THINKOS_RT_WQCLK_OFFS]
+#endif
 
 #if (THINKOS_ENABLE_PROFILING)
 	ldr     r0, [r2, #THINKOS_RT_CYCREF_OFFS]
@@ -226,45 +236,66 @@ thinkos_krn_xcpt_raise:
 	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
 
 	/* Exception on interrupt handler ? */
-	ands    r1, #SCB_ICSR_RETTOBASE 
-	beq     .L_reset_idle
+	tst     r1, #SCB_ICSR_RETTOBASE 
+	beq     .L_no_rettobase
 
 	/* Exception returns to idle thread ? */
 	cmp     lr, #CM3_EXC_RET_THREAD_MSP
-	beq     .L_reset_idle
+	beq     .L_ret_msp
 
-	/* Exception on idle thread ? */
-	ldr     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
-	cmp     r2, #THINKOS_THREAD_IDLE
-	beq     .L_reset_idle
 
 	/* Load the idle context pointer from the context vector */
-	ldr     r2, .L_thinkos_rt
-	ldr     r7, [r2, #THINKOS_THREAD_IDLE * 4]
+	ldr     r6, .L_thinkos_rt
+	ldr     r7, [r6, #THINKOS_THREAD_IDLE * 4]
 	/* Check for stack availability */
 	cmp     r7, r3
-	ble     .L_reset_idle
-
+	ble     .L_no_stack
 
 	/* Restore idle core context */
-	mov     sp, r7
+	cmp     r7, sp
+	bne     .L_idle_unstack
+
+	ldrb    r1, [r0, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
+
 	pop     {r4-r11}
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
 	b       thinkos_krn_thread_except
 
+.L_no_rettobase:
+	mov     r4, #THINKOS_ERR_KRN_NORETTOBASE    
+	b       .L_reset_idle
+
+.L_ret_msp:
+	mov     r4, #THINKOS_ERR_KRN_RETMSP
+	b       .L_reset_idle
+
+.L_idle_fault:
+	mov     r4, #THINKOS_ERR_KRN_IDLEFAULT
+	b       .L_reset_idle
+
+.L_no_stack:
+	mov     r4, #THINKOS_ERR_KRN_STACKOVF
+	b       .L_reset_idle
+
+.L_idle_unstack:
+	mov     r4, #THINKOS_ERR_KRN_UNSTACK
+
 .L_reset_idle:
 	/* Reset the exception stack */
 	bl      thinkos_krn_idle_reset
 	mov     sp, r0
 	ldr     r0, .L_xcpt_buf
+	mov     r1, r4
 	/* Restore idle core context */
 	pop     {r4-r11}
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the fatal exception handler */
 	b       thinkos_krn_fatal_except
+
+
 
 	.align  2
 .L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
@@ -276,7 +307,7 @@ thinkos_krn_xcpt_raise:
 .L_cm3_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 
-	.size   thinkos_krn_xcpt_raise, . - thinkos_krn_xcpt_raise
+	.size   __thinkos_krn_xcpt, . - __thinkos_krn_xcpt
 
 #if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb
@@ -287,7 +318,7 @@ thinkos_krn_xcpt_raise:
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
 	movs   r0, #THINKOS_ERR_BUS_FAULT
-	b      thinkos_krn_xcpt_raise
+	b      __thinkos_krn_xcpt
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
@@ -308,11 +339,11 @@ cm3_usage_fault_isr:
 	ldr     r3, .L_cm3_scb
 	ldr     r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
 	tst     r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
-	beq     thinkos_krn_xcpt_raise
+	beq     __thinkos_krn_xcpt
 	/* Code running from the process stack (non-privileged) causes a fault.
 	   (Select the context stack according to the content of LR */
 	tst     lr, #4
-	bne     thinkos_krn_xcpt_raise
+	bne     __thinkos_krn_xcpt
 	/* Get the call frame stack */
 	mov     r0, sp
 	/* Get PC from the stack */
@@ -325,7 +356,7 @@ cm3_usage_fault_isr:
 	/* Call the kernel service demultiplexer */
 	b       thinkos_krnsvc_isr
 #else
-	b       thinkos_krn_xcpt_raise
+	b       __thinkos_krn_xcpt
 #endif
 
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
@@ -339,7 +370,7 @@ cm3_usage_fault_isr:
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
 	movs   r0, #THINKOS_ERR_MEM_MANAGE
-	b      thinkos_krn_xcpt_raise
+	b      __thinkos_krn_xcpt
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
 

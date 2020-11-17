@@ -41,6 +41,7 @@ __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
 
+EXTERN(_reset)
 EXTERN(_stack)
 EXTERN(_reset)
 EXTERN(ice_comm_blk)

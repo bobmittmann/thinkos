@@ -262,10 +262,17 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 	return THINKOS_SYSCALL0(THINKOS_THREAD_SELF);
 }
 
-static inline int __attribute__((always_inline)) 
+static inline int 
 thinkos_thread_init(unsigned int thread, 
-					struct thinkos_thread_initializer * ini) {
-	return THINKOS_SYSCALL2(THINKOS_THREAD_INIT, thread, ini);
+                    struct thinkos_thread_initializer * ini) {
+
+	register uint32_t ret asm("r0");
+	register void * ptr asm("r1") = (void *)ini;
+
+	asm volatile (ARM_SVC(THINKOS_THREAD_INIT) : 
+				  "=r"(ret) : "0"(thread), "r"(ptr) : "memory" );
+
+	return ret;
 }
 
 static inline int 

@@ -72,6 +72,7 @@ static int __thinkos_alloc_lo(uint32_t * ptr, int start)
 
 	/* Look for an empty bit MSB first */
 	idx = __thinkos_ffs(~(bmp >> start)) + start;
+
 	if (idx >= 32)
 		return THINKOS_ENOMEM;
 	/* Mark as used */
@@ -105,7 +106,6 @@ static int __thinkos_hilo_alloc(uint32_t bmp[], int max, int tgt_idx)
 	} else {
 		/* Look for the next available slot */
 		idx = __thinkos_alloc_lo(bmp, tgt_idx);
-		DCC_LOG1(LOG_TRACE, "alloc_lo(): idx = %d", idx);
 		if (idx < 0)
 			idx = __thinkos_alloc_hi(bmp, tgt_idx);
 	}
@@ -162,14 +162,10 @@ static uint32_t * const thinkos_obj_alloc_lut[] = {
 #endif
 };
 
-static const uint16_t thinkos_wq_base_lut[] = {
-	[THINKOS_OBJ_READY]     = THINKOS_WQ_READY,
-#if (THINKOS_ENABLE_TIMESHARE)
-	[THINKOS_OBJ_TMSHARE]   = THINKOS_WQ_TMSHARE,
-#endif
-#if (THINKOS_ENABLE_CLOCK)
-	[THINKOS_OBJ_CLOCK]     = THINKOS_WQ_CLOCK,
-#endif
+static const uint16_t thinkos_obj_base_lut[] = {
+	[THINKOS_OBJ_READY]     = 1,
+	[THINKOS_OBJ_TMSHARE]   = 0,
+	[THINKOS_OBJ_CLOCK]     = 0,
 #if (THINKOS_MUTEX_MAX) > 0
 	[THINKOS_OBJ_MUTEX]     = THINKOS_MUTEX_BASE,
 #endif
@@ -221,7 +217,7 @@ bool __thinkos_obj_alloc_check(unsigned int oid)
 	}
 
 	bmp = thinkos_obj_alloc_lut[kind];
-	base = thinkos_wq_base_lut[kind];
+	base = thinkos_obj_base_lut[kind];
 	idx = oid - base;
 	max = thinkos_obj_cnt_lut[kind];
 	if (idx >= max) {
@@ -306,25 +302,27 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 
 	bmp = thinkos_obj_alloc_lut[kind];
 	max = thinkos_obj_cnt_lut[kind];
-	base = thinkos_wq_base_lut[kind];
+	base = thinkos_obj_base_lut[kind];
 
 #endif
 
-	DCC_LOG3(LOG_TRACE, "kind=%d base=%d max=%d", kind, base, max);
+	DCC_LOG3(LOG_MSG, "kind=%d base=%d max=%d", kind, base, max);
 
 	if (kind == THINKOS_OBJ_READY) {
 		int32_t tgt_idx = arg[1];
 
 		tgt_idx -= 1;  
-		DCC_LOG1(LOG_TRACE, "tgt_idx = %d", tgt_idx);
+		DCC_LOG1(LOG_MSG, "tgt_idx = %d", tgt_idx);
 
-		idx = __thinkos_hilo_alloc(bmp, max, tgt_idx);
+		if ((idx = __thinkos_hilo_alloc(bmp, max, tgt_idx)) >= 0) {
+			idx += base;
+		}
 	} else {
 		if ((idx = __thinkos_bmp_alloc(bmp, max)) >= 0) {
 			idx += base;
 		} 
 	}
-	DCC_LOG1(LOG_TRACE, "idx = %d", idx);
+	DCC_LOG1(LOG_MSG, "idx = %d", idx);
 	arg[0] = idx;
 }
 
@@ -449,7 +447,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 	{
 		unsigned int base;
 		bmp = thinkos_obj_alloc_lut[kind];
-		base = thinkos_wq_base_lut[kind];
+		base = thinkos_obj_base_lut[kind];
 		idx = oid - base;
 #if (THINKOS_ENABLE_ARG_CHECK)
 		max = thinkos_obj_cnt_lut[kind];

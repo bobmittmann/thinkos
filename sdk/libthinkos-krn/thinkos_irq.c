@@ -31,7 +31,8 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-extern int __sizeof_rom_vectors;
+extern void * __vcts_start;
+extern void * __vcts_end;
 
 #ifdef CM3_RAM_VECTORS
 extern void * __ram_vectors[];
@@ -41,11 +42,19 @@ extern void * __ram_vectors[];
 void __thinkos_irq_reset_all(void)
 {
 	int irq;
+
 	/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
 	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
 		cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
 		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 	}
+
+#ifdef CM3_RAM_VECTORS
+	__thinkos_memcpy(__ram_vectors, __vcts_start, 
+					 __vcts_end - __vcts_start);
+	/* Remap the Vector table to SRAM */
+	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
+#endif
 }
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
@@ -77,6 +86,11 @@ void __thinkos_irq_disable_all(void)
 	}
 }
 #endif
+
+void __thinkos_irq_init(void)
+{
+	__thinkos_irq_reset_all();
+}
 
 #if (THINKOS_IRQ_MAX) > 0
 void cm3_default_isr(unsigned int irq)
@@ -232,10 +246,8 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 	unsigned int irq = arg[1];
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-	unsigned int irq_max = ((uintptr_t)&__sizeof_rom_vectors / 
-							sizeof(void *)) - 16;
 
-	if (irq >= irq_max) {
+	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
@@ -311,7 +323,4 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 		break;
 	}
 }
-
-const char thinkos_irq_nm[] = "IRQ";
-
 

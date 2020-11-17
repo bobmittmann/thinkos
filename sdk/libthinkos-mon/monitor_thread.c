@@ -50,11 +50,9 @@ void __attribute__((noreturn)) __monitor_thread_exit_stub(int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
 
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-//	monitor_signal_thread_terminate(0, code);
-#endif
+	monitor_signal_thread_terminate(0, code);
 
-	thinkos_abort();
+//	thinkos_abort();
 	for(;;);
 }
 
@@ -68,7 +66,7 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 
 	thread_idx = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
 
-#if 1
+#if 0
 	if (__thinkos_thread_ctx_is_valid(thread_idx)) {
 		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
 				 thread_idx + 1, __thinkos_thread_ctx_get(thread_idx));
@@ -134,7 +132,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	(void)thread_id;
 
 	/* return in case of fault or abort */	
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_KRN_FAULT);
 	sigmask |= (1 << MONITOR_KRN_ABORT);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
@@ -166,6 +164,17 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 		case MONITOR_RX_PIPE:
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
+
+		case MONITOR_THREAD_TERMINATE: {
+			monitor_clear(MONITOR_THREAD_TERMINATE);
+			int code;
+
+			thread_id = monitor_thread_terminate_get(&code);
+			(void)code; 
+			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
+					thread_id, code);
+			return code;
+		}
 
 		default:
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);

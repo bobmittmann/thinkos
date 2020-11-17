@@ -111,11 +111,11 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_FAULT_ENABLE
-#define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
+#define MONITOR_FAULT_ENABLE       1
 #endif
 
 #ifndef MONITOR_EXCEPTION_ENABLE
-#define MONITOR_EXCEPTION_ENABLE   THINKOS_ENABLE_EXCEPTIONS
+#define MONITOR_EXCEPTION_ENABLE   1
 #endif
 
 #ifndef BOOT_ENABLE_THIRD
@@ -336,7 +336,6 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get();
-
 	monitor_thread_inf_get(thread_id, &inf);
 
 	//__thinkos_pause_all();
@@ -348,31 +347,36 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 		DCC_LOG(LOG_TRACE, "COMM connected!");
 		monitor_printf(comm, s_crlf);
 		monitor_printf(comm, s_hr);
-		monitor_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-						  thinkos_err_name_lut[inf.errno],
-						  inf.thread_id + 1,
-						  inf.errno,
-						  inf.pc);
-		if (xcpt->errno != THINKOS_NO_ERROR)
+		if (inf.errno == THINKOS_NO_ERROR) {
+			monitor_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+					   thinkos_err_name_lut[xcpt->errno],
+					   inf.thread_id + 1,
+					   inf.errno,
+					   inf.pc);
 			monitor_print_exception(comm, xcpt);
-		else
+		} else {
+			monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+					   thinkos_err_name_lut[inf.errno],
+					   inf.thread_id + 1,
+					   inf.errno,
+					   inf.pc);
 			monitor_print_thread(comm, thread_id);
+		}
 		monitor_printf(comm, s_hr);
 
 	}
 
-	__thinkos_thread_errno_set(thread_id, 0);
-	__thinkos_thread_resume(thread_id);
-
+//	__thinkos_thread_errno_set(thread_id, 0);
+//	__thinkos_thread_resume(thread_id);
 	/* turn the scheduler back on */
-	thinkos_krn_sched_on();
+//	thinkos_krn_sched_on();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
 
 #endif
 
-static void monitor_on_krn_except(const struct monitor_comm * comm)
+static void monitor_on_krn_fault(const struct monitor_comm * comm)
 {
 	struct monitor_thread_inf inf;
 	int thread_id;
@@ -675,6 +679,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_SELFTEST_ENABLE)
 	case CTRL_E:
 		monitor_printf(comm, "^E\r\n");
+
 		break;
 #endif
 #if (MONITOR_BREAKPOINT_ENABLE)
@@ -823,9 +828,11 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	sigmask |= (1 << MONITOR_KRN_ABORT);
 #if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
+	sigmask |= (1 << MONITOR_KRN_FAULT);
 #endif
 	sigmask |= (1 << MONITOR_COMM_RCV);
+	sigmask |= (1 << MONITOR_COMM_BRK);
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
@@ -862,12 +869,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
-		case MONITOR_KRN_ABORT:
-			monitor_clear(MONITOR_KRN_ABORT);
-			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			break;
-
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		case MONITOR_RESET:
 			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
@@ -875,6 +876,14 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			monitor_clear(MONITOR_RESET);
 			break;
 #endif
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG(LOG_TRACE, "/!\\ KRN_ABORT signal...");
+			board->softreset();
+#if (THINKOS_ENABLE_CONSOLE)
+			goto is_connected;
+#endif
+			break;
 
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
@@ -997,22 +1006,22 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #if (MONITOR_EXCEPTION_ENABLE)
 		case MONITOR_THREAD_FAULT:
 			monitor_clear(MONITOR_THREAD_FAULT);
-			DCC_LOG(LOG_TRACE, "Thread fault.");
+			DCC_LOG(LOG_TRACE, "Thread fault !.");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			monitor_on_thread_fault(comm);
 			break;
 
-#endif
-		case MONITOR_KRN_EXCEPT:
-			monitor_clear(MONITOR_KRN_EXCEPT);
-			DCC_LOG(LOG_TRACE, "System exception.");
+		case MONITOR_KRN_FAULT:
+			monitor_clear(MONITOR_KRN_FAULT);
+			DCC_LOG(LOG_TRACE, "!! Kernel fault !!");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
-			monitor_on_krn_except(comm);
+			monitor_on_krn_fault(comm);
 			break;
+#endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 		case MONITOR_BREAKPOINT:

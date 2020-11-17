@@ -75,7 +75,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 
 	board = (const struct thinkos_board *)arg;
 
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_KRN_FAULT);
 	sigmask |= (1 << MONITOR_KRN_ABORT);
 	sigmask |= (1 << MONITOR_SOFTRST);
 	sigmask |= (1 << MONITOR_COMM_BRK);
@@ -193,7 +193,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 
 	sigmask |= (1 << MONITOR_SOFTRST);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_KRN_FAULT);
 	sigmask |= (1 << MONITOR_COMM_BRK);
 	sigmask |= (1 << MONITOR_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE

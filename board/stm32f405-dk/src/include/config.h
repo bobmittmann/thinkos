@@ -92,14 +92,14 @@
 
 /* Enable scheduler trace calls */
 #if DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG      1
+#define THINKOS_ENABLE_SCHED_DEBUG      0
 #else
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 #endif
 
 /* Enable scheduler stack error detection */
 #if DEBUG
-#define THINKOS_ENABLE_SCHED_ERROR      1
+#define THINKOS_ENABLE_SCHED_ERROR      0
 #else
 #define THINKOS_ENABLE_SCHED_ERROR      0
 #endif
@@ -113,7 +113,7 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR          1
 #define THINKOS_ENABLE_MONITOR_THREADS  1
-#define THINKOS_ENABLE_MONITOR_CLOCK    1
+#define THINKOS_ENABLE_MONITOR_CLOCK    0
 #define THINKOS_ENABLE_MONITOR_SCHED    0
 #define THINKOS_ENABLE_MONITOR_SYSCALL  0
 #define THINKOS_MONITOR_STACK_SIZE      1024
@@ -184,7 +184,7 @@
 #define THINKOS_ENABLE_APP_CRC              1
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
-#define THINKOS_APP_TAG                     "S32F405"
+#define THINKOS_CUSTOM_APP_TAG                     "S32F405"
 //#define THINKOS_APP_TAG                     {0x334d5453, 0x30344632, 0x004b4435}
 
 /* -------------------------------------------------------------------------

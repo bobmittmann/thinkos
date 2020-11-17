@@ -42,7 +42,7 @@
 
 	.text
 
-	.align	4
+	.align	3
 	.thumb
 
 	.thumb_func
@@ -144,7 +144,6 @@ thinkos_sched_step_req_check:
 	tst      r5, r4
 	bne.n    thinkos_sched_step
 #endif
-	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* load the new thread id and stack limit */
@@ -156,6 +155,7 @@ thinkos_sched_step_req_check:
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]
 
+	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
 	.thumb_func
 thinkos_krn_sched_ctx_restore:
@@ -195,7 +195,6 @@ thinkos_krn_sched_ctx_restore:
 #else
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 #endif
-
 	/* restore core context */
 	ldmia    r12!, {r4-r11}
 	msr      PSP, r12
@@ -226,7 +225,7 @@ thinkos_krn_sched_ctx_restore:
     isb
 	movs     r1, #THINKOS_THREAD_IDLE
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-#if (THINKOS_ENABLE_SCHED_DEBUG)
+#if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
     ldr.w    r0, [r3, r1, lsl #2]
     cmp      sp, r0
@@ -246,16 +245,18 @@ thinkos_krn_sched_ctx_restore:
 
 .L_idle_return:
 	bx       lr
-#if (THINKOS_ENABLE_SCHED_DEBUG)
+#if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_err: 
 	movs    r0, #THINKOS_ERR_IDLE_STACK
-	b       thinkos_krn_xcpt_raise
+	b       thinkos_krn_sched_err
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
+#if (THINKOS_ENABLE_SCHED_ERROR)
 	movs    r0, #THINKOS_ERR_STACK_LIMIT
-	b       thinkos_krn_xcpt_raise
+	b       thinkos_krn_sched_err
+#endif
 #endif
 
 	.align  0

@@ -62,17 +62,38 @@
 #define THINKOS_ERR_APP_DATA_INVALID   50
 #define THINKOS_ERR_APP_CODE_INVALID   51
 #define THINKOS_ERR_APP_BSS_INVALID    52
-#define THINKOS_ERR_MAX                53
+
+#define THINKOS_ERR_KRN_NORETTOBASE    53
+#define THINKOS_ERR_KRN_RETMSP         54
+#define THINKOS_ERR_KRN_IDLEFAULT      55
+#define THINKOS_ERR_KRN_STACKOVF       56
+#define THINKOS_ERR_KRN_UNSTACK        57
+
+#define THINKOS_ERR_MAX                58
 
 #ifndef __ASSEMBLER__
 
+void thinkos_krn_syscall_err(int errno, unsigned int thread_idx);
+
+#if (THINKOS_ENABLE_ERROR_TRAP)
+  #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_syscall_err(__CODE, __TH)
+#else
+  #define __THINKOS_ERROR(__TH, __CODE)
+#endif
+
 extern const char thinkos_err_name_lut[THINKOS_ERR_MAX][12];
+
+static inline char const * thinkos_krn_eertag(unsigned int errno)
+{
+	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
+}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 char const * thinkos_krn_strerr(unsigned int errno);
+
 
 #ifdef __cplusplus
 }

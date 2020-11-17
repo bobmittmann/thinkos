@@ -111,7 +111,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 		}
 	}
 #endif
-	if (stack_top & 0x0000000f) {
+	if (stack_top & 0x00000007) {
 		DCC_LOG1(LOG_PANIC, "sp=%08x unaligned", stack_top); 
 		return THINKOS_ERR_THREAD_STACKALIGN;
 	}
@@ -162,8 +162,10 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	__thread_ctx_set(krn, thread_idx, ctx, ctrl);
 
 	if (paused) {
+		DCC_LOG1(LOG_TRACE, "<%d> thread paused...", thread_idx + 1);
 		__thread_pause_set(krn, thread_idx);
 	} else {
+		DCC_LOG1(LOG_TRACE, "<%d> thread ready...", thread_idx + 1);
 		__thread_wq_ready_insert(krn, thread_idx);
 		__thinkos_defer_sched();
 	}
@@ -195,7 +197,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	}
 
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (__thread_is_alloc(krn, thread_idx)) {
+	if (!__thread_is_alloc(krn, thread_idx)) {
 		DCC_LOG1(LOG_ERROR, "thread alloc %d!", thread_no);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;

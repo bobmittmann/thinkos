@@ -294,14 +294,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
  */
 
 /**
- * thinkos_krn_mpu_init() - Initializes Memory Protection Unit (MPU).
- * @krn_offs: Kernel RAM memory reserved space address
- * @krn_size:  Kernel RAM memory reserved space size
- * 
- */
-void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
-
-/**
  * thinkos_krn_userland() - Switch processor to user mode.
  *
  */

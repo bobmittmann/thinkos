@@ -168,6 +168,18 @@
   #define SIZEOF_BREAK_ID  0
 #endif
 
+#if (THINKOS_ENABLE_TIMESHARE)
+  #define SIZEOF_WQTMSHARE 4
+#else
+  #define SIZEOF_WQTMSHARE 0
+#endif
+
+#if (THINKOS_ENABLE_CLOCK)
+  #define SIZEOF_WQCLK 4
+#else
+  #define SIZEOF_WQCLK 0
+#endif
+
 #define THINKOS_RT_TH_CTX_OFFS         0
 #define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_TH_CTX_OFFS + SIZEOF_TH_CTX)
 #define THINKOS_RT_IDLE_CTX_OFFS   (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
@@ -183,6 +195,8 @@
 #define THINKOS_RT_CRITCNT_OFFS    (THINKOS_RT_BREAK_ID_OFFS + SIZEOF_BREAK_ID)
 #define THINKOS_RT_ACTIVE_OFFS     (THINKOS_RT_CRITCNT_OFFS + SIZEOF_CRITCNT)
 #define THINKOS_RT_READY_OFFS      ((THINKOS_RT_ACTIVE_OFFS) + 4)
+#define THINKOS_RT_WQTMSAHRE_OFFS  ((THINKOS_RT_READY_OFFS) + SIZEOF_WQTMSHARE)
+#define THINKOS_RT_WQCLK_OFFS      ((THINKOS_RT_WQTMSAHRE_OFFS) + SIZEOF_WQCLK)
 
 
 /* Mark for kernel breakpoint numbers. Breakpoints above this
@@ -616,9 +630,6 @@ struct thinkos_thread_create_args {
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
 
-/* Offset in the error assignment to allow for system exceptions */
-#define THINKOS_ERR_OFF    16
-
 /* -------------------------------------------------------------------------- 
  * Idle thread
  * --------------------------------------------------------------------------*/
@@ -659,14 +670,6 @@ void __thinkos_thread_abort(unsigned int thread_id);
 /* -------------------------------------------------------------------------- 
  * Support Functions
  * --------------------------------------------------------------------------*/
-
-void thinkos_krn_svc_err(unsigned int th, int code);
-
-#if (THINKOS_ENABLE_ERROR_TRAP)
-  #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_svc_err(__TH, __CODE)
-#else
-  #define __THINKOS_ERROR(__TH, __CODE)
-#endif
 
 /* set a bit in a bit map atomically */
 static inline void __attribute__((always_inline)) 
@@ -1099,7 +1102,6 @@ __thread_errno_clr(struct thinkos_rt * krn, unsigned int idx) {
 #endif
 }
 
-
 static inline void __attribute__((always_inline))
 __thread_cyccnt_clr(struct thinkos_rt * krn, unsigned int idx) {
 #if (THINKOS_ENABLE_PROFILE)
@@ -1493,9 +1495,10 @@ int __thinkos_thread_alloc(int target_id);
 
 void __krn_alloc_init(struct thinkos_rt * krn);
 
-void thinkos_krn_abort(struct thinkos_rt * krn);
-
 void thinkos_krn_kill_all(struct thinkos_rt * krn);
+
+void __thinkos_krn_core_init(struct thinkos_rt * krn);
+
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 
@@ -1530,8 +1533,6 @@ void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
 
 unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
 
-void __thinkos_core_reset(void);
-
 void __thinkos_system_reset(void);
 
 void __thinkos_sched_stop(void);
@@ -1539,8 +1540,6 @@ void __thinkos_sched_stop(void);
 uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len);
 
 uint32_t __thinkos_crc32_u8(const void * __buf, unsigned int __len); 
-
-bool __thinkos_mem_usr_rd_chk(uint32_t addr, uint32_t size);
 
 /* -------------------------------------------------------------------------- 
  * Scheduler 
@@ -1586,10 +1585,13 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 					void * arg, bool paused);
 
 /* User read and write memory access check */
-bool __thinkos_mem_usr_rw_chk(uintptr_t addr, uint32_t size);
+bool __thinkos_mem_usr_rw_chk(uintptr_t addr, int32_t size);
 
 /* User read and execute memory access check */
-bool __thinkos_mem_usr_rx_chk(uintptr_t addr, uint32_t size);
+bool __thinkos_mem_usr_rx_chk(uintptr_t addr, int32_t size);
+
+/* User read memory access check */
+bool __thinkos_mem_usr_rd_chk(uint32_t addr, int32_t size);
 
 /* -------------------------------------------------------------------------
  * System timer 
@@ -1603,6 +1605,18 @@ void thinkos_krn_systick_init(void);
 void __attribute__((noreturn)) thinkos_krn_sysrst(void);
 
 void thinkos_krn_udelay_calibrate(void);
+
+/**
+ * thinkos_krn_mpu_init() - Initializes Memory Protection Unit (MPU).
+ * @krn_offs: Kernel RAM memory reserved space address
+ * @krn_size:  Kernel RAM memory reserved space size
+ * 
+ */
+void thinkos_krn_mpu_init(uint32_t code_start, uint32_t code_end, 
+						  uint32_t data_start,  uint32_t data_end);
+
+
+void thinkos_krn_core_reset(struct thinkos_rt * krn);
 
 #ifdef __cplusplus
 }

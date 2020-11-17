@@ -149,6 +149,7 @@ void __xdump(struct thinkos_except * xcpt)
 				 ipsr, ipsr - 16);
 	}
 
+#if 0
 #if (THINKOS_ENABLE_FPU)
 	if ((xcpt->ret & CM3_EXC_RET_nFPCA) == 0) {
 		DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
@@ -173,6 +174,7 @@ void __xdump(struct thinkos_except * xcpt)
 	} else {
 		DCC_LOG(LOG_ERROR, "EXC_RETURN.nFPCA=0");
 	}
+#endif
 #endif
 
 	ctrl = xcpt->ctrl;
@@ -242,7 +244,7 @@ void __xdump(struct thinkos_except * xcpt)
 			 __scan_stack((void *)stack, size), thinkos_except_stack_size); 
 	}
 #endif
-	DCC_LOG1(LOG_ERROR, "exceptions count: %d", xcpt->seq); 
+	DCC_LOG1(LOG_ERROR, "exceptions count: %d", xcpt->seq - xcpt->ack); 
 
 #endif
 }

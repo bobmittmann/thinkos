@@ -66,7 +66,7 @@ ifneq ($(findstring $(MACH), stm32f429xg stm32f429xe stm32f429xi),)
 endif
 
 ifneq ($(findstring $(MACH), stm32f415xg),)
-  CPU = cortex-m3
+  CPU = cortex-m4
   STM32 = stm32f4x
   STM32_APP_CODE = 0x08020000
   STM32_APP_DATA = 0x20002000

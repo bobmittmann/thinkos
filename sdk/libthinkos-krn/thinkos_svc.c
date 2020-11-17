@@ -634,26 +634,3 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 
 };
 
-void thinkos_krn_svc_err(unsigned int thread_idx, int errno)
-{
-	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
-			 VT_POP, thread_idx + 1, errno);
-
-	if (thread_idx < THINKOS_THREAD_IDLE) {
-		__thinkos_suspend(thread_idx);
-		/* signal the scheduler ... */
-		__thinkos_defer_sched();
-#if (THINKOS_ENABLE_THREAD_FAULT)
-		__thinkos_thread_fault_set(thread_idx, errno);
-#endif
-#if (THINKOS_ENABLE_MONITOR) 
-		/* */
-//		monitor_signal_thread_fault(thread_idx);
-#else
-		/* FIXME: issue an exception */
-#endif
-	}
-}
-
-
-

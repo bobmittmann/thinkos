@@ -25,7 +25,7 @@ ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 SDK_DIR = $(THINKOS_DIR)/sdk
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
-PROG = sanity
+PROG = hw-test
 
 CFILES = io.c sanity.c
 
@@ -39,12 +39,8 @@ LIBS = gcc m stm32f util c thinkos-usr
 INCPATH = $(PROJECT_ROOT)/src/include
 
 CDEFS = CONFIG_H 
-CFLAGS = -O1 -Werror -Wall -Wextra -Wdouble-promotion -Wno-unused-parameter
-OPTIONS = -g -mno-unaligned-access 
+CFLAGS = -O1 
 
 MACH = stm32f415xg
-LDCODE := 0x08020000
-LDDATA := 0x20002000
-THINKAPP := 1
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-app.mk
 

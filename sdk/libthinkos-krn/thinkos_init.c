@@ -37,17 +37,11 @@
 #include <stdio.h>
 #include <string.h>
 
-extern uint32_t * __krn_data_init;
-extern uint16_t __krn_data_size;
+extern void * __krn_data_start;
+extern void * __krn_data_end;
+extern void * __krn_code_start;
+extern void * __krn_code_end;
 
-extern uint32_t __addrof_krn_data;
-extern uint32_t __sizeof_krn_data;
-
-extern uint32_t * __krn_code_init;
-extern uint16_t __krn_code_size;
-
-extern uint32_t __addrof_krn_code;
-extern uint32_t __sizeof_krn_code;
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
 #define __ID(OPT)         (((OPT) >> 24) & 0x3f)
@@ -55,13 +49,15 @@ extern uint32_t __sizeof_krn_code;
 #define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
 
+void __thinkos_krn_reset(struct thinkos_rt * krn);
+
 static void __thinkos_mem_init(struct thinkos_rt * krn)
 {
 #if (THINKOS_ENABLE_SANITY_CHECK)
-	krn->mem.krn_code.base = __addrof_krn_code;
-	krn->mem.krn_code.top = __addrof_krn_code + __sizeof_krn_code;
-	krn->mem.krn_data.base = __addrof_krn_data;
-	krn->mem.krn_data.top = __addrof_krn_data + __sizeof_krn_data;
+	krn->mem.krn_code.base = (uintptr_t)&__krn_code_start;
+	krn->mem.krn_code.top = (uintptr_t)&__krn_code_end;
+	krn->mem.krn_data.base = (uintptr_t)&__krn_data_start;
+	krn->mem.krn_data.top = (uintptr_t)&__krn_data_end;
 #endif
 }
 
@@ -163,6 +159,7 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_attr * lst[])
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t ctrl;
 	uint32_t ccr;
 	uint32_t sp;
@@ -235,7 +232,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
 	DCC_LOG(LOG_TRACE, "1. cleanup memory().");
 	/* clear the ThinkOS runtime structure */
-	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
+	__thinkos_memset32(krn, 0, sizeof(struct thinkos_rt));  
 #endif
 
 #if (THINKOS_ENABLE_UDELAY_CALIBRATE)
@@ -244,9 +241,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 //	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
-	__thinkos_core_reset();
+	__thinkos_krn_core_init(krn);
 
-	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", &thinkos_rt);
+	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", krn);
 
 	/* adjust exception priorities */
 	/*
@@ -403,14 +400,17 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	/* Set the initial thread */
 	__thinkos_active_set(thread_id);
 	/* add to the ready queue */
-	thinkos_rt.wq_ready = 1 << thread_id;
+	krn->wq_ready = 1 << thread_id;
 
-	__thinkos_mem_init(&thinkos_rt);
+	__thinkos_mem_init(krn);
 
 #if (THINKOS_ENABLE_MPU)
-	DCC_LOG2(LOG_TRACE, "6. thinkos_krn_mpu_init(%08x, %d)", 
-			 __addrof_krn_data, __sizeof_krn_data);
-	thinkos_krn_mpu_init(__addrof_krn_data, __sizeof_krn_data);
+	DCC_LOG2(LOG_TRACE, "6. thinkos_krn_mpu_init(%08x, %08x)", 
+			 (uintptr_t)&__krn_code_start, (uintptr_t)&__krn_data_start);
+	thinkos_krn_mpu_init((uintptr_t)&__krn_code_start, 
+						 (uintptr_t)&__krn_code_end,
+						 (uintptr_t)&__krn_data_start, 
+						 (uintptr_t)&__krn_data_end);
 #endif
 
 	/* Adjust privilege */
@@ -429,19 +429,15 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	return thread_id + 1;
 }
 
-extern int _stack;
-#define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
-#ifndef THINKOS_MAIN_STACK_SIZE
-  #define THINKOS_MAIN_STACK_SIZE 8192
-#endif
-
-uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
+extern int __krn_stack_start;
+extern int __krn_stack_end;
 
 #if (THINKOS_ENABLE_THREAD_INFO)
 const struct thinkos_thread_inf thinkos_main_inf = {
 	.tag = "MAIN",
-	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
-	.stack_size = THINKOS_MAIN_STACK_SIZE,
+	.stack_ptr = &__krn_stack_start,
+//	.stack_size = &__krn_stack_end - &__krn_stack_start,
+	.stack_size = 8192,
 	.priority = 0,
 	.thread_id = 1,
 	.paused = 0

@@ -178,15 +178,14 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			break;
 
 		if (sigact & (1 << MONITOR_RESET)) {
-			__thinkos_monitor_on_reset();
-
 			/* clear the RESET event */
 			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
+			__thinkos_monitor_on_reset();
 		}
 
 		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 
-	} while (0);
+	} while (1);
 
   #endif /* THINKOS_ENABLE_MONITOR */
 }

@@ -23,26 +23,24 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__code_init = ORIGIN(CODE);
-__data_init = ORIGIN(DATA);
-
-__krn_data_init = ORIGIN(DATA);
+__krn_data_start = ORIGIN(DATA);
 __krn_data_end = ORIGIN(DATA) + __krn_data_size;
 
-__krn_code_init = ORIGIN(CODE);
+__krn_code_start = ORIGIN(CODE);
 __krn_code_end = ORIGIN(CODE) + __krn_code_size;
 
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(STACK);
+__krn_stack_end = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__krn_stack_start = ORIGIN(STACK);
+_stack = __krn_stack_end;
+
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
-
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
 
-EXTERN(_stack)
 EXTERN(_reset)
+
 EXTERN(ice_comm_blk)
 
 EXTERN(cm3_nmi_isr)
@@ -54,7 +52,6 @@ EXTERN(cm3_svc_isr)
 EXTERN(cm3_debug_mon_isr)
 EXTERN(cm3_pendsv_isr)
 EXTERN(cm3_systick_isr)
-EXTERN(__sizeof_rom_vectors)
 
 SECTIONS
 {
@@ -73,16 +70,15 @@ SECTIONS
 		KEEP(*(.dccdata))
 	} >dcclog
 
-	.vect __code_init :
+	.vect :
 	{
 		. = ALIGN(4);
-		PROVIDE (__rom_vectors = .);
 		PROVIDE (__text_start = .);
+		PROVIDE (__vcts_start = .);
 		KEEP (*(.core_vectors))
 		KEEP (*(.nvic_vectors))
+		PROVIDE (__vcts_end = .);
 	} >"CODE" = 0xffffffff
-
-	PROVIDE(__rom_vectors_size = SIZEOF(.vect));
 
 	.init :
 	{
@@ -100,6 +96,17 @@ SECTIONS
 		/* all .rodata sections (constants, strings, etc.)  */
 		*(.rodata)
 		*(.rodata.__func__.*)
+		*(.rodata.* .gnu.linkonce.r.*)
+		*(.rodata1)
+
+		. = ALIGN(4);
+		/* constructors */
+		PROVIDE(__ctors_start = .);
+		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
+		KEEP (*(.init_array))
+		KEEP(*(SORT(.ctors.*)))
+		KEEP(*(.ctors))
+		PROVIDE(__ctors_end = .);
 
 		. = ALIGN(4);
 		/* kernel traces */
@@ -113,18 +120,7 @@ SECTIONS
 		KEEP(*(SORT(.rodata.trace.*)))
 		PROVIDE(__trace_usr_end = .);
 
-		*(.rodata.* .gnu.linkonce.r.*)
-		*(.rodata1)
-
 		. = ALIGN(4);
-		/* constructors */
-		PROVIDE(__ctors_start = .);
-		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
-		KEEP (*(.init_array))
-		KEEP(*(SORT(.ctors.*)))
-		KEEP(*(.ctors))
-		PROVIDE(__ctors_end = .);
-		. = ALIGN(8);
 	} >"CODE" = 0xffffffff
 
 	.ARM.extab : 
@@ -142,7 +138,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data __data_init :
+	.data :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */

@@ -48,7 +48,7 @@ enum monitor_event {
 	/* Debug monitor internal reset */
 	MONITOR_RESET           = 0,
 	/* ThinkOS kernel fault */
-	MONITOR_KRN_EXCEPT      = 1,
+	MONITOR_KRN_FAULT       = 1,
 	/* ThinkOS kernel reset indication */
 	MONITOR_KRN_ABORT       = 2,
 	/* ThinkOS idle indication */

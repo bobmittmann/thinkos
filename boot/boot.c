@@ -122,44 +122,44 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 
 	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
-	DCC_LOG(LOG_TRACE, "3. board_init().");
+//	DCC_LOG(LOG_TRACE, "3. board_init().");
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 	board->init();
 
-	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
+//	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 #if (BOOT_MONITOR_ENABLE)
 	comm = board->monitor_comm_init();
 #endif
 
 #if (BOOT_MONITOR_ENABLE)
-	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
+//	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 	thinkos_krn_monitor_init(comm, monitor, (void *)board);
 #endif
 
 #if (BOOT_SELFTEST_ENABLE)
 	/* This callback is used as an environment self check. */
-	DCC_LOG(LOG_TRACE, "board->selftest_task()");
+//	DCC_LOG(LOG_TRACE, "board->selftest_task()");
 	if ((ret = board->selftest_task((void *)board)) < 0) {
-		DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
+//		DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
 		thinkos_abort();
 	}
 #endif
@@ -169,13 +169,13 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	     - using a switch in the board
 		 - receiving a break on the serial line */
 	if ((ret = board->preboot_task((void *)board)) < 0) {
-		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
+//		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
 		thinkos_abort();
 	}
 #endif
 
 #if DEBUG
-	udelay(0x8000);
+//	udelay(0x8000);
 #endif
 
 #if (THINKOS_ENABLE_APP)

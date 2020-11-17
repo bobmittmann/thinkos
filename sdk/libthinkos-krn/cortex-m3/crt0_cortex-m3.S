@@ -38,44 +38,8 @@ __os_tag:
 #else
 	.string "ThinkOS"
 #endif
-	.p2align  4, 0x00
+	.p2align  3, 0x00
 	.size   __os_tag, . - __os_tag
-
-	.global __addrof_krn_data
-__addrof_krn_data:
-	.type   __addrof_krn_data, %object
-	.word  __krn_data_init
-	.size   __addrof_krn_data, . - __addrof_krn_data
-
-	.global __sizeof_krn_data
-__sizeof_krn_data:
-	.type   __sizeof_krn_data, %object
-	.word  __krn_data_size
-	.size   __sizeof_krn_data, . - __sizeof_krn_data
-
-	.global __addrof_krn_code
-__addrof_krn_code:
-	.type   __addrof_krn_code, %object
-	.word  __krn_code_init
-	.size   __addrof_krn_code, . - __addrof_krn_code
-
-	.global __sizeof_krn_code
-__sizeof_krn_code:
-	.type   __sizeof_krn_code, %object
-	.word  __krn_code_size
-	.size   __sizeof_krn_code, . - __sizeof_krn_code
-
-	.global __addrof_rom_vectors
-__addrof_rom_vectors:
-	.type   __addrof_rom_vectors, %object
-	.word  __rom_vectors
-	.size   __addrof_rom_vectors, . - __addrof_rom_vectors
-
-	.global __sizeof_rom_vectors
-__sizeof_rom_vectors:
-	.type   __sizeof_rom_vectors, %object
-	.word   __rom_vectors_size
-	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
 
 	.global __init_tab
 __init_tab:
@@ -101,14 +65,14 @@ _reset:
 	bl _init
 
 	/* load header table */
-    adr     r12, __init_tab
-	ldmia   r12, {r0, r1, r2, r3, r4, r5, r6, r7}
+    adr     r0, __init_tab
+	ldmia   r0, {r0, r1, r2, r3, r4, r5, r6, r7}
 
 	/* copy initialized variables .data section */
 1:  cmp     r2, r3
 	ittt	lo
-	ldrlo   r0, [r2], #4
-	strlo   r0, [r1], #4
+	ldrlo   r0, [r1], #4
+	strlo   r0, [r2], #4
 	blo     1b
 
 	/* clear .bss  */
@@ -118,8 +82,6 @@ _reset:
 	strlo   r0, [r4], #4
 	blo     2b
 
-	/* save lr */
-    mov     r5, lr
 	/* call constructors */
 3:  cmp     r6, r7
 	beq     4f
@@ -128,13 +90,7 @@ _reset:
 	b       3b
 4:
 
-	ldr     r1, .L_main_stack
-	ldr     r0, [r1]
-	mov     sp, r0
-
 	b       main
 
-.L_main_stack:
-    .word   thinkos_main_stack
-
 	.size   _reset, . - _reset
+

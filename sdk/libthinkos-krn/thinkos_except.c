@@ -56,13 +56,15 @@
 
 #include <sys/dcclog.h>
 
-void __attribute__((noreturn)) 
-	thinkos_krn_fatal_except(struct thinkos_except * xcpt)
+void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
 {
 #if DEBUG
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	mdelay(500);
 
-	DCC_LOG(LOG_PANIC, "Fatal exception");
+	DCC_LOG1(LOG_PANIC, VT_PSH VT_REV VT_FRD
+			 "  Fatal exception: %d  " VT_POP, errno);
 
 	mdelay(250);
 
@@ -78,17 +80,26 @@ void __attribute__((noreturn))
 	__tdump();
 
 	/* kill all threads */
-	__thinkos_core_reset();
+	thinkos_krn_core_reset(krn);
 
+	/* Enable Interrupts */
+	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
+	cm3_cpsie_i();
+
+	/* signal the monitor */
+	monitor_signal(MONITOR_KRN_FAULT);
 #endif
 #if (THINKOS_SYSRST_ONFAULT)
-	thinkos_krn_sysrst();
+//	thinkos_krn_sysrst();
 #endif
-	for(;;);
 }
 
-void thinkos_krn_thread_except(struct thinkos_except * xcpt)
+void thinkos_krn_thread_except(struct thinkos_except * xcpt, 
+							   uint32_t errno, uint32_t thread_id)
 {
+	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
+			 " Thread fault %d, thread %d " VT_POP, errno, thread_id + 1);
+
 	mdelay(250);
 
 	__xinfo(xcpt);
@@ -99,8 +110,14 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt)
 
 	__tdump();
 
+//	__thinkos_pause_all();
+
+	/* Enable Interrupts */
+	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
+	cm3_cpsie_i();
+
 	/* signal the monitor */
-	monitor_signal(MONITOR_THREAD_FAULT);
+	monitor_signal_thread_fault(thread_id);
 }
 
 
@@ -169,6 +186,4 @@ void __attribute__((naked, noreturn)) thinkos_krn_xcpt_raise(int errno)
 }
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
-
-const char thinkos_xcp_nm[] = "XCP";
 

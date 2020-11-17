@@ -1,6 +1,29 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 #include <thinkos.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <arch/cortex-m3.h>
+#include <sys/delay.h>
+#include <vt100.h>
+
+#if (DEBUG)
+/*
+  #ifndef LOG_LEVEL
+    #define LOG_LEVEL LOG_TRACE
+  #elif LOG_LEVEL < LOG_TRACE
+    #undef LOG_LEVEL 
+    #define LOG_LEVEL LOG_TRACE
+  #endif
+*/
+#endif
+
+#include <sys/dcclog.h>
+
 
 const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_NO_ERROR]              = "Ok",
@@ -45,8 +68,65 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_THREAD_STACKADDR]  = "StackAddr",
 	[THINKOS_ERR_FLASH_INVALID]     = "FlshInvalid",
 	[THINKOS_ERR_STACK_LIMIT]       = "StackLimit",
-	[THINKOS_ERR_IDLE_STACK]        = "IdleStack"
+	[THINKOS_ERR_IDLE_STACK]        = "IdleStack",
+	[THINKOS_ERR_NOT_IMPLEMENTED]   = "IdleStack",
+	[THINKOS_ERR_THREAD_STACKALIGN] = "StackAlign",
+	[THINKOS_ERR_THREAD_ENTRYADDR]  = "EntryAddr",
+	[THINKOS_ERR_THREAD_EXITADDR]   = "ExitAddr",
+	[THINKOS_ERR_THREAD_EXIST]      = "ThreadExist",
+	[THINKOS_ERR_APP_INVALID]       = "AppInvalid",
+	[THINKOS_ERR_APP_CRC_ERROR]     = "AppCRC",
+	[THINKOS_ERR_APP_DATA_INVALID]  = "AppData",
+	[THINKOS_ERR_APP_CODE_INVALID]  = "AppCode",
+	[THINKOS_ERR_APP_BSS_INVALID]   = "AppBss",
+	[THINKOS_ERR_KRN_NORETTOBASE]   = "NoRettobase",
+	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
+	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
+	[THINKOS_ERR_KRN_STACKOVF]      = "MSPStackOvf",
+	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
+
+void thinkos_krn_syscall_err(int errno, unsigned int thread_idx)
+{
+	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
+			 VT_POP, thread_idx + 1, errno);
+
+	__tdump();
+
+#if (THINKOS_ENABLE_MONITOR) 
+	__thinkos_pause_all();
+
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thinkos_suspend(thread_idx);
+		__thinkos_thread_fault_set(thread_idx, errno);
+	}
+
+	monitor_signal_thread_fault(thread_idx);
+#else
+	/* FIXME: issue an exception */
+#endif
+}
+
+void thinkos_krn_sched_err(unsigned int errno, uint32_t thread_idx)
+{
+	DCC_LOG2(LOG_ERROR, VT_PSH VT_REV VT_FGR
+			 " Scheduler fault %d, thread %d " VT_POP, 
+			 errno, thread_idx + 1);
+
+	__tdump();
+
+#if (THINKOS_ENABLE_MONITOR) 
+	__thinkos_pause_all();
+
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+
+	}
+	/* signal the monitor */
+	monitor_signal_thread_fault(thread_idx);
+#else
+	/* FIXME: issue an exception */
+#endif
+}
 
 #if 0
 static const char * const thinkos_krn_er_tab[] ={
@@ -98,3 +178,4 @@ char const * thinkos_krn_strerr(unsigned int errno)
 	return thinkos_krn_er_tab[errno];
 }
 #endif
+

@@ -28,6 +28,7 @@
 #include <sys/sysclk.h>
 #include <sys/delay.h>
 #include <sys/dcclog.h>
+#include <vt100.h>
 
 #if (THINKOS_ENABLE_CTL)
 
@@ -60,6 +61,18 @@ static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 #endif
 
 extern int32_t udelay_factor;
+
+void thinkos_krn_abort(struct thinkos_rt * krn)
+{
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
+
+	thinkos_krn_core_reset(krn);
+
+#if (THINKOS_ENABLE_MONITOR)
+	monitor_signal(MONITOR_KRN_ABORT);
+#endif
+}
+
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 {

@@ -72,13 +72,13 @@ uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm,
 			thinkos_console_rx_pipe_commit(n);
 			if (n == cnt) {
 				/* Wait for RX_PIPE */
-				DCC_LOG(LOG_TRACE, "Wait for RX_PIPE && COMM_RECV");
+				DCC_LOG(LOG_INFO, "Wait for RX_PIPE && COMM_RECV");
 				sigmask |= (1 << MONITOR_COMM_RCV);
 				sigmask &=  ~(1 << MONITOR_RX_PIPE);
 				//sigmask &=  ~(1 << MONITOR_RX_PIPE);
 			} else {
 				/* Wait for COMM_RECV */
-				DCC_LOG(LOG_TRACE, "Wait for COMM_RECV");
+				DCC_LOG(LOG_INFO, "Wait for COMM_RECV");
 				sigmask |= (1 << MONITOR_COMM_RCV);
 				sigmask &=  ~(1 << MONITOR_RX_PIPE);
 			}
@@ -89,7 +89,7 @@ uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm,
 			sigmask &=  ~(1 << MONITOR_RX_PIPE);
 		}
 	} else {
-		DCC_LOG(LOG_TRACE, "Raw mode RX wait RX_PIPE");
+		DCC_LOG(LOG_INFO, "Raw mode RX wait RX_PIPE");
 		/* Wait for RX_PIPE */
 		sigmask &= ~(1 << MONITOR_COMM_RCV);
 		sigmask |= (1 << MONITOR_RX_PIPE);
@@ -110,11 +110,11 @@ uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm,
 
 	status = monitor_comm_status_get(comm);
 	if (status & COMM_ST_CONNECTED) {
-		DCC_LOG(LOG_TRACE, "connected....");
+		DCC_LOG(LOG_INFO, "connected....");
 	}
 	if (status & COMM_ST_BREAK_REQ ) {
 		monitor_comm_break_ack(comm);
-		DCC_LOG(LOG_TRACE, "break_req....");
+		DCC_LOG(LOG_INFO, "break_req....");
 	}
 	connected = (status & COMM_ST_CONNECTED) ? true : false;
 	thinkos_krn_console_connect_set(connected);
@@ -140,7 +140,7 @@ uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm,
 
 	if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
 		int n;
-		DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, send...", cnt);
+		DCC_LOG1(LOG_INFO, "TX Pipe: cnt=%d, send...", cnt);
 		if ((n = monitor_comm_send(comm, ptr, cnt)) > 0) {
 			thinkos_console_tx_pipe_commit(n);
 			if (n == cnt) {
@@ -159,7 +159,7 @@ uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm,
 		}
 	} else {
 		/* Wait for TX_PIPE */
-		DCC_LOG1(LOG_TRACE, "TX Pipe: cnt=%d, wait....", cnt);
+		DCC_LOG1(LOG_INFO, "TX Pipe: cnt=%d, wait....", cnt);
 		sigmask |= (1 << MONITOR_TX_PIPE);
 		sigmask &= ~(1 << MONITOR_COMM_EOT);
 	}
@@ -185,12 +185,12 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 			thinkos_console_rx_pipe_commit(n);
 			if (n == cnt) {
 				/* Wait for RX_PIPE */
-				DCC_LOG(LOG_TRACE, 
+				DCC_LOG(LOG_INFO, 
 						"RX_PIPE: Wait for RX_PIPE && COMM_RECV");
 				sigmask |= (1 << MONITOR_COMM_RCV);
 				sigmask &=  ~(1 << MONITOR_RX_PIPE);
 			} else {
-				DCC_LOG(LOG_TRACE, "RX_PIPE: Wait for COMM_RECV");
+				DCC_LOG(LOG_INFO, "RX_PIPE: Wait for COMM_RECV");
 				/* Wait for COMM_RECV */
 				sigmask |= (1 << MONITOR_COMM_RCV);
 				sigmask &=  ~(1 << MONITOR_RX_PIPE);

@@ -29,6 +29,7 @@
 
 #include <thinkos.h>
 #include <sys/dcclog.h>
+#include <vt100.h>
 #include <sys/delay.h>
 
 #if (THINKOS_ENABLE_APP)
@@ -36,8 +37,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 
-#ifdef THINKOS_APP_TAG
-static const uint8_t tag[16] = THINKOS_APP_TAG;
+#ifdef THINKOS_CUSTOM_APP_TAG
+  static const uint8_t tag[8] = THINKOS_CUSTOM_APP_TAG;
+#else
+  static const uint8_t tag[8] = "ThinkApp";
 #endif
 
 const struct magic_blk flat_app_magic = {
@@ -52,13 +55,8 @@ const struct magic_blk flat_app_magic = {
 		{0x00000000, 0x00000000},
 		{0xffffffff, 0x6e696854},
 		{0xffffffff, 0x00534f6b},
-#ifdef THINKOS_APP_TAG
 		{0xffffffff, tag[0] + (tag[1]<<8) + (tag[2]<<16) + (tag[3]<<24)},
 		{0xffffffff, tag[4] + (tag[5]<<8) + (tag[6]<<16) + (tag[7]<<24)},
-#else
-		{0x00000000, 0x00000000},
-		{0x00000000, 0x00000000},
-#endif
 	}
 };
 #pragma GCC diagnostic pop
@@ -101,10 +99,6 @@ int thinkos_flat_check(const struct flat_app * app)
 #endif
 	uintptr_t addr;
 	bool ret;
-
-#ifdef THINKOS_APP_TAG
-
-#endif
 
 	DCC_LOG2(LOG_TRACE, "pc=0x%08x sp=0x%08x", app->entry, app->stack);
 

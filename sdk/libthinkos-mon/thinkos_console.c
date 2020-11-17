@@ -269,7 +269,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	tail = thinkos_console_rt.tx_pipe.tail + cnt;
 	thinkos_console_rt.tx_pipe.tail = tail;
 	if (tail == thinkos_console_rt.tx_pipe.head) {
-		DCC_LOG(LOG_TRACE, "TX_PIPE empty");
+		DCC_LOG(LOG_MSG, "TX_PIPE empty");
 		monitor_clear(MONITOR_TX_PIPE);
 	}
 

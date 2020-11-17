@@ -40,6 +40,6 @@ CDEFS = CONFIG_H
 
 CFLAGS = -O1 
 
-MACH = stm32l433xc
+MACH = stm32f415xg
 include $(ARCH_DIR)/mk/stm32-app.mk
 

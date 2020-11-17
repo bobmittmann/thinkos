@@ -33,8 +33,8 @@
 #include <vt100.h>
 #include <sys/dcclog.h>
 
-extern void * __rom_vectors[];
-extern int __sizeof_rom_vectors;
+extern void * __vcts_start;
+extern void * __vcts_end;
 
 #ifdef CM3_RAM_VECTORS
 extern void * __ram_vectors[];
@@ -55,18 +55,19 @@ uint32_t __attribute__((aligned(64)))
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-void __thinkos_krn_reset(struct thinkos_rt * krn)
+void __thinkos_krn_core_init(struct thinkos_rt * krn)
 {
 	unsigned int i;
 
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FRD " /!\\ Kernel Reset /!\\ " VT_POP);
+	/* clear all wait queues */
+	for (i = 0; i < THINKOS_WQ_CNT; ++i)
+		krn->wq_lst[i] = 0x00000000;
 
 	/* clear all threads excpet NULL */
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		__thread_ctx_clr(krn, i);
 		__thread_stat_clr(krn, i);
 		__thread_inf_clr(krn, i);
-		__thread_fault_clr(krn, i);
 		__thread_errno_clr(krn, i);
 		__thread_cyccnt_clr(krn, i);
 	}
@@ -120,14 +121,9 @@ void __thinkos_krn_reset(struct thinkos_rt * krn)
 void thinkos_krn_kill_all(struct thinkos_rt * krn)
 {
 	int active = __thread_active_get(krn);
-	int i;
 
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_FYW
 			 "<%2d> killing all threads ..." VT_POP, active + 1);
-
-	/* clear all wait queues */
-	for (i = 0; i < THINKOS_WQ_CNT; ++i)
-		krn->wq_lst[i] = 0x00000000;
 
 	if  (active != THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
@@ -136,54 +132,64 @@ void thinkos_krn_kill_all(struct thinkos_rt * krn)
 	__thinkos_defer_sched();
 }
 
-void thinkos_krn_abort(struct thinkos_rt * krn)
+void thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
+	int active = __thread_active_get(krn);
 
-	thinkos_krn_kill_all(krn); 
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Kernel Reset !!" VT_POP);
 
-	__thinkos_krn_reset(krn);
-
-#if (THINKOS_ENABLE_MONITOR)
-	monitor_signal(MONITOR_KRN_ABORT);
-#else
-
-#endif
-}
-
-void __thinkos_core_reset(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__thinkos_krn_reset(krn);
+	DCC_LOG(LOG_TRACE, "1. Initialize kernel datastructures ...");
+	__thinkos_krn_core_init(krn);
 
 #if (THINKOS_IRQ_MAX) > 0
+	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
+	__thinkos_irq_disable_all();
+	DCC_LOG(LOG_TRACE, "3. Reset all intrerrupts ...");
 	__thinkos_irq_reset_all();
 #endif
 
-#ifdef CM3_RAM_VECTORS
-	__thinkos_memcpy(__ram_vectors, __rom_vectors, __sizeof_rom_vectors);
-	/* Remap the Vector table to SRAM */
-	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
+#if THINKOS_ENABLE_EXCEPTIONS
+	DCC_LOG(LOG_TRACE, "4. exception reset...");
+	thinkos_krn_exception_reset();
 #endif
+
+	if  (active != THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thinkos_defer_sched();
+	}
 }
 
+#if 0
 void __thinkos_system_reset(void)
 {
-	DCC_LOG(LOG_WARNING, "/!\\ System reset in progress...");
+	struct thinkos_rt * krn = &thinkos_rt;
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FRD "!! System Reset !!" VT_POP);
 
 	DCC_LOG(LOG_TRACE, "1. ThinkOS core reset...");
-	__thinkos_core_reset();
+	__thinkos_krn_core_reset(krn);
+
+	
+#if (THINKOS_IRQ_MAX) > 0
+	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
+	__thinkos_irq_disable_all();
+	__thinkos_irq_reset_all();
+#endif
 
 #if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "2. exception reset...");
-	__exception_reset();
+	DCC_LOG(LOG_TRACE, "3. exception reset...");
+	thinkos_krn_exception_reset();
 #endif
+
+	if  (active != THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thinkos_defer_sched();
+	}
 
 	/* Enable Interrupts */
 	DCC_LOG(LOG_TRACE, "4. enablig interrupts...");
 	cm3_cpsie_i();
 }
+#endif
 
 bool thinkos_sched_active(void)
 {

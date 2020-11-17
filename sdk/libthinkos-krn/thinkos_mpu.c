@@ -80,7 +80,6 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
 	mpu->rasr = rasr;
 }
 
-
 /** 
  * thinkos_mpu_init:
  * @offs: offset of the kernel protected memory block
@@ -92,11 +91,12 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
  *
  */
 
-void thinkos_krn_mpu_init(uint32_t addr, uint32_t size)
+void thinkos_krn_mpu_init(uint32_t code_start, uint32_t code_end, 
+						  uint32_t data_start,  uint32_t data_end)
 {
 	struct cm3_mpu * mpu = CM3_MPU;
-	uint32_t sram_base = 0x20000000;
-	uint32_t offs = addr - sram_base;
+	uint32_t sram_base = data_start;
+	uint32_t size = data_end - data_start;
 	uint32_t bmp;
 	unsigned int n;
 
@@ -104,11 +104,10 @@ void thinkos_krn_mpu_init(uint32_t addr, uint32_t size)
  */
 
 	/* align kernel offset to 1K block region */
-	offs &= 0xffffffff << 10;
 	/* how many kernel 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
 
-	DCC_LOG3(LOG_TRACE, "MPU offs=%08x size=%d blocks=%d.", offs, size, n);
+	DCC_LOG2(LOG_TRACE, "MPU size=%d blocks=%d.", size, n);
 
 	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;
