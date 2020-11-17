@@ -23,21 +23,19 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__code_init = ORIGIN(CODE);
-__data_init = ORIGIN(DATA);
-
-__krn_data_init = ORIGIN(DATA);
+__krn_data_start = ORIGIN(DATA);
 __krn_data_end = ORIGIN(DATA) + __krn_data_size;
 
-__krn_code_init = ORIGIN(CODE);
+__krn_code_start = ORIGIN(CODE);
 __krn_code_end = ORIGIN(CODE) + __krn_code_size;
 
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(STACK);
+__krn_stack_end = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__krn_stack_start = ORIGIN(STACK);
+_stack = __krn_stack_end;
+
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
-
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
 
@@ -72,13 +70,14 @@ SECTIONS
 		KEEP(*(.dccdata))
 	} >dcclog
 
-	.vect __code_init :
+	.vect :
 	{
 		. = ALIGN(4);
 		PROVIDE (__text_start = .);
-		PROVIDE (__rom_vectors = .);
+		PROVIDE (__vcts_start = .);
 		KEEP (*(.core_vectors))
 		KEEP (*(.nvic_vectors))
+		PROVIDE (__vcts_end = .);
 	} >"CODE" = 0xffffffff
 
 	PROVIDE(__rom_vectors_size = SIZEOF(.vect));
@@ -141,7 +140,7 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data __data_init :
+	.data :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
@@ -155,13 +154,7 @@ SECTIONS
 	} >"DATA" AT >"CODE"
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-/*
-	.image :
-	{
-		. = . + 500000;
-		PROVIDE (__image_end = . );
-	} >"CODE"
-*/
+
 	.bss :
 	{
 		/* define a global symbol marking the start of the .bss section */

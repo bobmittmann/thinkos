@@ -50,8 +50,8 @@ void __thinkos_irq_reset_all(void)
 	}
 
 #ifdef CM3_RAM_VECTORS
-	__thinkos_memcpy(__ram_vectors, __vcts_start, 
-					 __vcts_end - __vcts_start);
+	__thinkos_memcpy(__ram_vectors, &__vcts_start, 
+					 &__vcts_end - &__vcts_start);
 	/* Remap the Vector table to SRAM */
 	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
 #endif
