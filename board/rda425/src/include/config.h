@@ -33,11 +33,11 @@
    ThinkOS configuration
    -------------------------------------------------------------------------- */
 
-#define THINKOS_IRQ_MAX                     84
+#define THINKOS_IRQ_MAX                     98
 #define THINKOS_ENABLE_IRQ_CTL              1
 #define THINKOS_ENABLE_IRQ_RESTORE          0
-#define THINKOS_ENABLE_IRQ_CYCCNT           0
-#define THINKOS_ENABLE_IRQ_PRIORITY_0       0
+#define THINKOS_ENABLE_IRQ_CYCCNT           1
+#define THINKOS_ENABLE_IRQ_PRIORITY_0       1
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT        0
 #define THINKOS_ENABLE_WQ_IRQ               1
 
@@ -71,7 +71,7 @@
  watching a flag in a given instant.*/
 #define THINKOS_ENABLE_FLAG_WATCH           0
 
-#define THINKOS_GATE_MAX                    0
+#define THINKOS_GATE_MAX                    8
 
 #define THINKOS_ENABLE_THREAD_STAT          1
 #define THINKOS_ENABLE_TIMED_CALLS          1
@@ -80,11 +80,11 @@
 #define THINKOS_ENABLE_ARG_CHECK            1
 /* Check if a thread tries to lock a mutex which it
    has previously locked. */
-#define THINKOS_ENABLE_DEADLOCK_CHECK       0
+#define THINKOS_ENABLE_DEADLOCK_CHECK       1
 /* Check if athread tries to unlock a mutex which is
    not his own. Also check for minimum stack size on 
  thread creation. */
-#define THINKOS_ENABLE_SANITY_CHECK         0
+#define THINKOS_ENABLE_SANITY_CHECK         1
 
 /* Enable scheduler trace calls */
 #if DEBUG
@@ -123,7 +123,7 @@
 #define THINKOS_ENABLE_MONITOR              1
 #define THINKOS_ENABLE_MONITOR_CLOCK        0
 #define THINKOS_ENABLE_MONITOR_THREADS      1
-#define THINKOS_MONITOR_STACK_SIZE          512
+#define THINKOS_MONITOR_STACK_SIZE          1024
 
 #define THINKOS_EXCEPT_STACK_SIZE           512
 #define THINKOS_ENABLE_ERROR_TRAP           1
@@ -169,12 +169,12 @@
 #define THINKOS_ENABLE_OFAST                1
 
 #define THINKOS_ENABLE_CONSOLE              1
-#define THINKOS_ENABLE_CONSOLE_MISC         0
-#define THINKOS_ENABLE_CONSOLE_BREAK        0
-#define THINKOS_ENABLE_CONSOLE_OPEN         0
-#define THINKOS_ENABLE_CONSOLE_NONBLOCK     0
-#define THINKOS_ENABLE_CONSOLE_DRAIN        0
-#define THINKOS_ENABLE_CONSOLE_MODE         0
+#define THINKOS_ENABLE_CONSOLE_MISC         1
+#define THINKOS_ENABLE_CONSOLE_BREAK        1
+#define THINKOS_ENABLE_CONSOLE_OPEN         1
+#define THINKOS_ENABLE_CONSOLE_NONBLOCK     1
+#define THINKOS_ENABLE_CONSOLE_DRAIN        1
+#define THINKOS_ENABLE_CONSOLE_MODE         1
 #define THINKOS_CONSOLE_RX_FIFO_LEN         64
 #define THINKOS_CONSOLE_TX_FIFO_LEN         512
 
@@ -191,25 +191,36 @@
 #define THINKOS_CUSTOM_APP_TAG              "RDA8COM"
 
 /* -------------------------------------------------------------------------
-   RCC 
+   STM32 Init
    -------------------------------------------------------------------------- */
-#define STM32_HCLK_HZ           79027200	/* Target HBA bus frequency */
-#define STM32_HSE_HZ            11289600	/* External oscillator frequency */
-#define STM32_ENABLE_HSE        1	/* Use external oscillator */
-#define STM32_ENABLE_PLL        1	/* Enable PLL */
-#define STM32_ENABLE_HSI        0	/* Don't use internal oscillator */
+
+#if 0
+#define STM32_HCLK_HZ           168000000	/* Target HBA bus frequency */
+#define STM32_HSE_HZ             12000000	/* External oscillator frequency */
+#endif
+#define STM32_HCLK_HZ           180633600	/* Target HBA bus frequency */
+#define STM32_HSE_HZ             11289600	/* External oscillator frequency */
+#define STM32_ENABLE_HSE         1	/* Use external oscillator */
+#define STM32_ENABLE_PLL         1	/* Enable PLL */
+#define STM32_ENABLE_PLLSAI      1
+#define STM32_ENABLE_PLLI2S      1
+#define STM32_ENABLE_PREFETCH    0	/* Disable prefetch for better 
+									   ADC accuracy */
 
 /* -------------------------------------------------------------------------
    USB 
    -------------------------------------------------------------------------- */
 
-#define STM32_ENABLE_USB_FS         1
-#define STM32_USB_FS_VBUS_CTRL      0
-#define STM32_USB_FS_EP_MAX         4
-#define STM32_USB_FS_IO_INIT        0
-#define STM32_USB_FS_IRQ_ENABLE     0
-#define STM32_USB_FS_VBUS_ENABLE    1
-#define STM32_USB_FS_SUSPEND        0
+#define STM32_ENABLE_OTG_FS       1
+#define STM32_OTG_FS_INEP_MAX     3
+#define STM32_OTG_FS_OUTEP_MAX    2
+#define STM32_OTG_FS_IO_INIT      0
+#define STM32_OTG_FS_VBUS_ENABLE  0
+#define STM32_VBUS_SENS_ENABLED   0
+#define STM32_OTG_FS_RX_FIFO_SIZE 192
+#define STM32_OTG_FS_BULK_PKTS    6
+
+#define CDC_EP_IN_MAX_PKT_SIZE    64
 
 /* -------------------------------------------------------------------------
    GDB
@@ -221,13 +232,13 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_ENABLE_GDB            0
-#define MONITOR_DUMPMEM_ENABLE     0
+#define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_BREAKPOINT_ENABLE  0
 #define MONITOR_THREAD_STEP_ENABLE 0
-#define MONITOR_SELFTEST_ENABLE    0
+#define MONITOR_SELFTEST_ENABLE    1
 #define MONITOR_CONFIGURE_ENABLE   0
-#define MONITOR_UPGRADE_ENABLE     0
+#define MONITOR_UPGRADE_ENABLE     1
 #define MONITOR_STACKUSAGE_ENABLE  1
 #define MONITOR_THREADINFO_ENABLE  1
 #define MONITOR_OSINFO_ENABLE      1
@@ -236,9 +247,9 @@
 #define MONITOR_APPRESTART_ENABLE  1
 #define MONITOR_EXCEPTION_ENABLE   1
 #define MONITOR_FAULT_ENABLE       1
-#define MONITOR_OS_PAUSE           0
-#define MONITOR_OS_RESUME          0
-#define MONITOR_RESTART_MONITOR    0
+#define MONITOR_OS_PAUSE           1
+#define MONITOR_OS_RESUME          1
+#define MONITOR_RESTART_MONITOR    1
 #define MONITOR_PREBOOT_ENABLE     1
 
 /* -------------------------------------------------------------------------
@@ -248,25 +259,27 @@
 #define SERIAL_RX_FIFO_LEN  1024
 
 /* -------------------------------------------------------------------------
- * LIBC 
+ * LibC
  * ------------------------------------------------------------------------- */
 
 #define PRINTF_ENABLE_FLOAT 1
 
-#define TRACE_TIMER STM32F_TIM2
+/* -------------------------------------------------------------------------
+ * Shell 
+ * ------------------------------------------------------------------------- */
+
+#define SHELL_LINE_MAX    80
+#define SHELL_HISTORY_MAX 16
+#define SHELL_ARG_MAX     16
+
+#define TTY_DEV_MAX 1
 
 /* -------------------------------------------------------------------------
  * Trace
  * ------------------------------------------------------------------------- */
 
-//#define TRACE_TIMER STM32F_TIM5
-#define TRACE_RING_SIZE 4096
-#define TRACE_STRING_MAX 256
-
-#define PKT_QUEUE_POOL_SIZE 20
-#define PKT_QUEUE_SIZE 16
-#define PKT_BUF_SIZE 64
-#define PKT_POOL_SIZE 128
+#define TRACE_TIMER STM32F_TIM5
+#define TRACE_RING_SIZE 1024
+#define TRACE_STRING_MAX 64
 
 #endif				/* __CONFIG_H__ */
-

@@ -12,14 +12,12 @@
 #include <vt100.h>
 
 #if (DEBUG)
-/*
   #ifndef LOG_LEVEL
     #define LOG_LEVEL LOG_TRACE
   #elif LOG_LEVEL < LOG_TRACE
     #undef LOG_LEVEL 
     #define LOG_LEVEL LOG_TRACE
   #endif
-*/
 #endif
 
 #include <sys/dcclog.h>
@@ -86,19 +84,22 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
-void thinkos_krn_syscall_err(int errno, unsigned int thread_idx)
+void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
 			 VT_POP, thread_idx + 1, errno);
 
 	__tdump();
 
 #if (THINKOS_ENABLE_MONITOR) 
-	__thinkos_pause_all();
+	__thinkos_krn_pause_all(krn);
 
 	if (thread_idx < THINKOS_THREAD_IDLE) {
-		__thinkos_suspend(thread_idx);
-		__thinkos_thread_fault_set(thread_idx, errno);
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+		__thread_suspend(krn, thread_idx);
 	}
 
 	monitor_signal_thread_fault(thread_idx);
@@ -109,6 +110,8 @@ void thinkos_krn_syscall_err(int errno, unsigned int thread_idx)
 
 void thinkos_krn_sched_err(unsigned int errno, uint32_t thread_idx)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_REV VT_FGR
 			 " Scheduler fault %d, thread %d " VT_POP, 
 			 errno, thread_idx + 1);
@@ -116,11 +119,14 @@ void thinkos_krn_sched_err(unsigned int errno, uint32_t thread_idx)
 	__tdump();
 
 #if (THINKOS_ENABLE_MONITOR) 
-	__thinkos_pause_all();
+	__thinkos_krn_pause_all(krn);
 
 	if (thread_idx < THINKOS_THREAD_IDLE) {
-
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+		__thread_suspend(krn, thread_idx);
 	}
+
 	/* signal the monitor */
 	monitor_signal_thread_fault(thread_idx);
 #else

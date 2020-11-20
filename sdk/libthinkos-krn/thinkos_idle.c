@@ -105,27 +105,27 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 #endif
 #endif
 
-#if (THINKOS_FLASH_MEM_MAX > 0)
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
 			case IDLE_HOOK_FLASH_MEM0:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(0, &thinkos_rt.flash_drv[0]);
 				break;
 
-#if (THINKOS_FLASH_MEM_MAX > 1)
+#if ((THINKOS_FLASH_MEM_MAX) > 1)
 			case IDLE_HOOK_FLASH_MEM1:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM1" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(1, &thinkos_rt.flash_drv[1]);
 				break;
-#if (THINKOS_FLASH_MEM_MAX > 2)
+#if ((THINKOS_FLASH_MEM_MAX) > 2)
 			case IDLE_HOOK_FLASH_MEM2:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(2, &thinkos_rt.flash_drv[2]);
 				break;
 #endif
-#if (THINKOS_FLASH_MEM_MAX > 3)
+#if ((THINKOS_FLASH_MEM_MAX) > 3)
 			case IDLE_HOOK_FLASH_MEM3:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
@@ -248,16 +248,20 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 	__thread_sl_set(krn, THINKOS_THREAD_IDLE, stack_base);
 
+#if (THINKOS_ENABLE_THREAD_INFO)
 	__thread_inf_set(krn, THINKOS_THREAD_IDLE, &thinkos_idle_inf);
+#endif
 
 	/* commit the context to the kernel */ 
 	__thread_ctx_set(krn, THINKOS_THREAD_IDLE, ctx, 0);
 
 #if DEBUG
 	udelay(0x8000);
-	DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
-			 "IDLE ctx=%08x except=%08x sl=%08x sp=%08x" _ATTR_POP_, 
-			 ctx, __thinkos_xcpt_stack_top(),
+	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
+			 "<IDLE> ctx=%08x top=%08x" VT_POP, 
+			 ctx, stack_top);
+	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
+			 "<IDLE> sl=%08x sp=%08x" VT_POP, 
 			 __thinkos_thread_sl_get(THINKOS_THREAD_IDLE),
 			 __thinkos_thread_sp_get(THINKOS_THREAD_IDLE));
 #endif

@@ -150,7 +150,7 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
    */
 
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
-								 struct flash_op_req * req)
+                          struct flash_op_req * req)
 {
 	const struct flash_dev * dev = drv->dev;
 	uint32_t off;
@@ -247,6 +247,7 @@ int thinkos_flash_drv_init(unsigned int idx,
 	return 0;	
 }
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 void thinkos_flash_drv_tasklet(unsigned int idx, struct thinkos_flash_drv * drv)
 {
 	unsigned int wq = THINKOS_FLASH_MEM_DESC(idx);
@@ -271,6 +272,7 @@ void thinkos_flash_drv_tasklet(unsigned int idx, struct thinkos_flash_drv * drv)
 		DCC_LOG(LOG_TRACE, "flash_drv: no waiting threads!");
 	}
 }
+#endif
 
 void thinkos_flash_mem_svc(int32_t arg[], int self)
 {
@@ -363,6 +365,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	DCC_LOG2(LOG_TRACE, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
 	DCC_LOG2(LOG_TRACE, "flash_drv: wq=%d idx=%d", wq, idx);
 
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* schedule the IDLE hook ... */
 	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
@@ -381,7 +384,12 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	__thinkos_defer_sched();
 
 	DCC_LOG1(LOG_TRACE, "<%2d> sleeping...", self);
+#else
+	ret = thinkos_flash_drv_req(drv, req);
+	arg[0] = ret;
+#endif
 }
 
 #endif /* (THINKOS_FLASH_MEM_MAX > 0) */
+
 

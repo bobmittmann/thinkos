@@ -28,10 +28,37 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \
-	THINKOS_ENABLE_COND_ALLOC | THINKOS_ENABLE_SEM_ALLOC | \
-	THINKOS_ENABLE_EVENT_ALLOC | THINKOS_ENABLE_FLAG_ALLOC | \
-	THINKOS_ENABLE_GATE_ALLOC
+
+#if ((THINKOS_WQ_MUTEX_CNT < 33) && (THINKOS_WQ_COND_CNT < 33) && \
+	 (THINKOS_WQ_SEMAPHORE_CNT < 33) && (THINKOS_WQ_EVENT_CNT < 33) && \
+	 (THINKOS_WQ_FLAG_CNT < 33) && (THINKOS_WQ_GATE_CNT < 33))
+  #define BMP_ALLOC_32BITS 1
+#else
+  #define BMP_ALLOC_32BITS 0
+#endif
+
+#if (THINKOS_ENABLE_OBJ_ALLOC)
+#if (BMP_ALLOC_32BITS)
+static int __thinkos_bmp32_alloc(uint32_t * bmp) 
+{
+	int idx;
+
+	/* Look for an empty bit MSB first */
+	idx = __thinkos_ffs(~(*bmp));
+	if (idx < 32) {
+		/* Mark as used */
+		__bit_mem_wr(bmp, idx, 1);  
+		return idx;
+	}
+
+	return THINKOS_ENOMEM;
+}
+
+static void __thinkos_bmp_init(uint32_t * bmp, unsigned int nbits) 
+{
+	*bmp = 0xffffffff << nbits;
+}
+#else
 static int __thinkos_bmp_alloc(uint32_t bmp[], unsigned int nbits) 
 {
 	unsigned int i;
@@ -47,12 +74,7 @@ static int __thinkos_bmp_alloc(uint32_t bmp[], unsigned int nbits)
 	}
 	return THINKOS_ENOMEM;
 }
-#endif
 
-#if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \
-	THINKOS_ENABLE_COND_ALLOC | THINKOS_ENABLE_SEM_ALLOC | \
-	THINKOS_ENABLE_EVENT_ALLOC | THINKOS_ENABLE_FLAG_ALLOC | \
-	THINKOS_ENABLE_GATE_ALLOC
 static void __thinkos_bmp_init(uint32_t bmp[], unsigned int nbits) 
 {
 	__thinkos_memset32(bmp, 0, nbits / 8);
@@ -61,6 +83,7 @@ static void __thinkos_bmp_init(uint32_t bmp[], unsigned int nbits)
 		bmp[nbits / 32] = 0xffffffff << (nbits % 32);
 }
 #endif
+
 
 static int __thinkos_alloc_lo(uint32_t * ptr, int start) 
 {
@@ -228,7 +251,6 @@ bool __thinkos_obj_alloc_check(unsigned int oid)
 }
 
 
-#if (THINKOS_ENABLE_OBJ_ALLOC)
 void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 {
 	unsigned int kind = arg[0];
@@ -318,9 +340,15 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 			idx += base;
 		}
 	} else {
+#if (BMP_ALLOC_32BITS)
+		if ((idx = __thinkos_bmp32_alloc(bmp)) >= 0) {
+			idx += base;
+		} 
+#else
 		if ((idx = __thinkos_bmp_alloc(bmp, max)) >= 0) {
 			idx += base;
 		} 
+#endif
 	}
 	DCC_LOG1(LOG_MSG, "idx = %d", idx);
 	arg[0] = idx;
@@ -363,7 +391,6 @@ void __krn_alloc_init(struct thinkos_rt * krn)
 	__thinkos_bmp_init(krn->gate_alloc, THINKOS_GATE_MAX); 
 #endif
 }
-#endif
 
 #if (THINKOS_ENABLE_OBJ_FREE)
 
@@ -465,5 +492,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 	arg[0] = THINKOS_OK;
 }
 
-#endif
+#endif /* #if (THINKOS_ENABLE_OBJ_FREE) */
+
+#endif /* (THINKOS_ENABLE_OBJ_ALLOC) */
 

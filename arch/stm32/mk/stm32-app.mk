@@ -22,8 +22,8 @@ __THISDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 __ARCH_DIR := $(abspath $(__THISDIR)/..)
 __THINKOS_DIR := $(abspath $(__ARCH_DIR)/../..)
 
-ifdef PROG
-
+ifndef PROG 
+  $(error PROG undefined!)
 endif
 
 # Load the thinkos configuration script
@@ -31,7 +31,7 @@ include $(__THINKOS_DIR)/mk/config.mk
 # Load the architecture configuration script
 include $(__ARCH_DIR)/mk/stm32-cfg.mk
 
-LDFLAGS += -Wl,--gc-sections -nostdlib 
+LDFLAGS += -Wl,--gc-sections -nostdlib -lgcc
 
 OPTIONS	+= -g -mcpu=$(CPU) -mthumb -mthumb-interwork -mno-unaligned-access
 
@@ -39,6 +39,10 @@ WARN = -Wextra -Werror -Wdouble-promotion
 NOWARN = -Wno-sign-compare -Wno-unused-parameter
 
 CFLAGS += -Wall $(WARN) $(NOWARN) -fno-builtin -ffreestanding -fomit-frame-pointer -ffunction-sections -fdata-sections 
+
+ifeq ($(CPU), cortex-m4)
+  OPTIONS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
+endif
 
 ifdef CODE
     APP_CODE := $(CODE)
@@ -79,7 +83,7 @@ ifeq ($(CPU), cortex-m4)
 endif
 
 ifdef LDSCRIPT
-  LDFLAGS += -T $(LDSCRIPT)
+  LDFLAGS += -T $(LDSCRIPT) -lgcc
 else
   LDFLAGS += -T $(MACH).ld -T arm-elf-thinkos-app.ld
 endif
@@ -93,7 +97,7 @@ include $(__THINKOS_DIR)/mk/prog.mk
 include $(__THINKOS_DIR)/mk/app.mk
 
 ifdef VERSION_MAJOR
-  include $(__THINKOS_DIR)/version.mk
+  include $(__THINKOS_DIR)/mk/version.mk
 endif
 
 include $(__THINKOS_DIR)/mk/jtag.mk

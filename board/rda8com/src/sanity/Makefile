@@ -30,20 +30,18 @@ TEST_DIR = $(THINKOS_DIR)/test
 
 CFILES = $(wildcard $(TEST_DIR)/sanity/*.c)
 
-LIBDIRS = $(SDK_DIR)/libc $(SDK_DIR)/libutil $(SDK_DIR)/libthinkos-usr
+LIBS = thinkos-usr util c
 
-LIBS = gcc thinkos-usr util c
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(LIBS))
 
 INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -O1 -Werror -Wall 
-OPTIONS = -g -mno-unaligned-access 
-
+CFLAGS = -O1 
 
 MACH = stm32l433xc
 LDCODE = 0x08010000
 LDDATA := 0x20001000
-THINKAPP := "RDA8COM"
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-app.mk
+

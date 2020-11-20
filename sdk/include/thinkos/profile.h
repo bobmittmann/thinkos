@@ -509,8 +509,8 @@
 #define THINKOS_FLASH_MEM_MAX                0
 #endif 
 
-#ifndef THINKOS_ENABLE_MEM_MAP
-#define THINKOS_ENABLE_MEM_MAP               0
+#ifndef THINKOS_ENABLE_MEMORY_MAP
+#define THINKOS_ENABLE_MEMORY_MAP            0
 #endif
 
 #ifndef THINKOS_DMA_MAX 
@@ -1074,7 +1074,9 @@ struct thinkos_profile {
 			uint32_t fpu                :1;
 			uint32_t fpu_ls             :1;
 			uint32_t profiling          :1;
-			uint32_t mem_map            :1;
+			uint32_t memory_map         :1;
+			uint32_t app                :1;
+			uint32_t app_crc            :1;
 		};
 	} feature;
 

@@ -126,7 +126,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
    ------------------------------------------------------------------------- */
 void thinkos_krn_exception_reset(void)
 {
-	DCC_LOG(LOG_ERROR, "Exception buffer reset...");
+	DCC_LOG(LOG_TRACE, "Exception buffer clear.");
 
 #if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize thread stack */
@@ -142,16 +142,18 @@ void thinkos_krn_exception_init(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
+	thinkos_krn_exception_reset();
+
 #if	(THINKOS_ENABLE_USAGEFAULT) 
-	DCC_LOG(LOG_TRACE, "Initializing usage fault...");
+	DCC_LOG(LOG_TRACE, "USAGE fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
 #endif
 #if	(THINKOS_ENABLE_BUSFAULT)
-	DCC_LOG(LOG_TRACE, "Initializing bus fault...");
+	DCC_LOG(LOG_TRACE, "BUS fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
 #endif
 #if (THINKOS_ENABLE_MPU)
-	DCC_LOG(LOG_TRACE, "Initializing memory management fault...");
+	DCC_LOG(LOG_TRACE, "Mem management fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
 #endif
 
@@ -166,6 +168,7 @@ void thinkos_krn_exception_init(void)
 		| SCB_SHCSR_MEMFAULTENA
 #endif
 		;
+
 }
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */

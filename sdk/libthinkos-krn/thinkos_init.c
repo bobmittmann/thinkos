@@ -37,11 +37,6 @@
 #include <stdio.h>
 #include <string.h>
 
-extern void * __krn_data_start;
-extern void * __krn_data_end;
-extern void * __krn_code_start;
-extern void * __krn_code_end;
-
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
 #define __ID(OPT)         (((OPT) >> 24) & 0x3f)
@@ -50,16 +45,6 @@ extern void * __krn_code_end;
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
 
 void __thinkos_krn_reset(struct thinkos_rt * krn);
-
-static void __thinkos_mem_init(struct thinkos_rt * krn)
-{
-#if (THINKOS_ENABLE_SANITY_CHECK)
-	krn->mem.krn_code.base = (uintptr_t)&__krn_code_start;
-	krn->mem.krn_code.top = (uintptr_t)&__krn_code_end;
-	krn->mem.krn_data.base = (uintptr_t)&__krn_data_start;
-	krn->mem.krn_data.top = (uintptr_t)&__krn_data_end;
-#endif
-}
 
 static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 {
@@ -157,15 +142,13 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 }
 
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_attr * lst[])
+					 const struct thinkos_thread_initializer * lst[])
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t ctrl;
 	uint32_t ccr;
-	uint32_t sp;
+	uintptr_t sp;
 	int thread_id;
-	(void)map;
-	(void)lst;
 
 	/* Static sanity check: */
 
@@ -213,7 +196,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 
 	/* disable interrupts */
-	cm3_cpsid_i();
+	thinkos_krn_irq_off();
 
 	/* sanity check */
 #if (THINKOS_ENABLE_SANITY_CHECK)
@@ -375,15 +358,17 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	/* configure the main stack */
 	cm3_msp_set((uintptr_t)__thinkos_xcpt_stack_top());
 
-	/* thread, we need to configure 
-	   idle thread and then exceptions. */
-	DCC_LOG(LOG_TRACE, "IDLE init...");
-	thinkos_krn_idle_init();
+	DCC_LOG(LOG_TRACE, "Memory management init...");
+	__thinkos_krn_mem_init(krn, map);
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "Exceptions init....");
 	thinkos_krn_exception_init();
 #endif
+
+	DCC_LOG(LOG_TRACE, "IDLE init...");
+	thinkos_krn_idle_init();
+
 
 #if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
 	DCC_LOG(LOG_TRACE, "SYysTick init...");
@@ -395,51 +380,60 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_krn_console_init();
 #endif
 
-	thread_id = __thinkos_init_main(sp, opt);
+	if (lst == NULL) {
+		bool privileged;
 
-	/* Set the initial thread */
-	__thinkos_active_set(thread_id);
-	/* add to the ready queue */
-	krn->wq_ready = 1 << thread_id;
-
-	__thinkos_mem_init(krn);
-
-#if (THINKOS_ENABLE_MPU)
-	DCC_LOG2(LOG_TRACE, "6. thinkos_krn_mpu_init(%08x, %08x)", 
-			 (uintptr_t)&__krn_code_start, (uintptr_t)&__krn_data_start);
-	thinkos_krn_mpu_init((uintptr_t)&__krn_code_start, 
-						 (uintptr_t)&__krn_code_end,
-						 (uintptr_t)&__krn_data_start, 
-						 (uintptr_t)&__krn_data_end);
-#endif
-
-	/* Adjust privilege */
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-	ctrl = __PRIVILEGED(opt) ? CONTROL_SPSEL : 
-		CONTROL_SPSEL | CONTROL_nPRIV;
+		privileged  = __PRIVILEGED(opt);
 #else
-	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+		ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+		privileged = false;
 #endif
-	cm3_control_set(ctrl);
 
-	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-			 thread_id + 1, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
-	cm3_cpsie_i();
+		DCC_LOG(LOG_TRACE, "Main thread init...");
+		thread_id = __thinkos_init_main(sp, opt);
+
+		/* Set the initial thread */
+		__thinkos_active_set(thread_id);
+		/* add to the ready queue */
+		krn->wq_ready = 1 << thread_id;
+
+		if (privileged) {
+			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
+		 } else {
+			DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
+			DCC_LOG(LOG_TRACE, "Enabling interrupts");
+			/* enable interrupts */
+			thinkos_krn_irq_on();
+		}
+
+		/* Adjust privilege */
+		ctrl = privileged ? CONTROL_SPSEL : CONTROL_SPSEL | CONTROL_nPRIV;
+		cm3_control_set(ctrl);
+
+		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
+				 thread_id + 1, cm3_msp_get(), cm3_psp_get(), 
+				 cm3_control_get());
+	} else {
+		/* FIXME: not implemented... */
+		return THINKOS_ENOSYS;
+	}
 
 	return thread_id + 1;
 }
 
-extern int __krn_stack_start;
-extern int __krn_stack_end;
+extern void * __krn_stack_start;
+extern void * __krn_stack_end;
+extern int __krn_stack_size;
 
 #if (THINKOS_ENABLE_THREAD_INFO)
 const struct thinkos_thread_inf thinkos_main_inf = {
 	.tag = "MAIN",
 	.stack_ptr = &__krn_stack_start,
-//	.stack_size = &__krn_stack_end - &__krn_stack_start,
-	.stack_size = 8192,
+	.stack_size = (uintptr_t)&__krn_stack_size,
 	.priority = 0,
 	.thread_id = 1,
+	.privileged = 0,
 	.paused = 0
 };
 #endif

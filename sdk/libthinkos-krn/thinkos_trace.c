@@ -30,8 +30,8 @@ _Pragma ("GCC optimize (\"Os\")")
 
 #include <sys/param.h>
 #include <stdbool.h>
-#include <trace.h>
 
+#if 0
 int thinkos_trace(const struct trace_ref * ref);
 int thinkos_trace_open(void);
 int thinkos_trace_close(int id);
@@ -39,6 +39,7 @@ int thinkos_trace_read(int id, uint32_t * buf, unsigned int len);
 int thinkos_trace_flush(int id);
 int thinkos_trace_getfirst(int id, struct trace_entry * entry);
 int thinkos_trace_getnext(int id, struct trace_entry * entry);
+#endif
 
 #if (THINKOS_ENABLE_TRACE)
 

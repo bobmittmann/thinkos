@@ -26,9 +26,6 @@
 #error "Only use this file on privileged code"
 #endif 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
 #ifndef __ASSEMBLER__
 
 #define DEBUGGER_PRIORITY       (0 << 5)
@@ -39,8 +36,7 @@
 #define IRQ_DEF_PRIORITY        (4 << 5)
 #define IRQ_LOW_PRIORITY        (5 << 5)
 #define IRQ_VERY_LOW_PRIORITY   (6 << 5)
-
-#define SYSCALL_PRIORITY        (7 << 5)
+#define SYSCALL_PRIORITY        (6 << 5)
 #define SCHED_PRIORITY          (7 << 5)
 
 #if (THINKOS_ENABLE_MONITOR)
@@ -53,24 +49,35 @@
 extern "C" {
 #endif
 
-static inline void 
-__attribute__((always_inline)) thinkos_krn_sched_off(void)  {
+static inline void __attribute__((always_inline)) thinkos_krn_sched_off(void) {
 	/* rise the BASEPRI to stop the scheduler */
-	cm3_basepri_set(SCHED_PRIORITY); 
+	asm volatile ("msr BASEPRI, %0\n" : : "r" (SCHED_PRIORITY));
 }
 
-static inline void 
-__attribute__((always_inline)) thinkos_krn_sched_on(void)  {
+static inline void __attribute__((always_inline)) thinkos_krn_sched_on(void) {
 	/* return the BASEPRI to the default to reenable the scheduler. */
-	cm3_basepri_set(0x00);
+	asm volatile ("msr BASEPRI, %0\n" : : "r" (0x00));
 }
 
-#if (THINKOS_ENABLE_CLOCK)
-static inline uint32_t __attribute__((always_inline)) 
-	thinkos_clock_i(void)  {
-	return (volatile uint32_t)thinkos_rt.ticks;
+/* disable interrupts */
+static inline void __attribute__((always_inline)) thinkos_krn_irq_off(void)  {
+	asm volatile ("cpsid i\n");
 }
-#endif
+
+/* enable interrupts */
+static inline void __attribute__((always_inline)) thinkos_krn_irq_on(void) {
+	asm volatile ("cpsie i\n");
+}
+
+/* disable interrupts and fault handlers (set fault mask) */
+static inline void __attribute__((always_inline)) thinkos_krn_fault_off(void) {
+	asm volatile ("cpsid f\n");
+}
+
+/* enable interrupts and fault handlers (set fault mask) */
+static inline void __attribute__((always_inline)) thinkos_krn_fault_on(void) {
+	asm volatile ("cpsie f\n");
+}
 
 void __thinkos_irq_disable_all(void);
 

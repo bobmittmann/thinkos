@@ -29,15 +29,9 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
 
 #include <thinkos.h>
-
 #include <sys/memory.h>
-
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events

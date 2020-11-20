@@ -174,9 +174,9 @@
 
 #define THINKOS_ENABLE_OFAST            1
 
-#define THINKOS_ENABLE_RESET_RAM_VECTORS 0
-
 #define THINKOS_ENABLE_STACK_LIMIT      1 
+
+#define THINKOS_ENABLE_APP              1
 
 /* -------------------------------------------------------------------------
    RCC 

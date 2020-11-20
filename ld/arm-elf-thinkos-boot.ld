@@ -32,6 +32,7 @@ __krn_code_end = ORIGIN(CODE) + __krn_code_size;
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 __krn_stack_end = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __krn_stack_start = ORIGIN(STACK);
+__krn_stack_size = __krn_stack_end - __krn_stack_start;
 _stack = __krn_stack_end;
 
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;

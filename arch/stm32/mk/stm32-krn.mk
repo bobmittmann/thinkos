@@ -22,12 +22,16 @@ __THISDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 __ARCH_DIR := $(abspath $(__THISDIR)/..)
 __THINKOS_DIR := $(abspath $(__ARCH_DIR)/../..)
 
+ifndef PROG 
+  $(error PROG undefined!)
+endif
+
 # Load the thinkos configuration script
 include $(__THINKOS_DIR)/mk/config.mk
 # Load the architecture configuration script
 include $(__ARCH_DIR)/mk/stm32-cfg.mk
 
-LDFLAGS += -Wl,--gc-sections -nostdlib 
+LDFLAGS += -Wl,--gc-sections -nostdlib -lgcc
 
 OPTIONS	+= -g -mcpu=$(CPU) -mthumb -mthumb-interwork -mno-unaligned-access
 
@@ -38,13 +42,6 @@ CFLAGS += -Wall $(WARN) $(NOWARN) -fno-builtin -ffreestanding -fomit-frame-point
 
 ifeq ($(CPU), cortex-m4)
   OPTIONS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
-endif
-
-ifdef RAM_VECTORS
-  CDEFS += CM3_RAM_VECTORS
-  BOOTLD = arm-elf-thinkos-ramvec.ld
-else
-  BOOTLD = arm-elf-thinkos-boot.ld
 endif
 
 ifdef KRN_DATA_SIZE
@@ -67,13 +64,20 @@ ifndef LOAD_ADDR
   LOAD_ADDR := $(KRN_CODE)
 endif
 
+ifdef RAM_VECTORS
+  CDEFS += CM3_RAM_VECTORS
+  BOOTLD = arm-elf-thinkos-ramvec.ld
+else
+  BOOTLD = arm-elf-thinkos-boot.ld
+endif
+
 ifdef LDSCRIPT
   LDFLAGS += -T $(LDSCRIPT)
 else
   LDFLAGS += -T $(MACH).ld -T $(STM32)-vec.ld -T $(BOOTLD)
 endif
 
-all: prog-all
+all: prog-all size
 
 clean: clean-all
 

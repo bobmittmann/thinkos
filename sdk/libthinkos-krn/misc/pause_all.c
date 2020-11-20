@@ -23,17 +23,17 @@
 #include <thinkos/kernel.h>
 #include <sys/dcclog.h>
 
-void __thinkos_pause_all(void)
+void __thinkos_krn_pause_all(struct thinkos_rt * krn)
 {
-	int32_t th;
+	unsigned int idx;
 
-	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
-		if (__thinkos_thread_ctx_is_valid(th)) {
-			DCC_LOG1(LOG_JABBER, "th=%d", th);
-			__thinkos_thread_pause(th);
+	for (idx = 0; idx < THINKOS_THREADS_MAX; ++idx) {
+		if (__thread_ctx_is_valid(krn, idx)) {
+			DCC_LOG1(LOG_JABBER, "th=%d", idx + 1);
+			__thinkos_krn_thread_pause(krn, idx);
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, "active=%d", __thinkos_active_get() + 1);
+	DCC_LOG1(LOG_TRACE, "active=%d", __thread_active_get(krn) + 1);
 }
 

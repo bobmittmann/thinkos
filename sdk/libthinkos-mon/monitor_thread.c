@@ -49,39 +49,37 @@ void monitor_thread_destroy(int thread_id)
 void __attribute__((noreturn)) __monitor_thread_exit_stub(int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	monitor_signal_thread_terminate(0, code);
-
+#endif
 //	thinkos_abort();
 	for(;;);
 }
 
+extern void * __krn_stack_start;
+extern void * __krn_stack_end;
+extern int __krn_stack_size;
+
 int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 {
+#if (THINKOS_ENABLE_THREAD_INFO)
 	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
+#endif
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_thread_initializer init;
 	unsigned int thread_idx;
+	uintptr_t stack_base;
+	uint32_t stack_size;
 	int ret;
 
+#if (THINKOS_ENABLE_THREAD_INFO)
 	thread_idx = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
-
-#if 0
-	if (__thinkos_thread_ctx_is_valid(thread_idx)) {
-		DCC_LOG2(LOG_WARNING, "thread %d already exists, ctx=%08x", 
-				 thread_idx + 1, __thinkos_thread_ctx_get(thread_idx));
-
-		DCC_LOG(LOG_TRACE, "__thinkos_thread_abort()");
-		__thinkos_thread_abort(thread_idx);
-		monitor_wait_idle();
-	}
-
-	/* FIXME: This call is not safe  */
-	/* Avoid race condition with kernel handlers */
-	while (thinkos_kernel_active()) {
-		DCC_LOG(LOG_TRACE, "kernel is active, wait for IDLE!!");
-		monitor_wait_idle();
-	}
+	stack_base = (uintptr_t)inf->stack_ptr;
+	stack_size = inf->stack_size;
+#else
+	thread_idx = 0;
+	stack_base = (uintptr_t)&__krn_stack_start;
+	stack_size = (uint32_t)&__krn_stack_size;
 #endif
 
 #if THINKOS_ENABLE_THREAD_ALLOC
@@ -89,8 +87,8 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
 #endif
 
-	init.stack_base = (uintptr_t)inf->stack_ptr;
-	init.stack_size = inf->stack_size;
+	init.stack_base = stack_base;
+	init.stack_size = stack_size;
 	init.task_entry = (uintptr_t)func;
 	init.task_exit = (uintptr_t)__monitor_thread_exit_stub;
 	init.task_arg[0] = (uintptr_t)arg;
@@ -100,7 +98,9 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 	init.priority = 0;
 	init.paused = false;
 	init.privileged = true;
+#if (THINKOS_ENABLE_THREAD_INFO)
 	init.inf = inf;
+#endif
 
 	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
 		__THINKOS_ERROR(THINKOS_THREAD_IDLE, ret);

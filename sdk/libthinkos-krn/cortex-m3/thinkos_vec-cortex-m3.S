@@ -83,7 +83,8 @@ cm3_hard_fault_isr:
 	movs   r0, #THINKOS_ERR_HARD_FAULT
 	/* Fall-through */
 	.size  cm3_hard_fault_isr, . - cm3_hard_fault_isr
-#endif
+#endif /*( (THINKOS_ENABLE_HARDFAULT) */
+
 
 	.global	__thinkos_krn_xcpt
 	.thumb
@@ -252,7 +253,8 @@ __thinkos_krn_xcpt:
 	ble     .L_no_stack
 
 	/* Restore idle core context */
-	cmp     r7, sp
+	mov     r6, sp
+	cmp     r7, r6
 	bne     .L_idle_unstack
 
 	ldrb    r1, [r0, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
@@ -375,6 +377,8 @@ cm3_mem_manage_isr:
 #endif
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
+
+
 
 #if (THINKOS_ENABLE_DBGMON)
 	.align  2

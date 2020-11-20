@@ -980,11 +980,11 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 	stm32f_usb_pullup(usb, true);
 #endif
 
-	DCC_LOG1(LOG_INFO, VT_PSH VT_FCY "ev=0x%08x [ATTACHED]" VT_POP, drv->ev);
-
 	for (i = 0;  i < STM32_USB_FS_EP_MAX; ++i) {
 		drv->ep[i].state = EP_DISABLED;
 	}
+
+	DCC_LOG1(LOG_INFO, VT_PSH VT_FCY "ev=0x%08x [ATTACHED]" VT_POP, drv->ev);
 
 #if (STM32_USB_FS_IRQ_ENABLE)
 	/* enable Cortex interrupts */

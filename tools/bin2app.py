@@ -66,69 +66,30 @@ class FlatHdr(object):
     sys_tag = self.sys_tag.decode('ascii') 
     sys_key = struct.unpack('<II', self.sys_tag)
 
-    print('  -      Start: 0x{:08x}'.format(self.entry))
-    print('  -      Stack: 0x{:08x}'.format(self.stack))
-    print('  - Stack size: {:d}'.format(self.stksz))
-    print('  -  File size: {:d}'.format(self.size))
-    print('  -         Os: \"' + os_tag + '\" (0x{:08x} 0x{:08x})'.format(
+    print('  - Start addr: 0x{:08x}'.format(self.entry))
+    print('  - Stack addr: 0x{:08x}'.format(self.stack))
+    print('  - Stack size: {:-10d}'.format(self.stksz))
+    print('  -  File size: {:-10d}'.format(self.size))
+    print('  -     Os tag: \"' + os_tag + '\" (0x{:08x} 0x{:08x})'.format(
                                   os_key[0], os_key[1]))
-    print('  -        Sys: \"' + sys_tag + '\" (0x{:08x} 0x{:08x})'.format(
+    print('  -    Sys tag: \"' + sys_tag + '\" (0x{:08x} 0x{:08x})'.format(
          sys_key[0], sys_key[1]))
 
-
+    print('  - Init table: ')
+    print('    Idx  Name    Sart addr   End addr       Size ')
     n = self.text_end - self.text_start
-    print('  - .text: 0x{:08x} - 0x{:08x} : {:d}'.format(
+    print('      0  .text   0x{:08x}  0x{:08x} {:-8d}'.format(
                              self.text_start, self.text_end, n))
-
     n = self.data_end - self.data_start
-    print('  - .data: 0x{:08x} - 0x{:08x} : {:d}'.format(
+    print('      1  .data   0x{:08x}  0x{:08x} {:-8d}'.format(
                              self.data_start, self.data_end, n))
-
     n = self.bss_end - self.bss_start
-    print('  -  .bss: 0x{:08x} - 0x{:08x} : {:d}'.format(
+    print('      2  .bss    0x{:08x}  0x{:08x} {:-8d}'.format(
                              self.bss_start, self.bss_end, n))
-
     n = self.ctor_end - self.ctor_start
-    print('  - .ctor: 0x{:08x} - 0x{:08x} : {:d}'.format(
+    print('      3  .ctor   0x{:08x}  0x{:08x} {:-8d}'.format(
                              self.ctor_start, self.ctor_end, n))
 
-def crctest(f, tag, bsize, data, size):
-  crc32 = crcmod.predefined.mkCrcFun('crc-32')
-  crc32_jamcrc = crcmod.predefined.mkCrcFun('jamcrc')
-  crc32_mpeg = crcmod.predefined.mkCrcFun('crc-32-mpeg')
-  crc32_posix = crcmod.predefined.mkCrcFun('posix')
-  crc32_bzip2 = crcmod.predefined.mkCrcFun('crc-32-bzip2')
-
-  crc32_stm32 = crcmod.mkCrcFun(0x104c11db7, initCrc=0, xorOut=0x00000000)
-
-  crc0 = crc32(data)
-  crc1 = crc32_jamcrc(data)
-  crc2 = crc32_mpeg(data)
-  crc3 = crc32_posix(data)
-  crc4 = crc32_bzip2(data)
-  crc5 = crc32_stm32(data)
-
-  crc = crc2;
-
-  print('  - CRC32: 0x{:08x} ... '.format(crc))
-  print('  -   CRC: 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x}'.format(
-                                   crc0, crc1, crc2, crc3, crc4))
-  crc_stm32 = 0x0d1871bf
-  dat = bytearray([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80])
-  i = 0
-  while i < 8:
-    crc0 = crc32_mpeg(dat[i:i+4])
-    crc1 = crc32(dat[i:i+4])
-    crc2 = crc32_jamcrc(dat[i:i+4])
-    crc3 = crc32_posix(dat[i:i+4])
-    crc4 = crc32_bzip2(dat[i:i+4])
-    crc5 = crc32_stm32(dat[i:i+4])
-    print('{:2d} - 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} '.format(
-           i, crc0, crc1, crc2, crc3, crc4, crc5))
-    i += 4
-
-
-  trail = (crc).to_bytes(4, byteorder='little') 
 
 def bin2app(f, tag, bsize, data, size):
   app = FlatHdr(data)
@@ -147,7 +108,6 @@ def bin2app(f, tag, bsize, data, size):
   if app.os_tag != os_tag:
     print(' invalid OS tag: \"' + os_tag.decode('ascii') + '\" != \"' + 
       os_tag.decode('ascii') + '\"')
-#    print(' invalid OS name: \"' + app.os_tag + '\" != \"' + os_tag + '\"')
 
   rem = (size % bsize)
   if  rem != 0:
@@ -157,21 +117,10 @@ def bin2app(f, tag, bsize, data, size):
     data += pad 
     size += n
 
-  crc32_fun = crcmod.predefined.mkCrcFun('crc-32')
   crc32_mpeg = crcmod.predefined.mkCrcFun('crc-32-mpeg')
-# crc32_stm32 = crcmod.mkCrcFun(0x104c11db7, initCrc=0xffffffff, rev=False, 
-#                                xorOut=0x00000000)
-
-  crc32_stm32 = crcmod.mkCrcFun(0x104c11db7, initCrc=0xffffffff, rev=False, 
-                                xorOut=0x00000000)
-
-  crc0 = crc32_stm32(data)
-  crc1 = crc32_mpeg(data)
-
-  crc = crc0;
+  crc = crc32_mpeg(data)
 
   print('  - CRC32: 0x{:08x} '.format(crc))
-  print('  -   CRC: 0x{:08x} '.format(crc1))
 
   trail = (crc).to_bytes(4, byteorder='little') 
   f.write(data)

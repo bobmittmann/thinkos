@@ -82,8 +82,8 @@ endif
 ifneq ($(findstring $(MACH), stm32f100 stm32f103 stm32f103x6),)
   CPU = cortex-m3
   STM32 = stm32f1
-  STM32_APP_CODE = 0x08020000
-  STM32_APP_DATA = 0x20002000
+  STM32_APP_CODE = 0x08003000
+  STM32_APP_DATA = 0x20000800
 endif
 
 ifneq ($(findstring $(MACH), stm32f207xe stm32f207xg),)

@@ -631,6 +631,5 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_APP_EXEC] = thinkos_nosys_svc,
 #endif
 
-
 };
 

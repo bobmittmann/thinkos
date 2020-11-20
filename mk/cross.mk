@@ -64,5 +64,6 @@ CXX := $(strip $(CROSS_COMPILE))g++
 RANLIB := $(strip $(CROSS_COMPILE))ranlib
 OBJCOPY := $(strip $(CROSS_COMPILE))objcopy
 OBJDUMP := $(strip $(CROSS_COMPILE))objdump
+SIZE:= $(strip $(CROSS_COMPILE))size
 STRIP := $(strip $(CROSS_COMPILE))strip
 

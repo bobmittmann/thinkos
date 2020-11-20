@@ -21,11 +21,8 @@
 
 #include <sys/stm32f.h>
 
-#ifndef THINKAPP
 	.syntax unified
 	.cpu cortex-m3
-
-	.extern _reset
 
 	/* ---------------------------------------------------------------------
 	 * Generate the vectors table 
@@ -497,6 +494,4 @@ _isr:
 
 
 	.end
-
-#endif /* THINKAPP */
 

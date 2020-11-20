@@ -68,9 +68,24 @@ struct thinkos_mem_map {
 	const struct thinkos_mem_desc * desc[]; /* Sorted list of descriptors */
 };
 
+struct thinkos_rt * krn;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+                            const struct thinkos_mem_map * map);
+
+/* User read and write memory access check */
+bool __thinkos_mem_usr_rw_chk(uintptr_t addr, int32_t size);
+
+/* User read and execute memory access check */
+bool __thinkos_mem_usr_rx_chk(uintptr_t addr, int32_t size);
+
+/* User read memory access check */
+bool __thinkos_mem_usr_rd_chk(uint32_t addr, int32_t size);
+
 
 #ifdef __cplusplus
 }

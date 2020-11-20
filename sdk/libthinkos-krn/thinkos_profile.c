@@ -117,7 +117,7 @@ const struct thinkos_profile thinkos_profile = {
 		.fpu             = THINKOS_ENABLE_FPU,
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
 		.profiling       = THINKOS_ENABLE_PROFILING,
-		.mem_map         = THINKOS_ENABLE_MEM_MAP
+		.memory_map      = THINKOS_ENABLE_MEMORY_MAP
 	},
 
 	.security = {
@@ -297,8 +297,8 @@ void __profile(void)
 			 p->feature.fpu_ls);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PROFILING       = %d", 
 			 p->feature.profiling);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEM_MAP         = %d", 
-			 p->feature.mem_map);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MEMORY_MAP      = %d", 
+			 p->feature.memory_map);
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ARG_CHECK       = %d", 
 			 p->security.arg_check);

@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-cdc.c
+ * File:	 __thread_krn_wq_get.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -20,33 +20,36 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
-
-#if THINKOS_ENABLE_APP
-
-/* -------------------------------------------------------------------------
- * Application execution
- * ------------------------------------------------------------------------- */
-
-bool monitor_app_exec(const struct monitor_app_desc * desc)
+int __thinkos_krn_thread_wq_get(struct thinkos_rt * krn, 
+								unsigned int thread_idx)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-	uintptr_t addr = (uintptr_t)desc->start_addr;
-	int thread_idx = 0;
-	int ret;
+#if !(THINKOS_ENABLE_THREAD_STAT)
+	int i;
+#endif
+	int wq;
 
-	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr))) {
-		DCC_LOG1(LOG_ERROR, "Can't start app: err=%d!", ret);
-		return false;
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	if ((thread_idx >= THINKOS_THREADS_MAX) || 
+		!__thread_ctx_is_valid(krn, thread_idx)) {
+		return -1;
 	}
+#endif
 
-	return true;
+#if (THINKOS_ENABLE_THREAD_STAT)
+	wq = krn->th_stat[thread_idx] >> 1;
+#else
+	for (i = 0; i < (THINKOS_WQ_CNT); ++i) {
+		if (krn->wq_lst[i] & (1 << thread_idx))
+			break;
+	}
+	if (i == (THINKOS_WQ_CNT))
+		return -1; /* not found */
+	wq = i;
+#endif /* THINKOS_ENABLE_THREAD_STAT */
+
+	return wq;
 }
 
-#endif

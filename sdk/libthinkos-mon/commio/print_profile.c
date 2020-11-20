@@ -115,7 +115,9 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU", p->feature.fpu);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU_LS", p->feature.fpu_ls);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_PROFILING", p->feature.profiling);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEM_MAP", p->feature.mem_map);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEMORY_MAP", p->feature.memory_map);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_APP", p->feature.app);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_APP_CRC", p->feature.app_crc);
 	/* Security */
 
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ARG_CHECK", p->security.arg_check);

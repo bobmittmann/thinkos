@@ -49,14 +49,16 @@ const struct magic_blk flat_app_magic = {
 		.cnt = 8
 		},
 	.rec = {
-		{0xff0000ff, 0x08000041},
-		{0x0000000f, 0x00000000},
-		{0x00000000, 0x00000000},
-		{0x00000000, 0x00000000},
-		{0xffffffff, 0x6e696854},
-		{0xffffffff, 0x00534f6b},
-		{0xffffffff, tag[0] + (tag[1]<<8) + (tag[2]<<16) + (tag[3]<<24)},
-		{0xffffffff, tag[4] + (tag[5]<<8) + (tag[6]<<16) + (tag[7]<<24)},
+		{.mask = 0xff0000ff, .comp = 0x08000041 },
+		{.mask = 0x0000000f, .comp = 0x00000000 },
+		{.mask = 0x00000000, .comp = 0x00000000 },
+		{.mask = 0x00000000, .comp = 0x00000000 },
+		{.mask = 0xffffffff, .comp = 0x6e696854 },
+		{.mask = 0xffffffff, .comp = 0x00534f6b },
+		{.mask = 0xffffffff, 
+	     .comp = tag[0] + (tag[1]<<8) + (tag[2]<<16) + (tag[3]<<24) },
+		{.mask = 0xffffffff, 
+         .comp = tag[4] + (tag[5]<<8) + (tag[6]<<16) + (tag[7]<<24) },
 	}
 };
 #pragma GCC diagnostic pop
@@ -120,8 +122,11 @@ int thinkos_flat_check(const struct flat_app * app)
 	DCC_LOG2(LOG_TRACE, "crc=0x%08x chk=0x%08x", crc, chk);
 #endif
 
+	(void)addr;
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	size = (app->text.end - app->text.start);
 	addr = app->text.start;
+
 	if ((size < 0) || !__thinkos_mem_usr_rx_chk(addr, size)) {
 		DCC_LOG2(LOG_ERROR, ".text section invalid addr=0x%08x size=%d", 
 				 addr, size);
@@ -148,6 +153,7 @@ int thinkos_flat_check(const struct flat_app * app)
 				 addr, size);
 		return THINKOS_ERR_APP_BSS_INVALID;
 	}
+#endif /* (THINKOS_ENABLE_SANITY_CHECK) */
 
 	return 0;
 }
@@ -166,6 +172,10 @@ const struct thinkos_thread_inf thinkos_app_inf = {
 	.paused = 0
 };
 #endif
+
+extern void * __krn_stack_start;
+extern void * __krn_stack_end;
+extern int __krn_stack_size;
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr)
@@ -196,8 +206,16 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 	stack_top = app->stack;
 	stack_base = stack_top - stack_size;
 #if (DEBUG)
-	stack_top -= 0x80;
-	stack_size -= 0x80;
+	if ((stack_top > (uintptr_t)&__krn_stack_start) &&
+		(stack_base < (uintptr_t)&__krn_stack_end)) {
+		intptr_t diff;
+		diff = stack_top - (uintptr_t)&__krn_stack_start;
+		
+		DCC_LOG1(LOG_WARNING, "stack collision, moving by %d!", diff);
+		/* Stack colision */
+		stack_top -= diff;
+		stack_size -= diff;
+	}
 #endif
 	task_entry = app->entry;
 	task_exit = app->entry;

@@ -73,7 +73,7 @@
 
 #ifndef __ASSEMBLER__
 
-void thinkos_krn_syscall_err(int errno, unsigned int thread_idx);
+void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx);
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
   #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_syscall_err(__CODE, __TH)

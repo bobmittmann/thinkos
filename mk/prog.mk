@@ -224,6 +224,7 @@ FLAGS_TO_PASS := $(FLAGS_TO_PASS) 'D=$(dbg_level)' 'V=$(verbose)' \
 				 'AR=$(AR)'\
 				 'OBJCOPY=$(OBJCOPY)'\
 				 'OBJDUMP=$(OBJDUMP)'\
+				 'SIZE=$(SIZE)'\
 				 'STRIP=$(STRIP)'\
 				 'CFLAGS=$(CFLAGS)'\
 				 'SFLAGS=$(SFLAGS)'\
@@ -324,6 +325,10 @@ libs-clean: $(LIBDIRS_CLEAN)
 
 libs-install: $(LIBDIRS_INSTALL)
 
+size: $(PROG_ELF) 
+	$(ACTION) "Size of: $<"
+	$(Q)$(SIZE) -G $<
+
 #------------------------------------------------------------------------------ 
 # Helpers to print the binary full path
 #------------------------------------------------------------------------------ 
@@ -350,7 +355,7 @@ cleanDebug:
 cleanRelease: 
 	$(Q)$(MAKE) D=0 clean
 
-.PHONY: all clean prog elf 
+.PHONY: prog-all clean-all prog elf 
 .PHONY: Debug Release cleanDebug cleanRelease
 .PHONY: $(LIBDIRS_ALL) $(LIBDIRS_CLEAN) $(LIBDIRS_INSTALL)
 
@@ -392,9 +397,9 @@ ifeq ($(strip $(CROSS_COMPILE)),)
 	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
 else
 ifeq ($(HOST),Cygwin)
-	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
+	$(Q)$(LD) $(addprefix -L,$(LIBPATH_WIN)) $(LDFLAGS) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(OFILES_WIN) $(OBJ_EXTRA) -o $(PROG_ELF_WIN) > $(PROG_MAP)
 else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_ELF) > $(PROG_MAP)
+	$(Q)$(LD) $(addprefix -L,$(LIBPATH)) $(LDFLAGS) -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) $(OFILES) $(OBJ_EXTRA) -Wl,--end-group -o $(PROG_ELF) > $(PROG_MAP)
 endif
 endif
 

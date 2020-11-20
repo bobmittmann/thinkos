@@ -174,17 +174,12 @@ struct thinkos_thread {
 
 struct thinkos_thread_inf {
 	void * stack_ptr;
-	union {
-		uint32_t opt;
-		struct {
-			uint16_t stack_size;
-			uint8_t priority;
-			uint8_t thread_id: 7;
-			uint8_t paused: 1;
-		};
-	};
-
-	char tag[8];
+	uint32_t stack_size;
+	uint8_t priority;
+	uint8_t thread_id: 6;
+	uint8_t privileged: 1;
+	uint8_t paused: 1;
+	char tag[10];
 };
 
 /** 
@@ -198,14 +193,6 @@ struct thinkos_thread_inf {
  * @tag: thread name
  *
  */
-struct thinkos_thread_attr {
-	void * stack_addr;
-	uint32_t stack_size: 16;
-	uint32_t priority: 8;
-	uint32_t thread_id: 7;
-	uint32_t paused: 1;
-	char tag[8];
-};
 
 /** 
  * typedef thinkos_task_t - Thread task function type.
@@ -243,11 +230,6 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int id);
  * @arg: Parameter to the task
  * @attr: Static thread attributes.
  */
-struct thinkos_thread_init {
-	thinkos_task_t task;
-	void * arg;
-	struct thinkos_thread_attr attr;
-};
 
 struct thinkos_thread_initializer;
 
@@ -283,7 +265,7 @@ extern "C" {
  */
 
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_attr * lst[]);
+					 const struct thinkos_thread_initializer * lst[]);
 
 /**
  * thinkos_krn_nrt_init() - Initializes the ThinkOS non-real-time extension.

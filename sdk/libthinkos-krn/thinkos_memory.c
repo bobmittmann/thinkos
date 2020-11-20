@@ -34,10 +34,21 @@
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 
+extern void * __krn_data_start;
+extern void * __krn_data_end;
+extern void * __krn_code_start;
+extern void * __krn_code_end;
+
+extern void * __usr_data_start;
+extern void * __usr_data_end;
+extern void * __usr_code_start;
+extern void * __usr_code_end;
+
 /* -------------------------------------------------------------------------
  * Memory auxiliary functions 
  * ------------------------------------------------------------------------- */
 
+#if (THINKOS_ENABLE_MEMORY_MAP)
 bool thinkos_mem_belong(const struct thinkos_mem_desc * mem, uint32_t addr)
 {
 	uint32_t size;
@@ -279,16 +290,11 @@ int thinkos_mem_read(const struct thinkos_mem_desc * mem,
 
 	return len - rem;
 }
+#endif
 
-extern void * __krn_data_start;
-extern void * __krn_data_end;
-extern void * __krn_code_start;
-extern void * __krn_code_end;
-
-
+#if (THINKOS_ENABLE_SANITY_CHECK)
 bool __thinkos_mem_usr_rx_chk(uint32_t addr, int32_t size)
 {
-//#if (THINKOS_ENABLE_MPU)
 #if 0
 	uint32_t code_base = thinkos_rt.mem.krn_code.base;
 	uint32_t code_top = thinkos_rt.mem.krn_code.top;
@@ -335,13 +341,38 @@ bool __thinkos_mem_usr_rx_chk(uint32_t addr, int32_t size)
 	return true;
 }
 
-bool __thinkos_mem_usr_rw_chk(uint32_t addr, int32_t size)
-{
-	return __thinkos_mem_usr_rx_chk(addr, size);
-}
+bool __thinkos_mem_usr_rd_chk(uint32_t addr, int32_t size) 
+	__attribute__((alias("__thinkos_mem_usr_rx_chk")));
 
-bool __thinkos_mem_usr_rd_chk(uint32_t addr, int32_t size)
+bool __thinkos_mem_usr_rw_chk(uint32_t addr, int32_t size) 
+	__attribute__((alias("__thinkos_mem_usr_rx_chk")));
+
+#endif /* (THINKOS_ENABLE_SANITY_CHECK) */
+
+void __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+							const struct thinkos_mem_map * map)
 {
-	return __thinkos_mem_usr_rx_chk(addr, size);
+
+	DCC_LOG2(LOG_TRACE, "kernel code: %08x-%08x", (uintptr_t)&__krn_code_start, 
+			 (uintptr_t)&__krn_code_end);
+	DCC_LOG2(LOG_TRACE, "kernel data: %08x-%08x", (uintptr_t)&__krn_data_start, 
+			 (uintptr_t)&__krn_data_end);
+#if (THINKOS_ENABLE_MEMORY_MAP)
+	krn->mem_map = map;
+#endif
+
+#if (THINKOS_ENABLE_MPU)
+	thinkos_krn_mpu_init((uintptr_t)&__krn_code_start, 
+						 (uintptr_t)&__krn_code_end,
+						 (uintptr_t)&__krn_data_start, 
+						 (uintptr_t)&__krn_data_end);
+#endif
+
+#if 0
+	krn->mem.krn_code.base = (uintptr_t)&__krn_code_start;
+	krn->mem.krn_code.top = (uintptr_t)&__krn_code_end;
+	krn->mem.krn_data.base = (uintptr_t)&__krn_data_start;
+	krn->mem.krn_data.top = (uintptr_t)&__krn_data_end;
+#endif
 }
 

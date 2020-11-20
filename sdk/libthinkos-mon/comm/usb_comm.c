@@ -1056,6 +1056,7 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 {
 	struct usb_cdc_acm_dev * dev = &usb_class_if_instance.dev;
 	struct usb_class_if * cl = &usb_class_if_instance;
+	int ret;
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)usb;
@@ -1066,8 +1067,10 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->configured = 0;
 	dev->rx_paused = false;
 
-	DCC_LOG(LOG_TRACE, "usb_dev_init()");
-	usb_dev_init(dev->usb, cl, &monitor_usb_ev);
+	DCC_LOG1(LOG_TRACE, "usb_dev_init(%08x)", dev->usb);
+	ret = usb_dev_init(dev->usb, cl, &monitor_usb_ev);
+	(void)ret;
+	DCC_LOG1(LOG_TRACE, "usb_dev_init() --> %d", ret);
 
 	return &monitor_usb_comm_instance;
 }

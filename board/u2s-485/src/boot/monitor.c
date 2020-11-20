@@ -41,25 +41,10 @@
 
 #include <sys/dcclog.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-static const struct magic_blk app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 3
-	},
-	.rec = {
-		{  0xffffffff, 0x0a0de004 },
-		{  0xffffffff, 0x6e696854 },
-		{  0xffffffff, 0x00534f6b }
-	}
-};
-#pragma GCC diagnostic pop
-
 extern int __heap_end;
-const void * heap_end = &__heap_end; 
-extern uint32_t _stack;
+
 extern const struct thinkos_thread_inf thinkos_main_inf;
+void __attribute__((noreturn)) usb_xflash(uint32_t offs, uint32_t len);
 
 void board_reset(void);
 
@@ -107,19 +92,11 @@ struct magic {
 #endif
 
 #define BOOTLOADER_BLOCK_OFFS 0x00000000
-#define BOOTLOADER_BLOCK_SIZE (16 * 1024)
+#define BOOTLOADER_BLOCK_SIZE (12 * 1024)
 #define BOOTLOADER_START_ADDR (0x08000000 + BOOTLOADER_BLOCK_OFFS)
 
-#define CONFIG_BLOCK_OFFS 0x00008000
-#define CONFIG_BLOCK_SIZE (16 * 1024)
-#define CONFIG_START_ADDR (0x08000000 + CONFIG_BLOCK_OFFS)
-
-#define RBF_BLOCK_OFFS 0x00010000
-#define RBF_BLOCK_SIZE (64 * 1024)
-#define RBF_START_ADDR (0x08000000 + RBF_BLOCK_OFFS)
-
-#define APPLICATION_BLOCK_OFFS 0x00020000
-#define APPLICATION_BLOCK_SIZE (384 * 1024)
+#define APPLICATION_BLOCK_OFFS 0x00003000
+#define APPLICATION_BLOCK_SIZE (12 * 1024)
 #define APPLICATION_START_ADDR (0x08000000 + APPLICATION_BLOCK_OFFS)
 
 /* ASCII Keyboard codes */
@@ -424,56 +401,16 @@ bool monitor_process_input(const struct monitor_comm * comm, int c)
 	return true;
 }
 
-static void __main_thread_exec(int (* func)(void *), void * arg)
-{
-	int thread_id = 0;
-	struct thinkos_context * ctx;
-
-	DCC_LOG2(LOG_TRACE, "__thinkos_thread_ctx_init(func=%p arg=%p)", func, arg);
-	ctx = __thinkos_thread_ctx_init(thread_id, (uintptr_t)&_stack, 
-									(uintptr_t)func, (uintptr_t)arg);
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
-#endif
-	
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	__thinkos_thread_sl_set(thread_id, 0);
-#endif
-
-	/* commit the context to the kernel */ 
-	__thinkos_thread_ctx_set(thread_id, ctx, CONTROL_SPSEL | CONTROL_nPRIV);
-
-	DCC_LOG1(LOG_INFO, "thread=%d [ready]", thread_id);
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
-
-	DCC_LOG(LOG_TRACE, "__thinkos_defer_sched()");
-	__thinkos_defer_sched();
-}
-
 static bool __monitor_app_exec(uintptr_t addr)
 {
-	uint32_t * signature = (uint32_t *)addr;
-	;
-	int i;
+	uintptr_t thumb = addr +  1;
+	int (* app)(void *, unsigned int);
 
-	for (i = app_magic.hdr.cnt - 1; i >= 0; --i) {
-		if (signature[i] != app_magic.rec[i].comp) {
-			return false;
-		}
-	}
+	app = (int (*)(void *, unsigned int))thumb;
+	if (monitor_thread_create(app, NULL) < 0)
+		return false;
 
-	if (i < 0) {
-		uintptr_t thumb;
-		int (* app)(void *);
-
-		thumb = ((uintptr_t)signature) + 1;
-		app = (int (*)(void *))thumb;
-		__main_thread_exec(app, NULL);
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 /* Default Monitor Task */
@@ -528,11 +465,12 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_puts("\r\n", comm);
 			goto is_connected;
 
-#if (MONITOR_UPGRADE_ENABLE)
 		case MONITOR_APP_UPLOAD:
 			monitor_clear(MONITOR_APP_UPLOAD);
+			usb_xflash((uintptr_t)&__heap_end, 4096);
 			break;
 
+#if (MONITOR_UPGRADE_ENABLE)
 		case MONITOR_USER_EVENT1:
 			monitor_clear(MONITOR_USER_EVENT1);
 			break;
@@ -594,19 +532,17 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 				DCC_LOG1(LOG_INFO, "monitor_comm_recv() = %d", cnt);
 			}
 			break;
-#if 0
+
 		case MONITOR_COMM_BRK:
+			monitor_clear(MONITOR_COMM_BRK);
 			monitor_comm_break_ack(comm);
 			break;
-#endif
+
 		case MONITOR_COMM_CTL:
 			monitor_clear(MONITOR_COMM_CTL);
 
 is_connected:
 			status = monitor_comm_status_get(comm);
-			if (status & COMM_ST_CONNECTED) {
-				DCC_LOG(LOG_TRACE, "connected....");
-			}
 			connected = (status & COMM_ST_CONNECTED) ? true : false;
 			thinkos_krn_console_connect_set(connected);
 
@@ -616,11 +552,10 @@ is_connected:
 			sigmask |= (1 << MONITOR_TX_PIPE);
 
 			if (connected) {
+				DCC_LOG(LOG_TRACE, "connected....");
 				sigmask |= ((1 << MONITOR_COMM_EOT) |
 							(1 << MONITOR_COMM_RCV));
 			}
-
-
 			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);
 			break;
 
@@ -694,3 +629,4 @@ is_connected:
 		}
 	}
 }
+

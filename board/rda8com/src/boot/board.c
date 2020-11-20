@@ -65,8 +65,7 @@ const struct thinkos_mem_desc peripheral_desc = {
 	.base = 0,
 	.cnt = 1,
 	.blk = {
-		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1},	/* RTC - 1K */
-		{.tag = "", 0x00000000, 0, 0, 0}
+		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}	/* RTC - 1K */
 		}
 };
 
@@ -80,17 +79,6 @@ struct thinkos_mem_map mem_map = {
 	}
 };
 
-const struct magic_blk thinkos_10_app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 4},
-	.rec = {
-		{0xffffffff, 0x08020021},
-		{0xffffffff, 0x10010000},
-		{0xffffffff, 0x6e696854},
-		{0xffffffff, 0x00534f6b}
-	}
-};
 #pragma GCC diagnostic pop
 
 extern const struct flash_dev stm32l4x_flash_dev;
@@ -212,6 +200,26 @@ void io_init(void)
 	;
 }
 
+void io_init_dbg(void)
+{
+	struct stm32_gpio *gpioa = STM32_GPIOA;
+//	struct stm32_gpio *gpiob = STM32_GPIOB;
+
+	gpioa->afrh = GPIO_AFRH_SET(8, GPIO_AF0)
+		| GPIO_AFRH_SET(11, GPIO_AF10) | GPIO_AFRH_SET(12, GPIO_AF10); /* USB */
+
+	gpioa->moder = GPIO_MODE_ALT_FUNC(8) /* MCO */
+		| GPIO_MODE_ALT_FUNC(11)| GPIO_MODE_ALT_FUNC(12) /* USB */
+	    | GPIO_MODE_ALT_FUNC(13) | GPIO_MODE_ALT_FUNC(14) /* JTAG */
+	    | GPIO_MODE_ALT_FUNC(15);	/* JTAG */
+
+	gpioa->otyper = GPIO_PUSH_PULL(8) /* MCO */
+		| GPIO_PUSH_PULL(11) | GPIO_PUSH_PULL(12); /* USB */
+
+	gpioa->ospeedr = GPIO_OSPEED_HIGH(8) /* MCO */
+		| GPIO_OSPEED_HIGH(11) | GPIO_OSPEED_HIGH(12); /* USB */
+}
+
 #ifndef SOFTRESET_DISABLE_DMA
 #define SOFTRESET_DISABLE_DMA 0
 #endif
@@ -248,7 +256,7 @@ void board_on_softreset(void)
 	}
 #endif
 
-#if 0
+#if 1
 	/* Reset all peripherals except USB_FS, GPIOA, GPIOB, FLASH and RTC */
 	rcc->ahb1rstr = ~((1 << RCC_FLASH) | (1 << RCC_RTC));
 	rcc->ahb2rstr = ~((1 << RCC_GPIOA) | (1 << RCC_GPIOB));
@@ -275,7 +283,7 @@ void board_on_softreset(void)
 	rcc->apb2enr = (1 << RCC_SPI1);
 
 	/* initialize IO's */
-//	io_init();
+	io_init_dbg();
 
 	/* Adjust USB interrupt priority */
 	cm3_irq_pri_set(STM32_IRQ_USB_FS, MONITOR_PRIORITY);
@@ -287,17 +295,19 @@ int fpga_configure(void);
 
 int board_init(void)
 {
-	int ret;
 
 	board_on_softreset();
 
 	DCC_LOG(LOG_TRACE, "Configuring FPGA...");
+#if 0
+	int ret;
 
 	if ((ret = fpga_configure()) < 0) {
 		DCC_LOG1(LOG_ERROR, VT_PSH VT_FRD VT_BRI 
 				 "FPGA configuration error %d!" VT_POP, ret);
 		return ret;
 	}
+#endif
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
 	thinkos_flash_drv_init(0, &board_flash_desc);
@@ -348,13 +358,19 @@ int board_configure_task(void *ptr)
 	return 0;
 }
 
-int board_selftest_task(void *ptr)
+int oard_default_task(void *ptr)
 {
 	return 0;
 }
 
 bool board_integrity_check(void)
 {
+	uint32_t tick;
+
+	for (tick = 0; tick < 10; ++tick) {
+		thinkos_sleep(500);
+	}
+
 	return true;
 }
 
@@ -401,19 +417,8 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.application = {
-			.tag = "",
-			.start_addr = 0x08010000,
-			.block_size = (96 * 2) * 1024,
-			.magic = &thinkos_10_app_magic},
 	.init = board_init,
 	.softreset = board_on_softreset,
-	.upgrade = NULL,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
-	.default_task = NULL,
-	.monitor_comm_init = board_comm_init,
 	.memory = &mem_map
 };
 
@@ -428,38 +433,76 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	DCC_LOG_CONNECT();
 
 #if DEBUG
-	udelay(0x8000);
+	mdelay(125);
 #endif
-
-	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
+	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FGR);
+	DCC_LOG(LOG_TRACE, "*************************************************");
+	DCC_LOG(LOG_TRACE, "*     RDA8COM ThinkOS Custom Bootloader         *");
+	DCC_LOG(LOG_TRACE, "*************************************************"
+			VT_POP "\n\n");
 #if DEBUG
-	udelay(0x8000);
+	mdelay(125);
 #endif
 
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 1. thinkos_krn_init()." VT_POP);
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
-	DCC_LOG(LOG_TRACE, "2. board_init().");
+#if DEBUG
+	mdelay(125);
+#endif
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 2. board_init()." VT_POP);
 	board_init();
 
-	DCC_LOG(LOG_TRACE, "2. usb_comm_init().");
+#if DEBUG
+	mdelay(125);
+#endif
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 3. usb_comm_init()." VT_POP);
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
-	DCC_LOG(LOG_TRACE, "2. thinkos_krn_monitor_init().");
+#if DEBUG
+	mdelay(125);
+#endif
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 4. thinkos_krn_monitor_init()." VT_POP);
 	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
 
-	DCC_LOG(LOG_TRACE, "2. board_integrity_check().");
+#if DEBUG
+	mdelay(125);
+#endif
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 5. thinkos_krn_irq_on()." VT_POP);
+	/* enable interrupts */
+	thinkos_krn_irq_on();
+
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 6. board_integrity_check()..." VT_POP);
 	if (!board_integrity_check()) {
+		DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
+				"**** board_integrity_check() failed." VT_POP);
+#if DEBUG
+		mdelay(10000);
+#endif
 		thinkos_abort();
 	}
 
 	app_addr = flash_desc.base + flash_desc.blk[FLASH_BLK_APP].off;  
 
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 7. thinkos_app_exec()..." VT_POP);
 	thinkos_app_exec(app_addr);
+	DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
+			"**** thinkos_app_exec() failed." VT_POP);
+#if DEBUG
+	mdelay(10000);
+#endif
 
-	DCC_LOG(LOG_ERROR, "2.thinkos_app_exec() failed!");
-
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 8. board_default_task()..." VT_POP);
 	board_default_task((void*)&this_board);
 }
 

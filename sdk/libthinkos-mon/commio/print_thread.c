@@ -27,31 +27,6 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-int __thinkos_thread_wq_get(unsigned int thread_id)
-{
-	struct thinkos_rt * rt = &thinkos_rt;
-	int wq;
-
-	if ((thread_id >= THINKOS_THREADS_MAX) || 
-		!__thinkos_thread_ctx_is_valid(thread_id)) {
-		return -1;
-	}
-
-#if THINKOS_ENABLE_THREAD_STAT
-	wq = rt->th_stat[thread_id] >> 1;
-#else
-	for (i = 0; i < THINKOS_WQ_CNT; ++i) {
-		if (rt->wq_lst[i] & (1 << thread_id))
-			break;
-	}
-	if (i == THINKOS_WQ_CNT)
-		return -1; /* not found */
-	wq = i;
-#endif /* THINKOS_ENABLE_THREAD_STAT */
-
-	return wq;
-}
-
 void monitor_print_thread(const struct monitor_comm * comm, 
 						 unsigned int thread_id)
 {
@@ -59,7 +34,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	struct thinkos_context * ctx;
 	int32_t timeout;
 	uint32_t cyccnt;
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	int sched_val;
 	int sched_pri;
 #endif
@@ -77,7 +52,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 		return;
 	}
 
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	wq = rt->th_stat[thread_id] >> 1;
 	tmw = rt->th_stat[thread_id] & 1;
 #else
@@ -88,25 +63,25 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	if (i == THINKOS_WQ_CNT)
 		return ; /* not found */
 	wq = i;
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 	tmw = rt->wq_clock & (1 << thread_id) ? 1 : 0;
 #else
 	tmw = 0;
 #endif
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	sched_val = rt->sched_val[thread_id];
 	sched_pri = rt->sched_pri[thread_id]; 
 #endif
 
-#if THINKOS_ENABLE_CLOCK
+#if (THINKOS_ENABLE_CLOCK)
 	timeout = (int32_t)(rt->clock[thread_id] - rt->ticks); 
 #else
 	timeout = -1;
 #endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	cyccnt = rt->cyccnt[thread_id];
 #else
 	cyccnt = 0;
@@ -117,7 +92,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	monitor_printf(comm, " - No: %d", thread_id + 1); 
-#if THINKOS_ENABLE_THREAD_INFO
+#if (THINKOS_ENABLE_THREAD_INFO)
 	if (rt->th_inf[thread_id])
 		monitor_printf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
 	else
@@ -125,7 +100,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 		monitor_printf(comm, ", '...'"); 
 
 	if (THINKOS_OBJ_READY == type) {
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 		if (thread_id != THINKOS_THREAD_IDLE) {
 			int irq;
 			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
@@ -149,7 +124,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 
 	}
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	monitor_printf(comm, " - sched: val=%3d pri=%3d", 
 			 sched_val, sched_pri); 
 #endif

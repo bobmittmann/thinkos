@@ -381,46 +381,46 @@ static const thread_resume_t thread_resume_lut[] = {
 
 #endif /* (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) */
 
-bool __thinkos_thread_pause(unsigned int thread_id)
+bool __thinkos_krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
 {
 	unsigned int wq;
 
 #if (THINKOS_ENABLE_PAUSE)
-	if (__bit_mem_rd(&thinkos_rt.wq_paused, thread_id) != 0) {
+	if (__bit_mem_rd(&krn->wq_paused, thread_id) != 0) {
 		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", thread_id+1);
 		/* paused */
 		return false;
 	}
 
 	/* insert into the paused queue */
-	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 1);
+	__bit_mem_wr(&krn->wq_paused, thread_id, 1);
 #endif
 
 #if (THINKOS_ENABLE_THREAD_STAT)
 	{
 		int stat;
 		/* remove the thread from a waiting queue, including ready  */
-		stat = thinkos_rt.th_stat[thread_id];
+		stat = krn->th_stat[thread_id];
 		wq = stat >> 1;
 		DCC_LOG5(LOG_INFO, "thread=%d stat=0x%02x wq=%d clk=%d, irq_th[irq]=%d", 
-				 thread_id+1, stat, wq, (stat & 1), thinkos_rt.irq_th[53]);
-		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);
+				 thread_id+1, stat, wq, (stat & 1), krn->irq_th[53]);
+		__bit_mem_wr(&krn->wq_lst[wq], thread_id, 0);
 #if (THINKOS_ENABLE_TIMESHARE)
 		/* possibly remove from the time share wait queue */
-		__bit_mem_wr((uint32_t *)&thinkos_rt.wq_tmshare, thread_id, 0);
+		__bit_mem_wr((uint32_t *)&krn->wq_tmshare, thread_id, 0);
 #endif
 	}
 #else
 	/* clear all bits on all queues */
 	for (wq = 0; wq < THINKOS_WQ_CNT; ++wq) 
-		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);
+		__bit_mem_wr(&krn->wq_lst[wq], thread_id, 0);
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 
 #if THINKOS_IRQ_MAX > 0
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (thinkos_rt.irq_th[irq] == (int)thread_id) {
+			if (krn->irq_th[irq] == (int)thread_id) {
 				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", thread_id+1, irq);
 				/* disable this interrupt source */
 				cm3_irq_disable(irq);
@@ -432,14 +432,14 @@ bool __thinkos_thread_pause(unsigned int thread_id)
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* posibly clear the step request */
-	__bit_mem_wr(&thinkos_rt.step_req, thread_id, 0);
+	__bit_mem_wr(&krn->step_req, thread_id, 0);
 	/* posibly clear the step on service */
-	__bit_mem_wr(&thinkos_rt.step_svc, thread_id, 0);
+	__bit_mem_wr(&krn->step_svc, thread_id, 0);
 #endif
 
 #if THINKOS_ENABLE_CLOCK
 	/* disable the clock */
-	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);
+	__bit_mem_wr(&krn->wq_clock, thread_id, 0);
 #endif
 
 	return true;
@@ -549,7 +549,7 @@ void thinkos_pause_svc(int32_t * arg, unsigned int self)
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (__bit_mem_rd(thinkos_rt.th_alloc, thread_id) == 0) {
+	if (__bit_mem_rd(krn->th_alloc, thread_id) == 0) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", thread_id);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
@@ -568,7 +568,7 @@ void thinkos_pause_svc(int32_t * arg, unsigned int self)
 
 	arg[0] = 0;
 
-	if (__thinkos_thread_pause(thread_id))
+	if (__thinkos_krn_thread_pause(krn, thread_id))
 		__thinkos_defer_sched();
 }
 

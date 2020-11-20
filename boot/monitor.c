@@ -164,6 +164,10 @@ void gdb_stub_task(const struct monitor_comm * comm);
   #define MONITOR_THREADINFO_ENABLE  1
 #endif
 
+#if !(THINKOS_ENABLE_MONITOR)
+#error "Need THINKOS_ENABLE_MONITOR"
+#endif
+
 #if !(THINKOS_ENABLE_MONITOR_THREADS)
 #error "Need THINKOS_ENABLE_MONITOR_THREADS"
 #endif
@@ -446,12 +450,13 @@ static void monitor_on_bkpt(struct monitor * mon)
 static void monitor_on_step(struct monitor * mon)
 {
 	const struct monitor_comm * comm = mon->comm;
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct monitor_thread_inf inf;
 	unsigned int thread_id;
 
 	thread_id = monitor_thread_step_get();
 	monitor_thread_inf_get(thread_id, &inf);
-	__thinkos_pause_all();
+	__thinkos_krn_pause_all(krn);
 
 	if (monitor_comm_isconnected(comm)) {
 		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, inf.pc);
@@ -466,9 +471,10 @@ static void monitor_on_step(struct monitor * mon)
 #if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(const struct monitor_comm * comm)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	monitor_printf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
-	__thinkos_pause_all();
+	__thinkos_krn_pause_all(krn);
 	if (monitor_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "monitor_wait_idle() failed!");
 	}

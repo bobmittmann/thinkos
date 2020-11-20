@@ -184,8 +184,7 @@
 #define THINKOS_ENABLE_APP_CRC              1
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
-#define THINKOS_CUSTOM_APP_TAG                     "S32F405"
-//#define THINKOS_APP_TAG                     {0x334d5453, 0x30344632, 0x004b4435}
+#define THINKOS_CUSTOM_APP_TAG              "S32F405"
 
 /* -------------------------------------------------------------------------
    RCC 

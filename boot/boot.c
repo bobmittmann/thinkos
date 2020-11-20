@@ -58,50 +58,6 @@
 #endif
 
 
-static bool magic_match(const struct magic_blk * magic, uintptr_t addr)
-{
-	uint32_t * mem = (uint32_t *)addr;
-	int k;
-	int j;
-
-	k = magic->hdr.pos;
-	for (j = 0; j < magic->hdr.cnt; ++j) {
-		if ((mem[k++] & magic->rec[j].mask) != magic->rec[j].comp)
-			return false;
-	}	
-
-	return true;
-}
-
-void __attribute__((noreturn)) app_task(const struct thinkos_board * board) 
-{
-	const struct monitor_app_desc * desc = &board->application;
-	uintptr_t app_entry = (uintptr_t)desc->start_addr;
-
-	if (!magic_match(desc->magic, app_entry)) {
-		DCC_LOG(LOG_WARNING, "Invalid ThinkOS app.");
-	} else {
-		int (* app_main)(int argc, const char * argv[]);
-		const char * app_argc[1];
-		int ret;
-
-		app_entry |= 0x00000001; /* thumb call */
-		app_main = (int (*)(int, const char **))app_entry;
-		app_argc[0] = board->application.tag;
-
-#if DEBUG
-		udelay(32768);
-#endif
-		DCC_LOG(LOG_TRACE, "Running ThinkOS App...");
-		ret = app_main(1, app_argc);
-		(void)ret;
-		DCC_LOG1(LOG_WARNING, "thinkos_app() returned with code %d.", ret);
-	}
-
-	board->default_task((void *)board);
-	for(;;);
-}
-
 void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 
 void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
@@ -155,14 +111,6 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	thinkos_krn_monitor_init(comm, monitor, (void *)board);
 #endif
 
-#if (BOOT_SELFTEST_ENABLE)
-	/* This callback is used as an environment self check. */
-//	DCC_LOG(LOG_TRACE, "board->selftest_task()");
-	if ((ret = board->selftest_task((void *)board)) < 0) {
-//		DCC_LOG(LOG_TRACE, "/!\\ self test failed!!!");
-		thinkos_abort();
-	}
-#endif
 #if (BOOT_PREBOOT_ENABLE)
 	/* This callback is used as a validation.
 	   - prevent the application to automatically run. Ex:
@@ -178,22 +126,12 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 //	udelay(0x8000);
 #endif
 
-#if (THINKOS_ENABLE_APP)
-	{
-		uintptr_t addr = board->application.start_addr;
-		thinkos_app_exec(addr);
-		board->default_task((void*)board);
-	}
-#else
-	#if (BOOT_MONITOR_ENABLE)
-		DCC_LOG(LOG_TRACE, "9. thinkos_thread_abort()");
-		thinkos_abort();
-	#else
-		DCC_LOG(LOG_TRACE, "10. app_task()");
-		app_task(board);
-	#endif
-#endif
-		for(;;);
+	uintptr_t addr = board->application.start_addr;
+	thinkos_app_exec(addr);
+	
+	board->default_task((void*)board);
+
+	for(;;);
 }
 
 

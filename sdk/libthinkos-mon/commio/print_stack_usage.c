@@ -25,6 +25,8 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
+#if (THINKOS_ENABLE_MONITOR)
+
 extern uint32_t thinkos_monitor_stack[];
 extern const uint16_t thinkos_monitor_stack_size;
 
@@ -89,4 +91,6 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "
 				   "| %6d\r\n", -2, tag, pc, sl, sp, size, free);
 }
+
+#endif
 

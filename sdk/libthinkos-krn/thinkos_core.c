@@ -21,12 +21,10 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
 
 #include <sys/delay.h>
 #include <thinkos.h>
@@ -118,7 +116,7 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif
 }
 
-void thinkos_krn_kill_all(struct thinkos_rt * krn)
+void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 {
 	int active = __thread_active_get(krn);
 

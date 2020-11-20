@@ -27,9 +27,6 @@
 #error "Never use <thinkos/except.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
 #define THINKOS_EXCEPT_ERRNO_OFFS      0
 #define THINKOS_EXCEPT_SEQ_OFFS        1
 #define THINKOS_EXCEPT_RET_OFFS        2

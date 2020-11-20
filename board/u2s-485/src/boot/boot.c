@@ -92,7 +92,7 @@ void main(int argc, char ** argv)
 	DCC_LOG_INIT();
 
 #ifndef UDELAY_FACTOR 
-	cm3_udelay_calibrate();
+	thinkos_krn_udelay_calibrate();
 #endif
 
 #if DEBUG
@@ -103,15 +103,12 @@ void main(int argc, char ** argv)
 	DCC_LOG(LOG_INFO, "______________________________________________________");
 	mdelay(100);
 #endif
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED, NULL, NULL);
 
 	board_init();
-
-	/* Wait for the other power supply and subsystems to stabilize */
-	DCC_LOG(LOG_TRACE, "4. thinkos_sleep().");
-	thinkos_sleep(100);
 
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
