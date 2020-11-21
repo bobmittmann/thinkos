@@ -187,7 +187,7 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	tail = pipe->tail;
 	/* get the maximum number of chars we can write into buffer */
 	if ((max = tail + THINKOS_CONSOLE_TX_FIFO_LEN - head) == 0) {
-		DCC_LOG2(LOG_TRACE, "fifo full: head=%u tail=%u", head, tail);
+		DCC_LOG2(LOG_INFO, "fifo full: head=%u tail=%u", head, tail);
 		return 0;
 	}
 	/* cnt is the number of chars we will write to the buffer,
@@ -434,7 +434,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
 void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_TRACE, "PC=%08x ...........", __thinkos_thread_pc_get(th)); 
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(th)); 
 	/* wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__thinkos_wakeup_return(wq, th, 0);
@@ -443,11 +443,11 @@ void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw)
 void thinkos_console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
 	if (!tx_pipe_isempty()) {
-		DCC_LOG1(LOG_TRACE, "PC=%08x pipe full ..",  
+		DCC_LOG1(LOG_INFO, "PC=%08x pipe full ..",  
 				 __thinkos_thread_pc_get(th)); 
 		console_signal_tx_pipe();
 	} else {
-		DCC_LOG1(LOG_TRACE, "PC=%08x ...........",
+		DCC_LOG1(LOG_INFO, "PC=%08x ...........",
 				 __thinkos_thread_pc_get(th)); 
 	}
 	/* wakeup from the console write wait queue setting the return value to 0.
@@ -490,7 +490,7 @@ void thinkos_console_svc(int32_t * arg, unsigned int self)
 
 #if (THINKOS_ENABLE_CONSOLE_MISC)
 	case CONSOLE_IS_CONNECTED:
-		DCC_LOG1(LOG_TRACE, "CONSOLE_IS_CONNECTED(%d)", 
+		DCC_LOG1(LOG_INFO, "CONSOLE_IS_CONNECTED(%d)", 
 				thinkos_console_rt.connected);
 		arg[0] = thinkos_console_rt.connected;
 		break;
@@ -524,7 +524,7 @@ void thinkos_console_svc(int32_t * arg, unsigned int self)
 
 	case CONSOLE_DRAIN:
 #if (THINKOS_ENABLE_CONSOLE_DRAIN)
-		DCC_LOG(LOG_TRACE, "CONSOLE_DRAIN");
+		DCC_LOG(LOG_INFO, "CONSOLE_DRAIN");
 		wq = THINKOS_WQ_CONSOLE_WR;
 drain_again:
 #if (ENABLE_CONSOLE_DEBUG)
@@ -740,7 +740,7 @@ wr_again:
 			bool val = arg[1];
 
 			thinkos_console_rt.raw_mode = val ? 1 : 0;
-			DCC_LOG1(LOG_TRACE, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
+			DCC_LOG1(LOG_INFO, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
 			arg[0] = THINKOS_OK;
 			console_signal_ctl();
 		}
@@ -763,20 +763,20 @@ bool thinkos_krn_console_is_raw_mode(void)
 
 void thinkos_krn_console_raw_mode_set(bool val) 
 {
-	DCC_LOG1(LOG_TRACE, "raw_mode=%s", val ? "true" : "false");
+	DCC_LOG1(LOG_INFO, "raw_mode=%s", val ? "true" : "false");
 	thinkos_console_rt.raw_mode = val;
 }
 #endif
 
 void thinkos_krn_console_connect_set(bool val) 
 {
-	DCC_LOG1(LOG_TRACE, "connected=%s", val ? "true" : "false");
+	DCC_LOG1(LOG_INFO, "connected=%s", val ? "true" : "false");
 	thinkos_console_rt.connected = val;
 }
 
 void thinkos_krn_console_init(void)
 {
-	DCC_LOG1(LOG_TRACE, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
+	DCC_LOG1(LOG_INFO, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
 					 sizeof(thinkos_console_rt));
 	console_clear_tx_pipe();

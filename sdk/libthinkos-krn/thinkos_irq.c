@@ -27,7 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 
 #if (THINKOS_IRQ_MAX) > 0
-void __thinkos_irq_reset_all(void)
+void __krn_irq_reset_all(struct thinkos_rt* krn)
 {
 	int irq;
 
@@ -37,12 +37,6 @@ void __thinkos_irq_reset_all(void)
 		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
 	}
 
-#ifdef CM3_RAM_VECTORS
-	__thinkos_memcpy(__ram_vectors, &__vcts_start, 
-					 &__vcts_end - &__vcts_start);
-	/* Remap the Vector table to SRAM */
-	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
-#endif
 }
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
@@ -75,9 +69,36 @@ void __thinkos_irq_disable_all(void)
 }
 #endif
 
-void __thinkos_irq_init(void)
+void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 {
-	__thinkos_irq_reset_all();
+
+	DCC_LOG(LOG_MSG, "initializing interrupts");
+	__krn_irq_reset_all(krn);
+
+#ifdef CM3_RAM_VECTORS
+	{
+		uint32_t * tab_ptr = (uint32_t *)&__vcts_start;
+		unsigned int tab_size = (uintptr_t)&__vcts_end - 
+			(uintptr_t)&__vcts_start;
+
+		DCC_LOG2(LOG_MSG, "copying RAM vectors 0x%08x, %d", 
+				 tab_ptr, tab_size);
+
+		__thinkos_memcpy(__ram_vectors, tab_ptr, tab_size);
+	}
+#endif
+
+#ifdef CM3_RAM_VECTORS
+	/* Remap the Vector table to SRAM */
+	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
+
+	DCC_LOG1(LOG_MSG, "remaping vectors to 0x%08x", CM3_SCB->vtor);
+
+	if (CM3_SCB->vtor != (uintptr_t)__ram_vectors) {
+		DCC_LOG1(LOG_PANIC, "SCB->VTOR(0x%08x) != __ram_vectors!", 
+				 CM3_SCB->vtor);
+	}
+#endif
 }
 
 #if (THINKOS_IRQ_MAX) > 0
@@ -101,7 +122,7 @@ void cm3_default_isr(unsigned int irq)
 		DCC_LOG2(LOG_ERROR, "<%d> IRQ %d invalid thread!", th + 1, irq);
 		return;
 	} else {
-		DCC_LOG2(LOG_TRACE, "<%d> IRQ %d..", th + 1, irq);
+		DCC_LOG2(LOG_MSG, "<%d> IRQ %d..", th + 1, irq);
 	}
 #endif
 	/* insert the thread into ready queue */
@@ -196,7 +217,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 	}
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
-	DCC_LOG2(LOG_INFO, "<%d> IRQ %d!", self, irq);
+	DCC_LOG2(LOG_MSG, "<%d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
@@ -248,7 +269,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 /* This macro is here for backword compatibility, TODO should be deprecated */
 #if (THINKOS_ENABLE_IRQ_CTL)
 	case THINKOS_IRQ_ENABLE:
-		DCC_LOG1(LOG_TRACE, "enabling IRQ %d", irq);
+		DCC_LOG1(LOG_MSG, "enabling IRQ %d", irq);
 		/* clear pending interrupt */
 		cm3_irq_enable(irq);
 		break;
@@ -298,6 +319,8 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
 
 			/* set the vector */
 			__ram_vectors[irq + 16] = isr;
+
+			DCC_LOG2(LOG_MSG, "irq_register(irq=%d isr=0x%08x)", irq, isr);
 
 			/* enable this interrupt source */
 			cm3_irq_enable(irq);

@@ -58,14 +58,15 @@ struct serial_dev * stm32f_uart6_serial_init(unsigned int baudrate,
 {
 	struct stm32f_serial_drv * drv = &uart6_serial_drv;
 
-	DCC_LOG(LOG_TRACE, "IDLE!");
 
+	DCC_LOG1(LOG_TRACE, "UART6: baudrate=%d", baudrate);
 	stm32f_serial_init(drv, baudrate, flags);
 
 #ifdef THINKAPP
 	/* configure and Enable interrupt */
 	thinkos_irq_register(STM32_IRQ_USART6, SERIAL_IRQ_PRIORITY,
 						 stm32f_usart6_isr);
+	DCC_LOG1(LOG_TRACE, "UART6: irq=%d", STM32_IRQ_USART6);
 #else
 	/* configure interrupts */
 	cm3_irq_pri_set(STM32_IRQ_USART6, SERIAL_IRQ_PRIORITY);

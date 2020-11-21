@@ -82,6 +82,9 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
+	//__thinkos_irq_disable_all();
+	__thread_disble_all(krn);
+
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
 			 VT_POP, thread_idx + 1, errno);
 
@@ -91,6 +94,14 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 
 	__tdump();
 
+
+//	__thread_suspend_all(krn);
+
+	__krn_defer_sched(krn);
+
+	monitor_signal_thread_fault(thread_idx, errno);
+
+#if  0
 #if (THINKOS_ENABLE_MONITOR) 
 #if (THINKOS_ENABLE_PAUSE) 
 	__thinkos_krn_pause_all(krn);
@@ -106,12 +117,11 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 	}
-	__thinkos_defer_sched();
 #endif
-	monitor_signal_thread_fault(thread_idx);
-#else
-	/* FIXME: issue an exception */
 #endif
+#endif
+
+
 }
 
 struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp, 
@@ -144,7 +154,7 @@ struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp,
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_fault(thread_idx);
+	monitor_signal_thread_fault(thread_idx, errno);
 #else
 	/* FIXME: issue an exception */
 #endif
@@ -181,7 +191,7 @@ void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread_idx)
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_fault(thread_idx);
+	monitor_signal_thread_fault(thread_idx, errno);
 #else
 	/* FIXME: issue an exception */
 #endif

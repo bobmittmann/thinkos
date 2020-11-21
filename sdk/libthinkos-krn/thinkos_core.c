@@ -130,7 +130,7 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
 	__thinkos_irq_disable_all();
 	DCC_LOG(LOG_TRACE, "3. Reset all intrerrupts ...");
-	__thinkos_irq_reset_all();
+	__krn_irq_reset_all(krn);
 #endif
 
 #if THINKOS_ENABLE_EXCEPTIONS
@@ -245,6 +245,51 @@ uint32_t __thinkos_thread_xpsr_get(unsigned int id)
 	return __thread_xpsr_get(&thinkos_rt, id); 
 }
 
+uint32_t __thinkos_thread_r0_get(unsigned int id) 
+{
+	return __thread_r0_get(&thinkos_rt, id);
+}
+
+void __thinkos_thread_r0_set(unsigned int id, uint32_t val) 
+{
+	__thread_r0_set(&thinkos_rt, id, val);
+}
+
+uint32_t __thinkos_thread_r1_get(unsigned int id) 
+{
+	return __thread_r1_get(&thinkos_rt, id);
+}
+
+void __thinkos_thread_r1_set(unsigned int id, uint32_t val) 
+{
+	__thread_r1_set(&thinkos_rt, id, val);
+}
+
+void __thinkos_thread_r2_set(unsigned int id, uint32_t val) 
+{
+	__thread_r2_set(&thinkos_rt, id, val);
+}
+
+void __thinkos_thread_r3_set(unsigned int id, uint32_t val) 
+{
+	__thread_r3_set(&thinkos_rt, id, val);
+}
+
+void __thinkos_thread_pc_set(unsigned int id, uintptr_t val) 
+{
+	__thread_pc_set(&thinkos_rt, id, val);
+}
+
+void __thinkos_thread_lr_set(unsigned int id, uintptr_t val) 
+{
+	__thread_lr_set(&thinkos_rt, id, val);
+}
+
+uint32_t * __thinkos_thread_frame_get(unsigned int id) 
+{
+	return __thread_frame_get(&thinkos_rt, id);
+}
+
 uint32_t __thinkos_thread_ctrl_get(unsigned int id) 
 {
 	return __thread_ctrl_get(&thinkos_rt, id); 
@@ -274,44 +319,6 @@ void  __thinkos_thread_ctx_flush(int32_t arg[], unsigned int id)
 void  __thinkos_thread_ctx_clr(unsigned int id) 
 {
 	__thread_ctx_clr(&thinkos_rt, id);
-}
-
-void __thinkos_thread_r0_set(unsigned int id, uint32_t val) 
-{
-	__thread_ctx_get(&thinkos_rt, id)->r0 = val;
-}
-
-void __thinkos_thread_r1_set(unsigned int id, uint32_t val) {
-	__thread_ctx_get(&thinkos_rt, id)->r1 = val;
-}
-
-void __thinkos_thread_r2_set(unsigned int id, uint32_t val) 
-{
-	__thread_ctx_get(&thinkos_rt, id)->r2 = val;
-}
-
-void __thinkos_thread_r3_set(unsigned int id, uint32_t val) 
-{
-	__thread_ctx_get(&thinkos_rt, id)->r3 = val;
-}
-
-void __thinkos_thread_pc_set(unsigned int id, uintptr_t val) 
-{
-	__thread_ctx_get(&thinkos_rt, id)->pc = (uint32_t)val;
-}
-
-void __thinkos_thread_lr_set(unsigned int id, uintptr_t val) 
-{
-	__thread_ctx_get(&thinkos_rt, id)->lr = (uint32_t)val;
-}
-
-uint32_t __thinkos_thread_r0_get(unsigned int id) 
-{
-	return __thread_ctx_get(&thinkos_rt, id)->r0;
-}
-
-uint32_t * __thinkos_thread_frame_get(unsigned int id) {
-	return (uint32_t *)&__thread_ctx_get(&thinkos_rt, id)->r0;
 }
 
 const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id) 
@@ -350,4 +357,228 @@ void __thinkos_thread_cyccnt_clr(unsigned int id)
 	__thread_cyccnt_clr(&thinkos_rt, id);
 }
 
+unsigned int __thinkos_thread_stat_wq_get(unsigned int th) 
+{
+	return __thread_stat_wq_get(&thinkos_rt, th);
+}
 
+bool __thinkos_thread_stat_tmw_get(unsigned int th) 
+{
+	return __thread_stat_tmw_get(&thinkos_rt, th);
+}
+
+void __thinkos_thread_stat_clr(unsigned int th) 
+{
+	__thread_stat_clr(&thinkos_rt, th);
+}
+
+void __thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd) 
+{
+	__thread_stat_set(&thinkos_rt, th, wq, tmd);
+}
+
+/* -------------------------------------------------------------------------- 
+ * thread stack limit access methods 
+ * --------------------------------------------------------------------------*/
+
+void __thinkos_thread_sl_clr(unsigned int idx) 
+{
+	__thread_sl_clr(&thinkos_rt, idx);
+}
+
+void __thinkos_thread_sl_set(unsigned int idx, uint32_t addr) 
+{
+	__thread_sl_set(&thinkos_rt, idx, addr);
+}
+
+void __thinkos_active_set(unsigned int th) 
+{
+	__thread_active_set(&thinkos_rt, th);
+}
+
+unsigned int __thinkos_active_get(void) 
+{
+	return __thread_active_get(&thinkos_rt);
+}
+
+uint32_t __thinkos_active_sl_get(void) 
+{
+	return __thread_active_sl_get(&thinkos_rt);
+}
+
+/* Set the active thread and stack limit */
+void __thinkos_active_sl_set(unsigned int th, uint32_t sl) 
+{
+	__thread_active_sl_set(&thinkos_rt, th, sl);
+}
+
+bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq) 
+{
+	return __thread_is_in_wq(&thinkos_rt, id, wq);
+}
+
+void  __thinkos_ready_clr(void) 
+{
+	__wq_ready_clr(&thinkos_rt); 
+}
+
+void __thinkos_suspend(unsigned int idx) 
+{
+	__thread_suspend(&thinkos_rt, idx);
+}
+
+int __thinkos_wq_idx(uint32_t * ptr) 
+{
+	return __wq_idx(&thinkos_rt, ptr);
+}
+
+int __thinkos_wq_head(unsigned int wq) 
+{
+	return __wq_head(&thinkos_rt, wq);
+}
+
+void __thinkos_wq_insert(unsigned int wq, unsigned int th)
+{
+	__wq_insert(&thinkos_rt, wq, th);
+}
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+void __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms)
+{
+	__tmdwq_insert(&thinkos_rt, wq, th, ms);
+}
+#endif
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+void __thinkos_wq_clock_insert(unsigned int th, unsigned int ms) 
+{
+	__wq_clock_insert(&thinkos_rt, th, ms);
+}
+#endif
+
+void __thinkos_wq_remove( unsigned int wq, unsigned int th) 
+{
+	__wq_remove(&thinkos_rt, wq, th);
+}
+
+void __thinkos_wakeup( unsigned int wq, unsigned int th) 
+{
+	__wq_wakeup(&thinkos_rt, wq, th);
+}
+
+void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret) 
+{
+	__wq_wakeup_return(&thinkos_rt, wq, th, ret);
+}
+
+
+#if (THINKOS_ENABLE_CLOCK)
+uint32_t  __thinkos_ticks(void) 
+{
+	return __krn_ticks(&thinkos_rt);
+}
+#endif
+
+/* Set the fault flag */
+void __thinkos_thread_fault_set(unsigned int th, int errno) 
+{
+	__thread_fault_set(&thinkos_rt, th, errno);
+}
+
+/* Clear the fault flag */
+void __thinkos_thread_fault_clr(unsigned int th) 
+{
+	__thread_fault_clr(&thinkos_rt, th);
+}
+
+/* Get the fault flag */
+bool __thinkos_thread_fault_get(unsigned int th) 
+{
+	return __thread_fault_get(&thinkos_rt, th);
+}
+
+
+/* Set the pause flag */
+void __thinkos_thread_pause_set(unsigned int th) 
+{
+	__thread_pause_set(&thinkos_rt, th);
+}
+
+/* Clear the pause flag */
+void __thinkos_thread_pause_clr(unsigned int th) 
+{
+	__thread_pause_clr(&thinkos_rt, th);
+}
+
+/* Get the pause flag */
+bool __thinkos_thread_pause_get(unsigned int th) 
+{
+	return __thread_pause_get(&thinkos_rt, th);
+}
+
+
+/* -------------------------------------------------------------------------- 
+ * kernel scheduler methods 
+ * --------------------------------------------------------------------------*/
+
+void __thinkos_cancel_sched(void)
+{
+	__krn_cancel_sched(&thinkos_rt);
+}
+
+/* flags a deferred execution of the scheduler */
+void  __thinkos_defer_sched(void)
+{
+	__krn_defer_sched(&thinkos_rt);
+}
+/* flags a deferred execution of the scheduler */
+void __thinkos_preempt(void)
+{
+	__krn_preempt(&thinkos_rt);
+}
+
+/* -------------------------------------------------------------------------- 
+ * kernel structure public access methods 
+ * --------------------------------------------------------------------------*/
+#if 0
+unsigned int thinkos_krn_active_get(struct thinkos_rt * krn) 
+{
+	idx = __thread_active_get(krn);
+
+	return idx;
+}
+#endif
+
+const char * __thinkos_thread_tag_get(unsigned int idx) 
+{
+	return __thread_tag_get(&thinkos_rt, idx);
+}
+
+int __thinkos_thread_wq_get(unsigned int thread_idx)
+{
+	return __thread_wq_get(&thinkos_rt, thread_idx);
+}
+
+/* -------------------------------------------------------------------------- 
+ * Objects
+ * --------------------------------------------------------------------------*/
+
+unsigned int __thinkos_obj_kind(unsigned int oid) 
+{
+	return __obj_kind(oid);
+}
+
+int __thinkos_kind_prefix(unsigned int kind)
+{ 
+	return __kind_prefix(kind);
+}
+
+const char * __thinkos_kind_name(unsigned int kind)
+{ 
+	return __kind_name(kind);
+}
+
+int __thinkos_thread_tmw_get(unsigned int idx) 
+{
+	return __thread_tmw_get(&thinkos_rt, idx);
+}

@@ -35,7 +35,6 @@ extern const uint16_t thinkos_except_stack_size;
 
 void monitor_print_stack_usage(const struct monitor_comm * comm)
 {
-	struct thinkos_rt * rt = &thinkos_rt;
 	struct monitor_swap * swp;
 	unsigned int size;
 	const char * tag;
@@ -55,14 +54,14 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	monitor_printf(comm, "\r\n");
 
 	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
-		if (__thread_ctx_is_valid(rt, i)) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 
-			tag = __thread_tag_get(rt, i);
-			sp = __thread_sp_get(rt, i);
-			pc = __thread_pc_get(rt, i);
-			sl = __thread_sl_get(rt, i);
+			tag = __thinkos_thread_tag_get(i);
+			sp = __thinkos_thread_sp_get(i);
+			pc = __thinkos_thread_pc_get(i);
+			sl = __thinkos_thread_sl_get(i);
 			size = sp - sl;
-			free = __scan_stack((void *)sl, size);
+			free = __thinkos_scan_stack((void *)sl, size);
 
 			monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "
 						   "| %6d\r\n", i + 1, tag, pc, sl, sp, size, free);
@@ -75,7 +74,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	pc = cm3_pc_get();
 	sl = (uintptr_t)thinkos_monitor_stack;
 	size = thinkos_monitor_stack_size;
-	free = __scan_stack((void *)sl, size);
+	free = __thinkos_scan_stack((void *)sl, size);
 
 	monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "
 				   "| %6d\r\n", -1, tag, pc, sl, sp, size, free);
@@ -86,7 +85,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	pc = swp->lr;
 	sl = (uintptr_t)thinkos_except_stack;
 	size = thinkos_except_stack_size;
-	free = __scan_stack((void *)sl, size);
+	free = __thinkos_scan_stack((void *)sl, size);
 
 	monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "
 				   "| %6d\r\n", -2, tag, pc, sl, sp, size, free);

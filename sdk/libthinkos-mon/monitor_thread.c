@@ -40,8 +40,8 @@ void monitor_thread_destroy(int thread_id)
 		return;
 	}
 
-	DCC_LOG(LOG_MSG, "__thinkos_thread_abort()");
-	__thinkos_thread_abort(thread_id);
+	DCC_LOG(LOG_ERROR, "__thinkos_thread_abort()");
+	//__thinkos_thread_abort(thread_id);
 
 	monitor_wait_idle();
 }

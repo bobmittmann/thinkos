@@ -340,6 +340,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_krn_console_init();
 #endif
 
+	DCC_LOG(LOG_TRACE, "Memory management init...");
+	__thinkos_krn_mem_init(krn, map);
+
+	DCC_LOG(LOG_TRACE, "Interrupts init init...");
+	__thinkos_krn_irq_init(krn);
+
 	if (lst == NULL) {
 		bool privileged;
 
@@ -378,6 +384,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		/* FIXME: not implemented... */
 		return THINKOS_ENOSYS;
 	}
+
+	__thread_enable_all(krn);
 
 	return thread_idx + 1;
 }

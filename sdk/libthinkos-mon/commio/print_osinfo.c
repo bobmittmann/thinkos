@@ -44,7 +44,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 	int j;
 
 
-	active = __thread_active_get(rt);
+	active = __thinkos_active_get();
 	DCC_LOG1(LOG_TRACE, "active=%d", active + 1);
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -111,7 +111,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 #endif
 
 	for (i = 0; i < THINKOS_CTX_CNT; ++i) {
-		if (__thread_ctx_is_valid(rt, i)) {
+		if (__thinkos_thread_ctx_is_valid(i)) {
 			const char * tag;
 			uint32_t sl;
 			uint32_t sp;
@@ -123,19 +123,19 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			monitor_printf(comm, "%3d", i + 1);
-			tag = __thread_tag_get(rt, i);
-			sl = __thread_sl_get(rt, i);
-			sp = __thread_sp_get(rt, i);
-			pc = __thread_pc_get(rt, i);
+			tag = __thinkos_thread_tag_get(i);
+			sl = __thinkos_thread_sl_get(i);
+			sp = __thinkos_thread_sp_get(i);
+			pc = __thinkos_thread_pc_get(i);
 
 			monitor_printf(comm, " | %7s | %08x | %08x | %08x", 
 						   tag, sl, sp, pc); 
 
-			oid = __thread_stat_wq_get(rt, i);
-			tmw = __thread_stat_tmw_get(rt, i);
+			oid = __thinkos_thread_stat_wq_get(i);
+			tmw = __thinkos_thread_stat_tmw_get(i);
 #if (THINKOS_ENABLE_THREAD_FAULT)
 			if (oid == THINKOS_WQ_FAULT) {
-				int errno = __thread_errno_get(rt, i);
+				int errno = __thinkos_thread_errno_get(i);
 				monitor_printf(comm, " | ERR %2d", errno);
 			} else 
 #endif
@@ -179,7 +179,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 				type = __thinkos_obj_kind(oid);
 				monitor_printf(comm, " | %c%c %3d", 
 						 tmw ? 'T' : ' ',
-						 thinkos_type_prefix_lut[type], 
+						 __thinkos_kind_prefix(type), 
 						 oid);
 			}
 #if THINKOS_ENABLE_CLOCK
@@ -214,7 +214,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 		wq = rt->wq_lst[j];
 		if (wq) { 
 			type = __thinkos_obj_kind(j);
-			monitor_printf(comm, "%3d %5s: {", j, thinkos_type_name_lut[type]);
+			monitor_printf(comm, "%3d %5s: {", j, __thinkos_kind_name(type));
 			for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 				if (wq & (1 << i)) 
 					monitor_printf(comm, " %d", i + 1);

@@ -23,7 +23,7 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
-int __scan_stack(void * stack, unsigned int size)
+int __thinkos_scan_stack(void * stack, unsigned int size)
 {
 	uint32_t * ptr = (uint32_t *)stack;
 	unsigned int i;

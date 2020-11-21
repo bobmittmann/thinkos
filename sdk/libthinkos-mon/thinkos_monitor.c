@@ -54,6 +54,7 @@ struct {
 
 	/* break thread id */
 	int8_t brk_thread_id;
+	int8_t brk_code;
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* entry/exit signal thread id */
@@ -310,16 +311,12 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 }
 #endif
 
-void monitor_signal_thread_fault(unsigned int thread_id) 
+void monitor_signal_thread_fault(unsigned int thread_idx, int32_t code) 
 {
-	thinkos_monitor_rt.brk_thread_id = thread_id;
+	/* adjust the thread id */
+	thinkos_monitor_rt.brk_thread_id = thread_idx + 1;
+	thinkos_monitor_rt.brk_code = code;
 	monitor_signal(MONITOR_THREAD_FAULT);
-}
-
-void monitor_signal_thread_break(unsigned int thread_id) 
-{
-	thinkos_monitor_rt.brk_thread_id = thread_id;
-	monitor_signal(MONITOR_THREAD_BREAK);
 }
 
 #define THINKOS_THREAD_LAST (THINKOS_THREAD_IDLE)
@@ -373,7 +370,7 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 	return 0;
 }
 
-int monitor_thread_break_get(void)
+int monitor_thread_break_get(int32_t * pcode)
 {
 	struct thinkos_context * ctx;
 	int thread_idx;
@@ -383,6 +380,9 @@ int monitor_thread_break_get(void)
 			return -1;
 	}
 
+	if (pcode) {
+		*pcode = thinkos_monitor_rt.brk_code;
+	}
 	return thread_idx;
 }
 

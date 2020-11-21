@@ -167,7 +167,15 @@ thinkos_krn_sched_ctx_restore:
 	.type   thinkos_krn_sched_ctx_restore, %function
 
 .L_save_active_and_restore:
-
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	/* get the control (3bits) from the context */
+	ands     r7, r0, #CONTROL_MSK
+	/* restore the control register */
+	msr      CONTROL, r7
+	isb
+	/* restore stack pointer */
+	subs     r0, r7
+#endif
 	/* r0: new thread stack
 	   r1: new active thread id and stack limit
 	   r2: old active thread id 
@@ -179,29 +187,13 @@ thinkos_krn_sched_ctx_restore:
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-	/* get the control (3bits) from the context */
-	ands     r7, r0, #CONTROL_MSK
-	/* restore the control register */
-	msr      CONTROL, r7
-	isb
-	/* restore stack pointer */
-	bics     r12, r0, #CONTROL_MSK
-
 .L_exit_usr:
-
-
-
-
-
-
-
-
-
+	/* restore core context */
+	ldmia    r0!, {r4-r11}
+	msr      PSP, r0
+	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 
-	/* restore core context */
-	ldmia    r12!, {r4-r11}
-	msr      PSP, r12
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
@@ -210,31 +202,21 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
-.L_ready_queue_empty:
-
-
-
-
-
-
-
-
-
-
-
-
 .L_exit_idle:
-    /* set the control register */
-    msr      CONTROL, r1
-    isb
-	movs     r1, #THINKOS_THREAD_IDLE
-	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+.L_ready_queue_empty:
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
-    ldr.w    r0, [r3, r1, lsl #2]
+    ldr.w    r0, [r3, #THINKOS_RT_IDLE_CTX_OFFS]
     cmp      sp, r0
     bne      .L_idle_err
 #endif
+    /* set the control register */
+    movs     r1, #0
+    msr      CONTROL, r1
+    isb
+
+	movs     r1, #THINKOS_THREAD_IDLE
+	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* restore core context */
 	pop      {r4-r11}
 	/* Synthesizes exception return */
@@ -247,7 +229,6 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
-.L_idle_return:
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_err: 
 	b       thinkos_krn_sched_idle_err
@@ -367,7 +348,6 @@ thinkos_sched_step:
 	/* Mask low priority interrupts except debug monitor */
 	mov      r5, #(1 << 5)
 	msr      BASEPRI, r5
-	mov      r1, #0
 	b        .L_exit_idle
 
 

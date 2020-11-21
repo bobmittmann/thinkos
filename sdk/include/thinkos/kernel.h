@@ -655,6 +655,9 @@ struct thinkos_thread_create_args {
 
 extern struct thinkos_rt thinkos_rt;
 
+#if (THINKOS_ENABLE_THREAD_INFO)
+extern const struct thinkos_thread_inf thinkos_main_inf;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -664,17 +667,207 @@ struct thinkos_context * __thinkos_thread_ctx_get(unsigned int idx);
 
 uintptr_t __thinkos_thread_pc_get(unsigned int idx);
 
-uint32_t __thinkos_thread_lr_get(unsigned int idx);
 
-uint32_t __thinkos_thread_sp_get(unsigned int idx);
+uint32_t __thinkos_thread_lr_get(unsigned int id);
 
-uint32_t __thinkos_thread_sl_get(unsigned int idx);
+uint32_t __thinkos_thread_sp_get(unsigned int id);
 
-uint32_t __thinkos_thread_xpsr_get(unsigned int idx);
+uint32_t __thinkos_thread_sl_get(unsigned int id);
 
-uint32_t __thinkos_thread_ctrl_get(unsigned int idx);
+uint32_t __thinkos_thread_xpsr_get(unsigned int id);
 
-uint32_t __thinkos_thread_exec_ret_get(unsigned int idx);
+uint32_t __thinkos_thread_r0_get(unsigned int id);
+
+void __thinkos_thread_r0_set(unsigned int id, uint32_t val);
+
+uint32_t __thinkos_thread_r1_get(unsigned int id);
+
+void __thinkos_thread_r1_set(unsigned int id, uint32_t val);
+
+void __thinkos_thread_r2_set(unsigned int id, uint32_t val);
+
+void __thinkos_thread_r3_set(unsigned int id, uint32_t val);
+
+void __thinkos_thread_pc_set(unsigned int id, uintptr_t val);
+
+void __thinkos_thread_lr_set(unsigned int id, uintptr_t val);
+
+uint32_t * __thinkos_thread_frame_get(unsigned int id);
+
+uint32_t __thinkos_thread_ctrl_get(unsigned int id);
+
+uint32_t __thinkos_thread_exec_ret_get(unsigned int id);
+
+bool __thinkos_thread_ctx_is_valid(unsigned int id);
+
+void  __thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * ctx,
+							   unsigned int ctrl);
+
+void  __thinkos_thread_ctx_flush(int32_t arg[], unsigned int id);
+
+void  __thinkos_thread_ctx_clr(unsigned int id);
+
+const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id);
+
+void  __thinkos_thread_inf_set(unsigned int id, 
+							   const struct thinkos_thread_inf * inf);
+
+void __thinkos_thread_inf_clr(unsigned int id);
+
+int __thinkos_thread_errno_get(unsigned int id);
+
+void __thinkos_thread_errno_set(unsigned int id, int errno);
+
+void __thinkos_thread_errno_clr(unsigned int id);
+
+void __thinkos_thread_cyccnt_clr(unsigned int id);
+
+unsigned int __thinkos_thread_stat_wq_get(unsigned int th);
+
+bool __thinkos_thread_stat_tmw_get(unsigned int th);
+
+void __thinkos_thread_stat_clr(unsigned int th);
+
+void __thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd);
+
+/* -------------------------------------------------------------------------- 
+ * thread stack limit access methods 
+ * --------------------------------------------------------------------------*/
+
+void __thinkos_thread_sl_clr(unsigned int idx);
+
+void __thinkos_thread_sl_set(unsigned int idx, uint32_t addr);
+
+void __thinkos_active_set(unsigned int th);
+
+unsigned int __thinkos_active_get(void);
+
+uint32_t __thinkos_active_sl_get(void);
+
+/* Set the active thread and stack limit */
+void __thinkos_active_sl_set(unsigned int th, uint32_t sl);
+
+bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq);
+
+void  __thinkos_ready_clr(void);
+
+void __thinkos_suspend(unsigned int idx);
+
+int __thinkos_wq_idx(uint32_t * ptr);
+
+int __thinkos_wq_head(unsigned int wq);
+
+void __thinkos_wq_insert(unsigned int wq, unsigned int th);
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+void __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms);
+#endif
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+void __thinkos_wq_clock_insert(unsigned int th, unsigned int ms);
+#endif
+
+void __thinkos_wq_remove( unsigned int wq, unsigned int th);
+
+void __thinkos_wakeup( unsigned int wq, unsigned int th);
+
+void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
+
+
+#if (THINKOS_ENABLE_CLOCK)
+uint32_t  __thinkos_ticks(void);
+#endif
+
+/* Set the fault flag */
+void __thinkos_thread_fault_set(unsigned int th, int errno);
+
+/* Clear the fault flag */
+void __thinkos_thread_fault_clr(unsigned int th);
+
+/* Get the fault flag */
+bool __thinkos_thread_fault_get(unsigned int th);
+
+
+/* Set the pause flag */
+void __thinkos_thread_pause_set(unsigned int th);
+
+/* Clear the pause flag */
+void __thinkos_thread_pause_clr(unsigned int th);
+
+/* Get the pause flag */
+bool __thinkos_thread_pause_get(unsigned int th);
+
+/* -------------------------------------------------------------------------- 
+ * kernel utility library 
+ * --------------------------------------------------------------------------*/
+
+void __thinkos_memcpy(void * __dst, const void * __src,  
+					  unsigned int __len);
+
+void __thinkos_memcpy32(void * __dst, const void * __src,  
+						unsigned int __len);
+
+void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
+
+unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
+
+void __thinkos_system_reset(void);
+
+uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len);
+
+uint32_t __thinkos_crc32_u8(const void * __buf, unsigned int __len); 
+
+/* -------------------------------------------------------------------------- 
+ * kernel core functions 
+ * --------------------------------------------------------------------------*/
+
+void thinkos_krn_core_reset(struct thinkos_rt * krn);
+
+int thinkos_krn_thread_init(struct thinkos_rt * krn,
+							unsigned int thread_idx,
+							struct thinkos_thread_initializer * init);
+
+unsigned int thinkos_krn_active_get(struct thinkos_rt * krn);
+
+void __attribute__((noreturn)) thinkos_krn_sysrst(void);
+
+void thinkos_krn_udelay_calibrate(void);
+
+/* -------------------------------------------------------------------------- 
+ * kernel thread functions 
+ * --------------------------------------------------------------------------*/
+
+bool __thinkos_thread_resume(unsigned int thread_id);
+
+int __thinkos_thread_wq_get(unsigned int thread_idx);
+
+int __thinkos_thread_tmw_get(unsigned int thread_idx);
+
+/* -------------------------------------------------------------------------- 
+ * kernel scheduler methods 
+ * --------------------------------------------------------------------------*/
+
+void __thinkos_cancel_sched(void);
+
+/* flags a deferred execution of the scheduler */
+void  __thinkos_defer_sched(void);
+
+/* flags a deferred execution of the scheduler */
+void __thinkos_preempt(void);
+
+const char * __thinkos_thread_tag_get(unsigned int idx);
+
+unsigned int __thinkos_obj_kind(unsigned int oid);
+
+int __thinkos_kind_prefix(unsigned int kind);
+
+const char * __thinkos_kind_name(unsigned int kind);
+
+/* -------------------------------------------------------------------------
+ * Kernel Debug
+ * ------------------------------------------------------------------------- */
+
+int __thinkos_scan_stack(void * stack, unsigned int size);
 
 #ifdef __cplusplus
 }

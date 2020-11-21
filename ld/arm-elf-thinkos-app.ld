@@ -37,6 +37,20 @@ SECTIONS
 {
 	. = 0;
 
+	.dcclog :
+	{
+		. = ALIGN(4);
+		KEEP(*(.dcclog))
+	} >dcclog
+
+	.dccdata :
+	{
+		. = ALIGN(4);
+		KEEP(*(.rodata.__FUNCTION__*))
+		KEEP(*(.dccdata))
+	} >dcclog
+
+
 	.init __code_init :
 	{
 		. = .;

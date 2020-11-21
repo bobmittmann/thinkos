@@ -111,16 +111,16 @@ void monitor_print_thread(const struct monitor_comm * comm,
 			if (irq < THINKOS_IRQ_MAX) {
 				monitor_printf(comm, " wait on IRQ[%d]\r\n", irq);
 			} else
-				monitor_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+				monitor_printf(comm, " %s.\r\n", __thinkos_kind_name(type)); 
 		} else
 #endif
-		monitor_printf(comm, " %s.\r\n", thinkos_type_name_lut[type]); 
+		monitor_printf(comm, " %s.\r\n", __thinkos_kind_name(type)); 
 	} else {
 		if (THINKOS_OBJ_FAULT == type) {
 			monitor_printf(comm, " FAULT!");
 		} else 
 			monitor_printf(comm, " %swait on %s(%3d)\r\n", 
-						  tmw ? "time" : "", thinkos_type_name_lut[type], wq); 
+						  tmw ? "time" : "", __thinkos_kind_name(type), wq); 
 
 	}
 

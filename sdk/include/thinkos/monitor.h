@@ -284,10 +284,12 @@ static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
-void monitor_signal_thread_terminate(unsigned int thread_id, int code);
-void monitor_signal_thread_break(unsigned int thread_id);
-void monitor_signal_thread_fault(unsigned int thread_id);
 
+void monitor_signal_thread_terminate(unsigned int thread_id, int code);
+
+void monitor_signal_thread_fault(unsigned int thread_id, int32_t code);
+
+int monitor_thread_break_get(int32_t * pcode);
 
 int monitor_thread_terminate_get(int * code);
 
@@ -298,7 +300,6 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);
 struct thinkos_context * monitor_thread_erro_get(uint8_t * thread_id, 
 												 int8_t * code);
 
-int monitor_thread_break_get(void);
 void monitor_thread_break_clr(void);
 
 int monitor_thread_step_get(void);

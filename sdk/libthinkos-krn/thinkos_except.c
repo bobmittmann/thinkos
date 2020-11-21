@@ -103,7 +103,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
 	cm3_cpsie_i();
 
 	/* signal the monitor */
-	monitor_signal_thread_fault(thread_id);
+	monitor_signal_thread_fault(thread_id, errno);
 }
 
 

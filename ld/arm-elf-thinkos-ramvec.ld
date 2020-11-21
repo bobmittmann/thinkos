@@ -39,7 +39,6 @@ ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
-
 EXTERN(_reset)
 
 EXTERN(ice_comm_blk)
@@ -54,6 +53,11 @@ EXTERN(cm3_debug_mon_isr)
 EXTERN(cm3_pendsv_isr)
 EXTERN(cm3_systick_isr)
 
+MEMORY
+{
+	krn_dcclog (r) : ORIGIN = 0x4f400000, LENGTH = 4096K
+}
+
 SECTIONS
 {
 	. = 0;
@@ -62,14 +66,14 @@ SECTIONS
 	{
 		. = ALIGN(4);
 		KEEP(*(.dcclog))
-	} >dcclog
+	} >krn_dcclog
 
 	.dccdata :
 	{
 		. = ALIGN(4);
 		KEEP(*(.rodata.__FUNCTION__*))
 		KEEP(*(.dccdata))
-	} >dcclog
+	} >krn_dcclog
 
 	.vect :
 	{
@@ -141,14 +145,19 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
+	.ramvect (NOLOAD):
+	{
+		. = ALIGN(4);
+		PROVIDE (__ram_vectors = . );
+		KEEP (*(.ram_vectors))
+		. = . + __rom_vectors_size; 
+	} >"DATA"
+
 	.data :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
-		PROVIDE (__ram_vectors = . );
-		KEEP (*(.ram_vectors))
-		. = . + __rom_vectors_size; 
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */

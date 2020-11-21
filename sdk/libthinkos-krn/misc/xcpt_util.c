@@ -20,17 +20,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/delay.h>
-#include <vt100.h>
+
+#include "thinkos_krn-i.h"
 
 #if (DEBUG)
   #ifndef LOG_LEVEL
@@ -232,7 +223,8 @@ void __xdump(struct thinkos_except * xcpt)
 
 #if (THINKOS_ENABLE_MONITOR)
 	DCC_LOG2(LOG_ERROR, "Monitor stack free: %d/%6d", 
-			 __scan_stack(thinkos_monitor_stack, thinkos_monitor_stack_size),
+			 __thinkos_scan_stack(thinkos_monitor_stack, 
+								  thinkos_monitor_stack_size),
 			 thinkos_monitor_stack_size); 
 	{
 		uintptr_t stack = (uintptr_t)thinkos_except_stack;
@@ -241,7 +233,8 @@ void __xdump(struct thinkos_except * xcpt)
 		size -=  sizeof(struct thinkos_except);
 
 		DCC_LOG2(LOG_ERROR, "EXCEPT stack free: %d/%6d", 
-			 __scan_stack((void *)stack, size), thinkos_except_stack_size); 
+			 __thinkos_scan_stack((void *)stack, size), 
+			 thinkos_except_stack_size); 
 	}
 #endif
 	DCC_LOG1(LOG_ERROR, "exceptions count: %d", xcpt->seq - xcpt->ack); 
@@ -424,7 +417,7 @@ void __tdump(void)
 					 __thinkos_thread_sp_get(i), 
 					 __thinkos_thread_pc_get(i), 
 					 __thinkos_thread_lr_get(i), 
-					 __scan_stack(inf->stack_ptr, inf->stack_size), 
+					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
 					 inf->stack_size);
   #else
 			DCC_LOG8(LOG_TRACE, "%7s (%2d %3d) SP=%08x PC=%08x LR=%08x %d/%d", 
@@ -433,7 +426,7 @@ void __tdump(void)
 					 __thinkos_thread_sp_get(i), 
 					 __thinkos_thread_pc_get(i), 
 					 __thinkos_thread_lr_get(i), 
-					 __scan_stack(inf->stack_ptr, inf->stack_size), 
+					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
 					 inf->stack_size);
   #endif
 #else
@@ -442,7 +435,7 @@ void __tdump(void)
 					 __thinkos_thread_sp_get(i), 
 					 __thinkos_thread_pc_get(i), 
 					 __thinkos_thread_lr_get(i), 
-					 __scan_stack(inf->stack_ptr, inf->stack_size), 
+					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
 					 inf->stack_size);
 #endif
 		} else {
