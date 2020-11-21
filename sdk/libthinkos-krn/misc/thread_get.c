@@ -19,9 +19,7 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <thinkos.h>
+#include "thinkos_krn-i.h"
 
 int __thinkos_thread_get(unsigned int thread_id, 
 						 struct thinkos_thread * st, 

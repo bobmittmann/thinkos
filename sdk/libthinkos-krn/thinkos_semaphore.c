@@ -19,13 +19,11 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <sys/dcclog.h>
 
 #if THINKOS_SEMAPHORE_MAX > 0
 
@@ -97,6 +95,7 @@ void thinkos_sem_trywait_svc(int32_t * arg, unsigned int self)
 
 void thinkos_sem_wait_svc(int32_t * arg, unsigned int self)
 {	
+	struct thinkos_rt * krn = &thinkos_rt; 
 	unsigned int wq = arg[0];
 	unsigned int sem = wq - THINKOS_SEM_BASE;
 	uint32_t sem_val;
@@ -148,7 +147,7 @@ again:
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_flush(arg, self);
+	__thread_ctx_flush(krn, arg, self);
 
 	/* insert into the event wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);

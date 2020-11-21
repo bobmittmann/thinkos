@@ -1,15 +1,4 @@
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <thinkos.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <arch/cortex-m3.h>
-#include <sys/delay.h>
-#include <vt100.h>
+#include "thinkos_krn-i.h"
 
 #if (DEBUG)
   #ifndef LOG_LEVEL
@@ -84,6 +73,11 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
+static inline void __thread_suspend_all(struct thinkos_rt * krn) {
+	/* remove from all from the ready wait queue */
+	krn->wq_ready = 0;  
+}
+
 void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -91,41 +85,100 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
 			 VT_POP, thread_idx + 1, errno);
 
+
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
+			__thread_tag_get(krn, thread_idx));
+
 	__tdump();
 
 #if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_PAUSE) 
 	__thinkos_krn_pause_all(krn);
-
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 		__thread_suspend(krn, thread_idx);
 	}
 
+#else
+	__thread_suspend_all(krn);
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+	}
+	__thinkos_defer_sched();
+#endif
 	monitor_signal_thread_fault(thread_idx);
 #else
 	/* FIXME: issue an exception */
 #endif
 }
 
-void thinkos_krn_sched_err(unsigned int errno, uint32_t thread_idx)
+struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp, 
+													unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
+	unsigned int errno = THINKOS_ERR_IDLE_STACK;
 
-	DCC_LOG2(LOG_ERROR, VT_PSH VT_REV VT_FGR
-			 " Scheduler fault %d, thread %d " VT_POP, 
-			 errno, thread_idx + 1);
+	DCC_LOG1(LOG_ERROR, VT_PSH VT_REV VT_FGR
+			 " Scheduler idle stack faul, thread %d " VT_POP, 
+			 thread_idx + 1);
 
 	__tdump();
 
 #if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_PAUSE) 
 	__thinkos_krn_pause_all(krn);
-
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 		__thread_suspend(krn, thread_idx);
 	}
+#else
+	__thread_suspend_all(krn);
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+	}
+	__thinkos_defer_sched();
+#endif
+
+	/* signal the monitor */
+	monitor_signal_thread_fault(thread_idx);
+#else
+	/* FIXME: issue an exception */
+#endif
+
+	return thinkos_krn_idle_reset();
+}
+
+void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread_idx)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	unsigned int errno = THINKOS_ERR_STACK_LIMIT;
+
+	DCC_LOG1(LOG_ERROR, VT_PSH VT_REV VT_FGR
+			 " Scheduler stack limit, thread %d " VT_POP, 
+			 thread_idx + 1);
+
+	__tdump();
+
+#if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_PAUSE) 
+	__thinkos_krn_pause_all(krn);
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+		__thread_suspend(krn, thread_idx);
+	}
+#else
+	__thread_suspend_all(krn);
+	if (thread_idx < THINKOS_THREAD_IDLE) {
+		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__thread_fault_set(krn, thread_idx, errno);
+	}
+	__thinkos_defer_sched();
+#endif
 
 	/* signal the monitor */
 	monitor_signal_thread_fault(thread_idx);

@@ -200,11 +200,13 @@ int stm32f_serial_dma_recv(struct stm32f_serial_dma_drv * drv,
 		}
 	}
 
+#if 0
 	if (cnt == 0) {
 		DCC_LOG1(LOG_WARNING, "%6d: DMA XFR cnt == 0!!!", thinkos_clock_i());
 	} else {
 		DCC_LOG2(LOG_INFO, "%6d: cnt=%d", thinkos_clock_i(), cnt);
 	}
+#endif
 
 	return cnt;
 }

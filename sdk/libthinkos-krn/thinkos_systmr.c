@@ -19,18 +19,11 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
-#include <sys/delay.h>
 
 #if (THINKOS_ENABLE_CLOCK)
 static void __thinkos_time_wakeup(int thread_id) 

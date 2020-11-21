@@ -19,16 +19,7 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/param.h>
-#include <sys/sysclk.h>
-#include <sys/delay.h>
-#include <sys/dcclog.h>
-#include <vt100.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_CTL)
 

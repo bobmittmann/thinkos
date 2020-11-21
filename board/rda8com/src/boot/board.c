@@ -429,53 +429,53 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	const struct monitor_comm * comm;
 	uintptr_t app_addr;
 
+#if DEBUG
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
-
-#if DEBUG
 	mdelay(125);
-#endif
+
 	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FGR);
 	DCC_LOG(LOG_TRACE, "*************************************************");
 	DCC_LOG(LOG_TRACE, "*     RDA8COM ThinkOS Custom Bootloader         *");
 	DCC_LOG(LOG_TRACE, "*************************************************"
 			VT_POP "\n\n");
-#if DEBUG
 	mdelay(125);
-#endif
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 1. thinkos_krn_init()." VT_POP);
+	mdelay(125);
+#endif
+
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
 #if DEBUG
-	mdelay(125);
-#endif
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 2. board_init()." VT_POP);
+	mdelay(125);
+#endif
 	board_init();
 
 #if DEBUG
-	mdelay(125);
-#endif
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 3. usb_comm_init()." VT_POP);
+	mdelay(125);
+#endif
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
 #if DEBUG
 	mdelay(125);
-#endif
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 4. thinkos_krn_monitor_init()." VT_POP);
+#endif
 	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
 
 #if DEBUG
 	mdelay(125);
-#endif
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 5. thinkos_krn_irq_on()." VT_POP);
+#endif
 	/* enable interrupts */
 	thinkos_krn_irq_on();
 

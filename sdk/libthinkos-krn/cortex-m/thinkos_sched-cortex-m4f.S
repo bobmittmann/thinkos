@@ -55,7 +55,7 @@ cm3_pendsv_isr:
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* get the active (current) thread and the ready bitmap */
 	ldrd     r12, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-	and      r2, r12, #0x3f
+	and      r2, r12, #(STACK_ALIGN_MSK)
 #else
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
@@ -150,7 +150,7 @@ thinkos_sched_step_req_check:
 	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
 	ldr.w	 r12, [r7, r1, lsl #2]
 	/* get the effective thread id */
-	ands     r1, r12, #0x3f
+	ands     r1, r12, #(STACK_ALIGN_MSK)
 #endif
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]
@@ -286,7 +286,7 @@ thinkos_sched_step:
 	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
 	ldr.w	 r12, [r7, r1, lsl #2]
 	/* get the effective thread id */
-	ands     r1, r12, #0x3f
+	ands     r1, r12, #(STACK_ALIGN_MSK)
 #endif
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]

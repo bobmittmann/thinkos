@@ -19,22 +19,8 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
-#define __THINKOS_FLASH__
-#include <thinkos/flash.h>
-#include <thinkos.h>
-#include <vt100.h>
-#include <sys/dcclog.h>
-#include <sys/delay.h>
-/* FIXME: platform memory map should move from MONITOR and bootloader 
-   to kernel... */
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
+
+#include "thinkos_krn-i.h"
 
 /* -------------------------------------------------------------------------- 
  * Idle task

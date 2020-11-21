@@ -124,6 +124,10 @@ thinkos_sched_swap:
 	str.w	 r0, [r3, r2, lsl #2]
 
 thinkos_sched_select_ready:
+#if (THINKOS_ENABLE_RUNMASK)
+	ldr      r7, [r3, #THINKOS_RT_RUNMASK_OFFS]
+	ands     r1, r7
+#endif
 	/* r1 - ready queue
 	   r2 - old thread id */
 	cbz      r1, .L_ready_queue_empty
@@ -244,18 +248,15 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_idle_return:
-	bx       lr
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_err: 
-	movs    r0, #THINKOS_ERR_IDLE_STACK
-	b       thinkos_krn_sched_err
+	b       thinkos_krn_sched_idle_err
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
 #if (THINKOS_ENABLE_SCHED_ERROR)
-	movs    r0, #THINKOS_ERR_STACK_LIMIT
-	b       thinkos_krn_sched_err
+	b       thinkos_krn_sched_stack_err
 #endif
 #endif
 

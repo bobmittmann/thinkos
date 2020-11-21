@@ -557,6 +557,12 @@
 #define THINKOS_ENABLE_UDELAY_CALIBRATE     0
 #endif
 
+/* THINKOS_ENABLE_RUNMASK - Enable runmask bitmap... */
+#ifndef THINKOS_ENABLE_RUNMASK              
+#define THINKOS_ENABLE_RUNMASK              0
+#endif
+
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/

@@ -28,7 +28,7 @@
 #endif 
 
 struct thinkos_thread_initializer {
-	uintptr_t stack_base;
+	uint32_t stack_base;
 	union {
 		uint32_t opt;
 		struct {
@@ -39,9 +39,9 @@ struct thinkos_thread_initializer {
 			uint8_t res: 6;
 		};
 	};
-	uintptr_t task_entry;
-	uintptr_t task_exit;
-	uintptr_t task_arg[4];
+	uint32_t task_entry;
+	uint32_t task_exit;
+	uint32_t task_arg[4];
 	const struct thinkos_thread_inf * inf;
 };
 

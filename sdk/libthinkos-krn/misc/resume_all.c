@@ -19,9 +19,7 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <sys/dcclog.h>
+#include "thinkos_krn-i.h"
 
 void __thinkos_resume_all(void)
 {

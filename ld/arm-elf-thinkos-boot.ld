@@ -81,6 +81,8 @@ SECTIONS
 		PROVIDE (__vcts_end = .);
 	} >"CODE" = 0xffffffff
 
+	PROVIDE(__rom_vectors_size = SIZEOF(.vect));
+
 	.init :
 	{
 		. = ALIGN(4);
@@ -144,7 +146,6 @@ SECTIONS
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
-		KEEP (*(.ram_vectors))
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */
@@ -153,13 +154,7 @@ SECTIONS
 	} >"DATA" AT >"CODE"
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-/*
-	.image :
-	{
-		. = . + 500000;
-		PROVIDE (__image_end = . );
-	} >"CODE"
-*/
+
 	.bss :
 	{
 		/* define a global symbol marking the start of the .bss section */

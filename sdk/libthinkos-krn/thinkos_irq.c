@@ -19,24 +19,12 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#include <thinkos.h>
-#include <stdio.h>
-#include <sys/dcclog.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-extern void * __vcts_start;
-extern void * __vcts_end;
-
-#ifdef CM3_RAM_VECTORS
-extern void * __ram_vectors[];
-#endif
 
 #if (THINKOS_IRQ_MAX) > 0
 void __thinkos_irq_reset_all(void)

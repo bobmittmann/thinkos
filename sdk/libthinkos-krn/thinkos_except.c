@@ -20,21 +20,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <arch/cortex-m3.h>
-#include <sys/delay.h>
-#include <vt100.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 

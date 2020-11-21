@@ -23,6 +23,8 @@
 #include <thinkos/kernel.h>
 #include <sys/dcclog.h>
 
+#if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
+		(THINKOS_ENABLE_THREAD_STAT)
 void __thinkos_krn_pause_all(struct thinkos_rt * krn)
 {
 	unsigned int idx;
@@ -36,4 +38,7 @@ void __thinkos_krn_pause_all(struct thinkos_rt * krn)
 
 	DCC_LOG1(LOG_TRACE, "active=%d", __thread_active_get(krn) + 1);
 }
+#else
+
+#endif
 

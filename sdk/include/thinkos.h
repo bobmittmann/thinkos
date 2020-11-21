@@ -207,10 +207,18 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int id);
 /* ThinkOS Thread Argument type cast macro */
 #define C_ARG(__PTR) (void *)(uintptr_t)(__PTR)
 
+#define ALIGN(__X, __N) ((((__X) + (__N) - 1) / (__N)) * (__N))
+
+#define BALIGN(__X, __B) (((__X) + (1 << (__N)) - 1) & (0xffffffff << (__N)))
+
 /* ThinkOS Thread Stack Declaration cast macro */
-#define THINKOS_THREAD_STACK(__SYM, __LEN, __SEC) \
-	uint32_t __SYM[(((__LEN) + 7) /8)] \
-	__attribute_ ((aligned(8), section(__SEC)))
+#define THINKOS_ALIGNED_STACK(__SYM, __LEN, __N) \
+	uint32_t __SYM[ALIGN(__LEN, __N) / 4] \
+	__attribute_ ((aligned(__N)))
+
+#define THINKOS_SECTION_STACK(__SYM, __LEN, __SEC) \
+	uint32_t __SYM[ALIGN(__LEN, 64) / 4] \
+	__attribute_ ((aligned(64), section(__SEC)))
 
 /*
  * usage:

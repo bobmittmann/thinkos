@@ -46,19 +46,18 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
-  SFILES = cortex-m3/thinkos_crt0-cortex-m3.S \
-		   cortex-m3/thinkos_vec-cortex-m3.S \
-		   cortex-m3/thinkos_svc-cortex-m3.S \
-		   cortex-m4f/thinkos_sched-cortex-m4f.S
-#		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
+  SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
+		   cortex-m/thinkos_vec-cortex-m3.S \
+		   cortex-m/thinkos_svc-cortex-m3.S \
+		   cortex-m/thinkos_sched-cortex-m4f.S
 endif
 
 ifeq ($(CPU), cortex-m3)
-  SFILES = cortex-m3/thinkos_crt0-cortex-m3.S \
-		   cortex-m3/thinkos_vec-cortex-m3.S \
-		   cortex-m3/thinkos_svc-cortex-m3.S \
-		   cortex-m3/thinkos_sched-cortex-m3.S
-#		   cortex-m3/thinkos_sched-cortex-m3-basic.S
+  SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
+		   cortex-m/thinkos_vec-cortex-m3.S \
+		   cortex-m/thinkos_svc-cortex-m3.S \
+		   cortex-m/thinkos_sched-cortex-m3.S
+#		   cortex-m/thinkos_sched-cortex-m3-msk.S
 endif
 
 include ../../mk/lib.mk

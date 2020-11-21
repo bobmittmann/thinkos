@@ -19,55 +19,43 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
-#define __THINKOS_CONSOLE__
-#include <thinkos/console.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
+#include "thinkos_krn-i.h"
 
-#include <stdio.h>
-#include <string.h>
+#if (THINKOS_ENABLE_THREAD_INFO)
+const struct thinkos_thread_inf thinkos_main_inf = {
+	.tag = "MAIN",
+	.stack_ptr = &__krn_stack_start,
+	.stack_size = (uintptr_t)&__krn_stack_size,
+	.priority = 0,
+	.thread_id = 1,
+	.privileged = 0,
+	.paused = 0
+};
+#endif
 
-
-#define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
-#define __ID(OPT)         (((OPT) >> 24) & 0x3f)
-#define __PRIVILEGED(OPT) (((OPT) >> 30) & 0x01)
-#define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
-#define __STACK_SIZE(OPT) ((OPT) & 0xffff)
-
-void __thinkos_krn_reset(struct thinkos_rt * krn);
-
-static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
+static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
+							   uint32_t opt)
 {
 #if THINKOS_ENABLE_TIMESHARE
 	int priority = __PRIORITY(opt);
 #endif
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	int id = __ID(opt) - 1;
+	int idx = __ID(opt) - 1;
+
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	int sz = __STACK_SIZE(opt);
-	uintptr_t sl;
+	uintptr_t sl = (uintptr_t)&__krn_stack_start;
 #endif
 
-	if (id < 0)
-		id = 0;
+	if (idx < 0)
+		idx = 0;
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
-	id = __thinkos_thread_alloc(id);
+	idx = __thinkos_thread_alloc(idx);
 #else
-	if (id >= THINKOS_THREADS_MAX)
-		id = THINKOS_THREADS_MAX - 1;
+	if (idx >= THINKOS_THREADS_MAX)
+		idx = THINKOS_THREADS_MAX - 1;
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
@@ -79,76 +67,43 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 #if THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN
 #error "THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN !!!"
 #endif
-
 	if (priority > THINKOS_SCHED_LIMIT_MAX)
 		priority = THINKOS_SCHED_LIMIT_MAX;
 
-	thinkos_rt.sched_pri[id] = priority;
-	thinkos_rt.sched_val[id] = priority / 2;
+	krn->sched_pri[idx] = priority;
+	krn->sched_val[idx] = priority / 2;
 
 	/* set the initial schedule limit */
-	thinkos_rt.sched_limit = priority;
-	if (thinkos_rt.sched_limit < THINKOS_SCHED_LIMIT_MIN)
-		thinkos_rt.sched_limit = THINKOS_SCHED_LIMIT_MIN;
+	krn->sched_limit = priority;
+	if (krn->sched_limit < THINKOS_SCHED_LIMIT_MIN)
+		krn->sched_limit = THINKOS_SCHED_LIMIT_MIN;
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
-			 id + 1, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	DCC_LOG1(LOG_TRACE, "     th_alloc=%08x", thinkos_rt.th_alloc[0]);
-#endif
-
-#if THINKOS_ENABLE_PAUSE
-	if (__PAUSED(opt)) {
-		/* insert into the paused list */
-		thinkos_rt.wq_paused = 1 << id;
-	} 
-#endif
+			 idx + 1, THINKOS_THREADS_MAX, krn->wq_ready);
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	if (sz == 0) {
-		DCC_LOG(LOG_WARNING, " sz == 0! ");
-		sl = 0;
-	} else {
-		DCC_LOG1(LOG_TRACE, " stack size=%d", sz);
-		sl = sp - sz;
-	}
-
-	__thinkos_thread_sl_set(id, (uintptr_t)sl);
-	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[id]);
+	__thread_sl_set(krn, idx, (uintptr_t)sl);
+	DCC_LOG1(LOG_TRACE, " sl=%08x", __thread_sl_get(krn, idx));
 #endif
 
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	__thinkos_thread_inf_set(id, (struct thinkos_thread_inf *)
-							 &thinkos_main_inf);
+	__thread_inf_set(krn, idx, (struct thinkos_thread_inf *)
+					 &thinkos_main_inf);
 #endif
 
-#if 0
-	/* The main thread is the current one so no need to commit
-	 just now */ 
-	{
-		struct thinkos_context *ctx;
-
-		ctx = (struct thinkos_context *)sp - 1;
-		/* commit the context to the kernel */ 
-		__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL);
-	}
-#endif
-
-
-	return id;
+	return idx;
 }
 
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_initializer * lst[])
 {
 	struct thinkos_rt * krn = &thinkos_rt;
+	int thread_idx;
 	uint32_t ctrl;
 	uint32_t ccr;
 	uintptr_t sp;
-	int thread_id;
 
 	/* Static sanity check: */
 
@@ -186,6 +141,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 
 	_Static_assert (offsetof(struct thinkos_rt, active) == 
 					THINKOS_RT_ACTIVE_OFFS, "THINKOS_RT_ACTIVE_OFFS");
+
+#if (THINKOS_ENABLE_RUNMASK)
+	_Static_assert (offsetof(struct thinkos_rt, runmask) == 
+					THINKOS_RT_RUNMASK_OFFS, "THINKOS_RT_RUNMASK_OFFS");
+#endif
 
 	_Static_assert (offsetof(struct thinkos_rt, wq_ready) == 
 					THINKOS_RT_READY_OFFS, "THINKOS_RT_READY_OFFS");
@@ -391,12 +351,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 
 		DCC_LOG(LOG_TRACE, "Main thread init...");
-		thread_id = __thinkos_init_main(sp, opt);
+		thread_idx = __thinkos_init_main(krn, sp, opt);
 
 		/* Set the initial thread */
-		__thinkos_active_set(thread_id);
+		__thread_active_set(krn, thread_idx);
 		/* add to the ready queue */
-		krn->wq_ready = 1 << thread_id;
+		krn->wq_ready = 1 << thread_idx;
 
 		if (privileged) {
 			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
@@ -412,29 +372,13 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		cm3_control_set(ctrl);
 
 		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-				 thread_id + 1, cm3_msp_get(), cm3_psp_get(), 
+				 thread_idx + 1, cm3_msp_get(), cm3_psp_get(), 
 				 cm3_control_get());
 	} else {
 		/* FIXME: not implemented... */
 		return THINKOS_ENOSYS;
 	}
 
-	return thread_id + 1;
+	return thread_idx + 1;
 }
-
-extern void * __krn_stack_start;
-extern void * __krn_stack_end;
-extern int __krn_stack_size;
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = &__krn_stack_start,
-	.stack_size = (uintptr_t)&__krn_stack_size,
-	.priority = 0,
-	.thread_id = 1,
-	.privileged = 0,
-	.paused = 0
-};
-#endif
 

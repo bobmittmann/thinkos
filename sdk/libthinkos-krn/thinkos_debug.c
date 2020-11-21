@@ -19,12 +19,7 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#include <thinkos.h>
-#include <vt100.h>
+#include "thinkos_krn-i.h"
  
 #if (THINKOS_ENABLE_SCHED_DEBUG)
   #ifndef LOG_LEVEL

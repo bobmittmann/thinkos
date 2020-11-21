@@ -19,28 +19,11 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
+#include "thinkos_krn-i.h"
+
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <vt100.h>
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-  #ifndef LOG_LEVEL
-    #define LOG_LEVEL LOG_TRACE
-  #elif LOG_LEVEL < LOG_TRACE
-    #undef LOG_LEVEL 
-    #define LOG_LEVEL LOG_TRACE
-  #endif
-#endif
-
-#include <sys/dcclog.h>
-
 
 void thinkos_thread_init_svc(int32_t * arg, int self);
 

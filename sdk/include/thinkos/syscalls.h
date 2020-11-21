@@ -38,62 +38,62 @@
 #define THINKOS_ALARM                  3
 #define THINKOS_SLEEP                  4
 
-#define THINKOS_MUTEX_LOCK             5
-#define THINKOS_MUTEX_TRYLOCK          6
-#define THINKOS_MUTEX_TIMEDLOCK        7
-#define THINKOS_MUTEX_UNLOCK           8
+#define THINKOS_CTL                    5
 
-#define THINKOS_SEM_INIT               9
-#define THINKOS_SEM_WAIT              10
-#define THINKOS_SEM_TRYWAIT           11
-#define THINKOS_SEM_TIMEDWAIT         12
-#define THINKOS_SEM_POST              13
+#define THINKOS_IRQ_WAIT               6
+#define THINKOS_IRQ_TIMEDWAIT          7
+#define THINKOS_IRQ_CTL                8
 
-#define THINKOS_COND_WAIT             14
-#define THINKOS_COND_TIMEDWAIT        15
-#define THINKOS_COND_SIGNAL           16
-#define THINKOS_COND_BROADCAST        17
+#define THINKOS_OBJ_ALLOC              9
+#define THINKOS_OBJ_FREE              10
 
-#define THINKOS_FLAG_TAKE             18
-#define THINKOS_FLAG_TIMEDTAKE        19
-#define THINKOS_FLAG_GIVE             20
+#define THINKOS_MUTEX_LOCK            11
+#define THINKOS_MUTEX_TRYLOCK         12
+#define THINKOS_MUTEX_TIMEDLOCK       13
+#define THINKOS_MUTEX_UNLOCK          14
 
-#define THINKOS_FLAG_VAL              21
-#define THINKOS_FLAG_CLR              22
-#define THINKOS_FLAG_SET              23
-#define THINKOS_FLAG_WATCH            24
-#define THINKOS_FLAG_TIMEDWATCH       25
+#define THINKOS_SEM_INIT              15
+#define THINKOS_SEM_WAIT              16
+#define THINKOS_SEM_TRYWAIT           17
+#define THINKOS_SEM_TIMEDWAIT         18
+#define THINKOS_SEM_POST              19
 
-#define THINKOS_GATE_WAIT             26
-#define THINKOS_GATE_TIMEDWAIT        27
-#define THINKOS_GATE_EXIT             28
-#define THINKOS_GATE_OPEN             29
-#define THINKOS_GATE_CLOSE            30
+#define THINKOS_COND_WAIT             20
+#define THINKOS_COND_TIMEDWAIT        21
+#define THINKOS_COND_SIGNAL           22
+#define THINKOS_COND_BROADCAST        23
 
-#define THINKOS_EVENT_WAIT            31
-#define THINKOS_EVENT_TIMEDWAIT       32
-#define THINKOS_EVENT_RAISE           33
-#define THINKOS_EVENT_MASK            34
-#define THINKOS_EVENT_CLEAR           35
+#define THINKOS_FLAG_TAKE             24
+#define THINKOS_FLAG_TIMEDTAKE        25
+#define THINKOS_FLAG_GIVE             26
 
-#define THINKOS_CONSOLE               36
+#define THINKOS_FLAG_VAL              27
+#define THINKOS_FLAG_CLR              28
+#define THINKOS_FLAG_SET              29
+#define THINKOS_FLAG_WATCH            30
+#define THINKOS_FLAG_TIMEDWATCH       31
 
-#define THINKOS_IRQ_WAIT              37
-#define THINKOS_IRQ_TIMEDWAIT         38
-#define THINKOS_IRQ_CTL               39
+#define THINKOS_GATE_WAIT             32
+#define THINKOS_GATE_TIMEDWAIT        33
+#define THINKOS_GATE_EXIT             34
+#define THINKOS_GATE_OPEN             35
+#define THINKOS_GATE_CLOSE            36
 
-#define THINKOS_OBJ_ALLOC             40
-#define THINKOS_OBJ_FREE              41
+#define THINKOS_EVENT_WAIT            37
+#define THINKOS_EVENT_TIMEDWAIT       38
+#define THINKOS_EVENT_RAISE           39
+#define THINKOS_EVENT_MASK            40
+#define THINKOS_EVENT_CLEAR           41
 
-#define THINKOS_JOIN                  42
-#define THINKOS_PAUSE                 43
-#define THINKOS_RESUME                44
+#define THINKOS_CONSOLE               42
 
-#define THINKOS_CANCEL                45
-#define THINKOS_EXIT                  46
-#define THINKOS_TERMINATE             47
+#define THINKOS_CANCEL                43
+#define THINKOS_TERMINATE             44
+#define THINKOS_JOIN                  45
+#define THINKOS_PAUSE                 46
+#define THINKOS_RESUME                47
 
-#define THINKOS_CTL                   48
+#define THINKOS_EXIT                  48
 
 #define THINKOS_COMM                  49
 

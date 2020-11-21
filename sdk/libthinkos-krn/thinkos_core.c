@@ -19,24 +19,9 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
+#include "thinkos_krn-i.h"
 
-#include <sys/delay.h>
-#include <thinkos.h>
-#include <vt100.h>
 #include <sys/dcclog.h>
-
-extern void * __vcts_start;
-extern void * __vcts_end;
-
-#ifdef CM3_RAM_VECTORS
-extern void * __ram_vectors[];
-#endif
 
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
@@ -116,6 +101,7 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif
 }
 
+#if 0
 void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 {
 	int active = __thread_active_get(krn);
@@ -129,6 +115,7 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 
 	__thinkos_defer_sched();
 }
+#endif
 
 void thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
@@ -223,4 +210,144 @@ void thinkos_krn_userland(void)
 {
 	cm3_control_set(CONTROL_SPSEL | CONTROL_nPRIV);
 }
+
+/* -------------------------------------------------------------------------- 
+ * thinkos runtime thread context access methods 
+ * --------------------------------------------------------------------------*/
+
+struct thinkos_context * __thinkos_thread_ctx_get(unsigned int id) 
+{
+	return __thread_ctx_get(&thinkos_rt, id);
+}
+
+uintptr_t __thinkos_thread_pc_get(unsigned int id) 
+{
+	return __thread_pc_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_lr_get(unsigned int id) 
+{
+	return __thread_lr_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_sp_get(unsigned int id) 
+{
+	return __thread_sp_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_sl_get(unsigned int id) 
+{
+	return __thread_sl_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_xpsr_get(unsigned int id) 
+{
+	return __thread_xpsr_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_ctrl_get(unsigned int id) 
+{
+	return __thread_ctrl_get(&thinkos_rt, id); 
+}
+
+uint32_t __thinkos_thread_exec_ret_get(unsigned int id) 
+{
+	return __thread_exec_ret_get(&thinkos_rt, id); 
+}
+
+bool __thinkos_thread_ctx_is_valid(unsigned int id) 
+{
+	return __thread_ctx_is_valid(&thinkos_rt, id);
+}
+
+void  __thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * ctx,
+							   unsigned int ctrl) 
+{
+	__thread_ctx_set(&thinkos_rt, id, ctx, ctrl);
+}
+
+void  __thinkos_thread_ctx_flush(int32_t arg[], unsigned int id) 
+{
+	__thread_ctx_flush(&thinkos_rt, arg, id);
+}
+
+void  __thinkos_thread_ctx_clr(unsigned int id) 
+{
+	__thread_ctx_clr(&thinkos_rt, id);
+}
+
+void __thinkos_thread_r0_set(unsigned int id, uint32_t val) 
+{
+	__thread_ctx_get(&thinkos_rt, id)->r0 = val;
+}
+
+void __thinkos_thread_r1_set(unsigned int id, uint32_t val) {
+	__thread_ctx_get(&thinkos_rt, id)->r1 = val;
+}
+
+void __thinkos_thread_r2_set(unsigned int id, uint32_t val) 
+{
+	__thread_ctx_get(&thinkos_rt, id)->r2 = val;
+}
+
+void __thinkos_thread_r3_set(unsigned int id, uint32_t val) 
+{
+	__thread_ctx_get(&thinkos_rt, id)->r3 = val;
+}
+
+void __thinkos_thread_pc_set(unsigned int id, uintptr_t val) 
+{
+	__thread_ctx_get(&thinkos_rt, id)->pc = (uint32_t)val;
+}
+
+void __thinkos_thread_lr_set(unsigned int id, uintptr_t val) 
+{
+	__thread_ctx_get(&thinkos_rt, id)->lr = (uint32_t)val;
+}
+
+uint32_t __thinkos_thread_r0_get(unsigned int id) 
+{
+	return __thread_ctx_get(&thinkos_rt, id)->r0;
+}
+
+uint32_t * __thinkos_thread_frame_get(unsigned int id) {
+	return (uint32_t *)&__thread_ctx_get(&thinkos_rt, id)->r0;
+}
+
+const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id) 
+{
+	return __thread_inf_get(&thinkos_rt, id);
+}
+
+void  __thinkos_thread_inf_set(unsigned int id, 
+							   const struct thinkos_thread_inf * inf) 
+{
+	__thread_inf_set(&thinkos_rt, id, inf);
+}
+
+void __thinkos_thread_inf_clr(unsigned int id) 
+{
+	__thread_inf_set(&thinkos_rt, id, NULL);
+}
+
+int __thinkos_thread_errno_get(unsigned int id) 
+{
+	return __thread_errno_get(&thinkos_rt, id);
+}
+
+void __thinkos_thread_errno_set(unsigned int id, int errno) 
+{
+	__thread_errno_set(&thinkos_rt, id, errno);
+}
+
+void __thinkos_thread_errno_clr(unsigned int id) 
+{
+	__thread_errno_clr(&thinkos_rt, id);
+}
+
+void __thinkos_thread_cyccnt_clr(unsigned int id) 
+{
+	__thread_cyccnt_clr(&thinkos_rt, id);
+}
+
 

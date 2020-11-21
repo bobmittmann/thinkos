@@ -250,9 +250,9 @@ uint32_t tcp_rel_timestamp(void)
 
 #if defined(DEBUG) || defined(ENABLE_TCPDUMP) || defined(IP_DEBUG) || \
 	defined(ETHARP_DEBUG)
-uint32_t tcp_tmr_stack[128];
+uint32_t __attribute__((aligned(64))) tcp_tmr_stack[128];
 #else
-uint32_t tcp_tmr_stack[96];
+uint32_t __attribute__((aligned(64))) tcp_tmr_stack[96];
 #endif
 
 const struct thinkos_thread_inf tcp_tmr_inf = {

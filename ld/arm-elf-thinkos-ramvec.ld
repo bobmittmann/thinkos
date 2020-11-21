@@ -32,6 +32,7 @@ __krn_code_end = ORIGIN(CODE) + __krn_code_size;
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
 __krn_stack_end = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __krn_stack_start = ORIGIN(STACK);
+__krn_stack_size = __krn_stack_end - __krn_stack_start;
 _stack = __krn_stack_end;
 
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
@@ -39,8 +40,8 @@ __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
 
-EXTERN(_stack)
 EXTERN(_reset)
+
 EXTERN(ice_comm_blk)
 
 EXTERN(cm3_nmi_isr)
@@ -98,6 +99,17 @@ SECTIONS
 		/* all .rodata sections (constants, strings, etc.)  */
 		*(.rodata)
 		*(.rodata.__func__.*)
+		*(.rodata.* .gnu.linkonce.r.*)
+		*(.rodata1)
+
+		. = ALIGN(4);
+		/* constructors */
+		PROVIDE(__ctors_start = .);
+		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
+		KEEP (*(.init_array))
+		KEEP(*(SORT(.ctors.*)))
+		KEEP(*(.ctors))
+		PROVIDE(__ctors_end = .);
 
 		. = ALIGN(4);
 		/* kernel traces */
@@ -111,18 +123,7 @@ SECTIONS
 		KEEP(*(SORT(.rodata.trace.*)))
 		PROVIDE(__trace_usr_end = .);
 
-		*(.rodata.* .gnu.linkonce.r.*)
-		*(.rodata1)
-
 		. = ALIGN(4);
-		/* constructors */
-		PROVIDE(__ctors_start = .);
-		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
-		KEEP (*(.init_array))
-		KEEP(*(SORT(.ctors.*)))
-		KEEP(*(.ctors))
-		PROVIDE(__ctors_end = .);
-		. = ALIGN(8);
 	} >"CODE" = 0xffffffff
 
 	.ARM.extab : 
@@ -145,7 +146,9 @@ SECTIONS
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
+		PROVIDE (__ram_vectors = . );
 		KEEP (*(.ram_vectors))
+		. = . + __rom_vectors_size; 
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */
@@ -159,8 +162,6 @@ SECTIONS
 	{
 		/* define a global symbol marking the start of the .bss section */
 		PROVIDE (__bss_start = . );
-		PROVIDE (__ram_vectors = . );
-		. = . + __rom_vectors_size; 
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"

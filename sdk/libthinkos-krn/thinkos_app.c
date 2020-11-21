@@ -202,8 +202,8 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
 #endif
 
-	stack_size = 16384;
 	stack_top = app->stack;
+	stack_size = app->stack_size;
 	stack_base = stack_top - stack_size;
 #if (DEBUG)
 	if ((stack_top > (uintptr_t)&__krn_stack_start) &&

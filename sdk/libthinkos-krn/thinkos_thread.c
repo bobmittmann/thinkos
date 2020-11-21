@@ -19,15 +19,7 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_NRT__
-#include <thinkos/nrt.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/delay.h>
-#include <sys/dcclog.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
 int __thinkos_thread_fault_code(unsigned int thread_idx)
@@ -70,7 +62,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	uintptr_t stack_size = init->stack_size;
 	uintptr_t task_entry = init->task_entry;
 	uintptr_t task_exit = init->task_exit;
-	uintptr_t * task_arg = init->task_arg;
+	uint32_t * task_arg = init->task_arg;
 	int priority = init->priority;
 	bool paused = init->paused;
 	bool privileged = init->privileged;
@@ -81,9 +73,14 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 
 	stack_top = stack_base + stack_size;
 
+	if (inf != NULL) {
+		DCC_LOG1(LOG_TRACE, "  tag: \"%s\"", inf->tag);
+	}
 	DCC_LOG3(LOG_TRACE, "stack: top=%08x base=%08x size=%d", 
 			 stack_top, stack_base, stack_size);
-	DCC_LOG2(LOG_TRACE, "task: entry=%08x exit=%08x", task_entry, task_exit);
+	DCC_LOG2(LOG_TRACE, " task: entry=%08x exit=%08x", task_entry, task_exit);
+	DCC_LOG4(LOG_TRACE, "  arg: %08x %08x %08x %08x", task_arg[0], 
+			 task_arg[1], task_arg[2], task_arg[3]);
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__thinkos_mem_usr_rw_chk(stack_base, stack_size)) {
@@ -111,12 +108,16 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 		}
 	}
 #endif
-	if (stack_top & 0x00000007) {
-		DCC_LOG1(LOG_PANIC, "sp=%08x unaligned", stack_top); 
+#endif
+	if (stack_top & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_top); 
 		return THINKOS_ERR_THREAD_STACKALIGN;
 	}
 
-#endif
+	if (stack_size & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_PANIC, "stack_Size=%08x unaligned", stack_size); 
+		return THINKOS_ERR_THREAD_STACKALIGN;
+	}
 
 	free = stack_size - sizeof(struct thinkos_context);
 
@@ -148,7 +149,6 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 
 	__thread_priority_set(krn, thread_idx, priority);
 
-	DCC_LOG2(LOG_TRACE, "__thread_inf_set(%08x, %s)", inf, inf->tag);
 	__thread_inf_set(krn, thread_idx, inf);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)

@@ -20,12 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -378,14 +376,14 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 int monitor_thread_break_get(void)
 {
 	struct thinkos_context * ctx;
-	int thread_id;
+	int thread_idx;
 
-	if ((thread_id = thinkos_monitor_rt.brk_thread_id) >= 0) {
-		if ((ctx = __thinkos_thread_ctx_get(thread_id)) == NULL)
+	if ((thread_idx = thinkos_monitor_rt.brk_thread_id) >= 0) {
+		if ((ctx = __thinkos_thread_ctx_get(thread_idx)) == NULL)
 			return -1;
 	}
 
-	return thread_id;
+	return thread_idx;
 }
 
 void monitor_thread_break_clr(void)

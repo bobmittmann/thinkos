@@ -27,8 +27,7 @@
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
-		(THINKOS_ENABLE_THREAD_STAT)
+#if (THINKOS_ENABLE_PAUSE)
 
 static bool ready_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
@@ -445,9 +444,6 @@ bool __thinkos_krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
 	return true;
 }
 
-#endif /* ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
-		(THINKOS_ENABLE_THREAD_STAT) */
-
 bool __thinkos_thread_resume(unsigned int thread_id)
 {
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
@@ -488,9 +484,6 @@ bool __thinkos_thread_resume(unsigned int thread_id)
 
 	return true;
 }
-
-
-#if THINKOS_ENABLE_PAUSE
 
 void thinkos_resume_svc(int32_t * arg, unsigned int self)
 {
@@ -573,5 +566,4 @@ void thinkos_pause_svc(int32_t * arg, unsigned int self)
 }
 
 #endif /* THINKOS_ENABLE_PAUSE */
-
 

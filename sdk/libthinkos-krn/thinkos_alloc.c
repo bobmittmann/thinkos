@@ -19,15 +19,11 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <sys/delay.h>
-#include <sys/dcclog.h>
-
 
 #if ((THINKOS_WQ_MUTEX_CNT < 33) && (THINKOS_WQ_COND_CNT < 33) && \
 	 (THINKOS_WQ_SEMAPHORE_CNT < 33) && (THINKOS_WQ_EVENT_CNT < 33) && \
@@ -38,7 +34,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
-#if (BMP_ALLOC_32BITS)
+
+#if 0
 static int __thinkos_bmp32_alloc(uint32_t * bmp) 
 {
 	int idx;
@@ -53,12 +50,17 @@ static int __thinkos_bmp32_alloc(uint32_t * bmp)
 
 	return THINKOS_ENOMEM;
 }
+#endif
+
+#if (BMP_ALLOC_32BITS)
 
 static void __thinkos_bmp_init(uint32_t * bmp, unsigned int nbits) 
 {
 	*bmp = 0xffffffff << nbits;
 }
+
 #else
+
 static int __thinkos_bmp_alloc(uint32_t bmp[], unsigned int nbits) 
 {
 	unsigned int i;
@@ -317,6 +319,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -327,6 +330,13 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 	base = thinkos_obj_base_lut[kind];
 
 #endif
+
+	if (bmp == NULL) {
+		DCC_LOG1(LOG_ERROR, "<%02> invlaid object", self + 1);
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
 
 	DCC_LOG3(LOG_MSG, "kind=%d base=%d max=%d", kind, base, max);
 
@@ -341,27 +351,31 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 		}
 	} else {
 #if (BMP_ALLOC_32BITS)
-		if ((idx = __thinkos_bmp32_alloc(bmp)) >= 0) {
+		if ((idx = __thinkos_alloc_lo(bmp, 0)) >= 0) {
 			idx += base;
-		} 
+		}  else {
+			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_ALLOC);
+		}
 #else
 		if ((idx = __thinkos_bmp_alloc(bmp, max)) >= 0) {
 			idx += base;
-		} 
+		}  else {
+			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_ALLOC);
+		}
 #endif
 	}
-	DCC_LOG1(LOG_MSG, "idx = %d", idx);
+	DCC_LOG2(LOG_TRACE, "<%2d> idx = %d", self + 1, idx);
 	arg[0] = idx;
 }
 
 void __krn_alloc_init(struct thinkos_rt * krn)
 {
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* initialize the thread allocation bitmap */ 
 	__thinkos_bmp_init(krn->th_alloc, THINKOS_THREADS_MAX); 
 #endif
 
-#if THINKOS_ENABLE_MUTEX_ALLOC
+#if (THINKOS_ENABLE_MUTEX_ALLOC)
 	/* initialize the mutex allocation bitmap */ 
 	__thinkos_bmp_init(krn->mutex_alloc, THINKOS_MUTEX_MAX); 
 #endif
@@ -376,7 +390,7 @@ void __krn_alloc_init(struct thinkos_rt * krn)
 	__thinkos_bmp_init(krn->cond_alloc, THINKOS_COND_MAX); 
 #endif
 
-#if THINKOS_ENABLE_FLAG_ALLOC
+#if (THINKOS_ENABLE_FLAG_ALLOC)
 	/* initialize the flag allocation bitmap */ 
 	__thinkos_bmp_init(krn->flag_alloc, THINKOS_FLAG_MAX); 
 #endif
@@ -406,6 +420,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (oid >= THINKOS_WQ_CNT) {
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -467,6 +482,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
+			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -479,6 +495,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 #if (THINKOS_ENABLE_ARG_CHECK)
 		max = thinkos_obj_cnt_lut[kind];
 		if (idx > max) {
+			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 			arg[0] = THINKOS_ENOMEM;
 			return;
 		}
@@ -486,7 +503,6 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self)
 	}
 
 #endif
-		
 
 	__bit_mem_wr(bmp, idx, 0);
 	arg[0] = THINKOS_OK;
