@@ -778,6 +778,10 @@ void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
 uint32_t  __thinkos_ticks(void);
 #endif
 
+/* -------------------------------------------------------------------------- 
+ * kernel error and debug
+ * --------------------------------------------------------------------------*/
+
 /* Set the fault flag */
 void __thinkos_thread_fault_set(unsigned int th, int errno);
 
@@ -787,6 +791,13 @@ void __thinkos_thread_fault_clr(unsigned int th);
 /* Get the fault flag */
 bool __thinkos_thread_fault_get(unsigned int th);
 
+void __thinkos_pause_all(void);
+
+void __thinkos_resume_all(void);
+
+bool __thinkos_thread_pause(unsigned int thread_id);
+
+bool __thinkos_thread_resume(unsigned int thread_id);
 
 /* Set the pause flag */
 void __thinkos_thread_pause_set(unsigned int th);
@@ -796,6 +807,13 @@ void __thinkos_thread_pause_clr(unsigned int th);
 
 /* Get the pause flag */
 bool __thinkos_thread_pause_get(unsigned int th);
+
+
+bool __thinkos_thread_isalive(unsigned int thread_id);
+
+bool __thinkos_thread_ispaused(unsigned int thread_id);
+
+bool __thinkos_thread_isfaulty(unsigned int thread_id);
 
 /* -------------------------------------------------------------------------- 
  * kernel utility library 
@@ -868,6 +886,8 @@ const char * __thinkos_kind_name(unsigned int kind);
  * ------------------------------------------------------------------------- */
 
 int __thinkos_scan_stack(void * stack, unsigned int size);
+
+int __thinkos_thread_getnext(int th);
 
 #ifdef __cplusplus
 }

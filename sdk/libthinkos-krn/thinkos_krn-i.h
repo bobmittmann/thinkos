@@ -511,16 +511,18 @@ __thread_wq_get(struct thinkos_rt * krn, unsigned int idx) {
 #endif
 }
 
-#if (THINKOS_ENABLE_TIMED_CALLS)
 static inline int __attribute__((always_inline)) 
 __thread_tmw_get(struct thinkos_rt * krn, unsigned int idx) {
-#if (THINKOS_ENABLE_THREAD_STAT)
+#if (THINKOS_ENABLE_TIMED_CALLS)
+  #if (THINKOS_ENABLE_THREAD_STAT)
 	return krn->th_stat[idx] & 1;
-#else
+  #else
 	return __bit_mem_rd(&krn->wq_clock, th);  
+  #endif
+#else
+	return false;
 #endif
 }
-#endif
 
 static inline bool __attribute__((always_inline)) 
 __thread_is_in_wq(struct thinkos_rt * krn, unsigned int idx, unsigned int wq) {
@@ -678,7 +680,7 @@ static inline struct thinkos_context * __thinkos_thread_ctx_init(
 	ctx->r1 = task_arg[1];
 	ctx->r2 = task_arg[2];
 	ctx->r3 = task_arg[3];
-	ctx->r12 = thread_idx + 1;
+	ctx->r12 = stack_top - stack_size;
 	ctx->lr = task_exit; /* Thumb function pointer */
 	ctx->pc = task_entry; /* Thumb function pointer */
 	ctx->xpsr = CM_EPSR_T; /* SET the thumb bit */
@@ -702,8 +704,14 @@ __wq_head(struct thinkos_rt * krn, unsigned int wq) {
 }
 
 static inline void __attribute__((always_inline)) 
+__wq_delete(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
+	/* remove from the wait queue */
+	__bit_mem_wr(&krn->wq_lst[wq], th, 0);  
+}
+
+static inline void __attribute__((always_inline)) 
 __wq_insert(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
-	/* insert into the event wait queue */
+	/* insert into the wait queue */
 	__bit_mem_wr(&krn->wq_lst[wq], th, 1);  
 #if (THINKOS_ENABLE_THREAD_STAT)
 	krn->th_stat[th] = wq << 1;
@@ -832,6 +840,12 @@ __krn_preempt(struct thinkos_rt * krn) {
 #endif
 }
 
+static inline void __attribute__((always_inline)) 
+__krn_suspend_all(struct thinkos_rt * krn) {
+	/* remove from all from the ready wait queue */
+	krn->wq_ready = 0;  
+}
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -852,33 +866,22 @@ void __thinkos_krn_abort_all(struct thinkos_rt * krn);
 
 void __thinkos_krn_core_init(struct thinkos_rt * krn);
 
-void __thinkos_krn_pause_all(struct thinkos_rt * krn);
+void __krn_pause_all(struct thinkos_rt * krn);
 
-bool __thinkos_krn_thread_pause(struct thinkos_rt *, unsigned int idx);
+void __krn_suspend_all(struct thinkos_rt * krn);
 
+void __krn_resume_all(struct thinkos_rt * krn);
 
+bool __krn_thread_pause(struct thinkos_rt *, unsigned int idx);
 
-bool __thinkos_thread_isalive(unsigned int thread_id);
+bool __krn_thread_resume(struct thinkos_rt *, unsigned int idx);
 
-bool __thinkos_thread_ispaused(unsigned int thread_id);
-
-bool __thinkos_thread_isfaulty(unsigned int thread_id);
 
 //void __thinkos_irq_reset_all(void);
 
 void __krn_irq_reset_all(struct thinkos_rt * krn);
 
 void __thinkos_krn_irq_init(struct thinkos_rt * krn);
-
-
-void __thinkos_resume_all(void);
-
-int __thinkos_thread_getnext(int th);
-
-bool __thinkos_active(void);
-
-bool __thinkos_suspended(void);
-	
 
 /* -------------------------------------------------------------------------- 
  * Scheduler 

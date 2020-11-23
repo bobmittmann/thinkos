@@ -400,7 +400,8 @@ void print_stack_usage(struct gdbrsp_agent * gdb, char * pkt)
 				cp += str2str(cp, " | ");
 				cp += uint2dec(cp, rt->th_inf[i]->stack_size);
 				cp += str2str(cp, " | ");
-				cp += uint2dec(cp, __scan_stack(rt->th_inf[i]->stack_ptr, 
+				cp += uint2dec(cp, __thinkos_scan_stack(
+													rt->th_inf[i]->stack_ptr, 
 												rt->th_inf[i]->stack_size));
 				cp += str2str(cp, "\n");
 			} else 

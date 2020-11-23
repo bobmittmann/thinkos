@@ -19,20 +19,19 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <sys/dcclog.h>
+
+#include "thinkos_krn-i.h"
 
 #if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
 		(THINKOS_ENABLE_THREAD_STAT)
-void __thinkos_krn_pause_all(struct thinkos_rt * krn)
+void __krn_pause_all(struct thinkos_rt * krn)
 {
 	unsigned int idx;
 
 	for (idx = 0; idx < THINKOS_THREADS_MAX; ++idx) {
 		if (__thread_ctx_is_valid(krn, idx)) {
 			DCC_LOG1(LOG_JABBER, "th=%d", idx + 1);
-			__thinkos_krn_thread_pause(krn, idx);
+			__krn_thread_pause(krn, idx);
 		}
 	}
 

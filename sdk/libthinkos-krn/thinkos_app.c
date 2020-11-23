@@ -20,17 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+
 #define __THINKOS_APP__
 #include <thinkos/app.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-
-#include <thinkos.h>
-#include <sys/dcclog.h>
-#include <vt100.h>
-#include <sys/delay.h>
 
 #if (THINKOS_ENABLE_APP)
 
@@ -203,7 +196,7 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 #endif
 
 	stack_top = app->stack;
-	stack_size = app->stack_size;
+	stack_size = app->stksz;
 	stack_base = stack_top - stack_size;
 #if (DEBUG)
 	if ((stack_top > (uintptr_t)&__krn_stack_start) &&

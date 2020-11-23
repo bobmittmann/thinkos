@@ -21,8 +21,6 @@
 
 #include "thinkos_krn-i.h"
 
-#include <sys/dcclog.h>
-
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
@@ -516,6 +514,30 @@ bool __thinkos_thread_pause_get(unsigned int th)
 	return __thread_pause_get(&thinkos_rt, th);
 }
 
+bool __thinkos_thread_pause(unsigned int thread_id)
+{
+	return __krn_thread_pause(&thinkos_rt, thread_id);
+}
+
+bool __thinkos_thread_resume(unsigned int thread_id)
+{
+	return __krn_thread_resume(&thinkos_rt, thread_id);
+}
+
+void __thinkos_resume_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_resume_all(krn);
+}
+
+void __thinkos_pause_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_pause_all(krn);
+}
+
 
 /* -------------------------------------------------------------------------- 
  * kernel scheduler methods 
@@ -582,3 +604,11 @@ int __thinkos_thread_tmw_get(unsigned int idx)
 {
 	return __thread_tmw_get(&thinkos_rt, idx);
 }
+
+void __thinkos_suspend_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_suspend_all(krn);
+}
+

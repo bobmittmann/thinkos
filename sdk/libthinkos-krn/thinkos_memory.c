@@ -23,16 +23,7 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <sys/dcclog.h>
-#include <sys/param.h>
-
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <thinkos.h>
+#include "thinkos_krn-i.h"
 
 extern void * __krn_data_start;
 extern void * __krn_data_end;

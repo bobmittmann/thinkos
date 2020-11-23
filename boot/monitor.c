@@ -337,9 +337,10 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
 	struct monitor_thread_inf inf;
 	unsigned int thread_id;
+	int32_t errno;
 
 	/* get the last thread known to be at fault */
-	thread_id = monitor_thread_break_get();
+	thread_id = monitor_thread_break_get(&errno);
 	monitor_thread_inf_get(thread_id, &inf);
 
 	//__thinkos_pause_all();
@@ -384,11 +385,12 @@ static void monitor_on_krn_fault(const struct monitor_comm * comm)
 {
 	struct monitor_thread_inf inf;
 	int thread_id;
+	int32_t errno;
 
 	mdelay(500);
 
 	/* get the last thread known to be at fault */
-	thread_id = monitor_thread_break_get();
+	thread_id = monitor_thread_break_get(&errno);
 	monitor_thread_inf_get(thread_id, &inf);
 
 	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
@@ -471,10 +473,9 @@ static void monitor_on_step(struct monitor * mon)
 #if (MONITOR_OS_PAUSE)
 static void monitor_pause_all(const struct monitor_comm * comm)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	monitor_printf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
-	__thinkos_krn_pause_all(krn);
+	__thinkos_pause_all();
 	if (monitor_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "monitor_wait_idle() failed!");
 	}

@@ -20,12 +20,7 @@
  */
 
 
-#include <stdint.h> 
-
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_PAUSE)
 
@@ -380,7 +375,7 @@ static const thread_resume_t thread_resume_lut[] = {
 
 #endif /* (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) */
 
-bool __thinkos_krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
+bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
 {
 	unsigned int wq;
 
@@ -444,7 +439,7 @@ bool __thinkos_krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
 	return true;
 }
 
-bool __thinkos_thread_resume(unsigned int thread_id)
+bool __krn_thread_resume(struct thinkos_rt * krn, unsigned int thread_id)
 {
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
 	bool (* resume)(unsigned int, unsigned int, bool);
@@ -561,8 +556,8 @@ void thinkos_pause_svc(int32_t * arg, unsigned int self)
 
 	arg[0] = 0;
 
-	if (__thinkos_krn_thread_pause(krn, thread_id))
-		__thinkos_defer_sched();
+	if (__krn_thread_pause(krn, thread_id))
+		__krn_defer_sched(krn);
 }
 
 #endif /* THINKOS_ENABLE_PAUSE */

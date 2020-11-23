@@ -73,11 +73,6 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
-static inline void __thread_suspend_all(struct thinkos_rt * krn) {
-	/* remove from all from the ready wait queue */
-	krn->wq_ready = 0;  
-}
-
 void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -138,19 +133,19 @@ struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp,
 
 #if (THINKOS_ENABLE_MONITOR) 
 #if (THINKOS_ENABLE_PAUSE) 
-	__thinkos_krn_pause_all(krn);
+	__krn_pause_all(krn);
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 		__thread_suspend(krn, thread_idx);
 	}
 #else
-	__thread_suspend_all(krn);
+	__krn_suspend_all(krn);
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 	}
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 #endif
 
 	/* signal the monitor */
@@ -175,19 +170,19 @@ void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread_idx)
 
 #if (THINKOS_ENABLE_MONITOR) 
 #if (THINKOS_ENABLE_PAUSE) 
-	__thinkos_krn_pause_all(krn);
+	__krn_pause_all(krn);
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 		__thread_suspend(krn, thread_idx);
 	}
 #else
-	__thread_suspend_all(krn);
+	__krn_suspend_all(krn);
 	if (thread_idx < THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thread_fault_set(krn, thread_idx, errno);
 	}
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 #endif
 
 	/* signal the monitor */
