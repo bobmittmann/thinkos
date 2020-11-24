@@ -121,6 +121,9 @@ void __monitor_context_swap(uint32_t ** pctx);
 
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+    struct krn_clock * clk = &thinkos_rt.time_clk;
+#endif
   #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	do {
@@ -135,6 +138,14 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			uint32_t ticks;
 			uint32_t wq;
 			int j;
+
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+			uint64_t ts;
+
+			ts = clk->timestamp;
+			ts += clk->increment;
+			clk->timestamp = ts;
+#endif
 
 			ticks = thinkos_rt.ticks; 
 			ticks++;

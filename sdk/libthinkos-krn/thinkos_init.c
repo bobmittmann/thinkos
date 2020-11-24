@@ -329,6 +329,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	DCC_LOG(LOG_TRACE, "IDLE init...");
 	thinkos_krn_idle_init();
 
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	__thinkos_krn_time_init(krn);
+#endif
 
 #if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
 	DCC_LOG(LOG_TRACE, "SYysTick init...");

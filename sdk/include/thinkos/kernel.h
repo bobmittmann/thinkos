@@ -905,6 +905,8 @@ void __thinkos_systick_sleep(void);
 
 void __thinkos_systick_wakeup(void);
 
+void __thinkos_krn_time_init(struct thinkos_rt * krn);
+
 #ifdef __cplusplus
 }
 #endif

@@ -220,6 +220,34 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #endif
 
 /* ----------------------------------------------
+ * Interrupts
+ * --------------------------------------------- */
+
+#if (THINKOS_IRQ_MAX) > 0
+	[THINKOS_IRQ_WAIT] = thinkos_irq_wait_svc,
+#else
+	[THINKOS_IRQ_WAIT] = thinkos_nosys_svc,
+#endif /* THINKOS_IRQ_MAX > 0 */
+
+#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) 
+	[THINKOS_IRQ_TIMEDWAIT] = thinkos_irq_timedwait_svc,
+#else
+	[THINKOS_IRQ_TIMEDWAIT] = thinkos_nosys_svc,
+#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
+
+#if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
+	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_irq_timedwait_cleanup_svc,
+#else
+	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_nosys_svc,
+#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
+
+#if (THINKOS_ENABLE_IRQ_CTL)
+	[THINKOS_IRQ_CTL] = thinkos_irq_ctl_svc,
+#else
+	[THINKOS_IRQ_CTL] = thinkos_nosys_svc,
+#endif /* THINKOS_ENABLE_IRQ_CTL */
+
+/* ----------------------------------------------
  * Mutex
  * --------------------------------------------- */
 
@@ -467,33 +495,6 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CONSOLE] = thinkos_nosys_svc,
 #endif
 
-/* ----------------------------------------------
- * Interrupts
- * --------------------------------------------- */
-
-#if (THINKOS_IRQ_MAX) > 0
-	[THINKOS_IRQ_WAIT] = thinkos_irq_wait_svc,
-#else
-	[THINKOS_IRQ_WAIT] = thinkos_nosys_svc,
-#endif /* THINKOS_IRQ_MAX > 0 */
-
-#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) 
-	[THINKOS_IRQ_TIMEDWAIT] = thinkos_irq_timedwait_svc,
-#else
-	[THINKOS_IRQ_TIMEDWAIT] = thinkos_nosys_svc,
-#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
-
-#if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_irq_timedwait_cleanup_svc,
-#else
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_nosys_svc,
-#endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
-
-#if (THINKOS_ENABLE_IRQ_CTL)
-	[THINKOS_IRQ_CTL] = thinkos_irq_ctl_svc,
-#else
-	[THINKOS_IRQ_CTL] = thinkos_nosys_svc,
-#endif /* THINKOS_ENABLE_IRQ_CTL */
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
 	[THINKOS_OBJ_ALLOC] = thinkos_obj_alloc_svc,

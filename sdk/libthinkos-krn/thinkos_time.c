@@ -31,14 +31,10 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define CLOCK_DRIFT_MAX FLOAT_Q31(0.000500)
 #endif
 
-void clock_init(struct krn_clock * clk, uint32_t tick_itv, uint32_t hw_tmr)
-{
-	clk->timestamp = 0;
-}
-
 #define THINKOS_SYSTICK_FREQ (1000) /* T = 1ms */
 #define THINKOS_TIME_SYSTICK_INC ((uint64_t)(1LL << 32) / (THINKOS_SYSTICK_FREQ))
 
+#if (THINKOS_ENABLE_DATE_AND_TIME)
 
 void __thinkos_krn_time_init(struct thinkos_rt * krn)
 {
@@ -180,4 +176,6 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 		break;
 	}
 }
+
+#endif /* (THINKOS_ENABLE_DATE_AND_TIME) */
 

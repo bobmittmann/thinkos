@@ -126,6 +126,7 @@ again:
 #if THINKOS_ENABLE_TIMED_CALLS
 void thinkos_ev_timedwait_svc(int32_t * arg, unsigned int self)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int wq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 	unsigned int no = wq - THINKOS_EVENT_BASE;

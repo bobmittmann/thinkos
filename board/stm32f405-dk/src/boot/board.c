@@ -292,11 +292,13 @@ int board_init(void)
 bool board_integrity_check(void)
 {
 	uint32_t tick;
-	uint64_t time;
 
 	/* Time window autoboot */
-	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
+	for (tick = 0; tick < 2*PREBOOT_TIME_SEC; ++tick) {
+		uint64_t time;
+
 		thinkos_sleep(500);
+	//	thinkos_alarm(50000 + tick * 500);
 
 		__puts(".");
 
@@ -317,6 +319,7 @@ bool board_integrity_check(void)
 
 
 		time = thinkos_time_realtime_get();
+		(void)time;
 		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
 	}
 
