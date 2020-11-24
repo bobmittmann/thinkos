@@ -562,6 +562,11 @@
 #define THINKOS_ENABLE_RUNMASK              0
 #endif
 
+/* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
+#ifndef THINKOS_ENABLE_DATE_AND_TIME 
+#define THINKOS_ENABLE_DATE_AND_TIME        0
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Dependency check
@@ -676,10 +681,16 @@
 #error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG"
 #endif
 
+/* monitor depends on idle hooks */
+#if (THINKOS_ENABLE_MONITOR) && !(THINKOS_ENABLE_IDLE_HOOKS)
+#error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_IDLE_HOOKS"
+#endif
+
 /* monitor clock depends on monitor and clock */
 #if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_CLOCK)
 #error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_CLOCK"
 #endif
+
 #if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -767,6 +778,11 @@
 #if (THINKOS_ENABLE_CONSOLE_MODE) && !(THINKOS_ENABLE_CONSOLE)
 #error "THINKOS_ENABLE_CONSOLE_MODE depends on THINKOS_ENABLE_CONSOLE"
 #endif
+
+#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_CLOCK)
+#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_CLOCK"
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Deprecated options

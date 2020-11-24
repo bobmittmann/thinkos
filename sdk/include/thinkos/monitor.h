@@ -41,14 +41,14 @@
 enum monitor_event {
 	/* Debug monitor internal reset */
 	MONITOR_RESET           = 0,
-	/* ThinkOS kernel fault */
-	MONITOR_KRN_FAULT       = 1,
-	/* ThinkOS kernel reset indication */
-	MONITOR_KRN_ABORT       = 2,
-	/* ThinkOS idle indication */
-	MONITOR_IDLE            = 3,
 	/* Board reset request */
-	MONITOR_SOFTRST         = 4,
+	MONITOR_SOFTRST         = 1,
+	/* ThinkOS kernel fault */
+	MONITOR_KRN_FAULT       = 2,
+	/* ThinkOS kernel reset in3ication */
+	MONITOR_KRN_ABORT       = 3,
+	/* ThinkOS idle indication5*/
+	MONITOR_IDLE            = 4,
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -473,6 +473,10 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 
 int monitor_thread_exec(const struct monitor_comm * comm, 
 						int (* task)(void *, unsigned int), void * arg);
+
+void thinkos_monitor_wakeup(void);
+
+void thinkos_monitor_sleep(void);
 
 #ifdef __cplusplus
 }

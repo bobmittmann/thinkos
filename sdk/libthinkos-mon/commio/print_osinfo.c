@@ -184,7 +184,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 			}
 #if THINKOS_ENABLE_CLOCK
 			{
-				int32_t dt = (int32_t)(rt->clock[i] - rt->ticks);
+				int32_t dt = (int32_t)(rt->th_clk[i] - rt->ticks);
 				if (dt < 0)
 					monitor_printf(comm, " | <timedout>"); 
 				else

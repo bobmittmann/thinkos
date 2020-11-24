@@ -287,15 +287,16 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 3
+#define PREBOOT_TIME_SEC 10
 
-int board_preboot_task(void *ptr)
+bool board_integrity_check(void)
 {
 	uint32_t tick;
+	uint64_t time;
 
 	/* Time window autoboot */
 	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
-		thinkos_sleep(250);
+		thinkos_sleep(500);
 
 		__puts(".");
 
@@ -313,6 +314,10 @@ int board_preboot_task(void *ptr)
 			stm32_gpio_set(IO_LED2);
 			break;
 		}
+
+
+		time = thinkos_time_realtime_get();
+		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
 	}
 
 	__puts("\r\n");
@@ -324,7 +329,7 @@ int board_preboot_task(void *ptr)
 	stm32_gpio_clr(IO_LED1);
 	stm32_gpio_clr(IO_LED2);
 
-	return 0;
+	return true;
 }
 
 int board_configure_task(void *ptr)
@@ -332,6 +337,7 @@ int board_configure_task(void *ptr)
 	__puts("- board configuration\r\n");
 	return 0;
 }
+
 
 int board_selftest_task(void *ptr)
 {
@@ -507,21 +513,8 @@ const struct thinkos_board this_board = {
 			.magic = &thinkos_10_app_magic},
 	.init = board_init,
 	.softreset = board_on_softreset,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
 	.default_task = board_default_task,
 	.monitor_comm_init = board_comm_init,
 	.memory = &mem_map
 };
-
-
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
-
-void __attribute((noreturn)) main(int argc, char ** argv)
-{
-//	thinkos_boot(&this_board, &standby_monitor_task);
-	thinkos_boot(&this_board, &boot_monitor_task);
-}
 

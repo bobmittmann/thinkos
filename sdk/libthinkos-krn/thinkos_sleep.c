@@ -31,7 +31,7 @@ void thinkos_sleep_svc(int32_t * arg, int self)
 	uint32_t ms = (uint32_t)arg[0];
 #if THINKOS_ENABLE_CLOCK
 	/* set the clock */
-	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
+	__thread_clk_itv_set(krn, self, ms);
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
 	/* mark the thread clock enable bit */
@@ -52,7 +52,7 @@ void thinkos_alarm_svc(int32_t * arg, int self)
 	uint32_t ms = (uint32_t)arg[0];
 
 	/* set the clock */
-	thinkos_rt.clock[self] = ms;
+	__thread_clk_set(krn, self, ms);
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
 	/* mark the thread clock enable bit */

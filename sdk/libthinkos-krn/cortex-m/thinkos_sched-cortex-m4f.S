@@ -124,6 +124,10 @@ thinkos_sched_swap:
 	str.w	 r0, [r3, r2, lsl #2]
 
 thinkos_sched_select_ready:
+#if (THINKOS_ENABLE_RUNMASK)
+	ldr      r7, [r3, #THINKOS_RT_RUNMASK_OFFS]
+	ands     r1, r7
+#endif
 	/* r1 - ready queue
 	   r2 - old thread id */
 	cbz      r1, .L_ready_queue_empty
@@ -163,7 +167,15 @@ thinkos_krn_sched_ctx_restore:
 	.type   thinkos_krn_sched_ctx_restore, %function
 
 .L_save_active_and_restore:
-
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	/* get the control (3bits) from the context */
+	ands     r7, r0, #CONTROL_MSK
+	/* restore the control register */
+	msr      CONTROL, r7
+	isb
+	/* restore stack pointer */
+	subs     r0, r7
+#endif
 	/* r0: new thread stack
 	   r1: new active thread id and stack limit
 	   r2: old active thread id 
@@ -175,14 +187,6 @@ thinkos_krn_sched_ctx_restore:
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
 
-	/* get the control (3bits) from the context */
-	ands     r7, r0, #CONTROL_MSK
-	/* restore the control register */
-	msr      CONTROL, r7
-	isb
-	/* restore stack pointer */
-	bics     r12, r0, #CONTROL_MSK
-
 .L_exit_usr:
 #if (THINKOS_ENABLE_FPU)
 	tst      r7, #(CONTROL_FPCA)
@@ -193,11 +197,12 @@ thinkos_krn_sched_ctx_restore:
 	movne    lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	moveq    lr, #CM3_EXC_RET_THREAD_PSP
 #else
+	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 #endif
 	/* restore core context */
-	ldmia    r12!, {r4-r11}
-	msr      PSP, r12
+	ldmia    r0!, {r4-r11}
+	msr      PSP, r0
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
@@ -206,31 +211,21 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
-.L_ready_queue_empty:
-/* TODO: non realtime threads */
-#if 0
-#if (THINKOS_NRT_THREADS_MAX) > 0
-	mov      r6, r2
-	mov      r7, r3
-	bl       thinkos_krn_nrt_scheduler
-	mov      r2, r6
-	mov      r3, r7
-	cbnz      r1, .L_exit_idle
-#endif /* (THINKOS_NRT_THREADS_MAX) > 0 */
-#endif
-
 .L_exit_idle:
-    /* set the control register */
-    msr      CONTROL, r1
-    isb
-	movs     r1, #THINKOS_THREAD_IDLE
-	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
+.L_ready_queue_empty:
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
-    ldr.w    r0, [r3, r1, lsl #2]
+    ldr.w    r0, [r3, #THINKOS_RT_IDLE_CTX_OFFS]
     cmp      sp, r0
     bne      .L_idle_err
 #endif
+    /* set the control register */
+    movs     r1, #0
+    msr      CONTROL, r1
+    isb
+
+	movs     r1, #THINKOS_THREAD_IDLE
+	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* restore core context */
 	pop      {r4-r11}
 	/* Synthesizes exception return */
@@ -243,19 +238,15 @@ thinkos_krn_sched_ctx_restore:
 	bx       lr
 #endif
 
-.L_idle_return:
-	bx       lr
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_err: 
-	movs    r0, #THINKOS_ERR_IDLE_STACK
-	b       thinkos_krn_sched_err
+	b       thinkos_krn_sched_idle_err
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
 #if (THINKOS_ENABLE_SCHED_ERROR)
-	movs    r0, #THINKOS_ERR_STACK_LIMIT
-	b       thinkos_krn_sched_err
+	b       thinkos_krn_sched_stack_err
 #endif
 #endif
 
@@ -366,7 +357,6 @@ thinkos_sched_step:
 	/* Mask low priority interrupts except debug monitor */
 	mov      r5, #(1 << 5)
 	msr      BASEPRI, r5
-	mov      r1, #0
 	b        .L_exit_idle
 
 

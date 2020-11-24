@@ -222,6 +222,16 @@ static inline void __attribute__((always_inline))
 #endif
 }
 
+
+/* Set the fault flag */
+static inline void __attribute__((always_inline)) 
+	__krn_brk_set(struct thinkos_rt * krn, unsigned int idx, int errno) {
+#if (THINKOS_ENABLE_MONITOR)
+	krn->brk_idx = idx;
+#endif
+}
+
+
 /* Clear the fault flag */
 static inline void __attribute__((always_inline))
 __thread_fault_clr(struct thinkos_rt * krn, unsigned int idx) {
@@ -722,8 +732,8 @@ __wq_insert(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 static inline void __attribute__((always_inline)) 
 __tmdwq_insert(struct thinkos_rt * krn, unsigned int wq, 
 			   unsigned int th, unsigned int ms) {
-	/* set the clock */
-	krn->clock[th] = krn->ticks + ms;
+	/* set the th_clk */
+	krn->th_clk[th] = krn->ticks + ms;
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&krn->wq_clock, th, 1);  
 	/* insert into the event wait queue */
@@ -739,7 +749,7 @@ __tmdwq_insert(struct thinkos_rt * krn, unsigned int wq,
 static inline void __attribute__((always_inline)) 
 __wq_clock_insert(struct thinkos_rt * krn, unsigned int th, unsigned int ms) {
 	/* set the clock */
-	krn->clock[th] = krn->ticks + ms;
+	krn->th_clk[th] = krn->ticks + ms;
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&krn->wq_clock, th, 1);  
 #if (THINKOS_ENABLE_THREAD_STAT)
@@ -810,6 +820,30 @@ __krn_ticks(struct thinkos_rt * krn) {
 	return krn->ticks;
 }
 #endif
+
+static inline void __attribute__((always_inline)) 
+__thread_clk_set(struct thinkos_rt * krn, unsigned int idx, uint32_t clk) {
+#if (THINKOS_ENABLE_CLOCK)
+	krn->th_clk[idx] = clk;
+#endif
+}
+
+static inline uint32_t __attribute__((always_inline)) 
+__thread_clk_get(struct thinkos_rt * krn, unsigned int idx) {
+#if (THINKOS_ENABLE_CLOCK)
+	return krn->th_clk[idx];
+#else
+	return 0;
+#endif
+}
+
+static inline void __attribute__((always_inline)) 
+__thread_clk_itv_set(struct thinkos_rt * krn, unsigned int idx, 
+					 int32_t itv) {
+#if (THINKOS_ENABLE_CLOCK)
+	krn->th_clk[idx] = krn->ticks + itv;
+#endif
+}
 
 /* -------------------------------------------------------------------------- 
  * kernel rt scheduler access methods 
@@ -926,7 +960,7 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 					void * arg, bool paused);
 
 /* -------------------------------------------------------------------------
- * System timer 
+ * System timer (Cortex-M SysTick)
  * ------------------------------------------------------------------------- */
 void thinkos_krn_systick_init(void);
 
@@ -937,7 +971,7 @@ static inline uint32_t __attribute__((always_inline)) thinkos_clock_i(void)  {
 #endif
 
 /* -------------------------------------------------------------------------
- * Misc timer 
+ * Misc 
  * ------------------------------------------------------------------------- */
 
 /**
@@ -951,6 +985,8 @@ void thinkos_krn_mpu_init(uint32_t code_start, uint32_t code_end,
 
 void __thinkos_krn_thread_abort(struct thinkos_rt * krn, 
 								unsigned int thread_idx);
+
+
 
 #ifdef __cplusplus
 }

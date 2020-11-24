@@ -76,7 +76,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 #endif
 
 #if (THINKOS_ENABLE_CLOCK)
-	timeout = (int32_t)(rt->clock[thread_id] - rt->ticks); 
+	timeout = (int32_t)(rt->th_clk[thread_id] - rt->ticks); 
 #else
 	timeout = -1;
 #endif

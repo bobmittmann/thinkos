@@ -191,7 +191,8 @@ again:
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG2(LOG_INFO, "<%d> waiting for event on %d", self, wq);
 	/* set the clock */
-	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
+	__thread_clk_itv_set(krn, self, ms);
+
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);  
 	/* Set the default return value to timeout. The

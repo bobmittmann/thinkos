@@ -72,7 +72,7 @@ int __thinkos_thread_get(unsigned int thread_id,
 #endif
 
 #if THINKOS_ENABLE_CLOCK
-	st->clock = (int32_t)(rt->clock[thread_id] - rt->ticks); 
+	st->clock = (int32_t)(rt->th_clk[thread_id] - rt->ticks); 
 #else
 	st->clock = -1;
 #endif

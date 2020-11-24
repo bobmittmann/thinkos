@@ -43,6 +43,12 @@
 #define __THINKOS_KRNSVC__
 #include <thinkos/krnsvc.h>
 
+#define __THINKOS_TIME__
+#include <thinkos/time.h>
+
+#define __THINKOS_CLOCK__
+#include <thinkos/clock.h>
+
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
 
@@ -330,14 +336,16 @@ struct thinkos_rt {
 	uint32_t cycref;
 #endif
 
+#if (THINKOS_ENABLE_MONITOR)
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-#if (THINKOS_ENABLE_DEBUG_STEP)
+  #if (THINKOS_ENABLE_DEBUG_STEP)
 	uint32_t step_req;  /* step request bitmap */
 	uint32_t step_svc;  /* step at service call bitmap */
+  #endif
 #endif
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
-	int8_t   break_id;  /* reserved */
+	int8_t   brk_idx;  /* break thread index */
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -437,10 +445,13 @@ struct thinkos_rt {
 	int8_t th_errno[THINKOS_THREADS_MAX]; /* Per thread error code */
 #endif
 
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	struct krn_clock time_clk;
+#endif
 #if (THINKOS_ENABLE_CLOCK)
 		uint32_t ticks;
-		/* This fields are used for time wait (e.g. sleep()) */
-		uint32_t clock[THINKOS_THREADS_MAX];
+		/* Per thread clock. Used for time wait (e.g. sleep()) */
+		uint32_t th_clk[THINKOS_THREADS_MAX];
   #if (THINKOS_ENABLE_MONITOR_CLOCK)
 		/* kernel monitor timer */
 		uint32_t monitor_clock;
@@ -888,6 +899,11 @@ const char * __thinkos_kind_name(unsigned int kind);
 int __thinkos_scan_stack(void * stack, unsigned int size);
 
 int __thinkos_thread_getnext(int th);
+
+
+void __thinkos_systick_sleep(void);
+
+void __thinkos_systick_wakeup(void);
 
 #ifdef __cplusplus
 }

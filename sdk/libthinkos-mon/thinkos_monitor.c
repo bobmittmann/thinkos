@@ -20,22 +20,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
+#include "thinkos_mon-i.h"
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-
-#include <sys/stm32f.h>
-#include <arch/cortex-m3.h>
-#include <sys/param.h>
-#include <stdbool.h>
-#include <sys/dcclog.h>
-#include <vt100.h>
 
 #if (THINKOS_ENABLE_MONITOR) 
 
@@ -281,7 +270,7 @@ int monitor_wait_idle(void)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* Issue an idle hook request */
-	__idle_hook_req(IDLE_HOOK_NOTIFY_MONITOR);
+	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
 
 	return monitor_expect(MONITOR_IDLE);
 #else
@@ -311,13 +300,59 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 }
 #endif
 
+
+void __thinkos_systick_sleep(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__systick_int_disable(krn);
+	__systick_pend_clr(krn);
+}
+
+void __thinkos_systick_wakeup(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__systick_int_enable(krn);
+	__systick_pend_set(krn);
+}
+
+
+void thinkos_monitor_sleep(void)
+{
+	/* Reenable systick interrupts and signal the monitor */
+	__thinkos_systick_sleep();
+}
+
 void monitor_signal_thread_fault(unsigned int thread_idx, int32_t code) 
 {
-	/* adjust the thread id */
-	thinkos_monitor_rt.brk_thread_id = thread_idx + 1;
-	thinkos_monitor_rt.brk_code = code;
-	monitor_signal(MONITOR_THREAD_FAULT);
+	uint32_t evset;
+	uint32_t set;
+
+	/* Disable systick interrupts */
+	__thinkos_systick_sleep();
+
+
+	set = (1 << MONITOR_THREAD_FAULT) | (1 << MONITOR_SOFTRST); 
+
+	do {
+		/* avoid possible race condition on monitor.events */
+		evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
+		evset |= set;
+	} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
+
+
+	/* Issue an idle hook request */
+	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
+
 }
+
+void thinkos_monitor_wakeup(void)
+{
+	/* Reenable systick interrupts and signal the monitor */
+	__thinkos_systick_wakeup();
+}
+
 
 #define THINKOS_THREAD_LAST (THINKOS_THREAD_IDLE)
 
@@ -694,5 +729,3 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 #endif
 
 #endif /* THINKOS_ENABLE_MONITOR */
-
-

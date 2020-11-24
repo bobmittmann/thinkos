@@ -66,6 +66,7 @@ void __thinkos_irq_disable_all(void)
 		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
 #endif
 	}
+
 }
 #endif
 

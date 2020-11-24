@@ -129,7 +129,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					THINKOS_RT_XCPT_IPSR_OFFS, "THINKOS_RT_XCPT_IPSR_OFFS");
 	_Static_assert (offsetof(struct thinkos_rt, step_id) == 
 					THINKOS_RT_STEP_ID_OFFS, "THINKOS_RT_STEP_ID_OFFS");
-	_Static_assert (offsetof(struct thinkos_rt, break_id) == 
+	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
 					THINKOS_RT_BREAK_ID_OFFS, "THINKOS_RT_BREAK_ID_OFFS");
 #endif
 

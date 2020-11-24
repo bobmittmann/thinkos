@@ -55,7 +55,7 @@ cm3_pendsv_isr:
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* get the active (current) thread and the ready bitmap */
 	ldrd     r12, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-	and      r2, r12, #0x3f
+	and      r2, r12, #(STACK_ALIGN_MSK)
 #else
 	ldrd     r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #endif
@@ -81,11 +81,11 @@ cm3_pendsv_isr:
 #endif
 	stmdb    r0!, {r4-r11}
 
+/* #if (THINKOS_ENABLE_FPU)
 
 
 
-
-
+#endif */
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	mrs      r7, CONTROL
@@ -154,7 +154,7 @@ thinkos_sched_step_req_check:
 	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
 	ldr.w	 r12, [r7, r1, lsl #2]
 	/* get the effective thread id */
-	ands     r1, r12, #0x3f
+	ands     r1, r12, #(STACK_ALIGN_MSK)
 #endif
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]
@@ -188,12 +188,21 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 .L_exit_usr:
+/* #if (THINKOS_ENABLE_FPU)
+
+
+
+
+
+
+
+#else */
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+/* #endif */
 	/* restore core context */
 	ldmia    r0!, {r4-r11}
 	msr      PSP, r0
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_PSP
-
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	mov      r3, sp
@@ -268,7 +277,7 @@ thinkos_sched_step:
 	adds     r7, r3, #THINKOS_RT_TH_SL_OFFS
 	ldr.w	 r12, [r7, r1, lsl #2]
 	/* get the effective thread id */
-	ands     r1, r12, #0x3f
+	ands     r1, r12, #(STACK_ALIGN_MSK)
 #endif
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]

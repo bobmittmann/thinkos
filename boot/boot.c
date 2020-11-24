@@ -35,7 +35,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <sys/stm32f.h>
 #include <sys/delay.h>
 
 #include <sys/dcclog.h>

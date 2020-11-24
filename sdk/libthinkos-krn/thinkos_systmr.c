@@ -143,7 +143,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			wq = __rbit(thinkos_rt.wq_clock);
 			while ((j = __clz(wq)) < 32) {
 				wq &= ~(0x80000000 >> j);  
-				if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
+				if ((int32_t)(thinkos_rt.th_clk[j] - ticks) <= 0) {
 					__thinkos_time_wakeup(j); 
 				}
 			}

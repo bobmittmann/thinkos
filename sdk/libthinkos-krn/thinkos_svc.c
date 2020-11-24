@@ -143,6 +143,8 @@ void thinkos_flash_mem_svc(int32_t * arg, int self);
 
 void thinkos_app_exec_svc(int32_t * arg, int self);
 
+void thinkos_time_svc(int32_t * arg, int self);
+
 #if (THINKOS_ENABLE_ESCALATE)
 /* Call a function in priviledged service mode. */
 void thinkos_escalate_svc(int32_t * arg, int self)
@@ -563,6 +565,12 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CRITICAL_EXIT] = thinkos_critical_exit_svc,
 #else
 	[THINKOS_CRITICAL_EXIT] = thinkos_nosys_svc,
+#endif
+
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	[THINKOS_DATE_AND_TIME] = thinkos_time_svc,
+#else
+	[THINKOS_DATE_AND_TIME] = thinkos_nosys_svc,
 #endif
 
 

@@ -31,9 +31,9 @@ VERSION_MINOR = "0"
 
 PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-BOOT_CFILES = boot.c monitor.c standby.c 
+BOOT_CFILES = monitor.c standby.c 
 
-CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c
+CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c boot.c
 
 LIBDIRS = $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-dbg $(ARCH_DIR)/libstm32f \

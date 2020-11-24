@@ -216,7 +216,8 @@ again:
 			 self + 1, wq, (gates >> idx) & 3);
 
 	/* set the clock */
-	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
+	__thread_clk_itv_set(&thinkos_rt, self, ms);
+
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);  
 	/* Set the default return value to timeout. The

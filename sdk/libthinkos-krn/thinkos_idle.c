@@ -60,11 +60,11 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 			continue;
 
 		switch (req) {
-			case IDLE_HOOK_NOTIFY_MONITOR:
+			case IDLE_HOOK_MONITOR_WAKEUP:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
 						"IDLE_HOOK_NOTIFY_MONITOR" _ATTR_POP_ );
 				/* Notify the debug/monitor */
-				monitor_signal(MONITOR_IDLE); 
+				thinkos_monitor_wakeup(); 
 				break;
 
 #if 0 

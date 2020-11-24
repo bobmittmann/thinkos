@@ -77,9 +77,8 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
-	//__thinkos_irq_disable_all();
-	__thread_disble_all(krn);
-
+	__thinkos_irq_disable_all();
+#if (THINKOS_ENABLE_MONITOR) 
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
 			 VT_POP, thread_idx + 1, errno);
 
@@ -92,9 +91,17 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 
 //	__thread_suspend_all(krn);
 
+	__thread_disble_all(krn);
+
+	/* discard context */
+	__thread_active_set(krn, THINKOS_THREAD_VOID);
+	__thread_fault_set(krn, thread_idx, errno);
+	__thread_suspend(krn, thread_idx);
 	__krn_defer_sched(krn);
 
 	monitor_signal_thread_fault(thread_idx, errno);
+
+#endif
 
 #if  0
 #if (THINKOS_ENABLE_MONITOR) 
@@ -115,8 +122,6 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 #endif
 #endif
 #endif
-
-
 }
 
 struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp, 
