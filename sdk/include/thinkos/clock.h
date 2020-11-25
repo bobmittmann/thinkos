@@ -44,10 +44,23 @@
 
 struct krn_clock {
 	uint64_t timestamp;
-	uint32_t increment;
+	uint32_t increment; /* fractional per tick increment */
 	int64_t realtime_offs;
-	uint32_t resolution;
+	uint32_t resolution; /* fractional clock resolution */
+	struct {
+		int32_t n_freq; /* frequency itegral part */
+		int32_t q_freq; /* frequency decimal part */
+		int32_t drift_comp; /* drift compensation seconds per ticks */
+		int32_t jitter;
+	} dbg;
+
+	struct {
+		uint32_t k;
+		volatile uint64_t cycles;
+		volatile uint32_t count;
+	} hw; 
 };
+
 
 #ifdef __cplusplus
 extern "C" {

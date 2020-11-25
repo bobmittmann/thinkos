@@ -31,7 +31,7 @@ time_t time(time_t * t)
 {
 	struct timespec tv;
 
-//	clock_gettime(CLOCK_REALTIME, &tv);
+	clock_gettime(CLOCK_REALTIME, &tv);
 	tv.tv_sec = 0;
 
 	if (t != NULL)

@@ -36,14 +36,83 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 
+uint64_t time_clock_rel_tick(struct krn_clock * clk, uint32_t refcnt)
+{
+	unsigned int pri;
+	int32_t diff;
+	uint64_t cyc;
+
+	cyc = clk->hw.cycles + (1LL << 32);
+	diff = refcnt - clk->hw.count;
+	(void)diff;
+
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+
+	clk->hw.cycles = cyc;
+	clk->hw.count = refcnt;
+	cm3_primask_set(pri);
+
+#if 0
+	{
+		uint32_t k = clk->hw.k;
+		/* Self calibrate */
+		uint32_t k0 = (uint64_t) (1LL << (32 + 8)) / diff;
+		/* Exponential Averaging filter */
+		k = ((uint64_t) k * 1023 + k0 + 511) / 1024;
+		clk->k = k;
+		DCC_LOG(LOG_TRACE"k=%u diff=%d", (uint32_t) k, diff);
+	}
+#endif
+
+	return cyc;
+}
+
+uint64_t time_clock_rel_timestamp(struct krn_clock * clk, uint32_t refcnt)
+{
+	uint32_t hwcnt;
+	uint64_t cyc;
+	int32_t diff;
+
+	do {
+		hwcnt = clk->hw.count;
+		cyc = clk->hw.cycles;
+	} while (hwcnt != clk->hw.count);
+
+	diff = refcnt - hwcnt;
+	return cyc + (((int64_t) diff * clk->hw.k) >> 8);
+}
+
+uint64_t time_clock_timestamp(struct krn_clock * clk)
+{
+	uint32_t refcnt;
+	uint32_t hwcnt;
+	uint64_t cyc;
+	int32_t diff;
+
+	refcnt = thinkos_cyccnt();
+
+	do {
+		hwcnt = clk->hw.count;
+		cyc = clk->hw.cycles;
+	} while (hwcnt != clk->hw.count);
+
+	diff = refcnt - hwcnt;
+	return cyc + (((int64_t) diff * clk->hw.k) >> 8);
+}
+
 void __thinkos_krn_time_init(struct thinkos_rt * krn)
 {
     struct krn_clock * clk = &thinkos_rt.time_clk;
-
+	uint32_t div = 487530;
 
 	clk->resolution = THINKOS_TIME_SYSTICK_INC;
 	clk->increment = clk->resolution;
 	clk->realtime_offs = (uint64_t)1606149342LL << 32;
+
+
+	clk->hw.cycles = 0;
+	clk->hw.k = (uint64_t) (1LL << (32 + 8)) / div;
 
 	DCC_LOG1(LOG_TRACE, "resolution=%d", clk->resolution);
 }
