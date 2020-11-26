@@ -335,46 +335,34 @@ static const char s_crlf[] =  "\r\n";
 
 static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
-	struct monitor_thread_inf inf;
-	unsigned int thread_id;
+	int thread_id;
 	int32_t errno;
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
-	monitor_thread_inf_get(thread_id, &inf);
+	if (thread_id < 0) {
+		DCC_LOG(LOG_WARNING, "No break thread!!!");
+		return;
+	}
 
-	//__thinkos_pause_all();
-	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
+	DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id + 1, errno);
 
 	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
+		struct monitor_thread_inf inf;
 
 		DCC_LOG(LOG_TRACE, "COMM connected!");
+
+		monitor_thread_inf_get(thread_id, &inf);
 		monitor_printf(comm, s_crlf);
 		monitor_printf(comm, s_hr);
-		if (inf.errno == THINKOS_NO_ERROR) {
-			monitor_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-					   thinkos_err_name_lut[xcpt->errno],
-					   inf.thread_id + 1,
-					   inf.errno,
-					   inf.pc);
-			monitor_print_exception(comm, xcpt);
-		} else {
-			monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
 					   thinkos_err_name_lut[inf.errno],
 					   inf.thread_id + 1,
 					   inf.errno,
 					   inf.pc);
-			monitor_print_thread(comm, thread_id);
-		}
+		monitor_print_thread(comm, thread_id);
 		monitor_printf(comm, s_hr);
-
 	}
-
-//	__thinkos_thread_errno_set(thread_id, 0);
-//	__thinkos_thread_resume(thread_id);
-	/* turn the scheduler back on */
-//	thinkos_krn_sched_on();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -383,7 +371,6 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 static void monitor_on_krn_fault(const struct monitor_comm * comm)
 {
-	struct monitor_thread_inf inf;
 	int thread_id;
 	int32_t errno;
 
@@ -391,34 +378,24 @@ static void monitor_on_krn_fault(const struct monitor_comm * comm)
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
-	monitor_thread_inf_get(thread_id, &inf);
-
-	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
+	if (thread_id < 0) {
+		DCC_LOG(LOG_WARNING, "No break thread!!!");
+	} else {
+		DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id + 1, errno);
+	}
 
 	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
-
-		DCC_LOG(LOG_TRACE, "COMM connected!");
-		monitor_printf(comm, s_hr);
-	
-		if (xcpt->errno == THINKOS_ERR_INVALID_STACK) {
-			monitor_printf(comm, 
-						  "# Kernel error, possible stack overflow !!!\r\n");
+		monitor_printf(comm, 
+					  "# Kernel error, possible stack overflow !!!\r\n");
+		if (thread_id > 0) {
 			monitor_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
-		} else {
-			monitor_printf(comm, "Exception!!!\r\n");
+			monitor_print_thread(comm, thread_id);
 		}
 
-#if (MONITOR_FAULT_ENABLE)
-		monitor_print_thread(comm, thread_id);
 		monitor_printf(comm, s_hr);
-#endif
-	} else {
 	}
 
 	mdelay(500);
-
-	monitor_soft_reset();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -934,7 +911,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		//				  (uint32_t)board->application.start_addr);
 
 
-			if (!monitor_app_exec(&board->application)) {
+			if (!monitor_app_exec(comm, &board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think

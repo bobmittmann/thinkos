@@ -45,7 +45,7 @@ enum monitor_event {
 	MONITOR_SOFTRST         = 1,
 	/* ThinkOS kernel fault */
 	MONITOR_KRN_FAULT       = 2,
-	/* ThinkOS kernel reset in3ication */
+	/* ThinkOS kernel reset indication */
 	MONITOR_KRN_ABORT       = 3,
 	/* ThinkOS idle indication5*/
 	MONITOR_IDLE            = 4,
@@ -284,8 +284,7 @@ static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
-void monitor_signal_thread_break(int32_t event); 
-
+void monitor_signal_break(int32_t sig); 
 
 void monitor_signal_thread_terminate(unsigned int thread_id, int code);
 

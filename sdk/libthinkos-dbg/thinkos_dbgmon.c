@@ -589,7 +589,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* suspend the current thread */
 					__thinkos_thread_pause(thread_id);
 					/* delivers a thread breakpoint on next round */
-					monitor_signal_thread_break(MONITOR_THREAD_BREAK); 
+					monitor_signal_break(MONITOR_THREAD_BREAK); 
 					/* run scheduler */
 					__thinkos_defer_sched();
 #endif
@@ -657,7 +657,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					/* record the break thread id */
 					thinkos_dbgmon_rt.break_id = thread_id;
 					/* delivers a breakpoint signal on next round */
-					monitor_signal_thread_break(MONITOR_THREAD_BREAK); 
+					monitor_signal_break(MONITOR_THREAD_BREAK); 
 					/* run scheduler */
 					__thinkos_defer_sched();
 					break;
@@ -721,7 +721,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();
 
-				monitor_signal_thread_break(MONITOR_THREAD_BREAK); 
+				monitor_signal_break(MONITOR_THREAD_BREAK); 
 			} else if ((uint32_t)thread_id < THINKOS_THREADS_MAX) {
 				DCC_LOG2(LOG_TRACE, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
 						 thread_id + 1, frm->pc);
@@ -729,13 +729,13 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				__thinkos_thread_pause(thread_id);
 				/* record the break thread id */
 				thinkos_dbgmon_rt.break_id = thread_id;
-				monitor_signal_thread_break(MONITOR_THREAD_BREAK); 
+				monitor_signal_break(MONITOR_THREAD_BREAK); 
 				__thinkos_defer_sched();
 			} else {
 				DCC_LOG2(LOG_ERROR, "<<WATCHPOINT>>: thread_id=%d pc=%08x ---", 
 						 thread_id + 1, frm->pc);
 				DCC_LOG(LOG_ERROR, "invalid active thread!!!");
-				monitor_signal_thread_break(MONITOR_THREAD_FAULT); 
+				monitor_signal_break(MONITOR_THREAD_FAULT); 
 				/* record the break thread id */
 				thinkos_dbgmon_rt.break_id = thread_id;
 				__thinkos_pause_all();

@@ -60,7 +60,7 @@ void thinkos_krn_abort(struct thinkos_rt * krn)
 	thinkos_krn_core_reset(krn);
 
 #if (THINKOS_ENABLE_MONITOR)
-	monitor_signal(MONITOR_KRN_ABORT);
+	monitor_signal_break(MONITOR_KRN_ABORT);
 #endif
 }
 

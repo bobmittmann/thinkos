@@ -114,7 +114,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
 					THINKOS_RT_CYCREF_OFFS, "THINKOS_RT_CYCREF_OFFS");
 
-	_Static_assert (offsetof(struct thinkos_rt, cyccnt) == 
+	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
 					THINKOS_RT_CYCCNT_OFFS, "THINKOS_RT_CYCCNT_OFFS");
 #endif
 

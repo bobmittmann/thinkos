@@ -30,60 +30,34 @@
 void monitor_print_thread(const struct monitor_comm * comm, 
 						 unsigned int thread_id)
 {
-	struct thinkos_rt * rt = &thinkos_rt;
 	struct thinkos_context * ctx;
 	int32_t timeout;
 	uint32_t cyccnt;
 #if (THINKOS_ENABLE_TIMESHARE)
+	struct thinkos_rt * rt = &thinkos_rt;
 	int sched_val;
 	int sched_pri;
 #endif
 	uint32_t ctrl;
 	uint32_t sp;
+	const char * tag;
 	int type;
 	int tmw;
 	int wq;
-#if !THINKOS_ENABLE_THREAD_STAT
-	int i;
-#endif
 
 	if (!thinkos_dbg_thread_ctx_is_valid(thread_id)) {
 		return;
 	}
 
-#if (THINKOS_ENABLE_THREAD_STAT)
-	wq = rt->th_stat[thread_id] >> 1;
-	tmw = rt->th_stat[thread_id] & 1;
-#else
-	for (i = 0; i < THINKOS_WQ_CNT; ++i) {
-		if (rt->wq_lst[i] & (1 << thread_id))
-			break;
-	}
-	if (i == THINKOS_WQ_CNT)
-		return ; /* not found */
-	wq = i;
-#if (THINKOS_ENABLE_CLOCK)
-	tmw = rt->wq_clock & (1 << thread_id) ? 1 : 0;
-#else
-	tmw = 0;
-#endif
-#endif /* THINKOS_ENABLE_THREAD_STAT */
+	wq = thinkos_dbg_thread_wq_get(thread_id);
+	tmw = thinkos_dbg_thread_tmw_get(thread_id);
+	timeout = thinkos_dbg_thread_clk_itv_get(thread_id);
+	cyccnt = thinkos_dbg_thread_cyccnt_get(thread_id);
+	tag = thinkos_dbg_thread_tag_get(thread_id);
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	sched_val = rt->sched_val[thread_id];
 	sched_pri = rt->sched_pri[thread_id]; 
-#endif
-
-#if (THINKOS_ENABLE_CLOCK)
-	timeout = (int32_t)(rt->th_clk[thread_id] - rt->ticks); 
-#else
-	timeout = -1;
-#endif
-
-#if (THINKOS_ENABLE_PROFILING)
-	cyccnt = rt->cyccnt[thread_id];
-#else
-	cyccnt = 0;
 #endif
 
 	type = __thinkos_obj_kind(wq);
@@ -91,12 +65,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	monitor_printf(comm, " - No: %d", thread_id + 1); 
-#if (THINKOS_ENABLE_THREAD_INFO)
-	if (rt->th_inf[thread_id])
-		monitor_printf(comm, ", '%s'", rt->th_inf[thread_id]->tag); 
-	else
-#endif
-		monitor_printf(comm, ", '...'"); 
+	monitor_printf(comm, ", '%s'", tag); 
 
 	if (THINKOS_OBJ_READY == type) {
 #if (THINKOS_IRQ_MAX) > 0

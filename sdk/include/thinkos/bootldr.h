@@ -180,7 +180,8 @@ bool monitor_app_suspend(void);
 
 bool monitor_app_continue(void);
 
-bool monitor_app_exec(const struct monitor_app_desc * desc);
+bool monitor_app_exec(const struct monitor_comm * comm, 
+					 const struct monitor_app_desc * desc);
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						  uintptr_t addr);

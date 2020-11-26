@@ -118,31 +118,33 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 
 void thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
-//	int active = __thread_active_get(krn);
+	int active = __thread_active_get(krn);
 
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Kernel Reset !!" VT_POP);
 
-	DCC_LOG(LOG_TRACE, "1. Initialize kernel datastructures ...");
-	__thinkos_krn_core_init(krn);
+#if DEBUG
+	mdelay(500);
+#endif
 
 #if (THINKOS_IRQ_MAX) > 0
-	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
+	DCC_LOG(LOG_TRACE, "1. Disable all intrerrupts ...");
 	__nvic_irq_disable_all();
-	DCC_LOG(LOG_TRACE, "3. Reset all intrerrupts ...");
+	DCC_LOG(LOG_TRACE, "2. Reset all intrerrupts ...");
 	__krn_irq_reset_all(krn);
 #endif
+
+	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
+	__thinkos_krn_core_init(krn);
 
 #if THINKOS_ENABLE_EXCEPTIONS
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	thinkos_krn_exception_reset();
 #endif
 
-#if 0
 	if  (active != THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thinkos_defer_sched();
 	}
-#endif
 }
 
 #if 0

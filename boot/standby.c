@@ -133,7 +133,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 
-			if (!monitor_app_exec(&board->application)) {
+			if (!monitor_app_exec(comm, &board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
@@ -247,7 +247,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 
-			if (!monitor_app_exec(&board->application)) {
+			if (!monitor_app_exec(comm, &board->application)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think

@@ -434,28 +434,43 @@ int thinkos_dbg_thread_brk_get(unsigned int id)
     return __krn_brk_get(krn);
 }
 
-struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int id)
+
+static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
+													 unsigned int idx)
 {
-    struct thinkos_rt * krn = &thinkos_rt;
-    int idx;
-
-	if (id > THINKOS_THREADS_MAX) {
+	if (idx > THINKOS_THREADS_MAX)
 		return NULL;
-	}
 
-    idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+    idx = (__krn_brk_get(krn) == idx) ? THINKOS_THREAD_VOID : idx;
     return __thread_ctx_get(krn, idx);
 }
 
-uintptr_t thinkos_dbg_thread_ctrl_get(unsigned int id)
+static unsigned int __dbg_thread_ctrl_get(struct thinkos_rt * krn,
+                                          unsigned int idx)
 {
-    struct thinkos_rt * krn = &thinkos_rt;
-    int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+	if (idx > THINKOS_THREADS_MAX)
+		return 0;
 
+    idx = (__krn_brk_get(krn) == idx) ? THINKOS_THREAD_VOID : idx;
     return __thread_ctrl_get(krn, idx);
 }
 
-uintptr_t thinkos_dbg_thread_pc_get(unsigned int id)
+
+struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int idx)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+	return __dbg_thread_ctx_get(krn, idx);
+}
+
+unsigned int thinkos_dbg_thread_ctrl_get(unsigned int idx)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+    return __dbg_thread_ctrl_get(krn, idx);
+}
+
+uint32_t thinkos_dbg_thread_pc_get(unsigned int id)
 {
     struct thinkos_rt * krn = &thinkos_rt;
     int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
@@ -489,9 +504,122 @@ const char * thinkos_dbg_thread_tag_get(unsigned int idx)
 	return __thread_tag_get(&thinkos_rt, idx);
 }
 
-int thinkos_dbg_thread_wq_get(unsigned int thread_idx)
+int thinkos_dbg_thread_wq_get(unsigned int idx)
 {
-	return __thread_wq_get(&thinkos_rt, thread_idx);
+	return __thread_wq_get(&thinkos_rt, idx);
+}
+
+int thinkos_dbg_thread_tmw_get(unsigned int idx)
+{
+	if (idx >= (THINKOS_THREAD_CNT)) {
+		return 0;
+	}
+	return __thread_tmw_get(&thinkos_rt, idx);
+}
+
+int thinkos_dbg_thread_errno_get(unsigned int idx)
+{
+	if (idx >= (THINKOS_THREAD_CNT)) {
+		return 0;
+	}
+	return __thread_errno_get(&thinkos_rt, idx);
+}
+
+
+uint32_t thinkos_dbg_thread_cyccnt_get(unsigned int idx)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (idx >= (THINKOS_TH_CYC_CNT)) {
+		return 0;
+	}
+	return __thread_cyccnt_get(&thinkos_rt, idx);
+#else
+	return 0;
+#endif
+}
+
+int32_t thinkos_dbg_thread_clk_itv_get(unsigned int idx)
+{
+	if (idx >= (THINKOS_TH_CLK_CNT)) {
+		return 0;
+	}
+	return __thread_clk_itv_get(&thinkos_rt, idx);
+}
+
+bool thinkos_dbg_thread_get(unsigned int thread_id, 
+						 struct thinkos_thread * st, 
+						 struct cortex_m_core * core,
+						 struct cortex_m_fp * fp)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_context * ctx;
+	unsigned int idx = thread_id;
+	unsigned int ctrl;
+
+	if ((ctx = __dbg_thread_ctx_get(krn, idx)) == NULL) {
+		return false;
+	}
+
+    ctrl = __dbg_thread_ctrl_get(krn, idx);
+
+	if (st != NULL) {
+		st->thread_no = idx + 1;
+		st->wq = __thread_wq_get(krn, idx);
+		st->tmw = __thread_tmw_get(krn, idx);
+		st->sched_val = __thread_sched_val_get(krn, idx);
+		st->sched_pri = __thread_sched_pri_get(krn, idx);
+		st->clk = __thread_clk_itv_get(krn, idx);
+		st->cyc = __thread_cyccnt_get(krn, idx);
+		__thinkos_memcpy(st->tag, __thread_tag_get(krn, idx), 10);
+		st->privileged = (ctrl & CONTROL_nPRIV) ? 0 : 1;
+#if (THINKOS_ENABLE_FPU)
+		st->fpca = (ctrl & CONTROL_FPCA) ? 1 : 0;
+#else
+		st->fpca = 0;
+#endif
+	}
+
+    idx = (__krn_brk_get(krn) == idx) ? THINKOS_THREAD_VOID : idx;
+    ctx = __thread_ctx_get(krn, idx);
+
+	if (core != NULL) {
+		core->r0 = ctx->r0;
+		core->r1 = ctx->r1;
+		core->r2 = ctx->r2;
+		core->r3 = ctx->r3;
+		core->r4 = ctx->r4;
+		core->r5 = ctx->r5;
+		core->r6 = ctx->r6;
+		core->r7 = ctx->r7;
+		core->r8 = ctx->r8;
+		core->r9 = ctx->r9;
+		core->r10 = ctx->r10;
+		core->r11 = ctx->r11;
+		core->r12 = ctx->r12;
+		core->sp = __thread_sp_get(krn, idx);
+		core->lr = __thread_lr_get(krn, idx);
+		core->pc = __thread_pc_get(krn, idx);
+		core->xpsr = __thread_xpsr_get(krn, idx);
+	}
+
+#if (THINKOS_ENABLE_FPU) 
+	if ((fp != NULL) && (ctrl & CONTROL_FPCA)) {
+		struct thinkos_fp_context * fp_ctx;
+		unsigned int i;
+
+		fp_ctx = FP_CTX(ctx);
+
+		fp->fpscr = fp_ctx->fpscr;
+
+		for (i = 0; i < 16; ++i)
+			fp->s[i] = fp_ctx->s0[i];
+
+		for (i = 0; i < 16; ++i)
+			fp->s[i + 16] = fp_ctx->s1[i];
+	}
+#endif
+
+	return 0;
 }
 
 
@@ -518,5 +646,30 @@ bool thinkos_dbg_thread_rec_get(unsigned int thread,
 
 	return true;
 }
+
+
 #endif
+
+int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
+{
+	int idx;
+
+	if ((idx = __krn_brk_get(krn)) < 0)
+		return -1;
+
+	if (__dbg_thread_ctx_get(krn, idx) == NULL)
+		return -1;
+
+	if (pcode)
+		*pcode = __thread_errno_get(krn, idx);
+
+	return idx;
+}
+
+int thinkos_dbg_thread_break_get(int32_t * pcode)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __thread_break_get(krn, pcode);
+}
 

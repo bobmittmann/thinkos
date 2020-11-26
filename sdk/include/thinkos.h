@@ -133,43 +133,57 @@ enum thinkos_obj_kind {
  * Flattened thread state structure
  * --------------------------------------------------------------------------*/
 
-struct cortex_m_context {
-	uint32_t r0;
-	uint32_t r1;
-	uint32_t r2;
-	uint32_t r3;
-
-	uint32_t r4;
-	uint32_t r5;
-	uint32_t r6;
-	uint32_t r7;
-
-	uint32_t r8;
-	uint32_t r9;
-	uint32_t r10;
-	uint32_t r11;
-
-	uint32_t r12;
-	uint32_t sp;
-	uint32_t lr;
-	uint32_t pc;
-
+struct cortex_m_core {
+	union {
+		uint32_t r[16];
+		struct {
+			uint32_t r0;
+			uint32_t r1;
+			uint32_t r2;
+			uint32_t r3;
+			uint32_t r4;
+			uint32_t r5;
+			uint32_t r6;
+			uint32_t r7;
+			uint32_t r8;
+			uint32_t r9;
+			uint32_t r10;
+			uint32_t r11;
+			uint32_t r12;
+			uint32_t sp;
+			uint32_t lr;
+			uint32_t pc;
+		};
+	};
 	uint32_t xpsr;
 };
+
+struct cortex_m_fp {
+	uint32_t fpscr;
+	union {
+		float  s[32];
+		double d[16];
+	};		
+};
+
 
 /* 
  * FIXME: this should be called struct thinkos_thread_inf... 
  */
 struct thinkos_thread {
-	uint32_t no: 6;
-	uint32_t tmw: 1;
-	uint32_t alloc: 1;
-	uint16_t wq;
+	uint32_t stack_ptr;
+	uint32_t stack_size;
+	uint8_t  priority;
+	uint8_t  thread_no: 6;
+	uint8_t  privileged: 1;
+	uint8_t  fpca: 1;
+	char     tag[10];
+	uint16_t wq:15;
+	uint16_t tmw:1;
 	uint8_t  sched_val;
 	uint8_t  sched_pri;
-	uint32_t clock;
-	uint32_t cyccnt;
-	const struct thinkos_thread_inf * inf;
+	uint32_t clk;
+	uint32_t cyc;
 };
 
 struct thinkos_thread_inf {

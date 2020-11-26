@@ -34,19 +34,31 @@
  * Application execution
  * ------------------------------------------------------------------------- */
 
-bool monitor_app_exec(const struct monitor_app_desc * desc)
+static int __app_exec_task(const struct monitor_app_desc * desc)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	uintptr_t addr = (uintptr_t)desc->start_addr;
-	int thread_idx = 0;
 	int ret;
 
-	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr))) {
+	if ((ret = thinkos_app_exec(addr))) {
 		DCC_LOG1(LOG_ERROR, "Can't start app: err=%d!", ret);
-		return false;
 	}
 
-	return true;
+	return ret;
+}
+
+bool monitor_app_exec(const struct monitor_comm * comm, 
+					 const struct monitor_app_desc * desc)
+{
+	int ret;
+
+	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
+
+	ret = monitor_thread_exec(comm, C_TASK(__app_exec_task), C_ARG(desc));
+
+	DCC_LOG1(LOG_TRACE, "monitor_thread_exec() = %d!", ret);
+
+	return (ret < 0) ? false : true;
 }
 
 #endif
+

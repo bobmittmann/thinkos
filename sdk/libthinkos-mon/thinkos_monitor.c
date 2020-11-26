@@ -41,10 +41,6 @@ struct {
 	/* user supplied parameter */
 	void * param;             
 
-	/* break thread id */
-	int8_t brk_thread_id;
-	int8_t brk_code;
-
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* entry/exit signal thread id */
 	int8_t ret_thread_id;
@@ -324,7 +320,7 @@ void thinkos_monitor_sleep(void)
 	__thinkos_systick_sleep();
 }
 
-void monitor_signal_thread_break(int32_t event) 
+void monitor_signal_break(int32_t event) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t evset;
@@ -347,6 +343,21 @@ void monitor_signal_thread_break(int32_t event)
 
 void thinkos_monitor_wakeup(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t sigset;
+	uint32_t sigmsk;
+
+	sigset = krn->monitor.events;
+	sigmsk = krn->monitor.mask;
+	(void)sigset;
+	(void)sigmsk;
+
+	if (sigset == 0) {
+		DCC_LOG2(LOG_ERROR, "set=0x%08x msk=0x%08x", sigset, sigmsk);
+	} else {
+		DCC_LOG2(LOG_TRACE, "set=0x%08x msk=0x%08x", sigset, sigmsk);
+	}
+
 	/* Reenable systick interrupts and signal the monitor */
 	__thinkos_systick_wakeup();
 }
@@ -356,48 +367,18 @@ void thinkos_monitor_wakeup(void)
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-	unsigned int errno = THINKOS_NO_ERROR;
-	struct thinkos_context * ctx;
 	unsigned int thread_id = id;
-	uint32_t pc = 0;
-	uint32_t sp = 0;
-	uint32_t ctrl = 0;
 
-	if (thread_id > THINKOS_THREAD_LAST) {
-		DCC_LOG(LOG_ERROR, "Invalid thread!");
+	if (!thinkos_dbg_thread_ctx_is_valid(id)) {
 		return -1;
 	}
 
-	if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx  = __thinkos_idle_ctx();
-		pc = ctx->pc;
-		sp = xcpt->msp;
-	} else if ((xcpt->errno != 0) && (thread_id == xcpt->active)) {
-		ctx = &xcpt->ctx.core;
-		pc = ctx->pc;
-		sp = xcpt->psp;
-		errno = xcpt->errno;
-	} else {
-		ctx = __thinkos_thread_ctx_get(thread_id);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG2(LOG_ERROR, "<%d> context 0x%08x invalid!!!", 
-					 thread_id + 1, ctx);
-			return -1;
-		}
-		ctrl = __thinkos_thread_ctrl_get(thread_id);
-		pc = __thinkos_thread_pc_get(thread_id);
-		sp = __thinkos_thread_sp_get(thread_id);
-		errno = __thinkos_thread_errno_get(thread_id);
-	}
-
 	if (inf != NULL) {
-		inf->pc = pc;
-		inf->sp = sp;
-		inf->errno = errno;
-		inf->thread_id = id;
-		inf->ctrl = ctrl;
-		inf->ctx = ctx;
+		inf->thread_id = thread_id;
+		inf->ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
+		inf->pc = thinkos_dbg_thread_pc_get(thread_id);
+		inf->sp = thinkos_dbg_thread_sp_get(thread_id);
+		inf->errno = thinkos_dbg_thread_errno_get(thread_id);
 	}
 
 	return 0;
@@ -405,12 +386,11 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 
 int monitor_thread_break_get(int32_t * pcode)
 {
-	return __thinkos_thread_break_get(pcode);
+	return thinkos_dbg_thread_break_get(pcode);
 }
 
 void monitor_thread_break_clr(void)
 {
-	thinkos_monitor_rt.brk_thread_id = -1;
 	monitor_signal(MONITOR_THREAD_FAULT);
 }
  
@@ -587,7 +567,6 @@ void thinkos_krn_monitor_reset(void)
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
 #endif
-	thinkos_monitor_rt.brk_thread_id = -1;
 }
 
 
@@ -657,7 +636,6 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
 #endif
-	thinkos_monitor_rt.brk_thread_id = -1;
 
 	/* Set the communication channel */
 	thinkos_monitor_rt.comm = comm; 

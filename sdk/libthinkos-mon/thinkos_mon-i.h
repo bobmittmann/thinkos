@@ -28,6 +28,9 @@
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <stdbool.h>
 
 #include <arch/cortex-m3.h>

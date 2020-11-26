@@ -87,6 +87,16 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
 #endif
 
+	if (stack_base & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_base); 
+		return -1;
+	}
+
+	if (stack_size & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_TRACE, "stack_Size=%08x unaligned", stack_size); 
+		stack_size &= ~(STACK_ALIGN_MSK);
+	}
+
 	init.stack_base = stack_base;
 	init.stack_size = stack_size;
 	init.task_entry = (uintptr_t)func;
@@ -103,8 +113,9 @@ int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
 #endif
 
 	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
-		__THINKOS_ERROR(THINKOS_THREAD_IDLE, ret);
-		thread_idx = ret;
+//		__THINKOS_ERROR(THINKOS_THREAD_IDLE, ret);
+//		thread_idx = ret;
+		return -ret;
 	};
 
 	DCC_LOG1(LOG_WARNING, "thread=%d", thread_idx + 1);
@@ -126,9 +137,13 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 {
 	uint32_t sigmask = 0;
 	int thread_id;
+	int ret;
 	int sig;
 
-	thread_id = monitor_thread_create(task, arg);
+	if ((ret = monitor_thread_create(task, arg))  < 0)
+		return ret;
+
+	thread_id = ret;
 	(void)thread_id;
 
 	/* return in case of fault or abort */	

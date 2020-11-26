@@ -536,10 +536,10 @@ __thread_tmw_get(struct thinkos_rt * krn, unsigned int idx) {
   #if (THINKOS_ENABLE_THREAD_STAT)
 	return krn->th_stat[idx] & 1;
   #else
-	return __bit_mem_rd(&krn->wq_clock, th);  
+	return __bit_mem_rd(&krn->wq_clock, idx);  
   #endif
 #else
-	return false;
+	return 0;
 #endif
 }
 
@@ -675,6 +675,34 @@ __thread_cyccnt_clr(struct thinkos_rt * krn, unsigned int idx) {
 	krn->cyccnt[idx] = 0;
 #endif
 }
+
+static inline uint32_t __attribute__((always_inline))
+__thread_cyccnt_get(struct thinkos_rt * krn, unsigned int idx) {
+#if (THINKOS_ENABLE_PROFILE)
+	return krn->cyccnt[idx];
+#else
+	return 0;
+#endif
+}
+
+static inline uint32_t __attribute__((always_inline))
+__thread_sched_val_get(struct thinkos_rt * krn, unsigned int idx) {
+#if (THINKOS_ENABLE_TIMESHARE)
+	return krn->sched_val[idx];
+#else
+	return 0;
+#endif
+}
+
+static inline uint32_t __attribute__((always_inline))
+__thread_sched_pri_get(struct thinkos_rt * krn, unsigned int idx) {
+#if (THINKOS_ENABLE_TIMESHARE)
+	return krn->sched_pri[idx];
+#else
+	return 0;
+#endif
+}
+
 
 static inline bool __attribute__((always_inline)) 
 __thread_is_alloc(struct thinkos_rt * krn, unsigned int idx) {
@@ -853,6 +881,16 @@ __thread_clk_itv_set(struct thinkos_rt * krn, unsigned int idx,
 	krn->th_clk[idx] = krn->ticks + itv;
 #endif
 }
+
+static inline int32_t __attribute__((always_inline)) 
+__thread_clk_itv_get(struct thinkos_rt * krn, unsigned int idx) {
+#if (THINKOS_ENABLE_CLOCK)
+	return krn->th_clk[idx] - krn->ticks;
+#else
+	return -1;
+#endif
+}
+
 
 /* -------------------------------------------------------------------------- 
  * kernel rt scheduler access methods 

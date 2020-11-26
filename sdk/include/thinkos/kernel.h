@@ -136,9 +136,11 @@
 #if (THINKOS_ENABLE_PROFILING)
   #define SIZEOF_CYCREF    4
   #define SIZEOF_CYCCNT    (__KRN_CTX_CNT * 4)
+  #define THINKOS_TH_CYC_CNT (__KRN_CTX_CNT)
 #else
   #define SIZEOF_CYCREF    0
   #define SIZEOF_CYCCNT    0
+  #define THINKOS_TH_CYC_CNT 0
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -302,6 +304,9 @@ struct thinkos_fp_context {
 	uint32_t fpscr;
 	uint32_t res;
 };
+
+#define FP_CTX(CTX) (struct thinkos_fp_context *)((uintptr_t)(CTX) - (16 * 4))
+
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -332,7 +337,7 @@ struct thinkos_rt {
 	
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
-	uint32_t cyccnt[__KRN_CTX_CNT]; 
+	uint32_t th_cyc[THINKOS_TH_CYC_CNT]; 
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -724,8 +729,6 @@ const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id);
 
 void  __thinkos_thread_inf_set(unsigned int id, 
 							   const struct thinkos_thread_inf * inf);
-
-int __thinkos_thread_break_get(int32_t * pcode);
 
 void __thinkos_thread_inf_clr(unsigned int id);
 

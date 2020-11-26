@@ -156,7 +156,7 @@
   #define THINKOS_ENABLE_IDLE_WFI           0
 #endif
 
-#define THINKOS_ENABLE_IDLE_HOOKS           0
+#define THINKOS_ENABLE_IDLE_HOOKS           1
 
 #define THINKOS_ENABLE_OBJ_ALLOC            0
 #define THINKOS_ENABLE_OBJ_FREE             0

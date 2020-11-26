@@ -73,30 +73,6 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
-int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
-{
-	struct thinkos_context * ctx;
-	int idx;
-
-	if ((idx = __krn_brk_get(krn)) >= 0) {
-		if ((ctx = __thread_ctx_get(krn, idx)) == NULL)
-			return -1;
-	}
-
-	if (pcode) {
-		*pcode = __thread_errno_get(krn, idx);
-	}
-
-	return idx;
-}
-
-int __thinkos_thread_break_get(int32_t * pcode)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	return __thread_break_get(krn, pcode);
-}
-
 /* Signal the thread to stop */
 static void __thread_break(struct thinkos_rt * krn, unsigned int idx) 
 {
@@ -133,7 +109,6 @@ void __thread_discard(struct thinkos_rt * krn, unsigned int idx)
 	__krn_defer_sched(krn);
 }
 
-
 void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -159,7 +134,7 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 
 	__tdump();
 
-	monitor_signal_thread_break(MONITOR_THREAD_FAULT);
+	monitor_signal_break(MONITOR_THREAD_FAULT);
 
 #endif
 }
@@ -194,7 +169,7 @@ struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp,
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_break(0);
+	monitor_signal_break(0);
 #else
 	/* FIXME: issue an exception */
 #endif
@@ -231,7 +206,7 @@ void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread_idx)
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_break(0);
+	monitor_signal_break(0);
 #else
 	/* FIXME: issue an exception */
 #endif

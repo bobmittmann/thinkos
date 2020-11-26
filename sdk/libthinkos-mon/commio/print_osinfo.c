@@ -53,11 +53,8 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 	cyccnt = rt->cycref;
 	cycsum = 0;
 	for (i = 0; i < THINKOS_THREAD_CNT; ++i) {
-		uint32_t cnt = rt->cyccnt[i];
+		uint32_t cnt = rt->th_cyc[i];
 		uint32_t ref = cycref[i];
-		ref = 0;
-
-		rt->cyccnt[i] = 0;
 		cycref[i] = cnt;
 		dif = cnt - ref; 
 		cycsum += dif;
@@ -134,7 +131,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 						   tag, sl, sp, pc); 
 
 			oid = thinkos_dbg_thread_wq_get(i);
-			tmw = __thinkos_thread_stat_tmw_get(i);
+			tmw = thinkos_dbg_thread_tmw_get(i);
 #if (THINKOS_ENABLE_THREAD_FAULT)
 			if (oid == THINKOS_WQ_FAULT) {
 				int errno = __thinkos_thread_errno_get(i);
@@ -185,15 +182,15 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 						 oid);
 			}
 #if THINKOS_ENABLE_CLOCK
-			if (i < (THINKOS_TH_CLK_CNT)) {
-				int32_t dt = (int32_t)(rt->th_clk[i] - rt->ticks);
-				if (dt < 0)
-					monitor_printf(comm, " | <timedout>"); 
-				else
-					monitor_printf(comm, " | %7d.%03d", 
-								   dt / 1000, dt % 1000); 
-			} else {
-					monitor_printf(comm, " |           "); 
+			{
+				int32_t dt = thinkos_dbg_thread_clk_itv_get(i);
+				int32_t sec;
+				int32_t ms;
+
+				sec = dt / 1000;
+				ms = ((dt < 0) ? -dt : dt) % 1000;
+
+				monitor_printf(comm, " |%7d.%03d", sec, ms);
 			}
 #endif
 #if THINKOS_ENABLE_PROFILING
