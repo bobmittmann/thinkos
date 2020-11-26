@@ -17,3 +17,4 @@ int clock_settime(clockid_t clk_id, const struct timespec *tp)
 {
 	return 0;
 }
+

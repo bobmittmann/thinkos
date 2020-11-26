@@ -26,7 +26,7 @@ help:
 	@echo "    latex       to make LaTeX files"
 	@echo "    pdf         to make PDF documents"
 
-html: user-html arm-html
+html: user-html arm-html kernel-html
 
 htmlhelp: arm-htmlhelp user-htmlhelp
 

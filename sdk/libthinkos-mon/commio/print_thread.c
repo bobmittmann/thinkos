@@ -22,8 +22,8 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
@@ -47,8 +47,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	int i;
 #endif
 
-	if ((thread_id >= THINKOS_THREADS_MAX) || 
-		!__thinkos_thread_ctx_is_valid(thread_id)) {
+	if (!thinkos_dbg_thread_ctx_is_valid(thread_id)) {
 		return;
 	}
 
@@ -131,9 +130,9 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	monitor_printf(comm, " - timeout=%8d ms", timeout); 
 	monitor_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
-	ctx = __thinkos_thread_ctx_get(thread_id);
-	sp = __thinkos_thread_sp_get(thread_id);
-	ctrl = __thinkos_thread_ctrl_get(thread_id);
+	ctx = thinkos_dbg_thread_ctx_get(thread_id);
+	sp = thinkos_dbg_thread_sp_get(thread_id);
+	ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
 	monitor_print_context(comm, ctx, sp, ctrl);
 
 	monitor_printf(comm, "\r\n");

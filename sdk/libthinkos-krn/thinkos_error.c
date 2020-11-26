@@ -73,54 +73,94 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
+int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
+{
+	struct thinkos_context * ctx;
+	int idx;
+
+	if ((idx = __krn_brk_get(krn)) >= 0) {
+		if ((ctx = __thread_ctx_get(krn, idx)) == NULL)
+			return -1;
+	}
+
+	if (pcode) {
+		*pcode = __thread_errno_get(krn, idx);
+	}
+
+	return idx;
+}
+
+int __thinkos_thread_break_get(int32_t * pcode)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __thread_break_get(krn, pcode);
+}
+
+/* Signal the thread to stop */
+static void __thread_break(struct thinkos_rt * krn, unsigned int idx) 
+{
+	uint32_t sl;
+
+	/* Get the active thread stack limit */
+	sl = __thread_sl_get(krn, idx);
+
+	/* Set the active thread and stack limit */
+	__thread_active_sl_set(krn, sl, THINKOS_THREAD_VOID);
+
+	/* Store the break thread idx refered by the thread_void
+	   context pointer */
+	__krn_brk_set(krn, idx);
+
+	__thread_suspend(krn, idx);
+
+	__krn_defer_sched(krn);
+}
+
+void __thread_discard(struct thinkos_rt * krn, unsigned int idx) 
+{
+	uint32_t sl;
+
+	/* Get the active thread stack limit */
+	sl = __thread_sl_get(krn, idx);
+
+	/* Set the active thread and stack limit */
+	__thread_active_sl_set(krn, sl, THINKOS_THREAD_VOID);
+
+	/* Suspend the thread */
+	__thread_suspend(krn, idx);
+
+	__krn_defer_sched(krn);
+}
+
+
 void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
-	__thinkos_irq_disable_all();
-#if (THINKOS_ENABLE_MONITOR) 
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
 			 VT_POP, thread_idx + 1, errno);
 
+#if DEBUG
+	mdelay(500);
+#endif
+
+#if (THINKOS_ENABLE_MONITOR) 
 
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
 			__thread_tag_get(krn, thread_idx));
 
-	__tdump();
-
-
-//	__thread_suspend_all(krn);
-
+	__nvic_irq_disable_all();
 	__thread_disble_all(krn);
 
-	/* discard context */
-	__thread_active_set(krn, THINKOS_THREAD_VOID);
+	__thread_break(krn, thread_idx);
+
 	__thread_fault_set(krn, thread_idx, errno);
-	__thread_suspend(krn, thread_idx);
-	__krn_defer_sched(krn);
 
-	monitor_signal_thread_fault(thread_idx, errno);
+	__tdump();
 
-#endif
+	monitor_signal_thread_break(MONITOR_THREAD_FAULT);
 
-#if  0
-#if (THINKOS_ENABLE_MONITOR) 
-#if (THINKOS_ENABLE_PAUSE) 
-	__thinkos_krn_pause_all(krn);
-	if (thread_idx < THINKOS_THREAD_IDLE) {
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thread_fault_set(krn, thread_idx, errno);
-		__thread_suspend(krn, thread_idx);
-	}
-
-#else
-	__thread_suspend_all(krn);
-	if (thread_idx < THINKOS_THREAD_IDLE) {
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thread_fault_set(krn, thread_idx, errno);
-	}
-#endif
-#endif
 #endif
 }
 
@@ -154,7 +194,7 @@ struct thinkos_context * thinkos_krn_sched_idle_err(uint32_t sp,
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_fault(thread_idx, errno);
+	monitor_signal_thread_break(0);
 #else
 	/* FIXME: issue an exception */
 #endif
@@ -191,7 +231,7 @@ void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread_idx)
 #endif
 
 	/* signal the monitor */
-	monitor_signal_thread_fault(thread_idx, errno);
+	monitor_signal_thread_break(0);
 #else
 	/* FIXME: issue an exception */
 #endif

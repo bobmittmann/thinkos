@@ -223,13 +223,22 @@ static inline void __attribute__((always_inline))
 }
 
 
-/* Set the fault flag */
+/* Set the break thread index */
 static inline void __attribute__((always_inline)) 
-	__krn_brk_set(struct thinkos_rt * krn, unsigned int idx, int errno) {
+	__krn_brk_set(struct thinkos_rt * krn, unsigned int idx) {
 #if (THINKOS_ENABLE_MONITOR)
 	krn->brk_idx = idx;
 #endif
 }
+
+/* Set the break thread index */
+static inline int __attribute__((always_inline)) 
+	__krn_brk_get(struct thinkos_rt * krn) {
+#if (THINKOS_ENABLE_MONITOR)
+	return krn->brk_idx;
+#endif
+}
+
 
 
 /* Clear the fault flag */

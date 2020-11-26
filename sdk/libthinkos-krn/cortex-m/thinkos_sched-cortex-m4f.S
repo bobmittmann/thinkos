@@ -63,7 +63,7 @@ cm3_pendsv_isr:
 	cmp      r2, #(THINKOS_THREAD_IDLE)
 
 	/* skip invalid ... */
-	bgt      thinkos_sched_select_ready
+//  bgt      thinkos_sched_select_ready
 .L_entry_idle:
 	ittt     eq
 	pusheq   {r4-r11}

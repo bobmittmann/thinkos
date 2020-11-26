@@ -98,12 +98,15 @@
 #define NRT_CTX_CNT (THINKOS_NRT_THREADS_MAX)
 
 /* Total number of threads */
-#define THINKOS_CTX_CNT (TH_CTX_CNT + NRT_CTX_CNT + 1)
+#define THINKOS_THREAD_CNT (TH_CTX_CNT + NRT_CTX_CNT + 1)
+
+/* Total number of context pointers */
+#define __KRN_CTX_CNT (THINKOS_THREAD_CNT + 1)
 
 #define THINKOS_THREAD_NULL (32)
 
 #define THINKOS_THREAD_IDLE (TH_CTX_CNT + NRT_CTX_CNT)
-/* Discard context signal */
+/* Special condition flag */
 #define THINKOS_THREAD_VOID (TH_CTX_CNT + NRT_CTX_CNT + 1)
 
 /* -------------------------------------------------------------------------- 
@@ -120,17 +123,19 @@
 #define SIZEOF_TH_CTX       (TH_CTX_CNT * 4)
 #define SIZEOF_NRT_CTX      (NRT_CTX_CNT * 4)
 #define SIZEOF_IDLE_CTX     4
-#define SIZEOF_CTX          (SIZEOF_TH_CTX + SIZEOF_NRT_CTX + SIZEOF_IDLE_CTX)
+#define SIZEOF_VOID_CTX     4
+#define SIZEOF_CTX          (SIZEOF_TH_CTX + SIZEOF_NRT_CTX + \
+							 SIZEOF_IDLE_CTX + SIZEOF_VOID_CTX)
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-  #define SIZEOF_TH_SL      (THINKOS_CTX_CNT * 4)
+  #define SIZEOF_TH_SL      (__KRN_CTX_CNT * 4)
 #else
   #define SIZEOF_TH_SL     0
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
   #define SIZEOF_CYCREF    4
-  #define SIZEOF_CYCCNT    (THINKOS_CTX_CNT * 4)
+  #define SIZEOF_CYCCNT    (__KRN_CTX_CNT * 4)
 #else
   #define SIZEOF_CYCREF    0
   #define SIZEOF_CYCCNT    0
@@ -155,9 +160,12 @@
   #else
     #define SIZEOF_MONITOR_CLOCK 0
   #endif
+  /* Only realtime threads have clocks */
+  #define THINKOS_TH_CLK_CNT (THINKOS_THREADS_MAX)
 #else
   #define SIZEOF_TICKS     0
   #define SIZEOF_MONITOR_CLOCK 0
+  #define THINKOS_TH_CLK_CNT 0
 #endif
 
 #if (THINKOS_ENABLE_MONITOR)
@@ -166,7 +174,7 @@
   #define SIZEOF_MONITOR   0
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_MONITOR)
   #if (THINKOS_ENABLE_DEBUG_STEP)
     #define SIZEOF_STEP_REQ  4
     #define SIZEOF_STEP_SVC  4
@@ -208,7 +216,8 @@
 #define THINKOS_RT_TH_CTX_OFFS         0
 #define THINKOS_RT_NRT_CTX_OFFS    (THINKOS_RT_TH_CTX_OFFS + SIZEOF_TH_CTX)
 #define THINKOS_RT_IDLE_CTX_OFFS   (THINKOS_RT_NRT_CTX_OFFS + SIZEOF_NRT_CTX)
-#define THINKOS_RT_TH_SL_OFFS      (THINKOS_RT_IDLE_CTX_OFFS + SIZEOF_IDLE_CTX)
+#define THINKOS_RT_VOID_CTX_OFFS   (THINKOS_RT_IDLE_CTX_OFFS + SIZEOF_IDLE_CTX)
+#define THINKOS_RT_TH_SL_OFFS      (THINKOS_RT_VOID_CTX_OFFS + SIZEOF_VOID_CTX)
 #define THINKOS_RT_CYCCNT_OFFS     (THINKOS_RT_TH_SL_OFFS + SIZEOF_TH_SL)
 #define THINKOS_RT_CYCREF_OFFS     (THINKOS_RT_CYCCNT_OFFS + SIZEOF_CYCCNT)
 #define THINKOS_RT_STEP_REQ_OFFS   (THINKOS_RT_CYCREF_OFFS + SIZEOF_CYCREF)
@@ -224,12 +233,6 @@
 #define THINKOS_RT_WQTMSAHRE_OFFS  ((THINKOS_RT_READY_OFFS) + SIZEOF_WQTMSHARE)
 #define THINKOS_RT_WQCLK_OFFS      ((THINKOS_RT_WQTMSAHRE_OFFS) + SIZEOF_WQCLK)
 
-
-/* Mark for kernel breakpoint numbers. Breakpoints above this
-   number are considered errors. */
-#define THINKOS_BKPT_EXCEPT_OFF 128
-
-#define THINKOS_ERROR_BKPT(_CODE_) ((THINKOS_BKPT_EXCEPT_OFF) + (_CODE_))
 
 #ifndef __ASSEMBLER__
 
@@ -311,24 +314,25 @@ struct thinkos_rt {
 	   This is critical for the scheduler operation. */
 	/* Thread context pointers */
 	union {
-		uintptr_t ctx[THINKOS_CTX_CNT]; 
+		uintptr_t ctx[__KRN_CTX_CNT]; 
 		struct {
 			uintptr_t th_ctx[TH_CTX_CNT]; 
 #if (NRT_CTX_CNT) > 0
 			uintptr_t nrt_ctx[NRT_CTX_CNT]; 
 #endif
 			uintptr_t idle_ctx;
+			uintptr_t void_ctx;
 		};
 	};
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* Per thread stack limit */
-	uint32_t th_sl[THINKOS_CTX_CNT]; 
+	uint32_t th_sl[__KRN_CTX_CNT]; 
 #endif
 	
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
-	uint32_t cyccnt[THINKOS_CTX_CNT]; 
+	uint32_t cyccnt[__KRN_CTX_CNT]; 
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -337,16 +341,14 @@ struct thinkos_rt {
 #endif
 
 #if (THINKOS_ENABLE_MONITOR)
-#if (THINKOS_ENABLE_DEBUG_BKPT)
   #if (THINKOS_ENABLE_DEBUG_STEP)
 	uint32_t step_req;  /* step request bitmap */
 	uint32_t step_svc;  /* step at service call bitmap */
-  #endif
-#endif
+  #endif /* THINKOS_ENABLE_DEBUG_STEP */
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
-	int8_t   brk_idx;  /* break thread index */
-#endif
+	int8_t   brk_idx;   /* break thread index */
+#endif /* THINKOS_ENABLE_MONITOR */
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
@@ -451,7 +453,7 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_CLOCK)
 		uint32_t ticks;
 		/* Per thread clock. Used for time wait (e.g. sleep()) */
-		uint32_t th_clk[THINKOS_THREADS_MAX];
+		uint32_t th_clk[THINKOS_TH_CLK_CNT];
   #if (THINKOS_ENABLE_MONITOR_CLOCK)
 		/* kernel monitor timer */
 		uint32_t monitor_clock;
@@ -537,7 +539,7 @@ struct thinkos_rt {
 #endif
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	const struct thinkos_thread_inf * th_inf[THINKOS_CTX_CNT];
+	const struct thinkos_thread_inf * th_inf[THINKOS_THREAD_CNT];
 #endif
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
 	struct thinkos_flash_drv flash_drv[THINKOS_FLASH_MEM_MAX];
@@ -722,6 +724,8 @@ const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id);
 
 void  __thinkos_thread_inf_set(unsigned int id, 
 							   const struct thinkos_thread_inf * inf);
+
+int __thinkos_thread_break_get(int32_t * pcode);
 
 void __thinkos_thread_inf_clr(unsigned int id);
 

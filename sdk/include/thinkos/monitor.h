@@ -39,8 +39,8 @@
  */
 
 enum monitor_event {
-	/* Debug monitor internal reset */
-	MONITOR_RESET           = 0,
+	/* Debug monitor internal task reset */
+	MONITOR_TASK_INIT       = 0,
 	/* Board reset request */
 	MONITOR_SOFTRST         = 1,
 	/* ThinkOS kernel fault */
@@ -59,7 +59,7 @@ enum monitor_event {
 	MONITOR_THREAD_CREATE   = 8,
 	/* ThinkOS Thread teminate */
 	MONITOR_THREAD_TERMINATE = 9,
-	/* ThinkOS Thread break (stopre	quest, breakpoint.. ) */
+	/* ThinkOS Thread break (stop request, error, fault, breakpoint.. ) */
 	MONITOR_THREAD_BREAK    = 10,
 	/* Debug Communication break signal */
 	MONITOR_COMM_BRK        = 11, 
@@ -284,13 +284,12 @@ static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
+void monitor_signal_thread_break(int32_t event); 
+
 
 void monitor_signal_thread_terminate(unsigned int thread_id, int code);
 
 void monitor_signal_thread_fault(unsigned int thread_id, int32_t code);
-
-void monitor_signal_thread_break(unsigned int thread_id, int32_t code);
-
 
 int monitor_thread_terminate_get(int * code);
 

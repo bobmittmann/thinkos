@@ -73,6 +73,12 @@
 
 #ifndef __ASSEMBLER__
 
+/* Mark for kernel breakpoint numbers. Breakpoints above this
+   number are considered errors. */
+#define THINKOS_BKPT_EXCEPT_OFF 128
+
+#define THINKOS_ERROR_BKPT(_CODE_) ((THINKOS_BKPT_EXCEPT_OFF) + (_CODE_))
+
 void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx);
 
 #if (THINKOS_ENABLE_ERROR_TRAP)

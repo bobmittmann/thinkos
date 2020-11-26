@@ -86,7 +86,8 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 		krn->gate[i] = 0;
 #endif /* THINKOS_GATE_MAX > 0 */
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_MONITOR)
+	krn->brk_idx = -1;
 	krn->step_id = -1;
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	krn->step_svc = 0;  /* step at service call bitmap */
@@ -117,7 +118,7 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 
 void thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
-	int active = __thread_active_get(krn);
+//	int active = __thread_active_get(krn);
 
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Kernel Reset !!" VT_POP);
 
@@ -126,7 +127,7 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 
 #if (THINKOS_IRQ_MAX) > 0
 	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
-	__thinkos_irq_disable_all();
+	__nvic_irq_disable_all();
 	DCC_LOG(LOG_TRACE, "3. Reset all intrerrupts ...");
 	__krn_irq_reset_all(krn);
 #endif
@@ -136,10 +137,12 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 	thinkos_krn_exception_reset();
 #endif
 
+#if 0
 	if  (active != THINKOS_THREAD_IDLE) {
 		__thread_active_set(krn, THINKOS_THREAD_VOID);
 		__thinkos_defer_sched();
 	}
+#endif
 }
 
 #if 0

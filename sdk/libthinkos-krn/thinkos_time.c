@@ -214,7 +214,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 				drift = -CLOCK_DRIFT_MAX;
 
 			/* average the estimated error */
-		//:m	clk->jitter = (clk->jitter + est_err) / 2;
+			//	clk->jitter = (clk->jitter + est_err) / 2;
 
 
 			clk_d = Q31_MUL(drift, clk->resolution);
@@ -247,4 +247,5 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 }
 
 #endif /* (THINKOS_ENABLE_DATE_AND_TIME) */
+
 

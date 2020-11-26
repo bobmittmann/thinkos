@@ -269,7 +269,7 @@ void board_on_softreset(void)
 
 int board_init(void)
 {
-	board_on_softreset();
+//	board_on_softreset();
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
 	thinkos_flash_drv_init(0, &board_flash_desc);

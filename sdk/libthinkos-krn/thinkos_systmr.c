@@ -181,9 +181,9 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		if (sigact == 0)
 			break;
 
-		if (sigact & (1 << MONITOR_RESET)) {
-			/* clear the RESET event */
-			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
+		if (sigact & (1 << MONITOR_TASK_INIT)) {
+			/* clear the TASK_INIT event */
+			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_TASK_INIT);
 			__thinkos_monitor_on_reset();
 		}
 

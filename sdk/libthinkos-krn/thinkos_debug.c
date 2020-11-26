@@ -410,4 +410,113 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 
 #endif
 
+bool thinkos_dbg_thread_ctx_is_valid(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx;
+
+	if (id > THINKOS_THREADS_MAX) {
+		return false;
+	}
+
+    idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+    return __thread_ctx_is_valid(krn, idx);
+}
+
+int thinkos_dbg_thread_brk_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+    if (!__thread_ctx_is_valid(krn, THINKOS_THREAD_VOID)) {
+        return -1;
+    }
+
+    return __krn_brk_get(krn);
+}
+
+struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx;
+
+	if (id > THINKOS_THREADS_MAX) {
+		return NULL;
+	}
+
+    idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+    return __thread_ctx_get(krn, idx);
+}
+
+uintptr_t thinkos_dbg_thread_ctrl_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+
+    return __thread_ctrl_get(krn, idx);
+}
+
+uintptr_t thinkos_dbg_thread_pc_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+
+    return __thread_pc_get(krn, idx);
+}
+
+uint32_t thinkos_dbg_thread_lr_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+
+    return __thread_lr_get(krn, idx);
+}
+
+uint32_t thinkos_dbg_thread_sp_get(unsigned int id)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    int idx = (__krn_brk_get(krn) == id) ? THINKOS_THREAD_VOID : id;
+
+    return __thread_sp_get(krn, idx);
+}
+
+uint32_t thinkos_dbg_thread_sl_get(unsigned int id) 
+{
+	return __thread_sl_get(&thinkos_rt, id); 
+}
+
+const char * thinkos_dbg_thread_tag_get(unsigned int idx) 
+{
+	return __thread_tag_get(&thinkos_rt, idx);
+}
+
+int thinkos_dbg_thread_wq_get(unsigned int thread_idx)
+{
+	return __thread_wq_get(&thinkos_rt, thread_idx);
+}
+
+
+#if 0
+bool thinkos_dbg_thread_rec_get(unsigned int thread,
+                           struct thread_rec * rec,
+                           struct thread_reg_core * core,
+                           struct thread_reg_float * fp)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+    struct thinkos_context * ctx;
+    unsigned int idx;
+
+    idx = (__krn_brk_get(krn) == thread) ? thread : THINKOS_THREAD_VOID;
+    ctx = __thread_ctx_get(krn, idx);
+
+    if (ctx != NULL) {
+		return false;
+    }
+
+	if (rec != NULL) {
+        rec->ctrl = __thread_ctrl_get(krn, idx);
+	}
+
+	return true;
+}
+#endif
 

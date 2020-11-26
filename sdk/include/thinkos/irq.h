@@ -45,6 +45,13 @@
   #define CLOCK_PRIORITY          (SYSCALL_PRIORITY)
 #endif
 
+void __nvic_irq_disable_all(void);
+
+void __nvic_irq_clrpend_all(void);
+
+void __nvic_irq_enable(void);
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -78,8 +85,6 @@ static inline void __attribute__((always_inline)) thinkos_krn_fault_off(void) {
 static inline void __attribute__((always_inline)) thinkos_krn_fault_on(void) {
 	asm volatile ("cpsie f\n");
 }
-
-void __thinkos_irq_disable_all(void);
 
 #ifdef __cplusplus
 }

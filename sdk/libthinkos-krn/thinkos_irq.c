@@ -68,7 +68,33 @@ void __thinkos_irq_disable_all(void)
 	}
 
 }
+
+void __nvic_irq_disable_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
+	}
+
+}
+
+void __nvic_irq_clrpend_all(void)
+{
+	int i;
+
+	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
+		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
+	}
+
+}
+
+
 #endif
+
+
+
+
 
 void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 {

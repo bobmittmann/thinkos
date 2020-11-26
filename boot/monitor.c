@@ -805,7 +805,7 @@ void __attribute__((noreturn))
 boot_monitor_task(const struct monitor_comm * comm, void * arg)
 {
 #if (MONITOR_OSINFO_ENABLE)
-	uint32_t cycref[THINKOS_CTX_CNT];
+	uint32_t cycref[THINKOS_THREAD_CNT];
 #endif
 	const struct thinkos_board * board;
 	struct monitor monitor;
@@ -876,6 +876,16 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
+		case MONITOR_SOFTRST:
+			/* Acknowledge the signal */
+			monitor_clear(MONITOR_SOFTRST);
+			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
+			board->softreset();
+#if (THINKOS_ENABLE_CONSOLE)
+			goto is_connected;
+#endif
+			break;
+
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 		case MONITOR_RESET:
 			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
@@ -892,15 +902,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 			break;
 
-		case MONITOR_SOFTRST:
-			/* Acknowledge the signal */
-			monitor_clear(MONITOR_SOFTRST);
-			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
-#if (THINKOS_ENABLE_CONSOLE)
-			goto is_connected;
-#endif
-			break;
 
 		case MONITOR_COMM_BRK:
 			/* Acknowledge the signal */

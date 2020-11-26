@@ -32,7 +32,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define THINKOS_ENABLE_MONITOR_NULL_TASK 0
 #endif
 
-#define MONITOR_PERISTENT_MASK (1 << MONITOR_RESET)
+#define MONITOR_PERISTENT_MASK (1 << MONITOR_TASK_INIT)
 
 struct {
 	/* task entry point */
@@ -324,27 +324,25 @@ void thinkos_monitor_sleep(void)
 	__thinkos_systick_sleep();
 }
 
-void monitor_signal_thread_fault(unsigned int thread_idx, int32_t code) 
+void monitor_signal_thread_break(int32_t event) 
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t evset;
 	uint32_t set;
 
 	/* Disable systick interrupts */
 	__thinkos_systick_sleep();
 
-
-	set = (1 << MONITOR_THREAD_FAULT) | (1 << MONITOR_SOFTRST); 
+	set = (1 << event) | (1 << MONITOR_SOFTRST); 
 
 	do {
 		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
 		evset |= set;
-	} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
-
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
 
 	/* Issue an idle hook request */
 	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
-
 }
 
 void thinkos_monitor_wakeup(void)
@@ -407,18 +405,7 @@ int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 
 int monitor_thread_break_get(int32_t * pcode)
 {
-	struct thinkos_context * ctx;
-	int thread_idx;
-
-	if ((thread_idx = thinkos_monitor_rt.brk_thread_id) >= 0) {
-		if ((ctx = __thinkos_thread_ctx_get(thread_idx)) == NULL)
-			return -1;
-	}
-
-	if (pcode) {
-		*pcode = thinkos_monitor_rt.brk_code;
-	}
-	return thread_idx;
+	return __thinkos_thread_break_get(pcode);
 }
 
 void monitor_thread_break_clr(void)
@@ -429,7 +416,7 @@ void monitor_thread_break_clr(void)
  
 static inline void __monitor_task_reset(void)
 {
-	monitor_signal(MONITOR_RESET);
+	monitor_signal(MONITOR_TASK_INIT);
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	__monitor_wait(&thinkos_rt.monitor); 
 #else
@@ -685,8 +672,9 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 		thinkos_monitor_rt.task = task;
 	thinkos_monitor_rt.param = param;
 	
-	/* set the startup and reset signals */
-	thinkos_rt.monitor.events = (1 << MONITOR_RESET);
+	/* set the task init and software reset signals */
+	thinkos_rt.monitor.events = (1 << MONITOR_TASK_INIT) | 
+		(1 << MONITOR_SOFTRST);
 	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	{
@@ -729,3 +717,4 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 #endif
 
 #endif /* THINKOS_ENABLE_MONITOR */
+

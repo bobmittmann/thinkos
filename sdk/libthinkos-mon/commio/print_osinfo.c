@@ -22,6 +22,8 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
@@ -34,7 +36,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 	uint32_t cycsum;
 	uint32_t cycbusy;
 	uint32_t cycdiv;
-	uint32_t cyc[THINKOS_CTX_CNT];
+	uint32_t cyc[THINKOS_THREAD_CNT];
 	uint32_t busy;
 	uint32_t idle;
 	uint32_t dif;
@@ -50,7 +52,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 #if (THINKOS_ENABLE_PROFILING)
 	cyccnt = rt->cycref;
 	cycsum = 0;
-	for (i = 0; i < THINKOS_CTX_CNT; ++i) {
+	for (i = 0; i < THINKOS_THREAD_CNT; ++i) {
 		uint32_t cnt = rt->cyccnt[i];
 		uint32_t ref = cycref[i];
 		ref = 0;
@@ -110,8 +112,8 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 	monitor_printf(comm, " |\r\n");
 #endif
 
-	for (i = 0; i < THINKOS_CTX_CNT; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
+	for (i = 0; i < THINKOS_THREAD_CNT; ++i) {
+		if (thinkos_dbg_thread_ctx_is_valid(i)) {
 			const char * tag;
 			uint32_t sl;
 			uint32_t sp;
@@ -123,15 +125,15 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 			/* Internal thread ids start form 0 whereas user
 			   thread numbers start form one ... */
 			monitor_printf(comm, "%3d", i + 1);
-			tag = __thinkos_thread_tag_get(i);
-			sl = __thinkos_thread_sl_get(i);
-			sp = __thinkos_thread_sp_get(i);
-			pc = __thinkos_thread_pc_get(i);
+			tag = thinkos_dbg_thread_tag_get(i);
+			sl = thinkos_dbg_thread_sl_get(i);
+			sp = thinkos_dbg_thread_sp_get(i);
+			pc = thinkos_dbg_thread_pc_get(i);
 
 			monitor_printf(comm, " | %7s | %08x | %08x | %08x", 
 						   tag, sl, sp, pc); 
 
-			oid = __thinkos_thread_stat_wq_get(i);
+			oid = thinkos_dbg_thread_wq_get(i);
 			tmw = __thinkos_thread_stat_tmw_get(i);
 #if (THINKOS_ENABLE_THREAD_FAULT)
 			if (oid == THINKOS_WQ_FAULT) {
@@ -183,12 +185,15 @@ void monitor_print_osinfo(const struct monitor_comm * comm,
 						 oid);
 			}
 #if THINKOS_ENABLE_CLOCK
-			{
+			if (i < (THINKOS_TH_CLK_CNT)) {
 				int32_t dt = (int32_t)(rt->th_clk[i] - rt->ticks);
 				if (dt < 0)
 					monitor_printf(comm, " | <timedout>"); 
 				else
-					monitor_printf(comm, " | %10d", dt); 
+					monitor_printf(comm, " | %7d.%03d", 
+								   dt / 1000, dt % 1000); 
+			} else {
+					monitor_printf(comm, " |           "); 
 			}
 #endif
 #if THINKOS_ENABLE_PROFILING

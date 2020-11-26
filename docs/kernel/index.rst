@@ -3,7 +3,7 @@
 
 .. include:: refs.txt
 
-.. _arm_for_thinkos:
+.. _thinkos_krn:
 
 =========================================
  Kernel Reference for ThinkOS developers
@@ -12,9 +12,11 @@
 The ThinkOS_ operating system is targeted to ARM_ `Cortex-M` microcontrollers.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   flash-driver
+   krn-intro.rst
+   errors_faults.rst
+   flashmem.rst
 
 ThinkOS_ is hosted at github: https://github.com/bobmittmann/thinkos
 
