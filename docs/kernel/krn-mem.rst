@@ -1,11 +1,11 @@
 .. -*- coding: utf-8; mode: rst -*-
 .. include:: refs.txt
 
-.. _thinkos_krn_flashdrv:
+.. _thinkos_krn_mem:
 
-=====================
- Kernel Flash Driver
-=====================
+=========================
+ Kernel Memory Management
+=========================
 
 TODO: description...
 

@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_CTL)
 
@@ -57,7 +58,7 @@ void thinkos_krn_abort(struct thinkos_rt * krn)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
 
-	thinkos_krn_core_reset(krn);
+	__thinkos_krn_core_reset(krn);
 
 #if (THINKOS_ENABLE_MONITOR)
 	monitor_signal_break(MONITOR_KRN_ABORT);

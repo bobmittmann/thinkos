@@ -68,7 +68,7 @@ struct thinkos_mem_map {
 	const struct thinkos_mem_desc * desc[]; /* Sorted list of descriptors */
 };
 
-struct thinkos_rt * krn;
+struct thinkos_rt;
 
 #ifdef __cplusplus
 extern "C" {

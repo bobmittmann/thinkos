@@ -32,7 +32,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define THINKOS_ENABLE_MONITOR_NULL_TASK 0
 #endif
 
-#define MONITOR_PERISTENT_MASK (1 << MONITOR_TASK_INIT)
+#define MONITOR_PERISTENT_MASK ((1 << MONITOR_TASK_INIT) | \
+								(1 << MONITOR_SOFTRST))
 
 struct {
 	/* task entry point */
@@ -327,7 +328,7 @@ void monitor_signal_break(int32_t event)
 	uint32_t set;
 
 	/* Disable systick interrupts */
-	__thinkos_systick_sleep();
+	//__thinkos_systick_sleep();
 
 	set = (1 << event) | (1 << MONITOR_SOFTRST); 
 
@@ -337,8 +338,10 @@ void monitor_signal_break(int32_t event)
 		evset |= set;
 	} while (__strex((uint32_t *)&krn->monitor.events, evset));
 
+	DCC_LOG1(LOG_TRACE, "set=0x%08x", evset);
+
 	/* Issue an idle hook request */
-	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
+//	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
 }
 
 void thinkos_monitor_wakeup(void)
@@ -362,8 +365,6 @@ void thinkos_monitor_wakeup(void)
 	__thinkos_systick_wakeup();
 }
 
-
-#define THINKOS_THREAD_LAST (THINKOS_THREAD_IDLE)
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {
@@ -522,28 +523,9 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 void monitor_soft_reset(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-#if 0
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
-	__thinkos_irq_disable_all();
+	thinkos_dbg_reset();
 
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"2. Kernel core reset..."   _ATTR_POP_); 
-	__thinkos_krn_core_reset(krn);
-
-#if (THINKOS_ENABLE_EXCEPTIONS)
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"3. Except reset..."   _ATTR_POP_); 
-	thinkos_krn_exception_reset();
-#endif
-
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"4. Send soft reset signal"  _ATTR_POP_);
-#endif
-
-	thinkos_krn_core_reset(krn);
-	monitor_signal(MONITOR_SOFTRST); 
+	monitor_signal_break(MONITOR_SOFTRST); 
 }
 
 /* -------------------------------------------------------------------------

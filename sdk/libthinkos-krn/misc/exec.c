@@ -20,38 +20,3 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
-/* -------------------------------------------------------------------------
- * Application execution
- * ------------------------------------------------------------------------- */
-
-extern const struct thinkos_thread_inf thinkos_main_inf;
-
-void __thinkos_exec(int thread_id, void (* func)(void *), 
-					void * arg, bool paused)
-{
-	DCC_LOG(LOG_MSG, "__thinkos_thread_abort()");
-	__thinkos_thread_abort(thread_id);
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	/* allocate the thread block */
-	__bit_mem_wr(&thinkos_rt.th_alloc, thread_id, 1);
-#endif
-
-	DCC_LOG2(LOG_MSG, "__thinkos_thread_init(func=%p arg=%p)", func, arg);
-	__thinkos_thread_init(thread_id, (uint32_t)thinkos_main_stack, func, arg);
-
-#if THINKOS_ENABLE_THREAD_INFO
-	DCC_LOG(LOG_MSG, "__thinkos_thread_inf_set()");
-	__thinkos_thread_inf_set(thread_id, &thinkos_main_inf);
-#endif
-
-	if (!paused) {
-		DCC_LOG(LOG_MSG, "__thinkos_thread_resume()");
-		__thinkos_thread_resume(thread_id);
-		__thinkos_defer_sched();
-	}
-}
-

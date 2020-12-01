@@ -19,24 +19,25 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_PAUSE
 bool __thinkos_thread_ispaused(unsigned int th)
 {
-	if (th >= THINKOS_THREADS_MAX) {
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	if (th > THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_WARNING, "invalid thread %d!", th);
 		return false;
 	}
 
-	if (!__thinkos_thread_ctx_is_valid(th)) {
+	if (!__thread_ctx_is_valid(krn, th)) {
 		DCC_LOG1(LOG_WARNING, "invalid thread %d!", th);
 		return false;
 	}
 
-	return __bit_mem_rd(&thinkos_rt.wq_paused, th);
+	return __thread_pause_get(krn, th);
 }
 #endif
 

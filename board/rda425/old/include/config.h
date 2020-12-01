@@ -33,11 +33,7 @@
 #define THINKOS_IRQ_MAX                 98
 #define THINKOS_ENABLE_IRQ_CTL          1
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             32
 #define THINKOS_ENABLE_THREAD_ALLOC     1

@@ -21,6 +21,7 @@
 
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 /* -------------------------------------------------------------------------- 
  * Idle task
@@ -193,7 +194,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	uintptr_t task_entry;
 	uintptr_t task_exit;
 	uintptr_t task_arg[4];
-	uint32_t free;
 
 	stack_base = (uintptr_t)THINKOS_IDLE_STACK_BASE;
 	stack_size = THINKOS_IDLE_STACK_SIZE;
@@ -203,8 +203,8 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
-	thinkos_rt.idle_hooks.req_map = 0;
-	task_arg[0] = (uintptr_t)&thinkos_rt.idle_hooks;
+	krn->idle_hooks.req_map = 0;
+	task_arg[0] = (uintptr_t)&krn->idle_hooks;
 #else
 	task_arg[0] = 0;
 #endif
@@ -219,17 +219,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	task_arg[3] = 0;
 #endif
 
-	free = THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
-	(void)free;
-
-#if (THINKOS_ENABLE_STACK_INIT)
-	/* initialize thread stack */
-	__thinkos_memset32((void *)stack_base, 0xdeadbeef, free);
-#elif (THINKOS_ENABLE_MEMORY_CLEAR)
-	__thinkos_memset32((void *)stack_base, 0, free);
-#endif
-
-	ctx = __thinkos_thread_ctx_init(THINKOS_THREAD_IDLE, stack_top, stack_size,
+	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,
 									task_entry, task_exit, task_arg);
 
 	__thread_sl_set(krn, THINKOS_THREAD_IDLE, stack_base);
@@ -248,8 +238,8 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 			 ctx, stack_top);
 	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
 			 "<IDLE> sl=%08x sp=%08x" VT_POP, 
-			 __thinkos_thread_sl_get(THINKOS_THREAD_IDLE),
-			 __thinkos_thread_sp_get(THINKOS_THREAD_IDLE));
+			 __thread_sl_get(krn, THINKOS_THREAD_IDLE),
+			 __thread_sp_get(krn, THINKOS_THREAD_IDLE));
 #endif
 
 	return ctx;
@@ -258,6 +248,21 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 /* initialize the idle thread */
 void thinkos_krn_idle_init(void)
 {
+	uintptr_t stack_base;
+	uint32_t free;
+
+	stack_base = (uintptr_t)THINKOS_IDLE_STACK_BASE;
+	(void)stack_base;
+
+	free = THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
+	(void)free;
+
+#if (THINKOS_ENABLE_STACK_INIT)
+	/* initialize thread stack */
+	__thinkos_memset32((void *)stack_base, 0xdeadbeef, free);
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32((void *)stack_base, 0, free);
+#endif
  	thinkos_krn_idle_reset();
 }
 

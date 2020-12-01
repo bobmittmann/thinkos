@@ -19,19 +19,20 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isfaulty(unsigned int th)
 {
-	if (th >= THINKOS_THREADS_MAX)
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	if (th > THINKOS_THREADS_MAX)
 		return false;
 
-	if (!__thinkos_thread_ctx_is_valid(th))
+	if (!__thread_ctx_is_valid(krn, th))
 		return false;
 
-	return __bit_mem_rd(&thinkos_rt.wq_fault, th);
+	return __thread_fault_get(krn, th);
 }
 #endif
 

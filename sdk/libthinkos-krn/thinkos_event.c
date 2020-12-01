@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -102,14 +103,14 @@ again:
 
 	/* insert into the event wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self - 1));
 	pend = (volatile uint32_t)thinkos_rt.ev[no].pend;
 	if (((ev = __thinkos_ffs(pend & mask)) < 32) || 
 		(__strex(&thinkos_rt.wq_lst[wq], queue))) {
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
 		goto again;
 	}
 
@@ -178,14 +179,14 @@ again:
 	__thinkos_thread_ctx_set(self, (struct thinkos_context *)&arg[-CTX_R0],
 							 CONTROL_SPSEL | CONTROL_nPRIV);
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self - 1));
 	pend = (volatile uint32_t)thinkos_rt.ev[no].pend;
 	if (((ev = __thinkos_ffs(pend & mask)) < 32) || 
 		(__strex(&thinkos_rt.wq_lst[wq], queue))) {
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
 		goto again;
 	}
 
@@ -195,7 +196,7 @@ again:
 	__thread_clk_itv_set(krn, self, ms);
 
 	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, (self - 1), 1);  
 	/* Set the default return value to timeout. The
 	   event_rise call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
@@ -296,6 +297,7 @@ void thinkos_ev_mask_svc(int32_t * arg, unsigned int self)
 	unsigned int no = wq - THINKOS_EVENT_BASE;
 	uint32_t queue;
 	uint32_t mask;
+	int idx;
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -346,7 +348,7 @@ again:
 		/* get the event wait queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((idx = __thinkos_ffs(queue)) == 32) {
 			/* no threads waiting */
 			__clrex();
 			/* set the mask bit on the mask bitmap */
@@ -354,8 +356,9 @@ again:
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << th);
+		queue &= ~(1 << idx);
 	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
+	th = idx + 1;
 
 	/* clear the event */
 	__bit_mem_wr(&thinkos_rt.ev[no].pend, ev, 0);  
@@ -364,10 +367,10 @@ again:
 	__bit_mem_wr(&thinkos_rt.ev[no].mask, ev, 1);  
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
+	__bit_mem_wr(&thinkos_rt.wq_ready, th - 1, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, th - 1, 0);  
 #endif
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, ev);

@@ -21,6 +21,8 @@
 
 #include "thinkos_krn-i.h"
 
+#include <sys/dcclog.h>
+
 /* -------------------------------------------------------------------------- 
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
@@ -40,11 +42,13 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 {
 	unsigned int i;
 
+	krn->sched.state = 0x00000000;
+
 	/* clear all wait queues */
 	for (i = 0; i < THINKOS_WQ_CNT; ++i)
 		krn->wq_lst[i] = 0x00000000;
 
-	/* clear all threads excpet NULL */
+	/* clear all threads but NULL */
 	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
 		__thread_ctx_clr(krn, i);
 		__thread_stat_clr(krn, i);
@@ -60,7 +64,7 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #if (THINKOS_MUTEX_MAX) > 0
 	/* initialize the mutex locks */
 	for (i = 0; i < THINKOS_MUTEX_MAX; i++) 
-		krn->lock[i] = -1;
+		krn->mtx_lock[i] = 0;
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
 #if (THINKOS_SEMAPHORE_MAX) > 0
@@ -86,9 +90,9 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 		krn->gate[i] = 0;
 #endif /* THINKOS_GATE_MAX > 0 */
 
-#if (THINKOS_ENABLE_MONITOR)
-	krn->brk_idx = -1;
-	krn->step_id = -1;
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+	krn->brk_idx = 0;
+	krn->step_id = 0;
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	krn->step_svc = 0;  /* step at service call bitmap */
 	krn->step_req = 0;  /* step request bitmap */
@@ -116,10 +120,8 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 }
 #endif
 
-void thinkos_krn_core_reset(struct thinkos_rt * krn)
+void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
-	int active = __thread_active_get(krn);
-
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Kernel Reset !!" VT_POP);
 
 #if DEBUG
@@ -141,10 +143,6 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 	thinkos_krn_exception_reset();
 #endif
 
-	if  (active != THINKOS_THREAD_IDLE) {
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thinkos_defer_sched();
-	}
 }
 
 #if 0
@@ -404,6 +402,7 @@ unsigned int __thinkos_active_get(void)
 	return __thread_active_get(&thinkos_rt);
 }
 
+#if 0
 uint32_t __thinkos_active_sl_get(void) 
 {
 	return __thread_active_sl_get(&thinkos_rt);
@@ -414,6 +413,8 @@ void __thinkos_active_sl_set(unsigned int th, uint32_t sl)
 {
 	__thread_active_sl_set(&thinkos_rt, th, sl);
 }
+#endif
+
 
 bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq) 
 {
@@ -427,7 +428,7 @@ void  __thinkos_ready_clr(void)
 
 void __thinkos_suspend(unsigned int idx) 
 {
-	__thread_suspend(&thinkos_rt, idx);
+	__krn_thread_suspend(&thinkos_rt, idx);
 }
 
 int __thinkos_wq_idx(uint32_t * ptr) 
@@ -437,18 +438,18 @@ int __thinkos_wq_idx(uint32_t * ptr)
 
 int __thinkos_wq_head(unsigned int wq) 
 {
-	return __wq_head(&thinkos_rt, wq);
+	return __krn_wq_head(&thinkos_rt, wq);
 }
 
 void __thinkos_wq_insert(unsigned int wq, unsigned int th)
 {
-	__wq_insert(&thinkos_rt, wq, th);
+	__krn_wq_insert(&thinkos_rt, wq, th);
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms)
 {
-	__tmdwq_insert(&thinkos_rt, wq, th, ms);
+	__krn_tmdwq_insert(&thinkos_rt, wq, th, ms);
 }
 #endif
 
@@ -466,7 +467,7 @@ void __thinkos_wq_remove( unsigned int wq, unsigned int th)
 
 void __thinkos_wakeup( unsigned int wq, unsigned int th) 
 {
-	__wq_wakeup(&thinkos_rt, wq, th);
+	__krn_wq_wakeup(&thinkos_rt, wq, th);
 }
 
 void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret) 
@@ -475,17 +476,15 @@ void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret)
 }
 
 
-#if (THINKOS_ENABLE_CLOCK)
 uint32_t  __thinkos_ticks(void) 
 {
 	return __krn_ticks(&thinkos_rt);
 }
-#endif
 
 /* Set the fault flag */
 void __thinkos_thread_fault_set(unsigned int th, int errno) 
 {
-	__thread_fault_set(&thinkos_rt, th, errno);
+	__thread_fault_raise(&thinkos_rt, th, errno);
 }
 
 /* Clear the fault flag */

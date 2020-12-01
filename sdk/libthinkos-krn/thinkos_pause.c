@@ -21,6 +21,7 @@
 
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_PAUSE)
 
@@ -31,6 +32,10 @@ static bool ready_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 	return true;
 }
+
+#if THINKOS_MUTEX_MAX > 0
+bool mutex_resume(unsigned int thread_id, unsigned int mutex, bool tmw); 
+#endif
 
 #if THINKOS_IRQ_MAX > 0
 static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
@@ -50,9 +55,7 @@ static bool irq_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 	DCC_LOG2(LOG_INFO, "thread_id=%d PC=%08x +++++", 
 			 thread_id, __thinkos_thread_pc_get(thread_id)); 
 	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
-#if THINKOS_ENABLE_CLOCK
 	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
-#endif
 	return true;
 }
 #endif
@@ -68,7 +71,6 @@ static bool tmshare_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 }
 #endif
 
-#if THINKOS_ENABLE_CLOCK
 static bool clock_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
 {
 //	if ((int32_t)(thinkos_rt.clock[thread_id] - thinkos_rt.ticks) <= 0) {
@@ -85,34 +87,6 @@ static bool clock_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 //	}
 	return true;
 }
-#endif
-
-#if THINKOS_MUTEX_MAX > 0
-static bool mutex_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
-{
-	unsigned int mutex = wq - THINKOS_MUTEX_BASE;
-
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(thread_id)); 
-
-	if (thinkos_rt.lock[mutex] == -1) {
-		thinkos_rt.lock[mutex] = thread_id;
-		/* insert the thread into ready queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
-#if THINKOS_ENABLE_TIMED_CALLS
-		/* set the thread's return value */
-		__thinkos_thread_r0_set(thread_id, 0);
-#endif
-		/* update status */
-		__thinkos_thread_stat_clr(thread_id);
-	} else {
-		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
-#if THINKOS_ENABLE_TIMED_CALLS
-		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
-#endif
-	}
-	return true;
-}
-#endif
 
 #if THINKOS_COND_MAX > 0
 static bool cond_resume(unsigned int thread_id, unsigned int wq, bool tmw) 
@@ -146,9 +120,7 @@ static bool semaphore_resume(unsigned int thread_id, unsigned int wq, bool tmw)
 		__thinkos_thread_stat_clr(thread_id);
 	} else {
 		__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 1);
-#if THINKOS_ENABLE_CLOCK
 		__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, tmw);
-#endif
 	}
 	return true;
 }
@@ -324,12 +296,8 @@ typedef  bool (* thread_resume_t)(unsigned int, unsigned int, bool);
 
 static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
-#if THINKOS_ENABLE_TIMESHARE
-	[THINKOS_OBJ_TMSHARE] = tmshare_resume,
-#endif
-#if THINKOS_ENABLE_CLOCK
+	[THINKOS_OBJ_THREAD] = join_resume,
 	[THINKOS_OBJ_CLOCK] = clock_resume,
-#endif
 #if THINKOS_MUTEX_MAX > 0
 	[THINKOS_OBJ_MUTEX] = mutex_resume,
 #endif
@@ -348,9 +316,6 @@ static const thread_resume_t thread_resume_lut[] = {
 #if THINKOS_GATE_MAX > 0
 	[THINKOS_OBJ_GATE] = gate_resume,
 #endif
-#if THINKOS_ENABLE_JOIN
-	[THINKOS_OBJ_JOIN] = join_resume,
-#endif
 #if THINKOS_ENABLE_CONSOLE
 	[THINKOS_OBJ_CONREAD] = thinkos_console_rd_resume,
 	[THINKOS_OBJ_CONWRITE] = thinkos_console_wr_resume,
@@ -360,6 +325,9 @@ static const thread_resume_t thread_resume_lut[] = {
 #endif
 #if THINKOS_ENABLE_JOIN
 	[THINKOS_OBJ_CANCELED] = canceled_resume,
+#endif
+#if THINKOS_ENABLE_TIMESHARE
+	[THINKOS_OBJ_TMSHARE] = tmshare_resume,
 #endif
 #if THINKOS_ENABLE_COMM
 	[THINKOS_OBJ_COMMSEND] = comm_send_resume,
@@ -431,10 +399,8 @@ bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int thread_id)
 	__bit_mem_wr(&krn->step_svc, thread_id, 0);
 #endif
 
-#if THINKOS_ENABLE_CLOCK
 	/* disable the clock */
 	__bit_mem_wr(&krn->wq_clock, thread_id, 0);
-#endif
 
 	return true;
 }
@@ -519,6 +485,7 @@ void thinkos_resume_svc(int32_t * arg, unsigned int self)
 
 void thinkos_pause_svc(int32_t * arg, unsigned int self)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
 	unsigned int thread = (unsigned int)arg[0];

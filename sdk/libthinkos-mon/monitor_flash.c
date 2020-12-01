@@ -60,6 +60,15 @@ static int __console_comm_send(void * dev, const void * buf, unsigned int len)
 	return len;
 }
 
+static int __console_puts(const char * s)
+{
+	int n = 0;
+
+	while (s[n] != '\0')
+		n++;
+	return __console_comm_send(NULL, s, n);
+}
+
 static int __console_comm_recv(void * dev, void * buf, 
 					  unsigned int len, unsigned int msec) 
 {
@@ -127,11 +136,15 @@ int __flash_ymodem_rcv_task(const char * tag)
 		return key;
 	}
 
+	__console_puts("\r\nFlash erase... ");
+
 	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
 		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
 		thinkos_flash_mem_close(key);
 		return ret;
 	}
+
+	__console_puts("\r\nYMODEM receive (Ctrl+X to cancel)... ");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 	//thinkos_console_raw_mode(true);
@@ -201,4 +214,5 @@ int monitor_flash_erase_all(const struct monitor_comm * comm,
 	return monitor_thread_exec(comm, C_TASK(__flash_erase_all_task),
 							   C_ARG(tag));
 }
+
 

@@ -774,7 +774,7 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 	if (((ep->xfr_len + 3) & ~0x3) == ((ep->xfr_cnt + 3) & ~0x3)) {
 		/* 5. After the data payload is popped from the receive FIFO, the 
 		   RXFLVL interrupt (OTG_FS_GINTSTS) must be unmasked. */
-		DCC_LOG(LOG_TRACE, VT_PSH VT_FYW VT_REV " FIFO IRQ enabled " VT_POP);
+		DCC_LOG(LOG_INFO, VT_PSH VT_FYW VT_REV " FIFO IRQ enabled " VT_POP);
 		/* Reenable RX fifo interrupts */
 		otg_fs->gintmsk |= OTG_FS_RXFLVLM;
 		/* FIXME: implement timeout... */

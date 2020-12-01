@@ -10,7 +10,7 @@
  * --------------------------------------------------------------------------*/
 
 #define THINKOS_NO_ERROR               0
-#define THINKOS_ERR_KERNEL_PANIC       1
+#define THINKOS_ERR_KRN_FAULT          1
 #define THINKOS_ERR_HARD_FAULT         2
 #define THINKOS_ERR_BUS_FAULT          3
 #define THINKOS_ERR_USAGE_FAULT        4

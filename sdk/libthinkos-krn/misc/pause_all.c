@@ -21,6 +21,7 @@
 
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
 		(THINKOS_ENABLE_THREAD_STAT)

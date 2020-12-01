@@ -41,7 +41,6 @@
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT        0
 #define THINKOS_ENABLE_WQ_IRQ               1
 
-#define THINKOS_ENABLE_CLOCK                1
 #define THINKOS_ENABLE_ALARM                1
 #define THINKOS_ENABLE_SLEEP                1
 

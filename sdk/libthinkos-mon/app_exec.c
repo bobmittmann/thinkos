@@ -20,13 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
+#include "thinkos_mon-i.h"
+
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
-
 
 #if THINKOS_ENABLE_APP
 
@@ -49,11 +46,14 @@ static int __app_exec_task(const struct monitor_app_desc * desc)
 bool monitor_app_exec(const struct monitor_comm * comm, 
 					 const struct monitor_app_desc * desc)
 {
+	int thread_id;
 	int ret;
 
 	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
 
-	ret = monitor_thread_exec(comm, C_TASK(__app_exec_task), C_ARG(desc));
+	ret = thinkos_dbg_thread_create(C_TASK(__app_exec_task), C_ARG(desc), true);
+	thread_id = ret;
+	(void)thread_id;
 
 	DCC_LOG1(LOG_TRACE, "monitor_thread_exec() = %d!", ret);
 

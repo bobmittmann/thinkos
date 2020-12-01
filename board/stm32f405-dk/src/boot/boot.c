@@ -24,8 +24,9 @@
 
 extern const struct thinkos_board this_board;
 extern const struct thinkos_mem_desc flash_mem;
+extern const struct thinkos_mem_map mem_map;
 #define FLASH_BLK_BOOT 0
-#define FLASH_BLK_APP  1
+#define FLASH_BLK_APP  2
 
 void board_init(void);
 void standby_monitor_task(const struct monitor_comm * comm, void * arg);
@@ -59,7 +60,7 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 
 	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
-					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
+					 THINKOS_OPT_STACK_SIZE(32768), &mem_map, NULL);
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
@@ -103,8 +104,8 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 
 	app_addr = flash_mem.base + flash_mem.blk[FLASH_BLK_APP].off;  
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 7. thinkos_app_exec()..." VT_POP);
+	DCC_LOG1(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 7. thinkos_app_exec(%08x)..." VT_POP, app_addr);
 	thinkos_app_exec(app_addr);
 	DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
 			"**** thinkos_app_exec() failed." VT_POP);
@@ -116,4 +117,5 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 			"* 8. board_default_task()..." VT_POP);
 	board_default_task((void*)&this_board);
 }
+
 

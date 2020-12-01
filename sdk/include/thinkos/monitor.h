@@ -308,7 +308,8 @@ int monitor_thread_step(unsigned int id, bool block);
 
 int monitor_thread_last_fault_get(uint32_t * addr);
 
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg);
+int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
+						  bool privileged);
 
 void monitor_thread_resume(int thread_id);
 
@@ -475,6 +476,9 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 void thinkos_monitor_wakeup(void);
 
 void thinkos_monitor_sleep(void);
+
+uint32_t monitor_threads_cyc_sum(uint32_t cyc[],uint32_t cycref[], 
+                                 unsigned int from, unsigned int max);
 
 #ifdef __cplusplus
 }

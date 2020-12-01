@@ -69,7 +69,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	/* Syscall */
 
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_JOIN", p->syscall.join);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CLOCK", p->syscall.clock);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ALARM", p->syscall.alarm);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SLEEP", p->syscall.sleep);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_CTL", p->syscall.ctl);

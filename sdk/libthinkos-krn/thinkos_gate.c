@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -78,7 +79,7 @@ again:
 		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
 		if (__strex(gates_bmp, gates))
 			goto again;
-		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self + 1, wq);
+		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, wq);
 		arg[0] = 0;
 		return;
 	}
@@ -102,7 +103,7 @@ again:
 	__thinkos_thread_ctx_flush(arg, self);
 	/* insert into the gate wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self - 1));
 	/* The gate may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
@@ -110,12 +111,12 @@ again:
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
 		goto again;
 	}
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG2(LOG_INFO, "<%d> waiting at gate %d...", self + 1, wq);
+	DCC_LOG2(LOG_INFO, "<%d> waiting at gate %d...", self, wq);
 	/* signal the scheduler ... */
 	__thinkos_defer_sched(); 
 }
@@ -163,7 +164,7 @@ again:
 	gates = __ldrex(gates_bmp);
 
 	if (((gates >> idx) & 3) == 3) {
-		DCC_LOG1(LOG_ERROR, "<%d> invalid state, open and locked.", self + 1);
+		DCC_LOG1(LOG_ERROR, "<%d> invalid state, open and locked.", self);
 		arg[0] = 0;
 		return;
 	}
@@ -173,7 +174,7 @@ again:
 		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
 		if (__strex(gates_bmp, gates))
 			goto again;
-		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self + 1, wq);
+		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, wq);
 		arg[0] = 0;
 		return;
 	}
@@ -198,7 +199,7 @@ again:
 	__thinkos_thread_ctx_flush(arg, self);
 	/* insert into the gate wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self -1));
 	/* The gate may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
@@ -206,20 +207,20 @@ again:
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
 		DCC_LOG1(LOG_INFO, "<%d> again.", self);
 		goto again;
 	}
 
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG3(LOG_INFO, "<%d> waiting at gate %d, state=%d...", 
-			 self + 1, wq, (gates >> idx) & 3);
+			 self, wq, (gates >> idx) & 3);
 
 	/* set the clock */
 	__thread_clk_itv_set(&thinkos_rt, self, ms);
 
 	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, (self - 1), 1);  
 	/* Set the default return value to timeout. The
 	   gate_open() call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
@@ -237,6 +238,7 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 	uint32_t gates;
 	uint32_t queue;
 	int th;
+	int k;
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (idx >= THINKOS_GATE_MAX) {
@@ -257,7 +259,7 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__bit_mem_rd(thinkos_rt.gate, idx * 2 + 1)) {
-		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self + 1, wq);
+		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, wq);
 		__THINKOS_ERROR(self, THINKOS_ERR_GATE_UNLOCKED);
 		arg[0] = THINKOS_EPERM;
 		return;
@@ -285,7 +287,7 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 			gates = __ldrex(gates_bmp);
 			gates |= (__GATE_SIGNALED << idx);
 		} while (__strex(gates_bmp, gates));
-		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self + 1, wq);
+		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self, wq);
 	} else { /* (open == 0) */
 again:
 		gates = __ldrex(gates_bmp);
@@ -295,11 +297,11 @@ again:
 			if (__strex(gates_bmp, gates))
 				goto again;
 			DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave closed.", 
-					 self + 1, wq);
+					 self, wq);
 			return;
 		}
 		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open due to signal.", 
-				 self + 1, wq);
+				 self, wq);
 	}
 
 	/* At this point the gate is garanteed to be signaled and locked! */
@@ -307,19 +309,19 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((k = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				gates = __ldrex(gates_bmp);
 				gates &= ~(__GATE_LOCKED << idx);
 			} while (__strex(gates_bmp, gates));
-			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self + 1, wq);
+			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self, wq);
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << th);
+		queue &= ~(1 << k);
 	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
-
+	th = k + 1;
 
 	/* close the gate by removing the signal */
 	do {
@@ -328,7 +330,7 @@ again:
 	} while (__strex(gates_bmp, gates));
 
 
-	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th + 1, wq);
+	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, wq);
 
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
@@ -350,6 +352,7 @@ void __thinkos_gate_open_i(uint32_t wq)
 	uint32_t * gates_bmp;
 	uint32_t gates;
 	uint32_t queue;
+	int k;
 	int th;
 
 	DCC_LOG1(LOG_MSG, "gate %d", wq);
@@ -381,7 +384,7 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((k = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				gates = __ldrex(gates_bmp);
@@ -391,9 +394,9 @@ again:
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << th);
+		queue &= ~(1 << k);
 	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
-
+	th = k + 1;
 
 	/* close the gate by removing the signal */
 	do {
@@ -406,10 +409,10 @@ again:
 
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
+	__bit_mem_wr(&thinkos_rt.wq_ready, th - 1, 1);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, th - 1, 0);  
 #endif
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);

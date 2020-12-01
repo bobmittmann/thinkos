@@ -31,12 +31,8 @@ const struct {
 		uint8_t wq[THINKOS_WQ_CNT]; /* placeholder */
 		struct {	
 			uint8_t wq_ready; /* ready threads queue */
-#if (THINKOS_ENABLE_TIMESHARE)
-			uint8_t wq_tmshare; /* Threads waiting for time share cycle */
-#endif
-#if (THINKOS_ENABLE_CLOCK)
+			uint8_t wq_thread[THINKOS_WQ_THREAD_CNT];
 			uint8_t wq_clock;
-#endif
 #if (THINKOS_MUTEX_MAX) > 0
 			uint8_t wq_mutex[THINKOS_WQ_MUTEX_CNT];
 #endif
@@ -55,9 +51,6 @@ const struct {
 #if (THINKOS_GATE_MAX) > 0
 			uint8_t wq_gate[THINKOS_WQ_GATE_CNT];
 #endif
-#if (THINKOS_ENABLE_JOIN)
-			uint8_t wq_join[THINKOS_WQ_JOIN_CNT];
-#endif
 #if (THINKOS_ENABLE_CONSOLE)
 			uint8_t wq_console_wr;
 			uint8_t wq_console_rd;
@@ -67,6 +60,9 @@ const struct {
 #endif
 #if (THINKOS_ENABLE_JOIN)
 			uint8_t wq_canceled; /* canceled threads wait queue */
+#endif
+#if (THINKOS_ENABLE_TIMESHARE)
+			uint8_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 #if (THINKOS_ENABLE_COMM)
 			uint8_t wq_comm_send;
@@ -88,12 +84,8 @@ const struct {
 	};
 } thinkos_obj_kind_lut = {
 	.wq_ready = THINKOS_OBJ_READY,
-#if THINKOS_ENABLE_TIMESHARE
-	.wq_tmshare = THINKOS_OBJ_TMSHARE,
-#endif
-#if THINKOS_ENABLE_CLOCK
+	.wq_thread = { [0 ... (THINKOS_THREADS_MAX - 1)] = THINKOS_OBJ_THREAD },
 	.wq_clock = THINKOS_OBJ_CLOCK,
-#endif
 #if THINKOS_MUTEX_MAX > 0
 	.wq_mutex = { [0 ... (THINKOS_MUTEX_MAX - 1)] = THINKOS_OBJ_MUTEX },
 #endif 
@@ -112,9 +104,6 @@ const struct {
 #if THINKOS_GATE_MAX > 0
 	.wq_gate = { [0 ... (THINKOS_GATE_MAX - 1)] = THINKOS_OBJ_GATE },
 #endif
-#if THINKOS_ENABLE_JOIN
-	.wq_join = { [0 ... (THINKOS_THREADS_MAX - 1)] = THINKOS_OBJ_JOIN },
-#endif
 #if THINKOS_ENABLE_CONSOLE
 	.wq_console_wr = THINKOS_OBJ_CONWRITE,
 	.wq_console_rd = THINKOS_OBJ_CONREAD,
@@ -124,6 +113,9 @@ const struct {
 #endif
 #if THINKOS_ENABLE_JOIN
 	.wq_canceled = THINKOS_OBJ_CANCELED,
+#endif
+#if THINKOS_ENABLE_TIMESHARE
+	.wq_tmshare = THINKOS_OBJ_TMSHARE,
 #endif
 #if THINKOS_ENABLE_COMM
 	.wq_comm_send = THINKOS_OBJ_COMMSEND,

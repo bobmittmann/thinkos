@@ -69,7 +69,7 @@ int __attribute__((noinline)) thinkos_thread_create(thinkos_task_t task_ptr, voi
 	}
 
 	stack_top = stack_base + stack_size;  
-	/* ensure alignement */
+	/* ensure page alignment */
 	stack_size &= ~0xf;
 	stack_top &= ~0xf;
 	stack_base = stack_top - stack_size;  

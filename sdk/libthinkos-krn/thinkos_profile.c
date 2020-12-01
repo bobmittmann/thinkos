@@ -70,7 +70,6 @@ const struct thinkos_profile thinkos_profile = {
 
 	.syscall = {
 		.join         = THINKOS_ENABLE_JOIN,
-		.clock        = THINKOS_ENABLE_CLOCK,
 		.alarm        = THINKOS_ENABLE_ALARM,
 		.sleep        = THINKOS_ENABLE_SLEEP,
 		.ctl          = THINKOS_ENABLE_CTL,
@@ -213,8 +212,6 @@ void __profile(void)
 
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_JOIN            = %d", 
 			 p->syscall.join);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CLOCK           = %d", 
-			 p->syscall.clock);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ALARM           = %d", 
 			 p->syscall.alarm);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_SLEEP           = %d", 

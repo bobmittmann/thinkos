@@ -199,8 +199,8 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
-			 __xcpt_active_get(xcpt) + 1,
-			 __thinkos_active_get() + 1); 
+			 __xcpt_active_get(xcpt),
+			 __thinkos_active_get()); 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
 			(scr & SCR_SEVONPEND) ? " SEVONPEND" : "",
@@ -381,104 +381,80 @@ int __xcpt_next_active_irq(int this_irq)
 
 void __xcpt_systick_int_disable(void)
 {
-#if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
 	struct cm3_systick * systick = CM3_SYSTICK;
 
 	systick->csr &= ~SYSTICK_CSR_TICKINT;
 	CM3_SCB->icsr = SCB_ICSR_PENDSTCLR;
-#endif
 }
 
 void __xcpt_systick_int_enable(void)
 {
-#if THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_TIMESHARE
 	struct cm3_systick * systick = CM3_SYSTICK;
 	systick->csr |= SYSTICK_CSR_TICKINT;
-#endif
 }
 
-void __tdump(void)
+void __tdump(struct thinkos_rt * krn)
 {
 #ifdef DEBUG
 	int i;
 
-	DCC_LOG1(LOG_TRACE, "active thread: %d", __thinkos_active_get() + 1);
-	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
-		const struct thinkos_thread_inf * inf;
-		if (!__thinkos_thread_ctx_is_valid(i))
+	DCC_LOG4(LOG_TRACE, "Sched: active=%d mask=0x%02x brk=0x%02x code=0x%02x", 
+			 __thread_active_get(krn),
+			 __krn_sched_mask_get(krn),
+			 __krn_sched_brk_get(krn),
+			 __krn_sched_code_get(krn));
+
+	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+		const char * tag;
+		unsigned int wq;
+		uint32_t sp;
+		uint32_t sl;
+		uint32_t pc;
+		uint32_t lr;
+		uint32_t ssize;
+		uint32_t sfree;
+
+
+		if (!__thread_ctx_is_valid(krn, i))
 			continue;
-		if ((inf = __thinkos_thread_inf_get(i)) != NULL) {
-#if THINKOS_ENABLE_THREAD_STAT
-  #if (THINKOS_ENABLE_STACK_LIMIT)
-			DCC_LOG9(LOG_TRACE, "%7s (%2d %3d) SL=%08x SP=%08x PC=%08x LR=%08x %d/%d", 
-					 inf->tag, i + 1, i == THINKOS_THREAD_IDLE ? 0 : 
-					 __thinkos_thread_stat_wq_get(i),
-					 __thinkos_thread_sl_get(i), 
-					 __thinkos_thread_sp_get(i), 
-					 __thinkos_thread_pc_get(i), 
-					 __thinkos_thread_lr_get(i), 
-					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
-					 inf->stack_size);
-  #else
-			DCC_LOG8(LOG_TRACE, "%7s (%2d %3d) SP=%08x PC=%08x LR=%08x %d/%d", 
-					 inf->tag, i + 1, i == THINKOS_THREAD_IDLE ? 0 : 
-					 __thinkos_thread_stat_wq_get(i),
-					 __thinkos_thread_sp_get(i), 
-					 __thinkos_thread_pc_get(i), 
-					 __thinkos_thread_lr_get(i), 
-					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
-					 inf->stack_size);
-  #endif
-#else
-			DCC_LOG7(LOG_TRACE, "%7s (%2d) SP=%08x PC=%08x LR=%08x %d/%d", 
-					 inf->tag, i + 1, 
-					 __thinkos_thread_sp_get(i), 
-					 __thinkos_thread_pc_get(i), 
-					 __thinkos_thread_lr_get(i), 
-					 __thinkos_scan_stack(inf->stack_ptr, inf->stack_size), 
-					 inf->stack_size);
-#endif
-		} else {
-#if (THINKOS_ENABLE_THREAD_STAT)
-  #if (THINKOS_ENABLE_STACK_LIMIT)
-		DCC_LOG6(LOG_TRACE, "....... (%2d %3d) SL=%08x SP=%08x PC=%08x LR=%08x", 
-				 i + 1, __thinkos_thread_stat_wq_get(i),
-				 __thinkos_thread_sl_get(i), 
-				 __thinkos_thread_sp_get(i), 
-				 __thinkos_thread_pc_get(i), 
-				 __thinkos_thread_lr_get(i)); 
-  #else
-		DCC_LOG5(LOG_TRACE, "....... (%2d %3d) SP=%08x PC=%08x LR=%08x", 
-				 i + 1, __thinkos_thread_stat_wq_get(i),
-				 __thinkos_thread_sp_get(i), 
-				 __thinkos_thread_pc_get(i), 
-				 __thinkos_thread_lr_get(i)); 
-  #endif		 
-#else
-		DCC_LOG4(LOG_TRACE, "....... (%2d) SP=%08x PC=%08x LR=%08x", 
-				 i + 1, __thinkos_thread_sp_get(i), 
-				 __thinkos_thread_pc_get(i), 
-				 __thinkos_thread_lr_get(i)); 
-#endif
 
+		tag = __thread_tag_get(krn, i);
+		wq = __thread_wq_get(krn, i);
+		sl = __thread_sl_get(krn, i);
+		sp = __thread_sp_get(krn, i);
+		pc = __thread_pc_get(krn, i);
+		lr = __thread_lr_get(krn, i) ;
+		ssize = __thread_stack_size_get(krn, i);
+		sfree= __thinkos_scan_stack((void *)sl, ssize);
 
-		}
+		DCC_LOG9(LOG_TRACE, 
+				 "%7s (%2d %3d) SL=%08x SP=%08x PC=%08x LR=%08x %d/%d", 
+				 tag, i, wq, sl, sp, pc, lr, sfree, ssize);
+
 	}
-	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", thinkos_rt.wq_ready);
+
+	DCC_LOG1(LOG_TRACE, "wq_ready=%08x", krn->wq_ready);
 #if THINKOS_ENABLE_TIMESHARE
-	DCC_LOG1(LOG_TRACE, "wq_tmshare=%08x", thinkos_rt.wq_tmshare);
+	DCC_LOG1(LOG_TRACE, "wq_tmshare=%08x", krn->wq_tmshare);
 #endif
-#if THINKOS_ENABLE_CLOCK
-	DCC_LOG1(LOG_TRACE, "wq_clock=%08x", thinkos_rt.wq_clock);
-#endif
+	DCC_LOG1(LOG_TRACE, "wq_clock=%08x", krn->wq_clock);
 
 #endif /* DEBUG */
+
 }
+
+/* Static sanity check: */
+_Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
+				"THINKOS_THREAD_FIRST != THINKOS_THREAD_BASE");
+
 
 void __odump(void)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
 
+	DCC_LOG3(LOG_TRACE, "     join: %2d (%2d .. %2d)", THINKOS_THREADS_MAX,
+			 THINKOS_THREAD_BASE,
+			 THINKOS_THREAD_BASE + THINKOS_THREADS_MAX - 1);
 #if (THINKOS_MUTEX_MAX > 0)
 	DCC_LOG3(LOG_TRACE, "    mutex: %2d (%2d .. %2d)", THINKOS_MUTEX_MAX,
 			 THINKOS_MUTEX_BASE,
@@ -508,11 +484,6 @@ void __odump(void)
 	DCC_LOG3(LOG_TRACE, "     gate: %2d (%2d .. %2d)", THINKOS_GATE_MAX,
 			 THINKOS_GATE_BASE,
 			 THINKOS_GATE_BASE + THINKOS_GATE_MAX - 1);
-#endif
-#if (THINKOS_ENABLE_JOIN)
-	DCC_LOG3(LOG_TRACE, "     join: %2d (%2d .. %2d)", THINKOS_THREADS_MAX,
-			 THINKOS_JOIN_BASE,
-			 THINKOS_JOIN_BASE + THINKOS_THREADS_MAX - 1);
 #endif
 #if (THINKOS_ENABLE_CONSOLE)
 	DCC_LOG2(LOG_TRACE, "  console: (wr:%2d rd:%2d)", 

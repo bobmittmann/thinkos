@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -141,19 +142,28 @@ static int __thinkos_hilo_alloc(uint32_t bmp[], int max, int tgt_idx)
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 int __thinkos_thread_alloc(int tgt_idx)
 {
-	return __thinkos_hilo_alloc(thinkos_rt.th_alloc, 
-								THINKOS_THREADS_MAX, 
-								tgt_idx);
+	int idx;
+
+	tgt_idx -= 1;
+
+	if (tgt_idx < 0)
+		tgt_idx = 0;
+	
+	idx = __thinkos_hilo_alloc(thinkos_rt.th_alloc, 
+							   THINKOS_THREADS_MAX, 
+							   tgt_idx);
+	if (idx < 0)
+		return idx;
+
+	return idx + 1;
 }
 #endif
 
 static uint32_t * const thinkos_obj_alloc_lut[] = {
-#if (THINKOS_ENABLE_THREAD_ALLOC)
-	[THINKOS_OBJ_READY]     = thinkos_rt.th_alloc,
-#else
 	[THINKOS_OBJ_READY]     = NULL,
+#if (THINKOS_ENABLE_THREAD_ALLOC)
+	[THINKOS_OBJ_THREAD]    = thinkos_rt.th_alloc,
 #endif
-	[THINKOS_OBJ_TMSHARE]   = NULL,
 	[THINKOS_OBJ_CLOCK]     = NULL,
 #if (THINKOS_ENABLE_MUTEX_ALLOC)
 	[THINKOS_OBJ_MUTEX]      = thinkos_rt.mutex_alloc,
@@ -185,11 +195,12 @@ static uint32_t * const thinkos_obj_alloc_lut[] = {
 #else
 	[THINKOS_OBJ_GATE]      = NULL,
 #endif
+	[THINKOS_OBJ_TMSHARE]   = NULL
 };
 
 static const uint16_t thinkos_obj_base_lut[] = {
-	[THINKOS_OBJ_READY]     = 1,
-	[THINKOS_OBJ_TMSHARE]   = 0,
+	[THINKOS_OBJ_READY]     = 0,
+	[THINKOS_OBJ_THREAD]    = THINKOS_THREAD_BASE,
 	[THINKOS_OBJ_CLOCK]     = 0,
 #if (THINKOS_MUTEX_MAX) > 0
 	[THINKOS_OBJ_MUTEX]     = THINKOS_MUTEX_BASE,
@@ -212,15 +223,14 @@ static const uint16_t thinkos_obj_base_lut[] = {
 };
 
 static const uint8_t thinkos_obj_cnt_lut[] = {
-	[THINKOS_OBJ_READY]     = THINKOS_THREADS_MAX,
-	[THINKOS_OBJ_TMSHARE]   = THINKOS_WQ_TMSHARE_CNT,
+	[THINKOS_OBJ_THREAD]    = THINKOS_THREADS_MAX,
 	[THINKOS_OBJ_CLOCK]     = THINKOS_WQ_CLOCK_CNT,
 	[THINKOS_OBJ_MUTEX]     = THINKOS_WQ_MUTEX_CNT,
 	[THINKOS_OBJ_COND]      = THINKOS_WQ_COND_CNT,
 	[THINKOS_OBJ_SEMAPHORE] = THINKOS_WQ_SEMAPHORE_CNT,
 	[THINKOS_OBJ_EVENT]     = THINKOS_WQ_EVENT_CNT,
 	[THINKOS_OBJ_FLAG]      = THINKOS_WQ_FLAG_CNT,
-	[THINKOS_OBJ_GATE]      = THINKOS_WQ_GATE_CNT,
+	[THINKOS_OBJ_GATE]      = THINKOS_WQ_GATE_CNT
 };
 
 bool __thinkos_obj_alloc_check(unsigned int oid)
@@ -330,20 +340,21 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 	base = thinkos_obj_base_lut[kind];
 
 #endif
+	DCC_LOG3(LOG_TRACE, "kind=%d base=%d max=%d", kind, base, max);
+	DCC_LOG1(LOG_TRACE, "kind=\"%s\"", __kind_name(kind));
 
 	if (bmp == NULL) {
-		DCC_LOG1(LOG_ERROR, "<%02> invlaid object", self + 1);
+		DCC_LOG1(LOG_ERROR, "<%2d> object invalid", self);
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 
-	DCC_LOG3(LOG_MSG, "kind=%d base=%d max=%d", kind, base, max);
 
-	if (kind == THINKOS_OBJ_READY) {
+	if (kind == THINKOS_OBJ_THREAD) {
 		int32_t tgt_idx = arg[1];
 
-		tgt_idx -= 1;  
+		tgt_idx -= base;  
 		DCC_LOG1(LOG_MSG, "tgt_idx = %d", tgt_idx);
 
 		if ((idx = __thinkos_hilo_alloc(bmp, max, tgt_idx)) >= 0) {
@@ -364,7 +375,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 		}
 #endif
 	}
-	DCC_LOG2(LOG_TRACE, "<%2d> idx = %d", self + 1, idx);
+	DCC_LOG2(LOG_TRACE, "<%2d> idx = %d", self, idx);
 	arg[0] = idx;
 }
 

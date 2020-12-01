@@ -21,6 +21,7 @@
 
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -29,30 +30,24 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_CANCEL)
 void thinkos_cancel_svc(int32_t * arg, unsigned int self)
 {
+	unsigned int thread_no = (unsigned int)arg[0];
 	struct thinkos_rt * krn = &thinkos_rt;
-
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	unsigned int thread = (unsigned int)arg[0];
-	unsigned int thread_idx;
 	int code = arg[1];
 	unsigned int wq;
 	uint32_t pc;
 
-	if (thread == 0)
-		thread_idx = self;
-	else
-		thread_idx = thread - 1;
+	if (thread_no == 0)
+		thread_no = self;
 
 #if THINKOS_ENABLE_ARG_CHECK
-	if (thread_idx >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_idx);
+	if (__thread_is_valid(krn, thread_no)) {
+		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_no);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (__bit_mem_rd(krn->th_alloc, thread_idx) == 0) {
+	if (__thread_is_alloc(krn, thread_no) == 0) {
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -60,9 +55,10 @@ void thinkos_cancel_svc(int32_t * arg, unsigned int self)
 #endif
 #endif
 
-	wq = __thread_wq_get(krn, thread_idx);
+	wq = __thread_wq_get(krn, thread_no);
 	/* remove from other wait queue including wq_ready */
-	__bit_mem_wr(&krn->wq_lst[wq], thread_idx, 0);
+	/* possibly remove from the time wait queue */
+	__wq_remove(krn, wq, thread_no);
 
 #if THINKOS_ENABLE_JOIN
 	/* insert into the canceled wait queue and wait for a join call */ 
@@ -72,24 +68,17 @@ void thinkos_cancel_svc(int32_t * arg, unsigned int self)
 	wq = __wq_idx(krn, &krn->wq_ready);
 #endif /* THINKOS_ENABLE_JOIN */
 
-	__wq_insert(krn, wq, thread_idx);
+	__krn_wq_insert(krn, wq, thread_no);
 
-#if THINKOS_ENABLE_TIMESHARE
 	/* possibly remove from the time share wait queue */
-	__bit_mem_wr(&krn->wq_tmshare, thread_idx, 0); 
-#endif
-
-#if THINKOS_ENABLE_CLOCK
-	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&krn->wq_clock, thread_idx, 0);  
-#endif
+	__thread_tmshare_clr(krn, thread_no);
 
 	DCC_LOG3(LOG_TRACE, "<%d> cancel %d, with code %d!", 
-			 self + 1, thread_idx + 1, code); 
+			 self, thread_no, code); 
 
 	pc = (uint32_t)__thinkos_thread_terminate_stub;
-	__thread_pc_set(krn, thread_idx, pc);
-	__thread_r0_set(krn, thread_idx, code);
+	__thread_pc_set(krn, thread_no, pc);
+	__thread_r0_set(krn, thread_no, code);
 	arg[0] = 0;
 }
 #endif

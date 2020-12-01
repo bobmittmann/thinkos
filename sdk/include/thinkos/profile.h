@@ -152,11 +152,6 @@
 #define THINKOS_ENABLE_GATE_ALLOC       (THINKOS_ENABLE_OBJ_ALLOC)
 #endif
 
-/* THINKOS_ENABLE_CLOCK: Enable the support for system timer */
-#ifndef THINKOS_ENABLE_CLOCK
-#define THINKOS_ENABLE_CLOCK            0
-#endif
-
 #ifndef THINKOS_ENABLE_TIMED_CALLS
 #define THINKOS_ENABLE_TIMED_CALLS      0
 #endif
@@ -554,12 +549,12 @@
 /* THINKOS_ENABLE_UDELAY_CALIBRATE - Enable kernel to calibrate 
    the delay loop */
 #ifndef THINKOS_ENABLE_UDELAY_CALIBRATE
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
 #endif
 
-/* THINKOS_ENABLE_RUNMASK - Enable runmask bitmap... */
-#ifndef THINKOS_ENABLE_RUNMASK              
-#define THINKOS_ENABLE_RUNMASK              0
+/* THINKOS_ENABLE_READY_MASK - Enable runmask bitmap... */
+#ifndef THINKOS_ENABLE_READY_MASK              
+#define THINKOS_ENABLE_READY_MASK           0
 #endif
 
 /* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
@@ -567,6 +562,12 @@
 #define THINKOS_ENABLE_DATE_AND_TIME        0
 #endif
 
+/* Enable kernel support for real time trace. The kernel hold the trace
+   ring in a protected memory and mediate its access by the application 
+   and debug monitor services. */
+#ifndef THINKOS_ENABLE_TRACE    
+#define THINKOS_ENABLE_TRACE                0 
+#endif
 
 /* -------------------------------------------------------------------------- 
  * Dependency check
@@ -625,15 +626,6 @@
 #error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_IRQ_CTL"
 #endif
 
-/* timed calls depends on clock */
-#if (THINKOS_ENABLE_TIMED_CALLS) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_TIMED_CALLS depends on THINKOS_ENABLE_CLOCK"
-#endif
-
-#if (THINKOS_ENABLE_ALARM) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_ALARM depends on THINKOS_ENABLE_CLOCK"
-#endif
-
 #if (THINKOS_ENABLE_HARDFAULT) && !(THINKOS_ENABLE_EXCEPTIONS)
 #error "THINKOS_ENABLE_HARDFAULT depends on THINKOS_ENABLE_EXCEPTIONS"
 #endif
@@ -686,11 +678,6 @@
 #error "THINKOS_ENABLE_MONITOR depends on THINKOS_ENABLE_IDLE_HOOKS"
 #endif
 
-/* monitor clock depends on monitor and clock */
-#if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_CLOCK"
-#endif
-
 #if (THINKOS_ENABLE_MONITOR_CLOCK) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_CLOCK depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -728,10 +715,6 @@
 
 #if (THINKOS_ENABLE_TIMESHARE) && !(THINKOS_ENABLE_PREEMPTION)
 #error "THINKOS_ENABLE_TIMESHARE depends on THINKOS_ENABLE_PREEMPTION"
-#endif
-
-#if (THINKOS_ENABLE_TIMESHARE) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_TIMESHARE depends on THINKOS_ENABLE_CLOCK"
 #endif
 
 #if (THINKOS_ENABLE_EXIT) && !(THINKOS_ENABLE_TERMINATE)
@@ -778,11 +761,6 @@
 #if (THINKOS_ENABLE_CONSOLE_MODE) && !(THINKOS_ENABLE_CONSOLE)
 #error "THINKOS_ENABLE_CONSOLE_MODE depends on THINKOS_ENABLE_CONSOLE"
 #endif
-
-#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_CLOCK)
-#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_CLOCK"
-#endif
-
 
 /* -------------------------------------------------------------------------- 
  * Deprecated options
@@ -841,7 +819,12 @@
 #endif
 
 #ifdef THINKOS_ENABLE_RESET_RAM_VECTORS
-#error "THINKOS_ENABLE_RESET_RAM_VECTORS iis deprecated"
+#error "THINKOS_ENABLE_RESET_RAM_VECTORS is deprecated"
+#endif
+
+/* THINKOS_ENABLE_CLOCK: Enable the support for system timer */
+#ifdef THINKOS_ENABLE_CLOCK
+#error "THINKOS_ENABLE_CLOCK is deprecated"
 #endif
 
 
@@ -849,17 +832,11 @@
  * Wait queues sizes
  * --------------------------------------------------------------------------*/
 
-#if (THINKOS_ENABLE_TIMESHARE)
-  #define THINKOS_WQ_TMSHARE_CNT 1
-#else
-  #define THINKOS_WQ_TMSHARE_CNT 0 
-#endif
+#define THINKOS_WQ_READY_CNT 1
 
-#if (THINKOS_ENABLE_CLOCK)
-  #define THINKOS_WQ_CLOCK_CNT 1
-#else
-  #define THINKOS_WQ_CLOCK_CNT 0 
-#endif
+#define THINKOS_WQ_THREAD_CNT (THINKOS_THREADS_MAX)
+
+#define THINKOS_WQ_CLOCK_CNT 1
 
 #if ((THINKOS_MUTEX_MAX) > 0)
   #define THINKOS_WQ_MUTEX_CNT (THINKOS_MUTEX_MAX)
@@ -897,12 +874,6 @@
   #define THINKOS_WQ_GATE_CNT 0 
 #endif
 
-#if (THINKOS_ENABLE_JOIN)
-  #define THINKOS_WQ_JOIN_CNT (THINKOS_THREADS_MAX)
-#else
-  #define THINKOS_WQ_JOIN_CNT 0 
-#endif
-
 #if (THINKOS_ENABLE_CONSOLE)
   #define THINKOS_WQ_CONSOLE_CNT 2
 #else
@@ -919,6 +890,12 @@
   #define THINKOS_WQ_CANCELED_CNT 1
 #else
   #define THINKOS_WQ_CANCELED_CNT 0 
+#endif
+
+#if (THINKOS_ENABLE_TIMESHARE)
+  #define THINKOS_WQ_TMSHARE_CNT 1
+#else
+  #define THINKOS_WQ_TMSHARE_CNT 0 
 #endif
 
 #if (THINKOS_ENABLE_COMM)
@@ -951,8 +928,8 @@
   #define THINKOS_WQ_FAULT_CNT 0 
 #endif
 
-#define THINKOS_WQ_CNT (1 + \
-  THINKOS_WQ_TMSHARE_CNT + \
+#define THINKOS_WQ_CNT (THINKOS_WQ_READY_CNT + \
+  THINKOS_WQ_THREAD_CNT + \
   THINKOS_WQ_CLOCK_CNT + \
   THINKOS_WQ_MUTEX_CNT + \
   THINKOS_WQ_COND_CNT + \
@@ -960,15 +937,16 @@
   THINKOS_WQ_EVENT_CNT + \
   THINKOS_WQ_FLAG_CNT + \
   THINKOS_WQ_GATE_CNT + \
-  THINKOS_WQ_JOIN_CNT + \
   THINKOS_WQ_CONSOLE_CNT + \
   THINKOS_WQ_PAUSED_CNT + \
   THINKOS_WQ_CANCELED_CNT + \
+  THINKOS_WQ_TMSHARE_CNT + \
   THINKOS_WQ_COMM_CNT + \
   THINKOS_WQ_IRQ_CNT + \
   THINKOS_WQ_DMA_CNT + \
   THINKOS_WQ_FLASH_MEM_CNT + \
   THINKOS_WQ_FAULT_CNT)
+
 
 /* -------------------------------------------------------------------------- 
  * FIXME: ??? Not sure what is the intent here ????

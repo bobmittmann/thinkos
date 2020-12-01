@@ -53,15 +53,10 @@ cm3_svc_isr:
 	   other threads use the PSP. No exception is allowed to call
 	   SVC */
 	ldr      r3, .L_thinkos_rt
-	ldr      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	/* get the effective thread id */
-	ands     r1, #0x3f
-	/* TODO: check the stack limit */
-#endif
+	ldrb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	ldr      r2, [r3, #THINKOS_RT_STEP_SVC_OFFS]
+	ldr      r2, [r3, #OFFSETOF_KRN_STEP_SVC]
 	adds     r3, r1, #1
 	lsrs     r2, r3
 	bcc      1f

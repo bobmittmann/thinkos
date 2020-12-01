@@ -21,40 +21,10 @@
 
 #include "thinkos_krn-i.h"
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-int __thinkos_thread_fault_code(unsigned int thread_idx)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-	unsigned int insn;
-	uint16_t * pc;
-	int code;
-
-	if (!__thinkos_thread_isfaulty(thread_idx))
-		return 0;
-
-	if (__xcpt_active_get(xcpt) == (int)thread_idx)
-		return xcpt->errno;
-
-	pc = (uint16_t *)__thinkos_thread_pc_get(thread_idx);
-	insn = pc[0];
-	code = insn & 0x00ff;
-
-	return code - THINKOS_BKPT_EXCEPT_OFF;
-}
-
-struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_idx)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-
-	if (__xcpt_active_get(xcpt) == (int)thread_idx)
-		return &xcpt->ctx.core;
-
-	return __thinkos_thread_ctx_get(thread_idx);
-}
-#endif
+#include <sys/dcclog.h>
 
 int thinkos_krn_thread_init(struct thinkos_rt * krn,
-							unsigned int thread_idx,
+							unsigned int thread_no,
 							struct thinkos_thread_initializer * init)
 {
 	const struct thinkos_thread_inf * inf = init->inf;
@@ -134,22 +104,22 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 #endif
 
 #if (THINKOS_NRT_THREADS_MAX > 0)
-	if (thread_idx >= (THINKOS_THREADS_MAX)) {
+	if (thread_no >= (THINKOS_THREADS_MAX)) {
 		/* TODO: implement NRT */
 		return THINKOS_ERR_NOT_IMPLEMENTED;
 	}
 #endif
 
-	ctx = __thinkos_thread_ctx_init(thread_idx, stack_top, stack_size,
+	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,
 									task_entry, task_exit, task_arg);
 
-	__thread_fault_clr(krn, thread_idx);
+	__thread_fault_clr(krn, thread_no);
 
-	__thread_sl_set(krn, thread_idx, stack_base);
+	__thread_sl_set(krn, thread_no, stack_base);
 
-	__thread_priority_set(krn, thread_idx, priority);
+	__thread_priority_set(krn, thread_no, priority);
 
-	__thread_inf_set(krn, thread_idx, inf);
+	__thread_inf_set(krn, thread_no, inf);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	/* Set the thread privilege */
@@ -158,15 +128,18 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
 #endif
 	/* commit the context to the kernel */ 
-	DCC_LOG3(LOG_TRACE, "<%d> ctx=%08x ctrl=%d", thread_idx + 1, ctx, ctrl);
-	__thread_ctx_set(krn, thread_idx, ctx, ctrl);
+	DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x", 
+			 thread_no, ctx, ctrl, ctx->pc);
+	__thread_ctx_set(krn, thread_no, ctx, ctrl);
+
+	__thread_enable(krn, thread_no);
 
 	if (paused) {
-		DCC_LOG1(LOG_TRACE, "<%d> thread paused...", thread_idx + 1);
-		__thread_pause_set(krn, thread_idx);
+		DCC_LOG1(LOG_TRACE, "<%d> thread paused...", thread_no);
+		__thread_pause_set(krn, thread_no);
 	} else {
-		DCC_LOG1(LOG_TRACE, "<%d> thread ready...", thread_idx + 1);
-		__thread_wq_ready_insert(krn, thread_idx);
+		DCC_LOG1(LOG_TRACE, "<%d> thread ready...", thread_no);
+		__thread_ready_set(krn, thread_no);
 		__thinkos_defer_sched();
 	}
 
@@ -178,7 +151,6 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_thread_initializer * init;
-	unsigned int thread_idx;
 	unsigned int thread_no;
 	int ret;
 
@@ -186,10 +158,8 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	thread_no = arg[0];
 	init = (struct thinkos_thread_initializer *)arg[1];
 
-	thread_idx = thread_no - 1;
-
 #if THINKOS_ENABLE_ARG_CHECK
-	if (thread_idx >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
+	if (thread_no > ((THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX))) {
 		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_no);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
@@ -197,7 +167,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	}
 
 #if THINKOS_ENABLE_THREAD_ALLOC
-	if (!__thread_is_alloc(krn, thread_idx)) {
+	if (!__thread_is_alloc(krn, thread_no)) {
 		DCC_LOG1(LOG_ERROR, "thread alloc %d!", thread_no);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		arg[0] = THINKOS_EINVAL;
@@ -207,17 +177,18 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
-	if (__thread_ctx_is_valid(krn, thread_idx)) {
+	if (__thread_ctx_is_valid(krn, thread_no)) {
 		DCC_LOG2(LOG_ERROR, "thread %d already exists, ctx=%08x", 
-				 thread_no, __thread_ctx_get(krn, thread_idx));
+				 thread_no, __thread_ctx_get(krn, thread_no));
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_EXIST);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	DCC_LOG3(LOG_TRACE, "<%2d> thread=%d init=0x%08x", self, thread_no, init);
-	if ((ret = thinkos_krn_thread_init(krn, thread_idx, init))) {
+	DCC_LOG3(LOG_TRACE, "<%2d> thread=%d init=0x%08x",
+			 self, thread_no, init);
+	if ((ret = thinkos_krn_thread_init(krn, thread_no, init))) {
 		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -225,9 +196,45 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	arg[0] = thread_idx + 1;
+	arg[0] = thread_no;
 
 	return;
 }
 
+#if (THINKOS_ENABLE_THREAD_FAULT)
+int __thinkos_thread_fault_code(unsigned int thread_no)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_rt * krn = &thinkos_rt;
+	unsigned int insn;
+	uint16_t * pc;
+	int code;
+
+#if 0
+FIXME:
+	if (!__thread_isfaulty(krn, thread_no))
+		return 0;
+#endif
+
+	if (__xcpt_active_get(xcpt) == (int)thread_no)
+		return xcpt->errno;
+
+	pc = (uint16_t *)__thread_pc_get(krn, thread_no);
+	insn = pc[0];
+	code = insn & 0x00ff;
+
+	return code - THINKOS_BKPT_EXCEPT_OFF;
+}
+
+struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if (__xcpt_active_get(xcpt) == (int)thread_no)
+		return &xcpt->ctx.core;
+
+	return __thread_ctx_get(krn, thread_no);
+}
+#endif
 

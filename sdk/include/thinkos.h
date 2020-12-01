@@ -83,7 +83,7 @@ enum thinkos_err {
 /** 
  * enum thinkos_obj_kind - Kernel object class. 
  * @THINKOS_OBJ_READY: Ready queue
- * @THINKOS_OBJ_TMSHARE: time share waiting queue 
+ * @THINKOS_OBJ_JOIN: thread join waiting queue 
  * @THINKOS_OBJ_CLOCK: clock waiting queue 
  * @THINKOS_OBJ_MUTEX: mutex waiting queue 
  * @THINKOS_OBJ_COND: conditional variable waiting queue 
@@ -91,11 +91,11 @@ enum thinkos_err {
  * @THINKOS_OBJ_EVENT: event waiting queue 
  * @THINKOS_OBJ_FLAG: flag waiting queue 
  * @THINKOS_OBJ_GATE: gate waiting queue 
- * @THINKOS_OBJ_JOIN: thread join waiting queue 
  * @THINKOS_OBJ_CONREAD : console read waiting queue 
  * @THINKOS_OBJ_CONWRITE: console write waiting queue 
  * @THINKOS_OBJ_PAUSED: thread paused list 
  * @THINKOS_OBJ_CANCELED: thread canceled list 
+ * @THINKOS_OBJ_TMSHARE: time share waiting queue 
  * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
  * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
@@ -107,7 +107,7 @@ enum thinkos_err {
 
 enum thinkos_obj_kind {
 	THINKOS_OBJ_READY     = 0,
-	THINKOS_OBJ_TMSHARE   = 1,
+	THINKOS_OBJ_THREAD    = 1,
 	THINKOS_OBJ_CLOCK     = 2,
 	THINKOS_OBJ_MUTEX     = 3,
 	THINKOS_OBJ_COND      = 4,
@@ -115,17 +115,17 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_EVENT     = 6,
 	THINKOS_OBJ_FLAG      = 7,
 	THINKOS_OBJ_GATE      = 8,
-	THINKOS_OBJ_JOIN      = 9,
 	THINKOS_OBJ_CONREAD   = 10,
 	THINKOS_OBJ_CONWRITE  = 11,
 	THINKOS_OBJ_PAUSED    = 12,
 	THINKOS_OBJ_CANCELED  = 13,
-	THINKOS_OBJ_COMMSEND  = 14,
-	THINKOS_OBJ_COMMRECV  = 15,
-	THINKOS_OBJ_IRQ       = 16,
-	THINKOS_OBJ_DMA       = 17,
-	THINKOS_OBJ_FLASH_MEM = 18,
-	THINKOS_OBJ_FAULT     = 19,
+	THINKOS_OBJ_TMSHARE   = 14,
+	THINKOS_OBJ_COMMSEND  = 15,
+	THINKOS_OBJ_COMMRECV  = 16,
+	THINKOS_OBJ_IRQ       = 17,
+	THINKOS_OBJ_DMA       = 18,
+	THINKOS_OBJ_FLASH_MEM = 19,
+	THINKOS_OBJ_FAULT     = 20,
 	THINKOS_OBJ_INVALID
 };
 
@@ -226,22 +226,21 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int id);
 #define BALIGN(__X, __B) (((__X) + (1 << (__N)) - 1) & (0xffffffff << (__N)))
 
 /* ThinkOS Thread Stack Declaration cast macro */
-#define THINKOS_ALIGNED_STACK(__SYM, __LEN, __N) \
-	uint32_t __SYM[ALIGN(__LEN, __N) / 4] \
-	__attribute_ ((aligned(__N)))
-
-#define THINKOS_SECTION_STACK(__SYM, __LEN, __SEC) \
+#define THINKOS_DEFINE_SECTION_STACK(__SYM, __LEN, __SEC) \
 	uint32_t __SYM[ALIGN(__LEN, 64) / 4] \
-	__attribute_ ((aligned(64), section(__SEC)))
+	__attribute__ ((aligned(64), section(__SEC)))
+
+#define THINKOS_DEFINE_STACK(__SYM, __LEN) \
+	uint32_t __SYM[ALIGN(__LEN, 64) / 4] __attribute__ ((aligned(64)))
 
 /*
  * usage:
  *
  * Declare 1024 bytes of stack in the ccm region.
- * THINKOS_THREAD_STACK(my_stack, 1024, "ccm");
+ * THINKOS_DEFINE_SECTION_STACK(my_stack, 1024, "ccm");
  *
- * thinkos_thread_create(TT_TASK(my_task), TT_ARG(my_arg), 
- *                       TT_STACK(my_stak), sizeof(my_stack));
+ * thinkos_thread_create(C_TASK(my_task), C_ARG(my_arg), 
+ *                       my_stak, sizeof(my_stack));
  *    
  *
  */

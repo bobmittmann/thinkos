@@ -738,7 +738,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_Y:
 		monitor_printf(comm, "^Y\r\nUpload application [y]? ");
 		if (monitor_getc(comm) == 'y') {
-			monitor_printf(comm, "\r\nYMODEM receive (Ctrl+X to cancel)... ");
 			/* Request app upload */
 			monitor_req_app_upload();
 		} else {
@@ -782,7 +781,7 @@ void __attribute__((noreturn))
 boot_monitor_task(const struct monitor_comm * comm, void * arg)
 {
 #if (MONITOR_OSINFO_ENABLE)
-	uint32_t cycref[THINKOS_THREAD_CNT];
+	uint32_t cycref[THINKOS_THREAD_LAST + 1];
 #endif
 	const struct thinkos_board * board;
 	struct monitor monitor;
@@ -893,8 +892,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
 			if (monitor_flash_ymodem_recv(comm, "APP") >= 0) {
 				monitor_printf(comm, "\r\nOk.\r\n");
-				/* Request app exec */
-				monitor_req_app_exec(); 
 			} else {
 				monitor_printf(comm, "\r\nfailed!\r\n");
 			}
@@ -907,25 +904,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-		//	monitor_printf(comm, "Starting application @ 0x%08x\r\n",
-		//				  (uint32_t)board->application.start_addr);
-
-
-			if (!monitor_app_exec(comm, &board->application)) {
-				monitor_printf(comm, "Can't run application!\r\n");
-				/* XXX: this event handler could be optionally compiled
-				   to save some resources. As a matter of fact I don't think
-				   they are useful at all */
-				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_create(C_TASK(board->default_task), 
-										 C_ARG(NULL));
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
-			}
-			DCC_LOG(LOG_TRACE, "APP_EXEC done");
+			monitor_app_exec(comm, &board->application);
 			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
@@ -1126,6 +1105,4 @@ is_connected:
 		}
 	}
 }
-
-
 

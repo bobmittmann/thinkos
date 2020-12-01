@@ -25,6 +25,8 @@
 #define __THINKOS_APP__
 #include <thinkos/app.h>
 
+#include <sys/dcclog.h>
+
 #if (THINKOS_ENABLE_APP)
 
 #pragma GCC diagnostic push
@@ -197,12 +199,18 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 
 	stack_top = app->stack;
 	stack_size = app->stksz;
-	stack_base = stack_top - stack_size;
+
 #if (DEBUG)
-	if ((stack_top > (uintptr_t)&__krn_stack_start) &&
-		(stack_base < (uintptr_t)&__krn_stack_end)) {
+	/* Prevent the application stack to overlap with the DCC buffer
+	   at the stack top */
+	DCC_LOG2(LOG_TRACE, "krn stack: 0x%08x - 0x%08x", 
+	 (uintptr_t)&__krn_stack_start,
+	 (uintptr_t)&__krn_stack_end);
+
+	if (stack_top > (uintptr_t)&__krn_stack_end) {
 		intptr_t diff;
-		diff = stack_top - (uintptr_t)&__krn_stack_start;
+
+		diff = stack_top - (uintptr_t)&__krn_stack_end;
 		
 		DCC_LOG1(LOG_WARNING, "stack collision, moving by %d!", diff);
 		/* Stack colision */
@@ -210,6 +218,15 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 		stack_size -= diff;
 	}
 #endif
+
+	/* ensure page alignment */
+	stack_size &= ~(STACK_ALIGN_MSK);
+	stack_top &= ~(STACK_ALIGN_MSK);
+	stack_base = stack_top - stack_size;  
+	
+	DCC_LOG2(LOG_TRACE, "app stack: 0x%08x - 0x%08x", 
+	 (uintptr_t)stack_base, (uintptr_t)stack_top);
+
 	task_entry = app->entry;
 	task_exit = app->entry;
 
@@ -244,7 +261,7 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 	thread_idx = self;
 
 	if (thread_idx >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
-		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self + 1, 
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self, 
 				 thread_idx + 1);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
@@ -253,7 +270,7 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 
 	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr))) {
 		DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
-				 self + 1, ret);
+				 self, ret);
 		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -263,11 +280,11 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 		if (__thread_active_get(krn) != self) {
 			DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
-				 self + 1, ret);
+				 self, ret);
 		}
 #endif
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thinkos_defer_sched();
+		__krn_sched_discard_active(krn);
+		__krn_defer_sched(krn);
 	}
 
 	/* Internal thread ids start form 0 whereas user

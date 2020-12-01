@@ -63,10 +63,10 @@ void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
 
 	mdelay(500);
 
-	__tdump();
+	__tdump(krn);
 
 	/* kill all threads */
-	thinkos_krn_core_reset(krn);
+	__thinkos_krn_core_reset(krn);
 
 	/* Enable Interrupts */
 	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
@@ -81,10 +81,13 @@ void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
 }
 
 void thinkos_krn_thread_except(struct thinkos_except * xcpt, 
-							   uint32_t errno, uint32_t thread_id)
+							   uint32_t errno, uint32_t thread_idx)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
-			 " Thread fault %d, thread %d " VT_POP, errno, thread_id + 1);
+			 " Thread fault %d, thread %d " VT_POP, 
+			 errno, thread_idx);
 
 	mdelay(250);
 
@@ -94,16 +97,32 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
 
 	mdelay(250);
 
-	__tdump();
-
-//	__thinkos_pause_all();
-
-	/* Enable Interrupts */
-	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
-	cm3_cpsie_i();
+	__tdump(krn);
 
 	/* signal the monitor */
 	monitor_signal_break(MONITOR_THREAD_FAULT);
+
+#if (THINKOS_ENABLE_MONITOR) 
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
+			__thread_tag_get(krn, thread_idx));
+
+	__nvic_irq_disable_all();
+
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#else
+	__krn_suspend_all(krn);
+#endif
+
+	__thread_fault_raise(krn, thread_idx, errno);
+
+	/* Enable Interrupts */
+	cm3_cpsie_i();
+
+	monitor_signal_break(MONITOR_THREAD_FAULT);
+#else
+	__krn_suspend_all(krn);
+#endif
 }
 
 

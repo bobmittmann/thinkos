@@ -191,7 +191,7 @@ void __xdump(struct thinkos_except * xcpt);
 
 void __idump(const char * s, uint32_t ipsr);
 
-void __tdump(void);
+void __tdump(struct thinkos_rt * krn);
 
 void __mpudump(void);
 

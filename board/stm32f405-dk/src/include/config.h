@@ -40,13 +40,10 @@
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT    1
 #define THINKOS_ENABLE_WQ_IRQ           1
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             32
 
@@ -125,6 +122,7 @@
 #define THINKOS_ENABLE_CONSOLE_MODE     1
 #define THINKOS_CONSOLE_RX_FIFO_LEN     512
 #define THINKOS_CONSOLE_TX_FIFO_LEN     2048
+#define THINKOS_ENABLE_CONSOLE_RAW          0 
 
 #define THINKOS_EXCEPT_STACK_SIZE           1024
 #define THINKOS_ENABLE_KRNSVC               1
@@ -140,8 +138,8 @@
 #else
   #define THINKOS_SYSRST_ONFAULT            1
 #endif
-#define THINKOS_ENABLE_DEBUG_BKPT           1
-#define THINKOS_ENABLE_DEBUG_WPT            1
+#define THINKOS_ENABLE_DEBUG_BKPT           0
+#define THINKOS_ENABLE_DEBUG_WPT            0
 #define THINKOS_ENABLE_DEBUG_STEP           0
 
 #define THINKOS_ENABLE_MPU                  1
@@ -169,7 +167,7 @@
 #define THINKOS_ENABLE_STACK_INIT           1
 #define THINKOS_ENABLE_MEMORY_CLEAR         1
 #define THINKOS_FLASH_MEM_MAX               1
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
 
 #define THINKOS_ENABLE_OFAST                1
 #define THINKOS_ENABLE_PRIVILEGED_THREAD    1
@@ -182,6 +180,7 @@
 
 #define THINKOS_ENABLE_DATE_AND_TIME        1
 #define THINKOS_CUSTOM_APP_TAG              "S32F405"
+#define THINKOS_ENABLE_READY_MASK           1
 
 /* -------------------------------------------------------------------------
    RCC 

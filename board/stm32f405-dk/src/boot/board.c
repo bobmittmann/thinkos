@@ -293,12 +293,14 @@ bool board_integrity_check(void)
 {
 	uint32_t tick;
 
+
 	/* Time window autoboot */
-	for (tick = 0; tick < 2*PREBOOT_TIME_SEC; ++tick) {
+	for (tick = 0; tick < PREBOOT_TIME_SEC; ++tick) {
 		uint64_t time;
 
 		thinkos_sleep(500);
-	//	thinkos_alarm(50000 + tick * 500);
+//		mdelay(250);
+//		thinkos_alarm(2000 + tick * 500);
 
 		__puts(".");
 
@@ -316,7 +318,6 @@ bool board_integrity_check(void)
 			stm32_gpio_set(IO_LED2);
 			break;
 		}
-
 
 		time = thinkos_time_realtime_get();
 		(void)time;
@@ -520,4 +521,5 @@ const struct thinkos_board this_board = {
 	.monitor_comm_init = board_comm_init,
 	.memory = &mem_map
 };
+
 

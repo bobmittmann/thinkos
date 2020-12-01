@@ -36,12 +36,11 @@ BOOT_CFILES = monitor.c standby.c
 CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c boot.c
 
 LIBDIRS = $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-dbg $(ARCH_DIR)/libstm32f \
+		  $(ARCH_DIR)/libstm32f \
 		  $(SDK_DIR)/libthinkos-mon $(SDK_DIR)/libxmodem \
-		  $(SDK_DIR)/libgdbrsp $(SDK_DIR)/libice-comm 
+		  $(SDK_DIR)/libice-comm 
 
-LIBS = stm32f util thinkos-krn thinkos-mon thinkos-dbg gcc gdbrsp xmodem \
-	   ice-comm 
+LIBS = stm32f util thinkos-krn thinkos-mon xmodem ice-comm 
 
 INCPATH = ../include
 

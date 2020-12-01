@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -90,7 +91,7 @@ again:
 #endif
 	/* insert into the flag wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self - 1));
 	/* The flag may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if (((volatile uint32_t)*flags_bmp & (1 << idx)) ||
@@ -98,7 +99,7 @@ again:
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, self - 1, 1);  
 		goto again;
 	}
 
@@ -171,7 +172,7 @@ again:
 #endif
 	/* insert into the flag wait queue */
 	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-	queue |= (1 << self);
+	queue |= (1 << (self - 1));
 	/* The flag may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if (((volatile uint32_t)*flags_bmp & (1 << idx)) ||
@@ -179,7 +180,7 @@ again:
 		/* roll back */
 		__thinkos_thread_stat_clr(self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
+		__bit_mem_wr(&thinkos_rt.wq_ready, self - 1, 1);  
 		goto again;
 	}
 
@@ -188,7 +189,7 @@ again:
 	/* set the clock */
 	__thread_clk_itv_set(krn, self, ms);
 	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, (self - 1), 1);  
 	/* Set the default return value to timeout. The
 	   flag_give_call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
@@ -203,6 +204,7 @@ void __thinkos_flag_give_i(uint32_t wq)
 	uint32_t * flags_bmp;
 	uint32_t flags;
 	uint32_t queue;
+	int ti;
 	int th;
 
 #if THINKOS_FLAG_MAX < 32
@@ -216,7 +218,7 @@ void __thinkos_flag_give_i(uint32_t wq)
 		/* insert into the event wait queue */
 		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
 		/* get a thread from the queue bitmap */
-		if ((th = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((ti = __thinkos_ffs(queue)) == 32) {
 			/* no threads waiting on the flag, . */ 
 			do {
 				flags = __ldrex(flags_bmp);
@@ -227,14 +229,15 @@ void __thinkos_flag_give_i(uint32_t wq)
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << th);
+		queue &= ~(1 << ti);
 	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
+	th = ti - 1;
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
+	__bit_mem_wr(&thinkos_rt.wq_ready, th - 1, 1);
 #if THINKOS_ENABLE_TIMED_CALLS
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+	__bit_mem_wr(&thinkos_rt.wq_clock, th - 1, 0);  
 	/* set the thread's return value */
 	__thinkos_thread_r0_set(th, 0);
 #endif
@@ -378,8 +381,7 @@ void thinkos_flag_set_svc(int32_t * arg, unsigned int self)
 	if ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
 		__thinkos_wakeup(wq, th);
 		/* get the remaining threads from the queue */
-		while ((th = __thinkos_wq_head(wq)) != 
-			   THINKOS_THREAD_NULL) {
+		while ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
 			__thinkos_wakeup(wq, th);
 		}
 		/* signal the scheduler ... */

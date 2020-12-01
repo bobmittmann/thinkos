@@ -40,17 +40,13 @@
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT    1
 #define THINKOS_ENABLE_WQ_IRQ           1
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
-#define THINKOS_ENABLE_SLEEP            1
-#define THINKOS_ENABLE_TERMINATE        1
 
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             32
 
+#define THINKOS_ENABLE_TERMINATE        1
 /* These settings are used when its desireable
    to create and destroy threads dinamically */
 #define THINKOS_ENABLE_JOIN             1

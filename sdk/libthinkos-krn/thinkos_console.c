@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -338,8 +339,9 @@ static int __console_wr_break(void)
 
 void thinkos_console_tx_pipe_commit(int cnt) 
 {
-	uint32_t tail;
+	struct thinkos_rt * krn = &thinkos_rt;
 	int wq = THINKOS_WQ_CONSOLE_WR;
+	uint32_t tail;
 	int th;
 
 #if (THINKOS_ENABLE_SANITY_CHECK)	
@@ -356,7 +358,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 		console_clear_tx_pipe();
 	}
 
-	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
 		DCC_LOG(LOG_INFO, "no thread waiting.");
 		return;
 	}
@@ -368,9 +370,9 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	   from an interrupt handler), let the thread to
 	   wake up and retry. */
 	/* wakeup from the console wait queue */
-	__thinkos_wakeup(wq, th);
+	__krn_wq_wakeup(krn, wq, th);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn); 
 }
 
 int thinkos_console_rx_pipe_ptr(uint8_t ** ptr) 
@@ -397,6 +399,7 @@ int thinkos_console_rx_pipe_ptr(uint8_t ** ptr)
 
 void thinkos_console_rx_pipe_commit(int cnt) 
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	int wq = THINKOS_WQ_CONSOLE_RD;
 	uint32_t head;
 	int th;
@@ -415,9 +418,9 @@ void thinkos_console_rx_pipe_commit(int cnt)
 		console_clear_rx_pipe();
 	}
 
-	DCC_LOG2(LOG_INFO, "wq=%d -> 0x%08x", wq, thinkos_rt.wq_lst[wq]);
+	DCC_LOG2(LOG_INFO, "wq=%d -> 0x%08x", wq, &krn->wq_lst[wq]);
 
-	if ((th = __thinkos_wq_head(wq)) == THINKOS_THREAD_NULL) {
+	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
 		DCC_LOG(LOG_INFO, "no thread waiting.");
 		return;
 	}
@@ -426,38 +429,43 @@ void thinkos_console_rx_pipe_commit(int cnt)
 	/* wakeup from the console read wait queue setting the return 
 	   value to 0.
 	   The calling thread should retry the operation. */
-	__thinkos_wakeup_return(wq, th, 0);
+	__wq_wakeup_return(krn, wq, th, 0);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn); 
 }
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
 void thinkos_console_rd_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thinkos_thread_pc_get(th)); 
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
 	/* wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
-	__thinkos_wakeup_return(wq, th, 0);
+	__wq_wakeup_return(krn, wq, th, 0);
 }
 
 void thinkos_console_wr_resume(unsigned int th, unsigned int wq, bool tmw) 
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	if (!tx_pipe_isempty()) {
 		DCC_LOG1(LOG_INFO, "PC=%08x pipe full ..",  
-				 __thinkos_thread_pc_get(th)); 
+				 __thread_pc_get(krn, th)); 
 		console_signal_tx_pipe();
 	} else {
 		DCC_LOG1(LOG_INFO, "PC=%08x ...........",
-				 __thinkos_thread_pc_get(th)); 
+				 __thread_pc_get(krn, th)); 
 	}
 	/* wakeup from the console write wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
-	__thinkos_wakeup_return(wq, th, 0);
+	__wq_wakeup_return(krn, wq, th, 0);
 }
 #endif
 
 void thinkos_console_svc(int32_t * arg, unsigned int self)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int req = arg[0];
 	unsigned int wq;
 	unsigned int len;
@@ -472,6 +480,11 @@ void thinkos_console_svc(int32_t * arg, unsigned int self)
 	}
 #endif
 
+	/* (2) Save the context pointer. In case an interrupt wakes up
+	   this thread before the scheduler is called, this will allow
+	   the interrupt handler to locate the return value (r0) address. */
+	__thread_ctx_flush(krn, arg, self);
+	
 	switch (req) {
 
 #if (THINKOS_ENABLE_CONSOLE_OPEN)
@@ -543,30 +556,27 @@ drain_again:
 			   ready wait queue. The __thinkos_suspend() call cannot be nested
 			   inside a LDREX/STREX pair as it may use the exclusive access 
 			   itself, in case we have enabled the time sharing option. */
-			__thinkos_suspend(self);
+			__krn_thread_suspend(krn, self);
 			/* update the thread status in preparation for event wait */
 #if (THINKOS_ENABLE_THREAD_STAT)
-			__thinkos_thread_stat_set(self, wq, 0);
+			__thread_stat_set(krn, self, wq, 0);
 #endif
 			/* (2) Save the context pointer. In case an interrupt wakes up
 			   this thread before the scheduler is called, this will allow
 			   the interrupt handler to locate the return value (r0) address. */
-			__thinkos_thread_ctx_set(self, 
-									 (struct thinkos_context *)&arg[-CTX_R0],
-									 CONTROL_SPSEL | CONTROL_nPRIV);
 
-			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
+			queue = __ldrex(&krn->wq_lst[wq]);
 
 			/* The pipe may have been drained while suspending (1).
 			   If this is the case roll back and restart. */
 			if (tx_pipe_isempty()) {
 				/* roll back */
 #if (THINKOS_ENABLE_THREAD_STAT)
-				__thinkos_thread_stat_clr(self);
+				__thread_stat_clr(krn, self);
 #endif
 				/* insert into the ready wait queue */
-				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 1 %d...", self + 1, wq);
+				__thread_ready_set(krn, self);  
+				DCC_LOG2(LOG_INFO, "<%2d> rollback 1 %d...", self, wq);
 				goto drain_again;
 			}
 			/* Insert into the event wait queue */
@@ -574,22 +584,22 @@ drain_again:
 			/* (3) Try to save back the queue state.
 			   The queue may have changed by an interrupt handler.
 			   If this is the case roll back and restart. */
-			if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
+			if (__strex(&krn->wq_lst[wq], queue)) {
 				/* roll back */
 #if (THINKOS_ENABLE_THREAD_STAT)
-				__thinkos_thread_stat_clr(self);
+				__thread_stat_clr(krn, self);
 #endif
 				/* insert into the ready wait queue */
-				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 2 %d...", self + 1, wq);
+				__thread_ready_set(krn, self);  
+				DCC_LOG2(LOG_INFO, "<%2d> rollback 2 %d...", self, wq);
 				goto drain_again;
 			}
 
 			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", 
-					 self + 1, wq);
+			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", 
+					 self, wq);
 			/* signal the scheduler ... */
-			__thinkos_defer_sched(); 
+			__krn_defer_sched(krn); 
 		}
 #else
 		arg[0] = 0;
@@ -607,7 +617,8 @@ drain_again:
 			tmo = arg[3];
 
 			if ((n = rx_pipe_read(buf, len)) > 0) {
-				DCC_LOG1(LOG_INFO, "Console timed read: len=%d", len);
+				DCC_LOG2(LOG_INFO, "<%2d> Console timed read: len=%d", 
+						 len, self);
 				console_signal_rx_pipe();
 				arg[0] = n;
 				break;
@@ -618,15 +629,14 @@ drain_again:
 				&& (!thinkos_console_rt.rd_nonblock) 
 #endif
 			   ) {
-				DCC_LOG(LOG_INFO, "Console timed read wait...");
-				/* wait for event */
-				__thinkos_suspend(self);
-				/* insert into the mutex wait queue */
-				__thinkos_tmdwq_insert(THINKOS_WQ_CONSOLE_RD, self, tmo);
+				DCC_LOG1(LOG_INFO, "<%2d> Console timed read wait...", 
+						 self);
 				/* Set the default return value to timeout. */
 				arg[0] = THINKOS_ETIMEDOUT;
+				/* wait for event */
+				__krn_thread_timedwait(krn, self, THINKOS_WQ_CONSOLE_RD, tmo);
 				/* signal the scheduler ... */
-				__thinkos_defer_sched(); 
+				__krn_defer_sched(krn); 
 			} else {
 				/* if timeout is 0 do not block */
 				arg[0] = THINKOS_EAGAIN;
@@ -653,11 +663,9 @@ drain_again:
 		}
 #endif
 		/* wait for event */
-		__thinkos_suspend(self);
-		/* insert into the mutex wait queue */
-		__thinkos_wq_insert(THINKOS_WQ_CONSOLE_RD, self);
+		__krn_thread_wait(krn, self, THINKOS_WQ_CONSOLE_RD);
 		/* signal the scheduler ... */
-		__thinkos_defer_sched(); 
+		__krn_defer_sched(krn); 
 		break;
 #endif
 
@@ -690,23 +698,18 @@ wr_again:
 #if (THINKOS_ENABLE_THREAD_STAT)
 			__thinkos_thread_stat_set(self, wq, 0);
 #endif
-			/* (2) Save the context pointer. In case an interrupt wakes up
-			   this thread before the scheduler is called, this will allow
-			   the interrupt handler to locate the return value (r0) address. */
-			__thinkos_thread_ctx_flush(arg, self);
-
-			queue = __ldrex(&thinkos_rt.wq_lst[wq]);
+			queue = __ldrex(&krn->wq_lst[wq]);
 			
 			/* The pipe may have been flushed while suspending (1).
 			   If this is the case roll back and restart. */
 			if (!tx_pipe_isfull()) {
 				/* roll back */
 #if (THINKOS_ENABLE_THREAD_STAT)
-				__thinkos_thread_stat_clr(self);
+				__thread_stat_clr(krn, self);
 #endif
 				/* insert into the ready wait queue */
-				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 1 %d...", self + 1, wq);
+				__thread_ready_set(krn, self);  
+				DCC_LOG2(LOG_INFO, "<%d> rollback 1 %d...", self, wq);
 				goto wr_again;
 			}
 			/* Insert into the event wait queue */
@@ -714,23 +717,22 @@ wr_again:
 			/* (3) Try to save back the queue state.
 			   The queue may have changed by an interrup handler.
 			   If this is the case roll back and restart. */
-			if (__strex(&thinkos_rt.wq_lst[wq], queue)) {
+			if (__strex(&krn->wq_lst[wq], queue)) {
 				/* roll back */
 #if (THINKOS_ENABLE_THREAD_STAT)
-				__thinkos_thread_stat_clr(self);
+				__thread_stat_clr(krn, self);
 #endif
 				/* insert into the ready wait queue */
-				__bit_mem_wr(&thinkos_rt.wq_ready, self, 1);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 2 %d...", self + 1, wq);
+				__thread_ready_set(krn, self);  
+				DCC_LOG2(LOG_INFO, "<%d> rollback 2 %d...", self, wq);
 				goto wr_again;
 			}
 
 			/* -- wait for event ---------------------------------------- */
 			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", 
-					 self + 1, wq);
+					 self, wq);
 			/* signal the scheduler ... */
-			__thinkos_defer_sched(); 
-
+			__krn_defer_sched(krn); 
 		}
 		break;
 

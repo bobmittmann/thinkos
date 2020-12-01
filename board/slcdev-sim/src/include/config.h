@@ -41,13 +41,10 @@
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
 #define THINKOS_ENABLE_WQ_IRQ           0
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             8
 

@@ -15,8 +15,10 @@ The ThinkOS_ operating system is targeted to ARM_ `Cortex-M` microcontrollers.
    :maxdepth: 2
 
    krn-intro.rst
-   errors_faults.rst
-   flashmem.rst
+   krn-error.rst
+   krn-mem.rst
+   krn-flash.rst
+   krn-sched.rst
 
 ThinkOS_ is hosted at github: https://github.com/bobmittmann/thinkos
 

@@ -19,26 +19,26 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_JOIN) || (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isalive(unsigned int th)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 //	bool dead;
 
 	if (th > THINKOS_THREAD_VOID)
 		return false;
 
-	if (!__thinkos_thread_ctx_is_valid(th))
+	if (!__thread_ctx_is_valid(krn, th))
 		return false;
 #if 0
 	dead = false;
 #if THINKOS_ENABLE_JOIN
-	dead |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);
+	dead |= __thread_canceled_get(krn, th);
 #endif
 #if THINKOS_ENABLE_THREAD_FAULT
-	dead |= __bit_mem_rd(&thinkos_rt.wq_fault, th);
+	dead |= __thread_fault_get(krn, th);
 #endif
 
 	return !dead;

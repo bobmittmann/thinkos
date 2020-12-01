@@ -20,114 +20,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
-#include <sys/delay.h>
+#include "thinkos_mon-i.h"
 
 /* -------------------------------------------------------------------------
  * Fast thread execution
  * ------------------------------------------------------------------------- */
 
-void monitor_thread_destroy(int thread_id)
-{
-	thread_id = (thread_id > 0) ? thread_id - 1 : 0;
-
-	if (!__thinkos_thread_ctx_is_valid(thread_id)) {
-		return;
-	}
-
-	DCC_LOG(LOG_ERROR, "__thinkos_thread_abort()");
-	//__thinkos_thread_abort(thread_id);
-
-	monitor_wait_idle();
-}
-
 void __attribute__((noreturn)) __monitor_thread_exit_stub(int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-	monitor_signal_thread_terminate(0, code);
-#endif
-//	thinkos_abort();
-	for(;;);
-}
-
-extern void * __krn_stack_start;
-extern void * __krn_stack_end;
-extern int __krn_stack_size;
-
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg)
-{
-#if (THINKOS_ENABLE_THREAD_INFO)
-	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
-#endif
-	struct thinkos_rt * krn = &thinkos_rt;
-	struct thinkos_thread_initializer init;
-	unsigned int thread_idx;
-	uintptr_t stack_base;
-	uint32_t stack_size;
-	int ret;
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	thread_idx = (inf->thread_id > 0) ? inf->thread_id - 1 : 0;
-	stack_base = (uintptr_t)inf->stack_ptr;
-	stack_size = inf->stack_size;
+#if 1
+	thinkos_thread_abort(code);
 #else
-	thread_idx = 0;
-	stack_base = (uintptr_t)&__krn_stack_start;
-	stack_size = (uint32_t)&__krn_stack_size;
+	thinkos_abort();
 #endif
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	/* force allocate the thread block */
-	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
-#endif
-
-	if (stack_base & (STACK_ALIGN_MSK)) {
-		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_base); 
-		return -1;
-	}
-
-	if (stack_size & (STACK_ALIGN_MSK)) {
-		DCC_LOG1(LOG_TRACE, "stack_Size=%08x unaligned", stack_size); 
-		stack_size &= ~(STACK_ALIGN_MSK);
-	}
-
-	init.stack_base = stack_base;
-	init.stack_size = stack_size;
-	init.task_entry = (uintptr_t)func;
-	init.task_exit = (uintptr_t)__monitor_thread_exit_stub;
-	init.task_arg[0] = (uintptr_t)arg;
-	init.task_arg[1] = 0;
-	init.task_arg[2] = 0;
-	init.task_arg[3] = 0;
-	init.priority = 0;
-	init.paused = false;
-	init.privileged = true;
-#if (THINKOS_ENABLE_THREAD_INFO)
-	init.inf = inf;
-#endif
-
-	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
-//		__THINKOS_ERROR(THINKOS_THREAD_IDLE, ret);
-//		thread_idx = ret;
-		return -ret;
-	};
-
-	DCC_LOG1(LOG_WARNING, "thread=%d", thread_idx + 1);
-
-	return thread_idx;
 }
-
-void monitor_thread_resume(int thread_id)
-{
-	if (__thinkos_thread_resume(thread_id))
-		__thinkos_defer_sched();
-} 
 
 /*
    Exec a thread and wait for termination
@@ -140,7 +47,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	int ret;
 	int sig;
 
-	if ((ret = monitor_thread_create(task, arg))  < 0)
+	if ((ret = thinkos_dbg_thread_create(task, arg, true))  < 0)
 		return ret;
 
 	thread_id = ret;
@@ -197,4 +104,10 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 		}
 	}
 }
+
+void monitor_thread_resume(int thread_id)
+{
+	if (__thinkos_thread_resume(thread_id))
+		__thinkos_defer_sched();
+} 
 

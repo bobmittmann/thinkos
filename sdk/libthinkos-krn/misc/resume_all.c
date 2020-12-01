@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 void __krn_resume_all(struct thinkos_rt * krn)
 {

@@ -20,14 +20,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
-#include <thinkos.h>
-#include <stdbool.h>
-#include <sys/param.h>
-#include <sys/delay.h>
-
+#include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
@@ -168,13 +161,15 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 	off = req->offset;
 	size = req->size;
 
+	DCC_LOG2(LOG_TRACE, "off=0x%08x size=%d", off, size);
+
 	if (off > drv->partition.size) {
 		DCC_LOG2(LOG_ERROR, "read off=%d > part.size=%d", 
 				 off, drv->partition.size);
 		return -THINKOS_EINVAL;
 	}
 
-	if (off + size > drv->partition.size)
+	if ((off + size) > drv->partition.size)
 		size = drv->partition.size - off;
 
 	off += drv->partition.offset;
@@ -190,7 +185,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			ret = flash_dev_read(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_WRITE:
-			DCC_LOG2(LOG_TRACE, "write off=0x%08x rem=%d", off, rem);
+			DCC_LOG2(LOG_INFO, "write off=0x%08x rem=%d", off, rem);
 			ret = flash_dev_write(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_ERASE:
@@ -211,6 +206,11 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 		}
 
 		if (ret < 0) {
+			break;
+		}
+
+		if (ret > rem) {
+			ret = rem; 
 			break;
 		}
 
@@ -262,6 +262,8 @@ void thinkos_flash_drv_tasklet(unsigned int idx, struct thinkos_flash_drv * drv)
 
 		req = (struct flash_op_req *)__thinkos_thread_frame_get(th);
 
+		DCC_LOG1(LOG_TRACE, "[req]=0x%08x", req);
+
 		ret = thinkos_flash_drv_req(drv, req);
 
 		/* wakeup from the flash wait queue */
@@ -286,7 +288,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	req = (struct flash_op_req *)arg;
 	opc = req->opc;
 	
-	DCC_LOG2(LOG_TRACE, "<%d> opc=%d", self + 1, opc);
+	DCC_LOG2(LOG_TRACE, "<%d> opc=%d", self, opc);
 
 	if (opc == THINKOS_FLASH_MEM_OPEN) {
 
@@ -364,6 +366,10 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 
 	DCC_LOG2(LOG_TRACE, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
 	DCC_LOG2(LOG_TRACE, "flash_drv: wq=%d idx=%d", wq, idx);
+
+	DCC_LOG1(LOG_TRACE, "flash_drv: [req]=0x%08x", req);
+	DCC_LOG2(LOG_TRACE, "flash_drv: off=0x%08x size=%d", 
+			 req->offset, req->size);
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* schedule the IDLE hook ... */

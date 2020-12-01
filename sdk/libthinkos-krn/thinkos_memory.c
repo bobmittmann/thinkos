@@ -18,12 +18,13 @@
  */
 
 /** 
- * @file gdb-rsp.c
- * @brief YARD-ICE
+ * @file thinkos_memory.c
+ * @brief ThinkOS
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 extern void * __krn_data_start;
 extern void * __krn_data_end;

@@ -20,11 +20,12 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 void __thinkos_krn_thread_abort(struct thinkos_rt * krn, 
 								unsigned int thread_idx)
 {
-	DCC_LOG1(LOG_TRACE, "(thread=%d)", thread_idx + 1); 
+	DCC_LOG1(LOG_TRACE, "(thread=%d)", thread_idx); 
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	{
@@ -51,7 +52,7 @@ void __thinkos_krn_thread_abort(struct thinkos_rt * krn,
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* Releases the thread block */
-	__bit_mem_wr(&krn->th_alloc[0], thread_idx, 0);
+	__bit_mem_wr(&krn->th_alloc[0], thread_idx - 1, 0);
 #endif
 
 	if (thread_idx == __thread_active_get(krn)) {
@@ -63,7 +64,7 @@ void __thinkos_krn_thread_abort(struct thinkos_rt * krn,
 	/* clear context. */
 	__thread_ctx_clr(krn, thread_idx);
 
-	__thread_suspend(krn, thread_idx);
+	__krn_thread_suspend(krn, thread_idx);
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
@@ -90,11 +91,11 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 	if ((unsigned int)ctx->r0 == 0) {
 		thread_id = self;
-		DCC_LOG2(LOG_WARNING, "<%d> terminate(0, %d)", self + 1 , code); 
+		DCC_LOG2(LOG_WARNING, "<%d> terminate(0, %d)", self , code); 
 	} else {
-		thread_id = ctx->r0 - 1;
-		DCC_LOG3(LOG_WARNING, "<%d> terminate(%d, %d)", self + 1, 
-				 thread_id + 1, code); 
+		thread_id = ctx->r0;
+		DCC_LOG3(LOG_WARNING, "<%d> terminate(%d, %d)", self, 
+				 thread_id, code); 
 	}
 
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -105,9 +106,9 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		return;
 	}
 #if (THINKOS_ENABLE_THREAD_ALLOC)
-	if (__bit_mem_rd(&krn->th_alloc[0], thread_id) == 0) {
+	if (__bit_mem_rd(&krn->th_alloc[0], thread_id - 1) == 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> thread not allocated, th_alloc=%08x", 
-				 thread_id + 1, krn->th_alloc[0]);
+				 thread_id, krn->th_alloc[0]);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
 		ctx->r0 = THINKOS_EINVAL;
 		return;
@@ -117,7 +118,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* possibly remove from the time share wait queue */
-	__bit_mem_wr((uint32_t *)&krn->wq_tmshare, thread_id, 0);  
+	__bit_mem_wr((uint32_t *)&krn->wq_tmshare, thread_id - 1, 0);  
 #endif
 
 #if (THINKOS_ENABLE_CANCEL)
@@ -129,21 +130,21 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		DCC_LOG1(LOG_INFO, "wq=%d", stat >> 1); 
 		__thinkos_thread_stat_clr(thread_id);
 		/* remove from other wait queue, if any */
-		__bit_mem_wr(&krn->wq_lst[stat >> 1], thread_id, 0);  
+		__bit_mem_wr(&krn->wq_lst[stat >> 1], thread_id  - 1, 0);  
 	}
 #else
 	{
 		int i;
 		/* remove from other wait queues, if any */
 		for (i = 0; i < __wq_idx(krn->wq_end); ++i)
-			__bit_mem_wr(&krn->wq_lst[i], thread_id, 0);  
+			__bit_mem_wr(&krn->wq_lst[i], thread_id  - 1, 0);  
 	}
 #endif
 #endif /* THINKOS_ENABLE_CANCEL */
 
 #if (THINKOS_ENABLE_JOIN)
 	{
-		unsigned int wq = THINKOS_JOIN_BASE + thread_id;
+		unsigned int wq = THINKOS_THREAD_BASE + thread_id;
 		int th;
 
 		if ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
@@ -167,7 +168,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 	DCC_LOG2(LOG_WARNING, "monitor_signal_terminate: thread=%d code=%d", 
-			 thread_id + 1, code);
+			 thread_id, code);
 	monitor_signal_thread_terminate(thread_id, code);
 #endif
 }
@@ -184,11 +185,11 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 #if (THINKOS_ENABLE_EXIT)
 void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 {
-	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self + 1, ctx->r0); 
+	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self, ctx->r0); 
 
 #if (THINKOS_ENABLE_JOIN)
-	if (thinkos_rt.wq_join[self] == 0) {
-		DCC_LOG1(LOG_MSG, "<%2d> canceled...", self + 1); 
+	if (thinkos_rt.wq_thread[self] == 0) {
+		DCC_LOG1(LOG_MSG, "<%2d> canceled...", self); 
 		/* insert into the canceled wait queue and wait for a join call */ 
 		__thinkos_wq_insert(THINKOS_WQ_CANCELED, self);
 		/* remove from the ready wait queue */

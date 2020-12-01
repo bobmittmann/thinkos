@@ -162,18 +162,16 @@ void thinkos_nosys_svc(int32_t * arg, int self)
 	arg[0] = THINKOS_ENOSYS;
 }
 
-#if (THINKOS_ENABLE_CLOCK)
 static void thinkos_clock_svc(int32_t * arg, int self)
 {
 	arg[0] = thinkos_rt.ticks;
 }
-#endif
 
 static void thinkos_thread_self_svc(int32_t * arg, int32_t self)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	arg[0] = self + 1;
+	arg[0] = self;
 }
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -201,11 +199,7 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,
 	[THINKOS_THREAD_INIT] = thinkos_thread_init_svc,
 
-#if (THINKOS_ENABLE_CLOCK)
 	[THINKOS_CLOCK] = thinkos_clock_svc,
-#else
-	[THINKOS_CLOCK] = thinkos_nosys_svc,
-#endif
 
 #if (THINKOS_ENABLE_ALARM)
 	[THINKOS_ALARM] = thinkos_alarm_svc,

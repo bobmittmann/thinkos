@@ -135,6 +135,31 @@ bool thinkos_dbg_thread_rec_get(unsigned int thread,
 
 int thinkos_dbg_thread_break_get(int32_t * pcode);
 
+int thinkos_dbg_thread_break_clr(void);
+
+void thinkos_dbg_reset(void);
+
+int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
+						  bool privileged);
+
+/* -------------------------------------------------------------------------
+ * Cycle counter
+ * ------------------------------------------------------------------------- */
+
+int thinkos_dbg_threads_cyc_get(uint32_t cyc[], uint32_t from, 
+                                unsigned int max);
+
+int thinkos_dbg_mutex_lock_get(unsigned int mtx);
+
+struct thread_waitqueue;
+
+struct thread_waitqueue * thinkos_dbg_wq_from_oid(unsigned int oid);
+
+bool thinkos_dbg_wq_contains(struct thread_waitqueue * wq, 
+							 unsigned int thread);
+
+bool thinkos_dbg_wq_is_empty(struct thread_waitqueue * wq);
+
 #ifdef __cplusplus
 }
 #endif

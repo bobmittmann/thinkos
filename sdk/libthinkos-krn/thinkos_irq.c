@@ -20,6 +20,7 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -34,7 +35,7 @@ void __krn_irq_reset_all(struct thinkos_rt* krn)
 	/* adjust IRQ priorities to regular (above SysTick and bellow SVC) */
 	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
 		cm3_irq_pri_set(irq, IRQ_DEF_PRIORITY);
-		thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+		krn->irq_th[irq] = THINKOS_THREAD_VOID;
 	}
 
 }

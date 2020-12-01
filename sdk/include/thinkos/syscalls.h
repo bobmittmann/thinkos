@@ -346,7 +346,7 @@ return THINKOS_SYSCALL1(THINKOS_OBJ_ALLOC, kind);
 }
 
 static inline int thinkos_obj_thread_alloc(int hint) {
-return THINKOS_SYSCALL2(THINKOS_OBJ_ALLOC, THINKOS_OBJ_READY, hint);
+return THINKOS_SYSCALL2(THINKOS_OBJ_ALLOC, THINKOS_OBJ_THREAD, hint);
 }
 
 static inline int thinkos_obj_free(int obj) {
@@ -624,7 +624,13 @@ thinkos_irq_priority_set(int irq, unsigned int pri) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_write(const void * buf, unsigned int len) {
-	return THINKOS_SYSCALL3(THINKOS_CONSOLE, CONSOLE_WRITE, buf, len);
+	uint32_t opc = CONSOLE_WRITE;
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE) : "=r"(ret) : 
+				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
@@ -806,8 +812,12 @@ thinkos_trace_getnext(int id, struct trace_entry * entry) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_open(const char * tag) {
-return THINKOS_SYSCALL2(THINKOS_FLASH_MEM, 
-                        __FLASH_OPC(THINKOS_FLASH_MEM_OPEN, 0), tag);
+	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_OPEN, 0);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)tag;
+	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
+				  "0"(opc), "r"(r1) : "memory" );
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
@@ -818,9 +828,16 @@ return THINKOS_SYSCALL1(THINKOS_FLASH_MEM,
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_read(int key, off_t offset, void * buf, size_t size) {
-return THINKOS_SYSCALL4(THINKOS_FLASH_MEM, 
-                        __FLASH_OPC(THINKOS_FLASH_MEM_READ, key),
-                        offset, size, buf);
+	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_READ, key);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uint32_t)offset;
+	register uint32_t r2 asm("r2") = size;
+	register uint32_t r3 asm("r3") = (uintptr_t)buf;
+
+	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
+				  "0"(opc), "r"(r1), "r"(r2) , "r"(r3) : "memory" );
+
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
@@ -828,8 +845,8 @@ thinkos_flash_mem_write(int key, off_t offset, const void * buf, size_t size) {
 	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_WRITE, key);
 	register int32_t ret asm("r0");
 	register uint32_t r1 asm("r1") = (uint32_t)offset;
-	register uint32_t r2 asm("r2") = (uintptr_t)buf;
-	register uint32_t r3 asm("r3") = size;
+	register uint32_t r2 asm("r2") = size;
+	register uint32_t r3 asm("r3") = (uintptr_t)buf;
 
 	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
 				  "0"(opc), "r"(r1), "r"(r2) , "r"(r3) : "memory" );

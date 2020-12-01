@@ -144,6 +144,13 @@ __thinkos_krn_xcpt:
 	/* disable interrupts */
 	cpsid   i
 	ldr     r3, .L_xcpt_buf
+
+	mov    r1, #1
+	0:
+	cmp    r1, 0
+	bne    0b
+
+
 	strb    r0, [r3, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
 	ldrb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS]  /* sequence */
 	adds    r0, r0, #1  /* increment sequence */
@@ -193,38 +200,12 @@ __thinkos_krn_xcpt:
 	str     r0, [r2, #SCB_ICSR_OFFS]
 
 	ldr     r2, .L_thinkos_rt
-	ldr     r0, [r2, #THINKOS_RT_READY_OFFS]
+	ldr     r0, [r2, #OFFSETOF_KRN_READY]
 	str     r0, [r3, #THINKOS_EXCEPT_READY_OFFS]
-	ldr     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
-
-	str     r0, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
-
-	/* Prepare to return */
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	ands    r0, #0x3f
-#endif
-	cmp     r0, #THINKOS_THREAD_IDLE
-	beq     .L_idle_fault
-
-	movs    r0, #THINKOS_THREAD_VOID
-	str     r0, [r2, #THINKOS_RT_ACTIVE_OFFS]
-	/* Force clearing the ready queue */
-	movs    r0, #0
-	str     r0, [r2, #THINKOS_RT_READY_OFFS]
-#if (THINKOS_ENABLE_TIMESHARE)
-	str     r0, [r2, #THINKOS_RT_WQTMSAHRE_OFFS]
-#endif
-#if (THINKOS_ENABLE_CLOCK)
-	str     r0, [r2, #THINKOS_RT_WQCLK_OFFS]
-#endif
-
-#if (THINKOS_ENABLE_PROFILING)
-	ldr     r0, [r2, #THINKOS_RT_CYCREF_OFFS]
-	str     r0, [r3, #THINKOS_EXCEPT_CYCREF_OFFS] 
-	ldr     r2, .L_cm3_dwt
-	ldr     r0, [r2, #4] /* DWT.SYCCNT */
-	str     r0, [r3, #THINKOS_EXCEPT_CYCCNT_OFFS] 
-#endif
+	ldr     r2, [r2, #OFFSETOF_KRN_SCHED]
+	str     r2, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
+	cmp     r2, #THINKOS_THREAD_IDLE
+	bge     .L_invalid_thread_fault
 
 	movs    r0, r3
 	adds    r3, #THINKOS_EXCEPT_CONTEXT_OFFS
@@ -244,7 +225,7 @@ __thinkos_krn_xcpt:
 	cmp     lr, #CM3_EXC_RET_THREAD_MSP
 	beq     .L_ret_msp
 
-
+#if 0
 	/* Load the idle context pointer from the context vector */
 	ldr     r6, .L_thinkos_rt
 	ldr     r7, [r6, #THINKOS_THREAD_IDLE * 4]
@@ -257,9 +238,14 @@ __thinkos_krn_xcpt:
 	cmp     r7, r6
 	bne     .L_idle_unstack
 
+#endif
 	ldrb    r1, [r0, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
 
 	pop     {r4-r11}
+
+	/* Adjust the control register */
+	mov     R12, #0
+	msr     CONTROL, r12
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
@@ -271,6 +257,11 @@ __thinkos_krn_xcpt:
 
 .L_ret_msp:
 	mov     r4, #THINKOS_ERR_KRN_RETMSP
+	b       .L_reset_idle
+
+.L_invalid_thread_fault:
+	beq     .L_idle_fault
+	mov     r4, #THINKOS_ERR_KRN_FAULT
 	b       .L_reset_idle
 
 .L_idle_fault:

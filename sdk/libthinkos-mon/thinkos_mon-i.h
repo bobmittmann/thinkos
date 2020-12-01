@@ -44,17 +44,13 @@
  * ------------------------------------------------------------------------- */
 
 static inline void __systick_int_disable(struct thinkos_rt * krn) {
-#if (THINKOS_ENABLE_CLOCK) 
 	struct cm3_systick * systick = CM3_SYSTICK;
 	systick->csr = SYSTICK_CSR_ENABLE;
-#endif
 }
 
 static inline void __systick_int_enable(struct thinkos_rt * krn) {
-#if (THINKOS_ENABLE_CLOCK) 
 	struct cm3_systick * systick = CM3_SYSTICK;
 	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
-#endif
 }
 
 static inline void __systick_pend_clr(struct thinkos_rt * krn) {

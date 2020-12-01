@@ -127,7 +127,10 @@ int consumer_task(void * arg)
 	return i;
 };
 
-uint32_t producer_stack[128];
+//THINKOS_DEFINE_STACK(producer_stack, 512);
+//THINKOS_DEFINE_STACK(consumer_stack, 512);
+
+uint32_t producer_stack[512];
 uint32_t consumer_stack[128];
 
 void semaphore_test(void)

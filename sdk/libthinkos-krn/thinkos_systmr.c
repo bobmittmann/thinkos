@@ -20,30 +20,31 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if (THINKOS_ENABLE_CLOCK)
-static void __thinkos_time_wakeup(int thread_id) 
+static void __thinkos_time_wakeup(struct thinkos_rt * krn, int th) 
 {
 #if (THINKOS_ENABLE_THREAD_STAT)
 	int wq;
 	/* update the thread status */
-	wq = __thinkos_thread_stat_wq_get(thread_id);
-	__thinkos_thread_stat_clr(thread_id);
+	wq = __thread_stat_wq_get(krn, th);
+
+	__thread_stat_clr(krn, th);
 	/* remove from other wait queue, if any */
-	__bit_mem_wr(&thinkos_rt.wq_lst[wq], thread_id, 0);  
+	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
 	/* remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, thread_id, 0);  
-	DCC_LOG1(LOG_MSG, "Wakeup %d...", thread_id + 1);
+	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
+	DCC_LOG1(LOG_TRACE, "Wakeup %d...", th);
 	/* insert into the ready wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);  
-	__thinkos_preempt();
+	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
+	__krn_preempt(krn);
 }
-#endif /* THINKOS_ENABLE_CLOCK */
+
 
 #if (THINKOS_ENABLE_TIMESHARE)
 static void __thinkos_timeshare(void) 
@@ -58,7 +59,7 @@ static void __thinkos_timeshare(void)
 		thinkos_rt.sched_val[idx] += thinkos_rt.sched_limit;
 		if (__bit_mem_rd(&thinkos_rt.wq_ready, idx) == 0) {
 			DCC_LOG1(LOG_TRACE, "thread %d is active but not ready!!!", 
-					 idx + 1);
+					 idx);
 		} else {
 			/* insert into the CPU wait queue */
 			__bit_mem_wr(&thinkos_rt.wq_tmshare, idx, 1);  
@@ -73,34 +74,34 @@ static void __thinkos_timeshare(void)
 /* --------------------------------------------------------------------------
  * ThinkOS - system timer
  * --------------------------------------------------------------------------*/
-#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct cm3_systick * systick = CM3_SYSTICK;
 
-  #if (THINKOS_ENABLE_CLOCK)
 	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 	{
 		uint32_t ticks;
 		uint32_t wq;
 		int j;
 
-		ticks = thinkos_rt.ticks; 
+		ticks = krn->ticks; 
 		ticks++;
-		thinkos_rt.ticks = ticks; 
+		krn->ticks = ticks; 
 
-		wq = __rbit(thinkos_rt.wq_clock);
+		wq = __rbit(krn->wq_clock);
 		while ((j = __clz(wq)) < 32) {
+			int32_t th = j + 1;
 			wq &= ~(0x80000000 >> j);  
-			if ((int32_t)(thinkos_rt.clock[j] - ticks) <= 0) {
-				__thinkos_time_wakeup(j); 
+			if ((int32_t)(krn->clock[th] - ticks) <= 0) {
+				__thinkos_time_wakeup(krn, th); 
 			}
 		}
 
     #if (THINKOS_ENABLE_MONITOR_CLOCK)
-		if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
+		if ((int32_t)(krn->monitor_clock - ticks) == 0) {
 			monitor_signal(MONITOR_ALARM);
 		}
     #endif
@@ -109,9 +110,8 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		__thinkos_timeshare(); 
     #endif /* THINKOS_ENABLE_TIMESHARE */
 	}
-  #endif /* THINKOS_ENABLE_CLOCK */
 
-	__thinkos_monitor_sched(&thinkos_rt.monitor);
+	__thinkos_monitor_sched(&krn->krn->monitor);
 }
 
 #else /* THINKOS_ENABLE_MONITOR_SCHED */
@@ -121,8 +121,9 @@ void __monitor_context_swap(uint32_t ** pctx);
 
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-    struct krn_clock * clk = &thinkos_rt.time_clk;
+    struct krn_clock * clk = &krn->time_clk;
 #endif
   #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
@@ -133,7 +134,6 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
   #endif
-  #if (THINKOS_ENABLE_CLOCK)
 		{
 			uint32_t ticks;
 			uint32_t wq;
@@ -147,20 +147,21 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			clk->timestamp = ts;
 #endif
 
-			ticks = thinkos_rt.ticks; 
+			ticks = krn->ticks; 
 			ticks++;
-			thinkos_rt.ticks = ticks; 
+			krn->ticks = ticks; 
 
-			wq = __rbit(thinkos_rt.wq_clock);
+			wq = __rbit(krn->wq_clock);
 			while ((j = __clz(wq)) < 32) {
+				int32_t th = j + 1;
 				wq &= ~(0x80000000 >> j);  
-				if ((int32_t)(thinkos_rt.th_clk[j] - ticks) <= 0) {
-					__thinkos_time_wakeup(j); 
+				if ((int32_t)(krn->th_clk[th] - ticks) <= 0) {
+					__thinkos_time_wakeup(krn, th); 
 				}
 			}
 
     #if (THINKOS_ENABLE_MONITOR_CLOCK)
-			if ((int32_t)(thinkos_rt.monitor_clock - ticks) == 0) {
+			if ((int32_t)(krn->monitor_clock - ticks) == 0) {
 				monitor_signal(MONITOR_ALARM);
 			}
     #endif
@@ -169,11 +170,10 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			__thinkos_timeshare(); 
     #endif /* THINKOS_ENABLE_TIMESHARE */
 		}
-  #endif /* THINKOS_ENABLE_CLOCK */
 
   #if (THINKOS_ENABLE_MONITOR)
-		sigset = thinkos_rt.monitor.events;
-		sigmsk = thinkos_rt.monitor.mask;
+		sigset = krn->monitor.events;
+		sigmsk = krn->monitor.mask;
 
 		sigact = sigset & sigmsk;
 
@@ -183,11 +183,11 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		if (sigact & (1 << MONITOR_TASK_INIT)) {
 			/* clear the TASK_INIT event */
-			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_TASK_INIT);
+			krn->monitor.events = sigset & ~(1 << MONITOR_TASK_INIT);
 			__thinkos_monitor_on_reset();
 		}
 
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 
 	} while (1);
 
@@ -204,17 +204,10 @@ void thinkos_krn_systick_init(void)
 	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
 	systick->cvr = 0;
 
-#if (THINKOS_ENABLE_CLOCK) 
 	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
-#else
-	systick->csr = SYSTICK_CSR_ENABLE;
-#endif
 }
 
-const char thinkos_clk_nm[] = "CLK";
-
-#endif /* THINKOS_ENABLE_CLOCK || THINKOS_ENABLE_MONITOR */
-
+#if (THINKOS_ENABLE_UDELAY_CALIBRATE)
 static unsigned int __get_ticks(void)
 {
 	return 0xffffffff - (CM3_SYSTICK->cvr << 8);
@@ -242,5 +235,5 @@ void thinkos_krn_udelay_calibrate(void)
 
 	cm3_cpsie_i();
 }
-
+#endif
 

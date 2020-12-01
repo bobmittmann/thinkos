@@ -142,7 +142,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
 					monitor_thread_create(C_TASK(board->default_task), 
-										 C_ARG(NULL));
+										 C_ARG(NULL), true);
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
 				}
@@ -256,7 +256,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
 					monitor_thread_create(C_TASK(board->default_task), 
-										 C_ARG(NULL));
+										 C_ARG(NULL), true);
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
 				}

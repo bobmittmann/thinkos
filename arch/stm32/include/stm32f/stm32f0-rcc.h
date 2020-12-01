@@ -612,7 +612,7 @@ struct stm32_rcc {
 struct stm32_clk {
 	uint8_t bus:3;
 	uint8_t bit:5;
-} __attribute__((packed))__;
+} __attribute__((packed));
 
 /*---------------------------------------------------------------------
  * Clocks

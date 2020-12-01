@@ -27,9 +27,11 @@ extern const uint8_t thinkos_obj_type_lut[];
 
 int thinkos_obj_type_get(unsigned int oid)
 {
-	if (oid >= THINKOS_WQ_CNT)
+	unsigned int idx = oid - THINKOS_OBJECT_FIRST;
+
+	if (idx > THINKOS_OBJECT_LAST)
 		return THINKOS_EINVAL;
 
-	return thinkos_obj_type_lut[oid];
+	return thinkos_obj_type_lut[idx];
 }
 
