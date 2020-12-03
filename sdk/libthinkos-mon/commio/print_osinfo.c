@@ -36,6 +36,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
     uint32_t busy;
     uint32_t cycsum = 0;
     uint32_t cycbusy;
+    uint32_t cycidle;
     uint32_t idle;
 #endif
 	uint32_t active;
@@ -43,28 +44,23 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	int j;
 
 	active = thinkos_dbg_active_get();
-	DCC_LOG1(LOG_TRACE, "active=%d", active);
+	monitor_printf(comm, " Active: %d", active);
 
 #if (THINKOS_ENABLE_PROFILING)
     cycsum = 0;
 
     cycsum = monitor_threads_cyc_sum(cyc, cycref, 0, max);
-    cycbusy = cycsum - cyc[THINKOS_THREAD_IDLE];
+    cycidle = cyc[THINKOS_THREAD_IDLE];
+    cycbusy = cycsum - cycidle;
     cycdiv = (cycsum + 500) / 1000;
 
-    busy = cycbusy / cycdiv;
+	busy = (cycdiv == 0) ? 1000 : (cycbusy / cycdiv);
     if (busy > 1000)
         busy  = 1000;
 
     idle = 1000 - busy;
     (void) idle;
-#endif
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	monitor_printf(comm, " Active: %d", active);
-
-#if THINKOS_ENABLE_PROFILING
 	monitor_printf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
 				   cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
 
@@ -78,15 +74,15 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	monitor_printf(comm, " |       SP"); 
 	monitor_printf(comm, " |       PC"); 
 	monitor_printf(comm, " | Status"); 
-#if THINKOS_ENABLE_TIMESHARE
-//	monitor_printf(comm, " |  Val |  Pri"); 
+#if (THINKOS_ENABLE_TIMESHARE)
+	/* TODO: add timeshare info */
 #endif
 	monitor_printf(comm, " | Clock (ms)"); 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	monitor_printf(comm, " | CPU %%"); 
 #endif
 
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 	monitor_printf(comm, " | Locks\r\n"); 
 #else
 	monitor_printf(comm, " |\r\n");
@@ -104,8 +100,6 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			int errno; 
 			bool tmw;
 
-			/* Internal thread ids start form 0 whereas user
-			   thread numbers start form one ... */
 			monitor_printf(comm, "%3d", i);
 			tag = thinkos_dbg_thread_tag_get(i);
 			sl = thinkos_dbg_thread_sl_get(i);
@@ -124,15 +118,15 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			} else if (thinkos_dbg_thread_is_ready(i)) {
 				monitor_printf(comm, " | READY ");
 			} else {
-#if THINKOS_ENABLE_TIMESHARE
-				/* FIXME: implement some info ...*/
-#endif
 				type = __thinkos_obj_kind(oid);
 				monitor_printf(comm, " | %c%c %3d", 
 						 tmw ? 'T' : ' ',
 						 __thinkos_kind_prefix(type), 
 						 oid);
 			}
+#if (THINKOS_ENABLE_TIMESHARE)
+			/* TODO: add timeshare info */
+#endif
 			{
 				int32_t dt = thinkos_dbg_thread_clk_itv_get(i);
 				int32_t sec;
@@ -143,14 +137,14 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 
 				monitor_printf(comm, " |%7d.%03d", sec, ms);
 			}
-#if THINKOS_ENABLE_PROFILING
-			busy = (cyc[i] + cycdiv / 2) / cycdiv;
+#if (THINKOS_ENABLE_PROFILING)
+			busy = (cycdiv == 0) ? 1000 : (cyc[i] / cycdiv);
 			if (busy > 1000)
 				busy  = 1000;
 			monitor_printf(comm, " | %3d.%d", busy / 10, busy % 10);
 #endif
 			monitor_printf(comm, " |");
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 			for (j = THINKOS_MUTEX_FIRST; j <= THINKOS_MUTEX_LAST; ++j) {
 				if (thinkos_dbg_mutex_lock_get(j) == i)
 					monitor_printf(comm, " %d", j + THINKOS_MUTEX_BASE);
@@ -174,7 +168,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 					monitor_printf(comm, " %d", i);
 			}
 			monitor_printf(comm, " }");
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 			if (type == THINKOS_OBJ_MUTEX)
 				monitor_printf(comm, " [lock=%d]", 
 							   thinkos_dbg_mutex_lock_get(j));

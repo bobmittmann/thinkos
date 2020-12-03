@@ -378,3 +378,24 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
+/* enable interrupts */
+static inline void __attribute__((always_inline)) __krn_irq_on(void) {
+	asm volatile ("cpsie i\n");
+}
+
+
+void thinkos_krn_irq_on(void) 
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	DCC_LOG(LOG_TRACE, "enabling interrupts...");
+
+	__krn_irq_on();
+
+//	thinkos_yield();
+	thinkos_sleep(1);
+
+	__kdump(krn);
+
+}
+

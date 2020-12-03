@@ -101,9 +101,6 @@
 #define __KRN_THREAD_LST_SIZ        (1 + (THINKOS_THREADS_MAX) + \
                                      (THINKOS_NRT_THREADS_MAX) + 1)
 
-#define __KRN_THREAD_FIRST          1
-#define __KRN_THREAD_LAST           THINKOS_THREAD_IDLE
-
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
   * --------------------------------------------------------------------------*/

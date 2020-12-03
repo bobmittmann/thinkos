@@ -450,43 +450,29 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 					 THINKOS_OPT_PRIVILEGED |
 					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
 
-#if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 2. board_init()." VT_POP);
-	mdelay(125);
-#endif
 	board_init();
 
-#if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 3. usb_comm_init()." VT_POP);
-	mdelay(125);
-#endif
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
-#if DEBUG
-	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 4. thinkos_krn_monitor_init()." VT_POP);
-#endif
 	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
 
-#if DEBUG
-	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 5. thinkos_krn_irq_on()." VT_POP);
-#endif
-	/* enable interrupts */
+	/* enable interrupts ???? */
 	thinkos_krn_irq_on();
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 6. board_integrity_check()..." VT_POP);
+
 	if (!board_integrity_check()) {
 		DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
 				"**** board_integrity_check() failed." VT_POP);
-#if DEBUG
-		mdelay(10000);
-#endif
 		thinkos_abort();
 	}
 
@@ -494,15 +480,15 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 7. thinkos_app_exec()..." VT_POP);
+
 	thinkos_app_exec(app_addr);
+
 	DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
 			"**** thinkos_app_exec() failed." VT_POP);
-#if DEBUG
-	mdelay(10000);
-#endif
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 8. board_default_task()..." VT_POP);
 	board_default_task((void*)&this_board);
 }
+
 

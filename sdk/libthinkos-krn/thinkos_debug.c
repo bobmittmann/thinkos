@@ -74,105 +74,6 @@ void __objkind(void)
 */
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-void __thinkos(struct thinkos_rt * krn)
-{
-	unsigned int i;
-	unsigned int oid;
-
-	for (oid = 0; oid < THINKOS_WQ_CNT; ++oid) {
-		uint32_t * wq;
-		int type;
-
-		wq = &krn->wq_lst[oid];
-		if (*wq) { 
-			type = __thinkos_obj_kind(oid);
-			switch (type) {
-			case THINKOS_OBJ_READY:
-				DCC_LOG2(LOG_TRACE, "READY %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_THREAD:
-				DCC_LOG2(LOG_TRACE, "THREAD %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_CANCELED:
-				DCC_LOG2(LOG_TRACE, "CANCELED %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_PAUSED:
-				DCC_LOG2(LOG_TRACE, "PAUSED %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_CLOCK:
-				DCC_LOG2(LOG_TRACE, "CLOCK %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_MUTEX:
-				DCC_LOG2(LOG_TRACE, "MUTEX %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_COND:
-				DCC_LOG2(LOG_TRACE, "COND %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_SEMAPHORE:
-				DCC_LOG2(LOG_TRACE, "SEMAPHORE %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_EVENT:
-				DCC_LOG2(LOG_TRACE, "EVENT %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_FLAG:
-				DCC_LOG2(LOG_TRACE, "FLAG %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_CONREAD:
-				DCC_LOG2(LOG_TRACE, "CON RD %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_CONWRITE:
-				DCC_LOG2(LOG_TRACE, "CON WR %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_TMSHARE:
-				DCC_LOG2(LOG_TRACE, "TMSHARE %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_COMMSEND:
-				DCC_LOG2(LOG_TRACE, "COMM TX %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_COMMRECV:
-				DCC_LOG2(LOG_TRACE, "COMM RX %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_IRQ:
-				DCC_LOG2(LOG_TRACE, "IRQ %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_DMA:
-				DCC_LOG2(LOG_TRACE, "DMA %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_FLASH_MEM:
-				DCC_LOG2(LOG_TRACE, "FLASH %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_FAULT:
-				DCC_LOG2(LOG_TRACE, "FAULT %d: 0x%08x", oid, *wq);
-				break;
-			case THINKOS_OBJ_INVALID:
-				DCC_LOG2(LOG_TRACE, "INVALID %d: 0x%08x", oid, *wq);
-				break;
-			default:
-				DCC_LOG2(LOG_WARNING, "ERROR %d: 0x%08x", oid, *wq);
-			}
-		}
-	}
-
-	DCC_LOG1(LOG_TRACE, "Ticks = %d", __krn_ticks_get(krn));
-	DCC_LOG1(LOG_TRACE, "Active = %d", __krn_active_get(krn));
-
-	DCC_LOG1(LOG_TRACE, "Alloc = %d", krn->th_alloc[0]);
-
-	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-		if (__thread_ctx_is_valid(krn, i)) {
-#if (THINKOS_ENABLE_THREAD_STAT)
-		DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", i, 
-				 __thread_wq_get(krn, i), __thread_sp_get(krn, i), 
-				 __thread_lr_get(krn, i), __thread_pc_get(krn, i));
-#else
-		DCC_LOG4(LOG_TRACE, "<%2d> sp=%08x lr=%08x pc=%08x", i, 
-				 __thread_sp_get(krn, i), __thread_lr_get(krn, i), 
-				 __thread_pc_get(krn, i));
-#endif
-		}
-	}
-
-}
 
 static uint32_t __ret_lut[8] = {
 	[0] = CM3_EXC_RET_THREAD_MSP, /* kernel */
@@ -350,7 +251,7 @@ void ERROR(uintptr_t __sp_ctl,
 				 ctx, ctx->pc, msp, __retstr(ret));
 
 	__context(__sp_ctl, __new_thread_id); 
-	__thinkos(&thinkos_rt);
+	__kdump(&thinkos_rt);
 	__tdump(&thinkos_rt);
 #endif
 }
@@ -672,8 +573,12 @@ int thinkos_dbg_thread_break_get(int32_t * pcode)
 	struct thinkos_rt * krn = &thinkos_rt;
 	int th;
 
+	DCC_LOG(LOG_TRACE, "...");
+
 	if ((th = __krn_sched_brk_get(krn)) == 0)
 		return -1;
+
+	DCC_LOG(LOG_TRACE, "...");
 
 	if (pcode)
 		*pcode = __thread_errno_get(krn, th);
@@ -686,6 +591,8 @@ int thinkos_dbg_thread_break_clr(void)
 	struct thinkos_rt * krn = &thinkos_rt;
 	int th;
 
+	DCC_LOG(LOG_TRACE, "clearing break condition...");
+
 	if ((th = __krn_sched_brk_get(krn)) == 0)
 		return -1;
 
@@ -695,6 +602,7 @@ int thinkos_dbg_thread_break_clr(void)
 
 	return 0;
 }
+
 
 int thinkos_dbg_mutex_lock_get(unsigned int mtx)
 {
@@ -707,6 +615,18 @@ int thinkos_dbg_mutex_lock_get(unsigned int mtx)
 	return 0;
 }
 
+void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
+{
+	uint32_t ref;
+	uint32_t cnt;
+
+	cnt = CM3_DWT->cyccnt;
+	ref = krn->cycref;
+	krn->cycref = cnt;
+
+	krn->th_cyc[th] += cnt - ref;
+}
+
 int thinkos_dbg_threads_cyc_get(uint32_t cyc[], unsigned int from, 
 								unsigned int cnt)
 {
@@ -717,6 +637,7 @@ int thinkos_dbg_threads_cyc_get(uint32_t cyc[], unsigned int from,
 	if (to > __KRN_THREAD_LST_SIZ)
 		return -THINKOS_EINVAL;
 
+	__krn_cyccnt_flush(krn, __krn_active_get(krn));
 	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
 
 	return to;
@@ -786,7 +707,7 @@ void thinkos_dbg_reset(void)
 void __attribute__((noreturn)) __dbg_thread_exit_stub(int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if 1
+#if 0
 	thinkos_thread_abort(code);
 #else
 	thinkos_abort();
@@ -848,6 +769,9 @@ int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
 	init.inf = inf;
 #endif
 
+	/* Make sure the scheduler is in normal state */
+	__krn_sched_normal(krn);
+
 	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
 		return -ret;
 	};
@@ -904,4 +828,3 @@ int thinkos_dbg_active_get(void)
 
 	return __krn_active_get(krn);
 }
-

@@ -47,8 +47,8 @@ enum monitor_event {
 	MONITOR_KRN_FAULT       = 2,
 	/* ThinkOS kernel reset indication */
 	MONITOR_KRN_ABORT       = 3,
-	/* ThinkOS idle indication5*/
-	MONITOR_IDLE            = 4,
+	/* User reqest abort */
+	MONITOR_USR_ABORT       = 4,
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -212,8 +212,6 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	return (comm->op->ctrl(comm->dev, COMM_CTRL_STATUS_GET) & 
 	        COMM_ST_CONNECTED) ? true : false;
 }
-
-void thinkos_monitor_svc(int32_t arg[], int self);
 
 void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
                      void (* task)(const struct monitor_comm *, void *),

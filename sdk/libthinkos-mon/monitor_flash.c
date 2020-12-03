@@ -44,6 +44,13 @@
 
 #include <sys/dcclog.h>
 
+#if !(THINKOS_ENABLE_CONSOLE_READ)
+#error "need THINKOS_ENABLE_CONSOLE_READ"
+#endif
+
+#if !(THINKOS_ENABLE_TIMED_CALLS)
+#error "need THINKOS_ENABLE_TIMED_CALLS"
+#endif
 
 static int __console_comm_send(void * dev, const void * buf, unsigned int len) 
 {
@@ -120,6 +127,35 @@ int __ymodem_rcv_task(uint32_t addr, unsigned int size)
 	return ret;
 }
 
+/* Erase a flash partition */
+static int __flash_erase_all_task(const char * tag)
+{
+	uint32_t offs = 0;
+	int ret;
+	int key;
+
+	__console_puts("\r\nFlash erase... ");
+
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
+		return key;
+	}
+
+	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
+		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
+	}
+
+	thinkos_flash_mem_close(key);
+
+	if (ret < 0)
+		__console_puts("\r\nFailed!\r\n");
+	else
+		__console_puts("\r\nOk.\r\n");
+
+
+	return ret;
+}
+
 /* Receive a file and write it into the flash using the YMODEM protocol */
 int __flash_ymodem_rcv_task(const char * tag)
 {
@@ -131,17 +167,13 @@ int __flash_ymodem_rcv_task(const char * tag)
 	int ret;
 	int key;
 
+	if ((ret = __flash_erase_all_task(tag)) < 0) {
+		return ret;
+	}
+
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
 		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
 		return key;
-	}
-
-	__console_puts("\r\nFlash erase... ");
-
-	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
-		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
-		thinkos_flash_mem_close(key);
-		return ret;
 	}
 
 	__console_puts("\r\nYMODEM receive (Ctrl+X to cancel)... ");
@@ -171,26 +203,12 @@ int __flash_ymodem_rcv_task(const char * tag)
 
 	thinkos_flash_mem_close(key);
 
-	return ret;
-}
+	thinkos_sleep(500);
 
-/* Erase a flash partition */
-static int __flash_erase_all_task(const char * tag)
-{
-	uint32_t offs = 0;
-	int ret;
-	int key;
-
-	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
-		return key;
-	}
-
-	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
-		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_erase() fail.");
-	}
-
-	thinkos_flash_mem_close(key);
+	if (ret < 0)
+		__console_puts("\r\nFailed!\r\n");
+	else
+		__console_puts("\r\nOk.\r\n");
 
 	return ret;
 }

@@ -166,6 +166,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #error "Need THINKOS_ENABLE_MONITOR"
 #endif
 
+/*
 #if !(THINKOS_ENABLE_MONITOR_THREADS)
 #error "Need THINKOS_ENABLE_MONITOR_THREADS"
 #endif
@@ -173,6 +174,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #if !(THINKOS_ENABLE_IDLE_HOOKS)
 #error "Need THINKOS_ENABLE_IDLE_HOOKS"
 #endif
+*/
 
 #if (MONITOR_THREAD_STEP_ENABLE) & !(THINKOS_ENABLE_DEBUG_STEP)
 #error "MONITOR_THREAD_STEP_ENABLE requires THINKOS_ENABLE_DEBUG_STEP"
@@ -361,6 +363,9 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 		monitor_print_thread(comm, thread_id);
 		monitor_printf(comm, s_hr);
 	}
+
+	DCC_LOG(LOG_TRACE, "thinkos_dbg_thread_break_clr().");
+	thinkos_dbg_thread_break_clr();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -567,7 +572,7 @@ static void show_mem_info(const struct monitor_comm * comm,
 		return;
 
 	monitor_printf(comm, "  %s:\r\n", mem->tag);
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+	for (i = 0; i < mem->cnt; ++i) {
 		tag = mem->blk[i].tag;
 		size = mem->blk[i].cnt << mem->blk[i].siz;
 		base = mem->base + mem->blk[i].off;
@@ -870,7 +875,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		case MONITOR_KRN_ABORT:
 			monitor_clear(MONITOR_KRN_ABORT);
 			DCC_LOG(LOG_TRACE, "/!\\ KRN_ABORT signal...");
-			board->softreset();
 #if (THINKOS_ENABLE_CONSOLE)
 			goto is_connected;
 #endif

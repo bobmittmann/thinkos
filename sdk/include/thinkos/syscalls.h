@@ -942,11 +942,6 @@ thinkos_time_realtime_comp(uint64_t dt) {
    Other
    ---------------------------------------------------------------------------*/
 
-static inline void thinkos_yield(void) {
-	CM3_SCB->icsr = SCB_ICSR_PENDSVSET; /* PendSV rise */
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
-}
-
 static inline void thinkos_bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }

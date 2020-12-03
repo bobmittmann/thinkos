@@ -117,17 +117,20 @@ thinkos_sched_swap:
 	/* store the old context pointer into the context vector */
 	str      r0, [r3, r2, lsl #2]
 
-thinkos_sched_select_ready:
 	/* r1 - ready queue
 	   r2 - old thread id */
+thinkos_sched_select_ready:
+#if (THINKOS_ENABLE_READY_MASK)
+	ldr      r7, [r3, #OFFSETOF_KRN_RDY_MSK]
+	ands     r1, r7
+	beq      r1, .L_ready_queue_empty
+#else
 	cbz      r1, .L_ready_queue_empty
+#endif
 	/* get a thread from the ready bitmap by counting the
 	leading zeros on the bitmap */
 	rbit     r1, r1
  	clz      r1, r1
- 	adds     r1, #1
-
-thinkos_krn_sched_ctx_get:
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
@@ -139,6 +142,10 @@ thinkos_sched_step_req_check:
 	tst      r5, r4
 	bne.n    thinkos_sched_step
 #endif
+	/* Get thread number from bitmap index */
+ 	adds     r1, #1
+
+thinkos_krn_sched_ctx_get:
 
 	/* load the new context pointer from the context vector */
 	ldr.w	 r0, [r3, r1, lsl #2]
@@ -165,9 +172,8 @@ thinkos_krn_sched_ctx_restore:
 	isb
 	/* restore the stack pointer */
 	subs     r0, r3
-#endif
-
-#if (THINKOS_ENABLE_SCHED_ERROR)
+	beq      .L_nullptr_err
+#else
 	cbz      r0, .L_nullptr_err
 #endif
 
@@ -184,26 +190,23 @@ thinkos_krn_sched_ctx_restore:
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 #endif
 
+	/* r0: new thread stack
+	   r1: new active thread id 
+	   r2: old active thread id 
+	   r3: new thread ctrl */
 	/* restore core context */
 	ldmia    r0!, {r4-r11}
 	msr      PSP, r0
+
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-
 	subs     r0, r0, #(8  * 4)
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
+  #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
 	orrs     r0, r3
-#endif
+  #endif
 	b        thinkos_sched_dbg
 #else
 	bx       lr
-#endif
-
-#if (THINKOS_ENABLE_SCHED_ERROR)
-.L_nullptr_err:
-	bl      thinkos_krn_sched_nullptr_err
-	mov      sp, r0
-	b       .L_return_idle
 #endif
 
 .L_entry_xcept:
@@ -226,6 +229,15 @@ thinkos_krn_sched_ctx_restore:
 	push     {r4-r11}
     mov      r0, sp
 	b        thinkos_sched_update_cyccnt
+
+.L_nullptr_err:
+#if (THINKOS_ENABLE_SCHED_ERROR)
+	bl       thinkos_krn_sched_nullptr_err
+	mov      sp, r0
+#endif
+	/* FALLTRHOUG 
+	b       .L_return_idle
+	*/
 
 .L_return_idle:
 #if (THINKOS_ENABLE_SCHED_ERROR)

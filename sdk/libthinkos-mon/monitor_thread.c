@@ -58,9 +58,11 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_KRN_ABORT);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
+	sigmask |= (1 << MONITOR_USR_ABORT);
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+#endif
 	sigmask |= (1 << MONITOR_COMM_BRK);
-
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
@@ -87,6 +89,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 		case MONITOR_THREAD_TERMINATE: {
 			monitor_clear(MONITOR_THREAD_TERMINATE);
 			int code;
@@ -97,7 +100,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 					thread_id, code);
 			return code;
 		}
-
+#endif
 		default:
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 			return -1;

@@ -261,20 +261,6 @@ void monitor_alarm_stop(void)
 	monitor_mask(MONITOR_ALARM);
 }
 
-int monitor_wait_idle(void)
-{
-	DCC_LOG(LOG_INFO, "IDLE wait...");
-
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	/* Issue an idle hook request */
-	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
-
-	return monitor_expect(MONITOR_IDLE);
-#else
-	return 0;
-#endif
-}
-
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 int monitor_thread_terminate_get(int * code)
 {

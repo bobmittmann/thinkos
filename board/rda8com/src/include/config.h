@@ -39,14 +39,14 @@
 #define THINKOS_ENABLE_IRQ_CYCCNT           0
 #define THINKOS_ENABLE_IRQ_PRIORITY_0       0
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT        0
-#define THINKOS_ENABLE_WQ_IRQ               1
+#define THINKOS_ENABLE_WQ_IRQ               0
 
 #define THINKOS_ENABLE_ALARM                1
 #define THINKOS_ENABLE_SLEEP                1
 
 #define THINKOS_ENABLE_TIMESHARE            0
 
-#define THINKOS_THREADS_MAX                 32
+#define THINKOS_THREADS_MAX                 30
 
 /* These settings are used when its desirable
    to create and destroy threads dynamically */
@@ -79,11 +79,11 @@
 #define THINKOS_ENABLE_ARG_CHECK            1
 /* Check if a thread tries to lock a mutex which it
    has previously locked. */
-#define THINKOS_ENABLE_DEADLOCK_CHECK       0
+#define THINKOS_ENABLE_DEADLOCK_CHECK       1
 /* Check if athread tries to unlock a mutex which is
    not his own. Also check for minimum stack size on 
  thread creation. */
-#define THINKOS_ENABLE_SANITY_CHECK         0
+#define THINKOS_ENABLE_SANITY_CHECK         1
 
 /* Enable scheduler trace calls */
 #if DEBUG
@@ -95,8 +95,10 @@
 /* Enable scheduler stack error detection */
 #if DEBUG
 #define THINKOS_ENABLE_SCHED_ERROR          1
+#define THINKOS_ENABLE_STACK_LIMIT          1
 #else
 #define THINKOS_ENABLE_SCHED_ERROR          0
+#define THINKOS_ENABLE_STACK_LIMIT          0
 #endif
 
 #if DEBUG
@@ -110,7 +112,6 @@
 
 /* Enable the per thread CPU usage counters */
 #define THINKOS_ENABLE_PROFILING            1
-#define THINKOS_ENABLE_STACK_LIMIT          1
 
 #define THINKOS_ENABLE_TERMINATE            1
 
@@ -121,8 +122,8 @@
 /* Enable monitor */
 #define THINKOS_ENABLE_MONITOR              1
 #define THINKOS_ENABLE_MONITOR_CLOCK        0
-#define THINKOS_ENABLE_MONITOR_THREADS      1
-#define THINKOS_MONITOR_STACK_SIZE          512
+#define THINKOS_ENABLE_MONITOR_THREADS      0
+#define THINKOS_MONITOR_STACK_SIZE          768
 
 #define THINKOS_EXCEPT_STACK_SIZE           512
 #define THINKOS_ENABLE_ERROR_TRAP           1
@@ -168,19 +169,20 @@
 #define THINKOS_ENABLE_OFAST                1
 
 #define THINKOS_ENABLE_CONSOLE              1
+#define THINKOS_ENABLE_CONSOLE_READ         1
 #define THINKOS_ENABLE_CONSOLE_MISC         0
 #define THINKOS_ENABLE_CONSOLE_BREAK        0
 #define THINKOS_ENABLE_CONSOLE_OPEN         0
 #define THINKOS_ENABLE_CONSOLE_NONBLOCK     0
 #define THINKOS_ENABLE_CONSOLE_DRAIN        0
 #define THINKOS_ENABLE_CONSOLE_MODE         0
-#define THINKOS_CONSOLE_RX_FIFO_LEN         64
+#define THINKOS_CONSOLE_RX_FIFO_LEN         512
 #define THINKOS_CONSOLE_TX_FIFO_LEN         512
 
 #define THINKOS_ENABLE_TRACE                0
 #define THINKOS_ENABLE_ALIGN                1
 
-#define THINKOS_ENABLE_KRNSVC               1
+#define THINKOS_ENABLE_KRNSVC               0
 
 #define THINKOS_ENABLE_STACK_ALIGN          1
 #define THINKOS_ENABLE_UNALIGN_TRAP         1

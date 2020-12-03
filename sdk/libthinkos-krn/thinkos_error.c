@@ -121,7 +121,6 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread)
 	__nvic_irq_disable_all();
 
 #if (THINKOS_ENABLE_MONITOR) 
-
 	__thread_fault_raise(krn, thread, errno);
 
 	__tdump(krn);
@@ -134,11 +133,11 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread)
 
 void thinkos_krn_sched_on_break(uint32_t sp, uint32_t thread)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+//	struct thinkos_rt * krn = &thinkos_rt;
 
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FMG "Scheduler: On Break" VT_POP);
 
-	__krn_sched_brk_clr(krn);
+//	__krn_sched_brk_clr(krn);
 
 	/* Notify the debug/monitor */
 	thinkos_monitor_wakeup(); 

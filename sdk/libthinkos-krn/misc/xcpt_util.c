@@ -658,3 +658,113 @@ void __vec(void)
 #endif
 }
 
+void __kdump(struct thinkos_rt * krn)
+{
+	unsigned int i;
+	unsigned int oid;
+
+	for (oid = 0; oid < THINKOS_WQ_CNT; ++oid) {
+		uint32_t * wq;
+		int type;
+
+		wq = &krn->wq_lst[oid];
+		if (*wq) { 
+			type = __thinkos_obj_kind(oid);
+			switch (type) {
+			case THINKOS_OBJ_READY:
+				DCC_LOG2(LOG_TRACE, "READY %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_THREAD:
+				DCC_LOG2(LOG_TRACE, "THREAD %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_CANCELED:
+				DCC_LOG2(LOG_TRACE, "CANCELED %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_PAUSED:
+				DCC_LOG2(LOG_TRACE, "PAUSED %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_CLOCK:
+				DCC_LOG2(LOG_TRACE, "CLOCK %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_MUTEX:
+				DCC_LOG2(LOG_TRACE, "MUTEX %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_COND:
+				DCC_LOG2(LOG_TRACE, "COND %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_SEMAPHORE:
+				DCC_LOG2(LOG_TRACE, "SEMAPHORE %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_EVENT:
+				DCC_LOG2(LOG_TRACE, "EVENT %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_FLAG:
+				DCC_LOG2(LOG_TRACE, "FLAG %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_CONREAD:
+				DCC_LOG2(LOG_TRACE, "CON RD %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_CONWRITE:
+				DCC_LOG2(LOG_TRACE, "CON WR %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_TMSHARE:
+				DCC_LOG2(LOG_TRACE, "TMSHARE %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_COMMSEND:
+				DCC_LOG2(LOG_TRACE, "COMM TX %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_COMMRECV:
+				DCC_LOG2(LOG_TRACE, "COMM RX %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_IRQ:
+				DCC_LOG2(LOG_TRACE, "IRQ %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_DMA:
+				DCC_LOG2(LOG_TRACE, "DMA %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_FLASH_MEM:
+				DCC_LOG2(LOG_TRACE, "FLASH %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_FAULT:
+				DCC_LOG2(LOG_TRACE, "FAULT %d: 0x%08x", oid, *wq);
+				break;
+			case THINKOS_OBJ_INVALID:
+				DCC_LOG2(LOG_TRACE, "INVALID %d: 0x%08x", oid, *wq);
+				break;
+			default:
+				DCC_LOG2(LOG_WARNING, "ERROR %d: 0x%08x", oid, *wq);
+			}
+		}
+	}
+
+	DCC_LOG4(LOG_TRACE, "Active=<%2d> Ready=%08x Alloc=%08x Ticks=%u", 
+			 __krn_active_get(krn), krn->wq_ready, 
+			 krn->th_alloc[0], __krn_ticks_get(krn) );
+
+	uintptr_t stack = (uintptr_t)thinkos_except_stack;
+	unsigned long size = thinkos_except_stack_size;
+	stack +=  sizeof(struct thinkos_except);
+	size -=  sizeof(struct thinkos_except);
+
+#if (THINKOS_ENABLE_MONITOR)
+	DCC_LOG(LOG_ERROR, "Stack:");
+	DCC_LOG2(LOG_ERROR, "    Monitor: %6d/%d", 
+			 __thinkos_scan_stack(thinkos_monitor_stack, 
+								  thinkos_monitor_stack_size),
+			 thinkos_monitor_stack_size); 
+#endif
+	DCC_LOG2(LOG_ERROR, "     Except: %6d/%d", 
+		 __thinkos_scan_stack((void *)stack, size), size); 
+
+	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+
+		if (__thread_ctx_is_valid(krn, i)) {
+			DCC_LOG5(LOG_TRACE, "<%2d> (%3d) SP=%08x LR=%08x PC=%08x", i, 
+					 __thread_wq_get(krn, i), __thread_sp_get(krn, i), 
+					 __thread_lr_get(krn, i), __thread_pc_get(krn, i));
+		}
+	}
+
+}
+
+

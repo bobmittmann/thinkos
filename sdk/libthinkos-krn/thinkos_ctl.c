@@ -54,11 +54,13 @@ static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
 
 extern int32_t udelay_factor;
 
-void thinkos_krn_abort(struct thinkos_rt * krn)
+static void thinkos_krn_abort(struct thinkos_rt * krn)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
 
 	__thinkos_krn_core_reset(krn);
+
+	__krn_suspend_all(krn);
 
 #if (THINKOS_ENABLE_MONITOR)
 	monitor_signal_break(MONITOR_KRN_ABORT);

@@ -194,6 +194,8 @@ void __idump(const char * s, uint32_t ipsr);
 
 void __tdump(struct thinkos_rt * krn);
 
+void __kdump(struct thinkos_rt * krn);
+
 void __mpudump(void);
 
 void __odump(void);

@@ -62,9 +62,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 
 	type = __thinkos_obj_kind(wq);
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	monitor_printf(comm, " - No: %d", thread_id + 1); 
+	monitor_printf(comm, " - No: %d", thread_id); 
 	monitor_printf(comm, ", '%s'", tag); 
 
 	if (THINKOS_OBJ_READY == type) {
