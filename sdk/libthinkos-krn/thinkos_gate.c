@@ -67,7 +67,7 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	unsigned int gate = arg[0];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
-	uint32_t gates;
+	uint32_t bits;
 	uint32_t queue;
 #if THINKOS_ENABLE_ARG_CHECK
 	int ret;
@@ -92,13 +92,13 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 again:
 	/* check whether the gate is open or not */
-	gates = __ldrex(gates_bmp);
-	if (((gates >> idx) & 3) == __GATE_SIGNALED) {
+	bits = __ldrex(gates_bmp);
+	if (((bits >> idx) & 3) == __GATE_SIGNALED) {
 		/* close and lock the gate */
-		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
-		if (__strex(gates_bmp, gates))
+		bits = (bits & ~(3 << idx)) | (__GATE_LOCKED << idx);
+		if (__strex(gates_bmp, bits))
 			goto again;
-		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, gate);
+		DCC_LOG2(LOG_INFO, "<%2d> enter gate %d.", self, gate);
 		arg[0] = 0;
 		return;
 	}
@@ -151,7 +151,7 @@ void thinkos_gate_timedwait_svc(int32_t arg[], int self,
 	uint32_t ms = (uint32_t)arg[1];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
-	uint32_t gates;
+	uint32_t bits;
 	uint32_t queue;
 #if THINKOS_ENABLE_ARG_CHECK
 	int ret;
@@ -176,18 +176,18 @@ void thinkos_gate_timedwait_svc(int32_t arg[], int self,
 
 again:
 	/* check whether the gate is open or not */
-	gates = __ldrex(gates_bmp);
+	bits = __ldrex(gates_bmp);
 
-	if (((gates >> idx) & 3) == 3) {
+	if (((bits >> idx) & 3) == 3) {
 		DCC_LOG1(LOG_ERROR, "<%d> invalid state, open and locked.", self);
 		arg[0] = 0;
 		return;
 	}
 
-	if (((gates >> idx) & 3) == __GATE_SIGNALED) {
+	if (((bits >> idx) & 3) == __GATE_SIGNALED) {
 		/* close and lock the gate */
-		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
-		if (__strex(gates_bmp, gates))
+		bits = (bits & ~(3 << idx)) | (__GATE_LOCKED << idx);
+		if (__strex(gates_bmp, bits))
 			goto again;
 		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, gate);
 		arg[0] = 0;
@@ -231,7 +231,7 @@ again:
 
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG3(LOG_INFO, "<%d> waiting at gate %d, state=%d...", 
-			 self, gate, (gates >> idx) & 3);
+			 self, gate, (bits >> idx) & 3);
 	__krn_thread_clk_itv_wait(krn, self, ms);
 }
 #endif
@@ -242,7 +242,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	unsigned int open = arg[1];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
-	uint32_t gates;
+	uint32_t bits;
 	uint32_t queue;
 	int th;
 	int j;
@@ -284,17 +284,17 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (open > 0) {
 		/* user wants the gate to stay open, make sure it signaled.  */
 		do {
-			gates = __ldrex(gates_bmp);
-			gates |= (__GATE_SIGNALED << idx);
-		} while (__strex(gates_bmp, gates));
+			bits = __ldrex(gates_bmp);
+			bits |= (__GATE_SIGNALED << idx);
+		} while (__strex(gates_bmp, bits));
 		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self, gate);
 	} else { /* (open == 0) */
 again:
-		gates = __ldrex(gates_bmp);
-		if ((gates & (__GATE_SIGNALED << 3)) == 0) {
+		bits = __ldrex(gates_bmp);
+		if ((bits & (__GATE_SIGNALED << 3)) == 0) {
 			/* not signaled, unlock the gate and leave. */
-			gates &= ~(__GATE_LOCKED << idx);
-			if (__strex(gates_bmp, gates))
+			bits &= ~(__GATE_LOCKED << idx);
+			if (__strex(gates_bmp, bits))
 				goto again;
 			DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave closed.", 
 					 self, gate);
@@ -309,12 +309,12 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&krn->wq_lst[gate]);
-		if ((j = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((j = __thinkos_ffs(queue)) == 32) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
-				gates = __ldrex(gates_bmp);
-				gates &= ~(__GATE_LOCKED << idx);
-			} while (__strex(gates_bmp, gates));
+				bits = __ldrex(gates_bmp);
+				bits &= ~(__GATE_LOCKED << idx);
+			} while (__strex(gates_bmp, bits));
 			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self, gate);
 			return;
 		} 
@@ -325,9 +325,9 @@ again:
 
 	/* close the gate by removing the signal */
 	do {
-		gates = __ldrex(gates_bmp);
-		gates &= ~(__GATE_SIGNALED << idx);
-	} while (__strex(gates_bmp, gates));
+		bits = __ldrex(gates_bmp);
+		bits &= ~(__GATE_SIGNALED << idx);
+	} while (__strex(gates_bmp, bits));
 
 
 	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, gate);
@@ -355,7 +355,7 @@ void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
 	int j;
 	int th;
 
-	DCC_LOG1(LOG_INFO, "gate %d", gate);
+	DCC_LOG1(LOG_TRACE, "gate %d", gate);
 
 #if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &krn->gate[0];
@@ -384,7 +384,7 @@ again:
 	do {
 		/* get a thread from the queue bitmap */
 		queue = __ldrex(&krn->wq_lst[gate]);
-		if ((j = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		if ((j = __thinkos_ffs(queue)) == 32) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				bits = __ldrex(gates_bmp);
@@ -423,6 +423,8 @@ again:
 void cm3_except13_isr(uint32_t gate)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
+
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 	/* open the gate */
 	__krn_gate_open(krn, gate);

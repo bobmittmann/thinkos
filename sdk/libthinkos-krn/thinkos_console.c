@@ -710,7 +710,7 @@ wr_again:
 				goto wr_again;
 			}
 			/* Insert into the event wait queue */
-			queue |= (1 << self);
+			queue |= (1 << (self - 1));
 			/* (3) Try to save back the queue state.
 			   The queue may have changed by an interrup handler.
 			   If this is the case roll back and restart. */

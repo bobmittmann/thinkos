@@ -79,8 +79,6 @@ void __nvic_irq_clrpend_all(void)
 	}
 
 }
-
-
 #endif
 
 void __thinkos_krn_irq_init(struct thinkos_rt * krn)
@@ -237,7 +235,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 	}
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
-	DCC_LOG2(LOG_MSG, "<%2d> IRQ %d!", self, irq);
+	DCC_LOG2(LOG_TRACE, "<%2d> IRQ %d!", self, irq);
 	arg[0] = THINKOS_OK;
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)

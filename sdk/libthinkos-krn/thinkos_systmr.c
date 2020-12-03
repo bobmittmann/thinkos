@@ -32,14 +32,13 @@ static void __thinkos_time_wakeup(struct thinkos_rt * krn, int th)
 	int wq;
 	/* update the thread status */
 	wq = __thread_stat_wq_get(krn, th);
-
 	__thread_stat_clr(krn, th);
 	/* remove from other wait queue, if any */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
 	/* remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
-	DCC_LOG1(LOG_TRACE, "Wakeup %d...", th);
+	DCC_LOG1(LOG_INFO, "Wakeup %d...", th);
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
 	__krn_preempt(krn);
@@ -192,7 +191,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		__monitor_context_swap(&krn->monitor.ctx); 
 
-	} while (0);
+	} while (1);
 
   #endif /* THINKOS_ENABLE_MONITOR */
 }
