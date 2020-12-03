@@ -81,6 +81,8 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct cm3_systick * systick = CM3_SYSTICK;
 
+	DCC_LOG(LOG_TRACE, "tick...");
+
 	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 	{
 		uint32_t ticks;
@@ -152,6 +154,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			krn->ticks = ticks; 
 
 			wq = __rbit(krn->wq_clock);
+
 			while ((j = __clz(wq)) < 32) {
 				int32_t th = j + 1;
 				wq &= ~(0x80000000 >> j);  
@@ -189,7 +192,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		__monitor_context_swap(&krn->monitor.ctx); 
 
-	} while (1);
+	} while (0);
 
   #endif /* THINKOS_ENABLE_MONITOR */
 }
@@ -237,3 +240,22 @@ void thinkos_krn_udelay_calibrate(void)
 }
 #endif
 
+#if (THINKOS_ENABLE_PAUSE)
+bool clock_resume(struct thinkos_rt * krn, unsigned int th, 
+				  unsigned int wq, bool tmw) 
+{
+//	if ((int32_t)(krn->clock[th] - krn->ticks) <= 0) {
+		/* thread's clock is in the past, wakeup now. */
+//		DCC_LOG1(LOG_INFO, "timeout PC=%08x .......", __thinkos_thread_pc_get(th)); 
+		/* update the thread status */
+//		__thinkos_thread_stat_clr(th);
+		/* insert into the ready wait queue */
+//		__bit_mem_wr(&krn->wq_ready, th, 1);  
+//	} else {
+	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", th, __thread_pc_get(krn, th)); 
+	if (tmw)
+		__thread_clk_enable(krn, th);
+//	}
+	return true;
+}
+#endif

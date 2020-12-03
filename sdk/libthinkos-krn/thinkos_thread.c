@@ -23,6 +23,22 @@
 
 #include <sys/dcclog.h>
 
+int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
+{
+#if THINKOS_ENABLE_ARG_CHECK
+	if (!__krn_obj_is_thread(krn, th)) {
+		return THINKOS_ERR_THREAD_INVALID;
+	}
+#if THINKOS_ENABLE_THREAD_ALLOC
+	if (__krn_thread_is_alloc(krn, th) == 0) {
+		return THINKOS_ERR_THREAD_ALLOC;
+	}
+#endif
+#endif
+	return THINKOS_OK;
+}
+
+
 int thinkos_krn_thread_init(struct thinkos_rt * krn,
 							unsigned int thread_no,
 							struct thinkos_thread_initializer * init)
@@ -140,7 +156,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	} else {
 		DCC_LOG1(LOG_TRACE, "<%d> thread ready...", thread_no);
 		__thread_ready_set(krn, thread_no);
-		__thinkos_defer_sched();
+		__krn_defer_sched(krn);
 	}
 
 	return 0;
@@ -157,23 +173,15 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	/* collect call arguments */
 	thread_no = arg[0];
 	init = (struct thinkos_thread_initializer *)arg[1];
-
+	
 #if THINKOS_ENABLE_ARG_CHECK
-	if (thread_no > ((THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX))) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_no);
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
+	if ((ret = __krn_thread_check(krn, thread_no)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", 
+				 self, thread_no);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	if (!__thread_is_alloc(krn, thread_no)) {
-		DCC_LOG1(LOG_ERROR, "thread alloc %d!", thread_no);
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
@@ -188,14 +196,13 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 
 	DCC_LOG3(LOG_TRACE, "<%2d> thread=%d init=0x%08x",
 			 self, thread_no, init);
+
 	if ((ret = thinkos_krn_thread_init(krn, thread_no, init))) {
 		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	};
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
 	arg[0] = thread_no;
 
 	return;
@@ -238,3 +245,52 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 }
 #endif
 
+void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th, 
+					   unsigned int wq) 
+{
+	/* (1) suspend the thread by removing it from the
+	   ready wait queue. */
+	__krn_thread_suspend(krn, th);
+	__krn_wq_insert(krn, wq, th);
+	/* signal the scheduler ... */
+	__krn_defer_sched(krn);
+}
+
+void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
+							unsigned int wq, unsigned int ms) {
+	__krn_tmdwq_insert(krn, wq, th, ms);
+	__krn_thread_suspend(krn, th);
+	/* signal the scheduler ... */
+	__krn_defer_sched(krn);
+}
+
+void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th, 
+							  unsigned int ms) 
+{
+	/* Set the default return value to timeout. 
+	   The wake up call will change this to 0 */
+	__thread_r0_set(krn, th, THINKOS_ETIMEDOUT);
+	/* set the clock */
+	__thread_clk_itv_set(krn, th, ms);
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, th);
+	/* signal the scheduler ... */
+	__krn_defer_sched(krn);
+}
+
+void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
+{
+	unsigned int th;
+
+	if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL) {
+		do {
+			DCC_LOG2(LOG_INFO, "<%2d> wakeup from %d.", th, wq);
+			/* wakeup from the cond wait queue */
+			__krn_wq_wakeup(krn, wq, th);
+			/* get the next thread */
+		} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
+
+		/* signal the scheduler ... */
+		__krn_defer_sched(krn);
+	}
+}

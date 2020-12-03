@@ -43,36 +43,33 @@ __krn_cond_is_alloc(struct thinkos_rt * krn, unsigned int cond) {
 		true : false;
 }
 
-int krn_cond_check(struct thinkos_rt * krn, int cond)
-{
 #if THINKOS_ENABLE_ARG_CHECK
-	if (!__krn_obj_is_mutex(krn, cond)) {
+static int krn_cond_check(struct thinkos_rt * krn, int cond)
+{
+	if (!__krn_obj_is_cond(krn, cond)) {
 		return THINKOS_ERR_COND_INVALID;
 	}
-#if THINKOS_ENABLE_MUTEX_ALLOC
-	if (__krn_mutex_is_alloc(krn, cond) == 0) {
+#if THINKOS_ENABLE_COND_ALLOC
+	if (__krn_cond_is_alloc(krn, cond) == 0) {
 		return THINKOS_ERR_COND_ALLOC;
 	}
 #endif
-#endif
 	return THINKOS_OK;
 }
+#endif
 
-void thinkos_cond_wait_svc(int32_t * arg, int self)
+void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
+	int th;
 #if THINKOS_ENABLE_ARG_CHECK
 	int ret;
-#endif
-	int th;
 
-#if THINKOS_ENABLE_ARG_CHECK
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
 				 self, cond);
-		__THINKOS_ERROR(self, THINKOS_ERR_COND_INVALID);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -97,27 +94,23 @@ void thinkos_cond_wait_svc(int32_t * arg, int self)
 	}
 #endif
 
-	/* Set the return value */
-	arg[0] = THINKOS_OK;
-
-	/* insert into the cond wait queue */
-	__krn_thread_wait(krn, self, cond);
-
 	DCC_LOG3(LOG_INFO, "<%2d> mutex %d unlocked, waiting on cond %d...", 
 			 self, mutex, cond);
     if ((th = krn_mutex_unlock_wakeup(krn, mutex)) != THINKOS_THREAD_NULL) {
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked.", th, mutex);
 	}
 
-	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	/* Set the return value */
+	arg[0] = THINKOS_OK;
+	/* insert into the cond wait queue */
+	__krn_thread_wait(krn, self, cond);
 }
 
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_cond_timedwait_svc(int32_t * arg, int self)
+void thinkos_cond_timedwait_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
 	uint32_t ms = (uint32_t)arg[2];
@@ -130,7 +123,7 @@ void thinkos_cond_timedwait_svc(int32_t * arg, int self)
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
 				 self, cond);
-		__THINKOS_ERROR(self, THINKOS_ERR_COND_INVALID);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -155,12 +148,6 @@ void thinkos_cond_timedwait_svc(int32_t * arg, int self)
 	}
 #endif
 
-	/* Set the default return value to timeout. The
-	   cond_signal call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
-
-	/* insert into the cond wait queue */
-	__krn_thread_timedwait(krn, self, cond, ms);
 
 	DCC_LOG3(LOG_INFO, "<%2d> mutex %d unlocked, waiting on cond %d...", 
 			 self, mutex, cond);
@@ -168,14 +155,16 @@ void thinkos_cond_timedwait_svc(int32_t * arg, int self)
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked.", th, mutex);
 	}
 
-	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	/* Set the default return value to timeout. The
+	   cond_signal call will change this to 0 */
+	arg[0] = THINKOS_ETIMEDOUT;
+	/* insert into the cond wait queue */
+	__krn_thread_timedwait(krn, self, cond, ms);
 }
 #endif
 
-void thinkos_cond_signal_svc(int32_t * arg, unsigned int self)
+void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int cond = arg[0];
 #if THINKOS_ENABLE_ARG_CHECK
 	int ret;
@@ -185,7 +174,7 @@ void thinkos_cond_signal_svc(int32_t * arg, unsigned int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
-		__THINKOS_ERROR(self, THINKOS_ERR_COND_INVALID);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -203,39 +192,43 @@ void thinkos_cond_signal_svc(int32_t * arg, unsigned int self)
 	arg[0] = THINKOS_OK;
 }
 
-void thinkos_cond_broadcast_svc(int32_t * arg, unsigned int self)
+void thinkos_cond_broadcast_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn)
 {	
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int cond = arg[0];
 #if THINKOS_ENABLE_ARG_CHECK
 	int ret;
 #endif
-	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
-		__THINKOS_ERROR(self, THINKOS_ERR_COND_INVALID);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	if ((th = __krn_wq_head(krn, cond)) != THINKOS_THREAD_NULL) {
-		do {
-			DCC_LOG2(LOG_INFO, "<%2d> wakeup from cond %d.", th, cond);
-			/* wakeup from the cond wait queue */
-			__krn_wq_wakeup(krn, cond, th);
-			/* get the next thread */
-		} while ((th = __krn_wq_head(krn, cond)) != THINKOS_THREAD_NULL);
-
-		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
-	}
-
 	/* Set the return value */
 	arg[0] = THINKOS_OK;
+	/* wakeup all threads waiting on the condition */
+	__krn_wq_wakeup_all(krn, cond);
 }
 
 #endif /* THINKOS_COND_MAX > 0 */
+
+#if (THINKOS_ENABLE_PAUSE)
+bool cond_resume(struct thinkos_rt * krn, unsigned int th, 
+						unsigned int wq, bool tmw) 
+{
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
+
+	__thread_wq_set(krn, th, wq);
+#if THINKOS_ENABLE_TIMED_CALLS
+	if (tmw)
+		__thread_clk_enable(krn, th);
+#endif
+	return true;
+}
+#endif
 

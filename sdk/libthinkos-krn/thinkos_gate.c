@@ -28,6 +28,32 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (THINKOS_GATE_MAX > 0)
 
+static inline bool __attribute__((always_inline)) 
+__krn_obj_is_gate(struct thinkos_rt * krn, unsigned int gate) {
+	return __obj_is_valid(gate, THINKOS_GATE_BASE, THINKOS_GATE_MAX);
+}
+
+static inline bool __attribute__((always_inline)) 
+__krn_gate_is_alloc(struct thinkos_rt * krn, unsigned int gate) {
+	return __bit_mem_rd(krn->gate_alloc, gate - THINKOS_GATE_BASE) ? 
+		true : false;
+}
+
+#if THINKOS_ENABLE_ARG_CHECK
+int krn_gate_check(struct thinkos_rt * krn, int gate)
+{
+	if (!__krn_obj_is_gate(krn, gate)) {
+		return THINKOS_ERR_GATE_INVALID;
+	}
+#if THINKOS_ENABLE_GATE_ALLOC
+	if (__krn_gate_is_alloc(krn, gate) == 0) {
+		return THINKOS_ERR_GATE_ALLOC;
+	}
+#endif
+	return THINKOS_OK;
+}
+#endif
+
 /* --------------------------------------------------------------------------
  * 
  * -------------------------------------------------------------------------- */
@@ -36,40 +62,33 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define __GATE_SIGNALED 1
 #define __GATE_LOCKED   2
 
-void thinkos_gate_wait_svc(int32_t * arg, unsigned int self)
+void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	unsigned int wq = arg[0];
-	unsigned int idx = wq - THINKOS_GATE_BASE;
+	unsigned int gate = arg[0];
+	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
 	uint32_t gates;
 	uint32_t queue;
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
+	if ((ret = krn_gate_check(krn, gate)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 
 #if (THINKOS_GATE_MAX < 16)
-	gates_bmp = &thinkos_rt.gate[0];
+	gates_bmp = &krn->gate[0];
 #else
-	gates_bmp = &thinkos_rt.gate[idx / 16];
+	gates_bmp = &krn->gate[idx / 16];
 	idx %= 16;
 #endif
 	idx *= 2;
 
-	DCC_LOG1(LOG_INFO, "gate %d", wq);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 again:
 	/* check whether the gate is open or not */
@@ -79,7 +98,7 @@ again:
 		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
 		if (__strex(gates_bmp, gates))
 			goto again;
-		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, wq);
+		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, gate);
 		arg[0] = 0;
 		return;
 	}
@@ -92,72 +111,68 @@ again:
 	   queue inside a system call as long as we insert it into a 
 	   waiting queue before leaving.
 	 */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
 	/* update the thread status in preparation for event wait */
 #if (THINKOS_ENABLE_THREAD_STAT)
-	thinkos_rt.th_stat[self] = wq << 1;
+	__thread_stat_set(krn, self, gate, 0);
 #endif
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_flush(arg, self);
+/* NEW: 2020-12-02 performed by the svc call entry stub 
+	__thread_ctx_flush(krn, arg, self);
+*/
+
 	/* insert into the gate wait queue */
-	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
+	queue = __ldrex(&krn->wq_lst[gate]);
 	queue |= (1 << (self - 1));
 	/* The gate may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
-		__strex(&thinkos_rt.wq_lst[wq], queue)) {
+		__strex(&krn->wq_lst[gate], queue)) {
 		/* roll back */
-		__thinkos_thread_stat_clr(self);
+		__thread_stat_clr(krn, self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
+		__thread_ready_set(krn, self);
 		goto again;
 	}
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG2(LOG_INFO, "<%d> waiting at gate %d...", self, wq);
+	DCC_LOG2(LOG_INFO, "<%d> waiting at gate %d...", self, gate);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched(); 
+	__krn_defer_sched(krn); 
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
-void thinkos_gate_timedwait_svc(int32_t * arg, unsigned int self)
+void thinkos_gate_timedwait_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn)
 {
-	unsigned int wq = arg[0];
+	unsigned int gate = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-	unsigned int idx = wq - THINKOS_GATE_BASE;
+	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
 	uint32_t gates;
 	uint32_t queue;
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
+	if ((ret = krn_gate_check(krn, gate)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-#endif
-
 
 #if (THINKOS_GATE_MAX < 16)
-	gates_bmp = &thinkos_rt.gate[0];
+	gates_bmp = &krn->gate[0];
 #else
-	gates_bmp = &thinkos_rt.gate[idx / 16];
+	gates_bmp = &krn->gate[idx / 16];
 	idx %= 16;
 #endif
 	idx *= 2;
 
-	DCC_LOG1(LOG_MSG, "gate %d", wq);
+	DCC_LOG1(LOG_MSG, "gate %d", gate);
 
 again:
 	/* check whether the gate is open or not */
@@ -174,7 +189,7 @@ again:
 		gates = (gates & ~(3 << idx)) | (__GATE_LOCKED << idx);
 		if (__strex(gates_bmp, gates))
 			goto again;
-		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, wq);
+		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, gate);
 		arg[0] = 0;
 		return;
 	}
@@ -187,79 +202,64 @@ again:
 	   It is not a problem having a thread not contained in any waiting
 	   queue inside a system call. 
 	 */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
 	/* update the thread status in preparation for event wait */
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
-	thinkos_rt.th_stat[self] = (wq << 1) + 1;
+	__thread_stat_set(krn, self, gate, 1);
 #endif
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_flush(arg, self);
+/* NEW: 2020-12-02 performed by the svc call entry stub 
+	__thread_ctx_flush(krn, arg, self);
+*/
 	/* insert into the gate wait queue */
-	queue = __ldrex(&thinkos_rt.wq_lst[wq]);
+	queue = __ldrex(&krn->wq_lst[gate]);
 	queue |= (1 << (self -1));
 	/* The gate may have been signaled while suspending (1).
 	 If this is the case roll back and restart. */
 	if ((((volatile uint32_t)*gates_bmp >> idx) & 3) == __GATE_SIGNALED ||
-		__strex(&thinkos_rt.wq_lst[wq], queue)) {
+		__strex(&krn->wq_lst[gate], queue)) {
 		/* roll back */
-		__thinkos_thread_stat_clr(self);
+		__thread_stat_clr(krn, self);
 		/* insert into the ready wait queue */
-		__bit_mem_wr(&thinkos_rt.wq_ready, (self - 1), 1);  
+		__thread_ready_set(krn, self);
 		DCC_LOG1(LOG_INFO, "<%d> again.", self);
 		goto again;
 	}
 
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG3(LOG_INFO, "<%d> waiting at gate %d, state=%d...", 
-			 self, wq, (gates >> idx) & 3);
-
-	/* set the clock */
-	__thread_clk_itv_set(&thinkos_rt, self, ms);
-
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, (self - 1), 1);  
-	/* Set the default return value to timeout. The
-	   gate_open() call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
-	/* signal the scheduler ... */
-	__thinkos_defer_sched(); 
+			 self, gate, (gates >> idx) & 3);
+	__krn_thread_clk_itv_wait(krn, self, ms);
 }
 #endif
 
-void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
+void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	unsigned int wq = arg[0];
+	unsigned int gate = arg[0];
 	unsigned int open = arg[1];
-	unsigned int idx = wq - THINKOS_GATE_BASE;
+	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
 	uint32_t gates;
 	uint32_t queue;
 	int th;
-	int k;
+	int j;
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
+	if ((ret = krn_gate_check(krn, gate)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
-	if (!__bit_mem_rd(thinkos_rt.gate, idx * 2 + 1)) {
-		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, wq);
+	if (!__bit_mem_rd(krn->gate, idx * 2 + 1)) {
+		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, gate);
 		__THINKOS_ERROR(self, THINKOS_ERR_GATE_UNLOCKED);
 		arg[0] = THINKOS_EPERM;
 		return;
@@ -267,14 +267,14 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 #endif
 
 #if (THINKOS_GATE_MAX < 16)
-	gates_bmp = &thinkos_rt.gate[0];
+	gates_bmp = &krn->gate[0];
 #else
-	gates_bmp = &thinkos_rt.gate[idx / 16];
+	gates_bmp = &krn->gate[idx / 16];
 	idx %= 16;
 #endif
 	idx *= 2;
 
-	DCC_LOG1(LOG_MSG, "gate %d", wq);
+	DCC_LOG1(LOG_MSG, "gate %d", gate);
 
 	arg[0] = 0;
 
@@ -287,7 +287,7 @@ void thinkos_gate_exit_svc(int32_t * arg, unsigned int self)
 			gates = __ldrex(gates_bmp);
 			gates |= (__GATE_SIGNALED << idx);
 		} while (__strex(gates_bmp, gates));
-		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self, wq);
+		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open.", self, gate);
 	} else { /* (open == 0) */
 again:
 		gates = __ldrex(gates_bmp);
@@ -297,31 +297,31 @@ again:
 			if (__strex(gates_bmp, gates))
 				goto again;
 			DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave closed.", 
-					 self, wq);
+					 self, gate);
 			return;
 		}
 		DCC_LOG2(LOG_INFO, "<%d> exit gate %d, leave open due to signal.", 
-				 self, wq);
+				 self, gate);
 	}
 
 	/* At this point the gate is garanteed to be signaled and locked! */
 
 	do {
 		/* get a thread from the queue bitmap */
-		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((k = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		queue = __ldrex(&krn->wq_lst[gate]);
+		if ((j = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
 				gates = __ldrex(gates_bmp);
 				gates &= ~(__GATE_LOCKED << idx);
 			} while (__strex(gates_bmp, gates));
-			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self, wq);
+			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", self, gate);
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << k);
-	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
-	th = k + 1;
+		queue &= ~(1 << j);
+	} while (__strex(&krn->wq_lst[gate], queue));
+	th = j + 1;
 
 	/* close the gate by removing the signal */
 	do {
@@ -330,167 +330,202 @@ again:
 	} while (__strex(gates_bmp, gates));
 
 
-	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, wq);
+	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, gate);
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
+	__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th, 0);  
+	__thread_clk_disable(krn, th);  
 	/* set the thread's return value */
-	__thinkos_thread_r0_set(th, 0);
+	__thread_r0_set(krn, th, 0);
 #endif
 	/* update status */
-	__thinkos_thread_stat_clr(th);
+	__thread_stat_clr(krn, th);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 }
 
-void __thinkos_gate_open_i(uint32_t wq)
+void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
 {
-	unsigned int idx = wq - THINKOS_GATE_BASE;
+	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
-	uint32_t gates;
+	uint32_t bits;
 	uint32_t queue;
-	int k;
+	int j;
 	int th;
 
-	DCC_LOG1(LOG_MSG, "gate %d", wq);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 #if (THINKOS_GATE_MAX < 16)
-	gates_bmp = &thinkos_rt.gate[0];
+	gates_bmp = &krn->gate[0];
 #else
-	gates_bmp = &thinkos_rt.gate[idx / 16];
+	gates_bmp = &krn->gate[idx / 16];
 	idx %= 16;
 #endif
 	idx *= 2;
 
 again:
 	/* check whether the gate is locked or not */
-	gates = __ldrex(gates_bmp);
-	if (gates & (__GATE_LOCKED << idx)) {
+	bits = __ldrex(gates_bmp);
+	if (bits & (__GATE_LOCKED << idx)) {
 		/* gate is locked, signal for open */
-		gates |= __GATE_SIGNALED << idx;
-		if (__strex(gates_bmp, gates))
+		bits |= __GATE_SIGNALED << idx;
+		if (__strex(gates_bmp, bits))
 			goto again;
-		DCC_LOG1(LOG_INFO, "gate %d is locked, signaling!", wq);
+		DCC_LOG1(LOG_INFO, "gate %d is locked, signaling!", gate);
 		return;
 	}
 	/* lock the gate to avoid race conditions */
-	gates |= (__GATE_LOCKED | __GATE_SIGNALED) << idx;
-	if (__strex(gates_bmp, gates))
+	bits |= (__GATE_LOCKED | __GATE_SIGNALED) << idx;
+	if (__strex(gates_bmp, bits))
 		goto again;
 
 	do {
 		/* get a thread from the queue bitmap */
-		queue = __ldrex(&thinkos_rt.wq_lst[wq]);
-		if ((k = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
+		queue = __ldrex(&krn->wq_lst[gate]);
+		if ((j = __thinkos_ffs(queue)) == THINKOS_THREAD_NULL) {
 			/* no threads waiting on the gate, unlock the gate */
 			do {
-				gates = __ldrex(gates_bmp);
-				gates &= ~(__GATE_LOCKED << idx);
-			} while (__strex(gates_bmp, gates));
-			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", th, wq);
+				bits = __ldrex(gates_bmp);
+				bits &= ~(__GATE_LOCKED << idx);
+			} while (__strex(gates_bmp, bits));
+			DCC_LOG2(LOG_MSG, "<%d> unlock gate %d.", j + 1, gate);
 			return;
 		} 
 		/* remove from the wait queue */
-		queue &= ~(1 << k);
-	} while (__strex(&thinkos_rt.wq_lst[wq], queue));
-	th = k + 1;
+		queue &= ~(1 << j);
+	} while (__strex(&krn->wq_lst[gate], queue));
+	th = j + 1;
 
 	/* close the gate by removing the signal */
 	do {
-		gates = __ldrex(gates_bmp);
-		gates &= ~(__GATE_SIGNALED << idx);
-	} while (__strex(gates_bmp, gates));
+		bits = __ldrex(gates_bmp);
+		bits &= ~(__GATE_SIGNALED << idx);
+	} while (__strex(gates_bmp, bits));
 
 
-	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, wq);
-
+	DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", th, gate);
 
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, th - 1, 1);
+	__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, th - 1, 0);  
+	__thread_clk_disable(krn, th);  
 #endif
 	/* set the thread's return value */
-	__thinkos_thread_r0_set(th, 0);
+	__thread_r0_set(krn, th, 0);
 	/* update status */
-	__thinkos_thread_stat_clr(th);
+	__thread_stat_clr(krn, th);
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void cm3_except13_isr(uint32_t wq)
+void cm3_except13_isr(uint32_t gate)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	/* open the gate */
-	__thinkos_gate_open_i(wq);
+	__krn_gate_open(krn, gate);
 	/* signal the scheduler ... */
-	__thinkos_preempt();
+	__krn_preempt(krn);
+}
+
+void __thinkos_gate_open_i(uint32_t gate)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	/* open the gate */
+	__krn_gate_open(krn, gate);
 }
 #endif /* THINKOS_ENABLE_I_CALLS */
 
-void thinkos_gate_open_svc(int32_t * arg, unsigned int self)
+void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	unsigned int wq = arg[0];
+	unsigned int gate = arg[0];
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-	unsigned int idx = wq - THINKOS_GATE_BASE;
-
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
+	if ((ret = krn_gate_check(krn, gate)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 	arg[0] = 0;
 
-	DCC_LOG1(LOG_INFO, "gate %d", wq);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 	/* open the gate */
-	__thinkos_gate_open_i(wq);
+	__krn_gate_open(krn, gate);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);;
 }
 
-void thinkos_gate_close_svc(int32_t * arg, unsigned int self)
+void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	unsigned int wq = arg[0];
-	unsigned int idx = wq - THINKOS_GATE_BASE;
+	unsigned int gate = arg[0];
+	unsigned int idx = gate - THINKOS_GATE_BASE;
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-
-	if (idx >= THINKOS_GATE_MAX) {
-		DCC_LOG1(LOG_ERROR, "object %d is not a gate!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_INVALID);
+	if ((ret = krn_gate_check(krn, gate)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if (THINKOS_ENABLE_GATE_ALLOC)
-	if (__bit_mem_rd(thinkos_rt.gate_alloc, idx) == 0) {
-		DCC_LOG1(LOG_ERROR, "invalid gate %d!", wq);
-		__THINKOS_ERROR(self, THINKOS_ERR_GATE_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 	arg[0] = 0;
 
-	DCC_LOG1(LOG_INFO, "gate %d", wq);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 	/* close the gate */
-	__bit_mem_wr(thinkos_rt.gate, idx * 2, 0);
+	__bit_mem_wr(krn->gate, idx * 2, 0);
 }
 
+#if (THINKOS_ENABLE_PAUSE)
+bool gate_resume(struct thinkos_rt * krn, unsigned int th, 
+				 unsigned int gate, bool tmw) 
+{
+	unsigned int idx = gate - THINKOS_GATE_BASE;
+	int open;
+	int lock;
+	
+	open = __bit_mem_rd(krn->gate, idx * 2);
+	lock = __bit_mem_rd(krn->gate, idx * 2 + 1); 
+
+	DCC_LOG3(LOG_INFO, "PC=%08x open=%d lock=%d...........", 
+			 __thread_pc_get(krn, th), open, lock);
+
+	/* THINKOS_GATE_SIGNALED */
+	if (open && !lock) {
+		/* close the gate */
+		__bit_mem_wr(krn->gate, idx * 2, 0);
+		/* lock the gate */
+		__bit_mem_wr(krn->gate, idx * 2 + 1, 1);
+
+		/* insert the thread into ready queue */
+		__thread_ready_set(krn, th);
+#if THINKOS_ENABLE_TIMED_CALLS
+		/* set the thread's return value */
+		__thread_r0_set(krn, th, 0);
+#endif
+		/* update status */
+		__thread_stat_clr(krn, th);
+	} else { 
+		__thread_wq_set(krn, th, gate);
+#if THINKOS_ENABLE_TIMED_CALLS
+		if (tmw)
+			__thread_clk_enable(krn, th);
+#endif
+	}
+	return true;
+}
+#endif
+
+
+
 #endif /* THINKOS_GATE_MAX > 0 */
+
 

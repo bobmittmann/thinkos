@@ -56,7 +56,8 @@ ifeq ($(CPU), cortex-m3)
   SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
 		   cortex-m/thinkos_vec-cortex-m3.S \
 		   cortex-m/thinkos_svc-cortex-m3.S \
-		   cortex-m/thinkos_sched-cortex-m3.S
+		   cortex-m/thinkos_sched-cortex-m4f.S
+#		   cortex-m/thinkos_sched-cortex-m3.S
 #		   cortex-m/thinkos_sched-cortex-m3-msk.S
 endif
 

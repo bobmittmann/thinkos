@@ -22,17 +22,16 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-void __thinkos_krn_thread_abort(struct thinkos_rt * krn, 
-								unsigned int thread_idx)
+void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 {
-	DCC_LOG1(LOG_TRACE, "(thread=%d)", thread_idx); 
+	DCC_LOG1(LOG_TRACE, "(thread=%d)", th); 
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	{
 		unsigned int j;
 
-		for (j = 0; j < THINKOS_THREADS_MAX; ++j) {
-			if (j == thread_idx)
+		for (j = THINKOS_THREAD_FIRST; j <= THINKOS_THREAD_LAST; ++j) {
+			if (j == th)
 				continue;
 			if (!__thread_ctx_is_valid(krn, j))
 				continue;
@@ -47,74 +46,65 @@ void __thinkos_krn_thread_abort(struct thinkos_rt * krn,
 	/* clear the schedule priority. In case the thread allocation
 	 is disabled, the schedule limit reevaluation may produce inconsistent
 	 results ... */
-	krn->sched_pri[thread_idx] = 0;
+	krn->sched_pri[th] = 0;
 #endif
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* Releases the thread block */
-	__bit_mem_wr(&krn->th_alloc[0], thread_idx - 1, 0);
+	__thread_alloc_clr(krn, th);
 #endif
 
-	if (thread_idx == __thread_active_get(krn)) {
-		DCC_LOG(LOG_INFO, "set active thread to void!"); 
+	if (th == __krn_active_get(krn)) {
 		/* discard current thread context */
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
+		__krn_sched_discard_active(krn);
 	}
 
 	/* clear context. */
-	__thread_ctx_clr(krn, thread_idx);
+	__thread_ctx_clr(krn, th);
 
-	__krn_thread_suspend(krn, thread_idx);
+	__krn_thread_suspend(krn, th);
 
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 }
 
 void __thinkos_krn_abort_all(struct thinkos_rt * krn)
 {
 	unsigned int j;
 
-	for (j = 0; j < THINKOS_THREADS_MAX; ++j) {
+	for (j = THINKOS_THREAD_FIRST; j <= THINKOS_THREAD_LAST; ++j) {
 		__thinkos_krn_thread_abort(krn, j);
 	}
 }
 
 #if (THINKOS_ENABLE_TERMINATE)
 /* Terminate the target thread */
-void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
+void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int thread_id;
-	int code = ctx->r1;
+	int code = arg[1];
 
 	(void)code;
 
-	if ((unsigned int)ctx->r0 == 0) {
+	if ((unsigned int)arg[0] == 0) {
 		thread_id = self;
 		DCC_LOG2(LOG_WARNING, "<%d> terminate(0, %d)", self , code); 
 	} else {
-		thread_id = ctx->r0;
+		thread_id = arg[0];
 		DCC_LOG3(LOG_WARNING, "<%d> terminate(%d, %d)", self, 
 				 thread_id, code); 
 	}
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
 
-#if (THINKOS_ENABLE_ARG_CHECK)
-	if (thread_id >= THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_id + 1);
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
-		ctx->r0 = THINKOS_EINVAL;
-		return;
-	}
-#if (THINKOS_ENABLE_THREAD_ALLOC)
-	if (__bit_mem_rd(&krn->th_alloc[0], thread_id - 1) == 0) {
-		DCC_LOG2(LOG_ERROR, "<%2d> thread not allocated, th_alloc=%08x", 
-				 thread_id, krn->th_alloc[0]);
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
-		ctx->r0 = THINKOS_EINVAL;
+	if ((ret = __krn_thread_check(krn, thread_id)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread_id);
+		__THINKOS_ERROR(self, ret);
+		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-#endif
+
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* possibly remove from the time share wait queue */
@@ -128,7 +118,7 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 		/* update the thread status */
 		stat = krn->th_stat[thread_id];
 		DCC_LOG1(LOG_INFO, "wq=%d", stat >> 1); 
-		__thinkos_thread_stat_clr(thread_id);
+		__thread_stat_clr(krn, thread_id);
 		/* remove from other wait queue, if any */
 		__bit_mem_wr(&krn->wq_lst[stat >> 1], thread_id  - 1, 0);  
 	}
@@ -144,22 +134,18 @@ void thinkos_terminate_svc(struct cm3_except_context * ctx, int self)
 
 #if (THINKOS_ENABLE_JOIN)
 	{
-		unsigned int wq = THINKOS_THREAD_BASE + thread_id;
+		unsigned int wq = thread_id;
 		int th;
 
-		if ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
-			DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
-			/* wakeup from the join wait queue */
-			__thinkos_wakeup(wq, th);
-			__thinkos_thread_r0_set(th, code);
-			/* wakeup all remaining threads */
-			while ((th = __thinkos_wq_head(wq)) != THINKOS_THREAD_NULL) {
+		if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_VOID) {
+			do {
 				DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th + 1, wq);
-				__thinkos_wakeup(wq, th);
-				__thinkos_thread_r0_set(th, code);
-			}
+				/* wakeup all remaining threads */
+				__krn_wq_wakeup(krn, wq, th);
+				__thread_r0_set(krn, th, code);
+			} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_VOID);
 			/* signal the scheduler ... */
-			__thinkos_defer_sched();
+			__krn_defer_sched(krn);
 		}
 	}
 #endif
@@ -183,19 +169,20 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 }
 
 #if (THINKOS_ENABLE_EXIT)
-void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
+void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
+					  struct thinkos_rt * krn)
 {
 	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self, ctx->r0); 
 
 #if (THINKOS_ENABLE_JOIN)
-	if (thinkos_rt.wq_thread[self] == 0) {
+	if (krn->wq_lst[self] == 0) {
 		DCC_LOG1(LOG_MSG, "<%2d> canceled...", self); 
 		/* insert into the canceled wait queue and wait for a join call */ 
-		__thinkos_wq_insert(THINKOS_WQ_CANCELED, self);
+		__krn_wq_insert(krn, THINKOS_WQ_CANCELED, self);
 		/* remove from the ready wait queue */
-		__thinkos_suspend(self);
+		__krn_thread_suspend(krn, self);
 		/* signal the scheduler ... */
-		__thinkos_defer_sched();
+		__krn_defer_sched(krn);
 	}
 #endif /* THINKOS_ENABLE_JOIN */
 
@@ -204,3 +191,4 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self)
 }
 
 #endif /* THINKOS_ENABLE_EXIT */
+

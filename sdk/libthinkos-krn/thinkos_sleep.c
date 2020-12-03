@@ -27,31 +27,28 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_ENABLE_SLEEP)
-void thinkos_sleep_svc(int32_t * arg, int self)
+void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
 
-	struct thinkos_rt * krn = &thinkos_rt;
+	DCC_LOG3(LOG_MSG, "self=%d krn=%08x clk=%08x", self, krn, krn->wq_clock);
 
-	DCC_LOG1(LOG_TRACE, "self=%d", self);
-
+	/* wait for event */
+	__krn_thread_suspend(krn, self);
+	/* mark the thread clock enable bit */
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
 	/* set the clock */
 	__thread_clk_itv_set(krn, self, ms);
 	/* insert into the clock wait queue */
-	__thread_clk_enable(krn, self);
-	/* mark the thread clock enable bit */
-	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
-	/* wait for event */
-	__krn_thread_suspend(krn, self);
+	__thread_clk_enable(krn, self) ;
 	/* signal the scheduler ... */
 	__krn_defer_sched(krn);
 }
 #endif
 
 #if (THINKOS_ENABLE_ALARM)
-void thinkos_alarm_svc(int32_t * arg, int self)
+void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t clk = (uint32_t)arg[0];
 
 	DCC_LOG2(LOG_TRACE, "<%2d> clk=%d", self, clk);

@@ -187,7 +187,8 @@ struct thinkos_except * __thinkos_except_buf(void);
 
 void __xinfo(struct thinkos_except * xcpt);
 
-void __xdump(struct thinkos_except * xcpt);
+void __xdump(struct thinkos_rt * krn, 
+			 struct thinkos_except * xcpt);
 
 void __idump(const char * s, uint32_t ipsr);
 

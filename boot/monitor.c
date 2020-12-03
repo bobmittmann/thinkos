@@ -38,10 +38,8 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-/*
 #define __THINKOS_DEBUG__
 #include <thinkos/debug.h>
-*/
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #define __THINKOS_CONSOLE__
@@ -452,7 +450,7 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 {
 	monitor_printf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
-	__thinkos_pause_all();
+	thinkos_dbg_pause_all();
 	if (monitor_wait_idle() < 0) {
 		DCC_LOG(LOG_WARNING, "monitor_wait_idle() failed!");
 	}
@@ -463,7 +461,7 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 static void monitor_resume_all(const struct monitor_comm * comm)
 {
 	monitor_printf(comm, "\r\nResuming all threads...\r\n");
-	__thinkos_resume_all();
+	thinkos_dbg_resume_all();
 	monitor_printf(comm, "Restarting...\r\n");
 }
 #endif
@@ -1089,7 +1087,7 @@ is_connected:
 		case MONITOR_USER_EVENT4:
 			monitor_clear(MONITOR_USER_EVENT4);
 			monitor_printf(comm, s_hr);
-			monitor_print_osinfo(comm, &thinkos_rt, cycref);
+			monitor_print_osinfo(comm, cycref);
 			break;
 #endif
 

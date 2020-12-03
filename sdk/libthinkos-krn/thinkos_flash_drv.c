@@ -23,7 +23,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if (THINKOS_FLASH_MEM_MAX > 0)
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
 #if 0
 int32_t genkey_lcg24(int32_t key)
 {
@@ -89,14 +89,14 @@ thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	uint32_t ticks;
 
-	ticks = thinkos_rt.ticks; 
+	ticks = krn->ticks; 
 	status = seq->start(status, dev);
 	while (status > 0) {
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 			ticks++;
 		status = seq->status(status, dev);
 	}
-	thinkos_rt.ticks = ticks; 
+	krn->ticks = ticks; 
 
 	status = seq->finish(status, dev);
 	return status;
@@ -117,14 +117,14 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
 	if (stat < 0)
 		return stat;
 
-	start_ticks = thinkos_rt.ticks; 
+	start_ticks = krn->ticks; 
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 	stat = thinkos_flash_seq(stat, dev->priv, &seq);
 	cm3_primask_set(pri);
 
-	dt = (int32_t)(thinkos_rt.ticks - start_ticks);
+	dt = (int32_t)(krn->ticks - start_ticks);
 	(void)dt;
 	DCC_LOG1(LOG_TRACE, "dt = %dms", dt);
 
@@ -225,6 +225,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 int thinkos_flash_drv_init(unsigned int idx, 
 						   const struct thinkos_flash_desc * desc)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_flash_drv * drv;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -232,7 +233,7 @@ int thinkos_flash_drv_init(unsigned int idx,
 		return -THINKOS_EINVAL;
 #endif
 
-	drv = &thinkos_rt.flash_drv[idx];
+	drv = &krn->flash_drv[idx];
 
 	DCC_LOG2(LOG_TRACE, "flash_drv_init(drv=%08x desc=%08x)...", drv, desc);
 
@@ -248,35 +249,36 @@ int thinkos_flash_drv_init(unsigned int idx,
 }
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void thinkos_flash_drv_tasklet(unsigned int idx, struct thinkos_flash_drv * drv)
+void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
+							   unsigned int idx, struct thinkos_flash_drv * drv)
 {
 	unsigned int wq = THINKOS_FLASH_MEM_DESC(idx);
 	struct flash_op_req * req;
 	int th;
 	int ret;
 
-	th = __thinkos_wq_head(wq);
+	th =__krn_wq_head(krn, wq);
 	if (th != THINKOS_THREAD_NULL) {
 		DCC_LOG2(LOG_YAP, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
-				 __thinkos_thread_r0_get(th));
+				 __thread_r0_get(krn, th));
 
-		req = (struct flash_op_req *)__thinkos_thread_frame_get(th);
+		req = (struct flash_op_req *)__thread_frame_get(krn, th);
 
 		DCC_LOG1(LOG_TRACE, "[req]=0x%08x", req);
 
 		ret = thinkos_flash_drv_req(drv, req);
 
 		/* wakeup from the flash wait queue */
-		__thinkos_wakeup_return(wq, th, ret);
+		__wq_wakeup_return(krn, wq, th, ret);
 		/* signal the scheduler ... */
-		__thinkos_defer_sched();
+		__krn_defer_sched(krn);
 	} else {
 		DCC_LOG(LOG_TRACE, "flash_drv: no waiting threads!");
 	}
 }
 #endif
 
-void thinkos_flash_mem_svc(int32_t arg[], int self)
+void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	struct thinkos_flash_drv * drv;
 	struct flash_op_req * req;
@@ -295,7 +297,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 		for (idx = 0; idx < THINKOS_FLASH_MEM_MAX; ++idx) {
 			const struct blk_desc * blk;
 
-			drv = &thinkos_rt.flash_drv[idx];
+			drv = &krn->flash_drv[idx];
 
 			if ((blk = mem_blk_lookup(drv->mem, req->tag)) != NULL) {
 				if (drv->ropen || drv->wopen) {
@@ -333,7 +335,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	}
 #endif
 
-	drv = &thinkos_rt.flash_drv[idx];
+	drv = &krn->flash_drv[idx];
 
 	if (opc == THINKOS_FLASH_MEM_CLOSE) {
 		if (!(drv->ropen || drv->wopen)) {
@@ -375,21 +377,18 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	/* schedule the IDLE hook ... */
 	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
-	__thinkos_wq_insert(wq, self);
-	/* (1) suspend the thread by removing it from the
-	   ready wait queue. The __thinkos_suspend() call cannot be nested
-	   inside a LDREX/STREX pair as it may use the exclusive access 
-	   itself, in case we have enabled the time sharing option. */
-	__thinkos_suspend(self);
+
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_flush(arg, self);
-
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+/* NEW: 2020-12-02 performed by the svc call entry stub 
+	__thread_ctx_flush(krn, arg, self);
+*/
 
 	DCC_LOG1(LOG_TRACE, "<%2d> sleeping...", self);
+
+	/* wait for event ... */
+	__krn_thread_wait(krn, self, wq);
 #else
 	ret = thinkos_flash_drv_req(drv, req);
 	arg[0] = ret;

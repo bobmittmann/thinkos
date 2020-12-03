@@ -54,7 +54,8 @@ const char __xcpt_name_lut[16][12] = {
 };
 
 /* Exception state dump */
-void __xdump(struct thinkos_except * xcpt)
+void __xdump(struct thinkos_rt * krn,
+			 struct thinkos_except * xcpt)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
 	uint32_t shcsr;
@@ -198,9 +199,10 @@ void __xdump(struct thinkos_except * xcpt)
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 
-	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
+//	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 __xcpt_active_get(xcpt),
-			 __thinkos_active_get()); 
+			 __krn_active_get(krn); 
+
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
 			(scr & SCR_SEVONPEND) ? " SEVONPEND" : "",
@@ -399,7 +401,7 @@ void __tdump(struct thinkos_rt * krn)
 	int i;
 
 	DCC_LOG4(LOG_TRACE, "Sched: active=%d mask=0x%02x brk=0x%02x code=0x%02x", 
-			 __thread_active_get(krn),
+			 __krn_active_get(krn),
 			 __krn_sched_mask_get(krn),
 			 __krn_sched_brk_get(krn),
 			 __krn_sched_code_get(krn));

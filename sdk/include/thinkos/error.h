@@ -68,8 +68,9 @@
 #define THINKOS_ERR_KRN_IDLEFAULT      55
 #define THINKOS_ERR_KRN_STACKOVF       56
 #define THINKOS_ERR_KRN_UNSTACK        57
+#define THINKOS_ERR_THREAD_CTX_INVALID 58
 
-#define THINKOS_ERR_MAX                58
+#define THINKOS_ERR_MAX                59
 
 #ifndef __ASSEMBLER__
 

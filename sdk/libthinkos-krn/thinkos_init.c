@@ -375,7 +375,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		thread_no = __thinkos_init_main(krn, sp, opt);
 
 		/* Set the initial thread */
-		__thread_active_set(krn, thread_no);
+		__krn_active_set(krn, thread_no);
 		/* add to the ready queue */
 		__thread_ready_set(krn, thread_no);
 

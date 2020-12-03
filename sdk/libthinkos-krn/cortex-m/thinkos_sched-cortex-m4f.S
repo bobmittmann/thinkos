@@ -73,20 +73,20 @@ cm3_pendsv_isr:
 	vstmiaeq r0, {s16-s31}
 #endif
 
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	mrs      r6, CONTROL
-	adds     r0, r6
-	adds     r0, #(CONTROL_SPSEL)
-#else
-	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
-#endif
-
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
 	adds     r7, r3, #OFFSETOF_KRN_TH_SL
 	ldr      r5, [r7, r2, lsl #2]
 	cmp      r0, r5
 	ble      .L_stack_err 
+#endif
+
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
+	mrs      r6, CONTROL
+	adds     r0, r6
+	adds     r0, #(CONTROL_SPSEL)
+#else
+	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
 #endif
 
 thinkos_sched_update_cyccnt:
@@ -152,19 +152,19 @@ thinkos_krn_sched_ctx_restore:
 
 .L_save_active_and_restore:
 	/* r0: new thread stack
-	   r1: new active thread id and stack limit
+	   r1: new active thread id 
 	   r2: old active thread id 
 	   r3: thinkos_rt */
 	strb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
 
 .L_exit_usr:
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	ands     r7, r0, #(CONTROL_MSK)
+	ands     r3, r0, #(CONTROL_MSK)
 	/* restore the control register */
-	msr      CONTROL, r7
+	msr      CONTROL, r3
 	isb
 	/* restore the stack pointer */
-	subs     r0, r7
+	subs     r0, r3
 #endif
 
 #if (THINKOS_ENABLE_SCHED_ERROR)
@@ -172,7 +172,7 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 #if (THINKOS_ENABLE_FPU)
-	tst      r7, #(CONTROL_FPCA)
+	tst      r3, #(CONTROL_FPCA)
 	itte     ne
 	/* restore FP context */
 	vldmiane r0, {s16-s31}
@@ -189,6 +189,11 @@ thinkos_krn_sched_ctx_restore:
 	msr      PSP, r0
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
+
+	subs     r0, r0, #(8  * 4)
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
+	orrs     r0, r3
+#endif
 	b        thinkos_sched_dbg
 #else
 	bx       lr
@@ -200,7 +205,6 @@ thinkos_krn_sched_ctx_restore:
 	mov      sp, r0
 	b       .L_return_idle
 #endif
-
 
 .L_entry_xcept:
     bmi      thinkos_sched_break /* N flag set: break condition */
@@ -223,10 +227,8 @@ thinkos_krn_sched_ctx_restore:
     mov      r0, sp
 	b        thinkos_sched_update_cyccnt
 
-
-
-#if (THINKOS_ENABLE_SCHED_ERROR)
 .L_return_idle:
+#if (THINKOS_ENABLE_SCHED_ERROR)
 	ldr.n    r3, .L_thinkos_rt
 	ldrb     r2, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
 #endif

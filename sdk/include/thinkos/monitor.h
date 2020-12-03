@@ -430,7 +430,6 @@ void monitor_hexdump(const struct monitor_comm * comm,
                     uint32_t addr, unsigned int size);
 
 void monitor_print_osinfo(const struct monitor_comm * comm, 
-						  struct thinkos_rt * rt,
 						  uint32_t cycref[]);
 
 void monitor_print_thread(const struct monitor_comm * comm, 

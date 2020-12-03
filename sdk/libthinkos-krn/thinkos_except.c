@@ -35,9 +35,9 @@
 */
   #undef THINKOS_SYSRST_ONFAULT
   #define THINKOS_SYSRST_ONFAULT    0
-  #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)
+  #define DCC_EXCEPT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
 #else
-  #define DCC_EXCEPT_DUMP(XCPT)
+  #define DCC_EXCEPT_DUMP(KRN, XCPT)
 #endif
 
 #include <sys/dcclog.h>
@@ -59,7 +59,7 @@ void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
 
 	__pdump();
 
-	DCC_EXCEPT_DUMP(xcpt);
+	DCC_EXCEPT_DUMP(krn, xcpt);
 
 	mdelay(500);
 
@@ -93,7 +93,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
 
 	__xinfo(xcpt);
 
-	DCC_EXCEPT_DUMP(xcpt);
+	DCC_EXCEPT_DUMP(krn, xcpt);
 
 	mdelay(250);
 

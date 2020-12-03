@@ -153,13 +153,13 @@ void __thinkos(struct thinkos_rt * krn)
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, "Ticks = %d", krn->ticks);
-	DCC_LOG1(LOG_TRACE, "Active = %d", __thread_active_get(krn));
+	DCC_LOG1(LOG_TRACE, "Ticks = %d", __krn_ticks_get(krn));
+	DCC_LOG1(LOG_TRACE, "Active = %d", __krn_active_get(krn));
 
 	DCC_LOG1(LOG_TRACE, "Alloc = %d", krn->th_alloc[0]);
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
+		if (__thread_ctx_is_valid(krn, i)) {
 #if (THINKOS_ENABLE_THREAD_STAT)
 		DCC_LOG5(LOG_TRACE, "<%2d> %3d sp=%08x lr=%08x pc=%08x", i, 
 				 __thread_wq_get(krn, i), __thread_sp_get(krn, i), 
@@ -500,6 +500,11 @@ uint32_t thinkos_dbg_thread_sl_get(unsigned int th)
 	return __thread_sl_get(&thinkos_rt, th); 
 }
 
+uint32_t thinkos_dbg_krn_ticks_get(unsigned int th) 
+{
+	return thinkos_rt.ticks;
+}
+
 const char * thinkos_dbg_thread_tag_get(unsigned int th) 
 {
 	return __thread_tag_get(&thinkos_rt, th);
@@ -525,7 +530,6 @@ int thinkos_dbg_thread_errno_get(unsigned int th)
 	}
 	return __thread_errno_get(&thinkos_rt, th);
 }
-
 
 uint32_t thinkos_dbg_thread_cyccnt_get(unsigned int th)
 {
@@ -851,5 +855,53 @@ int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
 	DCC_LOG1(LOG_TRACE, "thread=%d", thread_idx + 1);
 
 	return thread_idx;
+}
+
+void thinkos_dbg_resume_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_resume_all(krn);
+}
+
+void thinkos_dbg_pause_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_pause_all(krn);
+}
+
+int thinkos_dbg_thread_irq_get(unsigned int th)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+#if (THINKOS_IRQ_MAX > 0)
+	if ((th >= THINKOS_THREAD_FIRST) && (th <= THINKOS_THREAD_LAST)) {
+		int irq;
+
+		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+			if (krn->irq_th[irq] == th)
+				return irq;
+		}
+	}
+#endif
+	return -1;
+}
+
+bool thinkos_dbg_thread_is_ready(unsigned int th)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	if ((th >= THINKOS_THREAD_FIRST) && (th <= THINKOS_THREAD_LAST)) {
+		return __thread_ready_get(krn, th);
+	}
+	return false;
+}
+
+int thinkos_dbg_active_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __krn_active_get(krn);
 }
 

@@ -33,6 +33,9 @@
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
 
+#define __THINKOS_EXCEPT__
+#include <thinkos/except.h>
+
 #include <thinkos.h>
 
 #include <sys/delay.h>
@@ -171,13 +174,13 @@ __obj_is_valid(unsigned int oid, unsigned int first, unsigned int cnt) {
 
 /* Set the active thread and stack limit */
 static inline unsigned int __attribute__((always_inline)) 
-__thread_active_get(struct thinkos_rt * krn) {
+__krn_active_get(struct thinkos_rt * krn) {
 	int id = krn->sched.active & 0x7f;
 	return (id == 0) ? THINKOS_THREAD_IDLE : id;
 }
 
 static inline void __attribute__((always_inline)) 
-__thread_active_set(struct thinkos_rt * krn, unsigned int th) {
+__krn_active_set(struct thinkos_rt * krn, unsigned int th) {
 	krn->sched.active = th;
 }
 
@@ -227,22 +230,19 @@ static inline int __attribute__((always_inline))
 }
 
 /* Force discarding the active thread */
-static inline void __attribute__((always_inline)) 
-	__krn_sched_discard_active(struct thinkos_rt * krn) {
+static inline void __krn_sched_discard_active(struct thinkos_rt * krn) {
 	krn->sched.brk = 0;
 	krn->sched.mask = 0xfe;
 }
 
 /* Set the break thread index */
-static inline void __attribute__((always_inline)) 
-	__krn_sched_normal(struct thinkos_rt * krn) {
+static inline void __krn_sched_normal(struct thinkos_rt * krn) {
 	krn->sched.brk = 0;
 	krn->sched.code = 0;
 	krn->sched.mask = 0xff;
 }
 
-static inline void __attribute__((always_inline)) 
-__krn_cancel_sched(struct thinkos_rt * krn) {
+static inline void __krn_cancel_sched(struct thinkos_rt * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* removes the pending status of the PendSV exception */
 	scb->icsr = SCB_ICSR_PENDSVCLR;
@@ -250,8 +250,7 @@ __krn_cancel_sched(struct thinkos_rt * krn) {
 }
 
 /* flags a deferred execution of the scheduler */
-static inline void __attribute__((always_inline)) 
-__krn_defer_sched(struct thinkos_rt * krn) {
+static inline void __krn_defer_sched(struct thinkos_rt * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending service interrupt */
 	scb->icsr = SCB_ICSR_PENDSVSET;
@@ -259,10 +258,9 @@ __krn_defer_sched(struct thinkos_rt * krn) {
 }
 
 /* flags a deferred execution of the scheduler */
-static inline void __attribute__((always_inline)) 
-__krn_preempt(struct thinkos_rt * krn) {
+static inline void __krn_preempt(struct thinkos_rt * krn) {
 #if (THINKOS_ENABLE_PREEMPTION)
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 #endif
 }
 
@@ -342,12 +340,16 @@ __thread_ctx_set(struct thinkos_rt * krn, unsigned int th,
 	krn->ctx[th] = ((uintptr_t)ctx) | (ctrl & (CONTROL_MSK));
 }
 
+/*
+  NEW: 2020-12-02
+   Performed by the service entry stub 
 static inline void  __attribute__((always_inline)) 
 __thread_ctx_flush(struct thinkos_rt * krn, int32_t arg[], unsigned int th) {
 	uintptr_t ctx = (uintptr_t)(krn->ctx[th]);
 	uintptr_t sp = (uintptr_t)&arg[-CTX_R0];
 	krn->ctx[th] = sp + (ctx & (CONTROL_MSK));
 }
+*/
   
 static inline struct thinkos_context * __attribute__((always_inline)) 
 __thread_ctx_get(struct thinkos_rt * krn, unsigned int th) {
@@ -497,6 +499,12 @@ __thread_disble_all(struct thinkos_rt * krn) {
 #endif
 }
 
+static inline void __attribute__((always_inline)) 
+__thread_wq_set(struct thinkos_rt * krn, unsigned int th, unsigned int wq) {
+	/* insert into the wait queue */
+	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 1);  
+}
+
 /* -------------------------------------------------------------------------- 
  * wait queue access methods 
  * --------------------------------------------------------------------------*/
@@ -527,6 +535,21 @@ __krn_wq_insert(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 #endif
 }
 
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+static inline void __attribute__((always_inline)) 
+__wq_clock_insert(struct thinkos_rt * krn, unsigned int th, unsigned int ms) {
+	/* set the clock */
+	krn->th_clk[th] = krn->ticks + ms;
+	/* insert into the clock wait queue */
+	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);  
+#if (THINKOS_ENABLE_THREAD_STAT)
+	/* update status, mark the thread clock enable bit */
+	krn->th_stat[th] = 1;
+#endif
+	}
+#endif
+
 #if (THINKOS_ENABLE_TIMED_CALLS)
 static inline void __attribute__((always_inline)) 
 __krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq, 
@@ -542,20 +565,6 @@ __krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq,
 	krn->th_stat[th] = (wq << 1) + 1;
 #endif
 }
-#endif
-
-#if (THINKOS_ENABLE_TIMED_CALLS)
-static inline void __attribute__((always_inline)) 
-__wq_clock_insert(struct thinkos_rt * krn, unsigned int th, unsigned int ms) {
-	/* set the clock */
-	krn->th_clk[th] = krn->ticks + ms;
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);  
-#if (THINKOS_ENABLE_THREAD_STAT)
-	/* update status, mark the thread clock enable bit */
-	krn->th_stat[th] = 1;
-#endif
-	}
 #endif
 
 static inline void __attribute__((always_inline)) 
@@ -863,21 +872,6 @@ __thread_priority_set(struct thinkos_rt * krn, unsigned int th, int priority) {
 #endif
 }
 
-static inline void __krn_thread_wait(struct thinkos_rt * krn, 
-									 unsigned int th, 
-									 unsigned int wq) {
-	__krn_wq_insert(krn, wq, th);
-	__krn_thread_suspend(krn, th);
-}
-
-static inline void __krn_thread_timedwait(struct thinkos_rt * krn, 
-										  unsigned int th, 
-										  unsigned int wq, 
-										  unsigned int ms) {
-	__krn_tmdwq_insert(krn, wq, th, ms);
-	__krn_thread_suspend(krn, th);
-}
-
 /* -------------------------------------------------------------------------- 
  * thread status access methods 
  * --------------------------------------------------------------------------*/
@@ -1023,12 +1017,10 @@ __thread_alloc_set(struct thinkos_rt * krn, unsigned int th) {
 #endif
 }
 
-static inline bool __attribute__((always_inline)) 
-__thread_is_alloc(struct thinkos_rt * krn, unsigned int th) {
+static inline void __attribute__((always_inline)) 
+__thread_alloc_clr(struct thinkos_rt * krn, unsigned int th) {
 #if (THINKOS_ENABLE_THREAD_ALLOC)
-	return __bit_mem_rd(krn->th_alloc, (th - 1)) ? true : false;
-#else
-	return true;
+	__bit_mem_wr(krn->th_alloc, (th - 1), 0);
 #endif
 }
 
@@ -1037,7 +1029,7 @@ __thread_is_alloc(struct thinkos_rt * krn, unsigned int th) {
  * --------------------------------------------------------------------------*/
 
 static inline uint32_t __attribute__((always_inline)) 
-__krn_ticks(struct thinkos_rt * krn) {
+__krn_ticks_get(struct thinkos_rt * krn) {
 	return krn->ticks;
 }
 
@@ -1064,26 +1056,19 @@ __thread_clk_itv_get(struct thinkos_rt * krn, unsigned int th) {
 /* Set the schedule enable flag */
 static inline void  __attribute__((always_inline))
 __thread_clk_enable(struct thinkos_rt * krn, unsigned int th) {
-#if (THINKOS_ENABLE_READY_MASK)
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);
-#endif
 }
 
 /* Clear the schedule enable flag */
 static inline void  __attribute__((always_inline))
 __thread_clk_disable(struct thinkos_rt * krn, unsigned int th) {
-#if (THINKOS_ENABLE_READY_MASK)
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);
-#endif
 }
 
 /* Get the enable flag */
 static inline bool  __attribute__((always_inline))
 __thread_clk_is_enabled(struct thinkos_rt * krn, unsigned int th) {
-#if (THINKOS_ENABLE_READY_MASK)
 	return __bit_mem_rd(&krn->wq_clock, (th - 1)) ? true : false;
-#endif
-	return true;
 }
 
 
@@ -1091,7 +1076,18 @@ __thread_clk_is_enabled(struct thinkos_rt * krn, unsigned int th) {
  * Composite methods 
  * --------------------------------------------------------------------------*/
 
-static inline bool __thread_is_valid(struct thinkos_rt * krn, int th) {
+static inline bool __krn_obj_is_thread(struct thinkos_rt * krn, 
+										unsigned int th) {
+	return __obj_is_valid(th, THINKOS_THREAD_BASE, THINKOS_THREADS_MAX);
+}
+
+static inline bool __krn_thread_is_alloc(struct thinkos_rt * krn, 
+										 unsigned int th) {
+	return __bit_mem_rd(krn->th_alloc, 
+						th - THINKOS_THREAD_BASE) ? true : false;
+}
+
+static inline bool __krn_thread_is_valid(struct thinkos_rt * krn, int th) {
 	return ((th >= (THINKOS_THREAD_FIRST)) && (th <= (THINKOS_THREAD_LAST))) ?
 			 __thread_ctx_is_valid(krn, th) : false;
 }
@@ -1117,39 +1113,6 @@ static inline struct thinkos_context * __thinkos_thread_ctx_init(
 
 	return ctx;
 }
-
-
-#define CLASS_THREAD        0x00 
-#define CLASS_THREADB       0x20 
-#define CLASS_MUTEX         0x40
-#define CLASS_COND          0x60
-
-#define CLASS_SEMAPHORE     0x80
-#define CLASS_EVSET         0xa0
-#define CLASS_FLAG          0xc0
-#define CLASS_MISC          0xe0
-
-/* Fixed object kind definition:
-
-Th  
-*/
-
-#define __THREAD_FIRST        1
-#define __THREAD_LAST        32
-#define __THREAD_IDLE        33
-
-#define __MUTEX_FIRST        34
-#define __MUTEX_LAST         65
-
-
-#define ASS_THREADB         0x20 
-#define CLASS_MUTEX         0x40
-#define CLASS_COND          0x60
-
-#define CLASS_SEMAPHORE     0x80
-#define CLASS_EVSET         0xa0
-#define CLASS_FLAG          0xc0
-#define CLASS_MISC          0xe0
 
 /* -------------------------------------------------------------------------- 
  * mutex access methods 
@@ -1303,12 +1266,26 @@ void thinkos_krn_mpu_init(uint32_t code_start, uint32_t code_end,
 						  uint32_t data_start,  uint32_t data_end);
 
 void __thinkos_krn_thread_abort(struct thinkos_rt * krn, 
-								unsigned int thread_idx);
+								unsigned int thread);
 
 void __thread_fault_raise(struct thinkos_rt * krn, 
 						  unsigned int th, int errno);
 
 void __thinkos_krn_core_reset(struct thinkos_rt * krn);
+
+/* wait for event and signal the scheduler ... */
+void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th, 
+					   unsigned int wq);
+
+void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
+										  unsigned int wq, unsigned int ms);
+
+void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th, 
+							  unsigned int ms);
+
+void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq);
+
+int __krn_thread_check(struct thinkos_rt * krn, unsigned int th);
 
 #ifdef __cplusplus
 }

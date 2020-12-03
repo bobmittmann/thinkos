@@ -20,10 +20,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#include <thinkos.h>
-#include <sys/dcclog.h>
+#include "thinkos_mon-i.h"
 
 #if (THINKOS_ENABLE_MONITOR)
 
@@ -53,13 +50,13 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	monitor_printf(comm, " |   Free"); 
 	monitor_printf(comm, "\r\n");
 
-	for (i = 0; i <= THINKOS_THREADS_MAX; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
+	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+		if (thinkos_dbg_thread_ctx_is_valid(i)) {
 
-			tag = __thinkos_thread_tag_get(i);
-			sp = __thinkos_thread_sp_get(i);
-			pc = __thinkos_thread_pc_get(i);
-			sl = __thinkos_thread_sl_get(i);
+			tag = thinkos_dbg_thread_tag_get(i);
+			sp = thinkos_dbg_thread_sp_get(i);
+			pc = thinkos_dbg_thread_pc_get(i);
+			sl = thinkos_dbg_thread_sl_get(i);
 			size = sp - sl;
 			free = __thinkos_scan_stack((void *)sl, size);
 

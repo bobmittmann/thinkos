@@ -28,37 +28,27 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_ENABLE_CANCEL)
-void thinkos_cancel_svc(int32_t * arg, unsigned int self)
+void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	unsigned int thread_no = (unsigned int)arg[0];
-	struct thinkos_rt * krn = &thinkos_rt;
+	unsigned int th = (unsigned int)((arg[0] == 0) ? self : arg[0]);
 	int code = arg[1];
 	unsigned int wq;
 	uint32_t pc;
-
-	if (thread_no == 0)
-		thread_no = self;
-
 #if THINKOS_ENABLE_ARG_CHECK
-	if (__thread_is_valid(krn, thread_no)) {
-		DCC_LOG1(LOG_ERROR, "invalid thread %d!", thread_no);
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
+	int ret;
+
+	if ((ret = __krn_thread_check(krn, th)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, th);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_THREAD_ALLOC
-	if (__thread_is_alloc(krn, thread_no) == 0) {
-		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 
-	wq = __thread_wq_get(krn, thread_no);
+	wq = __thread_wq_get(krn, th);
 	/* remove from other wait queue including wq_ready */
 	/* possibly remove from the time wait queue */
-	__wq_remove(krn, wq, thread_no);
+	__wq_remove(krn, wq, th);
 
 #if THINKOS_ENABLE_JOIN
 	/* insert into the canceled wait queue and wait for a join call */ 
@@ -68,18 +58,18 @@ void thinkos_cancel_svc(int32_t * arg, unsigned int self)
 	wq = __wq_idx(krn, &krn->wq_ready);
 #endif /* THINKOS_ENABLE_JOIN */
 
-	__krn_wq_insert(krn, wq, thread_no);
+	__krn_wq_insert(krn, wq, th);
 
 	/* possibly remove from the time share wait queue */
-	__thread_tmshare_clr(krn, thread_no);
+	__thread_tmshare_clr(krn, th);
 
 	DCC_LOG3(LOG_TRACE, "<%d> cancel %d, with code %d!", 
-			 self, thread_no, code); 
+			 self, th, code); 
 
 	pc = (uint32_t)__thinkos_thread_terminate_stub;
-	__thread_pc_set(krn, thread_no, pc);
-	__thread_r0_set(krn, thread_no, code);
-	arg[0] = 0;
+	__thread_pc_set(krn, th, pc);
+	__thread_r0_set(krn, th, code);
+	arg[0] = THINKOS_OK;
 }
 #endif
 

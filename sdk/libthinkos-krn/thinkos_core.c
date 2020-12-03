@@ -251,14 +251,15 @@ uint32_t __thinkos_thread_r0_get(unsigned int id)
 	return __thread_r0_get(&thinkos_rt, id);
 }
 
-void __thinkos_thread_r0_set(unsigned int id, uint32_t val) 
-{
-	__thread_r0_set(&thinkos_rt, id, val);
-}
-
 uint32_t __thinkos_thread_r1_get(unsigned int id) 
 {
 	return __thread_r1_get(&thinkos_rt, id);
+}
+
+#if 0
+void __thinkos_thread_r0_set(unsigned int id, uint32_t val) 
+{
+	__thread_r0_set(&thinkos_rt, id, val);
 }
 
 void __thinkos_thread_r1_set(unsigned int id, uint32_t val) 
@@ -306,16 +307,20 @@ bool __thinkos_thread_ctx_is_valid(unsigned int id)
 	return __thread_ctx_is_valid(&thinkos_rt, id);
 }
 
+
 void  __thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * ctx,
 							   unsigned int ctrl) 
 {
 	__thread_ctx_set(&thinkos_rt, id, ctx, ctrl);
 }
 
+/*
+  NEW: 2020-12-02
 void  __thinkos_thread_ctx_flush(int32_t arg[], unsigned int id) 
 {
 	__thread_ctx_flush(&thinkos_rt, arg, id);
 }
+*/
 
 void  __thinkos_thread_ctx_clr(unsigned int id) 
 {
@@ -337,12 +342,14 @@ void __thinkos_thread_inf_clr(unsigned int id)
 {
 	__thread_inf_set(&thinkos_rt, id, NULL);
 }
+#endif
 
 int __thinkos_thread_errno_get(unsigned int id) 
 {
 	return __thread_errno_get(&thinkos_rt, id);
 }
 
+#if 0
 void __thinkos_thread_errno_set(unsigned int id, int errno) 
 {
 	__thread_errno_set(&thinkos_rt, id, errno);
@@ -378,9 +385,20 @@ void __thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd)
 	__thread_stat_set(&thinkos_rt, th, wq, tmd);
 }
 
+uint32_t  __thinkos_ticks(void) 
+{
+	return __krn_get_ticks(&thinkos_rt);
+}
+
 /* -------------------------------------------------------------------------- 
  * thread stack limit access methods 
  * --------------------------------------------------------------------------*/
+
+
+unsigned int __thinkos_active_get(void) 
+{
+	return __thread_active_get(&thinkos_rt);
+}
 
 void __thinkos_thread_sl_clr(unsigned int idx) 
 {
@@ -397,12 +415,6 @@ void __thinkos_active_set(unsigned int th)
 	__thread_active_set(&thinkos_rt, th);
 }
 
-unsigned int __thinkos_active_get(void) 
-{
-	return __thread_active_get(&thinkos_rt);
-}
-
-#if 0
 uint32_t __thinkos_active_sl_get(void) 
 {
 	return __thread_active_sl_get(&thinkos_rt);
@@ -421,15 +433,18 @@ bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq)
 	return __thread_is_in_wq(&thinkos_rt, id, wq);
 }
 
+#if 0
 void  __thinkos_ready_clr(void) 
 {
 	__wq_ready_clr(&thinkos_rt); 
 }
 
+#if 0
 void __thinkos_suspend(unsigned int idx) 
 {
 	__krn_thread_suspend(&thinkos_rt, idx);
 }
+#endif
 
 int __thinkos_wq_idx(uint32_t * ptr) 
 {
@@ -473,12 +488,6 @@ void __thinkos_wakeup( unsigned int wq, unsigned int th)
 void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret) 
 {
 	__wq_wakeup_return(&thinkos_rt, wq, th, ret);
-}
-
-
-uint32_t  __thinkos_ticks(void) 
-{
-	return __krn_ticks(&thinkos_rt);
 }
 
 /* Set the fault flag */
@@ -527,26 +536,12 @@ bool __thinkos_thread_resume(unsigned int thread_id)
 {
 	return __krn_thread_resume(&thinkos_rt, thread_id);
 }
-
-void __thinkos_resume_all(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__krn_resume_all(krn);
-}
-
-void __thinkos_pause_all(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__krn_pause_all(krn);
-}
-
+#endif
 
 /* -------------------------------------------------------------------------- 
  * kernel scheduler methods 
  * --------------------------------------------------------------------------*/
-
+#if 0
 void __thinkos_cancel_sched(void)
 {
 	__krn_cancel_sched(&thinkos_rt);
@@ -562,6 +557,7 @@ void __thinkos_preempt(void)
 {
 	__krn_preempt(&thinkos_rt);
 }
+#endif
 
 /* -------------------------------------------------------------------------- 
  * kernel structure public access methods 
@@ -573,7 +569,6 @@ unsigned int thinkos_krn_active_get(struct thinkos_rt * krn)
 
 	return idx;
 }
-#endif
 
 const char * __thinkos_thread_tag_get(unsigned int idx) 
 {
@@ -584,6 +579,21 @@ int __thinkos_thread_wq_get(unsigned int thread_idx)
 {
 	return __thread_wq_get(&thinkos_rt, thread_idx);
 }
+
+int __thinkos_thread_tmw_get(unsigned int idx) 
+{
+	return __thread_tmw_get(&thinkos_rt, idx);
+}
+
+void __thinkos_suspend_all(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_suspend_all(krn);
+}
+
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Objects
@@ -602,17 +612,5 @@ int __thinkos_kind_prefix(unsigned int kind)
 const char * __thinkos_kind_name(unsigned int kind)
 { 
 	return __kind_name(kind);
-}
-
-int __thinkos_thread_tmw_get(unsigned int idx) 
-{
-	return __thread_tmw_get(&thinkos_rt, idx);
-}
-
-void __thinkos_suspend_all(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__krn_suspend_all(krn);
 }
 

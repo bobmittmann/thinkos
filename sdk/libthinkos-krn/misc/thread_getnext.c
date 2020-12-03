@@ -24,12 +24,13 @@
 
 int __thinkos_thread_getnext(int th)
 {
+	struct thinkos_rt * krn = &thinkos_rt; 
 	int idx;
 
-	idx = (th < 0) ? 0 : th + 1;
+	idx = (th < 0) ? THINKOS_THREAD_FIRST : th + 1;
 	
-	for (; idx < THINKOS_THREADS_MAX; ++idx) {
-		if (__thinkos_thread_ctx_is_valid(idx))
+	for (; idx <= THINKOS_THREAD_LAST; ++idx) {
+		if (__thread_ctx_is_valid(krn, idx))
 			return idx;
 	}
 

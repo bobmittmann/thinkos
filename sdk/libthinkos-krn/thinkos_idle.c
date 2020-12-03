@@ -33,9 +33,10 @@
 #endif
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_idle_rt * idle)
+void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn,
+												 struct thinkos_idle_rt * idle)
 #else
-void __attribute__((noreturn, naked)) thinkos_idle_task(void)
+void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 #endif
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
@@ -96,27 +97,27 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 			case IDLE_HOOK_FLASH_MEM0:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(0, &thinkos_rt.flash_drv[0]);
+				thinkos_flash_drv_tasklet(krn, 0, &thinkos_rt.flash_drv[0]);
 				break;
 
 #if ((THINKOS_FLASH_MEM_MAX) > 1)
 			case IDLE_HOOK_FLASH_MEM1:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM1" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(1, &thinkos_rt.flash_drv[1]);
+				thinkos_flash_drv_tasklet(krn, 1, &thinkos_rt.flash_drv[1]);
 				break;
 #if ((THINKOS_FLASH_MEM_MAX) > 2)
 			case IDLE_HOOK_FLASH_MEM2:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(2, &thinkos_rt.flash_drv[2]);
+				thinkos_flash_drv_tasklet(krn, 2, &thinkos_rt.flash_drv[2]);
 				break;
 #endif
 #if ((THINKOS_FLASH_MEM_MAX) > 3)
 			case IDLE_HOOK_FLASH_MEM3:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(3, &thinkos_rt.flash_drv[3]);
+				thinkos_flash_drv_tasklet(krn, 3, &thinkos_rt.flash_drv[3]);
 				break;
 #endif
 #endif
@@ -129,7 +130,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(void)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
 				if (thinkos_rt.wq_ready != 0) {
-					__thinkos_defer_sched();
+					__krn_defer_sched(krn);
 				}
 #endif
 
@@ -204,17 +205,17 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
 	krn->idle_hooks.req_map = 0;
-	task_arg[0] = (uintptr_t)&krn->idle_hooks;
+	task_arg[0] = (uintptr_t)krn;
+	task_arg[1] = (uintptr_t)&krn->idle_hooks;
 #else
-	task_arg[0] = 0;
+	task_arg[0] = (uintptr_t)krn;
+	task_arg[1] = 0;
 #endif
 
 #if DEBUG
-	task_arg[1] = (uint32_t)0x11111111;
 	task_arg[2] = (uint32_t)0x22222222;
 	task_arg[3] = (uint32_t)0x33333333;
 #else
-	task_arg[1] = 0;
 	task_arg[2] = 0;
 	task_arg[3] = 0;
 #endif

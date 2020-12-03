@@ -61,9 +61,8 @@ int krn_mutex_unlock_wakeup(struct thinkos_rt * krn, int mtx)
 	return th;
 }
 
-void thinkos_mutex_trylock_svc(int32_t * arg, int self)
+void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int mutex = arg[0];
 	int ret;
 
@@ -96,9 +95,8 @@ void thinkos_mutex_trylock_svc(int32_t * arg, int self)
 }
 
 
-void thinkos_mutex_lock_svc(int32_t arg[], int self)
+void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int mutex = arg[0];
 	int ret;
 
@@ -127,18 +125,16 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self)
 		}
 #endif
 
+	DCC_LOG2(LOG_MSG , "<%2d> waiting on mutex %d...", self, mutex);
+
 	/* Set the return value */
 	arg[0] = THINKOS_OK;
 	__krn_thread_wait(krn, self, mutex);
-	DCC_LOG2(LOG_MSG , "<%2d> waiting on mutex %d...", self, mutex);
-	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
 }
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
+void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int mutex = arg[0];
 	int32_t ms = arg[1];
 	int ret;
@@ -167,19 +163,16 @@ void thinkos_mutex_timedlock_svc(int32_t * arg, int self)
 	}
 #endif
 		
+	DCC_LOG2(LOG_MSG, "<%2d> waiting on mutex %d...", self, mutex);
 	/* Set the default return value to timeout. The
 	   mutex_unlock() call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
 	__krn_thread_timedwait(krn, self, mutex, ms);
-	DCC_LOG2(LOG_MSG, "<%2d> waiting on mutex %d...", self, mutex);
-	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
 }
 #endif
 
-void thinkos_mutex_unlock_svc(int32_t * arg, int self)
+void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int mutex = arg[0];
 	unsigned int th;
 	int ret;

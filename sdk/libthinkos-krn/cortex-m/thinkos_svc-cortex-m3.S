@@ -42,6 +42,10 @@
 	.syntax unified
 	.cpu cortex-m3
 
+#define CONTROL_nPRIV      (1 << 0)
+#define CONTROL_SPSEL      (1 << 1)
+#define CONTROL_FPCA       (1 << 2)
+
 	.text
 	.align	3
 	.global cm3_svc_isr
@@ -52,28 +56,40 @@ cm3_svc_isr:
 	/* The IDLE thread is the only using the main stack MSP, all
 	   other threads use the PSP. No exception is allowed to call
 	   SVC */
-	ldr      r3, .L_thinkos_rt
-	ldrb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
+	ldr      r2, .L_thinkos_rt
+	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_ACTIVE]
+	mrs      r0, PSP
+
+	/* NEW: 2020-12-02*/
+	/* Flush the context pointer. This will allow interrupt handlers
+	 and the monitor to correctly locate the thread's context stack. */
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
+	mrs      r3, CONTROL
+	adds     r3, r0
+	adds     r3, #(CONTROL_SPSEL) - (8 * 4)
+#else
+	adds     r3, r0, #(CONTROL_SPSEL | CONTROL_nPRIV) - (8 * 4)
+#endif
+	str      r3, [r2, r1, lsl #2]
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	ldr      r2, [r3, #OFFSETOF_KRN_STEP_SVC]
-	adds     r3, r1, #1
-	lsrs     r2, r3
+	ldr      r3, [r2, #OFFSETOF_KRN_STEP_SVC]
+	lsrs     r3, r1
 	bcc      1f
-	ldr      r3, .L_cm3_scb
-	mov      r2, #SCB_ICSR_PENDSVSET
-	str      r2, [r3, #SCB_ICSR_OFFS]
+	ldr      r12, .L_cm3_scb
+	movs     r3, #SCB_ICSR_PENDSVSET
+	str      r3, [r12, #SCB_ICSR_OFFS]
 1:
 #endif
-	mrs      r0, PSP
+	
 	/* Get PC from the stack */
-	ldr      r2, [r0, #(6 * 4)] 
+	ldr      r3, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
-	ldrb     r2, [r2, #-2]
-    cmp      r2, #THINKOS_SYSCALL_CNT
+	ldrb     r3, [r3, #-2]
+    cmp      r3, #THINKOS_SYSCALL_CNT
     bhi      thinkos_nosys_svc
-	ldr      r3, .L_call_tab
-	ldr      pc, [r3, r2, lsl #2]
+	ldr      r12, .L_call_tab
+	ldr      pc, [r12, r3, lsl #2]
 	.align   2
 .L_call_tab:
 	.word    thinkos_svc_call_tab

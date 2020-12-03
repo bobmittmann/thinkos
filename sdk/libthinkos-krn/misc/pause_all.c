@@ -36,7 +36,7 @@ void __krn_pause_all(struct thinkos_rt * krn)
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, "active=%d", __thread_active_get(krn) + 1);
+	DCC_LOG1(LOG_TRACE, "active=%d", __krn_active_get(krn) + 1);
 }
 #else
 

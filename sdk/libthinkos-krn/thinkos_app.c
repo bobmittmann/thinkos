@@ -278,7 +278,7 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 
 	if (thread_idx == self) {
 #if (THINKOS_ENABLE_SANITY_CHECK)
-		if (__thread_active_get(krn) != self) {
+		if (__krn_active_get(krn) != self) {
 			DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
 				 self, ret);
 		}

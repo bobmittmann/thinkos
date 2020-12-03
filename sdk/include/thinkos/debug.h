@@ -142,6 +142,16 @@ void thinkos_dbg_reset(void);
 int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
 						  bool privileged);
 
+void thinkos_dbg_resume_all(void);
+
+void thinkos_dbg_pause_all(void);
+
+int thinkos_dbg_thread_irq_get(unsigned int th);
+
+bool thinkos_dbg_thread_is_ready(unsigned int th);
+
+int thinkos_dbg_active_get(void);
+
 /* -------------------------------------------------------------------------
  * Cycle counter
  * ------------------------------------------------------------------------- */
