@@ -47,8 +47,8 @@ _hdr_os_tag:
 	.size   _init_hdr, . - _init_hdr
 
 _hdr_sys_tag:
-#ifdef THINKOS_CUSTOM_APP_TAG
-	.string THINKOS_CUSTOM_APP_TAG
+#ifdef THINKOS_USR_CUSTOM_APP_TAG
+	.string THINKOS_USR_CUSTOM_APP_TAG
 	.p2align  3, 0x00
 #else
 	.word 0 

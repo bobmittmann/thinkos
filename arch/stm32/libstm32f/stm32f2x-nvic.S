@@ -131,8 +131,10 @@ __nvic_vectors:
 	.word	stm32f_otg_hs_wkup_isr    /* 76 USB OTG HS Wakeup through EXTI */
 	.word	stm32f_otg_hs_isr         /* 77 USB OTG HS */
 	.word	stm32f_dcmi_isr           /* 78 DCMI */
+#if 0
 	.word	stm32f_cryp_isr           /* 79 CRYP crypto */
 	.word	stm32f_hash_rng_isr       /* 80 Hash and Rng */
+#endif
 
 __nvic_vectors_end:
 	.global __nvic_vectors_end
@@ -451,9 +453,10 @@ _isr:
 
 	.weak       stm32f_cryp_isr
 	.thumb_set  stm32f_cryp_isr,_isr
-
+#if 0
 	.weak       stm32f_hash_rng_isr
 	.thumb_set  stm32f_hash_rng_isr,_isr
+#endif
 
 	.end
 

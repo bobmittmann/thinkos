@@ -57,7 +57,7 @@ const struct thinkos_mem_desc flash_desc = {
 		{.tag = "BOOT", .off= 0x00000000, M_RO, SZ_2K, 32}, 
 		/* Application: 192 KiB */
 		{.tag = "APP", .off = 0x00010000, M_RW, SZ_2K, 96},  
-		}
+	}
 };
 
 const struct thinkos_mem_desc peripheral_desc = {
@@ -66,7 +66,7 @@ const struct thinkos_mem_desc peripheral_desc = {
 	.cnt = 1,
 	.blk = {
 		{.tag = "RTC", 0x40002800, M_RW, SZ_1K, 1}	/* RTC - 1K */
-		}
+	}
 };
 
 struct thinkos_mem_map mem_map = {

@@ -18,8 +18,8 @@
  */
 
 /** 
- * @file cm3-sysrst.c
- * @brief YARD-ICE
+ * @file thinkos-sysrst.c
+ * @brief ThinkOS
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
@@ -37,3 +37,7 @@ void __attribute__((noreturn)) thinkos_krn_sysrst(void)
 	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
 	for(;;);
 }
+
+/* FIXME: _exit() !!! */
+void _exit(void) __attribute__((noreturn, weak, alias("thinkos_krn_sysrst")));
+

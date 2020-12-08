@@ -90,6 +90,17 @@ class FlatHdr(object):
     print('      3  .ctor   0x{:08x}  0x{:08x} {:-8d}'.format(
                              self.ctor_start, self.ctor_end, n))
 
+  def print_magic(self):
+    hdr_bin = struct.pack('<IIII8s8s', self.entry, self.stack, self.stksz,
+              self.size, self.os_tag, self.sys_tag)
+
+    hdr = struct.unpack('<IIIIIIII', hdr_bin)
+
+    print('\t.rec = {')
+    for u in hdr:
+      print('\t\t {{ 0x{:08x}, 0x{:08x} }},'.format(0xffffffff, u))
+    print('\t}')
+
 
 def bin2app(f, tag, bsize, data, size):
   app = FlatHdr(data)
@@ -126,6 +137,9 @@ def bin2app(f, tag, bsize, data, size):
   f.write(data)
   f.write(trail)
   f.close
+
+  app.print_magic()
+
 
 def replacelst(s, lst, val):
   for c in lst:

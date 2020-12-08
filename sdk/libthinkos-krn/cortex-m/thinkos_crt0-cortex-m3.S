@@ -23,6 +23,7 @@
 	.cpu cortex-m3
 
 	.extern  _init
+	.extern  _exit
 	.extern main
 
 	.thumb
@@ -90,7 +91,9 @@ _reset:
 	b       3b
 4:
 
-	b       main
+	bl      main
+
+	b       _exit
 
 	.size   _reset, . - _reset
 
