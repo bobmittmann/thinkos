@@ -29,36 +29,6 @@
 
 #if (THINKOS_ENABLE_APP)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-
-#ifdef THINKOS_CUSTOM_APP_TAG
-  static const uint8_t tag[8] = THINKOS_CUSTOM_APP_TAG;
-#else
-  static const uint8_t tag[8] = "ThinkApp";
-#endif
-
-const struct magic_blk flat_app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 8
-		},
-	.rec = {
-		{.mask = 0xff0000ff, .comp = 0x08000041 },
-		{.mask = 0x0000000f, .comp = 0x00000000 },
-		{.mask = 0x00000000, .comp = 0x00000000 },
-		{.mask = 0x00000000, .comp = 0x00000000 },
-		{.mask = 0xffffffff, .comp = 0x6e696854 },
-		{.mask = 0xffffffff, .comp = 0x00534f6b },
-		{.mask = 0xffffffff, 
-	     .comp = tag[0] + (tag[1]<<8) + (tag[2]<<16) + (tag[3]<<24) },
-		{.mask = 0xffffffff, 
-         .comp = tag[4] + (tag[5]<<8) + (tag[6]<<16) + (tag[7]<<24) },
-	}
-};
-#pragma GCC diagnostic pop
-
-
 void thinkos_flat_dump(const struct flat_app * app)
 {
 	DCC_LOG2(LOG_TRACE, "pc=0x%08x sp=0x%08x", app->entry, app->stack);
@@ -72,40 +42,53 @@ void thinkos_flat_dump(const struct flat_app * app)
 			 app->ctor.start, app->ctor.end);
 }
 
-static bool magic_match(const struct magic_blk * magic, uint32_t * mem)
-{
-	int k;
-	int j;
-
-	k = magic->hdr.pos;
-	for (j = 0; j < magic->hdr.cnt; ++j) {
-		if ((mem[k++] & magic->rec[j].mask) != magic->rec[j].comp)
-			return false;
-	}	
-
-	return true;
-}
-
 int thinkos_flat_check(const struct flat_app * app)
 {
 	uint32_t * mem = (uint32_t *)app;
-	int32_t size;
 #if (THINKOS_ENABLE_APP_CRC)
 	uint32_t crc;
 	uint32_t chk;
 #endif
+	int32_t size;
 	uintptr_t addr;
-	bool ret;
 
 	DCC_LOG2(LOG_TRACE, "pc=0x%08x sp=0x%08x", app->entry, app->stack);
 
-	if (!(ret = magic_match(&flat_app_magic, mem))) {
-		DCC_LOG(LOG_ERROR, "invalid application block!");
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	addr = (uintptr_t)app;
+	if (!__thinkos_mem_usr_rd_chk(addr, sizeof(struct flat_app))) {
+		DCC_LOG1(LOG_ERROR, "invalid pointer: addr=0x%08x", addr);
+		return THINKOS_ERR_APP_INVALID;
+	}
+#endif /* (THINKOS_ENABLE_SANITY_CHECK) */
+
+	app = (const struct flat_app *)addr;
+	if (app->entry != addr + 0x41) {
 		return THINKOS_ERR_APP_INVALID;
 	}
 
-#if (THINKOS_ENABLE_APP_CRC)
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	/* can we read and write at the application stack ? */ 
+	addr = app->stack;
+	size = app->stksz;
+	if ((size < 0) || !__thinkos_mem_usr_rw_chk(addr, size)) {
+		DCC_LOG2(LOG_ERROR, ".text section invalid addr=0x%08x size=%d", 
+				 addr, size);
+		return THINKOS_ERR_APP_INVALID;
+	}
+#endif
+
 	size = (app->size + 3) & ~3; /* Block alignment */
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	/* can we read and execute from the application address ? */ 
+	if (!__thinkos_mem_usr_rx_chk(addr, size)) {
+		DCC_LOG1(LOG_ERROR, "invalid pointer: addr=0x%08x", addr);
+		return THINKOS_ERR_APP_INVALID;
+	}
+#endif /* (THINKOS_ENABLE_SANITY_CHECK) */
+
+#if (THINKOS_ENABLE_APP_CRC)
 	DCC_LOG1(LOG_TRACE, "app size=%d", size);
 	crc = __thinkos_crc32_u32((uint32_t *)mem, size);
 	chk = mem[size >> 2];

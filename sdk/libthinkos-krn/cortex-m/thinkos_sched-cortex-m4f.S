@@ -220,7 +220,7 @@ thinkos_krn_sched_ctx_restore:
 	movs     r0, #~0 /* restore scheduler mask */
 	strb     r0, [r3, #OFFSETOF_KRN_SCHED_MASK]
 .L_entry_from_idle:
-	tst      lr, #CM3_EXC_RET_SPSEL
+	tst      lr, #EXC_RET_SPSEL
 	/* the origin was not IDLE discard context and move on */ 
 	bne      thinkos_sched_select_ready
 	/* Adjust the thread ID */
@@ -309,7 +309,7 @@ thinkos_sched_break:
 	.global thinkos_sched_break
 	.type   thinkos_sched_break, %function
 thinkos_sched_break:
-	tst      lr, #CM3_EXC_RET_SPSEL
+	tst      lr, #EXC_RET_SPSEL
 	/* the origin was IDLE save context and move on */ 
 	itt      eq
 	/* Adjust the thread ID */
@@ -320,7 +320,7 @@ thinkos_sched_break:
 #if (THINKOS_ENABLE_MONITOR)
     /* fault thread */
 	ldr      r2, .L_xcpt_buf
-	adds     r2, #(THINKOS_EXCEPT_CONTEXT_OFFS)
+	adds     r2, #(OFFSETOF_XCPT_CONTEXT)
 	stmia    r2!, {r4-r11} /* r4..r11 */
 	mrs      r0, PSP
 	ldmia    r0!, {r4-r11}

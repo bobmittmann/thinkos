@@ -50,8 +50,9 @@ struct {
 #endif
 } thinkos_monitor_rt;
 
-uint32_t __attribute__((aligned(16))) 
+uint32_t __attribute__((aligned(8))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
+
 const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -69,7 +70,6 @@ void __attribute__((noinline))__monitor_wait(struct thinkos_monitor * mon)
 #else
 void __monitor_context_swap(uint32_t ** pctx); 
 #endif
-
 
 /* -------------------------------------------------------------------------
  * Debug Monitor API

@@ -325,9 +325,9 @@ libs-clean: $(LIBDIRS_CLEAN)
 
 libs-install: $(LIBDIRS_INSTALL)
 
-size: $(PROG_ELF) 
-	$(ACTION) "Size of: $<"
-	$(Q)$(SIZE) -G $<
+#size: $(PROG_ELF) 
+#	$(ACTION) "Size of: $<"
+#	$(Q)$(SIZE) -G $<
 
 #------------------------------------------------------------------------------ 
 # Helpers to print the binary full path

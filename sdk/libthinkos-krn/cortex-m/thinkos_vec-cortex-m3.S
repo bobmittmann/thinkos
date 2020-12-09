@@ -24,6 +24,34 @@
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 
+/* Table B1-8 EXC_RETURN definition of exception return behavior, no FP 
+   extension
+   EXC_RETURN | Return to    | Return stack   |
+   0xFFFFFFF1 | Handler mode | Main           | 0001
+   0xFFFFFFF9 | Thread mode  | Main           | 1001
+   0xFFFFFFFD | Thread mode  | Process        | 1101
+ */
+
+/* Table B1-9 EXC_RETURN definition of exception return behavior, with FP 
+   extension 
+   EXC_RETURN | Return to    | Return stack | Frame type
+   0xFFFFFFE1 | Handler mode | Main         | Extended
+   0xFFFFFFE9 | Thread mode  | Main         | Extended
+   0xFFFFFFED | Thread mode  | Process      | Extended
+   0xFFFFFFF1 | Handler mode | Main         | Basic
+   0xFFFFFFF9 | Thread mode  | Main         | Basic
+   0xFFFFFFFD | Thread mode  | Process      | Basic
+
+#define EXEC_RET_SPSEL (1 << 2)
+#define EXEC_RET_MODE  (1 << 3)
+#define EXEC_RET_nFPCA (1 << 4)
+
+#define CONTROL_nPRIV       (1 << 0)
+#define CONTROL_SPSEL       (1 << 1)
+#define CONTROL_FPCA        (1 << 2)
+*/
+
+
 #define SCB_ICSR_OFFS  0x04
 #define SCB_SHCSR_OFFS 0x24 /* System Handler Control and State */
 #define SCB_CFSR_OFFS  0x28 /* Configurable Fault Status */
@@ -140,140 +168,102 @@ __thinkos_krn_xcpt:
 	   Return:
 	     r0: exception buffer */
 
-	mrs     r12, PRIMASK
-	/* disable interrupts */
-	cpsid   i
-	ldr     r3, .L_xcpt_buf
+	mrs     r2, PRIMASK
 
-	mov    r1, #1
+/*	mov    r1, #32
 	0:
 	cmp    r1, 0
-	bne    0b
+	bne    0b */
 
+	/* disable interrupts */
+	cpsid   i
 
-	strb    r0, [r3, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
-	ldrb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS]  /* sequence */
-	adds    r0, r0, #1  /* increment sequence */
-	strb    r0, [r3, #THINKOS_EXCEPT_SEQ_OFFS] /* count */
+	ldr     r1, .L_xcpt_buf
+	/* update sequence count */
+	ldrb    r3, [r1, #OFFSETOF_XCPT_SEQ]  /* sequence */
+	/* increment sequence */
+	adds    r3, #1
+	strb    r3, [r1, #OFFSETOF_XCPT_SEQ]  /* sequence */
 
-	strb    lr, [r3, #THINKOS_EXCEPT_RET_OFFS] /* return (lr) */
-	mrs     r0, FAULTMASK
-	lsl     r0, 1
-	and     r0, r12
-	strb    r0, [r3, #THINKOS_EXCEPT_PFMASK_OFFS] /* PRI/FAULT MASK */
+	strb    r0, [r1, #OFFSETOF_XCPT_ERRNO] /* errno */
 
-	mrs     r0, BASEPRI 
-	strb    r0, [r3, #THINKOS_EXCEPT_BASEPRI_OFFS] /* BASEPRI */
-	mrs     r0, IPSR
-	strb    r0, [r3, #THINKOS_EXCEPT_IPSR_OFFS] /* IPSR */
-	mrs     r0, CONTROL
-	strb    r0, [r3, #THINKOS_EXCEPT_CTRL_OFFS] /* CONTROL */
+	mrs     r3, IPSR
+	strb    r3, [r1, #OFFSETOF_XCPT_IPSR] /* IPSR */
 
-	mrs     r0, MSP 
-	mrs     r1, PSP 
-	tst     lr, #CM3_EXC_RET_SPSEL
+	strb    lr, [r1, #OFFSETOF_XCPT_RET] /* return (lr) */
+
+	/* BASEPRI */
+	mrs     r3, BASEPRI 
+	strb    r3, [r1, #OFFSETOF_XCPT_BASEPRI] 
+	/* PRIMASK/BASEPRI/FAULTMASK/CONTROL */
+	mrs     r3, CONTROL
+	strb    r3, [r1, #OFFSETOF_XCPT_CONTROL] 
+	/* PRIMASK/FAULTMASK */
+	mrs     r3, FAULTMASK
+	lsls    r3, #4 
+	adds    r3, r2
+	strb    r3, [r1, #OFFSETOF_XCPT_PRIMASK] 
+
+	/* save basic frame */
+	movs    r2, r1
+	adds    r2, #OFFSETOF_XCPT_CONTEXT
+	stmia   r2!, {r4-r11} /* r4..r11 */
+
+	mrs     r4, PSP 
+	tst     lr, #EXC_RET_SPSEL
 	ite     eq 
-	moveq   r12, r0
-	movne   r12, r1
-	str     r0, [r3, #THINKOS_EXCEPT_MSP_OFFS]
-	str     r1, [r3, #THINKOS_EXCEPT_PSP_OFFS] 
+	/* TODO: This call could cause an exception if PSP is invalid */
+	ldmiaeq sp!, {r5-r12} /* r0..r1, r12, lr, pc, xpsr */
+	ldmiane r4!, {r5-r12} /* r0..r1, r12, lr, pc, xpsr */
+	stmia   r2!, {r5-r12} /* r0..r1, r12, lr, pc, xpsr */
+	mov     r5, sp
+	ldr     r3, .L_thinkos_rt
+	ldr     r6, [r3, #OFFSETOF_KRN_SCHED]
+	ldr     r7, [r3, #OFFSETOF_KRN_READY]
+	/* PSP / MSP / SCHED / READY */
+	stmia   r2!, {r4, r5, r6, r7} 
 
-	ldr     r2, .L_cm3_scb
-	ldr     r1, [r2, #SCB_ICSR_OFFS] /* Interrupt Control State */
-	str     r1, [r3, #THINKOS_EXCEPT_ICSR_OFFS]
+	ldr     r3, .L_cm3_scb
+	ldr     r4, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
+	ldr     r5, [r3, #SCB_HFSR_OFF] /* Hard Fault Status */
+	ldr     r6, [r7, #SCB_MMFAR_OFFS] /* Mem Manage Address */
+	ldr     r7, [r7, #SCB_BFAR_OFFS] /* Bus Fault Address */
+	stmia   r2!, {r4, r5, r6, r7} 
 
-	ldr     r0, [r2, #SCB_SHCSR_OFFS] /* System Handler Control and State */
-	str     r0, [r3, #THINKOS_EXCEPT_SHCSR_OFFS]
+	ldr     r4, [r3, #SCB_ICSR_OFFS] /* Interrupt Control State */
+	ldr     r5, [r3, #SCB_SHCSR_OFFS] /* System Handler Control and State */
+#if (THINKOS_ENABLE_PROFILING)
+#endif
+	stmia   r2!, {r4, r5} 
 
-	ldr     r0, [r2, #SCB_CFSR_OFFS] /* Configurable Fault Status */
-	str     r0, [r3, #THINKOS_EXCEPT_CFSR_OFFS]
-	ldr     r0, [r2, #SCB_HFSR_OFF] /* Hard Fault Status */
-	str     r0, [r3, #THINKOS_EXCEPT_HFSR_OFFS]
+	/* check the mode of the exception (Thread or handler)*/
+	tst     lr, #EXC_RET_MODE
+	beq     .L_ret_handler
 
-	ldr     r0, [r2, #SCB_MMFAR_OFFS] /* Mem Manage Address */
-	str     r0, [r3, #THINKOS_EXCEPT_MMFAR_OFFS]
-	ldr     r0, [r2, #SCB_BFAR_OFFS] /* Bus Fault Address */
-	str     r0, [r3, #THINKOS_EXCEPT_BFAR_OFFS]
-
-	/* removes the pending status of the PendSV exception */
-	movs    r0, #SCB_ICSR_PENDSVCLR;
-	str     r0, [r2, #SCB_ICSR_OFFS]
-
-	ldr     r2, .L_thinkos_rt
-	ldr     r0, [r2, #OFFSETOF_KRN_READY]
-	str     r0, [r3, #THINKOS_EXCEPT_READY_OFFS]
-	ldr     r2, [r2, #OFFSETOF_KRN_SCHED]
-	str     r2, [r3, #THINKOS_EXCEPT_ACTIVE_OFFS]
-	cmp     r2, #THINKOS_THREAD_IDLE
-	bge     .L_invalid_thread_fault
-
-	movs    r0, r3
-	adds    r3, #THINKOS_EXCEPT_CONTEXT_OFFS
-	stmia   r3!, {r4-r11} /* r4..r11 */
-
-	/* Basic information is saved. Next call could cause an exception
-		TODO: check R12 (PSP/MSP) */
-
-	ldmia   r12, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-	stmia   r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
-
-	/* Exception on interrupt handler ? */
-	tst     r1, #SCB_ICSR_RETTOBASE 
-	beq     .L_no_rettobase
-
-	/* Exception returns to idle thread ? */
-	cmp     lr, #CM3_EXC_RET_THREAD_MSP
+	/* check the stack of the exception (PSP or MSP ?)*/
+	tst     lr, #EXC_RET_SPSEL
 	beq     .L_ret_msp
 
-#if 0
-	/* Load the idle context pointer from the context vector */
-	ldr     r6, .L_thinkos_rt
-	ldr     r7, [r6, #THINKOS_THREAD_IDLE * 4]
-	/* Check for stack availability */
-	cmp     r7, r3
-	ble     .L_no_stack
-
-	/* Restore idle core context */
-	mov     r6, sp
-	cmp     r7, r6
-	bne     .L_idle_unstack
-
+#if CHECK_RETTOBASE
+	/* Exception on interrupt handler using PSP ? */
+	tst     r4, #SCB_ICSR_RETTOBASE 
+	beq     .L_no_rettobase
 #endif
-	ldrb    r1, [r0, #THINKOS_EXCEPT_ERRNO_OFFS] /* errno */
-
-	pop     {r4-r11}
+	/* Check for stack availability */
+	mov      r3, sp
+	cmp      r2, r3
+	bge     .L_no_stack
 
 	/* Adjust the control register */
-	mov     R12, #0
-	msr     CONTROL, r12
+	movs    R3, #0
+	msr     CONTROL, r3
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
 	b       thinkos_krn_thread_except
 
-.L_no_rettobase:
-	mov     r4, #THINKOS_ERR_KRN_NORETTOBASE    
-	b       .L_reset_idle
-
 .L_ret_msp:
 	mov     r4, #THINKOS_ERR_KRN_RETMSP
-	b       .L_reset_idle
-
-.L_invalid_thread_fault:
-	beq     .L_idle_fault
-	mov     r4, #THINKOS_ERR_KRN_FAULT
-	b       .L_reset_idle
-
-.L_idle_fault:
-	mov     r4, #THINKOS_ERR_KRN_IDLEFAULT
-	b       .L_reset_idle
-
-.L_no_stack:
-	mov     r4, #THINKOS_ERR_KRN_STACKOVF
-	b       .L_reset_idle
-
-.L_idle_unstack:
-	mov     r4, #THINKOS_ERR_KRN_UNSTACK
 
 .L_reset_idle:
 	/* Reset the exception stack */
@@ -288,6 +278,35 @@ __thinkos_krn_xcpt:
 	/* Call the fatal exception handler */
 	b       thinkos_krn_fatal_except
 
+.L_no_stack:
+	mov     r4, #THINKOS_ERR_KRN_STACKOVF
+	b       .L_reset_idle
+
+.L_ret_handler:
+	mov     r4, #THINKOS_ERR_KRN_RETHANDLER
+	b       .L_reset_idle
+
+
+#if CHECK_RETTOBASE
+.L_no_rettobase:
+	mov     r4, #THINKOS_ERR_KRN_NORETTOBASE    
+	b       .L_reset_idle
+#endif
+
+#if 0
+	/* Load the idle context pointer from the context vector */
+	ldr     r6, .L_thinkos_rt
+	ldr     r7, [r6, #THINKOS_THREAD_IDLE * 4]
+
+	/* Restore idle core context */
+	mov     r6, sp
+	cmp     r7, r6
+	bne     .L_idle_unstack
+
+.L_idle_unstack:
+	mov     r4, #THINKOS_ERR_KRN_UNSTACK
+	b       .L_reset_idle
+#endif
 
 
 	.align  2

@@ -367,7 +367,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		privileged  = __PRIVILEGED(opt);
 #else
-		ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
 		privileged = false;
 #endif
 
@@ -386,11 +385,13 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 			DCC_LOG(LOG_TRACE, "Enabling interrupts");
 			/* enable interrupts */
 			thinkos_krn_irq_on();
+			DCC_LOG(LOG_TRACE, "Adjusting privilege");
+			/* enable interrupts */
+			/* Adjust privilege */
+			ctrl |=  CONTROL_nPRIV;
+			cm3_control_set(ctrl);
 		}
 
-		/* Adjust privilege */
-		ctrl = privileged ? CONTROL_SPSEL : CONTROL_SPSEL | CONTROL_nPRIV;
-		cm3_control_set(ctrl);
 
 		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 				 thread_no, cm3_msp_get(), cm3_psp_get(), 

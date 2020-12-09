@@ -24,29 +24,28 @@ VERSION_MAJOR = "0"
 VERSION_MINOR = "5"
 
 THINKOS_DIR = ../../../..
+
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 LZ77 = /c/opt/bin/lz77
 LZ_WINDOW_SIZE = 32768
-
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 BOOT_CFILES = boot.c monitor.c standby.c
 
 CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c fpga.c ice40hx1k.c 
 
-LIBS = stm32f util thinkos-krn thinkos-mon xmodem ice-comm
-
-SDK_LIBS = util thinkos-krn thinkos-mon xmodem ice-comm
-ARCH_LIBS = stm32f 
-LIBS = $(SDK_LIBS) $(ARCH_LIBS)
-
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-INCPATH = $(SDK_DIR)/include ../include
+SDK_LIBS = util thinkos-krn thinkos-mon xmodem ice-comm
+ARCH_LIBS = stm32f 
+
+LIBS = $(SDK_LIBS) $(ARCH_LIBS)
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=2
 

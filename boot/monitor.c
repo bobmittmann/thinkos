@@ -456,9 +456,6 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 	monitor_printf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
 	thinkos_dbg_pause_all();
-	if (monitor_wait_idle() < 0) {
-		DCC_LOG(LOG_WARNING, "monitor_wait_idle() failed!");
-	}
 }
 #endif
 

@@ -77,7 +77,7 @@ else
   LDFLAGS += -T $(MACH).ld -T $(STM32)-vec.ld -T $(BOOTLD)
 endif
 
-all: prog-all size
+all: prog-all 
 
 clean: clean-all
 

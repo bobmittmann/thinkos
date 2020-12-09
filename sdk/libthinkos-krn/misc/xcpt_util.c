@@ -97,23 +97,23 @@ void __xdump(struct thinkos_rt * krn,
 
 	ret  = 0xffffff00 | (xcpt->ret & 0xff);
 
-	sp = (ret & CM3_EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	sp = (ret & EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
 	DCC_LOG1(LOG_ERROR, "ret=%08x", ret); 
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
-			xcpt->ctx.core.r0, xcpt->ctx.core.r1, 
-			xcpt->ctx.core.r2, xcpt->ctx.core.r3);
+			xcpt->ctx.r0, xcpt->ctx.r1, 
+			xcpt->ctx.r2, xcpt->ctx.r3);
 	DCC_LOG4(LOG_ERROR, "   R4=%08x  R5=%08x  R6=%08x  R7=%08x", 
-			xcpt->ctx.core.r4, xcpt->ctx.core.r5, 
-			xcpt->ctx.core.r6, xcpt->ctx.core.r7);
+			xcpt->ctx.r4, xcpt->ctx.r5, 
+			xcpt->ctx.r6, xcpt->ctx.r7);
 	DCC_LOG4(LOG_ERROR, "   R8=%08x  R9=%08x R10=%08x R11=%08x", 
-			xcpt->ctx.core.r8, xcpt->ctx.core.r9, 
-			xcpt->ctx.core.r10, xcpt->ctx.core.r11);
+			xcpt->ctx.r8, xcpt->ctx.r9, 
+			xcpt->ctx.r10, xcpt->ctx.r11);
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
-			xcpt->ctx.core.r12, sp, xcpt->ctx.core.lr, xcpt->ctx.core.pc);
+			xcpt->ctx.r12, sp, xcpt->ctx.lr, xcpt->ctx.pc);
 	DCC_LOG4(LOG_ERROR, " XPSR=%08x MSP=%08x PSP=%08x RET=%08x", 
-			xcpt->ctx.core.xpsr, xcpt->msp, xcpt->psp, ret);
-	xpsr = xcpt->ctx.core.xpsr;
+			xcpt->ctx.xpsr, xcpt->msp, xcpt->psp, ret);
+	xpsr = xcpt->ctx.xpsr;
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
 		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
@@ -169,7 +169,7 @@ void __xdump(struct thinkos_rt * krn,
 #endif
 #endif
 
-	ctrl = xcpt->ctrl;
+	ctrl = xcpt->control;
 	DCC_LOG3(LOG_ERROR, " CTRL={%s%s%s }",
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
@@ -224,7 +224,8 @@ void __xdump(struct thinkos_rt * krn,
 #endif
 
 #if (THINKOS_ENABLE_MONITOR)
-	DCC_LOG2(LOG_ERROR, "Monitor stack free: %d/%6d", 
+	DCC_LOG3(LOG_ERROR, "Monitor stack (%08x) free: %d/%6d", 
+			 thinkos_monitor_stack,
 			 __thinkos_scan_stack(thinkos_monitor_stack, 
 								  thinkos_monitor_stack_size),
 			 thinkos_monitor_stack_size); 

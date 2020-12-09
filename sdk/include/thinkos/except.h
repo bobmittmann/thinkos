@@ -27,46 +27,49 @@
 #error "Never use <thinkos/except.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#define THINKOS_EXCEPT_ERRNO_OFFS      0
-#define THINKOS_EXCEPT_SEQ_OFFS        1
-#define THINKOS_EXCEPT_RET_OFFS        2
-#define THINKOS_EXCEPT_PFMASK_OFFS     3
+#define OFFSETOF_XCPT_SEQ        0
+#define OFFSETOF_XCPT_ERRNO      1
+#define OFFSETOF_XCPT_IPSR       2
+#define OFFSETOF_XCPT_RET        3
 
-#define THINKOS_EXCEPT_BASEPRI_OFFS    4
-#define THINKOS_EXCEPT_ACK_OFFS        5
-#define THINKOS_EXCEPT_IPSR_OFFS       6
-#define THINKOS_EXCEPT_CTRL_OFFS       7
+#define OFFSETOF_XCPT_ACK        4
+#define OFFSETOF_XCPT_BASEPRI    5
 
-#define THINKOS_EXCEPT_MSP_OFFS        8
-#define THINKOS_EXCEPT_PSP_OFFS       12
+#define OFFSETOF_XCPT_CONTROL    6
 
-#define THINKOS_EXCEPT_ICSR_OFFS      16
-#define THINKOS_EXCEPT_SHCSR_OFFS     20
+#define OFFSETOF_XCPT_PRIMASK    7
+#define OFFSETOF_XCPT_FAULTMASK  7
 
-#define THINKOS_EXCEPT_CFSR_OFFS      24
-#define THINKOS_EXCEPT_HFSR_OFFS      28
+#define OFFSETOF_XCPT_CONTEXT    8
 
-#define THINKOS_EXCEPT_MMFAR_OFFS     32
-#define THINKOS_EXCEPT_BFAR_OFFS      36
+#define OFFSETOF_XCPT_MSP       72
+#define OFFSETOF_XCPT_PSP       76
 
-#define THINKOS_EXCEPT_ACTIVE_OFFS    40
-#define THINKOS_EXCEPT_READY_OFFS     44
+#define OFFSETOF_XCPT_SCHED     80
+#define OFFSETOF_XCPT_READY     84
+
+#define OFFSETOF_XCPT_CFSR      88
+#define OFFSETOF_XCPT_HFSR      92
+
+#define OFFSETOF_XCPT_MMFAR     96
+#define OFFSETOF_XCPT_BFAR     100
+
+#define OFFSETOF_XCPT_ICSR     104
+#define OFFSETOF_XCPT_SHCSR    108
 
 #if (THINKOS_ENABLE_PROFILING)
-  #define THINKOS_EXCEPT_CYCREF_OFFS  48
-  #define THINKOS_EXCEPT_CYCCNT_OFFS  52
-  #define THINKOS_EXCEPT_CONTEXT_OFFS 56
+  #define OFFSETOF_XCPT_CYCREF  112
+  #define OFFSETOF_XCPT_CYCCNT  116
 #else
-  #define THINKOS_EXCEPT_CONTEXT_OFFS 48
 #endif
 
 /*
-#define SIZEOF_THINKOS_EXCEPT (THINKOS_EXCEPT_CONTEXT_OFFS + \
+#define SIZEOF_THINKOS_EXCEPT (OFFSETOF_XCPT_CONTEXT + \
 							   (SIZEOF_THINKOS_CONTEXT))
-*/
 
-#define SIZEOF_THINKOS_EXCEPT (THINKOS_EXCEPT_CONTEXT_OFFS + \
+#define SIZEOF_THINKOS_EXCEPT (OFFSETOF_XCPT_CONTEXT + \
 							   (SIZEOF_THINKOS_BASIC_CONTEXT))
+*/
 
 
 #ifndef __ASSEMBLER__
@@ -100,42 +103,51 @@ struct armv7m_extended_frame {
 };
 
 struct thinkos_except {
+	uint8_t  seq;       /* number of exceptions since except_ack() */
 	uint8_t  errno;     /* exception error code */
-	int8_t   seq;       /* number of exceptions since except_ack() */
-	uint8_t  ret;       /* exception exit return code low byte  */
-	uint8_t  pfmask;    /* PRIMASK / FAULTMASK */
-
-	uint8_t  basepri;   /* BASEPRI */
-	int8_t   ack;       /* */
 	uint8_t  ipsr;      /* IPSR */
-	uint8_t  ctrl;      /* CONTROL */
+	uint8_t  ret;       /* exception exit return code low byte  */
+
+	uint8_t  ack;  
+	uint8_t  basepri;      /* BASEPRI */
+	uint8_t  control;      /* CONTROL */
+	struct {
+		uint8_t  primask: 4;   /* PRIMASK */
+		uint8_t  faultmask: 4; /* FAULTMASK */
+	};
+
+	struct thinkos_context ctx;
 
 	uint32_t msp;       /* MSP */
 	uint32_t psp;       /* PSP */
 
-    /* SCB (System Control Block) */
-	uint32_t icsr;      /* Interrupt Control State */
-	uint32_t shcsr;     /* System Handler Control and State */
+    /* Kernel */
+	union {
+		uint32_t state;    /* scheduler state at the time of the exception */
+		struct {
+			uint8_t active; /* current active thread */
+			uint8_t mask;
+			uint8_t code;
+			uint8_t brk;
+		};
+	} sched;
+	uint32_t ready;     /* ready bitmap */
 
+    /* SCB (System Control Block) */
 	uint32_t cfsr;      /* Configurable Fault Status */
 	uint32_t hfsr;      /* Hard Fault Status */
-
 	uint32_t mmfar;     /* Mem Manage Address */
 	uint32_t bfar;      /* Bus Fault Address */
 
-	uint32_t  active;   /* active thread at the time of the exception */
-	uint32_t  ready;    /* ready bitmap */
+	uint32_t icsr;      /* Interrupt Control State */
+	uint32_t shcsr;     /* System Handler Control and State */
 
 #if (THINKOS_ENABLE_PROFILING)
-	uint32_t  cycref;    
-	uint32_t  cyccnt;    
+	uint32_t cycref;
+	uint32_t cyccnt;
 #endif
-
-	struct {
-		struct thinkos_context core;
-	} ctx;
-
 };
+
 
 extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
 extern const uint16_t thinkos_except_stack_size;
@@ -150,10 +162,7 @@ static inline struct thinkos_except * __thinkos_except_buf(void) {
 }
 
 static inline int __xcpt_active_get(struct thinkos_except * xcpt) {
-	uint32_t active = xcpt->active; 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	active &= 0x3f;
-#endif
+	uint32_t active = xcpt->sched.active; 
 	return (xcpt->seq != xcpt->ack) ? (int32_t)active : -1;
 }
 

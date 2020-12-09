@@ -24,6 +24,67 @@
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 
+	/* Static sanity check: */
+	_Static_assert (offsetof(struct thinkos_except, seq) == 
+					OFFSETOF_XCPT_SEQ, "OFFSETOF_XCPT_SEQ");
+
+	_Static_assert (offsetof(struct thinkos_except, errno) == 
+					OFFSETOF_XCPT_ERRNO, "OFFSETOF_XCPT_ERRNO");
+
+	_Static_assert (offsetof(struct thinkos_except, ipsr) == 
+					OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
+
+	_Static_assert (offsetof(struct thinkos_except, ret) == 
+					OFFSETOF_XCPT_RET, "OFFSETOF_XCPT_RET");
+
+	_Static_assert (offsetof(struct thinkos_except, ack) == 
+					OFFSETOF_XCPT_ACK, "OFFSETOF_XCPT_ACK");
+
+	_Static_assert (offsetof(struct thinkos_except, control) == 
+					OFFSETOF_XCPT_CONTROL, "OFFSETOF_XCPT_CONTROL");
+
+	_Static_assert (offsetof(struct thinkos_except, ctx) == 
+					OFFSETOF_XCPT_CONTEXT, "OFFSETOF_XCPT_CONTEXT");
+
+	_Static_assert (offsetof(struct thinkos_except, msp) == 
+					OFFSETOF_XCPT_MSP, "OFFSETOF_XCPT_MSP");
+
+	_Static_assert (offsetof(struct thinkos_except, psp) == 
+					OFFSETOF_XCPT_PSP, "OFFSETOF_XCPT_PSP");
+
+	_Static_assert (offsetof(struct thinkos_except, sched) == 
+					OFFSETOF_XCPT_SCHED, "OFFSETOF_XCPT_SCHED");
+
+	_Static_assert (offsetof(struct thinkos_except, ready) == 
+					OFFSETOF_XCPT_READY, "OFFSETOF_XCPT_READY");
+
+	_Static_assert (offsetof(struct thinkos_except, cfsr) == 
+					OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
+
+	_Static_assert (offsetof(struct thinkos_except, hfsr) == 
+					OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
+
+	_Static_assert (offsetof(struct thinkos_except, mmfar) == 
+					OFFSETOF_XCPT_MMFAR, "OFFSETOF_XCPT_MMFAR");
+
+	_Static_assert (offsetof(struct thinkos_except, bfar) == 
+					OFFSETOF_XCPT_BFAR, "OFFSETOF_XCPT_BFAR");
+
+	_Static_assert (offsetof(struct thinkos_except, icsr) == 
+					OFFSETOF_XCPT_ICSR, "OFFSETOF_XCPT_ICSR");
+
+	_Static_assert (offsetof(struct thinkos_except, shcsr) == 
+					OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
+
+#if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_except, cycref) == 
+					OFFSETOF_XCPT_CYCREF, "OFFSETOF_XCPT_CYCREF");
+
+	_Static_assert (offsetof(struct thinkos_except, cyccnt) == 
+					OFFSETOF_XCPT_CYCCNT, "OFFSETOF_XCPT_CYCCNT");
+#endif
+
+
 #if (DEBUG)
 /*
   #ifndef LOG_LEVEL
@@ -42,7 +103,7 @@
 
 #include <sys/dcclog.h>
 
-void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
+void thinkos_krn_fatal_except(uint32_t errno, struct thinkos_except * xcpt) 
 {
 #if DEBUG
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -80,14 +141,14 @@ void thinkos_krn_fatal_except(struct thinkos_except * xcpt, unsigned int errno)
 #endif
 }
 
-void thinkos_krn_thread_except(struct thinkos_except * xcpt, 
-							   uint32_t errno, uint32_t thread_idx)
+void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
+	int thread = xcpt->sched.active;
 
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
 			 " Thread fault %d, thread %d " VT_POP, 
-			 errno, thread_idx);
+			 errno, thread);
 
 	mdelay(250);
 
@@ -104,7 +165,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
 
 #if (THINKOS_ENABLE_MONITOR) 
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
-			__thread_tag_get(krn, thread_idx));
+			__thread_tag_get(krn, thread));
 
 	__nvic_irq_disable_all();
 
@@ -114,7 +175,7 @@ void thinkos_krn_thread_except(struct thinkos_except * xcpt,
 	__krn_suspend_all(krn);
 #endif
 
-	__thread_fault_raise(krn, thread_idx, errno);
+	__thread_fault_raise(krn, thread, errno);
 
 	/* Enable Interrupts */
 	cm3_cpsie_i();
