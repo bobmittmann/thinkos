@@ -139,8 +139,8 @@ int thinkos_dbg_thread_break_clr(void);
 
 void thinkos_dbg_reset(void);
 
-int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
-						  bool privileged);
+int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
+						  void (* on_exit)(unsigned int), bool privileged);
 
 void thinkos_dbg_resume_all(void);
 

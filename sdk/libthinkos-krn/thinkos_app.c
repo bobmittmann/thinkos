@@ -52,7 +52,8 @@ int thinkos_flat_check(const struct flat_app * app)
 	int32_t size;
 	uintptr_t addr;
 
-	DCC_LOG2(LOG_TRACE, "pc=0x%08x sp=0x%08x", app->entry, app->stack);
+	DCC_LOG3(LOG_TRACE, "app=0x%08x pc=0x%08x sp=0x%08x", app,
+			 app->entry, app->stack);
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	addr = (uintptr_t)app;

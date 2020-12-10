@@ -209,12 +209,18 @@ struct thinkos_thread_inf {
  */
 
 /** 
+ * typedef thinkos_entry_t - Compatibility task function type.
+ * Thread entry function template.
+ *
+ */
+typedef int (* thinkos_entry_t)(void * arg);
+
+/** 
  * typedef thinkos_task_t - Thread task function type.
  * Thread entry function template.
  *
  */
-
-typedef int (* thinkos_task_t)(void * arg, unsigned int id);
+typedef int (* thinkos_task_t)(void * arg, unsigned int);
 
 /* ThinkOS Thread Task type cast macro */
 #define C_TASK(__FUN) (int (*)(void *, unsigned int))(uintptr_t)(__FUN)
@@ -365,7 +371,7 @@ int thinkos_thread_create(thinkos_task_t task_ptr, void * task_arg,
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
+int thinkos_thread_create_inf(thinkos_entry_t task_ptr, void * task_arg,
 							  const struct thinkos_thread_inf * inf);
 
 

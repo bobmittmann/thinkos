@@ -60,7 +60,7 @@ class FlatHdr(object):
     self.ctor_start = tab[6]
     self.ctor_end = tab[7]
 
-  def print(self):
+  def print_info(self):
     os_tag = self.os_tag.decode('ascii') 
     os_key = struct.unpack('<II', self.os_tag)
     sys_tag = self.sys_tag.decode('ascii') 
@@ -104,7 +104,7 @@ class FlatHdr(object):
 
 def bin2app(f, tag, bsize, data, size):
   app = FlatHdr(data)
-  app.print()
+  app.print_info()
 
   if app.size != size:
     print(' file size mismatch {:d} != {:d}. '.format(app.size, size))
@@ -133,7 +133,8 @@ def bin2app(f, tag, bsize, data, size):
 
   print('  - CRC32: 0x{:08x} '.format(crc))
 
-  trail = (crc).to_bytes(4, byteorder='little') 
+  trail = struct.pack('<I', crc)
+# trail = (crc).to_bytes(4, byteorder='little') 
   f.write(data)
   f.write(trail)
   f.close

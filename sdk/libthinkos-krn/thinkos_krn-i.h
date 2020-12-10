@@ -1287,6 +1287,9 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq);
 
 int __krn_thread_check(struct thinkos_rt * krn, unsigned int th);
 
+int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[], 
+						  unsigned int from, unsigned int cnt);
+
 #ifdef __cplusplus
 }
 #endif

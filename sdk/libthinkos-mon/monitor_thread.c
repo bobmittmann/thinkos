@@ -26,10 +26,12 @@
  * Fast thread execution
  * ------------------------------------------------------------------------- */
 
-void __attribute__((noreturn)) __monitor_thread_exit_stub(int code)
+//void __attribute__((noreturn)) 
+void __monitor_thread_on_exit(unsigned int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
 #if 1
+	monitor_signal(MONITOR_USR_ABORT);
 	thinkos_thread_abort(code);
 #else
 	thinkos_abort();
@@ -44,10 +46,10 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 {
 	uint32_t sigmask = 0;
 	int thread_id;
-	int ret;
+	int ret = 0;
 	int sig;
 
-	if ((ret = thinkos_dbg_thread_create(task, arg, true))  < 0)
+	if ((ret = thinkos_dbg_thread_create(task, arg, __monitor_thread_on_exit, true))  < 0)
 		return ret;
 
 	thread_id = ret;

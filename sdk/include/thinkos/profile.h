@@ -569,6 +569,10 @@
 #define THINKOS_ENABLE_TRACE                0 
 #endif
 
+#ifndef THINKOS_ENABLE_CTL_KRN_INFO
+#define THINKOS_ENABLE_CTL_KRN_INFO         0
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/
@@ -762,6 +766,11 @@
 #if (THINKOS_ENABLE_CONSOLE_MODE) && !(THINKOS_ENABLE_CONSOLE)
 #error "THINKOS_ENABLE_CONSOLE_MODE depends on THINKOS_ENABLE_CONSOLE"
 #endif
+
+#if (THINKOS_ENABLE_CTL_KRN_INFO) && !(THINKOS_ENABLE_CTL)
+#error "THINKOS_ENABLE_CTL_KRN_INFO depends on THINKOS_ENABLE_CTL"
+#endif
+
 
 /* -------------------------------------------------------------------------- 
  * Deprecated options

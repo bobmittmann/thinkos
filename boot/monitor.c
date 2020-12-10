@@ -889,11 +889,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			monitor_clear(MONITOR_APP_UPLOAD);
 #if (MONITOR_APPUPLOAD_ENABLE)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			if (monitor_flash_ymodem_recv(comm, "APP") >= 0) {
-				monitor_printf(comm, "\r\nOk.\r\n");
-			} else {
-				monitor_printf(comm, "\r\nfailed!\r\n");
-			}
+			monitor_flash_ymodem_recv(comm, "APP");
 #endif
 			break;
 
@@ -903,16 +899,14 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			monitor_app_exec(comm, &board->application);
+			monitor_app_exec(comm);
 			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
 		case MONITOR_APP_ERASE:
 			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			monitor_printf(comm, "\r\nErasing...");
 			monitor_flash_erase_all(comm, "APP");
-			monitor_printf(comm, " ok.\r\n");
 			break;
 #endif
 

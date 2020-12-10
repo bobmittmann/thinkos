@@ -24,34 +24,6 @@
 
 #if (THINKOS_ENABLE_CTL)
 
-#ifndef THINKOS_ENABLE_CTL_KRN_INFO
-#define THINKOS_ENABLE_CTL_KRN_INFO 0
-#endif
-
-#if (THINKOS_ENABLE_PROFILING) && (THINKOS_ENABLE_CTL_KRN_INFO)
-static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
-{
-	uint32_t cyccnt;
-	int32_t delta;
-	int self;
-	int cnt = MIN((int)max, THINKOS_THREADS_MAX + 1);
-
-	self = __thinkos_active_get();
-	cyccnt = CM3_DWT->cyccnt;
-	delta = cyccnt - thinkos_rt.cycref;
-	/* update the reference */
-	thinkos_rt.cycref = cyccnt;
-	/* update thread's cycle counter */
-	thinkos_rt.cyccnt[self] += delta; 
-	/* copy cycle counters */
-	__thinkos_memcpy32(cycnt, thinkos_rt.cyccnt, cnt * sizeof(uint32_t));
-	/* reset cycle counters */
-	__thinkos_memset32(thinkos_rt.cyccnt, 0, cnt * sizeof(uint32_t));
-
-	return cnt; 
-}
-#endif
-
 extern int32_t udelay_factor;
 
 static void thinkos_krn_abort(struct thinkos_rt * krn)
@@ -60,7 +32,8 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 
 	__thinkos_krn_core_reset(krn);
 
-	__krn_suspend_all(krn);
+	/* Make sure to run the scheduler */
+	__krn_defer_sched(krn);
 
 #if (THINKOS_ENABLE_MONITOR)
 	monitor_signal_break(MONITOR_KRN_ABORT);
@@ -91,7 +64,6 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 		break;
 
 	case THINKOS_CTL_ABORT:
-		DCC_LOG(LOG_WARNING, "System control: !!Abort!!");
 		thinkos_krn_abort(krn);
 		break;
 
@@ -121,7 +93,9 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 #if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
-		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
+		arg[0] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
+									   (unsigned int)arg[2] >> 16,
+									   (unsigned int)arg[2] & 0xffff);
 		break;
 #endif
 
@@ -132,7 +106,7 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 #endif
 
 	default:
-		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
+		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
 		arg[0] = THINKOS_EINVAL;
 		break;

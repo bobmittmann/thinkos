@@ -23,7 +23,7 @@ __code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
 __data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
 __stack_top = ORIGIN(STACK) + LENGTH(STACK);
 __stack_size = LENGTH(STACK);
-
+__heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
 EXTERN(_reset)
 ENTRY(_reset)

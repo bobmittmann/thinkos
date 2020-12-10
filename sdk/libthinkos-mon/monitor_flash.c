@@ -22,8 +22,10 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
+#include "thinkos_mon-i.h"
+
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
 
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
@@ -31,16 +33,11 @@
 #include <sys/delay.h>
 #include <sys/dcclog.h>
 #include <thinkos.h>
-#include <trace.h>
 #include <vt100.h>
 #include <xmodem.h>
-#include <alloca.h>
 
 #include "board.h"
 #include "version.h"
-
-#include <thinkos.h>
-#include <vt100.h>
 
 #include <sys/dcclog.h>
 
@@ -67,7 +64,7 @@ static int __console_comm_send(void * dev, const void * buf, unsigned int len)
 	return len;
 }
 
-static int __console_puts(const char * s)
+int __console_puts(const char * s)
 {
 	int n = 0;
 
@@ -137,7 +134,7 @@ static int __flash_erase_all_task(const char * tag)
 	__console_puts("\r\nFlash erase... ");
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
+		DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_open('%s') fail.", tag);
 		return key;
 	}
 
@@ -172,7 +169,7 @@ int __flash_ymodem_rcv_task(const char * tag)
 	}
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		DCC_LOG(LOG_ERROR, "thinkos_flash_mem_open() fail.");
+		DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_open('%s') fail.", tag);
 		return key;
 	}
 

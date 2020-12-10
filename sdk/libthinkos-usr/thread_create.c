@@ -7,7 +7,7 @@ void __attribute__((noreturn, noinline)) thread_at_exit(int code)
 }
 
 int __attribute__((noinline)) 
-thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
+thinkos_thread_create_inf(thinkos_entry_t task_ptr, void * task_arg,
 							  const struct thinkos_thread_inf * inf)
 {
 	struct thinkos_thread_initializer init;

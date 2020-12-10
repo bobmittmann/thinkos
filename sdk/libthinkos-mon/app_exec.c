@@ -31,10 +31,24 @@
  * Application execution
  * ------------------------------------------------------------------------- */
 
-static int __app_exec_task(const struct monitor_app_desc * desc)
+void __app_exec_on_exit(unsigned int code)
 {
-	uintptr_t addr = (uintptr_t)desc->start_addr;
+	DCC_LOG1(LOG_WARNING, "code=%d", code);
+#if 1
+	thinkos_thread_abort(code);
+#else
+	thinkos_abort();
+#endif
+}
+
+
+static int __app_exec_task(uintptr_t addr, unsigned int thread)
+{
 	int ret;
+
+	__console_puts("\r\nStarting application... ");
+
+	DCC_LOG(LOG_TRACE, "thinkos_app_exec()!");
 
 	if ((ret = thinkos_app_exec(addr))) {
 		DCC_LOG1(LOG_ERROR, "Can't start app: err=%d!", ret);
@@ -43,15 +57,26 @@ static int __app_exec_task(const struct monitor_app_desc * desc)
 	return ret;
 }
 
-bool monitor_app_exec(const struct monitor_comm * comm, 
-					 const struct monitor_app_desc * desc)
+bool monitor_app_exec(const struct monitor_comm * comm)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_mem_part part;
+	uintptr_t addr;
 	int thread_id;
 	int ret;
 
 	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
 
-	ret = thinkos_dbg_thread_create(C_TASK(__app_exec_task), C_ARG(desc), true);
+	if (!__krn_mem_part_lookup(krn, "FLASH", "APP", &part)) {
+		DCC_LOG(LOG_ERROR, "Can't locate application...!");
+		return false;
+	}
+
+	DCC_LOG2(LOG_TRACE, "patition: %08x ~ %08x", part.begin, part.end);
+	addr = part.begin;
+
+	ret = thinkos_dbg_thread_create(C_TASK(__app_exec_task), C_ARG(addr), 
+									__app_exec_on_exit, true);
 	thread_id = ret;
 	(void)thread_id;
 

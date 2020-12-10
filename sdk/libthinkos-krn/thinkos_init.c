@@ -103,6 +103,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	uint32_t ctrl;
 	uint32_t ccr;
 	uintptr_t sp;
+	int ret;
 
 	/* Static sanity check: */
 	_Static_assert (offsetof(struct thinkos_rt, void_ctx) == 
@@ -354,7 +355,9 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 
 	DCC_LOG(LOG_TRACE, "Memory management init...");
-	__thinkos_krn_mem_init(krn, map);
+	if ((ret = __thinkos_krn_mem_init(krn, map))  < 0) {
+		return ret;
+	}
 
 	DCC_LOG(LOG_TRACE, "Interrupts init init...");
 	__thinkos_krn_irq_init(krn);

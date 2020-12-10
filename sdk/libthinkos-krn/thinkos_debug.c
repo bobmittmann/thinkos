@@ -615,35 +615,12 @@ int thinkos_dbg_mutex_lock_get(unsigned int mtx)
 	return 0;
 }
 
-void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
-{
-	uint32_t ref;
-	uint32_t cnt;
-
-	cnt = CM3_DWT->cyccnt;
-	ref = krn->cycref;
-	krn->cycref = cnt;
-
-	krn->th_cyc[th] += cnt - ref;
-}
-
 int thinkos_dbg_threads_cyc_get(uint32_t cyc[], unsigned int from, 
 								unsigned int cnt)
 {
-#if (THINKOS_ENABLE_PROFILING)
 	struct thinkos_rt * krn = &thinkos_rt;
-	unsigned int to = from + cnt;
 
-	if (to > __KRN_THREAD_LST_SIZ)
-		return -THINKOS_EINVAL;
-
-	__krn_cyccnt_flush(krn, __krn_active_get(krn));
-	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
-
-	return to;
-#else
-	return -THINKOS_ENOSYS;
-#endif
+	return __krn_threads_cyc_get(krn, cyc, from, cnt);
 }
 
 struct thread_waitqueue * thinkos_dbg_wq_from_oid(unsigned int oid)
@@ -718,31 +695,31 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
-						  bool privileged)
+int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
+						  void (* on_exit)(unsigned int), bool privileged)
 {
 #if (THINKOS_ENABLE_THREAD_INFO)
 	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
 #endif
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_thread_initializer init;
-	unsigned int thread_idx;
+	unsigned int thread;
 	uintptr_t stack_base;
 	uint32_t stack_size;
 	int ret;
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	thread_idx = (inf->thread_id > 0) ? inf->thread_id : 1;
+	thread = (inf->thread_id > 0) ? inf->thread_id : 1;
 	stack_base = (uintptr_t)inf->stack_ptr;
 	stack_size = inf->stack_size;
 #else
-	thread_idx = 1;
+	thread = 1;
 	stack_base = (uintptr_t)&__krn_stack_start;
 	stack_size = (uint32_t)&__krn_stack_size;
 #endif
 
 	/* force allocate the thread block */
-	__thread_alloc_set(krn, thread_idx);
+	__thread_alloc_set(krn, thread);
 
 	if (stack_base & (STACK_ALIGN_MSK)) {
 		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_base); 
@@ -756,10 +733,10 @@ int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
 
 	init.stack_base = stack_base;
 	init.stack_size = stack_size;
-	init.task_entry = (uintptr_t)func;
-	init.task_exit = (uintptr_t)__dbg_thread_exit_stub;
+	init.task_entry = (uintptr_t)entry;
+	init.task_exit = (uintptr_t)on_exit;
 	init.task_arg[0] = (uintptr_t)arg;
-	init.task_arg[1] = 0;
+	init.task_arg[1] = thread;
 	init.task_arg[2] = 0;
 	init.task_arg[3] = 0;
 	init.priority = 0;
@@ -772,13 +749,13 @@ int thinkos_dbg_thread_create(int (* func)(void *, unsigned int), void * arg,
 	/* Make sure the scheduler is in normal state */
 	__krn_sched_normal(krn);
 
-	if ((ret = thinkos_krn_thread_init(krn, thread_idx, &init))) {
+	if ((ret = thinkos_krn_thread_init(krn, thread, &init))) {
 		return -ret;
 	};
 
-	DCC_LOG1(LOG_TRACE, "thread=%d", thread_idx + 1);
+	DCC_LOG1(LOG_TRACE, "thread=%d", thread);
 
-	return thread_idx;
+	return thread;
 }
 
 void thinkos_dbg_resume_all(void)

@@ -68,13 +68,23 @@ struct thinkos_mem_map {
 	const struct thinkos_mem_desc * desc[]; /* Sorted list of descriptors */
 };
 
+/* Memory partition */
+struct thinkos_mem_part {
+	uint32_t begin;
+	uint32_t end;
+	uint8_t opt;
+	uint8_t dev;
+	uint8_t type;
+	uint8_t perm;
+};
+
 struct thinkos_rt;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+int __thinkos_krn_mem_init(struct thinkos_rt * krn, 
                             const struct thinkos_mem_map * map);
 
 /* User read and write memory access check */
@@ -86,6 +96,19 @@ bool __thinkos_mem_usr_rx_chk(uintptr_t addr, int32_t size);
 /* User read memory access check */
 bool __thinkos_mem_usr_rd_chk(uint32_t addr, int32_t size);
 
+
+const struct thinkos_mem_blk * __mem_blk_lookup(const struct thinkos_mem_desc * mem, 
+													const char * tag);
+ 
+const struct thinkos_mem_desc * __mem_desc_lookup(const struct thinkos_mem_map * map, 
+													  const char * tag);
+
+bool __mem_part_get(const struct thinkos_mem_map * map, unsigned int j, 
+					unsigned int i, struct thinkos_mem_part * mp);
+
+
+bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, const char * part,
+					 struct thinkos_mem_part * mem);
 
 #ifdef __cplusplus
 }

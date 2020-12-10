@@ -341,7 +341,32 @@ bool __thinkos_mem_usr_rw_chk(uint32_t addr, int32_t size)
 
 #endif /* (THINKOS_ENABLE_SANITY_CHECK) */
 
-void __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+
+#if DEBUG
+void __dmap(const struct thinkos_mem_map * map)
+{
+	int j;
+
+	for (j = 0; j < map->cnt; ++j) {
+		const struct thinkos_mem_desc * mem = map->desc[j];
+		int i;
+
+		DCC_LOG2(LOG_TRACE, "[%-8s]    %08x", mem->tag, mem->base);
+		for (i = 0; i < mem->cnt; ++i) {
+			const struct thinkos_mem_blk * blk = &mem->blk[i];
+			uint32_t begin;
+			uint32_t size;
+			uint32_t end;
+			begin = mem->base + blk->off;
+			size = (1 << blk->siz) * blk->cnt;
+			end = begin + size - 1;
+			DCC_LOG4(LOG_TRACE, "  +- %-8s %08x - %08x (%8d)", blk->tag, begin, end, size);
+		}
+	}
+}
+#endif
+ 
+int __thinkos_krn_mem_init(struct thinkos_rt * krn, 
 							const struct thinkos_mem_map * map)
 {
 
@@ -350,7 +375,17 @@ void __thinkos_krn_mem_init(struct thinkos_rt * krn,
 	DCC_LOG2(LOG_TRACE, "kernel data: %08x-%08x", (uintptr_t)&__krn_data_start, 
 			 (uintptr_t)&__krn_data_end);
 #if (THINKOS_ENABLE_MEMORY_MAP)
+	if (map == NULL) {
+		DCC_LOG(LOG_ERROR, "mull pointer!");
+		/* FIXME: return code */
+		return -1;
+	}
 	krn->mem_map = map;
+
+#if DEBUG
+	__dmap(map);
+#endif
+
 #endif
 
 #if (THINKOS_ENABLE_MPU)
@@ -366,5 +401,123 @@ void __thinkos_krn_mem_init(struct thinkos_rt * krn,
 	krn->mem.krn_data.base = (uintptr_t)&__krn_data_start;
 	krn->mem.krn_data.top = (uintptr_t)&__krn_data_end;
 #endif
+
+	return 0;
+}
+
+static uint64_t tag2hash(const char * tag)
+{
+	char * cp = (char *)tag;
+	uint64_t hash = 0;
+	int i = 0;
+	int c;
+
+	for (i = 0; i < 8; ++i) {
+		if ((c = cp[i]) == '\0')
+			break;
+		hash |= c << (i * 8); 
+	}
+
+	return hash;
+}
+
+const struct thinkos_mem_blk * __mem_blk_lookup(const struct thinkos_mem_desc * mem, 
+													const char * tag)
+{
+	uint64_t hash = tag2hash(tag);
+	int i;
+
+	DCC_LOG2(LOG_YAP, "hash=%08x%08x", hash >> 32, hash);
+
+	for (i = 0; i < mem->cnt; ++i) {
+		const struct thinkos_mem_blk * blk = &mem->blk[i];
+		uint64_t cmp = tag2hash(blk->tag);
+
+		DCC_LOG2(LOG_YAP, "cmp=%08x%08x", cmp >> 32, cmp);
+		if (hash == cmp) {
+			return blk;
+		}
+	}
+
+	return NULL;
+}
+ 
+const struct thinkos_mem_desc * __mem_desc_lookup(const struct thinkos_mem_map * map, 
+													  const char * tag)
+{
+	uint64_t hash = tag2hash(tag);
+	int i;
+
+	DCC_LOG2(LOG_YAP, "hash=%08x%08x", hash >> 32, hash);
+
+	for (i = 0; i < map->cnt; ++i) {
+		const struct thinkos_mem_desc * mem = map->desc[i];
+		uint64_t cmp = tag2hash(mem->tag);
+
+		DCC_LOG2(LOG_TRACE, "cmp=%08x%08x", cmp >> 32, cmp);
+		if (hash == cmp) {
+			return mem;
+		}
+	}
+
+	return NULL;
+}
+
+bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, const char * part,
+					 struct thinkos_mem_part * mp)
+{
+#if (THINKOS_ENABLE_MEMORY_MAP)
+	const struct thinkos_mem_map * map = krn->mem_map;
+	const struct thinkos_mem_desc * mem;
+	const struct thinkos_mem_blk * blk;
+
+	DCC_LOG3(LOG_YAP, "map=%08x '%s'/'%s'", map, desc, part);
+
+	if ((mem = __mem_desc_lookup(map, desc)) == NULL) {
+		DCC_LOG(LOG_WARNING, "__mem_desc_lookup() failed!");
+		return false;
+	}
+
+	if ((blk = __mem_blk_lookup(mem, part)) == NULL) {
+		DCC_LOG(LOG_WARNING, "__mem_blk_lookup() failed!");
+		return false;
+	}
+
+	if (mp != NULL) {
+		mp->begin = mem->base + blk->off;
+		mp->end = mem->base + blk->off + (1 << blk->siz) * blk->cnt;
+		mp->opt = blk->opt;
+		mp->dev = mem->dev;
+		mp->type = mem->typ;
+		mp->perm = mem->opt;
+	}
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool __mem_part_get(const struct thinkos_mem_map * map, unsigned int j, 
+					unsigned int i, struct thinkos_mem_part * mp)
+{
+	if (j < map->cnt) {
+		const struct thinkos_mem_desc * mem = map->desc[j];
+		if (i < mem->cnt) {
+			const struct thinkos_mem_blk * blk = &mem->blk[i];
+
+			if (mp != NULL) {
+				mp->begin = mem->base + blk->off;
+				mp->end = mem->base + blk->off + (1 << blk->siz) * blk->cnt;
+				mp->opt = blk->opt;
+				mp->dev = mem->dev;
+				mp->type = mem->typ;
+				mp->perm = mem->opt;
+			}
+
+			return true;
+		}
+	}
+	return false;
 }
 

@@ -36,7 +36,7 @@
 #include <sys/flash-dev.h>
 
 struct thinkos_flash_desc {
-	const struct mem_desc * mem;
+	const struct thinkos_mem_desc * mem;
 	const struct flash_dev * dev;
 };
 
@@ -60,7 +60,7 @@ struct flash_op_req {
 };
 
 struct thinkos_flash_drv {
-	const struct mem_desc * mem;
+	const struct thinkos_mem_desc * mem;
 	const struct flash_dev * dev;
 	uint8_t ropen;
 	uint8_t wopen;

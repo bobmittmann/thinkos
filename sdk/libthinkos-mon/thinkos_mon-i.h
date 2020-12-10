@@ -31,8 +31,6 @@
 #define __THINKOS_DEBUG__
 #include <thinkos/debug.h>
 
-#include <stdbool.h>
-
 #include <arch/cortex-m3.h>
 #include <sys/param.h>
 
@@ -72,6 +70,7 @@ static inline void __systick_pend_set(struct thinkos_rt * krn) {
 extern "C" {
 #endif
 
+int __console_puts(const char * s);
 
 #ifdef __cplusplus
 }

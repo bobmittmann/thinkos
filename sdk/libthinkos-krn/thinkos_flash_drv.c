@@ -41,47 +41,6 @@ static uint16_t genkey_lcg16(uint16_t key)
 }
 #endif
 
-static uint64_t tag2hash(const char * tag)
-{
-	char * cp = (char *)tag;
-	uint64_t hash = 0;
-	int i = 0;
-	int c;
-
-	for (i = 0; i < 8; ++i) {
-		if ((c = cp[i]) == '\0')
-			break;
-		hash |= c << (i * 8); 
-	}
-
-	return hash;
-}
-
-static inline uint64_t mem_blk_hash(const struct blk_desc * blk)
-{
-	return blk->hash;
-}
-
-static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem, 
-											  const char * tag)
-{
-	const struct blk_desc * blk = mem->blk;
-	uint64_t hash = tag2hash(tag);
-	int i;
-
-	DCC_LOG2(LOG_YAP, "hash=%08x%08x", hash >> 32, hash);
-
-	for (i = 0; i < mem->cnt; ++i) {
-		uint64_t cmp = mem_blk_hash(&blk[i]);
-		DCC_LOG2(LOG_YAP, "cmp=%08x%08x", cmp >> 32, cmp);
-		if (hash == cmp) {
-			return &blk[i];
-		}
-	}
-
-	return NULL;
-}
-
 #if 0
 int32_t __attribute__((section (".data#"), noinline)) 
 thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
@@ -295,11 +254,11 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (opc == THINKOS_FLASH_MEM_OPEN) {
 
 		for (idx = 0; idx < THINKOS_FLASH_MEM_MAX; ++idx) {
-			const struct blk_desc * blk;
+			const struct thinkos_mem_blk * blk;
 
 			drv = &krn->flash_drv[idx];
 
-			if ((blk = mem_blk_lookup(drv->mem, req->tag)) != NULL) {
+			if ((blk = __mem_blk_lookup(drv->mem, req->tag)) != NULL) {
 				if (drv->ropen || drv->wopen) {
 					ret = THINKOS_EBUSY;
 					break;
@@ -313,9 +272,10 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				key = genkey_lcg16(drv->key);
 				drv->key = key;
 #endif
+				ret = wq;
+
 				DCC_LOG2(LOG_TRACE, "open(tag=\"%s\") --> ret=%d", 
 						 req->tag, ret);
-				ret = wq;
 				break;
 			}
 		}

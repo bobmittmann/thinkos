@@ -614,3 +614,34 @@ const char * __thinkos_kind_name(unsigned int kind)
 	return __kind_name(kind);
 }
 
+void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
+{
+	uint32_t ref;
+	uint32_t cnt;
+
+	cnt = CM3_DWT->cyccnt;
+	ref = krn->cycref;
+	krn->cycref = cnt;
+
+	krn->th_cyc[th] += cnt - ref;
+}
+
+int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[], 
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	unsigned int to = from + cnt;
+
+	if (to > __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	__krn_cyccnt_flush(krn, __krn_active_get(krn));
+	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
+
+	return to;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
+
