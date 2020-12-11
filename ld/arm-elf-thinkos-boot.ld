@@ -35,15 +35,15 @@ __krn_stack_start = ORIGIN(STACK);
 __krn_stack_size = __krn_stack_end - __krn_stack_start;
 _stack = __krn_stack_end;
 
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__heap_start = __krn_data_end;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
+
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
+ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 
 EXTERN(_reset)
-
 EXTERN(ice_comm_blk)
-
 EXTERN(cm3_nmi_isr)
 EXTERN(cm3_hard_fault_isr)
 EXTERN(cm3_mem_manage_isr)
@@ -166,28 +166,6 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
-
-	.krn_stack :
-	{
-		. = ALIGN(4);
-		PROVIDE (__krn_stack_start = . );
-		/* all .krn_stack sections  */
-		*(.krn_stack .krn_stack*)
-		/* define a global symbol marking the end of the .krn_stack section  */
-		. = ALIGN(4);
-		PROVIDE (__krn_stack_end = . );
-	} >"DATA"
-
-	.heap :
-	{
-		PROVIDE (__heap_start = . );
-		/* all .heap sections  */
-		*(.heap .heap*)
-	} >"DATA"
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__heap_base = . );
 
 	/* Backed up control section */
 	.bkpctl :

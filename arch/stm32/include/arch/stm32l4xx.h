@@ -64,6 +64,8 @@
 #define STM32_BASE_ADC1         0x50040000
 
 #define STM32_BASE_GPIOH        0x48001c00
+#define STM32_BASE_GPIOG        0x48001800
+#define STM32_BASE_GPIOF        0x48001400
 #define STM32_BASE_GPIOE        0x48001000
 #define STM32_BASE_GPIOD        0x48000c00
 #define STM32_BASE_GPIOC        0x48000800
