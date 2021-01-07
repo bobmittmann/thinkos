@@ -49,8 +49,10 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	int ret = 0;
 	int sig;
 
-	if ((ret = thinkos_dbg_thread_create(task, arg, __monitor_thread_on_exit, true))  < 0)
+	if ((ret = thinkos_dbg_thread_create(task, arg, 
+		__monitor_thread_on_exit, true))  < 0) {
 		return ret;
+	}
 
 	thread_id = ret;
 	(void)thread_id;
@@ -65,9 +67,12 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 #endif
 	sigmask |= (1 << MONITOR_COMM_BRK);
+
 	sigmask |= (1 << MONITOR_COMM_RCV);
+	sigmask |= (1 << MONITOR_COMM_EOT);
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
+	sigmask |= (1 << MONITOR_RX_PIPE);
 
 	for(;;) {
 		switch ((sig = monitor_select(sigmask))) {

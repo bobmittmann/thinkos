@@ -73,7 +73,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
-#define MONITOR_DUMPMEM_ENABLE     1
+#define MONITOR_DUMPMEM_ENABLE     0
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
@@ -138,6 +138,10 @@ void gdb_stub_task(const struct monitor_comm * comm);
 
 #ifndef MONITOR_BOARDINFO_ENABLE
 #define MONITOR_BOARDINFO_ENABLE 1
+#endif
+
+#ifndef MONITOR_PROFILE_ENABLE
+#define MONITOR_PROFILE_ENABLE 0
 #endif
 
 #ifndef MONITOR_WATCHPOINT_ENABLE
@@ -340,12 +344,12 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
-	if (thread_id < 0) {
+	if (thread_id <= 0) {
 		DCC_LOG(LOG_WARNING, "No break thread!!!");
 		return;
 	}
 
-	DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id + 1, errno);
+	DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id, errno);
 
 	if (monitor_comm_isconnected(comm)) {
 		struct monitor_thread_inf inf;
@@ -357,7 +361,7 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 		monitor_printf(comm, s_hr);
 		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
 					   thinkos_err_name_lut[inf.errno],
-					   inf.thread_id + 1,
+					   inf.thread_id,
 					   inf.errno,
 					   inf.pc);
 		monitor_print_thread(comm, thread_id);
@@ -381,17 +385,17 @@ static void monitor_on_krn_fault(const struct monitor_comm * comm)
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
-	if (thread_id < 0) {
+	if (thread_id <= 0) {
 		DCC_LOG(LOG_WARNING, "No break thread!!!");
 	} else {
-		DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id + 1, errno);
+		DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id, errno);
 	}
 
 	if (monitor_comm_isconnected(comm)) {
 		monitor_printf(comm, 
 					  "# Kernel error, possible stack overflow !!!\r\n");
 		if (thread_id > 0) {
-			monitor_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
+			monitor_printf(comm, " Offended thread: %d\r\n", thread_id);
 			monitor_print_thread(comm, thread_id);
 		}
 
@@ -414,12 +418,12 @@ static void monitor_on_bkpt(struct monitor * mon)
 	monitor_thread_inf_get(thread_id, &inf);
 	__thinkos_pause_all();
 
-	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id + 1, inf.pc);
+	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id, inf.pc);
 
 	if (monitor_comm_isconnected(comm)) {
 		monitor_printf(comm, s_hr);
 		monitor_printf(mon->comm, "<%d> breakpoint @ 0x%08x\r\n", 
-					  thread_id + 1, inf.pc);
+					  thread_id, inf.pc);
 		mon->thread_id = thread_id;
 		monitor_print_thread(comm, thread_id);
 		monitor_breakpoint_clear(inf.pc, 4);
@@ -441,7 +445,7 @@ static void monitor_on_step(struct monitor * mon)
 	__thinkos_krn_pause_all(krn);
 
 	if (monitor_comm_isconnected(comm)) {
-		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, inf.pc);
+		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id, inf.pc);
 		monitor_printf(comm, s_hr);
 		mon->thread_id = thread_id;
 		monitor_print_thread(comm, thread_id);
@@ -621,8 +625,10 @@ static void monitor_board_info(const struct monitor_comm * comm,
 		show_mem_info(comm, board->memory->desc[i]);
 	}
 
+#if (MONITOR_PROFILE_ENABLE)
 	monitor_printf(comm, "\r\nKernel Profile:\r\n");
 	monitor_print_profile(comm, &thinkos_profile);
+#endif
 }
 #endif
 
@@ -736,23 +742,27 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 	case CTRL_Y:
+#if 0
 		monitor_printf(comm, "^Y\r\nUpload application [y]? ");
 		if (monitor_getc(comm) == 'y') {
 			/* Request app upload */
-			monitor_req_app_upload();
 		} else {
 			monitor_printf(comm, "\r\n");
 		}
+#endif
+		monitor_req_app_upload();
 		break;
 #if (MONITOR_APPWIPE_ENABLE)
 	case CTRL_W:
+#if 0
 		monitor_printf(comm, "^W\r\nErase application [y]? ");
 		if (monitor_getc(comm) == 'y') {
 			/* Request app erase */
-			monitor_req_app_erase(); 
 		} else {
 			monitor_printf(comm, "\r\n");
 		}
+#endif
+		monitor_req_app_erase(); 
 		break;
 #endif
 #if (MONITOR_APPRESTART_ENABLE)
@@ -950,13 +960,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		case MONITOR_USER_EVENT3:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
 			monitor_clear(MONITOR_USER_EVENT3);
-			monitor_printf(comm, "Confirm [y]? ");
-			if (monitor_getc(comm) == 'y') {
-				board->upgrade(comm);
-				monitor_printf(comm, "Failed !!!\r\n");
-			} else {
-				monitor_printf(comm, "\r\n");
-			}
 			break;
 #endif
 

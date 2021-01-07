@@ -58,6 +58,8 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr);
 void thinkos_console_tx_pipe_commit(int cnt);
 
 
+int __console_getc(unsigned int tmo);
+
 int __console_puts(const char * s);
 
 #ifdef __cplusplus
