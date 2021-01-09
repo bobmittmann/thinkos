@@ -223,7 +223,10 @@ typedef int (* thinkos_entry_t)(void * arg);
 typedef int (* thinkos_task_t)(void * arg, unsigned int);
 
 /* ThinkOS Thread Task type cast macro */
-#define C_TASK(__FUN) (int (*)(void *, unsigned int))(uintptr_t)(__FUN)
+#define C_TASK(__FUN) (thinkos_task_t)(uintptr_t)(__FUN)
+
+#define C_TASK_PTR(__FUN) (thinkos_entry_t)(uintptr_t)(__FUN)
+
 /* ThinkOS Thread Argument type cast macro */
 #define C_ARG(__PTR) (void *)(uintptr_t)(__PTR)
 
@@ -371,7 +374,7 @@ int thinkos_thread_create(thinkos_task_t task_ptr, void * task_arg,
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_thread_create_inf(thinkos_entry_t task_ptr, void * task_arg,
+int thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
 							  const struct thinkos_thread_inf * inf);
 
 

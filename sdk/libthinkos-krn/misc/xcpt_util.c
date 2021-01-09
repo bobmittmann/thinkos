@@ -742,6 +742,8 @@ void __kdump(struct thinkos_rt * krn)
 			 __krn_active_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
 
+	DCC_LOG1(LOG_TRACE, "Sched.state=%08x", krn->sched.state);
+
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;
 	stack +=  sizeof(struct thinkos_except);

@@ -198,15 +198,15 @@ __thread_active_sl_get(struct thinkos_rt * krn) {
 /* set the break condition */
 static inline void __attribute__((always_inline)) 
 __krn_sched_brk_set(struct thinkos_rt * krn, int brk, int code) {
-	krn->sched.brk = 0x80 + brk;
-	krn->sched.mask = 0xfe;
-	krn->sched.code = code;
+	krn->sched.brk = 0x00 + brk;
+	krn->sched.mask = 0x00;
+	krn->sched.code = code | 0x01;
 }
 
 /* clear the break condition */
 static inline void __attribute__((always_inline)) 
 __krn_sched_brk_clr(struct thinkos_rt * krn) {
-	krn->sched.brk = 0;
+	krn->sched.brk = 0x00;
 	krn->sched.mask = 0x00;
 	krn->sched.code = 0x00;
 }
@@ -231,14 +231,15 @@ static inline int __attribute__((always_inline))
 
 /* Force discarding the active thread */
 static inline void __krn_sched_discard_active(struct thinkos_rt * krn) {
-	krn->sched.brk = 0;
-	krn->sched.mask = 0xfe;
+	krn->sched.brk = 0x00;
+	krn->sched.code = 0x00;
+	krn->sched.mask = 0x00;
 }
 
 /* Set the break thread index */
 static inline void __krn_sched_normal(struct thinkos_rt * krn) {
-	krn->sched.brk = 0;
-	krn->sched.code = 0;
+	krn->sched.brk = 0x00;
+	krn->sched.code = 0x00;
 	krn->sched.mask = 0xff;
 }
 

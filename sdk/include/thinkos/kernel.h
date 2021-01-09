@@ -433,7 +433,7 @@ struct thinkos_rt {
 	};
 
 #if (THINKOS_ENABLE_PROFILING)
-	/* Reference cycle state ... */
+	/* Reference cycle ... */
 	uint32_t cycref;
 #endif
 

@@ -1067,10 +1067,10 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->configured = 0;
 	dev->rx_paused = false;
 
-	DCC_LOG1(LOG_TRACE, "usb_dev_init(%08x)", dev->usb);
+	DCC_LOG1(LOG_INFO, "usb_dev_init(%08x)", dev->usb);
 	ret = usb_dev_init(dev->usb, cl, &monitor_usb_ev);
 	(void)ret;
-	DCC_LOG1(LOG_TRACE, "usb_dev_init() --> %d", ret);
+	DCC_LOG1(LOG_INFO, "usb_dev_init() --> %d", ret);
 
 	return &monitor_usb_comm_instance;
 }

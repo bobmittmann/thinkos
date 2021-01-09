@@ -156,6 +156,18 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
+void __attribute__((noreturn, noinline)) krn_app_at_exit(int code)
+{
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "appp exit, code=%d ! " VT_POP, code);
+
+//	thinkos_exit(code);
+//	thinkos_thread_abort(code);
+
+	thinkos_abort();
+//	for(;;);
+}
+
+
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr)
 {
@@ -178,7 +190,7 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* force allocate the thread block */
-	__bit_mem_wr(&krn->th_alloc, thread_idx, 1);
+	__thread_alloc_set(krn, thread_idx);
 #endif
 
 	stack_top = app->stack;
@@ -212,7 +224,7 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 	 (uintptr_t)stack_base, (uintptr_t)stack_top);
 
 	task_entry = app->entry;
-	task_exit = app->entry;
+	task_exit = (uintptr_t)krn_app_at_exit;
 
 	init.stack_base = stack_base;
 	init.stack_size = stack_size;
@@ -246,7 +258,7 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 
 	if (thread_idx >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self, 
-				 thread_idx + 1);
+				 thread_idx);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -267,17 +279,15 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 				 self, ret);
 		}
 #endif
+		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
 		__krn_sched_discard_active(krn);
 		__krn_defer_sched(krn);
 	}
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	arg[0] = thread_idx + 1;
+	arg[0] = thread_idx;
 
 	return;
 }
 
 #endif /* (THINKOS_ENABLE_APP) */
-
 

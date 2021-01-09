@@ -61,11 +61,6 @@ static inline void __attribute__((always_inline)) thinkos_krn_sched_on(void) {
 	asm volatile ("msr BASEPRI, %0\n" : : "r" (0x00));
 }
 
-/* disable interrupts */
-static inline void __attribute__((always_inline)) thinkos_krn_irq_off(void)  {
-	asm volatile ("cpsid i\n");
-}
-
 /* disable interrupts and fault handlers (set fault mask) */
 static inline void __attribute__((always_inline)) thinkos_krn_fault_off(void) {
 	asm volatile ("cpsid f\n");
@@ -79,6 +74,9 @@ static inline void __attribute__((always_inline)) thinkos_krn_fault_on(void) {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* disable interrupts */
+void thinkos_krn_irq_off(void);
 
 void thinkos_krn_irq_on(void);
 

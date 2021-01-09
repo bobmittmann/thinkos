@@ -203,6 +203,8 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 		return;
 	};
 
+	__kdump(krn);
+
 	arg[0] = thread_no;
 
 	return;
@@ -239,7 +241,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
 	if (__xcpt_active_get(xcpt) == (int)thread_no)
-		return &xcpt->ctx.core;
+		return &xcpt->ctx;
 
 	return __thread_ctx_get(krn, thread_no);
 }

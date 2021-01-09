@@ -392,10 +392,22 @@ void thinkos_krn_irq_on(void)
 
 	__krn_irq_on();
 
+	__kdump(krn);
+
 //	thinkos_yield();
 	thinkos_sleep(1);
 
-	__kdump(krn);
+}
 
+/* disable interrupts */
+static inline void __attribute__((always_inline)) __krn_irq_off(void)  {
+	asm volatile ("cpsid i\n");
+}
+
+void thinkos_krn_irq_off(void) 
+{
+	DCC_LOG(LOG_TRACE, "disabling interrupts...");
+
+	__krn_irq_off();
 }
 

@@ -67,17 +67,28 @@ cm3_pendsv_isr:
 	/* r12: stack limit */
 	mrs      r0, PSP
 	stmdb    r0!, {r4-r11}
+	movs     r4, r0
 #if (THINKOS_ENABLE_FPU)
 	tst      lr, #EXC_RETURN_nFPCA
+#if 1
 	it       eq
-	vstmiaeq r0, {s16-s31}
+	vstmdbeq r4!, {s16-s31}
+#else
+	bne      2f	
+	mov  r12, #1
+1: 	cmp  r12, #0
+	bne  1b
+
+	vstmdb   r4!, {s16-s31}
+2:
+#endif
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
 	adds     r7, r3, #OFFSETOF_KRN_TH_SL
 	ldr      r5, [r7, r2, lsl #2]
-	cmp      r0, r5
+	cmp      r4, r5
 	ble      .L_stack_err 
 #endif
 
@@ -164,7 +175,6 @@ thinkos_krn_sched_ctx_restore:
 	   r3: thinkos_rt */
 	strb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
 
-.L_exit_usr:
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
 	ands     r3, r0, #(CONTROL_MSK)
 	/* restore the control register */
@@ -178,13 +188,33 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 #if (THINKOS_ENABLE_FPU)
+	movs     r4, r0
 	tst      r3, #(CONTROL_FPCA)
+#if 1
 	itte     ne
 	/* restore FP context */
-	vldmiane r0, {s16-s31}
+	vldmdbne r4!, {s16-s31}
 	/* Synthesizes exception return */
 	movne    lr, #CM3_EXC_RET_THREAD_PSP_EXT
 	moveq    lr, #CM3_EXC_RET_THREAD_PSP
+#else
+	beq      4f
+#if 0
+	mov  r12, #3
+3: 	cmp  r12, #0
+	bne  3b
+#endif
+
+	/* restore FP context */
+	vldmdb   r4!, {s16-s31}
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_PSP_EXT
+	b        5f
+4:
+	mov      lr, #CM3_EXC_RET_THREAD_PSP
+5:
+#endif
+
 #else
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_PSP

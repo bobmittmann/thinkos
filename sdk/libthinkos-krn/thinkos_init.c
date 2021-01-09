@@ -95,6 +95,9 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 	return th;
 }
 
+extern void * __bss_end;
+extern void * __heap_start;
+
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					 const struct thinkos_thread_initializer * lst[])
 {
@@ -104,6 +107,17 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	uint32_t ccr;
 	uintptr_t sp;
 	int ret;
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	uint32_t bss_end = (uintptr_t)&__bss_end;
+	uint32_t heap_start = (uintptr_t)&__heap_start;
+
+	if (bss_end > heap_start) {
+		DCC_LOG3(LOG_PANIC, "bss_end[%08x] > heap_start[%08x]! %d extra bytes!", 
+				 bss_end, heap_start, bss_end - heap_start);
+		return THINKOS_ENOMEM;    
+	}
+#endif
 
 	/* Static sanity check: */
 	_Static_assert (offsetof(struct thinkos_rt, void_ctx) == 
@@ -405,6 +419,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	}
 
 	__thread_enable_all(krn);
+
+	__kdump(krn);
 
 	return thread_no;
 }

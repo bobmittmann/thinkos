@@ -26,15 +26,15 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 
 int krn_mutex_check(struct thinkos_rt * krn, int mtx)
 {
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (!__krn_obj_is_mutex(krn, mtx)) {
 		return THINKOS_ERR_MUTEX_INVALID;
 	}
-#if THINKOS_ENABLE_MUTEX_ALLOC
+#if (THINKOS_ENABLE_MUTEX_ALLOC)
 	if (__krn_mutex_is_alloc(krn, mtx) == 0) {
 		return THINKOS_ERR_MUTEX_ALLOC;
 	}
@@ -81,7 +81,7 @@ void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		return;
 	} 
 
-#if THINKOS_ENABLE_DEADLOCK_CHECK
+#if (THINKOS_ENABLE_DEADLOCK_CHECK)
 	if (__krn_mutex_lock_get(krn, mutex) == self) {
 		DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
@@ -115,7 +115,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		return;
 	} 
 
-#if THINKOS_ENABLE_DEADLOCK_CHECK
+#if (THINKOS_ENABLE_DEADLOCK_CHECK)
 		/* Sanity check: the current thread already owns the lock */
 		if (__krn_mutex_lock_get(krn, mutex) == self) {
 			DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
@@ -132,7 +132,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_thread_wait(krn, self, mutex);
 }
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int mutex = arg[0];
@@ -154,7 +154,7 @@ void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * kr
 		return;
 	}
 
-#if THINKOS_ENABLE_DEADLOCK_CHECK
+#if (THINKOS_ENABLE_DEADLOCK_CHECK)
 	if (__krn_mutex_lock_get(krn, mutex) == self) {
 		DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
@@ -184,7 +184,7 @@ void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		return;
 	}
 
-#if THINKOS_ENABLE_SANITY_CHECK
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
 	if (__krn_mutex_lock_get(krn, mutex) != self) {

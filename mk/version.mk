@@ -26,30 +26,20 @@ ifndef VERSION_MAJOR
   $(error VERSION_MAJOR undefined!) 
 endif
 
-ifdef PROG
-  VERSION_NAME = $(PROG)
-else
-  VERSION_NAME = 
-endif	
+ifndef VERSION_NAME
+  ifdef PROG
+    VERSION_NAME = $(PROG)
+  else
+    VERSION_NAME = 
+  endif	
+endif
 
 ifndef VERSION_MINOR
   VERSION_MINOR = 0
 endif
 
 ifndef VERSION_DATE
-  VERSION_DATE = "2014-05-29"
-endif
-
-ifndef PRODUCT
-  PRODUCT = "YARD-ICE"
-endif
-
-ifndef REVISION
-  REVISION = "0.1"
-endif
-
-ifndef ASSEMBLY
-  ASSEMBLY = "A"
+  VERSION_DATE = "2021-01-01"
 endif
 
 ifndef PYTHON

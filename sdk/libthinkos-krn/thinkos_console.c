@@ -363,7 +363,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 		return;
 	}
 
-	DCC_LOG1(LOG_MSG, "thread_id=%d", th);
+	DCC_LOG1(LOG_TRACE, "thread_id=%d", th);
 
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
@@ -504,7 +504,7 @@ void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_CONSOLE_MISC)
 	case CONSOLE_IS_CONNECTED:
-		DCC_LOG1(LOG_INFO, "CONSOLE_IS_CONNECTED(%d)", 
+		DCC_LOG1(LOG_MSG, "CONSOLE_IS_CONNECTED(%d)", 
 				thinkos_console_rt.connected);
 		arg[0] = thinkos_console_rt.connected;
 		break;

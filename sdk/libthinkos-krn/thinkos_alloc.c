@@ -340,8 +340,8 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 	base = thinkos_obj_base_lut[kind];
 
 #endif
-	DCC_LOG3(LOG_TRACE, "kind=%d base=%d max=%d", kind, base, max);
-	DCC_LOG1(LOG_TRACE, "kind=\"%s\"", __kind_name(kind));
+	DCC_LOG3(LOG_MSG, "kind=%d base=%d max=%d", kind, base, max);
+	DCC_LOG1(LOG_MSG, "kind=\"%s\"", __kind_name(kind));
 
 	if (bmp == NULL) {
 		DCC_LOG1(LOG_ERROR, "<%2d> object invalid", self);
@@ -375,7 +375,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 		}
 #endif
 	}
-	DCC_LOG2(LOG_TRACE, "<%2d> idx = %d", self, idx);
+	DCC_LOG3(LOG_TRACE, "<%2d> kind=\"%s\" oid=%d", self, __kind_name(kind), idx);
 	arg[0] = idx;
 }
 
