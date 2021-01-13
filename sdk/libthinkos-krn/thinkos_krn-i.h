@@ -184,16 +184,6 @@ __krn_active_set(struct thinkos_rt * krn, unsigned int th) {
 	krn->sched.active = th;
 }
 
-#if 0
-static inline uint32_t __attribute__((always_inline)) 
-__thread_active_sl_get(struct thinkos_rt * krn) {
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	return krn->active & ~(STACK_ALIGN_MSK);
-#else
-	return 0;
-#endif /* THINKOS_ENABLE_STACK_LIMIT */
-}
-#endif
 
 /* set the break condition */
 static inline void __attribute__((always_inline)) 
@@ -268,15 +258,6 @@ static inline void __krn_preempt(struct thinkos_rt * krn) {
 /* -------------------------------------------------------------------------- 
  * Thread Stack Limit
  * --------------------------------------------------------------------------*/
-
-#if 0
-static inline void __attribute__((always_inline)) 
-__thread_active_sl_set(struct thinkos_rt * krn, uint32_t sl, unsigned int th) {
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	krn->active = (sl & ~(STACK_ALIGN_MSK)) + (th & STACK_ALIGN_MSK);
-#endif /* THINKOS_ENABLE_STACK_LIMIT */
-}
-#endif
 
 static inline void __attribute__((always_inline)) 
 __thread_sl_set(struct thinkos_rt * krn, unsigned int th, uint32_t addr) {

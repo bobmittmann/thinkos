@@ -72,7 +72,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 		}
 	}
 
-	monitor_printf(comm, ": %s\r\n", thinkos_err_name_lut[xcpt->errno]);
+	monitor_printf(comm, ": %s\r\n", thinkos_krn_err_tag(xcpt->errno));
 
 	/* FIXME: access function.. */
 	ret = 0xffffff00 | (xcpt->ret & 0xff);

@@ -70,9 +70,9 @@
 #endif
 
 #if (THINKOS_ENABLE_STACK_ALIGN)
-  #define STACK_ALIGN_MSK 0x0000003f
+  #define STACK_ALIGN_MSK 0x00000007
 #else
-  #define STACK_ALIGN_MSK 0x0000000f
+  #define STACK_ALIGN_MSK 0x00000003
 #endif
 
 /* -------------------------------------------------------------------------- 

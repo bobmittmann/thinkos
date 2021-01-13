@@ -73,9 +73,24 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
 };
 
+char const * thinkos_krn_err_tag(unsigned int errno)
+{
+	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
+}
+
+void __thread_discard(struct thinkos_rt * krn, unsigned int idx) 
+{
+	/* Suspend the thread */
+	__krn_thread_suspend(krn, idx);
+
+	__krn_defer_sched(krn);
+}
+
 /* Raise a fault */
-void __thread_fault_raise(struct thinkos_rt * krn, unsigned int th, 
-						  int errno) {
+void __thread_fault_raise(struct thinkos_rt * krn, unsigned int th, int errno) 
+{
+	__nvic_irq_disable_all();
+
 #if (THINKOS_ENABLE_THREAD_FAULT)
 	__thread_fault_set(krn, th);
 	__thread_stat_set(krn, th, THINKOS_WQ_FAULT, false);
@@ -93,13 +108,8 @@ void __thread_fault_raise(struct thinkos_rt * krn, unsigned int th,
 	/* request brake */
 	__krn_sched_brk_set(krn, th, errno);
 
-	__krn_defer_sched(krn);
-}
-
-void __thread_discard(struct thinkos_rt * krn, unsigned int idx) 
-{
-	/* Suspend the thread */
-	__krn_thread_suspend(krn, idx);
+#if (THINKOS_ENABLE_MONITOR) 
+#endif
 
 	__krn_defer_sched(krn);
 }
@@ -118,7 +128,33 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread)
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %8s    " VT_POP, 
 			__thread_tag_get(krn, thread));
 
+#if (THINKOS_ENABLE_MONITOR) 
+	__thread_fault_raise(krn, thread, errno);
+
+	__tdump(krn);
+
+	monitor_signal_break(MONITOR_THREAD_FAULT);
+#else
+	__krn_suspend_all(krn);
+#endif
+}
+
+void thinkos_krn_sched_stack_err(struct thinkos_rt * krn, unsigned int thread)
+{
+	unsigned int errno =THINKOS_ERR_KRN_STACKOVF;
+
+	DCC_LOG1(LOG_ERROR, VT_PSH VT_REV VT_FRD
+			 "/!\\ Scheduler stack limit, thread %d /!\\" VT_POP, 
+			 thread);
+
+#if DEBUG
+	mdelay(1000);
+#endif
+
 	__nvic_irq_disable_all();
+
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %8s    " VT_POP, 
+			__thread_tag_get(krn, thread));
 
 #if (THINKOS_ENABLE_MONITOR) 
 	__thread_fault_raise(krn, thread, errno);
@@ -143,25 +179,6 @@ void thinkos_krn_sched_on_break(uint32_t sp, uint32_t thread)
 	thinkos_monitor_wakeup(); 
 }
 
-void thinkos_krn_sched_stack_err(uint32_t sp, uint32_t thread)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	DCC_LOG1(LOG_ERROR, VT_PSH VT_REV VT_FGR
-			 " Scheduler stack limit, thread %d " VT_POP, 
-			 thread);
-
-#if DEBUG
-	mdelay(1000);
-#endif
-
-	__tdump(krn);
-
-	__krn_suspend_all(krn);
-
-
-	for(;;);
-}
 
 uintptr_t thinkos_krn_sched_nullptr_err(uint32_t sp, uint32_t thread)
 {

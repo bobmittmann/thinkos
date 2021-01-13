@@ -236,11 +236,11 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int);
 
 /* ThinkOS Thread Stack Declaration cast macro */
 #define THINKOS_DEFINE_SECTION_STACK(__SYM, __LEN, __SEC) \
-	uint32_t __SYM[ALIGN(__LEN, 64) / 4] \
-	__attribute__ ((aligned(64), section(__SEC)))
+	uint32_t __SYM[ALIGN(__LEN, 32) / 4] \
+	__attribute__ ((aligned(32), section(__SEC)))
 
 #define THINKOS_DEFINE_STACK(__SYM, __LEN) \
-	uint32_t __SYM[ALIGN(__LEN, 64) / 4] __attribute__ ((aligned(64)))
+	uint32_t __SYM[ALIGN(__LEN, 32) / 4] __attribute__ ((aligned(32)))
 
 /*
  * usage:

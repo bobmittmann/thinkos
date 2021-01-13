@@ -119,9 +119,8 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id)
    0xFFFFFFFD | Thread mode  | Process      | Basic
    */
 
-void SCHED(uintptr_t __sp_ctl, 
-		   uint32_t __new_thread_id,
-		   uint32_t __prev_thread_id)
+void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread_id,
+		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
 {
 	struct thinkos_context * ctx;
 	uint32_t msp = cm3_msp_get();
@@ -181,9 +180,8 @@ void SCHED(uintptr_t __sp_ctl,
 	}
 }
 
-void _IDLE(uintptr_t __sp_ctl, 
-		   uint32_t __new_thread_id,
-		   uint32_t __prev_thread_id)
+void _IDLE(struct thinkos_rt * krn, uint32_t __prev_thread_id,
+		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
 {
 #if DEBUG
 	struct thinkos_context * ctx;
@@ -212,9 +210,8 @@ void _IDLE(uintptr_t __sp_ctl,
 #endif
 }
 
-void ERROR(uintptr_t __sp_ctl, 
-		   uint32_t __new_thread_id,
-		   uint32_t __prev_thread_id)
+void ERROR(struct thinkos_rt * krn, uint32_t __prev_thread_id,
+		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
 {
 #if DEBUG
 	struct thinkos_context * ctx;
@@ -251,25 +248,24 @@ void ERROR(uintptr_t __sp_ctl,
 				 ctx, ctx->pc, msp, __retstr(ret));
 
 	__context(__sp_ctl, __new_thread_id); 
-	__kdump(&thinkos_rt);
-	__tdump(&thinkos_rt);
+	__kdump(krn);
+	__tdump(krn);
 #endif
 }
 
-void thinkos_sched_dbg(uintptr_t __sp_ctl, 
-					   uint32_t __new_thread_id,
-					   uint32_t __prev_thread_id)
+void thinkos_sched_dbg(struct thinkos_rt * krn, uint32_t __prev_thread_id, 
+					   uint32_t __new_thread_id, uintptr_t __sp_ctl)
 {
 	if (__new_thread_id > THINKOS_THREAD_IDLE) {
-		ERROR(__sp_ctl, __new_thread_id, __prev_thread_id);
+		ERROR(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
 	} else if (__new_thread_id == THINKOS_THREAD_IDLE) {
 		if (__prev_thread_id != THINKOS_THREAD_IDLE) {
-			_IDLE(__sp_ctl, __new_thread_id, __prev_thread_id);
+			_IDLE(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
 		} else {
-			_IDLE(__sp_ctl, __new_thread_id, __prev_thread_id);
+			_IDLE(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
 		}
 	} else {
-		SCHED(__sp_ctl, __new_thread_id, __prev_thread_id);
+		SCHED(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
 	}
 }
 

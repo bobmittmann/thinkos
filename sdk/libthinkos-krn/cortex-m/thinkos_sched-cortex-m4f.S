@@ -50,54 +50,46 @@ cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
 
-	/* r3: thinkos_rt */
-	ldr.n    r3, .L_thinkos_rt
-	ldrd     r2, r1, [r3, #OFFSETOF_KRN_SCHED]
+	/* r0: thinkos_rt */
+	ldr.n    r0, .L_thinkos_rt
+	ldrd     r1, r2, [r0, #OFFSETOF_KRN_SCHED]
 #if 0
 	mov  r12, #1
 1: 	cmp  r12, #0
 	bne  1b
 #endif
-	ands     r2, r2, r2, asr #9
+	ands     r1, r1, r1, asr #9
     bcc      .L_entry_xcept /* C flag clear: exception */
 	beq      .L_entry_from_idle /* Z flag set */
 
-	/* r1: ready, */
-	/* r2: active */
+	/* r2: ready, */
+	/* r1: active */
 	/* r12: stack limit */
-	mrs      r0, PSP
-	stmdb    r0!, {r4-r11}
-	movs     r4, r0
-#if (THINKOS_ENABLE_FPU)
+	mrs      r3, PSP
+	stmdb    r3!, {r4-r11}
+#if (THINKOS_ENABLE_STACK_LIMIT) || (THINKOS_ENABLE_FPU)
+	movs     r4, r3
+  #if (THINKOS_ENABLE_FPU)
 	tst      lr, #EXC_RETURN_nFPCA
-#if 1
 	it       eq
 	vstmdbeq r4!, {s16-s31}
-#else
-	bne      2f	
-	mov  r12, #1
-1: 	cmp  r12, #0
-	bne  1b
-
-	vstmdb   r4!, {s16-s31}
-2:
-#endif
+  #endif
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
-	adds     r7, r3, #OFFSETOF_KRN_TH_SL
-	ldr      r5, [r7, r2, lsl #2]
+	adds     r7, r0, #OFFSETOF_KRN_TH_SL
+	ldr      r5, [r7, r1, lsl #2]
 	cmp      r4, r5
 	ble      .L_stack_err 
 #endif
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
 	mrs      r6, CONTROL
-	adds     r0, r6
-	adds     r0, #(CONTROL_SPSEL)
+	adds     r3, r6
+	adds     r3, #(CONTROL_SPSEL)
 #else
-	adds     r0, #(CONTROL_SPSEL | CONTROL_nPRIV)
+	adds     r3, #(CONTROL_SPSEL | CONTROL_nPRIV)
 #endif
 
 thinkos_sched_update_cyccnt:
@@ -108,58 +100,58 @@ thinkos_sched_update_cyccnt:
 	ldr.n    r6, [r6, #4]
 	/* update the reference */
 	/* r5: cycref */
-	ldr      r5, [r3, #OFFSETOF_KRN_CYCREF]
+	ldr      r5, [r0, #OFFSETOF_KRN_CYCREF]
 	/* thinkos_rt.cycref = cyccnt */
-	str      r6, [r3, #OFFSETOF_KRN_CYCREF]
+	str      r6, [r0, #OFFSETOF_KRN_CYCREF]
 	/* r6: delta =  cyccnt - cycref */	
 	subs     r6, r6, r5
-	adds     r7, r3, #OFFSETOF_KRN_TH_CYC
+	adds     r7, r0, #OFFSETOF_KRN_TH_CYC
 	/* update thread's cycle counter */
-	ldr      r5, [r7, r2, lsl #2]
+	ldr      r5, [r7, r1, lsl #2]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
-	str      r5, [r7, r2, lsl #2]
+	str      r5, [r7, r1, lsl #2]
 #endif
 
 thinkos_sched_swap:
-	/* r0: thread stack
-	   r1: next active thread 
-	   r3: thinkos_rt */
+	/* r3: thread stack
+	   r2: next active thread 
+	   r0: thinkos_rt */
 	/* store the old context pointer into the context vector */
-	str      r0, [r3, r2, lsl #2]
+	str      r3, [r0, r1, lsl #2]
 
-	/* r1 - ready queue
-	   r2 - old thread id */
+	/* r2 - ready queue
+	   r1 - old thread id */
 thinkos_sched_select_ready:
 #if (THINKOS_ENABLE_READY_MASK)
-	ldr      r7, [r3, #OFFSETOF_KRN_RDY_MSK]
-	ands     r1, r7
-	beq      r1, .L_ready_queue_empty
+	ldr      r7, [r0, #OFFSETOF_KRN_RDY_MSK]
+	ands     r2, r7
+	beq      r2, .L_ready_queue_empty
 #else
-	cbz      r1, .L_ready_queue_empty
+	cbz      r2, .L_ready_queue_empty
 #endif
 	/* get a thread from the ready bitmap by counting the
 	leading zeros on the bitmap */
-	rbit     r1, r1
- 	clz      r1, r1
+	rbit     r2, r2
+ 	clz      r2, r2
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
 	/* r4: step_req */
-	ldr      r4, [r3, #OFFSETOF_KRN_STEP_REQ]
+	ldr      r4, [r0, #OFFSETOF_KRN_STEP_REQ]
 	/* check if the step request bit is set for this thread */
 	movs	 r5, #1
-	lsls     r5, r1
+	lsls     r5, r2
 	tst      r5, r4
 	bne.n    thinkos_sched_step
 #endif
 	/* Get thread number from bitmap index */
- 	adds     r1, #1
+ 	adds     r2, #1
 
 thinkos_krn_sched_ctx_get:
 
 	/* load the new context pointer from the context vector */
-	ldr.w	 r0, [r3, r1, lsl #2]
+	ldr.w	 r3, [r0, r2, lsl #2]
 
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
@@ -169,27 +161,27 @@ thinkos_krn_sched_ctx_restore:
 	.type   thinkos_krn_sched_ctx_restore, %function
 
 .L_save_active_and_restore:
-	/* r0: new thread stack
-	   r1: new active thread id 
-	   r2: old active thread id 
-	   r3: thinkos_rt */
-	strb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
+	/* r3: new thread stack
+	   r2: new active thread id 
+	   r1: old active thread id 
+	   r0: thinkos_rt */
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACTIVE]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	ands     r3, r0, #(CONTROL_MSK)
+	ands     r0, r3, #(CONTROL_MSK)
 	/* restore the control register */
-	msr      CONTROL, r3
+	msr      CONTROL, r0
 	isb
 	/* restore the stack pointer */
-	subs     r0, r3
+	subs     r3, r0
 	beq      .L_nullptr_err
 #else
-	cbz      r0, .L_nullptr_err
+	cbz      r3, .L_nullptr_err
 #endif
 
 #if (THINKOS_ENABLE_FPU)
-	movs     r4, r0
-	tst      r3, #(CONTROL_FPCA)
+	movs     r4, r3
+	tst      r0, #(CONTROL_FPCA)
 #if 1
 	itte     ne
 	/* restore FP context */
@@ -220,19 +212,19 @@ thinkos_krn_sched_ctx_restore:
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 #endif
 
-	/* r0: new thread stack
-	   r1: new active thread id 
-	   r2: old active thread id 
-	   r3: new thread ctrl */
+	/* r3: new thread stack
+	   r2: new active thread id 
+	   r1: old active thread id 
+	   r0: new thread ctrl */
 	/* restore core context */
-	ldmia    r0!, {r4-r11}
-	msr      PSP, r0
+	ldmia    r3!, {r4-r11}
+	msr      PSP, r3
 
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	subs     r0, r0, #(8  * 4)
+	subs     r3, r3, #(8  * 4)
   #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	orrs     r0, r3
+	orrs     r3, r0
   #endif
 	b        thinkos_sched_dbg
 #else
@@ -247,23 +239,23 @@ thinkos_krn_sched_ctx_restore:
    error condition or was forced by the kernel to reset the idle thread.
  */
 #endif
-	movs     r0, #~0 /* restore scheduler mask */
-	strb     r0, [r3, #OFFSETOF_KRN_SCHED_MASK]
+	movs     r3, #~0 /* restore scheduler mask */
+	strb     r3, [r0, #OFFSETOF_KRN_SCHED_MASK]
 .L_entry_from_idle:
 	tst      lr, #EXC_RET_SPSEL
 	/* the origin was not IDLE discard context and move on */ 
 	bne      thinkos_sched_select_ready
 	/* Adjust the thread ID */
-	movs     r2, #THINKOS_THREAD_IDLE
+	movs     r1, #THINKOS_THREAD_IDLE
 	/* Save context on MSP */
 	push     {r4-r11}
-    mov      r0, sp
+    mov      r3, sp
 	b        thinkos_sched_update_cyccnt
 
 .L_nullptr_err:
 #if (THINKOS_ENABLE_SCHED_ERROR)
 	bl       thinkos_krn_sched_nullptr_err
-	mov      sp, r0
+	mov      sp, r3
 #endif
 	/* FALLTRHOUG 
 	b       .L_return_idle
@@ -271,31 +263,31 @@ thinkos_krn_sched_ctx_restore:
 
 .L_return_idle:
 #if (THINKOS_ENABLE_SCHED_ERROR)
-	ldr.n    r3, .L_thinkos_rt
-	ldrb     r2, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
+	ldr.n    r0, .L_thinkos_rt
+	ldrb     r1, [r0, #OFFSETOF_KRN_SCHED_ACTIVE]
 #endif
 
 .L_ready_queue_empty:
 .L_exit_idle:
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
-    ldr.w    r0, [r3, #OFFSETOF_KRN_IDLE_CTX]
-    cmp      sp, r0
+    ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
+    cmp      sp, r3
     bne      .L_idle_stack_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
-    mov      r0, sp
+    mov      r3, sp
 #endif
     /* set the control register */
-    movs     r1, #0
-    msr      CONTROL, r1
+    movs     r2, #0
+    msr      CONTROL, r2
     isb
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 
 	/* set the active to 0 */
-	strb     r1, [r3, #OFFSETOF_KRN_SCHED_ACTIVE]
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACTIVE]
 	/* Adjust the thread ID */
-	movs     r1, #THINKOS_THREAD_IDLE
+	movs     r2, #THINKOS_THREAD_IDLE
 
 	/* restore core context */
 	pop      {r4-r11}
@@ -309,7 +301,7 @@ thinkos_krn_sched_ctx_restore:
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_err: 
 	bl      thinkos_krn_sched_idle_err
-	mov      sp, r0
+	mov      sp, r3
 	b       .L_return_idle
 #endif
 
@@ -317,7 +309,6 @@ thinkos_krn_sched_ctx_restore:
 .L_stack_err: 
 #if (THINKOS_ENABLE_SCHED_ERROR)
 	bl      thinkos_krn_sched_stack_err
-	mov      sp, r0
 	b       .L_return_idle
 #endif
 #endif
@@ -349,13 +340,13 @@ thinkos_sched_break:
 
 #if (THINKOS_ENABLE_MONITOR)
     /* fault thread */
-	ldr      r2, .L_xcpt_buf
-	adds     r2, #(OFFSETOF_XCPT_CONTEXT)
-	stmia    r2!, {r4-r11} /* r4..r11 */
-	mrs      r0, PSP
-	ldmia    r0!, {r4-r11}
-	stmia    r2!, {r4-r11} /* r4..r11 */
-    ldrb     r2, [r3, #(OFFSETOF_KRN_BREAK_ID)]
+	ldr      r1, .L_xcpt_buf
+	adds     r1, #(OFFSETOF_XCPT_CONTEXT)
+	stmia    r1!, {r4-r11} /* r4..r11 */
+	mrs      r3, PSP
+	ldmia    r3!, {r4-r11}
+	stmia    r1!, {r4-r11} /* r4..r11 */
+    ldrb     r1, [r0, #(OFFSETOF_KRN_BREAK_ID)]
 #endif
 .L_do_break:
 	bl       thinkos_krn_sched_on_break
@@ -373,23 +364,23 @@ thinkos_sched_step:
 	.global thinkos_sched_step
 	.type   thinkos_sched_step , %function
 
-	/* r0: thread context pointer */
-	/* r1: new thread id */
-	/* r2: old thread id */
-	/* r3: thinkos_rt */
+	/* r3: thread context pointer */
+	/* r2: new thread id */
+	/* r1: old thread id */
+	/* r0: thinkos_rt */
 	/* r4: (1 << new_thread_id) */
 
 	/* load the new context pointer from the context vector */
-	ldr.w	 r0, [r3, r1, lsl #2]
+	ldr.w	 r3, [r0, r2, lsl #2]
 
-	ldr      r6, [r3, #OFFSETOF_KRN_STEP_SVC]	
+	ldr      r6, [r0, #OFFSETOF_KRN_STEP_SVC]	
 	/* r6: step_svc */
 	tst      r4, r6
 	bne.n    .L_service_setp
  
 .L_normal_step:
 	/* get the PC value */
-	bics     r7, r0, #CONTROL_MSK
+	bics     r7, r3, #CONTROL_MSK
 	ldr      r5, [r7, #(CTX_PC * 4)]
 	/* load the next instruction */
 	ldrb     r5, [r5, #1]
@@ -401,11 +392,11 @@ thinkos_sched_step:
 	itt      eq
 	/* the thread is stepping into a system call */
 	orreq    r6, r4
-	streq    r6, [r3, #OFFSETOF_KRN_STEP_SVC]
+	streq    r6, [r0, #OFFSETOF_KRN_STEP_SVC]
 	beq      .L_save_active_and_restore
 
 	/* Set the thread step  */
-	strb     r1, [r3, #OFFSETOF_KRN_STEP_ID]
+	strb     r2, [r0, #OFFSETOF_KRN_STEP_ID]
 
 .L_restore_and_step:
 	ldr.n    r6, .L_cm_dcb
@@ -444,7 +435,7 @@ thinkos_sched_step:
 	 */
 
 	/* Set the thread step  */
-	strb     r1, [r3, #OFFSETOF_KRN_STEP_ID]
+	strb     r2, [r0, #OFFSETOF_KRN_STEP_ID]
 	/* step the IDLE thread instead  */
 	ldr.n    r6, .L_cm_dcb
 	/* Disable all exceptions. They wil be automatically restored

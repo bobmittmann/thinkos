@@ -581,7 +581,7 @@ drain_again:
 				goto drain_again;
 			}
 			/* Insert into the event wait queue */
-			queue |= (1 << self);
+			queue |= (1 << (self - 1));
 			/* (3) Try to save back the queue state.
 			   The queue may have changed by an interrupt handler.
 			   If this is the case roll back and restart. */
@@ -597,8 +597,7 @@ drain_again:
 			}
 
 			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", 
-					 self, wq);
+			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", self, wq);
 			/* signal the scheduler ... */
 			__krn_defer_sched(krn); 
 		}
@@ -630,8 +629,7 @@ drain_again:
 				&& (!thinkos_console_rt.rd_nonblock) 
 #endif
 			   ) {
-				DCC_LOG1(LOG_INFO, "<%2d> Console timed read wait...", 
-						 self);
+				DCC_LOG1(LOG_INFO, "<%2d> Console timed read wait...", self);
 				/* Set the default return value to timeout. */
 				arg[0] = THINKOS_ETIMEDOUT;
 				/* wait for event */
@@ -726,8 +724,7 @@ wr_again:
 			}
 
 			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", 
-					 self, wq);
+			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", self, wq);
 			/* signal the scheduler ... */
 			__krn_defer_sched(krn); 
 		}

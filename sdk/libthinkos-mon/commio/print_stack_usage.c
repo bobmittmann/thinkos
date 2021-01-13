@@ -61,7 +61,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 			free = __thinkos_scan_stack((void *)sl, size);
 
 			monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "
-						   "| %6d\r\n", i + 1, tag, pc, sl, sp, size, free);
+						   "| %6d\r\n", i, tag, pc, sl, sp, size, free);
 
 		}
 	}

@@ -89,17 +89,11 @@ void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx);
   #define __THINKOS_ERROR(__TH, __CODE)
 #endif
 
-extern const char thinkos_err_name_lut[THINKOS_ERR_MAX][12];
-
-static inline char const * thinkos_krn_eertag(unsigned int errno)
-{
-	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+char const * thinkos_krn_err_tag(unsigned int errno);
 char const * thinkos_krn_strerr(unsigned int errno);
 
 

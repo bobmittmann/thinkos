@@ -577,7 +577,7 @@ void __xinfo(struct thinkos_except * xcpt)
 	mdelay(100);
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BRD
 			 "/!\\ Exception %d [%s] /!\\" VT_POP, 
-			 err, thinkos_err_name_lut[err]);
+			 err, thinkos_krn_err_tag(err));
 
 	if (err == THINKOS_ERR_HARD_FAULT) {
 		uint32_t hfsr = xcpt->hfsr;

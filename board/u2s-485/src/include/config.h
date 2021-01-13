@@ -35,7 +35,6 @@
 
 #define THINKOS_IRQ_MAX                     60
 #define THINKOS_ENABLE_IRQ_CTL              1
-#define THINKOS_ENABLE_IRQ_RESTORE          0
 #define THINKOS_ENABLE_IRQ_CYCCNT           0
 #define THINKOS_ENABLE_IRQ_PRIORITY_0       0
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT        0
