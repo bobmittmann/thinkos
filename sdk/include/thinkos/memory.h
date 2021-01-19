@@ -78,11 +78,22 @@ struct thinkos_mem_part {
 	uint8_t perm;
 };
 
+/* Memory state */
+struct thinkos_mem_stat {
+	uint32_t begin;
+	uint32_t end;
+	uint8_t opt;
+	uint8_t dev;
+	uint8_t type;
+	uint8_t perm;
+};
+			
 struct thinkos_rt;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 int __thinkos_krn_mem_init(struct thinkos_rt * krn, 
                             const struct thinkos_mem_map * map);
@@ -107,8 +118,8 @@ bool __mem_part_get(const struct thinkos_mem_map * map, unsigned int j,
 					unsigned int i, struct thinkos_mem_part * mp);
 
 
-bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, const char * part,
-					 struct thinkos_mem_part * mem);
+bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, 
+						   const char * part, struct thinkos_mem_part * mem);
 
 #ifdef __cplusplus
 }

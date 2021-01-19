@@ -306,7 +306,9 @@ int monitor_thread_step(unsigned int id, bool block);
 
 int monitor_thread_last_fault_get(uint32_t * addr);
 
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg,
+int monitor_thread_create(const struct monitor_comm * comm,
+						   int (* func)(void *, unsigned int), 
+						   void * arg,
 						  bool privileged);
 
 void monitor_thread_resume(int thread_id);

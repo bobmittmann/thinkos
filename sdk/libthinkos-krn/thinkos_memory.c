@@ -442,8 +442,8 @@ const struct thinkos_mem_blk * __mem_blk_lookup(const struct thinkos_mem_desc * 
 	return NULL;
 }
  
-const struct thinkos_mem_desc * __mem_desc_lookup(const struct thinkos_mem_map * map, 
-													  const char * tag)
+const struct thinkos_mem_desc * __mem_desc_lookup(
+	const struct thinkos_mem_map * map, const char * tag)
 {
 	uint64_t hash = tag2hash(tag);
 	int i;
@@ -463,8 +463,9 @@ const struct thinkos_mem_desc * __mem_desc_lookup(const struct thinkos_mem_map *
 	return NULL;
 }
 
-bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, const char * part,
-					 struct thinkos_mem_part * mp)
+bool __krn_mem_part_lookup(struct thinkos_rt * krn, 
+	const char * desc, const char * part,
+	struct thinkos_mem_part * mp)
 {
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	const struct thinkos_mem_map * map = krn->mem_map;

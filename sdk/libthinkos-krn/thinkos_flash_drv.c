@@ -282,6 +282,34 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		arg[0] = ret;
 		return;
 	} 
+	
+	if (opc == THINKOS_FLASH_MEM_STAT) {
+		for (idx = 0; idx < THINKOS_FLASH_MEM_MAX; ++idx) {
+			const struct thinkos_mem_blk * blk;
+			const struct thinkos_mem_desc * mem;
+
+			drv = &krn->flash_drv[idx];
+			mem = drv->mem;
+
+			if ((blk = __mem_blk_lookup(mem, req->tag)) != NULL) {
+				struct thinkos_mem_part * mp;
+
+				mp = req->mp;
+				mp->begin = mem->base + blk->off;
+				mp->end = mem->base + blk->off + (1 << blk->siz) * blk->cnt;
+				mp->opt = blk->opt;
+				mp->dev = mem->dev;
+				mp->type = mem->typ;
+				mp->perm = mem->opt;
+
+				ret = THINKOS_OK;
+				break;
+			}
+		}
+		arg[0] = ret;
+		return;
+	}
+
 
 	wq = req->wq;
 	idx = wq - THINKOS_FLASH_MEM_BASE;

@@ -225,7 +225,7 @@ static int __flash_erase(int key)
 }
 
 /* Erase a flash partition */
-static int __flash_erase_partition(const char * tag)
+int __flash_erase_partition(const char * tag)
 {
 	int key;
 	int ret;
@@ -277,6 +277,8 @@ int __flash_ymodem_recv(const char * tag)
 	__console_puts("\r\nYMODEM receive ");
 	__console_puts("(Ctrl+X to cancel)... ");
 
+	thinkos_console_raw_mode(true);
+
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
 	fname = (char *)buf;
@@ -292,7 +294,10 @@ int __flash_ymodem_recv(const char * tag)
 		}
 	}
 
+	thinkos_console_raw_mode(false);
+
 	thinkos_flash_mem_close(key);
+
 
 	thinkos_sleep(500);
 
@@ -389,6 +394,7 @@ int monitor_flash_erase_all(const struct monitor_comm * comm,
 							   C_ARG(tag));
 }
 
+#if 0
 int __shell_cmd_rcv(char * arg) 
 {
 	char buf[64];
@@ -472,4 +478,6 @@ int monitor_console_shell(const struct monitor_comm * comm)
 	return monitor_thread_exec(comm, C_TASK(__console_shell_task), 
 							   C_ARG(NULL));
 }
+
+#endif
 

@@ -311,6 +311,17 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
  */
 void thinkos_krn_userland(void);
 
+#define THINKOS_CTL_REBOOT_KEY 0x38a63e9c
+
+/**
+ * thinkos_reboot() - restart the system ...
+ * @key: must be set to THINKOS_CTL_REBOOT_KEY 
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ */
+int thinkos_reboot(uint32_t key);
+
 /**
  * thinkos_app_exec() - replace the current thread...
  * @addr: aplication location

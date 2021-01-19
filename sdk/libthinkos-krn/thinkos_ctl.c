@@ -75,7 +75,10 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 	case THINKOS_CTL_REBOOT:
 		DCC_LOG(LOG_WARNING, "Reboot!");
-		thinkos_krn_sysrst();
+
+		if (arg[1] == THINKOS_CTL_REBOOT_KEY) {
+			thinkos_krn_sysrst();
+		}
 		break;
 
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
