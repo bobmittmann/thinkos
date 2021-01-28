@@ -421,8 +421,8 @@ static uint64_t tag2hash(const char * tag)
 	return hash;
 }
 
-const struct thinkos_mem_blk * __mem_blk_lookup(const struct thinkos_mem_desc * mem, 
-													const char * tag)
+const struct thinkos_mem_blk * 
+__mem_blk_lookup(const struct thinkos_mem_desc * mem, const char * tag)
 {
 	uint64_t hash = tag2hash(tag);
 	int i;

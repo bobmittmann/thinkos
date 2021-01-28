@@ -149,7 +149,7 @@ zero:
 
 		if (precision < 0) {
 			trim = 1;
-			/* FIXME: this needs to be recaluculated */
+			/* FIXME: this needs to be recalculated */
 			precision = (((51 - exp) + 3) * 621) >> 26;
 		}
 

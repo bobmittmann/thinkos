@@ -42,6 +42,7 @@ static int target_sync_reset(void)
 	int ret;
 
 	monitor_soft_reset();
+
 	if ((ret = monitor_expect(MONITOR_SOFTRST)) < 0) {
 		DCC_LOG(LOG_WARNING, "monitor_expect()!");
 		return ret;

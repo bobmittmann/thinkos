@@ -509,6 +509,8 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 void monitor_soft_reset(void)
 {
+	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " moitor soft Reset " VT_POP);
+
 	thinkos_dbg_reset();
 
 	monitor_signal_break(MONITOR_SOFTRST); 

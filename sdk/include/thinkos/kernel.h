@@ -884,6 +884,8 @@ void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len);
 
 unsigned int __thinkos_strlen(const char * __s, unsigned int __max);
 
+int __thinkos_strcmp(const char * __s1, const char * __s2);
+
 void __thinkos_system_reset(void);
 
 uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len);

@@ -670,6 +670,8 @@ void thinkos_dbg_reset(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
+	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FRD " DBG Reset " VT_POP);
+
 	__thinkos_krn_core_reset(krn);
 }
 

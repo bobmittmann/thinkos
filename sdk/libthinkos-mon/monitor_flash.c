@@ -140,6 +140,7 @@ int __console_gets(char * s, int size)
 		c = buf[0];
 
 		if (c == IN_EOL) {
+			DCC_LOG1(LOG_TRACE, "EOL, pos=%d", pos);
 			__console_puts(OUT_EOL);
 			break;
 		} else if (c == IN_SKIP) {
@@ -150,8 +151,12 @@ int __console_gets(char * s, int size)
 				__console_puts(OUT_BEL);
 			} else {
 				pos--;
+//				DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_stat('%s') fail.", tag);
+				DCC_LOG1(LOG_TRACE, "pos=%d", pos);
+
 				__console_puts(OUT_DEL);
 			}
+			continue;
 		} else if (c == IN_ESC) {
 		} else if (pos == size) {
 			__console_puts(OUT_BEL);
@@ -277,9 +282,9 @@ int __flash_ymodem_recv(const char * tag)
 	__console_puts("\r\nYMODEM receive ");
 	__console_puts("(Ctrl+X to cancel)... ");
 
-	thinkos_console_raw_mode(true);
-
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
+
+	thinkos_console_raw_mode(true);
 
 	fname = (char *)buf;
 	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
