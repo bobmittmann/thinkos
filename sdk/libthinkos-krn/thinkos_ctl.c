@@ -23,7 +23,6 @@
 #include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_CTL)
-
 extern int32_t udelay_factor;
 
 static void thinkos_krn_abort(struct thinkos_rt * krn)
@@ -39,7 +38,6 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 	monitor_signal_break(MONITOR_KRN_ABORT);
 #endif
 }
-
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 {

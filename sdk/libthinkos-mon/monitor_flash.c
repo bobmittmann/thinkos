@@ -31,8 +31,6 @@
 #include <thinkos/console.h>
 
 #include <sys/delay.h>
-#include <sys/dcclog.h>
-#include <thinkos.h>
 #include <vt100.h>
 #include <xmodem.h>
 
@@ -49,135 +47,11 @@
 #error "need THINKOS_ENABLE_TIMED_CALLS"
 #endif
 
-static int __console_comm_send(void * dev, const void * buf, unsigned int len) 
-{
-	uint8_t * cp = (uint8_t *)buf;
-	unsigned int rem = len;
-	int n;
-
-	while (rem) {
-		n = thinkos_console_write(cp, rem);
-		cp += n;
-		rem -= n;
-	}
-
-	return len;
-}
-
-int __console_puts(const char * s)
-{
-	int n = 0;
-
-	while (s[n] != '\0')
-		n++;
-	return __console_comm_send(NULL, s, n);
-}
-
-int __console_putc(int c)
-{
-	uint8_t buf[4];
-
-	buf[0] = c;
-	return __console_comm_send(NULL, buf, 1);
-}
-
-
-static int __console_comm_recv(void * dev, void * buf, 
-					  unsigned int len, unsigned int msec) 
-{
-	int ret = 0;
-
-	do {
-		ret = thinkos_console_timedread(buf, len, msec);
-	} while (ret == 0);
-
-	return ret;
-}
-
-int __console_getc(unsigned int tmo)
-{
-	uint8_t buf[4];
-
-	if (__console_comm_recv(NULL, buf, 1, tmo)  < 0)
-		return -1;
-
-	__console_comm_send(NULL, buf, 1);
-
-	return buf[0];
-}
-
-#define IN_BS      '\x8'
-#define IN_DEL      0x7F
-#define IN_EOL      '\r'
-#define IN_SKIP     '\3'
-#define IN_EOF      '\x1A'
-#define IN_ESC      '\033'
-
-#define OUT_DEL     "\x8 \x8"
-#define OUT_EOL     "\r\n"
-#define OUT_SKIP    "^C\r\n"
-#define OUT_EOF     "^Z"
-#define OUT_BEL     "\7"
-
-int __console_gets(char * s, int size)
-{
-	char buf[1];
-	int ret;
-	int pos;
-	int c;
-
-	/* left room to '\0' */
-	size--;
-	pos = 0;
-
-	for (;;) {
-		if ((ret = __console_comm_recv(NULL, buf, sizeof(char), 1000)) <= 0) {
-			if (ret >= THINKOS_ETIMEDOUT)
-				continue;	
-			return ret;
-		}
-
-		c = buf[0];
-
-		if (c == IN_EOL) {
-			DCC_LOG1(LOG_TRACE, "EOL, pos=%d", pos);
-			__console_puts(OUT_EOL);
-			break;
-		} else if (c == IN_SKIP) {
-			__console_puts(OUT_SKIP);
-			return -1;
-		} else if (c == IN_BS || c == IN_DEL) {
-			if (pos == 0) {
-				__console_puts(OUT_BEL);
-			} else {
-				pos--;
-//				DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_stat('%s') fail.", tag);
-				DCC_LOG1(LOG_TRACE, "pos=%d", pos);
-
-				__console_puts(OUT_DEL);
-			}
-			continue;
-		} else if (c == IN_ESC) {
-		} else if (pos == size) {
-			__console_puts(OUT_BEL);
-			continue;
-		}
-
-		s[pos++] = c;
-		__console_comm_send(NULL, buf, sizeof(char));
-	}
-
-	s[pos] = '\0';
-
-	return pos;
-}
-
-
 static const struct comm_dev console_comm_dev = {
 	.arg = NULL,
 	.op = {
-		.send = __console_comm_send,
-		.recv = __console_comm_recv
+		.send = krn_console_dev_send,
+		.recv = krn_console_dev_recv
 	}
 };
 
@@ -219,11 +93,11 @@ static int __flash_erase(int key)
 	uint32_t offs = 0;
 	int ret;
 
-	__console_puts("\r\nErasing... ");
+	krn_console_puts("\r\nErasing... ");
 	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
-		__console_puts("failed!\r\n");
+		krn_console_puts("failed!\r\n");
 	} else {
-		__console_puts("Ok.\r\n");
+		krn_console_puts("Ok.\r\n");
 	}
 
 	return ret;
@@ -235,16 +109,16 @@ int __flash_erase_partition(const char * tag)
 	int key;
 	int ret;
 
-	__console_puts("\r\nErase partition \"");
-	__console_puts(tag);
-	__console_puts("\" [y]? ");
-	if (__console_getc(10000) != 'y') {
-		__console_puts("\r\n");
+	krn_console_puts("\r\nErase partition \"");
+	krn_console_puts(tag);
+	krn_console_puts("\" [y]? ");
+	if (krn_console_getc(10000) != 'y') {
+		krn_console_puts("\r\n");
 		return -1;
 	}
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		__console_puts("\r\nError: can't open partition!\r\n");
+		krn_console_puts("\r\nError: can't open partition!\r\n");
 		return key;
 	}
 
@@ -266,21 +140,21 @@ int __flash_ymodem_recv(const char * tag)
 	int ret;
 	int key;
 
-	__console_puts("\r\nUpload \"");
-	__console_puts(tag);
-	__console_puts("\" [y]? ");
-	if (__console_getc(10000) != 'y') {
-		__console_puts("\r\n");
+	krn_console_puts("\r\nUpload \"");
+	krn_console_puts(tag);
+	krn_console_puts("\" [y]? ");
+	if (krn_console_getc(10000) != 'y') {
+		krn_console_puts("\r\n");
 		return -1;
 	}
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		__console_puts("\r\nError: can't open partition!\r\n");
+		krn_console_puts("\r\nError: can't open partition!\r\n");
 		return key;
 	}
 
-	__console_puts("\r\nYMODEM receive ");
-	__console_puts("(Ctrl+X to cancel)... ");
+	krn_console_puts("\r\nYMODEM receive ");
+	krn_console_puts("(Ctrl+X to cancel)... ");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
@@ -306,11 +180,11 @@ int __flash_ymodem_recv(const char * tag)
 
 	thinkos_sleep(500);
 
-	__console_puts("\r\nYMODEM receive ");
+	krn_console_puts("\r\nYMODEM receive ");
 	if (ret < 0)
-		__console_puts("failed!\r\n");
+		krn_console_puts("failed!\r\n");
 	else
-		__console_puts("Ok.\r\n");
+		krn_console_puts("Ok.\r\n");
 
 	return ret;
 }
@@ -325,11 +199,11 @@ int __flash_ymodem_rcv_task(const char * tag)
 	int ret;
 	int key;
 
-	__console_puts("\r\nUpload \"");
-	__console_puts(tag);
-	__console_puts("\" [y]? ");
-	if (__console_getc(10000) != 'y') {
-		__console_puts("\r\n");
+	krn_console_puts("\r\nUpload \"");
+	krn_console_puts(tag);
+	krn_console_puts("\" [y]? ");
+	if (krn_console_getc(10000) != 'y') {
+		krn_console_puts("\r\n");
 		return -1;
 	}
 
@@ -342,7 +216,7 @@ int __flash_ymodem_rcv_task(const char * tag)
 		return ret;
 	}
 
-	__console_puts("\r\nYMODEM receive (Ctrl+X to cancel)... ");
+	krn_console_puts("\r\nYMODEM receive (Ctrl+X to cancel)... ");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 	//thinkos_console_raw_mode(true);
@@ -372,9 +246,9 @@ int __flash_ymodem_rcv_task(const char * tag)
 	thinkos_sleep(500);
 
 	if (ret < 0)
-		__console_puts("\r\nFailed!\r\n");
+		krn_console_puts("\r\nFailed!\r\n");
 	else
-		__console_puts("\r\nOk.\r\n");
+		krn_console_puts("\r\nOk.\r\n");
 
 	return ret;
 }
@@ -390,6 +264,7 @@ int monitor_flash_ymodem_recv(const struct monitor_comm * comm,
 
 }
 
+#if 0
 int console_flash_erase_all_task(const char * tag);
 
 int monitor_flash_erase_all(const struct monitor_comm * comm, 
@@ -399,7 +274,6 @@ int monitor_flash_erase_all(const struct monitor_comm * comm,
 							   C_ARG(tag));
 }
 
-#if 0
 int __shell_cmd_rcv(char * arg) 
 {
 	char buf[64];
@@ -409,11 +283,11 @@ int __shell_cmd_rcv(char * arg)
 	do {
 		int i;
 		buf[0] = '\0';
-		if (__console_gets(buf, sizeof(buf)) <= 0) {
+		if (krn_console_gets(buf, sizeof(buf)) <= 0) {
 			return -1;
 		}
 
-		__console_puts(buf);
+		krn_console_puts(buf);
 		for (cp = buf; (*cp != '\0') && ((*cp == ' ') || (*cp == '\t')); cp++);
 		if ((cmd = *cp) == 0)
 			continue;
@@ -431,7 +305,7 @@ int __shell_cmd_rcv(char * arg)
 	return cmd;
 }
 
-int __console_shell(const char * msg, const char * prompt)
+int krn_console_shell(const char * msg, const char * prompt)
 {
 	char arg[64];
 	int cmd;
@@ -440,14 +314,14 @@ int __console_shell(const char * msg, const char * prompt)
 		thinkos_sleep(100);
 	}
 
-	__console_puts("\r\n");
+	krn_console_puts("\r\n");
 	if (msg != NULL) {
-		__console_puts(prompt);
+		krn_console_puts(prompt);
 	}
 
 	do {
-		__console_puts("\r\n");
-		__console_puts(prompt);
+		krn_console_puts("\r\n");
+		krn_console_puts(prompt);
 		cmd = __shell_cmd_rcv(arg);
 		if (thinkos_console_is_connected() <= 0)
 			return -1;
@@ -465,11 +339,11 @@ int __console_shell(const char * msg, const char * prompt)
 			break;
 
 		default:
-			__console_putc(cmd);
+			krn_console_putc(cmd);
 		}
 	} while (cmd != 'q');
 
-	__console_puts("\r\nBye\r\n");
+	krn_console_puts("\r\nBye\r\n");
 	return 0;
 }
 

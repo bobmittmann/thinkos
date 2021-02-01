@@ -706,6 +706,8 @@ struct thinkos_thread_create_args {
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
 
+#include <stdarg.h>
+
 extern struct thinkos_rt thinkos_rt;
 
 #if (THINKOS_ENABLE_THREAD_INFO)
@@ -891,6 +893,25 @@ void __thinkos_system_reset(void);
 uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len);
 
 uint32_t __thinkos_crc32_u8(const void * __buf, unsigned int __len); 
+
+int krn_snprintf(char * str, size_t size, const char *fmt, ...);
+int krn_vsnprintf(char * str, size_t size, const char *fmt, va_list ap);
+
+
+int krn_console_dev_send(void * dev, const void * buf, unsigned int len);
+
+int krn_console_dev_recv(void * dev, void * buf, 
+					  unsigned int len, unsigned int msec);
+
+int krn_console_write(const void * buf, unsigned int len);
+
+int krn_console_puts(const char * s);
+
+int krn_console_putc(int c);
+
+int krn_console_getc(unsigned int tmo);
+
+int krn_console_gets(char * s, int size);
 
 /* -------------------------------------------------------------------------- 
  * kernel core functions 

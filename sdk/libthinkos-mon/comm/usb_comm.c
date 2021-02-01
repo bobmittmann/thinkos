@@ -1020,6 +1020,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 			uint32_t status;
 			uint32_t toggle;
 
+			monitor_clear(MONITOR_COMM_BRK);
 			status = dev->shadow;
 			/* the bit state depends on shadow and status */
 			/* toggle if the bit is not set */

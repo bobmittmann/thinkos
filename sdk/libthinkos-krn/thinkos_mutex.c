@@ -208,7 +208,7 @@ void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 }
 
-bool mutex_resume(unsigned int thread_id, unsigned int mutex, bool tmw) 
+bool krn_mutex_resume(unsigned int thread_id, unsigned int mutex, bool tmw) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 

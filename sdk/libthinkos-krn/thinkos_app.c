@@ -158,15 +158,10 @@ extern int __krn_stack_size;
 
 void __attribute__((noreturn, noinline)) krn_app_at_exit(int code)
 {
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "appp exit, code=%d ! " VT_POP, code);
-
-//	thinkos_exit(code);
-//	thinkos_thread_abort(code);
-
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "app exit, code=%d ! " VT_POP, 
+			 code);
 	thinkos_abort();
-//	for(;;);
 }
-
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr)

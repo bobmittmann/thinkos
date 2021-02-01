@@ -150,6 +150,7 @@ void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt)
 			 " Thread fault %d, thread %d " VT_POP, 
 			 errno, thread);
 
+#if DEBUG
 	mdelay(250);
 
 	__xinfo(xcpt);
@@ -159,6 +160,7 @@ void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt)
 	mdelay(250);
 
 	__tdump(krn);
+#endif
 
 	/* signal the monitor */
 	monitor_signal_break(MONITOR_THREAD_FAULT);

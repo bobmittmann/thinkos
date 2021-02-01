@@ -218,7 +218,7 @@ void thinkos_cond_broadcast_svc(int32_t arg[], int self,
 #endif /* THINKOS_COND_MAX > 0 */
 
 #if (THINKOS_ENABLE_PAUSE)
-bool cond_resume(struct thinkos_rt * krn, unsigned int th, 
+bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th, 
 						unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 

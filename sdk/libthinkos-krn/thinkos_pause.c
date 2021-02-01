@@ -34,7 +34,7 @@ static bool ready_resume(struct thinkos_rt * krn,
 }
 
 #if THINKOS_MUTEX_MAX > 0
-bool mutex_resume(struct thinkos_rt * krn, unsigned int th, 
+bool krn_mutex_resume(struct thinkos_rt * krn, unsigned int th, 
 				  unsigned int mtx, bool tmw); 
 #endif
 
@@ -59,7 +59,7 @@ bool clock_resume(struct thinkos_rt * krn, unsigned int th,
 				  unsigned int wq, bool tmw);
 
 #if THINKOS_COND_MAX > 0
-bool cond_resume(struct thinkos_rt * krn, unsigned int th, 
+bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th, 
 				 unsigned int wq, bool tmw);
 #endif
 
@@ -175,10 +175,10 @@ static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_THREAD] = join_resume,
 	[THINKOS_OBJ_CLOCK] = clock_resume,
 #if THINKOS_MUTEX_MAX > 0
-	[THINKOS_OBJ_MUTEX] = mutex_resume,
+	[THINKOS_OBJ_MUTEX] = krn_mutex_resume,
 #endif
 #if THINKOS_COND_MAX > 0
-	[THINKOS_OBJ_COND] = cond_resume,
+	[THINKOS_OBJ_COND] = krn_cond_resume,
 #endif
 #if THINKOS_SEMAPHORE_MAX > 0
 	[THINKOS_OBJ_SEMAPHORE] = semaphore_resume,
