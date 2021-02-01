@@ -44,8 +44,8 @@ void thinkos_flat_dump(const struct flat_app * app)
 
 int thinkos_flat_check(const struct flat_app * app)
 {
-	uint32_t * mem = (uint32_t *)app;
 #if (THINKOS_ENABLE_APP_CRC)
+	uint32_t * mem = (uint32_t *)app;
 	uint32_t crc;
 	uint32_t chk;
 #endif

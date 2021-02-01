@@ -51,22 +51,8 @@
 #define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
 #define __STACK_SIZE(OPT) ((OPT) & 0xffff)
 
+/* this is a placeholder */
 #define THINKOS_THREAD_NULL 33
-
-/* Position of register R0 in the context */
-#define CTX_R0 8
-/* Position of register PC in the context */
-#define CTX_PC 14
-#define CTX_SIZE (16 * 4)
-
-#define SIZEOF_THINKOS_BASIC_CONTEXT (16 * 4)
-#define SIZEOF_THINKOS_EXTENDED_CONTEXT ((16 + 16 + 18) * 4)
-
-#if (THINKOS_ENABLE_FPU) 
-#define SIZEOF_THINKOS_CONTEXT SIZEOF_THINKOS_EXTENDED_CONTEXT
-#else
-#define SIZEOF_THINKOS_CONTEXT SIZEOF_THINKOS_BASIC_CONTEXT 
-#endif
 
 struct thread_waitqueue {
 	uint32_t bmp;

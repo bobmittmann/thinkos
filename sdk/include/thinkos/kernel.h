@@ -53,8 +53,21 @@
 #include <thinkos/irq.h>
 
 /* -------------------------------------------------------------------------- 
+ * Context structure offsets (used in assembler code)
+ * --------------------------------------------------------------------------*/
+
+/* Position of register R0 in the context */
+#define CTX_R0 8
+/* Position of register PC in the context */
+#define CTX_PC 14
+
+/* size of struct thinkos_context */
+#define SIZEOF_THINKOS_CONTEXT (16 * 4)
+
+
+/* -------------------------------------------------------------------------- 
  * Monitor structure offsets (used in assembler code)
-  * --------------------------------------------------------------------------*/
+ * --------------------------------------------------------------------------*/
 #define MONITOR_CTX_OFFS    (0) 
 #define MONITOR_EVS_OFFS    (MONITOR_CTX_OFFS  + 4) 
 #define MONITOR_MSK_OFFS    (MONITOR_EVS_OFFS  + 4) 

@@ -360,7 +360,7 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 		monitor_printf(comm, s_crlf);
 		monitor_printf(comm, s_hr);
 		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-					   thinkos_err_name_lut[inf.errno],
+					   thinkos_krn_err_tag(inf.errno),
 					   inf.thread_id,
 					   inf.errno,
 					   inf.pc);
@@ -916,7 +916,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		case MONITOR_APP_ERASE:
 			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			monitor_flash_erase_all(comm, "APP");
+			//monitor_flash_erase_all(comm, "APP");
 			break;
 #endif
 
