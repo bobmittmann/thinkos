@@ -78,12 +78,9 @@ cm3_pendsv_isr:
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
-//	mov     r7, #OFFSETOF_KRN_TH_SL
+//	mov      r7, #OFFSETOF_KRN_TH_SL
 //	ldr      r5, [r0, r1, lsl #2]
-
-	movs     r7, r1, lsl #2
-	adds     r7, r0
-	
+	add      r7, r0, r1, lsl #2
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
 	cmp      r4, r5
 	ble      .L_stack_err 
@@ -110,15 +107,12 @@ thinkos_sched_update_cyccnt:
 	str      r6, [r0, #OFFSETOF_KRN_CYCREF]
 	/* r6: delta =  cyccnt - cycref */	
 	subs     r6, r6, r5
-
-	movs     r7, r1, lsl #2
-	adds     r7, r0
-
+	add      r7, r0, r1, lsl #2
 	/* update thread's cycle counter */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 	/* thinkos_rt.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
-	str      r5, [r7,  #OFFSETOF_KRN_TH_CYC]
+	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
 
 thinkos_sched_swap:
