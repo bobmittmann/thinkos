@@ -377,42 +377,6 @@ int rsp_monitor_write(struct gdbrsp_agent * gdb, char * pkt,
 	return cnt;
 }
 
-void print_stack_usage(struct gdbrsp_agent * gdb, char * pkt)
-{
-	struct thinkos_rt * rt = &thinkos_rt;
-	char * str;
-	char * cp;
-	int i;
-	int n;
-
-	str = pkt + RSP_BUFFER_LEN - 80;
-	cp = str;
-	n = str2str(cp, "\n Th |     Tag |    Size |   Free\n");
-	rsp_monitor_write(gdb, pkt, str, n); 
-
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
-			cp = str;
-			cp += uint2dec(cp, i);
-			cp += str2str(cp, " | ");
-
-			if (rt->th_inf[i] != NULL) {
-				cp += str2str(cp, rt->th_inf[i]->tag);
-				cp += str2str(cp, " | ");
-				cp += uint2dec(cp, rt->th_inf[i]->stack_size);
-				cp += str2str(cp, " | ");
-				cp += uint2dec(cp, __thinkos_scan_stack(
-													rt->th_inf[i]->stack_ptr, 
-												rt->th_inf[i]->stack_size));
-				cp += str2str(cp, "\n");
-			} else 
-				cp += str2str(cp, "  ....   \n");
-			n = cp - str;
-			rsp_monitor_write(gdb, pkt, str, n); 
-		}
-	}
-}
-
 int rsp_cmd(struct gdbrsp_agent * gdb, char * pkt)
 {
 	char * cp = pkt + 6;
@@ -431,9 +395,6 @@ int rsp_cmd(struct gdbrsp_agent * gdb, char * pkt)
 
 	if (prefix(s, "reset") || prefix(s, "rst")) {
 		monitor_req_app_exec(); 
-	} else if (prefix(s, "os")) {
-	} else if (prefix(s, "si")) {
-		print_stack_usage(gdb, pkt);
 	} 
 #if THINKOS_ENABLE_CONSOLE
 	/* insert into the console pipe */

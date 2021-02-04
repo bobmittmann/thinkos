@@ -877,6 +877,6 @@ void __thinkos_dbgmon_init(void)
 	dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 }
 
-#endif /* THINKOS_ENABLE_MONITOR && !THINKOS_ENABLE_USAGEFAULT_MONITOR */
+#endif /* THINKOS_ENABLE_DEBUG */
 
 
