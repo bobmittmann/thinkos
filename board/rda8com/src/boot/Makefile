@@ -29,25 +29,41 @@ SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+MKCMD  = python $(TOOLS_DIR)/mkcmd.py
 LZ77 = /c/opt/bin/lz77
-LZ_WINDOW_SIZE = 32768
+LZ_WINDOW_SIZE = 16384
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-BOOT_CFILES = boot.c monitor.c standby.c
+#BOOT_CFILES = boot.c monitor.c standby.c
+#CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c fpga.c ice40hx1k.c 
+CFILES = board.c monitor.c shell.c cmd_tab.c fpga.c ice40hx1k.c 
 
-CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c fpga.c ice40hx1k.c 
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-SDK_LIBS = util thinkos-krn thinkos-mon xmodem ice-comm
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-dbg thinkos-usr gdbrsp \
+		   xmodem ice-comm
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)
 
 INCPATH = ../include
 
-CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=2
+#
+# select the hardware revision
+# 
+ifdef HWREV
+  ifeq ($(findstring $(HWREV), 1 2),)
+    $(error invalid HWREV number, must be 1 or 2) 
+  endif
+  __hwrev=$(HWREV)
+else
+  # assign a default hardware if not specified in the command line
+  __hwrev=2
+endif
+
+CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=$(__hwrev)
 
 CFLAGS = -Os
 
@@ -63,7 +79,7 @@ ICE40_LZ = $(OUTDIR)/ice40hx1k.lz
 #ICE40_C = $(SRCDIR)/ice40hx1k.c
 ICE40_H = $(SRCDIR)/ice40hx1k.h
 
-$(ICE40_LZ): $(ICE40_BIN)
+$(ICE40_LZ): $(ICE40_BIN) $(MAKEFILE_LIST)
 	$(LZ77) -w $(LZ_WINDOW_SIZE) -c -o $@ $<
 
 $(ICE40_C): $(ICE40_LZ)
@@ -73,4 +89,17 @@ $(ICE40_C): $(ICE40_LZ)
 #	$(BIN2HEX) -H ice40hx1k.h -n ice40hx1k_bin -o $@ $<
 
 $(ICE40_H): $(ICE40_C)
+
+CMD_TAB_YAML = $(SRCDIR)/cmd_tab.yaml
+CMD_TAB_C = $(SRCDIR)/cmd_tab.c
+CMD_TAB_H = $(SRCDIR)/cmd_tab.h
+
+$(CMD_TAB_H): $(CMD_TAB_C)
+
+$(CMD_TAB_C): $(CMD_TAB_YAML)
+	$(MKCMD) -p boot -o $@ $<
+
+cmdtab: $(CMD_TAB_C)
+
+.PHONY = cmdtab
 

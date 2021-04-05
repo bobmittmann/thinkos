@@ -297,7 +297,7 @@ thinkos_krn_sched_ctx_get:
 	push     {r4-r11}
     mov      r3, sp
     uxtb.n   r4, r1
-#if (THINKOS_ENABLE_SANITY_CHECK)
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 	cbz.n    r4, 1f
 	cmp.n    r4, #THINKOS_THREAD_IDLE
 	bne      .L_idle_entry_err    

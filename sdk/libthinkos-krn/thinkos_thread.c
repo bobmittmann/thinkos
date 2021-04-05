@@ -157,14 +157,13 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 				 thread_no, ctx, ctrl, ctx->pc);
 		__thread_pause_set(krn, thread_no);
 	} else 
-#else	
+#endif
 	{
 		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x ready.", 
 				 thread_no, ctx, ctrl, ctx->pc);
 		__thread_ready_set(krn, thread_no);
 		__krn_sched_defer(krn);
 	}
-#endif
 
 	return 0;
 }
