@@ -25,6 +25,9 @@
 #define __THINKOS_APP__
 #include <thinkos/app.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_APP)
@@ -269,13 +272,13 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 
 	if (thread_idx == self) {
 #if (THINKOS_ENABLE_SANITY_CHECK)
-		if (__krn_active_get(krn) != self) {
-			DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
-				 self, ret);
+		if (__krn_sched_active_get(krn) != self) {
+			DCC_LOG2(LOG_ERROR, "<%2d> sched.act=%d!", self, 
+					 __krn_sched_active_get(krn));
 		}
 #endif
 		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
-		__krn_sched_discard_active(krn);
+		__krn_sched_active_clr(krn);
 		__krn_defer_sched(krn);
 	}
 

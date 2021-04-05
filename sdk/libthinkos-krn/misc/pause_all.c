@@ -23,22 +23,16 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if ((THINKOS_ENABLE_THREAD_FAULT) || (THINKOS_ENABLE_PAUSE)) && \
-		(THINKOS_ENABLE_THREAD_STAT)
 void __krn_pause_all(struct thinkos_rt * krn)
 {
-	unsigned int idx;
+	int32_t th;
 
-	for (idx = 0; idx < THINKOS_THREADS_MAX; ++idx) {
-		if (__thread_ctx_is_valid(krn, idx)) {
-			DCC_LOG1(LOG_JABBER, "th=%d", idx + 1);
-			__krn_thread_pause(krn, idx);
+	for (th = THINKOS_THREAD_FIRST; th <= THINKOS_THREAD_LAST; ++th) {
+		if (__thread_ctx_is_valid(krn, th)) {
+			__krn_thread_pause(krn, th);
 		}
 	}
 
-	DCC_LOG1(LOG_TRACE, "active=%d", __krn_active_get(krn) + 1);
+	__krn_defer_sched(krn);
 }
-#else
-
-#endif
 

@@ -60,22 +60,33 @@
 #define THINKOS_ENABLE_THREAD_INFO      0
 #endif
 
+/* THINKOS_ENABLE_THREAD_STAT - Add thread status property to cache 
+   the current thread state. */
 #ifndef THINKOS_ENABLE_THREAD_STAT
 #define THINKOS_ENABLE_THREAD_STAT      0
 #endif
 
+/* THINKOS_ENABLE_JOIN - Used when its desirable to create and destroy threads 
+   dynamically */
 #ifndef THINKOS_ENABLE_JOIN
 #define THINKOS_ENABLE_JOIN             0
 #endif
 
+/* THINKOS_ENABLE_PAUSE  - Allow for pausing and resuming a single thread 
+   execution. This is needed for GDB and debug monitor. 
+   Also adds thinkos_pause() and thinkos_resume() calls. */
 #ifndef THINKOS_ENABLE_PAUSE
 #define THINKOS_ENABLE_PAUSE            0
 #endif
 
+/* THINKOS_ENABLE_CANCEL - A thread can cancel another thread asynchronously. 
+   Add thinkos_cancel() call. */
 #ifndef THINKOS_ENABLE_CANCEL
 #define THINKOS_ENABLE_CANCEL           0
 #endif
 
+/* THINKOS_ENABLE_EXIT - With this option it's possible to terminate a thread by calling thinkos_thread_exit(). Otherwise the thread terminates when the initial
+   thread task exits. */
 #ifndef THINKOS_ENABLE_EXIT
 #define THINKOS_ENABLE_EXIT             0
 #endif
@@ -450,9 +461,12 @@
 #define THINKOS_ENABLE_DEBUG_WPT            0
 #endif
 
-/* THINKOS_ENABLE_THREAD_FAULT - Support for faults being
-   trapped by the kernel.
-   */
+/* THINKOS_ENABLE_THREAD_FAULT - Per thread fault/error. With this option the 
+   scheduler remains operational as long as a non-critical error ocurs.
+   The falted thread is removed from the ready queue and marked appropriatelly.
+   The monitor is signaled and the scheduler/kernel resumes operation with the 
+   remaining of threads. 
+ */
 #ifndef THINKOS_ENABLE_THREAD_FAULT  
 #define THINKOS_ENABLE_THREAD_FAULT         0 
 #endif

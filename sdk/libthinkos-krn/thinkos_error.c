@@ -70,7 +70,9 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
 	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
 	[THINKOS_ERR_KRN_STACKOVF]      = "MSPStackOvf",
-	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack"
+	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack",
+	[THINKOS_ERR_IDLE_ENTRY]        = "IdleEntry",
+	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept"
 };
 
 char const * thinkos_krn_err_tag(unsigned int errno)
@@ -78,190 +80,123 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
-void __thread_discard(struct thinkos_rt * krn, unsigned int idx) 
+void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 {
-	/* Suspend the thread */
-	__krn_thread_suspend(krn, idx);
+	uint32_t act = SCHED_STAT_ACT(stat);
+	uint32_t brk = SCHED_STAT_BRK(stat);
+	uint32_t svc = SCHED_STAT_SVC(stat);
+	uint32_t err = SCHED_STAT_ERR(stat);
 
-	__krn_defer_sched(krn);
+	(void)act;
+	(void)brk;
+	(void)err;
+	(void)svc;
+
+	DCC_LOG4(LOG_INFO, VT_PSH VT_FGR " Service: act=%d brk=%d "
+			 "err=%d, svc=%d " VT_POP, act, brk, err, svc);
 }
 
-/* Raise a fault */
-void __thread_fault_raise(struct thinkos_rt * krn, unsigned int th, int errno) 
+#define THINKOS_ENABLE_KRN_SCHED_SVC 1
+
+#if (THINKOS_ENABLE_KRN_SCHED_SVC) 
+void thinkos_krn_sched_svc_reset(struct thinkos_rt * krn)
 {
-	__nvic_irq_disable_all();
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW " !! DBG Reset  !! " VT_POP);
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-	__thread_fault_set(krn, th);
-	__thread_stat_set(krn, th, THINKOS_WQ_FAULT, false);
-	/* possibly remove from the time wait queue */
-	__thread_clk_disable(krn, th);
-	__thread_errno_set(krn, th, errno);
-#endif
-
-#if (THINKOS_ENABLE_READY_MASK)
-	__thread_disble_all(krn);
-#else
-	__krn_suspend_all(krn);
-#endif
-
-	/* request brake */
-	__krn_sched_brk_set(krn, th, errno);
-
-#if (THINKOS_ENABLE_MONITOR) 
-#endif
-
-	__krn_defer_sched(krn);
+	__thinkos_krn_core_reset(krn);
 }
 
-void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread)
+/* Kernel defered services handler */
+void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t th_act =  SCHED_STAT_ACT(stat);
+	uint32_t th_brk = SCHED_STAT_BRK(stat);
+	uint32_t svc =  SCHED_STAT_SVC(stat);
 
-	DCC_LOG2(LOG_WARNING, VT_PSH VT_FMG VT_REV "/!\\ <%2d> Error %d /!\\"
-			 VT_POP, thread, errno);
+	(void)th_act;
+	(void)th_brk;
+	(void)svc;
 
 #if DEBUG
-	mdelay(500);
+	DCC_LOG3(LOG_TRACE, VT_PSH VT_FBL VT_REV " Service: act=%d brk=%d svc=%d " 
+			 VT_POP, th_act, th_brk, svc);
 #endif
 
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %8s    " VT_POP, 
-			__thread_tag_get(krn, thread));
+	switch (svc) {
+	case 1:
+		/* Clear the brake condition */
+		__krn_sched_brk_clr(krn);
+		break;
 
-#if (THINKOS_ENABLE_MONITOR) 
-	__thread_fault_raise(krn, thread, errno);
-
-	__tdump(krn);
-
-	monitor_signal_break(MONITOR_THREAD_FAULT);
-#else
-	__krn_suspend_all(krn);
-#endif
-}
-
-void thinkos_krn_sched_stack_err(struct thinkos_rt * krn, unsigned int thread)
-{
-	unsigned int errno =THINKOS_ERR_KRN_STACKOVF;
-
-	DCC_LOG1(LOG_ERROR, VT_PSH VT_REV VT_FRD
-			 "/!\\ Scheduler stack limit, thread %d /!\\" VT_POP, 
-			 thread);
-
-#if DEBUG
-	mdelay(1000);
-#endif
-
-	__nvic_irq_disable_all();
-
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %8s    " VT_POP, 
-			__thread_tag_get(krn, thread));
-
-#if (THINKOS_ENABLE_MONITOR) 
-	__thread_fault_raise(krn, thread, errno);
-
-	__tdump(krn);
-
-	monitor_signal_break(MONITOR_THREAD_FAULT);
-#else
-	__krn_suspend_all(krn);
-#endif
-}
-
-void thinkos_krn_sched_on_break(uint32_t sp, uint32_t thread)
-{
-//	struct thinkos_rt * krn = &thinkos_rt;
-
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FMG "Scheduler: On Break" VT_POP);
-
-//	__krn_sched_brk_clr(krn);
+	case 2:
+		if (th_act == 0)
+			th_act = THINKOS_THREAD_IDLE;
+		/* Set the brake condition */
+		__krn_sched_brk_set(krn, th_act);
+		break;
+	}
 
 	/* Notify the debug/monitor */
-	thinkos_monitor_wakeup(); 
+	monitor_signal(MONITOR_THREAD_BREAK);
 }
-
-
-uintptr_t thinkos_krn_sched_nullptr_err(uint32_t sp, uint32_t thread)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	DCC_LOG(LOG_ERROR, VT_PSH VT_REV VT_FRD
-			 " /!\\ Scheduler NULL pointer! /!\\ " VT_POP);
-
-	__tdump(krn);
-	__krn_suspend_all(krn);
-#if DEBUG
-	mdelay(1000);
 #endif
 
-	return (uintptr_t)thinkos_krn_idle_reset();
-}
-
-uintptr_t thinkos_krn_sched_idle_err(uint32_t sp, unsigned int thread)
+/* Kernel error trap services handler */
+void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t th_act =  SCHED_STAT_ACT(stat);
+	uint32_t th_brk = SCHED_STAT_BRK(stat);
+	uint32_t errno = SCHED_STAT_ERR(stat);
 
-	DCC_LOG(LOG_ERROR, VT_PSH VT_REV VT_FGR
-			 " /!\\ Scheduler idle error/!\\ " VT_POP);
-
-	__tdump(krn);
-	__krn_suspend_all(krn);
+	(void)th_act;
+	(void)th_brk;
+	(void)errno;
 
 #if DEBUG
-	mdelay(1000);
+	if (errno < THINKOS_ERR_MAX) {
+		DCC_LOG4(LOG_WARNING, VT_PSH VT_FRD VT_REV 
+				 " Error %d \"%s\" - act=%d brk=%d " VT_POP, 
+				 errno, thinkos_err_name_lut[errno], th_act, th_brk); 
+	} else {
+		DCC_LOG3(LOG_WARNING, VT_PSH VT_FRD VT_REV 
+				 " Error %d - act=%d brk=%d " 
+				 VT_POP, errno, th_act, th_brk);
+	}
+	mdelay(500);
+//	__tdump(krn);
 #endif
 
-	return (uintptr_t)thinkos_krn_idle_reset();
+#if (THINKOS_ENABLE_MONITOR) 
+
+  #if (THINKOS_ENABLE_THREAD_FAULT)
+	/* -----------------------------------------------------------------------
+	 * Per thread error. Multiple faulty threads allowed ... 
+	 * -----------------------------------------------------------------------
+	 */
+	__thread_stat_set(krn, th_act, THINKOS_WQ_FAULT, false);
+	/* possibly remove from the time wait queue */
+	__thread_clk_disable(krn, th_act);
+	/* transfer error to thread */
+	__thread_errno_set(krn, th_act, errno);
+	/* clear scheduler error */
+	__krn_sched_err_clr(krn);
+  #else
+	/* -----------------------------------------------------------------------
+	 * Per thread error. Multiple faulty threads allowed ... 
+	 * Global kernel/scheduler error. A single thread fault stops the kernel.
+	 * -----------------------------------------------------------------------
+	 */
+
+	/* Disable all interrupts */
+	__nvic_irq_disable_all();
+  #endif
+
+	/* Set the brake condition */
+	__krn_sched_brk_set(krn, th_act);
+	/* Notify the debug/monitor */
+	monitor_signal_break(MONITOR_THREAD_FAULT);
+
+#endif /* THINKOS_ENABLE_MONITOR */
+
 }
-
-
-#if 0
-static const char * const thinkos_krn_er_tab[] ={
-	[THINKOS_NO_ERROR]              = "No Error",
-	[THINKOS_ERR_KERNEL_PANIC]      = "Kernel Panic",
-	[THINKOS_ERR_HARD_FAULT] = "Hard Fault",
-	[THINKOS_ERR_BUS_FAULT] = "Bus Fault",
-	[THINKOS_ERR_USAGE_FAULT] = "Usage Fault",
-	[THINKOS_ERR_MEM_MANAGE] = "Memory Management",
-	[THINKOS_ERR_COND_INVALID] = "Conditional variable invalid",
-	[THINKOS_ERR_COND_ALLOC] = "Conditional variable allocation",
-	[THINKOS_ERR_MUTEX_INVALID] = "Mutex invalid",
-	[THINKOS_ERR_MUTEX_ALLOC] = "Mutex allocation",
-	[THINKOS_ERR_MUTEX_NOTMINE] = "Mutex locked by other thread",
-	[THINKOS_ERR_MUTEX_LOCKED] = "Mutex already locked",
-	[THINKOS_ERR_SEM_INVALID] = "Invalid Sempahore",
-	[THINKOS_ERR_SEM_ALLOC] = "Semaphore allocation",
-	[THINKOS_ERR_THREAD_INVALID] = "Thread invalid",
-	[THINKOS_ERR_THREAD_ALLOC] = "Thread allocation",
-	[THINKOS_ERR_THREAD_SMALLSTACK] = "Thread stack too small",
-	[THINKOS_ERR_IRQ_INVALID] = "Invalid IRQ",
-	[THINKOS_ERR_OBJECT_INVALID] = "Invalid kernel object",
-	[THINKOS_ERR_OBJECT_ALLOC] = "Kernel object allocation",
-	[THINKOS_ERR_GATE_INVALID] = "Gate invalid",
-	[THINKOS_ERR_GATE_ALLOC] = "Gate allocation",
-	[THINKOS_ERR_GATE_UNLOCKED] = "Gate unlocked",
-	[THINKOS_ERR_FLAG_INVALID] = "Flag invalid",
-	[THINKOS_ERR_FLAG_ALLOC] = "Flag allocation",
-	[THINKOS_ERR_EVSET_INVALID] = "Event-set invalid",
-	[THINKOS_ERR_EVSET_ALLOC] = "Event-set allocation ",
-	[THINKOS_ERR_EVENT_OUTOFRANGE] = "Event out of range",
-	[THINKOS_ERR_CONSOLE_REQINV] = "Console request invalid",
-	[THINKOS_ERR_CTL_REQINV] = "Control request invalid",
-	[THINKOS_ERR_COMM_REQINV] = "Comm request invalid",
-	[THINKOS_ERR_SYSCALL_INVALID] = "System call invalid",
-	[THINKOS_ERR_CRITICAL_EXIT] = "Critical exit",
-	[THINKOS_ERR_INVALID_POINTER] = "Pointer invalid",
-	[THINKOS_ERR_CONSOLE_FAULT] = "Console fault",
-	[THINKOS_ERR_INVALID_STACK] = "Invalid stack",
-	[THINKOS_ERR_SP_INVALID] = "Invalid stack pointer",
-	[THINKOS_ERR_USER] = "User defined error 0",
-};
-
-char const * thinkos_krn_strerr(unsigned int errno)
-{
-	if (errno > THINKOS_ERR_USER)
-		return "";
-
-	return thinkos_krn_er_tab[errno];
-}
-#endif
 

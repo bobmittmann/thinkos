@@ -376,8 +376,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	DCC_LOG(LOG_TRACE, "Interrupts init init...");
 	__thinkos_krn_irq_init(krn);
 
-	__krn_sched_normal(krn);
-
 	if (lst == NULL) {
 		bool privileged;
 
@@ -391,7 +389,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		thread_no = __thinkos_init_main(krn, sp, opt);
 
 		/* Set the initial thread */
-		__krn_active_set(krn, thread_no);
+		__krn_sched_active_set(krn, thread_no);
 		/* add to the ready queue */
 		__thread_ready_set(krn, thread_no);
 

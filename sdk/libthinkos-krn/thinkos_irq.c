@@ -269,7 +269,8 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 #endif
 
 
-void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
+void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
+						 struct thinkos_rt * krn)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];

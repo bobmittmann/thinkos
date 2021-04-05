@@ -86,15 +86,14 @@ static uint32_t __ret_lut[8] = {
 	[7] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp privileged */
 };
 
-
-void __context(uintptr_t __sp_ctl, uint32_t __thread_id)
+void __context(uintptr_t __sp_ctl, uint32_t __thd)
 {
 	struct thinkos_context * ctx;
 	uint32_t ctrl = 0;
 	uint32_t ret;
 
-	ctx = (struct thinkos_context *)(__sp_ctl & ~(CONTROL_MSK));
-	ctrl = __sp_ctl & (CONTROL_MSK); 
+	ctx = (struct thinkos_context *)(__sp_ctl & ~(THREAD_CTRL_MSK));
+	ctrl = __sp_ctl & (THREAD_CTRL_MSK); 
 	ret = __ret_lut[ctrl];
 	(void)ret;
 
@@ -106,7 +105,7 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id)
 			 ctx->r8, ctx->r9, ctx->r10, ctx->r11);
 	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
 			 ctx->r12, ctx, ctx->lr, ctx->pc);
-	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", ctx->xpsr, __thread_id);
+	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", ctx->xpsr, __thd);
 }
 
 
@@ -119,16 +118,16 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id)
    0xFFFFFFFD | Thread mode  | Process      | Basic
    */
 
-void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread_id,
-		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
+void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread,
+		   uint32_t __new_thread, uintptr_t __sp_ctl)
 {
 	struct thinkos_context * ctx;
 	uint32_t msp = cm3_msp_get();
 	uint32_t ctrl = 0;
 	uint32_t ret;
 
-	ctx = (struct thinkos_context *)(__sp_ctl & ~(CONTROL_MSK));
-	ctrl = __sp_ctl & (CONTROL_MSK); 
+	ctx = (struct thinkos_context *)(__sp_ctl & ~(THREAD_CTRL_MSK));
+	ctrl = __sp_ctl & (THREAD_CTRL_MSK); 
 	ret = __ret_lut[ctrl];
 
 	if (ret == 0) {
@@ -137,30 +136,30 @@ void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread_id,
 				" CONTROL=%d invalid!!!" _ATTR_POP_, ctrl);
 	}
 
-	if (__prev_thread_id == THINKOS_THREAD_IDLE) {
+	if (__prev_thread == THINKOS_THREAD_IDLE) {
 		if (ctrl & CONTROL_nPRIV) {
 			DCC_LOG5(LOG_TRACE,  _ATTR_PUSH_ _FG_MAGENTA_ 
 					 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-					 __new_thread_id, ctx, ctx->pc, 
+					 __new_thread, ctx, ctx->pc, 
 					 msp, __retstr(ret));
 		} else {
 			DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
 					 "IDLE -> <%2d> CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-					 __new_thread_id, ctx, ctx->pc, 
+					 __new_thread, ctx, ctx->pc, 
 					 msp, __retstr(ret));
 		}
-	} else if (__prev_thread_id == THINKOS_THREAD_VOID) {
+	} else if (__prev_thread == THINKOS_THREAD_VOID) {
 		if (ctrl & CONTROL_nPRIV) {
 			DCC_LOG5(LOG_TRACE,  _ATTR_PUSH_ _FG_BLUE_ 
 					 "VOID -> <%2d> " 
 					 "CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-					 __new_thread_id, 
+					 __new_thread, 
 					 ctx, ctx->pc, msp, __retstr(ret));
 		} else {
 			DCC_LOG5(LOG_TRACE,  _ATTR_PUSH_ _FG_RED_ 
 					 "VOID -> <%2d> " 
 					 "CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-					 __new_thread_id, 
+					 __new_thread, 
 					 ctx, ctx->pc, msp, __retstr(ret));
 		}
 	} else {
@@ -168,20 +167,20 @@ void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread_id,
 			DCC_LOG6(LOG_TRACE, 
 					 "<%2d> -> <%2d> " 
 					 "CTX=%08x PC=%08x MSP=%08x %s",
-					 __prev_thread_id, __new_thread_id, 
+					 __prev_thread, __new_thread, 
 					 ctx, ctx->pc, msp, __retstr(ret));
 		} else {
 			DCC_LOG6(LOG_TRACE,  _ATTR_PUSH_ _BRIGHT_ 
 					 "<%2d> -> <%2d> " 
 					 "CTX=%08x PC=%08x MSP=%08x %s" _ATTR_POP_,
-					 __prev_thread_id, __new_thread_id, 
+					 __prev_thread, __new_thread, 
 					 ctx, ctx->pc, msp, __retstr(ret));
 		}
 	}
 }
 
-void _IDLE(struct thinkos_rt * krn, uint32_t __prev_thread_id,
-		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
+void IDLE(struct thinkos_rt * krn, uint32_t __prev_thread,
+		   uint32_t __new_thread, uintptr_t __sp_ctl)
 {
 #if DEBUG
 	struct thinkos_context * ctx;
@@ -193,25 +192,25 @@ void _IDLE(struct thinkos_rt * krn, uint32_t __prev_thread_id,
 	ctrl = __sp_ctl & 0x000000007; 
 	ret = __ret_lut[ctrl];
 
-	if (__prev_thread_id == THINKOS_THREAD_IDLE) {
+	if (__prev_thread == THINKOS_THREAD_IDLE) {
 		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_ _DIM_
 				 "IDLE -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 ctx, ctx->pc, psp, __retstr(ret));
-	} else if (__prev_thread_id == THINKOS_THREAD_VOID) {
+	} else if (__prev_thread == THINKOS_THREAD_VOID) {
 		DCC_LOG4(LOG_TRACE, _ATTR_PUSH_ _FG_BLUE_ _BRIGHT_
 				 "VOID -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
 				 ctx, ctx->pc, psp, __retstr(ret));
 	} else {
 		DCC_LOG5(LOG_TRACE, _ATTR_PUSH_ _FG_CYAN_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __prev_thread_id, 
+				 __prev_thread, 
 				 ctx, ctx->pc, psp, __retstr(ret));
 	}
 #endif
 }
 
-void ERROR(struct thinkos_rt * krn, uint32_t __prev_thread_id,
-		   uint32_t __new_thread_id, uintptr_t __sp_ctl)
+void ERR(struct thinkos_rt * krn, uint32_t __prev_thread,
+		 uint32_t __new_thread, uintptr_t __sp_ctl)
 {
 #if DEBUG
 	struct thinkos_context * ctx;
@@ -230,43 +229,56 @@ void ERROR(struct thinkos_rt * krn, uint32_t __prev_thread_id,
 				" CONTROL=%d invalid!!!" _ATTR_POP_, ctrl);
 	}
 
-	if (__prev_thread_id == THINKOS_THREAD_IDLE)
+	if (__prev_thread == THINKOS_THREAD_IDLE)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
 				 "IDLE -> <%2d> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __new_thread_id, 
+				 __new_thread, 
 				 ctx, ctx->pc, psp, __retstr(ret));
-	else if (__new_thread_id == THINKOS_THREAD_IDLE)
+	else if (__new_thread == THINKOS_THREAD_IDLE)
 		DCC_LOG5(LOG_ERROR, _ATTR_PUSH_ _FG_RED_ _DIM_
 				 "<%2d> -> IDLE CTX=%08x PC=%08x PSP=%08x %s" _ATTR_POP_, 
-				 __prev_thread_id, 
+				 __prev_thread, 
 				 ctx, ctx->pc, psp, __retstr(ret));
 	else
 		DCC_LOG6(LOG_ERROR,  _ATTR_PUSH_ _FG_RED_ 
 				 "<%2d> -> <%2d> " 
 				 "CTX=%08x PC=%08x MSP=%08x %s"  _ATTR_POP_,
-				 __prev_thread_id, __new_thread_id, 
+				 __prev_thread, __new_thread, 
 				 ctx, ctx->pc, msp, __retstr(ret));
 
-	__context(__sp_ctl, __new_thread_id); 
+	__context(__sp_ctl, __new_thread); 
 	__kdump(krn);
 	__tdump(krn);
 #endif
 }
 
-void thinkos_sched_dbg(struct thinkos_rt * krn, uint32_t __prev_thread_id, 
-					   uint32_t __new_thread_id, uintptr_t __sp_ctl)
+struct thinkos_rt * thinkos_sched_dbg(struct thinkos_rt * __krn, 
+                                      uint32_t __ctrl, uint32_t __new_thread, 
+                                      uintptr_t __sp_ctl)
 {
-	if (__new_thread_id > THINKOS_THREAD_IDLE) {
-		ERROR(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
-	} else if (__new_thread_id == THINKOS_THREAD_IDLE) {
-		if (__prev_thread_id != THINKOS_THREAD_IDLE) {
-			_IDLE(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
+	uint32_t prev_thread = (__ctrl & 0xff);
+	uint32_t stat = (__ctrl >> 8);
+ 
+	if (stat > 0) {
+		if (__new_thread > THINKOS_THREAD_IDLE) {
+			ERR(__krn, prev_thread, __new_thread, __sp_ctl);
+		} else if (__new_thread == THINKOS_THREAD_IDLE) {
+			IDLE(__krn, prev_thread, __new_thread, __sp_ctl);
 		} else {
-			_IDLE(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
+			SCHED(__krn, prev_thread, __new_thread, __sp_ctl);
 		}
 	} else {
-		SCHED(krn, __prev_thread_id, __new_thread_id, __sp_ctl);
+		if ((prev_thread > THINKOS_THREAD_IDLE) ||
+			(__new_thread > THINKOS_THREAD_IDLE)) {
+			ERR(__krn, prev_thread, __new_thread, __sp_ctl);
+		} else if (__new_thread == THINKOS_THREAD_IDLE) {
+			IDLE(__krn, prev_thread, __new_thread, __sp_ctl);
+		} else {
+			SCHED(__krn, prev_thread, __new_thread, __sp_ctl);
+		}
 	}
+
+	return __krn;
 }
 
 void thinkos_sched_step_dbg(uintptr_t __sp_ctl, 
@@ -317,7 +329,6 @@ bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
 		return false;
 	}
 
-//    th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     return __thread_ctx_is_valid(krn, th);
 }
 
@@ -339,7 +350,7 @@ static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return NULL;
 
-    th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     return __thread_ctx_get(krn, th);
 }
 
@@ -349,7 +360,7 @@ static unsigned int __dbg_thread_ctrl_get(struct thinkos_rt * krn,
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     return __thread_ctrl_get(krn, th);
 }
 
@@ -425,7 +436,11 @@ int thinkos_dbg_thread_errno_get(unsigned int th)
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST)) {
 		return 0;
 	}
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	return __thread_errno_get(&thinkos_rt, th);
+#else
+	return __krn_sched_err_get(&thinkos_rt);
+#endif
 }
 
 uint32_t thinkos_dbg_thread_cyccnt_get(unsigned int th)
@@ -479,7 +494,7 @@ bool thinkos_dbg_thread_get(unsigned int th, struct thinkos_thread * st,
 #endif
 	}
 
-    th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     ctx = __thread_ctx_get(krn, th);
 
 	if (core != NULL) {
@@ -548,11 +563,12 @@ bool thinkos_dbg_thread_rec_get(unsigned int thread,
 
 #endif
 
+#if 0
 int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
 {
 	int th;
 
-	if ((th = __krn_sched_brk_get(krn)) == 0)
+	if ((th = __krn_sched_thread_get(krn)) == 0)
 		return -1;
 
 	if (__dbg_thread_ctx_get(krn, th) == NULL)
@@ -563,22 +579,28 @@ int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
 
 	return th;
 }
+#endif
 
-int thinkos_dbg_thread_break_get(int32_t * pcode)
+int thinkos_dbg_thread_break_get(int32_t * perrno)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	int th;
 
-	DCC_LOG(LOG_TRACE, "...");
+	DCC_LOG(LOG_YAP, "...");
 
 	if ((th = __krn_sched_brk_get(krn)) == 0)
 		return -1;
 
-	DCC_LOG(LOG_TRACE, "...");
-
-	if (pcode)
-		*pcode = __thread_errno_get(krn, th);
-
+	if (perrno) {
+#if (THINKOS_ENABLE_THREAD_FAULT)
+		/* per thread error */
+		DCC_LOG(LOG_INFO, "get thread error...");
+		*perrno = __thread_errno_get(krn, th);
+#else
+		DCC_LOG(LOG_INFO, "get sched error...");
+		*perrno = __krn_sched_err_get(krn);
+#endif
+	}
 	return th;
 }
 
@@ -587,14 +609,20 @@ int thinkos_dbg_thread_break_clr(void)
 	struct thinkos_rt * krn = &thinkos_rt;
 	int th;
 
-	DCC_LOG(LOG_TRACE, "clearing break condition...");
-
+	DCC_LOG(LOG_MSG, "check sched break condition...");
 	if ((th = __krn_sched_brk_get(krn)) == 0)
 		return -1;
 
+	DCC_LOG1(LOG_INFO, "clearing break condition: %d...", th);
 	__krn_sched_brk_clr(krn);
 
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	DCC_LOG(LOG_MSG, "clearing thread error ...");
 	__thread_errno_clr(krn, th);
+#else
+	DCC_LOG(LOG_MSG, "clearing sched error ...");
+	__krn_sched_err_clr(krn);
+#endif
 
 	return 0;
 }
@@ -670,7 +698,7 @@ void thinkos_dbg_reset(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FRD " DBG Reset " VT_POP);
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW " !! DBG Reset  !! " VT_POP);
 
 	__thinkos_krn_core_reset(krn);
 }
@@ -744,9 +772,6 @@ int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
 	init.inf = inf;
 #endif
 
-	/* Make sure the scheduler is in normal state */
-	__krn_sched_normal(krn);
-
 	if ((ret = thinkos_krn_thread_init(krn, thread, &init))) {
 		return -ret;
 	};
@@ -760,14 +785,38 @@ void thinkos_dbg_resume_all(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
+#if (THINKOS_ENABLE_PAUSE)
 	__krn_resume_all(krn);
+#else
+	__krn_sched_svc_set(krn, 1);
+	__krn_sched_defer(krn);
+#endif
 }
 
 void thinkos_dbg_pause_all(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
+#if (THINKOS_ENABLE_PAUSE)
 	__krn_pause_all(krn);
+#else
+	__krn_sched_svc_set(krn, 2);
+	__krn_sched_defer(krn);
+#endif
+}
+
+void thinkos_krn_dbg_req(struct thinkos_rt * krn, unsigned int opc)
+{
+	__krn_sched_svc_set(krn, opc);
+	__krn_sched_defer(krn);
+}
+
+void thinkos_dbg_ack(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_sched_svc_clr(krn);
+	__krn_sched_defer(krn);
 }
 
 int thinkos_dbg_thread_irq_get(unsigned int th)
@@ -801,5 +850,6 @@ int thinkos_dbg_active_get(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
-	return __krn_active_get(krn);
+	return __krn_sched_active_get(krn);
 }
+

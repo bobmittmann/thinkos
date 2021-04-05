@@ -45,6 +45,28 @@
 	.align	3
 	.thumb
 
+.L_entry_idle:
+	/* Save system context (IDLE) on MSP */
+	push     {r4-r11}
+    mov      r3, sp
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	cmp.n    r1, #THINKOS_THREAD_IDLE
+	bne      .L_idle_entry_err    
+#endif
+
+    lsls.n   r7, r1, #2
+	add.n    r7, r0
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	/* check the stack limit */
+	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
+	cmp.n    r3, r5
+	ble      .L_idle_stack_err 
+#endif
+
+    b        .L_update_cyccnt
+
 	.thumb_func
 cm3_pendsv_isr:
 	.global cm3_pendsv_isr
@@ -52,8 +74,20 @@ cm3_pendsv_isr:
 
 	/* r0: thinkos_rt */
 	ldr.n    r0, .L_thinkos_rt
-	ldrd     r1, r2, [r0, #OFFSETOF_KRN_SCHED]
+	ldrd     r3, r2, [r0, #OFFSETOF_KRN_SCHED]
 	/* r3: sched.ctrl: [ xcpt | err | svc | thd ] */
+
+	/* extract the context thread byte form control word */
+    uxtb.n   r1, r3
+	/*  | svc | fault | err | thd |  */
+	subs.n   r12, r1
+
+	/* r3: ctrl: [ 0x00 | xcpt | err | svc ] */
+	/* r2: ready bmp */
+	/* r1: sched.thread */
+
+    bne.n     thinkos_krn_sched_trap
+
 
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
@@ -72,42 +106,49 @@ thinkos_krn_sched_core:
 	/* r1: context thread [ xcpt | err | svc | thd ] */
 	/* r0: krn */
 	tst      lr, #EXC_RET_SPSEL
-	beq      .L_entry_idle
+	beq     .L_entry_idle
 
 	/* Save user thread context on PSP */
 	mrs      r3, PSP
 	/* Save context */
 	stmdb    r3!, {r4-r11}
+#if 0
+	stmdb    r3!, {r4-r8}
+    mov      r4, r8 
+    mov      r5, r9 
+    mov      r6, r10
+    mov      r7, r11
+	stmdb    r3!, {r4-r8}
+#endif
 
-	/* extract the context thread byte (6bits) form control word */
-    uxtb.n   r7, r1
-    lsls.n   r7, r7, #2
+
+    lsls.n   r7, r1, #2
 	add.n    r7, r0
 
 #if (THINKOS_ENABLE_STACK_LIMIT) || (THINKOS_ENABLE_FPU)
-	mov.n    r8, r3
+	mov.n    r4, r3
   #if (THINKOS_ENABLE_FPU)
 	/* Floating point context */
 	tst      lr, #EXC_RETURN_nFPCA
 	it       eq
-	vstmdbeq r8!, {s16-s31}
+	vstmdbeq  r4!, {s16-s31}
   #endif
 #endif
 
 	/* Append control */
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	mrs      r6, CONTROL
-	adds.n   r6, #(CONTROL_SPSEL)
-	add.n    r3, r6
+	mrs      r5, CONTROL
+	adds.n   r5, #(CONTROL_SPSEL)
+	add.n    r3, r5
 #else
 	adds.n   r3, r3, #(CONTROL_SPSEL | CONTROL_nPRIV)
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
-	ldr      r6, [r7, #OFFSETOF_KRN_TH_SL]
-	cmp.n    r8, r6
-	ble      .L_stack_err
+	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
+	cmp.n    r4, r5
+	ble      .L_stack_err 
 #endif
 
 
@@ -133,18 +174,12 @@ thinkos_krn_sched_core:
 	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
 
-	/*  | err | brk | svc | thd |  */
-	lsrs.n   r6, r1, #8
-	/* r3: ctrl: [ 0x00 | xcpt | err | svc ] */
-	/* r2: ready bmp */
-	/* r1: sched.thread */
-    bne.n    thinkos_krn_sched_except
 
-	/* r1: thread stack + control
+	/* r4: thread stack + control
 	   r2: next active thread 
 	   r0: thinkos_rt */
 	/* store the old context pointer into the context vector */
-	str.n    r3, [r7]
+	str.n     r3, [r7]
 
 	/* r2 - ready queue
 	   r1 - old thread id */
@@ -162,11 +197,11 @@ thinkos_sched_select_ready:
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
 	/* r4: step_req */
-	ldr      r6, [r0, #OFFSETOF_KRN_STEP_REQ]
+	ldr      r4, [r0, #OFFSETOF_KRN_STEP_REQ]
 	/* check if the step request bit is set for this thread */
 	movs.n	 r5, #1
 	lsls.n   r5, r2
-	tst.n    r5, r6
+	tst.n    r5, r4
 	bne.n    thinkos_sched_step
 #endif
 	/* Get thread number from bitmap index */
@@ -188,6 +223,7 @@ thinkos_krn_sched_ctx_get:
 	ands     r0, r3, #(THREAD_CTRL_MSK)
 	/* restore the control register */
 	msr      CONTROL, r0
+	isb
 	/* restore the stack pointer */
 	subs.n   r3, r0
 #endif
@@ -257,62 +293,30 @@ thinkos_krn_sched_ctx_get:
 	bx       lr
 #endif
 
-/* --------------------------------------------------------------------------
- * Scheduler detected errors
- * -------------------------------------------------------------------------- */
-
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_nullptr_err:
-	movs.n   r3, #THINKOS_ERR_INVALID_POINTER
-	b.n     thinkos_krn_sched_trap
+	mov     r1, THINKOS_ERR_INVALID_POINTER
+	b       thinkos_krn_sched_trap
+#endif
 
-.L_idle_stack_xcpt_err:
-	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
-	b.n      thinkos_krn_sched_trap
-
+#if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_err: 
-	movs.n   r3, #THINKOS_ERR_IDLE_STACK
-	b.n      thinkos_krn_sched_trap
+	mov     r1, #THINKOS_ERR_IDLE_STACK
+	b       thinkos_krn_sched_trap
+#endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
-	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
-	b.n     thinkos_krn_sched_trap
+	mov     r1, #THINKOS_ERR_THREAD_STACKADDR   
+	b       thinkos_krn_sched_trap
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 .L_idle_entry_err:
-	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
-	b.n     thinkos_krn_sched_trap
+	mov     r1, #THINKOS_ERR_IDLE_STACK
+	b       thinkos_krn_sched_trap
 #endif
-
-#endif
-
-/* --------------------------------------------------------------------------
- * IDLE 
- * -------------------------------------------------------------------------- */
-
-.L_entry_idle:
-	/* Save system context (IDLE) on MSP */
-	push     {r4-r11}
-    mov      r3, sp
-    uxtb.n   r4, r1
-#if (THINKOS_ENABLE_SANITY_CHECK)
-	cbz.n    r4, 1f
-	cmp.n    r4, #THINKOS_THREAD_IDLE
-	bne      .L_idle_entry_err    
-1:
-#endif
-    lsls.n   r7, r4, #2
-	add.n    r7, r0
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	/* check the stack limit */
-	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
-	cmp.n    r3, r5
-	ble      .L_idle_stack_err 
-#endif
-    b        .L_update_cyccnt
-
+	
 	.align  0
 .L_thinkos_rt:
 	.word	thinkos_rt
@@ -329,35 +333,22 @@ thinkos_krn_sched_ctx_get:
  *
  * -------------------------------------------------------------------------- */
 
-#if (THINKOS_ENABLE_ERROR_TRAP)
 
 	.thumb_func
 thinkos_krn_sched_trap:
 	.global thinkos_krn_sched_trap
 	.type   thinkos_krn_sched_trap, %function
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
-	/*  r1: | err | brk | svc | act |  */
-	/* Insert the error code (R3) on R1 */
-	lsls.n  r1, r1, #8
-	lsrs.n  r1, r1, #8
-	lsls.n  r3, r3, #24
-	adds.n  r1, r3
-#endif
-
-/* --------------------------------------------------------------------------
- *
- *
- * -------------------------------------------------------------------------- */
+#if (THINKOS_ENABLE_ERROR_TRAP)
 
 	/*  r0: krn */
-	/*  r1: | err | brk | svc | act |  */
-thinkos_krn_sched_except:
+	/*  r1: | xcpt |  err |  svc | thd |  */
+
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
-    ldr      r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
+    ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
-    bne      .L_idle_stack_xcpt_err
+    bne      .L_idle_stack_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
     mov.n     r3, sp
 #endif
@@ -367,33 +358,54 @@ thinkos_krn_sched_except:
     isb
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
-	/* Adjust the thread ID to the system thread (0) */
-	movs.n   r2, #THINKOS_THREAD_VOID
+	/* Adjust the thread ID */
+	movs.n   r2, #THINKOS_THREAD_IDLE
 	/* Set the active to IDLE */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 	/* Restore core context */
 	pop      {r4-r11}
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	push     {r1, lr}
+	push.n   {r1, lr}
+	uxtb.n   r1, r1
 	bl       thinkos_sched_dbg
-	pop      {r1, lr}
+	pop.n    {r1, lr}
 #endif
 
-	/*  r1: | err | svc | brk | act |  */
+	/*  r1: | xcpt |  err |  svc | thd |  */
+ 	mov.n    r3, r1
+	uxtb.n   r1, r1
 
-	lsrs.n   r2, r1, #16
-    bne.n    1f
-	b        thinkos_krn_sched_brk_handler
+	lsrs.n   r2, r3, #24
+    beq.n    1f
+//	b        thinkos_krn_sched_xcpt_handler
+	bx       lr
 1:
-	lsrs.n   r2, r1, #24
-    bne.n    2f
-	b        thinkos_krn_sched_svc_handler
-2:
+	lsrs.n   r2, r3, #16
+    beq.n    2f
 	b        thinkos_krn_sched_err_handler
+2:
+	lsrs.n   r2, r3, #8
+	bx      lr
+
+#endif
+
+
+#if (THINKOS_ENABLE_MONITOR)
+    /* break thread */
+	ldr      r3, .L_xcpt_ctx
+	stmia    r3!, {r4-r11} /* r4..r11 */
+	mrs      r4, PSP
+	ldmia    r4!, {r5-r12}
+	stmia    r3!, {r5-r12} /* r0..r3, r12, lr, pc, xpsr */
+#endif
+
+	.align  0
+.L_xcpt_ctx: /* exception buffer is at the bottom of the exception stack */
+	.word   thinkos_except_stack + OFFSETOF_XCPT_CONTEXT
 
 	.size   thinkos_krn_sched_trap, . - thinkos_krn_sched_trap
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
+
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	.thumb_func
@@ -410,9 +422,9 @@ thinkos_sched_step:
 	/* load the new context pointer from the context vector */
 	ldr.w	 r3, [r0, r2, lsl #2]
 
-	ldr      r4, [r0, #OFFSETOF_KRN_STEP_SVC]	
-	/* r4: step_svc */
-	tst      r6, r4
+	ldr      r6, [r0, #OFFSETOF_KRN_STEP_SVC]	
+	/* r6: step_svc */
+	tst      r4, r6
 	bne.n    .L_service_setp
  
 .L_normal_step:

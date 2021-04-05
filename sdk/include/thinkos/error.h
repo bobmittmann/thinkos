@@ -71,23 +71,13 @@
 #define THINKOS_ERR_KRN_UNSTACK        58
 #define THINKOS_ERR_THREAD_CTX_INVALID 59
 
-#define THINKOS_ERR_MAX                60
+#define THINKOS_ERR_IDLE_ENTRY         60
+#define THINKOS_ERR_IDLE_XCPT          61
+
+#define THINKOS_ERR_MAX                62
 
 #ifndef __ASSEMBLER__
 
-/* Mark for kernel breakpoint numbers. Breakpoints above this
-   number are considered errors. */
-#define THINKOS_BKPT_EXCEPT_OFF 128
-
-#define THINKOS_ERROR_BKPT(_CODE_) ((THINKOS_BKPT_EXCEPT_OFF) + (_CODE_))
-
-void thinkos_krn_syscall_err(unsigned int errno, unsigned int thread_idx);
-
-#if (THINKOS_ENABLE_ERROR_TRAP)
-  #define __THINKOS_ERROR(__TH, __CODE) thinkos_krn_syscall_err(__CODE, __TH)
-#else
-  #define __THINKOS_ERROR(__TH, __CODE)
-#endif
 
 #ifdef __cplusplus
 extern "C" {

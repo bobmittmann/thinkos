@@ -23,27 +23,25 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if (THINKOS_ENABLE_PAUSE)
 static bool ready_resume(struct thinkos_rt * krn, 
 						 unsigned int th, unsigned int wq, bool tmw) 
 {
-	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", 
-			 th, __thread_pc_get(krn, th)); 
+	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", th, __thread_pc_get(krn, th)); 
 	__thread_ready_set(krn, th);
 	return true;
 }
 
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 bool krn_mutex_resume(struct thinkos_rt * krn, unsigned int th, 
 				  unsigned int mtx, bool tmw); 
 #endif
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 bool irq_resume(struct thinkos_rt * krn, unsigned int th, 
 					   unsigned int wq, bool tmw);
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 static bool tmshare_resume(struct thinkos_rt * krn, unsigned int th, 
 						   unsigned int wq, bool tmw) 
 {
@@ -58,17 +56,17 @@ static bool tmshare_resume(struct thinkos_rt * krn, unsigned int th,
 bool clock_resume(struct thinkos_rt * krn, unsigned int th, 
 				  unsigned int wq, bool tmw);
 
-#if THINKOS_COND_MAX > 0
+#if (THINKOS_COND_MAX) > 0
 bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th, 
 				 unsigned int wq, bool tmw);
 #endif
 
-#if THINKOS_SEMAPHORE_MAX > 0
+#if (THINKOS_SEMAPHORE_MAX) > 0
 bool semaphore_resume(struct thinkos_rt * krn, unsigned int th, 
 							 unsigned int wq, bool tmw);
 #endif
 
-#if THINKOS_EVENT_MAX > 0
+#if (THINKOS_EVENT_MAX) > 0
 bool evset_resume(struct thinkos_rt * krn, unsigned int th, 
 				  unsigned int wq, bool tmw);
 #endif
@@ -94,14 +92,14 @@ static bool join_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
-#if THINKOS_ENABLE_CONSOLE
+#if (THINKOS_ENABLE_CONSOLE)
 bool thinkos_console_rd_resume(struct thinkos_rt * krn, unsigned int th, 
 							   unsigned int wq, bool tmw);
 bool thinkos_console_wr_resume(struct thinkos_rt * krn, unsigned int th, 
 							   unsigned int wq, bool tmw);
 #endif
 
-#if THINKOS_ENABLE_COMM
+#if (THINKOS_ENABLE_COMM)
 static bool comm_recv_resume(struct thinkos_rt * krn, unsigned int th, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
@@ -122,7 +120,7 @@ static bool comm_send_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
-#if THINKOS_ENABLE_JOIN
+#if (THINKOS_ENABLE_JOIN)
 static bool canceled_resume(struct thinkos_rt * krn, unsigned int th, 
 							unsigned int wq, bool tmw) 
 {
@@ -133,7 +131,7 @@ static bool canceled_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 static bool paused_resume(struct thinkos_rt * krn, unsigned int th, 
 						  unsigned int wq, bool tmw) 
 {
@@ -168,8 +166,6 @@ static bool flash_mem_resume(struct thinkos_rt * krn,
 typedef  bool (* thread_resume_t)(struct thinkos_rt *, 
 								  unsigned int, unsigned int, bool);
 
-#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
-
 static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
 	[THINKOS_OBJ_THREAD] = join_resume,
@@ -189,80 +185,76 @@ static const thread_resume_t thread_resume_lut[] = {
 #if THINKOS_FLAG_MAX > 0
 	[THINKOS_OBJ_FLAG] = flag_resume,
 #endif
-#if THINKOS_GATE_MAX > 0
+#if (THINKOS_GATE_MAX) > 0
 	[THINKOS_OBJ_GATE] = gate_resume,
 #endif
-#if THINKOS_ENABLE_CONSOLE
+#if (THINKOS_ENABLE_CONSOLE)
 	[THINKOS_OBJ_CONREAD] = thinkos_console_rd_resume,
 	[THINKOS_OBJ_CONWRITE] = thinkos_console_wr_resume,
 #endif
-#if THINKOS_ENABLE_PAUSE
+#if (THINKOS_ENABLE_PAUSE)
 	[THINKOS_OBJ_PAUSED] = paused_resume,
 #endif
-#if THINKOS_ENABLE_JOIN
+#if (THINKOS_ENABLE_JOIN)
 	[THINKOS_OBJ_CANCELED] = canceled_resume,
 #endif
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	[THINKOS_OBJ_TMSHARE] = tmshare_resume,
 #endif
-#if THINKOS_ENABLE_COMM
+#if (THINKOS_ENABLE_COMM)
 	[THINKOS_OBJ_COMMSEND] = comm_send_resume,
 	[THINKOS_OBJ_COMMRECV] = comm_recv_resume
 #endif
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 	[THINKOS_OBJ_IRQ]      = irq_resume,
 #endif
 #if (THINKOS_ENABLE_THREAD_FAULT)
 	[THINKOS_OBJ_FAULT] = fault_resume,
 #endif
-#if (THINKOS_FLASH_MEM_MAX > 0)
+#if (THINKOS_FLASH_MEM_MAX) > 0
 	[THINKOS_OBJ_FLASH_MEM] = flash_mem_resume
 #endif
 };
-
-#endif /* (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) */
 
 bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int th)
 {
 	unsigned int wq;
 
 #if (THINKOS_ENABLE_PAUSE)
-	if (__bit_mem_rd(&krn->wq_paused, th) != 0) {
-		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", th+1);
+	if (__thread_pause_get(krn, th)) {
+		DCC_LOG1(LOG_INFO, "thread=%d is paused already!", th);
 		/* paused */
 		return false;
 	}
 
 	/* insert into the paused queue */
-	__bit_mem_wr(&krn->wq_paused, th, 1);
+	__thread_pause_set(krn, th);  
 #endif
 
 #if (THINKOS_ENABLE_THREAD_STAT)
 	{
 		int stat;
+
 		/* remove the thread from a waiting queue, including ready  */
 		stat = krn->th_stat[th];
 		wq = stat >> 1;
-		DCC_LOG5(LOG_INFO, "thread=%d stat=0x%02x wq=%d clk=%d, irq_th[irq]=%d", 
-				 th+1, stat, wq, (stat & 1), krn->irq_th[53]);
-		__bit_mem_wr(&krn->wq_lst[wq], th, 0);
-#if (THINKOS_ENABLE_TIMESHARE)
-		/* possibly remove from the time share wait queue */
-		__bit_mem_wr((uint32_t *)&krn->wq_tmshare, th, 0);
-#endif
+		DCC_LOG4(LOG_TRACE, "thread=%d stat=0x%02x wq=%d clk=%d", 
+				 th, stat, wq, (stat & 1));
+		__krn_wq_thread_del(krn, wq, th);
+		__krn_wq_tmshare_thread_del(krn, wq);
 	}
 #else
-	/* clear all bits on all queues */
+	/* remove from all queues */
 	for (wq = 0; wq < THINKOS_WQ_CNT; ++wq) 
-		__bit_mem_wr(&krn->wq_lst[wq], th, 0);
+		__krn_wq_delete(krn, wq, th);
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_IRQ_MAX) > 0
 	{
 		int irq;
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
 			if (krn->irq_th[irq] == (int)th) {
-				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", th+1, irq);
+				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", th, irq);
 				/* disable this interrupt source */
 				cm3_irq_disable(irq);
 				break;
@@ -272,27 +264,30 @@ bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int th)
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	/* posibly clear the step request */
-	__bit_mem_wr(&krn->step_req, th, 0);
-	/* posibly clear the step on service */
-	__bit_mem_wr(&krn->step_svc, th, 0);
+	/* possibly clear the step request */
+	__bit_mem_wr(&krn->step_req, th - 1, 0);
+	/* possibly clear the step on service */
+	__bit_mem_wr(&krn->step_svc, th - 1, 0);
 #endif
 
 	/* disable the clock */
-	__bit_mem_wr(&krn->wq_clock, th, 0);
+	__krn_wq_clock_thread_del(krn, th);
 
 	return true;
 }
 
 bool __krn_thread_resume(struct thinkos_rt * krn, unsigned int th)
 {
-#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
-	bool (* resume)(struct thinkos_rt *, unsigned int, unsigned int, bool);
+#if (THINKOS_ENABLE_THREAD_STAT) 
 	unsigned int wq;
 	bool tmw;
+#endif
+
+#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
+	bool (* resume)(struct thinkos_rt *, unsigned int, unsigned int, bool);
 	int type;
 
-	if (__bit_mem_rd(&krn->wq_paused, th) != 0) {
+	if (__thread_pause_get(krn, th)) {
 		/* remove from the paused queue */
 		__thread_pause_clr(krn, th);  
 	} 
@@ -301,27 +296,53 @@ bool __krn_thread_resume(struct thinkos_rt * krn, unsigned int th)
 	wq = __thread_wq_get(&thinkos_rt, th);
 	tmw = __thread_tmw_get(&thinkos_rt, th);
 	type = __thinkos_obj_kind(wq);
+
 	DCC_LOG4(LOG_TRACE, "thread=%d wq=%d clk=%d type=%d", 
 			 th, wq, tmw, type);
 	resume = thread_resume_lut[type];
 	return resume(krn, th, wq, tmw);
 #else
   #if (THINKOS_ENABLE_PAUSE)
-	if (__bit_mem_rd(&krn->wq_paused, th) != 0) {
+	if (__thread_pause_get(krn, th)) {
 		/* remove from the paused queue */
 		__thread_pause_clr(krn, th);  
 	} 
   #endif
   #if (THINKOS_ENABLE_THREAD_FAULT)
-	if (__bit_mem_rd(&krn->wq_fault, th) != 0) {
+	if (__thread_fault_get(krn, th)) {
 		/* clear the fault flag queue */
 		__thread_fault_clr(krn, th);
 	}
   #endif
 	DCC_LOG1(LOG_INFO, "thread=%d [ready]", th);
-	__bit_mem_wr(&krn->wq_ready, th, 1);
-#endif /* (THINKOS_ENABLE_THREAD_STAT) */
 
+#if (THINKOS_ENABLE_THREAD_STAT) 
+	wq = (krn->th_stat[th] >> 1) & 0x1ff;
+	tmw = krn->th_stat[th] & 1;
+	/* reinsert the thread into a waiting queue, including ready  */
+	__krn_wq_thread_ins(krn, wq, th);
+	/* conditionally re-enable the clock ? */
+	if (tmw)
+		__krn_wq_clock_thread_ins(krn, th);
+#else
+	__krn_wq_ready_thread_ins(krn, th);
+#endif
+
+  #if (THINKOS_IRQ_MAX) > 0
+	{
+		int irq;
+		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+			if (krn->irq_th[irq] == (int)th) {
+				DCC_LOG2(LOG_INFO, "thread=%d IRQ=%d", th, irq);
+				/* enable this interrupt source */
+				cm3_irq_enable(irq);
+				break;
+			}
+		}
+	}
+  #endif
+
+#endif /* (THINKOS_ENABLE_THREAD_STAT) */
 	return true;
 }
 
@@ -382,6 +403,4 @@ void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (__krn_thread_pause(krn, th))
 		__krn_defer_sched(krn);
 }
-
-#endif /* THINKOS_ENABLE_PAUSE */
 

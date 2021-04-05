@@ -77,9 +77,9 @@
  * --------------------------------------------------------------------------*/
 
 #if (THINKOS_ENABLE_FPU)
-  #define CONTROL_MSK 0x07
+  #define THREAD_CTRL_MSK 0x07
 #else
-  #define CONTROL_MSK 0x03
+  #define THREAD_CTRL_MSK 0x03
 #endif
 
 #if (THINKOS_ENABLE_STACK_ALIGN)
@@ -257,8 +257,10 @@
 #define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
 #define OFFSETOF_KRN_RDY_MSK    (OFFSETOF_KRN_CRITCNT + SIZEOF_KRN_CRITCNT)
 
-#define OFFSETOF_KRN_SCHED_ACTIVE   (OFFSETOF_KRN_SCHED)
-#define OFFSETOF_KRN_SCHED_MASK     (OFFSETOF_KRN_SCHED_ACTIVE + 1)
+#define OFFSETOF_KRN_SCHED_THREAD   (OFFSETOF_KRN_SCHED)
+#define OFFSETOF_KRN_SCHED_SVC      (OFFSETOF_KRN_SCHED_THREAD + 1)
+#define OFFSETOF_KRN_SCHED_ERR      (OFFSETOF_KRN_SCHED_SVC + 1)
+#define OFFSETOF_KRN_SCHED_XCPT     (OFFSETOF_KRN_SCHED_ERR + 1)
 
 #define OFFSETOF_KRN_READY      (OFFSETOF_KRN_WQ_LST)
 #define OFFSETOF_KRN_WQ_JOIN    (OFFSETOF_KRN_READY + SIZEOF_KRN_WQ_READY)
@@ -267,6 +269,11 @@
 
 //#define OFFSETOF_KRN_MON_CLK    
 //(OFFSETOF_KRN_MON_CLK + SIZEOF_KRN_MON_CLK)
+
+#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 24) & 0xff)
+#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 16) & 0xff)
+#define SCHED_STAT_BRK(__STAT__) (((__STAT__) >> 8) & 0xff)
+#define SCHED_STAT_ACT(__STAT__) ((__STAT__) & 0xff)
 
 #ifndef __ASSEMBLER__
 
@@ -365,10 +372,10 @@ struct thinkos_rt {
 	union {
 		volatile uint32_t state; /* kernel state */
 		struct {
-			volatile uint8_t active; /* current active thread */
-			volatile uint8_t mask;
-			volatile uint8_t code;
-			volatile uint8_t brk;
+			volatile uint8_t act;    /* current active thread */
+			volatile uint8_t brk;    /* break thread (active at break point) */
+			volatile uint8_t svc;    /* pending service */
+			volatile uint8_t err;    /* error number */
 		};
 	} sched;
 
@@ -482,6 +489,7 @@ struct thinkos_rt {
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
+	struct {
   #if (THINKOS_ENABLE_DEBUG_STEP)
 	uint32_t step_req;  /* step request bitmap */
 	uint32_t step_svc;  /* step at service call bitmap */
@@ -489,7 +497,8 @@ struct thinkos_rt {
 	uint16_t xcpt_ipsr; /* Exception IPSR */
 	int8_t   step_id;   /* current stepping thread id */
 	int8_t   brk_idx;   /* break thread index */
-#endif /* THINKOS_ENABLE_MONITOR */
+	};
+#endif /* THINKOS_ENABLE_DEBUG_BKPT */
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,

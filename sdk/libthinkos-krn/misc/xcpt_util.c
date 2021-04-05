@@ -201,7 +201,7 @@ void __xdump(struct thinkos_rt * krn,
 
 //	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 __xcpt_active_get(xcpt),
-			 __krn_active_get(krn); 
+			 __krn_sched_active_get(krn); 
 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
@@ -401,11 +401,11 @@ void __tdump(struct thinkos_rt * krn)
 #ifdef DEBUG
 	int i;
 
-	DCC_LOG4(LOG_TRACE, "Sched: active=%d mask=0x%02x brk=0x%02x code=0x%02x", 
-			 __krn_active_get(krn),
-			 __krn_sched_mask_get(krn),
-			 __krn_sched_brk_get(krn),
-			 __krn_sched_code_get(krn));
+	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d brk=%d", 
+			 __krn_sched_active_get(krn),
+			 __krn_sched_svc_get(krn),
+			 __krn_sched_err_get(krn),
+			 __krn_sched_brk_get(krn));
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
 		const char * tag;
@@ -739,10 +739,15 @@ void __kdump(struct thinkos_rt * krn)
 	}
 
 	DCC_LOG4(LOG_TRACE, "Active=<%2d> Ready=%08x Alloc=%08x Ticks=%u", 
-			 __krn_active_get(krn), krn->wq_ready, 
+			 __krn_sched_active_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
 
-	DCC_LOG1(LOG_TRACE, "Sched.state=%08x", krn->sched.state);
+	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d svc=0x%02x err=%d brk=%d]", 
+			 krn->sched.state,
+			 __krn_sched_active_get(krn),
+			 __krn_sched_svc_get(krn),
+			 __krn_sched_err_get(krn),
+			 __krn_sched_brk_get(krn));
 
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;
@@ -759,8 +764,7 @@ void __kdump(struct thinkos_rt * krn)
 	DCC_LOG2(LOG_ERROR, "     Except: %6d/%d", 
 		 __thinkos_scan_stack((void *)stack, size), size); 
 
-	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-
+	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_IDLE; ++i) {
 		if (__thread_ctx_is_valid(krn, i)) {
 			DCC_LOG5(LOG_TRACE, "<%2d> (%3d) SP=%08x LR=%08x PC=%08x", i, 
 					 __thread_wq_get(krn, i), __thread_sp_get(krn, i), 

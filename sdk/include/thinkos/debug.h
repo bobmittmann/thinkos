@@ -170,6 +170,9 @@ bool thinkos_dbg_wq_contains(struct thread_waitqueue * wq,
 
 bool thinkos_dbg_wq_is_empty(struct thread_waitqueue * wq);
 
+
+void thinkos_dbg_ack(void);
+
 #ifdef __cplusplus
 }
 #endif

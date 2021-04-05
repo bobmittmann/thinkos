@@ -144,20 +144,27 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
 #endif
 	/* commit the context to the kernel */ 
-	DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x", 
-			 thread_no, ctx, ctrl, ctx->pc);
 	__thread_ctx_set(krn, thread_no, ctx, ctrl);
 
+#if (THINKOS_ENABLE_READY_MASK)
+	/* enable the thread to be scheduled ... */
 	__thread_enable(krn, thread_no);
+#endif
 
+#if (THINKOS_ENABLE_PAUSE)
 	if (paused) {
-		DCC_LOG1(LOG_TRACE, "<%d> thread paused...", thread_no);
+		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x paused...", 
+				 thread_no, ctx, ctrl, ctx->pc);
 		__thread_pause_set(krn, thread_no);
-	} else {
-		DCC_LOG1(LOG_TRACE, "<%d> thread ready...", thread_no);
+	} else 
+#else	
+	{
+		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x ready.", 
+				 thread_no, ctx, ctrl, ctx->pc);
 		__thread_ready_set(krn, thread_no);
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
+#endif
 
 	return 0;
 }
@@ -173,11 +180,10 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	/* collect call arguments */
 	thread_no = arg[0];
 	init = (struct thinkos_thread_initializer *)arg[1];
-	
+
 #if THINKOS_ENABLE_ARG_CHECK
 	if ((ret = __krn_thread_check(krn, thread_no)) != 0) {
-		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", 
-				 self, thread_no);
+		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread_no);
 		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
@@ -203,7 +209,9 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 		return;
 	};
 
+#if DEBUG
 	__kdump(krn);
+#endif
 
 	arg[0] = thread_no;
 
@@ -211,6 +219,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 }
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
+#if 0
 int __thinkos_thread_fault_code(unsigned int thread_no)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -234,6 +243,7 @@ FIXME:
 
 	return code - THINKOS_BKPT_EXCEPT_OFF;
 }
+#endif
 
 struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 {
@@ -296,3 +306,12 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 		__krn_defer_sched(krn);
 	}
 }
+
+#if 0
+void __krn_suspend_all(struct thinkos_rt * krn) 
+{
+	/* remove all threads from the ready wait queue */
+	__wq_ready_clr(krn);
+}
+#endif
+

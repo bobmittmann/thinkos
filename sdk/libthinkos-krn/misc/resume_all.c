@@ -26,14 +26,12 @@ void __krn_resume_all(struct thinkos_rt * krn)
 {
 	int32_t th;
 
-	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
+	for (th = THINKOS_THREAD_FIRST; th <= THINKOS_THREAD_LAST; ++th) {
 		if (__thread_ctx_is_valid(krn, th)) {
 			__krn_thread_resume(krn, th);
 		}
 	}
 
-	DCC_LOG(LOG_TRACE, "....");
-	
 	__krn_defer_sched(krn);
 }
 

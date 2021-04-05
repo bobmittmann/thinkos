@@ -80,7 +80,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct cm3_systick * systick = CM3_SYSTICK;
 
-	DCC_LOG(LOG_TRACE, "tick...");
+	DCC_LOG(LOG_MSG, "tick...");
 
 	if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 	{

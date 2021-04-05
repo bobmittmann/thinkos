@@ -595,6 +595,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				} 
 
 				/* Breakpoint on a system call */
+#if 0
 				if (code > THINKOS_BKPT_EXCEPT_OFF) {
 					unsigned int err = code - THINKOS_BKPT_EXCEPT_OFF;
 					(void)err;
@@ -622,6 +623,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					__thinkos_defer_sched();
 					break;
 				} 
+#endif
 
 				DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 						 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_

@@ -263,7 +263,7 @@ bool __thinkos_obj_alloc_check(unsigned int oid)
 }
 
 
-void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
+void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 {
 	unsigned int kind = arg[0];
 	unsigned int base;
@@ -375,7 +375,8 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self)
 		}
 #endif
 	}
-	DCC_LOG3(LOG_TRACE, "<%2d> kind=\"%s\" oid=%d", self, __kind_name(kind), idx);
+	DCC_LOG3(LOG_TRACE, "<%2d> kind=\"%s\" oid=%d", self, 
+			 __kind_name(kind), idx);
 	arg[0] = idx;
 }
 
@@ -419,7 +420,7 @@ void __krn_alloc_init(struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_OBJ_FREE)
 
-void thinkos_obj_free_svc(int32_t * arg, int32_t self)
+void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 {
 	unsigned int oid = arg[0];
 	unsigned int kind;
