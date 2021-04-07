@@ -22,6 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
+#if (THINKOS_ENABLE_TERMINATE)
 static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 {
 	DCC_LOG1(LOG_TRACE, "(thread=%d)", th); 
@@ -67,6 +68,7 @@ static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
+#endif
 
 #if 0
 void __thinkos_krn_abort_all(struct thinkos_rt * krn)

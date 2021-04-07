@@ -401,13 +401,13 @@ bool monitor_process_input(const struct monitor_comm * comm, int c)
 	return true;
 }
 
-static bool __monitor_app_exec(uintptr_t addr)
+static bool __monitor_app_exec(const struct monitor_comm * comm, uintptr_t addr)
 {
 	uintptr_t thumb = addr +  1;
 	int (* app)(void *, unsigned int);
 
 	app = (int (*)(void *, unsigned int))thumb;
-	if (monitor_thread_create(app, NULL) < 0)
+	if (monitor_thread_create(comm, app, NULL, false) < 0)
 		return false;
 
 	return true;
@@ -496,7 +496,7 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 
 		case MONITOR_APP_EXEC:
 			monitor_clear(MONITOR_APP_EXEC);
-			if (!__monitor_app_exec(APPLICATION_START_ADDR)) {
+			if (!__monitor_app_exec(comm, APPLICATION_START_ADDR)) {
 				monitor_puts("!ERR: app\r\n", comm);
 			}
 			break;

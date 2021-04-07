@@ -133,12 +133,14 @@ thinkos_krn_sched_core:
 	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/*  | err | brk | svc | thd |  */
 	lsrs.n   r6, r1, #8
 	/* r3: ctrl: [ 0x00 | xcpt | err | svc ] */
 	/* r2: ready bmp */
 	/* r1: sched.thread */
     bne.n    thinkos_krn_sched_except
+#endif
 
 	/* r1: thread stack + control
 	   r2: next active thread 
@@ -274,18 +276,17 @@ thinkos_krn_sched_ctx_get:
 	movs.n   r3, #THINKOS_ERR_IDLE_STACK
 	b.n      thinkos_krn_sched_trap
 
+  #if (THINKOS_ENABLE_SANITY_CHECK)
+.L_idle_entry_err:
+	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
+	b.n     thinkos_krn_sched_trap
+  #endif
+#endif
+
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
 	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
 	b.n     thinkos_krn_sched_trap
-#endif
-
-#if (THINKOS_ENABLE_SANITY_CHECK)
-.L_idle_entry_err:
-	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
-	b.n     thinkos_krn_sched_trap
-#endif
-
 #endif
 
 /* --------------------------------------------------------------------------
@@ -305,7 +306,7 @@ thinkos_krn_sched_ctx_get:
 #endif
     lsls.n   r7, r4, #2
 	add.n    r7, r0
-#if (THINKOS_ENABLE_STACK_LIMIT)
+#if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_SCHED_ERROR)
 	/* check the stack limit */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
 	cmp.n    r3, r5

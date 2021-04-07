@@ -32,12 +32,14 @@ _Pragma ("GCC optimize (\"Os\")")
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
 
+#if 0
 #if !(THINKOS_ENABLE_CONSOLE_READ)
 #error "need THINKOS_ENABLE_CONSOLE_READ"
 #endif
 
 #if !(THINKOS_ENABLE_TIMED_CALLS)
 #error "need THINKOS_ENABLE_TIMED_CALLS"
+#endif
 #endif
 
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 

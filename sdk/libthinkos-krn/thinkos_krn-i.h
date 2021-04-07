@@ -594,7 +594,7 @@ __krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq,
 #endif
 
 static inline void __attribute__((always_inline)) 
-__wq_remove(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
+__krn_wq_remove(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 	/* remove from the wait queue */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #if (THINKOS_ENABLE_TIMED_CALLS)
@@ -682,6 +682,11 @@ __krn_wq_clock_clr(struct thinkos_rt * krn) {
 /* Set the ready flag */
 static inline void  __attribute__((always_inline))
 __thread_ready_set(struct thinkos_rt * krn, unsigned int th) {
+	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
+}
+
+static inline void  __attribute__((always_inline))
+__krn_wq_ready_thread_ins(struct thinkos_rt * krn, unsigned int th) {
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
 }
 
@@ -915,6 +920,8 @@ static inline bool __attribute__((always_inline))
 __thread_stat_tmw_get(struct thinkos_rt * krn, unsigned int th) {
 #if (THINKOS_ENABLE_THREAD_STAT)
 	return (thinkos_rt.th_stat[th] & 1) ? true : false;
+#else
+	return __bit_mem_rd(&krn->wq_clock, (th - 1));  
 #endif
 }
 
@@ -1106,8 +1113,12 @@ static inline bool __krn_obj_is_thread(struct thinkos_rt * krn,
 
 static inline bool __krn_thread_is_alloc(struct thinkos_rt * krn, 
 										 unsigned int th) {
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	return __bit_mem_rd(krn->th_alloc, 
 						th - THINKOS_THREAD_BASE) ? true : false;
+#else
+	return true;
+#endif
 }
 
 static inline bool __krn_thread_is_valid(struct thinkos_rt * krn, int th) {
@@ -1150,8 +1161,12 @@ __krn_obj_is_mutex(struct thinkos_rt * krn, unsigned int mtx) {
 
 static inline bool __attribute__((always_inline)) 
 __krn_mutex_is_alloc(struct thinkos_rt * krn, unsigned int mtx) {
+#if (THINKOS_ENABLE_MUTEX_ALLOC)
 	return __bit_mem_rd(krn->mutex_alloc, mtx - THINKOS_MUTEX_BASE) ? 
 		true : false;
+#else
+	return true;
+#endif
 }
 
 static inline void __attribute__((always_inline)) 

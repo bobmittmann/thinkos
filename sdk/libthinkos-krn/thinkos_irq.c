@@ -147,7 +147,7 @@ void cm3_default_isr(unsigned int irq)
 
 #if (THINKOS_ENABLE_WQ_IRQ)
 	/* remove from the wait queue */
-	__wq_remove(krn, THINKOS_WQ_IRQ, th);  
+	__krn_wq_remove(krn, THINKOS_WQ_IRQ, th);  
 #endif
 
 	/* insert the thread into ready queue */

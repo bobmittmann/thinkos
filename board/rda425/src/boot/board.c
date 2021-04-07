@@ -107,7 +107,7 @@ const struct thinkos_mem_map mem_map = {
 extern const struct flash_dev stm32f4x_flash_dev;
 
 const struct thinkos_flash_desc board_flash_desc = {
-	.mem = (struct mem_desc *)&flash_desc,
+	.mem = (struct thinkos_mem_desc *)&flash_desc,
 	.dev = &stm32f4x_flash_dev
 };
 

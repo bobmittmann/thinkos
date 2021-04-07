@@ -180,7 +180,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	thread_no = arg[0];
 	init = (struct thinkos_thread_initializer *)arg[1];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if ((ret = __krn_thread_check(krn, thread_no)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread_no);
 		__THINKOS_ERROR(self, ret);
@@ -267,6 +267,7 @@ void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th,
 	__krn_defer_sched(krn);
 }
 
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
 							unsigned int wq, unsigned int ms) {
 	__krn_tmdwq_insert(krn, wq, th, ms);
@@ -274,6 +275,7 @@ void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th,
 	/* signal the scheduler ... */
 	__krn_defer_sched(krn);
 }
+#endif
 
 void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th, 
 							  unsigned int ms) 
