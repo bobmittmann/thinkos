@@ -20,23 +20,70 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <arch/cortex-m3.h>
-#include <sys/delay.h>
-#include <vt100.h>
+#include "thinkos_krn-i.h"
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
+
+	/* Static sanity check: */
+	_Static_assert (offsetof(struct thinkos_except, seq) == 
+					OFFSETOF_XCPT_SEQ, "OFFSETOF_XCPT_SEQ");
+
+	_Static_assert (offsetof(struct thinkos_except, errno) == 
+					OFFSETOF_XCPT_ERRNO, "OFFSETOF_XCPT_ERRNO");
+
+	_Static_assert (offsetof(struct thinkos_except, ipsr) == 
+					OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
+
+	_Static_assert (offsetof(struct thinkos_except, ret) == 
+					OFFSETOF_XCPT_RET, "OFFSETOF_XCPT_RET");
+
+	_Static_assert (offsetof(struct thinkos_except, ack) == 
+					OFFSETOF_XCPT_ACK, "OFFSETOF_XCPT_ACK");
+
+	_Static_assert (offsetof(struct thinkos_except, control) == 
+					OFFSETOF_XCPT_CONTROL, "OFFSETOF_XCPT_CONTROL");
+
+	_Static_assert (offsetof(struct thinkos_except, ctx) == 
+					OFFSETOF_XCPT_CONTEXT, "OFFSETOF_XCPT_CONTEXT");
+
+	_Static_assert (offsetof(struct thinkos_except, msp) == 
+					OFFSETOF_XCPT_MSP, "OFFSETOF_XCPT_MSP");
+
+	_Static_assert (offsetof(struct thinkos_except, psp) == 
+					OFFSETOF_XCPT_PSP, "OFFSETOF_XCPT_PSP");
+
+	_Static_assert (offsetof(struct thinkos_except, sched) == 
+					OFFSETOF_XCPT_SCHED, "OFFSETOF_XCPT_SCHED");
+
+	_Static_assert (offsetof(struct thinkos_except, ready) == 
+					OFFSETOF_XCPT_READY, "OFFSETOF_XCPT_READY");
+
+	_Static_assert (offsetof(struct thinkos_except, cfsr) == 
+					OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
+
+	_Static_assert (offsetof(struct thinkos_except, hfsr) == 
+					OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
+
+	_Static_assert (offsetof(struct thinkos_except, mmfar) == 
+					OFFSETOF_XCPT_MMFAR, "OFFSETOF_XCPT_MMFAR");
+
+	_Static_assert (offsetof(struct thinkos_except, bfar) == 
+					OFFSETOF_XCPT_BFAR, "OFFSETOF_XCPT_BFAR");
+
+	_Static_assert (offsetof(struct thinkos_except, icsr) == 
+					OFFSETOF_XCPT_ICSR, "OFFSETOF_XCPT_ICSR");
+
+	_Static_assert (offsetof(struct thinkos_except, shcsr) == 
+					OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
+
+#if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_except, cycref) == 
+					OFFSETOF_XCPT_CYCREF, "OFFSETOF_XCPT_CYCREF");
+
+	_Static_assert (offsetof(struct thinkos_except, cyccnt) == 
+					OFFSETOF_XCPT_CYCCNT, "OFFSETOF_XCPT_CYCCNT");
+#endif
+
 
 #if (DEBUG)
 /*
@@ -49,144 +96,129 @@
 */
   #undef THINKOS_SYSRST_ONFAULT
   #define THINKOS_SYSRST_ONFAULT    0
-  #define DCC_EXCEPT_DUMP(XCPT) __xdump(XCPT)
+  #define DCC_EXCEPT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
 #else
-  #define DCC_EXCEPT_DUMP(XCPT)
+  #define DCC_EXCEPT_DUMP(KRN, XCPT)
 #endif
 
 #include <sys/dcclog.h>
 
-void __attribute__((noreturn)) 
-	thinkos_krn_fatal_except(struct thinkos_except * xcpt)
+void thinkos_krn_fatal_except(uint32_t errno, struct thinkos_except * xcpt) 
 {
 #if DEBUG
-	struct cm3_scb * scb = CM3_SCB;
-	uint32_t hfsr;
+	struct thinkos_rt * krn = &thinkos_rt;
 
 	mdelay(500);
 
-	hfsr = scb->hfsr;
+	DCC_LOG1(LOG_PANIC, VT_PSH VT_REV VT_FRD
+			 "  Fatal exception: %d  " VT_POP, errno);
 
-	DCC_LOG3(LOG_PANIC, "Hard fault:%s%s%s", 
-			 (hfsr & SCB_HFSR_DEBUGEVT) ? " DEBUGEVT" : "",
-			 (hfsr & SCB_HFSR_FORCED) ?  " FORCED" : "",
-			 (hfsr & SCB_HFSR_VECTTBL) ? " VECTTBL" : "");
-	DCC_LOG1(LOG_PANIC, " HFSR=%08x", scb->hfsr);
-	DCC_LOG1(LOG_PANIC, " CFSR=%08x", xcpt->cfsr);
-	DCC_LOG1(LOG_PANIC, " BFAR=%08x", xcpt->bfar);
-	DCC_LOG1(LOG_PANIC, "MMFAR=%08x", xcpt->mmfar);
-
-	if (hfsr & SCB_HFSR_FORCED) {
-		uint32_t mmfsr;
-		uint32_t bfsr;
-		uint32_t ufsr;
-
-		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
-		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		(void)bfsr;
-		(void)ufsr;
-		(void)mmfsr ;
-
-		DCC_LOG1(LOG_PANIC, "BFSR=%08X", bfsr);
-		if (bfsr) {
-			DCC_LOG7(LOG_PANIC, "    %s%s%s%s%s%s%s", 
-					 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
-					 (bfsr & BFSR_LSPERR) ? " LSPERR" : "",
-					 (bfsr & BFSR_STKERR) ? " STKERR" : "",
-					 (bfsr & BFSR_UNSTKERR) ?  " UNSTKERR" : "",
-					 (bfsr & BFSR_IMPRECISERR) ?  " IMPRECISERR" : "",
-					 (bfsr & BFSR_PRECISERR) ?  " PRECISERR" : "",
-					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
-		}
-
-		DCC_LOG1(LOG_PANIC, "UFSR=%08X", ufsr);
-		if (ufsr) {
-			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
-					 (ufsr & UFSR_DIVBYZERO)  ? " DIVBYZERO" : "",
-					 (ufsr & UFSR_UNALIGNED)  ? " UNALIGNED" : "",
-					 (ufsr & UFSR_NOCP)  ? " NOCP" : "",
-					 (ufsr & UFSR_INVPC)  ? " INVPC" : "",
-					 (ufsr & UFSR_INVSTATE)  ? " INVSTATE" : "",
-					 (ufsr & UFSR_UNDEFINSTR)  ? " UNDEFINSTR" : "");
-		}
-		DCC_LOG1(LOG_PANIC, "MMFSR=%08X", mmfsr);
-		if (mmfsr) {
-			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
-					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
-					 (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
-					 (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
-					 (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
-					 (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
-					 (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-		}
-	}
-
-	__pdump();
-
-	DCC_EXCEPT_DUMP(xcpt);
-
-	mdelay(500);
-
-	__tdump();
-
-	/* kill all threads */
-	__thinkos_core_reset();
-
-#endif
-#if (THINKOS_SYSRST_ONFAULT)
-	thinkos_krn_sysrst();
-#endif
-	for(;;);
-}
-
-void thinkos_krn_thread_except(struct thinkos_except * xcpt)
-{
 	mdelay(250);
 
 	__xinfo(xcpt);
 
+
 	__pdump();
 
-	DCC_EXCEPT_DUMP(xcpt);
+	DCC_EXCEPT_DUMP(krn, xcpt);
+
+	mdelay(500);
+
+	__tdump(krn);
+
+	/* kill all threads */
+	__thinkos_krn_core_reset(krn);
+
+	/* Enable Interrupts */
+	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
+	cm3_cpsie_i();
+
+	/* signal the monitor */
+	monitor_signal(MONITOR_KRN_FAULT);
+#endif
+#if (THINKOS_SYSRST_ONFAULT)
+//	thinkos_krn_sysrst();
+#endif
+}
+
+void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt) 
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int thread = xcpt->sched.active;
+
+	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
+			 " Thread fault %d, thread %d " VT_POP, 
+			 errno, thread);
+	(void)krn;
+	(void)thread;
+
+#if DEBUG
+	mdelay(250);
+
+	__xinfo(xcpt);
+
+	DCC_EXCEPT_DUMP(krn, xcpt);
 
 	mdelay(250);
 
-	__tdump();
+	__tdump(krn);
+#endif
 
-	/* signal the monitor */
-	monitor_signal(MONITOR_THREAD_FAULT);
+#if (THINKOS_ENABLE_MONITOR) 
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
+			__thread_tag_get(krn, thread));
+
+	__nvic_irq_disable_all();
+
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#endif
+
+//	__thread_fault_raise(krn, thread, errno);
+
+	/* Enable Interrupts */
+	cm3_cpsie_i();
+
+	monitor_signal_break(MONITOR_THREAD_FAULT);
+#else
+	__krn_suspend_all(krn);
+#endif
 }
 
 
 /* -------------------------------------------------------------------------
    Application fault defered handler 
    ------------------------------------------------------------------------- */
-
-
 void thinkos_krn_exception_reset(void)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	DCC_LOG(LOG_TRACE, "Exception buffer clear.");
 
-	__thinkos_memset32(xcpt, 0x00000000,
+#if (THINKOS_ENABLE_STACK_INIT)
+	/* initialize thread stack */
+	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
 					   sizeof(struct thinkos_except));
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(thinkos_except_stack, 0, 
+					   sizeof(struct thinkos_except));
+#endif
 }
 
 void thinkos_krn_exception_init(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
-	DCC_LOG(LOG_TRACE, "Initializing exceptions...");
-
 	thinkos_krn_exception_reset();
 
 #if	(THINKOS_ENABLE_USAGEFAULT) 
+	DCC_LOG(LOG_TRACE, "USAGE fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_USAGE_FAULT, EXCEPT_PRIORITY);
 #endif
 #if	(THINKOS_ENABLE_BUSFAULT)
+	DCC_LOG(LOG_TRACE, "BUS fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_BUS_FAULT, EXCEPT_PRIORITY);
 #endif
 #if (THINKOS_ENABLE_MPU)
+	DCC_LOG(LOG_TRACE, "Mem management fault enabled.");
 	cm3_except_pri_set(CM3_EXCEPT_MEM_MANAGE, EXCEPT_PRIORITY);
 #endif
 
@@ -201,6 +233,7 @@ void thinkos_krn_exception_init(void)
 		| SCB_SHCSR_MEMFAULTENA
 #endif
 		;
+
 }
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */
@@ -221,6 +254,4 @@ void __attribute__((naked, noreturn)) thinkos_krn_xcpt_raise(int errno)
 }
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
-
-const char thinkos_xcp_nm[] = "XCP";
 

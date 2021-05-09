@@ -145,6 +145,8 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 				ry->comm->op.send(ry->comm->arg, pkt, 1);
 				return 0;
 			}
+
+			DCC_LOG1(LOG_WARNING, "YMODEM RX=%02x", c);
 		}
 
 		len = cnt + ((ry->crc_mode) ? 5 : 4);
@@ -430,5 +432,6 @@ int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname,
 
 	return ret;
 }
+
 
 

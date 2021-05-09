@@ -19,50 +19,50 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <sys/delay.h>
 
 #if (THINKOS_ENABLE_SLEEP)
-void thinkos_sleep_svc(int32_t * arg, int self)
+void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
-#if THINKOS_ENABLE_CLOCK
-	/* set the clock */
-	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
-	/* mark the thread clock enable bit */
-	__thinkos_thread_stat_set(self, THINKOS_WQ_CLOCK, true);
+
+	DCC_LOG3(LOG_MSG, "self=%d krn=%08x clk=%08x", self, krn, krn->wq_clock);
+
 	/* wait for event */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
+	/* mark the thread clock enable bit */
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
+	/* set the clock */
+	__thread_clk_itv_set(krn, self, ms);
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, self) ;
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
-#else
-	udelay(1000 * ms);
-#endif
+	__krn_defer_sched(krn);
 }
 #endif
 
 #if (THINKOS_ENABLE_ALARM)
-void thinkos_alarm_svc(int32_t * arg, int self)
+void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
-	uint32_t ms = (uint32_t)arg[0];
+	uint32_t clk = (uint32_t)arg[0];
+
+	DCC_LOG2(LOG_MSG, "<%2d> clk=%d", self, clk);
 
 	/* set the clock */
-	thinkos_rt.clock[self] = ms;
+	__thread_clk_set(krn, self, clk);
 	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
+	__thread_clk_enable(krn, self);
 	/* mark the thread clock enable bit */
-	__thinkos_thread_stat_set(self, THINKOS_WQ_CLOCK, true);
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
 	/* wait for event */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_defer_sched(krn);
 }
 #endif
 

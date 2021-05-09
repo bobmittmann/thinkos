@@ -29,6 +29,8 @@
 #include <thinkos.h>
 #include <sys/console.h>
 
+extern const char * zarathustra[];
+
 volatile uint64_t buffer; /* production buffer */
 
 int sem_empty; /* semaphore to signal an empty buffer */
@@ -43,15 +45,28 @@ int producer_task(void * arg)
 	unsigned int i = 0;
 	uint64_t x0 = 0;
 	uint64_t x1 = 0;
+	uint64_t x2 = 0;
+	const char * line;
+	int j;
 
 	prod_done = false;
 
 	printf(" %s(): [%d] started...\n", __func__, thinkos_thread_self());
 	thinkos_sleep(100);
 
+	j = 0;
 	for (i = 0; i < prod_count; i++) {
 		/* let's spend some time thinking */
 		thinkos_sleep(500);
+
+
+		line = zarathustra[j++];
+		if (line == NULL) {
+			j = 0;
+			line = zarathustra[j++];
+		}
+
+		x2 = strlen(line);
 
 		/* working */
 		if (i == 0)
@@ -59,7 +74,7 @@ int producer_task(void * arg)
 		else if (i == 1)
 			y = 1;
 		else
-			y = x1 + x0;
+			y = x1 + x0 + x2;
 
 		x0 = x1;
 		x1 = y;
@@ -112,7 +127,10 @@ int consumer_task(void * arg)
 	return i;
 };
 
-uint32_t producer_stack[128];
+//THINKOS_DEFINE_STACK(producer_stack, 512);
+//THINKOS_DEFINE_STACK(consumer_stack, 512);
+
+uint32_t producer_stack[512];
 uint32_t consumer_stack[128];
 
 void semaphore_test(void)
@@ -131,11 +149,11 @@ void semaphore_test(void)
 	sem_full = thinkos_sem_alloc(0); 
 
 	/* create the producer thread */
-	producer_th = thinkos_thread_create(producer_task, NULL, 
+	producer_th = thinkos_thread_create(C_TASK(producer_task), NULL, 
 			producer_stack, sizeof(producer_stack));
 
 	/* create the consuer thread */
-	consumer_th = thinkos_thread_create(consumer_task, NULL, 
+	consumer_th = thinkos_thread_create(C_TASK(consumer_task), NULL, 
 			consumer_stack, sizeof(consumer_stack));
 
 	printf(" * Empty semaphore: %d\n", sem_empty);
@@ -177,6 +195,8 @@ void stdio_init(void)
 
 int main(int argc, char ** argv)
 {
+	int i;
+	
 	/* Initialize the stdin, stdout and stderr */
 	stdio_init();
 
@@ -190,7 +210,12 @@ int main(int argc, char ** argv)
 	/* Run the test */
 	semaphore_test();
 
-	thinkos_sleep(10000);
+	printf(" Returning... ");
+
+	for (i = 10; i > 0; --i) {
+		thinkos_sleep(10000);
+		printf("%d ", i);
+	}
 
 	return 0;
 }

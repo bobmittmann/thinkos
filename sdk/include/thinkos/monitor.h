@@ -29,32 +29,9 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
 
 #include <thinkos.h>
-
 #include <sys/memory.h>
-
-#ifndef THINKOS_ENABLE_RESET_RAM_VECTORS
-  #ifdef CM3_RAM_VECTORS
-    #define THINKOS_ENABLE_RESET_RAM_VECTORS 1
-  #else
-    #define THINKOS_ENABLE_RESET_RAM_VECTORS 0
-  #endif
-#endif
-
-#ifndef THINKOS_MONITOR_ENABLE_RST_VEC
-#define THINKOS_MONITOR_ENABLE_RST_VEC CM3_RAM_VECTORS 
-#endif
-
-/* Mark for debug/monitor breakpoint numbers. */
-#define MONITOR_BKPT_ON_THREAD_CREATE 64
-#define MONITOR_BKPT_ON_THREAD_TERMINATE 65
-
-#define __BKPT(__NO) asm volatile ("bkpt %0\n" : : "I" __NO)
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events
@@ -62,16 +39,16 @@
  */
 
 enum monitor_event {
-	/* Debug monitor internal reset */
-	MONITOR_RESET           = 0,
-	/* ThinkOS power on startup indication */
-	MONITOR_STARTUP         = 1,
-	/* ThinkOS idle indication */
-	MONITOR_IDLE            = 2,
+	/* Debug monitor internal task reset */
+	MONITOR_TASK_INIT       = 0,
 	/* Board reset request */
-	MONITOR_SOFTRST         = 3,
+	MONITOR_SOFTRST         = 1,
 	/* ThinkOS kernel fault */
-	MONITOR_KRN_EXCEPT      = 4,
+	MONITOR_KRN_FAULT       = 2,
+	/* ThinkOS kernel reset indication */
+	MONITOR_KRN_ABORT       = 3,
+	/* User reqest abort */
+	MONITOR_USR_ABORT       = 4,
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -82,18 +59,20 @@ enum monitor_event {
 	MONITOR_THREAD_CREATE   = 8,
 	/* ThinkOS Thread teminate */
 	MONITOR_THREAD_TERMINATE = 9,
-	/* ThinkOS Thread breakpoint */
-	MONITOR_BREAKPOINT      = 10,
+	/* ThinkOS Thread break (stop request, error, fault, breakpoint.. ) */
+	MONITOR_THREAD_BREAK    = 10,
+	/* Debug Communication break signal */
+	MONITOR_COMM_BRK        = 11, 
 	/* Debug Communication data received pending */
-	MONITOR_COMM_RCV        = 11, 
-	/* Debug Communication end of transfer */
-	MONITOR_COMM_EOT        = 12,
+	MONITOR_COMM_RCV        = 12, 
+	/* Debug Communication end 3f transfer */
+	MONITOR_COMM_EOT        = 14,
 	/* Debug Communication control signal */
-	MONITOR_COMM_CTL        = 13,
+	MONITOR_COMM_CTL        = 15,
 	/* User console RX pipe data pending */
-	MONITOR_RX_PIPE         = 14,
+	MONITOR_RX_PIPE         = 16,
 	/* User console TX pipe not empty */
-	MONITOR_TX_PIPE         = 15,
+	MONITOR_TX_PIPE         = 17,
 
 	/* ThinkOS application stop request */
 	MONITOR_APP_STOP        = 18,
@@ -155,6 +134,18 @@ struct monitor_context {
 	uint32_t xpsr;
 };
 
+struct monitor_swap {
+	uint32_t xpsr;
+	uint32_t r4;
+	uint32_t r5;
+	uint32_t r6;
+	uint32_t r7;
+	uint32_t r8;
+	uint32_t r9;
+	uint32_t r10;
+	uint32_t r11;
+	uint32_t lr;
+};
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor communication interface
@@ -183,6 +174,13 @@ struct monitor_comm {
 	const void * dev;
 	const struct monitor_comm_op * op;
 };
+
+extern uint32_t thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
+extern const uint16_t thinkos_monitor_stack_size;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline int monitor_comm_send(const struct monitor_comm * comm, 
 								   const void * buf, unsigned int len) {
@@ -214,12 +212,6 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	return (comm->op->ctrl(comm->dev, COMM_CTRL_STATUS_GET) & 
 	        COMM_ST_CONNECTED) ? true : false;
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void thinkos_monitor_svc(int32_t arg[], int self);
 
 void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
                      void (* task)(const struct monitor_comm *, void *),
@@ -290,21 +282,22 @@ static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
-/* flags the monitor schedule */
-static inline void __attribute__((always_inline)) __thinkos_monitor_setpend(void) {
-	struct cm3_scb * scb = CM3_SCB;
-	/* rise a pending systick interrupt */
-	scb->icsr = SCB_ICSR_PENDSTSET;
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
-}
+void monitor_signal_break(int32_t sig); 
 
-void monitor_signal_thread_terminate(int thread_id, int code);
+void monitor_signal_thread_terminate(unsigned int thread_id, int code);
+
+void monitor_signal_thread_fault(unsigned int thread_id, int32_t code);
 
 int monitor_thread_terminate_get(int * code);
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);
 
-int monitor_thread_break_get(void);
+
+
+struct thinkos_context * monitor_thread_erro_get(uint8_t * thread_id, 
+												 int8_t * code);
+int monitor_thread_break_get(int32_t * pcode);
+
 void monitor_thread_break_clr(void);
 
 int monitor_thread_step_get(void);
@@ -313,8 +306,10 @@ int monitor_thread_step(unsigned int id, bool block);
 
 int monitor_thread_last_fault_get(uint32_t * addr);
 
-int monitor_thread_create(int (* func)(void *, unsigned int), void * arg, 
-                         const struct thinkos_thread_inf * inf);
+int monitor_thread_create(const struct monitor_comm * comm,
+						   int (* func)(void *, unsigned int), 
+						   void * arg,
+						  bool privileged);
 
 void monitor_thread_resume(int thread_id);
 
@@ -434,7 +429,8 @@ void monitor_hexdump(const struct monitor_comm * comm,
                     const struct thinkos_mem_desc * mem,
                     uint32_t addr, unsigned int size);
 
-void monitor_print_osinfo(const struct monitor_comm * comm);
+void monitor_print_osinfo(const struct monitor_comm * comm, 
+						  uint32_t cycref[]);
 
 void monitor_print_thread(const struct monitor_comm * comm, 
 						 unsigned int thread_id);
@@ -476,7 +472,12 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 int monitor_thread_exec(const struct monitor_comm * comm, 
 						int (* task)(void *, unsigned int), void * arg);
 
-int monitor_thread_start(int (* task)(void *, unsigned int), void * arg); 
+void thinkos_monitor_wakeup(void);
+
+void thinkos_monitor_sleep(void);
+
+uint32_t monitor_threads_cyc_sum(uint32_t cyc[],uint32_t cycref[], 
+                                 unsigned int from, unsigned int max);
 
 #ifdef __cplusplus
 }

@@ -19,58 +19,43 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-#define __THINKOS_EXCEPT__
-#include <thinkos/except.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
-#include <thinkos.h>
+#include "thinkos_krn-i.h"
+
 #include <sys/dcclog.h>
 
-#include <stdio.h>
-#include <string.h>
+#if (THINKOS_ENABLE_THREAD_INFO)
+const struct thinkos_thread_inf thinkos_main_inf = {
+	.tag = "MAIN",
+	.stack_ptr = &__krn_stack_start,
+	.stack_size = (uintptr_t)&__krn_stack_size,
+	.priority = 0,
+	.thread_id = 1,
+	.privileged = 0,
+	.paused = 0
+};
+#endif
 
-extern const char thinkos_svc_nm[];
-extern const char thinkos_sch_nm[];
-extern const char thinkos_xcp_nm[];
-extern const char thinkos_vec_nm[];
-extern const char thinkos_irq_nm[];
-extern const char thinkos_clk_nm[];
-
-#define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
-#define __ID(OPT)         (((OPT) >> 24) & 0x3f)
-#define __PRIVILEGED(OPT) (((OPT) >> 30) & 0x01)
-#define __PAUSED(OPT)     (((OPT) >> 31) & 0x01)
-#define __STACK_SIZE(OPT) ((OPT) & 0xffff)
-
-
-static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
+static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
+							   uint32_t opt)
 {
 #if THINKOS_ENABLE_TIMESHARE
 	int priority = __PRIORITY(opt);
 #endif
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	int id = __ID(opt) - 1;
+	int th = __ID(opt);
+
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	int sz = __STACK_SIZE(opt);
-	uintptr_t sl;
+	uintptr_t sl = (uintptr_t)&__krn_stack_start;
 #endif
 
-	if (id < 0)
-		id = 0;
+	if (th < 1)
+		th = 1;
 
 #if THINKOS_ENABLE_THREAD_ALLOC
 	/* alloc main thread */
-	id = __thinkos_thread_alloc(id);
+	th = __thinkos_thread_alloc(th);
 #else
-	if (id >= THINKOS_THREADS_MAX)
-		id = THINKOS_THREADS_MAX - 1;
+	if (th > THINKOS_THREADS_MAX)
+		th = THINKOS_THREADS_MAX;
 #endif
 
 #if THINKOS_ENABLE_TIMESHARE
@@ -82,98 +67,156 @@ static int __thinkos_init_main(uintptr_t sp, uint32_t opt)
 #if THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN
 #error "THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN !!!"
 #endif
-
 	if (priority > THINKOS_SCHED_LIMIT_MAX)
 		priority = THINKOS_SCHED_LIMIT_MAX;
 
-	thinkos_rt.sched_pri[id] = priority;
-	thinkos_rt.sched_val[id] = priority / 2;
+	krn->sched_pri[th] = priority;
+	krn->sched_val[th] = priority / 2;
 
 	/* set the initial schedule limit */
-	thinkos_rt.sched_limit = priority;
-	if (thinkos_rt.sched_limit < THINKOS_SCHED_LIMIT_MIN)
-		thinkos_rt.sched_limit = THINKOS_SCHED_LIMIT_MIN;
+	krn->sched_limit = priority;
+	if (krn->sched_limit < THINKOS_SCHED_LIMIT_MIN)
+		krn->sched_limit = THINKOS_SCHED_LIMIT_MIN;
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
-			 id + 1, THINKOS_THREADS_MAX, thinkos_rt.wq_ready);
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	DCC_LOG1(LOG_TRACE, "     th_alloc=%08x", thinkos_rt.th_alloc[0]);
-#endif
-
-#if THINKOS_ENABLE_PAUSE
-	if (__PAUSED(opt)) {
-		/* insert into the paused list */
-		thinkos_rt.wq_paused = 1 << id;
-	} 
-#endif
+			 th, THINKOS_THREADS_MAX, krn->wq_ready);
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	if (sz == 0) {
-		DCC_LOG(LOG_WARNING, " sz == 0! ");
-		sl = 0;
-	} else {
-		DCC_LOG1(LOG_TRACE, " stack size=%d", sz);
-		sl = sp - sz;
-	}
-
-	__thinkos_thread_sl_set(id, (uintptr_t)sl);
-	DCC_LOG1(LOG_TRACE, " sl=%08x", thinkos_rt.th_sl[id]);
+	__thread_sl_set(krn, th, (uintptr_t)sl);
+	DCC_LOG1(LOG_TRACE, " sl=%08x", __thread_sl_get(krn, th));
 #endif
 
 #if (THINKOS_ENABLE_THREAD_INFO)
-	__thinkos_thread_inf_set(id, (struct thinkos_thread_inf *)
-							 &thinkos_main_inf);
+	__thread_inf_set(krn, th, (struct thinkos_thread_inf *)
+					 &thinkos_main_inf);
 #endif
 
-#if 0
-	/* The main thread is the current one so no need to commit
-	 just now */ 
-	{
-		struct thinkos_context *ctx;
+	return th;
+}
 
-		ctx = (struct thinkos_context *)sp - 1;
-		/* commit the context to the kernel */ 
-		__thinkos_thread_ctx_set(id, ctx, CONTROL_SPSEL);
+extern void * __bss_end;
+extern void * __heap_start;
+
+int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
+					 const struct thinkos_thread_initializer * lst[])
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int thread_no;
+	uint32_t ctrl;
+	uint32_t ccr;
+	uintptr_t sp;
+	int ret;
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	uint32_t bss_end = (uintptr_t)&__bss_end;
+	uint32_t heap_start = (uintptr_t)&__heap_start;
+
+	if (bss_end > heap_start) {
+		DCC_LOG3(LOG_PANIC, "bss_end[%08x] > heap_start[%08x]! %d extra bytes!", 
+				 bss_end, heap_start, bss_end - heap_start);
+		return THINKOS_ENOMEM;    
 	}
 #endif
 
-	return id;
-}
+	/* Static sanity check: */
+	_Static_assert (offsetof(struct thinkos_rt, void_ctx) == 
+					OFFSETOF_KRN_VOID_CTX, "OFFSETOF_KRN_VOID_CTX");
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_attr * lst[])
-{
-	uint32_t sp;
-	uint32_t ctrl;
-	uint32_t ccr;
-	int thread_id;
+	_Static_assert (offsetof(struct thinkos_rt, idle_ctx) == 
+					OFFSETOF_KRN_IDLE_CTX, "OFFSETOF_KRN_IDLE_CTX");
 
-	(void)map;
-	(void)lst;
+#if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
+					OFFSETOF_KRN_CYCREF, "OFFSETOF_KRN_CYCREF");
 
+	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
+					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYCT");
+#endif
+
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_STEP)
+	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
+					OFFSETOF_KRN_STEP_REQ, "OFFSETOF_KRN_STEP_REQ");
+	_Static_assert (offsetof(struct thinkos_rt, step_svc) == 
+					OFFSETOF_KRN_STEP_SVC, "OFFSETOF_KRN_STEP_SVC");
+#endif
+	_Static_assert (offsetof(struct thinkos_rt, xcpt_ipsr) == 
+					OFFSETOF_KRN_XCPT_IPSR, "OFFSETOF_KRN_XCPT_IPSR");
+	_Static_assert (offsetof(struct thinkos_rt, step_id) == 
+					OFFSETOF_KRN_STEP_ID, "OFFSETOF_KRN_STEP_ID");
+	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
+					OFFSETOF_KRN_BREAK_ID, "OFFSETOF_KRN_BREAK_ID");
+#endif
+
+#if (THINKOS_ENABLE_CRITICAL)
+	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
+					OFFSETOF_KRN_CRITCNT, "OFFSETOF_KRN_CRITCNT");
+#endif
+
+
+	_Static_assert (offsetof(struct thinkos_rt, sched) == 
+					OFFSETOF_KRN_SCHED, "OFFSETOF_KRN_SCHED");
+
+#if (THINKOS_ENABLE_READY_MASK)
+	_Static_assert (offsetof(struct thinkos_rt, rdy_msk) == 
+					OFFSETOF_KRN_RDY_MSK, "OFFSETOF_KRN_RDY_MSK");
+#endif
+
+	_Static_assert (offsetof(struct thinkos_rt, wq_ready) == 
+					OFFSETOF_KRN_READY, "OFFSETOF_KRN_READY");
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+	_Static_assert (offsetof(struct thinkos_rt, th_sl) == 
+					OFFSETOF_KRN_TH_SL, "OFFSETOF_KRN_TH_SL");
+#endif
+
+#if (THINKOS_ENABLE_THREAD_INF)
+	_Static_assert (offsetof(struct thinkos_rt, th_inf) == 
+					OFFSETOF_KRN_TH_INF, "OFFSETOF_KRN_TH_INF");
+#endif
+
+#if (THINKOS_ENABLE_THREAD_STAT)
+	_Static_assert (offsetof(struct thinkos_rt, th_stat) == 
+					OFFSETOF_KRN_TH_STAT, "OFFSETOF_KRN_TH_STAT");
+#endif
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	_Static_assert (offsetof(struct thinkos_rt, th_errno) == 
+					OFFSETOF_KRN_TH_ERRNO, "OFFSETOF_KRN_TH_ERRNO");
+#endif
 
 	/* disable interrupts */
-	cm3_cpsid_i();
+	thinkos_krn_irq_off();
+
+	/* sanity check */
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	ctrl = cm3_control_get();
+	if (ctrl & CONTROL_nPRIV) {
+		DCC_LOG(LOG_PANIC, "0. Non privileged ...");
+		return THINKOS_EFAULT; 
+	}
+
+	if (ctrl & CONTROL_SPSEL) {
+		DCC_LOG(LOG_PANIC, "0. Using PSP ...");
+		return THINKOS_EFAULT; 
+	}
+#endif
 
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
+	DCC_LOG(LOG_TRACE, "1. cleanup memory().");
 	/* clear the ThinkOS runtime structure */
-	__thinkos_memset32(&thinkos_rt, 0, sizeof(struct thinkos_rt));  
+	__thinkos_memset32(krn, 0, sizeof(struct thinkos_rt));  
 #endif
 
-#if (THINKOS_ENABLE_STACK_INIT)
-	/* initialize exception stack */
-	__thinkos_memset32(thinkos_except_stack, 0xdeadbeef, 
-					   sizeof(thinkos_except_stack));
-#elif (THINKOS_ENABLE_MEMORY_CLEAR)
-	__thinkos_memset32(thinkos_except_stack, 0, 
-					   sizeof(thinkos_except_stack));
+#if (THINKOS_ENABLE_UDELAY_CALIBRATE)
+	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
+	thinkos_krn_udelay_calibrate();
 #endif
+//	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
-	__thinkos_core_reset();
+	__thinkos_krn_core_init(krn);
 
-	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", &thinkos_rt);
+	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", krn);
 
 	/* adjust exception priorities */
 	/*
@@ -182,23 +225,21 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	 *  0x20 - high priority interrupts
 	 *  0x40   .
 	 *
-	 *  0x60 - SVC
 	 *  0x80 - regular priority interrupts
-	 * 
-	 *  0xa0 - SysTick
-	 *  0xc0 - PendSV (scheduler)
-	 *
 	 *  0xe0 - very low priority interrupts
+
+	 *  0xa0 - SysTick
+	 *  0x60 - SVC
+	 *  0xc0 - PendSV (scheduler)
 	 */
 
-	/* SVC should not be preempted by the scheduler, thus it runs 
-	   at higher priority. In order for the regular priority
-	   interrupts to call SVC, they should run at a lower priority
-	   then SVC.*/
-	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
-	/* SysTick interrupt has to have a lower priority then SVC,
-	 to not preempt SVC */
+	/* SysTick interrupt has to have a lower priority */ 
 	cm3_except_pri_set(CM3_EXCEPT_SYSTICK, CLOCK_PRIORITY);
+
+	/* SVC should not be preempted by the scheduler, thus it runs 
+	   at same priority. */
+	cm3_except_pri_set(CM3_EXCEPT_SVC, SYSCALL_PRIORITY);
+
 	/* PendSV interrupt has to have the lowest priority among
 	   regular interrupts (higher number) */
 	cm3_except_pri_set(CM3_EXCEPT_PENDSV, SCHED_PRIORITY);
@@ -295,10 +336,6 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_rt.cycref = CM3_DWT->cyccnt;
 #endif
 
-#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
-	__krn_systick_init();
-#endif
-
 	/* Configure the thread stack ?? 
 	   If we already using the PSP nothing changes, if on the other 
 	   hand MSP is our stack we will move it to PSP 
@@ -311,61 +348,78 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	/* configure the main stack */
 	cm3_msp_set((uintptr_t)__thinkos_xcpt_stack_top());
 
-	/* thread, we need to configure 
-	   idle thread and exceptions. ... */
-	thinkos_krn_idle_init();
-
 #if (THINKOS_ENABLE_EXCEPTIONS)
+	DCC_LOG(LOG_TRACE, "Exceptions init....");
 	thinkos_krn_exception_init();
 #endif
 
-	thread_id = __thinkos_init_main(sp, opt);
+	DCC_LOG(LOG_TRACE, "IDLE init...");
+	thinkos_krn_idle_init();
 
-	/* Set the initial thread */
-	__thinkos_active_set(thread_id);
-	/* add to the ready queue */
-	thinkos_rt.wq_ready = 1 << thread_id;
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	__thinkos_krn_time_init(krn);
+#endif
 
-	/* Adjust privilege */
+	DCC_LOG(LOG_TRACE, "SYysTick init...");
+	thinkos_krn_systick_init();
+
+#if (THINKOS_ENABLE_CONSOLE)
+	DCC_LOG(LOG_TRACE, "Console init...");
+	thinkos_krn_console_init();
+#endif
+
+	DCC_LOG(LOG_TRACE, "Memory management init...");
+	if ((ret = __thinkos_krn_mem_init(krn, map))  < 0) {
+		return ret;
+	}
+
+	DCC_LOG(LOG_TRACE, "Interrupts init init...");
+	__thinkos_krn_irq_init(krn);
+
+	if (lst == NULL) {
+		bool privileged;
+
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-	ctrl = __PRIVILEGED(opt) ? CONTROL_SPSEL : 
-		CONTROL_SPSEL | CONTROL_nPRIV;
+		privileged  = __PRIVILEGED(opt);
 #else
-	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+		privileged = false;
 #endif
-	cm3_control_set(ctrl);
 
-	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-			 thread_id + 1, cm3_msp_get(), cm3_psp_get(), cm3_control_get());
-	cm3_cpsie_i();
+		DCC_LOG(LOG_TRACE, "Main thread init...");
+		thread_no = __thinkos_init_main(krn, sp, opt);
 
-	return thread_id + 1;
+		/* Set the initial thread */
+		__krn_sched_active_set(krn, thread_no);
+		/* add to the ready queue */
+		__thread_ready_set(krn, thread_no);
+
+		if (privileged) {
+			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
+		 } else {
+			DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
+			DCC_LOG(LOG_TRACE, "Enabling interrupts");
+			/* enable interrupts */
+			thinkos_krn_irq_on();
+			DCC_LOG(LOG_TRACE, "Adjusting privilege");
+			/* enable interrupts */
+			/* Adjust privilege */
+			ctrl |=  CONTROL_nPRIV;
+			cm3_control_set(ctrl);
+		}
+
+
+		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
+				 thread_no, cm3_msp_get(), cm3_psp_get(), 
+				 cm3_control_get());
+	} else {
+		/* FIXME: not implemented... */
+		return THINKOS_ENOSYS;
+	}
+
+	__thread_enable_all(krn);
+
+	__kdump(krn);
+
+	return thread_no;
 }
-
-extern int _stack;
-#define THINKOS_MAIN_STACK_TOP ((uint32_t *)&_stack)
-#ifndef THINKOS_MAIN_STACK_SIZE
-  #define THINKOS_MAIN_STACK_SIZE 8192
-#endif
-
-uint32_t * const thinkos_main_stack = THINKOS_MAIN_STACK_TOP;
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = THINKOS_MAIN_STACK_TOP - THINKOS_MAIN_STACK_SIZE / 4,
-	.stack_size = THINKOS_MAIN_STACK_SIZE,
-	.priority = 0,
-	.thread_id = 1,
-	.paused = 0
-};
-#endif
-
-const char * const thinkos_svc_link = thinkos_svc_nm;
-const char * const thinkos_xcp_link = thinkos_xcp_nm;
-const char * const thinkos_vec_link = thinkos_vec_nm;
-const char * const thinkos_sch_link = thinkos_sch_nm;
-const char * const thinkos_irq_link = thinkos_irq_nm;
-const char * const thinkos_clk_link = thinkos_clk_nm;
-
 

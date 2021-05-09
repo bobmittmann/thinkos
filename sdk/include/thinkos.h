@@ -42,7 +42,7 @@
 
 #define THINKOS_OPT_PRIORITY(VAL)   (((VAL) & 0xff) << 16)
 #define THINKOS_OPT_ID(VAL)         (((VAL) & 0x03f) << 24)
-#define THINKOS_OPT_PRIVILEGED      (1 << 30) /* runs at privileged level*/
+#define THINKOS_OPT_PRIVILEGED      (1 << 30) /* execution privilege */
 #define THINKOS_OPT_PAUSED          (1 << 31) /* don't run at startup */
 #define THINKOS_OPT_STACK_SIZE(VAL) ((VAL) & 0xffff)
 
@@ -83,7 +83,7 @@ enum thinkos_err {
 /** 
  * enum thinkos_obj_kind - Kernel object class. 
  * @THINKOS_OBJ_READY: Ready queue
- * @THINKOS_OBJ_TMSHARE: time share waiting queue 
+ * @THINKOS_OBJ_JOIN: thread join waiting queue 
  * @THINKOS_OBJ_CLOCK: clock waiting queue 
  * @THINKOS_OBJ_MUTEX: mutex waiting queue 
  * @THINKOS_OBJ_COND: conditional variable waiting queue 
@@ -91,11 +91,11 @@ enum thinkos_err {
  * @THINKOS_OBJ_EVENT: event waiting queue 
  * @THINKOS_OBJ_FLAG: flag waiting queue 
  * @THINKOS_OBJ_GATE: gate waiting queue 
- * @THINKOS_OBJ_JOIN: thread join waiting queue 
  * @THINKOS_OBJ_CONREAD : console read waiting queue 
  * @THINKOS_OBJ_CONWRITE: console write waiting queue 
  * @THINKOS_OBJ_PAUSED: thread paused list 
  * @THINKOS_OBJ_CANCELED: thread canceled list 
+ * @THINKOS_OBJ_TMSHARE: time share waiting queue 
  * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
  * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
@@ -107,7 +107,7 @@ enum thinkos_err {
 
 enum thinkos_obj_kind {
 	THINKOS_OBJ_READY     = 0,
-	THINKOS_OBJ_TMSHARE   = 1,
+	THINKOS_OBJ_THREAD    = 1,
 	THINKOS_OBJ_CLOCK     = 2,
 	THINKOS_OBJ_MUTEX     = 3,
 	THINKOS_OBJ_COND      = 4,
@@ -115,17 +115,17 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_EVENT     = 6,
 	THINKOS_OBJ_FLAG      = 7,
 	THINKOS_OBJ_GATE      = 8,
-	THINKOS_OBJ_JOIN      = 9,
 	THINKOS_OBJ_CONREAD   = 10,
 	THINKOS_OBJ_CONWRITE  = 11,
 	THINKOS_OBJ_PAUSED    = 12,
 	THINKOS_OBJ_CANCELED  = 13,
-	THINKOS_OBJ_COMMSEND  = 14,
-	THINKOS_OBJ_COMMRECV  = 15,
-	THINKOS_OBJ_IRQ       = 16,
-	THINKOS_OBJ_DMA       = 17,
-	THINKOS_OBJ_FLASH_MEM = 18,
-	THINKOS_OBJ_FAULT     = 19,
+	THINKOS_OBJ_TMSHARE   = 14,
+	THINKOS_OBJ_COMMSEND  = 15,
+	THINKOS_OBJ_COMMRECV  = 16,
+	THINKOS_OBJ_IRQ       = 17,
+	THINKOS_OBJ_DMA       = 18,
+	THINKOS_OBJ_FLASH_MEM = 19,
+	THINKOS_OBJ_FAULT     = 20,
 	THINKOS_OBJ_INVALID
 };
 
@@ -133,58 +133,67 @@ enum thinkos_obj_kind {
  * Flattened thread state structure
  * --------------------------------------------------------------------------*/
 
-struct cortex_m_context {
-	uint32_t r0;
-	uint32_t r1;
-	uint32_t r2;
-	uint32_t r3;
-
-	uint32_t r4;
-	uint32_t r5;
-	uint32_t r6;
-	uint32_t r7;
-
-	uint32_t r8;
-	uint32_t r9;
-	uint32_t r10;
-	uint32_t r11;
-
-	uint32_t r12;
-	uint32_t sp;
-	uint32_t lr;
-	uint32_t pc;
-
+struct cortex_m_core {
+	union {
+		uint32_t r[16];
+		struct {
+			uint32_t r0;
+			uint32_t r1;
+			uint32_t r2;
+			uint32_t r3;
+			uint32_t r4;
+			uint32_t r5;
+			uint32_t r6;
+			uint32_t r7;
+			uint32_t r8;
+			uint32_t r9;
+			uint32_t r10;
+			uint32_t r11;
+			uint32_t r12;
+			uint32_t sp;
+			uint32_t lr;
+			uint32_t pc;
+		};
+	};
 	uint32_t xpsr;
 };
+
+struct cortex_m_fp {
+	uint32_t fpscr;
+	union {
+		float  s[32];
+		double d[16];
+	};		
+};
+
 
 /* 
  * FIXME: this should be called struct thinkos_thread_inf... 
  */
 struct thinkos_thread {
-	uint32_t no: 6;
-	uint32_t tmw: 1;
-	uint32_t alloc: 1;
-	uint16_t wq;
+	uint32_t stack_ptr;
+	uint32_t stack_size;
+	uint8_t  priority;
+	uint8_t  thread_no: 6;
+	uint8_t  privileged: 1;
+	uint8_t  fpca: 1;
+	char     tag[10];
+	uint16_t wq:15;
+	uint16_t tmw:1;
 	uint8_t  sched_val;
 	uint8_t  sched_pri;
-	uint32_t clock;
-	uint32_t cyccnt;
-	const struct thinkos_thread_inf * inf;
+	uint32_t clk;
+	uint32_t cyc;
 };
 
 struct thinkos_thread_inf {
 	void * stack_ptr;
-	union {
-		uint32_t opt;
-		struct {
-			uint16_t stack_size;
-			uint8_t priority;
-			uint8_t thread_id: 7;
-			uint8_t paused: 1;
-		};
-	};
-
-	char tag[8];
+	uint32_t stack_size;
+	uint8_t priority;
+	uint8_t thread_id: 6;
+	uint8_t privileged: 1;
+	uint8_t paused: 1;
+	char tag[10];
 };
 
 /** 
@@ -198,41 +207,49 @@ struct thinkos_thread_inf {
  * @tag: thread name
  *
  */
-struct thinkos_thread_attr {
-	void * stack_addr;
-	uint32_t stack_size: 16;
-	uint32_t priority: 8;
-	uint32_t thread_id: 7;
-	uint32_t paused: 1;
-	char tag[8];
-};
+
+/** 
+ * typedef thinkos_entry_t - Compatibility task function type.
+ * Thread entry function template.
+ *
+ */
+typedef int (* thinkos_entry_t)(void * arg);
 
 /** 
  * typedef thinkos_task_t - Thread task function type.
  * Thread entry function template.
  *
  */
-
-typedef int (* thinkos_task_t)(void * arg, unsigned int id);
+typedef int (* thinkos_task_t)(void * arg, unsigned int);
 
 /* ThinkOS Thread Task type cast macro */
-#define C_TASK(__FUN) (int (*)(void *, unsigned int))(uintptr_t)(__FUN)
+#define C_TASK(__FUN) (thinkos_task_t)(uintptr_t)(__FUN)
+
+#define C_TASK_PTR(__FUN) (thinkos_entry_t)(uintptr_t)(__FUN)
+
 /* ThinkOS Thread Argument type cast macro */
 #define C_ARG(__PTR) (void *)(uintptr_t)(__PTR)
 
+#define ALIGN(__X, __N) ((((__X) + (__N) - 1) / (__N)) * (__N))
+
+#define BALIGN(__X, __B) (((__X) + (1 << (__N)) - 1) & (0xffffffff << (__N)))
+
 /* ThinkOS Thread Stack Declaration cast macro */
-#define THINKOS_THREAD_STACK(__SYM, __LEN, __SEC) \
-	uint32_t __SYM[(((__LEN) + 7) /8)] \
-	__attribute_ ((aligned(8), section(__SEC)))
+#define THINKOS_DEFINE_SECTION_STACK(__SYM, __LEN, __SEC) \
+	uint32_t __SYM[ALIGN(__LEN, 32) / 4] \
+	__attribute__ ((aligned(32), section(__SEC)))
+
+#define THINKOS_DEFINE_STACK(__SYM, __LEN) \
+	uint32_t __SYM[ALIGN(__LEN, 32) / 4] __attribute__ ((aligned(32)))
 
 /*
  * usage:
  *
  * Declare 1024 bytes of stack in the ccm region.
- * THINKOS_THREAD_STACK(my_stack, 1024, "ccm");
+ * THINKOS_DEFINE_SECTION_STACK(my_stack, 1024, "ccm");
  *
- * thinkos_thread_create(TT_TASK(my_task), TT_ARG(my_arg), 
- *                       TT_STACK(my_stak), sizeof(my_stack));
+ * thinkos_thread_create(C_TASK(my_task), C_ARG(my_arg), 
+ *                       my_stak, sizeof(my_stack));
  *    
  *
  */
@@ -243,16 +260,15 @@ typedef int (* thinkos_task_t)(void * arg, unsigned int id);
  * @arg: Parameter to the task
  * @attr: Static thread attributes.
  */
-struct thinkos_thread_init {
-	thinkos_task_t task;
-	void * arg;
-	struct thinkos_thread_attr attr;
-};
+
+struct thinkos_thread_initializer;
 
 #define __THINKOS_SYSCALLS__
 #include <thinkos/syscalls.h>
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
+#define __THINKOS_THREAD__
+#include <thinkos/thread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -279,7 +295,7 @@ extern "C" {
  */
 
 int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_attr * lst[]);
+					 const struct thinkos_thread_initializer * lst[]);
 
 /**
  * thinkos_krn_nrt_init() - Initializes the ThinkOS non-real-time extension.
@@ -290,18 +306,30 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
  */
 
 /**
- * thinkos_krn_mpu_init() - Initializes Memory Protection Unit (MPU).
- * @krn_offs: Kernel RAM memory reserved space address
- * @krn_size:  Kernel RAM memory reserved space size
- * 
- */
-void thinkos_krn_mpu_init(uint32_t krn_offs, unsigned int krn_size);
-
-/**
  * thinkos_krn_userland() - Switch processor to user mode.
  *
  */
 void thinkos_krn_userland(void);
+
+#define THINKOS_CTL_REBOOT_KEY 0x38a63e9c
+
+/**
+ * thinkos_reboot() - restart the system ...
+ * @key: must be set to THINKOS_CTL_REBOOT_KEY 
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ */
+int thinkos_reboot(uint32_t key);
+
+/**
+ * thinkos_app_exec() - replace the current thread...
+ * @addr: aplication location
+ *
+ * Return:
+ * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
+ */
+int thinkos_app_exec(uint32_t addr);
 
 
 /* ---------------------------------------------------------------------------

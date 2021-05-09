@@ -111,7 +111,7 @@ int stm32l4x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len)
 		return -2;
 	};
 
-	DCC_LOG2(LOG_TRACE, "page=%d size=%d", page, size);
+	DCC_LOG2(LOG_INFO, "page=%d size=%d", page, size);
 
 	/* Clear errors */
 	flash->sr = FLASH_ERR;
@@ -161,12 +161,13 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	src = (uint8_t *)buf;
 	dst = (uint32_t *)((uint32_t)STM32_FLASH_MEM + offs);
 
-	DCC_LOG2(LOG_INFO, "0x%08x len=%d", addr, len);
+	DCC_LOG2(LOG_MSG, "0x%08x len=%d", dst, len);
 
 	pri = cm3_primask_get();
 	data0 = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
 	data1 = src[4] | (src[5] << 8) | (src[6] << 16) | (src[7] << 24);
-	DCC_LOG3(LOG_TRACE, "0x%08x data=0x%04x 0x%04x", addr, data0, data1);
+	DCC_LOG3(LOG_INFO, "0x%08x data=0x%04x 0x%04x", dst, data0, data1);
+
 	cm3_primask_set(1);
 	sr = stm32l4x_flash_wr64(flash, dst, data0, data1);
 	cm3_primask_set(pri);

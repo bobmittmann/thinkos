@@ -19,260 +19,216 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
+
 #if THINKOS_ENABLE_OFAST
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <sys/dcclog.h>
 
-#if THINKOS_COND_MAX > 0
+/* -------------------------------------------------------------------------- 
+ * conditional variables 
+ * --------------------------------------------------------------------------*/
 
-void thinkos_cond_wait_svc(int32_t * arg, int self)
+#if ((THINKOS_COND_MAX) > 0)
+
+static inline bool __attribute__((always_inline)) 
+__krn_obj_is_cond(struct thinkos_rt * krn, unsigned int cond) {
+	return __obj_is_valid(cond, THINKOS_COND_BASE, THINKOS_COND_MAX);
+}
+
+static inline bool __attribute__((always_inline)) 
+__krn_cond_is_alloc(struct thinkos_rt * krn, unsigned int cond) {
+	return __bit_mem_rd(krn->cond_alloc, cond - THINKOS_COND_BASE) ? 
+		true : false;
+}
+
+#if THINKOS_ENABLE_ARG_CHECK
+static int krn_cond_check(struct thinkos_rt * krn, int cond)
 {
-	unsigned int cwq = arg[0];
-	unsigned int mwq = arg[1];
-#if THINKOS_ENABLE_ARG_CHECK
-	unsigned int cond = cwq - THINKOS_COND_BASE;
-#endif
-	unsigned int mutex = mwq - THINKOS_MUTEX_BASE;
-	int th;
-
-#if THINKOS_ENABLE_ARG_CHECK
-	if (cond >= THINKOS_COND_MAX) {
-		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
-				 self + 1, cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-	if (mutex >= THINKOS_MUTEX_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
+	if (!__krn_obj_is_cond(krn, cond)) {
+		return THINKOS_ERR_COND_INVALID;
 	}
 #if THINKOS_ENABLE_COND_ALLOC
-	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
-		DCC_LOG2(LOG_ERROR, "<%d> not alloc conditional variable %d!", 
-				 self + 1, cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
+	if (__krn_cond_is_alloc(krn, cond) == 0) {
+		return THINKOS_ERR_COND_ALLOC;
 	}
 #endif
-#if THINKOS_ENABLE_MUTEX_ALLOC
-	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
-		DCC_LOG2(LOG_ERROR, "<%d> not alloc mutex %d!", self + 1, mwq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
+	return THINKOS_OK;
+}
 #endif
 
-#ifdef THINKOS_ENABLE_SANITY_CHECK
+void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+{
+	unsigned int cond = arg[0];
+	unsigned int mutex = arg[1];
+	int th;
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
+
+	if ((ret = krn_cond_check(krn, cond)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
+				 self, cond);
+		__THINKOS_ERROR(self, ret);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
+
+	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid mutex %d!", self, mutex);
+		__THINKOS_ERROR(self, ret);
+		arg[0] = THINKOS_EINVAL;
+		return;
+	}
+#endif
+
+#if THINKOS_ENABLE_SANITY_CHECK
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
-	if (thinkos_rt.lock[mutex] != self) {
-		DCC_LOG3(LOG_WARNING, "<%d> mutex %d is locked by <%d>", 
-				 self + 1, mwq, thinkos_rt.lock[mutex] + 1);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_NOTMINE);
+	if (__krn_mutex_lock_get(krn, mutex) != self) {
+		DCC_LOG3(LOG_ERROR, "<%2d> mutex %d is locked by <%2d>!", 
+				 self, mutex, __krn_mutex_lock_get(krn, mutex));
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
 		arg[0] = THINKOS_EPERM;
 		return;
 	}
 #endif
 
-	/* insert into the cond wait queue */
-	__thinkos_wq_insert(cwq, self);
-	DCC_LOG3(LOG_INFO, "<%d> mutex %d unlocked, waiting on cond %d...", 
-			 self + 1, mwq, cwq);
-
-	/* check for threads wating on the mutex wait queue */
-	if ((th = __thinkos_wq_head(mwq)) == THINKOS_THREAD_NULL) {
-		/* no threads waiting on the lock, just release
-		   the lock */
-		DCC_LOG2(LOG_INFO, "<%d> mutex %d released", 
-				 self + 1, mwq);
-		thinkos_rt.lock[mutex] = -1;
-	} else {
-		/* set the mutex ownership to the new thread */
-		thinkos_rt.lock[mutex] = th;
-		DCC_LOG2(LOG_INFO, "<%d> mutex %d locked", th + 1, mwq);
-		/* wakeup from the mutex wait queue */
-		__thinkos_wakeup(mwq, th);
+	DCC_LOG3(LOG_INFO, "<%2d> mutex %d unlocked, waiting on cond %d...", 
+			 self, mutex, cond);
+    if ((th = krn_mutex_unlock_wakeup(krn, mutex)) != THINKOS_THREAD_NULL) {
+		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked.", th, mutex);
 	}
 
-	arg[0] = 0;
-
-	/* wait for event */
-	__thinkos_suspend(self);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	/* Set the return value */
+	arg[0] = THINKOS_OK;
+	/* insert into the cond wait queue */
+	__krn_thread_wait(krn, self, cond);
 }
 
 
 #if THINKOS_ENABLE_TIMED_CALLS
-void thinkos_cond_timedwait_svc(int32_t * arg, int self)
+void thinkos_cond_timedwait_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn)
 {
-	unsigned int cwq = arg[0];
-	unsigned int mwq = arg[1];
-#if THINKOS_ENABLE_ARG_CHECK
-	unsigned int cond = cwq - THINKOS_COND_BASE;
-#endif
-	unsigned int mutex = mwq - THINKOS_MUTEX_BASE;
+	unsigned int cond = arg[0];
+	unsigned int mutex = arg[1];
 	uint32_t ms = (uint32_t)arg[2];
+#if THINKOS_ENABLE_ARG_CHECK
+	int ret;
+#endif
 	int th;
 
 #if THINKOS_ENABLE_ARG_CHECK
-	if (cond >= THINKOS_COND_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_INVALID);
+	if ((ret = krn_cond_check(krn, cond)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
+				 self, cond);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-	if (mutex >= THINKOS_MUTEX_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid mutex %d!", mwq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_INVALID);
+
+	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid mutex %d!", self, mutex);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
-#if THINKOS_ENABLE_COND_ALLOC
-	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
-		DCC_LOG1(LOG_ERROR, "not alloc, conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
-#if THINKOS_ENABLE_MUTEX_ALLOC
-	if (__bit_mem_rd(thinkos_rt.mutex_alloc, mutex) == 0) {
-		DCC_LOG1(LOG_ERROR, "not alloc, mutex %d!", mwq);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#endif
 #endif
 
-#ifdef THINKOS_ENABLE_SANITY_CHECK
+#if THINKOS_ENABLE_SANITY_CHECK
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
-	if (thinkos_rt.lock[mutex] != self) {
-		DCC_LOG3(LOG_WARNING, "<%d> mutex %d is locked by <%d>", 
-				 self + 1, mwq, thinkos_rt.lock[mutex] + 1);
-		__THINKOS_ERROR(THINKOS_ERR_MUTEX_NOTMINE);
+	if (__krn_mutex_lock_get(krn, mutex) != self) {
+		DCC_LOG3(LOG_ERROR, "<%2d> mutex %d is locked by <%2d>!", 
+				 self, mutex, __krn_mutex_lock_get(krn, mutex));
+		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
 		arg[0] = THINKOS_EPERM;
 		return;
 	}
 #endif
 
-	/* insert into the cond wait queue */
-	__thinkos_tmdwq_insert(cwq, self, ms);
-	DCC_LOG3(LOG_INFO, "<%d> mutex %d unlocked, waiting on cond %d...", 
-			 self + 1, mwq, cwq);
 
-	/* check for threads wating on the mutex wait queue */
-	if ((th = __thinkos_wq_head(mwq)) == THINKOS_THREAD_NULL) {
-		/* no threads waiting on the lock, just release
-		   the lock */
-		DCC_LOG2(LOG_INFO, "<%d> mutex %d released", self + 1, mwq);
-		thinkos_rt.lock[mutex] = -1;
-	} else {
-		/* set the mutex ownership to the new thread */
-		thinkos_rt.lock[mutex] = th;
-		DCC_LOG2(LOG_INFO, "<%d> mutex %d locked", th + 1, mwq);
-		/* wakeup from the mutex wait queue */
-		__thinkos_wakeup(mwq, th);
+	DCC_LOG3(LOG_INFO, "<%2d> mutex %d unlocked, waiting on cond %d...", 
+			 self, mutex, cond);
+    if ((th = krn_mutex_unlock_wakeup(krn, mutex)) != THINKOS_THREAD_NULL) {
+		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked.", th, mutex);
 	}
 
 	/* Set the default return value to timeout. The
-	   sem_post call will change this to 0 */
+	   cond_signal call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
-
-	/* wait for event */
-	__thinkos_suspend(self);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	/* insert into the cond wait queue */
+	__krn_thread_timedwait(krn, self, cond, ms);
 }
 #endif
 
-void thinkos_cond_signal_svc(int32_t * arg)
+void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
-	unsigned int cwq = arg[0];
-	int th;
+	unsigned int cond = arg[0];
 #if THINKOS_ENABLE_ARG_CHECK
-	unsigned int cond = cwq - THINKOS_COND_BASE;
+	int ret;
+#endif
+	int th;
 
-	if (cond >= THINKOS_COND_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-
-#if THINKOS_ENABLE_COND_ALLOC
-	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
-		DCC_LOG1(LOG_ERROR, "not alloc conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_ALLOC);
+#if THINKOS_ENABLE_ARG_CHECK
+	if ((ret = krn_cond_check(krn, cond)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-#endif
 
-	/* insert all remaining threads into mutex wait queue */
-	if ((th = __thinkos_wq_head(cwq)) != THINKOS_THREAD_NULL) {
-		DCC_LOG2(LOG_INFO, "<%d> wakeup from cond %d.", th + 1, cwq);
-		/* wakeup from the mutex wait queue */
-		__thinkos_wakeup(cwq, th);
+	if ((th = __krn_wq_head(krn, cond)) != THINKOS_THREAD_NULL) {
+		DCC_LOG2(LOG_INFO, "<%2d> wakeup from condition %d.", th, cond);
+		/* wakeup from the condition wait queue */
+		__krn_wq_wakeup(krn, cond, th);
 		/* signal the scheduler ... */
-		__thinkos_defer_sched();
+		__krn_defer_sched(krn);
 	}
 
-	arg[0] = 0;
+	/* Set the return value */
+	arg[0] = THINKOS_OK;
 }
 
-void thinkos_cond_broadcast_svc(int32_t * arg)
+void thinkos_cond_broadcast_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn)
 {	
-	unsigned int cwq = arg[0];
-	int th;
+	unsigned int cond = arg[0];
 #if THINKOS_ENABLE_ARG_CHECK
-	unsigned int cond = cwq - THINKOS_COND_BASE;
+	int ret;
+#endif
 
-	if (cond >= THINKOS_COND_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#if THINKOS_ENABLE_COND_ALLOC
-	if (__bit_mem_rd(thinkos_rt.cond_alloc, cond) == 0) {
-		DCC_LOG1(LOG_ERROR, "not alloc, conditional variable %d!", cwq);
-		__THINKOS_ERROR(THINKOS_ERR_COND_ALLOC);
+#if THINKOS_ENABLE_ARG_CHECK
+	if ((ret = krn_cond_check(krn, cond)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
+		__THINKOS_ERROR(self, ret);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-#endif
 
-	/* insert all remaining threads into mutex wait queue */
-	if ((th = __thinkos_wq_head(cwq)) != THINKOS_THREAD_NULL) {
-		DCC_LOG2(LOG_INFO, "<%d> wakeup from cond %d.", th + 1, cwq);
-		/* wakeup from the mutex wait queue */
-		__thinkos_wakeup(cwq, th);
-		/* insert all remaining threads into mutex wait queue */
-		while ((th = __thinkos_wq_head(cwq)) != THINKOS_THREAD_NULL) {
-			DCC_LOG2(LOG_INFO, "<%d> wakeup from cond %d.", th + 1, cwq);
-			__thinkos_wakeup(cwq, th);
-		}
-		/* signal the scheduler ... */
-		__thinkos_defer_sched();
-	}
-
-	arg[0] = 0;
+	/* Set the return value */
+	arg[0] = THINKOS_OK;
+	/* wakeup all threads waiting on the condition */
+	__krn_wq_wakeup_all(krn, cond);
 }
 
 #endif /* THINKOS_COND_MAX > 0 */
+
+#if (THINKOS_ENABLE_PAUSE)
+bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th, 
+						unsigned int wq, bool tmw) 
+{
+	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
+
+	__thread_wq_set(krn, th, wq);
+#if THINKOS_ENABLE_TIMED_CALLS
+	if (tmw)
+		__thread_clk_enable(krn, th);
+#endif
+	return true;
+}
+#endif
 

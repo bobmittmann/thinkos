@@ -35,19 +35,15 @@
 
 #define THINKOS_IRQ_MAX                 44
 #define THINKOS_ENABLE_IRQ_CTL          1
-#define THINKOS_ENABLE_IRQ_RESTORE      0
 #define THINKOS_ENABLE_IRQ_CYCCNT       0
 #define THINKOS_ENABLE_IRQ_PRIORITY_0   0
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT    0
 #define THINKOS_ENABLE_WQ_IRQ           0
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             8
 
@@ -130,7 +126,7 @@
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
-#define THINKOS_ENABLE_DEBUG_FAULT      0
+#define THINKOS_ENABLE_THREAD_FAULT     0
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT        0
 #else
@@ -159,7 +155,6 @@
 
 #define THINKOS_ENABLE_IDLE_HOOKS       1
 
-#define THINKOS_ENABLE_KRN_TRACE        0
 #define THINKOS_ENABLE_OBJ_ALLOC        0
 #define THINKOS_ENABLE_OBJ_FREE         0
 
@@ -167,7 +162,7 @@
 #define THINKOS_ENABLE_THREAD_INFO      0
 
 #define THINKOS_ENABLE_MEMORY_CLEAR     1
-#define THINKOS_ENABLE_FLASH_MEM        0
+#define THINKOS_FLASH_MEM_MAX               1
 
 #define THINKOS_ENABLE_OFAST            1
 
@@ -194,7 +189,6 @@
    Bootloader 
    -------------------------------------------------------------------------- */
 
-#define BOOT_MEM_RESERVED          0x0800
 #define BOOT_ENABLE_THIRD          0
   
 #define BOOT_ENABLE_GDB            0

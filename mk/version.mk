@@ -26,30 +26,20 @@ ifndef VERSION_MAJOR
   $(error VERSION_MAJOR undefined!) 
 endif
 
-ifdef PROG
-  VERSION_NAME = $(PROG)
-else
-  VERSION_NAME = 
-endif	
+ifndef VERSION_NAME
+  ifdef PROG
+    VERSION_NAME = $(PROG)
+  else
+    VERSION_NAME = 
+  endif	
+endif
 
 ifndef VERSION_MINOR
   VERSION_MINOR = 0
 endif
 
 ifndef VERSION_DATE
-  VERSION_DATE = "2014-05-29"
-endif
-
-ifndef PRODUCT
-  PRODUCT = "YARD-ICE"
-endif
-
-ifndef REVISION
-  REVISION = "0.1"
-endif
-
-ifndef ASSEMBLY
-  ASSEMBLY = "A"
+  VERSION_DATE = "2021-01-01"
 endif
 
 ifndef PYTHON
@@ -78,10 +68,18 @@ $(VERSION_H):
 	$(ACTION) "Creating: $@"
 	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE) > $(VERSION_TAG)
 
+ifeq (Windows,$(HOST))
+  CLEAN_VERSION := $(strip $(subst /,\,$(VERSION_H) $(VERSION_TAG)))
+else
+  CLEAN_VERSION := $(strip $(VERSION_H) $(VERSION_TAG))
+endif
+
 version: 
 	$(Q)$(RMALL) $(VERSION_H) $(VERSION_TAG)
 	$(Q)$(MAKE) $(VERSION_H)
 
-.PHONY: version 
+version-clean: 
+	$(Q)$(RMALL) $(CLEAN_VERSION)
 
+.PHONY: version version-clean
 

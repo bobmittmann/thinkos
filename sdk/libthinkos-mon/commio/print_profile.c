@@ -69,7 +69,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	/* Syscall */
 
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_JOIN", p->syscall.join);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CLOCK", p->syscall.clock);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ALARM", p->syscall.alarm);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SLEEP", p->syscall.sleep);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_CTL", p->syscall.ctl);
@@ -115,9 +114,9 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU", p->feature.fpu);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU_LS", p->feature.fpu_ls);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_PROFILING", p->feature.profiling);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEM_MAP", p->feature.mem_map);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_TRACE", p->feature.krn_trace);
-
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEMORY_MAP", p->feature.memory_map);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_APP", p->feature.app);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_APP_CRC", p->feature.app_crc);
 	/* Security */
 
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ARG_CHECK", p->security.arg_check);
@@ -132,8 +131,10 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_USAGEFAULT", p->except.usagefault);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MEMFAULT", p->except.memfault);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_HARDFAULT", p->except.hardfault);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ERROR_TRAP", p->except.error_trap);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_SYSRST_ONFAULT", p->except.sysrst_onfault);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ERROR_TRAP", 
+				   p->except.error_trap);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_SYSRST_ONFAULT", 
+				   p->except.sysrst_onfault);
 
 	/* Monitor */
 
@@ -154,13 +155,15 @@ void monitor_print_profile(const struct monitor_comm * comm,
 				   p->debug.bkpt);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DEBUG_WPT", 
 				   p->debug.wpt);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_DEBUG_FAULT", 
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_THREAD_FAULT", 
 				   p->debug.fault);
 
 	/* Misc */
 
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_WFI", p->misc.idle_wfi);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SCHED_DEBUG", p->misc.sched_debug);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_WFI", 
+				   p->misc.idle_wfi);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SCHED_DEBUG", 
+				   p->misc.sched_debug);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_OFAST", 
 				   p->misc.ofast);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_UNALIGN_TRAP", 
@@ -169,7 +172,8 @@ void monitor_print_profile(const struct monitor_comm * comm,
 				   p->misc.div0_trap);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_STACK_ALIGN", 
 				   p->misc.stack_align);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_HOOKS", p->misc.idle_hooks);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IDLE_HOOKS", 
+				   p->misc.idle_hooks);
 
 }
 

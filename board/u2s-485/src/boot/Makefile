@@ -19,36 +19,33 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-PROJECT_ROOT = ../../
-THINKOS_DIR = $(PROJECT_ROOT)/../..
+THINKOS_DIR = ../../../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
-VERSION_DATE = "2020-05-29"
+VERSION_DATE = "2020-11-18"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "3"
+VERSION_MINOR = "4"
 
 PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 $(THINKOS_DIR)/boot/standby.c board.c 
+CFILES = boot.c monitor.c usb_xflash_pic.c usb_xflash.c
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
-		  $(SDK_DIR)/libice-comm 
+		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem
 
-LIBS = cm3 stm32f util thinkos-krn thinkos-mon gcc ice-comm 
+LIBS = stm32f util thinkos-krn thinkos-mon xmodem ice-comm 
 
-INCPATH = $(SDK_DIR)/include ../include
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -g -mno-unaligned-access 
+CFLAGS = -Os 
 
 MACH = stm32f103x6
-KRN_CODE_SIZE = 8192
+KRN_CODE_SIZE = 12288
 KRN_DATA_SIZE = 2048
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-krn.mk
 

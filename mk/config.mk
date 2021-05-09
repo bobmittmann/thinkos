@@ -28,6 +28,7 @@ SOURCE_MK := $(firstword $(MAKEFILE_LIST))
 THISDIR := $(dir $(CONFIG_MK))
 SCRPTDIR := $(abspath $(THISDIR))
 BASEDIR := $(abspath $(THISDIR)/..)
+PROJDIR := $(abspath $(THISDIR)/../..)
 TOOLSDIR := $(abspath $(THISDIR)/../tools)
 
 #------------------------------------------------------------------------------ 
@@ -212,9 +213,9 @@ ifeq ($(verbose),0)
 else
   Q :=
   ifeq ($(HOST),Windows)
-    ACTION := @rem
+    ACTION := @echo ; rem
   else
-    ACTION := @\#
+    ACTION := @echo ; \#
   endif
 endif
 
@@ -273,7 +274,6 @@ endif
 endif
 
 ifeq ($(HOST),Windows)
-#  PYTHON := "C:\Python27\python"
   PYTHON := python
 else
   PYTHON := python

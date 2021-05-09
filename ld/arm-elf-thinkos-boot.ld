@@ -1,5 +1,5 @@
 /* 
- * stm32f4xx.ld
+ * arm-elf-thinkos-boot.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -23,28 +23,27 @@ OUTPUT_FORMAT ("elf32-littlearm")
 ENTRY(_reset)
 SEARCH_DIR(.)
 
-__code_init = ORIGIN(CODE);
-__data_init = ORIGIN(DATA);
-
-__krn_data_init = ORIGIN(DATA);
+__krn_data_start = ORIGIN(DATA);
 __krn_data_end = ORIGIN(DATA) + __krn_data_size;
 
-__krn_code_init = ORIGIN(CODE);
+__krn_code_start = ORIGIN(CODE);
 __krn_code_end = ORIGIN(CODE) + __krn_code_size;
 
 _stack_top = ORIGIN(STACK) + LENGTH(STACK);
-_stack = _stack_top - DEFINED(ice_trace_init) * 0x50;
-_stack_limit = ORIGIN(STACK);
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__krn_stack_end = _stack_top - DEFINED(ice_trace_init) * 0x50;
+__krn_stack_start = ORIGIN(STACK);
+__krn_stack_size = __krn_stack_end - __krn_stack_start;
+_stack = __krn_stack_end;
+
+__heap_start = __krn_data_end;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
+ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 
-EXTERN(_stack)
 EXTERN(_reset)
 EXTERN(ice_comm_blk)
-
 EXTERN(cm3_nmi_isr)
 EXTERN(cm3_hard_fault_isr)
 EXTERN(cm3_mem_manage_isr)
@@ -72,9 +71,21 @@ SECTIONS
 		KEEP(*(.dccdata))
 	} >dcclog
 
-	.init __code_init :
+	.vect :
 	{
-		KEEP (*(.rom_vectors))
+		. = ALIGN(4);
+		PROVIDE (__text_start = .);
+		PROVIDE (__vcts_start = .);
+		KEEP (*(.core_vectors))
+		KEEP (*(.nvic_vectors))
+		PROVIDE (__vcts_end = .);
+	} >"CODE" = 0xffffffff
+
+	PROVIDE(__rom_vectors_size = SIZEOF(.vect));
+
+	.init :
+	{
+		. = ALIGN(4);
 		KEEP (*(.boot))
 		KEEP (*(.init))
 	} >"CODE" = 0xffffffff
@@ -88,6 +99,17 @@ SECTIONS
 		/* all .rodata sections (constants, strings, etc.)  */
 		*(.rodata)
 		*(.rodata.__func__.*)
+		*(.rodata.* .gnu.linkonce.r.*)
+		*(.rodata1)
+
+		. = ALIGN(4);
+		/* constructors */
+		PROVIDE(__ctors_start = .);
+		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
+		KEEP (*(.init_array))
+		KEEP(*(SORT(.ctors.*)))
+		KEEP(*(.ctors))
+		PROVIDE(__ctors_end = .);
 
 		. = ALIGN(4);
 		/* kernel traces */
@@ -101,18 +123,7 @@ SECTIONS
 		KEEP(*(SORT(.rodata.trace.*)))
 		PROVIDE(__trace_usr_end = .);
 
-		*(.rodata.* .gnu.linkonce.r.*)
-		*(.rodata1)
-
 		. = ALIGN(4);
-		/* constructors */
-		PROVIDE(__ctors_start = .);
-		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
-		KEEP (*(.init_array))
-		KEEP(*(SORT(.ctors.*)))
-		KEEP(*(.ctors))
-		PROVIDE(__ctors_end = .);
-		. = ALIGN(8);
 	} >"CODE" = 0xffffffff
 
 	.ARM.extab : 
@@ -130,12 +141,11 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
-	.data __data_init :
+	.data :
 	{
 		. = ALIGN(4);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
-		KEEP (*(.ram_vectors))
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */
@@ -144,13 +154,7 @@ SECTIONS
 	} >"DATA" AT >"CODE"
 
 	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
-/*
-	.image :
-	{
-		. = . + 500000;
-		PROVIDE (__image_end = . );
-	} >"CODE"
-*/
+
 	.bss :
 	{
 		/* define a global symbol marking the start of the .bss section */
@@ -162,28 +166,6 @@ SECTIONS
 	/* advance location counter to the next 32-bit boundary */
 	. = ALIGN(4);
 	PROVIDE (__bss_end = . );
-
-	.krn_stack :
-	{
-		. = ALIGN(4);
-		PROVIDE (__krn_stack_start = . );
-		/* all .krn_stack sections  */
-		*(.krn_stack .krn_stack*)
-		/* define a global symbol marking the end of the .krn_stack section  */
-		. = ALIGN(4);
-		PROVIDE (__krn_stack_end = . );
-	} >"DATA"
-
-	.heap :
-	{
-		PROVIDE (__heap_start = . );
-		/* all .heap sections  */
-		*(.heap .heap*)
-	} >"DATA"
-
-	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
-	PROVIDE (__heap_base = . );
 
 	/* Backed up control section */
 	.bkpctl :

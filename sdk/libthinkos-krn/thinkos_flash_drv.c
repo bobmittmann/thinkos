@@ -20,17 +20,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
-#include <thinkos.h>
-#include <stdbool.h>
-#include <sys/param.h>
-#include <sys/delay.h>
-
+#include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if (THINKOS_FLASH_MEM_MAX > 0)
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
 #if 0
 int32_t genkey_lcg24(int32_t key)
 {
@@ -48,47 +41,6 @@ static uint16_t genkey_lcg16(uint16_t key)
 }
 #endif
 
-static uint64_t tag2hash(const char * tag)
-{
-	char * cp = (char *)tag;
-	uint64_t hash = 0;
-	int i = 0;
-	int c;
-
-	for (i = 0; i < 8; ++i) {
-		if ((c = cp[i]) == '\0')
-			break;
-		hash |= c << (i * 8); 
-	}
-
-	return hash;
-}
-
-static inline uint64_t mem_blk_hash(const struct blk_desc * blk)
-{
-	return blk->hash;
-}
-
-static const struct blk_desc * mem_blk_lookup(const struct mem_desc * mem, 
-											  const char * tag)
-{
-	const struct blk_desc * blk = mem->blk;
-	uint64_t hash = tag2hash(tag);
-	int i;
-
-	DCC_LOG2(LOG_YAP, "hash=%08x%08x", hash >> 32, hash);
-
-	for (i = 0; i < mem->cnt; ++i) {
-		uint64_t cmp = mem_blk_hash(&blk[i]);
-		DCC_LOG2(LOG_YAP, "cmp=%08x%08x", cmp >> 32, cmp);
-		if (hash == cmp) {
-			return &blk[i];
-		}
-	}
-
-	return NULL;
-}
-
 #if 0
 int32_t __attribute__((section (".data#"), noinline)) 
 thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
@@ -96,14 +48,14 @@ thinkos_flash_seq(intptr_t status, void * dev, struct flash_dev_seq * seq)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	uint32_t ticks;
 
-	ticks = thinkos_rt.ticks; 
+	ticks = krn->ticks; 
 	status = seq->start(status, dev);
 	while (status > 0) {
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
 			ticks++;
 		status = seq->status(status, dev);
 	}
-	thinkos_rt.ticks = ticks; 
+	krn->ticks = ticks; 
 
 	status = seq->finish(status, dev);
 	return status;
@@ -124,16 +76,16 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
 	if (stat < 0)
 		return stat;
 
-	start_ticks = thinkos_rt.ticks; 
+	start_ticks = krn->ticks; 
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
 	stat = thinkos_flash_seq(stat, dev->priv, &seq);
 	cm3_primask_set(pri);
 
-	dt = (int32_t)(thinkos_rt.ticks - start_ticks);
+	dt = (int32_t)(krn->ticks - start_ticks);
 	(void)dt;
-	DCC_LOG1(LOG_TRACE, "dt = %dms", dt);
+	DCC_LOG1(LOG_INFO, "dt = %dms", dt);
 
 	/* FIXME: experimental */
 	return count;
@@ -150,7 +102,7 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
    */
 
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
-								 struct flash_op_req * req)
+                          struct flash_op_req * req)
 {
 	const struct flash_dev * dev = drv->dev;
 	uint32_t off;
@@ -160,7 +112,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 	int opc;
 
 	opc = req->opc;
-	DCC_LOG1(LOG_TRACE, "opc=%d!", opc);
+	DCC_LOG1(LOG_INFO, "opc=%d!", opc);
 #if DEBUG
 	udelay(0x8000);
 #endif
@@ -168,13 +120,15 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 	off = req->offset;
 	size = req->size;
 
+	DCC_LOG2(LOG_INFO, "off=0x%08x size=%d", off, size);
+
 	if (off > drv->partition.size) {
 		DCC_LOG2(LOG_ERROR, "read off=%d > part.size=%d", 
 				 off, drv->partition.size);
 		return -THINKOS_EINVAL;
 	}
 
-	if (off + size > drv->partition.size)
+	if ((off + size) > drv->partition.size)
 		size = drv->partition.size - off;
 
 	off += drv->partition.offset;
@@ -190,11 +144,11 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			ret = flash_dev_read(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_WRITE:
-			DCC_LOG2(LOG_TRACE, "write off=0x%08x rem=%d", off, rem);
+			DCC_LOG2(LOG_INFO, "write off=0x%08x rem=%d", off, rem);
 			ret = flash_dev_write(dev, off, ptr, rem);
 			break;
 		case THINKOS_FLASH_MEM_ERASE:
-			DCC_LOG2(LOG_TRACE, "erase off=0x%08x rem=%d", off, rem);
+			DCC_LOG2(LOG_INFO, "erase off=0x%08x rem=%d", off, rem);
 			ret = flash_dev_erase(dev, off, rem);
 #if 0
 			ret = thinkos_flash_drv_erase(dev, off, rem);
@@ -214,6 +168,11 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 			break;
 		}
 
+		if (ret > rem) {
+			ret = rem; 
+			break;
+		}
+
 		off += ret;
 		ptr += ret;
 		rem -= ret;
@@ -225,6 +184,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 int thinkos_flash_drv_init(unsigned int idx, 
 						   const struct thinkos_flash_desc * desc)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_flash_drv * drv;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -232,9 +192,9 @@ int thinkos_flash_drv_init(unsigned int idx,
 		return -THINKOS_EINVAL;
 #endif
 
-	drv = &thinkos_rt.flash_drv[idx];
+	drv = &krn->flash_drv[idx];
 
-	DCC_LOG2(LOG_TRACE, "flash_drv_init(drv=%08x desc=%08x)...", drv, desc);
+	DCC_LOG2(LOG_INFO, "flash_drv_init(drv=%08x desc=%08x)...", drv, desc);
 
 	/* Bind device driver and the memory descriptor */
 	drv->dev = desc->dev;
@@ -247,32 +207,37 @@ int thinkos_flash_drv_init(unsigned int idx,
 	return 0;	
 }
 
-void thinkos_flash_drv_tasklet(unsigned int idx, struct thinkos_flash_drv * drv)
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
+							   unsigned int idx, struct thinkos_flash_drv * drv)
 {
 	unsigned int wq = THINKOS_FLASH_MEM_DESC(idx);
 	struct flash_op_req * req;
 	int th;
 	int ret;
 
-	th = __thinkos_wq_head(wq);
+	th =__krn_wq_head(krn, wq);
 	if (th != THINKOS_THREAD_NULL) {
 		DCC_LOG2(LOG_YAP, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
-				 __thinkos_thread_r0_get(th));
+				 __thread_r0_get(krn, th));
 
-		req = (struct flash_op_req *)__thinkos_thread_frame_get(th);
+		req = (struct flash_op_req *)__thread_frame_get(krn, th);
+
+		DCC_LOG1(LOG_INFO, "[req]=0x%08x", req);
 
 		ret = thinkos_flash_drv_req(drv, req);
 
 		/* wakeup from the flash wait queue */
-		__thinkos_wakeup_return(wq, th, ret);
+		__wq_wakeup_return(krn, wq, th, ret);
 		/* signal the scheduler ... */
-		__thinkos_defer_sched();
+		__krn_defer_sched(krn);
 	} else {
-		DCC_LOG(LOG_TRACE, "flash_drv: no waiting threads!");
+		DCC_LOG(LOG_INFO, "flash_drv: no waiting threads!");
 	}
 }
+#endif
 
-void thinkos_flash_mem_svc(int32_t arg[], int self)
+void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	struct thinkos_flash_drv * drv;
 	struct flash_op_req * req;
@@ -284,16 +249,16 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 	req = (struct flash_op_req *)arg;
 	opc = req->opc;
 	
-	DCC_LOG2(LOG_TRACE, "<%d> opc=%d", self + 1, opc);
+	DCC_LOG2(LOG_INFO, "<%d> opc=%d", self, opc);
 
 	if (opc == THINKOS_FLASH_MEM_OPEN) {
 
 		for (idx = 0; idx < THINKOS_FLASH_MEM_MAX; ++idx) {
-			const struct blk_desc * blk;
+			const struct thinkos_mem_blk * blk;
 
-			drv = &thinkos_rt.flash_drv[idx];
+			drv = &krn->flash_drv[idx];
 
-			if ((blk = mem_blk_lookup(drv->mem, req->tag)) != NULL) {
+			if ((blk = __mem_blk_lookup(drv->mem, req->tag)) != NULL) {
 				if (drv->ropen || drv->wopen) {
 					ret = THINKOS_EBUSY;
 					break;
@@ -307,15 +272,44 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 				key = genkey_lcg16(drv->key);
 				drv->key = key;
 #endif
-				DCC_LOG2(LOG_TRACE, "open(tag=\"%s\") --> ret=%d", 
-						 req->tag, ret);
 				ret = wq;
+
+				DCC_LOG2(LOG_INFO, "open(tag=\"%s\") --> ret=%d", 
+						 req->tag, ret);
 				break;
 			}
 		}
 		arg[0] = ret;
 		return;
 	} 
+	
+	if (opc == THINKOS_FLASH_MEM_STAT) {
+		for (idx = 0; idx < THINKOS_FLASH_MEM_MAX; ++idx) {
+			const struct thinkos_mem_blk * blk;
+			const struct thinkos_mem_desc * mem;
+
+			drv = &krn->flash_drv[idx];
+			mem = drv->mem;
+
+			if ((blk = __mem_blk_lookup(mem, req->tag)) != NULL) {
+				struct thinkos_mem_part * mp;
+
+				mp = req->mp;
+				mp->begin = mem->base + blk->off;
+				mp->end = mem->base + blk->off + (1 << blk->siz) * blk->cnt;
+				mp->opt = blk->opt;
+				mp->dev = mem->dev;
+				mp->type = mem->typ;
+				mp->perm = mem->opt;
+
+				ret = THINKOS_OK;
+				break;
+			}
+		}
+		arg[0] = ret;
+		return;
+	}
+
 
 	wq = req->wq;
 	idx = wq - THINKOS_FLASH_MEM_BASE;
@@ -323,13 +317,13 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 #if THINKOS_ENABLE_ARG_CHECK
 	if (idx >= THINKOS_FLASH_MEM_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid flash %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_FLASH_INVALID);
+		__THINKOS_ERROR(self, THINKOS_ERR_FLASH_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	drv = &thinkos_rt.flash_drv[idx];
+	drv = &krn->flash_drv[idx];
 
 	if (opc == THINKOS_FLASH_MEM_CLOSE) {
 		if (!(drv->ropen || drv->wopen)) {
@@ -338,7 +332,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 			return;
 		}
 
-		DCC_LOG2(LOG_TRACE, "closing: wq=%d idx=%d", wq, idx);
+		DCC_LOG2(LOG_INFO, "closing: wq=%d idx=%d", wq, idx);
 		/* 
          * TODO: validate operation...
 		 */
@@ -360,28 +354,35 @@ void thinkos_flash_mem_svc(int32_t arg[], int self)
 		return;
 	} 
 
-	DCC_LOG2(LOG_TRACE, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
-	DCC_LOG2(LOG_TRACE, "flash_drv: wq=%d idx=%d", wq, idx);
+	DCC_LOG2(LOG_INFO, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
+	DCC_LOG2(LOG_INFO, "flash_drv: wq=%d idx=%d", wq, idx);
 
+	DCC_LOG1(LOG_INFO, "flash_drv: [req]=0x%08x", req);
+	DCC_LOG2(LOG_INFO, "flash_drv: off=0x%08x size=%d", 
+			 req->offset, req->size);
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* schedule the IDLE hook ... */
 	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
-	__thinkos_wq_insert(wq, self);
-	/* (1) suspend the thread by removing it from the
-	   ready wait queue. The __thinkos_suspend() call cannot be nested
-	   inside a LDREX/STREX pair as it may use the exclusive access 
-	   itself, in case we have enabled the time sharing option. */
-	__thinkos_suspend(self);
+
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thinkos_thread_ctx_flush(arg, self);
+/* NEW: 2020-12-02 performed by the svc call entry stub 
+	__thread_ctx_flush(krn, arg, self);
+*/
 
-	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	DCC_LOG1(LOG_INFO, "<%2d> sleeping...", self);
+
+	/* wait for event ... */
+	__krn_thread_wait(krn, self, wq);
+#else
+	ret = thinkos_flash_drv_req(drv, req);
+	arg[0] = ret;
+#endif
 }
 
-const char thinkos_flash_mem_nm[] = "FMM";
-
 #endif /* (THINKOS_FLASH_MEM_MAX > 0) */
+
 

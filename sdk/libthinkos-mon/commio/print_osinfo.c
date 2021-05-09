@@ -22,189 +22,131 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
 #include <thinkos.h>
 #include <sys/dcclog.h>
 
-#define CYCCNT_MAX ((THINKOS_THREADS_MAX) + 1)
-
-void monitor_print_osinfo(const struct monitor_comm * comm)
+void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 {
-	struct thinkos_rt * rt = &thinkos_rt;
 #if (THINKOS_ENABLE_PROFILING)
-	uint32_t cycbuf[CYCCNT_MAX];
-	uint32_t cyccnt;
-	int32_t delta;
-	uint32_t cycdiv;
-	uint32_t busy;
+    int max = thinkos_krn_threads_max();
+    uint32_t cyc[max];
+    uint32_t cycdiv;
+    uint32_t busy;
+    uint32_t cycsum = 0;
+    uint32_t cycbusy;
+    uint32_t cycidle;
+    uint32_t idle;
 #endif
 	uint32_t active;
 	int i;
 	int j;
 
-	active = __thinkos_active_get();
+	active = thinkos_dbg_active_get();
+	monitor_printf(comm, " Active: %d", active);
+
 #if (THINKOS_ENABLE_PROFILING)
-	cyccnt = CM3_DWT->cyccnt;
-	delta = cyccnt - rt->cycref;
-	/* update the reference */
-	rt->cycref = cyccnt;
-	/* update active thread's cycle counter */
-	rt->cyccnt[active] += delta; 
-	/* copy the thread counters to a buffer */
-	__thinkos_memcpy32(cycbuf, rt->cyccnt, sizeof(cycbuf));
-	/* reset cycle counters */
-	__thinkos_memset32(rt->cyccnt, 0, sizeof(cycbuf));
-#endif
+    cycsum = 0;
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	monitor_printf(comm, " Active: %d", active + 1);
+    cycsum = monitor_threads_cyc_sum(cyc, cycref, 0, max);
+    cycidle = cyc[THINKOS_THREAD_IDLE];
+    cycbusy = cycsum - cycidle;
+    cycdiv = (cycsum + 500) / 1000;
 
-#if THINKOS_ENABLE_CLOCK
-	monitor_printf(comm, ", Clock: %u", rt->ticks);
-#endif
+	busy = (cycdiv == 0) ? 1000 : (cycbusy / cycdiv);
+    if (busy > 1000)
+        busy  = 1000;
 
-#if THINKOS_ENABLE_PROFILING
-	monitor_printf(comm, ", CycCnt: %u\r\n", cyccnt);
-	{
-		uint32_t cycsum = 0;
-		uint32_t cycbusy;
-		uint32_t idle;
+    idle = 1000 - busy;
+    (void) idle;
 
-		cycsum = 0;
-		for (i = 0; i < THINKOS_THREADS_MAX; ++i)
-			cycsum += cycbuf[i];
-		cycbusy = cycsum;
-		cycsum += cycbuf[THINKOS_CYCCNT_IDLE];
-
-		cycdiv = (cycsum + 500) / 1000;
-		busy = (cycbusy + cycdiv / 2) / cycdiv;
-		idle = 1000 - busy;
-		monitor_printf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
-				cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
-	}
+	monitor_printf(comm, " %u cycles, %d.%d%% busy, %d.%d%% idle", 
+				   cycsum, busy / 10, busy % 10, idle / 10, idle % 10);
 
 #endif
 
 	monitor_printf(comm, "\r\n");
 
 	monitor_printf(comm, "  #"); 
-#if THINKOS_ENABLE_THREAD_INFO
 	monitor_printf(comm, " |     Tag"); 
 	monitor_printf(comm, " |    Stack"); 
-#endif
-	monitor_printf(comm, " |  Context"); 
-#if THINKOS_ENABLE_THREAD_STAT
+	monitor_printf(comm, " |       SP"); 
+	monitor_printf(comm, " |       PC"); 
 	monitor_printf(comm, " | Status"); 
+#if (THINKOS_ENABLE_TIMESHARE)
+	/* TODO: add timeshare info */
 #endif
-#if THINKOS_ENABLE_TIMESHARE
-//	monitor_printf(comm, " |  Val |  Pri"); 
-#endif
-#if THINKOS_ENABLE_CLOCK
 	monitor_printf(comm, " | Clock (ms)"); 
-#endif
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	monitor_printf(comm, " | CPU %%"); 
 #endif
 
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 	monitor_printf(comm, " | Locks\r\n"); 
 #else
 	monitor_printf(comm, " |\r\n");
 #endif
 
-	for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-		if (__thinkos_thread_ctx_is_valid(i)) {
+	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+		if (thinkos_dbg_thread_ctx_is_valid(i)) {
+			const char * tag;
+			uint32_t sl;
+			uint32_t sp;
+			uint32_t pc;
 			int oid;
 			int type;
+			int irq;
+			int errno; 
 			bool tmw;
 
-			/* Internal thread ids start form 0 whereas user
-			   thread numbers start form one ... */
-			monitor_printf(comm, "%3d", i + 1);
-#if THINKOS_ENABLE_THREAD_INFO
-			if (rt->th_inf[i] != NULL) {
-				monitor_printf(comm, " | %7s", rt->th_inf[i]->tag); 
-				monitor_printf(comm, " | %08x", (uint32_t)rt->th_inf[i]->stack_ptr); 
-			} else {
-				monitor_printf(comm, " |     ..."); 
-				monitor_printf(comm, " |      ..."); 
-			}
-#endif
-			monitor_printf(comm, " | %08x", __thinkos_thread_sp_get(i)); 
+			monitor_printf(comm, "%3d", i);
+			tag = thinkos_dbg_thread_tag_get(i);
+			sl = thinkos_dbg_thread_sl_get(i);
+			sp = thinkos_dbg_thread_sp_get(i);
+			pc = thinkos_dbg_thread_pc_get(i);
 
-#if THINKOS_ENABLE_THREAD_STAT
-			oid = thinkos_rt.th_stat[i] >> 1;
-			tmw = thinkos_rt.th_stat[i] & 1;
-#else
-			oid = THINKOS_WQ_READY; /* FIXME */
-			tmw = (thinkos_rt.wq_clock & (1 << i)) ? true : false;
-#endif
-#if THINKOS_ENABLE_DEBUG_FAULT
-			if (oid == THINKOS_WQ_FAULT) {
-				struct thinkos_except * xcpt = __thinkos_except_buf();
-				monitor_printf(comm, " | ERR %2d", xcpt->errno);
-			} else 
-#endif
-#if THINKOS_IRQ_MAX > 0 && THINKOS_ENABLE_WQ_IRQ
-			if (oid == THINKOS_WQ_IRQ) {
-				if (i != THINKOS_THREAD_IDLE) {
-					int irq;
-					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-						if (thinkos_rt.irq_th[irq] == i) {
-							break;
-						}
-					}
-					if (irq < THINKOS_IRQ_MAX) {
-						monitor_printf(comm, " | IRQ %2d", irq);
-					} else
-						monitor_printf(comm, " | IRQ ??");
-				}
-			} else 
-#endif
-			if (oid == THINKOS_WQ_READY) {
-#if THINKOS_IRQ_MAX > 0 && !THINKOS_ENABLE_WQ_IRQ
-				if (i != THINKOS_THREAD_IDLE) {
-					int irq;
-					for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-						if (thinkos_rt.irq_th[irq] == i) {
-							break;
-						}
-					}
-					if (irq < THINKOS_IRQ_MAX) {
-						monitor_printf(comm, " | IRQ %2d", irq);
-					} else
-						monitor_printf(comm, " | READY ");
-				}
-#else
+			monitor_printf(comm, " | %7s | %08x | %08x | %08x", 
+						   tag, sl, sp, pc); 
+
+			oid = thinkos_dbg_thread_wq_get(i);
+			tmw = thinkos_dbg_thread_tmw_get(i);
+			if ((errno = thinkos_dbg_thread_errno_get(i)) > 0) {
+				monitor_printf(comm, " | ERR %2d", errno);
+			} else if ((irq = thinkos_dbg_thread_irq_get(i)) >= 0) {
+				monitor_printf(comm, " | IRQ %2d", irq);
+			} else if (thinkos_dbg_thread_is_ready(i)) {
 				monitor_printf(comm, " | READY ");
-#endif
-#if THINKOS_ENABLE_TIMESHARE
-				/* FIXME: implement some info ...*/
-#endif
 			} else {
-				type = thinkos_obj_type_get(oid);
+				type = __thinkos_obj_kind(oid);
 				monitor_printf(comm, " | %c%c %3d", 
 						 tmw ? 'T' : ' ',
-						 thinkos_type_prefix_lut[type], 
+						 __thinkos_kind_prefix(type), 
 						 oid);
 			}
-#if THINKOS_ENABLE_CLOCK
-			{
-				int32_t dt = (int32_t)(rt->clock[i] - rt->ticks);
-				if (dt < 0)
-					monitor_printf(comm, " | <timedout>"); 
-				else
-					monitor_printf(comm, " | %10d", dt); 
-			}
+#if (THINKOS_ENABLE_TIMESHARE)
+			/* TODO: add timeshare info */
 #endif
-#if THINKOS_ENABLE_PROFILING
-			busy = (cycbuf[i] + cycdiv / 2) / cycdiv;
+			{
+				int32_t dt = thinkos_dbg_thread_clk_itv_get(i);
+				int32_t sec;
+				int32_t ms;
+
+				sec = dt / 1000;
+				ms = ((dt < 0) ? -dt : dt) % 1000;
+
+				monitor_printf(comm, " |%7d.%03d", sec, ms);
+			}
+#if (THINKOS_ENABLE_PROFILING)
+			busy = (cycdiv == 0) ? 1000 : (cyc[i] / cycdiv);
+			if (busy > 1000)
+				busy  = 1000;
 			monitor_printf(comm, " | %3d.%d", busy / 10, busy % 10);
 #endif
 			monitor_printf(comm, " |");
-#if THINKOS_MUTEX_MAX > 0
-			for (j = 0; j < THINKOS_MUTEX_MAX ; ++j) {
-				if (rt->lock[j] == i)
+#if (THINKOS_MUTEX_MAX) > 0
+			for (j = THINKOS_MUTEX_FIRST; j <= THINKOS_MUTEX_LAST; ++j) {
+				if (thinkos_dbg_mutex_lock_get(j) == i)
 					monitor_printf(comm, " %d", j + THINKOS_MUTEX_BASE);
 			}
 #endif 
@@ -212,22 +154,24 @@ void monitor_print_osinfo(const struct monitor_comm * comm)
 		}
 	}
 
-	for (j = 0; j < THINKOS_WQ_CNT; ++j) {
-		uint32_t wq;
+
+	for (j = THINKOS_OBJECT_FIRST; j <= THINKOS_OBJECT_LAST; ++j) {
+		struct thread_waitqueue * wq;
 		int type;
-		wq = rt->wq_lst[j];
-		if (wq) { 
-			type = thinkos_obj_type_get(j);
-			monitor_printf(comm, "%3d %5s: {", j, thinkos_type_name_lut[type]);
-			for (i = 0; i < THINKOS_THREADS_MAX; ++i) {
-				if (wq & (1 << i)) 
-					monitor_printf(comm, " %d", i + 1);
+
+		wq = thinkos_dbg_wq_from_oid(j);
+		if (!thinkos_dbg_wq_is_empty(wq)) { 
+			type = __thinkos_obj_kind(j);
+			monitor_printf(comm, "%3d %5s: {", j, __thinkos_kind_name(type));
+			for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+				if (thinkos_dbg_wq_contains(wq, i))
+					monitor_printf(comm, " %d", i);
 			}
 			monitor_printf(comm, " }");
-#if THINKOS_MUTEX_MAX > 0
+#if (THINKOS_MUTEX_MAX) > 0
 			if (type == THINKOS_OBJ_MUTEX)
 				monitor_printf(comm, " [lock=%d]", 
-						 rt->lock[j - THINKOS_MUTEX_BASE]);
+							   thinkos_dbg_mutex_lock_get(j));
 #endif 
 			monitor_printf(comm, "\r\n");
 		}

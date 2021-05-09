@@ -30,24 +30,6 @@
 	/* ---------------------------------------------------------------------
 	 * Generate the vectors table 
 	 * --------------------------------------------------------------------- */
-.macro cortex_m_vectors
-	.word	_stack
-	.word   _reset
-	.word   cm3_nmi_isr
-	.word   cm3_hard_fault_isr
-	.word   cm3_mem_manage_isr
-	.word   cm3_bus_fault_isr
-	.word   cm3_usage_fault_isr
-	.word   cm3_except7_isr
-	.word   ice_comm_blk
-	.word   cm3_except9_isr
-	.word   cm3_except10_isr
-	.word   cm3_svc_isr
-	.word   cm3_debug_mon_isr
-	.word   cm3_except13_isr
-	.word   cm3_pendsv_isr
-	.word   cm3_systick_isr
-.endm
 
 .macro stm32f_irq_vectors
 	.word	stm32f_wwdg_isr         /*  0 Window WatchDog */
@@ -242,54 +224,31 @@
 .endm
 
 
-	.section .vectors
-__vectors:
-	.global __vectors
 
-	/* ---------------------------------------------------------------------
-	 * vectors residing in FLASH 
-	 * --------------------------------------------------------------------- */
-	.section .rom_vectors, "ax", %progbits
-__rom_vectors:
-	.global __rom_vectors
-	.type __rom_vectors, %object
-	cortex_m_vectors
-#ifndef CM3_RAM_VECTORS
+	.section .nvic_vectors, "ax", %progbits
+__nvic_vectors:
+	.global __nvic_vectors
+	.type __nvic_vectors, %object
+
 	stm32f_irq_vectors
-#endif
-__rom_vectors_end:
-	.global __rom_vectors_end
-	.size   __rom_vectors, . - __rom_vectors
 
-	.text
-	.align  2
-	.global __sizeof_rom_vectors
-__sizeof_rom_vectors:
-	.type   __sizeof_rom_vectors, %object
-	.word	__rom_vectors_end - __rom_vectors
-	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
+__nvic_vectors_end:
+	.global __nvic_vectors_end
+	.size   __nvic_vectors, . - __rom_vectors
 
-#ifdef CM3_RAM_VECTORS
-	/* ---------------------------------------------------------------------
-	 * vectors residing in RAM 
-	 * --------------------------------------------------------------------- */
-	.section .ram_vectors, "ax", %progbits
-__ram_vectors:
-	.global __ram_vectors
-	.type __ram_vectors, %object
-	cortex_m_vectors
-	stm32f_irq_vectors
-__ram_vectors_end:
-	.global __ram_vectors_end
 
-	.text
-	.align  2
-	.global __sizeof_ram_vectors
-__sizeof_ram_vectors:
-	.type   __sizeof_ram_vectors, %object
-	.word   __ram_vectors_end - __ram_vectors
-	.size   __sizeof_ram_vectors, . - __sizeof_ram_vectors
-#endif
+
+	.thumb
+	.thumb_func
+	.type   _fault, %function
+#if 1
+	.global _fault
+	.thumb
+	.thumb_func
+	.type   _fault, %function
+_fault:
+	b		.
+	.size   _fault, . - _fault
 
 	.text
 	.align  2
@@ -302,23 +261,15 @@ _isr:
 	subs    r0, #16
 	b       cm3_default_isr
 	.size   _isr, . - _isr
-
-	.text
-	.align  2
-	.global _fault
-	.thumb
-	.thumb_func
-	.type   _fault, %function
-_fault:
-	b		.
-	.size   _fault, . - _fault
+#endif
 
 	/***********************************************************************
 	 * Provide weak aliases for each Exception handler to _fault().
 	 * Any function with the same name will override these definitions.
 	 */
-	.weak       cm3_default_isr
-	.thumb_set  cm3_default_isr,_fault
+//	.weakref        cm3_default_isr
+//	.thumb_set  cm3_default_isr,_fault
+
 
 	.weak       cm3_nmi_isr
 	.thumb_set  cm3_nmi_isr,_fault

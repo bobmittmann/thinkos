@@ -60,11 +60,129 @@
 
 void __attribute__((noreturn)) app_task(void *, unsigned int);
 
+void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+
 /*
    Default Monitor Task
  */
 void __attribute__((noreturn)) 
 standby_monitor_task(const struct monitor_comm * comm, void * arg)
+{
+	const struct thinkos_board * board;
+	uint32_t sigmask = 0;
+	int sig;
+
+	board = (const struct thinkos_board *)arg;
+
+	sigmask |= (1 << MONITOR_KRN_FAULT);
+	sigmask |= (1 << MONITOR_KRN_ABORT);
+	sigmask |= (1 << MONITOR_SOFTRST);
+	sigmask |= (1 << MONITOR_COMM_BRK);
+
+	sigmask |= (1 << MONITOR_COMM_RCV);
+#if THINKOS_ENABLE_CONSOLE
+	sigmask |= (1 << MONITOR_COMM_CTL);
+	sigmask |= (1 << MONITOR_TX_PIPE);
+//	sigmask |= (1 << MONITOR_RX_PIPE);
+#endif
+	sigmask |= (1 << MONITOR_APP_STOP);
+	sigmask |= (1 << MONITOR_APP_EXEC);
+	sigmask |= (1 << MONITOR_APP_UPLOAD);
+	sigmask |= (1 << MONITOR_APP_ERASE);
+	sigmask |= (1 << MONITOR_APP_TERM);
+	sigmask |= (1 << MONITOR_APP_RESUME);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
+	sigmask |= (1 << MONITOR_THREAD_CREATE);
+	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+
+#if 0
+	sigmask |= (1 << MONITOR_ALARM);
+	monitor_alarm(1000);
+#endif
+
+	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
+
+	for(;;) {
+		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
+		switch ((sig = monitor_select(sigmask))) {
+
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
+					 cm3_sp_get());
+			break;
+
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		case MONITOR_RESET:
+			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
+					 cm3_sp_get());
+			monitor_clear(MONITOR_RESET);
+			break;
+#endif
+
+		case MONITOR_SOFTRST:
+			/* Acknowledge the signal */
+			monitor_clear(MONITOR_SOFTRST);
+			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
+			board->softreset();
+			break;
+
+		case MONITOR_APP_EXEC:
+			monitor_clear(MONITOR_APP_EXEC);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
+
+
+			if (!monitor_app_exec(comm)) {
+				monitor_printf(comm, "Can't run application!\r\n");
+				/* XXX: this event handler could be optionally compiled
+				   to save some resources. As a matter of fact I don't think
+				   they are useful at all */
+				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
+				if (board->default_task != NULL) {
+					DCC_LOG(LOG_TRACE, "default_task()...!");
+					monitor_thread_create(comm, C_TASK(board->default_task), 
+										 C_ARG(NULL), true);
+				} else {
+					DCC_LOG(LOG_TRACE, "no default app set!");
+				}
+			}
+			DCC_LOG(LOG_TRACE, "APP_EXEC done");
+			break;
+
+		case MONITOR_THREAD_TERMINATE:
+			monitor_clear(MONITOR_THREAD_TERMINATE);
+			break;
+
+		case MONITOR_COMM_RCV:
+			sigmask = monitor_on_comm_rcv(comm, sigmask);
+			break;
+
+		case MONITOR_COMM_CTL:
+			sigmask = monitor_on_comm_ctl(comm, sigmask);
+			break;
+
+		case MONITOR_COMM_EOT:
+			/* FALLTHROUGH */
+		case MONITOR_TX_PIPE:
+			sigmask = monitor_on_tx_pipe(comm, sigmask);
+			break;
+
+		case MONITOR_RX_PIPE:
+			sigmask = monitor_on_rx_pipe(comm, sigmask);
+			break;
+
+			/* FALLTHROUGH */
+		default:
+			monitor_exec(boot_monitor_task, arg);
+			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
+		}
+	}
+}
+
+
+void __attribute__((noreturn)) 
+init_monitor_task(const struct monitor_comm * comm, void * arg)
 {
 	const struct thinkos_board * board;
 	uint32_t sigmask = 0;
@@ -74,11 +192,9 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 	board = (const struct thinkos_board *)arg;
 
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_STARTUP);
-#if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
-#endif
+	sigmask |= (1 << MONITOR_KRN_FAULT);
+	sigmask |= (1 << MONITOR_COMM_BRK);
 	sigmask |= (1 << MONITOR_COMM_RCV);
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << MONITOR_COMM_CTL);
@@ -105,11 +221,10 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
 
-		case MONITOR_STARTUP:
-			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
 					 cm3_sp_get());
-			monitor_clear(MONITOR_STARTUP);
-			startup = true;
 			break;
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -132,7 +247,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
 
 
-			if (!monitor_app_exec(&board->application, false)) {
+			if (!monitor_app_exec(comm)) {
 				monitor_printf(comm, "Can't run application!\r\n");
 				/* XXX: this event handler could be optionally compiled
 				   to save some resources. As a matter of fact I don't think
@@ -140,8 +255,8 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
 				if (board->default_task != NULL) {
 					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_start(C_TASK(board->default_task), 
-										 C_ARG(NULL));
+					monitor_thread_create(comm, C_TASK(board->default_task), 
+										 C_ARG(NULL), true);
 				} else {
 					DCC_LOG(LOG_TRACE, "no default app set!");
 				}
@@ -178,25 +293,10 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_COMM_CTL:
-			DCC_LOG(LOG_MSG, "/!\\ MONITOR_COMM_CTL");
-			monitor_clear(MONITOR_COMM_CTL);
-			{
-				int status = monitor_comm_status_get(comm);
-	        	if (status & COMM_ST_CONNECTED) {
-					DCC_LOG(LOG_TRACE, "connected....");
-				}
-	        	if (status & COMM_ST_BREAK_REQ ) {
-					monitor_comm_break_ack(comm);
-					DCC_LOG(LOG_TRACE, "break_req....");
-				}
-			}
-
 			sigmask = monitor_on_comm_ctl(comm, sigmask);
-			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);
 			break;
 
 		case MONITOR_COMM_EOT:
-			DCC_LOG(LOG_TRACE, "COMM_EOT");
 			/* FALLTHROUGH */
 		case MONITOR_TX_PIPE:
 			sigmask = monitor_on_tx_pipe(comm, sigmask);
@@ -206,9 +306,13 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 
+			/* FALLTHROUGH */
 		default:
+			monitor_exec(boot_monitor_task, arg);
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 		}
 	}
 }
+
+
 

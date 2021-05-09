@@ -149,9 +149,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 		return SHELL_ERR_GENERAL;
 	}
 
-#if THINKOS_ENABLE_CLOCK
 	fprintf(f, "[ Ticks = %d ]", rt.ticks);
-#endif
 
 #if THINKOS_ENABLE_PROFILING
 	{
@@ -200,9 +198,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_TIMESHARE
 	fprintf(f, " |  Val |  Pri"); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 	fprintf(f, " | Clock (ms)"); 
-#endif
 #if THINKOS_ENABLE_PROFILING
 	fprintf(f, " | CPU %%"); 
 #endif
@@ -233,7 +229,6 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_TIMESHARE
 			fprintf(f, " | %4d | %4d", rt.sched_val[i], rt.sched_pri[i]); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 			{
 				int32_t dt = (int32_t)(rt.clock[i] - rt.ticks);
 				if (dt < 0)
@@ -241,7 +236,6 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 				else
 					fprintf(f, " | %10d", dt); 
 			}
-#endif
 #if THINKOS_ENABLE_PROFILING
 			busy = (rt.cyccnt[i] + cycdiv / 2) / cycdiv;
 			fprintf(f, " | %3d.%d", busy / 10, busy % 10);
@@ -341,11 +335,8 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 		fprintf(f, " - Scheduler: val=%d pri=%4d\n", 
 				rt.sched_val[th], rt.sched_pri[th]); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 		fprintf(f, " - Clock: val=%d time=%d\n", rt.clock[th],
 				(int32_t)(rt.clock[th] - rt.ticks)); 
-#endif
-
 #if THINKOS_MUTEX_MAX > 0
 		fprintf(f, " - Mutex Locks: ");
 		for (j = 0; j < THINKOS_MUTEX_MAX ; ++j) {

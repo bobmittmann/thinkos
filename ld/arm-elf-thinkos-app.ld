@@ -21,17 +21,40 @@
 
 __code_init = DEFINED(__ldcode) ? __ldcode : ORIGIN(CODE);
 __data_init = DEFINED(__lddata) ? __lddata : ORIGIN(DATA);
+__stack_top = ORIGIN(STACK) + LENGTH(STACK);
+__stack_size = LENGTH(STACK);
+__heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
 EXTERN(_reset)
 ENTRY(_reset)
+
+EXTERN(_init_hdr)
+EXTERN(_init_tag)
+EXTERN(_init_tab)
+EXTERN(_init_rst)
 
 SECTIONS
 {
 	. = 0;
 
+	.dcclog :
+	{
+		. = ALIGN(4);
+		KEEP(*(.dcclog))
+	} >dcclog
+
+	.dccdata :
+	{
+		. = ALIGN(4);
+		KEEP(*(.rodata.__FUNCTION__*))
+		KEEP(*(.dccdata))
+	} >dcclog
+
+
 	.init __code_init :
 	{
-		KEEP (*(.init))
+		. = .;
+		KEEP(*(SORT(.init)))
 	} >"CODE" = 0xffffffff
 
 	.text :
@@ -68,8 +91,8 @@ SECTIONS
 	{ 
 		*(.ARM.extab* .gnu.linkonce.armextab.*) 
 	} >"CODE" = 0xffffffff
-	PROVIDE_HIDDEN (__exidx_start = .);
 
+	PROVIDE_HIDDEN (__exidx_start = .);
 	.ARM.exidx : 
 	{ 
 		*(.ARM.exidx* .gnu.linkonce.armexidx.*) 
@@ -92,7 +115,8 @@ SECTIONS
 		PROVIDE (__data_end = . );
 	} >"DATA" AT >"CODE"
 
-	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
+	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + 
+			SIZEOF(.ARM.extab) + SIZEOF(.ARM.exidx) + SIZEOF(.data));
 
 	.bss __data_end :
 	{

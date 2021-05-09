@@ -66,7 +66,6 @@
 #define THINKOS_ENABLE_GATE_ALLOC       0
 
 #define THINKOS_ENABLE_TIMED_CALLS      1
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 
@@ -110,7 +109,7 @@
 #define THINKOS_ENABLE_DEBUG_STEP       0
 #define THINKOS_ENABLE_DEBUG_BKPT       0
 #define THINKOS_ENABLE_DEBUG_WPT        0
-#define THINKOS_ENABLE_DEBUG_FAULT      0
+#define THINKOS_ENABLE_THREAD_FAULT     0
 
 #define THINKOS_ENABLE_STACK_INIT       0
 

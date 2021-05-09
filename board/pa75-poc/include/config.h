@@ -33,8 +33,6 @@
 #define THINKOS_IRQ_MAX                 90
 #define THINKOS_ENABLE_IRQ_CTL          1
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_TIMESHARE        0
 #define THINKOS_SCHED_LIMIT_MAX         32
 #define THINKOS_SCHED_LIMIT_MIN         1
@@ -66,6 +64,7 @@
 #define THINKOS_GATE_MAX                32
 #define THINKOS_ENABLE_GATE_ALLOC       1
 
+#define THINKOS_ENABLE_THREAD_FAULT     1
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
@@ -92,7 +91,6 @@
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1

@@ -203,6 +203,10 @@ struct vt_win * vt_win_create(const struct vt_win_def * def);
 
 int vt_win_puts(struct vt_win * win, const char * buf);
 
+void vt_frame(struct vt_win *win, const char * title);
+
+//void vt_widget(struct vt_win *win, const char * title);
+
 #ifdef __cplusplus
 }
 #endif	

@@ -66,8 +66,6 @@ int mbuf_queue_add(struct mbuf_queue * __q, const void * __buf, int __len)
 		} 
 		i++;
 
-		DCC_LOG2(LOG_INFO, "{%05x} new mbuf=<%05x>", (int)__q, dst);
-
 		__q->last->next = m;
 		__q->last = m;
 		m->next = NULL;

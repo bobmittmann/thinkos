@@ -80,8 +80,6 @@
 
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_ALARM            1
 
 #define THINKOS_ENABLE_SLEEP            1
@@ -112,11 +110,11 @@
 
 #define THINKOS_ENABLE_MONITOR          1
 
-#define THINKOS_ENABLE_MONITOR_CLOCK          1
+#define THINKOS_ENABLE_MONITOR_CLOCK    1
 
 #define THINKOS_ENABLE_DEBUG_STEP       1
 
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 
 #define THINKOS_ENABLE_MPU              1
 

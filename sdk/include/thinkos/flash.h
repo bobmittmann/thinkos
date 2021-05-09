@@ -36,7 +36,7 @@
 #include <sys/flash-dev.h>
 
 struct thinkos_flash_desc {
-	const struct mem_desc * mem;
+	const struct thinkos_mem_desc * mem;
 	const struct flash_dev * dev;
 };
 
@@ -53,14 +53,17 @@ struct flash_op_req {
 		uint32_t offset;
 		const char * tag;
 	};
-	uint32_t size;
+	union {
+		uint32_t size;
+		struct thinkos_mem_part * mp;
+	};
 	union {
 		void * buf;
 	};
 };
 
 struct thinkos_flash_drv {
-	const struct mem_desc * mem;
+	const struct thinkos_mem_desc * mem;
 	const struct flash_dev * dev;
 	uint8_t ropen;
 	uint8_t wopen;
@@ -71,6 +74,8 @@ struct thinkos_flash_drv {
 	} partition;
 };
 
+struct thinkos_rt;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -78,8 +83,9 @@ extern "C" {
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
 						  struct flash_op_req * req);
 
-void thinkos_flash_drv_tasklet(unsigned int idx, 
-							   struct thinkos_flash_drv * drv);
+void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
+                               unsigned int idx, 
+                               struct thinkos_flash_drv * drv);
 
 int thinkos_flash_drv_init(unsigned int idx, 
 						   const struct thinkos_flash_desc * desc);

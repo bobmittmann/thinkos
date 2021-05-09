@@ -20,31 +20,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#define __THINKOS_MONITOR__
-#include <thinkos/monitor.h>
-#define __THINKOS_IDLE__
-#include <thinkos/idle.h>
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
+#include "thinkos_mon-i.h"
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-
-#include <sys/stm32f.h>
-#include <arch/cortex-m3.h>
-#include <sys/param.h>
-#include <stdbool.h>
-#include <sys/dcclog.h>
-#include <vt100.h>
 
 #if (THINKOS_ENABLE_MONITOR) 
 
-#define MONITOR_PERISTENT_MASK ((1 << MONITOR_RESET) | \
-							   (1 << MONITOR_SOFTRST))
+#ifndef THINKOS_ENABLE_MONITOR_NULL_TASK
+#define THINKOS_ENABLE_MONITOR_NULL_TASK 0
+#endif
 
-#define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
+#define MONITOR_PERISTENT_MASK ((1 << MONITOR_TASK_INIT) | \
+								(1 << MONITOR_SOFTRST))
 
 struct {
 	/* task entry point */
@@ -52,23 +41,18 @@ struct {
 	const struct monitor_comm * comm;
 	/* user supplied parameter */
 	void * param;             
-	/* break thread id */
-	int8_t brk_thread_id;
-	uint8_t brk_code;
 
-	/* error thread id */
-	int8_t err_thread_id;
-	/* error code */
-	uint8_t err_code;
-
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* entry/exit signal thread id */
 	int8_t ret_thread_id;
 	/* entry/exit signal thread exit code */
 	int32_t ret_code;
+#endif
 } thinkos_monitor_rt;
 
-uint32_t __attribute__((aligned(16))) 
+uint32_t __attribute__((aligned(8))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
+
 const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);
 
 #if (THINKOS_ENABLE_MONITOR_SCHED)
@@ -86,67 +70,6 @@ void __attribute__((noinline))__monitor_wait(struct thinkos_monitor * mon)
 #else
 void __monitor_context_swap(uint32_t ** pctx); 
 #endif
-
-/**
-  * __monitor_irq_disable_all:
-  *
-  * Disable all interrupts by clearing the interrupt enable bit
-  * of all interrupts on the Nested Vector Interrupt Controller (NVIC).
-  *
-  * Also the interrupt enable backup is cleared to avoid 
-  * interrupts being reenabled by calling __monitor_irq_restore_all().
-  *
-  * The systick interrupt is not disabled.
-  */
-static void __monitor_irq_disable_all(void)
-{
-	int i;
-
-	DCC_LOG(LOG_WARNING, "NIVC all interrupts disabled!!!");
-
-	for (i = 0; i < NVIC_IRQ_REGS; ++i) {
-		CM3_NVIC->icer[i] = 0xffffff; /* disable interrupts */
-		/* FIXME: clearing the pending interrupt may have a side effect 
-		   on the comms irq used by the debug monitor. An alternative 
-		   would be to use the force enable list to avoid clearing those
-		   in the list. */
-#if 0
-		CM3_NVIC->icpr[i] = 0xffffff; /* clear pending interrupts */
-#endif
-	}
-}
-
-
-#if (THINKOS_MONITOR_ENABLE_RST_VEC)
-/**
- * __reset_ram_vectors:
- *
- * Copy the default values for the IRQ vectors from the flash into RAM. 
- * 
- * When the a new application replaces the existing one through the GDB
- * or Ymodem some interrupts can be fired due to wrong sequencig of
- * interrupt programming in the application. To avoid potential system
- * crashes the vectors should be initialized to a default value.
- *
- */
-
-void __reset_ram_vectors(void)
-{
-	/* XXX: 
-	   this function assumes the exception vectors defaults to be located 
-	   just after the .text section! */
-	extern unsigned int __text_end;
-	extern unsigned int __ram_vectors;
-	extern unsigned int __sizeof_ram_vectors;
-
-	unsigned int size = __sizeof_ram_vectors;
-	void * src = &__text_end;
-	void * dst = &__ram_vectors;
-
-	DCC_LOG3(LOG_MSG, "dst=%08x src=%08x size=%d", dst, src, size); 
-	__thinkos_memcpy32(dst, src, size); 
-}
-#endif /* THINKOS_MONITOR_ENABLE_RST_VEC */
 
 /* -------------------------------------------------------------------------
  * Debug Monitor API
@@ -168,6 +91,37 @@ void monitor_signal(int sig)
 
 	asm volatile ("isb\n" :  :  : );
 }
+
+void monitor_signal_break(int32_t sig) 
+{
+	monitor_signal(MONITOR_SOFTRST); 
+	monitor_signal(sig); 
+}
+
+#if 0
+void monitor_signal_break(int32_t event) 
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t evset;
+	uint32_t set;
+
+	/* Disable systick interrupts */
+	//__thinkos_systick_sleep();
+
+	set = (1 << event) | (1 << MONITOR_SOFTRST); 
+
+	do {
+		/* avoid possible race condition on monitor.events */
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
+		evset |= set;
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
+
+	DCC_LOG1(LOG_TRACE, "set=0x%08x", evset);
+
+	/* Issue an idle hook request */
+//	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
+}
+#endif
 
 bool monitor_is_set(int sig) 
 {
@@ -338,45 +292,7 @@ void monitor_alarm_stop(void)
 	monitor_mask(MONITOR_ALARM);
 }
 
-int monitor_wait_idle(void)
-{
-	DCC_LOG(LOG_INFO, "IDLE wait...");
-
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-	uint32_t save;
-	uint32_t evset;
-	uint32_t evmsk;
-	uint32_t result;
-
-	/* Issue an idle hook request */
-	__idle_hook_req(IDLE_HOOK_NOTIFY_MONITOR);
-
-	save = thinkos_rt.monitor.mask;
-
-	/* set the local mask */
-	evmsk = (1 << MONITOR_IDLE);
-	thinkos_rt.monitor.mask = evmsk;
-	
-	do {
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
-#else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
-#endif
-		do { /* avoid possible race condition on monitor.events */
-			evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
-			result = evset;
-			evset &= evmsk; /* clear the event */
-		} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
-	} while (result == 0);
-	thinkos_rt.monitor.mask = save;
-
-	return (result == evmsk) ? 0 : -1;
-#else
-	return 0;
-#endif
-}
-
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 int monitor_thread_terminate_get(int * code)
 {
 	int thread_id;
@@ -384,35 +300,102 @@ int monitor_thread_terminate_get(int * code)
 	if ((thread_id = thinkos_monitor_rt.ret_thread_id) >= 0) {
 		if (code != NULL) {
 			*code = thinkos_monitor_rt.ret_code;
-
 		}
 	}
 
 	return thread_id;
 }
  
-void monitor_signal_thread_terminate(int thread_id, int code) 
+void monitor_signal_thread_terminate(unsigned int thread_id, int code) 
 {
 	thinkos_monitor_rt.ret_thread_id = thread_id;
 	thinkos_monitor_rt.ret_code = code;
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
+#endif
 
-void monitor_signal_error(int thread_id, int errno) 
+
+void __thinkos_systick_sleep(void)
 {
-	thinkos_monitor_rt.err_thread_id = thread_id;
-	thinkos_monitor_rt.err_code = errno;
-	monitor_signal(MONITOR_THREAD_TERMINATE);
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__systick_int_disable(krn);
+	__systick_pend_clr(krn);
+}
+
+void __thinkos_systick_wakeup(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__systick_int_enable(krn);
+	__systick_pend_set(krn);
 }
 
 
+void thinkos_monitor_sleep(void)
+{
+	/* Disable the systick interrupts */
+	__thinkos_systick_sleep();
+}
+
+void thinkos_monitor_wakeup(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t sigset;
+	uint32_t sigmsk;
+
+	sigset = krn->monitor.events;
+	sigmsk = krn->monitor.mask;
+	(void)sigset;
+	(void)sigmsk;
+
+	if (sigset == 0) {
+		DCC_LOG2(LOG_ERROR, "set=0x%08x msk=0x%08x", sigset, sigmsk);
+	} else {
+		DCC_LOG2(LOG_TRACE, "set=0x%08x msk=0x%08x", sigset, sigmsk);
+	}
+
+	/* Reenable systick interrupts and signal the monitor */
+	__thinkos_systick_wakeup();
+}
+
+
+int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
+{
+	unsigned int thread_id = id;
+
+	if (!thinkos_dbg_thread_ctx_is_valid(id)) {
+		return -1;
+	}
+
+	if (inf != NULL) {
+		inf->thread_id = thread_id;
+		inf->ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
+		inf->pc = thinkos_dbg_thread_pc_get(thread_id);
+		inf->sp = thinkos_dbg_thread_sp_get(thread_id);
+		inf->errno = thinkos_dbg_thread_errno_get(thread_id);
+	}
+
+	return 0;
+}
+
+int monitor_thread_break_get(int32_t * pcode)
+{
+	return thinkos_dbg_thread_break_get(pcode);
+}
+
+void monitor_thread_break_clr(void)
+{
+	monitor_signal(MONITOR_THREAD_FAULT);
+}
+ 
 static inline void __monitor_task_reset(void)
 {
-	monitor_signal(MONITOR_RESET);
+	monitor_signal(MONITOR_TASK_INIT);
 #if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
+	__monitor_wait(&thinkos_rt.monitor); 
 #else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+	__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 #endif
 }
 
@@ -426,88 +409,11 @@ void __attribute__((naked))
 	__monitor_task_reset();
 }
 
-#define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
-
-int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-	unsigned int errno = THINKOS_NO_ERROR;
-	struct thinkos_context * ctx;
-	unsigned int thread_id = id;
-	uint32_t pc = 0;
-	uint32_t sp = 0;
-	uint32_t ctrl = 0;
-
-	if (thread_id > THINKOS_THREAD_LAST) {
-		DCC_LOG(LOG_ERROR, "Invalid thread!");
-		return -1;
-	}
-
-	if (thread_id == THINKOS_THREAD_VOID) {
-		ctx  = NULL;
-		pc = 0;
-		sp = 0;
-		ctrl = 0;
-	} else if (thread_id == THINKOS_THREAD_IDLE) {
-		ctx  = __thinkos_idle_ctx();
-		pc = ctx->pc;
-		sp = xcpt->msp;
-	} else if (thread_id == xcpt->active) {
-		ctx = &xcpt->ctx.core;
-		errno = xcpt->errno;
-		pc = ctx->pc;
-		sp = xcpt->psp;
-	} else {
-		ctx = __thinkos_thread_ctx_get(thread_id);
-		if (((uint32_t)ctx < 0x10000000) || ((uint32_t)ctx >= 0x30000000)) {
-			DCC_LOG2(LOG_ERROR, "<%d> context 0x%08x invalid!!!", 
-					 thread_id + 1, ctx);
-			return -1;
-		}
-		ctrl = __thinkos_thread_ctrl_get(thread_id);
-		sp = __thinkos_thread_sp_get(thread_id);
-	}
-
-	if (inf != NULL) {
-		inf->pc = pc;
-		inf->sp = sp;
-		inf->errno = errno;
-		inf->thread_id = id;
-		inf->ctrl = ctrl;
-		inf->ctx = ctx;
-	}
-
-	return 0;
-}
-
-int monitor_errno_get(void)
-{
-	return  thinkos_monitor_rt.err_code;
-}
-
-int monitor_thread_break_get(void)
-{
-	struct thinkos_context * ctx;
-	int thread_id;
-
-	if ((thread_id = thinkos_monitor_rt.brk_thread_id) >= 0) {
-		if ((ctx = __thinkos_thread_ctx_get(thread_id)) == NULL)
-			return -1;
-	}
-
-	return thread_id;
-}
-
-void monitor_thread_break_clr(void)
-{
-	thinkos_monitor_rt.brk_thread_id = -1;
-	thinkos_monitor_rt.brk_code = 0;
-}
-
 /* -------------------------------------------------------------------------
  * ThinkOS Monitor Core
  * ------------------------------------------------------------------------- */
 
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 void monitor_null_task(const struct monitor_comm * comm, void * param)
 {
 	for (;;) {
@@ -518,6 +424,7 @@ void monitor_null_task(const struct monitor_comm * comm, void * param)
 #endif
 	}
 }
+#endif
 
 #if !(THINKOS_ENABLE_MONITOR_SCHED)
 /*
@@ -535,10 +442,13 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 
 	/* Get the new task */
 	monitor_task = thinkos_monitor_rt.task; 
+
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	/* Set the new task to the default NULL in 
 	   case the new task returns; */
 	thinkos_monitor_rt.task = monitor_null_task;
-	
+#endif
+
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
@@ -547,23 +457,28 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 
 	DCC_LOG2(LOG_TRACE, "PC=%08x SP=0x%08x!", monitor_task, cm3_sp_get());
 	monitor_task(comm, param);
-
-	DCC_LOG(LOG_WARNING, "Debug monitor task returned!");
-
 	__monitor_task_reset();
 }
 
 /* Prepare the execution environment to invoke the new monitor task. */
-static void __thinkos_monitor_on_reset(void)
+void __thinkos_monitor_on_reset(void)
 {
+	struct monitor_swap * swap;
 	uint32_t * sp;
+	uint32_t idx;
 
-	sp = &thinkos_monitor_stack[(sizeof(thinkos_monitor_stack) / 4) - 10];
-	sp[0] = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* CPSR */
-	sp[9] = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
+	idx = (sizeof(thinkos_monitor_stack) - 
+		   sizeof(struct monitor_swap)) / sizeof(uint32_t);
+
+	sp = &thinkos_monitor_stack[idx];
 	thinkos_rt.monitor.ctx = sp;
+	
+	swap = (struct monitor_swap *)sp;
+	swap->xpsr = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* XPSR */
+	swap->lr = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
 }
 
+#if 0
 uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 {
 	uint32_t sigset;
@@ -583,23 +498,13 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
 		}
 
-#if 0
-		/* TODO: this stack check is very usefull... 
-		   Some sort of error to the developer should be raised or
-		 force a fault */
-		if (thinkos_monitor_rt.ctx < thinkos_monitor_stack) {
-			DCC_LOG(LOG_PANIC, "stack overflow!");
-			DCC_LOG2(LOG_PANIC, "monitor.ctx=%08x monitor.stack=%08x", 
-					 thinkos_monitor_rt.ctx, thinkos_monitor_stack);
-			DCC_LOG2(LOG_PANIC, "sigset=%08x sigmsk=%08x", sigset, sigmsk);
-		}
-		DCC_LOG1(LOG_TRACE, "sigset %08x", sigset);
-#endif
 		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
 	}
 
 	return sigact;
 }
+#endif
+
 #endif
 
 
@@ -612,22 +517,9 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 void monitor_soft_reset(void)
 {
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"1. Disable all interrupt on NVIC " _ATTR_POP_); 
-	__monitor_irq_disable_all();
+	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " Monitor Soft Reset " VT_POP);
 
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"3. Core reset..."   _ATTR_POP_); 
-	__thinkos_core_reset();
-
-#if (THINKOS_ENABLE_EXCEPTIONS)
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"4. Except reset..."   _ATTR_POP_); 
-	thinkos_krn_exception_reset();
-#endif
-
-	DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_MAGENTA_ _REVERSE_
-			"6. Send soft reset signal"  _ATTR_POP_);
+	thinkos_dbg_reset();
 
 	monitor_signal(MONITOR_SOFTRST); 
 }
@@ -649,10 +541,10 @@ void thinkos_krn_monitor_reset(void)
 	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
 #endif
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
-	thinkos_monitor_rt.err_thread_id = -1;
-	thinkos_monitor_rt.err_code = THINKOS_NO_ERROR;
+#endif
 }
 
 
@@ -686,7 +578,7 @@ struct monitor_context * __monitor_ctx_init(uintptr_t task,
 
 	ctx = __monitor_base_ctx();
 
-#if (THINKOS_ENABLE_STACK_INIT) && (THINKOS_ENABLE_MEMORY_CLEAR)
+#if (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32(ctx, 0, sizeof(struct monitor_context));
 #endif
 
@@ -713,27 +605,33 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 #if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
 					   sizeof(thinkos_monitor_stack));
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(thinkos_monitor_stack, 0, 
+					   sizeof(thinkos_monitor_stack));
 #endif
 
+#if (THINKOS_ENABLE_MONITOR_THREADS)
 	thinkos_monitor_rt.ret_thread_id = -1;
 	thinkos_monitor_rt.ret_code = 0;
-	thinkos_monitor_rt.err_thread_id = -1;
-	thinkos_monitor_rt.err_code = THINKOS_NO_ERROR;
+#endif
 
 	/* Set the communication channel */
 	thinkos_monitor_rt.comm = comm; 
 
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	/* Set the new task to default NULL */
 	if (task == NULL)
 		/* Set the new task to NULL */
 		thinkos_monitor_rt.task = monitor_null_task;
 	else
+#endif
 		thinkos_monitor_rt.task = task;
 	thinkos_monitor_rt.param = param;
 	
-	/* set the startup and reset signals */
-	thinkos_rt.monitor.events = (1 << MONITOR_STARTUP) | (1 << MONITOR_RESET);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK | (1 << MONITOR_STARTUP);
+	/* set the task init and software reset signals */
+	thinkos_rt.monitor.events = (1 << MONITOR_TASK_INIT) | 
+		(1 << MONITOR_SOFTRST);
+	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	{
 		struct monitor_context * ctx;
@@ -755,13 +653,15 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 
 	/* Set the persistent signals */
 	thinkos_rt.monitor.events |= (1 << MONITOR_RESET);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK | (1 << MONITOR_STARTUP);
+	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
 
 	arg[0] = (uint32_t)thinkos_monitor_rt.task;
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
 	if (task == NULL)
 		/* Set the new task to NULL */
 		thinkos_monitor_rt.task = monitor_null_task;
 	else
+#endif
 		thinkos_monitor_rt.task = task;
 
 	thinkos_monitor_rt.param = param;
@@ -773,5 +673,4 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 #endif
 
 #endif /* THINKOS_ENABLE_MONITOR */
-
 

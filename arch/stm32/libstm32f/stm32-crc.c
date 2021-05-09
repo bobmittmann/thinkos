@@ -65,8 +65,49 @@ uint32_t stm32_crc32(void  * buf, unsigned int len)
 		}
 	}
 
+	return crc->dr;
+}
+
+uint32_t crc32(void  * __buf, unsigned int __len) 
+	__attribute__((alias("stm32_crc32")));
+
+/* FAST 32 bits aligned CRC32 */
+
+uint32_t stm32_crc32_u32(uint32_t __buf[], unsigned int len)
+{
+	struct stm32_crc * crc = STM32_CRC;
+	uint32_t * src = __buf;
+	uint32_t * end = src + (len >> 2);
+
+	crc->cr = CRC_RESET;
+
+	while (src != end)
+		crc->dr = __rev(*src++);
 
 	return crc->dr;
 }
+
+
+uint32_t stm32_crc32_u8(void  * __buf, unsigned int len)
+{
+	struct stm32_crc * crc = STM32_CRC;
+	uint8_t * src = (uint8_t *)__buf;
+	uint8_t * end = src + (len & ~3);
+
+	crc->cr = CRC_RESET;
+
+	while (src != end) {
+		crc->dr = src[3] + (src[2] << 8) + (src[1] << 16) + (src[0] << 24);
+		src += 4;
+	}
+
+	return crc->dr;
+}
+
+uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len) 
+	__attribute__((alias("stm32_crc32_u32")));
+
+uint32_t __thinkos_crc32_u8(void * __buf, unsigned int __len) 
+	__attribute__((alias("stm32_crc32_u8")));
 
 #endif

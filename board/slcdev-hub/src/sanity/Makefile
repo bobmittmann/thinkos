@@ -30,10 +30,9 @@ TEST_DIR = $(THINKOS_DIR)/test
 
 CFILES = $(TEST_DIR)/sanity/sanity.c 
 
-LIBDIRS = $(SDK_DIR)/libcm3 $(SDK_DIR)/libc\
-		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil
+LIBDIRS = $(SDK_DIR)/libc $(SDK_DIR)/libutil $(SDK_DIR)/libthinkos-usr
 
-LIBS = gcc thinkos-usr c util c cm3 
+LIBS = gcc thinkos-usr util c
 
 INCPATH = ../include .
 

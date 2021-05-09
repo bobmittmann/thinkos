@@ -133,10 +133,10 @@ void gdb_stub_task(struct monitor_comm * comm)
 
 	//	DCC_LOG(LOG_INFO, "Comm connected..");
 
-	sigmask = (1 << MONITOR_KRN_EXCEPT);
+	sigmask = (1 << MONITOR_KRN_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_STEP);
-	sigmask |= (1 << MONITOR_BREAKPOINT);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_APP_STOP);
 	sigmask |= (1 << MONITOR_APP_EXEC);
 	sigmask |= (1 << MONITOR_APP_UPLOAD);
@@ -224,9 +224,9 @@ void gdb_stub_task(struct monitor_comm * comm)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
 			break;
 
-		case MONITOR_KRN_EXCEPT:
+		case MONITOR_KRN_FAULT:
 			DCC_LOG(LOG_INFO, "Exception.");
-			monitor_clear(MONITOR_KRN_EXCEPT);
+			monitor_clear(MONITOR_KRN_FAULT);
 //			gdbrsp_on_fault(gdb, pkt);
 			break;
 
@@ -242,9 +242,9 @@ void gdb_stub_task(struct monitor_comm * comm)
 //			gdbrsp_on_step(gdb, pkt);
 			break;
 
-		case MONITOR_BREAKPOINT:
-			DCC_LOG(LOG_INFO, "MONITOR_BREAKPOINT");
-			monitor_clear(MONITOR_BREAKPOINT);
+		case MONITOR_THREAD_BREAK:
+			DCC_LOG(LOG_INFO, "MONITOR_THREAD_BREAK");
+			monitor_clear(MONITOR_THREAD_BREAK);
 //			gdbrsp_on_breakpoint(gdb, pkt);
 			break;
 

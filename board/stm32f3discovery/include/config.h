@@ -69,7 +69,6 @@
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 #define THINKOS_ENABLE_BREAK            1
@@ -99,7 +98,7 @@
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
@@ -147,7 +146,6 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_ENABLE_GDB             1
-#define BOOT_MEM_RESERVED           0x1000
 #define MONITOR_CONFIGURE_ENABLE    0
 #define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      0

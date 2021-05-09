@@ -54,11 +54,6 @@ static void conf_wr(int c)
 
 static int conf_master_start(void)
 {
-//	if (!stm32_gpio_stat(IO_ICE40_CDONE)) {
-//		stm32_gpio_set(IO_ICE40_CSEL);
-//		return -1;
-//	}
-
 	/* The application processor (AP) begins by driving the iCE40 
 	   CRESET_B pin Low, resetting the iCE40 FPGA. Similarly, the AP holds 
 	   the iCE40's CSEL pin Low. The AP must hold the CRESET_B pin Low 
@@ -114,7 +109,7 @@ static int lz_readvarsize(uint32_t * x, const uint8_t * buf)
 
 extern uint8_t __heap_start[];
 
-int lattice_ice40_lz77_configure(const uint8_t * buf, unsigned int max)
+int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
 {
 	uint8_t *wnd = (uint8_t *) (&__heap_start);
 	uint8_t marker;
@@ -152,8 +147,7 @@ int lattice_ice40_lz77_configure(const uint8_t * buf, unsigned int max)
 				/* Copy corresponding data from history window */
 				for (i = 0; i < length; ++i) {
 					uint8_t c;
-					c = wnd[(outpos -
-						 offset) & LZ_WND_MASK];
+					c = wnd[(outpos - offset) & LZ_WND_MASK];
 					wnd[outpos & LZ_WND_MASK] = c;
 					++outpos;
 				}

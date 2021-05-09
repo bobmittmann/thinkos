@@ -21,7 +21,7 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-BOARDS = slcdev-hub stm32f405-dk u2s-485 rda8com 
+BOARDS = slcdev-hub stm32f405-dk u2s-485 rda8com rda425
 
 OUTDIR := $(abspath build)
 
@@ -30,14 +30,23 @@ all: boot-all
 clean: boot-clean
 
 boot-all: $(BOARDS:=-boot-all)
-
 boot-clean: $(BOARDS:=-boot-clean)
+
+sanity-all: $(BOARDS:=-sanity-all)
+sanity-clean: $(BOARDS:=-sanity-clean)
 
 %-boot-all: 
 	$(MAKE) -C $(@:%-boot-all=%)/src/boot O=$(OUTDIR)/$(@:%-boot-all=%)/boot all
 
 %-boot-clean:
 	$(MAKE) -C $(@:%-boot-clean=%)/src/boot O=$(OUTDIR)/$(@:%-boot-clean=%)/boot clean
+
+
+%-sanity-all: 
+	$(MAKE) -C $(@:%-sanity-all=%)/src/sanity O=$(OUTDIR)/$(@:%-sanity-all=%)/sanity all
+
+%-sanity-clean: 
+	$(MAKE) -C $(@:%-sanity-all=%)/src/sanity O=$(OUTDIR)/$(@:%-sanity-all=%)/sanity all
 
 help:
 	@echo 'Targets:'
@@ -46,5 +55,5 @@ help:
 	@echo '  clean      - Clean all boards'
 	@echo
 
-.PHONY: help
+.PHONY: help boot-all boot-clean sanity-all sanity-clean
 

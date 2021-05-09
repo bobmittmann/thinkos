@@ -10,7 +10,7 @@
  * --------------------------------------------------------------------------*/
 
 #define THINKOS_NO_ERROR               0
-#define THINKOS_ERR_KERNEL_PANIC       1
+#define THINKOS_ERR_KRN_FAULT          1
 #define THINKOS_ERR_HARD_FAULT         2
 #define THINKOS_ERR_BUS_FAULT          3
 #define THINKOS_ERR_USAGE_FAULT        4
@@ -52,17 +52,40 @@
 #define THINKOS_ERR_FLASH_INVALID      40
 #define THINKOS_ERR_STACK_LIMIT        41
 #define THINKOS_ERR_IDLE_STACK         42
-#define THINKOS_ERR_MAX                43
+#define THINKOS_ERR_NOT_IMPLEMENTED    43
+#define THINKOS_ERR_THREAD_STACKALIGN  44
+#define THINKOS_ERR_THREAD_ENTRYADDR   45
+#define THINKOS_ERR_THREAD_EXITADDR    46
+#define THINKOS_ERR_THREAD_EXIST       47
+#define THINKOS_ERR_APP_INVALID        48
+#define THINKOS_ERR_APP_CRC_ERROR      49
+#define THINKOS_ERR_APP_DATA_INVALID   50
+#define THINKOS_ERR_APP_CODE_INVALID   51
+#define THINKOS_ERR_APP_BSS_INVALID    52
+
+#define THINKOS_ERR_KRN_NORETTOBASE    53
+#define THINKOS_ERR_KRN_RETMSP         54
+#define THINKOS_ERR_KRN_RETHANDLER     55
+#define THINKOS_ERR_KRN_IDLEFAULT      56
+#define THINKOS_ERR_KRN_STACKOVF       57
+#define THINKOS_ERR_KRN_UNSTACK        58
+#define THINKOS_ERR_THREAD_CTX_INVALID 59
+
+#define THINKOS_ERR_IDLE_ENTRY         60
+#define THINKOS_ERR_IDLE_XCPT          61
+
+#define THINKOS_ERR_MAX                62
 
 #ifndef __ASSEMBLER__
 
-extern const char thinkos_err_name_lut[THINKOS_ERR_MAX][12];
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+char const * thinkos_krn_err_tag(unsigned int errno);
 char const * thinkos_krn_strerr(unsigned int errno);
+
 
 #ifdef __cplusplus
 }

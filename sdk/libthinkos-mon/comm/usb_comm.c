@@ -43,6 +43,10 @@
 #define THINKOS_MONITOR_ENABLE_COMM_STATS 0
 #endif
 
+#ifndef THINKOS_MONITOR_ENABLE_COMM_BRK
+#define THINKOS_MONITOR_ENABLE_COMM_BRK    1
+#endif
+
 /* Enable USB2.0 */
 #ifdef THINKOS_MONITOR_ENABLE_USB2_00 
 #define THINKOS_MONITOR_ENABLE_USB2_00 0
@@ -52,6 +56,7 @@
 #ifdef THINKOS_MONITOR_ENABLE_USB_HS
 #define THINKOS_MONITOR_ENABLE_USB_HS 0
 #endif
+
 
 #define EP0_ADDR 0
 
@@ -82,20 +87,29 @@
 #define USB_FEATURE_DEVICE_ENABLED 0
 #endif
 
+#ifndef USB_STATUS_DEVICE_ENABLED
+#define USB_STATUS_DEVICE_ENABLED 0
+#endif
+
 #ifndef USB_FEATURE_INTERFACE_ENABLED
 #define USB_FEATURE_INTERFACE_ENABLED 0
+#endif
+
+#ifndef USB_STATUS_INTERFACE_ENABLED
+#define USB_STATUS_INTERFACE_ENABLED 0
 #endif
 
 #ifndef USB_FEATURE_ENDPOINT_ENABLED
 #define USB_FEATURE_ENDPOINT_ENABLED 0
 #endif
 
-#ifndef USB_STATUS_ENABLED
-#define USB_STATUS_ENABLED 1
+#ifndef USB_STATUS_ENDPOINT_ENABLED
+#define USB_STATUS_ENDPOINT_ENABLED 0
 #endif
 
+
 #ifndef USB_SYNCH_FRAME_ENABLED
-#define USB_SYNCH_FRAME_ENABLED 1
+#define USB_SYNCH_FRAME_ENABLED 0
 #endif
 
 struct cdc_acm_descriptor_config {
@@ -250,8 +264,13 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 			sizeof(struct cdc_descriptor_abstract_control_management),
 		.bDescriptorType = CDC_CS_INTERFACE,
 		.bDescriptorSubtype = CDC_ABSTRACT_CONTROL_MANAGEMENT,
-		.bmCapabilities = CDC_ACM_COMMFEATURE + CDC_ACM_LINE + 
-			CDC_ACM_SENDBREAK
+		.bmCapabilities = CDC_ACM_COMMFEATURE 
+#if 0
+			+ CDC_ACM_LINE
+#endif
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
+			+ CDC_ACM_SENDBREAK
+#endif
 	},
 	/* Union Functional Descriptor */
 	.un0 = {
@@ -303,7 +322,6 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 	}
 
 };
-
 
 #define CDC_STOP_BITS_1   (0 << 0)
 #define CDC_STOP_BITS_1_5 (1 << 0)
@@ -388,7 +406,7 @@ static const struct cdc_line_coding monitor_usb_usb_cdc_lc = {
     .bDataBits = 8
 };
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_DEVICE_ENABLED)
 static const uint16_t monitor_usb_device_status = 
 	USB_DEVICE_STATUS_SELF_POWERED;
 static const uint16_t monitor_usb_interface_status = 0x0000;
@@ -418,7 +436,8 @@ struct usb_cdc_acm_dev {
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
-	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
+#define CDC_RX_BUF_SIZE CDC_EP_OUT_MAX_PKT_SIZE
+	uint8_t rx_buf[CDC_RX_BUF_SIZE];
 
 #if (THINKOS_MONITOR_ENABLE_COMM_STATS)
 	struct {
@@ -444,33 +463,33 @@ static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 
 	seq = dev->rx_seq;
 	ack = dev->rx_ack;
-	if ((free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack)) > 0) {
+	if ((free = CDC_RX_BUF_SIZE - (int32_t)(seq - ack)) > 0) {
 		int pos;
 
-		pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
+		pos = seq % CDC_RX_BUF_SIZE;
 		if (pos == 0) {
 			int n;
 
 			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 									dev->rx_buf, free);
-			DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d n=%d", 
+			DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d n=%d", 
 					 seq, ack, free, n);
 			cnt = n;
 		} else {
 			int m;
 			int n;
 
-			n = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), free);
+			n = MIN((CDC_RX_BUF_SIZE - pos), free);
 			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 									&dev->rx_buf[pos], n);
-			if (m == n)	{
+			if ((m == n) && (n != free)) {
 				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 										dev->rx_buf, free - m);
-				DCC_LOG5(LOG_MSG, "seq=%d ack=%d free=%d n=%d m=%d", 
+				DCC_LOG5(LOG_INFO, "seq=%d ack=%d free=%d n=%d m=%d", 
 						 seq, ack, free, n, m);
 				cnt = n + m;
 			} else {
-				DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d m=%d", 
+				DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d m=%d", 
 						 seq, ack, free, m);
 				cnt = m;
 			}
@@ -479,8 +498,8 @@ static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 
 		seq += cnt;
 
-		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
-			DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
+		if ((int32_t)(seq - ack) == CDC_RX_BUF_SIZE) {
+			DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RX PAUSE " VT_POP);
 			dev->rx_paused = true;
 		}
 
@@ -496,10 +515,15 @@ static void monitor_usb_on_rcv(usb_class_t * cl,
 						   unsigned int ep_id, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	unsigned int cnt;
 
-	DCC_LOG1(LOG_MSG, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
+	cnt = monitor_usb_cdc_acm_recv(dev);
+	(void)cnt;
 
-	monitor_usb_cdc_acm_recv(dev);
+	DCC_LOG2(LOG_INFO, VT_PSH VT_FCY VT_REV 
+			 "IRQ pkt_len=%d rcv_cnt=%d COMM_RCV..." 
+			 VT_POP, 
+			 len, cnt);
 
 	monitor_signal(MONITOR_COMM_RCV);
 }
@@ -565,7 +589,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* Return Device Descriptor */
 			*ptr = (void *)&cdc_acm_desc_dev;
 			len = sizeof(struct usb_descriptor_device);
-			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
+			DCC_LOG1(LOG_INFO, "GetDesc: Device: len=%d", len);
 			break;
 		}
 #if (THINKOS_MONITOR_ENABLE_USB2_00)
@@ -573,7 +597,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* Return Device Descriptor */
 			*ptr = (void *)&cdc_acm_desc_qual;
 			len = sizeof(struct usb_descriptor_device_qualifier);
-			DCC_LOG1(LOG_TRACE, "GetDesc: Device: len=%d", len);
+			DCC_LOG1(LOG_INFO, "GetDesc: Device: len=%d", len);
 			break;
 		}
 #endif
@@ -581,13 +605,13 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* Return Configuration Descriptor */
 			*ptr = (void *)&monitor_usb_cdc_acm_desc_cfg;
 			len = sizeof(struct cdc_acm_descriptor_set);
-			DCC_LOG1(LOG_TRACE, "GetDesc: Config: len=%d", len);
+			DCC_LOG1(LOG_INFO, "GetDesc: Config: len=%d", len);
 			break;
 		}
 
 		if (desc == USB_DESCRIPTOR_STRING) {
 			unsigned int n = value & 0xff;
-			DCC_LOG1(LOG_TRACE, "GetDesc: String[%d]", n);
+			DCC_LOG1(LOG_INFO, "GetDesc: String[%d]", n);
 			if (n < USB_STRCNT()) {
 				*ptr = (void *)monitor_usb_cdc_acm_str[n];
 				len = monitor_usb_cdc_acm_str[n]->length;
@@ -595,17 +619,17 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			break;
 		}
 		len = 0;
-		DCC_LOG1(LOG_TRACE, "GetDesc: %d ?", desc);
+		DCC_LOG1(LOG_INFO, "GetDesc: %d ?", desc);
 		break;
 
 	case STD_SET_ADDRESS:
-		DCC_LOG1(LOG_TRACE, "SetAddr: %d [ADDRESS]", value);
+		DCC_LOG1(LOG_INFO, "SetAddr: %d [ADDRESS]", value);
 		break;
 
 	case STD_SET_CONFIGURATION: {
-		DCC_LOG1(LOG_TRACE, "SetCfg: %d", value);
+		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
 		if (value) {
-			DCC_LOG(LOG_TRACE, "[CONFIGURED]");
+			DCC_LOG(LOG_INFO, "[CONFIGURED]");
 			dev[0].in_ep = usb_dev_ep_init(usb, &monitor_usb_in_info, 
 										   NULL, 0);
 			dev[0].out_ep = usb_dev_ep_init(usb, &monitor_usb_out_info, 
@@ -614,7 +638,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 											NULL, 0);
 			dev->configured = 1;
 		} else {
-			DCC_LOG(LOG_TRACE, "[UNCONFIGURED]");
+			DCC_LOG(LOG_INFO, "[UNCONFIGURED]");
 			usb_dev_ep_ctl(dev->usb, dev[0].in_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev[0].out_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev[0].int_ep, USB_EP_DISABLE);
@@ -623,45 +647,45 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		break;
 	}
 
+	case STD_GET_CONFIGURATION:
+		DCC_LOG(LOG_INFO, "GetCfg");
+		*ptr = (void *)&dev->configured;
+		len = 1;
+		break;
 
-#if (USB_STATUS_ENABLED)
+
+#if (USB_STATUS_DEVICE_ENABLED)
 	case STD_GET_STATUS_DEVICE:
-		DCC_LOG(LOG_TRACE, "GetStatusDev");
+		DCC_LOG(LOG_INFO, "GetStatusDev");
 		*ptr = (void *)&monitor_usb_device_status;
 		len = 2;
 		break;
 #endif
 
-	case STD_GET_CONFIGURATION:
-		DCC_LOG(LOG_TRACE, "GetCfg");
-		*ptr = (void *)&dev->configured;
-		len = 1;
-		break;
-
 #if (USB_FEATURE_DEVICE_ENABLED)
 	case STD_CLEAR_FEATURE_DEVICE:
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
-			DCC_LOG(LOG_TRACE, "SetFeatureDev(REMOTE_WAKEUP)");
+			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
-			DCC_LOG(LOG_TRACE, "SetFeatureDev(TEST_MODE)");
+			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE)");
 		} else
 			DCC_LOG1(LOG_WARNING, "ClrFeatureDev(%d)", value);
 		break;
 
 	case STD_SET_FEATURE_DEVICE:
 		if (value == USB_DEVICE_REMOTE_WAKEUP) {
-			DCC_LOG(LOG_TRACE, "SetFeatureDev(REMOTE_WAKEUP)");
+			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
-			DCC_LOG(LOG_TRACE, "SetFeatureDev(TEST_MODE )");
+			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE )");
 		} else
 			DCC_LOG1(LOG_WARNING, "SetFeatureDev(%d)", value);
 		break;
 #endif
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_INTERFACE_ENABLED)
 	/* Standard Interface Requests */
 	case STD_GET_STATUS_INTERFACE:
-		DCC_LOG1(LOG_TRACE, "GetStatusIf(%d)", index);
+		DCC_LOG1(LOG_INFO, "GetStatusIf(%d)", index);
 		*ptr = (void *)&monitor_usb_interface_status;
 		len = 2;
 		break;
@@ -669,23 +693,23 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 
 #if (USB_FEATURE_INTERFACE_ENABLED)
 	case STD_CLEAR_FEATURE_INTERFACE:
-		DCC_LOG2(LOG_TRACE, "ClrFeatureIf(%d,%d)", index, value);
+		DCC_LOG2(LOG_INFO, "ClrFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_SET_FEATURE_INTERFACE:
-		DCC_LOG2(LOG_TRACE, "SetFeatureIf(%d,%d)", index, value);
+		DCC_LOG2(LOG_INFO, "SetFeatureIf(%d,%d)", index, value);
 		break;
 
 	case STD_GET_INTERFACE:
-		DCC_LOG1(LOG_TRACE, "GetInterface(%d)", index);
+		DCC_LOG1(LOG_INFO, "GetInterface(%d)", index);
 		break;
 
 	case STD_SET_INTERFACE:
-		DCC_LOG1(LOG_TRACE, "SetInterface(%d)", index);
+		DCC_LOG1(LOG_INFO, "SetInterface(%d)", index);
 		break;
 #endif
 
-#if (USB_STATUS_ENABLED)
+#if (USB_STATUS_ENDPOINT_ENABLED)
 	/* Standard Endpoint Requests */
 	case STD_GET_STATUS_ENDPOINT:
 		{
@@ -704,14 +728,14 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			int ep_addr = index;
 
 			if (value == USB_ENDPOINT_HALT) {
-				DCC_LOG2(LOG_TRACE, VT_PSH VT_FMG VT_BRI
+				DCC_LOG2(LOG_INFO, VT_PSH VT_FMG VT_BRI
 						 "ClrFeatureEP Halt (%s %d)" VT_POP, 
 						  (ep_addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
 						  ep_addr & 0x7f);
 
 				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_CLR);
 			} else {
-				DCC_LOG2(LOG_TRACE, "ClrFeatureEP(%d,%d)", ep_addr, value);
+				DCC_LOG2(LOG_INFO, "ClrFeatureEP(%d,%d)", ep_addr, value);
 			}
 		}
 		break;
@@ -721,13 +745,13 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			int ep_addr = index;
 
 			if (value == USB_ENDPOINT_HALT) {
-				DCC_LOG2(LOG_TRACE, VT_PSH VT_FMG VT_BRI
+				DCC_LOG2(LOG_INFO, VT_PSH VT_FMG VT_BRI
 						 "SetFeatureEP Halt (%s %d)" VT_POP, 
 						  (ep_addr & USB_ENDPOINT_IN) ? "IN" : "OUT",
 						  ep_addr & 0x7f);
 				usb_dev_ep_ctl(dev->usb, ep_addr, USB_EP_STALL_SET);
 			} else {
-				DCC_LOG2(LOG_TRACE, "SetFeatureEP(%d,%d)", ep_addr, value);
+				DCC_LOG2(LOG_INFO, "SetFeatureEP(%d,%d)", ep_addr, value);
 			}
 		}
 		break;
@@ -748,23 +772,23 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			struct cdc_line_coding * lc;
 			lc = (struct cdc_line_coding *)dev->ctl_buf;
 			(void)lc;
-			DCC_LOG(LOG_TRACE, "CDC SetLn");
-			DCC_LOG1(LOG_TRACE, "dsDTERate=%d", lc->dwDTERate);
-			DCC_LOG1(LOG_TRACE, "bCharFormat=%d", lc->bCharFormat);
-			DCC_LOG1(LOG_TRACE, "bParityType=%d", lc->bParityType);
-			DCC_LOG1(LOG_TRACE, "bDataBits=%d", lc->bDataBits);
+			DCC_LOG(LOG_INFO, "CDC SetLn");
+			DCC_LOG1(LOG_INFO, "dsDTERate=%d", lc->dwDTERate);
+			DCC_LOG1(LOG_INFO, "bCharFormat=%d", lc->bCharFormat);
+			DCC_LOG1(LOG_INFO, "bParityType=%d", lc->bParityType);
+			DCC_LOG1(LOG_INFO, "bDataBits=%d", lc->bDataBits);
 			break;
 		}
 
 	case GET_LINE_CODING:
-		DCC_LOG(LOG_TRACE, "CDC GetLn");
+		DCC_LOG(LOG_INFO, "CDC GetLn");
 		/* Return Line Coding */
 		*ptr = (void *)&monitor_usb_usb_cdc_lc;
 		len = sizeof(struct cdc_line_coding);
 		break;
 
 	case SET_CONTROL_LINE_STATE:
-		DCC_LOG2(LOG_TRACE, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
+		DCC_LOG2(LOG_INFO, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d",
 				(value & CDC_DTE_PRESENT) ? 1 : 0,
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
 		if (value & CDC_DTE_PRESENT) 
@@ -775,6 +799,7 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		monitor_signal(MONITOR_COMM_CTL);
 		break;
 
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
 	case SEND_BREAK:
 		DCC_LOG1(LOG_TRACE, "CDC Send Break value=%d", value);
 		if (value != 0) {
@@ -786,12 +811,11 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			/* toggle if the bit is not set */
 			toggle = ~(status ^ dev->shadow) & COMM_ST_BREAK_REQ;
 			dev->status = status ^ toggle;
-
-			/* signal monitor */
-			monitor_signal(MONITOR_COMM_CTL);
+			monitor_signal(MONITOR_COMM_BRK);
 		}
 
 		break;
+#endif
 
 	default:
 		DCC_LOG5(LOG_WARNING, "CDC t=%x r=%x v=%x i=%d l=%d",
@@ -844,6 +868,7 @@ static void monitor_usb_on_wakeup(usb_class_t * cl)
 static void monitor_usb_on_error(usb_class_t * cl, int code)
 {
 	DCC_LOG(LOG_TRACE, "...");
+
 }
 
 static int monitor_usb_comm_send(const void * comm, 
@@ -918,14 +943,14 @@ static int monitor_usb_comm_recv(const void * comm,
 	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
 
 	cnt = MIN(n, len);
-	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
+	pos = ack % CDC_RX_BUF_SIZE;
 
 	if (pos == 0) {
 		DCC_LOG4(LOG_INFO, "1. n=%d ack=%d pos=%d cnt=%d...", 
 				 n, ack, pos, cnt);
 		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
-		unsigned int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
+		unsigned int m = CDC_RX_BUF_SIZE - pos;
 		unsigned int l;
 
 		m = MIN(m, cnt);
@@ -946,14 +971,15 @@ static int monitor_usb_comm_recv(const void * comm,
 	ack += cnt;
 	dev->rx_ack = ack;
 
-	if (dev->rx_paused && ((dev->rx_seq - ack) < CDC_EP_IN_MAX_PKT_SIZE)) {
+	if (dev->rx_paused && ((dev->rx_seq - ack) < (CDC_RX_BUF_SIZE / 2))) {
 		DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
 		dev->rx_paused = false;
+		/* receive more data into buffer */
 		monitor_usb_cdc_acm_recv(dev);
 	}
 
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
-		DCC_LOG(LOG_MSG, "signal MONITOR_COMM_RCV!");
+		DCC_LOG(LOG_INFO, "signal MONITOR_COMM_RCV!");
 		/* Pending data on fifo, resignal .. */
 		monitor_signal(MONITOR_COMM_RCV);
 	}
@@ -975,7 +1001,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		}
 		/* Bits in the shadow register are inverted  */
 		ret = dev->status ^ dev->shadow;
-		DCC_LOG1(LOG_TRACE, "status=%02x", ret);
+		DCC_LOG1(LOG_MSG, "status=%02x", ret);
 		break;
 
 	case COMM_CTRL_CONNECT:
@@ -988,15 +1014,13 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		}
 		break;
 
-	case COMM_CTRL_DISCONNECT:
-		ret = 0;
-		break;
-
+#if (THINKOS_MONITOR_ENABLE_COMM_BRK)
 	case COMM_CTRL_BREAK_ACK:
 		{
 			uint32_t status;
 			uint32_t toggle;
 
+			monitor_clear(MONITOR_COMM_BRK);
 			status = dev->shadow;
 			/* the bit state depends on shadow and status */
 			/* toggle if the bit is not set */
@@ -1006,34 +1030,12 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		ret = 0;
 		break;
 
-#if 0
-//	uint32_t buf[4];
-	if ((dev->acm.flags & ACM_CONNECTED) == 0) {
-		dev->acm.flags |= ACM_CONNECTED;
-		pkt = (struct cdc_notification *)buf;
-		/* bmRequestType */
-		pkt->bmRequestType = USB_CDC_NOTIFICATION;
-		/* bNotification */
-		pkt->bNotification = CDC_NOTIFICATION_SERIAL_STATE;
-		/* wValue */
-		pkt->wValue = 0;
-		/* wIndex */
-		pkt->wIndex = 1;
-		/* wLength */
-		pkt->wLength = 2;
-		/* data */
-		pkt->bData[0] = CDC_SERIAL_STATE_TX_CARRIER | 
-			CDC_SERIAL_STATE_RX_CARRIER;
-		pkt->bData[1] = 0;
-
-		ret = usb_dev_ep_pkt_xmit(dev->usb, dev->int_ep, pkt, 
-								  sizeof(struct cdc_notification));
-		if (ret < 0) {
-			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed!");
-			return ret;
-		}
-	}
 #endif
+
+	case COMM_CTRL_DISCONNECT:
+	default:
+		ret = 0;
+
 	}
 
 	return ret;
@@ -1063,6 +1065,7 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 {
 	struct usb_cdc_acm_dev * dev = &usb_class_if_instance.dev;
 	struct usb_class_if * cl = &usb_class_if_instance;
+	int ret;
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)usb;
@@ -1073,8 +1076,10 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->configured = 0;
 	dev->rx_paused = false;
 
-	DCC_LOG(LOG_TRACE, "usb_dev_init()");
-	usb_dev_init(dev->usb, cl, &monitor_usb_ev);
+	DCC_LOG1(LOG_INFO, "usb_dev_init(%08x)", dev->usb);
+	ret = usb_dev_init(dev->usb, cl, &monitor_usb_ev);
+	(void)ret;
+	DCC_LOG1(LOG_INFO, "usb_dev_init() --> %d", ret);
 
 	return &monitor_usb_comm_instance;
 }

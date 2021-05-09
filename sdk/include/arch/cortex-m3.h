@@ -703,9 +703,9 @@
 /* Return to thread mode and on return use the process stack extended frame */
 #define CM3_EXC_RET_THREAD_PSP_EXT 0xffffffed
 
-#define CM3_EXC_RET_THREAD         (1 << 1)
-#define CM3_EXC_RET_SPSEL          (1 << 2)
-#define CM3_EXC_RET_nFPCA          (1 << 4)
+#define EXC_RET_SPSEL          (1 << 2)
+#define EXC_RET_MODE           (1 << 3)
+#define EXC_RET_nFPCA          (1 << 4)
 
 #ifndef __ASSEMBLER__
 
@@ -1230,6 +1230,12 @@ static inline uint32_t __attribute__((always_inline)) cm3_sp_get(void) {
 	return sp;
 }
 
+static inline uint32_t __attribute__((always_inline)) cm3_pc_get(void) {
+	register uint32_t pc;
+	asm volatile ("mov %0, pc\n" : "=r" (pc));
+	return pc;
+}
+
 static inline void __attribute__((always_inline)) cm3_sp_set(uint32_t sp) {
 	asm volatile ("mov sp, %0\n" : : "r" (sp));
 }
@@ -1248,6 +1254,7 @@ static inline void __attribute__((always_inline)) cm3_lr_set(uint32_t lr) {
 
 extern uint32_t __clz(uint32_t val);
 extern uint32_t __rbit(uint32_t val);
+extern uint32_t __rev(uint32_t val);
 
 extern uint32_t __ldrex(uint32_t * addr);
 extern uint32_t __strex(uint32_t * addr, uint32_t val);
@@ -1257,6 +1264,12 @@ extern uint32_t __strex(uint32_t * addr, uint32_t val);
 static inline uint32_t __attribute__((always_inline)) __clz(uint32_t val) {
 	register uint32_t ret;
 	asm volatile ("clz %0, %1\n" : "=r" (ret) : "r" (val));
+	return ret;
+}
+
+static inline uint32_t __attribute__((always_inline)) __rev(uint32_t val) {
+	register uint32_t ret;
+	asm volatile ("rev %0, %1\n" : "=r" (ret) : "r" (val));
 	return ret;
 }
 

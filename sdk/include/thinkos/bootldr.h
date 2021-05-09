@@ -29,26 +29,10 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_APP__
+#include <thinkos/app.h>
 
 #include <thinkos/board.h>
-
-/* File identification magic block 
-
-   This block is used to guess the type of a memory block or file
-   based on a pattarn located somewhere inside the file.
- 
- */
-struct magic_blk {
-	struct {
-		uint16_t pos; /* Position of the pattern in bytes */
-		uint16_t cnt; /* Number of record entries */
-	} hdr;
-	/* Pattern records */
-	struct {
-	    uint32_t mask; /* Bitmask */
-		uint32_t comp; /* Compare value */
-	} rec[];
-};
 
 /* application block descriptor */
 struct monitor_app_desc {
@@ -90,6 +74,7 @@ struct thinkos_board {
 	int (* init)(void);
 	/* Soft reset */
 	void (* softreset)(void);
+	int (* on_break)(const struct monitor_comm *);
 
 	int (* configure_task)(void *);
 	int (* selftest_task)(void *);
@@ -105,6 +90,10 @@ struct thinkos_board {
 	   returns.  */
 	int (* default_task)(void *);
 
+	struct {
+		uint8_t mem;
+		uint8_t blk;
+	} app;
 	const struct thinkos_mem_map * memory;
 };
 
@@ -121,26 +110,6 @@ struct thinkos_board {
 #define BOOT_OPT_SELFTEST   (1 << 4)
 /* Try to run the application */
 #define BOOT_OPT_APPRUN     (1 << 5)
-
-
-
-/* FIXME: Not quite sure why this is here!!!! */
-struct ymodem_rcv {
-	unsigned int pktno;
-	unsigned int fsize;
-	unsigned int count;
-
-	unsigned char crc_mode;
-	unsigned char xmodem;
-	unsigned char sync;
-	unsigned char retry;
-
-	struct { 
-		unsigned char hdr[3];
-		unsigned char data[1024];
-		unsigned char fcs[2];
-	} pkt;
-};
 
 static inline void monitor_req_app_stop(void) {
 	monitor_signal(MONITOR_APP_STOP);
@@ -182,22 +151,14 @@ void standby_monitor_task(const struct monitor_comm * comm, void * arg);
 void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	void (monitor)(const struct monitor_comm *, void *));
 
-int monitor_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
-
-int monitor_ymodem_rcv_pkt(const struct monitor_comm * comm, 
-						struct ymodem_rcv * rx);
-
-void monitor_console_io_task(const struct monitor_comm * comm);
-
-int monitor_ymodem_flash(const struct monitor_comm * comm,
-						uint32_t addr, unsigned int size);
-
 bool monitor_app_suspend(void);
 
 bool monitor_app_continue(void);
 
-bool monitor_app_exec(const struct monitor_app_desc * desc, bool paused);
+bool monitor_app_exec(const struct monitor_comm * comm);
 
+int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
+						  uintptr_t addr);
 #ifdef __cplusplus
 }
 #endif

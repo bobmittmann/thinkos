@@ -31,25 +31,25 @@ VERSION_MINOR = "0"
 
 PROG = stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 $(THINKOS_DIR)/boot/standby.c board.c 
+BOOT_CFILES = monitor.c standby.c 
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
-		  $(SDK_DIR)/libthinkos-mon \
-		  $(SDK_DIR)/libgdbrsp $(SDK_DIR)/libice-comm 
+CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c boot.c
 
-LIBS = stm32f util thinkos-krn thinkos-mon thinkos-dbg gcc gdbrsp ice-comm 
+LIBDIRS = $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libutil \
+		  $(ARCH_DIR)/libstm32f \
+		  $(SDK_DIR)/libthinkos-mon $(SDK_DIR)/libxmodem \
+		  $(SDK_DIR)/libice-comm 
 
-INCPATH = $(SDK_DIR)/include ../include
+LIBS = stm32f util thinkos-krn thinkos-mon xmodem ice-comm 
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -O2 -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -g -mno-unaligned-access 
+CFLAGS = -Os
 
 MACH = stm32f415xg
-KRN_DATA_SIZE = 4096
+KRN_DATA_SIZE = 8192
 KRN_CODE_SIZE = 65536
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-krn.mk
 

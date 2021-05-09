@@ -36,8 +36,8 @@
 enum idle_hook_signal {
 	/* The higest priority goes to system reset request */
 	IDLE_HOOK_SYSRST = 0,
-	/* Debug/Monitor IDLE signal is next in the list */
-	IDLE_HOOK_NOTIFY_MONITOR = 1,
+	/* Wake up the monitor */
+	IDLE_HOOK_MONITOR_WAKEUP = 1,
 	/* */
 	IDLE_HOOK_SOFTRST = 2,
 	IDLE_HOOK_EXCEPT_DONE = 3,

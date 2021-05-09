@@ -23,13 +23,14 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_type.c obj_type_get.c \
-			  alloc_bmp_get.c bmp_alloc.c strlen.c \
-			  memcpy.c memcpy32.c memset32.c active.c suspended.c \
+MISC_CFILES = thinkos_obj.c strlen.c \
+			  memcpy.c memcpy32.c memset32.c \
+			  snprintf.c console_io.c \
+			  active.c suspended.c \
 			  thread_getnext.c thread_get.c \
 			  thread_isfaulty.c thread_ispaused.c \
 			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
-			  cpu-info.c
+			  cpu-info.c scan_stack.c thread_wq_get.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
@@ -38,24 +39,28 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_sleep.c thinkos_break.c thinkos_pause.c \
 		 thinkos_exit.c thinkos_join.c thinkos_cancel.c \
 		 thinkos_gate.c thinkos_ctl.c thinkos_idle.c thinkos_mpu.c \
-		 thinkos_systmr.c thinkos_ffs.c \
+		 thinkos_systmr.c thinkos_ffs.c thinkos_console.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
-		 thinkos_krnsvc.c thinkos_sysrst.c \
+		 thinkos_krnsvc.c thinkos_sysrst.c thinkos_time.c \
+		 thinkos_obj_kind_lut.c \
+		 thinkos_app.c thinkos_trace.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
-  SFILES = cortex-m4f/thinkos_sched-cortex-m4f.S \
-		   cortex-m3/crt0_cortex-m3.S \
-		   cortex-m3/thinkos_vec_cortex-m3.S
-#		   cortex-m4f/thinkos_sched-cortex-m4f-ndbg.S
+  SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
+		   cortex-m/thinkos_vec-cortex-m3.S \
+		   cortex-m/thinkos_svc-cortex-m3.S \
+		   cortex-m/thinkos_sched-cortex-m4f.S
 endif
 
 ifeq ($(CPU), cortex-m3)
-  SFILES = cortex-m3/thinkos_sched-cortex-m3.S \
-		   cortex-m3/crt0_cortex-m3.S \
-		   cortex-m3/thinkos_vec_cortex-m3.S
-#		   cortex-m3/thinkos_sched-cortex-m3-basic.S
+  SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
+		   cortex-m/thinkos_vec-cortex-m3.S \
+		   cortex-m/thinkos_svc-cortex-m3.S \
+		   cortex-m/thinkos_sched-cortex-m4f.S
+#		   cortex-m/thinkos_sched-cortex-m3.S
+#		   cortex-m/thinkos_sched-cortex-m3-msk.S
 endif
 
 include ../../mk/lib.mk

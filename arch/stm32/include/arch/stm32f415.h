@@ -94,7 +94,9 @@
 #define STM32_GPIOI ((struct stm32_gpio *)STM32_BASE_GPIOI)
 #define STM32_GPIO(N) ((struct stm32_gpio *)(STM32_BASE_GPIOA + (N)*0x400))
 
+#define STM32_CRC       ((struct stm32_crc *)STM32_BASE_CRC)
+
 #endif /* __ASSEMBLER__ */
 
-#endif /* __STM32F405_H__ */
+#endif /* __STM32F415_H__ */
 

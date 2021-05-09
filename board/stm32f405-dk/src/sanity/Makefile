@@ -1,52 +1,45 @@
-# Makefile
-# --------
-#
-#   ************************************************************************
-#   **            Company Confidential - For Internal Use Only            **
-#   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
-#   **                                                                    **
-#   **   This information is confidential and the exclusive property of   **
-#   ** Mircom.  It is intended for internal use and only for the purposes **
-#   **   provided,  and may not be disclosed to any third party without   **
-#   **                prior written permission from Mircom.               **
-#   **                                                                    **
-#   **                        Copyright 2017-2018                         **
-#   ************************************************************************
-#
-#
-
-#
-# Author: Bob Mittmann <bmittmann@mircomgroup.com>
+# File:		Makefile
+# Module: 
+# Target:
+# Comment:  
+# Copyright(C) 2012 Bob Mittmann. All Rights Reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-PROJECT_ROOT = ../..
-THINKOS_DIR = $(PROJECT_ROOT)/../..
-ARCH_DIR = $(THINKOS_DIR)/arch/stm32
-SDK_DIR = $(THINKOS_DIR)/sdk
-TOOLS_DIR = $(THINKOS_DIR)/tools
 
 PROG = sanity
 
-CFILES = io.c sanity.c
+THINKOS_DIR = ../../../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
+TEST_DIR = $(THINKOS_DIR)/test
 
-LIBDIRS = $(SDK_DIR)/libcm3 \
-		  $(ARCH_DIR)/libstm32f \
-		  $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libc \
-		  $(SDK_DIR)/libthinkos-usr \
+CFILES = $(wildcard $(TEST_DIR)/sanity/*.c)
 
-LIBS = gcc m cm3 stm32f util c thinkos-usr 
+LIBDIRS = $(SDK_DIR)/libc $(SDK_DIR)/libutil $(SDK_DIR)/libthinkos-usr
 
-INCPATH = $(PROJECT_ROOT)/src/include
+LIBS = gcc thinkos-usr util c
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
-CFLAGS = -O1 -Werror -Wall -Wextra -Wdouble-promotion -Wno-unused-parameter
-OPTIONS = -g -mno-unaligned-access 
+
+CFLAGS = -O1 
 
 MACH = stm32f415xg
-THINKAPP := 0x08020000
-LDCODE := $(THINKAPP)
-LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32.mk
-
+include $(ARCH_DIR)/mk/stm32-app.mk
 

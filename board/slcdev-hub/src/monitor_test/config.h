@@ -35,11 +35,7 @@
 
 #define THINKOS_ENABLE_IDLE_WFI         1
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             32
 #define THINKOS_ENABLE_THREAD_ALLOC     1
@@ -96,7 +92,7 @@
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 
 #define THINKOS_ENABLE_MPU              1
 #define THINKOS_ENABLE_ESCALATE         1

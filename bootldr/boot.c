@@ -56,10 +56,6 @@ const char * const copyright_str = "(c) Copyright 2015 - Bob Mittmann";
 #define BOOT_CUSTOM_COMM 0
 #endif
 
-#ifndef BOOT_MEM_RESERVED 
-#define BOOT_MEM_RESERVED 0x1000
-#endif
-
 void monitor_task(struct dmon_comm * comm);
 
 void monitor_exec(void)
@@ -123,14 +119,6 @@ int main(int argc, char ** argv)
 		DCC_LOG(LOG_TRACE, "5. usb_comm_init()");
 		comm_init();
 	}
-
-#if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_TRACE, "6. thinkos_mpu_init()");
-	thinkos_mpu_init(BOOT_MEM_RESERVED);
-
-	DCC_LOG(LOG_TRACE, "7. thinkos_userland()");
-	thinkos_userland();
-#endif
 
 	if (opt & BOOT_OPT_MONITOR) {
 		DCC_LOG(LOG_TRACE, "8. monitor_exec()");

@@ -67,7 +67,6 @@
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 #define THINKOS_ENABLE_BREAK            1
@@ -101,7 +100,7 @@
 #define THINKOS_ENABLE_DEBUG_BKPT       0
 #define THINKOS_ENABLE_DEBUG_WPT        0
 #define THINKOS_ENABLE_DEBUG_STEP       0
-#define THINKOS_ENABLE_DEBUG_FAULT      0
+#define THINKOS_ENABLE_THREAD_FAULT     0
 #define THINKOS_ENABLE_ERROR_TRAP       0
 
 #define THINKOS_ENABLE_MPU              0
@@ -175,7 +174,6 @@
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
-#define BOOT_MEM_RESERVED          0x1000
 #define BOOT_ENABLE_GDB            0
 #define BOOT_ENABLE_THIRD          0
 #define BOOT_ENABLE_CUSTOM_COMM    1

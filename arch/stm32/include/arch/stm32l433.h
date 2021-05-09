@@ -82,6 +82,10 @@
 #define STM32_GPIOC  ((struct stm32_gpio *)STM32_BASE_GPIOC)
 #define STM32_GPIOD  ((struct stm32_gpio *)STM32_BASE_GPIOD)
 #define STM32_GPIOE  ((struct stm32_gpio *)STM32_BASE_GPIOE)
+#define STM32_GPIOF  ((struct stm32_gpio *)STM32_BASE_GPIOF)
+#define STM32_GPIOH  ((struct stm32_gpio *)STM32_BASE_GPIOH)
+
+#define STM32_CRC       ((struct stm32_crc *)STM32_BASE_CRC)
 
 //#define STM32_GPIO(N) ((struct stm32_gpio *)(STM32_BASE_GPIOA + (N)*0x400))
 

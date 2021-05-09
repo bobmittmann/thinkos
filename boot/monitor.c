@@ -38,10 +38,8 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-/*
 #define __THINKOS_DEBUG__
 #include <thinkos/debug.h>
-*/
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #define __THINKOS_CONSOLE__
@@ -75,7 +73,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
-#define MONITOR_DUMPMEM_ENABLE     1
+#define MONITOR_DUMPMEM_ENABLE     0
 #endif
 
 #ifndef MONITOR_UPGRADE_ENABLE
@@ -95,7 +93,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_APPUPLOAD_ENABLE
-#define MONITOR_APPUPLOAD_ENABLE   0
+#define MONITOR_APPUPLOAD_ENABLE   1
 #endif
 
 #ifndef MONITOR_APPWIPE_ENABLE
@@ -111,11 +109,11 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_FAULT_ENABLE
-#define MONITOR_FAULT_ENABLE       THINKOS_ENABLE_EXCEPTIONS
+#define MONITOR_FAULT_ENABLE       1
 #endif
 
 #ifndef MONITOR_EXCEPTION_ENABLE
-#define MONITOR_EXCEPTION_ENABLE   THINKOS_ENABLE_EXCEPTIONS
+#define MONITOR_EXCEPTION_ENABLE   1
 #endif
 
 #ifndef BOOT_ENABLE_THIRD
@@ -142,6 +140,10 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #define MONITOR_BOARDINFO_ENABLE 1
 #endif
 
+#ifndef MONITOR_PROFILE_ENABLE
+#define MONITOR_PROFILE_ENABLE 0
+#endif
+
 #ifndef MONITOR_WATCHPOINT_ENABLE
 #define MONITOR_WATCHPOINT_ENABLE  0
 #endif
@@ -164,6 +166,11 @@ void gdb_stub_task(const struct monitor_comm * comm);
   #define MONITOR_THREADINFO_ENABLE  1
 #endif
 
+#if !(THINKOS_ENABLE_MONITOR)
+#error "Need THINKOS_ENABLE_MONITOR"
+#endif
+
+/*
 #if !(THINKOS_ENABLE_MONITOR_THREADS)
 #error "Need THINKOS_ENABLE_MONITOR_THREADS"
 #endif
@@ -171,6 +178,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #if !(THINKOS_ENABLE_IDLE_HOOKS)
 #error "Need THINKOS_ENABLE_IDLE_HOOKS"
 #endif
+*/
 
 #if (MONITOR_THREAD_STEP_ENABLE) & !(THINKOS_ENABLE_DEBUG_STEP)
 #error "MONITOR_THREAD_STEP_ENABLE requires THINKOS_ENABLE_DEBUG_STEP"
@@ -331,80 +339,70 @@ static const char s_crlf[] =  "\r\n";
 
 static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
-	struct monitor_thread_inf inf;
 	int thread_id;
+	int32_t errno;
 
 	/* get the last thread known to be at fault */
-	thread_id = monitor_thread_break_get();
-	monitor_thread_inf_get(thread_id, &inf);
-	__thinkos_pause_all();
-
-	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
-
-	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
-
-		DCC_LOG(LOG_TRACE, "COMM connected!");
-		monitor_printf(comm, s_crlf);
-		monitor_printf(comm, s_hr);
-		monitor_printf(comm, "* Fault %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-						  thinkos_err_name_lut[inf.errno],
-						  inf.thread_id + 1,
-						  inf.errno,
-						  inf.pc);
-		if (xcpt->errno != THINKOS_NO_ERROR)
-			monitor_print_exception(comm, xcpt);
-		else
-			monitor_print_thread(comm, thread_id);
-		monitor_printf(comm, s_hr);
-
+	thread_id = monitor_thread_break_get(&errno);
+	if (thread_id <= 0) {
+		DCC_LOG(LOG_WARNING, "No break thread!!!");
+		return;
 	}
 
-	/* turn the scheduler back on */
-	//thinkos_krn_sched_on();
+	DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id, errno);
+
+	if (monitor_comm_isconnected(comm)) {
+		struct monitor_thread_inf inf;
+
+		DCC_LOG(LOG_TRACE, "COMM connected!");
+
+		monitor_thread_inf_get(thread_id, &inf);
+		monitor_printf(comm, s_crlf);
+		monitor_printf(comm, s_hr);
+		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+					   thinkos_krn_err_tag(inf.errno),
+					   inf.thread_id,
+					   inf.errno,
+					   inf.pc);
+		monitor_print_thread(comm, thread_id);
+		monitor_printf(comm, s_hr);
+	}
+
+	DCC_LOG(LOG_TRACE, "thinkos_dbg_thread_break_clr().");
+	thinkos_dbg_thread_break_clr();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
 
 #endif
 
-static void monitor_on_krn_except(const struct monitor_comm * comm)
+static void monitor_on_krn_fault(const struct monitor_comm * comm)
 {
-	struct monitor_thread_inf inf;
 	int thread_id;
+	int32_t errno;
 
 	mdelay(500);
 
 	/* get the last thread known to be at fault */
-	thread_id = monitor_thread_break_get();
-	monitor_thread_inf_get(thread_id, &inf);
-
-	DCC_LOG2(LOG_ERROR, "<%d> fault @ 0x%08x !!", thread_id + 1, inf.pc);
+	thread_id = monitor_thread_break_get(&errno);
+	if (thread_id <= 0) {
+		DCC_LOG(LOG_WARNING, "No break thread!!!");
+	} else {
+		DCC_LOG2(LOG_ERROR, "<%d> fault %d !!", thread_id, errno);
+	}
 
 	if (monitor_comm_isconnected(comm)) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
-
-		DCC_LOG(LOG_TRACE, "COMM connected!");
-		monitor_printf(comm, s_hr);
-	
-		if (xcpt->errno == THINKOS_ERR_INVALID_STACK) {
-			monitor_printf(comm, 
-						  "# Kernel error, possible stack overflow !!!\r\n");
-			monitor_printf(comm, " Offended thread: %d\r\n", thread_id + 1);
-		} else {
-			monitor_printf(comm, "Exception!!!\r\n");
+		monitor_printf(comm, 
+					  "# Kernel error, possible stack overflow !!!\r\n");
+		if (thread_id > 0) {
+			monitor_printf(comm, " Offended thread: %d\r\n", thread_id);
+			monitor_print_thread(comm, thread_id);
 		}
 
-#if (MONITOR_FAULT_ENABLE)
-		monitor_print_thread(comm, thread_id);
 		monitor_printf(comm, s_hr);
-#endif
-	} else {
 	}
 
 	mdelay(500);
-
-	monitor_soft_reset();
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -420,12 +418,12 @@ static void monitor_on_bkpt(struct monitor * mon)
 	monitor_thread_inf_get(thread_id, &inf);
 	__thinkos_pause_all();
 
-	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id + 1, inf.pc);
+	DCC_LOG2(LOG_TRACE, "<%d> breakpoint @ 0x%08x", thread_id, inf.pc);
 
 	if (monitor_comm_isconnected(comm)) {
 		monitor_printf(comm, s_hr);
 		monitor_printf(mon->comm, "<%d> breakpoint @ 0x%08x\r\n", 
-					  thread_id + 1, inf.pc);
+					  thread_id, inf.pc);
 		mon->thread_id = thread_id;
 		monitor_print_thread(comm, thread_id);
 		monitor_breakpoint_clear(inf.pc, 4);
@@ -438,15 +436,16 @@ static void monitor_on_bkpt(struct monitor * mon)
 static void monitor_on_step(struct monitor * mon)
 {
 	const struct monitor_comm * comm = mon->comm;
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct monitor_thread_inf inf;
 	unsigned int thread_id;
 
 	thread_id = monitor_thread_step_get();
 	monitor_thread_inf_get(thread_id, &inf);
-	__thinkos_pause_all();
+	__thinkos_krn_pause_all(krn);
 
 	if (monitor_comm_isconnected(comm)) {
-		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id + 1, inf.pc);
+		DCC_LOG2(LOG_TRACE, "<%d> step at %08x", thread_id, inf.pc);
 		monitor_printf(comm, s_hr);
 		mon->thread_id = thread_id;
 		monitor_print_thread(comm, thread_id);
@@ -460,10 +459,7 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 {
 	monitor_printf(comm, "\r\nPausing all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "__thinkos_pause_all()");
-	__thinkos_pause_all();
-	if (monitor_wait_idle() < 0) {
-		DCC_LOG(LOG_WARNING, "monitor_wait_idle() failed!");
-	}
+	thinkos_dbg_pause_all();
 }
 #endif
 
@@ -471,7 +467,7 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 static void monitor_resume_all(const struct monitor_comm * comm)
 {
 	monitor_printf(comm, "\r\nResuming all threads...\r\n");
-	__thinkos_resume_all();
+	thinkos_dbg_resume_all();
 	monitor_printf(comm, "Restarting...\r\n");
 }
 #endif
@@ -577,7 +573,7 @@ static void show_mem_info(const struct monitor_comm * comm,
 		return;
 
 	monitor_printf(comm, "  %s:\r\n", mem->tag);
-	for (i = 0; mem->blk[i].cnt != 0; ++i) {
+	for (i = 0; i < mem->cnt; ++i) {
 		tag = mem->blk[i].tag;
 		size = mem->blk[i].cnt << mem->blk[i].siz;
 		base = mem->base + mem->blk[i].off;
@@ -629,8 +625,10 @@ static void monitor_board_info(const struct monitor_comm * comm,
 		show_mem_info(comm, board->memory->desc[i]);
 	}
 
+#if (MONITOR_PROFILE_ENABLE)
 	monitor_printf(comm, "\r\nKernel Profile:\r\n");
 	monitor_print_profile(comm, &thinkos_profile);
+#endif
 }
 #endif
 
@@ -671,6 +669,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_SELFTEST_ENABLE)
 	case CTRL_E:
 		monitor_printf(comm, "^E\r\n");
+
 		break;
 #endif
 #if (MONITOR_BREAKPOINT_ENABLE)
@@ -696,8 +695,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_OSINFO_ENABLE)
 	case CTRL_O:
 		monitor_printf(comm, "^O\r\n");
-		monitor_printf(comm, s_hr);
-		monitor_print_osinfo(comm);
+		monitor_signal(MONITOR_USER_EVENT4);
 		break;
 #endif
 #if (MONITOR_OS_PAUSE)
@@ -744,24 +742,27 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #endif
 	case CTRL_Y:
+#if 0
 		monitor_printf(comm, "^Y\r\nUpload application [y]? ");
 		if (monitor_getc(comm) == 'y') {
-			monitor_printf(comm, "\r\nYMODEM receive (Ctrl+X to cancel)... ");
 			/* Request app upload */
-			monitor_req_app_upload();
 		} else {
 			monitor_printf(comm, "\r\n");
 		}
+#endif
+		monitor_req_app_upload();
 		break;
 #if (MONITOR_APPWIPE_ENABLE)
 	case CTRL_W:
+#if 0
 		monitor_printf(comm, "^W\r\nErase application [y]? ");
 		if (monitor_getc(comm) == 'y') {
 			/* Request app erase */
-			monitor_req_app_erase(); 
 		} else {
 			monitor_printf(comm, "\r\n");
 		}
+#endif
+		monitor_req_app_erase(); 
 		break;
 #endif
 #if (MONITOR_APPRESTART_ENABLE)
@@ -789,6 +790,9 @@ static bool monitor_process_input(struct monitor * mon, int c)
 void __attribute__((noreturn)) 
 boot_monitor_task(const struct monitor_comm * comm, void * arg)
 {
+#if (MONITOR_OSINFO_ENABLE)
+	uint32_t cycref[THINKOS_THREAD_LAST + 1];
+#endif
 	const struct thinkos_board * board;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
@@ -799,7 +803,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	uint8_t * ptr;
 	int cnt;
 #endif
-	bool startup = false;
 	uint8_t buf[1];
 	int sig;
 
@@ -815,12 +818,14 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_STARTUP);
+	sigmask |= (1 << MONITOR_KRN_ABORT);
 #if (MONITOR_EXCEPTION_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
-	sigmask |= (1 << MONITOR_KRN_EXCEPT);
+	sigmask |= (1 << MONITOR_THREAD_BREAK);
+	sigmask |= (1 << MONITOR_KRN_FAULT);
 #endif
 	sigmask |= (1 << MONITOR_COMM_RCV);
+	sigmask |= (1 << MONITOR_COMM_BRK);
 #if THINKOS_ENABLE_CONSOLE
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_TX_PIPE);
@@ -842,6 +847,9 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 	sigmask |= (1 << MONITOR_THREAD_CREATE);
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
+#if (MONITOR_OSINFO_ENABLE)
+	sigmask |= (1 << MONITOR_USER_EVENT4);
+#endif
 
 #if 0
 	sigmask |= (1 << MONITOR_ALARM);
@@ -851,23 +859,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
 
 	for(;;) {
-		DCC_LOG1(LOG_TRACE, "sigmask=%08x", sigmask); 
+		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
-
-		case MONITOR_STARTUP:
-			DCC_LOG1(LOG_TRACE, "/!\\ STARTUP signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_STARTUP);
-			startup = true;
-			break;
-
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
 
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
@@ -879,17 +872,34 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 #endif
 			break;
 
+#if (THINKOS_ENABLE_MONITOR_SCHED)
+		case MONITOR_RESET:
+			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
+					 cm3_sp_get());
+			monitor_clear(MONITOR_RESET);
+			break;
+#endif
+		case MONITOR_KRN_ABORT:
+			monitor_clear(MONITOR_KRN_ABORT);
+			DCC_LOG(LOG_TRACE, "/!\\ KRN_ABORT signal...");
+#if (THINKOS_ENABLE_CONSOLE)
+			goto is_connected;
+#endif
+			break;
+
+
+		case MONITOR_COMM_BRK:
+			/* Acknowledge the signal */
+			monitor_clear(MONITOR_COMM_BRK);
+			monitor_comm_break_ack(comm);
+			DCC_LOG(LOG_WARNING, "/!\\ COMM_BREAK signal !");
+			break;
+
 		case MONITOR_APP_UPLOAD:
 			monitor_clear(MONITOR_APP_UPLOAD);
 #if (MONITOR_APPUPLOAD_ENABLE)
 			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			if (monitor_flash_ymodem_recv(comm, "APP") >= 0) {
-				monitor_printf(comm, "\r\nOk.\r\n");
-				/* Request app exec */
-				monitor_req_app_exec(); 
-			} else {
-				monitor_printf(comm, "\r\nfailed!\r\n");
-			}
+			monitor_flash_ymodem_recv(comm, "APP");
 #endif
 			break;
 
@@ -899,34 +909,14 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-		//	monitor_printf(comm, "Starting application @ 0x%08x\r\n",
-		//				  (uint32_t)board->application.start_addr);
-
-
-			if (!monitor_app_exec(&board->application, false)) {
-				monitor_printf(comm, "Can't run application!\r\n");
-				/* XXX: this event handler could be optionally compiled
-				   to save some resources. As a matter of fact I don't think
-				   they are useful at all */
-				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_start(C_TASK(board->default_task), 
-										 C_ARG(NULL));
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
-			}
-			DCC_LOG(LOG_TRACE, "APP_EXEC done");
+			monitor_app_exec(comm);
 			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
 		case MONITOR_APP_ERASE:
 			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			monitor_printf(comm, "\r\nErasing...");
-			monitor_flash_erase_all(comm, "APP");
-			monitor_printf(comm, " ok.\r\n");
+			//monitor_flash_erase_all(comm, "APP");
 			break;
 #endif
 
@@ -957,63 +947,41 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			break;
 
 		case MONITOR_THREAD_TERMINATE:
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE");
+			monitor_clear(MONITOR_THREAD_TERMINATE);
+			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
+			break;
 
-			monitor_wait_idle();
-
-			if (!startup) {
-				int thread_id;
-				int code;
-
-				monitor_clear(MONITOR_THREAD_TERMINATE);
-				thread_id = monitor_thread_terminate_get(&code);
-				(void)thread_id; 
-				(void)code; 
-				DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE id=%d code=%d",
-						 thread_id, code);
-				break;
-			}
-
-			startup = false;
-			monitor.test_status = 1;
-
-			DCC_LOG(LOG_TRACE, "APP exec request");
-			monitor_req_app_exec();
+		case MONITOR_THREAD_BREAK:
+			monitor_clear(MONITOR_THREAD_BREAK);
+			DCC_LOG(LOG_WARNING, "/!\\ THREAD_BREAK signal !");
 			break;
 
 #if (MONITOR_UPGRADE_ENABLE)
 		case MONITOR_USER_EVENT3:
 			DCC_LOG(LOG_TRACE, "MONITOR_USER_EVENT2: preboot!");
 			monitor_clear(MONITOR_USER_EVENT3);
-			monitor_printf(comm, "Confirm [y]? ");
-			if (monitor_getc(comm) == 'y') {
-				board->upgrade(comm);
-				monitor_printf(comm, "Failed !!!\r\n");
-			} else {
-				monitor_printf(comm, "\r\n");
-			}
 			break;
 #endif
 
 #if (MONITOR_EXCEPTION_ENABLE)
 		case MONITOR_THREAD_FAULT:
 			monitor_clear(MONITOR_THREAD_FAULT);
-			DCC_LOG(LOG_TRACE, "Thread fault.");
+			DCC_LOG(LOG_TRACE, "Thread fault !.");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
 			monitor_on_thread_fault(comm);
 			break;
 
-#endif
-		case MONITOR_KRN_EXCEPT:
-			monitor_clear(MONITOR_KRN_EXCEPT);
-			DCC_LOG(LOG_TRACE, "System exception.");
+		case MONITOR_KRN_FAULT:
+			monitor_clear(MONITOR_KRN_FAULT);
+			DCC_LOG(LOG_TRACE, "!! Kernel fault !!");
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
-			monitor_on_krn_except(comm);
+			monitor_on_krn_fault(comm);
 			break;
+#endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 		case MONITOR_BREAKPOINT:
@@ -1113,6 +1081,14 @@ is_connected:
 			break;
 #endif /* THINKOS_ENABLE_CONSOLE */
 
+#if (MONITOR_OSINFO_ENABLE)
+		case MONITOR_USER_EVENT4:
+			monitor_clear(MONITOR_USER_EVENT4);
+			monitor_printf(comm, s_hr);
+			monitor_print_osinfo(comm, cycref);
+			break;
+#endif
+
 #if 0
 		case MONITOR_ALARM:
 			DCC_LOG(LOG_TRACE, "Alarm !");
@@ -1125,5 +1101,4 @@ is_connected:
 		}
 	}
 }
-
 

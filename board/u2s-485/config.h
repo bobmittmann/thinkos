@@ -67,7 +67,6 @@
 #define THINKOS_ENABLE_GATE_ALLOC     0
 
 #define THINKOS_ENABLE_TIMED_CALLS    1
-#define THINKOS_ENABLE_CLOCK          1
 #define THINKOS_ENABLE_ALARM          1
 #define THINKOS_ENABLE_SLEEP          1
 

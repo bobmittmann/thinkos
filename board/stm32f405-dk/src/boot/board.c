@@ -55,11 +55,11 @@ const struct thinkos_mem_desc sram_mem = {
 	.base = 0x00000000,
 	.cnt = 5,
 	.blk = {
-		{.tag = "STACK",  0x10000000, M_RW, SZ_64K, 1}, /*  CCM - Main Stack */
-		{.tag = "KERN",   0x20000000, M_RO, SZ_4K, 1},	 /* Bootloader: 4KiB */
-		{.tag = "DATA",   0x20001000, M_RW, SZ_4K, 27}, /* App: 108KiB */
-		{.tag = "SRAM2",  0x2001c000, M_RW, SZ_16K,  1 }, /* SRAM 2: 16KiB */
-		{.tag = "SRAM3",  0x20020000, M_RW, SZ_64K,  1 }, /* SRAM 3: 64KiB */
+		{.tag = "STACK",  0x10000000, M_RW, SZ_1K,  64 }, /* CCM - Main Stack */
+		{.tag = "KERN",   0x20000000, M_RO, SZ_1K,   8 }, /* Bootloader: 8KiB */
+		{.tag = "DATA",   0x20002000, M_RW, SZ_1K, 104 }, /* App: 104KiB */
+		{.tag = "SRAM2",  0x2001c000, M_RW, SZ_1K,  16 }, /* SRAM 2: 16KiB */
+		{.tag = "SRAM3",  0x20020000, M_RW, SZ_1K,  64 }, /* SRAM 3: 64KiB */
 		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
@@ -114,7 +114,7 @@ const struct magic_blk thinkos_10_app_magic = {
 extern const struct flash_dev stm32f4x_flash_dev;
 
 const struct thinkos_flash_desc board_flash_desc = {
-	.mem = (const struct mem_desc *)&flash_mem,
+	.mem = (struct thinkos_mem_desc *)&flash_mem,
 	.dev = &stm32f4x_flash_dev
 };
 
@@ -208,6 +208,8 @@ void io_init(void)
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 }
 
+void __vec(void);
+
 void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
@@ -225,7 +227,7 @@ void board_on_softreset(void)
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
 	rcc->ahb1enr |= (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
-		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC);
 	rcc->ahb2enr |= (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
@@ -233,7 +235,7 @@ void board_on_softreset(void)
 
 	/* Reset all peripherals except USB_OTG and GPIOA */
 	rcc->ahb1rstr = ~((1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) |
-					  (1 << RCC_GPIOB) | (1 << RCC_GPIOC)); 
+					  (1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC)); 
 	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
 	rcc->ahb3rstr = ~(0);
 	rcc->apb1rstr = ~(0);
@@ -247,7 +249,7 @@ void board_on_softreset(void)
 
 	/* disable all peripherals clock sources except USB_OTG and GPIOA */
 	rcc->ahb1enr = (1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) | 
-		(1 << RCC_GPIOB) | (1 << RCC_GPIOC); 
+		(1 << RCC_GPIOB) | (1 << RCC_GPIOC) | (1 << RCC_CRC); 
 	rcc->ahb2enr = (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
@@ -261,11 +263,13 @@ void board_on_softreset(void)
 
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
+
+	DCC_LOG1(LOG_TRACE, "IRQ=%d", STM32F_IRQ_OTG_FS);
 }
 
 int board_init(void)
 {
-	board_on_softreset();
+//	board_on_softreset();
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
 	thinkos_flash_drv_init(0, &board_flash_desc);
@@ -283,17 +287,20 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 1
+#define PREBOOT_TIME_SEC 10
 
-int board_preboot_task(void *ptr)
+bool board_integrity_check(void)
 {
 	uint32_t tick;
 
-	__puts("- board preboot\r\n");
 
 	/* Time window autoboot */
-	for (tick = 0; tick < 4*PREBOOT_TIME_SEC; ++tick) {
-		thinkos_sleep(250);
+	for (tick = 0; tick < PREBOOT_TIME_SEC; ++tick) {
+		uint64_t time;
+
+		thinkos_sleep(500);
+//		mdelay(250);
+//		thinkos_alarm(2000 + tick * 500);
 
 		__puts(".");
 
@@ -311,13 +318,22 @@ int board_preboot_task(void *ptr)
 			stm32_gpio_set(IO_LED2);
 			break;
 		}
+
+		time = thinkos_time_realtime_get();
+		(void)time;
+		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
 	}
 
+	__puts("\r\n");
+
 	thinkos_sleep(250);
+
+	__puts("Loading application...\r\n");
+
 	stm32_gpio_clr(IO_LED1);
 	stm32_gpio_clr(IO_LED2);
 
-	return 0;
+	return true;
 }
 
 int board_configure_task(void *ptr)
@@ -325,6 +341,7 @@ int board_configure_task(void *ptr)
 	__puts("- board configuration\r\n");
 	return 0;
 }
+
 
 int board_selftest_task(void *ptr)
 {
@@ -355,14 +372,56 @@ void write_fault(void)
 int board_default_task(void *ptr)
 {
 	uint32_t tick;
+	uint32_t clk;
 
-#if 0
+#if 1
 	DCC_LOG1(LOG_TRACE, "ptr=0x%08x", ptr);
 	__puts("- board default\r\n");
 #endif
 
+	thinkos_abort();
+
+	for (tick = 0; tick < 16; ++tick) {
+		thinkos_sleep(125);
+
+		switch (tick & 0x7) {
+		case 0:
+			stm32_gpio_clr(IO_LED1);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED2);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED1);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED2);
+			break;
+		case 4:
+			stm32_gpio_clr(IO_LED3);
+			break;
+		case 5:
+			stm32_gpio_clr(IO_LED4);
+			break;
+		case 6:
+			stm32_gpio_set(IO_LED3);
+			break;
+		case 7:
+			stm32_gpio_set(IO_LED4);
+			break;
+		}
+	}
+
+
+//	thinkos_escalate(NULL, NULL);
+
+	clk = thinkos_clock();
 	for (tick = 0; tick < 10000000; ++tick) {
-		thinkos_sleep(1000);
+
+		mdelay(30);
+
+		clk += 100;
+		thinkos_alarm(clk);
 
 		switch (tick & 0x7) {
 		case 0:
@@ -391,8 +450,9 @@ int board_default_task(void *ptr)
 			break;
 		}
 	
-//		__puts("- tick\r\n");
+		//__puts("- tick\r\n");
 	}
+
 
 #if 0
 	int x;
@@ -457,22 +517,9 @@ const struct thinkos_board this_board = {
 			.magic = &thinkos_10_app_magic},
 	.init = board_init,
 	.softreset = board_on_softreset,
-//	.upgrade = bootloader_yflash,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
 	.default_task = board_default_task,
 	.monitor_comm_init = board_comm_init,
 	.memory = &mem_map
 };
-
-
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
-
-void __attribute((noreturn)) main(int argc, char ** argv)
-{
-	thinkos_boot(&this_board, &standby_monitor_task);
-}
 
 
