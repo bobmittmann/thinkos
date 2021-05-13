@@ -28,7 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (THINKOS_ENABLE_BREAK)
 
-void thinkos_break_svc(int32_t * arg, unsigned int self)
+void thinkos_break_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int wq = arg[0];
 	int th;

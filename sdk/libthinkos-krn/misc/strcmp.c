@@ -1,5 +1,5 @@
 /* 
- * pause_all.c
+ * thinkos_strcmp.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,20 +19,35 @@
  * http://www.gnu.org/
  */
 
+/** 
+ * @file thinkos_strcmp.c
+ * @brief ThinkOS kernel
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */ 
 
-#include "thinkos_krn-i.h"
-#include <sys/dcclog.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#if THINKOS_ENABLE_OFAST
+_Pragma ("GCC optimize (\"Os\")")
+#endif
 
-void __krn_pause_all(struct thinkos_rt * krn)
+/*
+ */
+
+int __thinkos_strcmp(const char * __s1, const char * __s2)
 {
-	int32_t th;
+	int c1;
+	int c2;
 
-	for (th = THINKOS_THREAD_FIRST; th <= THINKOS_THREAD_LAST; ++th) {
-		if (__thread_ctx_is_valid(krn, th)) {
-			__krn_thread_pause(krn, th);
-		}
-	}
+	do {
+		c1 = *__s1++;
+		c2 = *__s2++;
 
-	__krn_defer_sched(krn);
+		if ((c2 = c1 - c2) != 0)
+			return c2;
+
+	} while (c1 != '\0');
+
+	return 0;
 }
 

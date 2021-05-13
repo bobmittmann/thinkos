@@ -38,6 +38,5 @@ void __attribute__((noreturn)) thinkos_krn_sysrst(void)
 	for(;;);
 }
 
-/* FIXME: _exit() !!! */
 void _exit(void) __attribute__((noreturn, weak, alias("thinkos_krn_sysrst")));
 

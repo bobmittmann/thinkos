@@ -26,8 +26,7 @@ LIB_STATIC = thinkos-dbg
 GDB_CFILES = dbgmon_gdb.c 
 #gdb-cortex-m.c
 
-CFILES = thinkos_dbgmon.c \
-	$(addprefix gdb/,$(GDB_CFILES)) 
+CFILES = thinkos_dbgmon.c $(addprefix gdb/,$(GDB_CFILES)) 
 
 include ../../mk/lib.mk
 

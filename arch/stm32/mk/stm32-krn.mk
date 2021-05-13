@@ -31,7 +31,7 @@ include $(__THINKOS_DIR)/mk/config.mk
 # Load the architecture configuration script
 include $(__ARCH_DIR)/mk/stm32-cfg.mk
 
-LDFLAGS += -Wl,--gc-sections -nostdlib -lgcc
+LDFLAGS += -Wl,--gc-sections -nostdlib 
 
 OPTIONS	+= -g -mcpu=$(CPU) -mthumb -mthumb-interwork -mno-unaligned-access
 

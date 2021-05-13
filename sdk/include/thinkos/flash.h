@@ -53,7 +53,10 @@ struct flash_op_req {
 		uint32_t offset;
 		const char * tag;
 	};
-	uint32_t size;
+	union {
+		uint32_t size;
+		struct thinkos_mem_part * mp;
+	};
 	union {
 		void * buf;
 	};

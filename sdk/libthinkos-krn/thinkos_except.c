@@ -149,7 +149,10 @@ void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt)
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
 			 " Thread fault %d, thread %d " VT_POP, 
 			 errno, thread);
+	(void)krn;
+	(void)thread;
 
+#if DEBUG
 	mdelay(250);
 
 	__xinfo(xcpt);
@@ -159,9 +162,7 @@ void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt)
 	mdelay(250);
 
 	__tdump(krn);
-
-	/* signal the monitor */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
+#endif
 
 #if (THINKOS_ENABLE_MONITOR) 
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_FMG VT_REV "    %s" VT_POP, 
@@ -171,11 +172,9 @@ void thinkos_krn_thread_except(uint32_t errno, struct thinkos_except * xcpt)
 
 #if (THINKOS_ENABLE_READY_MASK)
 	__thread_disble_all(krn);
-#else
-	__krn_suspend_all(krn);
 #endif
 
-	__thread_fault_raise(krn, thread, errno);
+//	__thread_fault_raise(krn, thread, errno);
 
 	/* Enable Interrupts */
 	cm3_cpsie_i();

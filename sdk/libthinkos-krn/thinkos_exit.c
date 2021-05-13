@@ -22,7 +22,8 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
+#if (THINKOS_ENABLE_TERMINATE)
+static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 {
 	DCC_LOG1(LOG_TRACE, "(thread=%d)", th); 
 
@@ -54,9 +55,9 @@ void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 	__thread_alloc_clr(krn, th);
 #endif
 
-	if (th == __krn_active_get(krn)) {
+	if (th == __krn_sched_active_get(krn)) {
 		/* discard current thread context */
-		__krn_sched_discard_active(krn);
+		__krn_sched_active_clr(krn);
 	}
 
 	/* clear context. */
@@ -65,9 +66,11 @@ void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 	__krn_thread_suspend(krn, th);
 
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
+#endif
 
+#if 0
 void __thinkos_krn_abort_all(struct thinkos_rt * krn)
 {
 	unsigned int j;
@@ -76,6 +79,7 @@ void __thinkos_krn_abort_all(struct thinkos_rt * krn)
 		__thinkos_krn_thread_abort(krn, j);
 	}
 }
+#endif
 
 #if (THINKOS_ENABLE_TERMINATE)
 /* Terminate the target thread */

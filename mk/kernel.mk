@@ -369,12 +369,12 @@ $(PROG_KRN) $(PROG_MAP): $(LIBDIRS_ALL) $(OFILES) $(OBJ_EXTRA)
 	$(ACTION) "LD: $(PROG_KRN)"
 ifdef $(CROSS_COMPILE))
 ifeq ($(HOST),Cygwin)
-	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -r -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES_WIN) $(OBJ_EXTRA) -r -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group -lgcc $(addprefix -L,$(LIBPATH_WIN)) -o $(PROG_ELF_WIN) > $(PROG_MAP)
 else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -r -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--warn-common -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_KRN) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -r -Wl,-z,max-page-size=0x0100 -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--warn-common -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group -lgcc $(addprefix -L,$(LIBPATH)) -o $(PROG_KRN) > $(PROG_MAP)
 endif
 else
-	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -r -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group $(addprefix -L,$(LIBPATH)) -o $(PROG_KRN) > $(PROG_MAP)
+	$(Q)$(LD) $(LDFLAGS) $(OFILES) $(OBJ_EXTRA) -r -Wl,--print-map -Wl,--print-memory-usage -Wl,--cref -Wl,--sort-common -Wl,--start-group $(addprefix -l,$(LIBS)) -Wl,--end-group -lgcc $(addprefix -L,$(LIBPATH)) -o $(PROG_KRN) > $(PROG_MAP)
 endif
 
 %.sym: %.krn

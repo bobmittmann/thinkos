@@ -46,7 +46,7 @@ static int __app_exec_task(uintptr_t addr, unsigned int thread)
 {
 	int ret;
 
-	__console_puts("\r\nStarting application... ");
+	krn_console_puts("\r\nStarting application... ");
 
 	DCC_LOG(LOG_TRACE, "thinkos_app_exec()!");
 

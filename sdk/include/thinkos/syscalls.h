@@ -173,6 +173,7 @@
 #define THINKOS_FLASH_MEM_ERASE        5
 #define THINKOS_FLASH_MEM_LOCK         6
 #define THINKOS_FLASH_MEM_UNLOCK       7
+#define THINKOS_FLASH_MEM_STAT         8
 
 /* THINKOS_DATE_AND_TIME operations */
 #define THINKOS_TIME_MONOTONIC_GET     0
@@ -873,6 +874,19 @@ thinkos_flash_mem_unlock(int key, off_t offset, size_t size) {
 	return THINKOS_SYSCALL3(THINKOS_FLASH_MEM, 
 							__FLASH_OPC(THINKOS_FLASH_MEM_UNLOCK, key),
 							offset, size);
+}
+
+struct thinkos_mem_stat;
+
+static inline int __attribute__((always_inline)) 
+thinkos_flash_mem_stat(const char * tag, struct thinkos_mem_stat * stat) {
+	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_STAT, 0);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)tag;
+	register uint32_t r2 asm("r2") = (uintptr_t)stat;
+	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
+				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+	return ret;
 }
 
 /* ---------------------------------------------------------------------------

@@ -479,3 +479,4 @@ void otg_fs_fifo_dump(struct stm32f_otg_fs * otg_fs,
 #endif
 
 #endif /* STM32F_OTG_FS */
+

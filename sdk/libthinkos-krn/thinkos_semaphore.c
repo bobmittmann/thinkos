@@ -26,18 +26,20 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_SEMAPHORE_MAX > 0
+#if (THINKOS_SEMAPHORE_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
 __krn_obj_is_sem(struct thinkos_rt * krn, unsigned int sem) {
 	return __obj_is_valid(sem, THINKOS_SEM_BASE, THINKOS_SEMAPHORE_MAX);
 }
 
+#if (THINKOS_ENABLE_SEM_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_sem_is_alloc(struct thinkos_rt * krn, unsigned int sem) {
 	return __bit_mem_rd(krn->sem_alloc, sem - THINKOS_SEM_BASE) ? 
 		true : false;
 }
+#endif
 
 #if THINKOS_ENABLE_ARG_CHECK
 int krn_sem_check(struct thinkos_rt * krn, int sem)
@@ -45,7 +47,7 @@ int krn_sem_check(struct thinkos_rt * krn, int sem)
 	if (!__krn_obj_is_sem(krn, sem)) {
 		return THINKOS_ERR_SEM_INVALID;
 	}
-#if THINKOS_ENABLE_SEM_ALLOC
+#if (THINKOS_ENABLE_SEM_ALLOC)
 	if (__krn_sem_is_alloc(krn, sem) == 0) {
 		return THINKOS_ERR_SEM_ALLOC;
 	}
@@ -58,7 +60,7 @@ void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t value = (uint32_t)arg[1];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_sem_check(krn, sem)) != 0) {

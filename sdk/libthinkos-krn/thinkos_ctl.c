@@ -23,23 +23,18 @@
 #include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_CTL)
-
 extern int32_t udelay_factor;
 
 static void thinkos_krn_abort(struct thinkos_rt * krn)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
 
-	__thinkos_krn_core_reset(krn);
-
+//	__thinkos_krn_core_reset(krn);
+	/* request scheduler to stop everything */
+	__krn_sched_svc_set(krn, 1);
 	/* Make sure to run the scheduler */
 	__krn_defer_sched(krn);
-
-#if (THINKOS_ENABLE_MONITOR)
-	monitor_signal_break(MONITOR_KRN_ABORT);
-#endif
 }
-
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 {
@@ -75,7 +70,10 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 	case THINKOS_CTL_REBOOT:
 		DCC_LOG(LOG_WARNING, "Reboot!");
-		thinkos_krn_sysrst();
+
+		if (arg[1] == THINKOS_CTL_REBOOT_KEY) {
+			thinkos_krn_sysrst();
+		}
 		break;
 
 #if (THINKOS_ENABLE_CTL_KRN_INFO)

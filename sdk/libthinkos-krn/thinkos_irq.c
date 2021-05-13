@@ -147,7 +147,7 @@ void cm3_default_isr(unsigned int irq)
 
 #if (THINKOS_ENABLE_WQ_IRQ)
 	/* remove from the wait queue */
-	__wq_remove(krn, THINKOS_WQ_IRQ, th);  
+	__krn_wq_remove(krn, THINKOS_WQ_IRQ, th);  
 #endif
 
 	/* insert the thread into ready queue */
@@ -269,7 +269,8 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 #endif
 
 
-void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self)
+void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
+						 struct thinkos_rt * krn)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];

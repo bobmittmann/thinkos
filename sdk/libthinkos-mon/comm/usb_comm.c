@@ -436,7 +436,8 @@ struct usb_cdc_acm_dev {
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
-	uint8_t rx_buf[CDC_EP_IN_MAX_PKT_SIZE];
+#define CDC_RX_BUF_SIZE CDC_EP_OUT_MAX_PKT_SIZE
+	uint8_t rx_buf[CDC_RX_BUF_SIZE];
 
 #if (THINKOS_MONITOR_ENABLE_COMM_STATS)
 	struct {
@@ -462,33 +463,33 @@ static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 
 	seq = dev->rx_seq;
 	ack = dev->rx_ack;
-	if ((free = CDC_EP_IN_MAX_PKT_SIZE - (int32_t)(seq - ack)) > 0) {
+	if ((free = CDC_RX_BUF_SIZE - (int32_t)(seq - ack)) > 0) {
 		int pos;
 
-		pos = seq % CDC_EP_IN_MAX_PKT_SIZE;
+		pos = seq % CDC_RX_BUF_SIZE;
 		if (pos == 0) {
 			int n;
 
 			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 									dev->rx_buf, free);
-			DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d n=%d", 
+			DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d n=%d", 
 					 seq, ack, free, n);
 			cnt = n;
 		} else {
 			int m;
 			int n;
 
-			n = MIN((CDC_EP_IN_MAX_PKT_SIZE - pos), free);
+			n = MIN((CDC_RX_BUF_SIZE - pos), free);
 			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 									&dev->rx_buf[pos], n);
-			if (m == n)	{
+			if ((m == n) && (n != free)) {
 				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 										dev->rx_buf, free - m);
-				DCC_LOG5(LOG_MSG, "seq=%d ack=%d free=%d n=%d m=%d", 
+				DCC_LOG5(LOG_INFO, "seq=%d ack=%d free=%d n=%d m=%d", 
 						 seq, ack, free, n, m);
 				cnt = n + m;
 			} else {
-				DCC_LOG4(LOG_MSG, "seq=%d ack=%d free=%d m=%d", 
+				DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d m=%d", 
 						 seq, ack, free, m);
 				cnt = m;
 			}
@@ -497,8 +498,8 @@ static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 
 		seq += cnt;
 
-		if ((int32_t)(seq - ack) == CDC_EP_IN_MAX_PKT_SIZE) {
-			DCC_LOG(LOG_MSG, VT_PSH VT_FCY VT_REV " PAUSE " VT_POP);
+		if ((int32_t)(seq - ack) == CDC_RX_BUF_SIZE) {
+			DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RX PAUSE " VT_POP);
 			dev->rx_paused = true;
 		}
 
@@ -514,10 +515,15 @@ static void monitor_usb_on_rcv(usb_class_t * cl,
 						   unsigned int ep_id, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	unsigned int cnt;
 
-	DCC_LOG1(LOG_MSG, VT_PSH VT_FRD VT_BRI "IRQ len=%d..." VT_POP, len);
+	cnt = monitor_usb_cdc_acm_recv(dev);
+	(void)cnt;
 
-	monitor_usb_cdc_acm_recv(dev);
+	DCC_LOG2(LOG_INFO, VT_PSH VT_FCY VT_REV 
+			 "IRQ pkt_len=%d rcv_cnt=%d COMM_RCV..." 
+			 VT_POP, 
+			 len, cnt);
 
 	monitor_signal(MONITOR_COMM_RCV);
 }
@@ -862,6 +868,7 @@ static void monitor_usb_on_wakeup(usb_class_t * cl)
 static void monitor_usb_on_error(usb_class_t * cl, int code)
 {
 	DCC_LOG(LOG_TRACE, "...");
+
 }
 
 static int monitor_usb_comm_send(const void * comm, 
@@ -936,14 +943,14 @@ static int monitor_usb_comm_recv(const void * comm,
 	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
 
 	cnt = MIN(n, len);
-	pos = ack % CDC_EP_IN_MAX_PKT_SIZE;
+	pos = ack % CDC_RX_BUF_SIZE;
 
 	if (pos == 0) {
 		DCC_LOG4(LOG_INFO, "1. n=%d ack=%d pos=%d cnt=%d...", 
 				 n, ack, pos, cnt);
 		__thinkos_memcpy(dst, dev->rx_buf, cnt);
 	} else {
-		unsigned int m = CDC_EP_IN_MAX_PKT_SIZE - pos;
+		unsigned int m = CDC_RX_BUF_SIZE - pos;
 		unsigned int l;
 
 		m = MIN(m, cnt);
@@ -964,14 +971,15 @@ static int monitor_usb_comm_recv(const void * comm,
 	ack += cnt;
 	dev->rx_ack = ack;
 
-	if (dev->rx_paused && ((dev->rx_seq - ack) < CDC_EP_IN_MAX_PKT_SIZE)) {
+	if (dev->rx_paused && ((dev->rx_seq - ack) < (CDC_RX_BUF_SIZE / 2))) {
 		DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
 		dev->rx_paused = false;
+		/* receive more data into buffer */
 		monitor_usb_cdc_acm_recv(dev);
 	}
 
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
-		DCC_LOG(LOG_MSG, "signal MONITOR_COMM_RCV!");
+		DCC_LOG(LOG_INFO, "signal MONITOR_COMM_RCV!");
 		/* Pending data on fifo, resignal .. */
 		monitor_signal(MONITOR_COMM_RCV);
 	}
@@ -1012,6 +1020,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 			uint32_t status;
 			uint32_t toggle;
 
+			monitor_clear(MONITOR_COMM_BRK);
 			status = dev->shadow;
 			/* the bit state depends on shadow and status */
 			/* toggle if the bit is not set */
@@ -1081,5 +1090,4 @@ const struct monitor_comm * custom_comm_getinstance(void)
 }
 
 #endif
-
 

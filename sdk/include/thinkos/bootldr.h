@@ -74,6 +74,7 @@ struct thinkos_board {
 	int (* init)(void);
 	/* Soft reset */
 	void (* softreset)(void);
+	int (* on_break)(const struct monitor_comm *);
 
 	int (* configure_task)(void *);
 	int (* selftest_task)(void *);

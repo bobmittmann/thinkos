@@ -94,8 +94,6 @@ void __reset_ram_vectors(void)
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-#define THINKOS_THREAD_LAST (THINKOS_THREADS_MAX + 1)
-
 int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();
@@ -111,8 +109,8 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 		return -1;
 	}
 
-	if (thread_id == xcpt->active) {
-		ctx = &xcpt->ctx.core;
+	if (thread_id == xcpt->sched.active) {
+		ctx = &xcpt->ctx;
 		errno = xcpt->errno;
 		pc = ctx->pc;
 		sp = xcpt->psp;
@@ -597,6 +595,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 				} 
 
 				/* Breakpoint on a system call */
+#if 0
 				if (code > THINKOS_BKPT_EXCEPT_OFF) {
 					unsigned int err = code - THINKOS_BKPT_EXCEPT_OFF;
 					(void)err;
@@ -624,6 +623,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 					__thinkos_defer_sched();
 					break;
 				} 
+#endif
 
 				DCC_LOG4(LOG_WARNING, _ATTR_PUSH_ _FG_YELLOW_ _REVERSE_
 						 " KERNEL BKPT" _NORMAL_ _FG_YELLOW_
@@ -697,7 +697,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 //				thinkos_rt.xcpt_ipsr = ipsr;
 				/* Copy cuurent stack frame into exception
 				   buffer */
-				__thinkos_memcpy32(&xcpt->ctx.core.r0, frm,
+				__thinkos_memcpy32(&xcpt->ctx.r0, frm,
 								   sizeof(struct armv7m_basic_frame));
 				/* delivers a kernel exception on next round */
 				monitor_signal(MONITOR_KRN_FAULT);
@@ -879,6 +879,6 @@ void __thinkos_dbgmon_init(void)
 	dcb->demcr = demcr | DCB_DEMCR_MON_EN | DCB_DEMCR_MON_PEND;
 }
 
-#endif /* THINKOS_ENABLE_MONITOR && !THINKOS_ENABLE_USAGEFAULT_MONITOR */
+#endif /* THINKOS_ENABLE_DEBUG */
 
 

@@ -1,0 +1,73 @@
+
+--- # Command list
+
+- cmd: erase
+  alias: e
+  param: ['app', 'diag']
+  usage: 'erase a flash partition'
+  help: >
+    Erase a flash block.
+
+- cmd: rcvy
+  alias: y
+  param: ['app', 'diag']
+  usage: 'YMODEM file receive to flash partition'
+  help: >
+    This command uses YMODEM protocol to receive a file and write it to a
+    flash partrition.
+
+#- cmd: xxd
+#  alias: x
+#  param: ['PART', 'ADDR']
+#  usage: 'Hexdump flash partion'
+#  help: >
+#    Write the content of a FLASH partition to the console.
+
+- cmd: reboot
+  alias:
+  param: 
+  usage: 'Reboot the system'
+  help: >
+    Write the content of a FLASH partition to the console.
+
+#- cmd: delay
+#  alias: d
+#  param: ['TIME']
+#  usage: 'Wait for [TIME] millisecods to elapse'
+#  help: >
+#    Write the content of a FLASH partition to the console.
+
+#- cmd: quit
+#  alias: q
+#  param: ['TIME']
+#  usage: 'Quit the shell'
+#  help: >
+#    Write the content of a FLASH partition to the console.
+
+- cmd: help
+  alias: h
+  param: ['CMD']
+  usage: 'Display a summary list of commands'
+  help: >
+    Display a summary list of commands.
+
+- cmd: info
+  alias: i
+  usage: 'Display system information'
+
+#- cmd: echo
+#  param: ['STRING']
+#  usage: 'display a line of text'
+#  help: >
+#    Echo the STRING(s) to console. 
+
+- cmd: app
+  usage: 'Run the application'
+
+- cmd: diag
+  usage: 'Run the diagnostics app'
+
+#- cmd: version
+#  alias: ver
+#  usage: 'Show version information'
+

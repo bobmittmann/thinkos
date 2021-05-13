@@ -57,7 +57,7 @@ cm3_svc_isr:
 	   other threads use the PSP. No exception is allowed to call
 	   SVC */
 	ldr      r2, .L_thinkos_rt
-	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_ACTIVE]
+	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_THREAD]
 	mrs      r0, PSP
 
 	/* NEW: 2020-12-02*/

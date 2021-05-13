@@ -25,6 +25,9 @@
 #define __THINKOS_APP__
 #include <thinkos/app.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_APP)
@@ -44,8 +47,8 @@ void thinkos_flat_dump(const struct flat_app * app)
 
 int thinkos_flat_check(const struct flat_app * app)
 {
-	uint32_t * mem = (uint32_t *)app;
 #if (THINKOS_ENABLE_APP_CRC)
+	uint32_t * mem = (uint32_t *)app;
 	uint32_t crc;
 	uint32_t chk;
 #endif
@@ -158,15 +161,10 @@ extern int __krn_stack_size;
 
 void __attribute__((noreturn, noinline)) krn_app_at_exit(int code)
 {
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "appp exit, code=%d ! " VT_POP, code);
-
-//	thinkos_exit(code);
-//	thinkos_thread_abort(code);
-
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "app exit, code=%d ! " VT_POP, 
+			 code);
 	thinkos_abort();
-//	for(;;);
 }
-
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr)
@@ -274,13 +272,13 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 
 	if (thread_idx == self) {
 #if (THINKOS_ENABLE_SANITY_CHECK)
-		if (__krn_active_get(krn) != self) {
-			DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
-				 self, ret);
+		if (__krn_sched_active_get(krn) != self) {
+			DCC_LOG2(LOG_ERROR, "<%2d> sched.act=%d!", self, 
+					 __krn_sched_active_get(krn));
 		}
 #endif
 		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
-		__krn_sched_discard_active(krn);
+		__krn_sched_active_clr(krn);
 		__krn_defer_sched(krn);
 	}
 

@@ -363,7 +363,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 		return;
 	}
 
-	DCC_LOG1(LOG_TRACE, "thread_id=%d", th);
+	DCC_LOG1(LOG_INFO, "thread_id=%d", th);
 
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
@@ -629,7 +629,8 @@ drain_again:
 				&& (!thinkos_console_rt.rd_nonblock) 
 #endif
 			   ) {
-				DCC_LOG1(LOG_INFO, "<%2d> Console timed read wait...", self);
+				DCC_LOG2(LOG_INFO, "<%2d> Console %dms read wait...", 
+						 self, tmo);
 				/* Set the default return value to timeout. */
 				arg[0] = THINKOS_ETIMEDOUT;
 				/* wait for event */

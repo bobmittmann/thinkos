@@ -51,7 +51,7 @@ void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
 	uint32_t clk = (uint32_t)arg[0];
 
-	DCC_LOG2(LOG_TRACE, "<%2d> clk=%d", self, clk);
+	DCC_LOG2(LOG_MSG, "<%2d> clk=%d", self, clk);
 
 	/* set the clock */
 	__thread_clk_set(krn, self, clk);

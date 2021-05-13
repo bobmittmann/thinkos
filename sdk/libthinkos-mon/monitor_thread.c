@@ -121,3 +121,18 @@ void monitor_thread_resume(int thread_id)
 		__thinkos_defer_sched();
 } 
 
+int monitor_thread_create(const struct monitor_comm * comm, 
+						thinkos_task_t task, void * arg,
+						bool priviledged) 
+{
+	int ret;
+
+	if ((ret = thinkos_dbg_thread_create(task, arg, 
+		__monitor_thread_on_exit, priviledged))  < 0) {
+		return ret;
+	}
+
+	return ret;
+}
+
+

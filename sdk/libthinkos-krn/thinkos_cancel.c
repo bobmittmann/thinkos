@@ -48,7 +48,7 @@ void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	wq = __thread_wq_get(krn, th);
 	/* remove from other wait queue including wq_ready */
 	/* possibly remove from the time wait queue */
-	__wq_remove(krn, wq, th);
+	__krn_wq_remove(krn, wq, th);
 
 #if THINKOS_ENABLE_JOIN
 	/* insert into the canceled wait queue and wait for a join call */ 

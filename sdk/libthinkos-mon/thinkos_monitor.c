@@ -92,6 +92,37 @@ void monitor_signal(int sig)
 	asm volatile ("isb\n" :  :  : );
 }
 
+void monitor_signal_break(int32_t sig) 
+{
+	monitor_signal(MONITOR_SOFTRST); 
+	monitor_signal(sig); 
+}
+
+#if 0
+void monitor_signal_break(int32_t event) 
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	uint32_t evset;
+	uint32_t set;
+
+	/* Disable systick interrupts */
+	//__thinkos_systick_sleep();
+
+	set = (1 << event) | (1 << MONITOR_SOFTRST); 
+
+	do {
+		/* avoid possible race condition on monitor.events */
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
+		evset |= set;
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
+
+	DCC_LOG1(LOG_TRACE, "set=0x%08x", evset);
+
+	/* Issue an idle hook request */
+//	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
+}
+#endif
+
 bool monitor_is_set(int sig) 
 {
 	return thinkos_rt.monitor.events &  (1 << sig) ? true : false;
@@ -303,31 +334,8 @@ void __thinkos_systick_wakeup(void)
 
 void thinkos_monitor_sleep(void)
 {
-	/* Reenable systick interrupts and signal the monitor */
+	/* Disable the systick interrupts */
 	__thinkos_systick_sleep();
-}
-
-void monitor_signal_break(int32_t event) 
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	uint32_t evset;
-	uint32_t set;
-
-	/* Disable systick interrupts */
-	//__thinkos_systick_sleep();
-
-	set = (1 << event) | (1 << MONITOR_SOFTRST); 
-
-	do {
-		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&krn->monitor.events);
-		evset |= set;
-	} while (__strex((uint32_t *)&krn->monitor.events, evset));
-
-	DCC_LOG1(LOG_TRACE, "set=0x%08x", evset);
-
-	/* Issue an idle hook request */
-//	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
 }
 
 void thinkos_monitor_wakeup(void)
@@ -509,9 +517,11 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 
 void monitor_soft_reset(void)
 {
+	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " Monitor Soft Reset " VT_POP);
+
 	thinkos_dbg_reset();
 
-	monitor_signal_break(MONITOR_SOFTRST); 
+	monitor_signal(MONITOR_SOFTRST); 
 }
 
 /* -------------------------------------------------------------------------
