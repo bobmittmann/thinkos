@@ -114,7 +114,7 @@ const struct magic_blk thinkos_10_app_magic = {
 extern const struct flash_dev stm32f4x_flash_dev;
 
 const struct thinkos_flash_desc board_flash_desc = {
-	.mem = (const struct mem_desc *)&flash_mem,
+	.mem = (struct thinkos_mem_desc *)&flash_mem,
 	.dev = &stm32f4x_flash_dev
 };
 

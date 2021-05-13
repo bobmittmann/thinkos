@@ -231,6 +231,7 @@ const char * __thinkos_kind_name(unsigned int kind)
 
 void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
 {
+#if (THINKOS_ENABLE_PROFILING)
 	uint32_t ref;
 	uint32_t cnt;
 
@@ -239,6 +240,7 @@ void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
 	krn->cycref = cnt;
 
 	krn->th_cyc[th] += cnt - ref;
+#endif
 }
 
 int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[], 

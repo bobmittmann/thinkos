@@ -23,7 +23,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-static bool ready_resume(struct thinkos_rt * krn, 
+bool ready_resume(struct thinkos_rt * krn, 
 						 unsigned int th, unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", th, __thread_pc_get(krn, th)); 
@@ -163,12 +163,15 @@ static bool flash_mem_resume(struct thinkos_rt * krn,
 #endif
 
 
+#if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) 
 typedef  bool (* thread_resume_t)(struct thinkos_rt *, 
 								  unsigned int, unsigned int, bool);
 
 static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_READY] = ready_resume,
+#if (THINKOS_ENABLE_JOIN)
 	[THINKOS_OBJ_THREAD] = join_resume,
+#endif
 	[THINKOS_OBJ_CLOCK] = clock_resume,
 #if THINKOS_MUTEX_MAX > 0
 	[THINKOS_OBJ_MUTEX] = krn_mutex_resume,
@@ -215,6 +218,7 @@ static const thread_resume_t thread_resume_lut[] = {
 	[THINKOS_OBJ_FLASH_MEM] = flash_mem_resume
 #endif
 };
+#endif /* (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT) */
 
 bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int th)
 {
@@ -246,7 +250,7 @@ bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int th)
 #else
 	/* remove from all queues */
 	for (wq = 0; wq < THINKOS_WQ_CNT; ++wq) 
-		__krn_wq_delete(krn, wq, th);
+		__krn_wq_remove(krn, wq, th);
 #endif /* THINKOS_ENABLE_THREAD_STAT */
 
 #if (THINKOS_IRQ_MAX) > 0
