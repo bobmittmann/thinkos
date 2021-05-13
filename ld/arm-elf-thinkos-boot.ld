@@ -102,7 +102,7 @@ SECTIONS
 		*(.rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
 
-		. = ALIGN(4);
+		. = ALIGN(3);
 		/* constructors */
 		PROVIDE(__ctors_start = .);
 		KEEP (*(SORT(.init_array.*))) /* gcc 4.6 */
@@ -111,21 +111,21 @@ SECTIONS
 		KEEP(*(.ctors))
 		PROVIDE(__ctors_end = .);
 
-		. = ALIGN(4);
+		. = ALIGN(3);
 		/* kernel traces */
 		PROVIDE(__trace_krn_start = .);
 		KEEP(*(SORT(.rodata.trace_krn.*)))
 		PROVIDE(__trace_krn_end = .);
 
-		. = ALIGN(4);
+		. = ALIGN(3);
 		/* user traces */
 		PROVIDE(__trace_usr_start = .);
 		KEEP(*(SORT(.rodata.trace.*)))
 		PROVIDE(__trace_usr_end = .);
 
-		. = ALIGN(4);
 	} >"CODE" = 0xffffffff
 
+	. = ALIGN(3);
 	.ARM.extab : 
 	{ 
 		*(.ARM.extab* .gnu.linkonce.armextab.*) 
@@ -143,28 +143,27 @@ SECTIONS
 
 	.data :
 	{
-		. = ALIGN(4);
+		. = ALIGN(3);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
 		/* all .data sections  */
 		*(.data .data*)
 		/* define a global symbol marking the end of the .data section  */
-		. = ALIGN(4);
-		PROVIDE (__data_end = . );
 	} >"DATA" AT >"CODE"
 
-	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
+	. = ALIGN(3);
+	PROVIDE (__data_end = . );
+	/* define a global symbol marking the start of the .bss section */
+	PROVIDE (__bss_start = . );
 
 	.bss :
 	{
-		/* define a global symbol marking the start of the .bss section */
-		PROVIDE (__bss_start = . );
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"
 
 	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
+	. = ALIGN(3);
 	PROVIDE (__bss_end = . );
 
 	/* Backed up control section */
@@ -182,6 +181,8 @@ SECTIONS
 		*(.bkpdat .bkpdat*)
 		PROVIDE (__bkpdat_end = . );
 	} >"BKPDAT"
+
+	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
 
 }
 
