@@ -148,23 +148,22 @@ SECTIONS
 		PROVIDE (__data_start = . );
 		/* all .data sections  */
 		*(.data .data*)
-		/* define a global symbol marking the end of the .data section  */
-		. = ALIGN(4);
-		PROVIDE (__data_end = . );
 	} >"DATA" AT >"CODE"
 
-	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
+	. = ALIGN(4);
+	/* define a global symbol marking the end of the .data section  */
+	PROVIDE (__data_end = . );
+	/* define a global symbol marking the start of the .bss section */
+	PROVIDE (__bss_start = . );
 
 	.bss :
 	{
-		/* define a global symbol marking the start of the .bss section */
-		PROVIDE (__bss_start = . );
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"
 
 	/* advance location counter to the next 32-bit boundary */
-	. = ALIGN(4);
+	. = ALIGN(3);
 	PROVIDE (__bss_end = . );
 
 	/* Backed up control section */
@@ -182,6 +181,8 @@ SECTIONS
 		*(.bkpdat .bkpdat*)
 		PROVIDE (__bkpdat_end = . );
 	} >"BKPDAT"
+
+	PROVIDE(__image_size = SIZEOF(.init) + SIZEOF(.text) + SIZEOF(.data));
 
 }
 

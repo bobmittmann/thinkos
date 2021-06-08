@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <strings.h>
 
 /* The floating point value is calculated as: 
 
