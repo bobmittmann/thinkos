@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 
 /* FLoating point number layout:
 
