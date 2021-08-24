@@ -109,15 +109,15 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 		return -1;
 	}
 
-	if (thread_id == xcpt->sched.active) {
+	if (thread_id == xcpt->thread) {
 		ctx = &xcpt->ctx;
 		errno = xcpt->errno;
 		pc = ctx->pc;
-		sp = xcpt->psp;
+		sp = xcpt->sp;
 	} else if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx  = __thinkos_idle_ctx();
 		pc = ctx->pc;
-		sp = xcpt->msp;
+		sp = xcpt->sp;
 	} else {
 		if (thread_id == (unsigned int)thinkos_dbgmon_rt.break_id)
 			errno = thinkos_dbgmon_rt.errno;

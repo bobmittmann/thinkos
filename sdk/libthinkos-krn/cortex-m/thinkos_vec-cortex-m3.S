@@ -278,11 +278,11 @@ cm3_usage_fault_isr:
 	ldr     r3, .L_cm3_scb
 	ldr     r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
 	tst     r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
-	beq     __thinkos_krn_xcpt
+	beq     __thinkos_krn_thread_err
 	/* Code running from the process stack (non-privileged) causes a fault.
 	   (Select the context stack according to the content of LR */
 	tst     lr, #4
-	bne     __thinkos_krn_xcpt
+	bne     __thinkos_krn_thread_err
 	/* Get the call frame stack */
 	mov     r0, sp
 	/* Get PC from the stack */
