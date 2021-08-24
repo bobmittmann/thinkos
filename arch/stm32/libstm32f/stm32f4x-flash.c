@@ -61,7 +61,7 @@ int stm32f4x_flash_lock(struct stm32_flash * flash, off_t offs, size_t len)
 }
 
 uint32_t __attribute__((section (".data#"), noinline)) 
-stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
+stm32f4x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
 					uint32_t volatile * addr, uint32_t data)
 {
 	uint32_t sr;
@@ -100,11 +100,11 @@ int stm32f4x_flash_write(struct stm32_flash * flash,
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
-	sr = stm32f2x_flash_wr32(flash, cr, dst, data);
+	sr = stm32f4x_flash_wr32(flash, cr, dst, data);
 	cm3_primask_set(pri);
 
 	if (sr & FLASH_ERR) {
-		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_wr32() failed" " sr=%08x!", sr);
+		DCC_LOG1(LOG_WARNING, "stm32f4x_flash_wr32() failed" " sr=%08x!", sr);
 		return -1;
 	}
 
@@ -251,11 +251,11 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
-	sr = stm32f2x_flash_wr32(flash, cr, &dummy, 0);
+	sr = stm32f4x_flash_wr32(flash, cr, &dummy, 0);
 	cm3_primask_set(pri);
 
 	if (sr & FLASH_ERR) {
-		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_wr32() failed" " sr=%08x!", sr);
+		DCC_LOG1(LOG_WARNING, "stm32f4x_flash_wr32() failed" " sr=%08x!", sr);
 		return -1;
 	}
 

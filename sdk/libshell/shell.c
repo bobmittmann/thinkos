@@ -23,27 +23,8 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/shell.h>
-#include <sys/tty.h>
-
-#include <sys/serial.h>
-
 #define __SHELL_I__
 #include "shell-i.h"
-
-#ifndef SHELL_LINE_MAX
-#define SHELL_LINE_MAX 72
-#endif
-
-#ifndef SHELL_HISTORY_MAX
-#define SHELL_HISTORY_MAX 8
-#endif
 
 int shell(FILE * f, const char * (* prompt)(void), 
 		  void (* greeting)(FILE *), 

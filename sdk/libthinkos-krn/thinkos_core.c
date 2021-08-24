@@ -247,18 +247,37 @@ int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[],
 						  unsigned int from, unsigned int cnt)
 {
 #if (THINKOS_ENABLE_PROFILING)
-	unsigned int to = from + cnt;
-
-	if (to > __KRN_THREAD_LST_SIZ)
+	if (from >= __KRN_THREAD_LST_SIZ)
 		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
 
 	__krn_cyccnt_flush(krn, __krn_sched_active_get(krn));
 	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
 
-	return to;
+	return cnt;
 #else
 	return -THINKOS_ENOSYS;
 #endif
 }
 
+int __krn_threads_inf_get(struct thinkos_rt * krn, 
+						  const struct thinkos_thread_inf * inf[],
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
 

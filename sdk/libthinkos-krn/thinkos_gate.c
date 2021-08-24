@@ -355,7 +355,7 @@ void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
 	int j;
 	int th;
 
-	DCC_LOG1(LOG_TRACE, "gate %d", gate);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
 #if (THINKOS_GATE_MAX < 16)
 	gates_bmp = &krn->gate[0];

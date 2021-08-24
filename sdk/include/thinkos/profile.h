@@ -481,12 +481,23 @@
 #define THINKOS_ENABLE_SCHED_ERROR          0
 #endif
 
+/* THINKOS_ENABLE_KRN_SCHED_BRK - Enable thread break */
+#ifndef THINKOS_ENABLE_KRN_SCHED_BRK
+#define THINKOS_ENABLE_KRN_SCHED_BRK        0
+#endif
+
+/* THINKOS_ENABLE_KRN_SCHED_SVC - This option is used to request the execution of
+   a scheduler priority tasklet. */
+#ifndef THINKOS_ENABLE_KRN_SCHED_SVC
+#define THINKOS_ENABLE_KRN_SCHED_SVC        0
+#endif
+
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
    a tasklet when the system is idle. The tasklet runs on the IDLE 
    thread context.
  */
 #ifndef THINKOS_ENABLE_IDLE_HOOKS       
-#define THINKOS_ENABLE_IDLE_HOOKS            0
+#define THINKOS_ENABLE_IDLE_HOOKS           0
 #endif
 
 /* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 

@@ -712,13 +712,15 @@ static inline int __attribute__((always_inline))
 
 static inline int __attribute__((always_inline)) 
 	thinkos_thread_inf(const struct thinkos_thread_inf * inf[], 
-					   unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf, max);
+					   unsigned int from, unsigned int cnt) {
+		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, 
+								inf, ((from << 16) + cnt));
 	}
 
 static inline int __attribute__((always_inline)) 
-	thinkos_thread_cyccnt(uint32_t cyccnt[], unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_CYCCNT, cyccnt, max);
+	thinkos_thread_cyccnt(uint32_t cyccnt[], unsigned int from, unsigned int cnt) {
+		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_CYCCNT, 
+								cyccnt, ((from << 16) + cnt));
 	}
 
 static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {

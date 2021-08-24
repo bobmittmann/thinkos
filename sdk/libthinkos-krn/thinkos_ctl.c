@@ -79,12 +79,10 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
 #if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		unsigned int cnt;
-
-		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
-		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * cnt); 
-		arg[0] = cnt;
+		arg[0] = __krn_threads_inf_get(krn, 
+				(const struct thinkos_thread_inf **)arg[1], 
+				(unsigned int)arg[2] >> 16,
+				(unsigned int)arg[2] & 0xffff);
 		}
 		break;
 #endif

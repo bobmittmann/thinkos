@@ -40,10 +40,34 @@
 #endif
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/shell.h>
+#include <sys/tty.h>
+#include <errno.h>
 
 #ifndef SHELL_ARG_MAX 
 #define SHELL_ARG_MAX 16
 #endif
+
+#ifndef SHELL_LINE_MAX
+#define SHELL_LINE_MAX 72
+#endif
+
+#ifndef SHELL_HISTORY_MAX
+#define SHELL_HISTORY_MAX 8
+#endif
+
+#ifndef SHELL_ENV_MAX
+#define SHELL_ENV_MAX 32
+#endif
+
+#define CMD_SHELL_BUF (SIZEOF_CMD_HISTORY) + (SHELL_HISTORY_MAX) * (SHELL_LINE_MAX)
+
+#define SIZEOF_SHELL_BUF (SIZEOF_CMD_HISTORY) + (SHELL_HISTORY_MAX) * (SHELL_LINE_MAX)
+
 
 struct cmd_history {
 	uint8_t pos;
@@ -53,6 +77,13 @@ struct cmd_history {
 	uint8_t len;
 	char buf[];
 };
+
+struct shell_env {
+	FILE * fout;
+	FILE * fin;
+	char buf[];
+};
+
 
 #ifdef __cplusplus
 extern "C" {

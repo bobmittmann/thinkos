@@ -352,6 +352,8 @@ def mktabs(f, cmd_tab):
 
     if (collision == False):
       f.write('/*\n')
+      f.write('   Perfect Hashing\n')
+      f.write('\n')
       f.write('   Table generated with Fisher and Yates permutation\n')
       f.write('   algorithm\n')
       f.write('*/\n')
@@ -424,6 +426,10 @@ def mk_cmdtab_c(f, hdr_fname, cmd_tab):
 
   mktabs(f, cmd_tab)
 
+  f.write('/*\n')
+  f.write('   Binary search...\n')
+  f.write('*/\n')
+  f.write('\n')
   f.write('static int h_lookup(int x)\n')
   f.write('{\n')
   f.write('\tint i = 0;\n')

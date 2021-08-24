@@ -364,7 +364,7 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
 			if (krn->irq_th[irq] == (int)th) {
 				DCC_LOG2(LOG_INFO, "PC=%08x IRQ=%d ......", 
-						 __thinkos_thread_pc_get(th), irq); 
+						 __thread_pc_get(krn, th), irq); 
 				/* disable this interrupt source */
 				cm3_irq_enable(irq);
 				break;
@@ -372,7 +372,7 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 		}
 	}
 	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", 
-			 th, __thinkos_thread_pc_get(th)); 
+			 th, __thread_pc_get(krn, th)); 
 	__bit_mem_wr(&krn->wq_lst[wq], th, 1);
 	__bit_mem_wr(&krn->wq_clock, th, tmw);
 	return true;

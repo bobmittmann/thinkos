@@ -80,6 +80,7 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
+#if (THINKOS_ENABLE_KRN_SCHED_BRK)
 void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 {
 	uint32_t act = SCHED_STAT_ACT(stat);
@@ -95,8 +96,7 @@ void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 	DCC_LOG4(LOG_INFO, VT_PSH VT_FGR " Service: act=%d brk=%d "
 			 "err=%d, svc=%d " VT_POP, act, brk, err, svc);
 }
-
-#define THINKOS_ENABLE_KRN_SCHED_SVC 1
+#endif
 
 #if (THINKOS_ENABLE_KRN_SCHED_SVC) 
 void thinkos_krn_sched_svc_reset(struct thinkos_rt * krn)

@@ -60,7 +60,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	stack_top = stack_base + stack_size;
 
 	if (inf != NULL) {
-		DCC_LOG1(LOG_TRACE, "  tag: \"%s\"", inf->tag);
+		DCC_LOG1(LOG_YAP, "  tag: \"%s\"", inf->tag);
 	}
 	DCC_LOG3(LOG_TRACE, "stack: top=%08x base=%08x size=%d", 
 			 stack_top, stack_base, stack_size);
@@ -249,7 +249,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
-	if (__xcpt_active_get(xcpt) == (int)thread_no)
+	if (__xcpt_thread_get(xcpt) == (int)thread_no)
 		return &xcpt->ctx;
 
 	return __thread_ctx_get(krn, thread_no);

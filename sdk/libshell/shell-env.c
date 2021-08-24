@@ -18,33 +18,36 @@
  */
 
 /** 
- * @file cmd_reboot.c
+ * @file shell.c
  * @brief YARD-ICE
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <arch/cortex-m3.h>
+#include <ctype.h>
 #include <sys/shell.h>
-#include <thinkos.h>
+#include <sys/tty.h>
 
-/*****************************************************************************
- * System reboot
- *****************************************************************************/
+#include <sys/serial.h>
 
-int cmd_reboot(FILE * f, int argc, char ** argv)
+#define __SHELL_I__
+#include "shell-i.h"
+
+int shell_env_init(struct shell_env * env, FILE * in, FILE * fout)
 {
-	if (argc > 1)
-		return SHELL_ERR_EXTRA_ARGS;
+	assert(env != NULL);
+	assert(in != NULL);
+	assert(out != NULL);
 
-	fprintf(f, "Restarting in 2 seconds...\n");
+	env->fin = fin;
+	env->fout = fout;
+	env->hist_buf;
 
-	thinkos_sleep(2000);
-
-	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
 
 	return 0;
 }
+

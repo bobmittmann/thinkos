@@ -343,14 +343,19 @@ int thinkos_dbg_thread_brk_get(unsigned int th)
     return __krn_sched_brk_get(krn);
 }
 
-
 static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
 													 unsigned int th)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return NULL;
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    if (__xcpt_thread_get(xcpt) == th)
+		return &xcpt->ctx;
+
+    //th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+
     return __thread_ctx_get(krn, th);
 }
 
