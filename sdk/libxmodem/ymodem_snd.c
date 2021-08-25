@@ -378,14 +378,14 @@ static int sy_wait_ack(struct ymodem_snd * sy)
 				sy->ack++;
 			} else if (c == NAK) {
 				WARNS("YS: NAK");
-				break;
+				return c;
 			} else {
 				WARN("YS: %02x", c);
 			}
 		}
 	}
 
-	return 0;
+	return ACK;
 
 
 cancel:
@@ -405,7 +405,6 @@ static int ymodem_send_char(struct ymodem_snd * sy, int c)
 
 	buf[0] = c;
 
-	sy->seq++;
 	ret = sy->comm->op.send(sy->comm->arg, buf, 1);
 
 	return ret;
@@ -450,11 +449,17 @@ int ymodem_snd_eot(struct ymodem_snd * sy)
 
 	sy_wait_ack(sy);
 
+	sy->tmout_ms = YMODEM_SND_EOT_TMO_MS;
+
 	INFS("YS: EOT");
 	ymodem_send_char(sy, EOT);
+	sy->seq++;
 
-	sy->tmout_ms = YMODEM_SND_EOT_TMO_MS;
-	sy_wait_ack(sy);
+	if (sy_wait_ack(sy) == NAK) {
+		INFS("YS: EOT");
+		ymodem_send_char(sy, EOT);
+		sy_wait_ack(sy);
+	}
 
 	sy->state = YMODEM_SND_IDLE;
 	sy->data_len = 0;

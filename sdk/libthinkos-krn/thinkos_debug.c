@@ -362,11 +362,58 @@ static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
 static unsigned int __dbg_thread_ctrl_get(struct thinkos_rt * krn,
                                           unsigned int th)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->control;
+
     return __thread_ctrl_get(krn, th);
+}
+
+static uint32_t __dbg_thread_sp_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->sp;
+
+    return __thread_sp_get(krn, th);
+}
+
+static uint32_t __dbg_thread_pc_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.pc;
+
+    return __thread_pc_get(krn, th);
+}
+
+
+static uint32_t __dbg_thread_lr_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.lr;
+
+    return __thread_lr_get(krn, th);
 }
 
 
@@ -384,28 +431,25 @@ unsigned int thinkos_dbg_thread_ctrl_get(unsigned int th)
     return __dbg_thread_ctrl_get(krn, th);
 }
 
+uint32_t thinkos_dbg_thread_sp_get(unsigned int th)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+    return __dbg_thread_sp_get(krn, th);
+}
+
 uint32_t thinkos_dbg_thread_pc_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
-//    int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
 
-    return __thread_pc_get(krn, th);
+    return __dbg_thread_pc_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_lr_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
- //   int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
 
-    return __thread_lr_get(krn, th);
-}
-
-uint32_t thinkos_dbg_thread_sp_get(unsigned int th)
-{
-    struct thinkos_rt * krn = &thinkos_rt;
-  //  int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
-
-    return __thread_sp_get(krn, th);
+    return __dbg_thread_lr_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_sl_get(unsigned int th) 
@@ -499,7 +543,7 @@ bool thinkos_dbg_thread_get(unsigned int th, struct thinkos_thread * st,
 #endif
 	}
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+//    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     ctx = __thread_ctx_get(krn, th);
 
 	if (core != NULL) {
