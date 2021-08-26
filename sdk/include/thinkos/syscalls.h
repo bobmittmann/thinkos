@@ -556,45 +556,60 @@ thinkos_gate_open_i(int gate) {
  * --------------------------------------------------------------------------
  */
 
-static inline int __attribute__((always_inline)) 
-	thinkos_irq_timedwait(int irq, unsigned int ms) {
-
-	register uint32_t err asm("r0");
-	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT) : 
-				  "=r"(err), "=r"(cyccnt) :
-				  "0"(irq), "1"(ms) );
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT_CLEANUP) : 
-				  "=r"(err) : "0"(irq) );
-
-	return err;
-}
-
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	register uint32_t err asm("r0");
+	register uint32_t ret asm("r0");
 	register uint32_t cyccnt asm("r1");
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
+				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
 
-	return err;
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_wait_cyccnt(int irq, uint32_t * pcyccnt) {
 
-	register uint32_t err asm("r0");
+	register uint32_t ret asm("r0");
 	register uint32_t cyccnt asm("r1");
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
+				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
 
 	*pcyccnt = cyccnt;
 
-	return err;
+	return ret;
 }
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait_cyccnt(int irq, unsigned int ms, uint32_t * pcyccnt) {
+
+	register uint32_t ret asm("r0");
+	register uint32_t cyccnt asm("r1");
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_CLEANUP) : 
+				  "=r"(ret), "=r"(cyccnt) :
+				  "0"(irq), "1"(ms) );
+
+	*pcyccnt = cyccnt;
+
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait(int irq, unsigned int ms) {
+
+	register uint32_t ret asm("r0");
+	register uint32_t cyccnt asm("r1");
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_CLEANUP) : 
+				  "=r"(ret), "=r"(cyccnt) :
+				  "0"(irq), "1"(ms) );
+
+	return ret;
+}
+
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void)) {

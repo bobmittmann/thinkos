@@ -130,7 +130,7 @@ void cm3_default_isr(unsigned int irq)
 	krn->irq_th[irq] = THINKOS_THREAD_VOID;
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
-	/* set the thread's return value */
+	/* set the thread's cyccnt value */
 	__thread_r1_set(krn, th, cyccnt);
 #endif
 
@@ -157,6 +157,10 @@ void cm3_default_isr(unsigned int irq)
 	__krn_preempt(krn);
 }
 
+/* 
+   This syscall returns the irq number upon success. 
+ */
+
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
 void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, unsigned int self) 
 {
@@ -179,11 +183,12 @@ void thinkos_irq_timedwait_cleanup_svc(int32_t * arg, unsigned int self)
 		/* disable this interrupt source */
 		cm3_irq_disable(irq);
 		arg[0] = THINKOS_ETIMEDOUT;      /* return value */
-	} else {
-		arg[0] = THINKOS_OK;             /* return value */
 	}
 }
 
+/* 
+   This syscall returns the irq number upon success. 
+ */
 void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -221,6 +226,9 @@ void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self)
 }
 #endif
 
+/* 
+   This syscall returns the irq number upon success. 
+ */
 void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -236,7 +244,6 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self)
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
 	DCC_LOG2(LOG_INFO, "<%2d> IRQ %d!", self, irq);
-	arg[0] = THINKOS_OK;
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* Save the context pointer. In case an interrupt wakes up
