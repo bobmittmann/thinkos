@@ -42,7 +42,7 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_TIMESHARE)
-static bool tmshare_resume(struct thinkos_rt * krn, unsigned int th, 
+bool tmshare_resume(struct thinkos_rt * krn, unsigned int th, 
 						   unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", 
@@ -82,7 +82,7 @@ bool gate_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_JOIN)
-static bool join_resume(struct thinkos_rt * krn, unsigned int th, 
+bool join_resume(struct thinkos_rt * krn, unsigned int th, 
 						unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
@@ -100,7 +100,7 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_COMM)
-static bool comm_recv_resume(struct thinkos_rt * krn, unsigned int th, unsigned int wq, bool tmw) 
+bool comm_recv_resume(struct thinkos_rt * krn, unsigned int th, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
 	/* wakeup from the comm recv wait queue setting the return value to 0.
@@ -109,7 +109,7 @@ static bool comm_recv_resume(struct thinkos_rt * krn, unsigned int th, unsigned 
 	return true;
 }
 
-static bool comm_send_resume(struct thinkos_rt * krn, unsigned int th, 
+bool comm_send_resume(struct thinkos_rt * krn, unsigned int th, 
 							 unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
@@ -121,7 +121,7 @@ static bool comm_send_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_JOIN)
-static bool canceled_resume(struct thinkos_rt * krn, unsigned int th, 
+bool canceled_resume(struct thinkos_rt * krn, unsigned int th, 
 							unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
@@ -132,7 +132,7 @@ static bool canceled_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_PAUSE)
-static bool paused_resume(struct thinkos_rt * krn, unsigned int th, 
+bool paused_resume(struct thinkos_rt * krn, unsigned int th, 
 						  unsigned int wq, bool tmw) 
 {
 	DCC_LOG2(LOG_INFO, "invalid state: th=%d PC=%08x !!!!!!",
@@ -142,7 +142,7 @@ static bool paused_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
-static bool fault_resume(struct thinkos_rt * krn, unsigned int th, 
+bool fault_resume(struct thinkos_rt * krn, unsigned int th, 
 						 unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th));
@@ -155,7 +155,7 @@ static bool fault_resume(struct thinkos_rt * krn, unsigned int th,
 #endif
 
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
-static bool flash_mem_resume(struct thinkos_rt * krn, 
+bool flash_mem_resume(struct thinkos_rt * krn, 
 							 unsigned int th, unsigned int wq, bool tmw) 
 {
 	return true;

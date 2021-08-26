@@ -201,7 +201,8 @@ uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
 	return __clz(act) + 4;
 }
 
-void thinkos_krn_thread_except(struct thinkos_rt * krn,
+#if (THINKOS_ENABLE_THREAD_FAULT)
+void thinkos_krn_thread_fault(struct thinkos_rt * krn,
 							   struct thinkos_except * xcpt,
 							   uint32_t errno,
 							   uint32_t thread)
@@ -242,6 +243,7 @@ void thinkos_krn_thread_except(struct thinkos_rt * krn,
 	__krn_suspend_all(krn);
 #endif
 }
+#endif
 
 
 /* -------------------------------------------------------------------------

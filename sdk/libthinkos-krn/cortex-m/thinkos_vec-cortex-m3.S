@@ -192,6 +192,7 @@ __thinkos_krn_xcpt_done:
 
 	.size   __thinkos_krn_xcpt_done, . - __thinkos_krn_xcpt_done
 
+#if (THINKOS_ENABLE_THREAD_FAULT)
 
 	.global	__thinkos_krn_thread_err
 	.thumb
@@ -231,18 +232,17 @@ __thinkos_krn_thread_err:
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
-	b       thinkos_krn_thread_except
-
+	b       thinkos_krn_thread_fault
 
 	.align  2
 .L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
 	.word   thinkos_except_stack
-.L_thinkos_rt:
-	.word	thinkos_rt
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
 
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
+#endif /* THINKOS_ENABLE_THREAD_FAULT */
+
 
 #if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb
@@ -254,11 +254,15 @@ __thinkos_krn_thread_err:
 cm3_bus_fault_isr:
 	/* disable interrupts */
 	cpsid   i
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
 	movs   r2, #THINKOS_ERR_BUS_FAULT
 	b       __thinkos_krn_thread_err
+#else
+	b       .
+#endif /* THINKOS_ENABLE_THREAD_FAULT */
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
@@ -296,11 +300,15 @@ cm3_usage_fault_isr:
 	b       thinkos_krnsvc_isr
 #else
 	cpsid   i
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
 	movs    r2, #THINKOS_ERR_USAGE_FAULT
 	b       __thinkos_krn_thread_err
+#else
+	b       .
+#endif /* THINKOS_ENABLE_THREAD_FAULT */
 #endif
 
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
@@ -315,12 +323,15 @@ cm3_usage_fault_isr:
 cm3_mem_manage_isr:
 	/* disable interrupts */
 	cpsid   i
+#if (THINKOS_ENABLE_THREAD_FAULT)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
 	movs    r2, #THINKOS_ERR_MEM_MANAGE
 	b       __thinkos_krn_thread_err
-
+#else
+	b       .
+#endif /* THINKOS_ENABLE_THREAD_FAULT */
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
 
@@ -345,7 +356,6 @@ cm3_debug_mon_isr:
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 #endif /* THINKOS_ENABLE_DBGMON */
 
-
 	.text
 	.align	2
 
@@ -355,6 +365,12 @@ cm3_debug_mon_isr:
 	.type   _fault, %function
 _fault:
 	b		.
+
+	.align  2
+
+.L_thinkos_rt:
+	.word	thinkos_rt
+
 	.size   _fault, . - _fault
 
 
