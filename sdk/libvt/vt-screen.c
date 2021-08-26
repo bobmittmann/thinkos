@@ -82,7 +82,7 @@ int vt_screen_open(void)
 	__vt_console_write(s, n);
 	thinkos_sleep(200);
 
-
+	vt_msg_post(win, VT_WIN_DRAW, 0);
 	vt_msg_post(win, VT_WIN_REFRESH, 0);
 
 	return 0;
@@ -116,5 +116,13 @@ void vt_refresh(void)
 
 	win = __vt_win_root();
 	vt_msg_post(win, VT_WIN_REFRESH, 0);
+}
+
+void vt_redraw(void)
+{
+	struct vt_win * win;
+
+	win = __vt_win_root();
+	vt_msg_post(win, VT_WIN_DRAW, 0);
 }
 

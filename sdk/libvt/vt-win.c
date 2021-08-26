@@ -163,7 +163,7 @@ int vt_win_open(struct vt_win * win)
 
 int vt_win_close(struct vt_win * win)
 {
-	if (win->visible)
+	if (win->open)
 		__vt_win_close(win);
 
 	__vt_unlock();
@@ -308,13 +308,13 @@ int vt_fg_color_set(struct vt_win * win, enum vt_color color)
 	win->attr.fg_color = color;
 	if (win->open) {
 		char s[8];
-		int n = __vt_set_bg_color(s, win->attr.fg_color);
+		int n = __vt_set_fg_color(s, win->attr.fg_color);
 		__vt_console_write(s, n);
 	}
 	return 0;
 }
 
-int vt_attr_clear(struct vt_win * win, enum vt_attr attr)
+int vt_attr_clear(struct vt_win * win)
 {
 	assert(win != NULL);
 
@@ -326,19 +326,22 @@ int vt_attr_clear(struct vt_win * win, enum vt_attr attr)
 	win->attr.reverse= 0;
 	if (win->open) {
 		char s[8];
-		int n = __vt_attr_clear(s);
+		int n = __vt_clear_attr(s);
 		__vt_console_write(s, n);
 	}
 	return 0;
 }
 
-int vt_attr_bright_set(struct vt_win * win, enum vt_attr attr)
+int vt_attr_bright_set(struct vt_win * win)
 {
 	assert(win != NULL);
 
 	win->attr.bright = 1;
 	win->attr.dim = 0;
 	win->attr.hidden = 0;
+	win->attr.underline = 0;
+	win->attr.blink = 0;
+	win->attr.reverse= 0;
 	if (win->open) {
 		char s[8];
 		int n = __vt_set_attr(s, VT_ATTR_BRIGHT);
@@ -347,16 +350,73 @@ int vt_attr_bright_set(struct vt_win * win, enum vt_attr attr)
 	return 0;
 }
 
-int vt_attr_dim_set(struct vt_win * win, enum vt_attr attr)
+int vt_attr_dim_set(struct vt_win * win)
 {
 	assert(win != NULL);
 
 	win->attr.bright = 0;
 	win->attr.dim = 1;
 	win->attr.hidden = 0;
+	win->attr.underline = 0;
+	win->attr.blink = 0;
+	win->attr.reverse= 0;
 	if (win->open) {
 		char s[8];
 		int n = __vt_set_attr(s, VT_ATTR_DIM);
+		__vt_console_write(s, n);
+	}
+	return 0;
+}
+
+int vt_attr_underline_set(struct vt_win * win)
+{
+	assert(win != NULL);
+
+	win->attr.bright = 0;
+	win->attr.dim = 0;
+	win->attr.hidden = 0;
+	win->attr.underline = 1;
+	win->attr.blink = 0;
+	win->attr.reverse= 0;
+	if (win->open) {
+		char s[8];
+		int n = __vt_set_attr(s, VT_ATTR_UNDERLINE);
+		__vt_console_write(s, n);
+	}
+	return 0;
+}
+
+int vt_attr_blink_set(struct vt_win * win)
+{
+	assert(win != NULL);
+
+	win->attr.bright = 0;
+	win->attr.dim = 0;
+	win->attr.hidden = 0;
+	win->attr.underline = 0;
+	win->attr.blink = 1;
+	win->attr.reverse= 0;
+	if (win->open) {
+		char s[8];
+		int n = __vt_set_attr(s, VT_ATTR_BRIGHT);
+		__vt_console_write(s, n);
+	}
+	return 0;
+}
+
+int vt_attr_reverse_set(struct vt_win * win)
+{
+	assert(win != NULL);
+
+	win->attr.bright = 0;
+	win->attr.dim = 0;
+	win->attr.hidden = 0;
+	win->attr.underline = 0;
+	win->attr.blink = 0;
+	win->attr.reverse = 1;
+	if (win->open) {
+		char s[8];
+		int n = __vt_set_attr(s, VT_ATTR_REVERSE);
 		__vt_console_write(s, n);
 	}
 	return 0;
@@ -409,6 +469,30 @@ int vt_cursor_show(struct vt_win * win)
 	if (win->open) {
 		char s[8];
 		int n = __vt_cursor_show(s);
+		__vt_console_write(s, n);
+	}
+	return 0;
+}
+
+int vt_push(struct vt_win * win)
+{
+	assert(win != NULL);
+
+	if (win->open) {
+		char s[8];
+		int n = __vt_save(s);
+		__vt_console_write(s, n);
+	}
+	return 0;
+}
+
+int vt_pop(struct vt_win * win)
+{
+	assert(win != NULL);
+
+	if (win->open) {
+		char s[8];
+		int n = __vt_restore(s);
 		__vt_console_write(s, n);
 	}
 	return 0;
@@ -470,6 +554,13 @@ struct vt_pos vt_win_pos(struct vt_win * win)
 	return pos;
 }
 
+struct vt_win * vt_win_parent(struct vt_win * win)
+{
+	struct vt_win * parent = __vt_win_by_idx(win->parent);
+
+	return parent;
+}
+
 struct vt_size vt_win_size(struct vt_win * win)
 {
 	return win->size;
@@ -479,6 +570,7 @@ void vt_win_show(struct vt_win * win)
 {
 	if (!win->visible) {
 		win->visible = true;
+		vt_msg_post(win, VT_WIN_DRAW, 0);
 	}
 }
 
@@ -565,6 +657,9 @@ int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def)
 	win->msg_handler = (def->msg_handler == NULL) ? vt_default_msg_handler :
 		def->msg_handler;
 	win->data = def->data;
+
+	win->open = 0;
+	win->visible = 0;
 
 	return 0;
 }
@@ -679,6 +774,7 @@ int vt_msg_dispatch(struct vt_win * win, enum vt_msg msg, uintptr_t arg)
 {
 	switch (msg) {
 	case VT_WIN_REFRESH:
+	case VT_WIN_DRAW:
 		if (win->child != 0) {
 			struct vt_win * child;
 
@@ -705,6 +801,7 @@ int vt_default_msg_loop(unsigned int itv_ms)
 	uint32_t tmo_clk;
 	uint32_t tail;
 	enum vt_msg msg;
+	uintptr_t arg;
 
 	tail = __sys_vt.queue.tail;
 	tmo_clk = thinkos_clock() + itv_ms;
@@ -712,7 +809,6 @@ int vt_default_msg_loop(unsigned int itv_ms)
 	do {
 		char buf[1];
 		struct vt_win * win;
-		uintptr_t arg = 0;
 		int ret = 0;
 		int pos;
 
@@ -751,6 +847,6 @@ int vt_default_msg_loop(unsigned int itv_ms)
 
 	} while (msg != VT_QUIT);
 
-	return 0;
+	return (int)arg;
 }
 

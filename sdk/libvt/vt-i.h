@@ -63,15 +63,24 @@ struct vt_win {
 	uint8_t parent;
 	uint8_t sibiling;
 	uint8_t child;
-	uint8_t open: 1;
-	uint8_t visible: 1;
-	uint8_t font_g1: 1;
-	uint8_t cursor_hide: 1;
+	union {
+		uint8_t flags;
+		struct {
+			uint8_t open: 1;
+			uint8_t visible: 1;
+			uint8_t font_g1: 1;
+			uint8_t cursor_hide: 1;
+		};
+	};
 
 	struct vt_pos pos;
 	struct vt_size size;
+
 	struct vt_pos cursor;
-	struct vt_disp_attr attr;
+	union {
+		uint16_t __attr;
+		struct vt_disp_attr attr;
+	};
 
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, uintptr_t arg, 
 						  void * data);
@@ -99,6 +108,28 @@ struct vt_console {
 #define VT_MSG_QUEUE_SIZE 16
 #endif
 
+struct vt_ctx {
+	struct vt_win * win;
+	union {
+		uint8_t flags;
+		struct {
+			uint8_t open: 1;
+			uint8_t visible: 1;
+			uint8_t font_g1: 1;
+			uint8_t cursor_hide: 1;
+			uint8_t insert_off: 1;
+		};
+	};
+	union {
+		uint16_t __attr;
+		struct vt_disp_attr attr;
+	};
+	uint8_t x;
+	uint8_t y;
+	struct vt_pos min;
+	struct vt_pos max;
+};
+
 struct sys_vt_rt {
 	uint8_t mutex;
 	uint8_t sem;
@@ -110,6 +141,7 @@ struct sys_vt_rt {
 		volatile uint32_t tail;
 	} queue;
 	struct vt_console con;
+	struct vt_ctx ctx;
 	struct {
 		uint8_t max;
 		uint8_t used;
@@ -144,6 +176,10 @@ inline static struct vt_win * __vt_win_root(void) {
 	return &__vt_blk_by_idx(0)->win;
 }
 
+inline static struct vt_ctx * __vt_ctx(void) {
+	return &__sys_vt.ctx;
+}
+
 inline static void __vt_lock(void) {
 	thinkos_mutex_lock(__sys_vt.mutex);
 }
@@ -173,17 +209,11 @@ int __vt_set_scroll(char * s, int y0, int y1);
 
 int __vt_set_attr_lst(char * s, uint8_t attr[], int len);
 
-int __vt_attr_clear(char * s);
-
-int __vt_attr_set(char * sl, int attr);
-
 int __vt_attr_fg_color(char * s, int color);
 
 int __vt_attr_bg_color(char * s, int color);
 
 int __vt_attr_add(char * s, int attr);
-
-
 
 int __vt_set_bg_color(char * s, int color);
 
@@ -192,6 +222,8 @@ int __vt_set_fg_color(char * s, int color);
 int __vt_set_font_mode(char * s, int mode);
 
 int __vt_set_attr(char * s, int attr);
+
+int __vt_clear_attr(char * s);
 
 int __vt_move_to(char * s, int x, int y);
 

@@ -58,9 +58,12 @@ enum vt_msg {
 	VT_QUIT = 0,
 	VT_TIMEOUT = 1,
 	VT_CHAR_RECV = 2,
-	VT_WIN_REFRESH = 16,
-	VT_WIN_DESTROY = 17,
-	VT_WIN_CREATE = 18
+	VT_WIN_REFRESH = 3,
+	VT_WIN_DRAW = 4,
+	VT_WIN_NCDRAW = 5,
+	VT_WIN_CLEAR = 6,
+	VT_WIN_DESTROY = 7,
+	VT_WIN_CREATE = 8
 };
 
 #define MK_VT_KEY(CODE)   (0x2000 + (CODE))
@@ -94,15 +97,20 @@ struct vt_size {
 	uint8_t h;
 };
 
+struct vt_rect {
+	struct vt_pos pos;
+	struct vt_size size;
+};
+
 struct vt_disp_attr {
-	uint32_t bg_color: 4;
-	uint32_t fg_color: 4;
-	uint32_t bright: 1;
-	uint32_t dim: 1;
-	uint32_t underline: 1;
-	uint32_t blink: 1;
-	uint32_t reverse: 1;
-	uint32_t hidden: 1;
+	uint16_t bg_color: 4;
+	uint16_t fg_color: 4;
+	uint16_t bright: 1;
+	uint16_t dim: 1;
+	uint16_t underline: 1;
+	uint16_t blink: 1;
+	uint16_t reverse: 1;
+	uint16_t hidden: 1;
 };
 
 struct vt_win_def {
@@ -123,6 +131,9 @@ struct vt_screen_def {
 						  uint32_t arg, void * data);
 };
 
+/* VT context */
+struct vt_ctx;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -131,6 +142,7 @@ extern "C" {
 int vt_init(void);
 void vt_clrscr(void);
 void vt_refresh(void);
+void vt_redraw(void);
 void vt_quit(int retcode);
 
 int vt_screen_init(const struct vt_screen_def * def);
@@ -153,14 +165,7 @@ void vt_win_hide(struct vt_win * win);
 void vt_win_show(struct vt_win * win);
 int vt_win_refresh(struct vt_win * win);
 void vt_win_clear(struct vt_win * win);
-int vt_win_open(struct vt_win * win);
-int vt_win_close(struct vt_win * win);
 
-int vt_bg_color_set(struct vt_win * win, enum vt_color);
-int vt_fg_color_set(struct vt_win * win, enum vt_color);
-int vt_font_attr_set(struct vt_win * win, enum vt_attr);
-int vt_font_g0(struct vt_win * win);
-int vt_font_g1(struct vt_win * win);
 
 int vt_write(struct vt_win * win, const void * buf, unsigned int len); 
 
@@ -174,6 +179,22 @@ void vt_cursor_home(struct vt_win * win);
 
 int vt_cursor_show(struct vt_win * win);
 
+int vt_push(struct vt_win * win);
+int vt_pop(struct vt_win * win);
+
+int vt_bg_color_set(struct vt_win * win, enum vt_color);
+int vt_fg_color_set(struct vt_win * win, enum vt_color);
+
+int vt_attr_bright_set(struct vt_win * win);
+int vt_attr_dim_set(struct vt_win * win);
+int vt_attr_underline_set(struct vt_win * win);
+int vt_attr_blink_set(struct vt_win * win);
+int vt_attr_reverse_set(struct vt_win * win);
+int vt_attr_hidden_set(struct vt_win * win);
+int vt_attr_clear(struct vt_win * win);
+
+int vt_font_g0(struct vt_win * win);
+int vt_font_g1(struct vt_win * win);
 int vt_hbar(struct vt_win * win, unsigned int y); 
 
 int vt_getc(unsigned int tmo);
@@ -203,9 +224,39 @@ struct vt_win * vt_win_create(const struct vt_win_def * def);
 
 int vt_win_puts(struct vt_win * win, const char * buf);
 
+
+
 void vt_frame(struct vt_win *win, const char * title);
 
+void vt_nc_frame(struct vt_win *win, const char * title);
+
+struct vt_win * vt_win_parent(struct vt_win * win);
+
 //void vt_widget(struct vt_win *win, const char * title);
+
+/* close the terminal context */
+int vt_win_open(struct vt_win * win);
+int vt_win_close(struct vt_win * win);
+
+/* ------------------------------------------------------------------------- 
+   Contexts ....
+   Terminal Context
+ */
+
+/* get the context of the whole terminal */
+struct vt_ctx * vt_root_ctx(void);
+/* get the context of the whole window */
+struct vt_ctx * vt_win_ctx(struct vt_win * win);
+/* get the context of a rectangle inside the window */
+struct vt_ctx * vt_win_rect_ctx(struct vt_win * win, struct vt_rect * rect);
+/* get the context of the window frame */
+struct vt_ctx * vt_win_frame_ctx(struct vt_win * win);
+
+/* flush the terminal context buffer */
+int vt_ctx_flush(struct vt_win * win);
+/* release the context */
+int vt_ctx_close(struct vt_win * win);
+
 
 #ifdef __cplusplus
 }
