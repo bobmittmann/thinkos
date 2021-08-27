@@ -303,6 +303,8 @@ static int __console_rd_break(struct thinkos_rt * krn)
 		DCC_LOG(LOG_INFO, "no thread waiting.");
 		ret = 0;
 	} else {
+		DCC_LOG1(LOG_TRACE, "break %d", th);
+
 		thinkos_console_rt.rd_break = 0;
 		/* wakeup from the console read wait queue setting the return 
 		   value to 0.

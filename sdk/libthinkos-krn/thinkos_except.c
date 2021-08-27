@@ -201,14 +201,19 @@ uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
 	return __clz(act) + 4;
 }
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-void thinkos_krn_thread_fault(struct thinkos_rt * krn,
-							   struct thinkos_except * xcpt,
-							   uint32_t errno,
-							   uint32_t thread)
+#if (THINKOS_ENABLE_ERROR_TRAP)
+
+/* ARM exceptions in a thread context are recorded in
+   the exception buffer. Then a common handling
+   functions takes care of signaling the modules
+   that may be affected by this condition. */
+void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
+									 struct thinkos_except * xcpt,
+									 uint32_t errno,
+									 uint32_t thread)
 {
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
-			 " Thread fault %d, thread %d " VT_POP, 
+			 " Exception: error %d on thread %d " VT_POP, 
 			 errno, thread);
 
 #if DEBUG
@@ -224,6 +229,7 @@ void thinkos_krn_thread_fault(struct thinkos_rt * krn,
 #endif
 
 	__thread_errno_set(krn, thread, errno);
+
 	__krn_sched_brk_set(krn, thread);
 	__krn_sched_defer(krn);
 

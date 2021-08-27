@@ -1,5 +1,8 @@
 #include "vt-i.h"
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
+
 const struct vt_screen_def vt_default_screen_def = {
 	.attr = {
 		.fg_color = VT_COLOR_GREEN,
@@ -16,8 +19,12 @@ int vt_screen_init(const struct vt_screen_def * def)
 	struct vt_win * win;
 	struct vt_pos pos;
 	char s[16];
+	int ret;
 	int n;
 	int c;
+
+	if ((ret = __vt_lock()) < 0)
+		return ret;
 
 	if (def == NULL)
 		def = &vt_default_screen_def;
@@ -58,6 +65,8 @@ int vt_screen_init(const struct vt_screen_def * def)
 		def->msg_handler;
 	win->data = def->data;
 	win->visible = true;
+
+	__vt_unlock();
 
 	vt_msg_post(win, VT_WIN_CREATE, 0);
 
@@ -101,7 +110,7 @@ int vt_screen_close(void)
 	return 0;
 }
 
-void vt_reset(void)
+void vt_screen_reset(void)
 {
 	char s[64];
 	int n;

@@ -1,6 +1,9 @@
 #include "vt-i.h"
 #include <sys/null.h>
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
+
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
 	unsigned int i;
@@ -569,39 +572,5 @@ int vt_getkey(unsigned int tmo_ms)
 	}
 
 	return ret;
-}
-
-int __vt_win_fwrite(struct vt_win * win, const void * buf, unsigned int len) 
-{
-	int cnt;
-
-	__vt_lock();
-	__vt_win_open(win);
-
-	cnt = __vt_win_write(win, buf, len); 
-
-	__vt_win_close(win);
-	__vt_unlock();
-
-	return cnt;
-}
-
-const struct fileop vt_win_fops = {
-	.write = (int (*)(void *, const void *, size_t))__vt_win_fwrite,
-	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
-	.flush = (int (*)(void *))__vt_win_drain,
-	.close = (int (*)(void *))null_close
-};
-
-struct file vt_console_file;
-
-FILE * vt_console_fopen(struct vt_win * win)
-{
-	struct file * f = &vt_console_file;
-
-	f->data = (void *)win;
-	f->op = &vt_win_fops;
-
-	return f;
 }
 

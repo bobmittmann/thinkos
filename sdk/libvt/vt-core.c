@@ -44,24 +44,11 @@ int __vt_free(void * __p)
 	return 0;
 }
 
-int vt_init(void)
+static int __vt_core_reset(void)
 {
 	union vt_mem_blk * p;
 	union vt_mem_blk * q;
 	int i;
-	int ret;
-
-	if (__sys_vt.mutex == 0) {
-		if ((ret = thinkos_mutex_alloc()) < 0)
-			return ret;
-		__sys_vt.mutex = ret;
-	}
-
-	if (__sys_vt.sem == 0) {
-		if ((ret = thinkos_sem_alloc(0)) < 0)
-			return ret;
-		__sys_vt.sem = ret;
-	}
 
 	__sys_vt.alloc.used = 0;
 	__sys_vt.alloc.max = VT_WIN_POOL_SIZE;
@@ -81,7 +68,47 @@ int vt_init(void)
 	__sys_vt.queue.head = 0;
 	__sys_vt.queue.tail = 0;
 
-	return 0;
+	return thinkos_sem_init(__sys_vt.sem, 0);
+}
+
+int vt_reset(void)
+{
+	int ret;
+
+	if ((ret = thinkos_mutex_lock(__sys_vt.mutex)) < 0)
+		return ret;
+
+	ret = __vt_core_reset();
+
+	thinkos_mutex_unlock(__sys_vt.mutex);
+
+	return ret;
+}
+
+
+int vt_init(void)
+{
+	int ret;
+
+	if (__sys_vt.mutex == 0) {
+		if ((ret = thinkos_mutex_alloc()) < 0)
+			return ret;
+		__sys_vt.mutex = ret;
+	}
+
+	if (__sys_vt.sem == 0) {
+		if ((ret = thinkos_sem_alloc(0)) < 0)
+			return ret;
+		__sys_vt.sem = ret;
+	}
+
+	thinkos_mutex_lock(__sys_vt.mutex);
+
+	ret = __vt_core_reset();
+
+	thinkos_mutex_unlock(__sys_vt.mutex);
+
+	return ret;
 }
 
 void vt_quit(int retcode)

@@ -58,8 +58,8 @@ int thinkos_flat_check(const struct flat_app * app)
 	DCC_LOG3(LOG_TRACE, "app=0x%08x pc=0x%08x sp=0x%08x", app,
 			 app->entry, app->stack);
 
-#if (THINKOS_ENABLE_SANITY_CHECK)
 	addr = (uintptr_t)app;
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__thinkos_mem_usr_rd_chk(addr, sizeof(struct flat_app))) {
 		DCC_LOG1(LOG_ERROR, "invalid pointer: addr=0x%08x", addr);
 		return THINKOS_ERR_APP_INVALID;

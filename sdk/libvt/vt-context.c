@@ -79,6 +79,20 @@ struct vt_ctx * __vt_ctx_prepare(struct vt_ctx * ctx, struct vt_win * win,
 	return ctx;
 }
 
+void __vt_win_close(struct vt_win * win)
+{
+	char s[64];
+	char * cp;
+	int n;
+
+	cp = s;
+	cp += __vt_restore(cp);
+	n = cp - s;
+	__vt_console_write(s, n);
+
+	win->open = 0;
+}
+
 /* get the context of the whole window */
 struct vt_ctx * vt_win_ctx(struct vt_win * win)
 {
@@ -86,8 +100,8 @@ struct vt_ctx * vt_win_ctx(struct vt_win * win)
 	int x;
 	int y;
 
-	if (ctx->win == NULL) {
-		ctx->win = win;
+	if (__vt_lock() < 0) {
+		return NULL;
 	}
 
 	ctx->min.x = win->pos.x;
@@ -101,6 +115,73 @@ struct vt_ctx * vt_win_ctx(struct vt_win * win)
 
 	win->open = 1;
 
-	return __vt_ctx_prepare(ctx, win, x, y);
+	__vt_ctx_prepare(ctx, win, x, y);
+
+	return ctx;
 }
+
+int vt_ctx_close(struct vt_ctx * ctx)
+{
+//	if (win->open)
+//		__vt_win_close(win);
+
+	__vt_unlock();
+	return 0;
+}
+
+# if 0
+struct vt_ctx * __vt_win_open(struct vt_win * win)
+{
+	struct vt_ctx * ctx = __vt_ctx();
+	char s[128];
+	uint8_t lst[8];
+	char * cp;
+	int n;
+
+	win->open = 1;
+
+	ctx->attr = win->attr;
+
+	cp = s;
+	cp += __vt_save(cp);
+	cp += __vt_insert_off(cp);
+	if (win->font_g1)
+		cp += __vt_font_g1(cp);
+	else
+		cp += __vt_font_g0(cp);
+
+	lst[0] = VT_ATTR_NORMAL; /* Clear all attribute */
+	n = 1;
+
+	if (ctx->attr.bright) 
+		lst[n++] = VT_ATTR_BRIGHT;
+	else if (ctx->attr.dim) 
+		lst[n++] = VT_ATTR_DIM;
+	else if (ctx->attr.hidden) 
+		lst[n++] = VT_ATTR_HIDDEN;
+	if (ctx->attr.hidden) 
+		lst[n++] = VT_ATTR_HIDDEN;
+	if (ctx->attr.underline) 
+		lst[n++] = VT_ATTR_UNDERLINE;
+	if (ctx->attr.reverse) 
+		lst[n++] = VT_ATTR_REVERSE;
+	lst[n++] = VT_ATTR_BG_COLOR(ctx->attr.bg_color);
+	lst[n++] = VT_ATTR_FG_COLOR(ctx->attr.fg_color);
+
+	cp += __vt_set_attr_lst(cp, lst, n);
+
+	if (win->cursor_hide)
+		cp += __vt_cursor_hide(cp);
+	else
+		cp += __vt_cursor_show(cp);
+	cp += __vt_set_scroll(cp, win->pos.y, win->pos.y + win->size.h);
+	cp += __vt_move_to(cp, win->pos.x + win->cursor.x, 
+					   win->pos.y + win->cursor.y);
+	n = cp - s;
+	__vt_console_write(s, n);
+}
+
+#endif
+
+
 

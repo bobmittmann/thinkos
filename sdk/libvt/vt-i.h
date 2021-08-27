@@ -180,8 +180,8 @@ inline static struct vt_ctx * __vt_ctx(void) {
 	return &__sys_vt.ctx;
 }
 
-inline static void __vt_lock(void) {
-	thinkos_mutex_lock(__sys_vt.mutex);
+inline static int __vt_lock(void) {
+	return thinkos_mutex_lock(__sys_vt.mutex);
 }
 
 inline static void __vt_unlock(void) {
@@ -263,20 +263,15 @@ int __vt_getc(void);
 
 int __vt_reset(char * s);
 
-int __vt_win_drain(void * dev);
-
 void __vt_win_open(struct vt_win * win);
 
 void __vt_win_close(struct vt_win * win);
-
-int __vt_win_write(struct vt_win * win, 
-				   const void * buf, unsigned int len);
 
 int __vt_font_g0(char * s);
 
 int __vt_font_g1(char * s);
 
-void __vt_lock(void);
+int __vt_lock(void);
 
 void __vt_unlock(void);
 

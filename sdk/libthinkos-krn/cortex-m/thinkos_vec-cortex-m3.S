@@ -192,8 +192,8 @@ __thinkos_krn_xcpt_done:
 
 	.size   __thinkos_krn_xcpt_done, . - __thinkos_krn_xcpt_done
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
 
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	.global	__thinkos_krn_thread_err
 	.thumb
 	.thumb_func
@@ -215,7 +215,6 @@ __thinkos_krn_thread_err:
 	strb    r4, [r1, #OFFSETOF_XCPT_CONTROL]
 	strb    r2, [r1, #OFFSETOF_XCPT_ERRNO]
 	
-
 	ldr     r0, .L_thinkos_rt
 
 	ldrb    r3, [r0, #OFFSETOF_KRN_SCHED_THREAD]
@@ -225,14 +224,13 @@ __thinkos_krn_thread_err:
 	adds    r4, #1
 	strb    r4, [r1, #OFFSETOF_XCPT_SEQ]
 
-
 	/* Adjust the control register */
 	movs    R4, #0
 	msr     CONTROL, r4
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
 	/* Call the thread exception handler */
-	b       thinkos_krn_thread_fault
+	b       thinkos_krn_except_err_handler
 
 	.align  2
 .L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
@@ -241,8 +239,7 @@ __thinkos_krn_thread_err:
 	.word	CM3_SCB_BASE 
 
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
-#endif /* THINKOS_ENABLE_THREAD_FAULT */
-
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 
 #if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb
@@ -254,15 +251,16 @@ __thinkos_krn_thread_err:
 cm3_bus_fault_isr:
 	/* disable interrupts */
 	cpsid   i
-#if (THINKOS_ENABLE_THREAD_FAULT)
+
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
-	movs   r2, #THINKOS_ERR_BUS_FAULT
+	movs    r2, #THINKOS_ERR_BUS_FAULT
 	b       __thinkos_krn_thread_err
 #else
 	b       .
-#endif /* THINKOS_ENABLE_THREAD_FAULT */
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
 
@@ -300,7 +298,7 @@ cm3_usage_fault_isr:
 	b       thinkos_krnsvc_isr
 #else
 	cpsid   i
-#if (THINKOS_ENABLE_THREAD_FAULT)
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
@@ -308,7 +306,7 @@ cm3_usage_fault_isr:
 	b       __thinkos_krn_thread_err
 #else
 	b       .
-#endif /* THINKOS_ENABLE_THREAD_FAULT */
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 #endif
 
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
@@ -323,7 +321,7 @@ cm3_usage_fault_isr:
 cm3_mem_manage_isr:
 	/* disable interrupts */
 	cpsid   i
-#if (THINKOS_ENABLE_THREAD_FAULT)
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
 	beq     __thinkos_krn_fault
@@ -331,7 +329,7 @@ cm3_mem_manage_isr:
 	b       __thinkos_krn_thread_err
 #else
 	b       .
-#endif /* THINKOS_ENABLE_THREAD_FAULT */
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
 

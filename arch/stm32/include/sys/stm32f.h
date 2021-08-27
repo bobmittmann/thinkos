@@ -218,6 +218,31 @@ void stm32f_fsmc_speed(int div);
 void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt);
 
+static inline uint32_t * stm32_exti_imr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->imr, 0);
+}
+
+static inline uint32_t * stm32_exti_emr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->emr, 0);
+}
+
+static inline uint32_t * stm32_exti_rtsr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->rtsr, 0);
+}
+
+static inline uint32_t * stm32_exti_ftsr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->ftsr, 0);
+}
+
+static inline uint32_t * stm32_exti_swier_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->swier, 0);
+}
+
+static inline uint32_t * stm32_exti_pr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32F_EXTI->pr, 0);
+}
+
+
 /*---------------------------------------------------------------------
  * MCO
  *---------------------------------------------------------------------*/

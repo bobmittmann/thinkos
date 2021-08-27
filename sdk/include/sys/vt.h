@@ -140,6 +140,8 @@ extern "C" {
 #endif
 
 int vt_init(void);
+int vt_reset(void);
+
 void vt_clrscr(void);
 void vt_refresh(void);
 void vt_redraw(void);
@@ -148,6 +150,7 @@ void vt_quit(int retcode);
 int vt_screen_init(const struct vt_screen_def * def);
 int vt_screen_open(void);
 int vt_screen_close(void);
+void vt_screen_reset(void);
 struct vt_size vt_screen_size(void);
 
 struct vt_win * vt_win_alloc(void);
@@ -207,7 +210,7 @@ FILE * vt_console_fopen(struct vt_win * win);
 
 int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def);
 
-void vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t data);
+int vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t data);
 
 enum vt_msg vt_msg_wait(struct vt_win ** win, uintptr_t * data);
 enum vt_msg vt_msg_timedwait(struct vt_win ** win, uintptr_t * arg,
@@ -253,9 +256,9 @@ struct vt_ctx * vt_win_rect_ctx(struct vt_win * win, struct vt_rect * rect);
 struct vt_ctx * vt_win_frame_ctx(struct vt_win * win);
 
 /* flush the terminal context buffer */
-int vt_ctx_flush(struct vt_win * win);
+int vt_ctx_flush(struct vt_ctx * ctx);
 /* release the context */
-int vt_ctx_close(struct vt_win * win);
+int vt_ctx_close(struct vt_ctx * ctx);
 
 
 #ifdef __cplusplus
