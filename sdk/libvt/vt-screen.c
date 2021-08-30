@@ -8,13 +8,12 @@ const struct vt_screen_def vt_default_screen_def = {
 		.fg_color = VT_COLOR_GREEN,
 		.bg_color = VT_COLOR_BLUE,
 	},
-	.size = {.h = 0, .w = 0},
-	.data = NULL,
-	.msg_handler = vt_default_msg_handler
-
+	.size = {.h = 0, .w = 0}
 };
 
-int vt_screen_init(const struct vt_screen_def * def)
+int vt_screen_init(const struct vt_screen_def * def,
+				   vt_msg_handler_t msg_handler,
+				   void * data)
 {
 	struct vt_win * win;
 	struct vt_pos pos;
@@ -61,9 +60,9 @@ int vt_screen_init(const struct vt_screen_def * def)
 	win->child = 0;
 	win->sibiling = 0;
 	win->attr = def->attr;
-	win->msg_handler = (def->msg_handler == NULL) ? vt_default_msg_handler :
-		def->msg_handler;
-	win->data = def->data;
+	win->msg_handler = (msg_handler == NULL) ? 
+		vt_default_msg_handler : msg_handler;
+	win->data = data;
 	win->visible = true;
 
 	__vt_unlock();
@@ -80,16 +79,51 @@ struct vt_size vt_screen_size(void)
 	return win->size;
 }
 
-int vt_screen_open(void)
+void __vt_screen_reset(struct vt_ctx * ctx)
 {
-	struct vt_win * win;
 	char s[64];
 	int n;
 
-	win = __vt_win_root();
+	/* Reset screen */ 
 	n = __vt_reset(s);
 	__vt_console_write(s, n);
+
+	/* Set remote state to defaults */ 
+	ctx->rem.attr_bright = 0;
+	ctx->rem.attr_dim = 0;
+	ctx->rem.attr_underline = 0;
+	ctx->rem.attr_blink = 0;
+	ctx->rem.attr_reverse = 0;
+	ctx->rem.attr_hidden = 0;
+
+	ctx->rem.insert_off = 0;
+	ctx->rem.cursor_hide = 0;
+	ctx->rem.font_g1 = 0;
+	ctx->rem.color_fg = VT_COLOR_WHITE;
+	ctx->rem.color_bg = VT_COLOR_BLACK;
+	ctx->rem.pos_x = 0;
+	ctx->rem.pos_y = 0;
+
 	thinkos_sleep(200);
+}
+
+int vt_screen_open(void)
+{
+	struct vt_win * win;
+	struct vt_ctx * ctx;
+	int ret;
+
+	if ((ret = __vt_lock()) < 0)
+		return ret;
+
+	ctx = __vt_ctx();
+	win = __vt_win_root();
+
+	__vt_ctx_prepare(ctx, win);
+
+	__vt_screen_reset(ctx);
+
+	__vt_unlock();
 
 	vt_msg_post(win, VT_WIN_DRAW, 0);
 	vt_msg_post(win, VT_WIN_REFRESH, 0);

@@ -1,7 +1,7 @@
 #include "vt-i.h"
 #include <sys/null.h>
 
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_NONE
 #include <trace.h>
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
@@ -235,6 +235,9 @@ int __vt_set_attr_lst(char * s, uint8_t attr[], int len)
 	char * cp = s;
 	int i;
 
+	if (len == 0)
+		return 0;
+
 	*cp++ = '\033';
 	*cp++ = '[';
 
@@ -408,133 +411,150 @@ int __vt_get_cursor_pos(struct vt_pos * pos)
 	return 0;
 }
 
-
-int __vt_console_decode(struct vt_console * con, int c)
+int __vt_con_raw_decode(struct vt_console * con, int c)
 {
-	int ret = -1;
-	
-	unsigned int ctrl = con->ctrl;
+	if (c != IN_ESC)
+		return c;
 
-	do {
-		switch (con->mode) {
-		case MODE_RAW:
-			switch (c) {
-			case IN_ESC:
-				con->mode = MODE_ESC;
-				break;
-			default:
-				ret = c;
-			}
-			continue;
+	con->idx = 0;
+	con->val[0] = 0;
+	con->val[1] = 0;
+	con->mode = VT_CON_MODE_ESC;
 
-		case MODE_ESC:
-			switch (c) {
-			case '[':
-				con->mode = MODE_ESC_VAL1;
-				con->val = 0;
-				con->ctrl = 0;
-				break;
-			case 'O':
-				con->mode = MODE_ESC_O;
-				break;
-			default:
-				con->mode = MODE_RAW;
-			};
-			continue;
-
-		case MODE_ESC_VAL1:
-		case MODE_ESC_VAL2:
-			switch (c) {
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				con->val = con->val * 10 + c - '0';
-				continue;
-			case 'A':
-				/* cursor up */
-				c = VT_CURSOR_UP + ctrl;
-				break;
-			case 'B':
-				/* cursor down */
-				c = VT_CURSOR_DOWN + ctrl;
-				break;
-			case 'C':
-				/* cursor right */
-				c = VT_CURSOR_RIGHT + ctrl;
-				break;
-			case 'D':
-				/* cursor left */
-				c = VT_CURSOR_LEFT + ctrl;
-				break;
-			case '~':
-				switch (con->val) {
-				case 1:
-					c = VT_HOME + ctrl;
-					break;
-				case 2:
-					c = VT_INSERT + ctrl;
-					break;
-				case 3:
-					/* delete */
-					c = VT_DELETE + ctrl;
-					break;
-				case 4:
-					/* end */
-					c = VT_END + ctrl;
-					break;
-				case 5:
-					c = VT_PAGE_UP + ctrl;
-					break;
-				case 6:
-					c = VT_PAGE_DOWN + ctrl;
-					break;
-				default:
-					con->mode = 0;
-					continue;
-				}
-				break;
-			case ';':
-				con->mode = MODE_ESC_VAL2;
-				con->ctrl = VT_CTRL;
-				con->val = 0;
-				continue;
-			default:
-				con->mode = 0;
-				continue;
-			};
-			con->mode = 0;
-			break;
-
-		case MODE_ESC_O:
-			switch (c) {
-			case 'F':
-				/* end */
-				c = VT_END;
-				break;
-			case 'H':
-				/* home */
-				c = VT_HOME;
-				break;
-			default:
-				con->mode = 0;
-				continue;
-			}
-			con->mode = 0;
-			break;
-		} 
-	} while (0);
-
-	return ret;
+	return -1;
 }
 
-int vt_putc(int c)
+int __vt_con_esc_decode(struct vt_console * con, int c)
+{
+	if (c == '[') {
+		con->mode = VT_CON_MODE_ESC_VAL;
+	} else  if (c == 'O') {
+		con->mode = VT_CON_MODE_ESC_O;
+	} else { 
+		INF("key ESC+0x%02x", c);
+		con->mode = VT_CON_MODE_RAW;
+	}
+	return -1;
+}
+
+int __vt_con_esc_o_decode(struct vt_console * con, int c)
+{
+	con->mode = VT_CON_MODE_RAW;
+
+	switch (c) {
+	case 'F':
+		/* end */
+		c = VT_END;
+		break;
+	case 'H':
+		/* home */
+		c = VT_HOME;
+		break;
+	default:
+		INF("key ESC+O+0x%02x", c);
+		c = -1;
+	}
+
+	return c;
+} 
+
+int __vt_con_esc_val_decode(struct vt_console * con, int c)
+{
+	switch (c) {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9': {
+		int val = con->val[con->idx];
+		val = val * 10 + c - '0';
+		con->val[con->idx] = val;
+		c = -1;
+	}
+		break;
+	case ';':
+		c = -1;
+		if (con->idx < VT_CON_VAL_LST_SZ)
+			con->idx++;
+		break;
+	case 'A':
+		/* cursor up */
+		c = VT_CURSOR_UP;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+A = %04x", c);
+		break;
+	case 'B':
+		/* cursor down */
+		c = VT_CURSOR_DOWN;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+B = %04x", c);
+		break;
+	case 'C':
+		/* cursor right */
+		c = VT_CURSOR_RIGHT;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+C = %04x", c);
+		break;
+	case 'D':
+		/* cursor left */
+		c = VT_CURSOR_LEFT;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+D = %04x", c);
+		break;
+	case '~': {
+		int ctrl = con->idx ? VT_CTRL : 0;
+		con->mode = VT_CON_MODE_RAW;
+		switch (con->val[0]) {
+		case 1:
+			c = VT_HOME + ctrl;
+			break;
+		case 2:
+			c = VT_INSERT + ctrl;
+			break;
+		case 3:
+			/* delete */
+			c = VT_DELETE + ctrl;
+			break;
+		case 4:
+			/* end */
+			c = VT_END + ctrl;
+			break;
+		case 5:
+			c = VT_PAGE_UP + ctrl;
+			break;
+		case 6:
+			c = VT_PAGE_DOWN + ctrl;
+			break;
+		default:
+			INF("key ESC+[+%d~", con->val[0]);
+			c = -1;
+			break;
+		}
+		break;
+	}
+	default:
+		INF("key ESC+[+%d+%08x", con->val[0], c);
+		c = -1;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+	};
+
+	return c;
+}
+
+const vt_key_decode_t __vt_con_decode_by_mode[]  = {
+	[VT_CON_MODE_RAW] = __vt_con_raw_decode,
+	[VT_CON_MODE_ESC] = __vt_con_esc_decode,
+	[VT_CON_MODE_ESC_O] = __vt_con_esc_o_decode,
+	[VT_CON_MODE_ESC_VAL] = __vt_con_esc_val_decode
+};
+
+int __vt_putc(int c)
 {
 	char buf[1];
 
@@ -542,7 +562,7 @@ int vt_putc(int c)
 	return __vt_console_write(buf, 1);
 }
 
-int vt_puts(const char * s)
+int __vt_puts(const char * s)
 {
 	return __vt_console_write(s, strlen(s));
 }

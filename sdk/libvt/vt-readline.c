@@ -33,7 +33,7 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 			len = max;
 
 		for (i = 0; i < len; i++)
-			vt_putc(s[i]);
+			__vt_putc(s[i]);
 		s[i] = '\0';
 	}
 	pos = len;
@@ -47,23 +47,23 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 		switch (c) {
 		case VT_CURSOR_RIGHT:
 			if (pos < len)
-				vt_putc(buf[pos++]);
+				__vt_putc(buf[pos++]);
 			else
-				vt_puts(OUT_BEL);
+				__vt_puts(OUT_BEL);
 			continue;
 
 		case VT_CURSOR_LEFT:
 			if (pos > 0) {
-				vt_puts(OUT_CURSOR_LEFT);
+				__vt_puts(OUT_CURSOR_LEFT);
 				pos--;
 			} else {
-				vt_puts(OUT_BEL);
+				__vt_puts(OUT_BEL);
 			}
 			continue;
 
 		case VT_CTRL_CURSOR_RIGHT:
 			while (pos < len) {
-				vt_putc(buf[pos++]);
+				__vt_putc(buf[pos++]);
 				if ((buf[pos - 1] != ' ') && (buf[pos] == ' '))
 					break;
 			}
@@ -72,7 +72,7 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 		case VT_CTRL_CURSOR_LEFT:
 			if (pos > 0) {
 				do {
-					vt_puts(OUT_CURSOR_LEFT);
+					__vt_puts(OUT_CURSOR_LEFT);
 					pos--;
 					if ((buf[pos - 1] == ' ') && (buf[pos] != ' '))
 						break;
@@ -92,7 +92,7 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 		case VT_CURSOR_UP:
 		case VT_HOME:
 			while (pos > 0) {
-				vt_puts(OUT_CURSOR_LEFT);
+				__vt_puts(OUT_CURSOR_LEFT);
 				pos--;
 			} 
 			continue;
@@ -100,23 +100,23 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 		case VT_CURSOR_DOWN:
 		case VT_END:
 			while (pos < len) {
-				vt_putc(buf[pos++]);
+				__vt_putc(buf[pos++]);
 			} 
 			continue;
 
 		case VT_BS:
 			if (pos == 0) {
-				vt_puts(OUT_BEL);
+				__vt_puts(OUT_BEL);
 				continue;
 			}
 			if (len == pos) {
 				pos--;
 				len--;
-				vt_puts(OUT_BS);
+				__vt_puts(OUT_BS);
 				continue;
 			}
 
-			vt_puts(OUT_CURSOR_LEFT);
+			__vt_puts(OUT_CURSOR_LEFT);
 			pos--;
 
 			/* FALLTHROUGH */
@@ -132,29 +132,29 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 				buf[i] = buf[i + 1];
 			}
 			buf[len] = '\0';
-			vt_puts(&buf[pos]);
-			vt_putc(' ');
+			__vt_puts(&buf[pos]);
+			__vt_putc(' ');
 			for (i = len + 1; i > pos; i--)
-				vt_puts(OUT_CURSOR_LEFT);
+				__vt_puts(OUT_CURSOR_LEFT);
 			continue;
 
 		case VT_EOL:
 			buf[len] = '\0';
-			vt_puts("\r\n");
+			__vt_puts("\r\n");
 			return buf;
 
 		case VT_SKIP:
-			vt_puts(OUT_SKIP);
+			__vt_puts(OUT_SKIP);
 			return NULL;
 		}
 
 		if (len == max) {
-			vt_puts(OUT_BEL);
+			__vt_puts(OUT_BEL);
 			continue;
 		}
 
 		if (len == pos) {
-			vt_putc(c);
+			__vt_putc(c);
 			buf[pos] = c;
 			pos++;
 			len++;
@@ -169,11 +169,11 @@ char * vt_readline(char * buf, unsigned int max, unsigned int tmo)
 		buf[pos] = c;
 		buf[len] = '\0';
 
-		vt_puts(&buf[pos]);
+		__vt_puts(&buf[pos]);
 		pos++;
 
 		for (i = len; i > pos; i--)
-			vt_puts(OUT_CURSOR_LEFT);
+			__vt_puts(OUT_CURSOR_LEFT);
 
 	}
 }

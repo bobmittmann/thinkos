@@ -48,42 +48,33 @@
 #define OUT_SKIP            "^C"
 #define OUT_BEL             "\7"
 
-#define MODE_RAW 0
-#define MODE_ESC 1
-#define MODE_ESC_VAL1 2
-#define MODE_ESC_VAL2 3
-#define MODE_ESC_O 4
 
 #define VT_ATTR_FG_COLOR(_VT_COLOR_) (30 + (_VT_COLOR_))
 #define VT_ATTR_BG_COLOR(_VT_COLOR_) (40 + (_VT_COLOR_))
 
 /* -------------------------------------------------------------------------
  * VT Window */
+
 struct vt_win {
 	uint8_t parent;
 	uint8_t sibiling;
 	uint8_t child;
-	union {
-		uint8_t flags;
-		struct {
-			uint8_t open: 1;
-			uint8_t visible: 1;
-			uint8_t font_g1: 1;
-			uint8_t cursor_hide: 1;
-		};
+	struct {
+		uint8_t visible: 1;
+		uint8_t has_focus: 1;
+		uint8_t cursor_hide: 1;
+		uint8_t data_alloc: 1;
 	};
 
+	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, 
+						 uintptr_t arg, void * data);
+	
+	struct vt_attrs attr;
 	struct vt_pos pos;
+	
 	struct vt_size size;
-
 	struct vt_pos cursor;
-	union {
-		uint16_t __attr;
-		struct vt_disp_attr attr;
-	};
 
-	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, uintptr_t arg, 
-						  void * data);
 	void * data;
 };
 
@@ -92,40 +83,84 @@ union vt_mem_blk {
 		union vt_mem_blk * next;
 	};
 	struct vt_win win;
+	struct {
+		uint32_t data[5]; /* 20 bytes */
+	};
 };
+
+/* ----------------------------------------------------------------------------
+ * Console input decode 
+ */
+
+#define VT_CON_MODE_RAW      0
+#define VT_CON_MODE_ESC      1
+#define VT_CON_MODE_ESC_O    2
+#define VT_CON_MODE_ESC_VAL  3
+
+#define VT_CON_VAL_LST_SZ 2
 
 struct vt_console {
 	uint8_t mode;
-	uint16_t ctrl;
-	uint32_t val;
+	uint8_t idx;
+	uint8_t val[VT_CON_VAL_LST_SZ];
 };
 
-#ifndef VT_WIN_POOL_SIZE
-#define VT_WIN_POOL_SIZE  16
+typedef int (* vt_key_decode_t)(struct vt_console * con, int c);
+
+extern const vt_key_decode_t __vt_con_decode_by_mode[];
+
+static inline int __vt_console_decode(struct vt_console * con, int c) {
+	return __vt_con_decode_by_mode[con->mode](con, c);
+}
+
+/* ----------------------------------------------------------------------------
+ * Windows
+ */
+
+#ifndef VT_MEM_BLK_POOL_SIZE
+#define VT_MEM_BLK_POOL_SIZE  16
 #endif
 
 #ifndef VT_MSG_QUEUE_SIZE
 #define VT_MSG_QUEUE_SIZE 16
 #endif
 
-struct vt_ctx {
-	struct vt_win * win;
+#define VT_STATE_ATTR_MSK 0x0000003f
+#define VT_STATE_POS_MSK  0xffff0000
+
+struct vt_state {
 	union {
-		uint8_t flags;
+		uint32_t u32;	
 		struct {
-			uint8_t open: 1;
-			uint8_t visible: 1;
-			uint8_t font_g1: 1;
-			uint8_t cursor_hide: 1;
-			uint8_t insert_off: 1;
+			uint32_t attr_bright: 1;
+			uint32_t attr_dim: 1;
+			uint32_t attr_hidden: 1;
+			uint32_t attr_underline: 1;
+
+			uint32_t attr_blink: 1;
+			uint32_t attr_reverse: 1;
+
+			uint32_t color_bg: 3;
+			uint32_t color_fg: 3;
+
+			uint32_t cursor_hide: 1;
+			uint32_t insert_off: 1;
+			uint32_t font_g1: 1;
+			uint32_t res1: 1;
+
+			uint32_t pos_x: 8;
+			uint32_t pos_y: 8;
 		};
 	};
-	union {
-		uint16_t __attr;
-		struct vt_disp_attr attr;
-	};
-	uint8_t x;
-	uint8_t y;
+};
+
+/* ----------------------------------------------------------------------------
+ * Drawing context
+ */
+
+struct vt_ctx {
+	struct vt_state loc; /* local/virtual/cached display state */ 
+	struct vt_state rem; /* remote display state */ 
 	struct vt_pos min;
 	struct vt_pos max;
 };
@@ -133,10 +168,13 @@ struct vt_ctx {
 struct sys_vt_rt {
 	uint8_t mutex;
 	uint8_t sem;
-	uint8_t msg[VT_MSG_QUEUE_SIZE];
-	uint8_t idx[VT_MSG_QUEUE_SIZE];
-	uintptr_t arg[VT_MSG_QUEUE_SIZE];
 	struct {
+		uint8_t has_focus;
+	} cache;
+	struct {
+		uint8_t msg[VT_MSG_QUEUE_SIZE];
+		uint8_t idx[VT_MSG_QUEUE_SIZE];
+		uintptr_t arg[VT_MSG_QUEUE_SIZE];
 		volatile uint32_t head;
 		volatile uint32_t tail;
 	} queue;
@@ -149,11 +187,18 @@ struct sys_vt_rt {
 			union vt_mem_blk * first;
 			union vt_mem_blk * last;
 		} free;
-		union vt_mem_blk blk[VT_WIN_POOL_SIZE];
+		union vt_mem_blk blk[VT_MEM_BLK_POOL_SIZE];
+		/* block meta info */
+		uint8_t meta[VT_MEM_BLK_POOL_SIZE];
 	} alloc;
 };
 
 extern struct sys_vt_rt __sys_vt;
+
+
+/* ----------------------------------------------------------------------------
+ * Memory pool
+ */
 
 inline static union vt_mem_blk * __vt_blk_by_idx(unsigned int idx) {
 	return &__sys_vt.alloc.blk[idx];
@@ -176,9 +221,34 @@ inline static struct vt_win * __vt_win_root(void) {
 	return &__vt_blk_by_idx(0)->win;
 }
 
+inline static struct vt_win * __vt_sys_win_focused(void) {
+	return &__vt_blk_by_idx(__sys_vt.cache.has_focus)->win;
+}
+
+inline static void __vt_sys_cache_focused(struct vt_win * win) {
+	__sys_vt.cache.has_focus = __vt_idx_by_win(win);
+}
+
+inline static struct vt_win * __vt_win_sibiling(struct vt_win * win) {
+	return (win->sibiling == 0) ? NULL : __vt_win_by_idx(win->sibiling);
+}
+
+inline static struct vt_win * __vt_win_parent(struct vt_win * win) {
+	return (win->parent == 0) ? NULL : __vt_win_by_idx(win->parent);
+}
+
+inline static struct vt_win * __vt_win_child(struct vt_win * win) {
+	return (win->child == 0) ? NULL : __vt_win_by_idx(win->child);
+}
+
+
 inline static struct vt_ctx * __vt_ctx(void) {
 	return &__sys_vt.ctx;
 }
+
+/* ----------------------------------------------------------------------------
+ * screen lock 
+ */
 
 inline static int __vt_lock(void) {
 	return thinkos_mutex_lock(__sys_vt.mutex);
@@ -200,7 +270,9 @@ int __vt_free(void * __p);
 
 int __vt_console_write(const char * s, unsigned int len);
 
-void __vt_puts(const char * s);
+int __vt_puts(const char * s);
+
+int __vt_putc(int c);
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len);
 
@@ -276,6 +348,17 @@ int __vt_lock(void);
 void __vt_unlock(void);
 
 int __vt_console_decode(struct vt_console * con, int c);
+
+
+
+void __vt_ctx_prepare(struct vt_ctx * ctx, struct vt_win * win);
+
+void __vt_ctx_save(struct vt_ctx * ctx, struct vt_win * win);
+
+/* prepare a context ... */
+int __vt_ctx_close(struct vt_ctx * ctx);
+
+int __vt_ctx_write(struct vt_ctx * ctx, const void * buf, unsigned int len);
 
 #ifdef __cplusplus
 }
