@@ -27,9 +27,8 @@
 #include <thinkos/error.h>
 #define __THINKOS_KRNSVC__
 #include <thinkos/krnsvc.h>
-#include <vt100.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 

@@ -21,6 +21,7 @@
 
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
+#include <sys/sysclk.h>
 
 #if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
@@ -33,7 +34,7 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 	/* request scheduler to stop everything */
 	__krn_sched_err_set(krn, THINKOS_ABORT_REQ);
 	/* Make sure to run the scheduler */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)

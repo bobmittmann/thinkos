@@ -230,7 +230,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
 		/* wakeup from the flash wait queue */
 		__wq_wakeup_return(krn, wq, th, ret);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	} else {
 		DCC_LOG(LOG_INFO, "flash_drv: no waiting threads!");
 	}

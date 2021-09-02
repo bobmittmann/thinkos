@@ -157,11 +157,11 @@ void cm3_default_isr(unsigned int irq)
 	cm3_irq_disable(irq);
 
 	th = krn->irq_th[irq];
+
+#if (IRQ_DEBUG)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	krn->irq_th[irq] = THINKOS_THREAD_VOID;
 #endif 
-
-#if (IRQ_DEBUG)
 	if (th >= THINKOS_THREAD_IDLE) {
 		DCC_LOG2(LOG_ERROR, "<%2d> IRQ %d invalid thread!", th, irq);
 		return;
@@ -178,8 +178,7 @@ void cm3_default_isr(unsigned int irq)
 #endif
 
 #if (THINKOS_ENABLE_WQ_IRQ)
-//	__krn_wq_thread_del(krn, THINKOS_WQ_IRQ, th);  
-	__krn_wq_remove(krn, THINKOS_WQ_IRQ, th);  
+	__krn_wq_thread_del(krn, THINKOS_WQ_IRQ, th);  
 #endif 
 
 	/* insert the thread into ready queue */
@@ -212,12 +211,14 @@ void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self,
 
 	/* if the interrupt is not active declare a timeout */
 	//if (!cm3_irq_act_get(irq)) {
+	/* if the timer is no longer active declare a timeout */
 	if (!__thread_clk_is_enabled(krn, self)) {
 		arg[0] = THINKOS_ETIMEDOUT;      
-	} 
+	}// else {
+	//	arg[0] = THINKOS_OK;
 	
 	/* clear pending interrupt */
-//	cm3_irq_pend_clr(irq);
+	//	cm3_irq_pend_clr(irq);
 
 #if (THINKOS_ENABLE_WQ_IRQ)
 	/* remove from the wait queue */
@@ -257,7 +258,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self,
 	krn->irq_th[irq] = self;
 
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 
 	/* clear pending interrupt */
 	cm3_irq_pend_clr(irq);
@@ -306,7 +307,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 	krn->irq_th[irq] = self;
 
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 
 	/* clear pending interrupt */
 	cm3_irq_pend_clr(irq);

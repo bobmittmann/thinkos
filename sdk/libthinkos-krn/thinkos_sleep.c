@@ -22,7 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -42,7 +42,7 @@ void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 	/* insert into the clock wait queue */
 	__thread_clk_enable(krn, self) ;
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 #endif
 
@@ -62,7 +62,7 @@ void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 	/* wait for event */
 	__krn_thread_suspend(krn, self);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 #endif
 

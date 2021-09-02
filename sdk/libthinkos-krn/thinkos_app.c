@@ -279,7 +279,7 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 #endif
 		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
 		__krn_sched_active_clr(krn);
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 
 	arg[0] = thread_idx;

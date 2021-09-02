@@ -382,12 +382,10 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	__thinkos_krn_irq_init(krn);
 
 	if (lst == NULL) {
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		bool privileged;
 
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		privileged  = __PRIVILEGED(opt);
-#else
-		privileged = false;
 #endif
 
 		DCC_LOG(LOG_TRACE, "Main thread init...");
@@ -398,6 +396,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		/* add to the ready queue */
 		__thread_ready_set(krn, thread_no);
 
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		if (privileged) {
 			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
 		 } else {
@@ -411,7 +410,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 			ctrl |=  CONTROL_nPRIV;
 			cm3_control_set(ctrl);
 		}
-
+#else
+		DCC_LOG(LOG_TRACE, "Enabling interrupts");
+		/* enable interrupts */
+		thinkos_krn_irq_on();
+#endif
 
 		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 				 thread_no, cm3_msp_get(), cm3_psp_get(), 

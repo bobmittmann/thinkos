@@ -23,7 +23,7 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_obj.c strlen.c \
+MISC_CFILES = thinkos_obj.c strlen.c strcmp.c \
 			  memcpy.c memcpy32.c memset32.c \
 			  snprintf.c console_io.c \
 			  active.c suspended.c \

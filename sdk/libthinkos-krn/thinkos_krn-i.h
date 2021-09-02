@@ -37,12 +37,7 @@
 #include <thinkos/except.h>
 
 #include <thinkos.h>
-
 #include <sys/delay.h>
-#include <sys/param.h>
-#include <sys/sysclk.h>
-
-#include <thinkos.h>
 #include <vt100.h>
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)
@@ -158,17 +153,12 @@ __obj_is_valid(unsigned int oid, unsigned int first, unsigned int cnt) {
  * Scheduler control
  * --------------------------------------------------------------------------*/
 
+
 /* flags a deferred execution of the scheduler */
 static inline void __krn_sched_defer(struct thinkos_rt * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* rise a pending service interrupt */
 	scb->icsr = SCB_ICSR_PENDSVSET;
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
-}
-
-/* FIXME: for compatibility, should be removed in the future */
-static inline void __krn_defer_sched(struct thinkos_rt * krn) {
-	__krn_sched_defer(krn);
 }
 
 /* flags a deferred execution of the scheduler */
@@ -182,7 +172,6 @@ static inline void __krn_sched_cancel(struct thinkos_rt * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 	/* removes the pending status of the PendSV exception */
 	scb->icsr = SCB_ICSR_PENDSVCLR;
-	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
 /* Set the active thread */
@@ -1376,6 +1365,8 @@ bool thinkos_clock_active(void);
 bool thinkos_dbgmon_active(void);
 
 bool thinkos_kernel_active(void);
+
+void __krn_sched_defer(struct thinkos_rt * krn);
 
 /* -------------------------------------------------------------------------
  * Kernel Debug

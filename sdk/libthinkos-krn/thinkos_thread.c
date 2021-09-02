@@ -264,7 +264,7 @@ void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th,
 	__krn_thread_suspend(krn, th);
 	__krn_wq_insert(krn, wq, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
@@ -273,7 +273,7 @@ void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th,
 	__krn_tmdwq_insert(krn, wq, th, ms);
 	__krn_thread_suspend(krn, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 #endif
 
@@ -288,7 +288,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 	/* insert into the clock wait queue */
 	__thread_clk_enable(krn, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
@@ -304,7 +304,7 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 		} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 }
 

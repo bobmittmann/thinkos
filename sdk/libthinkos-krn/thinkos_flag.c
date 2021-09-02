@@ -22,11 +22,11 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_FLAG_MAX > 0
+#if (THINKOS_FLAG_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
 __krn_obj_is_flag(struct thinkos_rt * krn, unsigned int flag) {
@@ -39,13 +39,13 @@ __krn_flag_is_alloc(struct thinkos_rt * krn, unsigned int flag) {
 		true : false;
 }
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 int krn_flag_check(struct thinkos_rt * krn, int flag)
 {
 	if (!__krn_obj_is_flag(krn, flag)) {
 		return THINKOS_ERR_FLAG_INVALID;
 	}
-#if THINKOS_ENABLE_FLAG_ALLOC
+#if (THINKOS_ENABLE_FLAG_ALLOC)
 	if (__krn_flag_is_alloc(krn, flag) == 0) {
 		return THINKOS_ERR_FLAG_ALLOC;
 	}
@@ -66,7 +66,7 @@ void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	uint32_t * flags_bmp;
 	uint32_t flags;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -77,7 +77,7 @@ void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-#if THINKOS_FLAG_MAX < 32
+#if (THINKOS_FLAG_MAX) < 32
 	flags_bmp = &krn->flag[0];
 #else
 	flags_bmp = &krn->flag[idx / 32];
@@ -105,7 +105,7 @@ again:
 	 */
 	__krn_thread_suspend(krn, self);
 	/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	__thread_stat_set(krn, self, flag, 0);
 #endif
 	/* insert into the flag wait queue */
@@ -125,11 +125,11 @@ again:
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG2(LOG_INFO, "<%d> waiting for flag %d...", self, flag);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn); 
+	__krn_sched_defer(krn); 
 }
 
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_flag_timedtake_svc(int32_t arg[], int self, 
 								struct thinkos_rt * krn)
 {
@@ -139,7 +139,7 @@ void thinkos_flag_timedtake_svc(int32_t arg[], int self,
 	uint32_t * flags_bmp;
 	uint32_t bits;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -150,7 +150,7 @@ void thinkos_flag_timedtake_svc(int32_t arg[], int self,
 	}
 #endif
 
-#if THINKOS_FLAG_MAX < 32
+#if (THINKOS_FLAG_MAX) < 32
 	flags_bmp = &krn->flag[0];
 #else
 	flags_bmp = &krn->flag[idx / 32];
@@ -178,7 +178,7 @@ again:
 	 */
 	__krn_thread_suspend(krn, self);
 	/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	__thread_stat_set(krn, self, flag, 0);
 #endif
@@ -211,7 +211,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 	int th;
 	int j;
 
-#if THINKOS_FLAG_MAX < 32
+#if (THINKOS_FLAG_MAX) < 32
 	flags_bmp = &krn->flag[0];
 #else
 	flags_bmp = &krn->flag[idx / 32];
@@ -239,7 +239,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 
 	/* insert the thread into ready queue */
 	__thread_ready_set(krn, th);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);  
 	/* set the thread's return value */
@@ -270,7 +270,7 @@ void __thinkos_flag_give_i(uint32_t flag)
 void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -285,20 +285,20 @@ void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	__krn_flag_give(krn, flag);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 /* --------------------------------------------------------------------------
  * Flag watch family 
  * -------------------------------------------------------------------------- */
 
-#if THINKOS_ENABLE_FLAG_WATCH
+#if (THINKOS_ENABLE_FLAG_WATCH)
 
 void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -323,7 +323,7 @@ static void __thinkos_flag_clr(struct thinkos_rt * krn, uint32_t flag)
 void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -342,7 +342,7 @@ void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -364,7 +364,7 @@ void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -387,15 +387,14 @@ void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_thread_wait(krn, self, flag);
 }
 
-
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_flag_timedwatch_svc(int32_t arg[], int self, 
 								 struct thinkos_rt * krn)
 {
 	unsigned int flag = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
@@ -434,7 +433,7 @@ bool flag_resume(struct thinkos_rt * krn, unsigned int th,
 		__bit_mem_wr(krn->flag, idx, 0);
 		/* insert the thread into ready queue */
 		__thread_ready_set(krn, th);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
 		__thread_r0_set(krn, th, 0);
 #endif
@@ -442,7 +441,7 @@ bool flag_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_stat_clr(krn, th);
 	} else { 
 		__thread_wq_set(krn, th, flag);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		if (tmw)
 			__thread_clk_enable(krn, th);
 #endif

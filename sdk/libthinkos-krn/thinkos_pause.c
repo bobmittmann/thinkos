@@ -376,7 +376,7 @@ void thinkos_resume_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[0] = THINKOS_OK;
 
 	if (__krn_thread_resume(krn, th))
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 }
 
 void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -405,6 +405,6 @@ void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[0] = THINKOS_OK;
 
 	if (__krn_thread_pause(krn, th))
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 }
 
