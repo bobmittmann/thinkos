@@ -136,14 +136,14 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
 	__thinkos_krn_core_init(krn);
-#if THINKOS_ENABLE_EXCEPTIONS
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	thinkos_krn_exception_reset();
 #endif
 
 #if DEBUG
 //	mdelay(500);
-//	__kdump(krn);
+	__kdump(krn);
 #endif
 }
 

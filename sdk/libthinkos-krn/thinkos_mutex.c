@@ -223,3 +223,4 @@ bool krn_mutex_resume(unsigned int thread_id, unsigned int mutex, bool tmw)
 
 #endif /* THINKOS_MUTEX_MAX > 0 */
 
+

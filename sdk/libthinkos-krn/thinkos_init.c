@@ -150,6 +150,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
+	_Static_assert (offsetof(struct thinkos_rt, debug) == 
+					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
+#endif
+
+#if (THINKOS_ENABLE_CRITICAL)
 	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
 					OFFSETOF_KRN_CRITCNT, "OFFSETOF_KRN_CRITCNT");
 #endif

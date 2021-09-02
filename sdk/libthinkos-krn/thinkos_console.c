@@ -307,9 +307,9 @@ static int __console_rd_break(struct thinkos_rt * krn)
 
 		thinkos_console_rt.rd_break = 0;
 		/* wakeup from the console read wait queue setting the return 
-		   value to 0.
+		   value to THINKOS_EINTR.
 		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, 0);
+		__wq_wakeup_return(krn, wq, th, THINKOS_EINTR);
 		ret = 1;
 	}
 
@@ -783,4 +783,5 @@ void thinkos_krn_console_init(void)
 }
 
 #endif /* (THINKOS_ENABLE_CONSOLE) */
+
 

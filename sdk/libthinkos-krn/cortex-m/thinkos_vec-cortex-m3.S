@@ -53,12 +53,15 @@
 
 
 #define SCB_ICSR_OFFS  0x04
+
 #define SCB_SHCSR_OFFS 0x24 /* System Handler Control and State */
 #define SCB_CFSR_OFFS  0x28 /* Configurable Fault Status */
 #define SCB_HFSR_OFF   0x2c /* Hard Fault Status */
+
 #define SCB_DFSR_OFFS  0x30 /* Debug Fault Status */
 #define SCB_MMFAR_OFFS 0x34 /* Mem Manage Address */
 #define SCB_BFAR_OFFS  0x38 /* Bus Fault Address */
+
 #define SCB_AFSR_OFFS  0x3c /* Auxiliary Fault Status */
 
 #define DCB_DEMCR_OFFS 12 /* Debug Exception and Monitor Control Register */
@@ -200,15 +203,17 @@ __thinkos_krn_xcpt_done:
 	.type	__thinkos_krn_thread_err, %function
 
 __thinkos_krn_thread_err:
-
 	ldr     r1, .L_xcpt_buf
-	stmia   r1!, {r4-r11} /* save */
+	stmia   r1!, {r4-r11} /* save r4-r11 */
 	mrs     r12, PSP 
-	ldmia   r12!, {r4-r11}/* read r0-r4, r12, lr, pc, xpsr */
-	stmia   r1!, {r4-r12} /* save r0-r4, r12, lr, pc, xpsr, sp */
+	ldmia   r12!, {r4-r11}/* read r0-r3, r12, lr, pc, xpsr */
+	stmia   r1!, {r4-r12} /* save r0-r3, r12, lr, pc, xpsr, sp */
+	ldr     r3, .L_cm3_scb_shcsr
+	ldmia   r3!, {r4-r9} /* loadb SHCSR, CFSR, HFSR, DFSR, MMFAR, BFAR */
+	stmia   r1!, {r5,r8,r9} /* save CFSR, MMFAR, BFAR */
 
 	/* roll back to the exception buffer base */
-	subs    r1, #(17 * 4)
+	subs    r1, #(20 * 4)
 
 	strb    lr, [r1, #OFFSETOF_XCPT_RET]
 	mrs     r4, CONTROL
@@ -229,12 +234,37 @@ __thinkos_krn_thread_err:
 	msr     CONTROL, r4
 	/* Synthesizes exception return */
 	mov     lr, #CM3_EXC_RET_THREAD_MSP
+
+	/* restore Idle core context */
+	pop      {r4-r11}
+
 	/* Call the thread exception handler */
+	/* r0: krn 
+	   r1: xcept buf
+	   r2: errno
+	   r3: active thread */
 	b       thinkos_krn_except_err_handler
 
 	.align  2
+
 .L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
 	.word   thinkos_except_stack
+#if 0
+
+	ldr      r0, .L_thinkos_rt
+	strb     r2,  [r0, #OFFSETOF_KRN_SCHED_XCPT]
+
+	/* rise a pending service interrupt */
+	ldr      r12, .L_cm3_scb
+	movs     r3, #SCB_ICSR_PENDSVSET
+	str      r3, [r12, #SCB_ICSR_OFFS]
+	/* should reach the PendSV (scheduler) */
+	bx       lr
+#endif
+
+.L_cm3_scb_shcsr:
+	.word	CM3_SCB_BASE + SCB_SHCSR_OFFS
+
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
 
@@ -251,7 +281,6 @@ __thinkos_krn_thread_err:
 cm3_bus_fault_isr:
 	/* disable interrupts */
 	cpsid   i
-
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	tst     lr, #EXC_RET_SPSEL
@@ -297,6 +326,7 @@ cm3_usage_fault_isr:
 	/* Call the kernel service demultiplexer */
 	b       thinkos_krnsvc_isr
 #else
+	/* disable interrupts */
 	cpsid   i
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/

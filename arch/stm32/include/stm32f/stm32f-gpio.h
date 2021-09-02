@@ -422,7 +422,7 @@ static inline void stm32_gpio_clr(struct stm32_gpio *__gpio, int __pin) {
 }
 
 /* get pin status */
-static inline bool stm32_gpio_stat(struct stm32_gpio *__gpio, int __pin) {
+static inline uint32_t stm32_gpio_stat(struct stm32_gpio *__gpio, int __pin) {
 	return __gpio->idr & (uint32_t)(1 << __pin);
 }
 

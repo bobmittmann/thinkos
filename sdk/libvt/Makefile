@@ -29,8 +29,8 @@ include $(MK_DIR)/config.mk
 
 LIB_STATIC = vt
 
-CFILES = vt-core.c vt-win.c vt-io.c vt-screen.c vt-readline.c\
-		 vt-context.c vt-frame.c vt_menu.c
+CFILES = vt-core.c vt-win.c vt-io.c vt-screen.c vt-readline.c \
+		 vt-context.c vt-frame.c vt-menu.c
 
 include $(MK_DIR)/lib.mk
 

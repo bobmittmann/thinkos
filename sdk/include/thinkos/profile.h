@@ -433,6 +433,13 @@
 #define THINKOS_ENABLE_MONITOR_SCHED        0
 #endif
 
+/* THINKOS_ENABLE_DEBUG_BASE - Enable the kernel debug base subsystem.
+   All other DEBUG features depend on this flag
+   */
+#ifndef THINKOS_ENABLE_DEBUG_BASE
+#define THINKOS_ENABLE_DEBUG_BASE                0
+#endif
+
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
    Requires the DebugMonitor fault to be present on the platform.
    */
@@ -677,6 +684,10 @@
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
+
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -686,6 +697,11 @@
 #error "THINKOS_ENABLE_I_CALLS depends on THINKOS_ENABLE_KRNSVC"
 #endif
 */
+
+/* debug breakpoint depends on debug base */
+#if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
 
 /* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)

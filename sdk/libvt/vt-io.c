@@ -1,8 +1,34 @@
 #include "vt-i.h"
 #include <sys/null.h>
 
-#define TRACE_LEVEL TRACE_LVL_NONE
+#define TRACE_LEVEL TRACE_LVL_WARN
 #include <trace.h>
+
+/* limited range conversion to decimal */
+int __vt_uint2dec(char * s, int val)
+{
+	div_t y;
+
+	if (val < 10) {
+		s[0] = val + '0';
+		return 1;
+	} 
+	
+	if (val < 100) {
+		y = div(val, 10);
+		s[0] = y.quot + '0';
+		s[1] = y.rem + '0';
+		return 2;
+	} 
+
+	y = div(val, 100);
+	s[0] = y.quot + '0';
+	y = div(y.rem, 10);
+	s[1] = y.quot + '0';
+	s[2] = y.rem + '0';
+
+	return 3;
+}
 
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
@@ -31,8 +57,6 @@ int __vt_console_write(const char * s, unsigned int len)
 
 	return len;
 }
-
-int uint2dec(char * s, unsigned int val);
 
 int __vt_reset(char * s)
 {
@@ -154,7 +178,7 @@ int __vt_insert_lines(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 	*cp = '\0';
 
@@ -168,7 +192,7 @@ int __vt_delete_lines(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 
 	return cp - s;
@@ -181,7 +205,7 @@ int __vt_delete_chars(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 
 	return cp - s;
@@ -193,9 +217,9 @@ int __vt_set_scroll(char * s, int y0, int y1)
 
 	*cp++ = '\033';
 	*cp++ = '[';
-	cp += uint2dec(cp, y0);
+	cp += __vt_uint2dec(cp, y0);
 	*cp++ = ';';
-	cp += uint2dec(cp, y1);
+	cp += __vt_uint2dec(cp, y1);
 	*cp++ = 'r';
 
 	return cp - s;
@@ -293,6 +317,19 @@ int __vt_clear_attr(char * s)
 	return 3;
 }
 
+int __vt_font_g0(char * s)
+{
+	s[0] = '\017';
+	return 1;
+}
+
+int __vt_font_g1(char * s)
+{
+	s[0] = '\016';
+	return 1;
+}
+
+
 int __vt_set_attr(char * s, int attr)
 {
 	char * cp = s;
@@ -313,30 +350,31 @@ int __vt_move_to(char * s, int x, int y)
 
 	*cp++ = '\033';
 	*cp++ = '[';
-	cp += uint2dec(cp, y);
+	cp += __vt_uint2dec(cp, y);
 	*cp++ = ';';
-	cp += uint2dec(cp, x);
+	cp += __vt_uint2dec(cp, x);
 	*cp++ = 'f';
 
 	return cp - s;
 }
 
-int __vt_font_g0(char * s)
+int __vt_utf8(char * s, int c)
 {
-	char * cp = s;
+	if (c > 0x7ff) {
+		s[0] = 0xe0 + (c >> 12); 
+		s[1] = 0x80 + ((c >> 6) & 0x3f); 
+		s[2] = 0x80 + (c & 0x3f); 
+		return 3;
+	}
+	if (c > 0x7ff) {
+		s[0] = 0xc0 + ((c >> 6) & 0x1f); 
+		s[1] = 0x80 + (c & 0x3f); 
+		return 2;
+	}
 
-	*cp++ = '\017';
+	s[0] = c;
 
-	return cp - s;
-}
-
-int __vt_font_g1(char * s)
-{
-	char * cp = s;
-
-	*cp++ = '\016';
-
-	return cp - s;
+	return 1;
 }
 
 void __vt_flush(void)
@@ -360,65 +398,12 @@ int __vt_getc(void)
 	return buf[0];
 }
 
-int __vt_get_cursor_pos(struct vt_pos * pos) 
-{
-	int c;
-	int x;
-	int y;
-
-	__vt_flush();
-
-	__vt_console_write(VT100_QUERY_CURSOR_POS, 
-					   sizeof(VT100_QUERY_CURSOR_POS));
-
-	if ((c = __vt_getc()) != '\033') { /* ESC */
-		return c;
-	}
-	if ((c = __vt_getc()) != '[') {
-		return c;
-	}
-	y = 0;
-	for (;;) {
-		if ((c = __vt_getc()) < 0)
-			return c;
-		if (c >= '0' && c <= '9') {
-			y *= 10;
-			y += c - '0';
-		} else {
-			if (c != ';')
-				return c;
-			break;
-		}
-	}
-	x = 0;
-	for (;;) {
-		if ((c = __vt_getc()) < 0)
-			return c;
-		if (c >= '0' && c <= '9') {
-			x *= 10;
-			x += c - '0';
-		} else {
-			if (c != 'R') {
-				return c;
-			}
-			break;
-		}
-	}
-
-	pos->x = x;
-	pos->y = y;
-
-	return 0;
-}
 
 int __vt_con_raw_decode(struct vt_console * con, int c)
 {
 	if (c != IN_ESC)
 		return c;
 
-	con->idx = 0;
-	con->val[0] = 0;
-	con->val[1] = 0;
 	con->mode = VT_CON_MODE_ESC;
 
 	return -1;
@@ -428,6 +413,9 @@ int __vt_con_esc_decode(struct vt_console * con, int c)
 {
 	if (c == '[') {
 		con->mode = VT_CON_MODE_ESC_VAL;
+		con->idx = 0;
+		con->val[0] = 0;
+		con->val[1] = 0;
 	} else  if (c == 'O') {
 		con->mode = VT_CON_MODE_ESC_O;
 	} else { 
@@ -506,6 +494,21 @@ int __vt_con_esc_val_decode(struct vt_console * con, int c)
 		con->mode = VT_CON_MODE_RAW;
 		INF("key ESC+[+D = %04x", c);
 		break;
+
+	case 'R':
+		c = VT_CURSOR_POS;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+
+	case 'c':
+		c = VT_TERM_TYPE;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+
+	case '?':
+		INFS("key ESC+[?");
+		break;
+
 	case '~': {
 		int ctrl = con->idx ? VT_CTRL : 0;
 		con->mode = VT_CON_MODE_RAW;
@@ -515,8 +518,7 @@ int __vt_con_esc_val_decode(struct vt_console * con, int c)
 			break;
 		case 2:
 			c = VT_INSERT + ctrl;
-			break;
-		case 3:
+			break; case 3:
 			/* delete */
 			c = VT_DELETE + ctrl;
 			break;
@@ -538,7 +540,14 @@ int __vt_con_esc_val_decode(struct vt_console * con, int c)
 		break;
 	}
 	default:
-		INF("key ESC+[+%d+%08x", con->val[0], c);
+		{
+			if (con->idx == 2)
+				INF("key ESC+[%d;%d+%c", con->val[0], con->val[1], c);
+			else if (con->idx == 1)
+				INF("key ESC+[%d+%c", con->val[0], c);
+			else
+				WARN("key ESC+[%c",  c);
+		}
 		c = -1;
 		con->mode = VT_CON_MODE_RAW;
 		break;
@@ -592,5 +601,49 @@ int vt_getkey(unsigned int tmo_ms)
 	}
 
 	return ret;
+}
+
+int __vt_get_cursor_pos(struct vt_pos * pos) 
+{
+	int c;
+
+	__vt_flush();
+
+	__vt_console_write(VT100_QUERY_CURSOR_POS, 
+					   sizeof(VT100_QUERY_CURSOR_POS));
+
+	while ((c = __vt_getc()) > 0) {
+		if ((c = __vt_console_decode(&__sys_vt.con, c)) > 0)
+			if (c == VT_CURSOR_POS) {
+				pos->x = __sys_vt.con.val[1];
+				pos->y = __sys_vt.con.val[0];
+				INF("pos = (%d, %d)", pos->x, pos->y);
+				return 0;
+			}
+	}
+
+	return c;
+}
+
+
+int __vt_get_term_type(void) 
+{
+	int c;
+
+	__vt_flush();
+
+	__vt_console_write(VT100_QUERY_DEVICE_CODE, 
+					   sizeof(VT100_QUERY_DEVICE_CODE));
+
+	while ((c = __vt_getc()) > 0) {
+		if ((c = __vt_console_decode(&__sys_vt.con, c)) > 0)
+			if (c == VT_TERM_TYPE) {
+				c = __sys_vt.con.val[0];
+				INF("type = %d", c);
+				return c;
+			}
+	}
+
+	return c;
 }
 

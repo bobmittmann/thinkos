@@ -32,19 +32,18 @@
 
 #define OFFSETOF_XCPT_SP         64
 
-#define OFFSETOF_XCPT_RET        68
-#define OFFSETOF_XCPT_CONTROL    69
-#define OFFSETOF_XCPT_ERRNO      70
-#define OFFSETOF_XCPT_SEQ        71
+#define OFFSETOF_XCPT_CFSR       68
+#define OFFSETOF_XCPT_MMFAR      72
+#define OFFSETOF_XCPT_BFAR       76
 
-#define OFFSETOF_XCPT_THREAD     72
-#define OFFSETOF_XCPT_ACK        75
+#define OFFSETOF_XCPT_RET        80
+#define OFFSETOF_XCPT_CONTROL    81
+#define OFFSETOF_XCPT_ERRNO      82
+#define OFFSETOF_XCPT_SEQ        83
 
-#define OFFSETOF_XCPT_CFSR       76
-#define OFFSETOF_XCPT_HFSR       80
+#define OFFSETOF_XCPT_THREAD     84
+#define OFFSETOF_XCPT_ACK        87
 
-#define OFFSETOF_XCPT_MMFAR      84
-#define OFFSETOF_XCPT_BFAR       88
 
 #if 0
 #define OFFSETOF_XCPT_BASEPRI    5
@@ -113,6 +112,10 @@ struct thinkos_except {
 
 	uint32_t sp; /* SP */
 
+	uint32_t cfsr;
+	uint32_t mmfar;
+	uint32_t bfar;
+
 	uint8_t ret;       /* exception exit return code low byte  */
 	uint8_t control;
 	uint8_t errno;     /* exception error code */
@@ -123,10 +126,6 @@ struct thinkos_except {
 	uint8_t res2;	
 	uint8_t ack;
 	
-	uint32_t cfsr;
-	uint32_t hfsr;
-	uint32_t mmfar;
-	uint32_t bfar;
 };
 
 extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];

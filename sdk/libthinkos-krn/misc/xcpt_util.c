@@ -473,11 +473,11 @@ void __tdump(struct thinkos_rt * krn)
 #ifdef DEBUG
 	int i;
 
-	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d brk=%d", 
+	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d svc=%d", 
 			 __krn_sched_active_get(krn),
-			 __krn_sched_svc_get(krn),
+			 __krn_sched_kse_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_brk_get(krn));
+			 __krn_sched_svc_get(krn));
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
 #if DCCLOG_ENABLE_TAGS
@@ -821,12 +821,12 @@ void __kdump(struct thinkos_rt * krn)
 			 __krn_sched_active_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
 
-	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d svc=0x%02x err=%d brk=%d]", 
+	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
 			 krn->sched.state,
 			 __krn_sched_active_get(krn),
-			 __krn_sched_svc_get(krn),
+			 __krn_sched_kse_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_brk_get(krn));
+			 __krn_sched_svc_get(krn));
 
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;

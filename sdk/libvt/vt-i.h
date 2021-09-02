@@ -1,24 +1,31 @@
+/* parse-markup: reST */
+  
 /* 
- * File:	 vt-i.h
- * Author:   Robinson Mittmann (bobmittmann@gmail.com)
- * Target:
- * Comment:
- * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+ * vt-i.h
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * Copyright(C) 2021 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the Vt library.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You can receive a copy of the GNU Lesser General Public License from 
+ * http://www.gnu.org/
  */
+
+/* 
+ * @file vt-i.h
+ * @brief VT Library Intrnal Header 
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */ 
 
 #ifndef __VT_I_H__
 #define __VT_I_H__
@@ -32,7 +39,7 @@
 #include <string.h>
 #include <sys/console.h>
 #include <thinkos.h>
-#include <sys/vt.h>
+#include <vt.h>
 #include <vt100.h>
 
 #define IN_BS      '\x8'
@@ -84,7 +91,7 @@ union vt_mem_blk {
 	};
 	struct vt_win win;
 	struct {
-		uint32_t data[5]; /* 20 bytes */
+		uint32_t data[8]; /* 32 bytes */
 	};
 };
 
@@ -103,6 +110,8 @@ struct vt_console {
 	uint8_t mode;
 	uint8_t idx;
 	uint8_t val[VT_CON_VAL_LST_SZ];
+	struct vt_pos pos; 
+	struct vt_size size; 
 };
 
 typedef int (* vt_key_decode_t)(struct vt_console * con, int c);
@@ -122,7 +131,7 @@ static inline int __vt_console_decode(struct vt_console * con, int c) {
 #endif
 
 #ifndef VT_MSG_QUEUE_SIZE
-#define VT_MSG_QUEUE_SIZE 16
+#define VT_MSG_QUEUE_SIZE 32
 #endif
 
 #define VT_STATE_ATTR_MSK 0x0000003f
@@ -168,6 +177,8 @@ struct vt_ctx {
 struct sys_vt_rt {
 	uint8_t mutex;
 	uint8_t sem;
+	uint8_t term_type;
+	struct vt_pos cursor;
 	struct {
 		uint8_t has_focus;
 	} cache;
@@ -331,6 +342,10 @@ int __vt_cursor_show(char * s);
 
 int __vt_cursor_hide(char * s);
 
+int __vt_utf8(char * s, int c);
+
+int __vt_uint2dec(char * s, int val);
+
 int __vt_getc(void);
 
 int __vt_reset(char * s);
@@ -359,6 +374,8 @@ void __vt_ctx_save(struct vt_ctx * ctx, struct vt_win * win);
 int __vt_ctx_close(struct vt_ctx * ctx);
 
 int __vt_ctx_write(struct vt_ctx * ctx, const void * buf, unsigned int len);
+
+void __vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t arg);
 
 #ifdef __cplusplus
 }

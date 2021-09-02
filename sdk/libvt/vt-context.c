@@ -384,6 +384,17 @@ int vt_putc(struct vt_ctx * ctx, int c)
 	return __vt_ctx_write(ctx, buf, 1); 
 }
 
+int vt_putc_utf8(struct vt_ctx * ctx, uint16_t c)
+{
+	char buf[1];
+
+	assert(ctx != NULL);
+
+	buf[0] = c;
+	return __vt_ctx_write(ctx, buf, 1); 
+}
+
+
 
 int vt_mov_printf(struct vt_ctx * ctx, int x, int y, const char * fmt, ...)
 {
@@ -738,6 +749,49 @@ struct vt_size vt_ctx_size(struct vt_ctx * ctx)
 
 	return size;
 }
+
+void vt_utf8_putc(struct vt_ctx * ctx, int c) 
+{
+	int x_min;
+	int x_max;
+	int y_min;
+	int y_max;
+
+	x_min = ctx->min.x;
+	x_max = ctx->max.x;
+	y_min = ctx->min.y;
+	y_max = ctx->max.y;
+
+	if ((x_max > x_min) && (y_max > y_min)) {
+		char s[12];
+		char * cp;
+		int n;
+		int x;
+		int y;
+
+		__vt_ctx_sync(ctx);
+
+		x = ctx->rem.pos_x;
+		y = ctx->rem.pos_y;
+
+		cp = s;
+		if (x >= x_max) {
+			x = x_min;
+			y = (y >= y_max) ? y_min : (y + 1);
+			cp += __vt_move_to(cp, x, y);
+		}
+
+		cp += __vt_utf8(cp, c);
+		n = cp - s;
+		__vt_console_write(s, n);
+		x++;
+		ctx->rem.pos_y = y;
+		ctx->rem.pos_x = x;
+		ctx->loc.pos_x = x;
+		ctx->loc.pos_y = y;
+	}
+}
+
 
 #if 0
 void vt_attr_get(struct vt_ctx * ctx)

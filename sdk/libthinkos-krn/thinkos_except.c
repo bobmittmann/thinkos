@@ -52,9 +52,6 @@ _Static_assert (offsetof(struct thinkos_except, ack) ==
 _Static_assert (offsetof(struct thinkos_except, cfsr) == 
 				OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
 
-_Static_assert (offsetof(struct thinkos_except, hfsr) == 
-				OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
-
 _Static_assert (offsetof(struct thinkos_except, mmfar) == 
 				OFFSETOF_XCPT_MMFAR, "OFFSETOF_XCPT_MMFAR");
 
@@ -62,6 +59,9 @@ _Static_assert (offsetof(struct thinkos_except, bfar) ==
 				OFFSETOF_XCPT_BFAR, "OFFSETOF_XCPT_BFAR");
 
 #if 0
+_Static_assert (offsetof(struct thinkos_except, hfsr) == 
+				OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
+
 
 _Static_assert (offsetof(struct thinkos_except, ipsr) == 
 				OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
@@ -216,34 +216,32 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 			 " Exception: error %d on thread %d " VT_POP, 
 			 errno, thread);
 
+	/* Stop the scheduler */
+	__krn_sched_kse_set(krn, errno);
+//	__krn_sched_defer(krn);
+
 #if DEBUG
 	mdelay(250);
-
 	__xinfo(xcpt);
-
 	DCC_EXCEPT_DUMP(krn, xcpt);
-
 	mdelay(250);
-
 	__tdump(krn);
 #endif
 
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	/* Per thread error code */
 	__thread_errno_set(krn, thread, errno);
-
-	__krn_sched_brk_set(krn, thread);
-	__krn_sched_defer(krn);
+#endif
 
 #if (THINKOS_ENABLE_MONITOR) 
-
-	__nvic_irq_disable_all();
-
 #if (THINKOS_ENABLE_READY_MASK)
 	__thread_disble_all(krn);
 #endif
-
-	/* Enable Interrupts */
+	/* Disable all vectored interrupts on NVIC */
+	__nvic_irq_disable_all();
+	/* Enable CPU interrupts */
 	cm3_cpsie_i();
-
+	/* Signal monitor */
 	monitor_signal_break(MONITOR_THREAD_FAULT);
 #else
 	__krn_suspend_all(krn);

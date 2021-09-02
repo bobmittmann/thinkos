@@ -1,27 +1,34 @@
+/* parse-markup: reST */
+  
 /* 
- * File:	 sys/vt.h
- * Author:   Robinson Mittmann (bobmittmann@gmail.com)
- * Target:
- * Comment:
- * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+ * vt.h
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * Copyright(C) 2021 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the Vt library.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You can receive a copy of the GNU Lesser General Public License from 
+ * http://www.gnu.org/
  */
 
-#ifndef __SYS_VT_H__
-#define __SYS_VT_H__
+/* 
+ * @file vt.h
+ * @brief VT API
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */ 
+
+#ifndef __VT_H__
+#define __VT_H__
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,7 +76,8 @@ enum vt_msg {
 	VT_WIN_NCDRAW = 5,
 	VT_WIN_CLEAR = 6,
 	VT_WIN_DESTROY = 7,
-	VT_WIN_CREATE = 8
+	VT_WIN_CREATE = 8,
+	VT_TERM_STATUS = 9,
 };
 
 #define MK_VT_KEY(CODE)   (0x2000 + (CODE))
@@ -85,6 +93,8 @@ enum vt_msg {
 #define VT_DELETE       MK_VT_KEY(8)
 #define VT_HOME         MK_VT_KEY(9)
 #define VT_END          MK_VT_KEY(10)
+#define VT_CURSOR_POS   MK_VT_KEY(11)
+#define VT_TERM_TYPE    MK_VT_KEY(12)
 
 #define VT_CTRL_CURSOR_UP    VT_CURSOR_UP + VT_CTRL 
 #define VT_CTRL_CURSOR_DOWN  VT_CURSOR_DOWN + VT_CTRL   
@@ -92,15 +102,9 @@ enum vt_msg {
 #define VT_CTRL_CURSOR_LEFT  VT_CURSOR_LEFT + VT_CTRL   
 #define VT_CTRL_PAGE_UP      VT_PAGE_UP + VT_CTRL   
 #define VT_CTRL_PAGE_DOWN    VT_PAGE_DOWN + VT_CTRL   
-/*
-struct vt_pos {
-	uint8_t x;
-	uint8_t y;
-};
-*/
+
 
 #define VT_POS(_X, _Y) __extension__({(struct vt_pos){ .x = _X, .y = _Y};})
-
 #define VT_SIZE(_W, _H) __extension__({(struct vt_size){ .w = _W, .h = _H};})
 
 struct vt_pos {
@@ -210,6 +214,7 @@ struct vt_pos vt_win_pos(struct vt_win * win);
 void vt_win_hide(struct vt_win * win);
 void vt_win_show(struct vt_win * win);
 void vt_win_refresh(struct vt_win * win);
+void vt_win_render(struct vt_win * win);
 void vt_win_focus(struct vt_win * win);
 
 int vt_win_puts(struct vt_win * win, const char * buf);
@@ -317,15 +322,27 @@ void vt_nc_frame(struct vt_ctx *ctx, const char * title);
 
 int vt_hbar(struct vt_ctx * ctx, unsigned int y); 
  
+/* Draw a frame with optional title */
 void vt_rect_frame(struct vt_ctx *ctx, const char * title, 
 				   struct vt_rect rect);
-void vt_rect(struct vt_ctx *ctx, struct vt_rect rect);
 
+/* Draw a rectangle at position "pos" with size "size" */
+void vt_rect(struct vt_ctx *ctx, struct vt_pos pos, struct vt_size size);
+
+/* Draw an horizontal of size w starting at position (x, y)*/
+int vt_hline(struct vt_ctx * ctx, struct vt_pos pos, int w);
+
+/* Draw an horizontal line with T marks at each end */
 void vt_hsplit(struct vt_ctx *ctx, int x, int y, int w);
 
+/* Clear n positions in the current line starting at current position */
 void vt_clear_ln(struct vt_ctx * ctx, unsigned int n);
 
 struct vt_size vt_ctx_size(struct vt_ctx * ctx);
+
+void vt_utf8_putc(struct vt_ctx * ctx, int c);
+
+int vt_query_term(void);
 
 #ifdef __cplusplus
 }

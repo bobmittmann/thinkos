@@ -11,6 +11,8 @@ const struct vt_screen_def vt_default_screen_def = {
 	.size = {.h = 0, .w = 0}
 };
 
+int __vt_get_term_type(void);
+
 int vt_screen_init(const struct vt_screen_def * def,
 				   vt_msg_handler_t msg_handler,
 				   void * data)
@@ -31,6 +33,8 @@ int vt_screen_init(const struct vt_screen_def * def,
 	win = __vt_win_root();
 	win->pos.x = 1;
 	win->pos.y = 1;
+
+	__vt_get_term_type(); 
 
 	if ((c = __vt_get_cursor_pos(&pos)) != 0) {
 	} else {
@@ -65,9 +69,9 @@ int vt_screen_init(const struct vt_screen_def * def,
 	win->data = data;
 	win->visible = true;
 
-	__vt_unlock();
+	__vt_msg_post(win, VT_WIN_CREATE, 0);
 
-	vt_msg_post(win, VT_WIN_CREATE, 0);
+	__vt_unlock();
 
 	return 0;
 }
@@ -123,10 +127,10 @@ int vt_screen_open(void)
 
 	__vt_screen_reset(ctx);
 
-	__vt_unlock();
+	__vt_msg_post(win, VT_WIN_DRAW, 0);
+	__vt_msg_post(win, VT_WIN_REFRESH, 0);
 
-	vt_msg_post(win, VT_WIN_DRAW, 0);
-	vt_msg_post(win, VT_WIN_REFRESH, 0);
+	__vt_unlock();
 
 	return 0;
 }
@@ -134,12 +138,17 @@ int vt_screen_open(void)
 int vt_screen_close(void)
 {
 	char s[64];
+	int ret;
 	int n;
+
+	if ((ret = __vt_lock()) < 0)
+		return ret;
 
 	n = __vt_reset(s);
 	__vt_console_write(s, n);
+	thinkos_sleep(128);
 
-	thinkos_sleep(100);
+	__vt_unlock();
 
 	return 0;
 }
@@ -149,23 +158,30 @@ void vt_screen_reset(void)
 	char s[64];
 	int n;
 
-	n = __vt_reset(s);
-	__vt_console_write(s, n);
+	if ((__vt_lock()) >= 0) {
+		n = __vt_reset(s);
+		__vt_console_write(s, n);
+		thinkos_sleep(128);
+
+		__vt_unlock();
+	}
 }
 
 void vt_refresh(void)
 {
-	struct vt_win * win;
-
-	win = __vt_win_root();
-	vt_msg_post(win, VT_WIN_REFRESH, 0);
+	if ((__vt_lock()) >= 0) {
+		struct vt_win * win = __vt_win_root();
+		__vt_msg_post(win, VT_WIN_REFRESH, 0); 
+		__vt_unlock();
+	}
 }
 
 void vt_redraw(void)
 {
-	struct vt_win * win;
-
-	win = __vt_win_root();
-	vt_msg_post(win, VT_WIN_DRAW, 0);
+	if ((__vt_lock()) >= 0) {
+		struct vt_win * win = __vt_win_root();
+		__vt_msg_post(win, VT_WIN_DRAW, 0); 
+		__vt_unlock();
+	}
 }
 

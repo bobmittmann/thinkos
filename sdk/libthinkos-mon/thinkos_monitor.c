@@ -21,6 +21,7 @@
  */
 
 #include "thinkos_mon-i.h"
+#include <sys/delay.h>
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -75,58 +76,43 @@ void __monitor_context_swap(uint32_t ** pctx);
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-void monitor_signal(int sig) 
+static void __monitor_event_set(uint32_t ev) 
 {
-	struct cm3_scb * scb = CM3_SCB;
 	uint32_t evset;
 	
 	do {
 		/* avoid possible race condition on monitor.events */
 		evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
-		evset |= (1 << sig);
+		evset |= ev;
 	} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
+}
+
+void monitor_signal(int sig) 
+{
+	struct cm3_scb * scb = CM3_SCB;
+	
+	__monitor_event_set((1 << sig)); 
 
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
-
-	asm volatile ("isb\n" :  :  : );
 }
 
 void monitor_signal_break(int32_t sig) 
 {
-	monitor_signal(MONITOR_SOFTRST); 
-	monitor_signal(sig); 
+	struct cm3_scb * scb = CM3_SCB;
+
+	__monitor_event_set((1 << sig) | (1 << MONITOR_SOFTRST)); 
+
+	/* rise a pending systick interrupt */
+	scb->icsr = SCB_ICSR_PENDSTSET;
 }
 
 #if 0
-void monitor_signal_break(int32_t event) 
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	uint32_t evset;
-	uint32_t set;
-
-	/* Disable systick interrupts */
-	//__thinkos_systick_sleep();
-
-	set = (1 << event) | (1 << MONITOR_SOFTRST); 
-
-	do {
-		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&krn->monitor.events);
-		evset |= set;
-	} while (__strex((uint32_t *)&krn->monitor.events, evset));
-
-	DCC_LOG1(LOG_TRACE, "set=0x%08x", evset);
-
-	/* Issue an idle hook request */
-//	__idle_hook_req(IDLE_HOOK_MONITOR_WAKEUP);
-}
-#endif
-
 bool monitor_is_set(int sig) 
 {
 	return thinkos_rt.monitor.events &  (1 << sig) ? true : false;
 }
+#endif
 
 void monitor_unmask(int sig)
 {
@@ -260,13 +246,16 @@ int monitor_expect(int sig)
 
 int monitor_sleep(unsigned int ms)
 {
-	monitor_clear(MONITOR_ALARM);
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
+	monitor_clear(MONITOR_ALARM);
 	/* set the clock */
 	thinkos_rt.monitor_clock = thinkos_rt.ticks + ms;
-#endif
 	/* wait for signal */
 	return monitor_expect(MONITOR_ALARM);
+#else
+	mdelay(ms);
+	return 0;
+#endif
 }
 
 void monitor_alarm(unsigned int ms)

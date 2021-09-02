@@ -31,7 +31,7 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 
 //	__thinkos_krn_core_reset(krn);
 	/* request scheduler to stop everything */
-	__krn_sched_svc_set(krn, 1);
+	__krn_sched_err_set(krn, THINKOS_ABORT_REQ);
 	/* Make sure to run the scheduler */
 	__krn_defer_sched(krn);
 }
