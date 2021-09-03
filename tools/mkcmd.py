@@ -114,7 +114,7 @@ class CmdTab(list):
     data = fin.read();
     fin.close()
     
-    for entry in yaml.load(data):
+    for entry in yaml.safe_load(data):
       name = entry['cmd']
       try:
         alias = entry['alias']
@@ -209,7 +209,7 @@ def mk_cmdtab_h(f, fname, cmd_tab):
   f.write('extern const char * const ' + prefix + 'cmd_desc_tab[];\n')
   f.write('extern const char ' + prefix + 'cmd_alias_tab[][4];\n')
   f.write('\n')
-  f.write('extern const ' + cmd_tab.call_type() + ' const ' + prefix + 'cmd_call_tab[];\n')
+  f.write('extern const ' + cmd_tab.call_type() + ' ' + prefix + 'cmd_call_tab[];\n')
   f.write('\n')
   f.write('#ifdef __cplusplus\n')
   f.write('extern \"C\" {\n')
