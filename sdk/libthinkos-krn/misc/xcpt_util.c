@@ -34,6 +34,86 @@
 
 #include <sys/dcclog.h>
 
+#if DCCLOG_ENABLE_TAGS
+#define DCCLOG_ENABLE_TAGS 0
+#endif
+
+
+/* Hard fault exception dump */
+void __hard(struct thinkos_rt * krn,
+			struct thinkos_context * ctx,
+			uint32_t psp,
+			uint32_t stat)
+{
+#if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
+	uint32_t ipsr;
+	uint32_t xpsr;
+	int irqregs;
+	int irqbits;
+	int i;
+	int j;
+
+	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
+			ctx->r0, ctx->r1, 
+			ctx->r2, ctx->r3);
+	DCC_LOG4(LOG_ERROR, "   R4=%08x  R5=%08x  R6=%08x  R7=%08x", 
+			ctx->r4, ctx->r5, 
+			ctx->r6, ctx->r7);
+	DCC_LOG4(LOG_ERROR, "   R8=%08x  R9=%08x R10=%08x R11=%08x", 
+			ctx->r8, ctx->r9, 
+			ctx->r10, ctx->r11);
+	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
+			ctx->r12, psp, ctx->lr, ctx->pc);
+
+	xpsr = ctx->xpsr;
+	ipsr = xpsr & 0x1ff;
+	if (ipsr < 16) { 
+		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
+				 "ICI/IT=%02x GE=%1x IPSR=%d (%s) }", 
+				 (xpsr & (1 << 31)) ? 'N' : '.',
+				 (xpsr & (1 << 30)) ? 'Z' : '.',
+				 (xpsr & (1 << 29)) ? 'C' : '.',
+				 (xpsr & (1 << 28)) ? 'V' : '.',
+				 (xpsr & (1 << 27)) ? 'Q' : '.',
+				 (xpsr & (1 << 24)) ? 'T' : '.',
+				 ((xpsr >> 19) & 0xc0) | ((xpsr >> 10) & 0x3f),
+				 ((xpsr >> 16) & 0x0f),
+				 ipsr, __xcpt_name_lut[ipsr]);
+	} else {
+		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
+				 "ICI/IT=%02x GE=%1x IPSR=%d (IRQ %d) }", 
+				 (xpsr & (1 << 31)) ? 'N' : '.',
+				 (xpsr & (1 << 30)) ? 'Z' : '.',
+				 (xpsr & (1 << 29)) ? 'C' : '.',
+				 (xpsr & (1 << 28)) ? 'V' : '.',
+				 (xpsr & (1 << 27)) ? 'Q' : '.',
+				 (xpsr & (1 << 24)) ? 'T' : '.',
+				 ((xpsr >> 19) & 0xc0) | ((xpsr >> 10) & 0x3f),
+				 ((xpsr >> 16) & 0x0f),
+				 ipsr, ipsr - 16);
+	}
+
+	irqregs = CM3_ICTR + 1;
+	for (i = 0; i < irqregs ; ++i) {
+		irqbits = __rbit(CM3_NVIC->iabr[i]);
+		while ((j = __clz(irqbits)) < 32) {
+			irqbits &= ~(0x80000000 >> j);
+			DCC_LOG1(LOG_ERROR, "Active IRQ=%d", i * 32 + j); 
+		}
+	}
+
+	for (i = 0; i < irqregs ; ++i) {
+		irqbits = __rbit(CM3_NVIC->ispr[i]);
+		while ((j = __clz(irqbits)) < 32) {
+			irqbits &= ~(0x80000000 >> j);
+			DCC_LOG1(LOG_ERROR, "Pending IRQ=%d", i * 32 + j); 
+		}
+	}
+
+
+#endif
+}
+
 const char __xcpt_name_lut[16][12] = {
 	"Thread",
 	"Reset",
@@ -58,25 +138,17 @@ void __xdump(struct thinkos_rt * krn,
 			 struct thinkos_except * xcpt)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
-	uint32_t shcsr;
-	uint32_t icsr;
-	uint32_t ipsr;
+//	uint32_t shcsr;
+//	uint32_t icsr;
 	uint32_t xpsr;
 	uint32_t ctrl;
 	uint32_t ret;
 	uint32_t sp;
+	uint32_t ipsr;
 	int irqregs;
 	int irqbits;
 	int i;
 	int j;
-
-
-	ipsr = xcpt->ipsr;
-	if (ipsr < 16) { 
-		DCC_LOG2(LOG_ERROR, " IPSR=%d (%s)", ipsr, __xcpt_name_lut[ipsr]);
-	} else {
-		DCC_LOG2(LOG_ERROR, " IPSR=%d (IRQ %d)", ipsr, ipsr - 16);
-	}
 
 	irqregs = CM3_ICTR + 1;
 	for (i = 0; i < irqregs ; ++i) {
@@ -97,7 +169,7 @@ void __xdump(struct thinkos_rt * krn,
 
 	ret  = 0xffffff00 | (xcpt->ret & 0xff);
 
-	sp = (ret & EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	sp = xcpt->sp;
 	DCC_LOG1(LOG_ERROR, "ret=%08x", ret); 
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
@@ -111,8 +183,8 @@ void __xdump(struct thinkos_rt * krn,
 			xcpt->ctx.r10, xcpt->ctx.r11);
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
 			xcpt->ctx.r12, sp, xcpt->ctx.lr, xcpt->ctx.pc);
-	DCC_LOG4(LOG_ERROR, " XPSR=%08x MSP=%08x PSP=%08x RET=%08x", 
-			xcpt->ctx.xpsr, xcpt->msp, xcpt->psp, ret);
+	DCC_LOG2(LOG_ERROR, " XPSR=%08x RET=%08x", 
+			xcpt->ctx.xpsr, ret);
 	xpsr = xcpt->ctx.xpsr;
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
@@ -174,7 +246,7 @@ void __xdump(struct thinkos_rt * krn,
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
 			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
-
+#if 0
 	shcsr = xcpt->shcsr;
 	DCC_LOG10(LOG_ERROR, "SHCSR={%s%s%s%s%s%s%s%s%s%s }", 
 				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
@@ -198,10 +270,10 @@ void __xdump(struct thinkos_rt * krn,
 				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
 				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
 				 (icsr & SCB_ICSR_VECTACTIVE));
-
-//	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
-			 __xcpt_active_get(xcpt),
-			 __krn_sched_active_get(krn); 
+#endif
+	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
+			 __xcpt_thread_get(xcpt),
+			 __krn_sched_active_get(krn)); 
 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
@@ -401,14 +473,16 @@ void __tdump(struct thinkos_rt * krn)
 #ifdef DEBUG
 	int i;
 
-	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d brk=%d", 
+	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d svc=%d", 
 			 __krn_sched_active_get(krn),
-			 __krn_sched_svc_get(krn),
+			 __krn_sched_kse_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_brk_get(krn));
+			 __krn_sched_svc_get(krn));
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
+#if DCCLOG_ENABLE_TAGS
 		const char * tag;
+#endif
 		unsigned int wq;
 		uint32_t sp;
 		uint32_t sl;
@@ -421,7 +495,6 @@ void __tdump(struct thinkos_rt * krn)
 		if (!__thread_ctx_is_valid(krn, i))
 			continue;
 
-		tag = __thread_tag_get(krn, i);
 		wq = __thread_wq_get(krn, i);
 		sl = __thread_sl_get(krn, i);
 		sp = __thread_sp_get(krn, i);
@@ -429,10 +502,15 @@ void __tdump(struct thinkos_rt * krn)
 		lr = __thread_lr_get(krn, i) ;
 		ssize = __thread_stack_size_get(krn, i);
 		sfree= __thinkos_scan_stack((void *)sl, ssize);
-
+#if DCCLOG_ENABLE_TAGS
+		tag = __thread_tag_get(krn, i);
 		DCC_LOG9(LOG_TRACE, 
 				 "%7s (%2d %3d) SL=%08x SP=%08x PC=%08x LR=%08x %d/%d", 
 				 tag, i, wq, sl, sp, pc, lr, sfree, ssize);
+#endif
+		DCC_LOG8(LOG_TRACE, 
+				 "%2d (%3d) SL=%08x SP=%08x PC=%08x LR=%08x %d/%d", 
+				 i, wq, sl, sp, pc, lr, sfree, ssize);
 
 	}
 
@@ -578,7 +656,7 @@ void __xinfo(struct thinkos_except * xcpt)
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BRD
 			 "/!\\ Exception %d [%s] /!\\" VT_POP, 
 			 err, thinkos_krn_err_tag(err));
-
+#if 0
 	if (err == THINKOS_ERR_HARD_FAULT) {
 		uint32_t hfsr = xcpt->hfsr;
 		DCC_LOG3(LOG_PANIC, VT_PSH VT_BRI VT_FRD 
@@ -633,6 +711,7 @@ void __xinfo(struct thinkos_except * xcpt)
 					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
 		}
 	}
+#endif	
 #endif
 }
 
@@ -742,12 +821,12 @@ void __kdump(struct thinkos_rt * krn)
 			 __krn_sched_active_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
 
-	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d svc=0x%02x err=%d brk=%d]", 
+	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
 			 krn->sched.state,
 			 __krn_sched_active_get(krn),
-			 __krn_sched_svc_get(krn),
+			 __krn_sched_kse_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_brk_get(krn));
+			 __krn_sched_svc_get(krn));
 
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;
@@ -755,13 +834,13 @@ void __kdump(struct thinkos_rt * krn)
 	size -=  sizeof(struct thinkos_except);
 
 #if (THINKOS_ENABLE_MONITOR)
-	DCC_LOG(LOG_ERROR, "Stack:");
-	DCC_LOG2(LOG_ERROR, "    Monitor: %6d/%d", 
+	DCC_LOG(LOG_TRACE, "Stack:");
+	DCC_LOG2(LOG_TRACE, "    Monitor: %6d/%d", 
 			 __thinkos_scan_stack(thinkos_monitor_stack, 
 								  thinkos_monitor_stack_size),
 			 thinkos_monitor_stack_size); 
 #endif
-	DCC_LOG2(LOG_ERROR, "     Except: %6d/%d", 
+	DCC_LOG2(LOG_TRACE, "     Except: %6d/%d", 
 		 __thinkos_scan_stack((void *)stack, size), size); 
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_IDLE; ++i) {

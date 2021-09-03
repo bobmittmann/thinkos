@@ -22,8 +22,8 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #define __THINKOS_KERNEL__

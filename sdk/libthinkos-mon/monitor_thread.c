@@ -125,6 +125,7 @@ int monitor_thread_create(const struct monitor_comm * comm,
 						thinkos_task_t task, void * arg,
 						bool priviledged) 
 {
+#if (THINKOS_ENABLE_DEBUG_BASE)
 	int ret;
 
 	if ((ret = thinkos_dbg_thread_create(task, arg, 
@@ -133,6 +134,9 @@ int monitor_thread_create(const struct monitor_comm * comm,
 	}
 
 	return ret;
+#else
+	return -1;
+#endif
 }
 
 

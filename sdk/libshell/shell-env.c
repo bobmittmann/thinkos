@@ -1,9 +1,7 @@
 /* 
- * memset32.c
- *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
- * This file is part of the ThinkOS library.
+ * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -11,7 +9,7 @@
  * version 3.0 of the License, or (at your option) any later version.
  * 
  * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without flagen the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  * 
@@ -19,18 +17,37 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+/** 
+ * @file shell.c
+ * @brief YARD-ICE
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */
 
-#if (THINKOS_ENABLE_OFAST)
-_Pragma ("GCC optimize (\"Ofast\")")
-#endif
 
-void __thinkos_memset32(void * __dst, uint32_t __val, unsigned int __len)
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/shell.h>
+#include <sys/tty.h>
+
+#include <sys/serial.h>
+
+#define __SHELL_I__
+#include "shell-i.h"
+
+int shell_env_init(struct shell_env * env, FILE * in, FILE * fout)
 {
-	uint32_t * dst = (uint32_t *)__dst;
-	unsigned int i;
+	assert(env != NULL);
+	assert(in != NULL);
+	assert(out != NULL);
 
-	for (i = 0; i < (__len / 4); ++i)
-		dst[i] = __val;
+	env->fin = fin;
+	env->fout = fout;
+	env->hist_buf;
+
+
+	return 0;
 }
+

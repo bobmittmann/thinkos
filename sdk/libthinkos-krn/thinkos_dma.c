@@ -30,7 +30,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if THINKOS_DMA_MAX > 0
+#if (THINKOS_DMA_MAX) > 0
 void __thinkos_dma_reset_all(void)
 {
 	int dma;
@@ -42,12 +42,12 @@ void __thinkos_dma_reset_all(void)
 }
 #endif
 
-#if THINKOS_DMA_MAX > 0
+#if (THINKOS_DMA_MAX) > 0
 
 void thinkos_dma_irq(unsigned int irq) 
 {
 	unsigned int thread_id;
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;
 	uint32_t * usr_ptr;
@@ -70,13 +70,13 @@ void thinkos_dma_irq(unsigned int irq)
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
 
-#if THINKOS_ENABLE_WQ_DMA
+#if (THINKOS_ENABLE_WQ_DMA)
 	/* remove from the wait queue */
 	__thinkos_wq_remove(THINKOS_WQ_DMA, thread_id);  
 #endif
 
 
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* set cyle count in the storage provided by the thread */
 	usr_ptr = (uint32_t *)(thinkos_rt.dma_cyccnt[thread_id]);
 	*usr_ptr = cyccnt;
@@ -87,11 +87,11 @@ void thinkos_dma_irq(unsigned int irq)
 }
 
 
-#if THINKOS_ENABLE_DMA_TIMEDWAIT 
+#if (THINKOS_ENABLE_DMA_TIMEDWAIT) 
 void thinkos_dma_timedwait_cleanup_svc(int32_t * arg, int self) {
 	unsigned int dma = arg[0];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid DMA %d!", dma);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
@@ -116,11 +116,11 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 {
 	unsigned int dma = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	uint32_t * cyccnt_ptr;
 #endif
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG2(LOG_ERROR, "invalid DMA %d! dma_th=%d", dma, thinkos_rt.dma_th[53]);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
@@ -129,7 +129,7 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 	}
 #endif
 
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* The cycle count is returned on the location pointed by dma_cyccnt. Make
 	   sure it is a valid reference. */
 	cyccnt_ptr = (uint32_t *)&thinkos_rt.dma_cyccnt[self];
@@ -139,7 +139,7 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
-#if THINKOS_ENABLE_WQ_DMA
+#if (THINKOS_ENABLE_WQ_DMA)
 	__thinkos_tmdwq_insert(THINKOS_WQ_DMA, self, ms);
 #endif 
 
@@ -160,11 +160,11 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 void thinkos_dma_wait_svc(int32_t * arg, int self)
 {
 	unsigned int dma = arg[0];
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	uint32_t * cyccnt_ptr;
 #endif
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid DMA %d!", dma);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
@@ -172,7 +172,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 		return;
 	}
 
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* The cycle counter is returned in the memorty pointed by
 	   R1. Chek if it's a valid memory area. */
 	if (NULL == (void *)arg[1]) {
@@ -180,7 +180,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 		   make sure dma_cyccnt is a valid reference. */
 		cyccnt_ptr = (uint32_t *)&thinkos_rt.dma_cyccnt[self];
 	} 
-#if THINKOS_ENABLE_MPU
+#if (THINKOS_ENABLE_MPU)
 	/* There is a potential security brech as the pointer is written by 
 	   an priviledged interrupt handler. For this reason the whole kernel 
 	   memory space is checked.  */
@@ -205,7 +205,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	DCC_LOG2(LOG_MSG, "<%d> DMA %d!", self, dma);
 	arg[0] = THINKOS_OK;
 
-#if THINKOS_ENABLE_DMA_CYCCNT
+#if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the cycle counter (r1) address. */
@@ -216,7 +216,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	/* remove from ready Q */
 	__thinkos_suspend(self);
 
-#if THINKOS_ENABLE_WQ_DMA
+#if (THINKOS_ENABLE_WQ_DMA)
 	__thinkos_wq_insert(THINKOS_WQ_DMA, self);  
 #endif
 
@@ -238,7 +238,7 @@ void thinkos_dma_ctl_svc(int32_t * arg, int self)
 	unsigned int req = arg[0];
 	unsigned int dma = arg[1];
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	unsigned int dma_max = ((uintptr_t)&__sizeof_rom_vectors / 
 							sizeof(void *)) - 16;
 

@@ -141,9 +141,10 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
+	. = ALIGN(3);
+
 	.data :
 	{
-		. = ALIGN(3);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
 		/* all .data sections  */

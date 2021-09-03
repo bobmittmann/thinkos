@@ -24,6 +24,8 @@
  */
 
 #include "thinkos_krn-i.h"
+#include <sys/param.h>
+
 #include <sys/dcclog.h>
 
 extern void * __krn_data_start;

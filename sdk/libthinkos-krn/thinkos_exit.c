@@ -149,7 +149,7 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				__thread_r0_set(krn, th, code);
 			} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 			/* signal the scheduler ... */
-			__krn_defer_sched(krn);
+			__krn_sched_defer(krn);
 		}
 	}
 #endif
@@ -186,7 +186,7 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
 		/* remove from the ready wait queue */
 		__krn_thread_suspend(krn, self);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 #endif /* THINKOS_ENABLE_JOIN */
 

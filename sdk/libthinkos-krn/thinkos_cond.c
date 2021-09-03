@@ -22,7 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -43,13 +43,13 @@ __krn_cond_is_alloc(struct thinkos_rt * krn, unsigned int cond) {
 		true : false;
 }
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 static int krn_cond_check(struct thinkos_rt * krn, int cond)
 {
 	if (!__krn_obj_is_cond(krn, cond)) {
 		return THINKOS_ERR_COND_INVALID;
 	}
-#if THINKOS_ENABLE_COND_ALLOC
+#if (THINKOS_ENABLE_COND_ALLOC)
 	if (__krn_cond_is_alloc(krn, cond) == 0) {
 		return THINKOS_ERR_COND_ALLOC;
 	}
@@ -63,7 +63,7 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
 	int th;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
@@ -82,7 +82,7 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-#if THINKOS_ENABLE_SANITY_CHECK
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
 	if (__krn_mutex_lock_get(krn, mutex) != self) {
@@ -107,19 +107,19 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_cond_timedwait_svc(int32_t arg[], int self, 
 								struct thinkos_rt * krn)
 {
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
 	uint32_t ms = (uint32_t)arg[2];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 #endif
 	int th;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
 				 self, cond);
@@ -136,7 +136,7 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 	}
 #endif
 
-#if THINKOS_ENABLE_SANITY_CHECK
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	/* sanity check: avoid unlock the mutex by a thread that 
 	   does not own the lock */
 	if (__krn_mutex_lock_get(krn, mutex) != self) {
@@ -166,12 +166,12 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int cond = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 #endif
 	int th;
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
 		__THINKOS_ERROR(self, ret);
@@ -185,7 +185,7 @@ void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* wakeup from the condition wait queue */
 		__krn_wq_wakeup(krn, cond, th);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 
 	/* Set the return value */
@@ -196,11 +196,11 @@ void thinkos_cond_broadcast_svc(int32_t arg[], int self,
 								struct thinkos_rt * krn)
 {	
 	unsigned int cond = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 #endif
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
 		__THINKOS_ERROR(self, ret);
@@ -224,7 +224,7 @@ bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th,
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
 
 	__thread_wq_set(krn, th, wq);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	if (tmw)
 		__thread_clk_enable(krn, th);
 #endif

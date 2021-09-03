@@ -134,6 +134,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYCT");
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
+	_Static_assert (offsetof(struct thinkos_rt, debug) == 
+					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
+#endif
+
+#if 0
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
@@ -148,6 +154,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
 					OFFSETOF_KRN_BREAK_ID, "OFFSETOF_KRN_BREAK_ID");
 #endif
+#endif
+
 
 #if (THINKOS_ENABLE_CRITICAL)
 	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
@@ -377,12 +385,10 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	__thinkos_krn_irq_init(krn);
 
 	if (lst == NULL) {
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		bool privileged;
 
-#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		privileged  = __PRIVILEGED(opt);
-#else
-		privileged = false;
 #endif
 
 		DCC_LOG(LOG_TRACE, "Main thread init...");
@@ -393,6 +399,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 		/* add to the ready queue */
 		__thread_ready_set(krn, thread_no);
 
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 		if (privileged) {
 			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
 		 } else {
@@ -406,7 +413,11 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 			ctrl |=  CONTROL_nPRIV;
 			cm3_control_set(ctrl);
 		}
-
+#else
+		DCC_LOG(LOG_TRACE, "Enabling interrupts");
+		/* enable interrupts */
+		thinkos_krn_irq_on();
+#endif
 
 		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
 				 thread_no, cm3_msp_get(), cm3_psp_get(), 

@@ -22,7 +22,9 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#include <sys/param.h>
+
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -303,11 +305,13 @@ static int __console_rd_break(struct thinkos_rt * krn)
 		DCC_LOG(LOG_INFO, "no thread waiting.");
 		ret = 0;
 	} else {
+		DCC_LOG1(LOG_TRACE, "break %d", th);
+
 		thinkos_console_rt.rd_break = 0;
 		/* wakeup from the console read wait queue setting the return 
-		   value to 0.
+		   value to THINKOS_EINTR.
 		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, 0);
+		__wq_wakeup_return(krn, wq, th, THINKOS_EINTR);
 		ret = 1;
 	}
 
@@ -372,7 +376,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	/* wakeup from the console wait queue */
 	__krn_wq_wakeup(krn, wq, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn); 
+	__krn_sched_defer(krn); 
 }
 
 int thinkos_console_rx_pipe_ptr(uint8_t ** ptr) 
@@ -431,7 +435,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 	   The calling thread should retry the operation. */
 	__wq_wakeup_return(krn, wq, th, 0);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn); 
+	__krn_sched_defer(krn); 
 }
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
@@ -521,7 +525,7 @@ void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 			if (io & CONSOLE_IO_RD)
 				cnt += __console_rd_break(krn); 
 			if (cnt)
-				__krn_defer_sched(krn); /* signal the scheduler ... */
+				__krn_sched_defer(krn); /* signal the scheduler ... */
 		}
 		break;
 #endif
@@ -597,9 +601,11 @@ drain_again:
 			}
 
 			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", self, wq);
+			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", 
+					 self, wq);
+
 			/* signal the scheduler ... */
-			__krn_defer_sched(krn); 
+			__krn_sched_defer(krn); 
 		}
 #else
 		arg[0] = 0;
@@ -727,7 +733,7 @@ wr_again:
 			/* -- wait for event ---------------------------------------- */
 			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", self, wq);
 			/* signal the scheduler ... */
-			__krn_defer_sched(krn); 
+			__krn_sched_defer(krn); 
 		}
 		break;
 
@@ -781,4 +787,5 @@ void thinkos_krn_console_init(void)
 }
 
 #endif /* (THINKOS_ENABLE_CONSOLE) */
+
 

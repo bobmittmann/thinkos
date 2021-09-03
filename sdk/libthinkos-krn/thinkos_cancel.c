@@ -23,7 +23,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -34,7 +34,7 @@ void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	int code = arg[1];
 	unsigned int wq;
 	uint32_t pc;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = __krn_thread_check(krn, th)) != 0) {
@@ -50,7 +50,7 @@ void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* possibly remove from the time wait queue */
 	__krn_wq_remove(krn, wq, th);
 
-#if THINKOS_ENABLE_JOIN
+#if (THINKOS_ENABLE_JOIN)
 	/* insert into the canceled wait queue and wait for a join call */ 
 	wq = __wq_idx(krn, &krn->wq_canceled);
 #else /* THINKOS_ENABLE_JOIN */

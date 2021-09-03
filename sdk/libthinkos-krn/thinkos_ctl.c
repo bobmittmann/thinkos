@@ -21,6 +21,7 @@
 
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
+#include <sys/sysclk.h>
 
 #if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
@@ -31,9 +32,9 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 
 //	__thinkos_krn_core_reset(krn);
 	/* request scheduler to stop everything */
-	__krn_sched_svc_set(krn, 1);
+	__krn_sched_err_set(krn, THINKOS_ABORT_REQ);
 	/* Make sure to run the scheduler */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 void thinkos_ctl_svc(int32_t * arg, unsigned int self)
@@ -79,12 +80,10 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
 #if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		unsigned int cnt;
-
-		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
-		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * cnt); 
-		arg[0] = cnt;
+		arg[0] = __krn_threads_inf_get(krn, 
+				(const struct thinkos_thread_inf **)arg[1], 
+				(unsigned int)arg[2] >> 16,
+				(unsigned int)arg[2] & 0xffff);
 		}
 		break;
 #endif

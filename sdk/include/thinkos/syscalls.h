@@ -42,81 +42,77 @@
 
 #define THINKOS_IRQ_WAIT               6
 #define THINKOS_IRQ_TIMEDWAIT          7
-#define THINKOS_IRQ_CTL                8
+#define THINKOS_IRQ_TIMEDWAIT_FIXUP    8
+#define THINKOS_IRQ_CTL                9
 
-#define THINKOS_OBJ_ALLOC              9
-#define THINKOS_OBJ_FREE              10
+#define THINKOS_OBJ_ALLOC             10
+#define THINKOS_OBJ_FREE              11
 
-#define THINKOS_MUTEX_LOCK            11
-#define THINKOS_MUTEX_TRYLOCK         12
-#define THINKOS_MUTEX_TIMEDLOCK       13
-#define THINKOS_MUTEX_UNLOCK          14
+#define THINKOS_MUTEX_LOCK            12
+#define THINKOS_MUTEX_TRYLOCK         13
+#define THINKOS_MUTEX_TIMEDLOCK       14
+#define THINKOS_MUTEX_UNLOCK          15
 
-#define THINKOS_SEM_INIT              15
-#define THINKOS_SEM_WAIT              16
-#define THINKOS_SEM_TRYWAIT           17
-#define THINKOS_SEM_TIMEDWAIT         18
-#define THINKOS_SEM_POST              19
+#define THINKOS_SEM_INIT              16
+#define THINKOS_SEM_WAIT              17
+#define THINKOS_SEM_TRYWAIT           18
+#define THINKOS_SEM_TIMEDWAIT         19
+#define THINKOS_SEM_POST              20
 
-#define THINKOS_COND_WAIT             20
-#define THINKOS_COND_TIMEDWAIT        21
-#define THINKOS_COND_SIGNAL           22
-#define THINKOS_COND_BROADCAST        23
+#define THINKOS_COND_WAIT             21
+#define THINKOS_COND_TIMEDWAIT        22
+#define THINKOS_COND_SIGNAL           23
+#define THINKOS_COND_BROADCAST        24
 
-#define THINKOS_FLAG_TAKE             24
-#define THINKOS_FLAG_TIMEDTAKE        25
-#define THINKOS_FLAG_GIVE             26
+#define THINKOS_FLAG_TAKE             25
+#define THINKOS_FLAG_TIMEDTAKE        26
+#define THINKOS_FLAG_GIVE             27
 
-#define THINKOS_FLAG_VAL              27
-#define THINKOS_FLAG_CLR              28
-#define THINKOS_FLAG_SET              29
-#define THINKOS_FLAG_WATCH            30
-#define THINKOS_FLAG_TIMEDWATCH       31
+#define THINKOS_FLAG_VAL              28
+#define THINKOS_FLAG_CLR              29
+#define THINKOS_FLAG_SET              30 
+#define THINKOS_FLAG_WATCH            31
+#define THINKOS_FLAG_TIMEDWATCH       32
 
-#define THINKOS_GATE_WAIT             32
-#define THINKOS_GATE_TIMEDWAIT        33
-#define THINKOS_GATE_EXIT             34
-#define THINKOS_GATE_OPEN             35
-#define THINKOS_GATE_CLOSE            36
+#define THINKOS_GATE_WAIT             33
+#define THINKOS_GATE_TIMEDWAIT        34
+#define THINKOS_GATE_EXIT             35
+#define THINKOS_GATE_OPEN             36
+#define THINKOS_GATE_CLOSE            37
 
-#define THINKOS_EVENT_WAIT            37
-#define THINKOS_EVENT_TIMEDWAIT       38
-#define THINKOS_EVENT_RAISE           39
-#define THINKOS_EVENT_MASK            40
-#define THINKOS_EVENT_CLEAR           41
+#define THINKOS_EVENT_WAIT            38
+#define THINKOS_EVENT_TIMEDWAIT       39
+#define THINKOS_EVENT_RAISE           40
+#define THINKOS_EVENT_MASK            41
+#define THINKOS_EVENT_CLEAR           42
 
-#define THINKOS_CONSOLE               42
+#define THINKOS_CONSOLE               43
 
-#define THINKOS_CANCEL                43
-#define THINKOS_TERMINATE             44
-#define THINKOS_JOIN                  45
-#define THINKOS_PAUSE                 46
-#define THINKOS_RESUME                47
+#define THINKOS_CANCEL                44
+#define THINKOS_TERMINATE             45
+#define THINKOS_JOIN                  46
+#define THINKOS_PAUSE                 47
+#define THINKOS_RESUME                48
+#define THINKOS_EXIT                  49
 
-#define THINKOS_EXIT                  48
+#define THINKOS_DATE_AND_TIME         50
 
-#define THINKOS_DATE_AND_TIME         49
+#define THINKOS_COMM                  51
 
-#define THINKOS_COMM                  50
+#define THINKOS_CRITICAL_ENTER        52
 
-#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 51
+#define THINKOS_CRITICAL_EXIT         53
 
-#define THINKOS_ESCALATE              52
+#define THINKOS_MONITOR               54
 
-#define THINKOS_CRITICAL_ENTER        53
+#define THINKOS_TRACE                 55
+#define THINKOS_TRACE_CTL             56
 
-#define THINKOS_CRITICAL_EXIT         54
+#define THINKOS_FLASH_MEM             57
 
-#define THINKOS_MONITOR               55
+#define THINKOS_APP_EXEC              58
 
-#define THINKOS_TRACE                 56
-#define THINKOS_TRACE_CTL             57
-
-#define THINKOS_FLASH_MEM             58
-
-#define THINKOS_APP_EXEC              59
-
-#define THINKOS_SYSCALL_CNT           60
+#define THINKOS_SYSCALL_CNT           59
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_WRITE                  0
@@ -556,45 +552,60 @@ thinkos_gate_open_i(int gate) {
  * --------------------------------------------------------------------------
  */
 
-static inline int __attribute__((always_inline)) 
-	thinkos_irq_timedwait(int irq, unsigned int ms) {
-
-	register uint32_t err asm("r0");
-	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT) : 
-				  "=r"(err), "=r"(cyccnt) :
-				  "0"(irq), "1"(ms) );
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT_CLEANUP) : 
-				  "=r"(err) : "0"(irq) );
-
-	return err;
-}
-
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	register uint32_t err asm("r0");
+	register uint32_t ret asm("r0");
 	register uint32_t cyccnt asm("r1");
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
+				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
 
-	return err;
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_wait_cyccnt(int irq, uint32_t * pcyccnt) {
 
-	register uint32_t err asm("r0");
+	register uint32_t ret asm("r0");
 	register uint32_t cyccnt asm("r1");
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
+				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
 
 	*pcyccnt = cyccnt;
 
-	return err;
+	return ret;
 }
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait_cyccnt(int irq, unsigned int ms, uint32_t * pcyccnt) {
+
+	register uint32_t ret asm("r0");
+	register uint32_t cyccnt asm("r1");
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
+				  "=r"(ret), "=r"(cyccnt) :
+				  "0"(irq), "1"(ms) );
+
+	*pcyccnt = cyccnt;
+
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait(int irq, unsigned int ms) {
+
+	register uint32_t ret asm("r0");
+	register uint32_t cyccnt asm("r1");
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
+				  "=r"(ret), "=r"(cyccnt) :
+				  "0"(irq), "1"(ms) );
+
+	return ret;
+}
+
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void)) {
@@ -712,13 +723,15 @@ static inline int __attribute__((always_inline))
 
 static inline int __attribute__((always_inline)) 
 	thinkos_thread_inf(const struct thinkos_thread_inf * inf[], 
-					   unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf, max);
+					   unsigned int from, unsigned int cnt) {
+		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, 
+								inf, ((from << 16) + cnt));
 	}
 
 static inline int __attribute__((always_inline)) 
-	thinkos_thread_cyccnt(uint32_t cyccnt[], unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_CYCCNT, cyccnt, max);
+	thinkos_thread_cyccnt(uint32_t cyccnt[], unsigned int from, unsigned int cnt) {
+		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_CYCCNT, 
+								cyccnt, ((from << 16) + cnt));
 	}
 
 static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {

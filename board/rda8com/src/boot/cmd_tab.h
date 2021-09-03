@@ -25,7 +25,7 @@ extern const char * const boot_cmd_brief_tab[];
 extern const char * const boot_cmd_desc_tab[];
 extern const char boot_cmd_alias_tab[][4];
 
-extern boot_cmd_callback_t const boot_cmd_call_tab[];
+extern const boot_cmd_callback_t boot_cmd_call_tab[];
 
 #ifdef __cplusplus
 extern "C" {

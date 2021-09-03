@@ -130,7 +130,7 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
 				if (thinkos_rt.wq_ready != 0) {
-					__krn_defer_sched(krn);
+					__krn_sched_defer(krn);
 				}
 #endif
 

@@ -111,8 +111,6 @@ uint32_t thinkos_dbg_thread_sp_get(unsigned int id);
 
 bool thinkos_dbg_thread_ctx_is_valid(unsigned int id);
 
-int thinkos_dbg_thread_brk_get(unsigned int id);
-
 uint32_t thinkos_dbg_thread_sl_get(unsigned int id);
 
 const char * thinkos_dbg_thread_tag_get(unsigned int id);
@@ -132,6 +130,7 @@ bool thinkos_dbg_thread_rec_get(unsigned int thread,
                            struct thread_reg_core * core,
                            struct thread_reg_fp * fp);
 
+int thinkos_dbg_thread_brk_get(unsigned int id);
 
 int thinkos_dbg_thread_break_get(int32_t * pcode);
 

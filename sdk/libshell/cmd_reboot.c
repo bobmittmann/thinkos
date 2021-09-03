@@ -44,7 +44,7 @@ int cmd_reboot(FILE * f, int argc, char ** argv)
 
 	thinkos_sleep(2000);
 
-	thinkos_reboot(0);
+	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
 
 	return 0;
 }

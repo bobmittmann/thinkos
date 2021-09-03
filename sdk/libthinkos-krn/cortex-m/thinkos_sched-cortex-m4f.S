@@ -53,7 +53,8 @@ cm3_pendsv_isr:
 	/* r0: thinkos_rt */
 	ldr.n    r0, .L_thinkos_rt
 	ldrd     r1, r2, [r0, #OFFSETOF_KRN_SCHED]
-	/* r3: sched.ctrl: [ xcpt | err | svc | thd ] */
+	/* r1: sched.ctrl: [ xcpt | err | svc | thd ] */
+	/* r2: sched.ready: [bitmap]  */
 
 	.size   cm3_pendsv_isr, . - cm3_pendsv_isr
 
@@ -69,7 +70,7 @@ thinkos_krn_sched_core:
 #endif
 
 	/* r2: ready bmp */
-	/* r1: context thread [ xcpt | err | svc | thd ] */
+	/* r1: sched ctrl [ xcpt | err | svc | thd ] */
 	/* r0: krn */
 	tst      lr, #EXC_RET_SPSEL
 	beq      .L_entry_idle
@@ -80,8 +81,9 @@ thinkos_krn_sched_core:
 	stmdb    r3!, {r4-r11}
 
 	/* extract the context thread byte (6bits) form control word */
-    uxtb.n   r7, r1
-    lsls.n   r7, r7, #2
+    uxtb.n   r4, r1
+	/* get a pointer to the thread context vector */
+    lsls.n   r7, r4, #2
 	add.n    r7, r0
 
 #if (THINKOS_ENABLE_STACK_LIMIT) || (THINKOS_ENABLE_FPU)
@@ -105,11 +107,22 @@ thinkos_krn_sched_core:
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* check the stack limit */
-	ldr      r6, [r7, #OFFSETOF_KRN_TH_SL]
-	cmp.n    r8, r6
+	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
+	cmp.n    r8, r5
 	ble      .L_stack_err
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP)
+	/* check the kernel scheduler control word */
+	lsrs.n   r6, r1, #8
+	/* r6: sched.ctrl >> 8 : [ 0x00 | xcp | err | svc ] 
+
+	   r3: active_sp_ctrl : [SP | CONTROL ] 
+	   r2: ready bmp 
+	   r1: sched.ctrl = [ xcpt | err | svc | act ]  
+	 */
+    bne.n    thinkos_krn_sched_except
+#endif
 
 .L_update_cyccnt:
 
@@ -128,32 +141,25 @@ thinkos_krn_sched_core:
 
 	/* update thread's cycle counter */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_CYC]
-	/* thinkos_rt.cyccnt[old_thread_id] += delta */
+	/* thinkos_rt.cyccnt[thread_id] += delta */
 	adds.n   r5, r6
 	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
 
-#if (THINKOS_ENABLE_ERROR_TRAP)
-	/*  | err | brk | svc | thd |  */
-	lsrs.n   r6, r1, #8
-	/* r3: ctrl: [ 0x00 | xcpt | err | svc ] */
-	/* r2: ready bmp */
-	/* r1: sched.thread */
-    bne.n    thinkos_krn_sched_except
-#endif
-
-	/* r1: thread stack + control
-	   r2: next active thread 
-	   r0: thinkos_rt */
+	/* r0: thinkos_rt 
+	   r1: sched.ctrl 
+	   r2: ready bmp 
+	   r3: active_sp_ctrl: [SP | CONTROL ] 
+	   r7: thread_ctx[thread_id] */
 	/* store the old context pointer into the context vector */
 	str.n    r3, [r7]
 
-	/* r2 - ready queue
-	   r1 - old thread id */
+	/* load the kernel ready mask */
+	/* r2: ready bmp */
 thinkos_sched_select_ready:
 #if (THINKOS_ENABLE_READY_MASK)
-	ldr      r7, [r0, #OFFSETOF_KRN_RDY_MSK]
-	ands.n   r2, r7
+	ldr      r5, [r0, #OFFSETOF_KRN_RDY_MSK]
+	ands.n   r2, r5
 #endif
 	/* get a thread from the ready bitmap by counting the
 	leading zeros on the bitmap */
@@ -163,7 +169,7 @@ thinkos_sched_select_ready:
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 thinkos_sched_step_req_check:
-	/* r4: step_req */
+	/* r6: step_req */
 	ldr      r6, [r0, #OFFSETOF_KRN_STEP_REQ]
 	/* check if the step request bit is set for this thread */
 	movs.n	 r5, #1
@@ -180,9 +186,9 @@ thinkos_krn_sched_ctx_get:
 	ldr.n	 r3, [r0, r7]
 
 .L_save_active_and_restore:
-	/* r3: new thread stack
+	/* r4: old active thread id 
+	   r3: new thread stack
 	   r2: new active thread id 
-	   r1: old active thread id 
 	   r0: thinkos_rt */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 
@@ -212,7 +218,7 @@ thinkos_krn_sched_ctx_get:
 	mov      lr, #CM3_EXC_RET_THREAD_PSP
 #endif
 
-	/* r3: new thread stack
+	/* r3: new thread stack [ SP | CONTROL]
 	   r2: new active thread id 
 	   r1: old active thread id 
 	   r0: new thread ctrl */
@@ -226,12 +232,18 @@ thinkos_krn_sched_ctx_get:
   #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
 	orrs     r3, r0
   #endif
+
 	b        thinkos_sched_dbg
 #else
 	bx       lr
 #endif
 
 .L_exit_idle:
+	/* Adjust the thread ID */
+	movs.n   r2, #THINKOS_THREAD_IDLE
+	/* set the active to IDLE */
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
+
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the new context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
@@ -243,13 +255,8 @@ thinkos_krn_sched_ctx_get:
     /* set the control register */
     movs.n   r2, #0
     msr      CONTROL, r2
-    isb
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
-	/* Adjust the thread ID */
-	movs.n   r2, #THINKOS_THREAD_IDLE
-	/* set the active to IDLE */
-	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 	/* restore core context */
 	pop      {r4-r11}
 	/* return */
@@ -272,7 +279,9 @@ thinkos_krn_sched_ctx_get:
 	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
 	b.n      thinkos_krn_sched_trap
 
+
 .L_idle_stack_err: 
+/* FIXME: this is causing the system to block ... */
 	movs.n   r3, #THINKOS_ERR_IDLE_STACK
 	b.n      thinkos_krn_sched_trap
 
@@ -294,15 +303,31 @@ thinkos_krn_sched_ctx_get:
  * -------------------------------------------------------------------------- */
 
 .L_entry_idle:
+#if (THINKOS_ENABLE_ERROR_TRAP)
+	/* check the kernel scheduler control word */
+	lsrs.n   r3, r1, #8
+	/* r6: sched.ctrl >> 8 : [ 0x00 | xcp | err | svc ] 
+
+	   r3: active_sp_ctrl : [SP | CONTROL ] 
+	   r2: ready bmp 
+	   r1: sched.ctrl = [ xcpt | err | svc | act ]  */
+	/* kernel is blocked, just return */
+	it      ne
+	bxne    lr
+#endif
+
 	/* Save system context (IDLE) on MSP */
 	push     {r4-r11}
     mov      r3, sp
-    uxtb.n   r4, r1
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+	/* extract the current thread id */
+    uxtb.n   r4, r1
 	cbz.n    r4, 1f
 	cmp.n    r4, #THINKOS_THREAD_IDLE
 	bne      .L_idle_entry_err    
 1:
+#else
+	movs.n   r4, #THINKOS_THREAD_IDLE
 #endif
     lsls.n   r7, r4, #2
 	add.n    r7, r0
@@ -340,9 +365,9 @@ thinkos_krn_sched_trap:
 #if (THINKOS_ENABLE_SCHED_ERROR)
 	/*  r1: | err | brk | svc | act |  */
 	/* Insert the error code (R3) on R1 */
+	lsls.n  r3, r3, #24
 	lsls.n  r1, r1, #8
 	lsrs.n  r1, r1, #8
-	lsls.n  r3, r3, #24
 	adds.n  r1, r3
 #endif
 
@@ -354,24 +379,26 @@ thinkos_krn_sched_trap:
 	/*  r0: krn */
 	/*  r1: | err | brk | svc | act |  */
 thinkos_krn_sched_except:
+
+	/* store the old context pointer into the context vector */
+	str.n    r3, [r7]
 #if (THINKOS_ENABLE_SCHED_ERROR)
-    /* load the new context pointer from the context vector */
+    /* load the IDLE context pointer from the context vector */
     ldr      r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
-    cmp      sp, r3
-    bne      .L_idle_stack_xcpt_err
+    cmp.n    sp, r3
+    bne.n    .L_idle_stack_xcpt_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
     mov.n     r3, sp
 #endif
     /* set the control register */
     movs.n   r2, #0
     msr      CONTROL, r2
-    isb
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* Adjust the thread ID to the system thread (0) */
-	movs.n   r2, #THINKOS_THREAD_VOID
-	/* Set the active to IDLE */
-	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
+//	movs.n   r2, #THINKOS_THREAD_VOID
+	/* Set the active thread */
+//	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 	/* Restore core context */
 	pop      {r4-r11}
 
@@ -381,16 +408,6 @@ thinkos_krn_sched_except:
 	pop      {r1, lr}
 #endif
 
-	/*  r1: | err | svc | brk | act |  */
-
-	lsrs.n   r2, r1, #16
-    bne.n    1f
-	b        thinkos_krn_sched_brk_handler
-1:
-	lsrs.n   r2, r1, #24
-    bne.n    2f
-	b        thinkos_krn_sched_svc_handler
-2:
 	b        thinkos_krn_sched_err_handler
 
 	.size   thinkos_krn_sched_trap, . - thinkos_krn_sched_trap

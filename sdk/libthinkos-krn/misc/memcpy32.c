@@ -21,7 +21,8 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
+
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 

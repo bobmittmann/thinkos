@@ -209,7 +209,7 @@ int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 			case 'f': {
 				val = __double2u32(va_arg(ap, double));
 				if (cnt >= TRACE_ARG_MAX)
-					return -1;
+					return -2;
 				buf[cnt++] = val;
 				flags = 0;
 			}
@@ -217,6 +217,8 @@ int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 #endif
 			case 's':
 				cp = va_arg(ap, char *);
+				if (cp == NULL)
+					return -3;
 				i = 0;
 				do {
 					val = 0;
@@ -239,7 +241,7 @@ int vtracef(uint32_t buf[], const struct trace_ref * ref, va_list ap)
 						c = '\0';
 					}
 					if (cnt >= TRACE_ARG_MAX)
-						return -1;
+						return -4;
 					buf[cnt++] = val;
 				} while (c != '\0');
 				flags = 0;

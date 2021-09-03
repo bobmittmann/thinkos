@@ -187,6 +187,16 @@
   #define SIZEOF_KRN_BREAK_ID  0
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP)
+#define SIZEOF_KRN_DBG_STATUS  4
+#else
+#define SIZEOF_KRN_DBG_STATUS  0
+#endif
+
+#define SIZEOF_KRN_DEBUG (SIZEOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_SVC +\
+						  SIZEOF_KRN_XCPT_IPSR + SIZEOF_KRN_STEP_ID +\
+						  SIZEOF_KRN_BREAK_ID + SIZEOF_KRN_DBG_STATUS)
+
 #if (THINKOS_ENABLE_READY_MASK)
   #define SIZEOF_KRN_RDY_MSK 4
 #else
@@ -236,7 +246,7 @@
 #define OFFSETOF_KRN_TH_CTX     (OFFSETOF_KRN_VOID_CTX + SIZEOF_KRN_VOID_CTX)
 #define OFFSETOF_KRN_NRT_CTX    (OFFSETOF_KRN_TH_CTX + SIZEOF_KRN_TH_CTX)
 #define OFFSETOF_KRN_IDLE_CTX   (OFFSETOF_KRN_NRT_CTX + SIZEOF_KRN_NRT_CTX)
-#define OFFSETOF_KRN_SCHED     (OFFSETOF_KRN_IDLE_CTX + SIZEOF_KRN_IDLE_CTX) 
+#define OFFSETOF_KRN_SCHED      (OFFSETOF_KRN_IDLE_CTX + SIZEOF_KRN_IDLE_CTX) 
 #define OFFSETOF_KRN_WQ_LST     (OFFSETOF_KRN_SCHED + SIZEOF_KRN_SCHED)
 #define OFFSETOF_KRN_CYCREF     (OFFSETOF_KRN_WQ_LST + SIZEOF_KRN_WQ_LST)
 #define OFFSETOF_KRN_TICKS      (OFFSETOF_KRN_CYCREF + SIZEOF_KRN_CYCREF)
@@ -248,13 +258,17 @@
 #define OFFSETOF_KRN_TH_ERRNO   (OFFSETOF_KRN_TH_STAT + SIZEOF_KRN_TH_STAT)
 
 #define A4(__X) ((__X + 3) & ~3)
+#define OFFSETOF_KRN_DEBUG      A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
 
-#define OFFSETOF_KRN_STEP_REQ   A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
+#define OFFSETOF_KRN_STEP_REQ   (OFFSETOF_KRN_DEBUG)
 #define OFFSETOF_KRN_STEP_SVC   (OFFSETOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_REQ)
 #define OFFSETOF_KRN_XCPT_IPSR  (OFFSETOF_KRN_STEP_SVC + SIZEOF_KRN_STEP_SVC)
 #define OFFSETOF_KRN_STEP_ID    (OFFSETOF_KRN_XCPT_IPSR + SIZEOF_KRN_XCPT_IPSR)
 #define OFFSETOF_KRN_BREAK_ID   (OFFSETOF_KRN_STEP_ID + SIZEOF_KRN_STEP_ID)
-#define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+#define OFFSETOF_KRN_DBG_STATUS (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+
+#define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_DEBUG + SIZEOF_KRN_DEBUG)
+
 #define OFFSETOF_KRN_RDY_MSK    (OFFSETOF_KRN_CRITCNT + SIZEOF_KRN_CRITCNT)
 
 #define OFFSETOF_KRN_SCHED_THREAD   (OFFSETOF_KRN_SCHED)
@@ -270,9 +284,9 @@
 //#define OFFSETOF_KRN_MON_CLK    
 //(OFFSETOF_KRN_MON_CLK + SIZEOF_KRN_MON_CLK)
 
-#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 24) & 0xff)
-#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 16) & 0xff)
-#define SCHED_STAT_BRK(__STAT__) (((__STAT__) >> 8) & 0xff)
+#define SCHED_STAT_XCP(__STAT__) (((__STAT__) >> 24) & 0xff)
+#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 16) & 0xff)
+#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 8) & 0xff)
 #define SCHED_STAT_ACT(__STAT__) ((__STAT__) & 0xff)
 
 #ifndef __ASSEMBLER__
@@ -300,6 +314,13 @@ struct thinkos_monitor {
 	volatile uint32_t events;  /* event set bitmap */
 	volatile uint32_t mask;  /* events mask */
 };
+
+/* -------------------------------------------------------------------------- 
+ * Debug status structure
+ * --------------------------------------------------------------------------*/
+
+#if (THINKOS_ENABLE_DEBUG)
+#endif /* THINKOS_ENABLE_DEBUG */
 
 /* -------------------------------------------------------------------------- 
  * Thread context layout
@@ -348,6 +369,7 @@ struct thinkos_fp_context {
 
 #endif
 
+
 /* -------------------------------------------------------------------------- 
  * ThinkOS kernel data block
  * --------------------------------------------------------------------------*/
@@ -370,12 +392,13 @@ struct thinkos_rt {
 	};
 
 	union {
-		volatile uint32_t state; /* kernel state */
+		volatile uint32_t state; /* scheduler state */
 		struct {
 			volatile uint8_t act;    /* current active thread */
-			volatile uint8_t brk;    /* break thread (active at break point) */
-			volatile uint8_t svc;    /* pending service */
-			volatile uint8_t err;    /* error number */
+			volatile uint8_t svc;    /* deferred service request */
+			volatile uint8_t err;    /* thread error number - 
+										errors from syscalls */
+			volatile uint8_t kse;    /* kernel soft error number */
 		};
 	} sched;
 
@@ -488,17 +511,30 @@ struct thinkos_rt {
 	int8_t th_errno[__KRN_THREAD_LST_SIZ]; 
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_BASE)
 	struct {
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	uint32_t step_req;  /* step request bitmap */
-	uint32_t step_svc;  /* step at service call bitmap */
-  #endif /* THINKOS_ENABLE_DEBUG_STEP */
-	uint16_t xcpt_ipsr; /* Exception IPSR */
-	int8_t   step_id;   /* current stepping thread id */
-	int8_t   brk_idx;   /* break thread index */
-	};
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_STEP)
+		uint32_t step_req;  /* step request bitmap */
+		uint32_t step_svc;  /* step at service call bitmap */
+#endif /* THINKOS_ENABLE_DEBUG_STEP */
+		uint16_t xcpt_ipsr; /* Exception IPSR */
+		int8_t   step_id;   /* current stepping thread id */
+		int8_t   brk_idx;   /* break thread index */
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
+#if (THINKOS_ENABLE_ERROR_TRAP)
+		union {
+			uint32_t status;
+			struct {
+				uint8_t thread;   /* active thread */
+				uint8_t errno;    /* error number */
+				uint8_t xcptno;   /* exception number */
+				uint8_t kfault;   /* kernel fault ??  */
+			};
+		};
+#endif
+	} debug;
+#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
@@ -521,6 +557,7 @@ struct thinkos_rt {
 	uint32_t monitor_clock;
   #endif
 #endif
+
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	struct thinkos_idle_rt idle_hooks;
@@ -601,6 +638,7 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	const struct thinkos_mem_map * mem_map;
 #endif
+
 };
 
 /* -------------------------------------------------------------------------- 

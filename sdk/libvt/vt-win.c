@@ -1,462 +1,259 @@
+/* parse-markup: reST */
+  
+/* 
+ * vt-win.c
+ *
+ * Copyright(C) 2021 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the Vt library.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You can receive a copy of the GNU Lesser General Public License from 
+ * http://www.gnu.org/
+ */
+
+/* 
+ * @file vt-win.c
+ * @brief VT API
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */ 
+
 #include "vt-i.h"
 #include <sys/null.h>
 
+#define TRACE_LEVEL TRACE_LVL_DBG
+#include <trace.h>
+
 /* -------------------------------------------------------------------------
- * */
+ * Local functions
+ */
 
-void __vt_win_open(struct vt_win * win)
+void __vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t arg) 
 {
-	char s[128];
-	uint8_t lst[8];
-	char * cp;
-	int n;
+	uint32_t head;
+	int slot;
 
-	win->open = 1;
-	cp = s;
-	cp += __vt_save(cp);
-	cp += __vt_insert_off(cp);
-	if (win->font_g1)
-		cp += __vt_font_g1(cp);
-	else
-		cp += __vt_font_g0(cp);
+	/* FIXME: check boundaries */
+	head = __sys_vt.queue.head;
+	slot = head % VT_MSG_QUEUE_SIZE;
+	__sys_vt.queue.msg[slot] = msg;
+	__sys_vt.queue.idx[slot] = __vt_idx_by_win(win);
+	__sys_vt.queue.arg[slot] = arg;
+	__sys_vt.queue.head = head + 1;
 
-	lst[0] = VT_ATTR_NORMAL; /* Clear all attribute */
-	n = 1;
-
-	if (win->attr.bright) 
-		lst[n++] = VT_ATTR_BRIGHT;
-	else if (win->attr.dim) 
-		lst[n++] = VT_ATTR_DIM;
-	else if (win->attr.hidden) 
-		lst[n++] = VT_ATTR_HIDDEN;
-	if (win->attr.hidden) 
-		lst[n++] = VT_ATTR_HIDDEN;
-	if (win->attr.underline) 
-		lst[n++] = VT_ATTR_UNDERLINE;
-	if (win->attr.reverse) 
-		lst[n++] = VT_ATTR_REVERSE;
-	lst[n++] = VT_ATTR_BG_COLOR(win->attr.bg_color);
-	lst[n++] = VT_ATTR_FG_COLOR(win->attr.fg_color);
-
-	cp += __vt_set_attr_lst(cp, lst, n);
-
-	if (win->cursor_hide)
-		cp += __vt_cursor_hide(cp);
-	else
-		cp += __vt_cursor_show(cp);
-	cp += __vt_set_scroll(cp, win->pos.y, win->pos.y + win->size.h);
-	cp += __vt_move_to(cp, win->pos.x + win->cursor.x, 
-					   win->pos.y + win->cursor.y);
-	n = cp - s;
-	__vt_console_write(s, n);
+	if (head == __sys_vt.queue.tail)
+		thinkos_console_io_break(CONSOLE_IO_RD);
 }
 
-void __vt_win_close(struct vt_win * win)
+static int __vt_msg_dispatch(struct vt_win * win, 
+							 enum vt_msg msg, uintptr_t arg)
 {
-	char s[64];
-	char * cp;
-	int n;
+	switch (msg) {
+	case VT_WIN_REFRESH:
+	case VT_WIN_DRAW:
+		if (!win->visible)
+			return 0;
+		if (win->child != 0) {
+			struct vt_win * child;
 
-	cp = s;
-	cp += __vt_restore(cp);
-	n = cp - s;
-	__vt_console_write(s, n);
-
-	win->open = 0;
-}
-
-int __vt_win_write(struct vt_win * win, 
-				   const void * buf, unsigned int len) 
-{
-	const char scroll[] = "\n";
-	char s[12];
-	char * cp;
-	int rem;
-	int cnt;
-	int x;
-	int y;
-
-	if (!win->visible)
-		return 0;
-
-	x = win->cursor.x;
-	y = win->cursor.y;
-	cp = (char *)buf;
-	rem = len;
-	cnt = 0;
-
-	if (win->size.w == 0 || win->size.h == 0) {
-		/* window is closed (0) in at least one dimension */
-		return cnt;
+			child = __vt_win_by_idx(win->child);
+			__vt_msg_post(child, msg, arg);
+			while (child->sibiling != 0) {
+				child = __vt_win_by_idx(child->sibiling);
+				__vt_msg_post(child, msg, arg);
+			}
+		}
+		break;
+	default:
+		break;
 	}
 
-	while (rem > 0) {
-		int k;
-		int w;
-		int n;
-		int i;
+	thinkos_mutex_unlock(__sys_vt.mutex);
+	win->msg_handler(win, msg, arg, win->data);
+	thinkos_mutex_lock(__sys_vt.mutex);
 
-		w = win->size.w - x;
-		if (w == 0) {
-			if (y < win->size.h) {
-				y++;
-			} else {
-				__vt_console_write(scroll, sizeof(scroll) - 1);
+	return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Message loop 
+ */
+
+int vt_default_msg_loop(unsigned int itv_ms)
+{
+	struct vt_console * con = &__sys_vt.con;
+	uint32_t tmo_clk;
+	uint32_t tail;
+	enum vt_msg msg;
+	uintptr_t arg;
+	int connected;
+	int ret;
+
+	if ((ret = thinkos_mutex_lock(__sys_vt.mutex)) < 0)
+		return ret;
+
+	tail = __sys_vt.queue.tail;
+	tmo_clk = thinkos_clock() + itv_ms;
+	connected = console_is_connected();
+	for(;;) {
+		char buf[8];
+		struct vt_win * win;
+		int32_t tmo_ms;
+		uint32_t clk ;
+
+		if (tail != __sys_vt.queue.head) {
+			int slot;
+			int idx;
+
+			/* process queued messages */
+			slot = tail % VT_MSG_QUEUE_SIZE;
+			msg = __sys_vt.queue.msg[slot];
+			idx = __sys_vt.queue.idx[slot];
+			arg = __sys_vt.queue.arg[slot];
+			win = __vt_win_by_idx(idx);
+			tail++;
+			__sys_vt.queue.tail = tail;
+			__vt_msg_dispatch(win, msg, arg);
+			if  (msg == VT_QUIT) {
+				ret = (int)arg;
+				break;
 			}
-			x = 0;
-			w = win->size.w;
-			k = __vt_move_to(s, win->pos.x, win->pos.y + y);
-			__vt_console_write(s, k);
+			continue;
 		}
 
-		/* search for next '\n' or '\r' */
-		n = MIN(rem, w);
-		for (i = 0; (i < n) && (cp[i] != '\n') && 
-			 (cp[i] != '\r'); ++i);
+		clk = thinkos_clock();
+		if ((tmo_ms = (int32_t)(tmo_clk - clk)) <= 0) {
+			/* if the system was blocked, it will post 
+			   as many messages as needed to catch up, 
+			   honouring the clock rate */
+			arg = tmo_clk;
+			win = __vt_win_root();
+			msg = VT_TIMEOUT;
+			tmo_clk += itv_ms;
+			__vt_msg_post(win, msg, arg);
+			continue;
+		} 
+	
+		thinkos_mutex_unlock(__sys_vt.mutex);
+		ret = thinkos_console_timedread(buf, sizeof(buf), tmo_ms);
+		thinkos_mutex_lock(__sys_vt.mutex);
 
-		__vt_console_write(cp, i);
+		if (ret > 0) {
+			int i;
+			for (i = 0; i < ret; ++i) {
+				int c = buf[i];
+				if ((c = __vt_console_decode(con, c)) > 0) {
+					switch (c) {
 
-		if (cp[i] == '\n') {
-			if (y < win->size.h) {
-				y++;
-			} else {
-				__vt_console_write(scroll, sizeof(scroll) - 1);
+					case VT_CURSOR_POS: {
+						struct vt_pos pos;
+
+						pos.x = con->val[1];
+						pos.y = con->val[0];
+						YAP("VtLoop: pos = (%d, %d)", pos.x, pos.y);
+						__sys_vt.cursor = pos;
+					}
+						break;
+
+					case VT_TERM_TYPE: {
+						int type = con->val[0];
+						YAP("VtLoop: term = %d", type);
+						__sys_vt.term_type = type;
+					}
+						break;
+
+					default:
+						arg = c;
+						win = __vt_sys_win_focused();
+						msg = VT_CHAR_RECV;
+						__vt_msg_post(win, msg, arg);
+					}
+				}
 			}
-
-			x = 0;
-			k = __vt_move_to(s, win->pos.x, win->pos.y + y);
-			__vt_console_write(s, k);
-			/* skip '\n' */
-			i++;
-		} else if (cp[i] == '\r') {
-			x = 0;
-			k = __vt_move_to(s, win->pos.x, win->pos.y + y);
-			__vt_console_write(s, k);
-			/* skip '\r' */
-			i++;
+		} else if (ret == THINKOS_ETIMEDOUT){
+			int flag;
+			flag = console_is_connected();
+			if (flag != connected) {
+				connected = flag;
+				DBGS("VtLoop: VT_TERM_STATUS");
+				arg = flag;
+				win = __vt_win_root();
+				msg = VT_TERM_STATUS;
+				__vt_msg_post(win, msg, arg);
+			}
+		} else if (ret == THINKOS_EAGAIN){
+			YAPS("VtLoop: again");
+		} else if (ret == THINKOS_EINTR) {
+			YAPS("VtLoop: intr");
 		} else {
-			x += i;
+			YAP("VtLoop: read: %d", ret);
 		}
-		rem -= i;
-		cnt += i;
-		cp += i;
-	};
 
-	win->cursor.x = x;
-	win->cursor.y = y;
+	} 
 
-	return cnt;
+	thinkos_mutex_unlock(__sys_vt.mutex);
+
+	return ret;
 }
+
 
 /* -------------------------------------------------------------------------
- * */
-
-int vt_win_open(struct vt_win * win)
-{
-	__vt_lock();
-
-	if (win->visible)
-		__vt_win_open(win);
-
-	return 0;
-}
-
-int vt_win_close(struct vt_win * win)
-{
-	if (win->visible)
-		__vt_win_close(win);
-
-	__vt_unlock();
-	return 0;
-}
-
-int __vt_win_drain(void * dev)
-{
-	while (thinkos_console_drain() != 0);
-	return 0;
-}
-
-static const struct fileop __win_fops = {
-	.write = (int (*)(void *, const void *, size_t))__vt_win_write,
-	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
-	.flush = (int (*)(void *))__vt_win_drain,
-	.close = (int (*)(void *))null_close
-};
-
-int vt_printf(struct vt_win * win, const char * fmt, ...)
-{
-	struct file f = {
-		.data = (void *)win,
-		.op = &__win_fops 
-	};
-	va_list ap;
-	int cnt;
-
-	assert(win != NULL);
-	assert(fmt != NULL);
-
-	va_start(ap, fmt);
-	cnt = vfprintf(&f, fmt, ap);
-	va_end(ap);
-
-	return cnt;
-}
-
-int vt_write(struct vt_win * win, const void * buf, unsigned int len) 
-{
-	int cnt;
-
-	assert(win != NULL);
-	assert(buf != NULL);
-
-	cnt = __vt_win_write(win, buf, len); 
-
-	return cnt;
-}
-
-int vt_win_puts(struct vt_win * win, const char * buf) 
-{
-	unsigned int len;
-	int cnt;
-
-	assert(win != NULL);
-	assert(buf != NULL);
-
-	len = strlen(buf);
-
-	cnt = __vt_win_write(win, buf, len); 
-
-	return cnt;
-}
-
-const char __hbar[] = "----------------------------------------"; 
-
-int vt_hbar(struct vt_win * win, unsigned int y) 
-{
-	char s[16];
-	char * cp;
-	unsigned int rem;
-
-	assert(win != NULL);
-
-	cp = s;
-	cp += __vt_move_to(cp, win->pos.x, win->pos.y + y);
-	__vt_console_write(s, cp - s);
-
-	rem = win->size.w;
-	while (rem) {
-		int n;
-		n = MIN(rem, sizeof(__hbar) - 1);
-		__vt_console_write(__hbar, n);
-		rem -= n;
-	}
-
-	return 0;
-}
-
-int vt_cursor_move(struct vt_win * win, int x, int y)
-{
-	assert(win != NULL);
-
-	if (x > win->size.w)
-		x = win->size.w;
-	if (y > win->size.h)
-		y = win->size.h;
-
-	win->cursor.x = x;
-	win->cursor.y = y;
-
-	if (win->open) {
-		char s[16];
-		int n = n = __vt_move_to(s, win->pos.x + x, win->pos.y + y);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-void vt_cursor_home(struct vt_win * win)
-{
-	assert(win != NULL);
-
-	win->cursor.x = 0;
-	win->cursor.y = 0;
-
-	if (win->open) {
-		char s[32];
-		int n = __vt_move_to(s, win->pos.x, win->pos.y);
-		__vt_console_write(s, n);
-	}
-}
-
-int vt_bg_color_set(struct vt_win * win, enum vt_color color)
-{
-	assert(win != NULL);
-
-	win->attr.bg_color = color;
-	if (win->open) {
-		char s[16];
-		int n = __vt_set_bg_color(s, win->attr.bg_color);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_fg_color_set(struct vt_win * win, enum vt_color color)
-{
-	assert(win != NULL);
-
-	win->attr.fg_color = color;
-	if (win->open) {
-		char s[8];
-		int n = __vt_set_bg_color(s, win->attr.fg_color);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_attr_clear(struct vt_win * win, enum vt_attr attr)
-{
-	assert(win != NULL);
-
-	win->attr.bright = 0;
-	win->attr.dim = 0;
-	win->attr.hidden = 0;
-	win->attr.underline = 0;
-	win->attr.blink = 0;
-	win->attr.reverse= 0;
-	if (win->open) {
-		char s[8];
-		int n = __vt_attr_clear(s);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_attr_bright_set(struct vt_win * win, enum vt_attr attr)
-{
-	assert(win != NULL);
-
-	win->attr.bright = 1;
-	win->attr.dim = 0;
-	win->attr.hidden = 0;
-	if (win->open) {
-		char s[8];
-		int n = __vt_set_attr(s, VT_ATTR_BRIGHT);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_attr_dim_set(struct vt_win * win, enum vt_attr attr)
-{
-	assert(win != NULL);
-
-	win->attr.bright = 0;
-	win->attr.dim = 1;
-	win->attr.hidden = 0;
-	if (win->open) {
-		char s[8];
-		int n = __vt_set_attr(s, VT_ATTR_DIM);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_font_g0(struct vt_win * win)
-{
-	assert(win != NULL);
-
-	win->font_g1 = false;
-	if (win->open) {
-		char s[8];
-		int n = __vt_font_g0(s);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_font_g1(struct vt_win * win)
-{
-	assert(win != NULL);
-
-	win->font_g1 = true;
-	if (win->open) {
-		char s[8];
-		int n = __vt_font_g1(s);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_cursor_hide(struct vt_win * win)
-{
-	assert(win != NULL);
-
-	win->cursor_hide = 1;
-	if (win->open) {
-		char s[8];
-		int n = __vt_cursor_hide(s);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-int vt_cursor_show(struct vt_win * win)
-{
-	assert(win != NULL);
-
-	win->cursor_hide = 0;
-	if (win->open) {
-		char s[8];
-		int n = __vt_cursor_show(s);
-		__vt_console_write(s, n);
-	}
-	return 0;
-}
-
-const char __vt_clrln[] = "                            "
-	"                                                  "
-	"                                                  "; 
-
-void vt_win_clear(struct vt_win * win)
-{
-	char s[32];
-	char * cp;
-	int n;
-	int i;
-
-	if (!win->visible)
-		return;
-
-	for (i = 0; i < win->size.h; ++i) {
-		n = __vt_move_to(s, win->pos.x, win->pos.y + i);
-		__vt_console_write(s, n);
-
-		n = win->size.w;
-		cp = (char *)__vt_clrln;
-		__vt_console_write(cp, n);
-	}
-}
+ * Windowing API functions
+ */
 
 struct vt_win * vt_win_alloc(void) 
 {
+	struct vt_win * win = NULL;
 	union vt_mem_blk * blk;
 	
-	if ((blk = __vt_alloc()) == NULL) {
+	if (__vt_lock() >= 0) {
+		if ((blk = __vt_alloc()) == NULL) {
+			win = &blk->win;
+		}
+		__vt_unlock();
 	}
 
-	return &blk->win;
+	return win;
 }
 
 int vt_win_free(struct vt_win * win) 
 {
-	return __vt_free(win);
+	int ret;
+
+	if ((ret = __vt_lock()) >= 0) {
+		if (win->data_alloc) {
+			__vt_free(win->data);
+		}
+		ret = __vt_free(win);
+		__vt_unlock();
+	}
+
+	return ret;
 }
 
-int vt_win_refresh(struct vt_win * win) 
+void vt_win_render(struct vt_win * win)
 {
-	return __vt_free(win);
+	if (__vt_lock() >= 0) {
+		__vt_msg_post(win, VT_WIN_DRAW, 0);
+		__vt_unlock();
+	}
+}
 
+void vt_win_refresh(struct vt_win * win) 
+{
+	if (__vt_lock() >= 0) {
+		__vt_msg_post(win, VT_WIN_REFRESH, 0);
+		__vt_unlock();
+	}
 }
 
 struct vt_pos vt_win_pos(struct vt_win * win)
@@ -470,52 +267,166 @@ struct vt_pos vt_win_pos(struct vt_win * win)
 	return pos;
 }
 
+struct vt_win * vt_win_parent(struct vt_win * win)
+{
+	struct vt_win * parent = __vt_win_by_idx(win->parent);
+
+	return parent;
+}
+
 struct vt_size vt_win_size(struct vt_win * win)
 {
 	return win->size;
 }
 
+#if 0
+void vt_win_set_data(struct vt_win * win, void * val)
+{
+	uint32_t * src = (uint32_t *)val;
+	uint32_t * dst = (uint32_t *)win->data;
+
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	dst[3] = src[3];
+}
+#endif
+
+ssize_t vt_win_store(struct vt_win * win, const void * dat, size_t len)
+{
+	int ret;
+
+	if ((ret = __vt_lock()) >= 0) {
+		if (win->data == NULL) {
+			if (win->data_alloc == 0) {
+				union vt_mem_blk * blk;
+
+				blk = __vt_alloc();
+				win->data = blk;
+				win->data_alloc = 1;
+			} 
+			len = (len > sizeof(union vt_mem_blk)) ? 
+				sizeof(union vt_mem_blk) : len;
+		} else { 
+			if (win->data_alloc) {
+				len = (len > sizeof(union vt_mem_blk)) ? 
+					sizeof(union vt_mem_blk) : len;
+			} 
+		}
+		memcpy(win->data, dat, len);
+		__vt_unlock();
+		ret = len;
+	}
+
+	return ret;
+}
+
+ssize_t vt_win_recall(struct vt_win * win, void * dat, size_t len)
+{
+	if (win->data == NULL)
+		return 0;
+
+	if (win->data_alloc) {
+		len = (len > sizeof(union vt_mem_blk)) ? 
+			sizeof(union vt_mem_blk) : len;
+	} 
+
+	memcpy(dat, win->data, len);
+
+	return len;
+}
+
+
 void vt_win_show(struct vt_win * win)
 {
-	if (!win->visible) {
-		win->visible = true;
+	if (__vt_lock() >= 0) {
+		if (!win->visible) {
+			win->visible = true;
+			__vt_msg_post(win, VT_WIN_DRAW, 0);
+		}
+		__vt_unlock();
+	}
+}
+
+void vt_win_focus(struct vt_win * win)
+{
+	struct vt_win * w;
+	struct vt_win * p;
+
+	if (__vt_lock() >= 0) {
+		if (!win->has_focus) {
+
+			w = __vt_win_root();
+			w->has_focus = false;
+		
+			p = w;
+			w = __vt_win_child(p);
+			while (w != NULL) {
+				w->has_focus = false;
+				w = __vt_win_sibiling(w);
+			}
+
+			win->has_focus = 1;
+/*			win->cursor_hide = 0; */
+			__vt_sys_cache_focused(win);
+			if (win->visible) {
+				__vt_msg_post(win, VT_WIN_DRAW, 0);
+			}
+		}	
+	
+		__vt_unlock();
 	}
 }
 
 void vt_win_hide(struct vt_win * win)
 {
-	if (win->visible) {
-		win->visible = false;
+	if (__vt_lock() >= 0) {
+			if (win->visible) {
+				struct vt_win *wroot = __vt_win_root();
+				win->visible = false;
+				__vt_msg_post(wroot, VT_WIN_DRAW, 0);
+			}
+		__vt_unlock();
 	}
 }
 
 void vt_default_msg_handler(struct vt_win * win, enum vt_msg msg, 
 						 uint32_t arg, void * data)
 {
-	switch (msg) {
-	case VT_WIN_CREATE:
-		vt_win_show(win);
-		vt_win_open(win);
-		vt_win_clear(win);
-		vt_win_close(win);
-		break;
-	case VT_TIMEOUT:
-		if (win->child != 0) {
-			struct vt_win * child;
+	struct vt_ctx * ctx;
 
-			child = __vt_win_by_idx(win->child);
-			vt_msg_post(child, msg, arg);
-			while (child->sibiling != 0) {
-				child = __vt_win_by_idx(child->sibiling);
-				vt_msg_post(child, msg, arg);
+	switch (msg) {
+
+	case VT_WIN_DRAW:
+		ctx = vt_win_ctx_open(win);
+		vt_clear(ctx);
+		vt_ctx_close(ctx);
+		break;
+
+	case VT_TIMEOUT:
+		if (__vt_lock() >= 0) {
+			if (win->child != 0) {
+				struct vt_win * child;
+
+				child = __vt_win_by_idx(win->child);
+				__vt_msg_post(child, msg, arg);
+				while (child->sibiling != 0) {
+					child = __vt_win_by_idx(child->sibiling);
+					__vt_msg_post(child, msg, arg);
+				}
+
 			}
+			__vt_unlock();
 		}
 	default:
 		break;
 	}
 }
 
-int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def)
+int __vt_win_init(struct vt_win * win, 
+				  const struct vt_win_def * def,
+				  vt_msg_handler_t msg_handler,
+				  void * data)
 {
 	struct vt_win * parent;
 	struct vt_win * child;
@@ -525,8 +436,10 @@ int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def)
 	int y1;
 
 	/* Update tree */
-	win->parent = __vt_idx_by_win(def->parent);
-	parent = __vt_win_by_idx(win->parent);
+	if ((parent = def->parent) == NULL)
+			parent = __vt_win_root();
+	win->parent = __vt_idx_by_win(parent);
+
 	if (parent->child == 0)
 		parent->child = __vt_idx_by_win(win);
 	else {
@@ -561,49 +474,165 @@ int vt_win_init_ext(struct vt_win * win, const struct vt_win_def * def)
 
 	win->cursor.x = 0;
 	win->cursor.y = 0;
-	win->cursor_hide = 0;
-	win->msg_handler = (def->msg_handler == NULL) ? vt_default_msg_handler :
-		def->msg_handler;
-	win->data = def->data;
+	win->cursor_hide = 1;
+	win->visible = 0;
+	win->has_focus = 0;
+	win->data_alloc = 0;
+
+	win->msg_handler = (msg_handler == NULL) ? vt_default_msg_handler :
+		msg_handler;
+	win->data = data;
 
 	return 0;
 }
 
-struct vt_win * vt_win_create(const struct vt_win_def * def)
+int vt_win_init(struct vt_win * win, 
+				const struct vt_win_def * def,
+				vt_msg_handler_t msg_handler,
+				void * data)
 {
-	union vt_mem_blk * blk;
-	struct vt_win * win;
-	
-	if ((blk = __vt_alloc()) == NULL)
-		return NULL;
+	int ret;
 
-	win = &blk->win;
-	memset(win, 0, sizeof(struct vt_win));
+	if ((ret = __vt_lock()) >= 0) {
+		__vt_win_init(win, def, msg_handler, data);
+		__vt_unlock();
+	}
 
-	vt_win_init_ext(win, def);
-	vt_msg_post(win, VT_WIN_CREATE, 0);
+	return ret;
+}
+
+struct vt_win * vt_win_create(const struct vt_win_def * def,
+				vt_msg_handler_t msg_handler,
+				void * data)
+{
+	struct vt_win * win = NULL;
+
+	if (__vt_lock() >= 0) {
+		union vt_mem_blk * blk;
+
+		if ((blk = __vt_alloc()) != NULL) {
+			win = &blk->win;
+			memset(win, 0, sizeof(struct vt_win));
+
+			__vt_win_init(win, def, msg_handler, data);
+			__vt_msg_post(win, VT_WIN_CREATE, 0);
+		}
+
+		__vt_unlock();
+	}
 
 	return win;
 }
 
-void vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t arg)
+
+int vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t arg) 
 {
-	uint32_t head;
-	int pos;
+	int ret;
 
-	__vt_lock();
+	if ((ret = __vt_lock()) >= 0) {
+		 __vt_msg_post(win, msg, arg); 
+		__vt_unlock();
+	}
 
-	head = __sys_vt.queue.head;
-	pos = head % VT_MSG_QUEUE_SIZE;
-	__sys_vt.msg[pos] = msg;
-	__sys_vt.idx[pos] = __vt_idx_by_win(win);
-	__sys_vt.arg[pos] = arg;
-	__sys_vt.queue.head = head + 1;
+	return ret;
+}
 
-	thinkos_console_io_break(CONSOLE_IO_RD);
+/* -------------------------------------------------------------------------
+ * Miscellaneous
+ */
+
+int vt_query_term(void)
+{
+	int ret;
+
+	if ((ret = __vt_lock()) >= 0) {
+		__vt_console_write(VT100_QUERY_DEVICE_CODE, 
+						   sizeof(VT100_QUERY_DEVICE_CODE));
+		__vt_unlock();
+	}
+
+	return ret;
+}
+
+
+
+/* -------------------------------------------------------------------------
+ * VT console stream (file)
+ */
+
+static int __vt_win_fwrite(struct vt_win * win, 
+						   const void * buf, unsigned int len) 
+{
+	struct vt_ctx * ctx = __vt_ctx();
+	int cnt;
+	int ret;
+
+	if ((ret = __vt_lock()) < 0) {
+		WARNS("__vt_lock failed!" );
+		return ret;
+	}
+
+	if (win->visible) {
+		__vt_ctx_prepare(ctx, win);
+
+		cnt = __vt_ctx_write(ctx, buf, len); 
+
+		__vt_ctx_save(ctx, win);
+	} else {
+		cnt = len;
+	}
 
 	__vt_unlock();
+
+	return cnt;
 }
+
+static int __vt_win_drain(struct vt_win * win)
+{
+	struct vt_ctx * ctx = __vt_ctx();
+	int ret;
+
+	if ((ret = __vt_lock()) < 0) {
+		WARNS("__vt_lock failed!" );
+		return ret;
+	}
+
+	__vt_ctx_prepare(ctx, win);
+
+	while (thinkos_console_drain() != 0);
+
+	__vt_ctx_close(ctx);
+
+	__vt_unlock();
+
+	return 0;
+}
+
+const struct fileop vt_win_fops = {
+	.write = (int (*)(void *, const void *, size_t))__vt_win_fwrite,
+	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
+	.flush = (int (*)(void *))__vt_win_drain,
+	.close = (int (*)(void *))null_close
+};
+
+struct file vt_console_file;
+
+FILE * vt_console_fopen(struct vt_win * win)
+{
+	struct file * f = &vt_console_file;
+
+	f->data = (void *)win;
+	f->op = &vt_win_fops;
+
+	return f;
+}
+
+#if 0
+
+/* -------------------------------------------------------------------------
+ * Obsolete / deprecated
+ */
+
 
 enum vt_msg vt_msg_wait(struct vt_win ** win, uintptr_t * arg)
 {
@@ -612,7 +641,7 @@ enum vt_msg vt_msg_wait(struct vt_win ** win, uintptr_t * arg)
 	char buf[1];
 	int tmo = 100;
 	int ret = 0;
-	int pos;
+	int slot;
 
 	tail = __sys_vt.queue.tail;
 	while (tail == __sys_vt.queue.head) {
@@ -630,10 +659,10 @@ enum vt_msg vt_msg_wait(struct vt_win ** win, uintptr_t * arg)
 		}
 	}
 
-	pos = tail % VT_MSG_QUEUE_SIZE;
-	msg = __sys_vt.msg[pos];
-	*win  = __vt_win_by_idx(__sys_vt.idx[pos]);
-	*arg = __sys_vt.arg[pos];
+	slot = tail % VT_MSG_QUEUE_SIZE;
+	msg = __sys_vt.queue.msg[slot];
+	*win  = __vt_win_by_idx(__sys_vt.queue.idx[slot]);
+	*arg = __sys_vt.queue.arg[slot];
 	__sys_vt.queue.tail = tail + 1;
 
 	return msg;
@@ -646,7 +675,7 @@ enum vt_msg vt_msg_timedwait(struct vt_win ** win, uintptr_t * arg,
 	uint32_t tail;
 	char buf[1];
 	int ret = 0;
-	int pos;
+	int slot;
 
 	tail = __sys_vt.queue.tail;
 	while (tail == __sys_vt.queue.head) {
@@ -665,92 +694,57 @@ enum vt_msg vt_msg_timedwait(struct vt_win ** win, uintptr_t * arg,
 		}
 	}
 
-	pos = tail % VT_MSG_QUEUE_SIZE;
-	msg = __sys_vt.msg[pos];
-	*win  = __vt_win_by_idx(__sys_vt.idx[pos]);
-	*arg = __sys_vt.arg[pos];
+	slot = tail % VT_MSG_QUEUE_SIZE;
+	msg = __sys_vt.queue.msg[slot];
+	*win  = __vt_win_by_idx(__sys_vt.queue.idx[slot]);
+	*arg = __sys_vt.queue.arg[slot];
 	__sys_vt.queue.tail = tail + 1;
 
 	return msg;
 }
 
-
-int vt_msg_dispatch(struct vt_win * win, enum vt_msg msg, uintptr_t arg)
+int vt_win_open(struct vt_win * win)
 {
-	switch (msg) {
-	case VT_WIN_REFRESH:
-		if (win->child != 0) {
-			struct vt_win * child;
+	int ret;
 
-			child = __vt_win_by_idx(win->child);
-			vt_msg_post(child, msg, arg);
-			while (child->sibiling != 0) {
-				child = __vt_win_by_idx(child->sibiling);
-				vt_msg_post(child, msg, arg);
-			}
-		}
-		break;
-	default:
-		break;
+	if ((ret = __vt_lock()) >= 0) {
+
+		if (win->visible)
+			__vt_win_open(win);
 	}
 
-	win->msg_handler(win, msg, arg, win->data);
-
-	return 0;
+	return ret;
 }
 
-
-int vt_default_msg_loop(unsigned int itv_ms)
+int vt_win_close(struct vt_win * win)
 {
-	uint32_t tmo_clk;
-	uint32_t tail;
-	enum vt_msg msg;
+	if (win->open)
+		__vt_win_close(win);
 
-	tail = __sys_vt.queue.tail;
-	tmo_clk = thinkos_clock() + itv_ms;
-
-	do {
-		char buf[1];
-		struct vt_win * win;
-		uintptr_t arg = 0;
-		int ret = 0;
-		int pos;
-
-		while (tail == __sys_vt.queue.head) {
-			uint32_t clk = thinkos_clock();
-			int32_t tmo_ms;
-			if ((tmo_ms = (int32_t)(tmo_clk - clk)) < 0) {
-				/* if the system was blocked, it will dispatch 
-				   as many messages as needed to catch up, 
-				   honouring the clock rate */
-				arg = tmo_clk;
-				win = __vt_win_root();
-				msg = VT_TIMEOUT;
-				vt_msg_dispatch(win, msg, arg);
-				tmo_clk += itv_ms;
-			} else if ((ret = thinkos_console_timedread(buf, 1, tmo_ms)) > 0) {
-				int c;
-				if ((c = __vt_console_decode(&__sys_vt.con, buf[0])) > 0) {
-					arg = c;
-					win = __vt_win_root();
-					msg = VT_CHAR_RECV;
-					vt_msg_dispatch(win, msg, arg);
-				}
-			}
-		}
-
-		/* process queued messages */
-		pos = tail % VT_MSG_QUEUE_SIZE;
-		msg = __sys_vt.msg[pos];
-		win = __vt_win_by_idx(__sys_vt.idx[pos]);
-		arg = __sys_vt.arg[pos];
-		tail++;
-		__sys_vt.queue.tail = tail;
-
-		vt_msg_dispatch(win, msg, arg);
-
-	} while (msg != VT_QUIT);
-
+	__vt_unlock();
 	return 0;
 }
+
+void vt_win_set_data(struct vt_win * win, void * val)
+{
+	uint32_t * src = (uint32_t *)val;
+	uint32_t * dst = (uint32_t *)win->data;
+
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	dst[3] = src[3];
+}
+
+void vt_win_get_data(struct vt_win * win, void * val)
+{
+	uint32_t * src = (uint32_t *)win->data;
+	uint32_t * dst = (uint32_t *)val;
+
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	dst[3] = src[3];
+}
+#endif
 

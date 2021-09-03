@@ -433,6 +433,13 @@
 #define THINKOS_ENABLE_MONITOR_SCHED        0
 #endif
 
+/* THINKOS_ENABLE_DEBUG_BASE - Enable the kernel debug base subsystem.
+   All other DEBUG features depend on this flag
+   */
+#ifndef THINKOS_ENABLE_DEBUG_BASE
+#define THINKOS_ENABLE_DEBUG_BASE                0
+#endif
+
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
    Requires the DebugMonitor fault to be present on the platform.
    */
@@ -481,12 +488,23 @@
 #define THINKOS_ENABLE_SCHED_ERROR          0
 #endif
 
+/* THINKOS_ENABLE_KRN_SCHED_BRK - Enable thread break */
+#ifndef THINKOS_ENABLE_KRN_SCHED_BRK
+#define THINKOS_ENABLE_KRN_SCHED_BRK        0
+#endif
+
+/* THINKOS_ENABLE_KRN_SCHED_SVC - This option is used to request the execution of
+   a scheduler priority tasklet. */
+#ifndef THINKOS_ENABLE_KRN_SCHED_SVC
+#define THINKOS_ENABLE_KRN_SCHED_SVC        0
+#endif
+
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
    a tasklet when the system is idle. The tasklet runs on the IDLE 
    thread context.
  */
 #ifndef THINKOS_ENABLE_IDLE_HOOKS       
-#define THINKOS_ENABLE_IDLE_HOOKS            0
+#define THINKOS_ENABLE_IDLE_HOOKS           0
 #endif
 
 /* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
@@ -634,13 +652,13 @@
 #error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_TIMED_CALLS"
 #endif
 
-#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_WQ_IRQ)
-#error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_WQ_IRQ"
-#endif
+//#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_WQ_IRQ)
+//#error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_WQ_IRQ"
+//#endif
 
-#if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_WQ_IRQ)
-#error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_WQ_IRQ"
-#endif
+//#if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_WQ_IRQ)
+//#error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_WQ_IRQ"
+//#endif
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_IRQ_CTL)
 #error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_IRQ_CTL"
@@ -666,6 +684,10 @@
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
+
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -675,6 +697,11 @@
 #error "THINKOS_ENABLE_I_CALLS depends on THINKOS_ENABLE_KRNSVC"
 #endif
 */
+
+/* debug breakpoint depends on debug base */
+#if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
 
 /* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)
@@ -1150,6 +1177,7 @@ struct thinkos_profile {
 	union {
 		uint32_t flags;
 		struct {
+			uint32_t base      :1;
 			uint32_t enabled   :1;
 			uint32_t step      :1;
 			uint32_t bkpt      :1;

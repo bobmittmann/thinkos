@@ -32,6 +32,6 @@ void __krn_resume_all(struct thinkos_rt * krn)
 		}
 	}
 
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 

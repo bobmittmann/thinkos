@@ -76,6 +76,8 @@
 
 #define THINKOS_ERR_MAX                62
 
+#define THINKOS_ABORT_REQ             255
+
 #ifndef __ASSEMBLER__
 
 

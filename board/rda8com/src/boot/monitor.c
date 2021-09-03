@@ -631,7 +631,6 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 
 		case MONITOR_THREAD_BREAK:
 			monitor_clear(MONITOR_THREAD_BREAK);
-			thinkos_dbg_ack();
 			DCC_LOG(LOG_WARNING, "/!\\ THREAD_BREAK signal !");
 			break;
 

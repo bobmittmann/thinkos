@@ -22,7 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -204,7 +204,7 @@ void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((th = krn_mutex_unlock_wakeup(krn, mutex)) != THINKOS_THREAD_NULL) {
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked.", th, mutex);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 }
 
@@ -222,4 +222,5 @@ bool krn_mutex_resume(unsigned int thread_id, unsigned int mutex, bool tmw)
 }
 
 #endif /* THINKOS_MUTEX_MAX > 0 */
+
 

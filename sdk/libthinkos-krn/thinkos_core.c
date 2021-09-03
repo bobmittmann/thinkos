@@ -93,11 +93,11 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-	krn->brk_idx = 0;
-	krn->step_id = 0;
+	krn->debug.brk_idx = 0;
+	krn->debug.step_id = 0;
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	krn->step_svc = 0;  /* step at service call bitmap */
-	krn->step_req = 0;  /* step request bitmap */
+	krn->debug.step_svc = 0;  /* step at service call bitmap */
+	krn->debug.step_req = 0;  /* step request bitmap */
 #endif
 #endif
 
@@ -136,14 +136,14 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
 	__thinkos_krn_core_init(krn);
-#if THINKOS_ENABLE_EXCEPTIONS
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	thinkos_krn_exception_reset();
 #endif
 
 #if DEBUG
 //	mdelay(500);
-//	__kdump(krn);
+	__kdump(krn);
 #endif
 }
 
@@ -247,18 +247,37 @@ int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[],
 						  unsigned int from, unsigned int cnt)
 {
 #if (THINKOS_ENABLE_PROFILING)
-	unsigned int to = from + cnt;
-
-	if (to > __KRN_THREAD_LST_SIZ)
+	if (from >= __KRN_THREAD_LST_SIZ)
 		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
 
 	__krn_cyccnt_flush(krn, __krn_sched_active_get(krn));
 	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
 
-	return to;
+	return cnt;
 #else
 	return -THINKOS_ENOSYS;
 #endif
 }
 
+int __krn_threads_inf_get(struct thinkos_rt * krn, 
+						  const struct thinkos_thread_inf * inf[],
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
 

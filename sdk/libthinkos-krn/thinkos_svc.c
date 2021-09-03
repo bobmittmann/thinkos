@@ -122,7 +122,7 @@ void thinkos_irq_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_irq_timedwait_cleanup_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_irq_timedwait_fixup_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
@@ -144,17 +144,6 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 void thinkos_app_exec_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_time_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-#if (THINKOS_ENABLE_ESCALATE)
-/* Call a function in priviledged service mode. */
-void thinkos_escalate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
-{
-	int32_t ( * call)(int32_t, int32_t, int32_t);
-
-	call = (int32_t (*)(int32_t, int32_t, int32_t))arg[0];
-	arg[0] = call(arg[1], arg[2], arg[3]);
-}
-#endif
 
 void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
@@ -237,9 +226,9 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_irq_timedwait_cleanup_svc,
+	[THINKOS_IRQ_TIMEDWAIT_FIXUP] = thinkos_irq_timedwait_fixup_svc,
 #else
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_nosys_svc,
+	[THINKOS_IRQ_TIMEDWAIT_FIXUP] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
 #if (THINKOS_ENABLE_IRQ_CTL)
@@ -549,12 +538,6 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CTL] = thinkos_ctl_svc,
 #else
 	[THINKOS_CTL] = thinkos_nosys_svc,
-#endif
-
-#if (THINKOS_ENABLE_ESCALATE)
-	[THINKOS_ESCALATE] = thinkos_escalate_svc,
-#else
-	[THINKOS_ESCALATE] = thinkos_nosys_svc,
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
