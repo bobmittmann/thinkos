@@ -93,11 +93,11 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-	krn->brk_idx = 0;
-	krn->step_id = 0;
+	krn->debug.brk_idx = 0;
+	krn->debug.step_id = 0;
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	krn->step_svc = 0;  /* step at service call bitmap */
-	krn->step_req = 0;  /* step request bitmap */
+	krn->debug.step_svc = 0;  /* step at service call bitmap */
+	krn->debug.step_req = 0;  /* step request bitmap */
 #endif
 #endif
 

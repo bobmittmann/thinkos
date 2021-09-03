@@ -67,6 +67,8 @@ const boot_cmd_callback_t boot_cmd_call_tab[] = {
 };
 
 /*
+   Perfect Hashing
+
    Table generated with Fisher and Yates permutation
    algorithm
 */
@@ -99,6 +101,10 @@ static const uint8_t i_tab[] = {
 	  1,   4,   4,   5,   3,   7,   6,   5,
 	  3,   2,   6
 };
+
+/*
+   Binary search...
+*/
 
 static int h_lookup(int x)
 {

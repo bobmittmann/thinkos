@@ -136,6 +136,7 @@
   #define THINKOS_SYSRST_ONFAULT        1
 #endif
 
+#define THINKOS_ENABLE_DEBUG_BASE       1
 #define THINKOS_ENABLE_DEBUG            1
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1

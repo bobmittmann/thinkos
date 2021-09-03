@@ -134,6 +134,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYCT");
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
+	_Static_assert (offsetof(struct thinkos_rt, debug) == 
+					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
+#endif
+
+#if 0
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
@@ -148,11 +154,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
 					OFFSETOF_KRN_BREAK_ID, "OFFSETOF_KRN_BREAK_ID");
 #endif
-
-#if (THINKOS_ENABLE_CRITICAL)
-	_Static_assert (offsetof(struct thinkos_rt, debug) == 
-					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
 #endif
+
 
 #if (THINKOS_ENABLE_CRITICAL)
 	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 

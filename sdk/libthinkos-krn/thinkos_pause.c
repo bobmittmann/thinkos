@@ -269,9 +269,9 @@ bool __krn_thread_pause(struct thinkos_rt * krn, unsigned int th)
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	/* possibly clear the step request */
-	__bit_mem_wr(&krn->step_req, th - 1, 0);
+	__bit_mem_wr(&krn->debug.step_req, th - 1, 0);
 	/* possibly clear the step on service */
-	__bit_mem_wr(&krn->step_svc, th - 1, 0);
+	__bit_mem_wr(&krn->debug.step_svc, th - 1, 0);
 #endif
 
 	/* disable the clock */

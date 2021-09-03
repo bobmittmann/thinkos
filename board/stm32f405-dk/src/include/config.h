@@ -125,6 +125,7 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE           1024
 #define THINKOS_ENABLE_KRNSVC               1
+#define THINKOS_ENABLE_DEBUG_BASE           1
 #define THINKOS_ENABLE_ERROR_TRAP           1
 #define THINKOS_ENABLE_EXCEPTIONS           1
 #define THINKOS_ENABLE_HARDFAULT            1

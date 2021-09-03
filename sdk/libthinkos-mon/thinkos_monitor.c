@@ -508,7 +508,9 @@ void monitor_soft_reset(void)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " Monitor Soft Reset " VT_POP);
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
 	thinkos_dbg_reset();
+#endif
 
 	monitor_signal(MONITOR_SOFTRST); 
 }

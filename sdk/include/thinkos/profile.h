@@ -1177,6 +1177,7 @@ struct thinkos_profile {
 	union {
 		uint32_t flags;
 		struct {
+			uint32_t base      :1;
 			uint32_t enabled   :1;
 			uint32_t step      :1;
 			uint32_t bkpt      :1;

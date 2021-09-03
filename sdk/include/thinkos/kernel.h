@@ -186,11 +186,16 @@
   #define SIZEOF_KRN_STEP_ID   0
   #define SIZEOF_KRN_BREAK_ID  0
 #endif
+
 #if (THINKOS_ENABLE_ERROR_TRAP)
-  #define SIZEOF_KRN_DEBUG 4
+#define SIZEOF_KRN_DBG_STATUS  4
 #else
-  #define SIZEOF_KRN_DEBUG 0
+#define SIZEOF_KRN_DBG_STATUS  0
 #endif
+
+#define SIZEOF_KRN_DEBUG (SIZEOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_SVC +\
+						  SIZEOF_KRN_XCPT_IPSR + SIZEOF_KRN_STEP_ID +\
+						  SIZEOF_KRN_BREAK_ID + SIZEOF_KRN_DBG_STATUS)
 
 #if (THINKOS_ENABLE_READY_MASK)
   #define SIZEOF_KRN_RDY_MSK 4
@@ -253,14 +258,17 @@
 #define OFFSETOF_KRN_TH_ERRNO   (OFFSETOF_KRN_TH_STAT + SIZEOF_KRN_TH_STAT)
 
 #define A4(__X) ((__X + 3) & ~3)
+#define OFFSETOF_KRN_DEBUG      A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
 
-#define OFFSETOF_KRN_STEP_REQ   A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
+#define OFFSETOF_KRN_STEP_REQ   (OFFSETOF_KRN_DEBUG)
 #define OFFSETOF_KRN_STEP_SVC   (OFFSETOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_REQ)
 #define OFFSETOF_KRN_XCPT_IPSR  (OFFSETOF_KRN_STEP_SVC + SIZEOF_KRN_STEP_SVC)
 #define OFFSETOF_KRN_STEP_ID    (OFFSETOF_KRN_XCPT_IPSR + SIZEOF_KRN_XCPT_IPSR)
 #define OFFSETOF_KRN_BREAK_ID   (OFFSETOF_KRN_STEP_ID + SIZEOF_KRN_STEP_ID)
-#define OFFSETOF_KRN_DEBUG      (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+#define OFFSETOF_KRN_DBG_STATUS (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+
 #define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_DEBUG + SIZEOF_KRN_DEBUG)
+
 #define OFFSETOF_KRN_RDY_MSK    (OFFSETOF_KRN_CRITCNT + SIZEOF_KRN_CRITCNT)
 
 #define OFFSETOF_KRN_SCHED_THREAD   (OFFSETOF_KRN_SCHED)
@@ -312,8 +320,6 @@ struct thinkos_monitor {
  * --------------------------------------------------------------------------*/
 
 #if (THINKOS_ENABLE_DEBUG)
-struct thinkos_debug {
-};
 #endif /* THINKOS_ENABLE_DEBUG */
 
 /* -------------------------------------------------------------------------- 
@@ -505,6 +511,7 @@ struct thinkos_rt {
 	int8_t th_errno[__KRN_THREAD_LST_SIZ]; 
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
 	struct {
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
@@ -527,6 +534,7 @@ struct thinkos_rt {
 		};
 #endif
 	} debug;
+#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,

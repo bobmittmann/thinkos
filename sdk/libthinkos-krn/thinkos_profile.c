@@ -128,6 +128,14 @@ const struct thinkos_profile thinkos_profile = {
 		.stack_limit     = THINKOS_ENABLE_STACK_LIMIT
 	},
 
+	.monitor = {
+		.enabled         = THINKOS_ENABLE_MONITOR,
+		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
+		.threads         = THINKOS_ENABLE_MONITOR_THREADS,
+		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
+		.stack_size      = THINKOS_MONITOR_STACK_SIZE
+	},
+
 	.except = {
 		.exceptions      = THINKOS_ENABLE_EXCEPTIONS,
 		.busfault        = THINKOS_ENABLE_BUSFAULT,
@@ -138,15 +146,8 @@ const struct thinkos_profile thinkos_profile = {
 		.sysrst_onfault  = THINKOS_SYSRST_ONFAULT
 	},
 
-	.monitor = {
-		.enabled         = THINKOS_ENABLE_MONITOR,
-		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
-		.threads         = THINKOS_ENABLE_MONITOR_THREADS,
-		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
-		.stack_size      = THINKOS_MONITOR_STACK_SIZE
-	},
-
 	.debug = {
+		.base            = THINKOS_ENABLE_DEBUG_BASE,
 		.enabled         = THINKOS_ENABLE_DEBUG,
 		.step            = THINKOS_ENABLE_DEBUG_STEP,
 		.bkpt            = THINKOS_ENABLE_DEBUG_BKPT,
@@ -309,6 +310,7 @@ void __profile(void)
 			 p->security.memory_clear);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_LIMIT     = %d", 
 			 p->security.stack_limit);
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPTIONS      = %d", 
 			 p->except.exceptions);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_BUSFAULT        = %d", 
@@ -335,8 +337,10 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE     = %d", 
 			 p->monitor.stack_size);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG           = %d", 
-			 p->monitor.enabled);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BASE      = %d", 
+			 p->debug.base);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DBGMON_XCP      = %d", 
+			 p->debug.enabled);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
 			 p->debug.step);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BKPT      = %d", 

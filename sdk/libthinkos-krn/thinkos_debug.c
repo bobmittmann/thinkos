@@ -321,6 +321,7 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
 bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
@@ -331,6 +332,7 @@ bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
 
     return __thread_ctx_is_valid(krn, th);
 }
+
 
 
 static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
@@ -950,4 +952,6 @@ int thinkos_dbg_active_get(void)
 
 	return __krn_sched_active_get(krn);
 }
+
+#endif /* THINKOS_ENABLE_DEBUG_BASE */
 

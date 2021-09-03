@@ -252,6 +252,8 @@ __krn_sched_kse_clr(struct thinkos_rt * krn) {
 /* -------------------------------------------------------------------------- 
  * Debugging
  * --------------------------------------------------------------------------*/
+
+#if (THINKOS_ENABLE_DEBUG_BASE)
 /* Clear debug status */
 static inline void __attribute__((always_inline)) 
 __krn_debug_status_clr(struct thinkos_rt * krn) {
@@ -335,6 +337,7 @@ static inline void __attribute__((always_inline))
 __krn_debug_kfault_clr(struct thinkos_rt * krn) {
 	krn->debug.kfault = 0;
 }
+#endif /* THINKOS_ENABLE_DEBUG_BASE */
 
 #if 0
 
