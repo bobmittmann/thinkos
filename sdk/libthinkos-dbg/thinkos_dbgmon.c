@@ -434,7 +434,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 			 "step_req=%08x thread_id=%d"
 			 _ATTR_POP_, 
-			 thinkos_rt.step_req, thread_id + 1);
+			 thinkos_rt.debug.step_req, thread_id + 1);
 
 	if (CM3_DCB->dhcsr & DCB_DHCSR_C_DEBUGEN) {
 		DCC_LOG(LOG_ERROR, "can't step: DCB_DHCSR_C_DEBUGEN !!");

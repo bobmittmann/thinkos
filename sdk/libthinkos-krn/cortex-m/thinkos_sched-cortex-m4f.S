@@ -121,7 +121,7 @@ thinkos_krn_sched_core:
 	   r2: ready bmp 
 	   r1: sched.ctrl = [ xcpt | err | svc | act ]  
 	 */
-    bne.n    thinkos_krn_sched_except
+    bne.n    thinkos_krn_sched_bypass
 #endif
 
 .L_update_cyccnt:
@@ -200,7 +200,7 @@ thinkos_krn_sched_ctx_get:
 	subs.n   r3, r0
 #endif
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 	cbz.n    r3, .L_nullptr_err
 #endif
 
@@ -248,7 +248,7 @@ thinkos_krn_sched_ctx_get:
     /* load the new context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
-    bne      .L_idle_stack_err
+    bne      .L_idle_stack_ptr_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
     mov.n     r3, sp
 #endif
@@ -270,33 +270,14 @@ thinkos_krn_sched_ctx_get:
  * Scheduler detected errors
  * -------------------------------------------------------------------------- */
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
-.L_nullptr_err:
-	movs.n   r3, #THINKOS_ERR_INVALID_POINTER
-	b.n     thinkos_krn_sched_trap
-
-.L_idle_stack_xcpt_err:
-	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
-	b.n      thinkos_krn_sched_trap
-
-
-.L_idle_stack_err: 
-/* FIXME: this is causing the system to block ... */
-	movs.n   r3, #THINKOS_ERR_IDLE_STACK
-	b.n      thinkos_krn_sched_trap
-
-  #if (THINKOS_ENABLE_SANITY_CHECK)
-.L_idle_entry_err:
-	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
-	b.n     thinkos_krn_sched_trap
-  #endif
-#endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
 .L_stack_err: 
 	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
 	b.n     thinkos_krn_sched_trap
 #endif
+
+
 
 /* --------------------------------------------------------------------------
  * IDLE 
@@ -335,9 +316,34 @@ thinkos_krn_sched_ctx_get:
 	/* check the stack limit */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
 	cmp.n    r3, r5
-	ble      .L_idle_stack_err 
+	ble      .L_idle_stack_limit_err 
 #endif
     b        .L_update_cyccnt
+
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+.L_nullptr_err:
+	movs.n   r3, #THINKOS_ERR_INVALID_POINTER
+	b        thinkos_krn_sched_xcpt
+#endif
+
+#if (THINKOS_ENABLE_SCHED_ERROR)
+.L_idle_stack_ptr_err:
+.L_idle_stack_xcpt_err:
+	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
+	b        thinkos_krn_sched_xcpt
+#endif
+
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+.L_idle_entry_err:
+	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
+	b        thinkos_krn_sched_xcpt
+#endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_SCHED_ERROR)
+.L_idle_stack_limit_err: 
+	movs.n   r3, #THINKOS_ERR_IDLE_STACK
+	b        thinkos_krn_sched_xcpt
+#endif
 
 	.align  0
 .L_thinkos_rt:
@@ -349,6 +355,16 @@ thinkos_krn_sched_ctx_get:
 	.size   thinkos_krn_sched_core, . - thinkos_krn_sched_core
 
 
+#if (THINKOS_ENABLE_SCHED_ERROR)
+	.thumb_func
+thinkos_krn_sched_xcpt:
+	.global thinkos_krn_sched_xcpt
+	.type   thinkos_krn_sched_xcpt, %function
+/* FXME: fatal exception... */	
+	b       .
+	.size   thinkos_krn_sched_xcpt, . - thinkos_krn_sched_xcpt
+#endif /* THINKOS_ENABLE_SCHED_ERROR */
+
 
 /* --------------------------------------------------------------------------
  *
@@ -356,30 +372,21 @@ thinkos_krn_sched_ctx_get:
  * -------------------------------------------------------------------------- */
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
-
 	.thumb_func
 thinkos_krn_sched_trap:
 	.global thinkos_krn_sched_trap
 	.type   thinkos_krn_sched_trap, %function
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
 	/*  r1: | err | brk | svc | act |  */
 	/* Insert the error code (R3) on R1 */
 	lsls.n  r3, r3, #24
 	lsls.n  r1, r1, #8
 	lsrs.n  r1, r1, #8
 	adds.n  r1, r3
-#endif
-
-/* --------------------------------------------------------------------------
- *
- *
- * -------------------------------------------------------------------------- */
 
 	/*  r0: krn */
 	/*  r1: | err | brk | svc | act |  */
-thinkos_krn_sched_except:
-
+thinkos_krn_sched_bypass:
 	/* store the old context pointer into the context vector */
 	str.n    r3, [r7]
 #if (THINKOS_ENABLE_SCHED_ERROR)
@@ -395,10 +402,6 @@ thinkos_krn_sched_except:
     msr      CONTROL, r2
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
-	/* Adjust the thread ID to the system thread (0) */
-//	movs.n   r2, #THINKOS_THREAD_VOID
-	/* Set the active thread */
-//	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 	/* Restore core context */
 	pop      {r4-r11}
 

@@ -281,3 +281,16 @@ int __krn_threads_inf_get(struct thinkos_rt * krn,
 #endif
 }
 
+int __thread_wq_lookup(struct thinkos_rt * krn, unsigned int th)
+{
+	uint32_t msk = (1 << (th - 1));
+	int i;
+
+	for (i = THINKOS_OBJECT_LAST; i >= THINKOS_OBJECT_FIRST; --i) {
+		if (krn->wq_lst[i] & msk)
+			break;
+	}
+	
+	return i;
+}
+

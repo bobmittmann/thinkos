@@ -31,6 +31,7 @@
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <trace.h>
+#include <vt100.h>
 
 #include "board.h"
 #include "version.h"

@@ -817,9 +817,15 @@ void __kdump(struct thinkos_rt * krn)
 		}
 	}
 
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	DCC_LOG4(LOG_TRACE, "Active=<%2d> Ready=%08x Alloc=%08x Ticks=%u", 
 			 __krn_sched_active_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
+#else
+	DCC_LOG3(LOG_TRACE, "Active=<%2d> Ready=%08x Ticks=%u", 
+			 __krn_sched_active_get(krn), krn->wq_ready, 
+			 __krn_ticks_get(krn) );
+#endif
 
 	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
 			 krn->sched.state,
