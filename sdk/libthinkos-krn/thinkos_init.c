@@ -98,10 +98,9 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 extern void * __bss_end;
 extern void * __heap_start;
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_initializer * lst[])
+int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+					 const struct thinkos_mem_map * map)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	int thread_no;
 	uint32_t ctrl;
 	uint32_t ccr;
@@ -384,48 +383,43 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	DCC_LOG(LOG_TRACE, "Interrupts init init...");
 	__thinkos_krn_irq_init(krn);
 
-	if (lst == NULL) {
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-		bool privileged;
+	bool privileged;
 
-		privileged  = __PRIVILEGED(opt);
+	privileged  = __PRIVILEGED(opt);
 #endif
 
-		DCC_LOG(LOG_TRACE, "Main thread init...");
-		thread_no = __thinkos_init_main(krn, sp, opt);
+	DCC_LOG(LOG_TRACE, "Main thread init...");
+	thread_no = __thinkos_init_main(krn, sp, opt);
 
-		/* Set the initial thread */
-		__krn_sched_active_set(krn, thread_no);
-		/* add to the ready queue */
-		__thread_ready_set(krn, thread_no);
+	/* Set the initial thread */
+	__krn_sched_active_set(krn, thread_no);
+	/* add to the ready queue */
+	__thread_ready_set(krn, thread_no);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-		if (privileged) {
-			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
-		 } else {
-			DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
-			DCC_LOG(LOG_TRACE, "Enabling interrupts");
-			/* enable interrupts */
-			thinkos_krn_irq_on();
-			DCC_LOG(LOG_TRACE, "Adjusting privilege");
-			/* enable interrupts */
-			/* Adjust privilege */
-			ctrl |=  CONTROL_nPRIV;
-			cm3_control_set(ctrl);
-		}
-#else
+	if (privileged) {
+		DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
+	} else {
+		DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
 		DCC_LOG(LOG_TRACE, "Enabling interrupts");
 		/* enable interrupts */
 		thinkos_krn_irq_on();
+		DCC_LOG(LOG_TRACE, "Adjusting privilege");
+		/* enable interrupts */
+		/* Adjust privilege */
+		ctrl |=  CONTROL_nPRIV;
+		cm3_control_set(ctrl);
+	}
+#else
+	DCC_LOG(LOG_TRACE, "Enabling interrupts");
+	/* enable interrupts */
+	thinkos_krn_irq_on();
 #endif
 
-		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-				 thread_no, cm3_msp_get(), cm3_psp_get(), 
-				 cm3_control_get());
-	} else {
-		/* FIXME: not implemented... */
-		return THINKOS_ENOSYS;
-	}
+	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
+			 thread_no, cm3_msp_get(), cm3_psp_get(), 
+			 cm3_control_get());
 
 	__thread_enable_all(krn);
 

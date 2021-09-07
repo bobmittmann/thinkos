@@ -52,6 +52,9 @@
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
 
+#define __THINKOS_COMM__
+#include <thinkos/comm.h>
+
 /* -------------------------------------------------------------------------- 
  * Context structure offsets (used in assembler code)
  * --------------------------------------------------------------------------*/
@@ -452,9 +455,9 @@ struct thinkos_rt {
 			uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
-#if (THINKOS_ENABLE_COMM)
-			uint32_t wq_comm_send;
-			uint32_t wq_comm_recv;
+#if ((THINKOS_COMM_MAX) > 0)
+			uint32_t wq_comm_tx[THINKOS_WQ_COMM_TX_CNT];
+			uint32_t wq_comm_rx[THINKOS_WQ_COMM_RX_CNT];
 #endif
 
 #if (THINKOS_ENABLE_WQ_IRQ)
@@ -638,6 +641,9 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	const struct thinkos_mem_map * mem_map;
 #endif
+#if ((THINKOS_COMM_MAX) > 0)
+	const struct thinkos_comm * comm[THINKOS_COMM_MAX];
+#endif
 
 };
 
@@ -699,11 +705,11 @@ struct thinkos_rt {
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
+#define THINKOS_COMM_TX_BASE ((offsetof(struct thinkos_rt, wq_comm_tx) \
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
+#define THINKOS_COMM_RX_BASE ((offsetof(struct thinkos_rt, wq_comm_rx) \
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
@@ -725,11 +731,16 @@ struct thinkos_rt {
 
 
 #define THINKOS_MUTEX_FIRST  (THINKOS_MUTEX_BASE)
-#define THINKOS_MUTEX_LAST   ((THINKOS_MUTEX_FIRST) + (THINKOS_MUTEX_MAX) - 1)
+#define THINKOS_MUTEX_LAST   (THINKOS_MUTEX_FIRST + (THINKOS_MUTEX_MAX) - 1)
 
 #define THINKOS_OBJECT_FIRST (0)
-#define THINKOS_OBJECT_LAST  ((THINKOS_OBJECT_FIRST) + (THINKOS_WQ_CNT) - 1)
+#define THINKOS_OBJECT_LAST  (THINKOS_OBJECT_FIRST + (THINKOS_WQ_CNT) - 1)
 
+#define THINKOS_COMM_RX_FIRST  (THINKOS_COMM_RX_BASE)
+#define THINKOS_COMM_RX_LAST   (THINKOS_COMM_RX_FIRST + (THINKOS_COMM_MAX) - 1)
+
+#define THINKOS_COMM_TX_FIRST  (THINKOS_COMM_TX_BASE)
+#define THINKOS_COMM_TX_LAST   (THINKOS_COMM_TX_FIRST + (THINKOS_COMM_MAX) - 1)
 
 /* -------------------------------------------------------------------------- 
  * Static initialized kernel descriptors

@@ -144,7 +144,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_IRQ_MAX) > 0
-void cm3_default_isr(unsigned int irq)
+void __attribute__ ((aligned(16))) cm3_default_isr(unsigned int irq)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_IRQ_CYCCNT)

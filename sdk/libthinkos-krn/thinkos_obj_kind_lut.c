@@ -64,9 +64,9 @@ const struct {
 #if (THINKOS_ENABLE_TIMESHARE)
 			uint8_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
-#if (THINKOS_ENABLE_COMM)
-			uint8_t wq_comm_send;
-			uint8_t wq_comm_recv;
+#if (THINKOS_COMM_MAX) > 0
+			uint8_t wq_comm_tx[THINKOS_WQ_COMM_TX_CNT];
+			uint8_t wq_comm_rx[THINKOS_WQ_COMM_RX_CNT];
 #endif
 #if (THINKOS_IRQ_MAX) > 0
 			uint8_t wq_irq;
@@ -117,9 +117,9 @@ const struct {
 #if THINKOS_ENABLE_TIMESHARE
 	.wq_tmshare = THINKOS_OBJ_TMSHARE,
 #endif
-#if THINKOS_ENABLE_COMM
-	.wq_comm_send = THINKOS_OBJ_COMMSEND,
-	.wq_comm_recv = THINKOS_OBJ_COMMRECV,
+#if THINKOS_COMM_MAX
+	.wq_comm_tx = { [0 ... (THINKOS_COMM_MAX - 1)] = THINKOS_OBJ_COMMTX }, 
+	.wq_comm_rx = { [0 ... (THINKOS_COMM_MAX - 1)] = THINKOS_OBJ_COMMRX }, 
 #endif
 #if THINKOS_IRQ_MAX > 0
 	.wq_irq = THINKOS_OBJ_IRQ,

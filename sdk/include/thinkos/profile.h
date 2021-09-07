@@ -270,8 +270,8 @@
 #define THINKOS_ENABLE_CONSOLE_MISC     0
 #endif
 
-#ifndef THINKOS_ENABLE_COMM
-#define THINKOS_ENABLE_COMM             0
+#ifndef THINKOS_COMM_MAX
+#define THINKOS_COMM_MAX                0
 #endif
 
 #ifndef THINKOS_ENABLE_MPU 
@@ -949,10 +949,12 @@
   #define THINKOS_WQ_TMSHARE_CNT 0 
 #endif
 
-#if (THINKOS_ENABLE_COMM)
-  #define THINKOS_WQ_COMM_CNT 2
+#if (THINKOS_COMM_MAX)
+  #define THINKOS_WQ_COMM_RX_CNT (THINKOS_COMM_MAX)
+  #define THINKOS_WQ_COMM_TX_CNT (THINKOS_COMM_MAX)
 #else
-  #define THINKOS_WQ_COMM_CNT 0 
+  #define THINKOS_WQ_COMM_RX_CNT 0 
+  #define THINKOS_WQ_COMM_TX_CNT 0 
 #endif
 
 #if (THINKOS_ENABLE_WQ_IRQ)
@@ -992,7 +994,8 @@
   THINKOS_WQ_PAUSED_CNT + \
   THINKOS_WQ_CANCELED_CNT + \
   THINKOS_WQ_TMSHARE_CNT + \
-  THINKOS_WQ_COMM_CNT + \
+  THINKOS_WQ_COMM_RX_CNT + \
+  THINKOS_WQ_COMM_TX_CNT + \
   THINKOS_WQ_IRQ_CNT + \
   THINKOS_WQ_DMA_CNT + \
   THINKOS_WQ_FLASH_MEM_CNT + \
@@ -1065,8 +1068,10 @@ struct thinkos_profile {
 		uint32_t gate_max            :8;
 
 		uint32_t queue_max           :8;
+		uint32_t comm_max            :8;
 		uint32_t irq_max             :8;
 		uint32_t dma_max             :8;
+
 		uint32_t flash_max           :8;
 
 		uint32_t except_stack_size   :16;
@@ -1124,7 +1129,6 @@ struct thinkos_profile {
 			uint32_t console_drain      :1;
 			uint32_t console_read       :1;
 			uint32_t console_misc       :1;
-			uint32_t comm               :1;
 			uint32_t mpu                :1;
 			uint32_t fpu                :1;
 			uint32_t fpu_ls             :1;

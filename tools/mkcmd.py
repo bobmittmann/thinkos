@@ -516,7 +516,7 @@ def mk_cmdtab_c_linear(f, hdr_fname, cmd_tab):
 
   f.write('\t\tif (strcmp(str, boot_cmd_sym_tab[i]) == 0)\n')
   f.write('\t\t\treturn i;\n')
-  f.write('\t\tif (thinkos_strcmp(str, boot_cmd_alias_tab[i]) == 0)\n')
+  f.write('\t\tif (strcmp(str, boot_cmd_alias_tab[i]) == 0)\n')
   f.write('\t\t\treturn i;\n')
   f.write('\t}\n')
   f.write('\n')

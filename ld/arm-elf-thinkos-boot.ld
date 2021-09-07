@@ -43,6 +43,8 @@ __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 
 EXTERN(_reset)
+/*EXTERN(_isr) */
+EXTERN(__nvic_vectors)
 EXTERN(ice_comm_blk)
 EXTERN(cm3_nmi_isr)
 EXTERN(cm3_hard_fault_isr)

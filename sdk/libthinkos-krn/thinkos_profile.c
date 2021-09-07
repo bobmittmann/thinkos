@@ -61,6 +61,7 @@ const struct thinkos_profile thinkos_profile = {
 		.event_max       = THINKOS_EVENT_MAX,
 		.flag_max        = THINKOS_FLAG_MAX,
 		.gate_max        = THINKOS_GATE_MAX,
+		.comm_max        = THINKOS_COMM_MAX,
 
 		.queue_max       =  THINKOS_QUEUE_MAX,
 		.irq_max           =  THINKOS_IRQ_MAX,
@@ -111,7 +112,6 @@ const struct thinkos_profile thinkos_profile = {
 		.console_drain   = THINKOS_ENABLE_CONSOLE_DRAIN,
 		.console_read    = THINKOS_ENABLE_CONSOLE_READ,
 		.console_misc    = THINKOS_ENABLE_CONSOLE_MISC,
-		.comm            = THINKOS_ENABLE_COMM,
 		.mpu             = THINKOS_ENABLE_MPU,
 		.fpu             = THINKOS_ENABLE_FPU,
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
@@ -205,8 +205,10 @@ void __profile(void)
 			 p->limit.irq_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_DMA_MAX                = %d", 
 			 p->limit.dma_max);
-	DCC_LOG1(LOG_TRACE, "THINKOS_FLASH_MAX              = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_FLASH_MEM_MAX          = %d", 
 			 p->limit.flash_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_COMM_MAX               = %d", 
+			 p->limit.comm_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_EXCEPT_STACK_SIZE      = %d", 
 			 p->limit.except_stack_size);
 
@@ -285,8 +287,6 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_MISC    = %d", 
 			 p->feature.console_misc);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_COMM            = %d", 
-			 p->feature.comm);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MPU             = %d", 
 			 p->feature.mpu);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FPU             = %d", 

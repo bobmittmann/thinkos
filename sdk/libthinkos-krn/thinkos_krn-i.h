@@ -38,6 +38,7 @@
 
 #include <thinkos.h>
 #include <sys/delay.h>
+#include <sys/param.h>
 #include <vt100.h>
 
 #define __PRIORITY(OPT)   (((OPT) >> 16) & 0xff)

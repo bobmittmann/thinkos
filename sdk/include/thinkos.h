@@ -96,8 +96,8 @@ enum thinkos_err {
  * @THINKOS_OBJ_PAUSED: thread paused list 
  * @THINKOS_OBJ_CANCELED: thread canceled list 
  * @THINKOS_OBJ_TMSHARE: time share waiting queue 
- * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
- * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
+ * @THINKOS_OBJ_COMMTX : comm channel send waiting queue 
+ * @THINKOS_OBJ_COMMRX : comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
  * @THINKOS_OBJ_DMA: IRQ (Direct Memory Access) waiting queue 
  * @THINKOS_OBJ_FLASH_MEM: Flesh Memory operation waiting queue 
@@ -120,8 +120,8 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_PAUSED    = 12,
 	THINKOS_OBJ_CANCELED  = 13,
 	THINKOS_OBJ_TMSHARE   = 14,
-	THINKOS_OBJ_COMMSEND  = 15,
-	THINKOS_OBJ_COMMRECV  = 16,
+	THINKOS_OBJ_COMMTX    = 15,
+	THINKOS_OBJ_COMMRX    = 16,
 	THINKOS_OBJ_IRQ       = 17,
 	THINKOS_OBJ_DMA       = 18,
 	THINKOS_OBJ_FLASH_MEM = 19,
@@ -294,8 +294,8 @@ extern "C" {
  *
  */
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_initializer * lst[]);
+int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+					 const struct thinkos_mem_map * map);
 
 /**
  * thinkos_krn_nrt_init() - Initializes the ThinkOS non-real-time extension.

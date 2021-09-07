@@ -19,6 +19,9 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#include <arch/cortex-m3.h>
 #include <sys/stm32f.h>
 
 	.syntax unified
@@ -29,9 +32,13 @@
 	 * --------------------------------------------------------------------- */
 
 	.section .nvic_vectors, "ax", %progbits
-__nvic_vectors:
+
+	.align	2
 	.global __nvic_vectors
-	.type __nvic_vectors, %object
+
+	.type __nvic_vectors, %function
+__nvic_vectors:
+	.thumb
 
 	.word	stm32f_wwdg_isr         /*  0 Window WatchDog */
 	.word	stm32f_pvd_isr          /*  1 PVD through EXTI Line detection */
@@ -152,12 +159,23 @@ __nvic_vectors_end:
 	.size   __nvic_vectors, . - __nvic_vectors
 
 	.text
-	.align  2
+	.align  7
+	
 	.global _isr
 	.thumb
 	.thumb_func
 	.type   _isr, %function
 _isr:
+#if 0
+#if (THINKOS_ENABLE_IRQ_CYCCNT)
+	movw    r2, #:lower16:CM3_DWT_BASE
+	movt    r2, #:upper16:CM3_DWT_BASE
+	/* r6: cyccnt = CM3_DWT->cyccnt */
+	ldr.n   r2, [r2, #4]
+#endif
+	movw    r1, :lower16:thinkos_rt
+	movt    r1, :upper16:thinkos_rt
+#endif
 	mrs     r0, IPSR
 	subs    r0, #16
 	b       cm3_default_isr
@@ -382,10 +400,10 @@ _isr:
 	.thumb_set  stm32f_spi3_isr,_isr
 
 	.weak       stm32f_uart4_isr
-	.thumb_set  stm32f_uart4_isr,_isr
+	.thumb_set  stm32f_uart4_isr, _isr
 
 	.weak       stm32f_uart5_isr
-	.thumb_set  stm32f_uart5_isr,_isr
+	.thumb_set  stm32f_uart5_isr, _isr
 
 	.weak       stm32f_tim6_dac_isr
 	.thumb_set  stm32f_tim6_dac_isr,_isr

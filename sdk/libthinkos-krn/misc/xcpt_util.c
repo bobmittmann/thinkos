@@ -790,10 +790,10 @@ void __kdump(struct thinkos_rt * krn)
 			case THINKOS_OBJ_TMSHARE:
 				DCC_LOG2(LOG_TRACE, "TMSHARE %d: 0x%08x", oid, *wq);
 				break;
-			case THINKOS_OBJ_COMMSEND:
+			case THINKOS_OBJ_COMMTX:
 				DCC_LOG2(LOG_TRACE, "COMM TX %d: 0x%08x", oid, *wq);
 				break;
-			case THINKOS_OBJ_COMMRECV:
+			case THINKOS_OBJ_COMMRX:
 				DCC_LOG2(LOG_TRACE, "COMM RX %d: 0x%08x", oid, *wq);
 				break;
 			case THINKOS_OBJ_IRQ:

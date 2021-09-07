@@ -42,7 +42,7 @@
 
 	.text
 
-	.align	3
+	.align	7
 	.thumb
 
 	.thumb_func
@@ -51,7 +51,8 @@ cm3_pendsv_isr:
 	.type   cm3_pendsv_isr, %function
 
 	/* r0: thinkos_rt */
-	ldr.n    r0, .L_thinkos_rt
+	movw     r0, #:lower16:thinkos_rt
+	movt     r0, #:upper16:thinkos_rt
 	ldrd     r1, r2, [r0, #OFFSETOF_KRN_SCHED]
 	/* r1: sched.ctrl: [ xcpt | err | svc | thd ] */
 	/* r2: sched.ready: [bitmap]  */
@@ -128,7 +129,9 @@ thinkos_krn_sched_core:
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* DWT.SYCCNT */
-	ldr.n    r6, .L_cm_dwt
+//	ldr.n    r6, .L_cm_dwt
+	movw     r6, #:lower16:CM3_DWT_BASE
+	movt     r6, #:upper16:CM3_DWT_BASE
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n    r6, [r6, #4]
 	/* update the reference */
@@ -346,11 +349,9 @@ thinkos_krn_sched_ctx_get:
 #endif
 
 	.align  0
-.L_thinkos_rt:
-	.word	thinkos_rt
 #if (THINKOS_ENABLE_PROFILING)
-.L_cm_dwt:
-	.word   CM3_DWT_BASE    /* DWT Base Address */
+//.L_cm_dwt:
+//	.word   CM3_DWT_BASE    /* DWT Base Address */
 #endif
 	.size   thinkos_krn_sched_core, . - thinkos_krn_sched_core
 

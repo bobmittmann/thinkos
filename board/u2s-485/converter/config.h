@@ -79,7 +79,7 @@
 #define THINKOS_ENABLE_IRQ_CTL          0
 
 #define THINKOS_ENABLE_CONSOLE          0
-#define THINKOS_ENABLE_COMM             0
+#define THINKOS_COMM_MAX                0
 
 #define THINKOS_ENABLE_MPU              0
 #define THINKOS_ENABLE_FPU              0

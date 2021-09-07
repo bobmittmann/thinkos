@@ -99,25 +99,12 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn, unsigned int th,
 							   unsigned int wq, bool tmw);
 #endif
 
-#if (THINKOS_ENABLE_COMM)
-bool comm_recv_resume(struct thinkos_rt * krn, unsigned int th, unsigned int wq, bool tmw) 
-{
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
-	/* wakeup from the comm recv wait queue setting the return value to 0.
-	   The calling thread should retry the operation. */
-	__krn_wq_wakeup(krn, wq, th, 0);
-	return true;
-}
+#if (THINKOS_COMM_MAX) > 0
+bool comm_rx_resume(struct thinkos_rt * krn, 
+					unsigned int th, unsigned int wq, bool tmw);
 
-bool comm_send_resume(struct thinkos_rt * krn, unsigned int th, 
-							 unsigned int wq, bool tmw) 
-{
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
-	/* wakeup from the comm send wait queue setting the return value to 0.
-	   The calling thread should retry the operation. */
-	__krn_wq_wakeup(krn, wq, th, 0);
-	return true;
-}
+bool comm_tx_resume(struct thinkos_rt * krn, unsigned int th, 
+							 unsigned int wq, bool tmw);
 #endif
 
 #if (THINKOS_ENABLE_JOIN)
@@ -204,9 +191,9 @@ static const thread_resume_t thread_resume_lut[] = {
 #if (THINKOS_ENABLE_TIMESHARE)
 	[THINKOS_OBJ_TMSHARE] = tmshare_resume,
 #endif
-#if (THINKOS_ENABLE_COMM)
-	[THINKOS_OBJ_COMMSEND] = comm_send_resume,
-	[THINKOS_OBJ_COMMRECV] = comm_recv_resume
+#if (THINKOS_COMM_MAX) > 0
+	[THINKOS_OBJ_COMMTX] = comm_tx_resume,
+	[THINKOS_OBJ_COMMRX] = comm_rx_resume,
 #endif
 #if (THINKOS_IRQ_MAX) > 0
 	[THINKOS_OBJ_IRQ]      = irq_resume,

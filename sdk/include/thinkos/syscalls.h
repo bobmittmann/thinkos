@@ -97,22 +97,24 @@
 
 #define THINKOS_DATE_AND_TIME         50
 
-#define THINKOS_COMM                  51
+#define THINKOS_COMM_SEND             51
+#define THINKOS_COMM_RECV             52
+#define THINKOS_COMM_CTL              53
 
-#define THINKOS_CRITICAL_ENTER        52
+#define THINKOS_CRITICAL_ENTER        54
 
-#define THINKOS_CRITICAL_EXIT         53
+#define THINKOS_CRITICAL_EXIT         55
 
-#define THINKOS_MONITOR               54
+#define THINKOS_MONITOR               56
 
-#define THINKOS_TRACE                 55
-#define THINKOS_TRACE_CTL             56
+#define THINKOS_TRACE                 57
+#define THINKOS_TRACE_CTL             58
 
-#define THINKOS_FLASH_MEM             57
+#define THINKOS_FLASH_MEM             59
 
-#define THINKOS_APP_EXEC              58
+#define THINKOS_APP_EXEC              60
 
-#define THINKOS_SYSCALL_CNT           59
+#define THINKOS_SYSCALL_CNT           61
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_WRITE                  0
@@ -130,10 +132,6 @@
 
 #define CONSOLE_IO_WR                  (1 << 0)
 #define CONSOLE_IO_RD                  (1 << 1)
-
-/* THINKOS_COMM options */
-#define COMM_SEND                      0
-#define COMM_RECV                      1
 
 /* THINKOS_CTL options */
 #define THINKOS_CTL_ABORT              0
@@ -179,6 +177,9 @@
 #define THINKOS_TIME_REALTIME_STEP     4
 #define THINKOS_TIME_REALTIME_COMP     5
 
+/* THINKOS_COMM_CTL operations */
+#define THINKOS_COMM_OPEN              0
+#define THINKOS_COMM_CLOSE             1
 
 #ifndef __ASSEMBLER__
 
@@ -761,13 +762,28 @@ static inline int __attribute__((always_inline))
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-thinkos_comm_send(uint32_t hdr, const void * buf, unsigned int len) {
-	return THINKOS_SYSCALL4(THINKOS_COMM, COMM_SEND, hdr, buf, len);
+thinkos_comm_send(unsigned int comm, const void * buf, unsigned int len) {
+	return THINKOS_SYSCALL3(THINKOS_COMM_SEND, comm, buf, len);
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_comm_recv(uint32_t * hdr, void * buf, unsigned int len) {
-	return THINKOS_SYSCALL4(THINKOS_COMM, COMM_RECV, hdr, buf, len);
+thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
+	return THINKOS_SYSCALL3(THINKOS_COMM_RECV, comm, buf, len);
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_ctl(void * buf, unsigned int len) {
+	return THINKOS_SYSCALL2(THINKOS_COMM_CTL, buf, len);
+}
+
+#define __COMM_OPEN_OPC(DEVNO) ((THINKOS_COMM_OPEN << 24) + DEVNO)
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_open(unsigned int devno) {
+	uint32_t opc = __COMM_OPEN_OPC(devno);
+	register int32_t ret asm("r0");
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) : "0"(opc) : );
+	return ret;
 }
 
 /* ---------------------------------------------------------------------------

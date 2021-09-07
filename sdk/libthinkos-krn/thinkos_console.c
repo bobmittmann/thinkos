@@ -1,5 +1,5 @@
 /* 
- * thinkos_util.c
+ * thinkos_console.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -302,10 +302,10 @@ static int __console_rd_break(struct thinkos_rt * krn)
 
 	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
 		thinkos_console_rt.rd_break = 1;
-		DCC_LOG(LOG_INFO, "no thread waiting.");
+		DCC_LOG(LOG_MSG, "no thread waiting.");
 		ret = 0;
 	} else {
-		DCC_LOG1(LOG_TRACE, "break %d", th);
+		DCC_LOG1(LOG_MSG, "break %d", th);
 
 		thinkos_console_rt.rd_break = 0;
 		/* wakeup from the console read wait queue setting the return 
