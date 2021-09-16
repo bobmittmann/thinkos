@@ -63,26 +63,45 @@
  * VT Window */
 
 struct vt_win {
+	/* 0 */
 	uint8_t parent;
 	uint8_t sibiling;
 	uint8_t child;
-	struct {
-		uint8_t visible: 1;
-		uint8_t has_focus: 1;
-		uint8_t cursor_hide: 1;
-		uint8_t data_alloc: 1;
+	union {
+		struct {
+			uint8_t visible: 1;
+			uint8_t has_focus: 1;
+			uint8_t cursor_hide: 1;
+			uint8_t data_alloc: 1;
+			uint8_t usr1_set: 1;
+			uint8_t usr2_set: 1;
+			uint8_t usr3_set: 1;
+			uint8_t enabled: 1;
+		};
+		uint8_t flags;
 	};
-
 	void (* msg_handler)(struct vt_win * win, enum vt_msg msg, 
 						 uintptr_t arg, void * data);
 	
+	/* 8 */
 	struct vt_attrs attr;
 	struct vt_pos pos;
 	
+	/* 16 */
 	struct vt_size size;
 	struct vt_pos cursor;
 
-	void * data;
+	/* 24 */
+	union {
+		struct {
+			void * data;
+			uint32_t usr[3];
+		};
+		struct {
+			void * ptr[4];
+		};
+	};
+	/* 32 */
 };
 
 union vt_mem_blk {
@@ -175,9 +194,10 @@ struct vt_ctx {
 };
 
 struct sys_vt_rt {
-	uint8_t mutex;
 	uint8_t sem;
 	uint8_t term_type;
+	uint8_t core_mutex;
+
 	struct vt_pos cursor;
 	struct {
 		uint8_t has_focus;
@@ -262,11 +282,11 @@ inline static struct vt_ctx * __vt_ctx(void) {
  */
 
 inline static int __vt_lock(void) {
-	return thinkos_mutex_lock(__sys_vt.mutex);
+	return thinkos_mutex_lock(__sys_vt.core_mutex);
 }
 
 inline static void __vt_unlock(void) {
-	thinkos_mutex_unlock(__sys_vt.mutex);
+	thinkos_mutex_unlock(__sys_vt.core_mutex);
 }
 
 #ifdef __cplusplus
@@ -376,6 +396,8 @@ int __vt_ctx_close(struct vt_ctx * ctx);
 int __vt_ctx_write(struct vt_ctx * ctx, const void * buf, unsigned int len);
 
 void __vt_msg_post(struct vt_win * win, enum vt_msg msg, uintptr_t arg);
+
+int __vt_get_term_type(void);
 
 #ifdef __cplusplus
 }

@@ -46,6 +46,12 @@ int console_read(void * dev, void * buf, size_t len, unsigned int msec)
 
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret == THINKOS_EAGAIN) {
+			ret = 0;
+		} else if (ret == THINKOS_EINTR) {
+			ret = 0;
+		}
+
 	} while (ret == 0);
 
 	return ret;

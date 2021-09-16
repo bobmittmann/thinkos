@@ -97,24 +97,26 @@
 
 #define THINKOS_DATE_AND_TIME         50
 
-#define THINKOS_COMM_SEND             51
-#define THINKOS_COMM_RECV             52
-#define THINKOS_COMM_CTL              53
+#define THINKOS_COMM_CTL              51
+#define THINKOS_COMM_SEND             52
+#define THINKOS_COMM_RECV             53
+#define THINKOS_COMM_TIMEDSEND        54
+#define THINKOS_COMM_TIMEDRECV        55
+#define THINKOS_COMM_TIMED_FIXUP      56
 
-#define THINKOS_CRITICAL_ENTER        54
+#define THINKOS_CRITICAL_ENTER        58
+#define THINKOS_CRITICAL_EXIT         59
 
-#define THINKOS_CRITICAL_EXIT         55
+#define THINKOS_MONITOR               60
 
-#define THINKOS_MONITOR               56
+#define THINKOS_TRACE                 61
+#define THINKOS_TRACE_CTL             62
 
-#define THINKOS_TRACE                 57
-#define THINKOS_TRACE_CTL             58
+#define THINKOS_FLASH_MEM             63
 
-#define THINKOS_FLASH_MEM             59
+#define THINKOS_APP_EXEC              64
 
-#define THINKOS_APP_EXEC              60
-
-#define THINKOS_SYSCALL_CNT           61
+#define THINKOS_SYSCALL_CNT           65
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_WRITE                  0
@@ -761,21 +763,6 @@ static inline int __attribute__((always_inline))
    Communication channel
    ---------------------------------------------------------------------------*/
 
-static inline int __attribute__((always_inline)) 
-thinkos_comm_send(unsigned int comm, const void * buf, unsigned int len) {
-	return THINKOS_SYSCALL3(THINKOS_COMM_SEND, comm, buf, len);
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
-	return THINKOS_SYSCALL3(THINKOS_COMM_RECV, comm, buf, len);
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_comm_ctl(void * buf, unsigned int len) {
-	return THINKOS_SYSCALL2(THINKOS_COMM_CTL, buf, len);
-}
-
 #define __COMM_OPEN_OPC(DEVNO) ((THINKOS_COMM_OPEN << 24) + DEVNO)
 
 static inline int __attribute__((always_inline)) 
@@ -783,6 +770,54 @@ thinkos_comm_open(unsigned int devno) {
 	uint32_t opc = __COMM_OPEN_OPC(devno);
 	register int32_t ret asm("r0");
 	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) : "0"(opc) : );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_send(unsigned int comm, const void * buf, unsigned int len) {
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
+				  "0"(comm), "r"(r1), "r"(r2) : "memory"  );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_COMM_RECV) : "=r"(ret) : 
+				  "0"(comm), "r"(r1), "r"(r2) : "memory" );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_timedsend(unsigned int comm, const void * buf, unsigned int len,
+					   unsigned int tmo) {
+	register int32_t ret asm("r0");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDSEND) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "0"(r0), "r"(r1), "r"(r2), "r"(r3)  : "r12", "memory" );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
+					   unsigned int tmo) {
+	register int32_t ret asm("r0");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDRECV) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "0"(r0), "r"(r1), "r"(r2), "r"(r3)  : "r12", "memory" );
 	return ret;
 }
 

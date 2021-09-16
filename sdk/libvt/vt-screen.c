@@ -11,7 +11,7 @@ const struct vt_screen_def vt_default_screen_def = {
 	.size = {.h = 0, .w = 0}
 };
 
-int __vt_get_term_type(void);
+#define VT_SCREEN_DEFAULT_SIZE VT_SIZE(80, 25)
 
 int vt_screen_init(const struct vt_screen_def * def,
 				   vt_msg_handler_t msg_handler,
@@ -31,8 +31,8 @@ int vt_screen_init(const struct vt_screen_def * def,
 		def = &vt_default_screen_def;
 
 	win = __vt_win_root();
-	win->pos.x = 1;
-	win->pos.y = 1;
+	win->pos = VT_POS(1, 1);
+	win->size = VT_SCREEN_DEFAULT_SIZE;
 
 	__vt_get_term_type(); 
 
@@ -46,17 +46,13 @@ int vt_screen_init(const struct vt_screen_def * def,
 	if (def->size.h == 0 || def->size.w == 0) {
 		n = __vt_move_to(s, 255, 255);
 		__vt_console_write(s, n);
-		if ((c = __vt_get_cursor_pos(&pos)) != 0) {
-			win->size.w = 80;
-			win->size.h = 25;
-		} else {
+		if ((c = __vt_get_cursor_pos(&pos)) == 0) {
 			win->size.w = pos.x;
 			win->size.h = pos.y;
 		}
 		__vt_move_to(s, win->cursor.x, win->cursor.y);
 	} else {
-		win->size.w = def->size.w;
-		win->size.h = def->size.h;
+		win->size = def->size;
 	}
 
 	/* Update tree */
@@ -167,7 +163,7 @@ void vt_screen_reset(void)
 	}
 }
 
-void vt_refresh(void)
+void vt_screen_refresh(void)
 {
 	if ((__vt_lock()) >= 0) {
 		struct vt_win * win = __vt_win_root();
@@ -176,7 +172,7 @@ void vt_refresh(void)
 	}
 }
 
-void vt_redraw(void)
+void vt_screen_render(void)
 {
 	if ((__vt_lock()) >= 0) {
 		struct vt_win * win = __vt_win_root();

@@ -198,13 +198,15 @@ void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self,
 {
 	unsigned int irq = arg[0];
 
-#if (THINKOS_ENABLE_ARG_CHECK)
+#if (IRQ_DEBUG)
+#if (THINKOS_ENABLE_SANITY_CHECK)
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
+#endif
 #endif
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);

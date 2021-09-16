@@ -69,7 +69,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	monitor_printf(comm, "\r\n");
 
 	monitor_printf(comm, "  #"); 
-	monitor_printf(comm, " |     Tag"); 
+	monitor_printf(comm, "     Tag"); 
 	monitor_printf(comm, " |    Stack"); 
 	monitor_printf(comm, " |       SP"); 
 	monitor_printf(comm, " |       PC"); 
@@ -77,7 +77,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* TODO: add timeshare info */
 #endif
-	monitor_printf(comm, " | Clock (ms)"); 
+	monitor_printf(comm, " | Clk (ms)"); 
 #if (THINKOS_ENABLE_PROFILING)
 	monitor_printf(comm, " | CPU %%"); 
 #endif
@@ -106,7 +106,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			sp = thinkos_dbg_thread_sp_get(i);
 			pc = thinkos_dbg_thread_pc_get(i);
 
-			monitor_printf(comm, " | %7s | %08x | %08x | %08x", 
+			monitor_printf(comm, " %7s | %08x | %08x | %08x", 
 						   tag, sl, sp, pc); 
 
 			oid = thinkos_dbg_thread_wq_get(i);
@@ -129,6 +129,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 #endif
 			{
 				int32_t dt = thinkos_dbg_thread_clk_itv_get(i);
+#if 0
 				int32_t sec;
 				int32_t ms;
 
@@ -136,6 +137,10 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 				ms = ((dt < 0) ? -dt : dt) % 1000;
 
 				monitor_printf(comm, " |%7d.%03d", sec, ms);
+#else
+				monitor_printf(comm, " |%9d", dt);
+#endif
+
 			}
 #if (THINKOS_ENABLE_PROFILING)
 			busy = (cycdiv == 0) ? 1000 : (cyc[i] / cycdiv);

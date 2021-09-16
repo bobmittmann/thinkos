@@ -30,7 +30,7 @@
 #include "vt-i.h"
 #include <sys/null.h>
 
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_NONE
 #include <trace.h>
 
 /* -------------------------------------------------------------------------
@@ -77,11 +77,9 @@ static int __vt_msg_dispatch(struct vt_win * win,
 		break;
 	}
 
-	thinkos_mutex_unlock(__sys_vt.mutex);
+	__vt_unlock();
 	win->msg_handler(win, msg, arg, win->data);
-	thinkos_mutex_lock(__sys_vt.mutex);
-
-	return 0;
+	return __vt_lock();
 }
 
 /* -------------------------------------------------------------------------
@@ -98,7 +96,7 @@ int vt_default_msg_loop(unsigned int itv_ms)
 	int connected;
 	int ret;
 
-	if ((ret = thinkos_mutex_lock(__sys_vt.mutex)) < 0)
+	if ((ret = __vt_lock()) < 0)
 		return ret;
 
 	tail = __sys_vt.queue.tail;
@@ -143,9 +141,9 @@ int vt_default_msg_loop(unsigned int itv_ms)
 			continue;
 		} 
 	
-		thinkos_mutex_unlock(__sys_vt.mutex);
+		__vt_unlock();
 		ret = thinkos_console_timedread(buf, sizeof(buf), tmo_ms);
-		thinkos_mutex_lock(__sys_vt.mutex);
+		__vt_lock();
 
 		if (ret > 0) {
 			int i;
@@ -179,7 +177,7 @@ int vt_default_msg_loop(unsigned int itv_ms)
 					}
 				}
 			}
-		} else if (ret == THINKOS_ETIMEDOUT){
+		} else {
 			int flag;
 			flag = console_is_connected();
 			if (flag != connected) {
@@ -189,18 +187,22 @@ int vt_default_msg_loop(unsigned int itv_ms)
 				win = __vt_win_root();
 				msg = VT_TERM_STATUS;
 				__vt_msg_post(win, msg, arg);
+			} 
+			
+			if (ret == THINKOS_ETIMEDOUT) {
+				DBGS("VtLoop: timeout...");
+			} else if (ret == THINKOS_EAGAIN){
+				DBGS("VtLoop: again");
+			} else if (ret == THINKOS_EINTR) {
+				YAPS("VtLoop: intr");
+			} else {
+				YAP("VtLoop: read: %d", ret);
 			}
-		} else if (ret == THINKOS_EAGAIN){
-			YAPS("VtLoop: again");
-		} else if (ret == THINKOS_EINTR) {
-			YAPS("VtLoop: intr");
-		} else {
-			YAP("VtLoop: read: %d", ret);
 		}
 
 	} 
 
-	thinkos_mutex_unlock(__sys_vt.mutex);
+	__vt_unlock();
 
 	return ret;
 }

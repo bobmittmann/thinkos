@@ -51,7 +51,8 @@ enum thinkos_comm_ctrl {
 /* Signals */
 enum thinkos_comm_ctrl {
 	COMM_TX_FIFO = 0,
-	COMM_TX_PEND = 0
+	COMM_TX_PEND = 1,
+	COMM_RX_WAIT = 2
 };
 
 struct thinkos_comm;
@@ -71,6 +72,10 @@ struct thinkos_comm_krn_op {
 };
 
 struct thinkos_comm {
+	union {
+		char tag[8];
+		uint64_t hash;
+	};
 	const void * drv;
 	const struct thinkos_comm_drv_op * drv_op;
 	const struct thinkos_comm_krn_op * krn_op;
@@ -80,6 +85,8 @@ struct thinkos_comm {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c);
 
 int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq);
 

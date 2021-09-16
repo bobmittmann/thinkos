@@ -78,6 +78,8 @@ enum vt_msg {
 	VT_WIN_DESTROY = 7,
 	VT_WIN_CREATE = 8,
 	VT_TERM_STATUS = 9,
+	VT_MENU_ITEM_SELECT = 10,
+	VT_MENU_OPEN = 11,
 };
 
 #define MK_VT_KEY(CODE)   (0x2000 + (CODE))
@@ -176,8 +178,9 @@ int vt_init(void);
 int vt_reset(void);
 
 void vt_clrscr(void);
-void vt_refresh(void);
-void vt_redraw(void);
+
+void vt_screen_refresh(void);
+void vt_screen_render(void);
 void vt_quit(int retcode);
 
 int vt_screen_init(const struct vt_screen_def * def,
@@ -323,8 +326,9 @@ void vt_nc_frame(struct vt_ctx *ctx, const char * title);
 int vt_hbar(struct vt_ctx * ctx, unsigned int y); 
  
 /* Draw a frame with optional title */
-void vt_rect_frame(struct vt_ctx *ctx, const char * title, 
-				   struct vt_rect rect);
+void vt_rect_frame(struct vt_ctx *ctx, 
+				   struct vt_rect rect, 
+				   const char * title, bool hlight);
 
 /* Draw a rectangle at position "pos" with size "size" */
 void vt_rect(struct vt_ctx *ctx, struct vt_pos pos, struct vt_size size);

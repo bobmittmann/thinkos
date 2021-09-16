@@ -780,7 +780,6 @@ __krn_wq_clock_clr(struct thinkos_rt * krn) {
 	krn->wq_clock = 0;
 }
 
-
 /* -------------------------------------------------------------------------- 
  * Ready Queue
  * --------------------------------------------------------------------------*/
@@ -1207,6 +1206,16 @@ static inline bool  __attribute__((always_inline))
 __thread_clk_is_enabled(struct thinkos_rt * krn, unsigned int th) {
 	return __bit_mem_rd(&krn->wq_clock, (th - 1)) ? true : false;
 }
+
+static inline bool  __attribute__((always_inline))
+__thread_clk_chk_and_clr(struct thinkos_rt * krn, unsigned int th) {
+	int idx = (th - 1);
+	bool ret = __bit_mem_rd(&krn->wq_clock, idx) ? true : false;
+	__bit_mem_wr(&krn->wq_clock, idx, 0);
+
+	return ret;
+}
+
 
 /* -------------------------------------------------------------------------- 
  * Composite methods 

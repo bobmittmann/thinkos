@@ -80,12 +80,12 @@ int vt_reset(void)
 {
 	int ret;
 
-	if ((ret = thinkos_mutex_lock(__sys_vt.mutex)) < 0)
+	if ((ret = thinkos_mutex_lock(__sys_vt.core_mutex)) < 0)
 		return ret;
 
 	ret = __vt_core_reset();
 
-	thinkos_mutex_unlock(__sys_vt.mutex);
+	thinkos_mutex_unlock(__sys_vt.core_mutex);
 
 	return ret;
 }
@@ -95,10 +95,10 @@ int vt_init(void)
 {
 	int ret;
 
-	if (__sys_vt.mutex == 0) {
+	if (__sys_vt.core_mutex == 0) {
 		if ((ret = thinkos_mutex_alloc()) < 0)
 			return ret;
-		__sys_vt.mutex = ret;
+		__sys_vt.core_mutex = ret;
 	}
 
 	if (__sys_vt.sem == 0) {
@@ -107,11 +107,11 @@ int vt_init(void)
 		__sys_vt.sem = ret;
 	}
 
-	thinkos_mutex_lock(__sys_vt.mutex);
+	thinkos_mutex_lock(__sys_vt.core_mutex);
 
 	ret = __vt_core_reset();
 
-	thinkos_mutex_unlock(__sys_vt.mutex);
+	thinkos_mutex_unlock(__sys_vt.core_mutex);
 
 	return ret;
 }
