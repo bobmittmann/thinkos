@@ -113,9 +113,6 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 
 	opc = req->opc;
 	DCC_LOG1(LOG_INFO, "opc=%d!", opc);
-#if DEBUG
-	udelay(0x8000);
-#endif
 
 	off = req->offset;
 	size = req->size;
@@ -180,6 +177,20 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 
 	return size - rem;
 }
+
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
+void __thinkos_krn_flash_drv_reset(struct thinkos_rt * krn)
+{
+	int i;
+
+	for (i = 0; i < THINKOS_FLASH_MEM_MAX; ++i) {
+		struct thinkos_flash_drv * drv;
+		drv = &krn->flash_drv[i];
+		drv->wopen = 0;
+		drv->ropen = 0;
+	};
+}
+#endif
 
 int thinkos_flash_drv_init(unsigned int idx, 
 						   const struct thinkos_flash_desc * desc)
@@ -384,5 +395,4 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 #endif /* (THINKOS_FLASH_MEM_MAX > 0) */
-
 

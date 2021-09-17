@@ -156,7 +156,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 		DCC_LOG1(LOG_TRACE, "%d remaining bytes...", rem);
 		/* receive the packet */
 		while (rem) {
-			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 500);
+			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 250);
 
 			if (ret == THINKOS_ETIMEDOUT)
 				goto timeout;

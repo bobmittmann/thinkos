@@ -42,6 +42,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #endif
 
+#include <sys/dcclog.h>
+
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
 {
 	uint8_t * cp = (uint8_t *)buf;

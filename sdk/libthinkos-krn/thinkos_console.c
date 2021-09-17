@@ -379,6 +379,8 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	__krn_sched_defer(krn); 
 }
 
+
+
 int thinkos_console_rx_pipe_ptr(uint8_t ** ptr) 
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
@@ -406,37 +408,97 @@ void thinkos_console_rx_pipe_commit(int cnt)
 	struct thinkos_rt * krn = &thinkos_rt;
 	int wq = THINKOS_WQ_CONSOLE_RD;
 	uint32_t head;
+#if (THINKOS_ENABLE_SANITY_CHECK)	
+	uint32_t tail;
+#endif
 	int th;
 
+	head = thinkos_console_rt.rx_pipe.head + cnt;
 #if (THINKOS_ENABLE_SANITY_CHECK)	
-	if ((cnt <= 0) || (cnt > THINKOS_CONSOLE_RX_FIFO_LEN)) {
-		DCC_LOG1(LOG_PANIC, "cnt=%d !!!", cnt);
+	tail = thinkos_console_rt.rx_pipe.tail;
+	if ((int32_t)(head - tail) > THINKOS_CONSOLE_RX_FIFO_LEN) {
+		DCC_LOG1(LOG_PANIC, "RX_PIPE full dropping %d bytes", cnt);
+	} else {
+		thinkos_console_rt.rx_pipe.head = head;
 	}
+#else
+	thinkos_console_rt.rx_pipe.head = head;
 #endif
 
-	head = thinkos_console_rt.rx_pipe.head + cnt;
-	thinkos_console_rt.rx_pipe.head = head;
-	if (head == (thinkos_console_rt.rx_pipe.tail + 
-				 THINKOS_CONSOLE_RX_FIFO_LEN)) {
-		DCC_LOG(LOG_MSG, "RX_PIPE full");
-		console_clear_rx_pipe();
-	}
-
-	DCC_LOG2(LOG_INFO, "wq=%d -> 0x%08x", wq, &krn->wq_lst[wq]);
-
 	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG(LOG_INFO, "no thread waiting.");
+		DCC_LOG2(LOG_INFO, "wq=%d cnt=%d", wq, cnt);
 		return;
 	}
 
-	DCC_LOG1(LOG_INFO, "thread_id=%d", th);
-	/* wakeup from the console read wait queue setting the return 
-	   value to 0.
+	DCC_LOG3(LOG_INFO, "wakeup wq=%d cnt=%d th=%d", wq, cnt, th);
+	/* Wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__wq_wakeup_return(krn, wq, th, 0);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn); 
 }
+
+
+
+/* Write into fifo from.  */
+ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn, 
+									  const uint8_t * buf, size_t len)
+{
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
+	int wq = THINKOS_WQ_CONSOLE_RD;
+	uint32_t head;
+	uint32_t tail;
+	int cnt = 0;
+	int pos;
+	int max;
+	int th;
+
+	/* get the head position in the buffer */
+	head = pipe->head;
+	tail = pipe->tail;
+
+	/* get the maximum number of chars we can write into buffer */
+	if ((max = (tail - head) + THINKOS_CONSOLE_RX_FIFO_LEN) >= 0) {
+		uint8_t * cp = (uint8_t *)buf;
+
+		/* cnt is the number of chars we will write to the buffer,
+		   it should be the minimum of max and len */
+		cnt = MIN(max, len);
+		/* get the head position in the buffer */
+		pos = head % THINKOS_CONSOLE_RX_FIFO_LEN;
+		/* check whether to wrap around or on not */
+		if ((pos + cnt) > THINKOS_CONSOLE_RX_FIFO_LEN) {
+			/* we need to perform two writes */
+			int n;
+
+			/* get the number of chars from head pos until the end of buffer */
+			n = THINKOS_CONSOLE_RX_FIFO_LEN - pos;
+			/* get the number of chars from tail pos until the end of buffer */
+			__thinkos_memcpy(&pipe->buf[pos], cp, n);
+			/* the remaining chars are at the beginning of the buffer */
+			__thinkos_memcpy(&pipe->buf[0], cp + n, cnt - n);
+		} else {
+			__thinkos_memcpy(&pipe->buf[pos], cp, cnt);
+		}
+
+		DCC_LOG2(LOG_INFO, "wq=%d cnt=%d", wq, cnt);
+		pipe->head = head + cnt;
+	}
+
+	if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL) {
+		DCC_LOG3(LOG_INFO, "wakeup wq=%d cnt=%d th=%d", wq, cnt, th);
+		/* Wakeup from the console read wait queue setting the 
+		   return value to 0.
+		   The calling thread should retry the operation. */
+		__wq_wakeup_return(krn, wq, th, 0);
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn); 
+
+	}
+
+	return cnt;
+}
+
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
 bool thinkos_console_rd_resume(struct thinkos_rt * krn,
@@ -623,19 +685,19 @@ drain_again:
 			tmo = arg[3];
 
 			if ((n = rx_pipe_read(buf, len)) > 0) {
-				DCC_LOG2(LOG_INFO, "<%2d> Console timed read: len=%d", 
-						 len, self);
+				DCC_LOG3(LOG_INFO, "<%2d> rx_pipe_read(len=%d) => %d", 
+						 self, len, n);
 				console_signal_rx_pipe();
 				arg[0] = n;
 				break;
 			}
 
-			if ((tmo > 0) 
 #if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
-				&& (!thinkos_console_rt.rd_nonblock) 
+			if ((tmo > 0) && (!thinkos_console_rt.rd_nonblock)) { 
+#else
+			if (tmo > 0) {
 #endif
-			   ) {
-				DCC_LOG2(LOG_INFO, "<%2d> Console %dms read wait...", 
+				DCC_LOG2(LOG_INFO, "<%2d> timed_wait(%d) ...", 
 						 self, tmo);
 				/* Set the default return value to timeout. */
 				arg[0] = THINKOS_ETIMEDOUT;
@@ -645,7 +707,6 @@ drain_again:
 				/* if timeout is 0 do not block */
 				arg[0] = THINKOS_EAGAIN;
 			}
-
 			break;
 		}
 #endif

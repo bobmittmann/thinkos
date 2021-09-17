@@ -101,6 +101,15 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif
 #endif
 
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
+	for (i = 0; i < THINKOS_FLASH_MEM_MAX; ++i) {
+		struct thinkos_flash_drv * drv;
+		drv = &krn->flash_drv[i];
+		drv->wopen = 0;
+		drv->ropen = 0;
+	}
+#endif
+
 #if (THINKOS_ENABLE_CRITICAL)
 	krn->critical_cnt = 0;
 #endif
