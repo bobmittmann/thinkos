@@ -32,7 +32,7 @@ COMMIO_CFILES = monitor_putc.c monitor_puts.c \
 		print_osinfo.c print_alloc.c print_thread.c \
 		print_context.c print_stack_usage.c \
 		print_exception.c print_profile.c  \
-		monitor_hexdump.c
+		monitor_hexdump.c monitor_newln.c
 
 CFILES = thinkos_monitor.c monitor_thread.c monitor_memory.c \
 	 monitor_console_task.c \

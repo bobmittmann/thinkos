@@ -57,6 +57,16 @@
 #endif
 #endif
 
+
+
+#ifndef TRACE_PREFIX_MAX       
+#define TRACE_PREFIX_MAX        128
+#endif
+
+#ifndef TRACE_PRINT_BUF_LEN     
+#define TRACE_PRINT_BUF_LEN     512
+#endif
+
 struct trace_ctl {
 	uint32_t crc32;
 	unsigned int mutex;

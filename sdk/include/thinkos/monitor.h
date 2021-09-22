@@ -442,6 +442,8 @@ void monitor_print_context(const struct monitor_comm * comm,
 void monitor_print_exception(const struct monitor_comm * comm, 
                             struct thinkos_except * xcpt);
 
+void monitor_newln(const struct monitor_comm * comm);
+
 void monitor_print_profile(const struct monitor_comm * comm, 
                           const struct thinkos_profile * p);
 
