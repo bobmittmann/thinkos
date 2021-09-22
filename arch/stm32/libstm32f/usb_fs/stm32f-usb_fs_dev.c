@@ -71,7 +71,7 @@
 #if defined(STM32F_USB) && (STM32_ENABLE_USB_FS)
 
 #ifndef ENABLE_IRQ_MASK
-#define ENABLE_IRQ_MASK 1
+#define ENABLE_IRQ_MASK 0
 #endif
 
 #ifndef ENABLE_DBLBUF_DEBUG
@@ -79,7 +79,7 @@
 #endif
 
 #ifndef DOUBLE_BUFFER_ENABLE
-#define DOUBLE_BUFFER_ENABLE 0
+#define DOUBLE_BUFFER_ENABLE 1
 #endif
 
 /* Endpoint state */
@@ -675,6 +675,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 	__set_ep_txstat(usb, ep_id, USB_TX_NAK);
 
 	switch (info->attr & 0x03) {
+#if 0
 	case ENDPOINT_TYPE_CONTROL:
 		__set_ep_type(usb, ep_id, USB_EP_CONTROL);
 		/* allocate single buffers for TX and RX */
@@ -684,6 +685,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		drv->pktbuf_addr += sz;
 		DCC_LOG(LOG_INFO, "CONTROL");
 		break;
+#endif
 
 	case ENDPOINT_TYPE_ISOCHRONOUS:
 		DCC_LOG(LOG_INFO, "ISOCHRONOUS");

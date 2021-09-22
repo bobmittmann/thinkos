@@ -112,6 +112,8 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_CRITICAL)
 	krn->critical_cnt = 0;
+	/* turn the scheduler back on */
+	thinkos_krn_sched_on();
 #endif
 }
 

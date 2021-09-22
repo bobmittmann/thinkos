@@ -303,7 +303,7 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 }
 #endif
 
-
+#if 0
 void __thinkos_systick_sleep(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -347,7 +347,7 @@ void thinkos_monitor_wakeup(void)
 	/* Reenable systick interrupts and signal the monitor */
 	__thinkos_systick_wakeup();
 }
-
+#endif
 
 int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
 {

@@ -62,12 +62,14 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 			continue;
 
 		switch (req) {
+#if 0
 			case IDLE_HOOK_MONITOR_WAKEUP:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_RED_
 						"IDLE_HOOK_NOTIFY_MONITOR" _ATTR_POP_ );
 				/* Notify the debug/monitor */
 				thinkos_monitor_wakeup(); 
 				break;
+#endif
 
 #if 0 
 			/* FIXME: IDLE hooks or not, see KERNEL_ERROR */
@@ -126,12 +128,14 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 			case 32:
 #endif /* THINKOS_ENABLE_IDLE_HOOKS */
 
+#if 0
 #if (THINKOS_ENABLE_CRITICAL)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
 				if (thinkos_rt.wq_ready != 0) {
 					__krn_sched_defer(krn);
 				}
+#endif
 #endif
 
 #if (THINKOS_ENABLE_TRACE)

@@ -886,7 +886,7 @@ void thinkos_dbg_resume_all(void)
 #if (THINKOS_ENABLE_PAUSE)
 	__krn_resume_all(krn);
 #else
-	__krn_sched_svc_set(krn, 1);
+	__krn_sched_svc_clr(krn);
 	__krn_sched_defer(krn);
 #endif
 }
