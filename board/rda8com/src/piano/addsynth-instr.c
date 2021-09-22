@@ -74,7 +74,7 @@ int addsynth_instr_config(struct addsynth_instrument * instr,
 
 	/* FIXME: dynamic voice allocation */
 	if ((n = cfg->note_cnt) > ADDSYNTH_INSTRUMENT_VOICE_MAX) {
-		printf("cfg->note_cnt > ADDSYNTH_INSTRUMENT_VOICE_MAX\n");
+		printf("cfg->note_cnt > ADDSYNTH_INSTRUMENT_VOICE_MAX\r\n");
 		return -1;
 	}
 
@@ -96,17 +96,17 @@ int addsynth_instr_config(struct addsynth_instrument * instr,
 		uint32_t key;
 
 		if (idx > ADDSYNTH_INSTRUMENT_VOICE_MAX) {
-			printf("idx > ADDSYNTH_INSTRUMENT_VOICE_MAX\n");
+			printf("idx > ADDSYNTH_INSTRUMENT_VOICE_MAX\r\n");
 			break;
 		}
 
 		key = note->midi - ADDSYNTH_INSTR_KEY_FIRST;
 		if (key > ADDSYNTH_INSTR_KEY_CNT) {
-			printf("key > ADDSYNTH_INSTR_KEY_CNT)\n\r");
+			printf("key > ADDSYNTH_INSTR_KEY_CNT)\r\n");
 			break;
 		}
 
-		printf("Config note: midi=%2d idx=%2d key=%2d\n", note->midi, idx, key);
+		printf("Config note: midi=%2d idx=%2d key=%2d\r\n", note->midi, idx, key);
 		thinkos_sleep(10);
 		instr->key_lut[key] = idx;
 		voice = &instr->voice[idx];
@@ -288,7 +288,7 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 					case ENV_IDLE:
 						/* disable timer */
 						tmr_en &= ~(1 << j);
-						printf("[%d] idle tmr!!!!\n", j + 1);
+						printf("[%d] idle tmr!!!!\r\n", j + 1);
 						break;
 					case ENV_DELAY:
 						env_state[j] = ENV_ATTACK;
@@ -415,7 +415,7 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 
 				switch (env_state[j]) {
 				case ENV_IDLE:
-					printf("[%d] IDLE up ???\n", j + 1);
+					printf("[%d] IDLE up ???\r\n", j + 1);
 					break;
 				case ENV_DELAY:
 					break;
@@ -470,7 +470,7 @@ int addsynth_instr_init(struct addsynth_instrument * instr)
 	instr->mutex = thinkos_mutex_alloc();
 	instr->flag = thinkos_flag_alloc();
 
-	thinkos_thread_create_inf((int (*)(void *))addsynth_instr_task, 
+	thinkos_thread_create_inf(C_TASK(addsynth_instr_task), 
 							  (void *)instr,
 							  &addsynth_instr_thread_inf);
 	return 0;

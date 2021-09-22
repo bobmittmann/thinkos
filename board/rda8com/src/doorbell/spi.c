@@ -223,7 +223,7 @@ void spidev_init(void)
 	dev->stat = 0;
 	dev->ctrl = 0;
 
-	thinkos_thread_create_inf((int (*)(void *))spi_io_task, (void *)dev, 
+	thinkos_thread_create_inf(C_TASK(spi_io_task), (void *)dev, 
 							  &spi_io_thread_inf);
 }
 

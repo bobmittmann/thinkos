@@ -136,6 +136,7 @@ int keyboard_task(struct keyboard_drv * drv)
 			if ((diff = (key_stat ^ key_filt)) != 0) {
 				key_down = diff & ~key_filt;
 				key_up |= diff & key_filt;
+				printf("+");
 			}
 			key_stat = key_filt;
 		}
@@ -229,7 +230,7 @@ int keyboard_init(void)
 	drv->fifo.head = 0;
 	drv->fifo.tail = 0;
 
-	thinkos_thread_create_inf((int (*)(void *))keyboard_task, (void *)drv,
+	thinkos_thread_create_inf(C_TASK(keyboard_task), (void *)drv,
 							  &keyboard_thread_inf);
 	return 0;
 }

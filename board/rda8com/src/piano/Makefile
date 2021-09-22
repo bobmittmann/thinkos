@@ -37,29 +37,26 @@ CFILES = ../common/spidrv.c ../common/encoder.c \
 		 addsynth-instr.c \
 		 addsynth-piano.c addsynth-xilophone.c 
 
-#tonegen.c 
-#f32sin.c
+ARCH_LIBS = stm32f
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
-		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libc $(SDK_DIR)/libfixpt 
+SDK_LIBS = thinkos-usr util c fixpt tty
 
-LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt#
+LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
+		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))
 
-INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
+LIBS = m $(ARCH_LIBS) $(SDK_LIBS)
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
-CFLAGS = -Ofast -fomit-frame-pointer -Werror -Wall -Wdouble-promotion -Wno-unused-parameter -Wextra 
-#-Wpedantic 
-OPTIONS = -g -mno-unaligned-access 
-LDFLAGS = -Wl,--gc-sections 
+
+#LIBPATH = $(LIBMAD_DIR)
+
+CFLAGS = -O1 
 
 MACH = stm32l433xc
-THINKAPP  = 0x08010000
-LDCODE := $(THINKAPP)
+LDCODE = 0x08010000
 LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-app.mk
 
-%.c : %.mp3
-	$(BIN2HEX) -H mp3lib.h -o $@ $<
 

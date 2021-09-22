@@ -161,51 +161,6 @@ uint32_t __attribute__((noinline)) test(uint32_t r0, uint32_t r1, uint32_t r2)
 	return r0;
 }
 
-void cpu_usage_report(FILE * f)
-{
-	const struct thinkos_thread_inf *infbuf[33];
-	uint32_t cycbuf[33];
-	uint32_t cycsum = 0;
-	uint32_t cycbusy;
-	uint32_t cycidle;
-	uint32_t cycdiv;
-	uint32_t idle;
-	uint32_t busy;
-	int i;
-	int cnt;
-
-
-	/* The cycle counter and thread info must be collected with no 
-	   interruptions when threads are created/destroyed at runtime. */
-	thinkos_critical_enter();
-	cnt = thinkos_thread_inf(infbuf, 33);
-	thinkos_thread_cyccnt(cycbuf, cnt);
-	thinkos_critical_exit();
-
-	fprintf(f, "\n");
-
-	cycsum = 0;
-	for (i = 0; i < cnt; ++i)
-		cycsum += cycbuf[i];
-	cycidle = cycbuf[cnt - 1];	/* The last item is IDLE */
-	cycbusy = cycsum - cycidle;
-	cycdiv = (cycsum + 5000) / 10000;
-	busy = (cycbusy + (cycdiv / 2)) / cycdiv;
-	idle = 1000 - busy;
-	fprintf(f, "CPU usage: %d.%02d%% busy, %d.%02d%% idle\r\n",
-			busy / 100, busy % 100, idle / 100, idle % 100);
-
-	for (i = 0; i < cnt; ++i) {
-		const struct thinkos_thread_inf *inf;
-		if (((inf = infbuf[i]) != NULL) && (cycbuf[i] != 0)) {
-			uint32_t usage;
-			usage = (cycbuf[i] + cycdiv / 2) / cycdiv;
-			fprintf(f, "%2d %7s %3d.%02d%%\r\n", i, inf->tag,
-					usage / 100, usage % 100);
-		}
-	}
-
-}
 
 int main(int argc, char ** argv)
 {
@@ -214,9 +169,9 @@ int main(int argc, char ** argv)
 	stdio_init();
 
 	printf("\n\r\n\r");
-	printf("-------------------\n");
-	printf("  JUJU Synthesizer \n");
-	printf("-------------------\n");
+	printf("-------------------\r\n");
+	printf("  JUJU Synthesizer \r\n");
+	printf("-------------------\r\n");
 	printf("\n\r");
 
 	test(10, 11, 22);
@@ -275,21 +230,21 @@ int main(int argc, char ** argv)
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_on(instr, code, vel); 
-//			printf("<%2d> KEY_ON\n", arg);
+			printf("<%2d> KEY_ON\r\n", arg);
 			break;
 		case KBD_EV_KEY_OFF:
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_off(instr, code, vel); 
-//			printf("<%2d> KEY_OFF\n", arg);
+			printf("<%2d> KEY_OFF\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_OFF:
-			printf("<%2d> SWITCH OFF\n", arg);
+			printf("<%2d> SWITCH OFF\r\n", arg);
 			break;
 
 		case KBD_EV_TIMEOUT:
-			printf("timeout\n");
+			printf("timeout\r\n");
 //			cpu_usage_report(stdout);
 			break;
 		}

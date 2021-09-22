@@ -3,10 +3,10 @@
 TOOLS_DIR=../../../../tools
 PYTHON=python
 if [ -z "$JTAGTOOL_ADDR" ]; then
-	JTAGTOOL_ADDR=192.168.10.50
+	JTAGTOOL_ADDR=192.168.10.51
 fi
 # Collect ".bin" files in the positional parameters
-set -- `ls release/*.bin`
+set -- `ls release/*.app`
 # Get the last one
 for PROG_BIN; do true; done
 

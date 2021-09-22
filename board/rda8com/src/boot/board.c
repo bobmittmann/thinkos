@@ -534,6 +534,7 @@ int board_init(void)
 
 void main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
 
 #if DEBUG
@@ -553,14 +554,16 @@ void main(int argc, char ** argv)
 	mdelay(125);
 #endif
 
-	if (thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+
+	if (thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
-					 &mem_map, NULL) < 0) {
+					 &mem_map) < 0) {
 		DCC_LOG(LOG_ERROR, 	
 				VT_PSH VT_BRI VT_FRD "thinkos_krn_init() failed!" VT_POP);
 		for(;;);
 	}
 
+#if !(THINKOS_ENABLE_PRIVILEGED_THREAD)
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 5. thinkos_krn_irq_on()." VT_POP);
 	/* enable interrupts */
@@ -568,12 +571,12 @@ void main(int argc, char ** argv)
 
 	/* Wait a bit for the hardware to initialize ... */
 	thinkos_sleep(125);
+#endif
 
-//	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-//			"* 2. board_init()." VT_POP);
-//	board_init();
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 2. board_init()." VT_POP);
+	board_init();
 
-//	fpga_configure();
+	fpga_configure();
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 3. thinkos_flash_drv_init()." VT_POP);

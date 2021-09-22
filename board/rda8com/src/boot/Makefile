@@ -30,7 +30,7 @@ ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 MKCMD  = python $(TOOLS_DIR)/mkcmd.py
-LZ77 = /c/opt/bin/lz77
+LZ77 = $(TOOLS_DIR)/lz77/lz77
 LZ_WINDOW_SIZE = 16384
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
@@ -60,7 +60,7 @@ ifdef HWREV
   __hwrev=$(HWREV)
 else
   # assign a default hardware if not specified in the command line
-  __hwrev=2
+  __hwrev=1
 endif
 
 CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=$(__hwrev)
@@ -76,7 +76,7 @@ ICE40_DIR = ice40/ice40_comm_Implmnt
 ICE40_BIN = $(ICE40_DIR)/sbt/outputs/bitmap/ice40_comm_bitmap.bin
 # Uncomment ICE40_C to make changes in FPGA
 ICE40_LZ = $(OUTDIR)/ice40hx1k.lz
-#ICE40_C = $(SRCDIR)/ice40hx1k.c
+ICE40_C = $(SRCDIR)/ice40hx1k.c
 ICE40_H = $(SRCDIR)/ice40hx1k.h
 
 $(ICE40_LZ): $(ICE40_BIN) $(MAKEFILE_LIST)
@@ -97,7 +97,7 @@ CMD_TAB_H = $(SRCDIR)/cmd_tab.h
 $(CMD_TAB_H): $(CMD_TAB_C)
 
 $(CMD_TAB_C): $(CMD_TAB_YAML)
-	$(MKCMD) -p boot -o $@ $<
+	$(MKCMD) -l -p boot -o $@ $<
 
 cmdtab: $(CMD_TAB_C)
 

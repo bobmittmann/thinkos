@@ -362,7 +362,7 @@ int dac_init(void)
 		}
 	}
 
-	thinkos_thread_create_inf((int (*)(void *))dac_task, (void *)NULL,
+	thinkos_thread_create_inf(C_TASK(dac_task), (void *)NULL,
 				  &dac_thread_inf);
 
 	return 0;

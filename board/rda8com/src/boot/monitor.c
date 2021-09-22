@@ -272,6 +272,7 @@ static const char s_crlf[] =  "\r\n";
 
 static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
 	int thread_id;
 	int32_t errno;
 
@@ -287,8 +288,8 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 	if (monitor_comm_isconnected(comm)) {
 		struct monitor_thread_inf inf;
 
-		DCC_LOG(LOG_TRACE, "COMM connected!");
-
+		monitor_printf(comm, "\r\n" VT100_RESET);
+		monitor_sleep(250);
 		monitor_thread_inf_get(thread_id, &inf);
 		monitor_printf(comm, s_crlf);
 		monitor_printf(comm, s_hr);
@@ -297,12 +298,21 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 					   inf.thread_id,
 					   inf.errno,
 					   inf.pc);
-		monitor_print_thread(comm, thread_id);
-		monitor_printf(comm, s_hr);
-	}
 
-	DCC_LOG(LOG_TRACE, "thinkos_dbg_thread_break_clr().");
-	thinkos_dbg_thread_break_clr();
+		if ((errno == THINKOS_ERR_BUS_FAULT) || 
+			(errno == THINKOS_ERR_USAGE_FAULT) ||
+			(errno == THINKOS_ERR_MEM_MANAGE)) {
+			monitor_print_exception(comm, xcpt);
+		} else if ((errno >= THINKOS_ERR_APP_INVALID) && 
+			(errno <= THINKOS_ERR_APP_BSS_INVALID)) {
+			monitor_soft_reset();
+			monitor_signal(MONITOR_USER_EVENT3);
+		} else {
+			monitor_print_thread(comm, thread_id);
+		}
+		monitor_printf(comm, s_hr);
+
+	}
 
 	DCC_LOG(LOG_TRACE, "done.");
 }
@@ -325,6 +335,8 @@ static void monitor_on_krn_fault(const struct monitor_comm * comm)
 	}
 
 	if (monitor_comm_isconnected(comm)) {
+		monitor_printf(comm, VT100_RESET);
+		mdelay(250);
 		monitor_printf(comm, 
 					  "# Kernel error, possible stack overflow !!!\r\n");
 		if (thread_id > 0) {
@@ -474,12 +486,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		DCC_LOG(LOG_WARNING, "^C monitor_req_app_term()!");
 		monitor_req_app_term();
 		break;
-#if (MONITOR_DUMPMEM_ENABLE)
-	case CTRL_D:
-		monitor_printf(comm, "^D\r\n");
-		monitor_show_mem(mon, board);
-		break;
-#endif
 #if (MONITOR_BREAKPOINT_ENABLE)
 	case CTRL_F:
 		monitor_printf(comm, "^F\r\n");

@@ -34,7 +34,7 @@
 #endif
 
 #ifndef DAC_VOICES_MAX 
-#define DAC_VOICES_MAX 8
+#define DAC_VOICES_MAX 4
 #endif
 
 #ifndef DAC_PIPELINE_MAX 
