@@ -34,16 +34,6 @@
 
 #include <thinkos/board.h>
 
-/* application block descriptor */
-struct monitor_app_desc {
-	char tag[8];
-	uint32_t start_addr; /* Application memory block start address */
-	uint32_t block_size; /* Size of the memory block in bytes */
-	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
-	uint16_t filesize_offs;  /* Position of file size in the memory block */
-	const struct magic_blk * magic; /* File identification descriptor */
-};
-
 /* Board description */
 struct thinkos_board {
 	char name[16];
@@ -65,35 +55,9 @@ struct thinkos_board {
 		} ver;
 	} sw;
 
-	void (* upgrade)(const struct monitor_comm *);
-	const struct monitor_comm * (* monitor_comm_init)(void);
-	struct monitor_app_desc application;
-	void * arg;
-
-	/* System initialization - runs once when the system powers up */
-	int (* init)(void);
-	/* Soft reset */
-	void (* softreset)(void);
+	void (* on_softreset)(void);
 	int (* on_break)(const struct monitor_comm *);
 
-	int (* configure_task)(void *);
-	int (* selftest_task)(void *);
-	/* ThinkOS task: monitor will run this task prior to run
-	 the application. It should implement configuration
-	 application integrity check etc... 
-	 The return code indicates wether is ok or not to call the
-	 application task. */
-	int (* preboot_task)(void *);
-	/* ThinkOS task: application loader . */
-	int (* app_task)(void *);
-	/* ThinkOS task: monitor will run this task if the application
-	   returns.  */
-	int (* default_task)(void *);
-
-	struct {
-		uint8_t mem;
-		uint8_t blk;
-	} app;
 	const struct thinkos_mem_map * memory;
 };
 
