@@ -69,9 +69,7 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 				/* Notify the debug/monitor */
 				thinkos_monitor_wakeup(); 
 				break;
-#endif
 
-#if 0 
 			/* FIXME: IDLE hooks or not, see KERNEL_ERROR */
 			case IDLE_HOOK_SYSRST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_YELLOW_ 
@@ -213,15 +211,6 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	task_arg[1] = (uintptr_t)&krn->idle_hooks;
 #else
 	task_arg[0] = (uintptr_t)krn;
-	task_arg[1] = 0;
-#endif
-
-#if DEBUG
-	task_arg[2] = (uint32_t)0x22222222;
-	task_arg[3] = (uint32_t)0x33333333;
-#else
-	task_arg[2] = 0;
-	task_arg[3] = 0;
 #endif
 
 	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,

@@ -11,7 +11,6 @@
 add_file -verilog -lib work "ice40_comm.v" 
 add_file -verilog -lib work "spi_slave/spi_slave.v" 
 add_file -verilog -lib work "clkdiv/clkdiv.v" 
-add_file -verilog -lib work "pfracbrg/pfracbrg.v" 
 add_file -constraint -lib work "ice40_comm.sdc"
 #implementation: "ice40_comm_Implmnt"
 impl -add ice40_comm_Implmnt -type fpga

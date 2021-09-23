@@ -171,11 +171,8 @@ int lz_compress(const uint8_t in[], uint8_t out[],
     lz_hist_make(hist, in, insize);
 	marker = lz_hist_fmin(hist);
 
-	printf("f0 = %d\n", lz_hist_f0cnt(hist));
-
     /* Remember the marker symbol for the decoder */
     out[0] = marker;
-
 
     /* Start of compression */
     inpos = 0;
@@ -527,8 +524,13 @@ int main(int argc,  char **argv)
 
 	inname = argv[optind];
 
-	if (verbose > 1)
-		fprintf(stderr, "\nLZ77 window=%d\n", wndsz);
+	if (verbose > 1) {
+		if (compress) {
+			fprintf(stderr, "LZ77 compress\n");
+		} else {
+			fprintf(stderr, "LZ77 decompress\n");
+		}
+	}
 
     /* Open input file */
     if ((f = fopen(inname, "rb" )) == NULL) {
@@ -590,7 +592,7 @@ int main(int argc,  char **argv)
     }
 
     if (compress) {
-#if ENABLE_HUFFMANN
+#if (ENABLE_HUFFMANN)
 		uint8_t * huff;
 
     	huff = malloc(outsize);
@@ -599,9 +601,8 @@ int main(int argc,  char **argv)
 
 		outsize = lz_compress(huff, out, hsize, wndsz);
 
-//		outsize = lz_compress(in, out, insize, wndsz);
 		if (verbose) {
-			fprintf(stderr, "wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
+			fprintf(stderr, " - wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
 					outsize, insize, 100*(float)outsize/(float)insize );
 		}
 		magic = LZ77_MAGIC;
@@ -613,17 +614,17 @@ int main(int argc,  char **argv)
 
 
 		if (hsize < (outsize - 4)) {
-			fprintf(stderr, "lz=%8d huffmann=%8d\n", outsize, hsize); 
+			fprintf(stderr, " - lz=%8d huffmann=%8d\n", outsize, hsize); 
 			magic = LZ78_MAGIC;
 		}
 
-		fprintf(stderr, "lz=%8d huffmann=%8d\n", outsize, hsize); 
+		fprintf(stderr, " - lz=%8d huffmann=%8d\n", outsize, hsize); 
 		magic = LZ78_MAGIC;
 #else
 		outsize = lz_compress(in, out, insize, wndsz);
 		if (verbose) {
-			fprintf(stderr, "wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
-					outsize, insize, 100*(float)outsize/(float)insize );
+			fprintf(stderr, " - wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
+					insize, outsize, 100*(float)outsize/(float)insize );
 		}
 		magic = LZ77_MAGIC;
 #endif
@@ -646,7 +647,7 @@ int main(int argc,  char **argv)
 		if (magic == LZ78_MAGIC) {
 			uint8_t * huff;
 
-			fprintf(stderr, "lz=%8d huffmann=%8d\n", insize, hsize); 
+			fprintf(stderr, " - lz=%8d huffmann=%8d\n", insize, hsize); 
 
     		huff = malloc(outsize);
 
@@ -656,14 +657,14 @@ int main(int argc,  char **argv)
 		} else {
 			chk = lz_crc_uncompress(in, out, insize, wndsz);
 			if (chk != crc32) {
-				fprintf(stderr, "CRC check error [%08x != %08x]!n", chk, crc32);
+				fprintf(stderr, " - CRC check error [%08x != %08x]!n", chk, crc32);
 				fclose(f);
 				free(in);
 				return 7;
 			}
 
 			if (verbose) {
-				fprintf(stderr, "wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
+				fprintf(stderr, " - wnd=%-8d in=%-8d out=%-8d (%.2f%%)\n", wndsz, 
 						outsize, insize, 100*(float)outsize/(float)insize );
 			}
 		}

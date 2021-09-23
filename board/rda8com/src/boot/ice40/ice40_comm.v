@@ -73,10 +73,15 @@ module ice40_comm (
 );
 
 	localparam MCLK_HZ = 79027200;
+	localparam HCLK_HZ = 11289600;
+	localparam DCLK_HZ = 2822400;
+	localparam ACLK_HZ = 22050;
+	localparam SCLK_HSZ = 10;
 
 	wire [15:0] stat;
 	wire [15:0] ctrl;
 	wire clk;
+	wire dsp_clk;
 	wire aux_clk;
 	wire slow_clk;
 	wire rst;
@@ -85,23 +90,31 @@ module ice40_comm (
 	assign rst = 0;
 	wire brg_clk1;
 
-/*	clkdiv #(
-		.DIV(16)
+	clkdiv #(
+		.DIV(28)
 	) clk1 (
 		.clk_i(clk),
+		.rst_i(rst),
+		.clk_o(dsp_clk)
+	);
+
+	clkdiv #(
+		.DIV(128)
+	) clk2 (
+		.clk_i(dsp_clk),
 		.rst_i(rst),
 		.clk_o(aux_clk)
 	);
 
 	clkdiv #(
-		.DIV(16)
-	) clk2 (
+		.DIV(2205)
+	) clk3 (
 		.clk_i(aux_clk),
 		.rst_i(rst),
 		.clk_o(slow_clk)
 	);
   
-  */
+  
 	spi_slave  #(
 		.IO_COUNT(16),
 		.CPOL(0),
@@ -109,24 +122,14 @@ module ice40_comm (
 	) slv (
 		.rst_i(rst),
 
-		.nss_i(SPI_NSS1),
-		.sck_i(SPI_SCK1),
-		.sdi_i(SPI_MOSI1),
-		.sdo_o(SPI_MISO1),
+		.nss_i(SPI_NSS),
+		.sck_i(SPI_SCK),
+		.sdi_i(SPI_MOSI),
+		.sdo_o(SPI_MISO),
 
 		.data_i(stat),
 		.data_o(ctrl)
 	);
-
-	pfracbrg #(.CLK_HZ(8000000),
-			  .BAUDRATE(2666666),
-			  .OVERSAMPLE(1),
-			  .RESOLUTION(16),
-			  .BLOCKSIZE(2))
-		u1 (.clk_i(clk), 
-			.rst_i(rst),
-			.clr_i(0),
-			.brg_clk_o(brg_clk1));
 
 	assign stat[0] = SEL1;
 	assign stat[1] = SEL2;
@@ -135,8 +138,8 @@ module ice40_comm (
 	assign stat[7] = CTL1;
 	assign stat[4] = COMM1;
 	assign stat[5] = TDMDAT1;
-	assign stat[6] = brg_clk1;
-//	assign TDMCK1 = ctrl[0];
+	assign stat[6] = TDMFS1;
+	assign TDMCK1 = slow_clk;
 
 	assign stat[8] = SEL5;
 	assign stat[9] = SEL6;
@@ -146,17 +149,16 @@ module ice40_comm (
 	assign stat[12] = COMM2;
 	assign stat[13] = TDMDAT2;
 	assign stat[14] = TDMFS2;
-	assign TDMCK2 = ctrl[1];
+	assign TDMCK2 = slow_clk;
 
-	assign A_TXD = ctrl[8];
-	assign B_TXD = ctrl[9];
-	assign C_TXD = ctrl[10];
-	assign D_TXD = ctrl[11];
-
-	assign A_TXEN = ctrl[12];
-	assign B_TXEN = ctrl[13];
-	assign C_TXEN = ctrl[14];
-	assign D_TXEN = ctrl[15];
+	assign A_TXD = slow_clk;
+	assign B_TXD = 1;
+	assign C_TXD = aux_clk;
+	assign D_TXD = 1;
+	assign A_TXEN = 1;
+	assign B_TXEN = 0;
+	assign C_TXEN = 1;
+	assign D_TXEN = 0;
 
 	assign UART_TXD = PM_RXD;
 	assign PM_TXD = UART_RXD;

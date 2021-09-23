@@ -90,6 +90,7 @@ int play_task(void *arg)
 {
 	for (;;) {
 		int n;
+		dac_mp3_play(batatinha_mp3, SIZEOF_BATATINHA_MP3);
 
 		if (btn_push_wait()) {
 			n = rand() % 6;

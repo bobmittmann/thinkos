@@ -441,11 +441,7 @@ const struct thinkos_board this_board = {
 		       .build = VERSION_BUILD}
 	       },
 	.memory = &mem_map,
-	.app = { 
-		.mem = MEM_FLASH, 
-		.blk = FLASH_APP 
-	},
-	.softreset = board_on_softreset,
+	.on_softreset = board_on_softreset,
 	.on_break = board_on_break
 };
 

@@ -3,6 +3,7 @@
 IN=test.bin
 LZ=test.lz
 OUT=test.bout
+LZ77=../lz77
 
 function do_test {
 	SIZ=$1 
@@ -10,8 +11,8 @@ function do_test {
 
 	dd if=/dev/urandom bs=1 count=${SIZ} of=${IN}
 
-	./lz77 -vv -w ${WND} -c -o ${LZ} ${IN}
-	./lz77 -vv -w ${WND} -o ${OUT} ${LZ}
+	${LZ77} -vv -w ${WND} -c -o ${LZ} ${IN}
+	${LZ77} -vv -w ${WND} -o ${OUT} ${LZ}
 	md5sum ${IN} ${OUT}
 }
 
