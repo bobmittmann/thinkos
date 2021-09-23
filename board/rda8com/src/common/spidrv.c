@@ -105,8 +105,9 @@ static inline uint32_t __spi_io_xfer16(struct stm32f_spi *spi,
 	/* send data */
 	spi->dr = txd;
 	/* wait for incoming data */
-	while (!((sr = spi->sr) & SPI_RXNE))
+	while (!((sr = spi->sr) & SPI_RXNE)) {
 		thinkos_irq_wait(irq);
+	}
 
 	return spi->dr;
 }

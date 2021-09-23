@@ -7,7 +7,7 @@
 
 /* --- bin2hex.py: file size --- */
 
-#define SIZEOF_ICE40HX1K_BIN 2124
+#define SIZEOF_ICE40HX1K_BIN 1610
 
 
 /* --- bin.hex.py: file content --- */

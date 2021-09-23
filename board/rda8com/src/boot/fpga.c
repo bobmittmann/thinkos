@@ -193,7 +193,7 @@ int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
 	return cfgpos;
 }
 
-#if FPGA_RAW_ENABLE
+#if (FPGA_RAW_ENABLE)
 int lattice_ice40_raw_configure(const uint8_t * buf, unsigned int max)
 {
 	unsigned int n;
@@ -250,7 +250,7 @@ int fpga_configure(void)
 	unsigned int size = (SIZEOF_ICE40HX1K_BIN - 12);
 	uint8_t *bin = (uint8_t *)&ice40hx1k_bin[12];
 	int ret = 0;
-#if FPGA_RAW_ENABLE
+#if (FPGA_RAW_ENABLE)
 	const uint32_t * hdr = (uint32_t *)ice40hx1k_bin;
 	uint32_t magic = ntohl(hdr[0]);
 	uint32_t algo = ntohl(hdr[1]);

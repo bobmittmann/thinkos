@@ -80,7 +80,7 @@ ICE40_C = $(SRCDIR)/ice40hx1k.c
 ICE40_H = $(SRCDIR)/ice40hx1k.h
 
 $(ICE40_LZ): $(ICE40_BIN) $(MAKEFILE_LIST)
-	$(LZ77) -w $(LZ_WINDOW_SIZE) -c -o $@ $<
+	$(LZ77) -vv -w $(LZ_WINDOW_SIZE) -c -o $@ $<
 
 $(ICE40_C): $(ICE40_LZ)
 	$(BIN2HEX) -H ice40hx1k.h -n ice40hx1k_bin -o $@ $<

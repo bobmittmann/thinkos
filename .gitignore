@@ -18,3 +18,5 @@ language.settings.xml
 build/
 
 /tools/dcclog
+*.deps/
+*.cache/

@@ -4,7 +4,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2017.08.27940 - Bui
 ProjectName=ice40_comm
 Vendor=SiliconBlue
 Synthesis=synplify
-ProjectVFiles=ice40_comm.v=work,spi_slave/spi_slave.v=work,clkdiv/clkdiv.v=work,pfracbrg/pfracbrg.v=work
+ProjectVFiles=ice40_comm.v=work,spi_slave/spi_slave.v=work,clkdiv/clkdiv.v=work
 ProjectCFiles=ice40_comm.sdc
 CurImplementation=ice40_comm_Implmnt
 Implementations=ice40_comm_Implmnt

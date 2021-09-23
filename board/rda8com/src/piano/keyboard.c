@@ -72,13 +72,13 @@ static inline void __kbd_ev_put(struct keyboard_drv * drv,
 	thinkos_flag_give(drv->flag);
 }
 
-static inline uint32_t __kbd_io_poll(void)
+static inline uint32_t __kbd_io_poll(uint32_t seq)
 {
 	uint32_t spi_in;
 	uint32_t gpio_in;
 
 	/* process SPI inputs */
-	spi_in = spidrv_xfer(0) & 0x0000ffff;
+	spi_in = spidrv_xfer(seq) & 0x0000ffff;
 	/* process GPIO inputs */
 	gpio_in = stm32_gpio_stat(IO_PUSH_BTN) ? 0 : (1 << 16);
 
@@ -90,10 +90,11 @@ int keyboard_task(struct keyboard_drv * drv)
 	uint32_t tmr_clk[KBD_TMR_CNT];
 	uint32_t key_filt;
 	uint32_t key_stat;
+	uint32_t seq = 0;
 	uint32_t clk;
 	int j;
 
-	key_filt = __kbd_io_poll();
+	key_filt = __kbd_io_poll(seq++);
 	key_stat = key_filt;
 
 	/* Initialize timers */
@@ -129,7 +130,7 @@ int keyboard_task(struct keyboard_drv * drv)
 
 		/* IO polling */
 		prev = key_filt;
-		key_filt = __kbd_io_poll();
+		key_filt = __kbd_io_poll(seq++);
 		/* Debouncing */
 		if (prev == key_filt) {
 			int32_t diff;
@@ -139,6 +140,8 @@ int keyboard_task(struct keyboard_drv * drv)
 				printf("+");
 			}
 			key_stat = key_filt;
+		} else {
+			printf("1");
 		}
 
 		thinkos_mutex_lock(drv->mutex);

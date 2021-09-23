@@ -74,7 +74,7 @@ static int __spi_master_init(unsigned int freq)
 		br = 7;
 
 	freq = stm32_clk_hz(ICE40_CLK_SPI) / (2 << br);
-	printf("SPI: freq=%d Hz\n", freq);
+	fprintf(stderr, "SPI: freq=%d Hz\r\n", freq);
 
 	spi->cr1 = 0;
 	spi->i2scfgr = 0;
@@ -158,7 +158,7 @@ int spi_io_task(struct spi_ctrl * dev)
 		stat = __spi_io_xfer16(ctrl);
 		diff = stat ^ dev->stat;
 		if (diff != 0) {
-			printf("IO: stat=0x%02x diff=0x%02x\n", stat, diff);
+			fprintf(stderr, "IO: stat=0x%02x diff=0x%02x\n", stat, diff);
 			dev->stat = stat;
 		}
 		dev->seq++;
