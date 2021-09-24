@@ -42,13 +42,15 @@
 
 int __flash_ymodem_recv(const char * tag);
 int __ymodem_rcv_task(uint32_t addr, unsigned int size);
+int __flash_erase_partition(const char * tag);
+int krn_console_ymodem_recv(const char * tag);
 
 int boot_cmd_help(int argc, char * argv[])
 {
 	char s[64];
 	int i;
 
-	krn_console_puts("Boot commands:\r\n\r\n");
+	krn_console_puts("\r\nBoot commands:\r\n");
 
 	if (argc > 2)
 		return -1;
@@ -66,7 +68,6 @@ int boot_cmd_help(int argc, char * argv[])
 		return 0;
 	}
 
-	krn_console_puts("\r\n");
 	for (i = BOOT_CMD_FIRST; i <= BOOT_CMD_LAST; ++i) {
 		krn_snprintf(s, sizeof(s), "%10s %4s %s\r\n", boot_cmd_sym_tab[i],
 					 boot_cmd_alias_tab[i], boot_cmd_brief_tab[i]);
@@ -136,7 +137,7 @@ void boot_board_info(const struct thinkos_board * board)
 	krn_console_puts("Compiler: GCC-" __VERSION__ "\r\n");
 
 	/* memory blocks */
-	krn_console_puts("\r\nMemory Map:\r\n");
+	krn_console_puts("\r\nMemory:\r\n");
 	krn_console_puts("         Tag       Adress span"
 				  "     Size  Flags  Align \r\n");
 
@@ -145,12 +146,6 @@ void boot_board_info(const struct thinkos_board * board)
 	}
 	krn_console_puts("\r\n");
 }
-
-int krn_console_puts(const char * s);
-int krn_console_putc(int c);
-int krn_console_gets(char * s, int size);
-int __flash_erase_partition(const char * tag);
-int krn_console_ymodem_recv(const char * tag);
 
 int boot_cmd_info(int argc, char ** argv)
 {
@@ -176,7 +171,7 @@ int __parseline(char * line, char ** argv, int argmax)
 		while (__isspace(c)) {
 			c = *(++cp);
 		}
-
+#if 0
 		/* Quotes: copy verbatim */
 		if ((c == '\'') || (c == '\"')) {
 			int qt = c;
@@ -191,7 +186,7 @@ int __parseline(char * line, char ** argv, int argmax)
 			argv[n++] = tok;
 			continue;
 		}
-	
+#endif	
 		tok = cp;
 
 		for (;;) {
@@ -230,45 +225,19 @@ int flash_app_exec(const char * tag)
 	return thinkos_app_exec(stat.begin);
 }
 
-int boot_cmd_exec(int argc, char * argv[])
-{
-	krn_console_puts("exec\r\n");
-	return flash_app_exec(argv[1]);
-}
-
 int boot_cmd_app(int argc, char * argv[])
 {
 	return flash_app_exec("app");
 }
 
-int boot_cmd_diag(int argc, char * argv[])
-{
-	return flash_app_exec("diag");
-}
-
-int boot_cmd_version(int argc, char * argv[])
-{
-
-	return 0;
-}
-
 int boot_cmd_erase(int argc, char * argv[])
 {
-	krn_console_puts("erase\r\n");
-	return __flash_erase_partition(argv[1]);
+	return __flash_erase_partition("app");
 }
 
 int boot_cmd_rcvy(int argc, char * argv[])
 {
-	krn_console_puts("ry\r\n");
-	return __flash_ymodem_recv(argv[1]);
-}
-
-int boot_cmd_xxd(int argc, char * argv[])
-{
-	krn_console_puts("yxd\r\n");
-	__ymodem_rcv_task(0x20000000, 256 * 1024);
-	return 0;
+	return __flash_ymodem_recv("app");
 }
 
 int boot_cmd_reboot(int argc, char * argv[])
@@ -276,33 +245,6 @@ int boot_cmd_reboot(int argc, char * argv[])
 	krn_console_puts("\r\nRestarting...\r\n");
 	thinkos_sleep(1000);
 	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
-	return 0;
-}
-
-int boot_cmd_quit(int argc, char * argv[])
-{
-	krn_console_puts("\r\nBye...\r\n");
-	return 0;
-}
-
-int boot_cmd_delay(int argc, char * argv[])
-{
-	krn_console_puts("\r\nSleeping...\r\n");
-	return 0;
-}
-
-int boot_cmd_echo(int argc, char ** argv)
-{
-	int i;
-
-	for (i = 1; i < argc; ++i) {
-		if (i != 1)
-			krn_console_puts(" ");
-		krn_console_puts(argv[i]);
-	}
-
-	krn_console_puts("\r\n");
-
 	return 0;
 }
 
@@ -325,7 +267,6 @@ int boot_console_shell(const char * msg, const char * prompt)
 	for (;;) {
 		int ret;
 
-		krn_console_puts("\r\n");
 		krn_console_puts(prompt);
 		if ((ret = krn_console_gets(line, sizeof(line))) < 0) {
 			return ret;
@@ -334,9 +275,6 @@ int boot_console_shell(const char * msg, const char * prompt)
 		if (ret == 0) {
 			continue;
 		}
-
-//		if (thinkos_console_is_connected() <= 0)
-//			return -1;
 
 		if ((argc = __parseline(line, argv, 8)) <= 0) {
 			continue;

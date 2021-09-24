@@ -34,16 +34,13 @@ LZ77 = $(TOOLS_DIR)/lz77/lz77
 LZ_WINDOW_SIZE = 16384
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-#BOOT_CFILES = boot.c monitor.c standby.c
-#CFILES = $(addprefix $(THINKOS_DIR)/boot/,$(BOOT_CFILES)) board.c fpga.c ice40hx1k.c 
 CFILES = board.c monitor.c shell.c cmd_tab.c fpga.c ice40hx1k.c 
 
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-SDK_LIBS = util thinkos-krn thinkos-mon thinkos-dbg thinkos-usr gdbrsp \
-		   xmodem ice-comm
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem 
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)

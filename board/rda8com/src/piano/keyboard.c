@@ -40,7 +40,7 @@
 #define KBD_KEY_CNT  17
 #define KBD_FIFO_LEN 32
 
-#define KBD_POLL_ITV_MS 2
+#define KBD_POLL_ITV_MS 4
 
 #define KBD_TMR_CNT 1
 
@@ -137,11 +137,9 @@ int keyboard_task(struct keyboard_drv * drv)
 			if ((diff = (key_stat ^ key_filt)) != 0) {
 				key_down = diff & ~key_filt;
 				key_up |= diff & key_filt;
-				printf("+");
 			}
 			key_stat = key_filt;
 		} else {
-			printf("1");
 		}
 
 		thinkos_mutex_lock(drv->mutex);

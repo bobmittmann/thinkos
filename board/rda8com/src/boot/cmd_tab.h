@@ -8,15 +8,14 @@
 #include <stdint.h>
 
 #define BOOT_CMD_APP    1
-#define BOOT_CMD_DIAG    2
-#define BOOT_CMD_ERASE    3
-#define BOOT_CMD_HELP    4
-#define BOOT_CMD_INFO    5
-#define BOOT_CMD_RCVY    6
-#define BOOT_CMD_REBOOT    7
+#define BOOT_CMD_ERASE    2
+#define BOOT_CMD_HELP    3
+#define BOOT_CMD_INFO    4
+#define BOOT_CMD_RCVY    5
+#define BOOT_CMD_REBOOT    6
 
 #define BOOT_CMD_FIRST 1
-#define BOOT_CMD_LAST 7
+#define BOOT_CMD_LAST 6
 
 typedef int(* boot_cmd_callback_t)(int argc, char * argv[]);
 
@@ -38,7 +37,6 @@ int boot_cmd_lookup(const char * str);
   ---------------------------------------------------------------------------*/
 
 int boot_cmd_app(int argc, char * argv[]);
-int boot_cmd_diag(int argc, char * argv[]);
 int boot_cmd_erase(int argc, char * argv[]);
 int boot_cmd_help(int argc, char * argv[]);
 int boot_cmd_info(int argc, char * argv[]);

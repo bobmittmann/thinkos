@@ -64,6 +64,18 @@ int krn_console_write(const void * buf, unsigned int len)
 	return krn_console_dev_send(NULL, buf, len);
 }
 
+int krn_console_wrln(const char * ln)
+{
+	int n = 0;
+
+	if (ln) {
+		while (ln[n] != '\0')
+			n++;
+		krn_console_dev_send(NULL, ln, n);
+	}
+	return krn_console_dev_send(NULL, "\r\n", 2);
+}
+
 int krn_console_puts(const char * s)
 {
 	int n = 0;

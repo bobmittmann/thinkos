@@ -32,14 +32,14 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG = piano
 
-CFILES = ../common/spidrv.c ../common/encoder.c \
-		 piano.c dac.c keyboard.c addsynth-voice.c exp_envelope.c \
+CFILES = ../common/spidrv.c piano.c dac.c keyboard.c \
+		 addsynth-voice.c exp_envelope.c \
 		 addsynth-instr.c \
 		 addsynth-piano.c addsynth-xilophone.c 
 
 ARCH_LIBS = stm32f
 
-SDK_LIBS = thinkos-usr util c fixpt tty
+SDK_LIBS = thinkos-usr util c vt fixpt tty
 
 LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
 		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))
@@ -55,7 +55,7 @@ CDEFS = CONFIG_H
 CFLAGS = -O1 
 
 MACH = stm32l433xc
-LDCODE = 0x08010000
+LDCODE = 0x08008000
 LDDATA := 0x20001000
 include $(ARCH_DIR)/mk/stm32-app.mk
 

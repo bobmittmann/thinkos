@@ -28,7 +28,7 @@
 #include "envelope.h"
 #include <midi.h>
 
-#define ADDSYNTH_OSC_MAX 9
+#define ADDSYNTH_OSC_MAX 6
 
 struct osc_cfg {
 	float freq;

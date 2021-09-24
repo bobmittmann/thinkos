@@ -47,8 +47,8 @@
    to create and destroy threads dynamically */
 #define THINKOS_ENABLE_JOIN                 0
 #define THINKOS_ENABLE_PAUSE                0
-#define THINKOS_ENABLE_CANCEL               1
-#define THINKOS_ENABLE_TERMINATE            1
+#define THINKOS_ENABLE_CANCEL               0
+#define THINKOS_ENABLE_TERMINATE            0
 #define THINKOS_ENABLE_EXIT                 0
 
 #define THINKOS_MUTEX_MAX                   8
@@ -98,7 +98,7 @@
 
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR              1
-#define THINKOS_EXCEPT_STACK_SIZE           (384 + 64)
+#define THINKOS_EXCEPT_STACK_SIZE           384
 
 #define THINKOS_ENABLE_EXCEPTIONS           1
 #define THINKOS_ENABLE_HARDFAULT            1
@@ -118,7 +118,7 @@
 #define THINKOS_ENABLE_MPU                  1
 #define THINKOS_ENABLE_FPU                  1
 
-#define THINKOS_MONITOR_STACK_SIZE          (1024 + 128)
+#define THINKOS_MONITOR_STACK_SIZE          1024
 #define THINKOS_ENABLE_STACK_INIT           1
 
 #define THINKOS_ENABLE_CTL                  1
@@ -147,8 +147,8 @@
 #define THINKOS_ENABLE_CONSOLE_MISC         1
 #define THINKOS_ENABLE_CONSOLE_MODE         1
 #define THINKOS_ENABLE_CONSOLE_DRAIN        1
-#define THINKOS_CONSOLE_RX_FIFO_LEN         512
-#define THINKOS_CONSOLE_TX_FIFO_LEN         512
+#define THINKOS_CONSOLE_RX_FIFO_LEN         128
+#define THINKOS_CONSOLE_TX_FIFO_LEN         128
 
 #define THINKOS_ENABLE_UDELAY_CALIBRATE     1
 #define THINKOS_ENABLE_OBJ_ALLOC            1
@@ -193,9 +193,11 @@
 #define STM32_USB_FS_VBUS_ENABLE    1
 #define STM32_USB_FS_SUSPEND        0
 
-#define CDC_EP_OUT_MAX_PKT_SIZE     128
+/*
+#define CDC_EP_OUT_MAX_PKT_SIZE     64
 #define CDC_EP_IN_MAX_PKT_SIZE      64
 #define CDC_EP_INT_MAX_PKT_SIZE     8
+*/
 
 /* -------------------------------------------------------------------------
    Bootloader 

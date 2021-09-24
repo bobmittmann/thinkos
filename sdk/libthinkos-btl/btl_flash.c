@@ -1,0 +1,153 @@
+/* 
+ * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+/** 
+ * @file btl_flash.c
+ * @brief 
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */
+
+#include "thinkos_btl-i.h"
+
+#include <xmodem.h>
+
+#if 0
+#if !(THINKOS_ENABLE_CONSOLE_READ)
+#error "need THINKOS_ENABLE_CONSOLE_READ"
+#endif
+
+#if !(THINKOS_ENABLE_TIMED_CALLS)
+#error "need THINKOS_ENABLE_TIMED_CALLS"
+#endif
+#endif
+
+static const struct comm_dev console_comm_dev = {
+	.arg = NULL,
+	.op = {
+		.send = krn_console_dev_send,
+		.recv = krn_console_dev_recv
+	}
+};
+
+/* Erase a flash partition */
+static int __flash_erase(int key)
+{
+	uint32_t offs = 0;
+	int ret;
+
+	krn_console_puts("\r\nErasing... ");
+	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
+		krn_console_wrln("failed!");
+	} else {
+		krn_console_wrln("Ok.");
+	}
+
+	return ret;
+}
+
+/* Erase a flash partition */
+int btl_flash_erase_partition(const char * tag)
+{
+	int key;
+	int ret;
+
+	krn_console_puts("\r\nErase partition \"");
+	krn_console_puts(tag);
+	krn_console_puts("\" [y]? ");
+	if (krn_console_getc(10000) != 'y') {
+		krn_console_puts("\r\n");
+		return -1;
+	}
+
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		krn_console_puts("\r\nError: can't open partition!\r\n");
+		return key;
+	}
+
+	ret = __flash_erase(key);
+
+	thinkos_flash_mem_close(key);
+
+	return ret;
+}
+
+/* Receive a file and write it into the flash using the YMODEM protocol */
+int btl_flash_ymodem_recv(const char * tag)
+{
+	struct ymodem_rcv ry;
+	unsigned int fsize;
+	uint32_t offs = 0;
+	uint8_t buf[1024];
+	char * fname;
+	int ret;
+	int key;
+
+	krn_console_puts("\r\nUpload \"");
+	krn_console_puts(tag);
+	krn_console_puts("\" [y]? ");
+	if (krn_console_getc(10000) != 'y') {
+		krn_console_puts("\r\n");
+		return -1;
+	}
+
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		krn_console_puts("\r\nError: can't open partition!\r\n");
+		return key;
+	}
+
+	krn_console_wrln("YMODEM receive (Ctrl+X to cancel)... ");
+
+	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
+
+	thinkos_console_raw_mode(true);
+
+	fname = (char *)buf;
+	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
+		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
+			int cnt = ret;
+			DCC_LOG1(LOG_TRACE, "cnt=%d", cnt);
+			if ((ret = thinkos_flash_mem_write(key, offs, buf, cnt)) < 0) {
+				break;
+			}
+			offs += cnt;
+		}
+	}
+
+	thinkos_console_raw_mode(false);
+
+	thinkos_flash_mem_close(key);
+
+	thinkos_sleep(128);
+
+	krn_console_puts("\r\nYMODEM receive ");
+	if (ret < 0)
+		krn_console_wrln("failed!");
+	else
+		krn_console_wrln("Ok.");
+
+	return ret;
+}
+
+int monitor_flash_ymodem_recv(const struct monitor_comm * comm, 
+							 const char * tag)
+{
+	return monitor_thread_exec(comm, C_TASK(btl_flash_ymodem_recv), 
+							   C_ARG(tag));
+
+}
+

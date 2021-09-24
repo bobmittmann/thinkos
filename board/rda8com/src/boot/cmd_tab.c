@@ -3,12 +3,12 @@
   ---------------------------------------------------------------------------*/
 
 #include <stdlib.h>
+#include <string.h>
 #include "cmd_tab.h"
 
 
 const char * const boot_cmd_sym_tab[] = {
 	[BOOT_CMD_APP] = "app",
-	[BOOT_CMD_DIAG] = "diag",
 	[BOOT_CMD_ERASE] = "erase",
 	[BOOT_CMD_HELP] = "help",
 	[BOOT_CMD_INFO] = "info",
@@ -18,27 +18,15 @@ const char * const boot_cmd_sym_tab[] = {
 
 const char * const boot_cmd_brief_tab[] = {
 	[BOOT_CMD_APP] = "Run the application",
-	[BOOT_CMD_DIAG] = "Run the diagnostics app",
-	[BOOT_CMD_ERASE] = "erase a flash partition",
-	[BOOT_CMD_HELP] = "Display a summary list of commands",
+	[BOOT_CMD_ERASE] = "Erase application",
+	[BOOT_CMD_HELP] = "Display a list of commands",
 	[BOOT_CMD_INFO] = "Display system information",
-	[BOOT_CMD_RCVY] = "YMODEM file receive to flash partition",
+	[BOOT_CMD_RCVY] = "YMODEM app upload",
 	[BOOT_CMD_REBOOT] = "Reboot the system",
-};
-
-const char * const boot_cmd_desc_tab[] = {
-	[BOOT_CMD_APP] = "",
-	[BOOT_CMD_DIAG] = "",
-	[BOOT_CMD_ERASE] = "Erase a flash block.",
-	[BOOT_CMD_HELP] = "Display a summary list of commands.",
-	[BOOT_CMD_INFO] = "",
-	[BOOT_CMD_RCVY] = "This command uses YMODEM protocol to receive a file and write it to a flash partrition.",
-	[BOOT_CMD_REBOOT] = "Write the content of a FLASH partition to the console.",
 };
 
 const char boot_cmd_alias_tab[][4] = {
 	[BOOT_CMD_APP] = "",
-	[BOOT_CMD_DIAG] = "",
 	[BOOT_CMD_ERASE] = "e",
 	[BOOT_CMD_HELP] = "h",
 	[BOOT_CMD_INFO] = "i",
@@ -46,19 +34,8 @@ const char boot_cmd_alias_tab[][4] = {
 	[BOOT_CMD_REBOOT] = "",
 };
 
-const char * const boot_cmd_param_tab[] = {
-	[BOOT_CMD_APP] = NULL,
-	[BOOT_CMD_DIAG] = NULL,
-	[BOOT_CMD_ERASE] = "app | diag",
-	[BOOT_CMD_HELP] = "CMD",
-	[BOOT_CMD_INFO] = NULL,
-	[BOOT_CMD_RCVY] = "app | diag",
-	[BOOT_CMD_REBOOT] = NULL,
-};
-
 const boot_cmd_callback_t boot_cmd_call_tab[] = {
 	[BOOT_CMD_APP] = boot_cmd_app,
-	[BOOT_CMD_DIAG] = boot_cmd_diag,
 	[BOOT_CMD_ERASE] = boot_cmd_erase,
 	[BOOT_CMD_HELP] = boot_cmd_help,
 	[BOOT_CMD_INFO] = boot_cmd_info,
@@ -66,81 +43,17 @@ const boot_cmd_callback_t boot_cmd_call_tab[] = {
 	[BOOT_CMD_REBOOT] = boot_cmd_reboot,
 };
 
-/*
-   Perfect Hashing
-
-   Table generated with Fisher and Yates permutation
-   algorithm
-*/
-
-static const uint8_t p_tab[] = {
-	 88,   1,  11, 113,  49,  58, 125,  75,
-	 65,  90, 103,  93,  29,  86,   6,  92,
-	 16,  25,  42,  19,  31,  47,  33,  69,
-	100,   0,  96, 118, 106, 116,  89,  87,
-	115, 122,  18,  94,  23,  70,  60,  77,
-	 72,  20,  55,   7, 107,  66,  28,  26,
-	104,  73, 108,  10,  13, 102, 120,  78,
-	 37,  36,  54, 101,  21,  81,   3, 117,
-	 83,  84,  68, 127,  59,  27,  43, 124,
-	109,  67,  95,  32,  45,  57,   5, 114,
-	 40,  24,  14, 112,  99,  85,  79, 123,
-	 44,  50,  64, 119,  76,  12,  62,   4,
-	 51, 110,  61,  46,  80,  98,  56,  48,
-	 38,  97, 121,  41,  30,  22,  39,  63,
-	  2,  35, 126,  17,  34,  71,   9,  82,
-	 52,  74,  53,  15, 111, 105,   8,  91
-};
-
-static const uint8_t s_tab[] = {
-	 20,  38,  46,  50,  57,  61,  74,  97,
-	 98, 111, 126
-};
-
-static const uint8_t i_tab[] = {
-	  1,   4,   4,   5,   3,   7,   6,   5,
-	  3,   2,   6
-};
-
-/*
-   Binary search...
-*/
-
-static int h_lookup(int x)
+int boot_cmd_lookup(const char * str)
 {
-	int i = 0;
-	int j = sizeof(s_tab) - 1;
+	int i;
 
-	while (i <= j) {
-		int k = i + ((j - i) / 2);
-		int y = s_tab[k];
-		if (y == x) {
-			return k;
-		} else if (y < x) {
-			i = k + 1;
-		} else {
-			j = k - 1;
-		}
+	for (i = BOOT_CMD_FIRST; i <= BOOT_CMD_LAST; ++i) {
+		if (strcmp(str, boot_cmd_sym_tab[i]) == 0)
+			return i;
+		if (strcmp(str, boot_cmd_alias_tab[i]) == 0)
+			return i;
 	}
 
 	return -1;
-}
-
-int boot_cmd_lookup(const char * str)
-{
-	int h = 0;
-	int c;
-	int i;
-	int y;
-
-	for (i = 0; (c = str[i]) != '\0'; ++i) {
-		h = p_tab[c ^ h];
-	}
-
-	if ((y = h_lookup(h)) < 0) {
-		return y;
-	}
-
-	return i_tab[y];
 }
 

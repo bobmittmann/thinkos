@@ -1,15 +1,6 @@
 module ice40_comm (
 	input  MCLK,
-	input  MODE,
 	
-	input  UART_RXD,
-	output UART_TXD,
-
-	inout  COMM,
-	
-	input  PM_RXD,
-	output PM_TXD,
-
 	input  A_RXD,
 	output A_TXD,
 	output A_TXEN,
@@ -27,19 +18,9 @@ module ice40_comm (
 	output D_TXEN,
 	
 	input  SPI_NSS,
-	input  SPI_MISO,
+	output SPI_MISO,
 	input  SPI_MOSI,
 	input  SPI_SCK,
-
-	input  SPI_NSS1,
-	output SPI_MISO1,
-	input  SPI_MOSI1,
-	input  SPI_SCK1,
-
-	input  SAI_FS,
-	input  SAI_MCLK,
-	input  SAI_SCK,
-	input  SAI_SD,
 
 	input  SEL1,
 	input  SEL2,
@@ -61,15 +42,15 @@ module ice40_comm (
 	input  TDMFS2,
 	output TDMCK2,
 
-	input  QIO0,
-	input  QIO1,
-	input  QIO2,
-	input  QIO3,
-	input  QCLK,
-	input  QNCS,
-	
-	input  I2C_SCL,
-	input  I2C_SDA
+	input  NET_RXD,
+	output NET_TXD,
+
+	input  COMM,
+
+	input  SAI_SD,
+	input  SAI_MCLK,
+	input  SAI_SCK
+
 );
 
 	localparam MCLK_HZ = 79027200;
@@ -78,17 +59,19 @@ module ice40_comm (
 	localparam ACLK_HZ = 22050;
 	localparam SCLK_HSZ = 10;
 
+	wire clk;
+	wire rst;
+
 	wire [15:0] stat;
 	wire [15:0] ctrl;
-	wire clk;
+	reg  [15:0] cnt;
 	wire dsp_clk;
 	wire aux_clk;
 	wire slow_clk;
-	wire rst;
 
 	assign clk = MCLK;
 	assign rst = 0;
-	wire brg_clk1;
+
 
 	clkdiv #(
 		.DIV(28)
@@ -152,15 +135,13 @@ module ice40_comm (
 	assign TDMCK2 = slow_clk;
 
 	assign A_TXD = slow_clk;
-	assign B_TXD = 1;
-	assign C_TXD = aux_clk;
-	assign D_TXD = 1;
+	assign B_TXD = slow_clk;
+	assign C_TXD = slow_clk;
+	assign D_TXD = slow_clk;
 	assign A_TXEN = 1;
-	assign B_TXEN = 0;
+	assign B_TXEN = 1;
 	assign C_TXEN = 1;
-	assign D_TXEN = 0;
+	assign D_TXEN = 1;
 
-	assign UART_TXD = PM_RXD;
-	assign PM_TXD = UART_RXD;
 endmodule
 

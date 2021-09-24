@@ -106,9 +106,26 @@ static inline void monitor_req_app_upload(void) {
 extern const struct thinkos_flash_desc board_flash_desc;
 extern struct thinkos_flash_drv board_flash_drv;
 
+struct btl_shell_env;
+
+typedef int(* btl_cmd_callback_t)(struct btl_shell_env * env, int argc, 
+								  char * argv[]);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int blt_cmd_lookup(struct btl_shell_env * env, const char * str);
+
+int btl_console_shell(struct btl_shell_env * env);
+
+int btl_shell_env_init(struct btl_shell_env * env);
+
+struct btl_shell_env * btl_shell_env_getinstance(void);
+
+
+
+
 
 void standby_monitor_task(const struct monitor_comm * comm, void * arg);
 

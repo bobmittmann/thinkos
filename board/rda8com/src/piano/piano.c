@@ -86,9 +86,8 @@ void stdio_init(void)
 	FILE * f;
 
 	f = console_fopen();
-//	f = null_fopen(0);
 	/* initialize STDIO */
-	stderr = f;
+	stderr = null_fopen(0);
 	stdout = f;
 	stdin = f;
 }
@@ -211,6 +210,8 @@ int main(int argc, char ** argv)
 	keyboard_timer_set(1, 10000);
 	keyboard_timer_enable(1);
 
+	dac_gain_set(0.66);
+
 	/* sequencer */
 	for (;;) {
 		int event;
@@ -230,21 +231,21 @@ int main(int argc, char ** argv)
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_on(instr, code, vel); 
-			printf("<%2d> KEY_ON\r\n", arg);
+	//		printf("<%2d> KEY_ON\r\n", arg);
 			break;
 		case KBD_EV_KEY_OFF:
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_off(instr, code, vel); 
-			printf("<%2d> KEY_OFF\r\n", arg);
+	//		printf("<%2d> KEY_OFF\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_OFF:
-			printf("<%2d> SWITCH OFF\r\n", arg);
+	//		printf("<%2d> SWITCH OFF\r\n", arg);
 			break;
 
 		case KBD_EV_TIMEOUT:
-			printf("timeout\r\n");
+	//		printf("timeout\r\n");
 //			cpu_usage_report(stdout);
 			break;
 		}

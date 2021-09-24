@@ -984,6 +984,8 @@ int krn_console_getc(unsigned int tmo);
 
 int krn_console_gets(char * s, int size);
 
+int krn_console_wrln(const char * ln);
+
 /* -------------------------------------------------------------------------- 
  * kernel core functions 
  * --------------------------------------------------------------------------*/
