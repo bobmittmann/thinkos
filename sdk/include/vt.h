@@ -285,7 +285,7 @@ int vt_puts(struct vt_ctx * ctx, const char * buf);
 
 /* move */
 void vt_move(struct vt_ctx * ctx, int x, int y);
-void vt_home(struct vt_ctx * ctx);
+void vt_cursor_home(struct vt_ctx * ctx);
 
 /* move and print */
 int __attribute__((format(__printf__, 4, 5))) 
