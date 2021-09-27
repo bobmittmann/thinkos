@@ -99,12 +99,10 @@ const struct keyboard_cfg keyboard_piano_cfg = {
 		 [1] = { .key =  2, .code = MIDI_D4},
 		 [2] = { .key =  3, .code = MIDI_E4},
 		 [3] = { .key =  4, .code = MIDI_F4},
-		 [4] = { .key =  8, .code = MIDI_G4},
-		 [5] = { .key =  5, .code = MIDI_A4},
-		 [6] = { .key =  6, .code = MIDI_B4},
-
-		 [7] = { .key =  7, .code = MIDI_C5},
-
+		 [4] = { .key =  5, .code = MIDI_G4},
+		 [5] = { .key =  6, .code = MIDI_A4},
+		 [6] = { .key =  7, .code = MIDI_B4},
+		 [7] = { .key =  8, .code = MIDI_C5},
 		 [8] = { .key =  9, .code = MIDI_D5},
 		 [9] = { .key = 10, .code = MIDI_E5},
 		[10] = { .key = 11, .code = MIDI_F5},
@@ -116,6 +114,31 @@ const struct keyboard_cfg keyboard_piano_cfg = {
 		[15] = { .key = 16, .code = MIDI_D6}
 	}
 };
+
+
+const struct keyboard_cfg keyboard_xilophone_cfg = {
+	.keymap_cnt = 16,
+	.keymap = {
+		 [0] = { .key =  1, .code = MIDI_A4},
+		 [1] = { .key =  2, .code = MIDI_B4},
+		 [2] = { .key =  3, .code = MIDI_C5},
+		 [3] = { .key =  4, .code = MIDI_D5},
+		 [4] = { .key =  5, .code = MIDI_E5},
+		 [5] = { .key =  6, .code = MIDI_F5},
+		 [6] = { .key =  7, .code = MIDI_G5},
+		 [7] = { .key =  8, .code = MIDI_A5},
+		 [8] = { .key =  9, .code = MIDI_B5},
+		 [9] = { .key = 10, .code = MIDI_C6},
+		[10] = { .key = 11, .code = MIDI_D6},
+		[11] = { .key = 12, .code = MIDI_E6},
+		[12] = { .key = 13, .code = MIDI_F6},
+		[13] = { .key = 14, .code = MIDI_G6},
+		[14] = { .key = 15, .code = MIDI_A6},
+		[15] = { .key = 16, .code = MIDI_B6}
+	}
+};
+
+
 
 uint32_t x;
 
@@ -187,18 +210,20 @@ int main(int argc, char ** argv)
 	thinkos_sleep(10);
 	keyboard_init();
 
-	printf("Keyboard config...\n\r");
-	thinkos_sleep(10);
-	keyboard_config(&keyboard_piano_cfg);
-
 	printf("Instrument init...\n\r");
 	thinkos_sleep(10);
 	instr = addsynth_instrument_getinstance();
 	addsynth_instr_init(instr);
 
+	printf("Keyboard config...\n\r");
+	thinkos_sleep(10);
+	keyboard_config(&keyboard_xilophone_cfg);
+
 	printf("Instrument config...\n\r");
 	thinkos_sleep(10);
-	addsynth_instr_config(instr, &addsynth_piano_cfg);
+//	addsynth_instr_config(instr, &addsynth_piano_cfg);
+
+	addsynth_instr_config(instr, &addsynth_xilophone_cfg);
 
 	printf("Sequencer ...\n\r");
 	thinkos_sleep(10);
@@ -231,13 +256,13 @@ int main(int argc, char ** argv)
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_on(instr, code, vel); 
-	//		printf("<%2d> KEY_ON\r\n", arg);
+//			printf("<%2d> KEY_ON\r\n", arg);
 			break;
 		case KBD_EV_KEY_OFF:
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_off(instr, code, vel); 
-	//		printf("<%2d> KEY_OFF\r\n", arg);
+//			printf("<%2d> KEY_OFF\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_OFF:

@@ -154,12 +154,12 @@ int exp_envelope_config(struct exp_envelope *env, float dt,
 //		printf("5. b=%f\n", (double)b); 
 		c1 = powf(b, (float)1.0 / n);
 	} else {
-		c1 = .5;
+		c1 = .125;
 	}
 	c1release = c1;
 
-//	printf("attack=%d hold=%d ndecay%d nrelease=%d\n", 
-//		   nattack, nhold, ndecay, nrelease);
+	printf("attack=%d hold=%d ndecay%d nrelease=%d\n", 
+		   nattack, nhold, ndecay, nrelease);
 //	printf("c2attack=%10.8f c1hold=%10.8f c1decay=%10.8f c1release=%10.8f\n", 
 //		   (double)c2attack, (double)c1hold, 
 //		   (double)c1decay, (double)c1release);

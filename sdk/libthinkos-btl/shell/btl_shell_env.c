@@ -17,33 +17,34 @@
  */
 
 /** 
- * @file btl_cmd_reboot.c
+ * @file btl_shell_env.c
  * @brief 
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#define __THINKOS_CONSOLE__
-#include <thinkos/console.h>
-#include <sys/delay.h>
-#include <sys/dcclog.h>
-#include <thinkos.h>
-#include <vt100.h>
-#include <xmodem.h>
-#include <stdio.h>
-#include <ctype.h>
+#include "thinkos_btl-i.h"
 
-#include "board.h"
-#include "version.h"
+static struct btl_shell_env btl_shell_env_singleton;
 
-#include <sys/dcclog.h>
-
-int btl_cmd_reboot(int argc, char * argv[])
+struct btl_shell_env * btl_shell_env_getinstance(void)
 {
-	krn_console_puts("\r\nRestarting...\r\n");
-	thinkos_sleep(1000);
-	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
-	return 0;
+	return &btl_shell_env_singleton;
+}
+
+void btl_shell_env_prompt_set(struct btl_shell_env * env, const char * str)
+{
+	env->prompt = str;
+}
+
+void btl_shell_env_motd_set(struct btl_shell_env * env, const char * str)
+{
+	env->motd = str;
+}
+
+void btl_shell_env_init(struct btl_shell_env * env, 
+					   const char * motd, const char * prompt)
+{
+	env->prompt = prompt;
+	env->motd = motd;
 }
 

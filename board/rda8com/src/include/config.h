@@ -91,7 +91,7 @@
 
 /* Enable scheduler trace calls */
 #if DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG          1
+#define THINKOS_ENABLE_SCHED_DEBUG          0
 #else
 #define THINKOS_ENABLE_SCHED_DEBUG          0
 #endif
@@ -147,7 +147,7 @@
 #define THINKOS_ENABLE_CONSOLE_MISC         1
 #define THINKOS_ENABLE_CONSOLE_MODE         1
 #define THINKOS_ENABLE_CONSOLE_DRAIN        1
-#define THINKOS_CONSOLE_RX_FIFO_LEN         128
+#define THINKOS_CONSOLE_RX_FIFO_LEN         256
 #define THINKOS_CONSOLE_TX_FIFO_LEN         128
 
 #define THINKOS_ENABLE_UDELAY_CALIBRATE     1
@@ -193,11 +193,11 @@
 #define STM32_USB_FS_VBUS_ENABLE    1
 #define STM32_USB_FS_SUSPEND        0
 
-/*
-#define CDC_EP_OUT_MAX_PKT_SIZE     64
+#if 0
+#define CDC_EP_OUT_MAX_PKT_SIZE     128
 #define CDC_EP_IN_MAX_PKT_SIZE      64
-#define CDC_EP_INT_MAX_PKT_SIZE     8
-*/
+#define CDC_EP_INT_MAX_PKT_SIZE     16
+#endif
 
 /* -------------------------------------------------------------------------
    Bootloader 

@@ -150,8 +150,7 @@ int addsynth_instr_note_on(struct addsynth_instrument * instr,
 	if ((voice = __voice_lookup(instr, code)) == NULL) {
 		ret = -1;
 	} else {
-
-		//printf("ON voice->idx=%d\n", voice->idx);
+//		printf("ON voice->idx=%d\r\n", voice->idx);
 		instr->note_stat |= (1 << voice->idx);
 
 		thinkos_flag_give(instr->flag);
@@ -207,7 +206,7 @@ int addsynth_instr_note_off(struct addsynth_instrument * instr,
 
 #define INSTR_KEY_CNT  16
 
-#define INSTR_POLL_ITV_MS 125  /* 62.5 Hz */
+#define INSTR_POLL_ITV_MS 16  /* 62.5 Hz */
 
 enum {
 	ENV_IDLE = 0,
@@ -273,6 +272,7 @@ int addsynth_instr_task(struct addsynth_instrument * instr)
 		bmp = __rbit(tmr_en);
 		while ((j = __clz(bmp)) < 32) {
 			bmp &= ~(0x80000000 >> j);  
+
 
 			if ((diff = (int32_t)(tmr_clk[j] - clk)) <= 0) {
 				if (j == INSTR_TMR_KEY_POLL) {

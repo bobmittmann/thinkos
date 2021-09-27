@@ -119,13 +119,19 @@ int blt_cmd_lookup(struct btl_shell_env * env, const char * str);
 
 int btl_console_shell(struct btl_shell_env * env);
 
-int btl_shell_env_init(struct btl_shell_env * env);
-
 struct btl_shell_env * btl_shell_env_getinstance(void);
 
+void btl_shell_env_prompt_set(struct btl_shell_env * env, const char * str);
 
+void btl_shell_env_motd_set(struct btl_shell_env * env, const char * str);
 
+void btl_shell_env_init(struct btl_shell_env * env, 
+					   const char * motd, const char * prompt);
 
+int btl_flash_ymodem_recv(const char * tag);
+int btl_flash_erase_partition(const char * tag);
+void btl_board_info(const struct thinkos_board * board);
+int btl_flash_app_exec(const char * tag);
 
 void standby_monitor_task(const struct monitor_comm * comm, void * arg);
 

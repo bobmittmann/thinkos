@@ -30,11 +30,11 @@
 #endif
 
 #ifndef DAC_SAMPLE_RATE
-#define DAC_SAMPLE_RATE 44100
+#define DAC_SAMPLE_RATE 32000
 #endif
 
 #ifndef DAC_VOICES_MAX 
-#define DAC_VOICES_MAX 6
+#define DAC_VOICES_MAX 8
 #endif
 
 #ifndef DAC_PIPELINE_MAX 

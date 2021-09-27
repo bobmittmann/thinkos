@@ -287,7 +287,7 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
 		.attributes = ENDPOINT_TYPE_INTERRUPT,
 		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-		.interval = 200
+		.interval = 100
 	},
 	/* Data Class Interface Descriptor Requirement */
 	.if_data0 = {
@@ -524,7 +524,7 @@ static void monitor_usb_on_rcv(usb_class_t * cl,
 			 "IRQ pkt_len=%d rcv_cnt=%d COMM_RCV..." 
 			 VT_POP, 
 			 len, cnt);
-
+	
 	monitor_signal(MONITOR_COMM_RCV);
 }
 
@@ -668,8 +668,9 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
 			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE)");
-		} else
+		} else {
 			DCC_LOG1(LOG_WARNING, "ClrFeatureDev(%d)", value);
+		}
 		break;
 
 	case STD_SET_FEATURE_DEVICE:
@@ -677,8 +678,9 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
 			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE )");
-		} else
+		} else {
 			DCC_LOG1(LOG_WARNING, "SetFeatureDev(%d)", value);
+		}
 		break;
 #endif
 
@@ -980,6 +982,7 @@ static int monitor_usb_comm_recv(const void * comm,
 
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
 		DCC_LOG(LOG_INFO, "signal MONITOR_COMM_RCV!");
+
 		/* Pending data on fifo, resignal .. */
 		monitor_signal(MONITOR_COMM_RCV);
 	}

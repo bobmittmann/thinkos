@@ -191,7 +191,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 
 		__monitor_context_swap(&krn->monitor.ctx); 
 
-	} while (0);
+	} while (1);
 
   #endif /* THINKOS_ENABLE_MONITOR */
 }

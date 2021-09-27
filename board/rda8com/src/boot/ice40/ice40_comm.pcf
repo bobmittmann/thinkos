@@ -57,25 +57,38 @@ set_io COMM        7 -io_std SB_LVCMOS -pullup yes
 set_io SAI_SD     16 -io_std SB_LVCMOS -pullup no
 set_io SAI_MCLK   18 -io_std SB_LVCMOS -pullup no
 set_io SAI_SCK    19 -io_std SB_LVCMOS -pullup no
-set_io IO_RES0    20 -io_std SB_LVCMOS -pullup yes
 
-set_io IO_RES0    13 -io_std SB_LVCMOS -pullup yes
+set_io IO1        20 -io_std SB_LVCMOS -pullup no
+set_io IO2        68 -io_std SB_LVCMOS -pullup no
 
-set_io IO_RES2    41 -io_std SB_LVCMOS -pullup yes
-set_io IO_RES3    40 -io_std SB_LVCMOS -pullup yes
+set_io SAI_FS     13 -io_std SB_LVCMOS -pullup no
+
+
 set_io IO_RES1    42 -io_std SB_LVCMOS -pullup yes
 
-set_io IO_RES3    73 -io_std SB_LVCMOS -pullup yes
-set_io IO_RES4    72 -io_std SB_LVCMOS -pullup yes
+set_io TP12       72 -io_std SB_LVCMOS -pullup no
+set_io TP13       71 -io_std SB_LVCMOS -pullup no
 set_io IO_RES5    30 -io_std SB_LVCMOS -pullup yes
 
+
 set_io IO_RES7     1 -io_std SB_LVCMOS -pullup yes
-set_io IO_RES6     2 -io_std SB_LVCMOS -pullup yes
+set_io LED1        2 -io_std SB_LVCMOS -pullup no
+set_io LED2        3 -io_std SB_LVCMOS -pullup no
 set_io IO_RES8    26 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES9    27 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES10   28 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES11   29 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES12   33 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES13   34 -io_std SB_LVCMOS -pullup yes
+set_io IO_RES12   33 -io_std SB_LVCMOS -pullup yes
+set_io IO_RES13   34 -io_std SB_LVCMOS -pullup yes
 
+
+set_io IO_RES14     4 -io_std SB_LVCMOS -pullup no
+set_io IO_RES15     9 -io_std SB_LVCMOS -pullup no
+set_io IO_RES16    10 -io_std SB_LVCMOS -pullup no
+set_io IO_RES17    12 -io_std SB_LVCMOS -pullup no
+set_io IO_RES18    37 -io_std SB_LVCMOS -pullup no
+set_io IO_RES19    40 -io_std SB_LVCMOS -pullup no
+set_io IO_RES20    41 -io_std SB_LVCMOS -pullup no
 

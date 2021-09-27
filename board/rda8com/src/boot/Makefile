@@ -40,7 +40,7 @@ CFILES = board.c monitor.c shell.c cmd_tab.c fpga.c ice40hx1k.c
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem 
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem ice-comm
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)
@@ -94,7 +94,7 @@ CMD_TAB_H = $(SRCDIR)/cmd_tab.h
 $(CMD_TAB_H): $(CMD_TAB_C)
 
 $(CMD_TAB_C): $(CMD_TAB_YAML)
-	$(MKCMD) -l -p boot -o $@ $<
+	$(MKCMD) -l -e "struct btl_shell_env" -p btl -o $@ $<
 
 cmdtab: $(CMD_TAB_C)
 

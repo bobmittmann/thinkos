@@ -25,6 +25,7 @@
 #include "thinkos_btl-i.h"
 
 #include <xmodem.h>
+#include <sys/delay.h>
 
 #if 0
 #if !(THINKOS_ENABLE_CONSOLE_READ)
@@ -120,25 +121,27 @@ int btl_flash_ymodem_recv(const char * tag)
 	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
-			DCC_LOG1(LOG_TRACE, "cnt=%d", cnt);
 			if ((ret = thinkos_flash_mem_write(key, offs, buf, cnt)) < 0) {
 				break;
 			}
 			offs += cnt;
 		}
+		DCC_LOG1(LOG_WARNING, "ret=%d", ret);
+	} else {
+		DCC_LOG1(LOG_WARNING, "err=%d", ret);
 	}
 
 	thinkos_console_raw_mode(false);
 
 	thinkos_flash_mem_close(key);
 
-	thinkos_sleep(128);
+	thinkos_sleep(500);
 
-	krn_console_puts("\r\nYMODEM receive ");
+	krn_console_puts("\r\nYMODEM ");
 	if (ret < 0)
 		krn_console_wrln("failed!");
 	else
-		krn_console_wrln("Ok.");
+		krn_console_wrln("ok.");
 
 	return ret;
 }
@@ -149,5 +152,23 @@ int monitor_flash_ymodem_recv(const struct monitor_comm * comm,
 	return monitor_thread_exec(comm, C_TASK(btl_flash_ymodem_recv), 
 							   C_ARG(tag));
 
+}
+
+int btl_flash_app_exec(const char * tag)
+{
+	struct thinkos_mem_stat stat;
+	int ret;
+
+	if ((ret = thinkos_flash_mem_stat(tag, &stat)) < 0) {
+		DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_stat('%s') fail.", tag);
+		return ret;
+	}
+
+	return thinkos_app_exec(stat.begin);
+}
+
+int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
+{
+	return btl_flash_app_exec(argv[0]);
 }
 

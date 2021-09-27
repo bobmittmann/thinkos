@@ -94,7 +94,7 @@ int keyboard_task(struct keyboard_drv * drv)
 	uint32_t clk;
 	int j;
 
-	key_filt = __kbd_io_poll(seq++);
+	key_filt = __kbd_io_poll(seq);
 	key_stat = key_filt;
 
 	/* Initialize timers */
@@ -130,7 +130,7 @@ int keyboard_task(struct keyboard_drv * drv)
 
 		/* IO polling */
 		prev = key_filt;
-		key_filt = __kbd_io_poll(seq++);
+		key_filt = __kbd_io_poll(seq);
 		/* Debouncing */
 		if (prev == key_filt) {
 			int32_t diff;
@@ -242,7 +242,7 @@ int keyboard_event_wait(void)
 	uint8_t tail;
 	int ev;
 
-	//thinkos_mutex_lock(drv->mutex);
+//	thinkos_mutex_lock(drv->mutex);
 
 	tail = drv->fifo.tail;
 	while (drv->fifo.head == tail) {
@@ -251,7 +251,7 @@ int keyboard_event_wait(void)
 	ev = drv->fifo.buf[tail % KBD_FIFO_LEN];
 	drv->fifo.tail = tail + 1;
 
-	//thinkos_mutex_unlock(drv->mutex);
+//	thinkos_mutex_unlock(drv->mutex);
 
 	return ev;
 }

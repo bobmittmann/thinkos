@@ -39,7 +39,7 @@ CFILES = ../common/spidrv.c piano.c dac.c keyboard.c \
 
 ARCH_LIBS = stm32f
 
-SDK_LIBS = thinkos-usr util c vt fixpt tty
+SDK_LIBS = thinkos-usr util trace c vt fixpt tty
 
 LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
 		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))
@@ -52,11 +52,15 @@ CDEFS = CONFIG_H
 
 #LIBPATH = $(LIBMAD_DIR)
 
-CFLAGS = -O1 
+CFLAGS = -Og
 
-MACH = stm32l433xc
-LDCODE = 0x08008000
+MACH := stm32l433xc
+LDCODE := 0x0800a000
 LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32-app.mk
 
+APP_INSTALLDIR = /c/tmp/release/rda8com
+
+default: app-install
+
+include $(ARCH_DIR)/mk/stm32-app.mk
 

@@ -40,12 +40,7 @@
 
 #include <sys/dcclog.h>
 
-int __flash_ymodem_recv(const char * tag);
-int __ymodem_rcv_task(uint32_t addr, unsigned int size);
-int __flash_erase_partition(const char * tag);
-int krn_console_ymodem_recv(const char * tag);
-
-int boot_cmd_help(int argc, char * argv[])
+int btl_cmd_help(struct btl_shell_env * env, int argc, char * argv[])
 {
 	char s[64];
 	int i;
@@ -56,237 +51,69 @@ int boot_cmd_help(int argc, char * argv[])
 		return -1;
 
 	if (argc > 1) {
-		if ((i = boot_cmd_lookup(argv[1])) <= 0) {
+		if ((i = btl_cmd_lookup(env, argv[1])) <= 0) {
 			krn_console_puts("Not found!\r\n");
 			return -1;
 		};
 
-		krn_snprintf(s, sizeof(s), "%10s %4s %s\r\n", boot_cmd_sym_tab[i],
-					 boot_cmd_alias_tab[i], boot_cmd_brief_tab[i]);
+		krn_snprintf(s, sizeof(s), "%10s %4s %s\r\n", btl_cmd_name(env, i),
+					 btl_cmd_alias(env, i), btl_cmd_brief(env, i));
 		krn_console_puts(s);
 
 		return 0;
 	}
 
-	for (i = BOOT_CMD_FIRST; i <= BOOT_CMD_LAST; ++i) {
-		krn_snprintf(s, sizeof(s), "%10s %4s %s\r\n", boot_cmd_sym_tab[i],
-					 boot_cmd_alias_tab[i], boot_cmd_brief_tab[i]);
+	for (i = btl_cmd_first(env); i <= btl_cmd_last(env); ++i) {
+		krn_snprintf(s, sizeof(s), "%10s %4s %s\r\n", btl_cmd_name(env, i),
+					 btl_cmd_alias(env, i), btl_cmd_brief(env, i));
 		krn_console_puts(s);
 	}
 
 	return 0;
-}
-
-void mem_info_print(const struct thinkos_mem_desc * mem)
-{
-	const char * tag;
-	uint32_t base;
-	uint32_t size;
-	char s[64];
-	int align;
-	bool ro;
-	int i;
-
-	if (mem== NULL)
-		return;
-
-	krn_snprintf(s, sizeof(s), "  %s:\r\n", mem->tag);
-	for (i = 0; i < mem->cnt; ++i) {
-		tag = mem->blk[i].tag;
-		size = mem->blk[i].cnt << mem->blk[i].siz;
-		base = mem->base + mem->blk[i].off;
-		ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
-		align = ((mem->blk[i].opt & 3) + 1) * 8;
-		krn_snprintf(s, sizeof(s), "    %8s %08x-%08x %8d %6s %2d\r\n",
-					  tag, base, base + size - 4, size, 
-					  ro ? "RO" : "RW", align);
-		krn_console_puts(s);
-	}
-
 }
 
 extern const struct thinkos_board this_board;
 
-void boot_board_info(const struct thinkos_board * board)
+int btl_cmd_info(struct btl_shell_env * env, int argc, char ** argv)
 {
-	char s[64];
-	unsigned int i;
-
-	krn_snprintf(s, sizeof(s), "Board: %s <%s>\r\n"
-			   "Hardware: %s rev %d.%d\r\n",
-			   board->name, board->desc,
-			   board->hw.tag, board->hw.ver.major, board->hw.ver.minor
-			  );
-	krn_console_puts(s);
-
-	krn_snprintf(s, sizeof(s), "Firmware: %s-%d.%d.%d (%s) " __DATE__ 
-				  ", " __TIME__ "\r\n",
-				  board->sw.tag, 
-				  board->sw.ver.major, 
-				  board->sw.ver.minor, 
-				  board->sw.ver.build,
-#if DEBUG
-				  "debug"
-#else
-				  "release"
-#endif
-				  ); 
-	krn_console_puts(s);
-
-	/* compiler version string */
-	krn_console_puts("Compiler: GCC-" __VERSION__ "\r\n");
-
-	/* memory blocks */
-	krn_console_puts("\r\nMemory:\r\n");
-	krn_console_puts("         Tag       Adress span"
-				  "     Size  Flags  Align \r\n");
-
-	for (i = 0; i < board->memory->cnt; ++i) {
-		mem_info_print(board->memory->desc[i]);
-	}
-	krn_console_puts("\r\n");
-}
-
-int boot_cmd_info(int argc, char ** argv)
-{
-	boot_board_info(&this_board);
+	btl_board_info(&this_board);
 
 	return 0;
 }
 
-static inline int __isspace(int c) {
-	return ((c == ' ') || (c == '\t'));
+int btl_cmd_app(struct btl_shell_env * env, int argc, char * argv[])
+{
+
+	return btl_flash_app_exec("app");
 }
 
-int __parseline(char * line, char ** argv, int argmax)
+int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[])
 {
-	char * cp = line;
-	char * tok;
-	int n;
-	int c;
-
-	for (n = 0; (c = *cp) && (n < argmax); ) {
-
-		/* Remove lead blanks */
-		while (__isspace(c)) {
-			c = *(++cp);
-		}
-#if 0
-		/* Quotes: copy verbatim */
-		if ((c == '\'') || (c == '\"')) {
-			int qt = c;
-			tok = ++cp;
-			for (; ((c = *cp) != qt); cp++) {
-				if (c == '\0') {
-					/* parse error, unclosed quotes */
-					return -1;
-				}
-			}
-			*cp++ = '\0';
-			argv[n++] = tok;
-			continue;
-		}
-#endif	
-		tok = cp;
-
-		for (;;) {
-
-			if (c == '\0') {
-				if (tok != cp)
-					argv[n++] = tok;
-				return n;
-			}
-
-			if (__isspace(c)) {
-				*cp++ = '\0';
-				argv[n++] = tok;
-				break;
-			}
-
-			cp++;
-			c = *cp;
-		}
-	}
-
-	return n;
+	return btl_flash_erase_partition("app");
 }
 
-
-int flash_app_exec(const char * tag)
+int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[])
 {
-	struct thinkos_mem_stat stat;
-	int ret;
-
-	if ((ret = thinkos_flash_mem_stat(tag, &stat)) < 0) {
-		DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_stat('%s') fail.", tag);
-		return ret;
-	}
-
-	return thinkos_app_exec(stat.begin);
+	return btl_flash_ymodem_recv("app");
 }
 
-int boot_cmd_app(int argc, char * argv[])
+void tp12_on(void);
+void tp12_off(void);
+void tp13_on(void);
+void tp13_off(void);
+
+int btl_cmd_test(struct btl_shell_env * env, int argc, char * argv[])
 {
-	return flash_app_exec("app");
-}
-
-int boot_cmd_erase(int argc, char * argv[])
-{
-	return __flash_erase_partition("app");
-}
-
-int boot_cmd_rcvy(int argc, char * argv[])
-{
-	return __flash_ymodem_recv("app");
-}
-
-int boot_cmd_reboot(int argc, char * argv[])
-{
-	krn_console_puts("\r\nRestarting...\r\n");
-	thinkos_sleep(1000);
-	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
-	return 0;
-}
-
-int boot_console_shell(const char * msg, const char * prompt)
-{
-	char line[80];
-	char * argv[8];
-	int argc;
-	int cmd;
-
-	while (thinkos_console_is_connected() <= 0) {
-		thinkos_sleep(100);
-	}
-
-	krn_console_puts("\r\n");
-	if (msg != NULL) {
-		krn_console_puts(msg);
-	}
+	krn_console_puts("\r\nTest...\r\n");
 
 	for (;;) {
-		int ret;
-
-		krn_console_puts(prompt);
-		if ((ret = krn_console_gets(line, sizeof(line))) < 0) {
-			return ret;
-		}
-
-		if (ret == 0) {
-			continue;
-		}
-
-		if ((argc = __parseline(line, argv, 8)) <= 0) {
-			continue;
-		};
-
-		if ((cmd = boot_cmd_lookup(argv[0])) <= 0) {
-			continue;
-		};
-
-		boot_cmd_call_tab[cmd](argc, argv); 
-	} 
-
+		tp12_on();
+		tp13_off();
+		thinkos_sleep(8);
+		tp12_off();
+		tp13_on();
+		thinkos_sleep(8);
+	}
 	return 0;
 }
 

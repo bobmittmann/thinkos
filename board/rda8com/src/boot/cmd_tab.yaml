@@ -1,4 +1,3 @@
-
 --- # Command list
 
 - cmd: erase
@@ -37,3 +36,6 @@
 - cmd: app
   usage: 'Run the application'
 
+- cmd: test
+  alias: t
+  usage: 'Perform a test'

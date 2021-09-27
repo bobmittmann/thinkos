@@ -46,13 +46,16 @@
 struct btl_shell_env {
 	const char * motd;
 	const char * prompt;
-	const btl_cmd_callback_t * cmd_call;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int btl_cmd_lookup(struct btl_shell_env * env, const char * str);
+
+int btl_cmd_call(struct btl_shell_env * env, int argc, 
+				 char * argv[], unsigned int code);
 
 #ifdef __cplusplus
 }

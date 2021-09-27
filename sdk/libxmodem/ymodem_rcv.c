@@ -105,7 +105,6 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 		for (;;) {
 			int c;
-
 			ret = ry->comm->op.recv(ry->comm->arg, pkt, 
 									1, YMODEM_RCV_TMOUT_MS);
 
@@ -138,15 +137,22 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 			if (c == EOT) {
 				DCC_LOG(LOG_TRACE, "EOT");
-				/* end of transmission */
-				ry->state = YR_EOT;
 				pkt[0] = ACK;
 				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
 				ry->comm->op.send(ry->comm->arg, pkt, 1);
+				/* end of transmission */
+				ry->state = YR_EOT;
+//				ry->state = (ry->state = YR_EOT) ? YR_OK : YR_EOT;
 				return 0;
 			}
 
 			DCC_LOG1(LOG_WARNING, "YMODEM RX=%02x", c);
+
+			if (ry->state == YR_EOT) {
+				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
+				ry->state = YR_OK;
+				return 0;
+			}
 		}
 
 		len = cnt + ((ry->crc_mode) ? 5 : 4);
@@ -267,12 +273,14 @@ error:
 timeout:
 		DCC_LOG(LOG_TRACE, "timeout...");
 
+		if ((ry->state == YR_EOT) ||
+			((ry->count == ry->fsize) && (ry->xmodem == 0))) {
+			DCC_LOG(LOG_TRACE, "[EOT] transfer complete!!");
+			ry->state = YR_OK;
+			return 0;
+		}
+
 		if ((--ry->retry) == 0) {
-            if ((ry->count == ry->fsize) && (ry->xmodem == 0)) {
-                DCC_LOG(LOG_TRACE, "[EOT] transfer complete!!");
-				ry->state = YR_EOT;
-                return 0;
-            }
 			/* too many errors */
 			DCC_LOG(LOG_WARNING, "[ERR] too many errors!");
 			ry->state = YR_ERR;
@@ -371,8 +379,14 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 			break;
 		}
 
-		if ((ret = ymodem_rcv_pkt(ry)) <= 0)
+		if ((ret = ymodem_rcv_pkt(ry)) < 0) {
 			break;
+		}
+		if (ret == 0) {
+			if (ry->state <= YR_OK) {
+				break;
+			}
+		}
 
 		if (!ry->xmodem && (ry->pktno == 1)) {
 			if ((ret = ymodem_rcv_decode(ry->pkt.data, 
@@ -432,6 +446,5 @@ int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname,
 
 	return ret;
 }
-
 
 

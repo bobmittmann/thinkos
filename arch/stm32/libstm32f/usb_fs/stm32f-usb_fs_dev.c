@@ -79,7 +79,7 @@
 #endif
 
 #ifndef DOUBLE_BUFFER_ENABLE
-#define DOUBLE_BUFFER_ENABLE 1
+#define DOUBLE_BUFFER_ENABLE 0
 #endif
 
 /* Endpoint state */
@@ -997,7 +997,6 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
 #endif
 #ifdef STM32_IRQ_USB_FS
-	adsf
 	cm3_irq_enable(STM32_IRQ_USB_FS);
 #endif
 #if (STM32F_IRQ_USB_WKUP) && (STM32_USB_FS_SUSPEND) 

@@ -26,15 +26,34 @@
 #include "board.h"
 #include "version.h"
 
+#ifndef BOOT_ENABLE_JTAG
+#define BOOT_ENABLE_JTAG DEBUG
+#endif
+
+void tp12_on(void)
+{
+	stm32_gpio_set(IO_1);
+}
+
+void tp12_off(void)
+{
+	stm32_gpio_clr(IO_1);
+}
+
+void tp13_on(void)
+{
+	stm32_gpio_set(IO_2);
+}
+
+void tp13_off(void)
+{
+	stm32_gpio_clr(IO_2);
+}
+
 int fpga_configure(void);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 int boot_console_shell(const char * msg, const char * prompt);
 int flash_app_exec(const char * tag);
-
-int __console_shell_task(void * parm)
-{
-	return boot_console_shell("\r\n+++\r\nThinkOS\r\n", "boot# ");
-}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -69,10 +88,10 @@ const struct thinkos_mem_desc flash_desc = {
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		/* Bootloader: 32 KiB */
-		[FLASH_BOOT] = {.tag = "boot", .off= 0x00000000, M_RO, SZ_2K, 16}, 
-		/* Application: 224 KiB */
-		[FLASH_APP] = {.tag = "app", .off = 0x00008000, M_RW, SZ_2K, 112}
+		/* Bootloader: 40 KiB */
+		[FLASH_BOOT] = {.tag = "boot", .off= 0x00000000, M_RO, SZ_2K, 20}, 
+		/* Application: 220 KiB */
+		[FLASH_APP] = {.tag = "app", .off = 0x0000a000, M_RW, SZ_2K, 108}
 	}
 };
 
@@ -295,8 +314,12 @@ void board_on_softreset(void)
 
 int board_on_break(const struct monitor_comm * comm)
 {
-	return monitor_thread_create(comm, C_TASK(__console_shell_task), 
-								 C_ARG(NULL), true);
+	struct btl_shell_env * env = btl_shell_env_getinstance();
+
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
+
+	return monitor_thread_create(comm, C_TASK(btl_console_shell), 
+								 C_ARG(env), true);
 }
 
 /* Bootloader board description  */
@@ -338,6 +361,22 @@ void main(int argc, char ** argv)
 	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
 
+#if DEBUG
+	DCC_LOG_INIT();
+	DCC_LOG_CONNECT();
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FGR);
+	DCC_LOG(LOG_TRACE, "*************************************************");
+	DCC_LOG(LOG_TRACE, "*     RDA8COM ThinkOS Custom Bootloader         *");
+	DCC_LOG(LOG_TRACE, "*************************************************"
+			VT_POP "\n\n");
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 1. thinkos_krn_init()." VT_POP);
+	mdelay(125);
+#endif
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
@@ -352,6 +391,6 @@ void main(int argc, char ** argv)
 
 	thinkos_sleep(500);
 
-	flash_app_exec("app");
+	btl_flash_app_exec("app");
 }
 

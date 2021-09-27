@@ -24,9 +24,6 @@
 
 #include "thinkos_btl-i.h"
 
-int btl_parseline_shell(struct btl_shell_env * env, char * line, 
-						char ** argv, int argmax);
-
 static inline int __isspace(int c) {
 	return ((c == ' ') || (c == '\t'));
 }
@@ -122,11 +119,11 @@ int btl_console_shell(struct btl_shell_env * env)
 			continue;
 		};
 
-		if ((cmd = blt_cmd_lookup(env, argv[0])) <= 0) {
+		if ((cmd = btl_cmd_lookup(env, argv[0])) <= 0) {
 			continue;
 		};
 
-		ret = env->cmd_call[cmd](env, argc, argv); 
+		ret = btl_cmd_call(env, argc, argv, cmd); 
 		if (ret < 0) {
 			krn_console_wrln("Error");
 		}

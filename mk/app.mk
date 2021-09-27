@@ -68,5 +68,9 @@ app: $(PROG_APP)
 app-clean: 
 	$(Q)$(RMALL) $(CLEAN_APP)
 
+app-install: all
+	$(ACTION) "INSTALL: $(addprefix $(APP_INSTALLDIR)/, $(notdir $(PROG_APP)))"
+	$(Q)$(CP) $(PROG_APP) $(APP_INSTALLDIR)
+
 .PHONY: app app-clean
 

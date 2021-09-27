@@ -98,7 +98,7 @@ class ShellCmd(object):
 
 
 class CmdTab(list):
-  def __init__(self, prefix = None, suffix = None):
+  def __init__(self, prefix = None, suffix = None, envtype = None):
     super().__init__()
     if prefix is not None: 
       self.prefix = prefix + '_'
@@ -108,6 +108,7 @@ class CmdTab(list):
       self.suffix = '_' + suffix
     else:
       self.suffix = ''
+    self.envtype = envtype
 
   def load_yaml(self, fname):
     fin = open(fname, 'rb')
@@ -160,8 +161,32 @@ class CmdTab(list):
   def call_ret(self):
     return 'int'
 
+  def env_solo(self):
+    if self.envtype is not None:
+      s = self.envtype + ' * env'
+    else:
+      s = ''
+    return s
+
+  def env_lead(self):
+    if self.envtype is not None:
+      s = self.envtype + ' * env, '
+    else:
+      s = ''
+    return s
+
+  def env_arg(self):
+    if self.envtype is not None:
+      s = 'env, '
+    else:
+      s = ''
+    return s
+
   def call_parm(self):
-    return 'int argc, char * argv[]'
+    return self.env_lead() + 'int argc, char * argv[]'
+
+  def cmd_call_args(self):
+    return self.env_arg() + 'argc, argv'
 
   def call_type(self):
     return self.prefix + 'cmd_callback_t'
@@ -179,6 +204,8 @@ def mk_cmdtab_h(f, fname, cmd_tab):
 
   prefix = cmd_tab.prefix
   suffix = cmd_tab.suffix
+  env_solo = cmd_tab.env_solo()
+  env_lead = cmd_tab.env_lead()
 
   if fname:
     sym = replacelst(fname, [' ', '-', '.'], '_') 
@@ -202,6 +229,9 @@ def mk_cmdtab_h(f, fname, cmd_tab):
   f.write(cmd_tab.mk_cdef('CMD_FIRST', cmd_tab[0].val) + '\n')
   f.write(cmd_tab.mk_cdef('CMD_LAST', cmd_tab[-1].val) + '\n')
   f.write('\n')
+  if cmd_tab.envtype != None:
+    f.write(cmd_tab.envtype + ';\n')
+    f.write('\n')
   f.write('typedef ' + cmd_tab.call_typedef() + ';\n')
   f.write('\n')
   f.write('extern const char * const ' + prefix + 'cmd_sym_tab[];\n')
@@ -215,8 +245,24 @@ def mk_cmdtab_h(f, fname, cmd_tab):
   f.write('extern \"C\" {\n')
   f.write('#endif\n')
   f.write('\n')
-  f.write('int ' + prefix + 'cmd_lookup(const char * str);\n')
+  f.write('int ' + prefix + 'cmd_lookup(' + env_lead + 'const char * str);\n')
   f.write('\n')
+  f.write('int ' + prefix + 'cmd_first(' + env_solo + ');\n')
+  f.write('\n')
+  f.write('int ' + prefix + 'cmd_last(' + env_solo + ');\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_name(' + env_lead + 'unsigned int code);\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_alias(' + env_lead + 'unsigned int code);\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_brief(' + env_lead + 'unsigned int code);\n')
+  f.write('\n')
+
+  f.write('const char * ' + prefix + 'cmd_detail(' + env_lead + 'unsigned int code);\n')
+  f.write('\n')
+
+  f.write('int ' + prefix + 'cmd_call(' + env_lead + 'int argc, char * argv[], unsigned int code);\n');
+
   f.write('/*---------------------------------------------------------------------------\n')
   f.write('  Callbacks!\n')
   f.write('  ---------------------------------------------------------------------------*/\n')
@@ -365,7 +411,7 @@ def mktabs(f, cmd_tab):
       return h_len
   return 0
  
-def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
+def mk_cmdtab_c_lead(f, hdr_fname, cmd_tab):
 
   prefix = cmd_tab.prefix
   suffix = cmd_tab.suffix
@@ -375,9 +421,8 @@ def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
   f.write('  ---------------------------------------------------------------------------*/\n')
   f.write('\n')
   f.write('#include <stdlib.h>\n')
+  f.write('#include <string.h>\n')
   f.write('#include \"{:s}\"\n'.format(hdr_fname))
-  f.write('\n')
-
   f.write('\n')
   f.write('const char * const ' + prefix + 'cmd_sym_tab[] = {\n')
   for cmd in cmd_tab:
@@ -387,11 +432,6 @@ def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
   f.write('const char * const ' + prefix + 'cmd_brief_tab[] = {\n')
   for cmd in cmd_tab:
     f.write('\t[{:s}] = \"{:s}\",\n'.format(cmd.cdef(), cmd.brief))
-  f.write('};\n')
-  f.write('\n')
-  f.write('const char * const ' + prefix + 'cmd_desc_tab[] = {\n')
-  for cmd in cmd_tab:
-    f.write('\t[{:s}] = \"{:s}\",\n'.format(cmd.cdef(), cmd.desc))
   f.write('};\n')
   f.write('\n')
   f.write('const char ' + prefix + 'cmd_alias_tab[][4] = {\n')
@@ -424,6 +464,66 @@ def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
   f.write('};\n')
   f.write('\n')
 
+
+def mk_cmdtab_c_trail(f, hdr_fname, cmd_tab):
+  prefix = cmd_tab.prefix
+  suffix = cmd_tab.suffix
+  env_solo = cmd_tab.env_solo()
+  env_lead = cmd_tab.env_lead()
+  cmd_call_args = cmd_tab.cmd_call_args()
+
+  cmd_first = cmd_tab.mk_sym('cmd_first').upper()
+  cmd_last = cmd_tab.mk_sym('cmd_last').upper()
+
+  f.write('int ' + prefix + 'cmd_first(' + env_solo + ')\n')
+  f.write('{\n')
+  f.write('\treturn ' + cmd_first + ';\n')
+  f.write('}\n')
+  f.write('\n')
+  f.write('int ' + prefix + 'cmd_last(' + env_solo + ')\n')
+  f.write('{\n')
+  f.write('\treturn ' + cmd_last + ';\n')
+  f.write('}\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_name(' + env_lead + 'unsigned int code)\n')
+  f.write('{\n')
+  f.write('\treturn ' + prefix + 'cmd_sym_tab[code];\n')
+  f.write('}\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_alias(' + env_lead + 'unsigned int code)\n')
+  f.write('{\n')
+  f.write('\treturn ' + prefix + 'cmd_alias_tab[code];\n')
+  f.write('}\n')
+  f.write('\n')
+  f.write('const char * ' + prefix + 'cmd_brief(' + env_lead + 'unsigned int code)\n')
+  f.write('{\n')
+  f.write('\treturn ' + prefix + 'cmd_brief_tab[code];\n')
+  f.write('}\n')
+  f.write('\n')
+
+  f.write('int ' + prefix + 'cmd_call(' + env_lead + 'int argc, char * argv[], unsigned int code)\n')
+  f.write('{\n')
+  f.write('\tif (code > ' + cmd_last + ')\n')
+  f.write('\t\treturn -1;\n')
+  f.write('\treturn ' + prefix + 'cmd_call_tab[code](' + cmd_call_args + ');\n')
+  f.write('}\n')
+  f.write('\n')
+
+#
+#  f.write('const char * ' + prefix + 'cmd_detail(' + env_lead + 'unsigned int code)\n')
+#  f.write('{\n')
+#  f.write('\treturn ' + prefix + 'cmd_help_tab[code];\n')
+#  f.write('}\n')
+#  f.write('\n')
+
+
+def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
+
+  prefix = cmd_tab.prefix
+  suffix = cmd_tab.suffix
+  env_solo = cmd_tab.env_solo()
+  env_lead = cmd_tab.env_lead()
+
   mktabs(f, cmd_tab)
 
   f.write('/*\n')
@@ -450,7 +550,7 @@ def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
   f.write('\treturn -1;\n')
   f.write('}\n')
   f.write('\n')
-  f.write('int ' + prefix + 'cmd_lookup(const char * str)\n')
+  f.write('int ' + prefix + 'cmd_lookup(' + env_lead + 'const char * str)\n')
   f.write('{\n')
   f.write('\tint h = 0;\n')
   f.write('\tint c;\n')
@@ -469,54 +569,66 @@ def mk_cmdtab_c_perfhash(f, hdr_fname, cmd_tab):
   f.write('}\n')
   f.write('\n')
 
+
 def mk_cmdtab_c_linear(f, hdr_fname, cmd_tab):
 
   prefix = cmd_tab.prefix
   suffix = cmd_tab.suffix
+  env_solo = cmd_tab.env_solo()
+  env_lead = cmd_tab.env_lead()
+  cmd_first = cmd_tab.mk_sym('cmd_first').upper()
+  cmd_last = cmd_tab.mk_sym('cmd_last').upper()
 
-  f.write('/*---------------------------------------------------------------------------\n')
-  f.write('  This file was automatically generated by mkcmd.py. DO NOT edit!\n')
-  f.write('  ---------------------------------------------------------------------------*/\n')
+  f.write('/*\n')
+  f.write('   List search...\n')
+  f.write('*/\n')
   f.write('\n')
-  f.write('#include <stdlib.h>\n')
-  f.write('#include <string.h>\n')
-  f.write('#include \"{:s}\"\n'.format(hdr_fname))
-  f.write('\n')
-
-  f.write('\n')
-  f.write('const char * const ' + prefix + 'cmd_sym_tab[] = {\n')
-  for cmd in cmd_tab:
-    f.write('\t[{:s}] = \"{:s}\",\n'.format(cmd.cdef(), cmd.name))
-  f.write('};\n')
-  f.write('\n')
-  f.write('const char * const ' + prefix + 'cmd_brief_tab[] = {\n')
-  for cmd in cmd_tab:
-    f.write('\t[{:s}] = \"{:s}\",\n'.format(cmd.cdef(), cmd.brief))
-  f.write('};\n')
-  f.write('\n')
-  f.write('const char ' + prefix + 'cmd_alias_tab[][4] = {\n')
-  for cmd in cmd_tab:
-    if cmd.alias is not None:
-      f.write('\t[{:s}] = \"{:s}\",\n'.format(cmd.cdef(), cmd.alias))
-    else:
-      f.write('\t[{:s}] = \"\",\n'.format(cmd.cdef()))
-  f.write('};\n')
-  f.write('\n')
-
-  f.write('const ' + prefix + 'cmd_callback_t ' + prefix + 'cmd_call_tab[] = {\n')
-  for cmd in cmd_tab:
-    f.write('\t[{:s}] = {:s},\n'.format(cmd.cdef(), cmd.csym()))
-  f.write('};\n')
-  f.write('\n')
-  f.write('int ' + prefix + 'cmd_lookup(const char * str)\n')
+  f.write('int ' + prefix + 'cmd_lookup(' + env_lead + 'const char * str)\n')
   f.write('{\n')
   f.write('\tint i;\n')
   f.write('\n')
-  f.write('\tfor (i = BOOT_CMD_FIRST; i <= BOOT_CMD_LAST; ++i) {\n')
-
-  f.write('\t\tif (strcmp(str, boot_cmd_sym_tab[i]) == 0)\n')
+  f.write('\tfor (i = ' + cmd_first + '; i <= ' + cmd_last + '; ++i) {\n')
+  f.write('\t\tif (strcmp(str, ' + prefix + 'cmd_sym_tab[i]) == 0)\n')
   f.write('\t\t\treturn i;\n')
-  f.write('\t\tif (strcmp(str, boot_cmd_alias_tab[i]) == 0)\n')
+  f.write('\t\tif (strcmp(str, ' + prefix + 'cmd_alias_tab[i]) == 0)\n')
+  f.write('\t\t\treturn i;\n')
+  f.write('\t}\n')
+  f.write('\n')
+  f.write('\treturn -1;\n')
+  f.write('}\n')
+  f.write('\n')
+
+def mk_cmdtab_c_binsearch(f, hdr_fname, cmd_tab):
+
+  prefix = cmd_tab.prefix
+  suffix = cmd_tab.suffix
+  env_solo = cmd_tab.env_solo()
+  env_lead = cmd_tab.env_lead()
+  cmd_first = cmd_tab.mk_sym('cmd_first').upper()
+  cmd_last = cmd_tab.mk_sym('cmd_last').upper()
+
+  f.write('\n')
+  f.write('int ' + prefix + 'cmd_lookup(' + env_lead + 'const char * str)\n')
+  f.write('{\n')
+  f.write('\tint i = ' + cmd_first + ';\n')
+  f.write('\tint j = ' + cmd_last + ';\n')
+  f.write('\n')
+  f.write('\t/* Binary search for command names. */\n')
+  f.write('\twhile (i <= j) {\n')
+  f.write('\t\tint k = i + ((j - i) / 2);\n')
+  f.write('\t\tint cmp = strcmp(str, ' + prefix + 'cmd_sym_tab[k]);\n')
+  f.write('\t\tif (cmp == 0) {\n')
+  f.write('\t\t\treturn k;\n')
+  f.write('\t\t} else if (cmp < 0) {\n')
+  f.write('\t\t\ti = k + 1;\n')
+  f.write('\t\t} else {\n')
+  f.write('\t\t\tj = k - 1;\n')
+  f.write('\t\t}\n')
+  f.write('\t}\n')
+  f.write('\n')
+  f.write('\t/* Linear list search for command aliases. */\n')
+  f.write('\tfor (i = ' + cmd_first + '; i <= ' + cmd_last + '; ++i) {\n')
+  f.write('\t\tif (strcmp(str, ' + prefix + 'cmd_alias_tab[i]) == 0)\n')
   f.write('\t\t\treturn i;\n')
   f.write('\t}\n')
   f.write('\n')
@@ -548,10 +660,14 @@ def main(argv):
     help="use PREFIX before name on symbol declarations", metavar="PREFIX")
   parser.add_option("-s", "--suffix", dest="suffix", 
     help="use SUFFIX after name on symbol declarations", metavar="SUFFIX")
+  parser.add_option("-e", "--env", dest="envtype", 
+    help="use ENVTYPE as environment paramneter type", metavar="ENVTYPE")
   parser.add_option("-H", "--header", dest="header", 
     help="write header file", metavar="HEADER")
   parser.add_option("-l", "--linear", dest="linear", default=False,
           action="store_true", help="Use linear list searh algorithm")
+  parser.add_option("-b", "--bin", dest="binary", default=False,
+          action="store_true", help="Use binary search algorithm")
 
   options, args = parser.parse_args()
 
@@ -581,7 +697,7 @@ def main(argv):
     else:
       hdr_fname = None
 
-  cmd_tab = CmdTab(options.prefix, options.suffix)
+  cmd_tab = CmdTab(options.prefix, options.suffix, options.envtype)
 
   try:
     cmd_tab.load_yaml(infile)
@@ -597,11 +713,16 @@ def main(argv):
     else:
       fout_c = sys.stdout
 
+    mk_cmdtab_c_lead(fout_c, hdr_fname, cmd_tab)
+
     if options.linear:
       mk_cmdtab_c_linear(fout_c, hdr_fname, cmd_tab)
+    elif options.binary:
+      mk_cmdtab_c_binsearch(fout_c, hdr_fname, cmd_tab)
     else:
       mk_cmdtab_c_perfhash(fout_c, hdr_fname, cmd_tab)
 
+    mk_cmdtab_c_trail(fout_c, hdr_fname, cmd_tab)
 
     if out_fname is not None:
       fout_c.close() 

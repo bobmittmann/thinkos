@@ -53,14 +53,14 @@ void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 
 	DCC_LOG2(LOG_MSG, "<%2d> clk=%d", self, clk);
 
-	/* set the clock */
-	__thread_clk_set(krn, self, clk);
-	/* insert into the clock wait queue */
-	__thread_clk_enable(krn, self);
-	/* mark the thread clock enable bit */
-	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
 	/* wait for event */
 	__krn_thread_suspend(krn, self);
+	/* set the clock */
+	__thread_clk_set(krn, self, clk);
+	/* mark the thread clock enable bit */
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, self);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
