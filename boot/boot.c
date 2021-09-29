@@ -62,11 +62,12 @@ void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	void (monitor)(const struct monitor_comm *, void *))
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 #if (BOOT_MONITOR_ENABLE)
 	const struct monitor_comm * comm;
 #endif
 #if (BOOT_SELFTEST_ENABLE) || (BOOT_PREBOOT_ENABLE)
-	int ret;
+//	int ret;
 #endif
 
 	DCC_LOG_INIT();
@@ -84,22 +85,23 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #if DEBUG
 //	udelay(0x8000);
 #endif
-	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
-					 THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
+					 THINKOS_OPT_STACK_SIZE(32768), NULL);
 
 //	DCC_LOG(LOG_TRACE, "3. board_init().");
 #if DEBUG
 //	udelay(0x8000);
 #endif
-	board->init();
+//	board_init();
 
 //	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
 #if DEBUG
 //	udelay(0x8000);
 #endif
 #if (BOOT_MONITOR_ENABLE)
-	comm = board->monitor_comm_init();
+//	comm = board->monitor_comm_init();
+	comm = usb_comm_init(&stm32f_otg_fs_dev);
 #endif
 
 #if (BOOT_MONITOR_ENABLE)
@@ -107,7 +109,8 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 #if DEBUG
 //	udelay(0x8000);
 #endif
-	thinkos_krn_monitor_init(comm, monitor, (void *)board);
+
+	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&board);
 #endif
 
 #if (BOOT_PREBOOT_ENABLE)
@@ -115,20 +118,20 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 	   - prevent the application to automatically run. Ex:
 	     - using a switch in the board
 		 - receiving a break on the serial line */
-	if ((ret = board->preboot_task((void *)board)) < 0) {
+//	if ((ret = board->preboot_task((void *)board)) < 0) {
 //		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
-		thinkos_abort();
-	}
+//		thinkos_abort();
+//	}
 #endif
 
 #if DEBUG
 //	udelay(0x8000);
 #endif
 
-	uintptr_t addr = board->application.start_addr;
-	thinkos_app_exec(addr);
+//	uintptr_t addr = board->application.start_addr;
+//	thinkos_app_exec(addr);
 	
-	board->default_task((void*)board);
+//	board->default_task((void*)board);
 
 	for(;;);
 }

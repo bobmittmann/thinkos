@@ -171,7 +171,7 @@ static const struct magic_blk bootloader_magic = {
 };
 #pragma GCC diagnostic pop
 
-static void bootloader_yflash(const struct monitor_comm * comm)
+void bootloader_yflash(const struct monitor_comm * comm)
 {
 
 	stm32_gpio_clr(IO_LED1);
@@ -490,19 +490,7 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.application = {
-			.tag = "",
-			.start_addr = 0x08020000,
-			.block_size = (128 * 7) * 1024,
-			.magic = &thinkos_10_app_magic},
-	.init = board_init,
-	.softreset = board_on_softreset,
-	.upgrade = bootloader_yflash,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
-	.default_task = board_default_task,
-	.monitor_comm_init = board_comm_init,
+	.on_softreset = board_on_softreset,
 	.memory = &mem_map
 };
 

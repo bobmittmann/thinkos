@@ -125,7 +125,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 			break;
 
 		case MONITOR_APP_EXEC:
@@ -139,13 +139,13 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_create(comm, C_TASK(board->default_task), 
-										 C_ARG(NULL), true);
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
+//				if (board->default_task != NULL) {
+//					DCC_LOG(LOG_TRACE, "default_task()...!");
+//					monitor_thread_create(comm, C_TASK(board->default_task), 
+//										 C_ARG(NULL), true);
+//				} else {
+//					DCC_LOG(LOG_TRACE, "no default app set!");
+//				}
 			}
 			DCC_LOG(LOG_TRACE, "APP_EXEC done");
 			break;
@@ -239,7 +239,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 			break;
 
 		case MONITOR_APP_EXEC:
@@ -253,13 +253,13 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_create(comm, C_TASK(board->default_task), 
-										 C_ARG(NULL), true);
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
+//				if (board->default_task != NULL) {
+//					DCC_LOG(LOG_TRACE, "default_task()...!");
+//					monitor_thread_create(comm, C_TASK(board->default_task), 
+//										 C_ARG(NULL), true);
+//				} else {
+//					DCC_LOG(LOG_TRACE, "no default app set!");
+//				}
 			}
 			DCC_LOG(LOG_TRACE, "APP_EXEC done");
 			break;

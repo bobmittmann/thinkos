@@ -813,8 +813,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	monitor.thread_id = -1;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-	monitor.memdump.addr = board->application.start_addr;
-	monitor.memdump.size = board->application.block_size;
+	monitor.memdump.addr = 0;
+	monitor.memdump.size = 1024;
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
@@ -866,7 +866,7 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 #if (THINKOS_ENABLE_CONSOLE)
 			goto is_connected;
 #endif

@@ -713,7 +713,7 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.softreset = board_on_softreset,
+	.on_softreset = board_on_softreset,
 	.memory = &mem_map
 };
 
@@ -722,6 +722,7 @@ void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
     const struct monitor_comm * comm;
     uintptr_t app_addr;
 
@@ -742,9 +743,9 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 1. thinkos_krn_init()." VT_POP);
-    thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+    thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
                      THINKOS_OPT_PRIVILEGED |
-                     THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
+                     THINKOS_OPT_STACK_SIZE(32768), NULL);
 
 #if DEBUG
     mdelay(125);

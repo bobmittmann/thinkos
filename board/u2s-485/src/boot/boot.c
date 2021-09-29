@@ -86,6 +86,7 @@ void board_init(void)
 
 void main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
 	uint32_t flags = 0;
 
@@ -105,8 +106,8 @@ void main(int argc, char ** argv)
 #endif
 	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
-	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
-					 THINKOS_OPT_PRIVILEGED, NULL, NULL);
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+					 THINKOS_OPT_PRIVILEGED, NULL);
 
 	board_init();
 

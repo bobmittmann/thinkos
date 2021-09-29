@@ -38,6 +38,7 @@ int board_integrity_check(void);
 
 void __attribute__((noreturn)) main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
 	uintptr_t app_addr;
 
@@ -58,9 +59,9 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	mdelay(125);
 #endif
 
-	thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
-					 THINKOS_OPT_STACK_SIZE(32768), &mem_map, NULL);
+					 THINKOS_OPT_STACK_SIZE(32768), &mem_map);
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
