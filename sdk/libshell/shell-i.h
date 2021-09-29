@@ -64,6 +64,10 @@
 #define SHELL_ENV_MAX 32
 #endif
 
+#ifndef SHELL_PROMPT_MAX
+#define SHELL_PROMPT_MAX 11
+#endif
+
 #define CMD_SHELL_BUF (SIZEOF_CMD_HISTORY) + (SHELL_HISTORY_MAX) * (SHELL_LINE_MAX)
 
 #define SIZEOF_SHELL_BUF (SIZEOF_CMD_HISTORY) + (SHELL_HISTORY_MAX) * (SHELL_LINE_MAX)
@@ -81,9 +85,11 @@ struct cmd_history {
 struct shell_env {
 	FILE * fout;
 	FILE * fin;
-	char buf[];
+	const struct shell_ops * op;
+	uintptr_t data[];
 };
 
+#define SHELL_ENV(__T) ((struct shell_env *)(__T))
 
 #ifdef __cplusplus
 extern "C" {

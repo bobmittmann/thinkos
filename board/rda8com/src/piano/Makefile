@@ -29,17 +29,19 @@ SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+MKCMDTAB = python $(TOOLS_DIR)/mkcmd.py
 
 PROG = piano
 
-CFILES = ../common/spidrv.c piano.c dac.c keyboard.c \
+CFILES = ../common/spidrv.c piano.c dac.c keyboard.c  keyboard-cfgs.c \
 		 addsynth-voice.c exp_envelope.c \
 		 addsynth-instr.c \
-		 addsynth-piano.c addsynth-xilophone.c 
+		 addsynth-piano.c addsynth-xilophone.c \
+		 cmdtab.c shell.c
 
 ARCH_LIBS = stm32f
 
-SDK_LIBS = thinkos-usr util trace c vt fixpt tty
+SDK_LIBS = thinkos-usr util trace c fixpt tty shell 
 
 LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
 		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))
@@ -63,4 +65,17 @@ APP_INSTALLDIR = /c/tmp/release/rda8com
 default: app-install
 
 include $(ARCH_DIR)/mk/stm32-app.mk
+
+CMDTAB_YAML = $(SRCDIR)/cmdtab.yaml
+CMDTAB_C = $(SRCDIR)/cmdtab.c
+CMDTAB_H = $(SRCDIR)/cmdtab.h
+
+$(CMDTAB_H): $(CMDTAB_C)
+
+$(CMDTAB_C): $(CMDTAB_YAML)
+	$(MKCMDTAB) -l -o $@ $<
+
+cmdtab: $(CMDTAB_H)
+
+.PHONY = cmdtab
 

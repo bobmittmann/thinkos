@@ -29,6 +29,9 @@
 #include <stdio.h>
 #include "addsynth.h"
 
+#define RELEASE_ITV(__F) ((30 * DAC_SAMPLE_RATE) / (__F))
+
+
 const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 	.tag = "Xilophone",
 	.note_cnt = 16,
@@ -47,11 +50,12 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 			.env = {
 				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 25,
+				.attack_itv_ms = 23,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 25,
-				.release_itv_ms = 2000,
-				.sustain_lvl = 0.5
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_A4_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -67,13 +71,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_B4_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.guard_itv_ms = 63,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 32,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 4000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0.000001 
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_B4_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -89,14 +94,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_C5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 3,
-				.guard_itv_ms = 50,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 32,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 32,
-				.release_itv_ms = 4000,
-				.sustain_lvl = 0.25
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_C5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -112,14 +117,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_D5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 4,
-				.guard_itv_ms = 50,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 25,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 2000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_D5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -135,14 +140,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_E5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 5,
 				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 100,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 2000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_E5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -161,11 +166,12 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				.id = 6,
 				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 100,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 2000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_F5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -181,14 +187,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_G5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 7,
 				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 100,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 2000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_G5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -204,7 +210,14 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_A5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 8,
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_A5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
@@ -220,91 +233,18 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_B5_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 9,
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_B5_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
 		[9] = {
-			.tag = "E6",
-			.midi = MIDI_E6,
-			.osc = { 
-				[0] = { .freq = MIDI_E5_FREQ, .ampl = 0.333 },
-				[1] = { .freq = MIDI_E5_FREQ * 2, .ampl = 0 },
-				[2] = { .freq = MIDI_E5_FREQ * 3, .ampl = 0 },
-				[3] = { .freq = MIDI_E5_FREQ * 4, .ampl = 0 },
-				[4] = { .freq = MIDI_E5_FREQ * 5, .ampl = 0 },
-				[5] = { .freq = MIDI_E5_FREQ * 6, .ampl = 0 }
-			},
-			.env = {
-				.id = 10,
-			}
-
-		},
-		[10] = {
-			.tag = "F6",
-			.midi = MIDI_F6,
-			.osc = { 
-				[0] = { .freq = MIDI_F5_FREQ, .ampl = 0.333 },
-				[1] = { .freq = MIDI_F5_FREQ * 2, .ampl = 0 },
-				[2] = { .freq = MIDI_F5_FREQ * 3, .ampl = 0 },
-				[3] = { .freq = MIDI_F5_FREQ * 4, .ampl = 0 },
-				[4] = { .freq = MIDI_F5_FREQ * 5, .ampl = 0 },
-				[5] = { .freq = MIDI_F5_FREQ * 6, .ampl = 0 }
-			},
-			.env = {
-				.id = 11,
-			}
-
-		},
-		[11] = {
-			.tag = "G6",
-			.midi = MIDI_G6,
-			.osc = { 
-				[0] = { .freq = MIDI_G5_FREQ, .ampl = 0.333 },
-				[1] = { .freq = MIDI_G5_FREQ * 2, .ampl = 0 },
-				[2] = { .freq = MIDI_G5_FREQ * 3, .ampl = 0 },
-				[3] = { .freq = MIDI_G5_FREQ * 4, .ampl = 0 },
-				[4] = { .freq = MIDI_G5_FREQ * 5, .ampl = 0 },
-				[5] = { .freq = MIDI_G5_FREQ * 6, .ampl = 0 }
-			},
-			.env = {
-				.id = 12,
-			}
-
-		},
-		[12] = {
-			.tag = "A7",
-			.midi = MIDI_A7,
-			.osc = { 
-				[0] = { .freq = MIDI_A5_FREQ, .ampl = 0.333 },
-				[1] = { .freq = MIDI_A5_FREQ * 2, .ampl = 0 },
-				[2] = { .freq = MIDI_A5_FREQ * 3, .ampl = 0 },
-				[3] = { .freq = MIDI_A5_FREQ * 4, .ampl = 0 },
-				[4] = { .freq = MIDI_A5_FREQ * 5, .ampl = 0 },
-				[5] = { .freq = MIDI_A5_FREQ * 6, .ampl = 0 }
-			},
-			.env = {
-				.id = 13,
-			}
-
-		},
-		[13] = {
-			.tag = "B6",
-			.midi = MIDI_B6,
-			.osc = { 
-				[0] = { .freq = MIDI_B5_FREQ, .ampl = 0.333 },
-				[1] = { .freq = MIDI_B5_FREQ * 2, .ampl = 0 },
-				[2] = { .freq = MIDI_B5_FREQ * 3, .ampl = 0 },
-				[3] = { .freq = MIDI_B5_FREQ * 4, .ampl = 0 },
-				[4] = { .freq = MIDI_B5_FREQ * 5, .ampl = 0 },
-				[5] = { .freq = MIDI_B5_FREQ * 6, .ampl = 0 }
-			},
-			.env = {
-				.id = 14,
-			}
-
-		},
-		[14] = {
 			.tag = "C6",
 			.midi = MIDI_C6,
 			.osc = { 
@@ -316,11 +256,18 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_C6_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.id = 15,
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_C6_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
 			}
 
 		},
-		[15] = {
+		[10] = {
 			.tag = "D6",
 			.midi = MIDI_D6,
 			.osc = { 
@@ -332,13 +279,129 @@ const struct addsynth_instrument_cfg addsynth_xilophone_cfg = {
 				[5] = { .freq = MIDI_D6_FREQ * 6, .ampl = 0 }
 			},
 			.env = {
-				.guard_itv_ms = 50,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
-				.attack_itv_ms = 25,
+				.attack_itv_ms = 17,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 2000,
-				.release_itv_ms = 0,
-				.sustain_lvl = 0
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_D6_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
+			}
+
+		},
+		[11] = {
+			.tag = "E6",
+			.midi = MIDI_E6,
+			.osc = { 
+				[0] = { .freq = MIDI_E6_FREQ, .ampl = 0.333 },
+				[1] = { .freq = MIDI_E6_FREQ * 2, .ampl = 0 },
+				[2] = { .freq = MIDI_E6_FREQ * 3, .ampl = 0 },
+				[3] = { .freq = MIDI_E6_FREQ * 4, .ampl = 0 },
+				[4] = { .freq = MIDI_E6_FREQ * 5, .ampl = 0 },
+				[5] = { .freq = MIDI_E6_FREQ * 6, .ampl = 0 }
+			},
+			.env = {
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_E6_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
+			}
+
+		},
+		[12] = {
+			.tag = "F6",
+			.midi = MIDI_F6,
+			.osc = { 
+				[0] = { .freq = MIDI_F6_FREQ, .ampl = 0.333 },
+				[1] = { .freq = MIDI_F6_FREQ * 2, .ampl = 0 },
+				[2] = { .freq = MIDI_F6_FREQ * 3, .ampl = 0 },
+				[3] = { .freq = MIDI_F6_FREQ * 4, .ampl = 0 },
+				[4] = { .freq = MIDI_F6_FREQ * 5, .ampl = 0 },
+				[5] = { .freq = MIDI_F6_FREQ * 6, .ampl = 0 }
+			},
+			.env = {
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_F6_FREQ),
+				.supress_itv_ms = 92,
+				.sustain_lvl = 0.50
+			}
+
+		},
+		[13] = {
+			.tag = "G6",
+			.midi = MIDI_G6,
+			.osc = { 
+				[0] = { .freq = MIDI_G6_FREQ, .ampl = 0.333 },
+				[1] = { .freq = MIDI_G6_FREQ * 2, .ampl = 0 },
+				[2] = { .freq = MIDI_G6_FREQ * 3, .ampl = 0 },
+				[3] = { .freq = MIDI_G6_FREQ * 4, .ampl = 0 },
+				[4] = { .freq = MIDI_G6_FREQ * 5, .ampl = 0 },
+				[5] = { .freq = MIDI_G6_FREQ * 6, .ampl = 0 }
+			},
+			.env = {
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_G6_FREQ),
+				.supress_itv_ms = 64,
+				.sustain_lvl = 0.50
+			}
+
+		},
+		[14] = {
+			.tag = "A6",
+			.midi = MIDI_A6,
+			.osc = { 
+				[0] = { .freq = MIDI_A6_FREQ, .ampl = 0.333 },
+				[1] = { .freq = MIDI_A6_FREQ * 2, .ampl = 0 },
+				[2] = { .freq = MIDI_A6_FREQ * 3, .ampl = 0 },
+				[3] = { .freq = MIDI_A6_FREQ * 4, .ampl = 0 },
+				[4] = { .freq = MIDI_A6_FREQ * 5, .ampl = 0 },
+				[5] = { .freq = MIDI_A6_FREQ * 6, .ampl = 0 }
+			},
+			.env = {
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_A6_FREQ),
+				.supress_itv_ms = 64,
+				.sustain_lvl = 0.50
+			}
+
+		},
+		[15] = {
+			.tag = "B6",
+			.midi = MIDI_B6,
+			.osc = { 
+				[0] = { .freq = MIDI_B6_FREQ, .ampl = 0.333 },
+				[1] = { .freq = MIDI_B6_FREQ * 2, .ampl = 0 },
+				[2] = { .freq = MIDI_B6_FREQ * 3, .ampl = 0 },
+				[3] = { .freq = MIDI_B6_FREQ * 4, .ampl = 0 },
+				[4] = { .freq = MIDI_B6_FREQ * 5, .ampl = 0 },
+				[5] = { .freq = MIDI_B6_FREQ * 6, .ampl = 0 }
+			},
+			.env = {
+				.guard_itv_ms = 0,
+				.delay_itv_ms = 0,
+				.attack_itv_ms = 17,
+				.hold_itv_ms = 0,
+				.decay_itv_ms = 46,
+				.release_itv_ms = RELEASE_ITV(MIDI_B6_FREQ),
+				.supress_itv_ms = 64,
+				.sustain_lvl = 0.50
 			}
 
 		},

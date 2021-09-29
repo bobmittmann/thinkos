@@ -148,7 +148,7 @@ int thinkos_flat_check(const struct flat_app * app)
 const struct thinkos_thread_inf thinkos_app_inf = {
 	.tag = "APP",
 	.stack_ptr = 0,
-	.stack_size = 1024,
+	.stack_size = 8192,
 	.priority = 0,
 	.thread_id = 1,
 	.paused = 0
@@ -171,7 +171,7 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 {
 	struct thinkos_thread_initializer init;
 	const struct flat_app * app = (struct flat_app *)addr;
-	const struct thinkos_thread_inf * inf = &thinkos_app_inf;
+	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
 	uintptr_t stack_top;
 	uintptr_t stack_size;
 	uintptr_t stack_base;
@@ -223,6 +223,7 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 
 	task_entry = app->entry;
 	task_exit = (uintptr_t)krn_app_at_exit;
+
 
 	init.stack_base = stack_base;
 	init.stack_size = stack_size;

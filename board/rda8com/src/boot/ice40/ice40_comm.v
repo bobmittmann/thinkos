@@ -32,15 +32,15 @@ module ice40_comm (
 	input  TDMFS1,
 	input  TDMCK1,
 
-	output  SEL5,
-	output  SEL6,
-	output  SEL7,
-	output  SEL8,
-	output  CTL2,
-	output  COMM2,
-	output  TDMDAT2,
-	output  TDMFS2,
-	output  TDMCK2,
+	input  SEL5,
+	input  SEL6,
+	input  SEL7,
+	input  SEL8,
+	input  CTL2,
+	input  COMM2,
+	input  TDMDAT2,
+	input  TDMFS2,
+	input  TDMCK2,
 
 	input  NET_RXD,
 	output NET_TXD,
@@ -55,11 +55,15 @@ module ice40_comm (
 	output LED1,
 	output LED2,
 
-	input IO1,
-	input IO2,
+	output IO1,
+	output IO2,
 
 	output TP12,
-	output TP13
+	output TP13,
+
+	output TP71,
+	input TP72
+
 
 );
 
@@ -78,6 +82,10 @@ module ice40_comm (
 
 	wire [15:0] stat;
 	reg  [15:0] ctrl;
+
+	reg sig;
+	reg [1:0]sw;
+	reg [1:0]st;
 
 	wire dsp_clk;
 	wire aux_clk;
@@ -160,20 +168,19 @@ module ice40_comm (
 	assign stat[7] = TDMFS1;
 	assign stat[8] = TDMCK1;
 
-/*
-	assign stat[8] = SEL5;
-	assign stat[9] = SEL6;
-	assign stat[10] = SEL7;
-	assign stat[11] = SEL8;
-	assign stat[12] = CTL2;
-	assign stat[13] = COMM2;
-	assign stat[14] = TDMDAT2;
-	assign stat[15] = TDMFS2;
+
+	assign stat[9] = SEL5;
+	assign stat[10] = SEL6;
+	assign stat[11] = SEL7;
+	assign stat[12] = SEL8;
+	assign stat[13] = CTL2;
+	assign stat[14] = COMM2;
+	assign stat[15] = TDMDAT2;
+//	assign stat[15] = TDMFS2;
+
 	assign TDMCK2 = slow_clk;
-*/
 
-
-	assign SEL5 = ctrl[0];
+/*	assign SEL5 = ctrl[0];
 	assign SEL6 = ctrl[1];
 	assign SEL7 = ctrl[2];
 	assign SEL8 = ctrl[3];
@@ -182,22 +189,42 @@ module ice40_comm (
 	assign TDMDAT2 = ctrl[6];
 	assign TDMFS2 = ctrl[7];
 	assign TDMCK2 = ctrl[8];
+*/
+
+	assign A_TXD = 1;
+	assign B_TXD = 1;
+	assign C_TXD = 1;
+	assign D_TXD = 1;
+	assign A_TXEN = 0;
+	assign B_TXEN = 0;
+	assign C_TXEN = 0;
+	assign D_TXEN = 0;
+
+	assign LED1 = 0;
+	assign LED2 = 0;
+
+	assign IO1 = st[0];
+	assign IO2 = st[1];
+
+	assign TP71 = sig;
+
+	always @(posedge aux_clk)
+	begin
+		sig <= !sig;
+		sw[0] <= TP72;
+		sw[1] <= sw[0];
+		if (sw[0] ^ sw[1])
+			st <= 2'b10;
+		else if (~(sw[0] | sw[1]))
+			st <= 2'b01;
+		else	
+			st <= 2'b00;
+
+	end
 
 
-	assign A_TXD = slow_clk;
-	assign B_TXD = slow_clk;
-	assign C_TXD = slow_clk;
-	assign D_TXD = slow_clk;
-	assign A_TXEN = 1;
-	assign B_TXEN = 1;
-	assign C_TXEN = 1;
-	assign D_TXEN = 1;
-
-	assign LED1 = ctrl[14];
-	assign LED2 = ctrl[15];
-
-	assign TP12 = IO1;
-	assign TP13 = IO2;
+//	assign TP12 = IO1;
+//	assign TP13 = IO2;
 
 
 endmodule

@@ -158,10 +158,11 @@ void __attribute__ ((aligned(16))) cm3_default_isr(unsigned int irq)
 
 	th = krn->irq_th[irq];
 
-#if (IRQ_DEBUG)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	krn->irq_th[irq] = THINKOS_THREAD_VOID;
 #endif 
+
+#if (IRQ_DEBUG)
 	if (th >= THINKOS_THREAD_IDLE) {
 		DCC_LOG2(LOG_ERROR, "<%2d> IRQ %d invalid thread!", th, irq);
 		return;

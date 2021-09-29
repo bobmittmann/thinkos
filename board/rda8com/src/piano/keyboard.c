@@ -35,9 +35,10 @@
 #include "encoder.h"
 #include "keyboard.h"
 
-#define IO_PUSH_BTN STM32_GPIOB, 11
+#define IO_SW_1  STM32_GPIOB, 8
+#define IO_SW_2  STM32_GPIOB, 12
 
-#define KBD_KEY_CNT  17
+#define KBD_KEY_CNT  24
 #define KBD_FIFO_LEN 32
 
 #define KBD_POLL_ITV_MS 4
@@ -80,7 +81,8 @@ static inline uint32_t __kbd_io_poll(uint32_t seq)
 	/* process SPI inputs */
 	spi_in = spidrv_xfer(seq) & 0x0000ffff;
 	/* process GPIO inputs */
-	gpio_in = stm32_gpio_stat(IO_PUSH_BTN) ? 0 : (1 << 16);
+	gpio_in = stm32_gpio_stat(IO_SW_1) ? 0 : (1 << 16);
+	gpio_in |= stm32_gpio_stat(IO_SW_2) ? 0 : (1 << 17);
 
 	return spi_in | gpio_in;
 }
@@ -145,6 +147,7 @@ int keyboard_task(struct keyboard_drv * drv)
 		thinkos_mutex_lock(drv->mutex);
 
 		if (key_down) {
+//			printf("key down = %05x\r\n", key_down);
 			bmp = __rbit(key_down);
 			while ((j = __clz(bmp)) < 32) {
 				int code = drv->keycode[j];
@@ -159,6 +162,7 @@ int keyboard_task(struct keyboard_drv * drv)
 		}
 
 		if (key_up) {
+//			printf("key down = %05x\r\n", key_up);
 			bmp = __rbit(key_up);
 			while ((j = __clz(bmp)) < 32) {
 				int code = drv->keycode[j];
@@ -194,7 +198,9 @@ struct keyboard_drv keyboard_drv_rt;
 static void __kbd_io_init(void)
 {
 	/* Enable IO clocks */
-	stm32_gpio_mode(IO_PUSH_BTN, INPUT, PULL_UP);
+	stm32_gpio_mode(IO_SW_1, INPUT, PULL_UP);
+	stm32_gpio_mode(IO_SW_2, INPUT, PULL_UP);
+
 	stm32_gpio_mode(STM32_GPIOB, 10, OUTPUT, PUSH_PULL);
 	stm32_gpio_clr(STM32_GPIOB, 10);
 }
@@ -220,7 +226,7 @@ int keyboard_init(void)
 	drv->flag = thinkos_flag_alloc();
 
 	for (i = 0; i < KBD_KEY_CNT; ++i) {
-		__kbd_keymap(drv, i, 0x80 + i);
+		__kbd_keymap(drv, i, 128 + i);
 	}
 
 	for (i = 0; i < KBD_TMR_CNT; ++i) {

@@ -66,10 +66,12 @@ set_io SAI_FS     13 -io_std SB_LVCMOS -pullup no
 
 set_io IO_RES1    42 -io_std SB_LVCMOS -pullup yes
 
-set_io TP12       72 -io_std SB_LVCMOS -pullup no
-set_io TP13       71 -io_std SB_LVCMOS -pullup no
+set_io TP12       72 -io_std SB_LVCMOS -pullup yes
+set_io TP13       71 -io_std SB_LVCMOS -pullup yes
 set_io IO_RES5    30 -io_std SB_LVCMOS -pullup yes
 
+set_io TP72       73 -io_std SB_LVCMOS -pullup yes
+set_io TP71       74 -io_std SB_LVCMOS -pullup yes
 
 set_io IO_RES7     1 -io_std SB_LVCMOS -pullup yes
 set_io LED1        2 -io_std SB_LVCMOS -pullup no

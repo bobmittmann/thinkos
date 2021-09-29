@@ -39,6 +39,8 @@
 #define KBD_EVENT_ENCODE(__OPC, __ARG) ((((__OPC) & 0xff) << 8) | \
                                         ((__ARG) & 0xff))
 
+#define KBD_SWITCH(__ID) (128 + (__ID))
+
 struct keyboard;
 
 /*
@@ -52,6 +54,9 @@ struct keyboard_cfg {
 		uint8_t code;
 	} keymap[];
 };
+
+const struct keyboard_cfg keyboard_xilophone_cfg;
+const struct keyboard_cfg keyboard_piano_cfg;
 
 #ifdef __cplusplus
 extern "C" {

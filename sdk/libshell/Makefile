@@ -23,7 +23,8 @@ include ../../mk/config.mk
 
 LIB_STATIC = shell
 
-CFILES = shell.c get_next.c exec.c lookup.c history.c parseline.c stripline.c cmd_set.c cmd_get.c \
+CFILES = shell.c get_next.c exec.c lookup.c history.c parseline.c \
+		 stripline.c classic.c cmd_set.c cmd_get.c \
 		 cmd_unset.c cmd_echo.c cmd_close.c cmd_sleep.c cmd_reboot.c \
 		 cmd_memxxd.c cmd_osinfo.c cmd_netstat.c cmd_ifconfig.c \
 		 cmd_ping.c cmd_route.c cmd_arp.c cmd_ipcfg.c cmd_close.c \

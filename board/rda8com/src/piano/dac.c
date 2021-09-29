@@ -59,13 +59,13 @@ int silence_reset(void * arg, uint32_t clk)
 	return 0;
 }
 
-static const struct dac_stream_op silence_gen_op = {
+const struct dac_stream_op silence_gen_op = {
 	.encode = (int (*)(void *, float*, unsigned int, uint32_t))
 		silence_pcm_encode,
 	.reset = (int (*)(void *, uint32_t))silence_reset
 };
 
-static const struct dac_stream silence = {
+const struct dac_stream silence = {
 	.arg = NULL,
 	.op = &silence_gen_op
 };
@@ -124,6 +124,19 @@ uint32_t dac_clock(void)
 	return dac_rt.clk;
 }
 
+struct dac_smooth {
+	float c1;
+	volatile uint32_t x;
+};
+
+void dac_smooth_cfg(struct dac_smooth *smooth, unsigned int ms)
+{
+	uint32_t steps = (DAC_SAMPLE_RATE * ms / 1000);
+
+	smooth->x = steps;
+	smooth->c1 = (float)1.0 / (steps);
+}
+
 int dac_task(void *arg)
 {
 	struct stm32f_dma *dma = STM32F_DMA1;
@@ -138,6 +151,7 @@ int dac_task(void *arg)
 	__dac_timer_start();
 #endif
 
+#if 1
 	do {
 		/* Wait for first DAC DMA transfer to finish */
 		thinkos_irq_wait(STM32_IRQ_DMA1_CH4);
@@ -145,19 +159,61 @@ int dac_task(void *arg)
 		isr = dma->isr;
 		/* clear the DMA interrupt flags */
 		dma->ifcr = isr;
-#if 0
 		if (isr & DMA_TEIF4) {
-			printf("ERROR!\n");
+			fprintf(stderr, "DAC: DMA error!\r\n");
 		}
 
 		if ((isr & (DMA_TCIF4 | DMA_CHTIF4)) == 0) {
 			printf("isr=0x%x\n", isr);
 		}
-#endif
 		/* first transfer should be a half transfer */
 	} while ((isr & DMA_CHTIF4) == 0);
+#endif
 
-	printf("DAC started!\n");
+	printf("DAC started!\r\n");
+
+	{
+		unsigned int tm_ms = 500;
+		uint32_t frames;
+		uint32_t steps;
+		uint32_t x = 0;
+		float dy = 32768;
+		float c1;
+
+		steps = ((DAC_SAMPLE_RATE * tm_ms) / 1000);
+		frames = ((steps + DAC_FRAME_SIZE - 1) / DAC_FRAME_SIZE);
+		steps = frames * DAC_FRAME_SIZE;
+		x = steps;
+		
+		c1 = (float)1.0 / (steps);
+
+		while (cnt < frames) {
+			uint16_t * dst;
+			int i;
+
+			dst = dac_rt.dma_buf[cnt & 1];
+			for (i = 0; i < DAC_FRAME_SIZE; ++i) {
+				float o;
+				float xs;
+
+				/* smooth step */
+				x -= (x > 0) ? 1 : 0;
+				xs = x * c1;
+				o = dy - (xs * xs) * (-2 * xs + 3) * dy;
+				(void)o;
+				dst[i] = o;
+
+			}
+
+			thinkos_irq_wait(STM32_IRQ_DMA1_CH4);
+			isr = dma->isr;
+			if ((isr & (DMA_TCIF4 | DMA_CHTIF4)) == 0) {
+				fprintf(stderr, "DAC: DMA error!\r\n");
+			}
+			dma->ifcr = isr;
+			cnt++;
+		}
+	}
   
 	for (;;) {
 		float pcm[DAC_FRAME_SIZE];
@@ -336,10 +392,9 @@ int dac_init(void)
 	/* DAC channel 2 initial value */
 	dac->dhr12l2 = 0;
 
-	/* Ramp up to middle value */
 	pcm = dac_rt.dma_buf[0];
 	for (i = 0; i < 2 * DAC_FRAME_SIZE; ++i) {
-		pcm[i] = (32768 * 2 * DAC_FRAME_SIZE) / i;
+		pcm[i] = 0;
 	}
 
 	/* DAC configure with TIM7 as trigger */
@@ -391,6 +446,11 @@ void dac_gain_set(float gain)
 	dac_rt.gain = gain * 32767;
 }
 
+float dac_gain_get(void)
+{
+	return dac_rt.gain / (float)32767.0;
+}
+
 int dac_voice_op_set(int vid, int lid, 
 	void * arg, const struct dac_stream_op * op)
 {
@@ -410,5 +470,15 @@ int dac_voice_op_set(int vid, int lid,
 	dac_rt.voice_op[vj].op[li] = op;
 
 	return 0;
+}
+
+int dac_voice_max(void)
+{
+	return DAC_VOICES_MAX;
+}
+
+int dac_pipeline_max(void)
+{
+	return DAC_PIPELINE_MAX;
 }
 

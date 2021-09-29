@@ -24,6 +24,11 @@
 
 #include <sys/param.h>
 
+void tp12_on(void);
+void tp12_off(void);
+void tp13_on(void);
+void tp13_off(void);
+
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -439,7 +444,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 }
 
 
-
+#if 0
 /* Write into fifo from.  */
 ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn, 
 									  const uint8_t * buf, size_t len)
@@ -498,7 +503,7 @@ ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn,
 
 	return cnt;
 }
-
+#endif
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
 bool thinkos_console_rd_resume(struct thinkos_rt * krn,
@@ -702,6 +707,7 @@ drain_again:
 				/* Set the default return value to timeout. */
 				arg[0] = THINKOS_ETIMEDOUT;
 				/* wait for event */
+
 				__krn_thread_timedwait(krn, self, THINKOS_WQ_CONSOLE_RD, tmo);
 			} else {
 				/* if timeout is 0 do not block */

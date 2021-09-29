@@ -48,6 +48,34 @@ struct shell_cmd {
 	char * const desc;
 };
 
+extern const shell_callback_t cmd_call_tab[];
+
+
+/* New generalized API */
+
+struct shell_env;
+
+typedef int(* shell_cmd_callback_t)(struct shell_env * env, 
+									int argc, char * argv[]);
+
+struct shell_ops {
+	const char * (* greeting)(struct shell_env * env);
+	const char * (* prompt_get)(struct shell_env * env, char * buf, size_t len);
+	const char * (* cmd_name)(struct shell_env * env, unsigned int cmd);
+	const char * (* cmd_alias)(struct shell_env * env, unsigned int cmd);
+	const char * (* cmd_brief)(struct shell_env * env, unsigned int cmd);
+	const char * (* cmd_detail)(struct shell_env * env, unsigned int cmd);
+	int (* cmd_lookup)(struct shell_env * env, const char * str);
+	int (* cmd_first)(struct shell_env * env);
+	int (* cmd_next)(struct shell_env * env, unsigned int cmd);
+	int (* cmd_exec)(struct shell_env * env, int argc, 
+					 char * argv[], unsigned int cmd);
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct cmd_history;
 
 #define SIZEOF_CMD_HISTORY 5
@@ -55,6 +83,11 @@ struct cmd_history;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+int shell_history(struct shell_env * env, struct cmd_history * history,
+					  void (* greeting)(FILE *));
+
+int shell_simple(FILE * f, struct shell_ops * op);
 
 struct shell_cmd * cmd_lookup(const struct shell_cmd cmd_tab[], char * line);
 
@@ -126,7 +159,7 @@ int cmd_tcpstat(FILE * f, int argc, char ** argv);
 
 int cmd_ipcfg(FILE * f, int argc, char ** argv);
 
-int cmd_memxxd(FILE *f, int argc, char ** argv);
+int cmd_memxxd(FILE * f, int argc, char ** argv);
 
 #ifdef __cplusplus
 }

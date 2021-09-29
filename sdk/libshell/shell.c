@@ -26,30 +26,41 @@
 #define __SHELL_I__
 #include "shell-i.h"
 
-int shell(FILE * f, const char * (* prompt)(void), 
-		  void (* greeting)(FILE *), 
-		  const struct shell_cmd cmd_tab[])
+int shell_history(struct shell_env * env, struct cmd_history * history,
+			   void (* greeting)(FILE *))
 {
 	char line[SHELL_LINE_MAX];
-	char hist_buf[SIZEOF_CMD_HISTORY + SHELL_HISTORY_MAX * SHELL_LINE_MAX];
-	struct cmd_history * history;
-	struct shell_cmd * cmd;
+	char * argv[SHELL_ARG_MAX];
+	const struct shell_ops * op;
+	int argc;
+	int cmd;
 	char * cp;
 	char * st;
+	FILE * fin;
+	FILE * fout;
 	int ret = 0;
 
-	memset(line, 0, sizeof(line));
-	memset(hist_buf, 0, sizeof(hist_buf));
+	if (env == NULL)
+		return -1;
 
-	history = history_init(hist_buf, sizeof(hist_buf), SHELL_LINE_MAX);
+	if ((op = env->op) == NULL)
+		return -1;
 
-	if (greeting != NULL)
-		greeting(f);
+	if ((fout = env->fout) == NULL)
+		return -1;
+
+	if ((fin = env->fin) == NULL)
+		return -1;
+
+	if ((op->greeting) != NULL)
+		op->greeting(env);
 
 	do {
-		fprintf(f, "%s", prompt());
+		op->prompt_get(env, line, SHELL_PROMPT_MAX);
 
-		if (history_readline(history, f, line, SHELL_LINE_MAX) == NULL)
+		fputs(line, fout);
+
+		if (history_readline(history, env->fin, line, SHELL_LINE_MAX) == NULL)
 			return -1;
 
 		if ((cp = shell_stripline(line)) == NULL)
@@ -60,19 +71,25 @@ int shell(FILE * f, const char * (* prompt)(void),
 		/* get the next statement */
 		while ((st = cmd_get_next(&cp)) != NULL) {
 
-			if ((cmd = cmd_lookup(cmd_tab, st)) == NULL) {
-				fprintf(f, "Command not found!\n");
+			if ((cmd = op->cmd_lookup(env, st)) < 0) {
+				fprintf(fout, "Command not found!\n");
 				break;
 			}
 
-			ret = cmd_exec(f, cmd, st);
+			if ((argc = shell_parseline(line, argv, SHELL_ARG_MAX)) == 0) {
+				break;
+			}
+
+			ret = op->cmd_exec(env, argc, argv, cmd);
 			if (ret < 0) {
-				if(SHELL_ERR_ARG_MISSING == ret) {
-					fprintf(f, "  %s, %s - %s\n", cmd->name, cmd->alias, cmd->desc);
-					fprintf(f, "  usage: %s %s\n\n", cmd->alias, cmd->usage);
-				}
-				else if (ret !=  SHELL_ABORT) {
-					fprintf(f, "Error: %d\n", -ret);
+				if (SHELL_ERR_ARG_MISSING == ret) {
+					fprintf(fout, "  %s, %s - %s\n", 
+							op->cmd_name(env, cmd), op->cmd_alias(env, cmd), 
+							op->cmd_brief(env, cmd));
+					fprintf(fout, "  usage: %s %s\n\n", 
+							op->cmd_alias(env, cmd), op->cmd_detail(env, cmd));
+				} else if (ret !=  SHELL_ABORT) {
+					fprintf(fout, "Error: %d\n", -ret);
 					break;
 				}
 			}
@@ -81,5 +98,79 @@ int shell(FILE * f, const char * (* prompt)(void),
 	} while (ret != SHELL_ABORT); 
 
 	return 0;
+}
+
+int shell_simple(FILE * f, struct shell_ops * op)
+{
+	struct shell_env env_buf;
+	struct shell_env * env = &env_buf;
+	char line[SHELL_LINE_MAX];
+	char * argv[SHELL_ARG_MAX];
+	FILE * fout;
+	int argc;
+	char * cp;
+	char * st;
+	int cmd;
+	int ret = 0;
+
+	if ((fout = f) == NULL)
+		return -1;
+
+	if (op == NULL)
+		return -1;
+
+	env->fout = f;
+	env->fin = f;
+	env->op = op;
+
+	if ((op->greeting) != NULL)
+		op->greeting(env);
+
+	do {
+		if ((op->greeting) != NULL)
+			op->prompt_get(env, line, SHELL_PROMPT_MAX);
+		else
+			strcpy(line, "[app]> ");
+
+		fputs(line, fout);
+		
+		fgets(line, SHELL_LINE_MAX, env->fin);
+		if (line[0] != '\n')
+			continue;
+
+		if ((cp = shell_stripline(line)) == NULL)
+			continue;
+
+		/* get the next statement */
+		while ((st = cmd_get_next(&cp)) != NULL) {
+
+			if ((cmd = op->cmd_lookup(env, st)) < 0) {
+				fprintf(fout, "Command not found!\n");
+				break;
+			}
+
+			if ((argc = shell_parseline(line, argv, SHELL_ARG_MAX)) == 0) {
+				break;
+			}
+
+			ret = op->cmd_exec(env, argc, argv, cmd);
+			if (ret < 0) {
+				if (SHELL_ERR_ARG_MISSING == ret) {
+					fprintf(fout, "  %s, %s - %s\n", 
+							op->cmd_name(env, cmd), op->cmd_alias(env, cmd), 
+							op->cmd_brief(env, cmd));
+					fprintf(fout, "  usage: %s %s\n\n", 
+							op->cmd_alias(env, cmd), op->cmd_detail(env, cmd));
+				} else if (ret !=  SHELL_ABORT) {
+					fprintf(fout, "Error: %d\n", -ret);
+					break;
+				}
+			}
+			
+		}
+	} while (ret != SHELL_ABORT); 
+
+	return 0;
+
 }
 

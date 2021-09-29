@@ -36,6 +36,7 @@ struct envelope_cfg {
 	uint16_t hold_itv_ms;
 	uint16_t decay_itv_ms;
 	uint16_t release_itv_ms;
+	uint16_t supress_itv_ms;
 	float sustain_lvl;
 };
 
@@ -47,6 +48,7 @@ struct exp_envelope {
 	float c1hold;
 	float c1decay;
 	float c1release;
+	float c1supress;
 	float e1;
 	float e2;
 	float c1;
@@ -62,6 +64,7 @@ int exp_envelope_attack(struct exp_envelope * env, uint32_t clk);
 int exp_envelope_hold(struct exp_envelope * env, uint32_t clk);
 int exp_envelope_decay(struct exp_envelope * env, uint32_t clk);
 int exp_envelope_sustain(struct exp_envelope * env, uint32_t clk);
+int exp_envelope_supress(struct exp_envelope * env, uint32_t clk);
 int exp_envelope_release(struct exp_envelope * env, uint32_t clk);
 int exp_envelope_off(struct exp_envelope * env, uint32_t clk);
 
