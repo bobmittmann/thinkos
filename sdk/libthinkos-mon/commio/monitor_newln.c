@@ -3,6 +3,6 @@
 
 void monitor_newln(const struct monitor_comm * comm)
 {
-	monitor_comm_send(comm, "\r\n", 2);
+	monitor_comm_write(comm, "\r\n", 2);
 }
 

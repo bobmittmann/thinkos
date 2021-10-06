@@ -127,7 +127,12 @@ void thinkos_irq_timedwait_fixup_svc(int32_t arg[], int self, struct thinkos_rt 
 void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 
-void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
+void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
+void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
 
 void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
@@ -489,9 +494,13 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
  * --------------------------------------------- */
 
 #if (THINKOS_ENABLE_CONSOLE)
-	[THINKOS_CONSOLE] = thinkos_console_svc,
+	[THINKOS_CONSOLE_CTL] = thinkos_console_ctl_svc,
+	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
+	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
 #else
-	[THINKOS_CONSOLE] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_RECV] = thinkos_nosys_svc,
 #endif
 
 
@@ -577,20 +586,14 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_COMM_SEND] = thinkos_comm_send_svc,
 	[THINKOS_COMM_RECV] = thinkos_comm_recv_svc,
   #if (THINKOS_ENABLE_TIMED_CALLS)
-	[THINKOS_COMM_TIMEDSEND] = thinkos_comm_timedsend_svc,
-	[THINKOS_COMM_TIMEDRECV] = thinkos_comm_timedrecv_svc,
 	[THINKOS_COMM_TIMED_FIXUP] = thinkos_comm_timed_fixup_svc,
   #else
-	[THINKOS_COMM_TIMEDSEND] = thinkos_nosys_svc,
-	[THINKOS_COMM_TIMEDRECV] = thinkos_nosys_svc,
 	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
   #endif
 #else
 	[THINKOS_COMM_CTL] = thinkos_nosys_svc,
 	[THINKOS_COMM_SEND] = thinkos_nosys_svc,
 	[THINKOS_COMM_RECV] = thinkos_nosys_svc,
-	[THINKOS_COMM_TIMEDSEND] = thinkos_nosys_svc,
-	[THINKOS_COMM_TIMEDRECV] = thinkos_nosys_svc,
 	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
 #endif
 

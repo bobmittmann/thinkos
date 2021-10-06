@@ -55,7 +55,7 @@
 //struct gdbrspd gdbrspd;
 int dbgmon_gdbrsp_comm_send(void * attr, const void * buf, size_t len)
 {
-	return monitor_comm_send(attr, buf, len);
+	return monitor_comm_write(attr, buf, len);
 }
 
 int dbgmon_gdbrsp_comm_recv(void * attr, void * buf, size_t len)

@@ -25,7 +25,8 @@ LIB_STATIC = thinkos-mon
 
 COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
 
-COMMIO_CFILES = monitor_putc.c monitor_puts.c \
+COMMIO_CFILES = monitor_write.c monitor_read.c \
+				monitor_putc.c monitor_puts.c \
 		monitor_getc.c monitor_gets.c \
 		monitor_printf.c monitor_scanf.c \
 		monitor_println.c \

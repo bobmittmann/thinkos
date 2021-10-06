@@ -70,7 +70,7 @@ void monitor_hexdump(const struct monitor_comm * comm,
 			}
 
 			if (!eq) {
-				monitor_comm_send(comm, " ...\r\n", 6);
+				monitor_comm_write(comm, " ...\r\n", 6);
 				eq = true;
 			}
 		} else {	
@@ -96,7 +96,7 @@ dump_line:
 			*cp++ = '\r';
 			*cp++ = '\n';
 
-			monitor_comm_send(comm, buf, cp - buf);
+			monitor_comm_write(comm, buf, cp - buf);
 		}
 
 		cmp = (uint8_t *)buf;

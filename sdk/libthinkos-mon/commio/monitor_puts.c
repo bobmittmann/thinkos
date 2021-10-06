@@ -7,6 +7,6 @@ int monitor_puts(const char * s, const struct monitor_comm * comm)
 
 	while (s[n] != '\0')
 		n++;
-	return monitor_comm_send(comm, s, n);
+	return monitor_comm_write(comm, s, n);
 }
 

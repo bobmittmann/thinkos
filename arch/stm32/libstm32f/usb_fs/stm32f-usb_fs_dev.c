@@ -79,7 +79,7 @@
 #endif
 
 #ifndef DOUBLE_BUFFER_ENABLE
-#define DOUBLE_BUFFER_ENABLE 0
+#define DOUBLE_BUFFER_ENABLE 1
 #endif
 
 /* Endpoint state */

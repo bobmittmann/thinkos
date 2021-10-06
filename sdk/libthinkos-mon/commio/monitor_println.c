@@ -13,13 +13,13 @@ void monitor_println(const struct monitor_comm * comm, const char *fmt, ... )
 	for (n = 0; n < 79; ++n)
 		s[n] = ' ';
 	s[n++] = '\r';
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, s, n);
 
 	va_start(ap, fmt);
 	n = krn_vsnprintf(s, sizeof(s), fmt, ap);
 	s[n++] = '\r';
 	s[n++] = '\n';
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, s, n);
 	va_end(ap);
 }
 
@@ -31,11 +31,11 @@ void monitor_writeln(const char * ln, const struct monitor_comm * comm)
 	for (n = 0; n < 79; ++n)
 		s[n] = ' ';
 	s[n++] = '\r';
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, s, n);
 	n = 0;
 	while (ln[n] != '\0')
 		n++;
-	monitor_comm_send(comm, ln, n);
-	monitor_comm_send(comm, "\r\n", 2);
+	monitor_comm_write(comm, ln, n);
+	monitor_comm_write(comm, "\r\n", 2);
 }
 

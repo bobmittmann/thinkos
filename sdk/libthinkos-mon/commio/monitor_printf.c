@@ -14,6 +14,6 @@ int monitor_printf(const struct monitor_comm * comm, const char *fmt, ... )
 	n = krn_vsnprintf(s, sizeof(s), fmt, ap);
 	va_end(ap);
 
-	return monitor_comm_send(comm, s, n);
+	return monitor_comm_write(comm, s, n);
 }
 

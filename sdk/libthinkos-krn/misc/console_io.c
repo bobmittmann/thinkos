@@ -43,11 +43,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #include <sys/dcclog.h>
-
-void tp12_on(void);
-void tp12_off(void);
-void tp13_on(void);
-void tp13_off(void);
+#include <sys/dcclog.h>
 
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
 {
@@ -55,15 +51,11 @@ int krn_console_dev_send(void * dev, const void * buf, unsigned int len)
 	unsigned int rem = len;
 	int n;
 
-//	tp12_on();
-
 	while (rem) {
 		n = thinkos_console_write(cp, rem);
 		cp += n;
 		rem -= n;
 	}
-
-//	tp12_off();
 
 	return len;
 }
@@ -108,11 +100,15 @@ int krn_console_dev_recv(void * dev, void * buf,
 {
 	int ret = 0;
 
-//	tp13_on();
+
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret < 0) {
+//			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
+		} else {
+//			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread()->%d", ret);
+		}
 	} while (ret == 0);
-//	tp13_off();
 
 	return ret;
 }

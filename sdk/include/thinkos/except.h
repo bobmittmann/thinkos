@@ -128,7 +128,7 @@ struct thinkos_except {
 	
 };
 
-extern uint32_t thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
+extern uint32_t thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
 extern const uint16_t thinkos_except_stack_size;
 
 #ifdef __cplusplus

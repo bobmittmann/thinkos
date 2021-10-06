@@ -25,7 +25,7 @@ int monitor_gets(char * s, int size, const struct monitor_comm * comm)
 	pos = 0;
 
 	for (;;) {
-		if (monitor_comm_recv(comm, buf, sizeof(char)) <= 0)
+		if (monitor_comm_read(comm, buf, sizeof(char)) <= 0)
 			return -1;
 
 		c = buf[0];

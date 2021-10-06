@@ -270,8 +270,8 @@ void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th,
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
 							unsigned int wq, unsigned int ms) {
-	__krn_tmdwq_insert(krn, wq, th, ms);
 	__krn_thread_suspend(krn, th);
+	__krn_tmdwq_insert(krn, wq, th, ms);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }

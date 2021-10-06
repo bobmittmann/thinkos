@@ -385,6 +385,12 @@ const struct monitor_comm * custom_comm_getinstance(void);
  * ----------------------------------------------------------------------------
  */
 
+int monitor_comm_write(const struct monitor_comm * comm, 
+								   const void * buf, unsigned int len);
+
+int monitor_comm_read(const struct monitor_comm * comm, void * buf, 
+					  unsigned int len);
+
 /* Minimalistic printf style output formatter */
 int __attribute__((format (__printf__, 2, 3))) 
 	monitor_printf(const struct monitor_comm * comm, const char *fmt, ... );

@@ -41,7 +41,6 @@
 #define THINKOS_ENABLE_WQ_IRQ               0
 
 #define THINKOS_THREADS_MAX                16
-#define THINKOS_ENABLE_THREAD_ALLOC         1
 
 /* These settings are used when its desirable
    to create and destroy threads dynamically */
@@ -166,6 +165,7 @@
 #define THINKOS_ENABLE_ALARM                1
 #define THINKOS_ENABLE_MEMORY_MAP           1
 #define THINKOS_ENABLE_CTL_KRN_INFO         0
+#define THINKOS_ENABLE_DATE_AND_TIME        0
 
 #define THINKOS_ENABLE_KRNSVC               0
 #define THINKOS_ENABLE_MONITOR_THREADS      0
@@ -193,12 +193,6 @@
 #define STM32_USB_FS_VBUS_ENABLE    1
 #define STM32_USB_FS_SUSPEND        0
 
-#if 0
-#define CDC_EP_OUT_MAX_PKT_SIZE     128
-#define CDC_EP_IN_MAX_PKT_SIZE      64
-#define CDC_EP_INT_MAX_PKT_SIZE     16
-#endif
-
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
@@ -208,7 +202,6 @@
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_BREAKPOINT_ENABLE  0
 #define MONITOR_THREAD_STEP_ENABLE 0
-#define MONITOR_SELFTEST_ENABLE    0
 #define MONITOR_CONFIGURE_ENABLE   0
 #define MONITOR_UPGRADE_ENABLE     0
 #define MONITOR_STACKUSAGE_ENABLE  1
@@ -219,16 +212,6 @@
 #define MONITOR_APPRESTART_ENABLE  1
 #define MONITOR_EXCEPTION_ENABLE   1
 #define MONITOR_FAULT_ENABLE       1
-#define MONITOR_OS_PAUSE           0
-#define MONITOR_OS_RESUME          0
-#define MONITOR_RESTART_MONITOR    0
-#define MONITOR_PREBOOT_ENABLE     1
-
-/* -------------------------------------------------------------------------
- * Serial
- * ------------------------------------------------------------------------- */
-
-#define SERIAL_RX_FIFO_LEN  1024
 
 /* -------------------------------------------------------------------------
  * LIBC 

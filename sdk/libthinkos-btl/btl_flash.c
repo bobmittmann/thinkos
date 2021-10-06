@@ -76,7 +76,8 @@ int btl_flash_erase_partition(const char * tag)
 	}
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		krn_console_puts("\r\nError: can't open partition!\r\n");
+		krn_console_puts("Error: ");
+		krn_console_wrln("can't open partition!");
 		return key;
 	}
 
@@ -98,7 +99,7 @@ int btl_flash_ymodem_recv(const char * tag)
 	int ret;
 	int key;
 
-	krn_console_puts("\r\nUpload \"");
+	krn_console_puts("Upload \"");
 	krn_console_puts(tag);
 	krn_console_puts("\" [y]? ");
 	if (krn_console_getc(10000) != 'y') {
@@ -107,11 +108,13 @@ int btl_flash_ymodem_recv(const char * tag)
 	}
 
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		krn_console_puts("\r\nError: can't open partition!\r\n");
+		krn_console_puts("Error: ");
+		krn_console_wrln("can't open partition!");
 		return key;
 	}
 
-	krn_console_wrln("YMODEM receive (Ctrl+X to cancel)... ");
+	krn_console_puts("\r\nYMODEM ");
+	krn_console_wrln("receive (Ctrl+X to cancel)... ");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
@@ -122,6 +125,7 @@ int btl_flash_ymodem_recv(const char * tag)
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
 			if ((ret = thinkos_flash_mem_write(key, offs, buf, cnt)) < 0) {
+				DCC_LOG1(LOG_ERROR, "thinkos_flash_mem_write()=>%d", ret);
 				break;
 			}
 			offs += cnt;

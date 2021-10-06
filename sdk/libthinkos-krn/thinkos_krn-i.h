@@ -650,13 +650,29 @@ __krn_wq_tmshare_thread_del(struct thinkos_rt * krn, unsigned int th) {
 
 static inline void __attribute__((always_inline)) 
 __krn_wq_insert(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
-	/* insert into the wait queue */
-	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 1);  
 #if (THINKOS_ENABLE_THREAD_STAT)
 	krn->th_stat[th] = wq << 1;
 #endif
+	/* insert into the wait queue */
+	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 1);  
 }
 
+#if (THINKOS_ENABLE_TIMED_CALLS)
+static inline void __attribute__((always_inline)) 
+__krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq, 
+			   unsigned int th, unsigned int ms) {
+	/* set the th_clk */
+	krn->th_clk[th] = krn->ticks + ms;
+#if (THINKOS_ENABLE_THREAD_STAT)
+	/* update status, mark the thread clock enable bit */
+	krn->th_stat[th] = (wq << 1) + 1;
+#endif
+	/* insert into the event wait queue */
+	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 1);
+	/* insert into the clock wait queue */
+	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);  
+}
+#endif
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 static inline void __attribute__((always_inline)) 
@@ -682,22 +698,6 @@ __wq_clock_remove(struct thinkos_rt * krn, unsigned int th) {
 	}
 #endif
 
-#if (THINKOS_ENABLE_TIMED_CALLS)
-static inline void __attribute__((always_inline)) 
-__krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq, 
-			   unsigned int th, unsigned int ms) {
-	/* set the th_clk */
-	krn->th_clk[th] = krn->ticks + ms;
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);  
-	/* insert into the event wait queue */
-	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 1);
-#if (THINKOS_ENABLE_THREAD_STAT)
-	/* update status, mark the thread clock enable bit */
-	krn->th_stat[th] = (wq << 1) + 1;
-#endif
-}
-#endif
 
 static inline void __attribute__((always_inline)) 
 __krn_wq_remove(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {

@@ -65,6 +65,17 @@ inline static void console_signal_rx_pipe(void)
 #endif
 }
 
+inline static void console_clear_ctl(void)
+{
+#if (THINKOS_ENABLE_MONITOR)
+	/* FIXME: the raw mode console mechanism has a circular dependency 
+	   between console and debug monitor */
+	monitor_clear(MONITOR_COMM_CTL);
+#else
+#endif
+}
+
+
 inline static void console_signal_ctl(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -130,49 +141,7 @@ struct {
 	};
 } thinkos_console_rt;
 
-#if (THINKOS_ENABLE_CONSOLE_READ)
-static int rx_pipe_read(uint8_t * buf, unsigned int len)
-{
-	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
-	unsigned int max;
-	uint32_t tail;
-	int cnt;
-	int pos;
-
-	/* pipe->tail is declared as volatile, 
-	   for performance reasons we read it only once at 
-	   the beginning and write it back at the end. */
-	tail = pipe->tail;
-	/* get the maximum number of chars we can read from the buffer */
-	if ((max = pipe->head - tail) == 0)
-		return 0;
-
-	/* cnt is the number of chars we will read from the buffer,
-	   it should be the minimum of max and len */
-	cnt = MIN(max, len);
-	/* get the tail position in the buffer */
-	pos = (tail % THINKOS_CONSOLE_RX_FIFO_LEN);
-	/* check whether to wrap around or on not */
-	if ((pos + cnt) > THINKOS_CONSOLE_RX_FIFO_LEN) {
-		/* we need to perform two reads */
-		int n;
-		int m;
-		/* get the number of chars from tail pos until the end of buffer */
-		n = THINKOS_CONSOLE_RX_FIFO_LEN - pos;
-		/* the remaining chars are at the beginning of the buffer */
-		m = cnt - n;
-		__thinkos_memcpy(buf, &pipe->buf[pos], n);
-		__thinkos_memcpy(buf + n, &pipe->buf[0], m);
-	} else {
-		__thinkos_memcpy(buf, &pipe->buf[pos], cnt);
-	}
-
-	pipe->tail = tail + cnt;
-
-	return cnt;
-}
-#endif
-
+#if 0
 static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
@@ -183,11 +152,6 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	uint32_t pos;
 	int cnt;
 
-#if (ENABLE_CONSOLE_DEBUG)
-	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
-		DCC_LOG1(LOG_PANIC, "tail=%u", thinkos_console_rt.tx_pipe.tail);
-	}
-#endif
 	/* pipe->head is declared as volatile, 
 	   for performance reasons we read it only once at 
 	   the beginning and write it back at the end. */
@@ -205,13 +169,6 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 	pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
 	DCC_LOG6(LOG_INFO, "head=%u tail=%u max=%d len=%d cnt=%d pos=%d", 
 			 head, tail, max, len, cnt, pos);
-
-#if (ENABLE_CONSOLE_DEBUG)
-	if (cnt > THINKOS_CONSOLE_TX_FIFO_LEN) {
-		DCC_LOG4(LOG_PANIC, "head=%u tail=%u len=%d cnt = %d", 
-			 head, tail, THINKOS_CONSOLE_TX_FIFO_LEN, cnt);
-	}
-#endif
 
 	/* check whether to wrap around or on not */
 	if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
@@ -232,6 +189,7 @@ static int tx_pipe_write(const uint8_t * buf, unsigned int len)
 
 	return cnt;
 }
+#endif
 
 static inline bool tx_pipe_isfull(void)
 {
@@ -245,13 +203,13 @@ static inline bool tx_pipe_isempty(void)
 	return pipe->tail == pipe->head;
 }
 
-#if 0
-static bool __rx_pipe_isempty(struct console_rx_pipe * pipe)
+static inline bool rx_pipe_isempty(void)
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
 	return pipe->tail == pipe->head;
 }
 
+#if 0
 static unsigned int __rx_pipe_avail(struct console_rx_pipe * pipe) 
 {
 	int32_t cnt;
@@ -348,8 +306,8 @@ static int __console_wr_break(struct thinkos_rt * krn)
 
 void thinkos_console_tx_pipe_commit(int cnt) 
 {
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
 	struct thinkos_rt * krn = &thinkos_rt;
-	int wq = THINKOS_WQ_CONSOLE_WR;
 	uint32_t tail;
 	int th;
 
@@ -362,17 +320,19 @@ void thinkos_console_tx_pipe_commit(int cnt)
 
 	tail = thinkos_console_rt.tx_pipe.tail + cnt;
 	thinkos_console_rt.tx_pipe.tail = tail;
+#if 0
 	if (tail == thinkos_console_rt.tx_pipe.head) {
-		DCC_LOG(LOG_MSG, "TX_PIPE empty");
+		DCC_LOG(LOG_TRACE, "TX_PIPE empty");
 		console_clear_tx_pipe();
 	}
+#endif
 
 	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
 		DCC_LOG(LOG_INFO, "no thread waiting.");
 		return;
 	}
 
-	DCC_LOG1(LOG_INFO, "thread_id=%d", th);
+	DCC_LOG1(LOG_TRACE, "thread_id=%d", th);
 
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
@@ -408,41 +368,13 @@ int thinkos_console_rx_pipe_ptr(uint8_t ** ptr)
 	return cnt;
 }
 
-void thinkos_console_rx_pipe_commit(int cnt) 
+#if 0
+void __con_rx_dump(void) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-	int wq = THINKOS_WQ_CONSOLE_RD;
-	uint32_t head;
-#if (THINKOS_ENABLE_SANITY_CHECK)	
-	uint32_t tail;
-#endif
-	int th;
-
-	head = thinkos_console_rt.rx_pipe.head + cnt;
-#if (THINKOS_ENABLE_SANITY_CHECK)	
-	tail = thinkos_console_rt.rx_pipe.tail;
-	if ((int32_t)(head - tail) > THINKOS_CONSOLE_RX_FIFO_LEN) {
-		DCC_LOG1(LOG_PANIC, "RX_PIPE full dropping %d bytes", cnt);
-	} else {
-		thinkos_console_rt.rx_pipe.head = head;
-	}
-#else
-	thinkos_console_rt.rx_pipe.head = head;
-#endif
-
-	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG2(LOG_INFO, "wq=%d cnt=%d", wq, cnt);
-		return;
-	}
-
-	DCC_LOG3(LOG_INFO, "wakeup wq=%d cnt=%d th=%d", wq, cnt, th);
-	/* Wakeup from the console read wait queue setting the return value to 0.
-	   The calling thread should retry the operation. */
-	__wq_wakeup_return(krn, wq, th, 0);
-	/* signal the scheduler ... */
-	__krn_sched_defer(krn); 
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
+	DCC_LOG2(LOG_PANIC, "Rx pipe: head=%u tail=%u", pipe->head, pipe->tail);
 }
-
+#endif
 
 #if 0
 /* Write into fifo from.  */
@@ -535,14 +467,340 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 }
 #endif
 
-void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+
+void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+{
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+	unsigned int len = arg[1];
+	uint8_t * buf = (uint8_t *)arg[0];
+	uint8_t * cp = (uint8_t *)buf;
+	uint32_t head;
+	uint32_t tail;
+	uint32_t max;
+	uint32_t pos;
+	int cnt;
+
+	/* (1) suspend the thread by removing it from the
+	   ready wait queue. The __thinkos_suspend() call cannot be nested
+	   inside a LDREX/STREX pair as it may use the exclusive access 
+	   itself, in case we have enabled the time sharing option. */
+	__krn_thread_suspend(krn, self);
+
+	/* Insert into the event wait queue */
+	__krn_wq_insert(krn, wq, self);
+
+	/* Set the return value to ZERO. The calling thread 
+	   should retry sending data. */
+	arg[0] = 0;
+
+	/* pipe->head is declared as volatile, 
+	   for performance reasons we read it only once at 
+	   the beginning and write it back at the end. */
+	head = pipe->head;
+	tail = pipe->tail;
+	/* get the maximum number of chars we can write into buffer */
+	if ((max = (tail - head + THINKOS_CONSOLE_TX_FIFO_LEN)) == 0) {
+		/* -- wait for event ---------------------------------------- */
+		DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn); 
+	} else {
+		/* cnt is the number of chars we will write to the buffer,
+		   it should be the minimum of max and len */
+		cnt = MIN(max, len);
+
+		/* get the head position in the buffer */
+		pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
+		DCC_LOG6(LOG_INFO, "head=%u tail=%u max=%d len=%d cnt=%d pos=%d", 
+				 head, tail, max, len, cnt, pos);
+
+		/* check whether to wrap around or on not */
+		if ((pos + cnt) > THINKOS_CONSOLE_TX_FIFO_LEN) {
+			/* we need to perform two writes */
+			int n;
+			int m;
+			/* get the number of chars from tail pos until the end of buffer */
+			n = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
+			/* the remaining chars are at the beginning of the buffer */
+			m = cnt - n;
+			__thinkos_memcpy(&pipe->buf[pos], cp, n);
+			__thinkos_memcpy(&pipe->buf[0], cp + n, m);
+		} else {
+			__thinkos_memcpy(&pipe->buf[pos], cp, cnt);
+		}
+
+		pipe->head = head + cnt;
+
+		/* remove from console wait queue */
+		__krn_wq_remove(krn, wq, self);
+		/* insert into the ready wait queue */
+		__thread_ready_set(krn, self);  
+
+		/* signal driver */
+		console_signal_tx_pipe();
+
+		arg[0] = cnt;
+	}
+}
+
+void thinkos_console_rx_pipe_commit(int cnt) 
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int wq = THINKOS_WQ_CONSOLE_RD;
+	uint32_t * ptr = (uint32_t *)&thinkos_console_rt.rx_pipe.head;
+	uint32_t queue;
+	uint32_t head;
+	int idx;
+	int th;
+
+	do {
+		head = __ldrex(ptr);
+		head += cnt;
+	} while (__strex(ptr, head));
+
+	wq = THINKOS_WQ_CONSOLE_RD;
+	do {
+		queue = __ldrex(&krn->wq_lst[wq]);
+		/* get a thread from the queue bitmap */
+		if ((idx = __thinkos_ffs(queue)) == 32) {
+			return;
+		} 
+		/* remove from the wait queue */
+		queue &= ~(1 << idx);
+	} while (__strex(&krn->wq_lst[wq], queue));
+	th = idx + 1; 
+
+	/* insert the thread into ready queue */
+	__thread_ready_set(krn, th);  
+#if (THINKOS_ENABLE_TIMED_CALLS)
+	/* possibly remove from the time wait queue */
+	__thread_clk_disable(krn, th);
+	/* set the thread's return value */
+	__thread_r0_set(krn, th, 0);
+#endif
+#if (THINKOS_ENABLE_THREAD_STAT)
+	/* update status */
+	__thread_stat_clr(krn, th);
+#endif
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+}
+
+#if (THINKOS_ENABLE_CONSOLE_READ)
+static int rx_pipe_read(uint8_t * buf, unsigned int len)
+{
+	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
+	unsigned int max;
+	uint32_t tail;
+	int cnt;
+	int pos;
+
+	/* pipe->tail is declared as volatile, 
+	   for performance reasons we read it only once at 
+	   the beginning and write it back at the end. */
+	tail = pipe->tail;
+	/* get the maximum number of chars we can read from the buffer */
+	if ((max = pipe->head - tail) == 0)
+		return 0;
+
+	/* cnt is the number of chars we will read from the buffer,
+	   it should be the minimum of max and len */
+	cnt = MIN(max, len);
+	/* get the tail position in the buffer */
+	pos = (tail % THINKOS_CONSOLE_RX_FIFO_LEN);
+	/* check whether to wrap around or on not */
+	if ((pos + cnt) > THINKOS_CONSOLE_RX_FIFO_LEN) {
+		/* we need to perform two reads */
+		int n;
+		int m;
+		/* get the number of chars from tail pos until the end of buffer */
+		n = THINKOS_CONSOLE_RX_FIFO_LEN - pos;
+		/* the remaining chars are at the beginning of the buffer */
+		m = cnt - n;
+		__thinkos_memcpy(buf, &pipe->buf[pos], n);
+		__thinkos_memcpy(buf + n, &pipe->buf[0], m);
+	} else {
+		__thinkos_memcpy(buf, &pipe->buf[pos], cnt);
+	}
+
+	pipe->tail = tail + cnt;
+
+	return cnt;
+}
+#endif
+
+
+#if (THINKOS_ENABLE_CONSOLE_READ)
+void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+{
+#if (THINKOS_ENABLE_TIMED_CALLS) || (THINKOS_ENABLE_CONSOLE_NONBLOCK)
+	int nonblock;
+#endif
+#if (THINKOS_ENABLE_TIMED_CALLS) 
+	int32_t tmo = (int32_t)arg[2];
+#endif
+	unsigned int len = arg[1];
+	uint8_t * buf = (uint8_t *)arg[0];
+	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
+	uint32_t queue;
+	int n;
+
+rd_again:
+	if ((n = rx_pipe_read(buf, len)) > 0) {
+		DCC_LOG3(LOG_INFO, "<%2d> rx_pipe_read(len=%d) => %d", 
+				 self, len, n);
+		console_signal_rx_pipe();
+		arg[0] = n;
+		return;
+	}
+
+#if (THINKOS_ENABLE_TIMED_CALLS) || (THINKOS_ENABLE_CONSOLE_NONBLOCK)
+#if (THINKOS_ENABLE_TIMED_CALLS) 
+	tmo = (int32_t)arg[2];
+  #if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
+	nonblock = (tmo == 0) || (thinkos_console_rt.rd_nonblock);
+  #else
+	nonblock = tmo == 0;
+  #endif
+#elif (THINKOS_ENABLE_CONSOLE_NONBLOCK)
+	nonblock = thinkos_console_rt.rd_nonblock;
+#endif
+	if (nonblock) {
+		/* if timeout is 0 do not block */
+		arg[0] = THINKOS_EAGAIN;
+		DCC_LOG2(LOG_WARNING, "<%2d> tmo=%d !!!", self, tmo);
+		return;
+	}
+#endif
+
+	/* (1) suspend the thread by removing it from the
+	   ready wait queue. The __thinkos_suspend() call cannot be nested
+	   inside a LDREX/STREX pair as it may use the exclusive access 
+	   itself, in case we have enabled the time sharing option. */
+	__krn_thread_suspend(krn, self);
+
+	queue = __ldrex(&krn->wq_lst[wq]);
+
+#if 0
+	/* The pipe may have been flushed while suspending (1).
+	   If this is the case roll back and restart. */
+	if (!rx_pipe_isempty()) {
+		/* roll back */
+		/* insert into the ready wait queue */
+		__thread_ready_set(krn, self);  
+		DCC_LOG1(LOG_WARNING, "<%d> rollback 1 ...", self);
+		goto rd_again;
+	}
+#endif
+
+	/* -- wait for event ---------------------------------------- */
+	DCC_LOG1(LOG_INFO, "<%d> prepare ...", self);
+
+#if (THINKOS_ENABLE_TIMED_CALLS) 
+	if (tmo > 0) {
+		/* Set the default return value to timeout. The
+		   thinkos_console_rx_pipe_commit() call will change this to 0 */
+		arg[0] = THINKOS_ETIMEDOUT;
+		/* set the clock */
+		__thread_clk_itv_set(krn, self, tmo);
+		/* update the thread status in preparation for event wait */
+#if (THINKOS_ENABLE_THREAD_STAT)
+		__thread_stat_set(krn, self, wq, 1);
+#endif
+		/* insert into the clock wait queue */
+		__thread_clk_enable(krn, self);
+	} else 
+#endif	
+	{
+		/* Set the return value to ZERO. The calling thread 
+		   should retry sending data. */
+		arg[0] = 0;
+		/* update the thread status in preparation for event wait */
+#if (THINKOS_ENABLE_THREAD_STAT)
+		__thread_stat_set(krn, self, wq, 0);
+#endif
+	}
+
+	/* Insert into the event wait queue */
+	queue |= (1 << (self - 1));
+
+	/* (3) Try to save back the queue state.
+	   The queue may have changed by an interrup handler.
+	   If this is the case roll back and restart. */
+	if ((__strex(&krn->wq_lst[wq], queue)) || !rx_pipe_isempty()) {
+		/* roll back */
+		/* insert into the ready wait queue */
+		__thread_ready_set(krn, self);  
+#if (THINKOS_ENABLE_THREAD_STAT)
+		__thread_stat_clr(krn, self);
+#endif
+#if (THINKOS_ENABLE_TIMED_CALLS) 
+		/* remove from the clock wait queue */
+		__thread_clk_disable(krn, self);
+#endif
+		DCC_LOG1(LOG_WARNING, "<%d> rollback 2 ...", self);
+		goto rd_again;
+	}
+
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+
+	/* -- wait for event ---------------------------------------- */
+	DCC_LOG1(LOG_INFO, "<%d> sleeping ...", self);
+
+	return;
+}
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE_DRAIN)
+void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+{
+	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+	uint32_t head;
+	uint32_t tail;
+	uint32_t cnt;
+
+	/* (1) suspend the thread by removing it from the
+	   ready wait queue. The __thinkos_suspend() call cannot be nested
+	   inside a LDREX/STREX pair as it may use the exclusive access 
+	   itself, in case we have enabled the time sharing option. */
+	__krn_thread_suspend(krn, self);
+
+	/* Insert into the event wait queue */
+	__krn_wq_insert(krn, wq, self);
+
+	/* Set the return value to THINKOS_EAGAIN. The calling thread 
+	   should retry sending data. */
+	arg[0] = THINKOS_EAGAIN;
+
+	/* pipe->head is declared as volatile, 
+	   for performance reasons we read it only once at 
+	   the beginning and write it back at the end. */
+	head = pipe->head;
+	tail = pipe->tail;
+	/* get the maximum number of chars we can write into buffer */
+	if ((cnt = (head - tail)) > 0) {
+		/* -- wait for event ---------------------------------------- */
+		DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn); 
+	} else {
+		/* remove from console wait queue */
+		__krn_wq_remove(krn, wq, self);
+		/* insert into the ready wait queue */
+		__thread_ready_set(krn, self);  
+
+		arg[0] = 0;
+	}
+
+}
+#endif
+
+void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int req = arg[0];
-	unsigned int wq;
-	unsigned int len;
-	uint32_t queue;
-	uint8_t * buf;
-	int n;
 	
 #if (ENABLE_CONSOLE_DEBUG)
 	if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
@@ -609,199 +867,10 @@ void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	case CONSOLE_DRAIN:
 #if (THINKOS_ENABLE_CONSOLE_DRAIN)
-		DCC_LOG(LOG_INFO, "CONSOLE_DRAIN");
-		wq = THINKOS_WQ_CONSOLE_WR;
-drain_again:
-#if (ENABLE_CONSOLE_DEBUG)
-		if (thinkos_console_rt.tx_pipe.tail > 0x40000000) {
-			__THINKOS_ERROR(self, THINKOS_ERR_CONSOLE_FAULT);
-		}
-#endif
-		if (tx_pipe_isempty()) {
-			DCC_LOG(LOG_INFO, "pipe empty.");
-			arg[0] = 0;
-		} else {
-			/* Set the return value to EGAIN. The calling thread 
-			   should retry ... */
-			arg[0] = THINKOS_EAGAIN;
-			/* (1) suspend the thread by removing it from the
-			   ready wait queue. The __thinkos_suspend() call cannot be nested
-			   inside a LDREX/STREX pair as it may use the exclusive access 
-			   itself, in case we have enabled the time sharing option. */
-			__krn_thread_suspend(krn, self);
-			/* update the thread status in preparation for event wait */
-#if (THINKOS_ENABLE_THREAD_STAT)
-			__thread_stat_set(krn, self, wq, 0);
-#endif
-			/* (2) Save the context pointer. In case an interrupt wakes up
-			   this thread before the scheduler is called, this will allow
-			   the interrupt handler to locate the return value (r0) address. */
-
-			queue = __ldrex(&krn->wq_lst[wq]);
-
-			/* The pipe may have been drained while suspending (1).
-			   If this is the case roll back and restart. */
-			if (tx_pipe_isempty()) {
-				/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-				__thread_stat_clr(krn, self);
-#endif
-				/* insert into the ready wait queue */
-				__thread_ready_set(krn, self);  
-				DCC_LOG2(LOG_INFO, "<%2d> rollback 1 %d...", self, wq);
-				goto drain_again;
-			}
-			/* Insert into the event wait queue */
-			queue |= (1 << (self - 1));
-			/* (3) Try to save back the queue state.
-			   The queue may have changed by an interrupt handler.
-			   If this is the case roll back and restart. */
-			if (__strex(&krn->wq_lst[wq], queue)) {
-				/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-				__thread_stat_clr(krn, self);
-#endif
-				/* insert into the ready wait queue */
-				__thread_ready_set(krn, self);  
-				DCC_LOG2(LOG_INFO, "<%2d> rollback 2 %d...", self, wq);
-				goto drain_again;
-			}
-
-			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%2d> waiting on console write %d...", 
-					 self, wq);
-
-			/* signal the scheduler ... */
-			__krn_sched_defer(krn); 
-		}
+		thinkos_console_drain_svc(arg, self, krn);
 #else
-		arg[0] = 0;
-#endif /* THINKOS_ENABLE_CONSOLE_DRAIN */
-		break;
-
-#if (THINKOS_ENABLE_CONSOLE_READ)
-#if (THINKOS_ENABLE_TIMED_CALLS)
-	case CONSOLE_TIMEDREAD:
-		{
-			unsigned int tmo;
-
-			buf = (uint8_t *)arg[1];
-			len = arg[2];
-			tmo = arg[3];
-
-			if ((n = rx_pipe_read(buf, len)) > 0) {
-				DCC_LOG3(LOG_INFO, "<%2d> rx_pipe_read(len=%d) => %d", 
-						 self, len, n);
-				console_signal_rx_pipe();
-				arg[0] = n;
-				break;
-			}
-
-#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
-			if ((tmo > 0) && (!thinkos_console_rt.rd_nonblock)) { 
-#else
-			if (tmo > 0) {
+		arg[0] = THINKOS_OK;
 #endif
-				DCC_LOG2(LOG_INFO, "<%2d> timed_wait(%d) ...", 
-						 self, tmo);
-				/* Set the default return value to timeout. */
-				arg[0] = THINKOS_ETIMEDOUT;
-				/* wait for event */
-
-				__krn_thread_timedwait(krn, self, THINKOS_WQ_CONSOLE_RD, tmo);
-			} else {
-				/* if timeout is 0 do not block */
-				arg[0] = THINKOS_EAGAIN;
-			}
-			break;
-		}
-#endif
-
-	case CONSOLE_READ:
-		buf = (uint8_t *)arg[1];
-		len = arg[2];
-		DCC_LOG1(LOG_INFO, "Console read: len=%d", len);
-		if ((n = rx_pipe_read(buf, len)) > 0) {
-			console_signal_rx_pipe();
-			arg[0] = n;
-			break;
-		}
-		DCC_LOG(LOG_INFO, "Console read wait...");
-#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
-		if (thinkos_console_rt.rd_nonblock) {
-			arg[0] = THINKOS_EAGAIN;
-			break;
-		}
-#endif
-		/* wait for event and signal the scheduler ... */
-		__krn_thread_wait(krn, self, THINKOS_WQ_CONSOLE_RD);
-		break;
-#endif
-
-	case CONSOLE_WRITE:
-		buf = (uint8_t *)arg[1];
-		len = arg[2];
-		wq = THINKOS_WQ_CONSOLE_WR;
-		DCC_LOG1(LOG_INFO, "Console write: len=%d", len);
-wr_again:
-		if ((n = tx_pipe_write(buf, len)) > 0) {
-			DCC_LOG1(LOG_INFO, "tx_pipe_write: n=%d", n);
-			console_signal_tx_pipe();
-			arg[0] = n;
-		} else {
-#if (THINKOS_ENABLE_CONSOLE_NONBLOCK)
-			if (thinkos_console_rt.wr_nonblock) {
-				arg[0] = THINKOS_EAGAIN;
-				break;
-			}
-#endif
-			/* Set the return value to ZERO. The calling thread 
-			   should retry sending data. */
-			arg[0] = 0;
-			/* (1) suspend the thread by removing it from the
-			   ready wait queue. The __thinkos_suspend() call cannot be nested
-			   inside a LDREX/STREX pair as it may use the exclusive access 
-			   itself, in case we have enabled the time sharing option. */
-			__krn_thread_suspend(krn, self);
-			/* update the thread status in preparation for event wait */
-#if (THINKOS_ENABLE_THREAD_STAT)
-			__thread_stat_set(krn, self, wq, 0);
-#endif
-			queue = __ldrex(&krn->wq_lst[wq]);
-			
-			/* The pipe may have been flushed while suspending (1).
-			   If this is the case roll back and restart. */
-			if (!tx_pipe_isfull()) {
-				/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-				__thread_stat_clr(krn, self);
-#endif
-				/* insert into the ready wait queue */
-				__thread_ready_set(krn, self);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 1 %d...", self, wq);
-				goto wr_again;
-			}
-			/* Insert into the event wait queue */
-			queue |= (1 << (self - 1));
-			/* (3) Try to save back the queue state.
-			   The queue may have changed by an interrup handler.
-			   If this is the case roll back and restart. */
-			if (__strex(&krn->wq_lst[wq], queue)) {
-				/* roll back */
-#if (THINKOS_ENABLE_THREAD_STAT)
-				__thread_stat_clr(krn, self);
-#endif
-				/* insert into the ready wait queue */
-				__thread_ready_set(krn, self);  
-				DCC_LOG2(LOG_INFO, "<%d> rollback 2 %d...", self, wq);
-				goto wr_again;
-			}
-
-			/* -- wait for event ---------------------------------------- */
-			DCC_LOG2(LOG_INFO, "<%d> waiting on console write %d...", self, wq);
-			/* signal the scheduler ... */
-			__krn_sched_defer(krn); 
-		}
 		break;
 
 #if (THINKOS_ENABLE_CONSOLE_MODE)
@@ -851,6 +920,7 @@ void thinkos_krn_console_init(void)
 					 sizeof(thinkos_console_rt));
 	console_clear_tx_pipe();
 	console_clear_rx_pipe();
+	console_clear_ctl();
 }
 
 #endif /* (THINKOS_ENABLE_CONSOLE) */

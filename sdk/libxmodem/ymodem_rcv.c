@@ -32,6 +32,9 @@
 #include <xmodem.h>
 #include <crc.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <sys/dcclog.h>
 
 #define SOH  0x01
@@ -90,6 +93,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 	unsigned int seq;
 	int ret = 0;
 	int cnt = 0;
+	int junk = 0;
 	int rem;
 	int len;
 
@@ -99,7 +103,14 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 	}
 
 	for (;;) {
+		if (junk) {
+//			__thinkos_dbg_halt();
+//			DCC_LOG(LOG_TRACE, "[JUNK]");
+		} else {
+//			DCC_LOG(LOG_TRACE, "[SYN]");
+		}
 		if ((ret = ry->comm->op.send(ry->comm->arg, &ry->sync, 1)) < 0) {
+			DCC_LOG1(LOG_WARNING, "send()->%d", ret);
 			return ret;
 		}
 
@@ -153,6 +164,8 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 				ry->state = YR_OK;
 				return 0;
 			}
+
+			junk++;
 		}
 
 		len = cnt + ((ry->crc_mode) ? 5 : 4);
@@ -162,10 +175,16 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 		DCC_LOG1(LOG_TRACE, "%d remaining bytes...", rem);
 		/* receive the packet */
 		while (rem) {
-			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 250);
+			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 127);
 
-			if (ret == THINKOS_ETIMEDOUT)
-				goto timeout;
+			if (ret == THINKOS_ETIMEDOUT)  {
+#if 0
+				DCC_LOG(LOG_ERROR, "rcv timeout, try again...");
+				ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 128);
+				if (ret == THINKOS_ETIMEDOUT)
+#endif					
+					goto timeout;
+			}
 
 			if (ret < 0) {
 				DCC_LOG1(LOG_ERROR, "comm receive error, ret=%d", ret);
@@ -250,7 +269,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 			pkt[0] = ACK;
 			ry->comm->op.send(ry->comm->arg, pkt, 1);
 		} else {
-			ry->retry = 10;
+			ry->retry = 2;
 			ry->sync = ACK;
 			if ((ry->count + cnt) > ry->fsize)
 				cnt = ry->fsize - ry->count;
@@ -265,7 +284,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 error:
 		/* flush */
-		while (ry->comm->op.recv(ry->comm->arg, pkt, 1024, 200) > 0);
+		while (ry->comm->op.recv(ry->comm->arg, pkt, 1024, 255) > 0);
 		ry->sync = NAK;
 		ret = -1;
 		break;
@@ -279,6 +298,7 @@ timeout:
 			ry->state = YR_OK;
 			return 0;
 		}
+
 
 		if ((--ry->retry) == 0) {
 			/* too many errors */
@@ -406,6 +426,7 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 	return ret;
 }
 
+
 int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname, 
 					 unsigned int * pfsize)
 {
@@ -433,7 +454,7 @@ int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname,
 			}
 
 		} else {
-			DCC_LOG1(LOG_WARNING, "pktno=%d!!!!", ry->pktno);
+			DCC_LOG1(LOG_INFO, "pktno=%d!!!!", ry->pktno);
 			ry->data_len = ret;
 			ry->data_pos = 0;
 		}

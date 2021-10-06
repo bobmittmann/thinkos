@@ -1182,7 +1182,7 @@ int thinkos_console_read(void * buf, unsigned int len);
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_ETIMEDOUT if
  * it times out, OK %THINKOS_OK otherwise. 
  */
-int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
+int thinkos_console_timedread(void * buf, unsigned int len, int32_t ms);
 
 int thinkos_console_is_connected(void);
 

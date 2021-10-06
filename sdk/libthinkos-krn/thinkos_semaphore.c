@@ -218,8 +218,6 @@ again:
 	/* update status, mark the thread clock enable bit */
 	krn->th_stat[self] = (sem << 1) + 1;
 #endif
-	__thread_ctx_set(krn, self, (struct thinkos_context *)&arg[-CTX_R0],
-							 CONTROL_SPSEL | CONTROL_nPRIV);
 	queue = __ldrex(&krn->wq_lst[sem]);
 	queue |= (1 << (self - 1));
 	if (((volatile uint32_t)krn->sem_val[sem - THINKOS_SEM_BASE] > 0) ||

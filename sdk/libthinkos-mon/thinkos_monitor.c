@@ -76,32 +76,36 @@ void __monitor_context_swap(uint32_t ** pctx);
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-static void __monitor_event_set(uint32_t ev) 
+static void __monitor_event_set(struct thinkos_rt * krn, uint32_t ev) 
 {
 	uint32_t evset;
 	
 	do {
 		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
 		evset |= ev;
-	} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
 }
 
 void monitor_signal(int sig) 
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct cm3_scb * scb = CM3_SCB;
 	
-	__monitor_event_set((1 << sig)); 
+	__monitor_event_set(krn, (1 << sig)); 
 
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
+
+//	asm volatile ("isb\n" :  :  : );
 }
 
 void monitor_signal_break(int32_t sig) 
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct cm3_scb * scb = CM3_SCB;
 
-	__monitor_event_set((1 << sig) | (1 << MONITOR_SOFTRST)); 
+	__monitor_event_set(krn, (1 << sig) | (1 << MONITOR_SOFTRST)); 
 
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
@@ -110,59 +114,64 @@ void monitor_signal_break(int32_t sig)
 #if 0
 bool monitor_is_set(int sig) 
 {
-	return thinkos_rt.monitor.events &  (1 << sig) ? true : false;
+	return krn->monitor.events &  (1 << sig) ? true : false;
 }
 #endif
 
 void monitor_unmask(int sig)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t mask;
 
 	do {
-		mask = __ldrex((uint32_t *)&thinkos_rt.monitor.mask);
+		mask = __ldrex((uint32_t *)&krn->monitor.mask);
 		mask |= (1 << sig);
-	} while (__strex((uint32_t *)&thinkos_rt.monitor.mask, mask));
+	} while (__strex((uint32_t *)&krn->monitor.mask, mask));
 }
 
 void monitor_mask(int sig)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t mask;
 
 	do {
-		mask = __ldrex((uint32_t *)&thinkos_rt.monitor.mask);
+		mask = __ldrex((uint32_t *)&krn->monitor.mask);
 		mask &= ~(1 << sig);
-	} while (__strex((uint32_t *)&thinkos_rt.monitor.mask, mask));
+	} while (__strex((uint32_t *)&krn->monitor.mask, mask));
 }
 
 void monitor_clear(int sig)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	uint32_t evact;
 	uint32_t evset;
 
 	do {
 		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
 		evact = evset & (1 << sig);
 		evset ^= evact;
-	} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
 }
 
 /* wait for multiple events, return the highest priority (smaller number)
    don't clear the event upon exiting. */
 int monitor_select(uint32_t evmsk)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	int evset;
 	uint32_t save;
 	int sig;
 
-	save = thinkos_rt.monitor.mask;
+	save = krn->monitor.mask;
 	/* adjust the local mask */
 	evmsk |= save | MONITOR_PERISTENT_MASK;
-	DCC_LOG1(LOG_MSG, "evmask=%08x ........ ", evmsk);
 	/* set the global mask */
-	thinkos_rt.monitor.mask = evmsk;
+	krn->monitor.mask = evmsk;
+	DCC_LOG1(LOG_MSG, "evmask=%08x ........ ", evmsk);
+
 	for(;;) {
-		evset = thinkos_rt.monitor.events;
+		evset = krn->monitor.events;
 		/* apply local and global masks, 
 		   making sure not to mask non maskable events */
 		evset &= evmsk;
@@ -172,17 +181,17 @@ int monitor_select(uint32_t evmsk)
 		if (sig < 32)
 			break;
 
-		DCC_LOG2(LOG_INFO, "waiting evmsk=%08x, sp=%08x sleeping...", 
+		DCC_LOG2(LOG_MSG, "waiting evmsk=%08x, sp=%08x sleeping...", 
 				 evmsk, cm3_sp_get());
 #if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
+		__monitor_wait(&krn->monitor); 
 #else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 #endif
-		DCC_LOG1(LOG_INFO, "wakeup, sp=%08x ...", cm3_sp_get());
+		DCC_LOG1(LOG_MSG, "wakeup, sp=%08x ...", cm3_sp_get());
 	} 
 	/* restore the global mask */
-	thinkos_rt.monitor.mask = save;
+	krn->monitor.mask = save;
 
 	DCC_LOG1(LOG_MSG, "event=%d", sig);
 
@@ -193,27 +202,30 @@ int monitor_select(uint32_t evmsk)
 /* wait for a single event and clear the event */
 int monitor_expect(int sig)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct cm3_scb * scb = CM3_SCB;
 	uint32_t save;
 	uint32_t evset;
 	uint32_t evmsk;
 	uint32_t result;
 
-	save = thinkos_rt.monitor.mask;
+	save = krn->monitor.mask;
 	/* set the local mask */
 	evmsk = save | (1 << sig) | MONITOR_PERISTENT_MASK;
-	thinkos_rt.monitor.mask = evmsk;
+	krn->monitor.mask = evmsk;
+	DCC_LOG2(LOG_MSG, "evmask=%08x save=%08x", evmsk, save);
 
 	for (;;) {
 		/* avoid possible race condition on monitor.events */
 		do {
-			evset = __ldrex((uint32_t *)&thinkos_rt.monitor.events);
+			evset = __ldrex((uint32_t *)&krn->monitor.events);
 			/* apply local and global masks, 
 			   making sure not to mask non maskable events */
 			result = evset;
 			result &= evmsk;
 			if (result & (1 << sig))
 				evset &= ~(1 << sig); /* clear the event */
-		} while (__strex((uint32_t *)&thinkos_rt.monitor.events, evset));
+		} while (__strex((uint32_t *)&krn->monitor.events, evset));
 
 		if (result != 0)
 			break;
@@ -223,22 +235,26 @@ int monitor_expect(int sig)
 					 (1 << sig), evset, evmsk);
 		}
 #if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
+		__monitor_wait(&krn->monitor); 
 #else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 #endif
 		if (evset != 0) {
 			DCC_LOG(LOG_MSG, "wakeup...");
 		}
 	}
 
-	thinkos_rt.monitor.mask = save;
+	krn->monitor.mask = save;
 
 	if ((result & (1 << sig)) == 0) {
+		DCC_LOG3(LOG_MSG, "expected %08x got %08x/%08x.", 
+				 (1 << sig), result, evmsk);
 		/* unexpected event received */
 		sig = -1;
-		DCC_LOG3(LOG_WARNING, "expected %08x got %08x/%08x, sleeping...", 
-				 (1 << sig), result, evmsk);
+		/* rise a pending systick interrupt */
+		scb->icsr = SCB_ICSR_PENDSTSET;
+	} else {
+		DCC_LOG1(LOG_MSG, "sig=%d", sig);
 	}
 
 	return sig;
@@ -249,7 +265,7 @@ int monitor_sleep(unsigned int ms)
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
 	monitor_clear(MONITOR_ALARM);
 	/* set the clock */
-	thinkos_rt.monitor_clock = thinkos_rt.ticks + ms;
+	krn->monitor_clock = krn->ticks + ms;
 	/* wait for signal */
 	return monitor_expect(MONITOR_ALARM);
 #else
@@ -265,7 +281,7 @@ void monitor_alarm(unsigned int ms)
 	monitor_unmask(MONITOR_ALARM);
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock */
-	thinkos_rt.monitor_clock = thinkos_rt.ticks + ms;
+	krn->monitor_clock = krn->ticks + ms;
 #endif
 }
 
@@ -273,7 +289,7 @@ void monitor_alarm_stop(void)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock in the past so it won't generate a signal */
-	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
+	krn->monitor_clock = krn->ticks - 1;
 #endif
 	/* make sure the signal is cleared */
 	monitor_clear(MONITOR_ALARM);
@@ -407,9 +423,9 @@ void monitor_null_task(const struct monitor_comm * comm, void * param)
 {
 	for (;;) {
 #if (THINKOS_ENABLE_MONITOR_SCHED)
-		__monitor_wait(&thinkos_rt.monitor); 
+		__monitor_wait(&krn->monitor); 
 #else
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 #endif
 	}
 }
@@ -441,7 +457,7 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
+	krn->monitor_clock = krn->ticks - 1;
 #endif
 
 	DCC_LOG2(LOG_TRACE, "PC=%08x SP=0x%08x!", monitor_task, cm3_sp_get());
@@ -452,6 +468,7 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 /* Prepare the execution environment to invoke the new monitor task. */
 void __thinkos_monitor_on_reset(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct monitor_swap * swap;
 	uint32_t * sp;
 	uint32_t idx;
@@ -460,7 +477,7 @@ void __thinkos_monitor_on_reset(void)
 		   sizeof(struct monitor_swap)) / sizeof(uint32_t);
 
 	sp = &thinkos_monitor_stack[idx];
-	thinkos_rt.monitor.ctx = sp;
+	krn->monitor.ctx = sp;
 	
 	swap = (struct monitor_swap *)sp;
 	swap->xpsr = CM_EPSR_T + CM3_EXCEPT_SYSTICK; /* XPSR */
@@ -474,8 +491,8 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 	uint32_t sigmsk;
 	uint32_t sigact;
 
-	sigset = thinkos_rt.monitor.events;
-	sigmsk = thinkos_rt.monitor.mask;
+	sigset = krn->monitor.events;
+	sigmsk = krn->monitor.mask;
 	sigact = sigset & sigmsk;
 
 	/* Process monitor events */
@@ -484,10 +501,10 @@ uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
 			__thinkos_monitor_on_reset();
 
 			/* clear the RESET event */
-			thinkos_rt.monitor.events = sigset & ~(1 << MONITOR_RESET);
+			krn->monitor.events = sigset & ~(1 << MONITOR_RESET);
 		}
 
-		__monitor_context_swap(&thinkos_rt.monitor.ctx); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 	}
 
 	return sigact;
@@ -529,7 +546,7 @@ void thinkos_krn_monitor_reset(void)
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	thinkos_rt.monitor_clock = thinkos_rt.ticks - 1;
+	krn->monitor_clock = krn->ticks - 1;
 #endif
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
@@ -593,6 +610,7 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
                      void (* task)(const struct monitor_comm *, void *),
 					 void * param)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
 					   sizeof(thinkos_monitor_stack));
@@ -620,16 +638,16 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 	thinkos_monitor_rt.param = param;
 	
 	/* set the task init and software reset signals */
-	thinkos_rt.monitor.events = (1 << MONITOR_TASK_INIT) | 
+	krn->monitor.events = (1 << MONITOR_TASK_INIT) | 
 		(1 << MONITOR_SOFTRST);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
+	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 #if (THINKOS_ENABLE_MONITOR_SCHED)
 	{
 		struct monitor_context * ctx;
 
 		ctx = __monitor_ctx_init((uintptr_t)task, (uintptr_t)comm,
 								 (uintptr_t)param);
-		thinkos_rt.monitor.ctl = (uintptr_t)ctx;
+		krn->monitor.ctl = (uintptr_t)ctx;
 	}
 #endif
 }
@@ -643,8 +661,8 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 	struct cm3_scb * scb = CM3_SCB;
 
 	/* Set the persistent signals */
-	thinkos_rt.monitor.events |= (1 << MONITOR_RESET);
-	thinkos_rt.monitor.mask = MONITOR_PERISTENT_MASK;
+	krn->monitor.events |= (1 << MONITOR_RESET);
+	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
 	arg[0] = (uint32_t)thinkos_monitor_rt.task;
 #if (THINKOS_ENABLE_MONITOR_NULL_TASK)
