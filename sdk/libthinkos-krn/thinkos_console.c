@@ -913,7 +913,7 @@ void thinkos_krn_console_connect_set(bool val)
 	thinkos_console_rt.connected = val;
 }
 
-void thinkos_krn_console_init(void)
+void thinkos_krn_console_reset(void)
 {
 	DCC_LOG1(LOG_INFO, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
@@ -922,6 +922,12 @@ void thinkos_krn_console_init(void)
 	console_clear_rx_pipe();
 	console_clear_ctl();
 }
+
+void thinkos_krn_console_init(void)
+{
+	thinkos_krn_console_reset();
+}
+
 
 #endif /* (THINKOS_ENABLE_CONSOLE) */
 

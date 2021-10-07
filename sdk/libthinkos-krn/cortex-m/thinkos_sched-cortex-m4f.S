@@ -270,19 +270,6 @@ thinkos_krn_sched_ctx_get:
 #endif
 
 /* --------------------------------------------------------------------------
- * Scheduler detected errors
- * -------------------------------------------------------------------------- */
-
-
-#if (THINKOS_ENABLE_STACK_LIMIT)
-.L_stack_err: 
-	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
-	b.n     thinkos_krn_sched_trap
-#endif
-
-
-
-/* --------------------------------------------------------------------------
  * IDLE 
  * -------------------------------------------------------------------------- */
 
@@ -361,16 +348,21 @@ thinkos_krn_sched_ctx_get:
 thinkos_krn_sched_xcpt:
 	.global thinkos_krn_sched_xcpt
 	.type   thinkos_krn_sched_xcpt, %function
-/* FXME: fatal exception... */	
+/* FIXME: fatal exception... */	
 	b       .
 	.size   thinkos_krn_sched_xcpt, . - thinkos_krn_sched_xcpt
 #endif /* THINKOS_ENABLE_SCHED_ERROR */
 
 
 /* --------------------------------------------------------------------------
- *
- *
+ * Scheduler detected errors
  * -------------------------------------------------------------------------- */
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+.L_stack_err: 
+	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
+	b.n     thinkos_krn_sched_trap
+#endif
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	.thumb_func

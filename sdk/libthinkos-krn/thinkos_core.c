@@ -153,42 +153,9 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 
 #if DEBUG
-//	mdelay(500);
 	__kdump(krn);
 #endif
 }
-
-#if 0
-void __thinkos_system_reset(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FRD "!! System Reset !!" VT_POP);
-
-	DCC_LOG(LOG_TRACE, "1. ThinkOS core reset...");
-	__thinkos_krn_core_reset(krn);
-
-	
-#if (THINKOS_IRQ_MAX) > 0
-	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
-	__thinkos_irq_disable_all();
-	__thinkos_irq_reset_all();
-#endif
-
-#if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "3. exception reset...");
-	thinkos_krn_exception_reset();
-#endif
-
-	if  (active != THINKOS_THREAD_IDLE) {
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thinkos_defer_sched();
-	}
-
-	/* Enable Interrupts */
-	DCC_LOG(LOG_TRACE, "4. enablig interrupts...");
-	cm3_cpsie_i();
-}
-#endif
 
 bool thinkos_sched_active(void)
 {
@@ -212,10 +179,6 @@ bool thinkos_dbgmon_active(void)
 
 bool thinkos_kernel_active(void)
 {
-#if 0
-	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
-							  SCB_SHCSR_SVCALLACT)) ? true : false;
-#endif
 	return (CM3_SCB->shcsr & (SCB_SHCSR_PENDSVACT | 
 							  SCB_SHCSR_SVCALLACT)) ? true : false;
 }

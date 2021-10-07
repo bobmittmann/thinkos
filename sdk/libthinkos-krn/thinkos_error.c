@@ -146,37 +146,51 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat, 
 								   uint32_t sp)
 {
-	uint32_t th_act =  SCHED_STAT_ACT(stat);
+	uint32_t thread = SCHED_STAT_ACT(stat);
 	uint32_t svcno = SCHED_STAT_SVC(stat);
 	uint32_t errno = SCHED_STAT_ERR(stat);
 	uint32_t xcpno = SCHED_STAT_XCP(stat);
 
-	(void)th_act;
+	(void)thread;
 	(void)svcno;
 	(void)errno;
 	(void)xcpno;
+
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	/* Per thread error code */
+	__thread_errno_set(krn, thread, errno);
+#endif
 
 #if DEBUG
 	if (xcpno > 0) {
 		DCC_LOG3(LOG_WARNING, VT_PSH VT_FRD VT_REV 
 				 " Exception %d \"%s\" -  thread=%d" VT_POP, 
-				 xcpno, thinkos_err_name_lut[xcpno], th_act); 
+				 xcpno, thinkos_err_name_lut[xcpno], thread); 
 	} 
 
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
 			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
 					 " Error %d \"%s\" - thread=%d" VT_POP, 
-					 errno, thinkos_err_name_lut[errno], th_act); 
+					 errno, thinkos_err_name_lut[errno], thread); 
 		} else {
 			DCC_LOG2(LOG_WARNING, VT_PSH VT_FRD VT_REV 
 					 " Error %d - thread=%d" VT_POP, 
-					 errno, th_act);
+					 errno, thread);
 		}
 	}
 
-	mdelay(500);
-//	__tdump(krn);
+	thread = __krn_sched_active_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	
+	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
+			 thread, xcpno, errno, svcno);
+
+	mdelay(2000);
+
+	__tdump(krn);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 

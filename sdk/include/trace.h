@@ -150,6 +150,14 @@ ret; })
 		tracef(&__inf, ## __VA_ARGS__); \
 	}} while (0)
 
+#define NOTE(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
+	if (TRACE_LEVEL >= TRACE_LVL_NOTE)  { \
+		TRACE_REF_DEF("note") __note = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_NOTE, .opt=0, \
+		  .func=__func__, .fmt=__FMT}; \
+		tracef(&__note, ## __VA_ARGS__); \
+	}} while (0)
+
 #define WARN(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
 	if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		TRACE_REF_DEF("warn") __warn = \
@@ -234,6 +242,14 @@ ret; })
 		  .func=__func__, .fmt=__STR}; \
 		trace(&__inf); \
 		}} while (0)
+
+#define NOTES(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		TRACE_REF_DEF("note") __note = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_NOTE, .opt=0, \
+		  .func=__func__, .fmt=__STR}; \
+		trace(&__note); \
+		}} while (0)
+
 
 #define WARNS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		TRACE_REF_DEF("warn") __warn = \

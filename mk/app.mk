@@ -68,9 +68,18 @@ app: $(PROG_APP)
 app-clean: 
 	$(Q)$(RMALL) $(CLEAN_APP)
 
-app-install: all
+app-install: all $(APP_INSTALLDIR)
 	$(ACTION) "INSTALL: $(addprefix $(APP_INSTALLDIR)/, $(notdir $(PROG_APP)))"
 	$(Q)$(CP) $(PROG_APP) $(APP_INSTALLDIR)
+	$(foreach f,$(APP_INSTALLFILES),$(shell $(CP) $(f) $(APP_INSTALLDIR)))
 
-.PHONY: app app-clean
+$(APP_INSTALLDIR):
+	$(ACTION) "Creating installation directory: $@"
+ifeq ($(HOST),Windows)
+	$(Q)if not exist $(subst /,\,$@) $(MKDIR) $(subst /,\,$@)
+else
+	$(Q)$(MKDIR) $@
+endif
+
+.PHONY: app app-clean app-install
 

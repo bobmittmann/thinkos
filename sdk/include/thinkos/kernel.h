@@ -401,7 +401,7 @@ struct thinkos_rt {
 			volatile uint8_t svc;    /* deferred service request */
 			volatile uint8_t err;    /* thread error number - 
 										errors from syscalls */
-			volatile uint8_t kse;    /* kernel soft error number */
+			volatile uint8_t xcp;    /* exception error number */
 		};
 	} sched;
 

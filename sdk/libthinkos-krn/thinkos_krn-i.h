@@ -230,23 +230,22 @@ static inline unsigned int __attribute__((always_inline))
 }
 
 
-
-/* Set the scheduler kernel soft error */
+/* Set the scheduler kernel exception error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_kse_set(struct thinkos_rt * krn, unsigned int kse) {
-	krn->sched.kse = kse;
+__krn_sched_xcp_set(struct thinkos_rt * krn, unsigned int kse) {
+	krn->sched.xcp = kse;
 }
 
-/* Get the scheduler kernel soft error */
+/* Get the scheduler kernel exception error */
 static inline unsigned int __attribute__((always_inline)) 
-	__krn_sched_kse_get(struct thinkos_rt * krn) {
-	return krn->sched.kse;
+	__krn_sched_xcp_get(struct thinkos_rt * krn) {
+	return krn->sched.xcp;
 }
 
-/* Clear the scheduler kernel soft error */
+/* Clear the scheduler kernel exception error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_kse_clr(struct thinkos_rt * krn) {
-	krn->sched.kse = 0;
+__krn_sched_xcp_clr(struct thinkos_rt * krn) {
+	krn->sched.xcp = 0;
 }
 
 

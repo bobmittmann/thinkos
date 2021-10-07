@@ -485,7 +485,7 @@ int thinkos_dbg_thread_errno_get(unsigned int th)
 	if (__krn_sched_active_get(krn) == th) {
 		int svcno = __krn_sched_svc_get(krn);
 		int errno = __krn_sched_err_get(krn);
-		int xcpno = __krn_sched_kse_get(krn);
+		int xcpno = __krn_sched_xcp_get(krn);
 
 		return (xcpno) ? xcpno : ((errno) ? errno : svcno); 
 	}
@@ -664,7 +664,7 @@ int thinkos_dbg_thread_break_get(int32_t * perrno)
 	thread = __krn_sched_active_get(krn);
 	svcno = __krn_sched_svc_get(krn);
 	errno = __krn_sched_err_get(krn);
-	xcpno = __krn_sched_kse_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
 	
 	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
 			 thread, xcpno, errno, svcno);
@@ -675,7 +675,6 @@ int thinkos_dbg_thread_break_get(int32_t * perrno)
 		__krn_sched_err_get(krn);
 	} else if (svcno == 0)
 		__krn_sched_svc_get(krn); */
-
 
 
 	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
@@ -701,7 +700,7 @@ int thinkos_dbg_thread_break_clr(void)
 	int errno;
 	int xcpno;
 
-	DCC_LOG(LOG_YAP, "...");
+	DCC_LOG(LOG_WARNING, "...");
 
 	errno = __krn_debug_errno_get(krn);
 	xcpno = __krn_debug_xcptno_get(krn);
@@ -712,7 +711,7 @@ int thinkos_dbg_thread_break_clr(void)
 	}
 
 	if (xcpno > 0)
-		__krn_sched_kse_clr(krn);
+		__krn_sched_xcp_clr(krn);
 	else if (errno > 0) 
 		__krn_sched_err_clr(krn);
 	else if (svcno == 0)
@@ -799,6 +798,11 @@ void thinkos_dbg_reset(void)
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW " !! DBG Reset  !! " VT_POP);
 
 	__thinkos_krn_core_reset(krn);
+
+#if (THINKOS_ENABLE_CONSOLE)
+	DCC_LOG(LOG_TRACE, "Console reset...");
+	thinkos_krn_console_reset();
+#endif
 }
 
 /* -------------------------------------------------------------------------
@@ -954,4 +958,5 @@ int thinkos_dbg_active_get(void)
 }
 
 #endif /* THINKOS_ENABLE_DEBUG_BASE */
+
 

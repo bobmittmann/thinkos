@@ -39,6 +39,9 @@ extern "C" {
 /* intialize kernel console */
 void thinkos_krn_console_init(void);
 
+/* resets kernel console */
+void thinkos_krn_console_reset(void);
+
 /* set/clear the kernel console's connected flag */
 void thinkos_krn_console_connect_set(bool val); 
 

@@ -475,7 +475,7 @@ void __tdump(struct thinkos_rt * krn)
 
 	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d svc=%d", 
 			 __krn_sched_active_get(krn),
-			 __krn_sched_kse_get(krn),
+			 __krn_sched_xcp_get(krn),
 			 __krn_sched_err_get(krn),
 			 __krn_sched_svc_get(krn));
 
@@ -830,7 +830,7 @@ void __kdump(struct thinkos_rt * krn)
 	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
 			 krn->sched.state,
 			 __krn_sched_active_get(krn),
-			 __krn_sched_kse_get(krn),
+			 __krn_sched_xcp_get(krn),
 			 __krn_sched_err_get(krn),
 			 __krn_sched_svc_get(krn));
 

@@ -191,7 +191,7 @@ terminal/display settings, and vary depending on the implementation: */
 
 #define _GOTO_(Y, X)        ESC"["#Y";"#X"f"
 
-#define _GOTOXY_            ESC"[%d;%df"
+#define _GOTOXY_            ESC "[%d;%df"
 
 #define _TERM_RESET_		ESC "c"
 #define _CURSOR_HOME_		ESC "[H"

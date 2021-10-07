@@ -202,7 +202,6 @@ uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
-
 /* ARM exceptions in a thread context are recorded in
    the exception buffer. Then a common handling
    functions takes care of signaling the modules
@@ -217,8 +216,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 			 errno, thread);
 
 	/* Stop the scheduler */
-	__krn_sched_kse_set(krn, errno);
-//	__krn_sched_defer(krn);
+	__krn_sched_xcp_set(krn, errno);
 
 #if DEBUG
 	mdelay(250);
