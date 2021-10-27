@@ -27,8 +27,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/usb.h>
-#include <sys/cdc.h>
+#include <usb/core.h>
+#include <usb/cdc.h>
 
 #define EP0_ADDR 0
 #define EP0_MAX_PKT_SIZE 64
@@ -52,10 +52,10 @@
 struct cdc_acm_descriptor_config {
 	struct usb_descriptor_configuration cfg;
 	struct usb_descriptor_interface comm_if;
-	struct cdc_header_descriptor hdr;
-	struct cdc_call_management_descriptor cm;
-	struct cdc_abstract_control_management_descriptor acm;
-	struct cdc_union_1slave_descriptor un;
+	struct cdc_descriptor_header hdr;
+	struct cdc_descriptor_call_management cm;
+	struct cdc_descriptor_abstract_control_management acm;
+	struct cdc_descriptor_union_1slave un;
 	struct usb_descriptor_endpoint ep_int;
 	struct usb_descriptor_interface if_data;
 	struct usb_descriptor_endpoint ep_out;

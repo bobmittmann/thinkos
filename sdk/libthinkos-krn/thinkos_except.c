@@ -307,13 +307,16 @@ void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 }
 #endif
 
+#if 0
 void __attribute__((naked, noreturn)) thinkos_krn_xcpt_raise(int errno)
 {
-	monitor_signal(MONITOR_THREAD_FAULT);
+	/* FIXME: this is not right 
+	monitor_signal(MONITOR_THREAD_FAULT); */
 #if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
 #endif
 }
+#endif
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 

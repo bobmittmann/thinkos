@@ -33,11 +33,13 @@ __krn_obj_is_gate(struct thinkos_rt * krn, unsigned int gate) {
 	return __obj_is_valid(gate, THINKOS_GATE_BASE, THINKOS_GATE_MAX);
 }
 
+#if (THINKOS_ENABLE_GATE_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_gate_is_alloc(struct thinkos_rt * krn, unsigned int gate) {
 	return __bit_mem_rd(krn->gate_alloc, gate - THINKOS_GATE_BASE) ? 
 		true : false;
 }
+#endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 int krn_gate_check(struct thinkos_rt * krn, int gate)

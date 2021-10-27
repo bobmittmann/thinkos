@@ -19,20 +19,34 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+THINKOS_DIR = ../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
-PROG = u2s-485
+VERSION_DATE = "2020-11-18"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "4"
+
+PROG = u2s-485-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = u2s-485.c serial.c board.c leds.c usb_trace.c raw_trace.c \
 		 sdu_trace.c xflash.c usb_xflash_pic.c profclk.c
 
-LIBDIRS = ../../sdk/libstm32f ../../sdk/libutil \
-		  ../../sdk/libthinkos ../../sdk/libc ../../sdk/libice-comm \
-		  ../../sdk/libcdc-acm 
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
+		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libcdc-acm 
 
-LIBS = stm32f util thinkos c ice-comm cdc-acm 
+LIBS = stm32f util thinkos-krn ice-comm 
 
-CFLAGS = -Os
+INCPATH = ./include
+
+CDEFS = CONFIG_H 
+
+CFLAGS = -Os 
 
 MACH = stm32f103x6
-include ../../mk/stm32f103-krn.mk
+KRN_CODE_SIZE = 12288
+KRN_DATA_SIZE = 2048
+include $(ARCH_DIR)/mk/stm32-krn.mk
 

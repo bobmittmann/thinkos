@@ -33,11 +33,13 @@ __krn_obj_is_flag(struct thinkos_rt * krn, unsigned int flag) {
 	return __obj_is_valid(flag, THINKOS_FLAG_BASE, THINKOS_FLAG_MAX);
 }
 
+#if (THINKOS_ENABLE_FLAG_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_flag_is_alloc(struct thinkos_rt * krn, unsigned int flag) {
 	return __bit_mem_rd(krn->flag_alloc, flag - THINKOS_FLAG_BASE) ? 
 		true : false;
 }
+#endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 int krn_flag_check(struct thinkos_rt * krn, int flag)

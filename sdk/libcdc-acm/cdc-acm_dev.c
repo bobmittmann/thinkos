@@ -37,6 +37,9 @@
 #include <thinkos.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
 
 struct usb_cdc_acm {
 	/* modem bits */
@@ -138,20 +141,20 @@ static inline void __memcpy(void * __dst, void * __src,  unsigned int __len)
 		dst[i] = src[i];
 }
 
-void usb_cdc_on_rcv(struct usb_cdc_acm_dev * dev, 
-					unsigned int ep_id, unsigned int len)
+void usb_cdc_on_rcv(usb_class_t * class, unsigned int ep_id, unsigned int len)
 {
 	DCC_LOG(LOG_INFO, "thinkos_flag_give_i(RX_FLAG)");
 	thinkos_flag_give_i(RX_FLAG);
 }
 
-void usb_cdc_on_eot(struct usb_cdc_acm_dev * dev, unsigned int ep_id)
+void usb_cdc_on_eot(usb_class_t * class, unsigned int ep_id)
 {
 	thinkos_flag_give_i(TX_DONE);
 }
 
-void usb_cdc_on_eot_int(struct usb_cdc_acm_dev * dev, unsigned int ep_id)
+void usb_cdc_on_eot_int(usb_class_t * class, unsigned int ep_id)
 {
+	//struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)class; 
 	thinkos_flag_give_i(CTL_FLAG);
 }
 
@@ -159,21 +162,21 @@ const usb_dev_ep_info_t usb_cdc_in_info = {
 	.addr = USB_ENDPOINT_IN + EP_IN_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
-	.on_in = (void *)usb_cdc_on_eot
+	.on_in = usb_cdc_on_eot
 };
 
 const usb_dev_ep_info_t usb_cdc_out_info = {
 	.addr = USB_ENDPOINT_OUT + EP_OUT_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
-	.on_out = (void *)usb_cdc_on_rcv
+	.on_out = usb_cdc_on_rcv
 };
 
 const usb_dev_ep_info_t usb_cdc_int_info = {
 	.addr = USB_ENDPOINT_IN + EP_INT_ADDR,
 	.attr = ENDPOINT_TYPE_INTERRUPT,
 	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
-	.on_in = (void *)usb_cdc_on_eot_int
+	.on_in = usb_cdc_on_eot_int
 };
 
 int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
@@ -259,7 +262,7 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 		//                      usb_ep0_send_word(dev, 0);
 		break;
 
-	case STD_GET_STATUS_ZERO:
+	case STD_GET_STATUS_DEVICE:
 		DCC_LOG(LOG_INFO, "GetStZr");
 		//                      usb_ep0_send_word(dev, 0);
 		break;

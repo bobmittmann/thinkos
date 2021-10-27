@@ -30,10 +30,10 @@
 #include <sys/usb-cdc.h>
 
 const struct fileop usb_cdc_ops= {
-	.write = (void *)usb_cdc_write,
-	.read = (void *)usb_cdc_read,
-	.flush = (void *)usb_cdc_flush,
-	.close = (void *)usb_cdc_release
+	.write = usb_cdc_write,
+	.read = usb_cdc_read,
+	.flush = usb_cdc_flush,
+	.close = usb_cdc_release
 };
 
 FILE * usb_cdc_fopen(struct usb_cdc_class * dev)

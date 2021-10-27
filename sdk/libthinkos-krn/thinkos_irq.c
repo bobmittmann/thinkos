@@ -321,6 +321,8 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 #endif
 
 
+/* This macro is here for backword compatibility, TODO should be deprecated */
+#if (THINKOS_ENABLE_IRQ_CTL)
 void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
 						 struct thinkos_rt * krn)
 {
@@ -338,8 +340,6 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 	arg[0] = 0;
 	
 	switch (req) {
-/* This macro is here for backword compatibility, TODO should be deprecated */
-#if (THINKOS_ENABLE_IRQ_CTL)
 	case THINKOS_IRQ_ENABLE:
 		DCC_LOG1(LOG_MSG, "enabling IRQ %d", irq);
 		/* clear pending interrupt */
@@ -364,8 +364,6 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 			cm3_irq_pri_set(irq, priority);
 		}
 		break;
-
-#endif
 
 #ifdef CM3_RAM_VECTORS
 	case THINKOS_IRQ_REGISTER:
@@ -406,6 +404,8 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 		break;
 	}
 }
+#endif
+
 
 #if (THINKOS_ENABLE_PAUSE)
 bool irq_resume(struct thinkos_rt * krn, unsigned int th, 
