@@ -209,8 +209,13 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 	krn->idle_hooks.req_map = 0;
 	task_arg[0] = (uintptr_t)krn;
 	task_arg[1] = (uintptr_t)&krn->idle_hooks;
+	task_arg[2] = 0;
+	task_arg[3] = 0;
 #else
 	task_arg[0] = (uintptr_t)krn;
+	task_arg[1] = 0;
+	task_arg[2] = 0;
+	task_arg[3] = 0;
 #endif
 
 	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,

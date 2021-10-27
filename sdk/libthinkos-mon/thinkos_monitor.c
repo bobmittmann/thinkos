@@ -263,6 +263,8 @@ int monitor_expect(int sig)
 int monitor_sleep(unsigned int ms)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
+	struct thinkos_rt * krn = &thinkos_rt;
+	
 	monitor_clear(MONITOR_ALARM);
 	/* set the clock */
 	krn->monitor_clock = krn->ticks + ms;
@@ -276,10 +278,12 @@ int monitor_sleep(unsigned int ms)
 
 void monitor_alarm(unsigned int ms)
 {
+#if (THINKOS_ENABLE_MONITOR_CLOCK)
+	struct thinkos_rt * krn = &thinkos_rt;
+	
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	monitor_clear(MONITOR_ALARM);
 	monitor_unmask(MONITOR_ALARM);
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
 	/* set the clock */
 	krn->monitor_clock = krn->ticks + ms;
 #endif
@@ -288,6 +292,8 @@ void monitor_alarm(unsigned int ms)
 void monitor_alarm_stop(void)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	/* set the clock in the past so it won't generate a signal */
 	krn->monitor_clock = krn->ticks - 1;
 #endif
@@ -316,52 +322,6 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 	thinkos_monitor_rt.ret_thread_id = thread_id;
 	thinkos_monitor_rt.ret_code = code;
 	monitor_signal(MONITOR_THREAD_TERMINATE);
-}
-#endif
-
-#if 0
-void __thinkos_systick_sleep(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__systick_int_disable(krn);
-	__systick_pend_clr(krn);
-}
-
-void __thinkos_systick_wakeup(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	__systick_int_enable(krn);
-	__systick_pend_set(krn);
-}
-
-
-void thinkos_monitor_sleep(void)
-{
-	/* Disable the systick interrupts */
-	__thinkos_systick_sleep();
-}
-
-void thinkos_monitor_wakeup(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	uint32_t sigset;
-	uint32_t sigmsk;
-
-	sigset = krn->monitor.events;
-	sigmsk = krn->monitor.mask;
-	(void)sigset;
-	(void)sigmsk;
-
-	if (sigset == 0) {
-		DCC_LOG2(LOG_ERROR, "set=0x%08x msk=0x%08x", sigset, sigmsk);
-	} else {
-		DCC_LOG2(LOG_TRACE, "set=0x%08x msk=0x%08x", sigset, sigmsk);
-	}
-
-	/* Reenable systick interrupts and signal the monitor */
-	__thinkos_systick_wakeup();
 }
 #endif
 
@@ -457,6 +417,8 @@ static void __attribute__((naked, noreturn)) monitor_bootstrap(void)
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	krn->monitor_clock = krn->ticks - 1;
 #endif
 
@@ -484,40 +446,12 @@ void __thinkos_monitor_on_reset(void)
 	swap->lr = ((uintptr_t)monitor_bootstrap) | 1; /* LR */
 }
 
-#if 0
-uint32_t __attribute__((aligned(16))) __thinkos_monitor_isr(void)
-{
-	uint32_t sigset;
-	uint32_t sigmsk;
-	uint32_t sigact;
-
-	sigset = krn->monitor.events;
-	sigmsk = krn->monitor.mask;
-	sigact = sigset & sigmsk;
-
-	/* Process monitor events */
-	if (sigact != 0) {
-		if (sigact & (1 << MONITOR_RESET)) {
-			__thinkos_monitor_on_reset();
-
-			/* clear the RESET event */
-			krn->monitor.events = sigset & ~(1 << MONITOR_RESET);
-		}
-
-		__monitor_context_swap(&krn->monitor.ctx); 
-	}
-
-	return sigact;
-}
 #endif
-
-#endif
-
 
 /**
  * monitor_soft_reset:
  *
- * Reinitialize the plataform by reseting all ThinkOS subsystems.
+ * Reinitialize the plataform by reseting ThinkOS subsystems.
  * 
  */
 
@@ -546,6 +480,8 @@ void thinkos_krn_monitor_reset(void)
 	/* set the clock in the past so it won't generate signals in 
 	 the near future */
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	krn->monitor_clock = krn->ticks - 1;
 #endif
 

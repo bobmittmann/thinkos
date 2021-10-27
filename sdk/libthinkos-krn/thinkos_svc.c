@@ -496,10 +496,13 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #if (THINKOS_ENABLE_CONSOLE)
 	[THINKOS_CONSOLE_CTL] = thinkos_console_ctl_svc,
 	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
-	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
 #else
 	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
 	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
+#endif
+#if (THINKOS_ENABLE_CONSOLE_READ)
+	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
+#else
 	[THINKOS_CONSOLE_RECV] = thinkos_nosys_svc,
 #endif
 

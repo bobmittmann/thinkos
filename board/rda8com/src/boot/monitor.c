@@ -237,8 +237,6 @@ static void monitor_print_fault(const struct monitor_comm * comm)
 	monitor_print_exception(comm, xcpt);
 }
 
-static const char s_crlf[] =  "\r\n";
-
 static void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
 	struct thinkos_except * xcpt = __thinkos_except_buf();

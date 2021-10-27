@@ -161,7 +161,6 @@ uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm,
 }
 
 
-#if 0
 /*
    Default Monitor comm event handler
  */
@@ -170,4 +169,3 @@ uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm,
 {
 	return sigmask;
 }
-#endif
