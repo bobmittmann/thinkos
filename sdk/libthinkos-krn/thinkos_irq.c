@@ -275,7 +275,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self,
    This syscall returns the IRQ number upon success. 
  */
 void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
-						 struct thinkos_rt * krn)
+						  struct thinkos_rt * krn)
 {
 	unsigned int irq = arg[0];
 

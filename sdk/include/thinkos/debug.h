@@ -109,6 +109,10 @@ uint32_t thinkos_dbg_thread_lr_get(unsigned int id);
 
 uint32_t thinkos_dbg_thread_sp_get(unsigned int id);
 
+uint32_t thinkos_dbg_thread_stack_size_get(unsigned int th);
+
+uint32_t thinkos_dbg_thread_stack_base_get(unsigned int th);
+
 bool thinkos_dbg_thread_ctx_is_valid(unsigned int id);
 
 uint32_t thinkos_dbg_thread_sl_get(unsigned int id);
