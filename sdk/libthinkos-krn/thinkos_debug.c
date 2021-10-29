@@ -449,6 +449,16 @@ uint32_t thinkos_dbg_thread_sl_get(unsigned int th)
 	return __thread_sl_get(&thinkos_rt, th); 
 }
 
+uint32_t thinkos_dbg_thread_stack_size_get(unsigned int th) 
+{
+	return __thread_stack_size_get(&thinkos_rt, th);
+}
+
+uint32_t thinkos_dbg_thread_stack_base_get(unsigned int th) 
+{
+	return __thread_stack_base_get(&thinkos_rt, th);
+}
+
 uint32_t thinkos_dbg_krn_ticks_get(unsigned int th) 
 {
 	return thinkos_rt.ticks;
