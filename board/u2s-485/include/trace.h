@@ -36,9 +36,9 @@
 #define SHOW_SUPV 4
 #define SHOW_PKT  8
 
-extern struct usb_cdc_class * usb_cdc;
-extern uint8_t trace_opt;
+extern uint32_t trace_opt;
 extern uint32_t trace_ts;
+extern struct usb_cdc_class * usb_cdc;
 extern uint32_t protocol_buf[];
 
 #ifdef __cplusplus
@@ -53,9 +53,13 @@ int xxd(char * s, int max, uint8_t * buf, int len);
 
 int xx_dump(uint32_t ts, uint8_t * buf, int len);
 
-int usb_printf(const char *fmt, ... );
+void usb_trace_init(struct usb_cdc_class * cdc);
+
+int usb_printf(struct usb_cdc_class * cdc, const char *fmt, ... );
 
 void raw_trace(uint32_t ts, uint8_t * rx_buf, unsigned int rx_len);
+
+void raw_trace_init(void);
 
 void trace_time_abs(bool en);
 
@@ -66,7 +70,6 @@ void trace_damp_pkt(struct packet * pkt);
 void trace_sdu_pkt(struct packet * pkt);
 
 void trace_mstp_pkt(struct packet * pkt);
-
 #ifdef __cplusplus
 }
 #endif

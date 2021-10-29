@@ -207,7 +207,7 @@ void show_menu(usb_cdc_class_t * cdc)
 	usb_printf(cdc, "  [U/u] enable/disable SDU supervisory\r\n");
 	usb_printf(cdc, "  [X/x] enable/disable XON/XOFF flow control\r\n");
 	usb_printf(cdc, "[U2S-485 %d.%d]: ", FW_VERSION_MAJOR, FW_VERSION_MINOR);
-};
+}
 
 static void vcom_serial_8n1_force_cfg(struct vcom * vcom, 
 									  unsigned int baudrate)
@@ -409,8 +409,9 @@ void __attribute__((noreturn)) usb_recv_task(struct vcom * vcom)
 			stats.rx_cnt = tmp.rx_cnt;
 			stats.tx_cnt = tmp.tx_cnt;
 
-			if (rx_cnt || tx_cnt)
+			if (rx_cnt || tx_cnt) {
 				DCC_LOG2(LOG_TRACE, "Serial rx=%d tx=%d", rx_cnt, tx_cnt);
+			}
 		} else {
 			DCC_LOG1(LOG_ERROR, "len=%d", len);
 		}
@@ -583,6 +584,7 @@ uint32_t __attribute__((aligned(8))) serial_recv_stack[192];
 
 int __attribute__((noreturn)) main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	struct usb_cdc_class * cdc;
 	struct serial_dev * serial;
 	struct vcom vcom;
@@ -591,14 +593,11 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 
-	/* calibrate usecond delay loop */
-	cm3_udelay_calibrate();
-
 	DCC_LOG(LOG_TRACE, "1. io_init()");
 	io_init();
 
-	DCC_LOG(LOG_TRACE, "2. thinkos_init()");
-	thinkos_init(THINKOS_OPT_PRIORITY(3) | THINKOS_OPT_ID(3));
+	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init()");
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(3) | THINKOS_OPT_ID(3), NULL);
 
 	leds_init();
 
@@ -618,16 +617,16 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 
 	usb_trace_init(cdc);
 
-	thinkos_thread_create((void *)led_task, (void *)NULL,
+	thinkos_thread_create(C_TASK(led_task), (void *)NULL,
 						  led_stack, sizeof(led_stack) |
 						  THINKOS_OPT_PRIORITY(1) | THINKOS_OPT_ID(1));
 
-	thinkos_thread_create((void *)serial_recv_task, 
+	thinkos_thread_create(C_TASK(serial_recv_task), 
 						  (void *)&vcom,
 						  serial_recv_stack, sizeof(serial_recv_stack) |
 						  THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
 
-	thinkos_thread_create((void *)serial_ctrl_task, 
+	thinkos_thread_create(C_TASK(serial_ctrl_task), 
 						  (void *)&vcom,
 						  serial_ctrl_stack, sizeof(serial_ctrl_stack) |
 						  THINKOS_OPT_PRIORITY(2) | THINKOS_OPT_ID(2));
@@ -646,3 +645,6 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 	usb_recv_task(&vcom);
 }
 
+void cm3_default_isr(int irq)
+{
+}

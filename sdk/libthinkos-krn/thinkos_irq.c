@@ -110,8 +110,10 @@ void __nvic_irq_clrpend_all(void)
 void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 {
 
+#if (THINKOS_IRQ_MAX) > 0
 	DCC_LOG(LOG_MSG, "initializing interrupts");
 	__krn_irq_reset_all(krn);
+#endif
 
 #ifdef CM3_RAM_VECTORS
 	{

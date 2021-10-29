@@ -29,11 +29,11 @@
 
 #include <sys/usb-cdc.h>
 
-const struct fileop usb_cdc_ops= {
-	.write = usb_cdc_write,
-	.read = usb_cdc_read,
-	.flush = usb_cdc_flush,
-	.close = usb_cdc_release
+const struct fileop usb_cdc_ops = {
+	.write = (int (*)(void *, const void *, size_t)) usb_cdc_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int)) usb_cdc_read,
+	.flush = (int (*)(void *))usb_cdc_flush,
+	.close = (int (*)(void *))usb_cdc_release
 };
 
 FILE * usb_cdc_fopen(struct usb_cdc_class * dev)

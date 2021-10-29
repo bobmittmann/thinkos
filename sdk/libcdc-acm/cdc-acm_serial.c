@@ -31,10 +31,10 @@
 #include <sys/dcclog.h>
 
 const struct serial_op cdc_acm_serial_op = {
-	.send = (void *)usb_cdc_write,
-	.recv = (void *)usb_cdc_read,
-	.drain = (void *)usb_cdc_flush,
-	.close = (void *)usb_cdc_release
+	.send = (int (*)(void *, const void *, size_t)) usb_cdc_write,
+	.recv = (int (*)(void *, void *, size_t, unsigned int)) usb_cdc_read,
+	.drain = (int (*)(void *))usb_cdc_flush,
+	.close = (int (*)(void *))usb_cdc_release
 };
 
 extern struct usb_cdc_acm_dev usb_cdc_rt;

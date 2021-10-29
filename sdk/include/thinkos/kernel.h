@@ -904,8 +904,6 @@ void __thinkos_wakeup( unsigned int wq, unsigned int th);
 void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
 
 
-uint32_t  __thinkos_ticks(void);
-
 /* -------------------------------------------------------------------------- 
  * kernel error and debug
  * --------------------------------------------------------------------------*/

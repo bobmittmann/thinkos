@@ -370,11 +370,11 @@ void stm32f_usart2_isr(void)
 }
 
 const struct serial_op stm32f_uart_serial_op = {
-	.send = (void *)__serial_write,
-	.recv = (void *)__serial_read,
-	.drain = (void *)__serial_drain,
-	.close = (void *)__serial_close,
-	.ioctl = (void *)__serial_ioctl
+	.send = (int (*)(void *, const void *, unsigned int))__serial_write,
+	.recv = (int (*)(void *, void *, unsigned int, unsigned int))__serial_read,
+	.drain = (int (*)(void *))__serial_drain,
+	.close = (int (*)(void *))__serial_close,
+	.ioctl = (int (*)(void *, int, uintptr_t, uintptr_t))__serial_ioctl
 };
 
 const struct serial_dev uart2_serial_dev = {
