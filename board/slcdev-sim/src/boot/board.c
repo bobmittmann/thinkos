@@ -611,25 +611,59 @@ const struct magic_blk thinkos_10_app_magic = {
    Bootloader and debugger, memory description  
  */
 
-const struct mem_desc sram_desc = {
-	.tag = "RAM",
-	.base = 0,
+#define RAM_BOOT  0
+#define RAM_APP   1
+
+const struct thinkos_mem_desc sram_desc = {
+	.tag = "ram",
+	.base = 0x00000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x20000000, M_RO, SZ_1K, 2},	/* Bootloader: 2KiB */
-		{"APP", 0x20000800, M_RW, SZ_1K, 8},	/* Application: 8KiB */
-		}
+		/* Bootloader: 2iB */
+		[RAM_BOOT] = {.tag = "boot",  .off = 0x20000000, M_RO, SZ_1K, 2},   
+		/* Application: 8KiB */
+		[RAM_APP] = {.tag = "app",    .off = 0x20001000, M_RW, SZ_1K, 8},   
+	}
 };
 
-const struct mem_desc flash_mem = {
-	.tag = "FLASH",
+
+#define FLASH_BOOT 0
+#define FLASH_APP  1
+
+const struct thinkos_mem_desc flash_desc = {
+	.tag = "flash",
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_256, 64}, /* Bootloader: 16 KiB */
-		{"APP", 0x00002000, M_RW, SZ_256, 448},	/* Application: 112 KiB */
-		}
+		/* Bootloader: 16 KiB */
+		[FLASH_BOOT] = {.tag = "boot", .off= 0x00000000, M_RO, SZ_256, 64}, 
+		/* Application: 112 KiB */
+		[FLASH_APP] = {.tag = "app", .off = 0x0000a000, M_RW, SZ_256, 448}
+	}
 };
+
+#define MEM_FLASH  0
+#define MEM_SRAM   1
+
+const struct thinkos_mem_map mem_map = {
+	.tag = "MEM",
+	.cnt = 2,
+	.desc = {
+		[MEM_FLASH] = &flash_desc,
+		[MEM_SRAM] = &sram_desc
+	}
+};
+
+
+int board_on_break(const struct monitor_comm * comm)
+{
+	struct btl_shell_env * env = btl_shell_env_getinstance();
+
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
+
+	return monitor_thread_create(comm, C_TASK(btl_console_shell), 
+								 C_ARG(env), true);
+}
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
@@ -646,33 +680,13 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.memory = {
-		   .cnt = 2,
-		   .flash = &flash_mem,
-		   .ram = &sram_desc,
-		   .periph = NULL },
-	.application = {
-			.tag = "",
-			.start_addr = 0x08010000,
-			.block_size = (96 * 2) * 1024,
-			.magic = &thinkos_10_app_magic},
-	.init = board_init,
-	.softreset = board_on_softreset,
-	.upgrade = NULL,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
-	.default_task = board_default_task
+	.memory = &mem_map,
+	.on_softreset = board_on_softreset,
+	.on_break = board_on_break
 };
 
 extern const struct flash_dev stm32l1x_flash_dev;
 
-const struct thinkos_flash_desc board_flash_desc = {
-	.mem = &flash_mem,
-	.dev = &stm32l1x_flash_dev
-};
-
-struct thinkos_flash_drv board_flash_drv;
 
 #pragma GCC diagnostic pop
 

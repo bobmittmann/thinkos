@@ -19,36 +19,66 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-PROJECT_ROOT = ../../
-THINKOS_DIR = $(PROJECT_ROOT)/../..
+VERSION_DATE = "2020-11-18"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "5"
+
+THINKOS_DIR = ../../../..
+
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
+BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+MKCMD  = python $(TOOLS_DIR)/mkcmd.py
+LZ77 = $(TOOLS_DIR)/lz77/lz77
+LZ_WINDOW_SIZE = 16384
+PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-VERSION_DATE = "2020-05-29"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "3"
+CFILES = board.c monitor.c shell.c cmd_tab.c fpga.c ice40hx1k.c 
 
-PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 board.c 
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
+		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
-		  $(SDK_DIR)/libice-comm 
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem ice-comm
+ARCH_LIBS = stm32f 
 
-LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc ice-comm 
+LIBS = $(SDK_LIBS) $(ARCH_LIBS)
 
-INCPATH = $(SDK_DIR)/include ../include
+INCPATH = ../include
 
-CDEFS = CONFIG_H 
+#
+# select the hardware revision
+# 
+ifdef HWREV
+  ifeq ($(findstring $(HWREV), 1 2),)
+    $(error invalid HWREV number, must be 1 or 2) 
+  endif
+  __hwrev=$(HWREV)
+else
+  # assign a default hardware if not specified in the command line
+  __hwrev=1
+endif
 
-CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -g -mno-unaligned-access 
+CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=$(__hwrev)
+
+CFLAGS = -Os
 
 MACH = stm32l151xb
 KRN_CODE_SIZE = 8192
-KRN_DATA_SIZE = 2048
-include $(ARCH_DIR)/mk/stm32.mk
+KRN_DATA_SIZE = 2048 
+include $(ARCH_DIR)/mk/stm32-krn.mk
+
+CMD_TAB_YAML = $(SRCDIR)/cmd_tab.yaml
+CMD_TAB_C = $(SRCDIR)/cmd_tab.c
+CMD_TAB_H = $(SRCDIR)/cmd_tab.h
+
+$(CMD_TAB_H): $(CMD_TAB_C)
+
+$(CMD_TAB_C): $(CMD_TAB_YAML)
+	$(MKCMD) -l -e "struct btl_shell_env" -p btl -o $@ $<
+
+cmdtab: $(CMD_TAB_C)
+
+.PHONY = cmdtab
 
