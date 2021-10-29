@@ -32,8 +32,8 @@
 void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt)
 {
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
+	struct stm32_exti * exti = STM32_EXTI;
 	int port;
 
 	/* System configuration controller clock enable */

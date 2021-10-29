@@ -298,7 +298,7 @@ struct thinkos_context * monitor_thread_erro_get(uint8_t * thread_id,
 												 int8_t * code);
 int monitor_thread_break_get(int32_t * pcode);
 
-void monitor_thread_break_clr(void);
+int monitor_thread_break_clr(void);
 
 int monitor_thread_step_get(void);
 void monitor_thread_step_clr(void);

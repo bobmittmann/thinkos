@@ -146,7 +146,7 @@ void stdio_init(void)
 
 void stm32f_exti9_5_isr(void)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 	static uint32_t window_tmo;
 	static bool enabled = true;
 	uint32_t ticks;
@@ -180,9 +180,9 @@ void io_init(void)
 	rcc->apb2enr |= RCC_AFIOEN;
 #endif
 #if defined(STM32F4X)
-	struct stm32f_exti * exti = STM32F_EXTI;
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
-	struct stm32f_rcc * rcc = STM32F_RCC;
+	struct stm32_exti * exti = STM32_EXTI;
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
+	struct stm32_rcc * rcc = STM32_RCC;
 #endif
 
 	DCC_LOG(LOG_MSG, "Configuring GPIO pins...");

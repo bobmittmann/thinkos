@@ -147,6 +147,10 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
 	__thinkos_krn_core_init(krn);
+/* 
+ * FIXME: the exception buffer shouldn't be cleared except by an excplicit call
+ * after debug handling??? 
+*/
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	thinkos_krn_exception_reset();

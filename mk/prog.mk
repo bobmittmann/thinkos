@@ -172,6 +172,7 @@ ifdef PROG
   PROG_ELF := $(OUTDIR)/$(PROG).elf
   PROG_ELX := $(OUTDIR)/$(PROG).elx
   PROG_SYM := $(OUTDIR)/$(PROG).sym
+  PROG_NM := $(OUTDIR)/$(PROG).nm
   PROG_LST := $(OUTDIR)/$(PROG).lst
   PROG_TAG := $(OUTDIR)/$(PROG).tag
 endif
@@ -192,11 +193,14 @@ ifeq ($(HOST),Cygwin)
   ifdef PROG_SYM
     PROG_SYM_WIN := $(subst \,\\,$(shell cygpath -w $(PROG_SYM)))
   endif
+  ifdef PROG_NM
+    PROG_NM_WIN := $(subst \,\\,$(shell cygpath -w $(PROG_NM)))
+  endif
 endif
 
 GFILES := $(HFILES_OUT) $(CFILES_OUT) $(SFILES_OUT) 
 PFILES := $(PROG_BIN) $(PROG_SREC) $(PROG_ELF) $(PROG_LST) \
-		  $(PROG_SYM) $(PROG_MAP)
+		  $(PROG_SYM) $(PROG_MAP) $(PROG_NM)
 
 ifeq (Windows,$(HOST))
   CLEAN_OFILES := $(strip $(subst /,\,$(OFILES)))
@@ -315,6 +319,8 @@ ihex: $(PROG_IHEX)
 
 sym: $(PROG_SYM)
 
+nm: $(PROG_NM)
+
 lst: $(PROG_LST)
 
 tag: $(PROG_TAG)
@@ -409,6 +415,14 @@ ifeq ($(HOST),Cygwin)
 	$(Q)$(OBJDUMP) -t $(PROG_ELF_WIN) | sort > $@
 else
 	$(Q)$(OBJDUMP) -t $< | sort > $@
+endif
+
+%.nm: %.elf
+	$(ACTION) "NM: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(NM) -t $(PROG_ELF_WIN) > $@
+else
+	$(Q)$(NM) -S -n $< > $@
 endif
 
 %.lst: %.elf

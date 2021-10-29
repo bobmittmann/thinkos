@@ -105,7 +105,7 @@
 void stm32f_eth_init(struct stm32f_eth * eth)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
 
 #if STM32F_ETH_ENABLE_RMII
 	DCC_LOG(LOG_TRACE, "Selecting RMII interface...");

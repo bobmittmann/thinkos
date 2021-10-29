@@ -96,7 +96,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 			 sched_val, sched_pri); 
 #endif
 	monitor_printf(comm, " - timeout=%8d ms", timeout); 
-	monitor_printf(comm, " - cycles=%u", cyccnt); 
+	monitor_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
 	ctx = thinkos_dbg_thread_ctx_get(thread_id);
 	sp = thinkos_dbg_thread_sp_get(thread_id);

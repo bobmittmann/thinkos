@@ -232,8 +232,8 @@ static inline unsigned int __attribute__((always_inline))
 
 /* Set the scheduler kernel exception error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_xcp_set(struct thinkos_rt * krn, unsigned int kse) {
-	krn->sched.xcp = kse;
+__krn_sched_xcp_set(struct thinkos_rt * krn, unsigned int xcp) {
+	krn->sched.xcp = xcp;
 }
 
 /* Get the scheduler kernel exception error */

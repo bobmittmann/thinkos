@@ -207,9 +207,9 @@ uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
    functions takes care of signaling the modules
    that may be affected by this condition. */
 void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
-									 struct thinkos_except * xcpt,
-									 uint32_t errno,
-									 uint32_t thread)
+									struct thinkos_except * xcpt,
+									uint32_t errno,
+									uint32_t thread)
 {
 	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
 			 " Exception: error %d on thread %d " VT_POP, 

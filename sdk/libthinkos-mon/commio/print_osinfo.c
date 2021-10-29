@@ -77,13 +77,13 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* TODO: add timeshare info */
 #endif
-	monitor_printf(comm, " | Clk (ms)"); 
+	monitor_printf(comm, " |  Clk (ms)"); 
 #if (THINKOS_ENABLE_PROFILING)
 	monitor_printf(comm, " | CPU %%"); 
 #endif
 
 #if (THINKOS_MUTEX_MAX) > 0
-	monitor_printf(comm, " | Locks\r\n"); 
+	monitor_printf(comm, " | Lock\r\n"); 
 #else
 	monitor_printf(comm, " |\r\n");
 #endif
@@ -138,7 +138,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 
 				monitor_printf(comm, " |%7d.%03d", sec, ms);
 #else
-				monitor_printf(comm, " |%9d", dt);
+				monitor_printf(comm, " |%10d", dt);
 #endif
 
 			}

@@ -420,12 +420,12 @@ _fault:
 	.thumb_set  cm3_mem_manage_isr,_fault
 #endif
 
-#if	!(THINKOS_ENABLE_USAGEFAULT) 
+#if	!(THINKOS_ENABLE_BUSFAULT)
 	.weak       cm3_bus_fault_isr
 	.thumb_set  cm3_bus_fault_isr,_fault
 #endif
 
-#if	!(THINKOS_ENABLE_BUSFAULT)
+#if	!(THINKOS_ENABLE_USAGEFAULT) 
 	.weak       cm3_usage_fault_isr
 	.thumb_set  cm3_usage_fault_isr,_fault
 #endif

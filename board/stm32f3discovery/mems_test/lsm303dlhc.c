@@ -51,7 +51,7 @@ struct mag_dev {
 
 void magnetometer_task(struct mag_dev * mag)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 	struct {
 		int16_t x;
 		int16_t z;
@@ -120,8 +120,8 @@ void lsm303_mag_vec_get(struct vector * v)
 
 void lsm303_mag_init(void)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
+	struct stm32_exti * exti = STM32_EXTI;
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
 	uint8_t cfg[3];
 	uint32_t tmp;
 
@@ -256,8 +256,8 @@ void lsm303_acc_vec_get(struct vector * v)
 
 void lsm303_acc_init(void)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
+	struct stm32_exti * exti = STM32_EXTI;
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
 	uint8_t cfg[6];
 	uint32_t tmp;
 

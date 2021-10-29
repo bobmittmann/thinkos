@@ -349,10 +349,11 @@ int monitor_thread_break_get(int32_t * pcode)
 	return thinkos_dbg_thread_break_get(pcode);
 }
 
-void monitor_thread_break_clr(void)
+int monitor_thread_break_clr(void)
 {
-	monitor_signal(MONITOR_THREAD_FAULT);
+	return thinkos_dbg_thread_break_clr();
 }
+
  
 static inline void __monitor_task_reset(void)
 {

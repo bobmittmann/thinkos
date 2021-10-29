@@ -140,6 +140,8 @@ int thinkos_dbg_thread_break_get(int32_t * pcode);
 
 int thinkos_dbg_thread_break_clr(void);
 
+uint32_t thinkos_dbg_sched_state_get(void);
+
 void thinkos_dbg_reset(void);
 
 int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,

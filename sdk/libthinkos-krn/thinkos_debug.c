@@ -653,6 +653,15 @@ int thinkos_dbg_thread_brk_get(unsigned int th)
 }
 #endif
 
+
+uint32_t thinkos_dbg_sched_state_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return krn->sched.state;
+}
+
+
 int thinkos_dbg_thread_break_get(int32_t * perrno)
 {
 	struct thinkos_rt * krn = &thinkos_rt;

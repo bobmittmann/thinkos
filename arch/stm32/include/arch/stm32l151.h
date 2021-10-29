@@ -180,7 +180,7 @@
 
 #define STM32_CRC    ((struct stm32_crc *)STM32_BASE_CRC)
 
-#define STM32_EXTI   ((struct stm32f_exti *)STM32_BASE_EXTI)
+#define STM32_EXTI   ((struct stm32_exti *)STM32_BASE_EXTI)
 #define STM32_COMP   ((struct stm32_comp *)STM32_BASE_COMP)
 
 #define STM32_USART1 ((struct stm32_usart *)STM32_BASE_USART1)

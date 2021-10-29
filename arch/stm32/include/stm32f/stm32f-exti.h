@@ -83,7 +83,7 @@
 
 #include <stdint.h>
 
-struct stm32f_exti {
+struct stm32_exti {
 	volatile uint32_t imr;
 	volatile uint32_t emr;
 	volatile uint32_t rtsr;

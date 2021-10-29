@@ -341,7 +341,7 @@ int board_boot_init(void)
 #if COMM_NSEL_ISR_ENABLE
 void stm32f_exti9_5_isr(void)
 {
-	struct stm32f_exti *exti = STM32F_EXTI;
+	struct stm32_exti *exti = STM32_EXTI;
 
 	exti->pr = EXTI_COMM_NSEL;
 
@@ -390,7 +390,7 @@ void ptp_uart_init(unsigned int baudrate)
 
 void stm32f_exti3_isr(void)
 {
-	struct stm32f_exti *exti = STM32F_EXTI;
+	struct stm32_exti *exti = STM32_EXTI;
 	struct stm32_usart *uart = STM32_USART2;
 	uint32_t cr1;
 

@@ -27,8 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #ifndef CLOCK_DRIFT_MAX
-//#define CLOCK_DRIFT_MAX FLOAT_Q31(0.000200)
-/* FIXME: change the max drift to 200ppm */
+/* max drift: 500ppm */
 #define CLOCK_DRIFT_MAX FLOAT_Q31(0.000500)
 #endif
 
@@ -118,7 +117,7 @@ void __thinkos_krn_time_init(struct thinkos_rt * krn)
 	DCC_LOG1(LOG_TRACE, "resolution=%d", clk->resolution);
 }
 
-static uint64_t clock_timestamp(struct krn_clock * clk)
+static uint64_t krn_clock_timestamp(struct krn_clock * clk)
 {
     register uint64_t ts;
     register uint32_t dt;
@@ -149,13 +148,14 @@ static uint64_t clock_timestamp(struct krn_clock * clk)
 }
 
 
-void thinkos_time_svc(int32_t * arg, unsigned int self)
+void thinkos_time_svc(int32_t * arg, unsigned int self,
+					  struct thinkos_rt * krn) 
 {
-    struct krn_clock * clk = &thinkos_rt.time_clk;
+    struct krn_clock * clk = &krn->time_clk;
 	unsigned int oper = arg[0];
 	union krn_time tm;
 
-	tm.u64 = clock_timestamp(clk);
+	tm.u64 = krn_clock_timestamp(clk);
 
 	switch (oper) {
 	case THINKOS_TIME_MONOTONIC_GET:
@@ -200,6 +200,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 		break;
 
 	case THINKOS_TIME_REALTIME_COMP:
+		/* Drift compensation */
 		{
 			int32_t drift = arg[1];
 			int32_t est_err = arg[2];
@@ -245,6 +246,19 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}
+}
+
+int krn_fmt_clk_realtime(struct thinkos_rt * krn, char * s) 
+{
+    struct krn_clock * clk = &krn->time_clk;
+	union krn_time tm;
+	uint32_t frac;
+
+	tm.u64 = krn_clock_timestamp(clk);
+
+	frac = ((uint64_t)tm.frac * 1000LL + (1LL << 31)) >> 32;
+
+	return krn_snprintf(s, 16, "%d.%03d", tm.sec, frac);
 }
 
 #endif /* (THINKOS_ENABLE_DATE_AND_TIME) */

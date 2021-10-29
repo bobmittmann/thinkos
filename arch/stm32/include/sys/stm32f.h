@@ -215,7 +215,7 @@ void stm32f_fsmc_speed(int div);
 #define EXTI_EDGE_RISING 1
 #define EXTI_EDGE_FALLING 0
 
-void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
+void stm32_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt);
 
 static inline uint32_t * stm32_exti_imr_bitband(void) {

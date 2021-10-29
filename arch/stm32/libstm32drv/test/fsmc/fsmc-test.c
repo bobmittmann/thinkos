@@ -126,7 +126,7 @@ void __move(uint16_t * dst, uint16_t * src, unsigned int len)
 
 int fpga_init(struct fpga_io * fpga, const void * rbf, int size) 
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 	int ret; 
 
 	/* Enable clock output */
@@ -171,7 +171,7 @@ int fpga_init(struct fpga_io * fpga, const void * rbf, int size)
 void __stm32f_exti9_5_isr(void)
 {
 	struct fpga_io * fpga =  (struct fpga_io *)STM32F_FSMC_NE1;
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 	unsigned int st;
 	unsigned int en;
 
@@ -203,7 +203,7 @@ void fpga_irq_enable(void)
 
 void fpga_irq_wait(struct fpga_io * fpga, unsigned int mask) 
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 	int st;
 
 	while (((st = fpga->ist) & mask) == 0) {
