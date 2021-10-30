@@ -141,7 +141,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	/* Set the thread privilege */
 	ctrl = privileged ? CONTROL_SPSEL : CONTROL_SPSEL | CONTROL_nPRIV;
 #else
-	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+	ctrl = 0;
 #endif
 	/* commit the context to the kernel */ 
 	__thread_ctx_set(krn, thread_no, ctx, ctrl);

@@ -36,6 +36,9 @@
 #define __THINKOS_EXCEPT__
 #include <thinkos/except.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <thinkos.h>
 #include <sys/delay.h>
 #include <sys/param.h>

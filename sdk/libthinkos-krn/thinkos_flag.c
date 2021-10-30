@@ -89,7 +89,7 @@ void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 again:
 	flags = __ldrex(flags_bmp);
 	if (flags & (1 << idx)) {
-		DCC_LOG2(LOG_INFO, "<%d> signaled %d...", self, flag);
+		DCC_LOG2(LOG_TRACE, "<%d> signaled %d...", self, flag);
 		/* clear the flag */
 		flags &= ~(1 << idx);
 		if (__strex(flags_bmp, flags))
@@ -125,7 +125,7 @@ again:
 	}
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG2(LOG_INFO, "<%d> waiting for flag %d...", self, flag);
+	DCC_LOG2(LOG_TRACE, "<%d> waiting for flag %d...", self, flag);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn); 
 }
@@ -162,7 +162,7 @@ void thinkos_flag_timedtake_svc(int32_t arg[], int self,
 again:
 	bits = __ldrex(flags_bmp);
 	if (bits & (1 << idx)) {
-		DCC_LOG2(LOG_INFO, "<%d> signaled %d...", self, flag);
+		DCC_LOG2(LOG_TRACE, "<%d> signaled %d...", self, flag);
 		/* clear the flag */
 		bits &= ~(1 << idx);
 		if (__strex(flags_bmp, bits))
@@ -199,7 +199,7 @@ again:
 	}
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG2(LOG_INFO, "<%d> waiting for flag %d...", self, flag);
+	DCC_LOG2(LOG_TRACE, "<%d> waiting for flag %d...", self, flag);
 	__krn_thread_clk_itv_wait(krn, self, ms);
 }
 #endif
@@ -239,6 +239,8 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 	} while (__strex(&krn->wq_lst[flag], queue));
 	th = j + 1;
 
+	DCC_LOG1(LOG_TRACE, "<%2d> wakeup...", th);
+
 	/* insert the thread into ready queue */
 	__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
@@ -265,6 +267,7 @@ void __thinkos_flag_give_i(uint32_t flag)
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	__krn_flag_give(krn, flag);
+	__krn_preempt(krn);
 }
 #endif /* THINKOS_ENABLE_I_CALLS */
 

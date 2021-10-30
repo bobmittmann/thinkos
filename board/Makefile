@@ -21,7 +21,7 @@
 # Author: Robinson Mittmann <bobmittmann@gmail.com>
 # 
 
-BOARDS = slcdev-hub stm32f405-dk u2s-485 rda8com rda425
+BOARDS = slcdev-sim slcdev-hub stm32f405-dk u2s-485 rda8com rda425
 
 OUTDIR := $(abspath build)
 

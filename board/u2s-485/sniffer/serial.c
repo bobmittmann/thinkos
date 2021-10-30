@@ -154,8 +154,8 @@ int __serial_write(struct stm32_serial_drv * drv, const void * buf,
 
 		head = drv->tx_fifo.head;
 		free = UART_TX_FIFO_BUF_LEN - (int32_t)(head - drv->tx_fifo.tail);
-		DCC_LOG3(LOG_MSG, "head=%d tail=%d n=%d", head, drv->tx_fifo.tail, n);
 		n = MIN(rem, free);
+		DCC_LOG3(LOG_MSG, "head=%d tail=%d n=%d", head, drv->tx_fifo.tail, n);
 		for (i = 0; i < n; ++i) 
 			drv->tx_fifo.buf[head++ & (UART_TX_FIFO_BUF_LEN - 1)] = *cp++;
 		drv->tx_fifo.head = head;

@@ -31,7 +31,7 @@ void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
 
-	DCC_LOG3(LOG_MSG, "self=%d krn=%08x clk=%08x", self, krn, krn->wq_clock);
+	DCC_LOG2(LOG_MSG, "<%2d> itvl=%d", self, ms);
 
 	/* wait for event */
 	__krn_thread_suspend(krn, self);

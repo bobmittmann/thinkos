@@ -187,9 +187,8 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 }
 
 /* resets the idle thread and context */
-struct thinkos_context * thinkos_krn_idle_reset(void)
+struct thinkos_context * __thinkos_krn_idle_reset(struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_context * ctx;
 	uintptr_t stack_top;
 	uintptr_t stack_size;
@@ -232,8 +231,8 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 
 #if DEBUG
 	udelay(0x8000);
-	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
-			 "<IDLE> ctx=%08x top=%08x" VT_POP, 
+	DCC_LOG3(LOG_TRACE, VT_PSH VT_BRI VT_FCY
+			 "<IDLE> id=%d ctx=%08x top=%08x" VT_POP, THINKOS_THREAD_IDLE, 
 			 ctx, stack_top);
 	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
 			 "<IDLE> sl=%08x sp=%08x" VT_POP, 
@@ -245,7 +244,7 @@ struct thinkos_context * thinkos_krn_idle_reset(void)
 }
 
 /* initialize the idle thread */
-void thinkos_krn_idle_init(void)
+void __thinkos_krn_idle_init(struct thinkos_rt * krn)
 {
 	uintptr_t stack_base;
 	uint32_t free;
@@ -262,27 +261,27 @@ void thinkos_krn_idle_init(void)
 #elif (THINKOS_ENABLE_MEMORY_CLEAR)
 	__thinkos_memset32((void *)stack_base, 0, free);
 #endif
- 	thinkos_krn_idle_reset();
-}
 
+ 	__thinkos_krn_idle_reset(krn);
+}
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void __idle_hook_req(unsigned int req) 
+void __idle_hook_req(struct thinkos_rt * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {
-		map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+		map = __ldrex((uint32_t *)&krn->idle_hooks.req_map);
 		map |= (1 << req);
-	} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 
-void __idle_hook_clr(unsigned int req) 
+void __idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {
-		map = __ldrex((uint32_t *)&thinkos_rt.idle_hooks.req_map);
+		map = __ldrex((uint32_t *)&krn->idle_hooks.req_map);
 		map &= ~(1 << req);
-	} while (__strex((uint32_t *)&thinkos_rt.idle_hooks.req_map, map));
+	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 #endif
 

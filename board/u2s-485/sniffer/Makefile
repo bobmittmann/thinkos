@@ -43,7 +43,7 @@ INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os 
+CFLAGS = -O1
 
 MACH = stm32f103x6
 KRN_CODE_SIZE = 12288

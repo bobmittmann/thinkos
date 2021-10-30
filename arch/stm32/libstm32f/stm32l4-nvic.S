@@ -45,7 +45,6 @@ __nvic_vectors:
 	.word	stm32_exti2_isr        /*  8 EXTI Line2 */
 	.word	stm32_exti3_isr        /*  9 EXTI Line3 */
 	.word	stm32_exti4_isr        /* 10 EXTI Line4 */
-
 	.word	stm32_dma1_channel1_isr   /* 11 DMA1 Channel 1 */
 	.word	stm32_dma1_channel2_isr   /* 12 DMA1 Channel 2 */
 	.word	stm32_dma1_channel3_isr   /* 13 DMA1 Channel 3 */

@@ -44,9 +44,9 @@ OTG_HS_CFILES = stm32f-otg_hs.c stm32f-otg_hs_dev.c
 
 
 ifeq ($(STM32), stm32l1)
-SFILES = stm32l-vec.S
+SFILES = stm32l1-nvic.S
 
-CFILES = stm32l-init.c stm32l-flash.c stm32f-gpio.c stm32l-eeprom.c \
+CFILES = stm32l1-init.c stm32l1-flash.c stm32f-gpio.c stm32l1-eeprom.c \
 		 stm32f-dma.c \
 		 $(addprefix usart/,$(USART_CFILES))
 endif

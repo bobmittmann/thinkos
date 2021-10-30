@@ -30,12 +30,10 @@ ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 MKCMD  = python $(TOOLS_DIR)/mkcmd.py
-LZ77 = $(TOOLS_DIR)/lz77/lz77
-LZ_WINDOW_SIZE = 16384
-PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = board.c monitor.c shell.c cmd_tab.c fpga.c ice40hx1k.c 
-
+CFILES = board.c
+#monitor.c 
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
@@ -47,20 +45,7 @@ LIBS = $(SDK_LIBS) $(ARCH_LIBS)
 
 INCPATH = ../include
 
-#
-# select the hardware revision
-# 
-ifdef HWREV
-  ifeq ($(findstring $(HWREV), 1 2),)
-    $(error invalid HWREV number, must be 1 or 2) 
-  endif
-  __hwrev=$(HWREV)
-else
-  # assign a default hardware if not specified in the command line
-  __hwrev=1
-endif
-
-CDEFS = CONFIG_H LZ_WINDOW_SIZE=$(LZ_WINDOW_SIZE) HWREV=$(__hwrev)
+CDEFS = CONFIG_H 
 
 CFLAGS = -Os
 
@@ -68,17 +53,4 @@ MACH = stm32l151xb
 KRN_CODE_SIZE = 8192
 KRN_DATA_SIZE = 2048 
 include $(ARCH_DIR)/mk/stm32-krn.mk
-
-CMD_TAB_YAML = $(SRCDIR)/cmd_tab.yaml
-CMD_TAB_C = $(SRCDIR)/cmd_tab.c
-CMD_TAB_H = $(SRCDIR)/cmd_tab.h
-
-$(CMD_TAB_H): $(CMD_TAB_C)
-
-$(CMD_TAB_C): $(CMD_TAB_YAML)
-	$(MKCMD) -l -e "struct btl_shell_env" -p btl -o $@ $<
-
-cmdtab: $(CMD_TAB_C)
-
-.PHONY = cmdtab
 

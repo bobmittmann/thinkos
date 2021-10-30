@@ -454,11 +454,6 @@ _fault:
 
 	.extern     cm3_pendsv_isr
 
-#if (THINKOS_ENABLE_CLOCK) || (THINKOS_ENABLE_MONITOR)
 	.extern     cm3_systick_isr
-#else
-	.weak       cm3_systick_isr
-	.thumb_set  cm3_systick_isr,_fault
-#endif
 
 

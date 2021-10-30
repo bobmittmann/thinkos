@@ -374,7 +374,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* schedule the IDLE hook ... */
-	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
+	__idle_hook_req(krn, IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
 
 	/* (2) Save the context pointer. In case an interrupt wakes up

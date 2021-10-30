@@ -26,7 +26,7 @@ OPTIONS	= $(DBGOPTS)
 
 SFLAGS	= -Wall
 CFLAGS	= -Wall -Ofast
-LDFLAGS	=
+LDFLAGS	= -lm
 
 CC	= gcc
 LD	= gcc
@@ -47,4 +47,5 @@ $(PROJECT): Makefile $(OFILES)
 
 %.o : %.c Makefile
 	$(CC) $(OPTIONS) $(CFLAGS) $(addprefix -I,$(INCPATH)) -o $@ -c $<
+
 

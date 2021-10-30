@@ -1,5 +1,5 @@
 /* 
- * File:	stm32f-init.c
+ * File:	stm32l1-init.c
  * Author:  Robinson Mittmann (bobmittmann@gmail.com)
  * Target:  jtagtool3
  * Comment: 
@@ -20,13 +20,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/stm32f.h>
-#include <sys/halt.h>
-
 #ifdef CONFIG_H
 #include "config.h"
 #endif
 
+#include <sys/stm32f.h>
+
+/* -------------------------------------------------------------------- 
+   Default options 
+*/
 #ifndef STM32_ENABLE_HSI
 #define STM32_ENABLE_HSI 1
 #endif
@@ -39,50 +41,87 @@
 #define STM32_ENABLE_PLL 0
 #endif
 
-
 /* Set default values for system clocks */
-#if defined(STM32L1X)
-
-#ifndef HSE_HZ
-  #define HSE_HZ 8000000
+#ifndef STM32_HCLK_HZ 
+#define STM32_HCLK_HZ 80000000
 #endif
 
-#ifndef HSI_HZ
-  #define HSI_HZ 16000000
+#ifndef STM32_HSE_HZ
+#define STM32_HSE_HZ 8000000
 #endif
 
-#ifndef PLL_HZ
-  #define PLL_HZ 32000000
+#ifndef STM32_HSI_HZ
+#define STM32_HSI_HZ 16000000
 #endif
 
-#ifndef HCLK_HZ
+#define STM32_APB1_PRE 1
+#define STM32_APB2_PRE 1
+#define STM32_MCO_DIV 1
+
+/* --------------------------------------------------------------------
+   Precalculated PLL configuartion
+*/
+
+#if (STM32_HCLK_HZ == 16000000) && (STM32_HSE_HZ == 8000000)
+  /* PLLVCO = 259.660800 MHz */
+  #define PLLM         1
+  #define PLLN        23
+  #define PLLR         4 /*     PLLCLK ->  64.915200 MHz */
+  #define PLLQ         5 /* PLL48M1CLK ->  51.932160 MHz */
+  #define PLLPDIV     11 /* PLLSAI2CLK ->  23.605527 MHz */
+
+  /* PLLSAIVCO = 90.316800 MHz */
+  #define PLLSAIN      8
+  #define PLLSAIPDIV   4 /* PLLSAI2CLK ->  22.579200 MHz */
+  #define PLLSAIQ      2 /* PLL48M2CLK ->  45.158400 MHz */
+  #define PLLSAIR      4 /*  PLLADCCLK ->  22.579200 MHz */
+#endif
+
+/* -------------------------------------------------------------------- 
+   The real clock frequencies based on PLL configuration
+*/
+
+#if (STM32_ENABLE_PLL)
+  #define __VCO_HZ (((uint64_t)(STM32_HSE_HZ) * PLLN) / PLLM)
+  #define __HCLK_HZ (__VCO_HZ / PLLR)
+#else
+  #define __HCLK_HZ (STM32_HCLK_HZ)
+#endif
+
+#if STM32_ENABLE_PLLSAI
+  /* Enable the SAI PLL, the SAI PLL is PLLSAI1CLK */
+  #define __VCOSAI_HZ (((uint64_t)STM32_HSE_HZ * PLLSAIN) / PLLM)
+  #define __SAI_HZ (__VCOSAI_HZ / PLLSAIPDIV)
+#else
   #if STM32_ENABLE_PLL
-    #define HCLK_HZ PLL_HZ
-  #elif STM32_ENABLE_HSI
-    #define HCLK_HZ HSI_HZ
-  #elif STM32_ENABLE_HSE
-    #define HCLK_HZ HSE_HZ
+    /* The SAI PLL is disabled, the SAI PLL is PLLSAI2CLK */
+    #define __SAI_HZ (__VCO_HZ / PLLPDIV)
   #else
-	#error "HCLK_HZ undefined!"
+    #define __SAI_HZ STM32_HSI_HZ
   #endif
 #endif
 
+#define __APB1_HZ   (__HCLK_HZ) / (STM32_APB1_PRE)
+#define __APB2_HZ   (__HCLK_HZ) / (STM32_APB2_PRE)
+#define __MCO_HZ 	(__HCLK_HZ) / (STM32_MCO_DIV)
 
-#ifndef STM32_APB1_HZ
-  #if STM32_ENABLE_PLL
-    #define STM32_APB1_HZ (HCLK_HZ / 2)
-  #else 
-    #define STM32_APB1_HZ HCLK_HZ
-  #endif
+/* The timer clock frequencies are automatically defined by hardware. There 
+   are two cases:
+   1. If the APB prescaler equals 1, the timer clock frequencies are 
+   set to the same frequency as that of the APB domain.
+   2. Otherwise, they are set to twice (×2) the frequency of the APB domain. */
+#if (STM32_APB1_PRE == 1)
+  #define __TIM1_HZ  (__APB1_HZ)
+#else
+  #define __TIM1_HZ  ((__APB1_HZ) * 2)
 #endif
 
-#ifndef STM32_APB2_HZ
-  #if STM32_ENABLE_PLL
-    #define STM32_APB2_HZ (HCLK_HZ / 2)
-  #else 
-    #define STM32_APB2_HZ HCLK_HZ
-  #endif
+#if (STM32_APB2_PRE == 1)
+  #define __TIM2_HZ  (__APB2_HZ)
+#else
+  #define __TIM2_HZ  ((__APB2_HZ) * 2)
 #endif
+
 
 #if STM32_APB1_HZ == HCLK_HZ
 #define STM32_TIM1_HZ STM32_APB1_HZ
@@ -95,19 +134,36 @@
 #else
 #define STM32_TIM2_HZ (2 * STM32_APB2_HZ)
 #endif
+/* -------------------------------------------------------------------- 
+   Constants to be used by the libraries 
+*/
 
-/* This constant is used to calibrate the systick timer */
-const uint32_t cm3_systick_load_1ms = ((HCLK_HZ / 8) / 1000) - 1;
-
-/* Hardware initialization */
-const uint32_t stm32f_apb1_hz = STM32_APB1_HZ;
-const uint32_t stm32f_apb2_hz = STM32_APB2_HZ;
-const uint32_t stm32f_tim1_hz = STM32_TIM1_HZ;
-const uint32_t stm32f_tim2_hz = STM32_TIM2_HZ;
-
+const uint32_t stm32f_apb1_hz = __APB1_HZ;
+const uint32_t stm32f_apb2_hz = __APB2_HZ;
+//const uint32_t stm32f_ahb_hz  = __AHB_HZ;
+const uint32_t stm32f_mco_hz  = __MCO_HZ;
+const uint32_t stm32f_tim1_hz = __TIM1_HZ;
+const uint32_t stm32f_tim2_hz = __TIM2_HZ;
+const uint32_t stm32f_sai_hz = __SAI_HZ;
+const uint32_t stm32f_hse_hz = STM32_HSE_HZ;
+const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
+#if STM32_ENABLE_PLL
+const uint32_t stm32f_vco_hz = __VCO_HZ;
 #endif
 
-void _init(void)
+#ifndef THINKAPP
+
+const uint32_t sysclk_hz[] = {
+	[SYSCLK_STM32_APB1] = __APB1_HZ,
+	[SYSCLK_STM32_APB2] = __APB2_HZ,
+	[SYSCLK_STM32_TIM1] = __TIM1_HZ,
+	[SYSCLK_STM32_TIM2] = __TIM2_HZ,
+};
+
+/* This constant is used to calibrate the systick timer */
+const uint32_t cm3_systick_load_1ms = ((__HCLK_HZ / 8) / 1000) - 1;
+
+void __attribute__((section(".init"))) _init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 	struct stm32_pwr * pwr = STM32_PWR;
@@ -131,8 +187,6 @@ void _init(void)
 	for (again = 8192; ; again--) {
 		if (((csr = pwr->csr) & PWR_PVDO) == 0)
 			break;
-		if (again == 0)
-			halt(); /* voltage regulator failed! */
 	}
 
 	/*******************************************************************
@@ -143,8 +197,6 @@ void _init(void)
 	for (again = 8192; ; again--) {
 		if (((csr = pwr->csr) & PWR_VOSF) == 0)
 			break;
-		if (again == 0)
-			halt(); /* voltage regulator failed! */
 	}
 
 #if STM32_ENABLE_HSI
@@ -157,8 +209,6 @@ void _init(void)
 	for (again = 8192; ; again--) {
 		if ((rcc_cr = rcc->cr) & RCC_HSIRDY)
 			break;
-		if (again == 0)
-			halt(); /* internal clock startup failed! */
 	}
 #endif
 
@@ -172,8 +222,6 @@ void _init(void)
 	for (again = 8192; ; again--) {
 		if ((rcc_cr = rcc->cr) & RCC_HSERDY)
 			break;
-		if (again == 0)
-			halt(); /* external clock startup failed! */
 	}
 #endif
 
@@ -211,8 +259,6 @@ void _init(void)
 	for (again = 8192; ; again--) {
 		if ((rcc_cr = rcc->cr) & RCC_PLLRDY)
 			break;
-		if (again == 0)
-			halt(); /* PLL lock failed! */
 	}
 #endif /* STM32_ENABLE_PLL */
 
@@ -225,10 +271,6 @@ void _init(void)
 		acr = flash->acr;
 		if (acr & FLASH_ACC64)
 			break;
-		if (again == 0) {
-			/* PLL lock fail */
-			halt();
-		}
 	}
 	
 #if STM32_ENABLE_PLL
@@ -242,10 +284,6 @@ void _init(void)
 		acr = flash->acr;
 		if (acr & FLASH_LATENCY)
 			break;
-		if (again == 0) {
-			/* FLASH WS configuration failed */
-			halt();
-		}
 	}
 
 #if STM32_ENABLE_PLL
@@ -263,4 +301,6 @@ void _init(void)
 #endif
 
 }
+
+#endif /* THINKAPP */
 

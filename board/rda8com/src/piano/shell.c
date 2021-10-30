@@ -1,19 +1,3 @@
-/* console.c - console shell 
- * ---------
- *
- *   ************************************************************************
- *   **            Company Confidential - For Internal Use Only            **
- *   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
- *   **                                                                    **
- *   **   This information is confidential and the exclusive property of   **
- *   ** Mircom.  It is intended for internal use and only for the purposes **
- *   **   provided,  and may not be disclosed to any third party without   **
- *   **                prior written permission from Mircom.               **
- *   **                                                                    **
- *   **                        Copyright 2017-2018                         **
- *   ************************************************************************
- *
- */
 
 /** 
  * @file console.c

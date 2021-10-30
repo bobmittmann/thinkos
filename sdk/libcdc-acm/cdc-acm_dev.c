@@ -466,10 +466,10 @@ int usb_cdc_read(usb_cdc_class_t * cl, void * buf,
 	int ret;
 	int n;
 
-	DCC_LOG3(LOG_MSG, "ep=%d len=%d msec=%d", dev->out_ep, len, msec);
+	DCC_LOG3(LOG_TRACE, "ep=%d len=%d msec=%d", dev->out_ep, len, msec);
 	
 	if ((n = dev->rx_cnt - dev->rx_pos) > 0) {
-		DCC_LOG(LOG_INFO, "read from intern buffer");
+		DCC_LOG(LOG_TRACE, "read from intern buffer");
 		goto read_from_buffer;
 	};
 
@@ -480,31 +480,31 @@ int usb_cdc_read(usb_cdc_class_t * cl, void * buf,
 		if (len >= CDC_EP_IN_MAX_PKT_SIZE) {
 			if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
 										 buf, len)) > 0) {
-				DCC_LOG1(LOG_INFO, "1. n=%d", n);
+				DCC_LOG1(LOG_TRACE, "1. n=%d", n);
 				return n;
 			} 
 		} else {
 			if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, dev->rx_buf, 
 										 CDC_EP_IN_MAX_PKT_SIZE)) > 0) {
-				DCC_LOG1(LOG_INFO, "2. n=%d", n);
+				DCC_LOG1(LOG_TRACE, "2. n=%d", n);
 				dev->rx_pos = 0;
 				dev->rx_cnt = n;
 				goto read_from_buffer;
 			}
 		}
 
-		DCC_LOG1(LOG_MSG, "3. n=%d", n);
+		DCC_LOG1(LOG_TRACE, "3. n=%d", n);
 
 		if ((ret = thinkos_flag_timedtake(RX_FLAG, msec)) < 0) {
 			if (ret == THINKOS_ETIMEDOUT) {
-				DCC_LOG(LOG_MSG, "timeout!!");
+				DCC_LOG(LOG_TRACE, "timeout!!");
 			}
 			return ret;
 		}
 	}
 
 read_from_buffer:
-	DCC_LOG(LOG_INFO, "reading from buffer");
+	DCC_LOG(LOG_TRACE, "reading from buffer");
 	n = MIN(n, len);
 	__memcpy(buf, &dev->rx_buf[dev->rx_pos], n);
 	dev->rx_pos += n;

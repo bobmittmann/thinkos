@@ -37,10 +37,12 @@ static void __thinkos_time_wakeup(struct thinkos_rt * krn, int th)
 	/* remove from other wait queue, if any */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
+	DCC_LOG1(LOG_MSG, "<%2d> wakeup!", th);
 	/* remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
+
 	__krn_preempt(krn);
 }
 
@@ -258,3 +260,4 @@ bool clock_resume(struct thinkos_rt * krn, unsigned int th,
 	return true;
 }
 #endif
+

@@ -102,8 +102,6 @@ thinkos_krn_sched_core:
 	mrs      r6, CONTROL
 	adds.n   r6, #(CONTROL_SPSEL)
 	add.n    r3, r6
-#else
-	adds.n   r3, r3, #(CONTROL_SPSEL | CONTROL_nPRIV)
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -256,8 +254,8 @@ thinkos_krn_sched_ctx_get:
     mov.n     r3, sp
 #endif
     /* set the control register */
-    movs.n   r2, #0
-    msr      CONTROL, r2
+    movs.n   r4, #0
+    msr      CONTROL, r4
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* restore core context */

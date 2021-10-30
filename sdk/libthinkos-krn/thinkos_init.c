@@ -360,9 +360,6 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	thinkos_krn_exception_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "IDLE init...");
-	thinkos_krn_idle_init();
-
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 	__thinkos_krn_time_init(krn);
 #endif
@@ -382,6 +379,9 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 
 	DCC_LOG(LOG_TRACE, "Interrupts init init...");
 	__thinkos_krn_irq_init(krn);
+
+	DCC_LOG(LOG_TRACE, "IDLE init...");
+	__thinkos_krn_idle_init(krn);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	bool privileged;

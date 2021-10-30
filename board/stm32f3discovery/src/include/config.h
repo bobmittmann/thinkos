@@ -1,24 +1,4 @@
-/* config.h - system configuration
- * --------
- *
- *   ************************************************************************
- *   **            Company Confidential - For Internal Use Only            **
- *   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
- *   **                                                                    **
- *   **   This information is confidential and the exclusive property of   **
- *   ** Mircom.  It is intended for internal use and only for the purposes **
- *   **   provided,  and may not be disclosed to any third party without   **
- *   **                prior written permission from Mircom.               **
- *   **                                                                    **
- *   **                        Copyright 2017-2018                         **
- *   ************************************************************************
- *
- */
-
 /** 
- * @file config.h
- * @author Robinson Mittmann <bmittmann@mircomgroup.com>
- * @brief System wide configuration options.
  * 
  * This file is common to the application as well as the bootloader.
  * It holds configuration options for ThinkOS, Bootloader and other 

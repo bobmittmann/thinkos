@@ -380,11 +380,10 @@ void __attribute__((noreturn)) usb_recv_task(struct vcom * vcom)
 	stats.tx_cnt = 0;
 
 	for (;;) {
-		len = usb_cdc_read(cdc, buf, VCOM_BUF_SIZE, 1000);
-
-		DCC_LOG1(LOG_MSG, "rx len=%d", len);
+		len = usb_cdc_read(cdc, buf, VCOM_BUF_SIZE, 10000);
 
 		if (len > 0) {
+			DCC_LOG1(LOG_TRACE, "USB rx=%d", len);
 			usb_rx_cnt += len;
 			if (vcom->mode == VCOM_MODE_CONVERTER) {
 				led_flash(LED_RED, 50);
@@ -398,6 +397,8 @@ void __attribute__((noreturn)) usb_recv_task(struct vcom * vcom)
 			uint32_t rx_cnt;
 			uint32_t tx_cnt;
 			
+			DCC_LOG(LOG_TRACE, "USB timeout...");
+
 			if (usb_rx_cnt) {
 				DCC_LOG1(LOG_TRACE, "USB rx=%d", usb_rx_cnt);
 				usb_rx_cnt = 0;
@@ -578,16 +579,19 @@ void __attribute__((noreturn)) serial_ctrl_task(struct vcom * vcom)
 	}
 }
 
-uint32_t __attribute__((aligned(8))) led_stack[32];
+uint32_t __attribute__((aligned(8))) led_stack[64];
 uint32_t __attribute__((aligned(8))) serial_ctrl_stack[64];
 uint32_t __attribute__((aligned(8))) serial_recv_stack[192];
 
+
 int __attribute__((noreturn)) main(int argc, char ** argv)
 {
+	struct thinkos_thread_initializer init;
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct usb_cdc_class * cdc;
 	struct serial_dev * serial;
 	struct vcom vcom;
+	int ret;
 	int i;
 
 	DCC_LOG_INIT();
@@ -597,13 +601,16 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 	io_init();
 
 	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init()");
-	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(3) | THINKOS_OPT_ID(3), NULL);
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(4) | THINKOS_OPT_ID(4), NULL);
 
+	DCC_LOG(LOG_TRACE, "3. leds_init()");
 	leds_init();
 
+	DCC_LOG(LOG_TRACE, "4. usb_cdc_init()");
 	cdc = usb_cdc_init(&stm32f_usb_fs_dev, cdc_acm_str, 
 					   cdc_acm_strcnt);
 
+	DCC_LOG(LOG_TRACE, "5. serial2_open()");
 	serial = serial2_open();
 
 	vcom.serial = serial;
@@ -615,22 +622,52 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 	vcom.cfg.stopbits = 1;
 	vcom.cfg_lock = false;
 
+	DCC_LOG(LOG_TRACE, "6. usb_trace_init()");
 	usb_trace_init(cdc);
 
-	thinkos_thread_create(C_TASK(led_task), (void *)NULL,
-						  led_stack, sizeof(led_stack) |
-						  THINKOS_OPT_PRIORITY(1) | THINKOS_OPT_ID(1));
+	DCC_LOG(LOG_TRACE, "7. thinkos_thread_init()");
+	init.stack_base = (uintptr_t)led_stack;
+	init.stack_size = sizeof(led_stack);
+	init.task_entry = (uintptr_t)led_task;
+	init.task_exit = (uintptr_t)NULL;
+	init.task_arg[0] = (uintptr_t)NULL;
+	init.task_arg[1] = 0;
+	init.task_arg[2] = 0;
+	init.task_arg[3] = 0;
+	init.priority = 2;
+	init.paused = 0;
+	init.privileged = 0;
+	init.inf = NULL;
+	if ((ret = thinkos_thread_init(2, &init)) < 0) {
+		DCC_LOG1(LOG_WARNING, "error=%d", ret);
+	}
+	DCC_LOG1(LOG_TRACE, "thread=%d", ret);
 
-	thinkos_thread_create(C_TASK(serial_recv_task), 
-						  (void *)&vcom,
-						  serial_recv_stack, sizeof(serial_recv_stack) |
-						  THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
+	DCC_LOG(LOG_TRACE, "8. thinkos_thread_init()");
+	init.stack_base = (uintptr_t)serial_recv_stack;
+	init.stack_size = sizeof(serial_recv_stack);
+	init.task_entry = (uintptr_t)serial_recv_task;
+	init.task_exit = (uintptr_t)NULL;
+	init.task_arg[0] = (uintptr_t)&vcom;
+	init.priority = 1;
+	if ((ret = thinkos_thread_init(1, &init)) < 0) {
+		DCC_LOG1(LOG_WARNING, "error=%d", ret);
+	}
+	DCC_LOG1(LOG_TRACE, "thread=%d", ret);
 
-	thinkos_thread_create(C_TASK(serial_ctrl_task), 
-						  (void *)&vcom,
-						  serial_ctrl_stack, sizeof(serial_ctrl_stack) |
-						  THINKOS_OPT_PRIORITY(2) | THINKOS_OPT_ID(2));
+	DCC_LOG(LOG_TRACE, "9. thinkos_thread_init()");
+	init.stack_base = (uintptr_t)serial_ctrl_stack;
+	init.stack_size = sizeof(serial_ctrl_stack);
+	init.task_entry = (uintptr_t)serial_ctrl_task;
+	init.task_exit = (uintptr_t)NULL;
+	init.task_arg[0] = (uintptr_t)&vcom;
+	init.priority = 3;
+	if ((ret = thinkos_thread_init(3, &init)) < 0) {
+		DCC_LOG1(LOG_WARNING, "error=%d", ret);
+	}
+	DCC_LOG1(LOG_TRACE, "thread=%d", ret);
 
+	DCC_LOG(LOG_TRACE, "7. usb_vbus()");
 	usb_vbus(true);
 
 	for (i = 0; i < 5; ++i) {
@@ -647,4 +684,6 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 
 void cm3_default_isr(int irq)
 {
+	DCC_LOG(LOG_TRACE, "isr()!");
 }
+

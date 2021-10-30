@@ -691,3 +691,41 @@ extern const struct flash_dev stm32l1x_flash_dev;
 #pragma GCC diagnostic pop
 
 
+void main(int argc, char ** argv)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+//	const struct monitor_comm * comm;
+
+#if DEBUG
+	DCC_LOG_INIT();
+	DCC_LOG_CONNECT();
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FGR);
+	DCC_LOG(LOG_TRACE, "*************************************************");
+	DCC_LOG(LOG_TRACE, "*     RDA8COM ThinkOS Custom Bootloader         *");
+	DCC_LOG(LOG_TRACE, "*************************************************"
+			VT_POP "\n\n");
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 1. thinkos_krn_init()." VT_POP);
+	mdelay(125);
+#endif
+
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
+					 &mem_map);
+	board_init();
+
+//	thinkos_flash_drv_init(0, &flash_desc);
+
+//	comm = usb_comm_init(&stm32f_usb_fs_dev);
+
+//	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
+
+	thinkos_sleep(500);
+
+	btl_flash_app_exec("app");
+}
+

@@ -1,25 +1,4 @@
-/* config.h - system configuration
- * --------
- *
- *   ************************************************************************
- *   **            Company Confidential - For Internal Use Only            **
- *   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
- *   **                                                                    **
- *   **   This information is confidential and the exclusive property of   **
- *   ** Mircom.  It is intended for internal use and only for the purposes **
- *   **   provided,  and may not be disclosed to any third party without   **
- *   **                prior written permission from Mircom.               **
- *   **                                                                    **
- *   **                        Copyright 2017-2018                         **
- *   ************************************************************************
- *
- */
-
 /** 
- * @file config.h
- * @author Robinson Mittmann <bmittmann@mircomgroup.com>
- * @brief System wide configuration options.
- * 
  * This file is common to the application as well as the bootloader.
  * It holds configuration options for ThinkOS, Bootloader and other 
  * system wide parameters.
@@ -172,8 +151,8 @@
 /* -------------------------------------------------------------------------
    RCC 
    -------------------------------------------------------------------------- */
-#define STM32_HCLK_HZ           72000000 /* Target HBA bus frequency */
-#define STM32_HSE_HZ            12000000 /* External oscillator frequency */
+#define STM32_HCLK_HZ           16000000 /* Target HBA bus frequency */
+#define STM32_HSE_HZ            8000000 /* External oscillator frequency */
 #define STM32_ENABLE_HSE        1 /* Use external oscillator */
 #define STM32_ENABLE_PLL        1 /* Enable PLL */
 #define STM32_ENABLE_HSI        0 /* Don't use internal oscillator */
