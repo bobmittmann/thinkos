@@ -49,6 +49,35 @@
 #define CDC_EP_INT_MAX_PKT_SIZE 64
 #endif
 
+#ifndef USB_FEATURE_DEVICE_ENABLED
+#define USB_FEATURE_DEVICE_ENABLED 0
+#endif
+
+#ifndef USB_STATUS_DEVICE_ENABLED
+#define USB_STATUS_DEVICE_ENABLED 0
+#endif
+
+#ifndef USB_FEATURE_INTERFACE_ENABLED
+#define USB_FEATURE_INTERFACE_ENABLED 0
+#endif
+
+#ifndef USB_STATUS_INTERFACE_ENABLED
+#define USB_STATUS_INTERFACE_ENABLED 0
+#endif
+
+#ifndef USB_FEATURE_ENDPOINT_ENABLED
+#define USB_FEATURE_ENDPOINT_ENABLED 0
+#endif
+
+#ifndef USB_STATUS_ENDPOINT_ENABLED
+#define USB_STATUS_ENDPOINT_ENABLED 0
+#endif
+
+
+#ifndef USB_SYNCH_FRAME_ENABLED
+#define USB_SYNCH_FRAME_ENABLED 0
+#endif
+
 struct cdc_acm_descriptor_config {
 	struct usb_descriptor_configuration cfg;
 	struct usb_descriptor_interface comm_if;

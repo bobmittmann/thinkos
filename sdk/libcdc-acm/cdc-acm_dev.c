@@ -46,6 +46,7 @@ struct usb_cdc_acm {
 	volatile uint8_t status; /* modem status lines */
 	volatile uint8_t control; /* modem control lines */
 	volatile uint8_t flags;
+	volatile uint8_t brk;
 	struct cdc_line_coding lc;
 };
 
@@ -326,6 +327,17 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
 		break;
 
+	case SEND_BREAK:
+		dev->acm.brk = value;
+		/* there might have threads waiting for
+		   modem control line changes (DTR, RTS)
+		   wake them up */
+		thinkos_flag_give_i(CTL_FLAG);
+
+		DCC_LOG1(LOG_TRACE, "CDC Send Break value=%d", value);
+		break;
+
+
 	default:
 		DCC_LOG5(LOG_INFO, "CDC t=%x r=%x v=%x i=%d l=%d",
 				req->type, req->request, value, index, len);
@@ -583,18 +595,19 @@ int usb_cdc_state_get(usb_cdc_class_t * cl, usb_cdc_state_t * state)
 
 	state->cfg.flowctrl = SERIAL_FLOWCTRL_NONE;
 
-	state->ctrl.dtr = (dev->acm.control & CDC_DTE_PRESENT);
-	state->ctrl.rts = (dev->acm.control & CDC_ACTIVATE_CARRIER);
+	state->ctrl.dtr = (dev->acm.control & CDC_DTE_PRESENT) ? 1 : 0;
+	state->ctrl.rts = (dev->acm.control & CDC_ACTIVATE_CARRIER) ? 1 : 0;
+	state->ctrl.brk = (dev->acm.brk) ? 1 : 0;
 
-	state->stat.dsr = (dev->acm.status & CDC_SERIAL_STATE_TX_CARRIER);
-	state->stat.ri = (dev->acm.status & CDC_SERIAL_STATE_RING);
-	state->stat.dcd = (dev->acm.status & CDC_SERIAL_STATE_RX_CARRIER);
+	state->stat.dsr = (dev->acm.status & CDC_SERIAL_STATE_TX_CARRIER) ? 1 : 0;
+	state->stat.ri = (dev->acm.status & CDC_SERIAL_STATE_RING) ? 1 : 0;
+	state->stat.dcd = (dev->acm.status & CDC_SERIAL_STATE_RX_CARRIER) ? 1 : 0;
 	state->stat.cts = 0;
-	state->stat.brk = (dev->acm.status & CDC_SERIAL_STATE_BREAK);
+	state->stat.brk = (dev->acm.status & CDC_SERIAL_STATE_BREAK) ? 1 : 0;
 
-	state->err.ovr = (dev->acm.status & CDC_SERIAL_STATE_OVERRUN);
-	state->err.par = (dev->acm.status & CDC_SERIAL_STATE_PARITY);
-	state->err.frm = (dev->acm.status & CDC_SERIAL_STATE_FRAMING);
+	state->err.ovr = (dev->acm.status & CDC_SERIAL_STATE_OVERRUN) ? 1 : 0;
+	state->err.par = (dev->acm.status & CDC_SERIAL_STATE_PARITY) ? 1 : 0;
+	state->err.frm = (dev->acm.status & CDC_SERIAL_STATE_FRAMING) ? 1 : 0;
 
 	state->flags = dev->acm.flags;
 
