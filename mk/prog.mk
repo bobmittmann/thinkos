@@ -414,7 +414,8 @@ endif
 ifeq ($(HOST),Cygwin)
 	$(Q)$(OBJDUMP) -t $(PROG_ELF_WIN) | sort > $@
 else
-	$(Q)$(OBJDUMP) -t $< | sort > $@
+#	$(Q)$(OBJDUMP) -t $< | sort > $@
+	$(Q)$(READELF) -s -W $< | sort -n -k 2,2 > $@
 endif
 
 %.nm: %.elf
@@ -457,6 +458,7 @@ ifeq ($(HOST),Cygwin)
 	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
 else
 	$(Q)$(OBJCOPY) -j .vect -j .init -j .text -j .ARM.extab -j .ARM.exidx -j .data --output-target binary $< $@
+	$(Q)$(ECHO) -n "Binary file size: " ;wc -c $@ | cut -d " " -f 1
 endif
 
 %.srec: %.elf

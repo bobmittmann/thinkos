@@ -266,7 +266,7 @@ void __thinkos_krn_idle_init(struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void __idle_hook_req(struct thinkos_rt * krn, unsigned int req) 
+void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {
@@ -275,7 +275,7 @@ void __idle_hook_req(struct thinkos_rt * krn, unsigned int req)
 	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 
-void __idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
+void _krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {

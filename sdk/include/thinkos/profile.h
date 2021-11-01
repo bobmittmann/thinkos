@@ -396,7 +396,7 @@
    Requires the kernel services (KRNSVC) to be enabled.
    */
 #ifndef THINKOS_ENABLE_MONITOR
-#define THINKOS_ENABLE_MONITOR          0
+#define THINKOS_ENABLE_MONITOR               0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_THREADS: Monitors the creation and termination of 
@@ -406,7 +406,7 @@
    Requires the kernel monitor to be enabled.
  */
 #ifndef THINKOS_ENABLE_MONITOR_THREADS 
-#define THINKOS_ENABLE_MONITOR_THREADS  0
+#define THINKOS_ENABLE_MONITOR_THREADS       0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_CLOCK: Enable the kernel monitor clock.
@@ -419,13 +419,13 @@
    Requires the clock module to be enabled.
    */
 #ifndef THINKOS_ENABLE_MONITOR_CLOCK
-#define THINKOS_ENABLE_MONITOR_CLOCK     0
+#define THINKOS_ENABLE_MONITOR_CLOCK        0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_SYSCALL: Enable user syscall to install
    a monitor. */
 #ifndef THINKOS_ENABLE_MONITOR_SYSCALL
-#define THINKOS_ENABLE_MONITOR_SYSCALL  0
+#define THINKOS_ENABLE_MONITOR_SYSCALL      0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler. */
@@ -437,7 +437,7 @@
    All other DEBUG features depend on this flag
    */
 #ifndef THINKOS_ENABLE_DEBUG_BASE
-#define THINKOS_ENABLE_DEBUG_BASE                0
+#define THINKOS_ENABLE_DEBUG_BASE           0
 #endif
 
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.

@@ -1262,6 +1262,8 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 			return;
 		}
 
+		 (void)pktbuf;
+//#ifdef STM32_IRQ_USB_FS
 		if (epr & USB_CTR_TX) {
 			struct stm32f_usb_tx_pktbuf * tx_pktbuf;
 #if (ENABLE_IRQ_MASK)
@@ -1301,12 +1303,6 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 			case EP_IN_DATA: 
 				/* send the next data chunk */
 				if (epr & USB_EP_DBL_BUF) {
-//					if (len == 0) {
-//						DCC_LOG2(LOG_INFO, VT_PSH VT_FMG 
-//								 "[%d] ZLP [EP_IN_DATA_LAST]"
-//								 VT_POP, ep_id, len);
-//						ep->state = EP_IN_DATA_LAST;
-//						__ep_zlp_send(usb, ep_id);
 					DCC_LOG4(LOG_MSG, VT_PSH VT_FGR 
 							 "[%d] len=%d TX DblBuf DTOG=%d SW_BUF=%d " 
 							 VT_POP, ep_id, len,
@@ -1391,6 +1387,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				ep->on_out(drv->cl, ep_id, len);
 			}
 		}
+//#endif /* STM32_IRQ_USB_FS */
 	}
 
 #if (STM32_USB_FS_SUSPEND) 

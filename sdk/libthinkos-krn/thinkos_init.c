@@ -219,7 +219,7 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
 	thinkos_krn_udelay_calibrate();
 #endif
-//	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	__thinkos_krn_core_init(krn);
 

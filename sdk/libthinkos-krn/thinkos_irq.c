@@ -26,18 +26,10 @@
 #define IRQ_DEBUG 0
 #endif
 
+
 void thinkos_krn_irq_on(void) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	DCC_LOG(LOG_TRACE, "enabling interrupts...");
-
 	__krn_irq_on();
-
-	__kdump(krn);
-
-//	thinkos_yield();
-	thinkos_sleep(1);
 }
 
 /* disable interrupts */

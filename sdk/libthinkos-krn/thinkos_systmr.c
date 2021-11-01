@@ -224,7 +224,6 @@ void thinkos_krn_udelay_calibrate(void)
 	uint32_t rvr;
 	uint32_t csr;
 
-	cm3_cpsid_i();
 	rvr = systick->rvr;
 	csr = systick->csr;
 
@@ -236,8 +235,6 @@ void thinkos_krn_udelay_calibrate(void)
 
 	systick->rvr = rvr;
 	systick->csr = csr;
-
-	cm3_cpsie_i();
 }
 #endif
 
@@ -260,4 +257,5 @@ bool clock_resume(struct thinkos_rt * krn, unsigned int th,
 	return true;
 }
 #endif
+
 

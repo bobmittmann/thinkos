@@ -66,7 +66,7 @@ struct thinkos_comm_drv_op {
 };
 
 struct thinkos_comm_krn_op {
-	int (*init)(const struct thinkos_comm * comm, int tx_wq, int rx_wq);
+	int (*init)(const struct thinkos_comm * comm, void * parm, int tx_wq, int rx_wq);
 	void (*reset)(const struct thinkos_comm * comm, int priority);
 	int (*done)(const struct thinkos_comm * comm);
 };
@@ -90,9 +90,8 @@ int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c);
 
 int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq);
 
-int thinkos_krn_comm_init(struct thinkos_rt * krn,
-						  const struct thinkos_comm * comm, 
-						  unsigned int idx);
+int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int idx,
+						  const struct thinkos_comm * comm, void * parm);
 
 #if 0
 static inline int krn_comm_send(const struct thinkos_comm_dev * comm, 

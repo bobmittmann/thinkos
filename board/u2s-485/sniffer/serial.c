@@ -23,6 +23,9 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
 #include "board.h"
 
 #include <stdio.h>
@@ -30,9 +33,6 @@
 #include <sys/serial.h>
 #include <sys/param.h>
 #include <sys/delay.h>
-
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
 
 #include <sys/dcclog.h>
 

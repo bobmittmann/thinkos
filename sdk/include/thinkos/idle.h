@@ -71,9 +71,9 @@ void __thinkos_krn_idle_init(struct thinkos_rt * krn);
 
 struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn);
 
-void __idle_hook_req(unsigned int req);
+void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req); 
 
-void __idle_hook_clr(unsigned int req);
+void __krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req);
 
 struct thinkos_context * __thinkos_idle_ctx(void);
 

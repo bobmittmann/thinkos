@@ -41,14 +41,14 @@ int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 
 int thinkos_krn_thread_init(struct thinkos_rt * krn,
 							unsigned int thread_no,
-							struct thinkos_thread_initializer * init)
+							const struct thinkos_thread_initializer * init)
 {
 	const struct thinkos_thread_inf * inf = init->inf;
 	uintptr_t stack_base = init->stack_base;
 	uintptr_t stack_size = init->stack_size;
 	uintptr_t task_entry = init->task_entry;
 	uintptr_t task_exit = init->task_exit;
-	uint32_t * task_arg = init->task_arg;
+	uint32_t * task_arg = (uint32_t *)init->task_arg;
 	int priority = init->priority;
 	bool paused = init->paused;
 	bool privileged = init->privileged;

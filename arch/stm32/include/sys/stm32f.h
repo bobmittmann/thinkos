@@ -114,6 +114,8 @@ extern const usb_dev_t stm32f_otg_hs_dev;
  *---------------------------------------------------------------------*/
 #include <sys/flash-dev.h>
 extern const struct flash_dev stm32l4x_flash_dev;
+extern const struct flash_dev stm32l1x_flash_dev;
+extern const struct flash_dev stm32f1x_flash_dev;
 
 
 /*---------------------------------------------------------------------

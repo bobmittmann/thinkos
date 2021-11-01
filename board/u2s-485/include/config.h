@@ -27,7 +27,10 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define THINKOS_EXCEPT_STACK_SIZE        320
+/* -------------------------------------------------------------------------
+   ThinkOS configuration
+   -------------------------------------------------------------------------- */
+
 
 #define THINKOS_IRQ_MAX                  0
 
@@ -39,6 +42,7 @@
 #define THINKOS_ENABLE_TIMED_CALLS       1
 
 #define THINKOS_ENABLE_IDLE_WFI          1
+#define THINKOS_ENABLE_IDLE_HOOKS        0
 
 #define THINKOS_ENABLE_JOIN              0
 #define THINKOS_ENABLE_PAUSE             0
@@ -98,6 +102,7 @@
 #define THINKOS_ENABLE_SCHED_ERROR       0
 
 #define THINKOS_ENABLE_I_CALLS           1
+#define THINKOS_EXCEPT_STACK_SIZE        320
 
 /* -------------------------------------------------------------------------
  * USB device and CDC-ACM 

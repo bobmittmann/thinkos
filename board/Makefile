@@ -36,7 +36,8 @@ sanity-all: $(BOARDS:=-sanity-all)
 sanity-clean: $(BOARDS:=-sanity-clean)
 
 %-boot-all: 
-	$(MAKE) -C $(@:%-boot-all=%)/src/boot O=$(OUTDIR)/$(@:%-boot-all=%)/boot all
+	@$(MAKE) -C $(@:%-boot-all=%)/src/boot O=$(OUTDIR)/$(@:%-boot-all=%)/boot all
+	@echo "------------------------------"
 
 %-boot-clean:
 	$(MAKE) -C $(@:%-boot-clean=%)/src/boot O=$(OUTDIR)/$(@:%-boot-clean=%)/boot clean

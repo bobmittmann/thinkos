@@ -25,6 +25,9 @@
 
 #include "board.h"
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
 #include <string.h>
 #include <stdint.h>
 #include <sys/serial.h>

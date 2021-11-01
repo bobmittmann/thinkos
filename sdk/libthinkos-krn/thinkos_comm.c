@@ -380,8 +380,9 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 int thinkos_krn_comm_init(struct thinkos_rt * krn,
+						  unsigned int idx,
 						  const struct thinkos_comm * comm, 
-						  unsigned int idx)
+						  void * parm)
 {
 	int tx_wq;
 	int rx_wq;
@@ -390,7 +391,7 @@ int thinkos_krn_comm_init(struct thinkos_rt * krn,
 	rx_wq = THINKOS_COMM_RX_FIRST + idx;
 
 	krn->comm[idx] = comm;
-	comm->krn_op->init(comm, tx_wq, rx_wq);
+	comm->krn_op->init(comm, parm, tx_wq, rx_wq);
 
 	return 0;
 }

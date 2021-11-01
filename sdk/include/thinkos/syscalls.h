@@ -276,7 +276,7 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 
 static inline int 
 thinkos_thread_init(unsigned int thread, 
-                    struct thinkos_thread_initializer * ini) {
+                    const struct thinkos_thread_initializer * ini) {
 
 	register uint32_t ret asm("r0");
 	register void * ptr asm("r1") = (void *)ini;

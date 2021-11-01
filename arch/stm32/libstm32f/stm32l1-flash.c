@@ -34,7 +34,6 @@
 #define FLASH_ERR (FLASH_RDERR | FLASH_OPTVERRUSR | FLASH_OPTVERR | \
 				   FLASH_SIZERR | FLASH_PGAERR | FLASH_WRPERR)
 
-
 #if defined(STM32L1X)
 
 int stm32l1x_flash_unlock(struct stm32_flash * flash, off_t offs, size_t len)
