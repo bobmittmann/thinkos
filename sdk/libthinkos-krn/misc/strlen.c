@@ -39,3 +39,6 @@ unsigned int __thinkos_strlen(const char * __s, unsigned int __max)
 	return n;
 }
 
+unsigned int strlen(const char *, unsigned int)
+	__attribute__ ((weak, alias ("__thinkos_strlen")));
+

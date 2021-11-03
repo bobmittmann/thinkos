@@ -34,8 +34,7 @@ MKCMDTAB = python $(TOOLS_DIR)/mkcmd.py
 PROG = piano
 
 CFILES = ../common/spidrv.c piano.c dac.c keyboard.c  keyboard-cfgs.c \
-		 addsynth-voice.c exp_envelope.c \
-		 addsynth-instr.c \
+		 addsynth-voice.c exp_envelope.c addsynth-instr.c \
 		 addsynth-piano.c addsynth-xilophone.c \
 		 cmdtab.c shell.c
 
@@ -52,18 +51,15 @@ INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
+CFLAGS = -Og
 #LIBPATH = $(LIBMAD_DIR)
 
-CFLAGS = -Og
+APP_INSTALLDIR = /c/tmp/release/rda8com
+default: app-install
 
 MACH := stm32l433xc
 LDCODE := 0x0800a000
 LDDATA := 0x20001000
-
-APP_INSTALLDIR = /c/tmp/release/rda8com
-
-default: app-install
-
 include $(ARCH_DIR)/mk/stm32-app.mk
 
 CMDTAB_YAML = $(SRCDIR)/cmdtab.yaml

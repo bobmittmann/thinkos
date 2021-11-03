@@ -218,7 +218,7 @@ extern const struct thinkos_comm usb_cdc_comm_instance;
 void main(int argc, char ** argv)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
-//	const struct monitor_comm * comm;
+	const struct monitor_comm * comm;
 
 	DCC_LOG_INIT();
 
@@ -236,13 +236,13 @@ void main(int argc, char ** argv)
 
 	board_reset();
 
-//	comm = usb_comm_init(&stm32f_usb_fs_dev);
+	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
-	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
-						  (void *)&stm32f_usb_fs_dev);
+//	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
+//						  (void *)&stm32f_usb_fs_dev);
 
 	/* starts/restarts monitor with autoboot enabled */
-//	thinkos_krn_monitor_init(comm, monitor_task, NULL);
+	thinkos_krn_monitor_init(comm, monitor_task, NULL);
 
 //	thinkos_thread_init(1, &app_thread_init);
 //
