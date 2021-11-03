@@ -382,7 +382,7 @@ void main(int argc, char ** argv)
 					 &mem_map);
 	board_init();
 
-	thinkos_flash_drv_init(0, &board_flash_desc);
+	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
 
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 

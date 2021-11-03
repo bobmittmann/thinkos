@@ -269,10 +269,11 @@ void board_on_softreset(void)
 
 int board_init(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 //	board_on_softreset();
 
 #if (THINKOS_FLASH_MEM_MAX > 0)
-	thinkos_flash_drv_init(0, &board_flash_desc);
+	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
 #endif
 
 	stm32_gpio_set(IO_LED3);

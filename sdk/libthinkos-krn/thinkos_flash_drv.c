@@ -192,10 +192,9 @@ void __thinkos_krn_flash_drv_reset(struct thinkos_rt * krn)
 }
 #endif
 
-int thinkos_flash_drv_init(unsigned int idx, 
-						   const struct thinkos_flash_desc * desc)
+int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx, 
+							   const struct thinkos_flash_desc * desc)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_flash_drv * drv;
 
 #if THINKOS_ENABLE_ARG_CHECK
