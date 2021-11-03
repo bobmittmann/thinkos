@@ -52,7 +52,10 @@ enum thinkos_comm_ctrl {
 enum thinkos_comm_ctrl {
 	COMM_TX_FIFO = 0,
 	COMM_TX_PEND = 1,
-	COMM_RX_WAIT = 2
+	COMM_RX_WAIT = 2,
+	COMM_TX_WAIT = 3,
+	COMM_RX_SETUP = 4,
+	COMM_TX_SETUP = 5
 };
 
 struct thinkos_comm;
@@ -66,9 +69,26 @@ struct thinkos_comm_drv_op {
 };
 
 struct thinkos_comm_krn_op {
-	int (*init)(const struct thinkos_comm * comm, void * parm, int tx_wq, int rx_wq);
+	int (*init)(const struct thinkos_comm * comm, void * parm, unsigned int idx);
 	void (*reset)(const struct thinkos_comm * comm, int priority);
 	int (*done)(const struct thinkos_comm * comm);
+};
+
+struct comm_rx_req {
+	volatile uint32_t cnt;
+	uint8_t * ptr;
+	uint32_t len;
+	uint32_t tmo;
+};
+
+struct comm_rx_wait_req {
+	volatile uint32_t cnt;
+	uint32_t head;
+};
+
+struct comm_tx_wait_req {
+	volatile uint32_t cnt;
+	uint32_t tail;
 };
 
 struct thinkos_comm {
@@ -81,6 +101,23 @@ struct thinkos_comm {
 	const struct thinkos_comm_krn_op * krn_op;
 };
 
+struct thinkos_comm_obj {
+	const struct thinkos_comm * comm;
+	void * parm;
+	uint16_t tx_head;
+	uint16_t tx_tail;
+	uint16_t tx_size;
+	uint8_t * tx_buf;
+
+	uint16_t rx_head;
+	uint16_t rx_tail;
+	uint16_t rx_size;
+	uint8_t * rx_buf;
+
+	uint8_t tx_wq;
+	uint8_t rx_wq;
+	uint8_t res[2];
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,8 +127,15 @@ int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c);
 
 int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq);
 
-int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int idx,
+
+int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int oid, 
 						  const struct thinkos_comm * comm, void * parm);
+
+struct comm_rx_req * krn_comm_rx_req_get(struct thinkos_rt * krn, unsigned int oid);
+
+void krn_comm_rx_wakeup(struct thinkos_rt * krn, unsigned int oid);
+
+void krn_comm_tx_wakeup(struct thinkos_rt * krn, unsigned int oid);
 
 #if 0
 static inline int krn_comm_send(const struct thinkos_comm_dev * comm, 

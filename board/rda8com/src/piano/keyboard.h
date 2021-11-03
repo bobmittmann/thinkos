@@ -55,8 +55,8 @@ struct keyboard_cfg {
 	} keymap[];
 };
 
-const struct keyboard_cfg keyboard_xilophone_cfg;
-const struct keyboard_cfg keyboard_piano_cfg;
+extern const struct keyboard_cfg keyboard_xilophone_cfg;
+extern const struct keyboard_cfg keyboard_piano_cfg;
 
 #ifdef __cplusplus
 extern "C" {

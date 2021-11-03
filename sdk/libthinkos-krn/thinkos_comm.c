@@ -191,9 +191,9 @@ void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #endif
 #endif
 
-	comm = krn->comm[idx];
+	comm = krn->comm_obj[idx].comm;
 
-	DCC_LOG2(LOG_TRACE, "<%2d> comm %d", self, wq);
+	DCC_LOG2(LOG_INFO, "<%2d> comm %d", self, wq);
 
 	req->cnt = 0;
 	/* wait for event ... */
@@ -208,16 +208,79 @@ void thinkos_comm_timedsend_svc(int32_t arg[], int self,
 {
 }
 
-struct comm_rx_req {
-	volatile uint32_t cnt;
-	uint8_t * ptr;
-	uint32_t len;
-	uint32_t tmo;
-};
+void krn_comm_rx_wakeup(struct thinkos_rt * krn, unsigned int oid)
+{
+	unsigned int rx_wq;
+	unsigned int idx;
+	int th;
+
+	idx = oid - THINKOS_COMM_TX_BASE;
+	rx_wq = idx + THINKOS_COMM_RX_BASE;
+
+	DCC_LOG3(LOG_MSG, "oid=%d idx=%d wq=%d", oid, idx, rx_wq);
+
+	th = __krn_wq_head(krn, rx_wq);
+	if (th != THINKOS_THREAD_NULL) {
+		struct thinkos_comm_obj * obj;
+		struct comm_rx_wait_req * req;
+		uint16_t head;
+		unsigned int cnt;
+
+		obj = &krn->comm_obj[idx];
+		req = (struct comm_rx_wait_req *)__thread_frame_get(krn, th);
+		head = req->head;
+
+		cnt = obj->rx_head - head; 
+		req->cnt = cnt;
+
+		DCC_LOG2(LOG_MSG, "<%2d> cnt=%d", th, cnt);
+
+		/* wakeup from the wait queue */
+		__krn_wq_ready_thread_ins(krn, th);
+		__krn_wq_remove(krn, rx_wq, th);
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn);
+	}
+}
+
+void krn_comm_tx_wakeup(struct thinkos_rt * krn, unsigned int oid)
+{
+	unsigned int tx_wq;
+	unsigned int idx;
+	int th;
+
+	idx = oid - THINKOS_COMM_TX_BASE;
+	tx_wq = idx + THINKOS_COMM_TX_BASE;
+
+	th = __krn_wq_head(krn, tx_wq);
+	if (th != THINKOS_THREAD_NULL) {
+		struct thinkos_comm_obj * obj;
+		struct comm_tx_wait_req * req;
+		uint16_t tail;
+		int cnt;
+
+		obj = &krn->comm_obj[idx];
+		req = (struct comm_tx_wait_req *)__thread_frame_get(krn, th);
+		tail = req->tail & 0xffff;
+		cnt = (int16_t)(obj->tx_tail - tail); 
+		req->cnt = cnt;
+
+		DCC_LOG2(LOG_TRACE, "<%2d> cnt=%d", th, cnt);
+
+		/* wakeup from the wait queue */
+		__krn_wq_ready_thread_ins(krn, th);
+		__krn_wq_remove(krn, tx_wq, th);
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn);
+	} else {
+		DCC_LOG3(LOG_MSG, "oid=%d idx=%d wq=%d", oid, idx, tx_wq);
+	}
+}
+
 
 int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
 {
-	int ret = -1;
+	int ret = 0;
 	int th;
 
 	th = __krn_wq_head(krn, rx_wq);
@@ -274,7 +337,7 @@ void thinkos_comm_timedrecv_svc(int32_t arg[], int self,
 	}
 #endif
 
-	comm = krn->comm[idx];
+	comm = krn->comm_obj[idx].comm;
 
 	arg[4] = wq;
 	req->cnt = 0;
@@ -311,7 +374,7 @@ void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-	comm = krn->comm[idx];
+	comm = krn->comm_obj[idx].comm;
 
 	req->cnt = 0;
 	/* wait for event ... */
@@ -329,9 +392,8 @@ int thinkos_comm_drain(struct thinkos_comm * comm, unsigned int wq,
 
 struct comm_ctl_req {
 	struct {
-		uint8_t idx;
+		uint16_t parm;
 		uint8_t res1;
-		uint8_t res2;
 		uint8_t oper;
 	};
 };
@@ -339,44 +401,163 @@ struct comm_ctl_req {
 void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	const struct thinkos_comm  * comm;
+	struct thinkos_comm_obj * obj;
 	struct comm_ctl_req * req;
 	unsigned int oid;
 	unsigned int idx;
 	unsigned int op;
+	uint32_t pri;
 	
 	req = (struct comm_ctl_req *)arg;
 	op = req->oper;
 	
-	DCC_LOG3(LOG_TRACE, "<%d> oper=%d devno=%d", self, op, req->idx);
+	DCC_LOG3(LOG_MSG, "<%d> oper=%d parm=%d", self, op, req->parm);
 
-	if (op == THINKOS_COMM_OPEN) {
-		idx = req->idx;
-		if (idx > THINKOS_COMM_MAX) {
-			__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
-			arg[0] = THINKOS_EINVAL;
-			return;
-		}
+	switch (op) {
+	case THINKOS_COMM_OPEN: {
+			idx = req->parm;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
 
-		comm = krn->comm[idx];
-		(void)comm;
+			comm = krn->comm_obj[idx].comm;
+			(void)comm;
 
-		oid = idx + THINKOS_COMM_TX_BASE;
-		(void)oid;
+			oid = idx + THINKOS_COMM_TX_BASE;
+			(void)oid;
 #if (THINKOS_ENABLE_SANITY_CHECK)
-		if (comm == NULL) {
-			__THINKOS_ERROR(self, THINKOS_ERR_KRN_FAULT);
-			arg[0] = THINKOS_EINVAL;
-			return;
-		}
+			if (comm == NULL) {
+				__THINKOS_ERROR(self, THINKOS_ERR_KRN_FAULT);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
 #endif
 
-		comm->drv_op->open(comm->drv);
+			comm->drv_op->open(comm->drv);
 
-		arg[0] = oid;
-		return;
+			arg[0] = oid;
+		}
+		break;
+
+	case THINKOS_COMM_RX_SETUP: {
+			oid = req->parm;
+			idx = THINKOS_COMM_RX_FIRST - oid;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+			obj = &krn->comm_obj[idx];
+			comm = obj->comm;
+			(void)comm;
+
+			obj->rx_head = 0;
+			obj->rx_tail = 0;
+			obj->rx_buf = (uint8_t *)arg[1];
+			obj->rx_size = arg[2];
+
+			comm->drv_op->signal(comm->drv, COMM_RX_SETUP);
+		}
+		break;
+
+	case THINKOS_COMM_RX_WAIT: {
+			oid = req->parm;
+			idx = THINKOS_COMM_RX_FIRST - oid;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+			obj = &krn->comm_obj[idx];
+			obj->rx_tail = arg[1];
+			comm = obj->comm;
+			(void)comm;
+
+			/* wait for event ... */
+			__krn_thread_wait(krn, self, oid);
+
+			comm->drv_op->signal(comm->drv, COMM_RX_WAIT);
+		}
+		break;
+
+	case THINKOS_COMM_TX_SETUP: {
+			oid = req->parm;
+			idx = THINKOS_COMM_TX_FIRST - oid;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+			obj = &krn->comm_obj[idx];
+			comm = obj->comm;
+			(void)comm;
+
+			obj->tx_head = 0;
+			obj->tx_tail = 0;
+			obj->tx_buf = (uint8_t *)arg[1];
+			obj->tx_size = arg[2];
+		}
+		break;
+
+	case THINKOS_COMM_TX_WAIT: {
+			uint16_t tail;
+			int cnt;
+			oid = req->parm;
+			idx = THINKOS_COMM_TX_FIRST - oid;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+			obj = &krn->comm_obj[idx];
+
+			pri = cm3_primask_get();
+			cm3_primask_set(1);
+
+			tail = arg[1] & 0xffff;
+			if ((cnt = (int16_t)(obj->tx_tail - tail)) == 0) {
+				comm = obj->comm;
+				(void)comm;
+
+				/* wait for event ... */
+				__krn_thread_wait(krn, self, oid);
+				comm->drv_op->signal(comm->drv, COMM_TX_WAIT);
+			} else {
+				arg[0] = cnt;
+			}
+
+			cm3_primask_set(pri);
+		}
+		break;
+
+	case THINKOS_COMM_TX_SIGNAL: {
+			oid = req->parm;
+			idx = THINKOS_COMM_TX_FIRST - oid;
+			if (idx > THINKOS_COMM_MAX) {
+				__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
+				arg[0] = THINKOS_EINVAL;
+				return;
+			}
+			obj = &krn->comm_obj[idx];
+
+			pri = cm3_primask_get();
+			cm3_primask_set(1);
+
+			obj->tx_head = arg[1];
+			comm = obj->comm;
+			(void)comm;
+			comm->drv_op->signal(comm->drv, COMM_TX_SETUP);
+
+			cm3_primask_set(pri);
+		}
+		break;
+
+	default:
+		arg[0] = THINKOS_ENOSYS;
 	}
 
-	arg[0] = THINKOS_ENOSYS;
 }
 
 int thinkos_krn_comm_init(struct thinkos_rt * krn,
@@ -384,14 +565,22 @@ int thinkos_krn_comm_init(struct thinkos_rt * krn,
 						  const struct thinkos_comm * comm, 
 						  void * parm)
 {
+	struct thinkos_comm_obj * obj;
 	int tx_wq;
 	int rx_wq;
+	int oid;
 	
 	tx_wq = THINKOS_COMM_TX_FIRST + idx;
 	rx_wq = THINKOS_COMM_RX_FIRST + idx;
+	oid = tx_wq; 
 
-	krn->comm[idx] = comm;
-	comm->krn_op->init(comm, parm, tx_wq, rx_wq);
+	obj = &krn->comm_obj[idx];
+	obj->comm = comm;
+	obj->parm = parm;
+	obj->rx_wq = rx_wq;
+	obj->tx_wq = tx_wq;
+
+	comm->krn_op->init(comm, parm, oid);
 
 	return 0;
 }

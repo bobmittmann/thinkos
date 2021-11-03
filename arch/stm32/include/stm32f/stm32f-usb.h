@@ -769,10 +769,18 @@ static inline void __set_ep_type(struct stm32f_usb * usb, int ep_id, int type) {
 	usb->epr[ep_id] = epr | type;
 }
 
+static inline int __get_ep_type(struct stm32f_usb * usb, int ep_id) {
+	return USB_EP_TYPE_GET(usb->epr[ep_id]);
+}
+
 static inline void __set_ep_addr(struct stm32f_usb * usb, int ep_id, int addr) {
 	uint32_t epr;
 	epr = usb->epr[ep_id] & USB_EPREG_MASK & ~USB_EA_MSK;
 	usb->epr[ep_id] = epr | addr;
+}
+
+static inline int __get_ep_addr(struct stm32f_usb * usb, int ep_id) {
+	return USB_EA_GET(usb->epr[ep_id]);
 }
 
 /* configure a RX descriptor */

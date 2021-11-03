@@ -70,13 +70,6 @@
  thread creation. */
 #define THINKOS_ENABLE_SANITY_CHECK         1
 
-/* Enable scheduler trace calls */
-#if DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG          1
-#else
-#define THINKOS_ENABLE_SCHED_DEBUG          0
-#endif
-
 /* Enable scheduler stack error detection */
 #if DEBUG
 #define THINKOS_ENABLE_SCHED_ERROR          1
@@ -119,7 +112,7 @@
 #if DEBUG
   #define THINKOS_ENABLE_HARDFAULT          0
   #define THINKOS_ENABLE_EXCEPTIONS         0
-  #define THINKOS_ENABLE_SCHED_DEBUG        1
+  #define THINKOS_ENABLE_SCHED_DEBUG        0
   #define THINKOS_SYSRST_ONFAULT            0
 #else
   #define THINKOS_ENABLE_HARDFAULT          0
@@ -144,7 +137,7 @@
 #ifdef DEBUG
   #define THINKOS_ENABLE_IDLE_WFI           0
 #else
-  #define THINKOS_ENABLE_IDLE_WFI           0
+  #define THINKOS_ENABLE_IDLE_WFI           1
 #endif
 
 #define THINKOS_ENABLE_IDLE_HOOKS           0
@@ -170,8 +163,8 @@
  * delay
  * ------------------------------------------------------------------------- */
 
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
-//#define UDELAY_FACTOR           767
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define UDELAY_FACTOR           767
 
 /* -------------------------------------------------------------------------
    RCC 
@@ -187,12 +180,12 @@
    -------------------------------------------------------------------------- */
 
 #define STM32_ENABLE_USB_FS         1
-#define STM32_USB_FS_VBUS_CTRL      1
+#define STM32_USB_FS_VBUS_CTRL      0
 #define STM32_USB_FS_EP_MAX         4
 #define STM32_USB_FS_IO_INIT        0
 #define STM32_USB_FS_IRQ_ENABLE     0
-#define STM32_USB_FS_VBUS_ENABLE    1
-#define STM32_USB_FS_SUSPEND        1
+#define STM32_USB_FS_VBUS_ENABLE    0
+#define STM32_USB_FS_SUSPEND        0
 
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
 #define CDC_EP_IN_MAX_PKT_SIZE  64

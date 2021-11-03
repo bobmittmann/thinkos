@@ -19,24 +19,27 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-THINKOS_DIR = ../../../..
-SDK_DIR = $(THINKOS_DIR)/sdk
-ARCH_DIR = $(THINKOS_DIR)/arch/stm32
-TOOLS_DIR = $(THINKOS_DIR)/tools
-
 VERSION_DATE = "2020-11-18"
 VERSION_MAJOR = "0"
 VERSION_MINOR = "4"
 
+THINKOS_DIR = ../../../..
+
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c usb-cdc-comm.c
+CFILES = boot.c usb-cdc-comm.c zarathustra.c
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
-		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem
+INCPATH = ../include
 
-LIBS = stm32f thinkos-krn thinkos-mon util xmodem ice-comm 
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
+		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
+
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem ice-comm
+ARCH_LIBS = stm32f 
+LIBS = $(SDK_LIBS) $(ARCH_LIBS)
 
 INCPATH = ../include
 

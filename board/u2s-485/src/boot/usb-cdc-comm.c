@@ -418,14 +418,14 @@ static const uint16_t comm_usb_cdc_interface_status = 0x0000;
 struct usb_cdc_acm_dev {
 	/* underling USB device */
 	struct usb_dev * usb;
+
+	uint8_t comm_oid;
+
 	/* endpoints handlers */
 	uint8_t ctl_ep;
 	uint8_t in_ep;
 	uint8_t out_ep;
 	uint8_t int_ep;
-
-	uint8_t tx_wq;
-	uint8_t rx_wq;
 
 #define CDC_CTL_BUF_LEN 16
 	/* control endpoint buffer */
@@ -453,89 +453,116 @@ struct usb_cdc_acm_dev {
 
 };
 
-static int comm_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
-{
-	uint32_t seq;
-	uint32_t ack;
-	int free;
-	int cnt;
-
-	seq = dev->rx_seq;
-	ack = dev->rx_ack;
-	if ((free = CDC_RX_BUF_SIZE - (int32_t)(seq - ack)) > 0) {
-		int pos;
-
-		pos = seq % CDC_RX_BUF_SIZE;
-		if (pos == 0) {
-			int n;
-
-			n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-									dev->rx_buf, free);
-			DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d n=%d", 
-					 seq, ack, free, n);
-			cnt = n;
-		} else {
-			int m;
-			int n;
-
-			n = MIN((CDC_RX_BUF_SIZE - pos), free);
-			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-									&dev->rx_buf[pos], n);
-			if ((m == n) && (n != free)) {
-				n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-										dev->rx_buf, free - m);
-				DCC_LOG5(LOG_INFO, "seq=%d ack=%d free=%d n=%d m=%d", 
-						 seq, ack, free, n, m);
-				cnt = n + m;
-			} else {
-				DCC_LOG4(LOG_INFO, "seq=%d ack=%d free=%d m=%d", 
-						 seq, ack, free, m);
-				cnt = m;
-			}
-
-		}
-
-		seq += cnt;
-
-		if ((int32_t)(seq - ack) == CDC_RX_BUF_SIZE) {
-			DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RX PAUSE " VT_POP);
-			dev->rx_paused = true;
-		}
-
-		dev->rx_seq = seq;
-	} else {
-		cnt = 0;
-	}
-
-	return cnt;
-}
-
 static void comm_usb_cdc_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
-	unsigned int cnt;
+	struct thinkos_comm_obj * obj; 
+	struct thinkos_rt * krn = &thinkos_rt;
+	int idx = 0;
+	uint32_t tail;
+	uint32_t head;
+	uint32_t size;
+	uint32_t free;
+	uint8_t * buf;
+	uint32_t n;
+	uint32_t pos;
 
-	cnt = comm_usb_cdc_acm_recv(dev);
-	(void)cnt;
+	obj = &krn->comm_obj[idx];
+	head = obj->rx_head;
+	tail = obj->rx_tail;
+	size = obj->rx_size;
+	buf = obj->rx_buf;
 
-	DCC_LOG2(LOG_INFO, VT_PSH VT_FCY VT_REV 
-			 "IRQ pkt_len=%d rcv_cnt=%d COMM_RCV..." 
-			 VT_POP, 
-			 len, cnt);
+	free = size - (head - tail);
+	pos = head % size;
+
+	n = size - pos;
+	if (free > n) {
+		int m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, &buf[pos], n);
+		if (n == m) {
+			m = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, &buf[0], free - n);
+			m += n;
+		}
+		head += m;
+	} else {
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, &buf[pos], free);
+		if (n > 0) {
+			head += n;
+		}
+	}
 	
-//	monitor_signal(MONITOR_COMM_RCV);
+	obj->rx_head = head;
+	krn_comm_rx_wakeup(krn, dev->comm_oid);
+
+#if 0
+	if ((req = krn_comm_rx_req_get(krn, dev->comm_oid)) != NULL) {
+		unsigned int len;
+		unsigned int cnt;
+		unsigned int rem;
+		uint8_t * buf;
+		int n;
+
+		len = req->len;
+		cnt = req->cnt;
+		buf = &req->ptr[cnt];
+		rem = len - cnt;
+
+		n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, buf, rem);
+		if (n > 0) {
+			req->cnt = cnt + n;
+		}
+		DCC_LOG3(LOG_TRACE, "cnt=%d len=%d n=%d", cnt, len, n);
+	} else {
+		DCC_LOG(LOG_WARNING, "no recv request!");
+	}
+#endif
+
 }
 
 static void comm_usb_cdc_on_eot(usb_class_t * cl, unsigned int ep_id)
 {
-//	monitor_signal(MONITOR_COMM_EOT);
+	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_comm_obj * obj; 
+	int idx = 0;
+	uint32_t tail;
+	uint32_t head;
+	uint32_t size;
+	uint32_t cnt;
+
 	DCC_LOG(LOG_MSG, "COMM_EOT");
+
+	obj = &krn->comm_obj[idx];
+
+	head = obj->tx_head;
+	tail = obj->tx_tail;
+	size = obj->tx_size;
+
+	cnt = (head - tail);
+	if (cnt) {
+		uint8_t * buf;
+		uint32_t max;
+		uint32_t pos;
+		int n;
+
+		buf = obj->tx_buf;
+		pos = tail % size;
+		max = size - pos;
+		cnt = cnt > max ? max : cnt;
+		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, &buf[pos], cnt);
+		obj->tx_tail = tail + n;
+		cnt -= n;
+	}
+
+	if (cnt != size) {
+		krn_comm_tx_wakeup(krn, dev->comm_oid);
+	}
 }
 
 static void comm_usb_cdc_on_eot_int(usb_class_t * cl, unsigned int ep_id)
 {
-	DCC_LOG1(LOG_MSG, "ep_id=%d", ep_id);
+	DCC_LOG1(LOG_TRACE, "ep_id=%d", ep_id);
 }
 
 static const usb_dev_ep_info_t comm_usb_cdc_in_info = {
@@ -629,18 +656,20 @@ static int comm_usb_cdc_on_setup(usb_class_t * cl,
 		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
 		if (value) {
 			DCC_LOG(LOG_INFO, "[CONFIGURED]");
-			dev[0].in_ep = usb_dev_ep_init(usb, &comm_usb_cdc_in_info, 
-										   NULL, 0);
-			dev[0].out_ep = usb_dev_ep_init(usb, &comm_usb_cdc_out_info, 
-											NULL, 0);
-			dev[0].int_ep = usb_dev_ep_init(usb, &comm_usb_cdc_int_info, 
-											NULL, 0);
+			dev->in_ep = usb_dev_ep_init(usb, &comm_usb_cdc_in_info, 
+										 NULL, 0);
+			dev->out_ep = usb_dev_ep_init(usb, &comm_usb_cdc_out_info, 
+										  NULL, 0);
+			dev->int_ep = usb_dev_ep_init(usb, &comm_usb_cdc_int_info, 
+										  NULL, 0);
+			DCC_LOG3(LOG_TRACE, "in=%d out=%d int=%d", 
+					 dev->in_ep, dev->out_ep, dev->int_ep);
 			dev->configured = 1;
 		} else {
 			DCC_LOG(LOG_INFO, "[UNCONFIGURED]");
-			usb_dev_ep_ctl(dev->usb, dev[0].in_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev[0].out_ep, USB_EP_DISABLE);
-			usb_dev_ep_ctl(dev->usb, dev[0].int_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev->in_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_DISABLE);
+			usb_dev_ep_ctl(dev->usb, dev->int_ep, USB_EP_DISABLE);
 			dev->configured = 0;
 		}
 		break;
@@ -879,9 +908,6 @@ static const usb_class_events_t comm_usb_cdc_ev = {
 	.on_error = comm_usb_cdc_on_error
 };
 
-
-
-
 int comm_usb_cdc_comm_send(const void * comm, 
 						   const void * buf, unsigned int len)
 {
@@ -889,70 +915,6 @@ int comm_usb_cdc_comm_send(const void * comm,
 
 	return usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, buf, len);
 }
-
-int comm_usb_cdc_comm_recv(const void * comm, 
-						   void * buf, unsigned int len)
-{
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-	uint8_t * dst = (uint8_t *)buf;
-	uint32_t ack;
-	unsigned int pos;
-	unsigned int cnt;
-	unsigned int n;
-
-	ack = dev->rx_ack;
-
-	if ((n = (int32_t)(dev->rx_seq - ack)) == 0)  {
-//		monitor_clear(MONITOR_COMM_RCV);
-		return 0;
-	}
-
-	cnt = MIN(n, len);
-	pos = ack % CDC_RX_BUF_SIZE;
-
-	if (pos == 0) {
-		DCC_LOG4(LOG_INFO, "1. n=%d ack=%d pos=%d cnt=%d...", 
-				 n, ack, pos, cnt);
-		__thinkos_memcpy(dst, dev->rx_buf, cnt);
-	} else {
-		unsigned int m = CDC_RX_BUF_SIZE - pos;
-		unsigned int l;
-
-		m = MIN(m, cnt);
-		__thinkos_memcpy(dst, &dev->rx_buf[pos], m);
-		dst += m;
-
-		l = cnt - m;
-		__thinkos_memcpy(dst, dev->rx_buf, l);
-
-		DCC_LOG6(LOG_INFO, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
-				 m, l, n, ack, pos, cnt);
-	}
-
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-	dev->stats.rx_octet += cnt;
-#endif
-
-	ack += cnt;
-	dev->rx_ack = ack;
-
-	if (dev->rx_paused && ((dev->rx_seq - ack) < (CDC_RX_BUF_SIZE / 2))) {
-		DCC_LOG(LOG_INFO, VT_PSH VT_FCY VT_REV " RESUME " VT_POP);
-		dev->rx_paused = false;
-		/* receive more data into buffer */
-//		comm_usb_cdc_acm_recv(dev);
-	}
-
-	if ((int32_t)(dev->rx_seq - ack) > 0) {
-		DCC_LOG(LOG_INFO, "signal MONITOR_COMM_RCV!");
-
-		/* Pending data on fifo, resignal .. */
-//		monitor_signal(MONITOR_COMM_RCV);
-	}
-
-	return cnt;
-}
-
 
 static int comm_usb_cdc_comm_ctrl(const void * comm, unsigned int opc)
 {
@@ -963,7 +925,51 @@ static int comm_usb_cdc_comm_ctrl(const void * comm, unsigned int opc)
 //static struct usb_class_if usb_class_if_instance;
 void usb_comm_signal(struct usb_cdc_acm_dev * dev, unsigned int sig)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_comm_obj * obj; 
+	int idx = 0;
+	uint32_t tail;
+	uint32_t head;
+	uint32_t size;
+	uint8_t * buf;
+	uint32_t max;
+	uint32_t pos;
+	uint32_t cnt;
+	int n;
 
+	obj = &krn->comm_obj[idx];
+
+	switch (sig) {
+	case COMM_TX_PEND:
+		/* enable TX empty interrupt */
+		DCC_LOG(LOG_MSG, "TX PEND...");
+		break;
+
+	case COMM_RX_WAIT:
+		DCC_LOG(LOG_MSG, "RX WAIT...");
+		break;
+
+	case COMM_TX_SETUP:
+		DCC_LOG(LOG_MSG, "COMM TX SETUP...");
+		head = obj->tx_head;
+		tail = obj->tx_tail;
+
+		if ((cnt = (head - tail)) > 0) {
+			size = obj->tx_size;
+			buf = obj->tx_buf;
+			pos = tail % size;
+			max = size - pos;
+			cnt = cnt > max ? max : cnt;
+			n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, &buf[pos], cnt);
+			obj->tx_tail = tail + n;
+		}
+		break;
+
+	case COMM_RX_SETUP:
+		DCC_LOG(LOG_MSG, "COMM RX SETUP...");
+//		usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_NAK_CLR);
+		break;
+	}
 }
 
 int usb_comm_open(struct usb_cdc_acm_dev * dev)
@@ -974,7 +980,6 @@ int usb_comm_open(struct usb_cdc_acm_dev * dev)
 }
 
 //	comm_usb_cdc_comm_send,
-//	comm_usb_cdc_comm_recv,
 //
 const struct thinkos_comm_drv_op usb_cdc_comm_drv_op  = {
 	.open = (int (*)(const void *))NULL,
@@ -984,8 +989,7 @@ const struct thinkos_comm_drv_op usb_cdc_comm_drv_op  = {
 	.signal = (void (*)(const void *, unsigned int))usb_comm_signal
 };
 
-int usb_cdc_comm_init(const struct thinkos_comm * comm, 
-					  void * parm, int tx_wq, int rx_wq)
+int usb_cdc_comm_init(const struct thinkos_comm * comm, void * parm, unsigned int comm_oid)
 {
 
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm->drv;
@@ -994,17 +998,13 @@ int usb_cdc_comm_init(const struct thinkos_comm * comm,
 
 	/* initialize USB device */
 	dev->usb = (usb_dev_t *)parm;
+	dev->comm_oid = comm_oid;
 	dev->rx_seq = 0;
 	dev->rx_ack = 0;
 	dev->status = 0;
-	dev->tx_wq = tx_wq;
-	dev->rx_wq = tx_wq;
 	dev->shadow = 0;
 	dev->configured = 0;
 	dev->rx_paused = false;
-
-	DCC_LOG2(LOG_TRACE, "tx_wq=%d rx_wq=%d", tx_wq, rx_wq);
-
 
 	DCC_LOG1(LOG_INFO, "usb_dev_init(%08x)", dev->usb);
 	ret = usb_dev_init(dev->usb, cl, &comm_usb_cdc_ev);
@@ -1019,7 +1019,7 @@ void usb_cdc_comm_reset(const struct thinkos_comm * comm, int priority)
 }
 
 struct thinkos_comm_krn_op usb_cdc_comm_krn_op = {
-	.init = (int (*)(const struct thinkos_comm *, void *, int, int))usb_cdc_comm_init,
+	.init = (int (*)(const struct thinkos_comm *, void *, unsigned int))usb_cdc_comm_init,
 	.reset = (void (*)(const struct thinkos_comm *, int))usb_cdc_comm_reset,
 	.done = (int (*)(const struct thinkos_comm *))NULL
 };

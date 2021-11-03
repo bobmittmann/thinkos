@@ -131,6 +131,8 @@ int main(int argc, char ** argv)
 
 	stdio_init();
 
+	thinkos_sleep(100);
+
 	printf("\n\r\n\r");
 	printf("-------------------\r\n");
 	printf("  JUJU Synthesizer \r\n");

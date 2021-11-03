@@ -179,6 +179,12 @@
 /* THINKOS_COMM_CTL operations */
 #define THINKOS_COMM_OPEN              0
 #define THINKOS_COMM_CLOSE             1
+#define THINKOS_COMM_RX_SETUP          2
+#define THINKOS_COMM_TX_SETUP          3
+#define THINKOS_COMM_TX_SIGNAL         4
+#define THINKOS_COMM_RX_WAIT           5
+#define THINKOS_COMM_TX_WAIT           6
+
 
 #ifndef __ASSEMBLER__
 
@@ -778,6 +784,12 @@ static inline int __attribute__((always_inline))
    ---------------------------------------------------------------------------*/
 
 #define __COMM_OPEN_OPC(DEVNO) ((THINKOS_COMM_OPEN << 24) + DEVNO)
+#define __COMM_RX_SETUP_OPC(OID) ((THINKOS_COMM_RX_SETUP << 24) + OID)
+#define __COMM_TX_SETUP_OPC(OID) ((THINKOS_COMM_TX_SETUP << 24) + OID)
+#define __COMM_TX_SIGNAL_OPC(OID) ((THINKOS_COMM_TX_SIGNAL << 24) + OID)
+#define __COMM_TX_WAIT_OPC(OID) ((THINKOS_COMM_TX_WAIT << 24) + OID)
+#define __COMM_RX_WAIT_OPC(OID) ((THINKOS_COMM_RX_WAIT << 24) + OID)
+
 
 static inline int __attribute__((always_inline)) 
 thinkos_comm_open(unsigned int devno) {
@@ -806,6 +818,67 @@ thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
 				  "0"(comm), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
+
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_rx_setup(unsigned int oid, void * buf, unsigned int len) {
+	uint32_t opc = __COMM_RX_SETUP_OPC(oid);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) :
+				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_rx_wait(unsigned int oid, uint32_t head) {
+	uint32_t opc = __COMM_RX_WAIT_OPC(oid);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = head;
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) :
+				  "0"(opc), "r"(r1));
+	return ret;
+}
+
+
+
+
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_tx_setup(unsigned int oid, void * buf, unsigned int len) {
+	uint32_t opc = __COMM_TX_SETUP_OPC(oid);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) :
+				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_tx_signal(unsigned int oid, uint32_t head) {
+	uint32_t opc = __COMM_TX_SIGNAL_OPC(oid);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = head;
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) :
+				  "0"(opc), "r"(r1));
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_tx_wait(unsigned int oid, uint32_t head) {
+	uint32_t opc = __COMM_TX_WAIT_OPC(oid);
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = head;
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) :
+				  "0"(opc), "r"(r1));
+	return ret;
+}
+
+
+
+
 
 static inline int __attribute__((always_inline)) 
 thinkos_comm_timedsend(unsigned int comm, const void * buf, unsigned int len,

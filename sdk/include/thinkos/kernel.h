@@ -634,15 +634,14 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_GATE_ALLOC)
 	uint32_t gate_alloc[(THINKOS_GATE_MAX + 31) / 32];
 #endif
-
+#if ((THINKOS_COMM_MAX) > 0)
+	struct thinkos_comm_obj comm_obj[THINKOS_COMM_MAX];
+#endif
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
 	struct thinkos_flash_drv flash_drv[THINKOS_FLASH_MEM_MAX];
 #endif
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	const struct thinkos_mem_map * mem_map;
-#endif
-#if ((THINKOS_COMM_MAX) > 0)
-	const struct thinkos_comm * comm[THINKOS_COMM_MAX];
 #endif
 
 };

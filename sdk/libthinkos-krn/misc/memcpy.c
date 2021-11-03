@@ -44,3 +44,6 @@ void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n)
 	}
 }
 
+void memcpy(void *, const void *, size_t)
+	__attribute__ ((weak, alias ("__thinkos_memcpy")));
+

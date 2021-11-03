@@ -366,7 +366,7 @@ static void stm32f_usb_dev_reset(struct stm32f_usb_drv * drv)
 
 
 /* start sending */
-int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id,
+int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id, 
 						   void * buf, unsigned int len)
 {
 	struct stm32f_usb_pktbuf * pktbuf = STM32F_USB_PKTBUF;
@@ -379,8 +379,7 @@ int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id,
 	uint32_t epr;
 
 	if (len == 0) {
-		DCC_LOG1(LOG_WARNING, VT_PSH VT_FGR VT_REV 
-				 "[%d] len=0!!!" VT_POP, 
+		DCC_LOG1(LOG_WARNING, VT_PSH VT_FGR VT_REV "[%d] len == 0!!!" VT_POP, 
 				 ep_id);
 		return 0;
 	}
@@ -571,8 +570,9 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 {
 	struct stm32f_usb_ep * ep = &drv->ep[ep_id];
 	struct stm32f_usb * usb = STM32F_USB;
+	int addr = ep->addr;
 
-	DCC_LOG2(LOG_MSG, "ep=%d opt=%d", ep_id, opt);
+	DCC_LOG3(LOG_MSG, "ep=%d opt=%d addr=%d", ep_id, opt, addr);
 
 #if DEBUG
 	if ((unsigned int)ep_id >= STM32_USB_FS_EP_MAX) {
@@ -586,7 +586,11 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 		break;
 
 	case USB_EP_NAK_CLR:
-		__set_ep_txstat(usb, ep_id, USB_TX_VALID);
+		if (addr & USB_ENDPOINT_IN) {
+			__set_ep_txstat(usb, ep_id, USB_TX_VALID);
+		 } else {
+			__set_ep_rxstat(usb, ep_id, USB_RX_VALID);
+		 }
 		break;
 
 	case USB_EP_NAK_SET:
@@ -670,6 +674,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		return 0;
 	}
 
+	ep->addr = info->addr;
 	__set_ep_addr(usb, ep_id, info->addr & 0x7f);
 	__set_ep_rxstat(usb, ep_id, USB_RX_NAK);
 	__set_ep_txstat(usb, ep_id, USB_TX_NAK);
@@ -1032,7 +1037,7 @@ void stm32f_can1_tx_usb_hp_isr(void)
 
 	ep_id = USB_EP_ID_GET(sr);
 
-	DCC_LOG1(LOG_TRACE, "CTR ep_id=%d", ep_id);
+	DCC_LOG1(LOG_MSG, "CTR ep_id=%d", ep_id);
 
 	epr = usb->epr[ep_id];
 	ep = &drv->ep[ep_id];
@@ -1180,6 +1185,7 @@ void stm32f_can1_tx_usb_hp_isr(void)
 	if (sr & USB_ERR) {
 		DCC_LOG(LOG_INFO, "USB_ERR");
 		usb->istr = ~USB_ERR;
+		mdelay(100);
 	}
 
 	if (sr & USB_PMAOVR) {
@@ -1420,6 +1426,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		/* The USB software can usually ignore errors, since the 
 		   USB peripheral and the PC host manage retransmission in case 
 		   of errors in a fully transparent way. */
+		mdelay(100);
 	}
 
 	if (sr & USB_PMAOVR) {
