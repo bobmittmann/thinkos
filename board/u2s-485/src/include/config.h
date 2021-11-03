@@ -164,14 +164,14 @@
 #define THINKOS_ENABLE_MEMORY_MAP           0
 
 /* Communication channels */
-#define THINKOS_COMM_MAX                    1
+#define THINKOS_COMM_MAX                    0
 
 /* -------------------------------------------------------------------------
  * delay
  * ------------------------------------------------------------------------- */
 
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
-//#define UDELAY_FACTOR           767
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define UDELAY_FACTOR           767
 
 /* -------------------------------------------------------------------------
    RCC 

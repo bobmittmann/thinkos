@@ -154,6 +154,15 @@ void board_reset(void)
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
 }
 
+void usb_vbus(bool on)
+{
+	if (on)
+		stm32_gpio_mode(USB_FS_VBUS, OUTPUT, PUSH_PULL | SPEED_LOW);
+	else
+		stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
+}
+
+
 /* Default Monitor Task */
 void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm, void * param)
 {
@@ -231,18 +240,17 @@ void main(int argc, char ** argv)
 	mdelay(100);
 #endif
 
+	board_reset();
+
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED, NULL);
 
-	board_reset();
-
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
-
-//	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
-//						  (void *)&stm32f_usb_fs_dev);
 
 	/* starts/restarts monitor with autoboot enabled */
 	thinkos_krn_monitor_init(comm, monitor_task, NULL);
+
+	usb_vbus(true);
 
 //	thinkos_thread_init(1, &app_thread_init);
 //
