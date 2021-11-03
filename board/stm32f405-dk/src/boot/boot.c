@@ -36,13 +36,14 @@ void boot_monitor_task(const struct monitor_comm * comm, void * arg);
 void __attribute__((noreturn)) board_default_task(void *ptr);
 int board_integrity_check(void);
 
-void __attribute__((noreturn)) main(int argc, char ** argv)
+void main(int argc, char ** argv)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
-	uintptr_t app_addr;
 
 #if DEBUG
+	int i;
+
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 	mdelay(125);
@@ -53,6 +54,13 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "*************************************************"
 			VT_POP "\n\n");
 	mdelay(125);
+
+
+	for (i = 0; i < 100; ++i) {
+		DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+				"* +++" VT_POP);
+		mdelay(125);
+	}
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 1. thinkos_krn_init()." VT_POP);
@@ -72,7 +80,14 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 3. usb_comm_init()." VT_POP);
+			"* 3. thinkos_krn_flash_drv_init()." VT_POP);
+	mdelay(125);
+#endif
+	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
+
+#if DEBUG
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 4. usb_comm_init()." VT_POP);
 	mdelay(125);
 #endif
 	comm = usb_comm_init(&stm32f_otg_fs_dev);
@@ -80,18 +95,12 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 #if DEBUG
 	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 4. thinkos_krn_monitor_init()." VT_POP);
+			"* 5. thinkos_krn_monitor_init()." VT_POP);
 #endif
 	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, 
 							 (void *)&this_board);
 
-#if DEBUG
-	mdelay(125);
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 5. thinkos_krn_irq_on()." VT_POP);
-#endif
-	/* enable interrupts */
-	thinkos_krn_irq_on();
+	thinkos_sleep(100);
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 6. board_integrity_check()..." VT_POP);
@@ -104,20 +113,11 @@ void __attribute__((noreturn)) main(int argc, char ** argv)
 		thinkos_abort();
 	}
 
-	app_addr = flash_mem.base + flash_mem.blk[FLASH_BLK_APP].off;  
+	if (board_integrity_check()) {
+		btl_flash_app_exec("app");
+	} else {
+		btl_flash_app_exec("diag");
+	}
 
-	DCC_LOG1(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 7. thinkos_app_exec(%08x)..." VT_POP, app_addr);
-	thinkos_app_exec(app_addr);
-	DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
-			"**** thinkos_app_exec() failed." VT_POP);
-#if DEBUG
-	mdelay(10000);
-#endif
-
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 8. board_default_task()..." VT_POP);
-	board_default_task((void*)&this_board);
 }
-
 
