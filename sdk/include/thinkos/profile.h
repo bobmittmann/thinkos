@@ -187,10 +187,6 @@
 #define THINKOS_ENABLE_CRITICAL         0
 #endif
 
-#ifndef THINKOS_ENABLE_ESCALATE
-#define THINKOS_ENABLE_ESCALATE         0
-#endif
-
 #ifndef THINKOS_IRQ_MAX 
 #define THINKOS_IRQ_MAX                 80
 #endif
@@ -821,6 +817,11 @@
    stack (MSP) all the remaining threads (non privileged) make use of
    the PSP instead.
  */
+
+#ifdef THINKOS_ENABLE_ESCALATE
+#warning "THINKOS_ENABLE_ESCALATE is deprecated"
+#endif
+
 #ifdef THINKOS_ENABLE_IDLE_MSP
 #error "THINKOS_ENABLE_IDLE_MSP is deprecated"
 #endif
@@ -1086,7 +1087,6 @@ struct thinkos_profile {
 			uint32_t sleep           :1;
 			uint32_t ctl             :1;
 			uint32_t critical        :1;
-			uint32_t escalate        :1;
 			uint32_t irq_ctl         :1;
 			uint32_t pause           :1;
 			uint32_t cancel          :1;

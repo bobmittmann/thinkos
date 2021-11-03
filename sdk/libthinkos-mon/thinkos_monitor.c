@@ -543,11 +543,11 @@ struct monitor_context * __monitor_ctx_init(uintptr_t task,
 }
 #endif
 
-void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
-                     void (* task)(const struct monitor_comm *, void *),
-					 void * param)
+void thinkos_krn_monitor_init(struct thinkos_rt * krn,
+							  const struct monitor_comm * comm, 
+							  void (* task)(const struct monitor_comm *, void *),
+							  void * param)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
 					   sizeof(thinkos_monitor_stack));
@@ -590,15 +590,16 @@ void thinkos_krn_monitor_init(const struct monitor_comm * comm,
 }
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL)
-void thinkos_monitor_svc(int32_t arg[], int self)
+void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	void (* task)(const struct monitor_comm *, void *) = 
 		(void (*)(const struct monitor_comm *, void *))arg[0];
 	void * param = (void *)arg[1];
 	struct cm3_scb * scb = CM3_SCB;
 
-	/* Set the persistent signals */
-	krn->monitor.events |= (1 << MONITOR_RESET);
+	/* Set the task init signal */
+	krn->monitor.events |= (1 << MONITOR_TASK_INIT);
+	/* Set the persistent mmask */
 	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
 	arg[0] = (uint32_t)thinkos_monitor_rt.task;
@@ -611,7 +612,6 @@ void thinkos_monitor_svc(int32_t arg[], int self)
 		thinkos_monitor_rt.task = task;
 
 	thinkos_monitor_rt.param = param;
-	thinkos_monitor_rt.ctx = 0;
 
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;

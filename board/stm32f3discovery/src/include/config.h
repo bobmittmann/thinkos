@@ -119,7 +119,6 @@
 #define THINKOS_ENABLE_DEBUG_STEP       0
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              1
 
 #define THINKOS_MONITOR_STACK_SIZE       (1024 + 384)

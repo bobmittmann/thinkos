@@ -74,7 +74,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SLEEP", p->syscall.sleep);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_CTL", p->syscall.ctl);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CRITICAL", p->syscall.critical);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ESCALATE", p->syscall.escalate);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IRQ_CTL", p->syscall.irq_ctl);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_PAUSE", p->syscall.pause);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CANCEL", p->syscall.cancel);

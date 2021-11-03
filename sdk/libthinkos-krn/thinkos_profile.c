@@ -75,7 +75,6 @@ const struct thinkos_profile thinkos_profile = {
 		.sleep        = THINKOS_ENABLE_SLEEP,
 		.ctl          = THINKOS_ENABLE_CTL,
 		.critical     = THINKOS_ENABLE_CRITICAL,
-		.escalate     = THINKOS_ENABLE_ESCALATE,
 		.irq_ctl      = THINKOS_ENABLE_IRQ_CTL,
 		.pause        = THINKOS_ENABLE_PAUSE,
 		.cancel       = THINKOS_ENABLE_CANCEL,
@@ -223,8 +222,6 @@ void __profile(void)
 			 p->syscall.ctl);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CRITICAL        = %d", 
 			 p->syscall.critical);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ESCALATE        = %d", 
-			 p->syscall.escalate);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_CTL         = %d", 
 			 p->syscall.irq_ctl);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PAUSE           = %d", 

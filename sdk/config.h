@@ -132,8 +132,6 @@
 
 #define THINKOS_ENABLE_CRITICAL         1
 
-#define THINKOS_ENABLE_ESCALATE         1
-
 #define THINKOS_ENABLE_IDLE_WFI         1
 
 #endif /* __CONFIG_H__ */

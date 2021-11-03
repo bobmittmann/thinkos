@@ -17,10 +17,15 @@ ${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r -a 0x08000000 \
 
 if [ $? = 0 ] ; then
 	# Collect ".bin" files in the positional parameters
-	set -- `ls ../app/Release/*.bin`
+	set -- `ls ../app/Release/*.elf`
 	# Get the last one
-	for APP_BIN; do true; done
-	APP_ELF=${APP_BIN%%.bin}.elf
+	for APP_ELF; 
+		do true; 
+	done
+
+	if [ "${APP_ELF}" = "" ] ; then
+		echo "No application found..."
+	fi
 
 	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
 	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \

@@ -110,7 +110,7 @@ void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
 //	udelay(0x8000);
 #endif
 
-	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&board);
+	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&board);
 #endif
 
 #if (BOOT_PREBOOT_ENABLE)

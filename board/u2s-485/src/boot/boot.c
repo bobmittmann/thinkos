@@ -248,7 +248,7 @@ void main(int argc, char ** argv)
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
 	/* starts/restarts monitor with autoboot enabled */
-	thinkos_krn_monitor_init(comm, monitor_task, NULL);
+	thinkos_krn_monitor_init(krn, comm, monitor_task, NULL);
 
 	usb_vbus(true);
 

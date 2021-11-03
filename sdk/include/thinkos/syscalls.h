@@ -1038,10 +1038,6 @@ static inline void thinkos_bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
-static inline int thinkos_escalate(int (* call)(void *), void * arg) {
-	return THINKOS_SYSCALL2(THINKOS_ESCALATE, call, arg);
-}
-
 /* ---------------------------------------------------------------------------
    Application support
    ---------------------------------------------------------------------------*/

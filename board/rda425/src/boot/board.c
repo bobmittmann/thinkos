@@ -767,7 +767,8 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 #endif
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 4. thinkos_krn_monitor_init()." VT_POP);
-    thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
+    thinkos_krn_monitor_init(krn, comm, 
+							 boot_monitor_task, (void *)&this_board);
 
 #if DEBUG
     mdelay(125);

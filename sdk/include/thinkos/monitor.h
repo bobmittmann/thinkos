@@ -213,9 +213,9 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	        COMM_ST_CONNECTED) ? true : false;
 }
 
-void thinkos_krn_monitor_init(const struct monitor_comm * comm, 
-                     void (* task)(const struct monitor_comm *, void *),
-					 void * param);
+void thinkos_krn_monitor_init(struct thinkos_rt * krn, const struct monitor_comm * comm, 
+							  void (* task)(const struct monitor_comm *, void *), 
+							  void * param);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events/signals 

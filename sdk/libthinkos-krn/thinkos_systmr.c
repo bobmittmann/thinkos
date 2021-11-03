@@ -46,13 +46,12 @@ static void __thinkos_time_wakeup(struct thinkos_rt * krn, int th)
 	__krn_preempt(krn);
 }
 
-
 #if (THINKOS_ENABLE_TIMESHARE)
-static void __thinkos_timeshare(void) 
+static void __thinkos_timeshare(struct thinkos_rt * krn) 
 {
 	int32_t idx;
 
-	idx = __thinkos_active_get();
+	idx = __krn_sched_active_get(krn);
 
 	/*  */
 	thinkos_rt.sched_val[idx] -= thinkos_rt.sched_pri[idx];
@@ -64,8 +63,8 @@ static void __thinkos_timeshare(void)
 		} else {
 			/* insert into the CPU wait queue */
 			__bit_mem_wr(&thinkos_rt.wq_tmshare, idx, 1);  
-			__thinkos_suspend(idx);
-			__thinkos_preempt();
+			__krn_thread_suspend(krn, idx + 1);
+			__krn_preempt(krn);
 		}
 	}
 }
@@ -171,7 +170,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
     #endif
 
     #if (THINKOS_ENABLE_TIMESHARE)
-			__thinkos_timeshare(); 
+			__thinkos_timeshare(krn); 
     #endif /* THINKOS_ENABLE_TIMESHARE */
 		}
 

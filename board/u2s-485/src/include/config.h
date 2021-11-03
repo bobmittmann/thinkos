@@ -132,7 +132,6 @@
 #define THINKOS_ENABLE_DEBUG_STEP           0
 
 #define THINKOS_ENABLE_MPU                  0
-#define THINKOS_ENABLE_ESCALATE             0
 #define THINKOS_ENABLE_FPU                  0
 
 #define THINKOS_ENABLE_STACK_INIT           0

@@ -978,7 +978,7 @@ static inline void __attribute__((always_inline))
 	uint32_t ready;
 	uint32_t tmshare;
 	do {
-		ready = __ldrex(&kern->wq_ready);
+		ready = __ldrex(&krn->wq_ready);
 		/* remove from the ready wait queue */
 		ready &= ~(1 << (th - 1));
 		/* if the ready queue is empty, collect
@@ -989,9 +989,9 @@ static inline void __attribute__((always_inline))
 			ready |= tmshare;
 			tmshare = 0;
 		} 
-	} while (__strex(&kern->wq_ready, ready));
-	tmshare = kern->wq_tmshare;
-	kern->wq_tmshare = tmshare;
+	} while (__strex(&krn->wq_ready, ready));
+	tmshare = krn->wq_tmshare;
+	krn->wq_tmshare = tmshare;
 #endif /* (!THINKOS_ENABLE_TIMESHARE) */
 }
 

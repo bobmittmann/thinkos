@@ -722,7 +722,7 @@ void main(int argc, char ** argv)
 
 //	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
-//	thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
+//	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
 
 	thinkos_sleep(500);
 

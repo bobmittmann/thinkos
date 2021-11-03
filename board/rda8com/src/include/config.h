@@ -110,7 +110,6 @@
 
 #define THINKOS_ENABLE_PREEMPTION           1
 #define THINKOS_ENABLE_CRITICAL             0
-#define THINKOS_ENABLE_ESCALATE             0
 
 /* Allow to interrupt a system call */
 #define THINKOS_ENABLE_BREAK                0
