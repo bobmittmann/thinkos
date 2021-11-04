@@ -81,7 +81,6 @@ int __parseline(char * line, char ** argv, int argmax)
 	return n;
 }
 
-
 int btl_console_shell(struct btl_shell_env * env)
 {
 	const char * prompt;
@@ -125,7 +124,9 @@ int btl_console_shell(struct btl_shell_env * env)
 
 		ret = btl_cmd_call(env, argc, argv, cmd); 
 		if (ret < 0) {
-			krn_console_wrln("Error");
+# if 0
+			krn_console_wr("Error");
+#endif
 		}
 	} 
 
