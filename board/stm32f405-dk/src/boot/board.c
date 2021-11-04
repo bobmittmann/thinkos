@@ -67,11 +67,12 @@ const struct thinkos_mem_desc sram_mem = {
 const struct thinkos_mem_desc flash_mem = {
 	.tag = "FLASH",
 	.base = 0x08000000,
-	.cnt = 3,
+	.cnt = 4,
 	.blk = {
 		{.tag = "BOOT", 0x00000000, M_RO, SZ_16K, 4}, /* Bootloader: 64 KiB */
 		{.tag = "CONF", 0x00010000, M_RW, SZ_64K, 1}, /* Config: 64 KiB */
-		{.tag = "APP",  0x00020000, M_RW, SZ_128K, 7}, /* Application:  */
+		{.tag = "APP",  0x00020000, M_RW, SZ_128K, 3}, /* Application: 384 KiB */
+		{.tag = "EXT", 0x00080000, M_RW, SZ_128K, 4}, /* Extension: 512 KiB */
 		{.tag = "", 0x00000000, 0, 0, 0}
 		}
 };
@@ -87,7 +88,7 @@ const struct thinkos_mem_desc peripheral_mem = {
 };
 
 
-const struct thinkos_mem_map mem_map = {
+const struct thinkos_mem_map board_mem_map = {
 	.tag = "MEM",
 	.cnt = 3,
 	.desc = {
@@ -97,89 +98,14 @@ const struct thinkos_mem_map mem_map = {
 	}
 };
 
-const struct magic_blk thinkos_10_app_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 3},
-	.rec = {
-		{0xffffffff, 0x0a0de004},
-		{0xffffffff, 0x6e696854},
-		{0xffffffff, 0x00534f6b},
-		{0x00000000, 0x00000000}
-		}
-};
-
-#pragma GCC diagnostic pop
-
-extern const struct flash_dev stm32f4x_flash_dev;
-
 const struct thinkos_flash_desc board_flash_desc = {
-	.mem = (struct thinkos_mem_desc *)&flash_mem,
+	.mem = &flash_mem,
 	.dev = &stm32f4x_flash_dev
 };
 
-
-extern const uint8_t otg_xflash_pic[];
-extern const unsigned int sizeof_otg_xflash_pic;
-
-/* Receives a file using YMODEM protocol and writes into Flash. */
-static int yflash(uint32_t blk_offs, uint32_t blk_size,
-		   const struct magic_blk * magic)
-{
-	uintptr_t yflash_code = (uintptr_t)(0x20001000);
-	int (* yflash_ram)(uint32_t, uint32_t, const struct magic_blk *);
-	uintptr_t thumb;
-	int ret;
-
-	cm3_primask_set(1);
-	__thinkos_memcpy((void *)yflash_code, otg_xflash_pic, 
-					 sizeof_otg_xflash_pic);
-
-	thumb = yflash_code | 0x00000001; /* thumb call */
-	yflash_ram = (int (*)(uint32_t, uint32_t, const struct magic_blk *))thumb;
-	ret = yflash_ram(blk_offs, blk_size, magic);
-
-	return ret;
-}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-static const struct magic_blk bootloader_magic = {
-	.hdr = {
-		.pos = 0,
-		.cnt = 2
-	},
-	.rec = {
-		{  0xffff0000, 0x10010000 },
-		{  0xffff0000, 0x08000000 },
-	}
-};
 #pragma GCC diagnostic pop
 
-void bootloader_yflash(const struct monitor_comm * comm)
-{
-
-	stm32_gpio_clr(IO_LED1);
-	stm32_gpio_clr(IO_LED2);
-	stm32_gpio_clr(IO_LED3);
-	stm32_gpio_clr(IO_LED4);
-
-	yflash(0, 32768, &bootloader_magic);
-}
-
-
-void __puts(const char *s)
-{
-	int rem = __thinkos_strlen(s, 64);
-
-	while (rem) {
-		int n = thinkos_console_write(s, rem);
-		s += n;
-		rem -= n;
-	}
-}
-
-void io_init(void)
+static void io_init(void)
 {
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
@@ -208,9 +134,7 @@ void io_init(void)
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
 }
 
-void __vec(void);
-
-void board_on_softreset(void)
+static void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 //	struct stm32f_spi * spi = ICE40_SPI;
@@ -269,12 +193,9 @@ void board_on_softreset(void)
 
 int board_init(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-//	board_on_softreset();
+	stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
 
-#if (THINKOS_FLASH_MEM_MAX > 0)
-	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
-#endif
+	io_init();
 
 	stm32_gpio_set(IO_LED3);
 	stm32_gpio_set(IO_LED4);
@@ -300,10 +221,8 @@ bool board_integrity_check(void)
 		uint64_t time;
 
 		thinkos_sleep(500);
-//		mdelay(250);
-//		thinkos_alarm(2000 + tick * 500);
 
-		__puts(".");
+		krn_console_puts(".");
 
 		switch (tick & 0x3) {
 		case 0:
@@ -325,11 +244,11 @@ bool board_integrity_check(void)
 		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
 	}
 
-	__puts("\r\n");
+	krn_console_puts("\r\n");
 
 	thinkos_sleep(250);
 
-	__puts("Loading application...\r\n");
+	krn_console_puts("Loading application...\r\n");
 
 	stm32_gpio_clr(IO_LED1);
 	stm32_gpio_clr(IO_LED2);
@@ -337,162 +256,17 @@ bool board_integrity_check(void)
 	return true;
 }
 
-int board_configure_task(void *ptr)
+static int board_on_break(const struct monitor_comm * comm)
 {
-	__puts("- board configuration\r\n");
-	return 0;
-}
-
-
-int board_selftest_task(void *ptr)
-{
-	__puts("- board self test\r\n");
-	return 0;
-}
-
-void write_fault(void)
-{
-	volatile uint32_t * ptr = (uint32_t *)(0x0);
-	uint32_t x = 0;
-	int i;
-
-	for (i = 0; i < (16 << 4); ++i) {
-		*ptr = x;
-		ptr += 0x10000000 / (2 << 4);
-	}
-}
-
-
-
-/* ----------------------------------------------------------------------------
- * This function runs as the main thread's task when the bootloader 
- * fails to run the application ... 
- * ----------------------------------------------------------------------------
- */
-
-int board_default_task(void *ptr)
-{
-	uint32_t tick;
-	uint32_t clk;
+	struct btl_shell_env * env = btl_shell_env_getinstance();
 
 #if 1
-	DCC_LOG1(LOG_TRACE, "ptr=0x%08x", ptr);
-	__puts("- board default\r\n");
+	/* Already initialized in main() */
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
 #endif
 
-	thinkos_abort();
-
-	for (tick = 0; tick < 16; ++tick) {
-		thinkos_sleep(125);
-
-		switch (tick & 0x7) {
-		case 0:
-			stm32_gpio_clr(IO_LED1);
-			break;
-		case 1:
-			stm32_gpio_clr(IO_LED2);
-			break;
-		case 2:
-			stm32_gpio_set(IO_LED1);
-			break;
-		case 3:
-			stm32_gpio_set(IO_LED2);
-			break;
-		case 4:
-			stm32_gpio_clr(IO_LED3);
-			break;
-		case 5:
-			stm32_gpio_clr(IO_LED4);
-			break;
-		case 6:
-			stm32_gpio_set(IO_LED3);
-			break;
-		case 7:
-			stm32_gpio_set(IO_LED4);
-			break;
-		}
-	}
-
-
-//	thinkos_escalate(NULL, NULL);
-
-	clk = thinkos_clock();
-	for (tick = 0; tick < 10000000; ++tick) {
-
-		mdelay(30);
-
-		clk += 100;
-		thinkos_alarm(clk);
-
-		switch (tick & 0x7) {
-		case 0:
-			stm32_gpio_clr(IO_LED1);
-			break;
-		case 1:
-			stm32_gpio_clr(IO_LED2);
-			break;
-		case 2:
-			stm32_gpio_set(IO_LED1);
-			break;
-		case 3:
-			stm32_gpio_set(IO_LED2);
-			break;
-		case 4:
-			stm32_gpio_clr(IO_LED3);
-			break;
-		case 5:
-			stm32_gpio_clr(IO_LED4);
-			break;
-		case 6:
-			stm32_gpio_set(IO_LED3);
-			break;
-		case 7:
-			stm32_gpio_set(IO_LED4);
-			break;
-		}
-	
-		//__puts("- tick\r\n");
-	}
-
-
-#if 0
-	int x;
-	x = thinkos_flash_mem_open("BOOT");
-	thinkos_flash_mem_close(x);
-
-	char buf[128];
-
-	__puts("- FLASH test\r\n");
-	x = thinkos_flash_mem_open("BOOT");
-	thinkos_flash_mem_read(x, 0, buf, 14);
-	thinkos_flash_mem_close(x);
-
-	__puts(buf);
-
-	x = thinkos_flash_mem_open("BOOT");
-	thinkos_flash_mem_write(x, 0, "Hello world!", 14);
-	thinkos_flash_mem_close(x);
-
-
-	x = thinkos_flash_mem_open("CONF");
-	thinkos_flash_mem_write(x, 0, "Hello world!", 16);
-	thinkos_flash_mem_read(x, 0, buf, 16);
-	thinkos_flash_mem_close(x);
-
-	__puts(buf);
-
-	x = thinkos_flash_mem_open("CONF");
-	thinkos_flash_mem_erase(x, 0, 16);
-	thinkos_flash_mem_close(x);
-#endif
-	return 0;
-}
-
-const struct monitor_comm * board_comm_init(void)
-{
-	DCC_LOG(LOG_TRACE, "USB comm init");
-
-	return usb_comm_init(&stm32f_otg_fs_dev);
+	return monitor_thread_create(comm, C_TASK(btl_console_shell), 
+								 C_ARG(env), true);
 }
 
 
@@ -512,7 +286,8 @@ const struct thinkos_board this_board = {
 		       .build = VERSION_BUILD}
 	       },
 	.on_softreset = board_on_softreset,
-	.memory = &mem_map
+	.on_break = board_on_break,
+	.memory = &board_mem_map
 };
 
 

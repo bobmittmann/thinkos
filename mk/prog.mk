@@ -414,8 +414,8 @@ endif
 ifeq ($(HOST),Cygwin)
 	$(Q)$(OBJDUMP) -t $(PROG_ELF_WIN) | sort > $@
 else
-#	$(Q)$(OBJDUMP) -t $< | sort > $@
-	$(Q)$(READELF) -s -W $< | sort -n -k 2,2 > $@
+	$(Q)$(OBJDUMP) -t $< | sort > $@
+#	$(Q)$(READELF) -s -W $< | sort -n -k 2,2 > $@
 endif
 
 %.nm: %.elf

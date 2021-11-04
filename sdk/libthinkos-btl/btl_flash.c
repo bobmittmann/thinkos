@@ -51,7 +51,7 @@ static int __flash_erase(int key)
 	uint32_t offs = 0;
 	int ret;
 
-	krn_console_puts("\r\nErasing... ");
+	krn_console_puts("Erasing... ");
 	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
 		krn_console_wrln("failed!");
 	} else {
@@ -75,6 +75,7 @@ int btl_flash_erase_partition(const char * tag)
 		return -1;
 	}
 
+	krn_console_puts("\r\n");
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
 		krn_console_puts("Error: ");
 		krn_console_wrln("can't open partition!");
@@ -107,13 +108,14 @@ int btl_flash_ymodem_recv(const char * tag)
 		return -1;
 	}
 
+	krn_console_puts("\r\n");
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
 		krn_console_puts("Error: ");
 		krn_console_wrln("can't open partition!");
 		return key;
 	}
 
-	krn_console_puts("\r\nYMODEM ");
+	krn_console_puts("YMODEM ");
 	krn_console_wrln("receive (Ctrl+X to cancel)... ");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);

@@ -49,7 +49,7 @@ INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os
+CFLAGS = -O1
 
 MACH = stm32f415xg
 KRN_DATA_SIZE = 8192

@@ -43,8 +43,6 @@
 #define THINKOS_ENABLE_ALARM                1
 #define THINKOS_ENABLE_SLEEP                1
 
-#define THINKOS_ENABLE_TIMESHARE            1
-
 #define THINKOS_THREADS_MAX                32
 
 /* These settings are used when its desireable
@@ -86,18 +84,6 @@
  thread creation. */
 #define THINKOS_ENABLE_SANITY_CHECK         1
 
-#define THINKOS_ENABLE_DEBUG                0
-
-/* Enable scheduler trace calls */
-#if DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG          1
-#else
-#define THINKOS_ENABLE_SCHED_DEBUG          0
-#endif
-
-/* Enable scheduler stack error detection */
-#define THINKOS_ENABLE_SCHED_ERROR          1
-
 /* Allow to interrupt a system call */
 #define THINKOS_ENABLE_BREAK                1
 
@@ -110,8 +96,7 @@
 #define THINKOS_ENABLE_MONITOR_CLOCK        1
 #define THINKOS_ENABLE_MONITOR_SCHED        0
 #define THINKOS_ENABLE_MONITOR_SYSCALL      1
-#define THINKOS_MONITOR_STACK_SIZE       1024
-#define THINKOS_ENABLE_STACK_LIMIT          1
+#define THINKOS_MONITOR_STACK_SIZE          (1024 + 512)
 
 #define THINKOS_ENABLE_CONSOLE              1
 #define THINKOS_ENABLE_CONSOLE_READ         1 
@@ -123,10 +108,11 @@
 #define THINKOS_ENABLE_CONSOLE_MODE         1
 #define THINKOS_CONSOLE_RX_FIFO_LEN       512
 #define THINKOS_CONSOLE_TX_FIFO_LEN      2048
-#define THINKOS_ENABLE_CONSOLE_RAW          1 
 
-#define THINKOS_EXCEPT_STACK_SIZE        1024
-#define THINKOS_ENABLE_KRNSVC               0
+#define THINKOS_ENABLE_STACK_ALIGN          1
+#define THINKOS_ENABLE_UNALIGN_TRAP         1
+#define THINKOS_EXCEPT_STACK_SIZE         512
+#define THINKOS_ENABLE_STACK_LIMIT          1
 #define THINKOS_ENABLE_DEBUG_BASE           1
 #define THINKOS_ENABLE_ERROR_TRAP           1
 #define THINKOS_ENABLE_EXCEPTIONS           1
@@ -140,12 +126,26 @@
 #else
   #define THINKOS_SYSRST_ONFAULT            1
 #endif
+/* Enable scheduler trace calls */
+#if DEBUG
+  #define THINKOS_ENABLE_SCHED_DEBUG        0
+/* Enable scheduler stack error detection */
+#define THINKOS_ENABLE_SCHED_ERROR          0
+#else
+  #define THINKOS_ENABLE_SCHED_DEBUG        0
+/* Enable scheduler stack error detection */
+#define THINKOS_ENABLE_SCHED_ERROR          0
+#endif
+
+#define THINKOS_ENABLE_DEBUG                0
 #define THINKOS_ENABLE_DEBUG_BKPT           0
 #define THINKOS_ENABLE_DEBUG_WPT            0
 #define THINKOS_ENABLE_DEBUG_STEP           0
 
+
 #define THINKOS_ENABLE_MPU                  1
 #define THINKOS_ENABLE_FPU                  1
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
 
 #define THINKOS_ENABLE_CTL                  1
 #define THINKOS_ENABLE_CRITICAL             1
@@ -162,7 +162,6 @@
 #define THINKOS_ENABLE_OBJ_ALLOC            1
 #define THINKOS_ENABLE_OBJ_FREE             1
  
-#define THINKOS_ENABLE_I_CALLS              1
 #define THINKOS_ENABLE_THREAD_INFO          1
 
 #define THINKOS_ENABLE_STACK_INIT           1
@@ -171,7 +170,6 @@
 #define THINKOS_ENABLE_UDELAY_CALIBRATE     1
 
 #define THINKOS_ENABLE_OFAST                1
-#define THINKOS_ENABLE_PRIVILEGED_THREAD    1
 
 #define THINKOS_ENABLE_APP                  1
 #define THINKOS_ENABLE_APP_FLAT             1
@@ -181,8 +179,11 @@
 
 #define THINKOS_ENABLE_DATE_AND_TIME        1
 #define THINKOS_CUSTOM_APP_TAG              "S32F405"
-#define THINKOS_ENABLE_READY_MASK           0
 
+#define THINKOS_ENABLE_TIMESHARE            0
+#define THINKOS_ENABLE_I_CALLS              0
+#define THINKOS_ENABLE_READY_MASK           0
+#define THINKOS_ENABLE_KRNSVC               0
 /* -------------------------------------------------------------------------
    RCC 
    -------------------------------------------------------------------------- */
@@ -204,10 +205,12 @@
 #define STM32_OTG_FS_INEP_MAX        3
 #define STM32_OTG_FS_OUTEP_MAX       2
 #define STM32_OTG_FS_IO_INIT         0
-#define STM32_OTG_FS_VBUS_SENS       0
+#define STM32_OTG_FS_VBUS_SENS       1
 #define STM32_OTG_FS_VBUS_CONNECT    0
 #define STM32_OTG_FS_RX_FIFO_SIZE    192
 #define STM32_OTG_FS_BULK_PKTS       6
+
+//#define STM32_OTG_FS_VBUS            STM32_GPIOA, 9
 
 #define CDC_EP_IN_MAX_PKT_SIZE       64
 
