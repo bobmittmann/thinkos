@@ -38,7 +38,7 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
 							   uint32_t opt)
 {
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	int priority = __PRIORITY(opt);
 #endif
 	int th = __ID(opt);
@@ -50,7 +50,7 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 	if (th < 1)
 		th = 1;
 
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* alloc main thread */
 	th = __thinkos_thread_alloc(th);
 #else
@@ -58,13 +58,13 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 		th = THINKOS_THREADS_MAX;
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 
-#if THINKOS_SCHED_LIMIT_MIN < 1
+#if (THINKOS_SCHED_LIMIT_MIN) < 1
 #error "THINKOS_SCHED_LIMIT_MIN must be at least 1"
 #endif
 
-#if THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN
+#if (THINKOS_SCHED_LIMIT_MAX) < (THINKOS_SCHED_LIMIT_MIN)
 #error "THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN !!!"
 #endif
 	if (priority > THINKOS_SCHED_LIMIT_MAX)
@@ -75,8 +75,8 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 
 	/* set the initial schedule limit */
 	krn->sched_limit = priority;
-	if (krn->sched_limit < THINKOS_SCHED_LIMIT_MIN)
-		krn->sched_limit = THINKOS_SCHED_LIMIT_MIN;
+	if (krn->sched_limit < (THINKOS_SCHED_LIMIT_MIN))
+		krn->sched_limit = (THINKOS_SCHED_LIMIT_MIN);
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
@@ -397,24 +397,18 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	/* add to the ready queue */
 	__thread_ready_set(krn, thread_no);
 
+	DCC_LOG(LOG_TRACE, "Enabling interrupts");
+	thinkos_krn_irq_on();
+
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	if (privileged) {
 		DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
 	} else {
 		DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
-		DCC_LOG(LOG_TRACE, "Enabling interrupts");
-		/* enable interrupts */
-		thinkos_krn_irq_on();
-		DCC_LOG(LOG_TRACE, "Adjusting privilege");
-		/* enable interrupts */
 		/* Adjust privilege */
 		ctrl |=  CONTROL_nPRIV;
 		cm3_control_set(ctrl);
 	}
-#else
-	DCC_LOG(LOG_TRACE, "Enabling interrupts");
-	/* enable interrupts */
-	thinkos_krn_irq_on();
 #endif
 
 	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 

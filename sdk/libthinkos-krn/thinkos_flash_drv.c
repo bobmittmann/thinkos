@@ -269,7 +269,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 			drv = &krn->flash_drv[idx];
 
 			if ((blk = __mem_blk_lookup(drv->mem, req->tag)) != NULL) {
-				if (drv->ropen || drv->wopen) {
+				if ((drv->ropen != 0) || (drv->wopen != 0)) {
 					ret = THINKOS_EBUSY;
 					break;
 				}
@@ -284,8 +284,9 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #endif
 				ret = wq;
 
-				DCC_LOG2(LOG_INFO, "open(tag=\"%s\") --> ret=%d", 
-						 req->tag, ret);
+				DCC_LOGSTR(LOG_TRACE, "open(\"%s\")", req->tag);
+				DCC_LOG3(LOG_TRACE, "opt=%d rd=%d wr=%d", blk->opt, 
+						 drv->ropen, drv->wopen);
 				break;
 			}
 		}
@@ -336,7 +337,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	drv = &krn->flash_drv[idx];
 
 	if (opc == THINKOS_FLASH_MEM_CLOSE) {
-		if (!(drv->ropen || drv->wopen)) {
+		if ((drv->ropen == 0) && (drv->wopen == 0)) {
 			DCC_LOG(LOG_WARNING, "not open");
 			arg[0] = THINKOS_EINVAL;
 			return;
@@ -352,18 +353,20 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		return;
 	} 
 
-	if ((opc == THINKOS_FLASH_MEM_READ) && (!drv->ropen)) {
+	if ((opc == THINKOS_FLASH_MEM_READ) && (drv->ropen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for read");
 		arg[0] = THINKOS_EPERM;
 		return;
 	} 
 
-	if ((opc == THINKOS_FLASH_MEM_WRITE) && (!drv->wopen)) {
+	if (((opc == THINKOS_FLASH_MEM_WRITE) || (opc == THINKOS_FLASH_MEM_ERASE)) 
+		&& (drv->wopen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for write");
 		arg[0] = THINKOS_EPERM;
 		return;
 	} 
 
+	DCC_LOG2(LOG_TRACE, "rd=%d wr=%d", drv->ropen, drv->wopen);
 	DCC_LOG2(LOG_INFO, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
 	DCC_LOG2(LOG_INFO, "flash_drv: wq=%d idx=%d", wq, idx);
 

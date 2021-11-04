@@ -97,7 +97,7 @@ const struct thinkos_mem_desc flash_desc = {
 #define MEM_FLASH  0
 #define MEM_SRAM   1
 
-const struct thinkos_mem_map mem_map = {
+const struct thinkos_mem_map board_mem_map = {
 	.tag = "MEM",
 	.cnt = 2,
 	.desc = {
@@ -338,7 +338,7 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.memory = &mem_map,
+	.memory = &board_mem_map,
 	.on_softreset = board_on_softreset,
 	.on_break = board_on_break
 };
@@ -379,7 +379,7 @@ void main(int argc, char ** argv)
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
-					 &mem_map);
+					 &board_mem_map);
 	board_init();
 
 	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);

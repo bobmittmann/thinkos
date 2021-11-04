@@ -1109,7 +1109,7 @@ static void otg_disconnect(struct stm32f_otg_fs * otg_fs)
 
 }
 
-void otg_power_on(struct stm32f_otg_fs * otg_fs)
+void stm32_otg_power_on(struct stm32f_otg_fs * otg_fs)
 {
 	DCC_LOG(LOG_MSG, "Enabling USB FS clock...");
 	stm32_clk_enable(STM32_RCC, STM32_CLK_OTGFS);
@@ -1124,7 +1124,7 @@ void otg_power_on(struct stm32f_otg_fs * otg_fs)
 #endif
 }
 
-void otg_power_off(struct stm32f_otg_fs * otg_fs)
+void stm32_otg_power_off(struct stm32f_otg_fs * otg_fs)
 {
 	otg_disconnect(otg_fs);
 

@@ -15,6 +15,6 @@ ${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r  -a 0x08000000 \
 
 if [ $? = 0 ] ; then
 	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
-	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} 'disable debug'
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} 'nrst'
 fi
 

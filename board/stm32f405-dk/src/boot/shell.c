@@ -84,12 +84,12 @@ int btl_cmd_info(struct btl_shell_env * env, int argc, char * argv[])
 
 int btl_cmd_app(struct btl_shell_env * env, int argc, char * argv[])
 {
-	return btl_flash_app_exec("app");
+	return btl_flash_app_exec("APP");
 }
 
 int btl_cmd_diag(struct btl_shell_env * env, int argc, char * argv[])
 {
-	return btl_flash_app_exec("diag");
+	return btl_flash_app_exec("DATA");
 }
 
 int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[])
@@ -114,6 +114,6 @@ int btl_cmd_echo(struct btl_shell_env * env, int argc, char * argv[])
 
 int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[])
 {
-	return btl_flash_ymodem_recv("app");
+	return btl_flash_ymodem_recv("APP");
 }
 

@@ -701,6 +701,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 		case MONITOR_COMM_BRK:
 			/* Acknowledge the signal */
 			DCC_LOG(LOG_WARNING, "/!\\ COMM_BREAK signal !");
+			monitor_puts("\r\n+++\r\nBRK\r\n", comm);
+
 			monitor_comm_break_ack(comm);
 			monitor_soft_reset();
 			monitor_signal(MONITOR_USER_EVENT3);
@@ -793,9 +795,8 @@ is_connected:
 		case MONITOR_USER_EVENT3:
 			monitor_clear(MONITOR_USER_EVENT3);
 			DCC_LOG(LOG_INFO, "MONITOR_USER_EVENT3!");
-			if (board->on_break) {
-				board->on_break(comm);
-			}
+			monitor_puts("\r\nboard.on_break()", comm);
+			board->on_break(comm);
 			break;
 
 		default:

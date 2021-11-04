@@ -1,5 +1,5 @@
 /* 
- * File:	 thinkos/thread.h
+ * File:	 sys/util.h
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -20,39 +20,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __THINKOS_THREAD_H__
-#define __THINKOS_THREAD_H__
-
-#ifndef __THINKOS_THREAD__
-#error "Never use <thinkos/thread.h> directly; include <thinkos/kernel.h> instead."
-#endif 
-
-struct thinkos_thread_initializer {
-	uintptr_t stack_base;
-	uint32_t stack_size;
-	union {
-		uint32_t opt;
-		struct {
-			uint8_t priority;
-			uint8_t privileged: 1;
-			uint8_t paused: 1;
-			uint8_t res: 6;
-		};
-	};
-	uintptr_t task_entry;
-	uintptr_t task_exit;
-	uint32_t task_arg[4];
-	const struct thinkos_thread_inf * inf;
-};
+#ifndef __SYS_UTIL_H__
+#define __SYS_UTIL_H__
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int uint2dec(char * s, unsigned int val);
+int uint2hex(char * s, unsigned int val);
+
+int ull2dec(char * s, unsigned long long val);
+int ull2hex(char * s, unsigned long long val);
+
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __THINKOS_THREAD_H__ */
+#endif /* __SYS_UTIL_H__ */
 

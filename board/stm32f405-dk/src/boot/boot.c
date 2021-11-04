@@ -7,10 +7,10 @@
 
 #define __THINKOS_FLASH__
 #include <thinkos/flash.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 
 #include <thinkos.h>
 
@@ -22,24 +22,27 @@
 #include "board.h"
 #include "version.h"
 
-extern const struct thinkos_board this_board;
-extern const struct thinkos_mem_desc flash_mem;
-extern const struct thinkos_mem_map mem_map;
-#define FLASH_BLK_BOOT 0
-#define FLASH_BLK_APP  2
-
 void board_init(void);
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg);
-
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
-void __attribute__((noreturn)) board_default_task(void *ptr);
 int board_integrity_check(void);
+extern const struct thinkos_mem_map board_mem_map;
+extern const struct thinkos_board this_board;
+extern const struct thinkos_flash_desc board_flash_desc;
+
+void usb_vbus_connect(bool connect)
+{
+	if (connect)
+		stm32_gpio_mode(OTG_FS_VBUS, ALT_FUNC, SPEED_LOW);
+	else
+		stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
+}
 
 void main(int argc, char ** argv)
 {
+	struct btl_shell_env * env = btl_shell_env_getinstance();
 	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
+
 
 #if DEBUG
 	int i;
@@ -69,7 +72,7 @@ void main(int argc, char ** argv)
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED |
-					 THINKOS_OPT_STACK_SIZE(32768), &mem_map);
+					 THINKOS_OPT_STACK_SIZE(32768), &board_mem_map);
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
@@ -84,6 +87,8 @@ void main(int argc, char ** argv)
 	mdelay(125);
 #endif
 	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
+
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
@@ -102,22 +107,11 @@ void main(int argc, char ** argv)
 
 	thinkos_sleep(100);
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 6. board_integrity_check()..." VT_POP);
-	if (!board_integrity_check()) {
-		DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
-				"**** board_integrity_check() failed." VT_POP);
-#if DEBUG
-		mdelay(10000);
-#endif
-		thinkos_abort();
-	}
-
 	if (board_integrity_check()) {
-		btl_flash_app_exec("app");
-	} else {
-		btl_flash_app_exec("diag");
+		btl_flash_app_exec("APP");
 	}
 
+
+	btl_console_shell(env);
 }
 

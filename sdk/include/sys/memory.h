@@ -63,12 +63,15 @@
 #define SZ_512M 29
 #define SZ_1G   30
 #define SZ_2G   31
+#define SZ_4G   32
+#define SZ_8G   33
+#define SZ_16G  34
 
 /* Memory flags */
 #define M_XC  (1 << 7) /* Execution */
 #define M_DM  (1 << 6) /* DMA  */
-#define M_RW  (0 << 2) /*   */
-#define M_RO  (1 << 2) /* Read Only  */
+#define M_RW  (0 << 4) /*   */
+#define M_RO  (1 << 4) /* Read Only  */
 
 
 /* Memory block descriptor */
@@ -95,9 +98,10 @@ struct blk_desc {
 #define M_NV  (1 << 4) /* Non volatile  */
 #define M_PE  (1 << 5) /* Peripheral  */
 #define M_EX  (1 << 3) /* External  */
+
 #define M_AM  (3 << 0) /* alignment/access mask */
 #define M_64  (3 << 0) /* 64 bit alignement  */
-#define M_32  (2 << 0) /* 32 bits alignement  */
+#define M_32  (2 << 0) /* 32 bits alignment  */
 #define M_16  (1 << 0) /* 16 bits alignment */
 #define M_8   (0 << 0) /* 8 bits alignment/access */
 

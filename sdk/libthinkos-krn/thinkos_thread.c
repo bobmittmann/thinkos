@@ -25,11 +25,11 @@
 
 int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 {
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (!__krn_obj_is_thread(krn, th)) {
 		return THINKOS_ERR_THREAD_INVALID;
 	}
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	if (__krn_thread_is_alloc(krn, th) == 0) {
 		return THINKOS_ERR_THREAD_ALLOC;
 	}
@@ -119,7 +119,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	__thinkos_memset32(stack_base, 0, free);
 #endif
 
-#if (THINKOS_NRT_THREADS_MAX > 0)
+#if (THINKOS_NRT_THREADS_MAX) > 0
 	if (thread_no >= (THINKOS_THREADS_MAX)) {
 		/* TODO: implement NRT */
 		return THINKOS_ERR_NOT_IMPLEMENTED;

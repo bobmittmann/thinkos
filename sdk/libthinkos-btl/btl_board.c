@@ -82,8 +82,8 @@ void btl_board_info(const struct thinkos_board * board)
 
 	/* memory blocks */
 	krn_console_wrln("Memory:");
-	krn_console_wrln("         Tag       Adress span"
-				  "     Size  Flags  Alignn");
+	krn_console_wrln("         Tag    Begin      End"
+				  "     Size  Flags  Align");
 
 	for (i = 0; i < board->memory->cnt; ++i) {
 		btl_mem_info_print(board->memory->desc[i]);

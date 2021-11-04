@@ -603,6 +603,10 @@
 #define THINKOS_ENABLE_CTL_KRN_INFO         0
 #endif
 
+#ifndef THINKOS_THREAD_STACK_MAX
+#define THINKOS_THREAD_STACK_MAX            65280
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/

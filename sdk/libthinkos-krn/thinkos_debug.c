@@ -842,6 +842,8 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
+
+
 int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
 						  void (* on_exit)(unsigned int), bool privileged)
 {
@@ -863,6 +865,11 @@ int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
 	thread = 1;
 	stack_base = (uintptr_t)&__krn_stack_start;
 	stack_size = (uint32_t)&__krn_stack_size;
+#endif
+
+#if (THINKOS_THREAD_STACK_MAX)
+	if (stack_size > (THINKOS_THREAD_STACK_MAX))
+		stack_size = THINKOS_THREAD_STACK_MAX;
 #endif
 
 	/* force allocate the thread block */

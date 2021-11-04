@@ -30,9 +30,9 @@ TEST_DIR = $(THINKOS_DIR)/test
 
 CFILES = $(wildcard $(TEST_DIR)/sanity/*.c)
 
-LIBDIRS = $(SDK_DIR)/libc $(SDK_DIR)/libutil $(SDK_DIR)/libthinkos-usr
+LIBS = thinkos-usr util tty c
 
-LIBS = gcc thinkos-usr util c
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(LIBS))
 
 INCPATH = ../include
 
@@ -41,5 +41,7 @@ CDEFS = CONFIG_H
 CFLAGS = -O1 
 
 MACH = stm32f415xg
+LDCODE := 0x08020000
+LDDATA := 0x20002000
 include $(ARCH_DIR)/mk/stm32-app.mk
 
