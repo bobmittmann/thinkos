@@ -58,8 +58,8 @@ struct monitor {
 extern "C" {
 #endif
 
-void monitor_task(const struct monitor_comm * comm, void * param);
-
+void monitor_task(const struct monitor_comm * comm, void * param,
+					   uintptr_t sta, struct thinkos_rt * krn);
 #ifdef __cplusplus
 }
 #endif

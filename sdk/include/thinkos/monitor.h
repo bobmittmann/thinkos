@@ -80,30 +80,30 @@ enum monitor_event {
 	MONITOR_APP_STOP        = 18,
 	/* ThinkOS application resume request */
 	MONITOR_APP_RESUME      = 19,
-	/* */
+	/* User console */
+	MONITOR_APP_EXEC        = 20,
+	
+	MONITOR_APP_ERASE       = 21,
+	MONITOR_APP_UPLOAD      = 22,
 
 	/* User/bootloader extension events 0 to 7 */
-	MONITOR_USER_EVENT4     = 20,
-	MONITOR_USER_EVENT1     = 21,
-	MONITOR_USER_EVENT2     = 22,
-	MONITOR_USER_EVENT3     = 23,
+	MONITOR_USER_EVENT4     = 23,
+	MONITOR_USER_EVENT3     = 24,
 
 	/* Debug Communication break signal */
-	SIG_COMM_BRK            = 24, 
+	SIG_COMM_BRK            = 25, 
 	/* Debug Communication data received pending */
-	SIG_COMM_RCV            = 25, 
+	SIG_COMM_RCV            = 26, 
 	/* Debug Communication end 3f transfer */
-	SIG_COMM_EOT            = 26,
+	SIG_COMM_EOT            = 27,
 	/* Debug Communication control signal */
-	SIG_COMM_CTL            = 27,
+	SIG_COMM_CTL            = 28,
 	/* User console RX pipe data pending */
-	SIG_CONSOLE_RX          = 28,
+	SIG_CONSOLE_RX          = 29,
 	/* User console TX pipe not empty */
-	SIG_CONSOLE_TX          = 29,
+	SIG_CONSOLE_TX          = 30,
 	/* User console control */
-	SIG_CONSOLE_CTRL        = 30,
-	/* User console */
-	SIG_TEST = 31,
+	SIG_CONSOLE_CTRL        = 31,
 
 	MONITOR_NONE            = 32
 };
@@ -240,7 +240,8 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 
 void thinkos_krn_monitor_init(struct thinkos_rt * krn, 
 							  const struct monitor_comm * comm, 
-							  void (* task)(const struct monitor_comm *, void *), 
+							  void (* task)(const struct monitor_comm *, void *,
+											uintptr_t, struct thinkos_rt *), 
 							  void * param);
 
 /* ----------------------------------------------------------------------------
@@ -343,12 +344,12 @@ void monitor_thread_destroy(int thread_id);
 
 
 #define MONITOR_TASK(_F_) (void (*)(const struct monitor_comm *, \
-				  void *, void *, struct thinkos_rt *))(_F_ )
+				  void *, uintptr_t, struct thinkos_rt *))(_F_ )
 
 /* ??? */
 void __attribute__((noreturn)) monitor_exec(
 	void (* task)(const struct monitor_comm *, 
-				  void *, void *, struct thinkos_rt *), 
+				  void *, uintptr_t, struct thinkos_rt *), 
 	const struct monitor_comm *, void * env, uintptr_t sta);
 
 /* ----------------------------------------------------------------------------

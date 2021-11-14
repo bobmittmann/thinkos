@@ -51,7 +51,8 @@ void tp13_off(void)
 }
 
 int fpga_configure(void);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+					   uintptr_t sta, struct thinkos_rt * krn);
 int flash_app_exec(const char * tag);
 
 #pragma GCC diagnostic push

@@ -133,10 +133,13 @@ int btl_flash_erase_partition(const char * tag);
 void btl_board_info(const struct thinkos_board * board);
 int btl_flash_app_exec(const char * tag);
 
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
+void __attribute__((noreturn)) 
+	standby_monitor_task(const struct monitor_comm * comm, 
+						 void * arg, uintptr_t sta, 
+						 struct thinkos_rt * krn);
 
 void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board,
-	void (monitor)(const struct monitor_comm *, void *));
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_rt *));
 
 bool monitor_app_suspend(void);
 

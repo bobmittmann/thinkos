@@ -534,7 +534,7 @@ void monitor_watchpoint(struct monitor * mon)
 #endif
 
 void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
-					   void * env, void * krn);
+					   uintptr_t sta, void * krn);
 
 #if (BOOT_ENABLE_GDB)
 void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm, 
@@ -790,7 +790,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
  */
 void __attribute__((noreturn)) 
 boot_monitor_task(const struct monitor_comm * comm, void * arg, 
-					   void * env, void * krn)
+					   uintptr_t sta, void * krn)
 {
 #if (MONITOR_OSINFO_ENABLE)
 	uint32_t cycref[THINKOS_THREAD_LAST + 1];

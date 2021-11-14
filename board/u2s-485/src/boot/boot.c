@@ -164,7 +164,8 @@ void usb_vbus(bool on)
 
 
 /* Default Monitor Task */
-void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm, void * param)
+void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm, void * param,
+					   uintptr_t sta, struct thinkos_rt * krn)
 {
 	uint32_t sigmask = 0;
 	uint32_t sig;

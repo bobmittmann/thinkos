@@ -23,7 +23,8 @@
 #include "version.h"
 
 void board_init(void);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   uintptr_t, struct thinkos_rt *);
 int board_integrity_check(void);
 extern const struct thinkos_mem_map board_mem_map;
 extern const struct thinkos_board this_board;

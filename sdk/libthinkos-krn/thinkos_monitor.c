@@ -475,7 +475,7 @@ uint32_t * __monitor_ctx_init(uintptr_t task, uintptr_t comm,
 	return sp;
 }
 
-void monitor_exec(void (* task)(const struct monitor_comm *, void *, void *, 
+void monitor_exec(void (* task)(const struct monitor_comm *, void *, uintptr_t, 
 								struct thinkos_rt *), 
 				  const struct monitor_comm * comm, void * env, uintptr_t sta)
 {
@@ -486,7 +486,8 @@ void monitor_exec(void (* task)(const struct monitor_comm *, void *, void *,
 
 void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 							  const struct monitor_comm * comm, 
-							  void (* task)(const struct monitor_comm *, void *),
+							  void (* task)(const struct monitor_comm *, void *,
+											uintptr_t, struct thinkos_rt *),
 							  void * env)
 {
 	uint32_t * sp;

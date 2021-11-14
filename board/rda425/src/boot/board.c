@@ -717,8 +717,10 @@ const struct thinkos_board this_board = {
 	.memory = &mem_map
 };
 
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void standby_monitor_task(const struct monitor_comm * comm, void * arg, 
+						  uintptr_t sta, struct thinkos_rt * krn);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   uintptr_t sta, struct thinkos_rt * krn);
 
 void __attribute((noreturn)) main(int argc, char ** argv)
 {

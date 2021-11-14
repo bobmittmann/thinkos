@@ -57,10 +57,11 @@
 #endif
 
 
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   uintptr_t, struct thinkos_rt *);
 
 void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
-	void (monitor)(const struct monitor_comm *, void *))
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_rt *))
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 #if (BOOT_MONITOR_ENABLE)
