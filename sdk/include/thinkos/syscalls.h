@@ -107,7 +107,7 @@
 #define THINKOS_CRITICAL_ENTER        57
 #define THINKOS_CRITICAL_EXIT         58
 
-#define THINKOS_MONITOR               59
+#define THINKOS_MONITOR_CTL           59
 
 #define THINKOS_TRACE                 60
 #define THINKOS_TRACE_CTL             61
@@ -179,6 +179,10 @@
 /* THINKOS_COMM_CTL operations */
 #define THINKOS_COMM_OPEN              0
 #define THINKOS_COMM_CLOSE             1
+
+
+/* THINKOS_MONITOR_CTL operations */
+#define MONITOR_CTL_TASK_INIT          0
 
 #ifndef __ASSEMBLER__
 
@@ -758,9 +762,16 @@ static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {
 struct monitor_comm;
 
 static inline int __attribute__((always_inline)) 
+	thinkos_monitor_ctl(unsigned int opc, uintptr_t arg1, uintptr_t arg2, 
+						uintptr_t arg3) {
+	return THINKOS_SYSCALL4(THINKOS_MONITOR_CTL, opc, arg1, arg2, arg3);
+}
+
+static inline int __attribute__((always_inline)) 
 	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
-				   const struct monitor_comm * comm, void * param) {
-	return THINKOS_SYSCALL3(THINKOS_MONITOR, task, comm, param);
+				   const struct monitor_comm * comm, void * env) {
+	return THINKOS_SYSCALL4(THINKOS_MONITOR_CTL, MONITOR_CTL_TASK_INIT, 
+							task, comm, env);
 }
 
 static inline int __attribute__((always_inline)) 

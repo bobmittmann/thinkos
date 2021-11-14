@@ -461,7 +461,7 @@ uint32_t thinkos_dbg_thread_stack_base_get(unsigned int th)
 
 uint32_t thinkos_dbg_krn_ticks_get(unsigned int th) 
 {
-	return thinkos_rt.ticks;
+	return thinkos_rt.clk.time;
 }
 
 const char * thinkos_dbg_thread_tag_get(unsigned int th) 

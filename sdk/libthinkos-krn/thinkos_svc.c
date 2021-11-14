@@ -167,7 +167,7 @@ void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 void thinkos_clock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	arg[0] = thinkos_rt.ticks;
+	arg[0] = thinkos_rt.clk.time;
 }
 
 void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -601,9 +601,9 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #endif
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL) 
-	[THINKOS_MONITOR] = thinkos_monitor_svc,
+	[THINKOS_MONITOR_CTL] = thinkos_monitor_svc,
 #else
-	[THINKOS_MONITOR] = thinkos_nosys_svc,
+	[THINKOS_MONITOR_CTL] = thinkos_nosys_svc,
 #endif
 
 #if (THINKOS_ENABLE_TRACE)

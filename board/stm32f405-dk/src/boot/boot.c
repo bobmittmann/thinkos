@@ -105,12 +105,18 @@ void main(int argc, char ** argv)
 	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, 
 							 (void *)&this_board);
 
-	thinkos_sleep(100);
+	thinkos_sleep(200);
+
+//	monitor_signal(SIG_COMM_BRK); 
+//	thinkos_sleep(1000);
+//	monitor_signal(SIG_CONSOLE_CTRL); 
+//	thinkos_sleep(1000);
+//	monitor_signal(SIG_CONSOLE_CTRL); 
+//	thinkos_sleep(1000);
 
 	if (board_integrity_check()) {
 		btl_flash_app_exec("APP");
 	}
-
 
 	btl_console_shell(env);
 }

@@ -53,6 +53,15 @@
 /* this is a placeholder */
 #define THINKOS_THREAD_NULL 33
 
+#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
+/*
+ *  32Q20 fractional kernel clock 
+ */
+  #define KRN_CLK_FROM_MS(__MS) (__MS * 1049)
+#else
+  #define KRN_CLK_FROM_MS(__MS) __MS 
+#endif
+
 struct thread_waitqueue {
 	uint32_t bmp;
 };
@@ -663,8 +672,8 @@ __krn_wq_insert(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 static inline void __attribute__((always_inline)) 
 __krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq, 
 			   unsigned int th, unsigned int ms) {
-	/* set the th_clk */
-	krn->th_clk[th] = krn->ticks + ms;
+	/* set the clk.th_tmr */
+	krn->clk.th_tmr[th] = krn->clk.time + KRN_CLK_FROM_MS(ms);
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	krn->th_stat[th] = (wq << 1) + 1;
@@ -680,7 +689,7 @@ __krn_tmdwq_insert(struct thinkos_rt * krn, unsigned int wq,
 static inline void __attribute__((always_inline)) 
 __wq_clock_insert(struct thinkos_rt * krn, unsigned int th, unsigned int ms) {
 	/* set the clock */
-	krn->th_clk[th] = krn->ticks + ms;
+	krn->clk.th_tmr[th] = krn->clk.time + KRN_CLK_FROM_MS(ms);
 	/* insert into the clock wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 1);  
 #if (THINKOS_ENABLE_THREAD_STAT)
@@ -1168,27 +1177,27 @@ __thread_alloc_clr(struct thinkos_rt * krn, unsigned int th) {
 
 static inline uint32_t __attribute__((always_inline)) 
 __krn_ticks_get(struct thinkos_rt * krn) {
-	return krn->ticks;
+	return krn->clk.time;
 }
 
 static inline void __attribute__((always_inline)) 
 __thread_clk_set(struct thinkos_rt * krn, unsigned int th, uint32_t clk) {
-	krn->th_clk[th] = clk;
+	krn->clk.th_tmr[th] = clk;
 }
 
 static inline uint32_t __attribute__((always_inline)) 
 __thread_clk_get(struct thinkos_rt * krn, unsigned int th) {
-	return krn->th_clk[th];
+	return krn->clk.th_tmr[th];
 }
 
 static inline void __attribute__((always_inline)) 
 __thread_clk_itv_set(struct thinkos_rt * krn, unsigned int th, int32_t itv) {
-	krn->th_clk[th] = krn->ticks + itv;
+	krn->clk.th_tmr[th] = krn->clk.time + KRN_CLK_FROM_MS(itv);
 }
 
 static inline int32_t __attribute__((always_inline)) 
 __thread_clk_itv_get(struct thinkos_rt * krn, unsigned int th) {
-	return krn->th_clk[th] - krn->ticks;
+	return krn->clk.th_tmr[th] - krn->clk.time;
 }
 
 /* Set the schedule enable flag */
@@ -1402,10 +1411,10 @@ void __thinkos_exec(int thread_id, void (* func)(void *),
 /* -------------------------------------------------------------------------
  * System timer (Cortex-M SysTick)
  * ------------------------------------------------------------------------- */
-void thinkos_krn_systick_init(void);
+void thinkos_krn_systick_init(struct thinkos_rt * krn);
 
 static inline uint32_t __attribute__((always_inline)) thinkos_clock_i(void)  {
-	return (volatile uint32_t)thinkos_rt.ticks;
+	return (volatile uint32_t)thinkos_rt.clk.time;
 }
 
 /* -------------------------------------------------------------------------

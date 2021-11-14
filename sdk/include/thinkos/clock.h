@@ -43,10 +43,9 @@
 #ifndef __ASSEMBLER__
 
 struct krn_clock {
-	uint64_t timestamp;
-	uint32_t increment; /* fractional per tick increment */
 	int64_t realtime_offs;
 	uint32_t resolution; /* fractional clock resolution */
+
 	struct {
 		int32_t n_freq; /* frequency itegral part */
 		int32_t q_freq; /* frequency decimal part */

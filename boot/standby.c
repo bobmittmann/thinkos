@@ -113,14 +113,6 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 					 cm3_sp_get());
 			break;
 
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
-
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
@@ -226,14 +218,6 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 			DCC_LOG1(LOG_TRACE, "/!\\ KRN_ABORT signal (SP=0x%08x)...", 
 					 cm3_sp_get());
 			break;
-
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
 
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */

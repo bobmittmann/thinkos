@@ -531,7 +531,8 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-void boot_monitor_task(const struct monitor_comm *, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+				  uintptr_t sta, struct thinkos_rt * krn);
 
 #if (MONITOR_GDB_ENABLE)
 void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm, 
@@ -556,7 +557,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #endif
 	case CTRL_C:
 		monitor_puts("^C\r\n", comm);
-		monitor_req_app_term();
 		break;
 #if (MONITOR_BREAKPOINT_ENABLE)
 	case CTRL_F:
@@ -633,7 +633,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
    Default Monitor Task
  */
 void __attribute__((noreturn)) 
-boot_monitor_task(const struct monitor_comm * comm, void * arg)
+boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+				  uintptr_t sta, struct thinkos_rt * krn)
 {
 	const struct thinkos_board * board;
 	struct monitor monitor;
@@ -801,6 +802,7 @@ is_connected:
 
 		default:
 			DCC_LOG1(LOG_WARNING, "unhandled SIG %d!", sig);
+			monitor_clear(sig);
 			break;
 		}
 	}

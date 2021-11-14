@@ -125,12 +125,16 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	_Static_assert (offsetof(struct thinkos_rt, idle_ctx) == 
 					OFFSETOF_KRN_IDLE_CTX, "OFFSETOF_KRN_IDLE_CTX");
 
+	_Static_assert (offsetof(struct thinkos_rt, clk) == 
+					OFFSETOF_KRN_CLK, "OFFSETOF_KRN_CLK");
+
 #if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
+					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYC");
+
 	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
 					OFFSETOF_KRN_CYCREF, "OFFSETOF_KRN_CYCREF");
 
-	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
-					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYCT");
 #endif
 
 #if (THINKOS_ENABLE_DEBUG_BASE)
@@ -360,12 +364,12 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	thinkos_krn_exception_init();
 #endif
 
+	DCC_LOG(LOG_TRACE, "SYysTick init...");
+	thinkos_krn_systick_init(krn);
+
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 	__thinkos_krn_time_init(krn);
 #endif
-
-	DCC_LOG(LOG_TRACE, "SYysTick init...");
-	thinkos_krn_systick_init();
 
 #if (THINKOS_ENABLE_CONSOLE)
 	DCC_LOG(LOG_TRACE, "Console init...");

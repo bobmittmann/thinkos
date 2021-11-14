@@ -126,8 +126,8 @@
 #else
   #define THINKOS_SYSRST_ONFAULT            1
 #endif
-/* Enable scheduler trace calls */
 #if DEBUG
+/* Enable scheduler trace calls */
   #define THINKOS_ENABLE_SCHED_DEBUG        0
 /* Enable scheduler stack error detection */
 #define THINKOS_ENABLE_SCHED_ERROR          0
@@ -142,10 +142,9 @@
 #define THINKOS_ENABLE_DEBUG_WPT            0
 #define THINKOS_ENABLE_DEBUG_STEP           0
 
-
 #define THINKOS_ENABLE_MPU                  1
 #define THINKOS_ENABLE_FPU                  1
-#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    1
 
 #define THINKOS_ENABLE_CTL                  1
 #define THINKOS_ENABLE_CRITICAL             1
@@ -177,6 +176,7 @@
 #define THINKOS_ENABLE_APP_CRC              1
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
+#define THINKOS_ENABLE_FRACTIONAL_CLOCK     1
 #define THINKOS_ENABLE_DATE_AND_TIME        1
 #define THINKOS_CUSTOM_APP_TAG              "S32F405"
 

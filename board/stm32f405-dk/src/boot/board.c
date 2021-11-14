@@ -132,6 +132,55 @@ static void io_init(void)
 
 	stm32_gpio_clr(IO_LED4);
 	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_clr(IO_LED4);
+	stm32_gpio_mode(IO_LED4, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	stm32_gpio_mode(PUSH_BTN, INPUT, PULL_UP);
+
+	stm32_gpio_mode(IO_I2C1_SCL, INPUT, 0);
+	stm32_gpio_mode(IO_I2C1_SDA, INPUT, 0);
+
+	stm32_gpio_clr(IO_I2S2_WS);
+	stm32_gpio_mode(IO_I2S2_WS, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_I2S2_CK);
+	stm32_gpio_mode(IO_I2S2_CK, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_I2S2_SDI);
+	stm32_gpio_mode(IO_I2S2_WS, OUTPUT, PUSH_PULL | SPEED_LOW);
+	stm32_gpio_clr(IO_I2S2_SDO);
+	stm32_gpio_mode(IO_I2S2_SDO, OUTPUT, PUSH_PULL | SPEED_LOW);
+
+	/* Debug serial -----------------------------------------------------*/
+	stm32_gpio_af(IO_UART1_TX, GPIO_AF10);
+	stm32_gpio_mode(IO_UART1_TX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+	stm32_gpio_af(IO_UART1_RX, GPIO_AF10);
+	stm32_gpio_mode(IO_UART1_RX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
+
+/**************************************************************************
+ * Debug serial
+ **************************************************************************/
+#define IO_UART1_TX       STM32_GPIOB, 6
+#define IO_UART1_RX       STM32_GPIOB, 7
+
+/**************************************************************************
+ * I2C1
+ **************************************************************************/
+#define IO_I2C1_SCL           STM32_GPIOB, 8
+#define IO_I2C1_SDA           STM32_GPIOB, 9
+
+/**************************************************************************
+ * USART3
+ **************************************************************************/
+#define IO_USART3_TX      STM32_GPIOB, 10
+#define IO_USART3_RX      STM32_GPIOB, 11
+
+/**************************************************************************
+ * I2S2USART3
+ **************************************************************************/
+#define IO_I2S2_WS       STM32_GPIOB, 12
+#define IO_I2S2_CK       STM32_GPIOB, 13
+#define IO_I2S2_SDI      STM32_GPIOB, 14
+#define IO_I2S2_SDO      STM32_GPIOB, 15
 }
 
 static void board_on_softreset(void)
@@ -209,18 +258,17 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 10
+#define PREBOOT_TIME_SEC 4
 
 bool board_integrity_check(void)
 {
 	uint32_t tick;
 
-
 	/* Time window autoboot */
-	for (tick = 0; tick < PREBOOT_TIME_SEC; ++tick) {
-		uint64_t time;
+	for (tick = 0; tick < (PREBOOT_TIME_SEC * 4); ++tick) {
+//		uint64_t time;
 
-		thinkos_sleep(500);
+		thinkos_sleep(250);
 
 		krn_console_puts(".");
 
@@ -239,9 +287,9 @@ bool board_integrity_check(void)
 			break;
 		}
 
-		time = thinkos_time_realtime_get();
-		(void)time;
-		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
+//		time = thinkos_time_realtime_get();
+//		(void)time;
+//		DCC_LOG1(LOG_TRACE, "time = %u", (time >> 32));
 	}
 
 	krn_console_puts("\r\n");

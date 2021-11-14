@@ -61,41 +61,50 @@ enum monitor_event {
 	MONITOR_THREAD_TERMINATE = 9,
 	/* ThinkOS Thread break (stop request, error, fault, breakpoint.. ) */
 	MONITOR_THREAD_BREAK    = 10,
+
 	/* Debug Communication break signal */
 	MONITOR_COMM_BRK        = 11, 
 	/* Debug Communication data received pending */
 	MONITOR_COMM_RCV        = 12, 
 	/* Debug Communication end 3f transfer */
-	MONITOR_COMM_EOT        = 14,
+	MONITOR_COMM_EOT        = 13,
 	/* Debug Communication control signal */
-	MONITOR_COMM_CTL        = 15,
+	MONITOR_COMM_CTL        = 14,
 	/* User console RX pipe data pending */
-	MONITOR_RX_PIPE         = 16,
+	MONITOR_RX_PIPE         = 15,
 	/* User console TX pipe not empty */
-	MONITOR_TX_PIPE         = 17,
+	MONITOR_TX_PIPE         = 16,
 
+	MONITOR_APP_TERM        = 17,
 	/* ThinkOS application stop request */
 	MONITOR_APP_STOP        = 18,
 	/* ThinkOS application resume request */
 	MONITOR_APP_RESUME      = 19,
-	/* ThinkOS application terminate request */
-	MONITOR_APP_TERM        = 20,
-	/* ThinkOS application erase request */
-	MONITOR_APP_ERASE       = 21,
-	/* ThinkOS application 2pload request */
-	MONITOR_APP_UPLOAD      = 22,
-	/* ThinkOS application exec request */
-	MONITOR_APP_EXEC        = 23,
+	/* */
+
 	/* User/bootloader extension events 0 to 7 */
-	MONITOR_USER_EVENT0     = 24,
-	MONITOR_USER_EVENT1     = 25,
-	MONITOR_USER_EVENT2     = 26,
-	MONITOR_USER_EVENT3     = 27,
-	MONITOR_USER_EVENT4     = 28,
-	MONITOR_USER_EVENT5     = 29,
-	MONITOR_USER_EVENT6     = 30,
-	MONITOR_FLASH_DRV       = 31,
-	/*  */
+	MONITOR_USER_EVENT4     = 20,
+	MONITOR_USER_EVENT1     = 21,
+	MONITOR_USER_EVENT2     = 22,
+	MONITOR_USER_EVENT3     = 23,
+
+	/* Debug Communication break signal */
+	SIG_COMM_BRK            = 24, 
+	/* Debug Communication data received pending */
+	SIG_COMM_RCV            = 25, 
+	/* Debug Communication end 3f transfer */
+	SIG_COMM_EOT            = 26,
+	/* Debug Communication control signal */
+	SIG_COMM_CTL            = 27,
+	/* User console RX pipe data pending */
+	SIG_CONSOLE_RX          = 28,
+	/* User console TX pipe not empty */
+	SIG_CONSOLE_TX          = 29,
+	/* User console control */
+	SIG_CONSOLE_CTRL        = 30,
+	/* User console */
+	SIG_TEST = 31,
+
 	MONITOR_NONE            = 32
 };
 
@@ -178,6 +187,22 @@ struct monitor_comm {
 extern uint32_t thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
 extern const uint16_t thinkos_monitor_stack_size;
 
+struct defered_svc_map {
+	union {
+		int (* on_event[8])(struct thinkos_rt * krn, void * env);
+		struct {
+			void (* on_comm_brk)(struct thinkos_rt * krn, void * env);
+			void (* on_comm_rcv)(struct thinkos_rt * krn, void * env);
+			void (* on_comm_eot)(struct thinkos_rt * krn, void * env);
+			void (* on_comm_ctl)(struct thinkos_rt * krn, void * env);
+			void (* on_console_rx)(struct thinkos_rt * krn, void * env);
+			void (* on_console_tx)(struct thinkos_rt * krn, void * env);
+			void (* on_console_ctl)(struct thinkos_rt * krn, void * env);
+			void (* on_console_tmr)(struct thinkos_rt * krn, void * env);
+		};
+	};
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -213,7 +238,8 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	        COMM_ST_CONNECTED) ? true : false;
 }
 
-void thinkos_krn_monitor_init(struct thinkos_rt * krn, const struct monitor_comm * comm, 
+void thinkos_krn_monitor_init(struct thinkos_rt * krn, 
+							  const struct monitor_comm * comm, 
 							  void (* task)(const struct monitor_comm *, void *), 
 							  void * param);
 
@@ -315,9 +341,15 @@ void monitor_thread_resume(int thread_id);
 
 void monitor_thread_destroy(int thread_id);
 
+
+#define MONITOR_TASK(_F_) (void (*)(const struct monitor_comm *, \
+				  void *, void *, struct thinkos_rt *))(_F_ )
+
 /* ??? */
-void __attribute__((noreturn)) monitor_exec(void (* task) 
-   (const struct monitor_comm *, void *), void * param);
+void __attribute__((noreturn)) monitor_exec(
+	void (* task)(const struct monitor_comm *, 
+				  void *, void *, struct thinkos_rt *), 
+	const struct monitor_comm *, void * env, uintptr_t sta);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor memory API

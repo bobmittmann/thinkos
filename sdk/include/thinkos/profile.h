@@ -607,6 +607,14 @@
 #define THINKOS_THREAD_STACK_MAX            65280
 #endif
 
+/* Kernel clock and thread timers uses a 12.20 fixed point representation.
+ *
+ * Resolution = 0.9537 uS
+ * Max interval = 34.133 minutes */
+#ifndef THINKOS_ENABLE_FRACTIONAL_CLOCK
+#define THINKOS_ENABLE_FRACTIONAL_CLOCK     0
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/
@@ -775,6 +783,7 @@
 #error "THINKOS_ENABLE_JOIN depends on THINKOS_ENABLE_TERMINATE"
 #endif
 
+#if 0
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if (THINKOS_ENABLE_TIMED_CALLS ) && !(THINKOS_ENABLE_THREAD_STAT)
 #error "THINKOS_ENABLE_TIMED_CALLS  depends on THINKOS_ENABLE_THREAD_STAT"
@@ -790,6 +799,7 @@
 
 #if (THINKOS_ENABLE_DEBUG_STEP ) && !(THINKOS_ENABLE_THREAD_STAT)
 #error "THINKOS_ENABLE_DEBUG_STEP  depends on THINKOS_ENABLE_THREAD_STAT"
+#endif
 #endif
 
 #if (THINKOS_ENABLE_FPU_LS) && !(THINKOS_ENABLE_FPU)

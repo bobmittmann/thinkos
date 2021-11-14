@@ -31,14 +31,18 @@ void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
 
-	DCC_LOG2(LOG_MSG, "<%2d> itvl=%d", self, ms);
+	DCC_LOG2(LOG_TRACE, "<%2d> itvl=%d", self, ms);
 
 	/* wait for event */
 	__krn_thread_suspend(krn, self);
 	/* mark the thread clock enable bit */
 	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
+
 	/* set the clock */
 	__thread_clk_itv_set(krn, self, ms);
+
+	DCC_LOG2(LOG_TRACE, "clk=%d --> %d", krn->clk.time, krn->clk.th_tmr[self]);
+
 	/* insert into the clock wait queue */
 	__thread_clk_enable(krn, self) ;
 	/* signal the scheduler ... */

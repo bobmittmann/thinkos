@@ -134,14 +134,22 @@
   #define SIZEOF_KRN_TH_SL          0
 #endif
 
-#if (THINKOS_ENABLE_PROFILING)
-  #define SIZEOF_KRN_CYCREF    4
-  #define SIZEOF_KRN_TH_CYC    (__KRN_THREAD_LST_SIZ * 4)
-  #define THINKOS_KRN_THREAD_CYC_LST_SIZ (__KRN_THREAD_LST_SIZ)
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 28
 #else
-  #define SIZEOF_KRN_CYCREF    0
+  #if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
+    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 8
+  #else
+    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 4
+  #endif
+#endif
+
+#if (THINKOS_ENABLE_PROFILING)
+  #define SIZEOF_KRN_TH_CYC    (__KRN_THREAD_LST_SIZ * 4)
+  #define SIZEOF_KRN_CYCREF    4
+#else
   #define SIZEOF_KRN_TH_CYC    0
-  #define THINKOS_KRN_THREAD_CYC_LST_SIZ 0
+  #define SIZEOF_KRN_CYCREF    0
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -251,11 +259,13 @@
 #define OFFSETOF_KRN_IDLE_CTX   (OFFSETOF_KRN_NRT_CTX + SIZEOF_KRN_NRT_CTX)
 #define OFFSETOF_KRN_SCHED      (OFFSETOF_KRN_IDLE_CTX + SIZEOF_KRN_IDLE_CTX) 
 #define OFFSETOF_KRN_WQ_LST     (OFFSETOF_KRN_SCHED + SIZEOF_KRN_SCHED)
-#define OFFSETOF_KRN_CYCREF     (OFFSETOF_KRN_WQ_LST + SIZEOF_KRN_WQ_LST)
-#define OFFSETOF_KRN_TICKS      (OFFSETOF_KRN_CYCREF + SIZEOF_KRN_CYCREF)
-#define OFFSETOF_KRN_TH_CLK     (OFFSETOF_KRN_TICKS + SIZEOF_KRN_TICKS)
-#define OFFSETOF_KRN_TH_CYC     (OFFSETOF_KRN_TH_CLK + SIZEOF_KRN_TH_CLK)
-#define OFFSETOF_KRN_TH_SL      (OFFSETOF_KRN_TH_CYC + SIZEOF_KRN_TH_CYC)
+#define OFFSETOF_KRN_CLK        (OFFSETOF_KRN_WQ_LST + SIZEOF_KRN_WQ_LST)
+#define OFFSETOF_KRN_TH_CYC     (OFFSETOF_KRN_CLK + SIZEOF_KRN_CLK)
+#define OFFSETOF_KRN_CYCREF     (OFFSETOF_KRN_TH_CYC + SIZEOF_KRN_TH_CYC)
+
+
+
+#define OFFSETOF_KRN_TH_SL      (OFFSETOF_KRN_CYCREF + SIZEOF_KRN_CYCREF)
 #define OFFSETOF_KRN_TH_INF     (OFFSETOF_KRN_TH_SL + SIZEOF_KRN_TH_SL)
 #define OFFSETOF_KRN_TH_STAT    (OFFSETOF_KRN_TH_INF + SIZEOF_KRN_TH_INF)
 #define OFFSETOF_KRN_TH_ERRNO   (OFFSETOF_KRN_TH_STAT + SIZEOF_KRN_TH_STAT)
@@ -305,17 +315,21 @@
 
 struct thinkos_mem_map;
 
+struct defered_svc_map;
+
 /* -------------------------------------------------------------------------- 
  * Monitor control structure
  * --------------------------------------------------------------------------*/
 
 struct thinkos_monitor { 
+	uint32_t events;  /* event set bitmap */
+	uint32_t mask;  /* events mask */
+	const struct defered_svc_map * svc; /* event handler map */
+	void * env; /* environment */
 	union{
 		volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
 		uint32_t * ctx;
 	};
-	volatile uint32_t events;  /* event set bitmap */
-	volatile uint32_t mask;  /* events mask */
 };
 
 /* -------------------------------------------------------------------------- 
@@ -478,20 +492,25 @@ struct thinkos_rt {
 		};
 	};
 
-#if (THINKOS_ENABLE_PROFILING)
-	/* Reference cycle ... */
-	uint32_t cycref;
-#endif
-
 	struct {
-		uint32_t ticks;
-		/* Per thread clock. Used for time wait (e.g. sleep()) */
-		uint32_t th_clk[__KRN_THREAD_LST_SIZ];
-	};
+		/* Per thread timer. Used for time wait (e.g. sleep()) */
+		uint32_t th_tmr[__KRN_THREAD_LST_SIZ];
+		uint32_t time;      /* clock present value */
+#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
+		uint32_t increment; /* fractional per tick increment */
+#endif
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+		uint32_t resolution; /* fractional clock resolution */
+		uint32_t timestamp[2]; /* date and time fractional value */
+		int32_t realtime_offs[2];
+#endif
+	} clk;
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
 	uint32_t th_cyc[__KRN_THREAD_LST_SIZ]; 
+	/* Reference cycle ... */
+	uint32_t cycref;
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -548,17 +567,9 @@ struct thinkos_rt {
 	uint32_t rdy_msk;
 #endif
 
-#if (THINKOS_ENABLE_DATE_AND_TIME)
-	struct krn_clock time_clk;
-#endif
-
 #if (THINKOS_ENABLE_MONITOR)
 	/* kernel monitor control structure */
 	struct thinkos_monitor monitor;
-  #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	/* kernel monitor timer */
-	uint32_t monitor_clock;
-  #endif
 #endif
 
 
@@ -644,6 +655,11 @@ struct thinkos_rt {
 #if ((THINKOS_COMM_MAX) > 0)
 	const struct thinkos_comm * comm[THINKOS_COMM_MAX];
 #endif
+
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	struct krn_clock time_clk;
+#endif
+
 
 };
 

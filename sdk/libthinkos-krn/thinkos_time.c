@@ -107,7 +107,7 @@ void __thinkos_krn_time_init(struct thinkos_rt * krn)
 	uint32_t div = 487530;
 
 	clk->resolution = THINKOS_TIME_SYSTICK_INC;
-	clk->increment = clk->resolution;
+	krn->clk.increment = clk->resolution;
 	clk->realtime_offs = (uint64_t)1606149342LL << 32;
 
 
@@ -117,12 +117,12 @@ void __thinkos_krn_time_init(struct thinkos_rt * krn)
 	DCC_LOG1(LOG_TRACE, "resolution=%d", clk->resolution);
 }
 
-static uint64_t krn_clock_timestamp(struct krn_clock * clk)
+static uint64_t __krn_clock_timestamp(struct thinkos_rt * krn)
 {
     register uint64_t ts;
     register uint32_t dt;
 
-	ts = clk->timestamp;
+	ts = krn->clk.timestamp[0];
 
     /* hardware timer ticks */
 //  dt = ((uint64_t)clk->increment * cnt0 * clk->tmr_k + (1LL << 30)) >> 31;
@@ -155,7 +155,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self,
 	unsigned int oper = arg[0];
 	union krn_time tm;
 
-	tm.u64 = krn_clock_timestamp(clk);
+	tm.u64 = __krn_clock_timestamp(krn);
 
 	switch (oper) {
 	case THINKOS_TIME_MONOTONIC_GET:
@@ -230,7 +230,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self,
 		//	clk->drift_comp = q31_d;
 
 			/* Update the increpent per tick */
-			clk->increment = clk->resolution + clk_d;
+			krn->clk.increment = clk->resolution + clk_d;
 
     /* return the corrected drift adjustment per second.
        Q31 fixed point format */
@@ -250,11 +250,10 @@ void thinkos_time_svc(int32_t * arg, unsigned int self,
 
 int krn_fmt_clk_realtime(struct thinkos_rt * krn, char * s) 
 {
-    struct krn_clock * clk = &krn->time_clk;
 	union krn_time tm;
 	uint32_t frac;
 
-	tm.u64 = krn_clock_timestamp(clk);
+	tm.u64 = __krn_clock_timestamp(krn);
 
 	frac = ((uint64_t)tm.frac * 1000LL + (1LL << 31)) >> 32;
 
