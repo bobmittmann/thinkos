@@ -60,11 +60,11 @@ void stdio_init(void)
 }
 
 /* Convert from clock interval to float point */
-#define CLK_FLOAT(X)     ((float)(uint64_t)(X) / 4294967296.)
+#define CLK_FLOAT(X)     ((float)(uint64_t)(X) / (float)4294967296.)
 
 int main(int argc, char ** argv)
 {
-	uint64_t time;
+	union krn_time t;
 	int i;
 	
 	/* Initialize the stdin, stdout and stderr */
@@ -82,8 +82,9 @@ int main(int argc, char ** argv)
 	/* Run the test */
 	for (i = 10; i > 0; --i) {
 		thinkos_sleep(1000);
-		time = thinkos_time_monotonic_get();
-		printf("%d - %.10f\r\n", i, time);
+		t.u64 = thinkos_time_monotonic_get();
+		printf("%2d - %d.%06u\r\n", i, t.sec, 
+			   ((uint64_t)t.frac * 1000000LL) >> 32);
 	}
 
 	return 0;

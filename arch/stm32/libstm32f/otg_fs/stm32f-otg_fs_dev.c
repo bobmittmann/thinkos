@@ -166,7 +166,7 @@ static void __ep_pktbuf_alloc(struct stm32f_otg_drv * drv,
 #endif
 	}
 
-	DCC_LOG3(LOG_TRACE, "addr=%d siz=%d free=%d", drv->fifo_addr, siz,
+	DCC_LOG3(LOG_INFO, "addr=%d siz=%d free=%d", drv->fifo_addr, siz,
 			 OTG_FS_MEM_SIZE - (drv->fifo_addr + siz));
 
 	drv->fifo_addr += siz;
@@ -1144,7 +1144,7 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv,
 	/* Initialize IO pins */
 	otg_io_init();
 
-	DCC_LOG(LOG_TRACE, "Enabling USB FS clock...");
+	DCC_LOG(LOG_INFO, "Enabling USB FS clock...");
 	stm32_clk_enable(STM32_RCC, STM32_CLK_OTGFS);
 	
 	/* Initialize as a device */
@@ -1327,7 +1327,7 @@ static void stm32f_otg_dev_reset(struct stm32f_otg_drv * drv)
 	uint32_t siz;
 	int i;
 
-	DCC_LOG(LOG_TRACE, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	DCC_LOG(LOG_INFO, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 	/* Clear the Remote Wake-up Signaling */
 	otg_fs->dctl &= ~OTG_FS_RWUSIG;

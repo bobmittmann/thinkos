@@ -1032,7 +1032,7 @@ void stm32f_can1_tx_usb_hp_isr(void)
 
 	ep_id = USB_EP_ID_GET(sr);
 
-	DCC_LOG1(LOG_TRACE, "CTR ep_id=%d", ep_id);
+	DCC_LOG1(LOG_INFO, "CTR ep_id=%d", ep_id);
 
 	epr = usb->epr[ep_id];
 	ep = &drv->ep[ep_id];

@@ -587,11 +587,6 @@
 #define THINKOS_ENABLE_READY_MASK           0
 #endif
 
-/* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
-#ifndef THINKOS_ENABLE_DATE_AND_TIME 
-#define THINKOS_ENABLE_DATE_AND_TIME        0
-#endif
-
 /* Enable kernel support for real time trace. The kernel hold the trace
    ring in a protected memory and mediate its access by the application 
    and debug monitor services. */
@@ -615,6 +610,11 @@
 #define THINKOS_ENABLE_FRACTIONAL_CLOCK     0
 #endif
 
+/* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
+#ifndef THINKOS_ENABLE_DATE_AND_TIME 
+#define THINKOS_ENABLE_DATE_AND_TIME        0
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/
@@ -625,36 +625,39 @@
 #warn "THINKOS_THREADS_MAX set to 32"
 #endif
 
-#if (THINKOS_ENABLE_MUTEX_ALLOC) & !(THINKOS_MUTEX_MAX)
+#if (THINKOS_ENABLE_MUTEX_ALLOC) && !(THINKOS_MUTEX_MAX)
 #undef THINKOS_ENABLE_MUTEX_ALLOC
 #define THINKOS_ENABLE_MUTEX_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_COND_ALLOC) & !(THINKOS_COND_MAX)
+#if (THINKOS_ENABLE_COND_ALLOC) && !(THINKOS_COND_MAX)
 #undef THINKOS_ENABLE_COND_ALLOC
 #define THINKOS_ENABLE_COND_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_SEM_ALLOC) & !(THINKOS_SEMAPHORE_MAX)
+#if (THINKOS_ENABLE_SEM_ALLOC) && !(THINKOS_SEMAPHORE_MAX)
 #undef THINKOS_ENABLE_SEM_ALLOC
 #define THINKOS_ENABLE_SEM_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_EVENT_ALLOC) & !(THINKOS_EVENT_MAX)
+#if (THINKOS_ENABLE_EVENT_ALLOC) && !(THINKOS_EVENT_MAX)
 #undef THINKOS_ENABLE_EVENT_ALLOC
 #define THINKOS_ENABLE_EVENT_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_FLAG_ALLOC) & !(THINKOS_FLAG_MAX)
+#if (THINKOS_ENABLE_FLAG_ALLOC) && !(THINKOS_FLAG_MAX)
 #undef THINKOS_ENABLE_FLAG_ALLOC
 #define THINKOS_ENABLE_FLAG_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_GATE_ALLOC) & !(THINKOS_GATE_MAX)
+#if (THINKOS_ENABLE_GATE_ALLOC) && !(THINKOS_GATE_MAX)
 #undef THINKOS_ENABLE_GATE_ALLOC
 #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
 
+#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_FRACTIONAL_CLOCK)
+#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_FRACTIONAL_CLOCK"
+#endif
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_TIMED_CALLS)
 #error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_TIMED_CALLS"

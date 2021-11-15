@@ -176,12 +176,15 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		{
 			uint32_t clk;
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-			uint64_t ts;
+			union krn_time ts;
 
-			ts = krn->clk.timestamp[1];
-			ts += krn->clk.increment;
-			krn->clk.timestamp[0] = ts;
-			clk = ts >> 12; 
+			ts.sec = krn->clk.timestamp.sec;
+			ts.frac = krn->clk.timestamp.frac;
+
+			ts.u64 += krn->clk.increment;
+			krn->clk.timestamp.sec = ts.sec;
+			krn->clk.timestamp.frac = ts.frac;
+			clk = ts.u64 >> 12; 
 #else
 			clk = krn->clk.time; 
 #if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
@@ -291,7 +294,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			krn->monitor.events = sigset;
 			krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
 		} else {
-			DCC_LOG1(LOG_TRACE, "sigact=%08x.", sigact); 
+			DCC_LOG1(LOG_MSG, "sigact=%08x.", sigact); 
 			__monitor_context_swap(&krn->monitor.ctx); 
 		}
 
@@ -301,8 +304,12 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 }
 
 #define THINKOS_SYSTICK_FREQ (1000) /* T = 1ms */
+
 #define THINKOS_CLK_INCREMENT (((uint64_t)(1LL << 32) / \
 								(THINKOS_SYSTICK_FREQ)) >> 12)
+
+#define THINKOS_CLK_RESOLUTION (((uint64_t)(1LL << 32) / \
+								(THINKOS_SYSTICK_FREQ)))
 
 extern const uint32_t krn_timer_clk_k;
 extern const uint32_t krn_timer_freq;
@@ -324,7 +331,9 @@ void thinkos_krn_systick_init(struct thinkos_rt * krn)
 
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-	krn->clk.increment = krn->time_clk.resolution;
+	krn->clk.resolution = THINKOS_CLK_RESOLUTION;
+	krn->clk.increment = krn->clk.resolution;
+	DCC_LOG1(LOG_TRACE, "clk.increment=%u", krn->clk.increment); 
 #elif (THINKOS_ENABLE_FRACTIONAL_CLOCK)
 	krn->clk.increment = THINKOS_CLK_INCREMENT;
 	DCC_LOG1(LOG_TRACE, "clk.increment=%u", krn->clk.increment); 

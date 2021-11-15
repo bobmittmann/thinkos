@@ -31,13 +31,11 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_MONITOR) 
 
 
-
 #ifndef THINKOS_ENABLE_MONITOR_NULL_TASK
 #define THINKOS_ENABLE_MONITOR_NULL_TASK 1
 #endif
 
-#define MONITOR_PERISTENT_MASK ((1 << MONITOR_TASK_INIT) | \
-								(1 << MONITOR_SOFTRST))
+#define MONITOR_PERISTENT_MASK ((1 << MONITOR_SOFTRST) | (1 << MONITOR_TASK_INIT))
 
 struct {
 	/* task entry point */
@@ -479,7 +477,7 @@ void monitor_exec(void (* task)(const struct monitor_comm *, void *, uintptr_t,
 								struct thinkos_rt *), 
 				  const struct monitor_comm * comm, void * env, uintptr_t sta)
 {
-	monitor_signal(MONITOR_TASK_INIT);
+//	monitor_signal(MONITOR_TASK_INIT);
 	DCC_LOG1(LOG_TRACE, "task=%p", task);
 	__monitor_context_exec((uintptr_t)task, (uintptr_t)comm, env, sta); 
 }
@@ -504,7 +502,7 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 
 	krn->monitor.ctx = sp;
 	/* set the task init and software reset signals */
-	krn->monitor.events = (1 << MONITOR_TASK_INIT)	| (1 << MONITOR_SOFTRST);
+	krn->monitor.events = (1 << MONITOR_TASK_INIT);
 	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
 	DCC_LOG1(LOG_TRACE, "mask=%08x", krn->monitor.mask);

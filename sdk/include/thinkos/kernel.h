@@ -135,7 +135,7 @@
 #endif
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 28
+  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 32
 #else
   #if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
     #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 8
@@ -500,9 +500,17 @@ struct thinkos_rt {
 		uint32_t increment; /* fractional per tick increment */
 #endif
 #if (THINKOS_ENABLE_DATE_AND_TIME)
+		/* date and time fractional value */
+		struct {
+			uint32_t frac;
+			uint32_t sec;
+		} timestamp;
+		struct {
+			uint32_t frac;
+			uint32_t sec;
+		} realtime_offs;
 		uint32_t resolution; /* fractional clock resolution */
-		uint32_t timestamp[2]; /* date and time fractional value */
-		int32_t realtime_offs[2];
+		uint32_t k; /* residual clock multiplication factor */
 #endif
 	} clk;
 
@@ -657,7 +665,7 @@ struct thinkos_rt {
 #endif
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-	struct krn_clock time_clk;
+//	struct krn_clock time_clk;
 #endif
 
 

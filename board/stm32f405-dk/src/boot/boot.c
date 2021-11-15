@@ -23,6 +23,7 @@
 #include "version.h"
 
 void board_init(void);
+void board_reset(void);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg,
 					   uintptr_t, struct thinkos_rt *);
 int board_integrity_check(void);
@@ -106,7 +107,11 @@ void main(int argc, char ** argv)
 	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, 
 							 (void *)&this_board);
 
-	thinkos_sleep(200);
+	DCC_LOG(LOG_TRACE, "board_reset(),,,");
+	board_reset();
+
+	DCC_LOG(LOG_TRACE, "thinkos_sleep(),,,");
+//	thinkos_sleep(200);
 
 //	monitor_signal(SIG_COMM_BRK); 
 //	thinkos_sleep(1000);
@@ -115,9 +120,14 @@ void main(int argc, char ** argv)
 //	monitor_signal(SIG_CONSOLE_CTRL); 
 //	thinkos_sleep(1000);
 
+	DCC_LOG(LOG_TRACE, "board_integrity_check(),,,");
 	if (board_integrity_check()) {
+		DCC_LOG(LOG_TRACE, "btl_flash_app_exec(APP)...");
 		btl_flash_app_exec("APP");
 	}
+
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 6. btl_flash_app_exec() fail." VT_POP);
 
 	btl_console_shell(env);
 }

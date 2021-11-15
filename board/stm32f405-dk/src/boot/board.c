@@ -245,11 +245,17 @@ int board_init(void)
 	stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
 
 	io_init();
+	board_on_softreset();
 
 	stm32_gpio_set(IO_LED3);
 	stm32_gpio_set(IO_LED4);
 
 	return 0;
+}
+
+void board_reset(void)
+{
+	board_on_softreset();
 }
 
 /* ----------------------------------------------------------------------------
@@ -258,7 +264,7 @@ int board_init(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 4
+#define PREBOOT_TIME_SEC 1
 
 bool board_integrity_check(void)
 {
