@@ -784,25 +784,21 @@ int stm32f_otg_dev_ep_pkt_recv(struct stm32f_otg_drv * drv, int ep_id,
 }
 
 int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv, 
-						  unsigned int ep_addr, unsigned int opt)
+						  unsigned int ep_id, unsigned int opt)
 {
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
-	struct stm32f_otg_ep * ep;
-	int ep_id;
+	struct stm32f_otg_ep * ep= &drv->ep[ep_id];
 	int idx;
 
-	if ((idx = ep_addr & 0x7f) > 3) {
-		DCC_LOG1(LOG_ERROR, "invalid address addr=%d", ep_addr);
+#if DEBUG
+	if ((unsigned int)ep_id >= OTG_EP_MAX) {
+		DCC_LOG1(LOG_WARNING, "invalid ep_id=%d!", ep_id);
 		return -1;
 	}
+#endif
 
-	if (ep_addr & USB_ENDPOINT_IN) {
-		ep_id = idx + OTG_INEP_OFF;
-		DCC_LOG(LOG_INFO, "IN ENDPOINT");
-	} else {
-		ep_id = idx;
-		DCC_LOG(LOG_INFO, "OUT ENDPOINT");
-	}
+	ep= &drv->ep[ep_id];
+	idx = ep->idx;
 
 #if DEBUG
 	if ((unsigned int)ep_id >= OTG_EP_MAX) {
@@ -839,7 +835,7 @@ int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv,
 		break;
 
 	case USB_EP_STALL_SET:
-		if (ep_addr & USB_ENDPOINT_IN)
+		if (idx >= OTG_INEP_OFF)
 			__ep_in_stall_set(otg_fs, idx);
 		else
 			__ep_out_stall_set(otg_fs, idx);
@@ -848,7 +844,7 @@ int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv,
 		break;
 
 	case USB_EP_STALL_CLR:
-		if (ep_addr & USB_ENDPOINT_IN)
+		if (idx >= OTG_INEP_OFF)
 			__ep_in_stall_clr(otg_fs, idx);
 		else
 			__ep_out_stall_clr(otg_fs, idx);
@@ -859,6 +855,19 @@ int stm32f_otg_dev_ep_ctl(struct stm32f_otg_drv * drv,
 	case USB_EP_DISABLE:
 		ep->state = EP_UNCONFIGURED;
 		break;
+
+	case USB_EP_IN_REQ:
+		if (ep->state == EP_STALLED) {
+			DCC_LOG(LOG_TRACE, "EP IN REQ - STALLED");
+		} else if (ep->state == EP_UNCONFIGURED) {
+			DCC_LOG(LOG_TRACE, "EP IN REQ - UNCONFIGURED");
+		} else if (ep->state == EP_IDLE) {
+			DCC_LOG(LOG_TRACE, "EP IN REQ - EP_IDLE");
+		} else {
+			DCC_LOG(LOG_TRACE, "EP IN REQ");
+		}
+		break;
+
 
 	default:
 		return -1;
@@ -1137,9 +1146,13 @@ int stm32f_otg_fs_dev_init(struct stm32f_otg_drv * drv,
 						   const struct usb_class_events * ev)
 {
 	struct stm32f_otg_fs * otg_fs = STM32F_OTG_FS;
+	int i;
 
 	drv->cl = cif;
 	drv->ev = ev;
+
+	for (i = 0; i < OTG_EP_MAX; ++i) 
+		drv->ep[i].state = EP_UNCONFIGURED;
 
 	/* Initialize IO pins */
 	otg_io_init();

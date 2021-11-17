@@ -184,6 +184,10 @@
 #define THINKOS_ENABLE_I_CALLS              0
 #define THINKOS_ENABLE_READY_MASK           0
 #define THINKOS_ENABLE_KRNSVC               0
+
+#define THINKOS_COMM_MAX                    1
+
+
 /* -------------------------------------------------------------------------
    RCC 
    -------------------------------------------------------------------------- */

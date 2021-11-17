@@ -93,6 +93,9 @@ int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq);
 int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int idx,
 						  const struct thinkos_comm * comm, void * parm);
 
+ssize_t krn_comm_tx_wq_req_process(struct thinkos_rt * krn, unsigned int tx_wq,
+								   uint8_t * dst, size_t max);
+
 #if 0
 static inline int krn_comm_send(const struct thinkos_comm_dev * comm, 
 								   const void * buf, unsigned int len) {

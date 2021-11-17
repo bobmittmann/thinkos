@@ -33,7 +33,7 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG := stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c board.c monitor.c shell.c cmd_tab.c 
+CFILES = boot.c board.c monitor.c uart1-comm.c shell.c cmd_tab.c usb-cdc-comm.c
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 

@@ -100,7 +100,7 @@ enum monitor_event {
 	SIG_COMM_CTL            = 28,
 	/* User console RX pipe data pending */
 	SIG_CONSOLE_RX          = 29,
-	/* User console TX pipe not empty */
+	/* User console TX request */
 	SIG_CONSOLE_TX          = 30,
 	/* User console control */
 	SIG_CONSOLE_CTRL        = 31,

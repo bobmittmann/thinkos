@@ -33,6 +33,14 @@ void tp13_off(void);
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
+inline static void console_signal_tx_req(void)
+{
+#if (THINKOS_ENABLE_MONITOR)
+	monitor_signal(SIG_CONSOLE_TX);
+#else
+#endif
+}
+
 inline static void console_clear_tx_pipe(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -124,6 +132,8 @@ struct console_tx_pipe {
 #define CONSOLE_FLAG_RAW       (1  << 3)
 
 struct {
+	volatile uint8_t comm;
+
 	struct console_tx_pipe tx_pipe;
 	struct console_rx_pipe rx_pipe;
 	volatile union {
@@ -467,8 +477,23 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 }
 #endif
 
-
 void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+{	
+	struct comm_tx_req * req = (struct comm_tx_req *)arg;
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+
+	DCC_LOG2(LOG_TRACE, "<%2d> console tx req... %d", self, wq);
+
+	req->cnt = 0;
+
+	/* wait for event ... */
+	__krn_thread_wait(krn, self, wq);
+
+	/* signal driver */
+	console_signal_tx_req();
+}
+
+void _thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;

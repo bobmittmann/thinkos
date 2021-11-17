@@ -101,12 +101,6 @@ int krn_comm_rx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-struct comm_tx_req {
-	volatile uint32_t cnt;
-	uint8_t * ptr;
-	uint32_t len;
-};
-
 int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq)
 {
 	int c = -1;
@@ -137,6 +131,49 @@ int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq)
 	return c;
 }
 
+ssize_t krn_comm_tx_wq_req_process(struct thinkos_rt * krn, 
+								   unsigned int tx_wq,
+								   uint8_t * dst, size_t max)
+{
+	struct comm_tx_req * req = NULL;
+	int th;
+
+	th = __krn_wq_head(krn, tx_wq);
+	if (th != THINKOS_THREAD_NULL) {
+		req = (struct comm_tx_req *)__thread_frame_get(krn, th);
+		size_t len = req->len;
+		size_t cnt = req->cnt;
+		ssize_t rem;
+		uint8_t * src;
+
+		if ((rem = (len - cnt)) > 0) {
+			int i;
+			if (rem > max)
+				rem = max;
+		
+			src = &req->ptr[cnt];
+			for (i = 0; i < rem; ++i) {
+				dst[i] = src[i];
+			}
+			cnt += rem;
+			req->cnt = cnt + rem;
+		}
+
+		if (len == cnt) {
+			/* wakeup from the wait queue */
+			__krn_wq_ready_thread_ins(krn, th);
+			__krn_wq_remove(krn, tx_wq, th);
+			/* signal the scheduler ... */
+			__krn_sched_defer(krn);
+		}
+	
+		return rem;
+	}
+
+	return 0;
+}
+
+
 void thinkos_comm_timed_fixup_svc(int32_t arg[], int self, 
 								  struct thinkos_rt * krn)
 {
@@ -160,7 +197,6 @@ void thinkos_comm_timed_fixup_svc(int32_t arg[], int self,
 
 }
 
-
 void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	struct comm_tx_req * req = (struct comm_tx_req *)arg;
@@ -178,7 +214,7 @@ void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_comm_tx_check(krn, wq)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, wq);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[4] = THINKOS_EINVAL;
 		return;
 	}
 #if 0
@@ -207,13 +243,6 @@ void thinkos_comm_timedsend_svc(int32_t arg[], int self,
 							   struct thinkos_rt * krn)
 {
 }
-
-struct comm_rx_req {
-	volatile uint32_t cnt;
-	uint8_t * ptr;
-	uint32_t len;
-	uint32_t tmo;
-};
 
 int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
 {
@@ -347,13 +376,11 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	req = (struct comm_ctl_req *)arg;
 	op = req->oper;
 	
-	DCC_LOG3(LOG_TRACE, "<%d> oper=%d devno=%d", self, op, req->idx);
-
 	if (op == THINKOS_COMM_OPEN) {
 		idx = req->idx;
 		if (idx > THINKOS_COMM_MAX) {
 			__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
-			arg[0] = THINKOS_EINVAL;
+			arg[4] = THINKOS_EINVAL;
 			return;
 		}
 
@@ -365,18 +392,22 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 		if (comm == NULL) {
 			__THINKOS_ERROR(self, THINKOS_ERR_KRN_FAULT);
-			arg[0] = THINKOS_EINVAL;
+			arg[4] = THINKOS_EINVAL;
 			return;
 		}
 #endif
 
+		DCC_LOG2(LOG_TRACE, "<%d> open(%p)", self, comm->drv);
 		comm->drv_op->open(comm->drv);
 
-		arg[0] = oid;
+
+		arg[4] = oid;
 		return;
+	} else {
+		DCC_LOG3(LOG_TRACE, "<%d> oper=%d devno=%d", self, op, req->idx);
 	}
 
-	arg[0] = THINKOS_ENOSYS;
+	arg[4] = THINKOS_ENOSYS;
 }
 
 int thinkos_krn_comm_init(struct thinkos_rt * krn,

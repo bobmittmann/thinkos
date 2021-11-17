@@ -792,19 +792,49 @@ static inline int __attribute__((always_inline))
 
 static inline int __attribute__((always_inline)) 
 thinkos_comm_open(unsigned int devno) {
-	uint32_t opc = __COMM_OPEN_OPC(devno);
-	register int32_t ret asm("r0");
-	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) : "0"(opc) : );
+	register int32_t ret asm("r12");
+	register int32_t opc asm("r0") = __COMM_OPEN_OPC(devno);
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) : "r"(opc) : );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_comm_send(unsigned int comm, const void * buf, size_t len) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = 0;
+	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_comm_timedsend(unsigned int comm, const void * buf, size_t len,
+					   uint32_t tmo) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_SEND) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_comm_send(unsigned int comm, const void * buf, unsigned int len) {
-	register int32_t ret asm("r0");
+thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
+					   unsigned int tmo) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
 	register uint32_t r1 asm("r1") = (uintptr_t)buf;
 	register uint32_t r2 asm("r2") = len;
-	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
-				  "0"(comm), "r"(r1), "r"(r2) : "memory"  );
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDRECV) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
 	return ret;
 }
 
@@ -815,34 +845,6 @@ thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
 	register uint32_t r2 asm("r2") = len;
 	asm volatile (ARM_SVC(THINKOS_COMM_RECV) : "=r"(ret) : 
 				  "0"(comm), "r"(r1), "r"(r2) : "memory" );
-	return ret;
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_comm_timedsend(unsigned int comm, const void * buf, unsigned int len,
-					   unsigned int tmo) {
-	register int32_t ret asm("r0");
-	register uint32_t r0 asm("r0") = comm;
-	register uint32_t r1 asm("r1") = (uintptr_t)buf;
-	register uint32_t r2 asm("r2") = len;
-	register uint32_t r3 asm("r3") = tmo;
-	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDSEND) 
-				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
-				  "0"(r0), "r"(r1), "r"(r2), "r"(r3)  : "r12", "memory" );
-	return ret;
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
-					   unsigned int tmo) {
-	register int32_t ret asm("r0");
-	register uint32_t r0 asm("r0") = comm;
-	register uint32_t r1 asm("r1") = (uintptr_t)buf;
-	register uint32_t r2 asm("r2") = len;
-	register uint32_t r3 asm("r3") = tmo;
-	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDRECV) 
-				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
-				  "0"(r0), "r"(r1), "r"(r2), "r"(r3)  : "r12", "memory" );
 	return ret;
 }
 

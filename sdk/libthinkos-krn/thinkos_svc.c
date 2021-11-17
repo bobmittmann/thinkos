@@ -188,7 +188,7 @@ void thinkos_yield_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 void thinkos_critical_enter_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	if (++thinkos_rt.critical_cnt) {
-		thinkos_krn_sched_off();
+		__krn_sched_off();
 	}
 }
 
@@ -198,7 +198,7 @@ void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		__THINKOS_ERROR(self, THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
-		thinkos_krn_sched_on();
+		__krn_sched_on();
 	}
 }
 #endif

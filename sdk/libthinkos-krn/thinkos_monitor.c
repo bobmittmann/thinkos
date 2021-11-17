@@ -43,6 +43,7 @@ struct {
 	const struct monitor_comm * comm;
 	/* user supplied parameter */
 	void * param;             
+	struct comm_tx_req * tx_req;
 
 #if (THINKOS_ENABLE_MONITOR_THREADS)
 	/* entry/exit signal thread id */
@@ -79,6 +80,15 @@ static void __monitor_event_set(struct thinkos_rt * krn, uint32_t ev)
 		evset |= ev;
 	} while (__strex((uint32_t *)&krn->monitor.events, evset));
 }
+
+void krn_monitor_signal(struct thinkos_rt * krn, int sig) 
+{
+	__monitor_event_set(krn, (1 << sig)); 
+
+	/* rise a pending systick interrupt */
+	CM3_SCB->icsr = SCB_ICSR_PENDSTSET;
+}
+
 
 void monitor_signal(int sig) 
 {
@@ -411,7 +421,25 @@ void def_on_console_rx(struct thinkos_rt * krn, void * env)
 
 void def_on_console_tx(struct thinkos_rt * krn, void * env)
 {
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
+	const struct thinkos_comm * comm;
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+	struct comm_tx_req * req;
+	int th;
+
+	/* check if there is a pending monitor request */
+	if ((req = krn->monitor.tx_req) != NULL) {
+		th = 0;
+	} else if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL) {
+		req = (struct comm_tx_req *)__thread_frame_get(krn, th);
+	} else {
+		DCC_LOG(LOG_WARNING, "no thread waiting.");
+		return;
+	}
+
+	if ((comm = krn->monitor.comm) == NULL) {
+		DCC_LOG(LOG_ERROR, "no communication port.");
+		return;
+	}
 }
 
 void def_on_console_ctl(struct thinkos_rt * krn, void * env)

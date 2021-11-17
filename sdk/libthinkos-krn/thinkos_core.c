@@ -113,7 +113,7 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CRITICAL)
 	krn->critical_cnt = 0;
 	/* turn the scheduler back on */
-	thinkos_krn_sched_on();
+	__krn_sched_on();
 #endif
 }
 
@@ -270,5 +270,16 @@ int __thread_wq_lookup(struct thinkos_rt * krn, unsigned int th)
 	}
 	
 	return i;
+}
+
+
+void thinkos_krn_sched_off(struct thinkos_rt * krn)
+{
+	__krn_sched_off();
+}
+
+void thinkos_krn_sched_on(struct thinkos_rt * krn)
+{
+	__krn_sched_on();
 }
 

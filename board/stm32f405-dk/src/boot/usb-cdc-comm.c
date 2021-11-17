@@ -1,5 +1,5 @@
 /* 
- * /usb-cdc-comm.h
+ * /usb-cdc-comm.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -956,20 +956,26 @@ int comm_usb_cdc_comm_recv(const void * comm,
 
 static int usb_cdc_comm_ctrl(const void * comm, unsigned int opc)
 {
+	DCC_LOG1(LOG_TRACE, "%d...", opc);
 //	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	return 0;
 }
 
 //static struct usb_class_if usb_class_if_instance;
-void usb_comm_signal(struct usb_cdc_acm_dev * dev, unsigned int sig)
+//
+//
+//void usb_comm_signal(const struct thinkos_comm * comm, unsigned int sig)
+void usb_cdc_comm_signal(struct usb_cdc_acm_dev * dev, unsigned int sig)
 {
-
-	DCC_LOG1(LOG_TRACE, "usb_comm_signal(%d)...", sig);
+	if (sig == COMM_TX_PEND) {
+		DCC_LOG(LOG_TRACE, "TX PEND...");
+		usb_dev_ep_ctl(dev->usb, dev[0].in_ep, USB_EP_IN_REQ);
+	}
 }
 
-int usb_comm_open(struct usb_cdc_acm_dev * dev)
+int usb_cdc_comm_open(struct usb_cdc_acm_dev * dev)
 {
-	DCC_LOG(LOG_TRACE, "Initializing UART...");
+	DCC_LOG(LOG_TRACE, "Initializing USB...");
 
 	return THINKOS_OK;
 }
@@ -978,11 +984,11 @@ int usb_comm_open(struct usb_cdc_acm_dev * dev)
 //	comm_usb_cdc_comm_recv,
 //
 const struct thinkos_comm_drv_op usb_cdc_comm_drv_op  = {
-	.open = (int (*)(const void *))usb_comm_open,
+	.open = (int (*)(const void *))usb_cdc_comm_open,
 	.send = (int (*)(const void *, const void *, unsigned int))NULL,
 	.recv = (int (*)(const void *, void *, unsigned int))NULL,
 	.ctrl = (int (*)(const void *, unsigned int))usb_cdc_comm_ctrl,
-	.signal = (void (*)(const void *, unsigned int))usb_comm_signal
+	.signal = (void (*)(const void *, unsigned int))usb_cdc_comm_signal
 };
 
 int usb_cdc_comm_init(const struct thinkos_comm * comm, 

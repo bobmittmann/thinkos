@@ -45,15 +45,15 @@ int __krn_fifo8_putc(struct thinkos_fifo8 * fifo, int c)
 	return 0;
 }
 
-int __krn_fifo8_getc(struct thinkos_fifo8 * fifo)
+int thinkos_krn_fifo8_getc(struct thinkos_fifo8 * fifo)
 {
 	uint32_t head = fifo->head;
 	uint32_t tail = fifo->tail;
 	uint32_t size = fifo->size;
 	int c = 0;
 
-	if ((int32_t)(head - tail) > 0) {
-		uint32_t pos = tail & (size - 1);
+	if (((int32_t)head - (int32_t)tail) > 0) {
+		uint32_t pos = tail % size;
 		c = fifo->buf[pos];
 		fifo->tail = tail + 1;
 	}
@@ -94,6 +94,14 @@ int __krn_fifo_getc(struct thinkos_fifo * fifo)
 	}
 
 	return c;
+}
+
+void __krn_fifo8_init(struct thinkos_fifo8 * fifo, size_t size)
+{
+	fifo->size = size;
+	fifo->mark = size / 2;
+	fifo->head = 0;
+	fifo->tail = 0;
 }
 
 

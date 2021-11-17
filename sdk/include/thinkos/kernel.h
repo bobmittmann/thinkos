@@ -324,12 +324,14 @@ struct defered_svc_map;
 struct thinkos_monitor { 
 	uint32_t events;  /* event set bitmap */
 	uint32_t mask;  /* events mask */
-	const struct defered_svc_map * svc; /* event handler map */
+	const struct defered_svc_map * svc; /* defered services vectors */
 	void * env; /* environment */
 	union{
 		volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
 		uint32_t * ctx;
 	};
+	const struct thinkos_comm * comm;
+	struct comm_tx_req * tx_req;
 };
 
 /* -------------------------------------------------------------------------- 
@@ -1051,6 +1053,10 @@ unsigned int __thinkos_obj_kind(unsigned int oid);
 int __thinkos_kind_prefix(unsigned int kind);
 
 const char * __thinkos_kind_name(unsigned int kind);
+
+void thinkos_krn_sched_off(struct thinkos_rt * krn);
+
+void thinkos_krn_sched_on(struct thinkos_rt * krn);
 
 /* -------------------------------------------------------------------------
  * Kernel Debug

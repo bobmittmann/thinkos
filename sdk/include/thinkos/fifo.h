@@ -122,6 +122,36 @@ static inline bool __krn_fifo8_isempty(struct thinkos_fifo8 * fifo) {
 	return fifo->tail == fifo->head;
 }
 
+static inline ssize_t __krn_fifo8_free(struct thinkos_fifo8 * fifo) {
+	return (fifo->tail - fifo->head) + fifo->size;
+}
+
+static inline ssize_t __krn_fifo8_used(struct thinkos_fifo8 * fifo) {
+	return ((int32_t)fifo->head - (int32_t)fifo->tail);
+}
+
+static inline int __krn_fifo8_getc(struct thinkos_fifo8 * fifo) {
+	uint32_t tail = fifo->tail;
+	int c = fifo->buf[tail % fifo->size];
+	fifo->tail = tail + 1;
+	return c;
+}
+
+static inline uint8_t * __krn_fifo8_ptr(struct thinkos_fifo8 * fifo, uint32_t seq) {
+	return &fifo->buf[seq % fifo->size];
+}
+
+static inline uint32_t __krn_fifo8_free_max(struct thinkos_fifo8 * fifo)
+{
+	uint32_t tail = fifo->tail;
+	uint32_t size = fifo->size;
+	uint32_t free;
+	uint32_t rem;
+	free = (tail - fifo->head) + size;
+	rem = size - (tail % size);
+	return free < rem ? free : rem;
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -131,6 +161,8 @@ ssize_t __krn_fifo_write(struct thinkos_fifo * fifo,
 
 ssize_t __krn_fifo_read(struct thinkos_fifo * fifo, 
 						uint8_t * buf, size_t len);
+
+void __krn_fifo8_init(struct thinkos_fifo8 * fifo, size_t size);
 
 int __krn_fifo8_putc(struct thinkos_fifo8 * fifo, int c);
 

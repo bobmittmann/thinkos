@@ -1323,11 +1323,45 @@ __krn_mutex_idx(struct thinkos_rt * krn, unsigned int mtx) {
 #endif
 
 
+static inline void __attribute__((always_inline)) __krn_sched_off(void) {
+	/* rise the BASEPRI to stop the scheduler */
+	asm volatile ("msr BASEPRI, %0\n" : : "r" (SCHED_PRIORITY));
+}
+
+static inline void __attribute__((always_inline)) __krn_sched_on(void) {
+	/* return the BASEPRI to the default to reenable the scheduler. */
+	asm volatile ("msr BASEPRI, %0\n" : : "r" (0x00));
+}
+
+/* disable interrupts and fault handlers (set fault mask) */
+static inline void __attribute__((always_inline)) thinkos_krn_fault_off(void) {
+	asm volatile ("cpsid f\n");
+}
+
+/* enable interrupts and fault handlers (set fault mask) */
+static inline void __attribute__((always_inline)) thinkos_krn_fault_on(void) {
+	asm volatile ("cpsie f\n");
+}
+
 /* enable interrupts */
 static inline void __attribute__((always_inline)) __krn_irq_on(void) {
 	asm volatile ("cpsie i\n");
 }
 
+struct comm_rx_req {
+	volatile uint32_t cnt;
+	uint8_t * ptr;
+	uint32_t len;
+	uint32_t tmo;
+};
+
+struct comm_tx_req {
+	uint32_t wq;
+	uint8_t * ptr;
+	uint32_t len;
+	uint32_t tmo;
+	uint32_t cnt;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -1338,6 +1372,8 @@ int krn_mutex_check(struct thinkos_rt * krn, int mtx);
 
 int krn_mutex_unlock_wakeup(struct thinkos_rt * krn, int mtx);
 #endif
+
+void krn_monitor_signal(struct thinkos_rt * krn, int sig);
 
 void thinkos_trace_rt(struct thinkos_rt * krn);
 

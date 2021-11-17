@@ -151,9 +151,9 @@ static void io_init(void)
 	stm32_gpio_mode(IO_I2S2_SDO, OUTPUT, PUSH_PULL | SPEED_LOW);
 
 	/* Debug serial -----------------------------------------------------*/
-	stm32_gpio_af(IO_UART1_TX, GPIO_AF10);
+	stm32_gpio_af(IO_UART1_TX, GPIO_AF7);
 	stm32_gpio_mode(IO_UART1_TX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
-	stm32_gpio_af(IO_UART1_RX, GPIO_AF10);
+	stm32_gpio_af(IO_UART1_RX, GPIO_AF7);
 	stm32_gpio_mode(IO_UART1_RX, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
 /**************************************************************************
@@ -204,7 +204,7 @@ static void board_on_softreset(void)
 	rcc->ahb2enr |= (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
-	rcc->apb2enr = 0;
+	rcc->apb2enr |= (1 << RCC_USART1);
 
 	/* Reset all peripherals except USB_OTG and GPIOA */
 	rcc->ahb1rstr = ~((1 << RCC_CCMDATARAM) | (1 << RCC_GPIOA) |
@@ -212,7 +212,7 @@ static void board_on_softreset(void)
 	rcc->ahb2rstr = ~(1 << RCC_OTGFS);
 	rcc->ahb3rstr = ~(0);
 	rcc->apb1rstr = ~(0);
-	rcc->apb2rstr = ~(0);
+	rcc->apb2rstr = ~((1 << RCC_USART1));
 
 	rcc->ahb1rstr = 0;
 	rcc->ahb2rstr = 0;
@@ -226,7 +226,7 @@ static void board_on_softreset(void)
 	rcc->ahb2enr = (1 << RCC_OTGFS);
 	rcc->ahb3enr = 0;
 	rcc->apb1enr = 0;
-	rcc->apb2enr = 0;
+	rcc->apb2enr = (1 << RCC_USART1);
 
 	/* reinitialize IO's */
 	io_init();
@@ -237,7 +237,14 @@ static void board_on_softreset(void)
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 
-	DCC_LOG1(LOG_TRACE, "IRQ=%d", STM32F_IRQ_OTG_FS);
+	DCC_LOG1(LOG_TRACE, "OTG_FS IRQ=%d", STM32F_IRQ_OTG_FS);
+
+	/* configure interrupts */
+	cm3_irq_pri_set(STM32_IRQ_USART1, MONITOR_PRIORITY);
+	/* enable interrupts */
+	cm3_irq_enable(STM32_IRQ_USART1);
+
+	DCC_LOG1(LOG_TRACE, "USART1 IRQ=%d", STM32_IRQ_USART1);
 }
 
 int board_init(void)
