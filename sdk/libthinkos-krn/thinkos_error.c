@@ -66,7 +66,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_APP_DATA_INVALID]  = "AppData",
 	[THINKOS_ERR_APP_CODE_INVALID]  = "AppCode",
 	[THINKOS_ERR_APP_BSS_INVALID]   = "AppBss",
-	[THINKOS_ERR_KRN_NORETTOBASE]   = "NoRettobase",
+	[THINKOS_ERR_IDLE_MSP]          = "IdleMSP",
 	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
 	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
 	[THINKOS_ERR_KRN_STACKOVF]      = "MSPStackOvf",
@@ -208,5 +208,16 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat,
 #endif
 
 }
+
+void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn, uint32_t stat, 
+								   uint32_t sp, uint32_t errno)
+{
+	DCC_LOG2(LOG_PANIC, VT_PSH VT_FRD VT_REV 
+			 " Error %d \"%s\"" VT_POP, 
+			 errno, thinkos_err_name_lut[errno]); 
+	__kdump(krn);
+	for(;;);
+}
+
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
  

@@ -290,11 +290,12 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		if ((ev = __clz(sigact)) < 8) {
 			/* clear the TASK_INIT event */
 			sigset &= ~(1 << (31 - ev));
-			DCC_LOG2(LOG_MSG, "sigset=%08x, ev=%0d", sigset, ev); 
+//			DCC_LOG2(LOG_TRACE, "DSR sigset=%08x, ev=%0d", sigset, ev); 
 			krn->monitor.events = sigset;
 			krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
 		} else {
-			DCC_LOG1(LOG_MSG, "sigact=%08x.", sigact); 
+			DCC_LOG2(LOG_TRACE, "swap sigact=%08x sched=%08x.", sigact,
+					 krn->sched.state); 
 			__monitor_context_swap(&krn->monitor.ctx); 
 		}
 

@@ -24,7 +24,7 @@
 
 #include <sys/param.h>
 
-#define SVC_RETCODE 5
+#define SVC_RETCODE 4
 
 void tp12_on(void);
 void tp12_off(void);
@@ -775,7 +775,7 @@ rd_again:
 	__krn_sched_defer(krn);
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG1(LOG_INFO, "<%d> sleeping ...", self);
+	DCC_LOG1(LOG_TRACE, "<%d> sleeping ...", self);
 
 	return;
 }

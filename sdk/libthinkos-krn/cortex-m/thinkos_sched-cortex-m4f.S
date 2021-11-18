@@ -245,14 +245,18 @@ thinkos_krn_sched_ctx_get:
 	/* set the active to IDLE */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
+//#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+/* FIXME: in some circumstances we reach this code... */
+#if 0
     /* load the new context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
     bne      .L_idle_stack_ptr_err
+
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
     mov.n     r3, sp
 #endif
+
     /* set the control register */
     movs.n   r4, #0
     msr      CONTROL, r4
@@ -298,6 +302,7 @@ thinkos_krn_sched_ctx_get:
 #else
 	movs.n   r4, #THINKOS_THREAD_IDLE
 #endif
+	/* get a pointer to the thread context vector */
     lsls.n   r7, r4, #2
 	add.n    r7, r0
 #if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_SCHED_ERROR)
@@ -314,8 +319,13 @@ thinkos_krn_sched_ctx_get:
 	b        thinkos_krn_sched_xcpt
 #endif
 
-#if (THINKOS_ENABLE_SCHED_ERROR)
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_ptr_err:
+	movs.n   r3, #THINKOS_ERR_IDLE_MSP
+	b        thinkos_krn_sched_xcpt
+#endif
+
+#if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_xcpt_err:
 	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
 	b        thinkos_krn_sched_xcpt
@@ -347,7 +357,7 @@ thinkos_krn_sched_xcpt:
 	.global thinkos_krn_sched_xcpt
 	.type   thinkos_krn_sched_xcpt, %function
 /* FIXME: fatal exception... */	
-	b       .
+	b       thinkos_krn_fatal_err_handler
 	.size   thinkos_krn_sched_xcpt, . - thinkos_krn_sched_xcpt
 #endif /* THINKOS_ENABLE_SCHED_ERROR */
 
