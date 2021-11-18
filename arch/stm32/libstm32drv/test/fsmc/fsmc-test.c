@@ -138,7 +138,7 @@ int fpga_init(struct fpga_io * fpga, const void * rbf, int size)
 	stm32f_fsmc_speed(1);
 
 	/* Configure external interrupt ... */
-	stm32f_exti_init(STM32F_GPIOD, 6, EXTI_EDGE_RISING);
+	stm32_exti_init(STM32F_GPIOD, 6, EXTI_EDGE_RISING);
 
 	if ((ret = altera_configure(rbf, size)) < 0) {
 		printf(" # altera_configure() failed: %d!\n", ret);

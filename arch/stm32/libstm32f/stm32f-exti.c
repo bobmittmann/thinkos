@@ -29,7 +29,7 @@
 
 #if defined(STM32F2X) || defined(STM32F4X)
 
-void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
+void stm32_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt)
 {
 	struct stm32_syscfg * syscfg = STM32_SYSCFG;

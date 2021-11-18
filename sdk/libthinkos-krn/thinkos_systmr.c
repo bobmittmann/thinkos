@@ -38,7 +38,7 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 	/* remove from other wait queue, if any */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
-	DCC_LOG1(LOG_MSG, "<%2d> wakeup!", th);
+	DCC_LOG1(LOG_TRACE, "<%2d> wakeup!", th);
 	/* remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
 	/* insert into the ready wait queue */

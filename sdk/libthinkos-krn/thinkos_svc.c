@@ -133,6 +133,8 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
+void thinkos_console_timed_fixup_svc(int32_t arg[], int self, 
+								  struct thinkos_rt * krn);
 
 void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
@@ -208,6 +210,13 @@ typedef void (* thinkos_svc_t)(int32_t arg[], int self, struct thinkos_rt * krn)
 thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,
 	[THINKOS_THREAD_INIT] = thinkos_thread_init_svc,
+
+
+#if (THINKOS_ENABLE_CTL)
+	[THINKOS_CTL] = thinkos_ctl_svc,
+#else
+	[THINKOS_CTL] = thinkos_nosys_svc,
+#endif
 
 	[THINKOS_CLOCK] = thinkos_clock_svc,
 
@@ -500,12 +509,18 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
 	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
 #endif
+
 #if (THINKOS_ENABLE_CONSOLE_READ)
 	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
 #else
 	[THINKOS_CONSOLE_RECV] = thinkos_nosys_svc,
 #endif
 
+#if (THINKOS_ENABLE_CONSOLE) && (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_console_timed_fixup_svc,
+#else
+	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_nosys_svc,
+#endif
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
 	[THINKOS_OBJ_ALLOC] = thinkos_obj_alloc_svc,
@@ -554,32 +569,6 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #else
 	[THINKOS_TERMINATE] = thinkos_nosys_svc,
 #endif
-
-#if (THINKOS_ENABLE_CTL)
-	[THINKOS_CTL] = thinkos_ctl_svc,
-#else
-	[THINKOS_CTL] = thinkos_nosys_svc,
-#endif
-
-#if (THINKOS_ENABLE_CRITICAL)
-	[THINKOS_CRITICAL_ENTER] = thinkos_critical_enter_svc,
-#else
-	[THINKOS_CRITICAL_ENTER] = thinkos_nosys_svc,
-#endif
-
-#if (THINKOS_ENABLE_CRITICAL)
-	[THINKOS_CRITICAL_EXIT] = thinkos_critical_exit_svc,
-#else
-	[THINKOS_CRITICAL_EXIT] = thinkos_nosys_svc,
-#endif
-
-#if (THINKOS_ENABLE_DATE_AND_TIME)
-	[THINKOS_DATE_AND_TIME] = thinkos_time_svc,
-#else
-	[THINKOS_DATE_AND_TIME] = thinkos_nosys_svc,
-#endif
-
-
 /* ----------------------------------------------
  * Comm 
  * --------------------------------------------- */
@@ -599,6 +588,26 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_COMM_RECV] = thinkos_nosys_svc,
 	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
 #endif
+
+
+#if (THINKOS_ENABLE_CRITICAL)
+	[THINKOS_CRITICAL_ENTER] = thinkos_critical_enter_svc,
+#else
+	[THINKOS_CRITICAL_ENTER] = thinkos_nosys_svc,
+#endif
+
+#if (THINKOS_ENABLE_CRITICAL)
+	[THINKOS_CRITICAL_EXIT] = thinkos_critical_exit_svc,
+#else
+	[THINKOS_CRITICAL_EXIT] = thinkos_nosys_svc,
+#endif
+
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+	[THINKOS_DATE_AND_TIME] = thinkos_time_svc,
+#else
+	[THINKOS_DATE_AND_TIME] = thinkos_nosys_svc,
+#endif
+
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL) 
 	[THINKOS_MONITOR_CTL] = thinkos_monitor_svc,

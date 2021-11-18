@@ -228,8 +228,8 @@ void io_init(void)
 	stm32_gpio_mode(IO_COMM_RX, ALT_FUNC, SPEED_HIGH);
 
 	/* Raise interrupt on falling edge */
-	stm32f_exti_init(IO_COMM_NTXEN, 0);
-	stm32f_exti_init(IO_COMM_NSEL, 0);
+	stm32_exti_init(IO_COMM_NTXEN, 0);
+	stm32_exti_init(IO_COMM_NSEL, 0);
 #endif
 	/* - LEDs -------------------------------------------------------------- */
 	stm32_gpio_clr(IO_LED1A);

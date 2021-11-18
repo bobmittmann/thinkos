@@ -1158,7 +1158,7 @@ int thinkos_trace_getnext(int id, struct trace_entry * entry);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_console_write(const void * buf, unsigned int len);
+ssize_t thinkos_console_write(const void * buf, size_t len);
 
 /**
  * thinkos_console_read() -  read from console driver.
@@ -1168,7 +1168,7 @@ int thinkos_console_write(const void * buf, unsigned int len);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_console_read(void * buf, unsigned int len);
+ssize_t thinkos_console_read(void * buf, size_t len);
 
 /**
  * thinkos_console_timedread() - read from console driver with timeout.
@@ -1180,7 +1180,7 @@ int thinkos_console_read(void * buf, unsigned int len);
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_ETIMEDOUT if
  * it times out, OK %THINKOS_OK otherwise. 
  */
-int thinkos_console_timedread(void * buf, unsigned int len, int32_t ms);
+ssize_t thinkos_console_timedread(void * buf, size_t len, int32_t ms);
 
 int thinkos_console_is_connected(void);
 

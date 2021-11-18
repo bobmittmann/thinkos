@@ -204,7 +204,7 @@ void external_bus_init(void)
 	stm32f_fsmc_init();
 		
 	/* Configure external interrupt ... */
-	stm32f_exti_init(FPGA_EXTI, EXTI_EDGE_RISING);
+	stm32_exti_init(FPGA_EXTI, EXTI_EDGE_RISING);
 
 	/* Initialize clock output */
 	stm32f_mco2_init();
