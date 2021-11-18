@@ -513,6 +513,11 @@ __thread_r3_set(struct thinkos_rt * krn, unsigned int th, uint32_t val) {
 }
 
 static inline void  __attribute__((always_inline)) 
+__thread_r12_set(struct thinkos_rt * krn, unsigned int th, uint32_t val) {
+	__thread_ctx_get(krn, th)->r12 = val;
+}
+
+static inline void  __attribute__((always_inline)) 
 __thread_lr_set(struct thinkos_rt * krn, unsigned int th, uintptr_t val) {
 	__thread_ctx_get(krn, th)->lr = (uint32_t)val;
 }

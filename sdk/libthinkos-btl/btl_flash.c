@@ -27,14 +27,12 @@
 #include <xmodem.h>
 #include <sys/delay.h>
 
-#if 0
 #if !(THINKOS_ENABLE_CONSOLE_READ)
 #error "need THINKOS_ENABLE_CONSOLE_READ"
 #endif
 
 #if !(THINKOS_ENABLE_TIMED_CALLS)
 #error "need THINKOS_ENABLE_TIMED_CALLS"
-#endif
 #endif
 
 static const struct comm_dev console_comm_dev = {
@@ -66,11 +64,14 @@ int btl_flash_erase_partition(const char * tag)
 {
 	int key;
 	int ret;
+	int c;
 
 	krn_console_puts("\r\nErase partition \"");
 	krn_console_puts(tag);
 	krn_console_puts("\" [y]? ");
-	if (krn_console_getc(10000) != 'y') {
+	if ((c = krn_console_getc(10000)) != 'y') {
+		krn_console_putc(c);
+		DCC_LOG1(LOG_WARNING, "c=%d", c);
 		krn_console_puts("\r\n");
 		return -1;
 	}

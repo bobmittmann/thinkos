@@ -106,7 +106,7 @@ int krn_console_dev_recv(void * dev, void * buf,
 		if (ret < 0) {
 //			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
 		} else {
-//			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread()->%d", ret);
+			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread()->%d", ret);
 		}
 	} while (ret == 0);
 
@@ -116,11 +116,22 @@ int krn_console_dev_recv(void * dev, void * buf,
 int krn_console_getc(unsigned int tmo)
 {
 	uint8_t buf[4];
+	int n;
+	int c;
 
-	if (krn_console_dev_recv(NULL, buf, 1, tmo)  < 0)
+	if ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) <= 0) {
+		DCC_LOG1(LOG_TRACE, "ret=%d", n);
 		return -1;
+	}
 
-	return buf[0];
+	c = buf[0];
+
+	DCC_LOG2(LOG_TRACE, "0x%02x 0x%02x", buf[0], buf[1]);
+
+	/* XXX: echo */
+	krn_console_dev_send(NULL, buf, sizeof(char));
+
+	return c;
 }
 
 #define IN_BS      '\x8'
@@ -148,7 +159,7 @@ int krn_console_gets(char * s, int size)
 	pos = 0;
 
 	for (;;) {
-		if ((ret = krn_console_dev_recv(NULL, buf, sizeof(char), 1000)) <= 0) {
+		if ((ret = krn_console_dev_recv(NULL, buf, sizeof(char), 5000)) <= 0) {
 			if (ret >= THINKOS_ETIMEDOUT)
 				continue;	
 			return ret;

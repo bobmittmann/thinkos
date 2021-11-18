@@ -605,7 +605,7 @@ void thinkos_console_rx_pipe_commit(int cnt)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_r12_set(krn, th, 0);
 #endif
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
