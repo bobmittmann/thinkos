@@ -407,7 +407,7 @@ const uint32_t sysclk_hz[] = {
 	[SYSCLK_STM32_TIM2] = __HCLK_HZ,
 };
 
-void __attribute__((section(".init"))) _init(void)
+void __attribute__((section(".init"))) stm32f4x_init(void)
 {
 #if defined(STM32F446)
 	struct stm32_pwr * pwr = STM32_PWR;
@@ -552,6 +552,9 @@ void __attribute__((section(".init"))) _init(void)
 #endif
 
 }
+
+void __attribute__((weak, alias("stm32f4x_init"))) _init(void);
+
 
 #endif /* THINKAPP */
 

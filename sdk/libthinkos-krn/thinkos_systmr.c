@@ -38,7 +38,7 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 	/* remove from other wait queue, if any */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
-	DCC_LOG1(LOG_TRACE, "<%2d> wakeup!", th);
+	DCC_LOG1(LOG_MSG, "<%2d> wakeup!", th);
 	/* remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
 	/* insert into the ready wait queue */
@@ -290,11 +290,11 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		if ((ev = __clz(sigact)) < 8) {
 			/* clear the TASK_INIT event */
 			sigset &= ~(1 << (31 - ev));
-//			DCC_LOG2(LOG_TRACE, "DSR sigset=%08x, ev=%0d", sigset, ev); 
+			DCC_LOG2(LOG_MSG, "DSR sigset=%08x, ev=%0d", sigset, ev); 
 			krn->monitor.events = sigset;
 			krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
 		} else {
-			DCC_LOG2(LOG_TRACE, "swap sigact=%08x sched=%08x.", sigact,
+			DCC_LOG2(LOG_MSG, "swap sigact=%08x sched=%08x.", sigact,
 					 krn->sched.state); 
 			__monitor_context_swap(&krn->monitor.ctx); 
 		}
