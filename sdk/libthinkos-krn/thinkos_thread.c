@@ -65,7 +65,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	DCC_LOG3(LOG_TRACE, "stack: top=%08x base=%08x size=%d", 
 			 stack_top, stack_base, stack_size);
 	DCC_LOG2(LOG_TRACE, " task: entry=%08x exit=%08x", task_entry, task_exit);
-	DCC_LOG4(LOG_TRACE, "  arg: %08x %08x %08x %08x", task_arg[0], 
+	DCC_LOG4(LOG_TRACE, " args: %08x %08x %08x %08x", task_arg[0], 
 			 task_arg[1], task_arg[2], task_arg[3]);
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
@@ -208,8 +208,10 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 		return;
 	};
 
-#if DEBUG
+#if (DEBUG)
+  #if (LOG_LEVEL) < (LOG_INFO)
 	__kdump(krn);
+  #endif		
 #endif
 
 	arg[0] = thread_no;

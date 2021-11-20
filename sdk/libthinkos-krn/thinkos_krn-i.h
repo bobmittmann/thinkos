@@ -766,6 +766,26 @@ __wq_wakeup_return(struct thinkos_rt * krn, unsigned int wq,
 	__thread_r0_set(krn, th, ret);
 }
 
+static inline void __attribute__((always_inline)) 
+__wq_wakeup_r12_set(struct thinkos_rt * krn, unsigned int wq, 
+                    unsigned int th, int ret) {
+	/* insert the thread into ready queue */
+	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
+	/* remove from the wait queue */
+	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
+#if (THINKOS_ENABLE_TIMED_CALLS)
+	/* possibly remove from the time wait queue */
+	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
+#endif
+#if (THINKOS_ENABLE_THREAD_STAT)
+	/* update status */
+	krn->th_stat[th] = 0;
+#endif
+	/* set the thread's return value */
+	__thread_r12_set(krn, th, ret);
+}
+
+
 static inline int __attribute__((always_inline)) 
 __thread_tmw_get(struct thinkos_rt * krn, unsigned int th) {
 #if (THINKOS_ENABLE_TIMED_CALLS)

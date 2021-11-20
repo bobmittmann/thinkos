@@ -285,7 +285,7 @@ static int __console_rd_break(struct thinkos_rt * krn)
 		/* wakeup from the console read wait queue setting the return 
 		   value to THINKOS_EINTR.
 		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, THINKOS_EINTR);
+		__wq_wakeup_r12_set(krn, wq, th, THINKOS_EINTR);
 		ret = 1;
 	}
 
@@ -307,7 +307,7 @@ static int __console_wr_break(struct thinkos_rt * krn)
 		/* wakeup from the console write wait queue setting the return 
 		   value to 0.
 		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, 0);
+		__wq_wakeup_r12_set(krn, wq, th, 0);
 		ret = 1;
 	}
 
@@ -350,12 +350,10 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	   from an interrupt handler), let the thread to
 	   wake up and retry. */
 	/* wakeup from the console wait queue */
-	__krn_wq_wakeup(krn, wq, th);
+	__wq_wakeup_r12_set(krn, wq, th, 0);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn); 
 }
-
-
 
 int thinkos_console_rx_pipe_ptr(uint8_t ** ptr) 
 {
@@ -438,7 +436,7 @@ ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn,
 		/* Wakeup from the console read wait queue setting the 
 		   return value to 0.
 		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, 0);
+		__wq_wakeup_r12_set(krn, wq, th, 0);
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn); 
 
@@ -455,7 +453,7 @@ bool thinkos_console_rd_resume(struct thinkos_rt * krn,
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
 	/* wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
-	__wq_wakeup_return(krn, wq, th, 0);
+	__wq_wakeup_r12_set(krn, wq, th, 0);
 	
 	return true;
 }
@@ -473,7 +471,7 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 	}
 	/* wakeup from the console write wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
-	__wq_wakeup_return(krn, wq, th, 0);
+	__wq_wakeup_r12_set(krn, wq, th, 0);
 	return true;
 }
 #endif
@@ -530,9 +528,18 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* get the maximum number of chars we can write into buffer */
 	if ((max = (tail - head + THINKOS_CONSOLE_TX_FIFO_LEN)) == 0) {
 		/* -- wait for event ---------------------------------------- */
-		DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
-		/* signal the scheduler ... */
-		__krn_sched_defer(krn); 
+		if (thinkos_console_rt.connected) {
+			DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+			/* signal the scheduler ... */
+			__krn_sched_defer(krn); 
+		} else {
+			/* flush the pipe */
+			pipe->tail = head;
+			/* remove from console wait queue */
+			__krn_wq_remove(krn, wq, self);
+			/* insert into the ready wait queue */
+			__thread_ready_set(krn, self);  
+		}
 	} else {
 		/* cnt is the number of chars we will write to the buffer,
 		   it should be the minimum of max and len */
@@ -565,10 +572,10 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* insert into the ready wait queue */
 		__thread_ready_set(krn, self);  
 
+		arg[SVC_RETCODE] = cnt;
+
 		/* signal driver */
 		console_signal_tx_pipe();
-
-		arg[SVC_RETCODE] = cnt;
 	}
 }
 
