@@ -78,9 +78,9 @@
 #define THINKOS_ERR_COMM_INVALID       62
 #define THINKOS_ERR_MEMORY_INVALID     63
 
-#define THINKOS_ERR_MAX                64
+#define THINKOS_ERR_ABORT_REQ          64
 
-#define THINKOS_ABORT_REQ             255
+#define THINKOS_ERR_MAX                65
 
 #ifndef __ASSEMBLER__
 

@@ -159,12 +159,15 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-void __attribute__((noreturn, noinline)) krn_app_at_exit(int code)
+void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
 {
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "app exit, code=%d ! " VT_POP, 
 			 code);
 	thinkos_abort();
 }
+
+void krn_app_at_exit(int code)
+	__attribute__ ((weak, alias ("__krn_app_at_exit")));
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr)

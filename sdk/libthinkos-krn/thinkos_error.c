@@ -72,7 +72,8 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_STACKOVF]      = "MSPStackOvf",
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack",
 	[THINKOS_ERR_IDLE_ENTRY]        = "IdleEntry",
-	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept"
+	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept",
+	[THINKOS_ERR_ABORT_REQ]         = "AbortReq"
 };
 
 char const * thinkos_krn_err_tag(unsigned int errno)
@@ -161,7 +162,7 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat,
 	__thread_errno_set(krn, thread, errno);
 #endif
 
-#if DEBUG
+#if (DEBUG)
 	if (xcpno > 0) {
 		DCC_LOG3(LOG_WARNING, VT_PSH VT_FRD VT_REV 
 				 " Exception %d \"%s\" -  thread=%d" VT_POP, 
@@ -215,7 +216,11 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn, uint32_t stat,
 	DCC_LOG2(LOG_PANIC, VT_PSH VT_FRD VT_REV 
 			 " Error %d \"%s\"" VT_POP, 
 			 errno, thinkos_err_name_lut[errno]); 
+#if (DEBUG)
 	__kdump(krn);
+#endif
+
+	/*  FIXME: should reboot or do something else... */
 	for(;;);
 }
 

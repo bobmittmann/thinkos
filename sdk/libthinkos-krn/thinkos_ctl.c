@@ -29,10 +29,8 @@ extern int32_t udelay_factor;
 static void thinkos_krn_abort(struct thinkos_rt * krn)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
-
-//	__thinkos_krn_core_reset(krn);
 	/* request scheduler to stop everything */
-	__krn_sched_err_set(krn, THINKOS_ABORT_REQ);
+	__krn_sched_err_set(krn, THINKOS_ERR_ABORT_REQ);
 	/* Make sure to run the scheduler */
 	__krn_sched_defer(krn);
 }

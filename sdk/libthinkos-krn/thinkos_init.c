@@ -421,7 +421,9 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 
 	__thread_enable_all(krn);
 
+#if (DEBUG)
 	__kdump(krn);
+#endif
 
 	return thread_no;
 }
