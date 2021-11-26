@@ -38,10 +38,9 @@ int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 	return THINKOS_OK;
 }
 
-
-int thinkos_krn_thread_init(struct thinkos_rt * krn,
-							unsigned int thread_no,
-							const struct thinkos_thread_initializer * init)
+int thinkos_krn_thread_init(
+	struct thinkos_rt * krn, unsigned int thread_no,
+	const struct thinkos_thread_initializer * init)
 {
 	const struct thinkos_thread_inf * inf = init->inf;
 	uintptr_t stack_base = init->stack_base;

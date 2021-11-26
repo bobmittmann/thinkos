@@ -1013,8 +1013,8 @@ int krn_console_wrln(const char * ln);
  * --------------------------------------------------------------------------*/
 
 int thinkos_krn_thread_init(struct thinkos_rt * krn,
-							unsigned int thread_idx,
-							const struct thinkos_thread_initializer * init);
+	unsigned int thread_idx,
+	const struct thinkos_thread_initializer * init);
 
 unsigned int thinkos_krn_active_get(struct thinkos_rt * krn);
 

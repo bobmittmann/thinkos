@@ -161,7 +161,7 @@ int monitor_flash_ymodem_recv(const struct monitor_comm * comm,
 
 }
 
-int btl_flash_app_exec(const char * tag)
+int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1)
 {
 	struct thinkos_mem_stat stat;
 	int ret;
@@ -171,11 +171,11 @@ int btl_flash_app_exec(const char * tag)
 		return ret;
 	}
 
-	return thinkos_app_exec(stat.begin);
+	return thinkos_app_exec(stat.begin, arg0, arg1, 0, 0);
 }
 
 int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
 {
-	return btl_flash_app_exec(argv[0]);
+	return btl_flash_app_exec(argv[0], 0, 0);
 }
 

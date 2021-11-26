@@ -1064,8 +1064,16 @@ static inline void thinkos_bkpt(int no) {
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-thinkos_app_exec(uint32_t addr) {
-	return THINKOS_SYSCALL1(THINKOS_APP_EXEC, addr);
+thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1, 
+				 uintptr_t arg2, uintptr_t arg3) {
+	register int32_t ret asm("r12");
+	register uintptr_t r0 asm("r0") = arg0;
+	register uintptr_t r1 asm("r1") = arg1;
+	register uintptr_t r2 asm("r2") = arg2;
+	register uintptr_t r3 asm("r2") = arg3;
+	asm volatile (ARM_SVC(THINKOS_APP_EXEC) : 
+				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2), "r"(r3), "0"(addr) : );
+	return ret;
 }
 
 #ifdef __cplusplus
