@@ -43,15 +43,22 @@ enum trace_level {
 	TRACE_LVL_YAP   = 8
 };
 
+enum trace_faicility {
+	TRACE_UNT_KRN  = 0,
+	TRACE_UNT_DRV  = 1,
+	TRACE_UNT_MON  = 2
+};
+
+
 /* Trace flags (options) */
 #define TRACE_OPT_XXD 1
 #define TRACE_OPT_AD  2
 
 /* Trace reference */
 struct trace_ref {
-	unsigned char lvl;   /* Trace level */
-	unsigned char opt;   /* Options */
-	unsigned short line; /* Source file line number */
+	uint8_t lvl;         /* Trace level */
+	uint8_t opt;         /* Options */
+	uint16_t line;       /* Source file line number */
 	const char * func;   /* Function name */
 	const char * fmt;    /* Formatting string */
 };
@@ -93,8 +100,10 @@ struct trace_iterator {
   #elif DEBUG == 3
    #define TRACE_LEVEL TRACE_LVL_WARN
   #elif DEBUG == 4
-   #define TRACE_LEVEL TRACE_LVL_INF
+   #define TRACE_LEVEL TRACE_LVL_ATT
   #elif DEBUG == 5
+   #define TRACE_LEVEL TRACE_LVL_INF
+  #elif DEBUG == 6
    #define TRACE_LEVEL TRACE_LVL_DBG
   #else
    #define TRACE_LEVEL TRACE_LVL_YAP
@@ -172,6 +181,14 @@ ret; })
 		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=0, \
 		  .func=__func__, .fmt=__FMT}; \
 		tracef(&__err, ## __VA_ARGS__); \
+	}} while (0)
+
+#define CRIT(__FMT, ...) do { tracef_chk(__FMT, ## __VA_ARGS__); \
+	if (TRACE_LEVEL >= TRACE_LVL_CRIT)  { \
+		TRACE_REF_DEF("crit") __crit = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_CRIT, .opt=0, \
+		  .func=__func__, .fmt=__FMT}; \
+		tracef(&__crit, ## __VA_ARGS__); \
 	}} while (0)
 
 #define YAP_I(__FMT, ...) do { tracef_chk( __fmt, ## __VA_ARGS__); \
@@ -265,6 +282,13 @@ ret; })
 		trace(&__err); \
 		}} while (0)
 
+#define CRITS(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_CRIT)  { \
+		TRACE_REF_DEF("crit") __crit = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_CRIT, .opt=0, \
+		  .func=__func__, .fmt=__STR}; \
+		trace(&__crit); \
+		}} while (0)
+
 #define YAPS_I(__STR) do { if (TRACE_LEVEL >= TRACE_LVL_YAP)  { \
 		TRACE_REF_DEF("yap") __yap = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_YAP, .opt=0, \
@@ -326,6 +350,13 @@ ret; })
 		  tracex(&__infx, __BUF, __LEN);\
 		}} while (0)
 
+#define NOTEX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_NOTE)  { \
+		TRACE_REF_DEF("notex") __notex = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_NOTE, .opt=TRACE_OPT_XXD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__notex, __BUF, __LEN);\
+		}} while (0)
+
 #define WARNX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		TRACE_REF_DEF("warnx") __warnx = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
@@ -359,11 +390,18 @@ ret; })
 		  tracex(&__dbgx, __BUF, __LEN);\
 		}} while (0)
 
-#define INFA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
-		TRACE_REF_DEF("infx") __infx = \
+#define WARNA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
+		TRACE_REF_DEF("warnx") __warnx = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_AD, \
 		  .func=__func__, .fmt=__STR}; \
-		  tracex(&__infx, __BUF, __LEN);\
+		  tracex(&__warnx, __BUF, __LEN);\
+		}} while (0)
+
+#define NOTEA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_NOTE)  { \
+		TRACE_REF_DEF("notex") __notex = \
+		{ .line=__LINE__, .lvl=TRACE_LVL_NOTE, .opt=TRACE_OPT_AD, \
+		  .func=__func__, .fmt=__STR}; \
+		  tracex(&__notex, __BUF, __LEN);\
 		}} while (0)
 
 #define WARNA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
@@ -382,34 +420,50 @@ ret; })
 
 #else
 
-#define DBG(__FMT, ...)
-#define INF(__FMT, ...)
-#define WARN(__FMT, ...)
 #define ERR(__FMT, ...)
+#define WARN(__FMT, ...)
+#define NOTE(__FMT, ...)
+#define INF(__FMT, ...)
+#define DBG(__FMT, ...)
 #define YAP(__FMT, ...)
 
-#define DBG_I(__FMT, ...)
-#define INF_I(__FMT, ...)
-#define WARN_I(__FMT, ...)
 #define ERR_I(__FMT, ...)
+#define WARN_I(__FMT, ...)
+#define NOTE_I(__FMT, ...)
+#define INF_I(__FMT, ...)
+#define DBG_I(__FMT, ...)
 #define YAP_I(__FMT, ...)
 
-#define DBGS(__STR)
-#define INFS(__STR)
+#define CRITS(__STR)
 #define WARNS(__STR)
 #define ERRS(__STR)
+#define NOTES(__STR)
+#define INFS(__STR)
+#define DBGS(__STR)
 #define YAPS(__STR)
 
-#define DBGX(__STR, __BUF, __LEN)
-#define INFX(__STR, __BUF, __LEN)
-#define WARNX(__STR, __BUF, __LEN)
+#define CRITA(__STR)
+#define WARNA(__STR)
+#define ERRA(__STR)
+#define NOTEA(__STR)
+#define INFA(__STR)
+#define DBGA(__STR)
+#define YAPA(__STR)
+
+#define CRITX(__STR, __BUF, __LEN)
 #define ERRX(__STR, __BUF, __LEN)
+#define WARNX(__STR, __BUF, __LEN)
+#define NOTEX(__STR, __BUF, __LEN)
+#define INFX(__STR, __BUF, __LEN)
+#define DBGX(__STR, __BUF, __LEN)
 #define YAPX(__STR, __BUF, __LEN)
 
-#define DBGS_I(__STR)
-#define INFS_I(__STR)
-#define WARNS_I(__STR)
+#define CRITS_I(__STR)
 #define ERRS_I(__STR)
+#define WARNS_I(__STR)
+#define NOTES_I(__STR)
+#define INFS_I(__STR)
+#define DBGS_I(__STR)
 #define YAPS_I(__STR)
 
 #endif
