@@ -390,11 +390,11 @@ ret; })
 		  tracex(&__dbgx, __BUF, __LEN);\
 		}} while (0)
 
-#define WARNA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
-		TRACE_REF_DEF("warnx") __warnx = \
+#define INFA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_INF)  { \
+		TRACE_REF_DEF("infx") __infx = \
 		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_AD, \
 		  .func=__func__, .fmt=__STR}; \
-		  tracex(&__warnx, __BUF, __LEN);\
+		  tracex(&__infx, __BUF, __LEN);\
 		}} while (0)
 
 #define NOTEA(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_NOTE)  { \
