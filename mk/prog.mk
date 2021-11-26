@@ -518,3 +518,18 @@ ifneq ($(HOST),Cygwin)
 -include $(DFILES)
 endif
 
+install: all $(INSTALLDIR)
+	$(ACTION) "INSTALL: $(addprefix $(INSTALLDIR)/, $(notdir $(PROG_BIN)))"
+	$(Q)$(CP) $(PROG_BIN) $(INSTALLDIR)
+	$(foreach f,$(INSTALLFILES),$(shell $(CP) $(f) $(INSTALLDIR)))
+
+$(INSTALLDIR):
+	$(ACTION) "Creating installation directory: $@"
+ifeq ($(HOST),Windows)
+	$(Q)if not exist $(subst /,\,$@) $(MKDIR) $(subst /,\,$@)
+else
+	$(Q)$(MKDIR) $@
+endif
+
+.PHONY: install
+
