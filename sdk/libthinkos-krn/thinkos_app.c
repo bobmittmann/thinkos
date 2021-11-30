@@ -172,7 +172,7 @@ void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
 	thinkos_abort();
 }
 
-void krn_app_at_exit(int code)
+void __attribute__((noreturn)) krn_app_at_exit(int code)
 	__attribute__ ((weak, alias ("__krn_app_at_exit")));
 
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,

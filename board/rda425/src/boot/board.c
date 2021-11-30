@@ -796,7 +796,7 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 7. thinkos_app_exec()..." VT_POP);
-    thinkos_app_exec(app_addr);
+    thinkos_app_exec(app_addr, 0, 0, 0, 0);
     DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
             "**** thinkos_app_exec() failed." VT_POP);
 #if DEBUG

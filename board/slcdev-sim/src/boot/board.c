@@ -726,6 +726,6 @@ void main(int argc, char ** argv)
 
 	thinkos_sleep(500);
 
-	btl_flash_app_exec("app");
+	btl_flash_app_exec("app", 0, 0);
 }
 

@@ -60,7 +60,7 @@ void main(int argc, char ** argv)
 
 	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FBL);
 	DCC_LOG(LOG_TRACE, "*************************************************");
-	DCC_LOG(LOG_TRACE, "*    STM32F507-DK ThinkOS Custom Bootloader     *");
+	DCC_LOG(LOG_TRACE, "*    STM32F405-DK ThinkOS Custom Bootloader     *");
 	DCC_LOG(LOG_TRACE, "*************************************************"
 			VT_POP "\n\n");
 	mdelay(125);
@@ -146,7 +146,7 @@ void main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "board_integrity_check(),,,");
 	if (board_integrity_check()) {
 		DCC_LOG(LOG_TRACE, "btl_flash_app_exec(APP)...");
-		btl_flash_app_exec("APP");
+		btl_flash_app_exec("APP", 0, 0);
 	}
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
