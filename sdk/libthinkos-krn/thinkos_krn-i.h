@@ -1425,6 +1425,8 @@ void __krn_irq_reset_all(struct thinkos_rt * krn);
 
 void __thinkos_krn_irq_init(struct thinkos_rt * krn);
 
+void __krn_irq_thread_del(struct thinkos_rt* krn, unsigned int th);
+
 /* -------------------------------------------------------------------------- 
  * Scheduler 
  * --------------------------------------------------------------------------*/

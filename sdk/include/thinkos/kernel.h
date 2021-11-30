@@ -737,9 +737,11 @@ struct thinkos_rt {
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
+#if (THINKOS_ENABLE_WQ_IRQ)
 #define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
+#endif
 
 #define THINKOS_WQ_DMA ((offsetof(struct thinkos_rt, wq_dma) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \

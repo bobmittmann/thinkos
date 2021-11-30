@@ -58,6 +58,26 @@ void __krn_irq_reset_all(struct thinkos_rt* krn)
 
 }
 
+#if (THINKOS_IRQ_MAX) > 0
+/* Cancel an interrupt ... */
+void __krn_irq_thread_del(struct thinkos_rt* krn, unsigned int th)
+{
+	int irq;
+
+	for (irq = 0; irq < THINKOS_IRQ_MAX; irq++) {
+		if (th == krn->irq_th[irq]) {
+			/* disable this interrupt source */
+			cm3_irq_disable(irq);
+			/* remove */
+			krn->irq_th[irq] = THINKOS_THREAD_VOID;
+			DCC_LOG2(LOG_TRACE, "thread=%d irq=%d", th, irq);
+			return;
+		}
+	}
+}
+#endif 
+
+
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
 /**
