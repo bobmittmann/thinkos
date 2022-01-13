@@ -286,17 +286,18 @@ int http_parse_header(struct httpctl * ctl)
 				buf[pos - 2] = '\0';
 				DCC_LOGSTR(LOG_TRACE, "\"%s\"", &buf[lin]);
 
-				if ((hdr = http_parse_field(&buf[lin], &val)) == 0) {
+				if ((hdr = http_parse_field(&buf[lin], &val)) != 0) {
 					DCC_LOGSTR(LOG_WARNING, "http_parse_field(\"%s\") failed!", 
 							   &buf[lin]);
-					return -1;
+
+					if (http_process_field(ctl, hdr, val) < 0) {
+						DCC_LOG1(LOG_WARNING, "http_process_field(%d) failed!", 
+								 &buf[lin]);
+						return -1;
+					}
+
 				}
 
-				if (http_process_field(ctl, hdr, val) < 0) {
-					DCC_LOG1(LOG_WARNING, "http_process_field(%d) failed!", 
-							 &buf[lin]);
-					return -1;
-				}
 				/* move to the next line */
 				lin = pos;
 			}
