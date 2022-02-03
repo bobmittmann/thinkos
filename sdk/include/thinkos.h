@@ -1105,7 +1105,7 @@ int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_clocks(uint32_t * clk[]);
+//int thinkos_clocks(uint32_t clk[]);
 
 /**
  * thinkos_udelay_factor() - get udelay calibration factor.

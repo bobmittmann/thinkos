@@ -23,6 +23,10 @@
 #include <sys/stm32f.h>
 #include <stdint.h>
 
+#ifdef STM32_UID
+#define STM32F_UID STM32_UID
+#endif
+
 #ifdef STM32F_UID
 
 void stm32_uid(uint32_t esn[])

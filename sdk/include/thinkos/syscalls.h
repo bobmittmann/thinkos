@@ -735,7 +735,7 @@ thinkos_console_wr_nonblock(unsigned int enable) {
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-	thinkos_clocks(uint32_t * clk[]) {
+	thinkos_clocks(uint32_t clk[]) {
 	register int32_t ret asm("r12");
 	register int32_t opc asm("r0") = THINKOS_CTL_CLOCKS;
 	register uint32_t ptr asm("r1") = (uintptr_t)clk;

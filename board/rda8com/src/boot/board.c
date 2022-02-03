@@ -344,6 +344,11 @@ const struct thinkos_board this_board = {
 	.on_break = board_on_break
 };
 
+void thinkos_arch_release_get(struct thinkos_release * rel)
+{
+    __thinkos_memcpy(rel, &this_board.sw, sizeof(struct thinkos_release));
+}
+
 
 int board_init(void)
 {

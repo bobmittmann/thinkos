@@ -496,6 +496,11 @@ const struct thinkos_board this_board = {
 	.memory = &mem_map
 };
 
+void thinkos_arch_release_get(struct thinkos_release * rel)
+{
+    __thinkos_memcpy(rel, &this_board.sw, sizeof(struct thinkos_release));
+}
+
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
 	thinkos_boot(&this_board, standby_monitor_task);
