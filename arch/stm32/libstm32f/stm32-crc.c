@@ -1,5 +1,5 @@
 /* 
- * File:	 usb-test.c
+ * File:	 stm32-crc.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:

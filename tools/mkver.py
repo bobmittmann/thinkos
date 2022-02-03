@@ -30,7 +30,7 @@ import codecs
 import datetime
 import time 
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 # --- constants
 PY3 = sys.version_info >= (3, 0)
@@ -54,9 +54,10 @@ class Version():
     self.major = int(major)
     self.minor = int(minor)
     self.build = build
-    self.year = year
-    self.month = month
-    self.day = day
+    self.year = utcnow.year
+    self.month = utcnow.month
+    self.day = utcnow.day
+    self.hour = utcnow.hour
     self.timestamp = unixtime
 
 
@@ -81,14 +82,17 @@ def mkcver(f, ver):
   f.write('#define VERSION_MAJOR {:d}\n'.format(ver.major))
   f.write('#define VERSION_MINOR {:d}\n'.format(ver.minor))
   f.write('#define VERSION_BUILD {:d}\n'.format(ver.build))
+  f.write('#define VERSION_YEAR {:04d}\n'.format(ver.year))
+  f.write('#define VERSION_MONTH {:d}\n'.format(ver.month))
+  f.write('#define VERSION_DAY {:d}\n'.format(ver.day))
+  f.write('#define VERSION_HOUR {:d}\n'.format(ver.hour))
+  f.write('#define VERSION_TIMESTAMP {:d}LL\n'.format(int(ver.timestamp)))
   f.write('#define VERSION_NUM \"{:d}.{:d}.{:d}\"\n'.\
     format(ver.major, ver.minor, ver.build))
   f.write('#define VERSION_STR \"{:s}-{:d}.{:d}.{:d}\"\n'.\
     format(ver.name, ver.major, ver.minor, ver.build))
-  f.write('#define VERSION_YEAR \"{:04d}\"\n'.format(ver.year))
   f.write('#define VERSION_DATE \"{:04d}-{:02d}-{:02d}\"\n'.\
     format(ver.year, ver.month, ver.day))
-  f.write('#define VERSION_TIMESTAMP {:d}\n'.format(int(ver.timestamp)))
 
 def replacelst(s, lst, val):
   for c in lst:

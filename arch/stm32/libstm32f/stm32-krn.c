@@ -1,9 +1,7 @@
 /* 
- * board.h
+ * Copyright(C) 2021 Robinson Mittmann. All Rights Reserved.
  *
- * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
- * 
- * This file is part of the ThinkOS library.
+ * This file is part of the libstm32.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,28 +18,18 @@
  */
 
 /** 
- * @file board.h
- * @brief Board description 
+ * @file stm32f-krn.c
+ * @brief STM32 Kernel 
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
-
-
-#ifndef __THINKOS_BOARD_H__
-#define __THINKOS_BOARD_H__
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
-#define __THINKOS_MEMORY__
-#include <thinkos/memory.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
+void thinkos_arch_version_get(struct thinkos_version * ver)
+{
+	ver->major = THINKOS_KRN_VERSION_MAJOR;
+	ver->minor = THINKOS_KRN_VERSION_MINOR;
+	__thinkos_memcpy(ver->mach, THINKOS_KRN_MACH, sizeof(THINKOS_KRN_MACH)); 
 }
-#endif
-
-#endif /* __THINKOS_BOARD_H__ */
 

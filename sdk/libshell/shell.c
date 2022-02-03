@@ -26,8 +26,7 @@
 #define __SHELL_I__
 #include "shell-i.h"
 
-int shell_history(struct shell_env * env, struct cmd_history * history,
-			   void (* greeting)(FILE *))
+int shell_history(struct shell_env * env, struct cmd_history * history)
 {
 	char line[SHELL_LINE_MAX];
 	char * argv[SHELL_ARG_MAX];

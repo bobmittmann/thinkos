@@ -36,6 +36,7 @@ struct classic_shell_env {
 	const struct shell_ops * op;
 	const struct shell_cmd * cmdtab;
 	const char * (* prompt)(void); 
+	void (* greeting)(FILE *);
 };
 
 #define CLASSIC_SHELL_ENV(__T) ((struct classic_shell_env *)(__T))
@@ -135,7 +136,19 @@ int classic_cmd_next(struct shell_env * env, unsigned int code)
 	return (cmdtab[++code].callback != NULL) ? code : -1;
 }
 
+const char * shell_classic_greeting(struct shell_env * env)
+{
+	void (* greeting)(FILE *) = CLASSIC_SHELL_ENV(env)->greeting;
+
+	if (greeting != NULL) {
+		greeting(env->fout);
+	}
+
+	return "";
+}
+
 const struct shell_ops shell_classic_ops = {
+	.greeting = shell_classic_greeting,
 	.prompt_get = classic_prompt_get,
 	.cmd_name = classic_cmd_name,
 	.cmd_alias = classic_cmd_alias,
@@ -147,6 +160,7 @@ const struct shell_ops shell_classic_ops = {
 	.cmd_exec = classic_cmd_exec
 };
 
+/* Classical shell interface */
 
 int shell(FILE * f, const char * (* prompt)(void), 
 		  void (* greeting)(FILE *),
@@ -163,11 +177,12 @@ int shell(FILE * f, const char * (* prompt)(void),
 	env.fout = f;
 	env.cmdtab = cmdtab;
 	env.prompt = prompt;
+	env.greeting = greeting;
 	env.op = &shell_classic_ops;
 
 	memset(hist_buf, 0, sizeof(hist_buf));
 	history = history_init(hist_buf, sizeof(hist_buf), SHELL_LINE_MAX);
 
-	return shell_history(SHELL_ENV(&env), history, greeting);
+	return shell_history(SHELL_ENV(&env), history);
 }
 

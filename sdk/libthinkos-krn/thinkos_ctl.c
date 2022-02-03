@@ -35,14 +35,19 @@ static void thinkos_krn_abort(struct thinkos_rt * krn)
 	__krn_sched_defer(krn);
 }
 
-void thinkos_ctl_svc(int32_t * arg, unsigned int self)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	unsigned int req = arg[0];
-	int32_t * pval;
-	const uint32_t ** ptr;
+void thinkos_arch_esn_get(uint32_t esn[]);
 
-	arg[0] = 0;
+void thinkos_arch_version_get(struct thinkos_version * ver);
+
+void thinkos_arch_release_get(struct thinkos_release * rel);
+
+void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
+{
+	unsigned int req = arg[0];
+	const uint32_t ** ptr;
+	int32_t * pval;
+
+	arg[4] = THINKOS_ENOSYS;
 	
 	DCC_LOG(LOG_MSG, ".........................");
 
@@ -75,10 +80,22 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 		}
 		break;
 
+	case THINKOS_CTL_ESN_GET:
+		thinkos_arch_esn_get((uint32_t *)arg[1]);
+		break;
+		
+	case THINKOS_CTL_VERSION_GET:
+		thinkos_version_get((struct thinkos_version *)arg[1]);
+		break;
+
+	case THINKOS_CTL_RELEASE_GET:
+		thinkos_arch_release_get((struct thinkos_release *)arg[1]);
+		break;
+
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
 #if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		arg[0] = __krn_threads_inf_get(krn, 
+		arg[4] = __krn_threads_inf_get(krn, 
 				(const struct thinkos_thread_inf **)arg[1], 
 				(unsigned int)arg[2] >> 16,
 				(unsigned int)arg[2] & 0xffff);
@@ -88,7 +105,7 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 #if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
-		arg[0] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
+		arg[4] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
 									   (unsigned int)arg[2] >> 16,
 									   (unsigned int)arg[2] & 0xffff);
 		break;
@@ -96,14 +113,14 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 	case THINKOS_CTL_CYCCNT:
 		/* Return the current value of the CPU cycle counter */
-		arg[0] = CM3_DWT->cyccnt;
+		arg[4] = CM3_DWT->cyccnt;
 		break;
 #endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
-		arg[0] = THINKOS_EINVAL;
+		arg[4] = THINKOS_EINVAL;
 		break;
 	}
 }

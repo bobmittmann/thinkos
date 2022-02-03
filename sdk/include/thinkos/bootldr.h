@@ -31,6 +31,8 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_APP__
 #include <thinkos/app.h>
+#define __THINKOS_CTRL__
+#include <thinkos/ctrl.h>
 
 #include <thinkos/board.h>
 
@@ -46,14 +48,7 @@ struct thinkos_board {
 		} ver;
 	} hw;
 
-	struct {
-		char tag[10];
-		struct {
-			uint16_t build;
-			uint8_t minor;
-			uint8_t major;
-		} ver;
-	} sw;
+	struct thinkos_release sw;
 
 	void (* on_softreset)(void);
 	int (* on_break)(const struct monitor_comm *);

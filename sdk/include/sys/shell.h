@@ -84,8 +84,7 @@ struct cmd_history;
 extern "C" {
 #endif
 
-int shell_history(struct shell_env * env, struct cmd_history * history,
-					  void (* greeting)(FILE *));
+int shell_history(struct shell_env * env, struct cmd_history * history);
 
 int shell_simple(FILE * f, struct shell_ops * op);
 

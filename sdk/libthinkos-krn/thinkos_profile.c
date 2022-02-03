@@ -36,8 +36,8 @@ const struct thinkos_profile thinkos_profile = {
 
 	.kernel = {
 		.version = {
-			.major = THINKOS_KERNEL_VERSION_MAJOR,
-			.minor = THINKOS_KERNEL_VERSION_MINOR,
+			.major = THINKOS_KRN_VERSION_MAJOR,
+			.minor = THINKOS_KRN_VERSION_MINOR,
 			.reserved = 0
 		},
 		.timeshare  = THINKOS_ENABLE_TIMESHARE,

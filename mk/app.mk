@@ -55,7 +55,25 @@ else
 	$(Q)$(PYTHON) $(BIN2APP) -o $@ -t $(THINKAPP) $<
 endif
 
+ifndef VMA_ADDR
+  ifdef LOAD_ADDR
+  	VMA_ADDR = $(LOAD_ADDR)
+  else
+    VMA_ADDR = 0x08000000
+  endif
+endif
+
+%.s19: %.app
+	$(ACTION) "APP-S19: $@"
+ifeq ($(HOST),Cygwin)
+	$(Q)$(OBJCOPY) --input-target binary --output-target srec --srec-forceS3 --adjust-vma=$(VMA_ADDR) $(subst \,\\,$(shell cygpath -w $<)) $(subst \,\\,$(shell cygpath -w $@))
+else
+	$(Q)$(OBJCOPY) --input-target binary --output-target srec --srec-forceS3 --adjust-vma=$(VMA_ADDR) $< $@
+endif
+
 PROG_APP := $(OUTDIR)/$(PROG).app
+
+APP_SREC := $(OUTDIR)/$(PROG).s19
 
 ifeq (Windows,$(HOST))
   CLEAN_APP := $(strip $(subst /,\,$(PROG_APP)))
@@ -64,6 +82,8 @@ else
 endif
 
 app: $(PROG_APP)
+
+app-srec: $(APP_SREC)
 
 app-clean: 
 	$(Q)$(RMALL) $(CLEAN_APP)

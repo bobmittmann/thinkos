@@ -33,7 +33,7 @@ USART_CFILES = stm32f-usart.c stm32f-usart_init.c\
 			   stm32f-usart_getc.c stm32f-usart_putc.c\
 			   stm32f-usart_read.c stm32f-usart_write.c\
 			   stm32f-usart_canon_write.c\
-			   stm32f-usart_fops.c stm32f-usart_fops_raw.c \
+			   stm32f-usart_fops.c stm32f-usart_fops_raw.c\
 			   stm32f-usart_legacy.c
 
 USB_FS_CFILES = stm32f-usb_fs.c stm32f-usb_fs_dev.c
@@ -47,7 +47,7 @@ ifeq ($(STM32), stm32l1)
 SFILES = stm32l1-nvic.S
 
 CFILES = stm32l1-init.c stm32l1-flash.c stm32f-gpio.c stm32l1-eeprom.c \
-		 stm32f-dma.c \
+		 stm32f-dma.c stm32-uid.c \
 		 $(addprefix usart/,$(USART_CFILES))
 endif
 
@@ -55,8 +55,8 @@ ifeq ($(STM32), stm32l4)
 SFILES = stm32l4-nvic.S
 
 CFILES = stm32l4-init.c stm32l4-flash.c stm32f-gpio.c \
-		 stm32f-dma.c stm32f-spi.c \
-		 stm32-crc.c \
+		 stm32f-dma.c stm32f-spi.c stm32-crc.c stm32-uid.c \
+		 stm32-krn.c\
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))\
 		 $(addprefix usart/,$(USART_CFILES))
 endif
@@ -64,10 +64,11 @@ endif
 ifeq ($(STM32), stm32f3)
 SFILES = stm32f-vec.S
 
-CFILES = stm32f1x-init.c stm32f-gpio.c \
+CFILES = stm32f1x-init.c stm32f-gpio.c\
 		 stm32f-spi.c stm32f-exti.c stm32f-mco.c\
 		 stm32f-dma.c stm32f1x-flash.c stm32f-rtc.c\
 		 stm32-crc.c\
+		 stm32-krn.c\
 		 $(addprefix usart/,$(USART_CFILES))\
 		 $(addprefix usb_fs/,$(USB_FS_CFILES))
 endif
@@ -78,7 +79,8 @@ SFILES = stm32f4x-nvic.S
 CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c stm32f-exti.c stm32f-mco.c\
 		 stm32f-dma.c stm32f4x-flash.c stm32f-rtc.c\
-		 stm32-crc.c stm32f-rcc.c\
+		 stm32-crc.c stm32f-rcc.c stm32-uid.c\
+		 stm32-krn.c\
 		 $(addprefix usart/,$(USART_CFILES))\
 		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
@@ -90,7 +92,8 @@ SFILES = stm32f446x-nvic.S
 CFILES = stm32f4x-init.c stm32f-gpio.c stm32f-eth.c\
 		 stm32f-spi.c stm32f-fsmc.c stm32f-exti.c stm32f-mco.c\
 		 stm32f-dma.c stm32f4x-flash.c stm32f-rtc.c\
-		 stm32-crc.c stm32f-rcc.c\
+		 stm32-crc.c stm32f-rcc.c stm32-uid.c\
+		 stm32-krn.c\
 		 $(addprefix usart/,$(USART_CFILES))\
 		 $(addprefix otg_fs/,$(OTG_FS_CFILES))\
 		 $(addprefix otg_hs/,$(OTG_HS_CFILES))
