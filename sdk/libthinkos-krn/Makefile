@@ -23,13 +23,12 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_obj.c strlen.c strcmp.c \
-			  memcpy.c memcpy32.c memset32.c \
-			  snprintf.c console_io.c \
-			  active.c suspended.c \
-			  thread_getnext.c thread_get.c \
-			  thread_isfaulty.c thread_ispaused.c \
-			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
+MISC_CFILES = strlen.c strcmp.c memcpy.c memcpy32.c memset32.c\
+			  thinkos_obj.c snprintf.c console_io.c\
+			  active.c suspended.c fmt_hex.c\
+			  thread_getnext.c thread_get.c\
+			  thread_isfaulty.c thread_ispaused.c\
+			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c\
 			  cpu-info.c scan_stack.c thread_wq_get.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \

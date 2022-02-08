@@ -78,6 +78,7 @@ struct mstp_lnk_stats {
 	uint32_t tx_mgmt;
 	uint32_t tx_unicast;
 	uint32_t tx_bcast;
+	uint32_t tx_pfm;
 	uint32_t token_lost;
 };
 

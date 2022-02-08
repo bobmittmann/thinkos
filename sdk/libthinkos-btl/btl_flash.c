@@ -179,3 +179,43 @@ int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
 	return btl_flash_app_exec(argv[0], 0, 0);
 }
 
+
+/* Receive a file and write it into the flash using the YMODEM protocol */
+int btl_flash_xxd(const char * tag)
+{
+	uint32_t rem = 1024 * 1024;
+	uint32_t offs = 0;
+	uint8_t buf[64];
+	char line[128];
+	int ret;
+	int key;
+
+	krn_console_puts("\r\n");
+	if ((key = thinkos_flash_mem_open(tag)) < 0) {
+		krn_console_puts("Error: ");
+		krn_console_wrln("can't open partition!");
+		return key;
+	}
+
+	while (rem > 0) {
+		int cnt;
+
+		cnt = 16;
+		if ((ret = thinkos_flash_mem_read(key, offs, buf, cnt)) < 0) {
+			DCC_LOG1(LOG_ERROR, "thinkos_flash_mem_red()=>%d", ret);
+			break;
+		}
+
+		krn_fmt_line_hex32(line, offs, buf, cnt);
+		krn_console_puts(line);
+
+		cnt = ret;
+		offs += cnt;
+		rem -= cnt;
+	}
+
+	thinkos_flash_mem_close(key);
+
+	return ret;
+}
+
