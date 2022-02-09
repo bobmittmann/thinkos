@@ -1010,6 +1010,9 @@ int krn_console_gets(char * s, int size);
 
 int krn_console_wrln(const char * ln);
 
+int krn_fmt_line_hex32(char * __ln, uint32_t __addr, 
+					   const void * __buf, int __cnt);
+
 /* -------------------------------------------------------------------------- 
  * kernel core functions 
  * --------------------------------------------------------------------------*/

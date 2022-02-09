@@ -124,6 +124,9 @@ void btl_shell_env_init(struct btl_shell_env * env,
 					   const char * motd, const char * prompt);
 
 int btl_flash_ymodem_recv(const char * tag);
+
+int btl_flash_xxd(const char * tag);
+
 int btl_flash_erase_partition(const char * tag);
 void btl_board_info(const struct thinkos_board * board);
 int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1);

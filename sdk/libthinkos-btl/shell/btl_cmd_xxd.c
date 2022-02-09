@@ -17,7 +17,7 @@
  */
 
 /** 
- * @file btl_cmd_reboot.c
+ * @file btl_cmd_xxd.c
  * @brief 
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
@@ -39,11 +39,7 @@
 
 #include <sys/dcclog.h>
 
-int btl_cmd_reboot(int argc, char * argv[])
+int btl_cmd_xxd(int argc, char * argv[])
 {
-	krn_console_puts("\r\nRestarting...\r\n");
-	thinkos_sleep(1000);
-	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
-	return 0;
 }
 
