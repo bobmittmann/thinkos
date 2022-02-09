@@ -26,11 +26,6 @@
 
 #define SVC_RETCODE 4
 
-void tp12_on(void);
-void tp12_off(void);
-void tp13_on(void);
-void tp13_off(void);
-
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -343,7 +338,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 		return;
 	}
 
-	DCC_LOG1(LOG_TRACE, "thread_id=%d", th);
+	DCC_LOG1(LOG_INFO, "thread_id=%d", th);
 
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
@@ -529,7 +524,7 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((max = (tail - head + THINKOS_CONSOLE_TX_FIFO_LEN)) == 0) {
 		/* -- wait for event ---------------------------------------- */
 		if (thinkos_console_rt.connected) {
-			DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+			DCC_LOG2(LOG_INFO, "<%d> fifo full: waiting %d...", self, wq);
 			/* signal the scheduler ... */
 			__krn_sched_defer(krn); 
 		} else {
@@ -782,7 +777,7 @@ rd_again:
 	__krn_sched_defer(krn);
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG1(LOG_TRACE, "<%d> sleeping ...", self);
+	DCC_LOG1(LOG_INFO, "<%d> sleeping ...", self);
 
 	return;
 }
@@ -818,7 +813,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* get the maximum number of chars we can write into buffer */
 	if ((cnt = (head - tail)) > 0) {
 		/* -- wait for event ---------------------------------------- */
-		DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+		DCC_LOG2(LOG_INFO, "<%d> fifo full: waiting %d...", self, wq);
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn); 
 	} else {

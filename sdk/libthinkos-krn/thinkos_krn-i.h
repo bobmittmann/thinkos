@@ -1463,6 +1463,10 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __trace(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __thinkos(struct thinkos_rt * krn);
 void __profile(void);
+void __hard(struct thinkos_rt * krn,
+			struct thinkos_context * ctx,
+			uint32_t sp, uint32_t ipsr);
+
 
 /* -------------------------------------------------------------------------
  * Main thread exec

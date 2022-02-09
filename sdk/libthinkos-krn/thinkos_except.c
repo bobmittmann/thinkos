@@ -107,11 +107,6 @@ _Static_assert (offsetof(struct thinkos_except, cyccnt) ==
 
 #include <sys/dcclog.h>
 
-void __hard(struct thinkos_rt * krn,
-			struct thinkos_context * ctx,
-			uint32_t sp,
-			uint32_t ipsr);
-
 void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 							  struct thinkos_context * ctx,
 							  uint32_t sp,
@@ -126,32 +121,26 @@ void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 	uint32_t lr = (state >> 28) | 0xfffffff0;
 #endif
 	uint32_t ipsr = xpsr & 0x1ff;
-
-	mdelay(500);
+	int i;
 
 	DCC_LOG(LOG_PANIC, VT_PSH VT_REV VT_FRD
 			" !!! Fatal exception !!!!" VT_POP);
 
 	mdelay(250);
 
+	DCC_LOG(LOG_PANIC, "1. __hard()...");
 	__hard(krn, ctx, sp, ipsr);
 
-	mdelay(250);
+	for (i = 0; i < 10; ++i) {
+		mdelay(500);
+		DCC_LOG1(LOG_PANIC, "Fatal except %d.", i);
+	}
 
-	/* kill all threads */
-	__thinkos_krn_core_reset(krn);
-
-	/* Enable Interrupts */
-	//	DCC_LOG(LOG_TRACE, "5. enablig interrupts...");
-	cm3_cpsie_i();
-
-	/* signal the monitor */
-	monitor_signal(MONITOR_KRN_FAULT);
+	DCC_LOG(LOG_PANIC, "System reset!");
 #else
-#if (THINKOS_SYSRST_ONFAULT)
+#endif
+	mdelay(1000);
 	thinkos_krn_sysrst();
-#endif
-#endif
 }
 
 #define SHCSR_ACT_MASK SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | \
@@ -246,7 +235,6 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 #endif
 }
 #endif
-
 
 /* -------------------------------------------------------------------------
    Application fault defered handler 

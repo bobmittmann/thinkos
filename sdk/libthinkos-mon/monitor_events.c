@@ -111,14 +111,14 @@ uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm,
 			/* Wait for COMM_EOT, stop TX_PIPE notification */
 			sigmask &= ~(1 << MONITOR_TX_PIPE);
 			sigmask |= (1 << MONITOR_COMM_EOT);
-			DCC_LOG1(LOG_WARNING, "TX_PIPE: data=%d sent none", cnt);
+			DCC_LOG1(LOG_INFO, "TX_PIPE: data=%d sent none", cnt);
 		}
 	} else {
 		monitor_clear(MONITOR_TX_PIPE);
 		/* Wait for TX_PIPE, stop COMM_EOT notification */
 		sigmask |= (1 << MONITOR_TX_PIPE);
 		sigmask &= ~(1 << MONITOR_COMM_EOT);
-		DCC_LOG(LOG_WARNING, "TX_PIPE: fifo empty");
+		DCC_LOG(LOG_INFO, "TX_PIPE: fifo empty");
 	}
 
 	return sigmask;

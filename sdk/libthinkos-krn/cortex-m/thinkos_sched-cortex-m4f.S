@@ -315,31 +315,31 @@ thinkos_krn_sched_ctx_get:
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_nullptr_err:
-	movs.n   r3, #THINKOS_ERR_INVALID_POINTER
+	movs.n   r5, #THINKOS_ERR_INVALID_POINTER
 	b        thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_ptr_err:
-	movs.n   r3, #THINKOS_ERR_IDLE_MSP
+	movs.n   r5, #THINKOS_ERR_IDLE_MSP
 	b        thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_xcpt_err:
-	movs.n   r3, #THINKOS_ERR_IDLE_XCPT
+	movs.n   r5, #THINKOS_ERR_IDLE_XCPT
 	b        thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_entry_err:
-	movs.n  r3, #THINKOS_ERR_IDLE_ENTRY
+	movs.n   r5, #THINKOS_ERR_IDLE_ENTRY
 	b        thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_limit_err: 
-	movs.n   r3, #THINKOS_ERR_IDLE_STACK
+	movs.n   r5, #THINKOS_ERR_IDLE_STACK
 	b        thinkos_krn_sched_xcpt
 #endif
 
@@ -357,6 +357,7 @@ thinkos_krn_sched_xcpt:
 	.global thinkos_krn_sched_xcpt
 	.type   thinkos_krn_sched_xcpt, %function
 /* FIXME: fatal exception... */	
+	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
 	b       thinkos_krn_fatal_err_handler
 	.size   thinkos_krn_sched_xcpt, . - thinkos_krn_sched_xcpt
 #endif /* THINKOS_ENABLE_SCHED_ERROR */
@@ -366,24 +367,17 @@ thinkos_krn_sched_xcpt:
  * Scheduler detected errors
  * -------------------------------------------------------------------------- */
 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-.L_stack_err: 
-	movs.n  r3, #THINKOS_ERR_THREAD_STACKADDR   
-	b.n     thinkos_krn_sched_trap
-#endif
-
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	.thumb_func
 thinkos_krn_sched_trap:
 	.global thinkos_krn_sched_trap
 	.type   thinkos_krn_sched_trap, %function
 
-	/*  r1: | err | brk | svc | act |  */
-	/* Insert the error code (R3) on R1 */
-	lsls.n  r3, r3, #24
-	lsls.n  r1, r1, #8
-	lsrs.n  r1, r1, #8
-	adds.n  r1, r3
+#if (THINKOS_ENABLE_STACK_LIMIT)
+.L_stack_err: 
+	movs.n  r5, #THINKOS_ERR_THREAD_STACKADDR 
+	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
+#endif
 
 	/*  r0: krn */
 	/*  r1: | err | brk | svc | act |  */

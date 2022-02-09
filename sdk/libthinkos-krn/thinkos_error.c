@@ -144,31 +144,29 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 
 /* Kernel error trap services handler */
 #if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat, 
-								   uint32_t sp)
+void thinkos_krn_sched_err_handler(struct thinkos_rt * krn)
 {
-	uint32_t thread = SCHED_STAT_ACT(stat);
-	uint32_t svcno = SCHED_STAT_SVC(stat);
-	uint32_t errno = SCHED_STAT_ERR(stat);
-	uint32_t xcpno = SCHED_STAT_XCP(stat);
+	uint32_t thread;
+	uint32_t svcno;
+	uint32_t errno;
+	uint32_t xcpno;
 
 	(void)thread;
 	(void)svcno;
 	(void)errno;
 	(void)xcpno;
 
+
 #if (THINKOS_ENABLE_THREAD_FAULT)
+	thread = __krn_sched_active_get(krn);
+	errno = __krn_sched_err_get(krn);
 	/* Per thread error code */
 	__thread_errno_set(krn, thread, errno);
 #endif
 
 #if (DEBUG)
-	if (xcpno > 0) {
-		DCC_LOG3(LOG_WARNING, VT_PSH VT_FRD VT_REV 
-				 " Exception %d \"%s\" -  thread=%d" VT_POP, 
-				 xcpno, thinkos_err_name_lut[xcpno], thread); 
-	} 
-
+	thread = __krn_sched_active_get(krn);
+	errno = __krn_sched_err_get(krn);
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
 			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
@@ -181,17 +179,13 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat,
 		}
 	}
 
-	thread = __krn_sched_active_get(krn);
 	svcno = __krn_sched_svc_get(krn);
-	errno = __krn_sched_err_get(krn);
 	xcpno = __krn_sched_xcp_get(krn);
 	
 	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
 			 thread, xcpno, errno, svcno);
 
-	mdelay(2000);
-
-	__tdump(krn);
+	mdelay(1000);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 
@@ -210,18 +204,37 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat,
 
 }
 
-void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn, uint32_t stat, 
-								   uint32_t sp, uint32_t errno)
+void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 {
-	DCC_LOG2(LOG_PANIC, VT_PSH VT_FRD VT_REV 
-			 " Error %d \"%s\"" VT_POP, 
-			 errno, thinkos_err_name_lut[errno]); 
 #if (DEBUG)
+	uint32_t errno;
+
+	errno = __krn_sched_err_get(krn);
+
+	DCC_LOG2(LOG_PANIC, VT_PSH VT_FRD VT_REV 
+			 " Krn error %d \"%s\"" VT_POP, 
+			 errno, thinkos_err_name_lut[errno]); 
 	__kdump(krn);
+
+	mdelay(1000);
 #endif
 
+#if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#endif
+//	__thinkos_krn_core_reset(krn);
+	/* Disable all vectored interrupts on NVIC */
+	__nvic_irq_disable_all();
+	/* Enable CPU interrupts */
+	cm3_cpsie_i();
+	/* Signal monitor */
+	monitor_signal_break(MONITOR_KRN_FAULT);
+#else
+	__krn_suspend_all(krn);
 	/*  FIXME: should reboot or do something else... */
 	for(;;);
+#endif
 }
 
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
