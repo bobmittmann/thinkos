@@ -53,7 +53,7 @@ static int __flash_erase(int key)
 	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
 		krn_console_wrln("failed!");
 	} else {
-		krn_console_wrln("Ok.");
+		krn_console_wrln("ok.");
 	}
 
 	return ret;
@@ -72,15 +72,13 @@ int btl_flash_erase_partition(const char * tag)
 	if ((c = krn_console_getc(10000)) != 'y') {
 		krn_console_putc(c);
 		DCC_LOG1(LOG_WARNING, "c=%d", c);
-		krn_console_puts("\r\n");
-		return -1;
+		krn_console_crlf();
+		return BTL_SHELL_OK;
 	}
 
-	krn_console_puts("\r\n");
+	krn_console_crlf();
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		krn_console_puts("Error: ");
-		krn_console_wrln("can't open partition!");
-		return key;
+		return BTL_SHELL_ERR_ARG_INVALID;
 	}
 
 	ret = __flash_erase(key);
@@ -105,15 +103,13 @@ int btl_flash_ymodem_recv(const char * tag)
 	krn_console_puts(tag);
 	krn_console_puts("\" [y]? ");
 	if (krn_console_getc(10000) != 'y') {
-		krn_console_puts("\r\n");
-		return -1;
+		krn_console_crlf();
+		return BTL_SHELL_OK;
 	}
 
-	krn_console_puts("\r\n");
+	krn_console_crlf();
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		krn_console_puts("Error: ");
-		krn_console_wrln("can't open partition!");
-		return key;
+		return BTL_SHELL_ERR_ARG_INVALID;
 	}
 
 	krn_console_puts("YMODEM ");
@@ -144,7 +140,8 @@ int btl_flash_ymodem_recv(const char * tag)
 
 	thinkos_sleep(500);
 
-	krn_console_puts("\r\nYMODEM ");
+	krn_console_crlf();
+	krn_console_puts("YMODEM ");
 	if (ret < 0)
 		krn_console_wrln("failed!");
 	else
@@ -181,35 +178,32 @@ int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
 
 
 /* Receive a file and write it into the flash using the YMODEM protocol */
-int btl_flash_xxd(const char * tag)
+int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max)
 {
-	uint32_t rem = 1024 * 1024;
-	uint32_t offs = 0;
-	uint8_t buf[64];
-	char line[128];
-	int ret;
+	int32_t rem = __max;
+	uint32_t offs = __offs;
+	uint32_t buf[32];
+	char ln[128];
+	int ret = 0;
 	int key;
 
-	krn_console_puts("\r\n");
-	if ((key = thinkos_flash_mem_open(tag)) < 0) {
-		krn_console_puts("Error: ");
-		krn_console_wrln("can't open partition!");
-		return key;
+	if ((key = thinkos_flash_mem_open(__tag)) < 0) {
+		return BTL_SHELL_ERR_ARG_INVALID;
 	}
 
 	while (rem > 0) {
 		int cnt;
 
 		cnt = 16;
-		if ((ret = thinkos_flash_mem_read(key, offs, buf, cnt)) < 0) {
-			DCC_LOG1(LOG_ERROR, "thinkos_flash_mem_red()=>%d", ret);
+		if ((ret = thinkos_flash_mem_read(key, offs, buf, cnt)) <= 0) {
 			break;
 		}
 
-		krn_fmt_line_hex32(line, offs, buf, cnt);
-		krn_console_puts(line);
+        cnt = ret;
 
-		cnt = ret;
+		krn_fmt_line_hex32(ln, offs, buf, cnt);
+		krn_console_wrln(ln);
+
 		offs += cnt;
 		rem -= cnt;
 	}

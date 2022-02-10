@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#if 0
 
 int krn_fmt_hex8(char * s, uint32_t val)
 {
@@ -177,4 +178,5 @@ int cmd_memxxd(FILE *f, int argc, char ** argv)
 	return 0;
 }
 
+#endif
 

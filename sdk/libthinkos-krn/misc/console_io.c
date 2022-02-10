@@ -65,15 +65,8 @@ int krn_console_write(const void * buf, unsigned int len)
 	return krn_console_dev_send(NULL, buf, len);
 }
 
-int krn_console_wrln(const char * ln)
+int krn_console_crlf(void)
 {
-	int n = 0;
-
-	if (ln) {
-		while (ln[n] != '\0')
-			n++;
-		krn_console_dev_send(NULL, ln, n);
-	}
 	return krn_console_dev_send(NULL, "\r\n", 2);
 }
 
@@ -94,6 +87,11 @@ int krn_console_putc(int c)
 	return krn_console_dev_send(NULL, buf, 1);
 }
 
+int krn_console_wrln(const char * ln)
+{
+	krn_console_puts(ln);
+	return krn_console_crlf();
+}
 
 int krn_console_dev_recv(void * dev, void * buf, 
 					  unsigned int len, unsigned int msec) 
@@ -182,6 +180,7 @@ int krn_console_gets(char * s, int size)
 			}
 			continue;
 		} else if (c == IN_ESC) {
+			continue;
 		} else if (pos == size) {
 			krn_console_puts(OUT_BEL);
 			continue;

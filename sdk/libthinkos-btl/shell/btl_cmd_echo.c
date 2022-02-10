@@ -1,4 +1,4 @@
- /* 
+/* 
  * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  */
 
 /** 
- * @file btl_cmd_xxd.c
+ * @file btl_cmd_echo.c
  * @brief 
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
@@ -28,14 +28,13 @@
 #include <thinkos/console.h>
 #include <thinkos.h>
 
-int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[])
+int btl_cmd_echo(struct btl_shell_env * env, int argc, char * argv[])
 {
-	if (argc < 2)
-		return BTL_SHELL_ERR_ARG_MISSING;
-
-	if (argc > 2)
-		return BTL_SHELL_ERR_EXTRA_ARGS;
-
-	return btl_flash_xxd(argv[1], 0, 256 * 1024);
+	while (--argc) {
+		krn_console_puts(*(++argv));
+		krn_console_putc(' ');
+	}
+	
+	return krn_console_crlf();
 }
 

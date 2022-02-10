@@ -28,7 +28,7 @@ static inline int __isspace(int c) {
 	return ((c == ' ') || (c == '\t'));
 }
 
-int __parseline(char * line, char ** argv, int argmax)
+int btl_parseline(char * line, char ** argv, int argmax)
 {
 	char * cp = line;
 	char * tok;
@@ -81,6 +81,15 @@ int __parseline(char * line, char ** argv, int argmax)
 	return n;
 }
 
+const char btl_err_tab[][16] = {
+	"ok",
+	"undefined",
+	"cmd invalid",
+	"arg missing",
+	"arg invalid",
+	"extra args"
+};
+
 int btl_console_shell(struct btl_shell_env * env)
 {
 	const char * prompt;
@@ -114,20 +123,22 @@ int btl_console_shell(struct btl_shell_env * env)
 			continue;
 		}
 
-		if ((argc = __parseline(line, argv, 8)) <= 0) {
+		if ((argc = btl_parseline(line, argv, 8)) <= 0) {
 			continue;
 		};
 
-		if ((cmd = btl_cmd_lookup(env, argv[0])) <= 0) {
-			continue;
+		if ((ret = btl_cmd_lookup(env, argv[0])) >= 0) {
+			cmd = ret;
+			ret = btl_cmd_call(env, argc, argv, cmd); 
+			if (ret >= 0) 
+				continue;
 		};
 
-		ret = btl_cmd_call(env, argc, argv, cmd); 
-		if (ret < 0) {
-# if 0
-			krn_console_wr("Error");
-#endif
-		}
+		if (ret < BTL_SHELL_ERR_UNDEFINED)
+			ret = BTL_SHELL_ERR_UNDEFINED;
+			
+		krn_console_puts("Error: ");
+		krn_console_wrln(btl_err_tab[-ret]);
 	} 
 
 	return 0;

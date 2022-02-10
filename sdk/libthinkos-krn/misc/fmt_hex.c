@@ -41,21 +41,25 @@ int krn_fmt_hex8(char * s, uint32_t val)
 
 int krn_fmt_hex16(char * s, uint32_t val)
 {
-	krn_fmt_hex8(s, val >> 8);
-	krn_fmt_hex8(s, val);
+	s += krn_fmt_hex8(s, val >> 8);
+	s += krn_fmt_hex8(s, val);
+	*s = '\0';
 
 	return 4;
 }
 
 int krn_fmt_hex32(char * s, uint32_t val)
 {
-	krn_fmt_hex8(s, val >> 8);
-	krn_fmt_hex8(s, val);
+	s += krn_fmt_hex16(s, val >> 16);
+	s += krn_fmt_hex16(s, val);
+	*s = '\0';
 
 	return 8;
 }
 
-int krn_fmt_line_hex32(char * s, uint32_t  addr, const void * buf, int __cnt)
+
+int krn_fmt_line_hex32(char * s, uint32_t  addr, 
+					   const void * __buf, int __cnt)
 {
 	uint32_t base;
 	uint8_t * p;
@@ -81,43 +85,43 @@ int krn_fmt_line_hex32(char * s, uint32_t  addr, const void * buf, int __cnt)
 
 	cp = s;
 	cp += krn_fmt_hex32(cp, base);
-	__thinkos_memcpy(cp, ": ", 2);
-	cp += 2;
+	*cp++ = ':';
+	*cp++ = ' ';
 
-	p = (uint8_t *)buf; 
+	p = (uint8_t *)__buf; 
 	for (i = 0; i < n; i += sizeof(uint32_t)) {
 		if (i < j) {
 			__thinkos_memcpy(cp, "________ ", 9);
-			cp += 9;
+			cp += 9; 
 		} else {
 			val = p[0] + (p[1] << 8) + (p[2] << 16) + (p[3] << 24);
-			cp += krn_fmt_hex32(cp, val);
 			p += sizeof(uint32_t);
+			cp += krn_fmt_hex32(cp, val);
+			*cp++ = ' ';
 		}
 	}
 
-	for (; i < 16; i += 4) {
+	for (; i < 16; i += sizeof(uint32_t)) {
 		__thinkos_memcpy(cp, "         ", 9);
 		cp += 9; 
 	}
 
-	__thinkos_memcpy(cp, ": ", 2);
-	cp += 2;
+	*cp++ = ' ';
 
-	p = (uint8_t *)buf; 
+	p = (uint8_t *)__buf; 
 	for (i = 0; i < n; i++) {
-		if (i == 8)
-			*cp++ = ' ';
-		if (i < j) {
-			*cp++ = '.';
+		if (i == 8) {
+			c = ' ';
+		} else if (i < j) {
+			c = '.';
 		} else {
 			c = *p++;
-			*cp++ = ((c < ' ') || (c > 126)) ? '.' : c;
+			c = ((c < ' ') || (c > 126)) ? '.' : c;
 		}
+		*cp++ = c;
 	}
 
-	__thinkos_memcpy(cp, "\r\n", 3);
-	cp += 3;
+	*cp = '\0';
 
 	return cp - s;
 }

@@ -1004,11 +1004,15 @@ int krn_console_puts(const char * s);
 
 int krn_console_putc(int c);
 
+int krn_console_crlf(void);
+
 int krn_console_getc(unsigned int tmo);
 
 int krn_console_gets(char * s, int size);
 
 int krn_console_wrln(const char * ln);
+
+int krn_fmt_hex32(char * s, uint32_t val);
 
 int krn_fmt_line_hex32(char * __ln, uint32_t __addr, 
 					   const void * __buf, int __cnt);

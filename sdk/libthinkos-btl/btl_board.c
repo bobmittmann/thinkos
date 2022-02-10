@@ -45,7 +45,7 @@ void btl_mem_info_print(const struct thinkos_mem_desc * mem)
 		ro = (mem->blk[i].opt == M_RO) ? 1 : 0;
 		align = ((mem->blk[i].opt & 3) + 1) * 8;
 		krn_snprintf(s, sizeof(s), "    %8s %08x-%08x %8d %6s %2d\r\n",
-					  tag, base, base + size - 4, size, 
+					  tag, base, base + size - 1, size, 
 					  ro ? "RO" : "RW", align);
 		krn_console_puts(s);
 	}

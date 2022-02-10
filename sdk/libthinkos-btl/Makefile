@@ -23,7 +23,9 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-btl
 
-SHELL_CFILES = btl_shell_env.c btl_shell.c btl_cmd_reboot.c btl_cmd_memxxd.c 
+SHELL_CFILES = btl_shell_env.c btl_shell.c btl_cmd_reboot.c\
+			   btl_cmd_xxd.c btl_cmd_delay.c btl_cmd_echo.c\
+			   btl_cmd_rcvy.c btl_cmd_erase.c 
 
 CFILES = btl_flash.c btl_board.c \
 		 $(addprefix shell/,$(SHELL_CFILES))

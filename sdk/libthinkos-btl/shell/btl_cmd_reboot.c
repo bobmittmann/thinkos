@@ -26,24 +26,15 @@
 #include <thinkos/bootldr.h>
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
-#include <sys/delay.h>
-#include <sys/dcclog.h>
 #include <thinkos.h>
-#include <vt100.h>
-#include <xmodem.h>
-#include <stdio.h>
-#include <ctype.h>
 
-#include "board.h"
-#include "version.h"
-
-#include <sys/dcclog.h>
-
-int btl_cmd_reboot(int argc, char * argv[])
+int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[])
 {
-	krn_console_puts("\r\nRestarting...\r\n");
+	krn_console_crlf();
+	krn_console_wrln("Restarting...");
 	thinkos_sleep(1000);
 	thinkos_reboot(THINKOS_CTL_REBOOT_KEY);
+
 	return 0;
 }
 

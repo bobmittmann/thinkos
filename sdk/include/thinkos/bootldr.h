@@ -36,6 +36,16 @@
 
 #include <thinkos/board.h>
 
+enum {
+	BTL_SHELL_OK = 0,
+	BTL_SHELL_ERR_GENERAL = -1,
+	BTL_SHELL_ERR_CMD_INVALID = -2,
+	BTL_SHELL_ERR_ARG_MISSING = -3,
+	BTL_SHELL_ERR_ARG_INVALID = -4,
+	BTL_SHELL_ERR_EXTRA_ARGS = -5,
+	BTL_SHELL_ERR_UNDEFINED = -6
+};
+
 /* Board description */
 struct thinkos_board {
 	char name[16];
@@ -125,11 +135,27 @@ void btl_shell_env_init(struct btl_shell_env * env,
 
 int btl_flash_ymodem_recv(const char * tag);
 
-int btl_flash_xxd(const char * tag);
-
 int btl_flash_erase_partition(const char * tag);
 void btl_board_info(const struct thinkos_board * board);
-int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1);
+int btl_flash_app_exec(const char * __tag, uintptr_t __arg0, uintptr_t __arg1);
+int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max);
+
+/* ---------------------------------------------------------------------------
+ *  Shell commands
+ * ---------------------------------------------------------------------------
+ */
+
+int btl_cmd_delay(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_echo(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[]);
+
+/* ---------------------------------------------------------------------------
+ *  Monitor
+ * ---------------------------------------------------------------------------
+ */
 
 void __attribute__((noreturn)) 
 	standby_monitor_task(const struct monitor_comm * comm, 
