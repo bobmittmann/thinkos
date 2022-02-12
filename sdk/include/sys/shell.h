@@ -35,7 +35,8 @@ enum {
 	SHELL_ERR_ARG_MISSING = -3,
 	SHELL_ERR_ARG_INVALID = -4,
 	SHELL_ERR_EXTRA_ARGS = -5,
-	SHELL_ABORT = -6, 
+	SHELL_ERR_PARSE = -6,
+	SHELL_ABORT = -7, 
 };
 
 typedef int (* shell_callback_t)(FILE * f, int argc, char ** argv);
