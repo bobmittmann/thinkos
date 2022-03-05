@@ -269,12 +269,21 @@ Note: Not used in I2S mode and SPI TI mode */
 #define SPI_SR 0x08
 
 #ifdef STM32L4X 
+
+#define SPI_FTLVL_MSK (0x3 << 11)
+#define SPI_FTLVL_SET(VAL) (((VAL) << 11) & SPI_FTLVL_MSK)
+#define SPI_FTLVL_GET(REG) (((REG) & SPI_FTLVL_MSK) >> 11)
+
 /* Bits 12:11 FTLVL[1:0]: FIFO Transmission Level */
 /* These bits are set and cleared by hardware.
 00: FIFO empty
 01: 1/4 FIFO
 10: 1/2 FIFO
 11: FIFO full (considered as FULL when the FIFO threshold is greater than 1/2) */
+
+#define SPI_FRLVL_MSK (0x3 << 9)
+#define SPI_FRLVL_SET(VAL) (((VAL) << 9) & SPI_FRLVL_MSK)
+#define SPI_FRLVL_GET(REG) (((REG) & SPI_FRLVL_MSK) >> 9)
 
 /* Bits 10:9 FRLVL[1:0]: FIFO reception level */
 /* These bits are set and cleared by hardware.
