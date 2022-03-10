@@ -1094,6 +1094,7 @@ This bit is set and cleared by software.
    0110: Reserved
    0111: Channel 4 mapped on SDMMC1
    others: Reserved */
+#define DMA2_C4S_SPI1_TX (0x4 << 12)
 
 /* Bits [8..11] - DMA channel 3 selection */
 #define DMA2_C3S_MSK (0xf << 8)
@@ -1110,6 +1111,7 @@ This bit is set and cleared by software.
    devices only.
    0111: Reserved
    others: Reserved */
+#define DMA2_C3S_SPI1_RX (0x4 << 8)
 
 /* Bits [4..7] - DMA channel 2 selection */
 #define DMA2_C2S_MSK (0xf << 4)
