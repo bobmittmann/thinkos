@@ -359,14 +359,14 @@ ret; })
 
 #define WARNX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_WARN)  { \
 		TRACE_REF_DEF("warnx") __warnx = \
-		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
+		{ .line=__LINE__, .lvl=TRACE_LVL_WARN, .opt=TRACE_OPT_XXD, \
 		  .func=__func__, .fmt=__STR}; \
 		  tracex(&__warnx, __BUF, __LEN);\
 		}} while (0)
 
 #define ERRX(__STR, __BUF, __LEN) do { if (TRACE_LEVEL >= TRACE_LVL_ERR)  { \
 		TRACE_REF_DEF("errx") __errx = \
-		{ .line=__LINE__, .lvl=TRACE_LVL_INF, .opt=TRACE_OPT_XXD, \
+		{ .line=__LINE__, .lvl=TRACE_LVL_ERR, .opt=TRACE_OPT_XXD, \
 		  .func=__func__, .fmt=__STR}; \
 		  tracex(&__errx, __BUF, __LEN);\
 		}} while (0)

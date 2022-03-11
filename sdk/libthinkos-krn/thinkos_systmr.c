@@ -48,7 +48,7 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 }
 
 #if (THINKOS_ENABLE_TIMESHARE)
-static void __thinkos_timeshare(struct thinkos_rt * krn) 
+static void __thinkos_krn_timeshare(struct thinkos_rt * krn) 
 {
 	int32_t idx;
 
