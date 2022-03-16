@@ -207,7 +207,7 @@ __krn_sched_active_get(struct thinkos_rt * krn) {
 
 /* Set the scheduler error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_err_set(struct thinkos_rt * krn, unsigned int errno) {
+__krn_sched_err_set(struct thinkos_rt * krn, uint8_t errno) {
 	krn->sched.err = errno;
 }
 
@@ -225,7 +225,7 @@ static inline unsigned int __attribute__((always_inline))
 
 /* Set the scheduler pending service */
 static inline void __attribute__((always_inline)) 
-__krn_sched_svc_set(struct thinkos_rt * krn, unsigned int svc) {
+__krn_sched_svc_set(struct thinkos_rt * krn, uint8_t svc) {
 	krn->sched.svc = svc;
 }
 
@@ -241,15 +241,14 @@ static inline unsigned int __attribute__((always_inline))
 	return krn->sched.svc;
 }
 
-
 /* Set the scheduler kernel exception error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_xcp_set(struct thinkos_rt * krn, unsigned int xcp) {
+__krn_sched_xcp_set(struct thinkos_rt * krn, uint8_t xcp) {
 	krn->sched.xcp = xcp;
 }
 
 /* Get the scheduler kernel exception error */
-static inline unsigned int __attribute__((always_inline)) 
+static inline uint8_t __attribute__((always_inline)) 
 	__krn_sched_xcp_get(struct thinkos_rt * krn) {
 	return krn->sched.xcp;
 }

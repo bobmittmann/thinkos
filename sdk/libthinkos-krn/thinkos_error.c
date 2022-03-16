@@ -31,6 +31,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_THREAD_ALLOC]      = "ThrdAlloc",
 	[THINKOS_ERR_THREAD_SMALLSTACK] = "SmallStack",
 	[THINKOS_ERR_IRQ_INVALID]       = "IrqInvalid",
+	[THINKOS_ERR_IRQ_TAKEN]         = "IrqTaken",
 	[THINKOS_ERR_OBJECT_INVALID]    = "ObjInvalid",
 	[THINKOS_ERR_OBJECT_ALLOC]      = "ObjAlloc",
 	[THINKOS_ERR_GATE_INVALID]      = "GateInvalid",
@@ -85,9 +86,9 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 {
 	uint32_t act = SCHED_STAT_ACT(stat);
-	uint32_t svc = SCHED_STAT_BRK(stat);
 	uint32_t svc = SCHED_STAT_SVC(stat);
 	uint32_t err = SCHED_STAT_ERR(stat);
+	uint32_t xcp = SCHED_STAT_XCPT(stat);
 
 	(void)act;
 	(void)brk;
@@ -144,18 +145,14 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 
 /* Kernel error trap services handler */
 #if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_sched_err_handler(struct thinkos_rt * krn)
+void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
 {
+#if DEBUG
 	uint32_t thread;
-	uint32_t svcno;
-	uint32_t errno;
-	uint32_t xcpno;
-
-	(void)thread;
-	(void)svcno;
-	(void)errno;
-	(void)xcpno;
-
+	uint32_t svcno = SCHED_STAT_SVC(sched);
+	uint32_t errno = SCHED_STAT_ERR(sched);
+#endif
+	uint32_t xcpno = SCHED_STAT_XCP(sched);
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
 	thread = __krn_sched_active_get(krn);
@@ -167,6 +164,8 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn)
 #if (DEBUG)
 	thread = __krn_sched_active_get(krn);
 	errno = __krn_sched_err_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
 			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
@@ -179,8 +178,6 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn)
 		}
 	}
 
-	svcno = __krn_sched_svc_get(krn);
-	xcpno = __krn_sched_xcp_get(krn);
 	
 	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
 			 thread, xcpno, errno, svcno);
@@ -197,7 +194,11 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn)
 	/* Enable CPU interrupts */
 	cm3_cpsie_i();
 	/* Signal monitor */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
+	if (xcpno != 0) {
+		monitor_signal_break(MONITOR_KRN_FAULT);
+	} else {
+		monitor_signal_break(MONITOR_THREAD_FAULT);
+	}
 #else
 	__krn_suspend_all(krn);
 #endif

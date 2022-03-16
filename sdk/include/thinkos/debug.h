@@ -82,6 +82,9 @@ struct thread_rec {
 extern "C" {
 #endif
 
+//#define __THINKOS_EXCEPT__
+//#include <thinkos/except.h>
+
 /* -------------------------------------------------------------------------
  * Debug API 
  * ------------------------------------------------------------------------- */
@@ -153,6 +156,10 @@ int thinkos_dbg_thread_irq_get(unsigned int th);
 bool thinkos_dbg_thread_is_ready(unsigned int th);
 
 int thinkos_dbg_active_get(void);
+
+struct thinkos_except;
+
+int thinkos_dbg_except_get(struct thinkos_except * xcpt);
 
 /* -------------------------------------------------------------------------
  * Cycle counter

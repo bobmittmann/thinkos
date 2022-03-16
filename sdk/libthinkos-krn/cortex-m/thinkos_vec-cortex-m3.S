@@ -304,7 +304,7 @@ cm3_bus_fault_isr:
 cm3_usage_fault_isr:
 #if	(THINKOS_ENABLE_KRNSVC) 
 	/* Kernel services -------------------------------------------- */
-
+dsf
 	/* Check for undefined instruction flag on UFSR */
 	ldr     r3, .L_cm3_scb
 	ldr     r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */

@@ -28,7 +28,7 @@ CFILES = shell.c get_next.c exec.c lookup.c history.c parseline.c \
 		 cmd_unset.c cmd_echo.c cmd_close.c cmd_sleep.c cmd_reboot.c \
 		 cmd_memxxd.c cmd_osinfo.c cmd_netstat.c cmd_ifconfig.c \
 		 cmd_ping.c cmd_route.c cmd_arp.c cmd_ipcfg.c cmd_close.c \
-		 cmd_clear.c cmd_cfgerase.c
+		 cmd_clear.c cmd_cfgerase.c cmd_debug.c
 
 INCPATH = ../include
 

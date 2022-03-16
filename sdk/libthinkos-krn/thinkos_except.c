@@ -205,7 +205,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 			 errno, thread);
 
 	/* Stop the scheduler */
-	__krn_sched_xcp_set(krn, errno);
+	__krn_sched_err_set(krn, errno);
 
 #if DEBUG
 	mdelay(250);

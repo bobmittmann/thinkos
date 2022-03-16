@@ -161,6 +161,8 @@ SECTIONS
 
 	.bss :
 	{
+		*(.krn.data .krn.data*)
+		*(.krn.stack .krn.stack*)
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"

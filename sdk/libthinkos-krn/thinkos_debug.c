@@ -712,6 +712,21 @@ int thinkos_dbg_thread_break_get(int32_t * perrno)
 	return thread;
 }
 
+int thinkos_dbg_except_get(struct thinkos_except * xcpt)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int xcpno;
+
+	if ((xcpno = __krn_sched_xcp_get(krn)) == 0) {
+		return 0;
+	}
+
+	__thinkos_memcpy32(xcpt, __thinkos_except_buf(), 
+					   sizeof(struct thinkos_except));
+
+	return xcpno;
+}
+
 int thinkos_dbg_thread_break_clr(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -721,9 +736,9 @@ int thinkos_dbg_thread_break_clr(void)
 
 	DCC_LOG(LOG_WARNING, "...");
 
-	errno = __krn_debug_errno_get(krn);
-	xcpno = __krn_debug_xcptno_get(krn);
-	svcno = __krn_debug_kfault_get(krn);
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	svcno = __krn_sched_svc_get(krn);
 
 	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
 		return -1;

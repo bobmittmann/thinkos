@@ -53,7 +53,7 @@ struct {
 #endif
 } thinkos_monitor_rt;
 
-uint32_t __attribute__((aligned(8))) 
+uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
 
 const uint16_t thinkos_monitor_stack_size = sizeof(thinkos_monitor_stack);

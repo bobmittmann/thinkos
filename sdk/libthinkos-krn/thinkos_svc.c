@@ -117,6 +117,7 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_gate_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
+void thinkos_irq_dbg_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
@@ -646,6 +647,12 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #else
 	[THINKOS_APP_EXEC] = thinkos_nosys_svc,
 #endif
+
+#if (THINKOS_IRQ_MAX) > 0
+	[THINKOS_IRQ_DBG] = thinkos_irq_dbg_svc,
+#else
+	[THINKOS_IRQ_DBG] = thinkos_nosys_svc,
+#endif /* THINKOS_IRQ_MAX > 0 */
 
 };
 

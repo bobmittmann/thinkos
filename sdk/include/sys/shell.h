@@ -161,6 +161,8 @@ int cmd_ipcfg(FILE * f, int argc, char ** argv);
 
 int cmd_memxxd(FILE * f, int argc, char ** argv);
 
+int cmd_debug(FILE *f, int argc, char ** argv);
+
 #ifdef __cplusplus
 }
 #endif

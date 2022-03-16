@@ -81,7 +81,7 @@ thinkos_krn_sched_core:
 	/* Save context */
 	stmdb    r3!, {r4-r11}
 
-	/* extract the context thread byte (6bits) form control word */
+	/* extract the active thread id form sheduler control word */
     uxtb.n   r4, r1
 	/* get a pointer to the thread context vector */
     lsls.n   r7, r4, #2
@@ -187,18 +187,18 @@ thinkos_krn_sched_ctx_get:
 	ldr.n	 r3, [r0, r7]
 
 .L_save_active_and_restore:
-	/* r4: old active thread id 
-	   r3: new thread stack
+	/* r3: new thread stack + ctrl
 	   r2: new active thread id 
+	   r1: old thread id
 	   r0: thinkos_rt */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	ands     r0, r3, #(THREAD_CTRL_MSK)
+	ands     r5, r3, #(THREAD_CTRL_MSK)
 	/* restore the control register */
-	msr      CONTROL, r0
+	msr      CONTROL, r5
 	/* restore the stack pointer */
-	subs.n   r3, r0
+	subs.n   r3, r5
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
@@ -207,7 +207,7 @@ thinkos_krn_sched_ctx_get:
 
 #if (THINKOS_ENABLE_FPU)
 	mov.n    r12, r3
-	tst      r0, #(CONTROL_FPCA)
+	tst      r5, #(CONTROL_FPCA)
 	itte     ne
 	/* restore FP context */
 	vldmdbne r12!, {s16-s31}
@@ -229,11 +229,9 @@ thinkos_krn_sched_ctx_get:
 
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	subs     r3, r3, #(8  * 4)
-  #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
-	orrs     r3, r0
-  #endif
-
+	/* get a pointer to the thread context vector */
+    lsls.n   r3, r2, #2
+	ldr.n	 r3, [r0, r3]
 	b        thinkos_sched_dbg
 #else
 	bx       lr
@@ -393,8 +391,8 @@ thinkos_krn_sched_bypass:
     mov.n     r3, sp
 #endif
     /* set the control register */
-    movs.n   r2, #0
-    msr      CONTROL, r2
+    movs.n   r3, #0
+    msr      CONTROL, r3
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* Restore core context */

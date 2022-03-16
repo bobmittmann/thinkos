@@ -618,13 +618,13 @@ struct thinkos_rt {
 	uint32_t gate[(THINKOS_GATE_MAX + 15) / 16]; /* gates states */
 #endif /* THINKOS_GATE_MAX > 0 */
 
+#if ((THINKOS_IRQ_MAX) > 0)
+	volatile uint8_t irq_th[THINKOS_IRQ_MAX];
+#endif /* THINKOS_IRQ_MAX */
+
 #if ((THINKOS_MUTEX_MAX) > 0)
 	uint8_t mtx_lock[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
-
-#if ((THINKOS_IRQ_MAX) > 0)
-	int8_t irq_th[THINKOS_IRQ_MAX];
-#endif /* THINKOS_IRQ_MAX */
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	uint32_t th_alloc[1];

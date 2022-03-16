@@ -111,7 +111,6 @@ struct thinkos_except {
 	struct thinkos_context ctx;
 
 	uint32_t sp; /* SP */
-
 	uint32_t cfsr;
 	uint32_t mmfar;
 	uint32_t bfar;

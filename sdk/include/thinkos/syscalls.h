@@ -117,7 +117,9 @@
 
 #define THINKOS_APP_EXEC              64
 
-#define THINKOS_SYSCALL_CNT           64
+#define THINKOS_IRQ_DBG               65
+
+#define THINKOS_SYSCALL_CNT           65
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_OPEN                   3
@@ -146,6 +148,7 @@
 #define THINKOS_CTL_VERSION_GET        10
 #define THINKOS_CTL_RELEASE_GET        11
 #define THINKOS_CTL_PROFILE_GET        12
+#define THINKOS_CTL_ERROR              15
 
 /* THINKOS_IRQ_CTL options */
 #define THINKOS_IRQ_DISABLE            0
@@ -564,56 +567,64 @@ thinkos_gate_open_i(int gate) {
  */
 
 static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	register uint32_t ret asm("r0");
+	register int32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
-
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) :
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0));
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_wait_cyccnt(int irq, uint32_t * pcyccnt) {
 
-	register uint32_t ret asm("r0");
+	register uint32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(ret), "=r"(cyccnt) : "0"(irq) );
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) :
+				  "=r"(ret), "=r"(cyccnt) : "0"(r0) );
 
 	*pcyccnt = cyccnt;
-
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_timedwait_cyccnt(int irq, unsigned int ms, uint32_t * pcyccnt) {
 
-	register uint32_t ret asm("r0");
+	register uint32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
 				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
-				  "=r"(ret), "=r"(cyccnt) :
-				  "0"(irq), "1"(ms) );
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0), "1"(ms) );
 
 	*pcyccnt = cyccnt;
-
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_timedwait(int irq, unsigned int ms) {
 
-	register uint32_t ret asm("r0");
+	register int32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
 
 	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
 				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
-				  "=r"(ret), "=r"(cyccnt) :
-				  "0"(irq), "1"(ms) );
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0), "1"(ms) );
 
+	return ret;
+}
+
+
+static inline int __attribute__((always_inline)) 
+thinkos_irq_dbg(int irq) {
+	register int32_t ret asm("r12");
+	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_DBG) :
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0));
 	return ret;
 }
 
@@ -779,6 +790,15 @@ static inline int __attribute__((always_inline))
 		register int32_t ret asm("r12");
 		register int32_t opc asm("r0") = THINKOS_CTL_REBOOT;
 		register uint32_t arg asm("r1") = key;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc), "r"(arg));
+		return ret;
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_error(uint32_t code) {
+		register int32_t ret asm("r12");
+		register int32_t opc asm("r0") = THINKOS_CTL_ERROR;
+		register uint32_t arg asm("r1") = code;
 		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc), "r"(arg));
 		return ret;
 	}

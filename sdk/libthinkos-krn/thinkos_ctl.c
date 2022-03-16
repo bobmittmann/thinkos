@@ -66,6 +66,10 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 		thinkos_krn_abort(krn);
 		break;
 
+	case THINKOS_CTL_ERROR:
+		__THINKOS_ERROR(self, arg[1]);
+		break;
+
 /* XXX: Deprecated
 	case THINKOS_CTL_TRACE:
 		DCC_LOGSTR(LOG_MSG, "%s", (char *)arg[1]);
