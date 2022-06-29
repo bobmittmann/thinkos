@@ -25,7 +25,8 @@ include ../../mk/config.mk
 
 LIB_STATIC = tty
 
-CFILES = tty_dev.c tty_fops.c
+CFILES = tty_dev.c tty_fops.c tty_readline.c tty_readfield.c
+
 
 include ../../mk/lib.mk
 

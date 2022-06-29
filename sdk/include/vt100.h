@@ -102,6 +102,9 @@
 #define VT100_LINE_WRAP_EN      ESC "7h"
 #define VT100_LINE_WRAP_DIS     ESC "7l"
 
+#define VT100_SET_36_LINES      ESC "[?9l"
+#define VT100_SET_24_LINES      ESC "[?9h"
+
 #define VT100_CLRSCR            ESC "[2J"
 #define VT100_GOTOYX            ESC "[%d;%df"
 #define VT100_GOTO(Y, X)        ESC "["#Y";"#X"f"
@@ -128,8 +131,10 @@
 #define VT100_ATTR_NORMAL       ESC "[0m"
 #define VT100_ATTR_BRIGHT       ESC "[1m"
 #define VT100_ATTR_DIM          ESC "[2m"
+#define VT100_ATTR_LARGE        ESC "[3m"
 #define VT100_ATTR_UNDERLINE    ESC "[4m"
 #define VT100_ATTR_BLINK        ESC "[5m"
+#define VT100_ATTR_JUMBO        ESC "[6m"
 #define VT100_ATTR_REVERSE      ESC "[7m"
 #define VT100_ATTR_HIDDEN       ESC "[8m"
 
@@ -171,7 +176,7 @@ terminal/display settings, and vary depending on the implementation: */
 #define VT100_FONT_SELECT_G0       "\017"
 
 #define VT100_ENTER_GRP_MODE       ESC "F"
-#define VT100_EXIT_GRP_MODE       ESC "G"
+#define VT100_EXIT_GRP_MODE        ESC "G"
 
 #define VT100_SET_FONT_G0_UK       ESC "(A"
 #define VT100_SET_FONT_G0_ASCII    ESC "(B"
