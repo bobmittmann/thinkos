@@ -365,6 +365,8 @@ void main(int argc, char ** argv)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
+	int ret;
+	int i;
 
 #if DEBUG
 	DCC_LOG_INIT();
@@ -383,9 +385,18 @@ void main(int argc, char ** argv)
 	mdelay(125);
 #endif
 
-	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+	ret = thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
 					 &board_mem_map);
+
+	(void)ret;
+#if DEBUG
+	if (ret < 0) {
+		DCC_LOG(LOG_ERROR, 	VT_PSH VT_BRI VT_FRD 
+				"thinkos_krn_init() failed!" VT_POP);
+		for(;;);
+	}
+#endif
 	board_init();
 
 	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
@@ -395,7 +406,12 @@ void main(int argc, char ** argv)
 	thinkos_krn_monitor_init(krn, comm, 
 							 boot_monitor_task, (void *)&this_board);
 
-	thinkos_sleep(500);
+	for (i = 0; i < 100; ++i) { 
+		tp12_on();
+		thinkos_sleep(500);
+		tp12_off();
+		thinkos_sleep(500);
+	}
 
 	btl_flash_app_exec("app", 0, 0);
 }
