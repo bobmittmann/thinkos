@@ -102,11 +102,6 @@ enum mstp_frame_type {
 	FRM_RESUME				   = 0xff
 };
 
-enum {
-	MSTP_MODE_FREEZE = 0,
-	MSTP_MODE_RESUME
-}MSTP_MODE;
-
 /** @enum mstp_frame_type
  * @brief MSTP Frame Types
  *
