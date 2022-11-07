@@ -71,7 +71,7 @@ int btl_cmd_lookup(struct btl_shell_env * env, const char * str)
 			return i;
 	}
 
-	return -1;
+	return -2;
 }
 
 int btl_cmd_first(struct btl_shell_env * env)
@@ -102,7 +102,7 @@ const char * btl_cmd_brief(struct btl_shell_env * env, unsigned int code)
 int btl_cmd_call(struct btl_shell_env * env, int argc, char * argv[], unsigned int code)
 {
 	if (code > BTL_CMD_LAST)
-		return -1;
+		return -2;
 	return btl_cmd_call_tab[code](env, argc, argv);
 }
 

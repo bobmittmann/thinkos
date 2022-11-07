@@ -912,8 +912,8 @@ int thinkos_flag_timedtake(int flag, unsigned int ms);
 /** 
  * DOC: Gates
  *
- * Gates are syncronization objects which provide a convenient way of 
- * creating mutual exclusion acess to 
+ * Gates are synchronization objects which provide a convenient way of 
+ * creating mutual exclusion access to 
  * code blocks signaled by interrupt handlers...
  * 
  * A gate have a lock flag and a signal flag. A gate can be in one of 
@@ -983,7 +983,7 @@ int thinkos_gate_wait(int gate);
  *
  *
  * Description:
- * If the gate is open this function return imediatelly, otherwise it will
+ * If the gate is open this function return immediately, otherwise it will
  * block the calling thread.
  *
  */
@@ -1039,7 +1039,7 @@ int thinkos_gate_close(int gate);
  * @open: Indicate the state of the gate on exit. 
  * - @p open > 0, the gate will be left open, allowing for another thread 
  * to enter the gate.
- * - @p open == 0, the gate will stay closed if not signaled, in wich case
+ * - @p open == 0, the gate will stay closed if not signaled, in which case
  * it will open accordingly.
  *
  * Return:

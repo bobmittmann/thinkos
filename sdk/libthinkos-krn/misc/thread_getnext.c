@@ -25,13 +25,14 @@
 int __thinkos_thread_getnext(int th)
 {
 	struct thinkos_rt * krn = &thinkos_rt; 
-	int idx;
+	int i;
 
-	idx = (th < 0) ? THINKOS_THREAD_FIRST : th + 1;
-	
-	for (; idx <= THINKOS_THREAD_LAST; ++idx) {
-		if (__thread_ctx_is_valid(krn, idx))
-			return idx;
+	i = (th < THINKOS_THREAD_FIRST) ? THINKOS_THREAD_FIRST : th + 1;
+
+	for (; i <= THINKOS_THREAD_LAST; ++i) {
+		/* Skip invalid threads */ 
+		if (__thread_ctx_is_valid(krn, i))
+			return i;
 	}
 
 	return -1;

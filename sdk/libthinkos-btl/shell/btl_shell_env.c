@@ -24,6 +24,8 @@
 
 #include "thinkos_btl-i.h"
 
+/* Bootloader shell environment */
+
 static struct btl_shell_env btl_shell_env_singleton;
 
 struct btl_shell_env * btl_shell_env_getinstance(void)

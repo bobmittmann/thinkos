@@ -38,6 +38,7 @@ void btl_mem_info_print(const struct thinkos_mem_desc * mem)
 		return;
 
 	krn_snprintf(s, sizeof(s), "  %s:\r\n", mem->tag);
+	krn_console_puts(s);
 	for (i = 0; i < mem->cnt; ++i) {
 		tag = mem->blk[i].tag;
 		size = mem->blk[i].cnt << mem->blk[i].siz;
