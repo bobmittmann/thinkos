@@ -283,21 +283,12 @@ int serdrv_init(void)
 
 	DCC_LOG1(LOG_TRACE, "DMA_CCR7=%08x", &dma->ch[TX_DMA_CHAN].ccr);
 
-#ifdef CM3_RAM_VECTORS
-	thinkos_irq_register(STM32_IRQ_USART2, IRQ_PRIORITY_LOW, 
-						 stm32_usart2_isr);
-	thinkos_irq_register(STM32_IRQ_DMA1_CH7, IRQ_PRIORITY_LOW, 
-						 stm32_dma1_channel7_isr);
-//	thinkos_irq_register(STM32_IRQ_DMA1_CH6, IRQ_PRIORITY_LOW, 
-//						 stm32_dma1_channel6_isr);
-#else
 	cm3_irq_pri_set(STM32_IRQ_USART2, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_USART2);
 	cm3_irq_pri_set(STM32_IRQ_DMA1_CH7, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_DMA1_CH7);
 	cm3_irq_pri_set(STM32_IRQ_DMA1_CH6, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_DMA1_CH6);
-#endif
 
 	return 0;
 }

@@ -615,6 +615,11 @@
 #define THINKOS_ENABLE_DATE_AND_TIME        0
 #endif
 
+/* THINKOS_ENABLE_RAM_VECTORS - Enable IRQ vectors to reside in RAM... */
+#ifndef THINKOS_ENABLE_RAM_VECTORS
+#define THINKOS_ENABLE_RAM_VECTORS 0
+#endif
+
 /* -------------------------------------------------------------------------- 
  * Dependency check
  * --------------------------------------------------------------------------*/
