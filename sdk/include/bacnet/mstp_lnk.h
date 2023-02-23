@@ -170,6 +170,13 @@ struct mstp_lnk * mstp_lnk_getinstance(unsigned int id);
 int mstp_lnk_init(struct mstp_lnk * lnk, const char * name, 
 				  unsigned int addr, struct serial_dev * dev);
 
+/** @brief Uninitializes an MS/TP link.
+ *
+ * @param lnk The MS/TP link control structure.
+ * @return On success, 0 is returned. On error #-1 is returned.
+ */
+int mstp_lnk_done(struct mstp_lnk * mstp);
+
 /** @brief Start sending and receiving data on MS/TP link.
  *
  * @param lnk The MS/TP link control structure.
@@ -177,7 +184,7 @@ int mstp_lnk_init(struct mstp_lnk * lnk, const char * name,
  */
 int mstp_lnk_resume(struct mstp_lnk * lnk);
 
-/** @brief Start sending/receiving data on MS/TP link.
+/** @brief Stop sending/receiving data on MS/TP link.
  *
  * @param lnk The MS/TP link control structure.
  * @return On success, 0 is returned. On error #-1 is returned.

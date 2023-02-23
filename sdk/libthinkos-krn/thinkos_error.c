@@ -67,6 +67,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_APP_DATA_INVALID]  = "AppData",
 	[THINKOS_ERR_APP_CODE_INVALID]  = "AppCode",
 	[THINKOS_ERR_APP_BSS_INVALID]   = "AppBss",
+	[THINKOS_ERR_APP_ABORT_REQ]     = "AbortReq",
 	[THINKOS_ERR_IDLE_MSP]          = "IdleMSP",
 	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
 	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
@@ -74,7 +75,6 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack",
 	[THINKOS_ERR_IDLE_ENTRY]        = "IdleEntry",
 	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept",
-	[THINKOS_ERR_ABORT_REQ]         = "AbortReq"
 };
 
 char const * thinkos_krn_err_tag(unsigned int errno)
@@ -108,7 +108,7 @@ void thinkos_krn_sched_svc_reset(struct thinkos_rt * krn)
 	__thinkos_krn_core_reset(krn);
 }
 
-/* Kernel defered services handler */
+/* Kernel deferred services handler */
 void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 {
 	uint32_t th_act =  SCHED_STAT_ACT(stat);

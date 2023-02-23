@@ -26,20 +26,36 @@
 #if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
 
-static void thinkos_krn_abort(struct thinkos_rt * krn)
+void __thinkos_arch_esn_get(uint32_t esn[]) {
+}
+
+void __thinkos_arch_version_get(struct thinkos_version * ver)
+{
+}
+
+void __thinkos_arch_release_get(struct thinkos_release * rel)
+{
+}
+
+void thinkos_arch_esn_get(uint32_t esn[])
+	__attribute__ ((weak, alias ("__thinkos_arch_esn_get")));
+
+
+void thinkos_arch_version_get(struct thinkos_version * ver)
+	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
+
+void thinkos_arch_release_get(struct thinkos_release * rel)
+	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
+
+
+static void thinkos_krn_abort(struct thinkos_rt * krn, int ret)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
 	/* request scheduler to stop everything */
-	__krn_sched_err_set(krn, THINKOS_ERR_ABORT_REQ);
+	__krn_sched_err_set(krn, THINKOS_ERR_APP_ABORT_REQ);
 	/* Make sure to run the scheduler */
 	__krn_sched_defer(krn);
 }
-
-void thinkos_arch_esn_get(uint32_t esn[]);
-
-void thinkos_arch_version_get(struct thinkos_version * ver);
-
-void thinkos_arch_release_get(struct thinkos_release * rel);
 
 void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 {
@@ -62,10 +78,12 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 		*pval = udelay_factor;
 		break;
 
-	case THINKOS_CTL_ABORT:
-		thinkos_krn_abort(krn);
+	case THINKOS_CTL_ABORT: {
+		int ret = (int)arg[1];
+		thinkos_krn_abort(krn,  ret);
+	}
 		break;
-
+	
 	case THINKOS_CTL_ERROR:
 		__THINKOS_ERROR(self, arg[1]);
 		break;

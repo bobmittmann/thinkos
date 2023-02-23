@@ -87,6 +87,14 @@ int krn_console_putc(int c)
 	return krn_console_dev_send(NULL, buf, 1);
 }
 
+int krn_console_puthex(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex32(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 8);
+}
+
 int krn_console_wrln(const char * ln)
 {
 	krn_console_puts(ln);
