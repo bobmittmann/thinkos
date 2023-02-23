@@ -261,6 +261,8 @@ void __attribute__((section(".init"))) _init(void)
 	/*******************************************************************
 	 * Configure flash access and wait states 
 	 *******************************************************************/
+	rcc->ahb1enr = (1 << RCC_FLASH);
+
 #if DEBUG	
 	while ((flash->sr & FLASH_BSY) != 0);
 #endif
