@@ -28,14 +28,20 @@
 #include <thinkos/console.h>
 #include <thinkos.h>
 
+extern volatile int dbg_cnt;
+
 int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[])
 {
+	int ret;
+
 	if (argc < 2)
 		return BTL_SHELL_ERR_ARG_MISSING;
 
 	if (argc > 2)
 		return BTL_SHELL_ERR_EXTRA_ARGS;
 
-	return btl_flash_erase_partition(argv[1]);
+	ret = btl_flash_erase_partition(argv[1]);
+
+	return ret;
 }
 

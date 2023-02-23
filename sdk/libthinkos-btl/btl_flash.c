@@ -44,13 +44,15 @@ static const struct comm_dev console_comm_dev = {
 };
 
 /* Erase a flash partition */
-static int __flash_erase(int key)
+static int __flash_erase(int key, size_t size)
 {
 	uint32_t offs = 0;
+	char s[64];
 	int ret;
 
-	krn_console_puts("Erasing... ");
-	if ((ret = thinkos_flash_mem_erase(key, offs, 256*1024)) < 0) {
+	krn_snprintf(s, sizeof(s), "Erasing %d bytes... ", size);
+	krn_console_puts(s);
+	if ((ret = thinkos_flash_mem_erase(key, offs, size)) != size) {
 		krn_console_wrln("failed!");
 	} else {
 		krn_console_wrln("ok.");
@@ -62,6 +64,8 @@ static int __flash_erase(int key)
 /* Erase a flash partition */
 int btl_flash_erase_partition(const char * tag)
 {
+	struct thinkos_mem_stat stat;
+	size_t size;
 	int key;
 	int ret;
 	int c;
@@ -75,13 +79,19 @@ int btl_flash_erase_partition(const char * tag)
 		krn_console_crlf();
 		return BTL_SHELL_OK;
 	}
-
 	krn_console_crlf();
+
+	if (thinkos_flash_mem_stat(tag, &stat) < 0) {
+		return BTL_SHELL_ERR_ARG_INVALID;
+	}
+
+	size = stat.end - stat.begin;
+
 	if ((key = thinkos_flash_mem_open(tag)) < 0) {
 		return BTL_SHELL_ERR_ARG_INVALID;
 	}
 
-	ret = __flash_erase(key);
+	ret = __flash_erase(key, size);
 
 	thinkos_flash_mem_close(key);
 
