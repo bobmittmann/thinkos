@@ -395,6 +395,14 @@
 #define THINKOS_ENABLE_MONITOR               0
 #endif
 
+/* THINKOS_ENABLE_DEFERRED_ISR: Provides a mean of running high privilege 
+ * routines. Used by debuggers, kernel monitor, console...
+   Requires the kernel monitor to be enabled.
+ */
+#ifndef THINKOS_ENABLE_DEFERRED_ISR 
+#define THINKOS_ENABLE_DEFERRED_ISR          0
+#endif 
+
 /* THINKOS_ENABLE_MONITOR_THREADS: Monitors the creation and termination of 
    threads. It's used by the bootloader to sequence the system initialization 
    also the monitor can use it to profile the user application. 
@@ -747,6 +755,11 @@
 /* thread monitoring depends on monitor */
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+/* thread monitoring depends on monitor */
+#if (THINKOS_ENABLE_DEFERRED_ISR) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_DEFERRED_ISR depends on THINKOS_ENABLE_MONITOR"
 #endif
 
 /* monitor thread scheduler depends on monitor */

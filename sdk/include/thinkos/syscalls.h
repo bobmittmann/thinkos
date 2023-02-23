@@ -191,6 +191,7 @@
 
 /* THINKOS_MONITOR_CTL operations */
 #define MONITOR_CTL_TASK_INIT          0
+#define MONITOR_CTL_SIGNAL             1
 
 #ifndef __ASSEMBLER__
 
@@ -855,19 +856,38 @@ static inline int __attribute__((always_inline))
 
 
 struct monitor_comm;
-
-static inline int __attribute__((always_inline)) 
-	thinkos_monitor_ctl(unsigned int opc, uintptr_t arg1, uintptr_t arg2, 
-						uintptr_t arg3) {
-	return THINKOS_SYSCALL4(THINKOS_MONITOR_CTL, opc, arg1, arg2, arg3);
-}
-
+/*
 static inline int __attribute__((always_inline)) 
 	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
 				   const struct monitor_comm * comm, void * env) {
 	return THINKOS_SYSCALL4(THINKOS_MONITOR_CTL, MONITOR_CTL_TASK_INIT, 
 							task, comm, env);
 }
+*/
+
+static inline int __attribute__((always_inline)) 
+	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
+				   const struct monitor_comm * comm, void * env) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = MONITOR_CTL_TASK_INIT;
+		register uint32_t arg1 asm("r1") = (uintptr_t)task;
+		register uint32_t arg2 asm("r2") = (uintptr_t)comm;
+		register uint32_t arg3 asm("r3") = (uintptr_t)env;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(arg1), "r"(arg2), "r"(arg3) : "memory" );
+		return ret;
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_monitor_signal(unsigned int signo) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = MONITOR_CTL_SIGNAL;
+		register uint32_t arg1 asm("r1") = signo;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(arg1) );
+		return ret;
+	}
+
 
 static inline int __attribute__((always_inline)) 
 	thinkos_critical_enter(void) {

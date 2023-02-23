@@ -169,7 +169,6 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		uint32_t sigset;
 		uint32_t sigmsk;
 		uint32_t sigact;
-		int ev;
 
 		if (systick->csr & SYSTICK_CSR_COUNTFLAG)
   #endif
@@ -287,17 +286,23 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		if (sigact == 0)
 			break;
 
-		if ((ev = __clz(sigact)) < 8) {
-			/* clear the TASK_INIT event */
-			sigset &= ~(1 << (31 - ev));
-			DCC_LOG2(LOG_MSG, "DSR sigset=%08x, ev=%0d", sigset, ev); 
-			krn->monitor.events = sigset;
-			krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
-		} else {
-			DCC_LOG2(LOG_MSG, "swap sigact=%08x sched=%08x.", sigact,
-					 krn->sched.state); 
-			__monitor_context_swap(&krn->monitor.ctx); 
+#if (THINKOS_ENABLE_DEFERRED_ISR)
+		{
+			int ev;
+
+			if ((ev = __clz(sigact)) < 8) {
+				/* clear the TASK_INIT event */
+				sigset &= ~(1 << (31 - ev));
+				DCC_LOG2(LOG_MSG, "DSR sigset=%08x, ev=%0d", sigset, ev); 
+				krn->monitor.events = sigset;
+				krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
+				continue;
+			} 
 		}
+#endif
+		DCC_LOG2(LOG_MSG, "swap sigact=%08x sched=%08x.", sigact,
+				 krn->sched.state); 
+		__monitor_context_swap(&krn->monitor.ctx); 
 
 	} while (1);
 

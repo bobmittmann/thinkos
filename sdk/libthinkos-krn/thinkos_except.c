@@ -237,7 +237,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 #endif
 
 /* -------------------------------------------------------------------------
-   Application fault defered handler 
+   Application fault deferred handler 
    ------------------------------------------------------------------------- */
 void thinkos_krn_exception_reset(void)
 {

@@ -174,7 +174,11 @@
 #define SIZEOF_KRN_TH_CLK    (__KRN_THREAD_LST_SIZ * 4)
 
 #if (THINKOS_ENABLE_MONITOR)
-  #define SIZEOF_KRN_MONITOR   (4 * 3)
+#if (THINKOS_ENABLE_DEFERRED_ISR)
+  #define SIZEOF_KRN_MONITOR   (4 * 7)
+#else
+  #define SIZEOF_KRN_MONITOR   (4 * 4)
+#endif
 #else
   #define SIZEOF_KRN_MONITOR   0
 #endif
@@ -313,7 +317,7 @@
 
 struct thinkos_mem_map;
 
-struct defered_svc_map;
+struct deferred_svc_map;
 
 /* -------------------------------------------------------------------------- 
  * Monitor control structure
@@ -322,14 +326,16 @@ struct defered_svc_map;
 struct thinkos_monitor { 
 	uint32_t events;  /* event set bitmap */
 	uint32_t mask;  /* events mask */
-	const struct defered_svc_map * svc; /* defered services vectors */
+#if (THINKOS_ENABLE_DEFERRED_ISR)
+	const struct deferred_svc_map * svc; /* deferred services vectors */
 	void * env; /* environment */
+	struct comm_tx_req * tx_req;
+#endif
 	union{
 		volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
 		uint32_t * ctx;
 	};
 	const struct thinkos_comm * comm;
-	struct comm_tx_req * tx_req;
 };
 
 /* -------------------------------------------------------------------------- 
@@ -1003,6 +1009,8 @@ int krn_console_write(const void * buf, unsigned int len);
 int krn_console_puts(const char * s);
 
 int krn_console_putc(int c);
+
+int krn_console_puthex(uint32_t val);
 
 int krn_console_crlf(void);
 

@@ -375,7 +375,7 @@ void __monitor_at_exit(int retcode)
 /**
  * monitor_soft_reset:
  *
- * Reinitialize the plataform by reseting ThinkOS subsystems.
+ * Reinitialize the platform by resetting ThinkOS subsystems.
  * 
  */
 
@@ -394,6 +394,11 @@ void monitor_soft_reset(void)
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------
+ * Deferred ISR
+ * ------------------------------------------------------------------------- */
+
+#if (THINKOS_ENABLE_DEFERRED_ISR)
 void def_on_comm_brk(struct thinkos_rt * krn, void * env)
 {
 	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
@@ -452,7 +457,7 @@ void def_on_console_tmr(struct thinkos_rt * krn, void * env)
 	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
 }
 
-const struct defered_svc_map thinkos_def_svc = {
+const struct deferred_svc_map thinkos_def_svc = {
 	.on_comm_brk = def_on_comm_brk,
 	.on_comm_rcv = def_on_comm_rcv,
 	.on_comm_eot = def_on_comm_eot,
@@ -462,6 +467,7 @@ const struct defered_svc_map thinkos_def_svc = {
 	.on_console_ctl = def_on_console_ctl,
 	.on_console_tmr = def_on_console_tmr
 };
+#endif /* (THINKOS_ENABLE_DEFERRED_ISR) */
 
 static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
 {
@@ -523,8 +529,10 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 	/* Set the communication channel */
 	thinkos_monitor_rt.comm = comm; 
 
+#if (THINKOS_ENABLE_DEFERRED_ISR)
 	krn->monitor.svc = &thinkos_def_svc;
 	krn->monitor.env = (void *)env;
+#endif
 	
 	sp = __monitor_ctx_init((uintptr_t)task, (uintptr_t)comm, env, (uintptr_t)0);
 
@@ -545,8 +553,9 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	switch (oper) {
 	case MONITOR_CTL_TASK_INIT: {
 		void (* task)(const struct monitor_comm *, void *) = 
-			(void (*)(const struct monitor_comm *, void *))arg[0];
-		void * env = (void *)arg[1];
+			(void (*)(const struct monitor_comm *, void *))arg[1];
+		const struct monitor_comm * comm (const struct monitor_comm *)arg[2];
+		void * env = (void *)arg[3];
 
 		/* disable interrupts */
 		cm3_cpsid_i();
@@ -556,9 +565,10 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* Set the persistent mmask */
 		krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
-		arg[0] = (uint32_t)thinkos_monitor_rt.task;
+//		arg[4] = (uint32_t)thinkos_monitor_rt.task;
+		arg[4] = THINKOS_OK;
 
-			thinkos_monitor_rt.task = task;
+		thinkos_monitor_rt.task = task;
 
 		thinkos_monitor_rt.param = env;
 
@@ -569,6 +579,19 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 	break;
 
+	case MONITOR_CTL_SIGNAL: {
+		unsigned int signo = arg[1];
+
+		arg[4] = THINKOS_OK;
+		thinkos_signal(signo);
+	}
+	break;
+
+	default:
+		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
+		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
+		arg[4] = THINKOS_EINVAL;
+		break;
 
 	}
 }
