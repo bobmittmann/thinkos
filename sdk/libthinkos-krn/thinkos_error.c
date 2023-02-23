@@ -147,16 +147,18 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 #if (THINKOS_ENABLE_ERROR_TRAP)
 void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
 {
-#if DEBUG
+#if (THINKOS_ENABLE_THREAD_FAULT) || (DEBUG)
 	uint32_t thread;
-	uint32_t svcno = SCHED_STAT_SVC(sched);
 	uint32_t errno = SCHED_STAT_ERR(sched);
+#endif
+#if DEBUG
+	uint32_t svcno = SCHED_STAT_SVC(sched);
 #endif
 	uint32_t xcpno = SCHED_STAT_XCP(sched);
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
 	thread = __krn_sched_active_get(krn);
-	errno = __krn_sched_err_get(krn);
+//	errno = __krn_sched_err_get(krn);
 	/* Per thread error code */
 	__thread_errno_set(krn, thread, errno);
 #endif

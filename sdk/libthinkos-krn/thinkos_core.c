@@ -157,7 +157,7 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 
 #if DEBUG
-	__kdump(krn);
+//	__kdump(krn);
 #endif
 }
 

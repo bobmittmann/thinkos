@@ -172,9 +172,7 @@ __rom_vectors:
 	.global __rom_vectors
 	.type __rom_vectors, %object
 	cortex_m_vectors
-#ifndef CM3_RAM_VECTORS
 	stm32_irq_vectors
-#endif
 __rom_vectors_end:
 	.global __rom_vectors_end
 	.size   __rom_vectors, . - __rom_vectors
@@ -186,28 +184,6 @@ __sizeof_rom_vectors:
 	.type   __sizeof_rom_vectors, %object
 	.word	__rom_vectors_end - __rom_vectors
 	.size   __sizeof_rom_vectors, . - __sizeof_rom_vectors
-
-#ifdef CM3_RAM_VECTORS
-	/* ---------------------------------------------------------------------
-	 * vectors residing in RAM 
-	 * --------------------------------------------------------------------- */
-	.section .ram_vectors, "ax", %progbits
-__ram_vectors:
-	.global __ram_vectors
-	.type __ram_vectors, %object
-	cortex_m_vectors
-	stm32_irq_vectors
-__ram_vectors_end:
-	.global __ram_vectors_end
-
-	.text
-	.align  2
-	.global __sizeof_ram_vectors
-__sizeof_ram_vectors:
-	.type   __sizeof_ram_vectors, %object
-	.word   __ram_vectors_end - __ram_vectors
-	.size   __sizeof_ram_vectors, . - __sizeof_ram_vectors
-#endif
 
 	.text
 	.align  2

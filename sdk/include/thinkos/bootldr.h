@@ -89,7 +89,7 @@ static inline void monitor_req_app_resume(void) {
 }
 
 static inline void monitor_req_app_term(void) {
-	monitor_soft_reset();
+//	monitor_soft_reset();
 	monitor_signal(MONITOR_APP_TERM);
 }
 

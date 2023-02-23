@@ -281,7 +281,7 @@ void thinkos_dma_ctl_svc(int32_t * arg, int self)
 
 #endif
 
-#ifdef CM3_RAM_VECTORS
+#if (THINKOS_ENABLE_RAM_VECTORS)
 	case THINKOS_DMA_REGISTER:
 		{
 			unsigned int priority = arg[2];

@@ -34,6 +34,12 @@
 #define THINKOS_ENABLE_IRQ_SANITY_CHECK 0
 #endif
 
+#if (THINKOS_IRQ_MAX) > 0
+//#if (THINKOS_ENABLE_RAM_VECTORS)
+#if (THINKOS_ENABLE_RAM_VECTORS)
+void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(128)));
+#endif
+#endif
 
 void thinkos_krn_irq_on(void) 
 {
@@ -139,7 +145,7 @@ void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 	__krn_irq_reset_all(krn);
 #endif
 
-#ifdef CM3_RAM_VECTORS
+#if (THINKOS_ENABLE_RAM_VECTORS)
 	{
 		uint32_t * tab_ptr = (uint32_t *)&__vcts_start;
 		unsigned int tab_size = (uintptr_t)&__vcts_end - 
@@ -148,11 +154,11 @@ void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 		DCC_LOG2(LOG_MSG, "copying RAM vectors 0x%08x, %d", 
 				 tab_ptr, tab_size);
 
-		__thinkos_memcpy(__ram_vectors, tab_ptr, tab_size);
+		__thinkos_memcpy32(__ram_vectors, tab_ptr, tab_size);
 	}
 #endif
 
-#ifdef CM3_RAM_VECTORS
+#if (THINKOS_ENABLE_RAM_VECTORS)
 	/* Remap the Vector table to SRAM */
 	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
 
@@ -461,7 +467,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 		}
 		break;
 
-#ifdef CM3_RAM_VECTORS
+#if (THINKOS_ENABLE_RAM_VECTORS)
 	case THINKOS_IRQ_REGISTER:
 		{
 			unsigned int priority = arg[2];
