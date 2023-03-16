@@ -62,24 +62,10 @@
  * in addition to the payload.
  */
 struct mstp_frame_inf {
-	uint8_t type;  /**< frame type */
+	uint8_t ftype;  /**< frame type */
 	uint8_t daddr; /**< destination address */
 	uint8_t saddr; /**< source address */
-};
-
-struct mstp_lnk_stats {
-	uint32_t rx_err;
-	uint32_t rx_token;
-	uint32_t rx_mgmt;
-	uint32_t rx_unicast;
-	uint32_t rx_bcast;
-	uint32_t rx_drop;
-	uint32_t tx_token;
-	uint32_t tx_mgmt;
-	uint32_t tx_unicast;
-	uint32_t tx_bcast;
-	uint32_t tx_pfm;
-	uint32_t token_lost;
+	uint8_t qos; /**< priority */
 };
 
 /** @enum mstp_frame_type 
@@ -96,25 +82,88 @@ enum mstp_frame_type {
 	FRM_BACNET_DATA_NO_REPLY   = 0x06,
 	FRM_REPLY_POSTPONED        = 0x07,
 	FRM_DATA_XPCT_REPLY        = 0x80,
-	FRM_DATA_NO_REPLY          = 0xc0,
-	FRM_DATA_CLASS_A		   = 0xca,
-	FRM_FREEZE		           = 0xfe, 
-	FRM_RESUME				   = 0xff
+	FRM_DATA_NO_REPLY          = 0xc0
 };
 
-/** @enum mstp_frame_type
- * @brief MSTP Frame Types
+struct mstp_lnk_stats {
+	uint32_t rx_frm_err;
+	uint32_t rx_err;
+	uint32_t rx_token;
+	uint32_t rx_mgmt;
+	uint32_t rx_unicast;
+	uint32_t rx_bcast;
+	uint32_t rx_drop;
+	uint32_t tx_token;
+	uint32_t tx_mgmt;
+	uint32_t tx_unicast;
+	uint32_t tx_bcast;
+	uint32_t tx_pfm;
+	uint32_t token_lost;
+};
+
+/** @enum mstp_lnk_role 
+ * @brief MSTP Link Roles 
  *
  */
-enum mstp_mgmt_event {
-	MSTP_EV_SOLE_MASTER = 0,
-	MSTP_EV_MULTIMASTER = 1,
-	MSTP_EV_TOKEN_LOST  = 2,
-	MSTP_EV_PROBE_SEND  = 3,
-	MSTP_EV_PROBE_RECV  = 4,
-	MSTP_EV_PROBE_TMO   = 5,
-	MSTP_EV_PROBE_ERR   = 6
+enum mstp_lnk_role {
+	MSTP_LNK_NONE    = 0,
+	MSTP_LNK_SLAVE   = 1,
+	MSTP_LNK_MASTER  = 2,
+	MSTP_LNK_SNIFFER = 3
 };
+
+/** @enum mstp_mgmt_event
+ * @brief MSTP Management Events
+ */
+enum mstp_mgmt_event {
+	MSTP_EV_LINK_DOWN            = 0,
+	MSTP_EV_LINK_UP              = 1,
+	MSTP_EV_SOLE_MASTER          = 2,
+	MSTP_EV_MULTIMASTER          = 3,
+	MSTP_EV_PROBE_BEGIN          = 4,
+	MSTP_EV_PROBE_END            = 5,
+	MSTP_EV_LINK_LINE_BREAK      = 6,
+	MSTP_EV_LINK_TOO_MANY_ERRORS = 7,
+
+	MSTP_EV_LINK_REQ_ECHO        = 0x08,
+	MSTP_EV_LINK_REQ_XFER        = 0x09,
+	MSTP_EV_LINK_REQ_FTXB        = 0x0a,
+	MSTP_EV_LINK_REQ_NOFW        = 0x0b,
+	MSTP_EV_LINK_REQ_ISOA        = 0x0c,
+	MSTP_EV_LINK_REQ_ROLE_SLAVE  = 0x0d,
+	MSTP_EV_LINK_REQ_ROLE_MASTER = 0x0e,
+
+	MSTP_EV_LINK_DO_ECHO         = 0x88,
+	MSTP_EV_LINK_DO_XFER         = 0x89,
+	MSTP_EV_LINK_DO_FTXB         = 0x8a,
+	MSTP_EV_LINK_DO_NOFW         = 0x8b,
+	MSTP_EV_LINK_DO_ISOA         = 0x8c,
+	MSTP_EV_LINK_DO_ROLE_SLAVE   = 0x8d,
+	MSTP_EV_LINK_DO_ROLE_MASTER  = 0x8e
+};
+
+
+/** @enum mstp_link_mgmt
+ * @brief MSTP Management Events
+ */
+enum mstp_link_mgmt_req {
+	LINK_REQ_ECHO           = 0x08,
+	LINK_REQ_XFER           = 0x09,
+	LINK_REQ_FTXB           = 0x0a,
+	LINK_REQ_NOFW           = 0x0b,
+	LINK_REQ_ISOA           = 0x0c,
+	LINK_REQ_ROLE_SLAVE     = 0x0d,
+	LINK_REQ_ROLE_MASTER    = 0x0e,
+
+	LINK_REPLY_ECHO         = 0x88,
+	LINK_REPLY_XFER         = 0x89,
+	LINK_REPLY_FTXB         = 0x8a,
+	LINK_REPLY_NOFW         = 0x8b,
+	LINK_REPLY_ISOA         = 0x8c,
+	LINK_REPLY_ROLE_SLAVE   = 0x8d,
+	LINK_REPLY_ROLE_MASTER  = 0x8e
+};
+
 
 /** @def MSTP_ADDR_BCAST
  * @brief MSTP broadcast address
@@ -136,7 +185,7 @@ extern "C" {
 /** @defgroup linkmgmt MS/TP link management
  *
  * This group of functions are used to allocate, initialize,
- * and manage SM/TP links.
+ * and manage MS/TP links.
  *
  * @{
  */
@@ -145,7 +194,7 @@ extern "C" {
  *
  * The link control structure is allocated from a pool of resources.
  * The link control structure should be initialized by calling the
- * @c mstp_lnk_init() fucntion;
+ * @c mstp_lnk_init() function;
  * Subsequent MS/TP link operations will be performed by referencing 
  * the returning pointer.
  *
@@ -156,19 +205,24 @@ struct mstp_lnk * mstp_lnk_alloc(void);
 
 struct mstp_lnk * mstp_lnk_getinstance(unsigned int id);
 
+struct mstp_lnk_comm;
+
 /** @brief Initialize a MS/TP link control structure
  *
- * This function binds a MS/TP link control structure with a name,
+ * This function binds a MS/TP link control structure with a tag,
  * an address and a serial device.
  *
  * @param lnk The MS/TP link control structure.
- * @param name String naming this link.
+ * @param tag String naming this link.
  * @param addr The MAC address for this link.
+ * @param role The role of the device on the network.
  * @param dev A serial device driver.
  * @return On success, 0 is returned. On error #-1 is returned.
  */
-int mstp_lnk_init(struct mstp_lnk * lnk, const char * name, 
-				  unsigned int addr, struct serial_dev * dev);
+int mstp_lnk_init(struct mstp_lnk * lnk, const char * tag, 
+				  unsigned int addr, enum mstp_lnk_role role, 
+				  struct mstp_lnk_comm * comm);
+
 
 /** @brief Uninitializes an MS/TP link.
  *
@@ -191,21 +245,46 @@ int mstp_lnk_resume(struct mstp_lnk * lnk);
  */
 int mstp_lnk_stop(struct mstp_lnk * lnk);
 
-/** @brief  MS/TP link processing loop.
+/** @brief  MS/TP link master processing loop.
  *
  * This function receives frames from the serial interface, processes 
  * them as appropriate and sends back responses, and tokens.
- * It mantains the link.
- * A thread should be reserved esclusivelly to call this function as it
- * will never returns.
+ * It maintains the link.
+ * A thread should be reserved exclusively to call this function.
  *
  * @param lnk The MS/TP link control structure.
  */
-void mstp_lnk_loop(struct mstp_lnk * lnk);
+void mstp_lnk_master_loop(struct mstp_lnk * lnk);
 
-int mstp_lnk_getaddr(struct mstp_lnk * lnk);
+/** @brief  MS/TP link slave processing loop.
+ *
+ * This function receives frames from the serial interface, processes 
+ * them as appropriate and sends back responses.
+ * A thread should be reserved exclusively to call this function.
+ *
+ * @param lnk The MS/TP link control structure.
+ */
+void mstp_lnk_slave_loop(struct mstp_lnk * lnk);
 
-int mstp_lnk_getbcast(struct mstp_lnk * lnk);
+/** @brief  MS/TP link sniffer processing loop.
+ *
+ * This function receives frames from the serial interface, processes 
+ *
+ * @param lnk The MS/TP link control structure.
+ */
+void mstp_lnk_slave_loop(struct mstp_lnk * lnk);
+
+/** @brief  Get the MS/TP station address.
+ *
+ * This function returns the current station adddress.
+ *
+ * @param lnk The MS/TP link control structure.
+ * @param cbk Callback function.
+ *
+ * @return On success, returns the configured address. On error #-1 is returned.
+ */
+
+int mstp_lnk_addr_get(struct mstp_lnk * lnk);
 
 /** @brief  MS/TP link management callback registering.
  *
@@ -218,16 +297,19 @@ int mstp_lnk_getbcast(struct mstp_lnk * lnk);
  * @param cbk Callback function.
  */
 int mstp_lnk_mgmt(struct mstp_lnk * lnk,
-		void (*cbk)(struct mstp_lnk *, unsigned int));
+		int (*cbk)(struct mstp_lnk *, unsigned int));
 
 int mstp_lnk_mgmt_set(struct mstp_lnk *lnk,
-					  void (*cbk) (struct mstp_lnk *, unsigned int));
+					  int (*cbk) (struct mstp_lnk *, unsigned int));
 
 int mstp_lnk_stats_get(struct mstp_lnk * lnk,
 					   struct mstp_lnk_stats * stats, bool reset);
 
 unsigned int mstp_lnk_getnetmap(struct mstp_lnk * lnk, uint8_t map[],
 		unsigned int max);
+
+unsigned int mstp_lnk_active_get(struct mstp_lnk *lnk, uint8_t map[],
+								 unsigned int max);
 
 void mstp_lnk_clrnetmap (struct mstp_lnk * lnk);
 
@@ -244,9 +326,9 @@ int mstp_lnk_addr_set(struct mstp_lnk *lnk, unsigned int addr);
 
 /** @defgroup linkio MS/TP link data sending/receiving 
  * This group of functions are used to send and receive
- * data trough the SM/TP links.
+ * data trough the MS/TP links.
  *
- * The link should be previouslly initialized by calling the
+ * The link should have been previously initialized by calling the
  * appropriated link management calls. Also the link state machine
  * must be running by calling @c mstp_lnk_loop().
  * @{
@@ -254,12 +336,12 @@ int mstp_lnk_addr_set(struct mstp_lnk *lnk, unsigned int addr);
 
 /** @brief MS/TP link frame send.
  *
- * This function sends a frames on a SM/TP link.
+ * This function sends a frames on a MS/TP link.
  *
  * @param lnk The MS/TP link control structure.
  * @param buf Pointer to the frame payload.
  * @param count Number of bytes to send.
- * @param inf Pointer to a frame info strucutre containing the destination
+ * @param inf Pointer to a frame info structure containing the destination
  * address and the frame type.
  * @return On success, the number of bytes sent is returned.
  * On error @b -1 is returned.
@@ -270,12 +352,12 @@ int mstp_lnk_send(struct mstp_lnk * lnk, const void * buf,
 
 /** @brief MS/TP link frame receive.
  *
- * This function receives a frames on a SM/TP link.
+ * This function receives a frames on a MS/TP link.
  *
  * @param lnk The MS/TP link control structure.
- * @param buf Pointer to the frame payload receiving bufffer.
- * @param count Maximum number of bytes to be recevied.
- * @param inf Pointer to a frame info strucutre containing the source 
+ * @param buf Pointer to the frame payload receiving buffer.
+ * @param count Maximum number of bytes to be received.
+ * @param inf Pointer to a frame info structure containing the source 
  * address and the frame type.
  * @return On success, the number of bytes received is returned.
  * On error @b -1 is returned.
@@ -283,8 +365,61 @@ int mstp_lnk_send(struct mstp_lnk * lnk, const void * buf,
 
 int mstp_lnk_recv(struct mstp_lnk * lnk, void * buf, 
 				  unsigned int count, struct mstp_frame_inf * inf);
-/**@}*/
 
+
+/** @brief MS/TP link half_duplex operation set.
+ *
+ * This function configures the MS/TP link to operate in half_duplex mode.
+ * or full-duplex mode.
+ *
+ * @param lnk The MS/TP link control structure.
+ * @param on The value of the half_duplex flag:
+ * 			- false, full-duplex 
+ * 			- true, half duplex
+ * @return On success, the previous value of the flag is returned. 
+ * On error #-1 is returned. 
+ *
+ */
+ int mstp_lnk_half_duplex_set(struct mstp_lnk * lnk, bool on);
+
+/** @brief MS/TP link role .
+ *
+ * This function sets or changes the role of the MS/TP link.
+ *
+ * @param lnk The MS/TP link control structure.
+ * @param role can be set to one of the folloing values: 
+ *  - MSTP_LNK_MASTER : Master station
+ *  - MSTP_LNK_SLAVE: Slave station
+ *  - MSTP_LNK_SNIFFER: Monitoring station
+ *
+ * @return On success, the previous roler of the flag is returned. 
+ * On error #-1 is returned. 
+ *
+ */
+ int mstp_lnk_role_set(struct mstp_lnk * lnk, enum mstp_lnk_role role);
+
+int mstp_lnk_role_get(struct mstp_lnk *lnk);
+
+int mstp_lnk_role_req_get(struct mstp_lnk *lnk);
+
+struct mstp_lnk_mgmt_msg {
+	uint8_t saddr;
+	uint8_t daddr;
+	uint8_t req;
+	uint8_t opt;
+};
+
+ssize_t mstp_lnk_mgmt_send(struct mstp_lnk *lnk, 
+						   const struct mstp_lnk_mgmt_msg * msg, 
+						   const void *buf, size_t cnt);
+
+ssize_t mstp_lnk_mgmt_recv(struct mstp_lnk *lnk, struct mstp_lnk_mgmt_msg * msg, 
+						   void *buf, size_t max);
+
+
+int mstp_lnk_up_timedwait(struct mstp_lnk *lnk, unsigned int tmo_ms);
+
+/**@}*/
 #ifdef __cplusplus
 }
 #endif
