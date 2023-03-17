@@ -23,30 +23,34 @@ VERSION_DATE = "2020-04-05"
 VERSION_MAJOR = "0"
 VERSION_MINOR = "1"
 
-PROJECT_ROOT = ../../
-THINKOS_DIR = $(PROJECT_ROOT)/../..
+THINKOS_DIR = ../../../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+MKCMD  = python $(TOOLS_DIR)/mkcmd.py
 
-PROG = piano
+PROG = piano-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 CFILES = ../common/spidrv.c ../common/encoder.c \
 		 piano.c dac.c keyboard.c addsynth-voice.c exp_envelope.c \
 		 addsynth-instr.c \
-		 addsynth-piano.c addsynth-xilophone.c 
+		 addsynth-piano.c addsynth-xilophone.c  \
+		filt.c
 
 #tonegen.c 
 #f32sin.c
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
-		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libc $(SDK_DIR)/libfixpt 
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
+		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt#
+SDK_LIBS = util thinkos-usr c fixpt
 
-INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
+ARCH_LIBS = stm32f 
+
+LIBS = $(SDK_LIBS) $(ARCH_LIBS) m stm32f util c thinkos-usr fixpt
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
 CFLAGS = -Ofast -fomit-frame-pointer -Werror -Wall -Wdouble-promotion -Wno-unused-parameter -Wextra 
@@ -55,10 +59,9 @@ OPTIONS = -g -mno-unaligned-access
 LDFLAGS = -Wl,--gc-sections 
 
 MACH = stm32l433xc
-THINKAPP  = 0x08010000
-LDCODE := $(THINKAPP)
+LDCODE = 0x08010000
 LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-app.mk
 
 %.c : %.mp3
 	$(BIN2HEX) -H mp3lib.h -o $@ $<

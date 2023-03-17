@@ -172,7 +172,7 @@ static inline int serial_close(struct serial_dev * dev){
 	return dev->op->close(dev->drv);
 }
 
-static inline int serial_ioctl(struct serial_dev * dev,
+extern inline int serial_ioctl(struct serial_dev * dev, 
 							   int opt, uintptr_t arg1, uintptr_t arg2) {
 	return dev->op->ioctl(dev->drv, opt, arg1, arg2);
 }
@@ -257,10 +257,10 @@ extern "C" {
 #endif
 
 int serial_send(struct serial_dev * dev, const void * buf, 
-				unsigned int len);
+				size_t len);
 
 int serial_recv(struct serial_dev * dev, void * buf, 
-				unsigned int len, unsigned int msec);
+				size_t len, unsigned int msec);
 
 int serial_drain(struct serial_dev * dev);
 

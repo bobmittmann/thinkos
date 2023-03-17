@@ -470,7 +470,7 @@ int addsynth_instr_init(struct addsynth_instrument * instr)
 	instr->mutex = thinkos_mutex_alloc();
 	instr->flag = thinkos_flag_alloc();
 
-	thinkos_thread_create_inf((int (*)(void *))addsynth_instr_task, 
+	thinkos_thread_create_inf(C_TASK(addsynth_instr_task), 
 							  (void *)instr,
 							  &addsynth_instr_thread_inf);
 	return 0;

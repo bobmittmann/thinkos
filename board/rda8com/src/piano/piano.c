@@ -120,6 +120,22 @@ const struct keyboard_cfg keyboard_piano_cfg = {
 
 uint32_t x;
 
+int o54d_filt(float st[], float y[], float x[], unsigned int len);
+float lp_st[4];
+
+int __attribute__((noinline)) filt_test(void)
+{
+	float x[1024];
+	float y[256];
+	int i;
+
+	for (i = 0; i < 1024; ++i) {
+		x[i] = (float)(RAND_MAX) / rand();
+	}
+
+	return o54d_filt(lp_st, y, x, 1024);
+}
+
 uint32_t __attribute__((noinline)) test(uint32_t r0, uint32_t r1, uint32_t r2)
 {
 	uint32_t r3;
@@ -220,6 +236,7 @@ int main(int argc, char ** argv)
 	printf("\n\r");
 
 	test(10, 11, 22);
+	filt_test();
 
 	io_init();
 
