@@ -26,8 +26,8 @@ void monitor_comm_send_int(int32_t val, unsigned int width,
 	} else {
 		n = uint2dec(s, val);
 	}
-	monitor_comm_send(comm, monitor_blanks, width - n);
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, monitor_blanks, width - n);
+	monitor_comm_write(comm, s, n);
 }
 
 void monitor_comm_send_uint(uint32_t val, unsigned int width, 
@@ -37,8 +37,8 @@ void monitor_comm_send_uint(uint32_t val, unsigned int width,
 	int n;
 
 	n = uint2dec(s, val);
-	monitor_comm_send(comm, monitor_blanks, width - n);
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, monitor_blanks, width - n);
+	monitor_comm_write(comm, s, n);
 }
 
 void monitor_comm_send_str(const char * s, unsigned int width, 
@@ -49,14 +49,14 @@ void monitor_comm_send_str(const char * s, unsigned int width,
 	while (s[n] != '\0')
 		n++;
 
-	monitor_comm_send(comm, monitor_blanks, width - n);
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, monitor_blanks, width - n);
+	monitor_comm_write(comm, s, n);
 }
 
 void monitor_comm_send_blanks(unsigned int width, 
                              const struct monitor_comm * comm) 
 {
-	monitor_comm_send(comm, monitor_blanks, width);
+	monitor_comm_write(comm, monitor_blanks, width);
 }
 
 void monitor_comm_send_hex(uint32_t val, unsigned int width, 
@@ -66,7 +66,7 @@ void monitor_comm_send_hex(uint32_t val, unsigned int width,
 	int n;
 
 	n = uint2hex(s, val);
-	monitor_comm_send(comm, monitor_zeros, width - n);
-	monitor_comm_send(comm, s, n);
+	monitor_comm_write(comm, monitor_zeros, width - n);
+	monitor_comm_write(comm, s, n);
 }
 

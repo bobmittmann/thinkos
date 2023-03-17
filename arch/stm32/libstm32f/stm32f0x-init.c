@@ -179,11 +179,6 @@ void __attribute__((section(".init"))) _init(void)
 	/* select PLL as MCO output */
 	rcc->cfgr = RCC_MCO_PLL | (cfg & ~RCC_SW) | RCC_SW_PLL;
 
-#ifdef CM3_RAM_VECTORS
-	/* Remap the VECTOR table to SRAM 0x20000000  */
-	CM3_SCB->vtor = 0x20000000; /* Vector Table Offset */
-#endif
-
 #endif
 }
 

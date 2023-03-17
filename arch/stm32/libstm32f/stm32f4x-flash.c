@@ -57,11 +57,13 @@ int stm32f4x_flash_lock(struct stm32_flash * flash, off_t offs, size_t len)
 	if (len == 0)
 		return 0;
 
+	flash->cr |= FLASH_LOCK;
+
 	return 0;
 }
 
 uint32_t __attribute__((section (".data#"), noinline)) 
-stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
+stm32f4x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
 					uint32_t volatile * addr, uint32_t data)
 {
 	uint32_t sr;
@@ -100,11 +102,11 @@ int stm32f4x_flash_write(struct stm32_flash * flash,
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
-	sr = stm32f2x_flash_wr32(flash, cr, dst, data);
+	sr = stm32f4x_flash_wr32(flash, cr, dst, data);
 	cm3_primask_set(pri);
 
 	if (sr & FLASH_ERR) {
-		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_wr32() failed" " sr=%08x!", sr);
+		DCC_LOG1(LOG_WARNING, "stm32f4x_flash_wr32() failed" " sr=%08x!", sr);
 		return -1;
 	}
 
@@ -251,11 +253,11 @@ int stm32f4x_flash_erase(struct stm32_flash * flash,
 
 	pri = cm3_primask_get();
 	cm3_primask_set(1);
-	sr = stm32f2x_flash_wr32(flash, cr, &dummy, 0);
+	sr = stm32f4x_flash_wr32(flash, cr, &dummy, 0);
 	cm3_primask_set(pri);
 
 	if (sr & FLASH_ERR) {
-		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_wr32() failed" " sr=%08x!", sr);
+		DCC_LOG1(LOG_WARNING, "stm32f4x_flash_wr32() failed" " sr=%08x!", sr);
 		return -1;
 	}
 
@@ -288,6 +290,125 @@ const struct flash_dev_ops stm32f4x_flash_dev_ops = {
 const struct flash_dev stm32f4x_flash_dev = {
 	.priv = (void *)STM32_FLASH,
 	.op = &stm32f4x_flash_dev_ops
+};
+
+int stm32f4x_otp_erase(struct stm32_flash * flash, 
+						 unsigned int offs, unsigned int len)
+{
+	return -1;
+}
+
+int stm32f4x_otp_read(struct stm32_flash * flash, 
+					  off_t offs, void * buf, size_t len)
+{
+	uint8_t * src = (uint8_t *)((uint32_t)STM32_OTP_MEM + offs);
+	uint8_t * dst = (uint8_t *)buf;
+	unsigned int i;
+
+	for (i = 0; i < len; ++i) {
+		dst[i] = src[i];
+	}
+
+	return len;
+}
+
+#if 0
+int stm32f4x_otp_write(struct stm32_flash * flash, 
+					   off_t offs, const void * buf, size_t len)
+{
+	uint8_t * dst = (uint8_t *)((uint32_t)STM32_OTP_MEM + offs);
+	uint8_t * src = (uint8_t *)buf;
+	unsigned int i;
+
+	for (i = 0; i < len; ++i) {
+		dst[i] = src[i];
+	}
+
+	return len;
+}
+
+int stm32f4x_otp_write(struct stm32_flash * flash, 
+					   off_t offs, const void * buf, size_t len)
+{
+	uint32_t data;
+	uint32_t * dst;
+	uint8_t * src;
+
+	if (len == 0)
+		return 0;
+
+	src = (uint8_t *)buf;
+	dst = (uint32_t *)(((uint32_t)STM32_OTP_MEM + offs) & 0xfffffffc);
+	data = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
+
+	dst[0] = data;
+
+	return (len >= 4 ? 4 : len);
+}
+#endif
+
+int stm32f4x_otp_write(struct stm32_flash * flash, 
+					   off_t offs, const void * buf, size_t len)
+{
+	uint32_t data;
+	uint32_t * dst;
+	uint8_t * src;
+	uint32_t cr;
+	uint32_t sr;
+	uint32_t pri;
+
+	if (len == 0)
+		return 0;
+
+	src = (uint8_t *)buf;
+	dst = (uint32_t *)(((uint32_t)STM32_OTP_MEM + offs) & 0xfffffffc);
+
+	data = src[0] | (src[1] << 8) | (src[2] << 16) | (src[3] << 24);
+
+	/* Clear errors */
+	flash->sr = FLASH_ERR;
+	cr = FLASH_PG | FLASH_PSIZE_32;
+
+	pri = cm3_primask_get();
+	cm3_primask_set(1);
+	sr = stm32f4x_flash_wr32(flash, cr, dst, data);
+	cm3_primask_set(pri);
+
+	if (sr & FLASH_ERR) {
+		DCC_LOG1(LOG_WARNING, "stm32f4x_flash_wr32() failed" " sr=%08x!", sr);
+		return -1;
+	}
+
+	return (len >= 4 ? 4 : len);
+}
+
+int stm32f4x_otp_unlock(struct stm32_flash * flash, off_t offs, size_t len)
+{
+	return 0;
+}
+
+int stm32f4x_otp_lock(struct stm32_flash * flash, off_t offs, size_t len)
+{
+	return 0;
+}
+
+const struct flash_dev_ops stm32f4x_otp_dev_ops = {
+	.write = (int (*)(void *, off_t, const void *, size_t))stm32f4x_otp_write,
+	.read = (int (*)(void *, off_t, void *, size_t))stm32f4x_otp_read,
+	.erase = (int (*)(void *, off_t, size_t ))stm32f4x_otp_erase,
+	.lock = (int (*)(void *, off_t, size_t))stm32f4x_otp_lock,
+	.unlock = (int (*)(void *, off_t, size_t))stm32f4x_otp_unlock,
+#if 0
+	.erase = {
+		.init = (intptr_t (*)(void *, off_t, size_t)) stm32f4x_flash_erase_init,
+		.seq = &stm32f4x_flash_dev_erase_seq
+	}
+#endif
+};
+
+const struct flash_dev stm32f4x_otp_dev = {
+	.priv = (void *)STM32_FLASH,
+	.op = &stm32f4x_otp_dev_ops
 };
 
 #endif

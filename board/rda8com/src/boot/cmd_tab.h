@@ -7,43 +7,58 @@
 
 #include <stdint.h>
 
-#define BOOT_CMD_APP    1
-#define BOOT_CMD_DIAG    2
-#define BOOT_CMD_ERASE    3
-#define BOOT_CMD_HELP    4
-#define BOOT_CMD_INFO    5
-#define BOOT_CMD_RCVY    6
-#define BOOT_CMD_REBOOT    7
+#define BTL_CMD_APP     1
+#define BTL_CMD_ERASE    2
+#define BTL_CMD_HELP    3
+#define BTL_CMD_INFO    4
+#define BTL_CMD_RCVY    5
+#define BTL_CMD_REBOOT    6
+#define BTL_CMD_TEST    7
 
-#define BOOT_CMD_FIRST 1
-#define BOOT_CMD_LAST 7
+#define BTL_CMD_FIRST 1
+#define BTL_CMD_LAST 7
 
-typedef int(* boot_cmd_callback_t)(int argc, char * argv[]);
+struct btl_shell_env;
 
-extern const char * const boot_cmd_sym_tab[];
-extern const char * const boot_cmd_brief_tab[];
-extern const char * const boot_cmd_desc_tab[];
-extern const char boot_cmd_alias_tab[][4];
+typedef int(* btl_cmd_callback_t)(struct btl_shell_env * env, int argc, char * argv[]);
 
-extern boot_cmd_callback_t const boot_cmd_call_tab[];
+extern const char * const btl_cmd_sym_tab[];
+extern const char * const btl_cmd_brief_tab[];
+extern const char * const btl_cmd_desc_tab[];
+extern const char btl_cmd_alias_tab[][4];
+
+extern const btl_cmd_callback_t btl_cmd_call_tab[];
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int boot_cmd_lookup(const char * str);
+int btl_cmd_lookup(struct btl_shell_env * env, const char * str);
 
+int btl_cmd_first(struct btl_shell_env * env);
+
+int btl_cmd_last(struct btl_shell_env * env);
+
+const char * btl_cmd_name(struct btl_shell_env * env, unsigned int code);
+
+const char * btl_cmd_alias(struct btl_shell_env * env, unsigned int code);
+
+const char * btl_cmd_brief(struct btl_shell_env * env, unsigned int code);
+
+const char * btl_cmd_detail(struct btl_shell_env * env, unsigned int code);
+
+int btl_cmd_call(struct btl_shell_env * env, int argc, char * argv[], unsigned int code);
 /*---------------------------------------------------------------------------
   Callbacks!
   ---------------------------------------------------------------------------*/
 
-int boot_cmd_app(int argc, char * argv[]);
-int boot_cmd_diag(int argc, char * argv[]);
-int boot_cmd_erase(int argc, char * argv[]);
-int boot_cmd_help(int argc, char * argv[]);
-int boot_cmd_info(int argc, char * argv[]);
-int boot_cmd_rcvy(int argc, char * argv[]);
-int boot_cmd_reboot(int argc, char * argv[]);
+int btl_cmd_app(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_help(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_info(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_test(struct btl_shell_env * env, int argc, char * argv[]);
 
 #ifdef __cplusplus
 }

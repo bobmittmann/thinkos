@@ -321,6 +321,7 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
 bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
@@ -332,36 +333,79 @@ bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
     return __thread_ctx_is_valid(krn, th);
 }
 
-int thinkos_dbg_thread_brk_get(unsigned int th)
-{
-    struct thinkos_rt * krn = &thinkos_rt;
-
-    if (!__thread_ctx_is_valid(krn, THINKOS_THREAD_VOID)) {
-        return -1;
-    }
-
-    return __krn_sched_brk_get(krn);
-}
 
 
 static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
 													 unsigned int th)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return NULL;
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    if (__xcpt_thread_get(xcpt) == th)
+		return &xcpt->ctx;
+
+    //th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+
     return __thread_ctx_get(krn, th);
 }
 
 static unsigned int __dbg_thread_ctrl_get(struct thinkos_rt * krn,
                                           unsigned int th)
 {
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->control;
+
     return __thread_ctrl_get(krn, th);
+}
+
+static uint32_t __dbg_thread_sp_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->sp;
+
+    return __thread_sp_get(krn, th);
+}
+
+static uint32_t __dbg_thread_pc_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.pc;
+
+    return __thread_pc_get(krn, th);
+}
+
+
+static uint32_t __dbg_thread_lr_get(struct thinkos_rt * krn,
+                                          unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.lr;
+
+    return __thread_lr_get(krn, th);
 }
 
 
@@ -379,28 +423,25 @@ unsigned int thinkos_dbg_thread_ctrl_get(unsigned int th)
     return __dbg_thread_ctrl_get(krn, th);
 }
 
+uint32_t thinkos_dbg_thread_sp_get(unsigned int th)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+    return __dbg_thread_sp_get(krn, th);
+}
+
 uint32_t thinkos_dbg_thread_pc_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
-//    int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
 
-    return __thread_pc_get(krn, th);
+    return __dbg_thread_pc_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_lr_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
- //   int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
 
-    return __thread_lr_get(krn, th);
-}
-
-uint32_t thinkos_dbg_thread_sp_get(unsigned int th)
-{
-    struct thinkos_rt * krn = &thinkos_rt;
-  //  int th = (__krn_sched_brk_get(krn) == th) ? THINKOS_THREAD_VOID : th;
-
-    return __thread_sp_get(krn, th);
+    return __dbg_thread_lr_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_sl_get(unsigned int th) 
@@ -408,9 +449,19 @@ uint32_t thinkos_dbg_thread_sl_get(unsigned int th)
 	return __thread_sl_get(&thinkos_rt, th); 
 }
 
+uint32_t thinkos_dbg_thread_stack_size_get(unsigned int th) 
+{
+	return __thread_stack_size_get(&thinkos_rt, th);
+}
+
+uint32_t thinkos_dbg_thread_stack_base_get(unsigned int th) 
+{
+	return __thread_stack_base_get(&thinkos_rt, th);
+}
+
 uint32_t thinkos_dbg_krn_ticks_get(unsigned int th) 
 {
-	return thinkos_rt.ticks;
+	return thinkos_rt.clk.time;
 }
 
 const char * thinkos_dbg_thread_tag_get(unsigned int th) 
@@ -433,13 +484,23 @@ int thinkos_dbg_thread_tmw_get(unsigned int th)
 
 int thinkos_dbg_thread_errno_get(unsigned int th)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
+
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST)) {
 		return 0;
 	}
 #if (THINKOS_ENABLE_THREAD_FAULT)
-	return __thread_errno_get(&thinkos_rt, th);
+	return __thread_errno_get(krn, th);
 #else
-	return __krn_sched_err_get(&thinkos_rt);
+	if (__krn_sched_active_get(krn) == th) {
+		int svcno = __krn_sched_svc_get(krn);
+		int errno = __krn_sched_err_get(krn);
+		int xcpno = __krn_sched_xcp_get(krn);
+
+		return (xcpno) ? xcpno : ((errno) ? errno : svcno); 
+	}
+
+	return 0;
 #endif
 }
 
@@ -494,7 +555,7 @@ bool thinkos_dbg_thread_get(unsigned int th, struct thinkos_thread * st,
 #endif
 	}
 
-    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
+//    th = (__krn_sched_active_get(krn) == th) ? THINKOS_THREAD_VOID : th;
     ctx = __thread_ctx_get(krn, th);
 
 	if (core != NULL) {
@@ -579,50 +640,120 @@ int __thread_break_get(struct thinkos_rt * krn, int32_t * pcode)
 
 	return th;
 }
+
+int thinkos_dbg_thread_brk_get(unsigned int th)
+{
+    struct thinkos_rt * krn = &thinkos_rt;
+
+    if (!__thread_ctx_is_valid(krn, THINKOS_THREAD_VOID)) {
+        return -1;
+    }
+
+    return __krn_sched_brk_get(krn);
+}
 #endif
+
+
+uint32_t thinkos_dbg_sched_state_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return krn->sched.state;
+}
+
 
 int thinkos_dbg_thread_break_get(int32_t * perrno)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
-	int th;
+	int svcno;
+	int errno;
+	int xcpno;
+	int thread;
 
-	DCC_LOG(LOG_YAP, "...");
+//	if ((th = __krn_sched_brk_get(krn)) == 0)
+//		return -1;
+//	th = __krn_debug_thread_get(krn);
+//	errno = __krn_debug_errno_get(krn);
+//	xcpno = __krn_debug_xcptno_get(krn);
+//	svcno = __krn_debug_kfault_get(krn);
 
-	if ((th = __krn_sched_brk_get(krn)) == 0)
+//	if ((th = __krn_sched_brk_get(krn)) == 0)
+//		return -1;
+	
+	thread = __krn_sched_active_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	
+	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
+			 thread, xcpno, errno, svcno);
+
+/*	if (xcpno > 0) {
+		__krn_sched_err_get(krn);
+	} else if (errno > 0)   {
+		__krn_sched_err_get(krn);
+	} else if (svcno == 0)
+		__krn_sched_svc_get(krn); */
+
+
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
 		return -1;
+	}
 
 	if (perrno) {
-#if (THINKOS_ENABLE_THREAD_FAULT)
-		/* per thread error */
-		DCC_LOG(LOG_INFO, "get thread error...");
-		*perrno = __thread_errno_get(krn, th);
-#else
-		DCC_LOG(LOG_INFO, "get sched error...");
-		*perrno = __krn_sched_err_get(krn);
-#endif
+		if (xcpno != 0)
+			*perrno = xcpno;
+		else if (errno != 0) 
+			*perrno = errno;
+		else if (svcno != 0)
+			*perrno = svcno;
 	}
-	return th;
+
+	return thread;
+}
+
+int thinkos_dbg_except_get(struct thinkos_except * xcpt)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int xcpno;
+
+	if ((xcpno = __krn_sched_xcp_get(krn)) == 0) {
+		return 0;
+	}
+
+	__thinkos_memcpy32(xcpt, __thinkos_except_buf(), 
+					   sizeof(struct thinkos_except));
+
+	return xcpno;
 }
 
 int thinkos_dbg_thread_break_clr(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
-	int th;
+	int svcno;
+	int errno;
+	int xcpno;
 
-	DCC_LOG(LOG_MSG, "check sched break condition...");
-	if ((th = __krn_sched_brk_get(krn)) == 0)
+	DCC_LOG(LOG_WARNING, "...");
+
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
 		return -1;
+	}
 
-	DCC_LOG1(LOG_INFO, "clearing break condition: %d...", th);
-	__krn_sched_brk_clr(krn);
+	if (xcpno > 0)
+		__krn_sched_xcp_clr(krn);
+	else if (errno > 0) 
+		__krn_sched_err_clr(krn);
+	else if (svcno == 0)
+		__krn_sched_svc_clr(krn);
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-	DCC_LOG(LOG_MSG, "clearing thread error ...");
-	__thread_errno_clr(krn, th);
-#else
-	DCC_LOG(LOG_MSG, "clearing sched error ...");
-	__krn_sched_err_clr(krn);
-#endif
+	/* all clear ? */
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
+	}
 
 	return 0;
 }
@@ -701,6 +832,11 @@ void thinkos_dbg_reset(void)
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW " !! DBG Reset  !! " VT_POP);
 
 	__thinkos_krn_core_reset(krn);
+
+#if (THINKOS_ENABLE_CONSOLE)
+	DCC_LOG(LOG_TRACE, "Console reset...");
+	thinkos_krn_console_reset();
+#endif
 }
 
 /* -------------------------------------------------------------------------
@@ -720,6 +856,8 @@ void __attribute__((noreturn)) __dbg_thread_exit_stub(int code)
 extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
+
+
 
 int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
 						  void (* on_exit)(unsigned int), bool privileged)
@@ -742,6 +880,11 @@ int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
 	thread = 1;
 	stack_base = (uintptr_t)&__krn_stack_start;
 	stack_size = (uint32_t)&__krn_stack_size;
+#endif
+
+#if (THINKOS_THREAD_STACK_MAX)
+	if (stack_size > (THINKOS_THREAD_STACK_MAX))
+		stack_size = THINKOS_THREAD_STACK_MAX;
 #endif
 
 	/* force allocate the thread block */
@@ -788,7 +931,7 @@ void thinkos_dbg_resume_all(void)
 #if (THINKOS_ENABLE_PAUSE)
 	__krn_resume_all(krn);
 #else
-	__krn_sched_svc_set(krn, 1);
+	__krn_sched_svc_clr(krn);
 	__krn_sched_defer(krn);
 #endif
 }
@@ -805,6 +948,7 @@ void thinkos_dbg_pause_all(void)
 #endif
 }
 
+#if 0
 void thinkos_krn_dbg_req(struct thinkos_rt * krn, unsigned int opc)
 {
 	__krn_sched_svc_set(krn, opc);
@@ -818,6 +962,7 @@ void thinkos_dbg_ack(void)
 	__krn_sched_svc_clr(krn);
 	__krn_sched_defer(krn);
 }
+#endif
 
 int thinkos_dbg_thread_irq_get(unsigned int th)
 {
@@ -852,4 +997,7 @@ int thinkos_dbg_active_get(void)
 
 	return __krn_sched_active_get(krn);
 }
+
+#endif /* THINKOS_ENABLE_DEBUG_BASE */
+
 

@@ -164,27 +164,39 @@
 #define SPI_CR2 0x04
 
 #ifdef STM32L4X 
-/*
-   Bit 14 LDMA_TX: Last DMA transfer for transmission
-   This bit is used in data packing mode, to define if the total number of data to transmit by DMA
-   is odd or even. It has significance only if the TXDMAEN bit in the SPIx_CR2 register is set and
-   if packing mode is used (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It
-   has to be written when the SPI is disabled (SPE = 0 in the SPIx_CR1 register).
+
+/* Bit 14 LDMA_TX: Last DMA transfer for transmission */
+#define SPI_LDMA_TX (1 << 14)
+/* This bit is used in data packing mode, to define if the total number of 
+   data to transmit by DMA is odd or even. It has significance only if the 
+   TXDMAEN bit in the SPIx_CR2 register is set and if packing mode is used 
+   (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It 
+   has to be written when the SPI is disabled (SPE = 0 in the 
+   SPIx_CR1 register).
    0: Number of data to transfer is even
    1: Number of data to transfer is odd
-   Note: Refer to Procedure for disabling the SPI on page 1204 if the CRCEN bit is set.
-   Bit 13 LDMA_RX: Last DMA transfer for reception
-   This bit is used in data packing mode, to define if the total number of data to receive by DMA is
-   odd or even. It has significance only if the RXDMAEN bit in the SPIx_CR2 register is set and if
-   packing mode is used (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It has
-   to be written when the SPI is disabled (SPE = 0 in the SPIx_CR1 register).
+   Note: Refer to Procedure for disabling the SPI if the CRCEN bit is set. */
+
+/* Bit 13 LDMA_RX: Last DMA transfer for reception */
+#define SPI_LDMA_RX (1 << 13)
+/* This bit is used in data packing mode, to define if the total number of 
+   data to receive by DMA is odd or even. It has significance only if the 
+   RXDMAEN bit in the SPIx_CR2 register is set and if packing mode is used 
+   (data length =< 8-bit and write access to SPIx_DR is 16-bit wide). It 
+   has to be written when the SPI is disabled (SPE = 0 in the 
+   SPIx_CR1 register).
    0: Number of data to transfer is even
    1: Number of data to transfer is odd
-   Note: Refer to Procedure for disabling the SPI on page 1204 if the CRCEN bit is set.
-   Bit 12 FRXTH: FIFO reception threshold
-   This bit is used to set the threshold of the RXFIFO that triggers an RXNE event
-   0: RXNE event is generated if the FIFO level is greater than or equal to 1/2 (16-bit)
-   1: RXNE event is generated if the FIFO level is greater than or equal to 1/4 (8-bit) */
+   Note: Refer to Procedure for disabling the SPI if the CRCEN bit is set. */
+
+/* Bit 12 FRXTH: FIFO reception threshold */
+#define SPI_FRXTH (1 << 12)
+/* This bit is used to set the threshold of the RXFIFO that triggers an 
+   RXNE event
+   0: RXNE event is generated if the FIFO level is greater than or equal 
+   to 1/2 (16-bit)
+   1: RXNE event is generated if the FIFO level is greater than or equal 
+   to 1/4 (8-bit) */
 
 /* Bits 11:8 DS [3:0]: Data size */
 #define SPI_DS(N) ((((N) - 1) & 0xf) << 8)
@@ -205,8 +217,8 @@
    1101: 14-bit
    1110: 15-bit
    1111: 16-bit
-   If software attempts to write one of the “Not used” values, they are forced to the value “0111”(8-
-   bit).
+   If software attempts to write one of the “Not used” values, they are 
+   forced to the value “0111”(8- bit).
 */
 
 
@@ -269,12 +281,21 @@ Note: Not used in I2S mode and SPI TI mode */
 #define SPI_SR 0x08
 
 #ifdef STM32L4X 
+
+#define SPI_FTLVL_MSK (0x3 << 11)
+#define SPI_FTLVL_SET(VAL) (((VAL) << 11) & SPI_FTLVL_MSK)
+#define SPI_FTLVL_GET(REG) (((REG) & SPI_FTLVL_MSK) >> 11)
+
 /* Bits 12:11 FTLVL[1:0]: FIFO Transmission Level */
 /* These bits are set and cleared by hardware.
 00: FIFO empty
 01: 1/4 FIFO
 10: 1/2 FIFO
 11: FIFO full (considered as FULL when the FIFO threshold is greater than 1/2) */
+
+#define SPI_FRLVL_MSK (0x3 << 9)
+#define SPI_FRLVL_SET(VAL) (((VAL) << 9) & SPI_FRLVL_MSK)
+#define SPI_FRLVL_GET(REG) (((REG) & SPI_FRLVL_MSK) >> 9)
 
 /* Bits 10:9 FRLVL[1:0]: FIFO reception level */
 /* These bits are set and cleared by hardware.

@@ -1,6 +1,35 @@
 #include "vt-i.h"
 #include <sys/null.h>
 
+#define TRACE_LEVEL TRACE_LVL_WARN
+#include <trace.h>
+
+/* limited range conversion to decimal */
+int __vt_uint2dec(char * s, int val)
+{
+	div_t y;
+
+	if (val < 10) {
+		s[0] = val + '0';
+		return 1;
+	} 
+	
+	if (val < 100) {
+		y = div(val, 10);
+		s[0] = y.quot + '0';
+		s[1] = y.rem + '0';
+		return 2;
+	} 
+
+	y = div(val, 100);
+	s[0] = y.quot + '0';
+	y = div(y.rem, 10);
+	s[1] = y.quot + '0';
+	s[2] = y.rem + '0';
+
+	return 3;
+}
+
 int __vt_strcpyn(char * dst, const char * src, unsigned int len)
 {
 	unsigned int i;
@@ -28,8 +57,6 @@ int __vt_console_write(const char * s, unsigned int len)
 
 	return len;
 }
-
-int uint2dec(char * s, unsigned int val);
 
 int __vt_reset(char * s)
 {
@@ -151,7 +178,7 @@ int __vt_insert_lines(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 	*cp = '\0';
 
@@ -165,7 +192,7 @@ int __vt_delete_lines(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 
 	return cp - s;
@@ -178,7 +205,7 @@ int __vt_delete_chars(char * s, int n)
 	*cp++ = '\033';
 	*cp++ = '[';
 	*cp++ = 'P';
-	cp += uint2dec(cp, n);
+	cp += __vt_uint2dec(cp, n);
 	*cp++ = 'M';
 
 	return cp - s;
@@ -190,9 +217,9 @@ int __vt_set_scroll(char * s, int y0, int y1)
 
 	*cp++ = '\033';
 	*cp++ = '[';
-	cp += uint2dec(cp, y0);
+	cp += __vt_uint2dec(cp, y0);
 	*cp++ = ';';
-	cp += uint2dec(cp, y1);
+	cp += __vt_uint2dec(cp, y1);
 	*cp++ = 'r';
 
 	return cp - s;
@@ -231,6 +258,9 @@ int __vt_set_attr_lst(char * s, uint8_t attr[], int len)
 {
 	char * cp = s;
 	int i;
+
+	if (len == 0)
+		return 0;
 
 	*cp++ = '\033';
 	*cp++ = '[';
@@ -287,6 +317,19 @@ int __vt_clear_attr(char * s)
 	return 3;
 }
 
+int __vt_font_g0(char * s)
+{
+	s[0] = '\017';
+	return 1;
+}
+
+int __vt_font_g1(char * s)
+{
+	s[0] = '\016';
+	return 1;
+}
+
+
 int __vt_set_attr(char * s, int attr)
 {
 	char * cp = s;
@@ -307,30 +350,31 @@ int __vt_move_to(char * s, int x, int y)
 
 	*cp++ = '\033';
 	*cp++ = '[';
-	cp += uint2dec(cp, y);
+	cp += __vt_uint2dec(cp, y);
 	*cp++ = ';';
-	cp += uint2dec(cp, x);
+	cp += __vt_uint2dec(cp, x);
 	*cp++ = 'f';
 
 	return cp - s;
 }
 
-int __vt_font_g0(char * s)
+int __vt_utf8(char * s, int c)
 {
-	char * cp = s;
+	if (c > 0x7ff) {
+		s[0] = 0xe0 + (c >> 12); 
+		s[1] = 0x80 + ((c >> 6) & 0x3f); 
+		s[2] = 0x80 + (c & 0x3f); 
+		return 3;
+	}
+	if (c > 0x7ff) {
+		s[0] = 0xc0 + ((c >> 6) & 0x1f); 
+		s[1] = 0x80 + (c & 0x3f); 
+		return 2;
+	}
 
-	*cp++ = '\017';
+	s[0] = c;
 
-	return cp - s;
-}
-
-int __vt_font_g1(char * s)
-{
-	char * cp = s;
-
-	*cp++ = '\016';
-
-	return cp - s;
+	return 1;
 }
 
 void __vt_flush(void)
@@ -354,184 +398,172 @@ int __vt_getc(void)
 	return buf[0];
 }
 
-int __vt_get_cursor_pos(struct vt_pos * pos) 
+
+int __vt_con_raw_decode(struct vt_console * con, int c)
 {
-	int c;
-	int x;
-	int y;
-
-	__vt_flush();
-
-	__vt_console_write(VT100_QUERY_CURSOR_POS, 
-					   sizeof(VT100_QUERY_CURSOR_POS));
-
-	if ((c = __vt_getc()) != '\033') { /* ESC */
+	if (c != IN_ESC)
 		return c;
-	}
-	if ((c = __vt_getc()) != '[') {
-		return c;
-	}
-	y = 0;
-	for (;;) {
-		if ((c = __vt_getc()) < 0)
-			return c;
-		if (c >= '0' && c <= '9') {
-			y *= 10;
-			y += c - '0';
-		} else {
-			if (c != ';')
-				return c;
-			break;
-		}
-	}
-	x = 0;
-	for (;;) {
-		if ((c = __vt_getc()) < 0)
-			return c;
-		if (c >= '0' && c <= '9') {
-			x *= 10;
-			x += c - '0';
-		} else {
-			if (c != 'R') {
-				return c;
-			}
-			break;
-		}
-	}
 
-	pos->x = x;
-	pos->y = y;
+	con->mode = VT_CON_MODE_ESC;
 
-	return 0;
+	return -1;
 }
 
-
-int __vt_console_decode(struct vt_console * con, int c)
+int __vt_con_esc_decode(struct vt_console * con, int c)
 {
-	int ret = -1;
-	
-	unsigned int ctrl = con->ctrl;
-
-	do {
-		switch (con->mode) {
-		case MODE_RAW:
-			switch (c) {
-			case IN_ESC:
-				con->mode = MODE_ESC;
-				break;
-			default:
-				ret = c;
-			}
-			continue;
-
-		case MODE_ESC:
-			switch (c) {
-			case '[':
-				con->mode = MODE_ESC_VAL1;
-				con->val = 0;
-				con->ctrl = 0;
-				break;
-			case 'O':
-				con->mode = MODE_ESC_O;
-				break;
-			default:
-				con->mode = MODE_RAW;
-			};
-			continue;
-
-		case MODE_ESC_VAL1:
-		case MODE_ESC_VAL2:
-			switch (c) {
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				con->val = con->val * 10 + c - '0';
-				continue;
-			case 'A':
-				/* cursor up */
-				c = VT_CURSOR_UP + ctrl;
-				break;
-			case 'B':
-				/* cursor down */
-				c = VT_CURSOR_DOWN + ctrl;
-				break;
-			case 'C':
-				/* cursor right */
-				c = VT_CURSOR_RIGHT + ctrl;
-				break;
-			case 'D':
-				/* cursor left */
-				c = VT_CURSOR_LEFT + ctrl;
-				break;
-			case '~':
-				switch (con->val) {
-				case 1:
-					c = VT_HOME + ctrl;
-					break;
-				case 2:
-					c = VT_INSERT + ctrl;
-					break;
-				case 3:
-					/* delete */
-					c = VT_DELETE + ctrl;
-					break;
-				case 4:
-					/* end */
-					c = VT_END + ctrl;
-					break;
-				case 5:
-					c = VT_PAGE_UP + ctrl;
-					break;
-				case 6:
-					c = VT_PAGE_DOWN + ctrl;
-					break;
-				default:
-					con->mode = 0;
-					continue;
-				}
-				break;
-			case ';':
-				con->mode = MODE_ESC_VAL2;
-				con->ctrl = VT_CTRL;
-				con->val = 0;
-				continue;
-			default:
-				con->mode = 0;
-				continue;
-			};
-			con->mode = 0;
-			break;
-
-		case MODE_ESC_O:
-			switch (c) {
-			case 'F':
-				/* end */
-				c = VT_END;
-				break;
-			case 'H':
-				/* home */
-				c = VT_HOME;
-				break;
-			default:
-				con->mode = 0;
-				continue;
-			}
-			con->mode = 0;
-			break;
-		} 
-	} while (0);
-
-	return ret;
+	if (c == '[') {
+		con->mode = VT_CON_MODE_ESC_VAL;
+		con->idx = 0;
+		con->val[0] = 0;
+		con->val[1] = 0;
+	} else  if (c == 'O') {
+		con->mode = VT_CON_MODE_ESC_O;
+	} else { 
+		INF("key ESC+0x%02x", c);
+		con->mode = VT_CON_MODE_RAW;
+	}
+	return -1;
 }
 
-int vt_putc(int c)
+int __vt_con_esc_o_decode(struct vt_console * con, int c)
+{
+	con->mode = VT_CON_MODE_RAW;
+
+	switch (c) {
+	case 'F':
+		/* end */
+		c = VT_END;
+		break;
+	case 'H':
+		/* home */
+		c = VT_HOME;
+		break;
+	default:
+		INF("key ESC+O+0x%02x", c);
+		c = -1;
+	}
+
+	return c;
+} 
+
+int __vt_con_esc_val_decode(struct vt_console * con, int c)
+{
+	switch (c) {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9': {
+		int val = con->val[con->idx];
+		val = val * 10 + c - '0';
+		con->val[con->idx] = val;
+		c = -1;
+	}
+		break;
+	case ';':
+		c = -1;
+		if (con->idx < VT_CON_VAL_LST_SZ)
+			con->idx++;
+		break;
+	case 'A':
+		/* cursor up */
+		c = VT_CURSOR_UP;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+A = %04x", c);
+		break;
+	case 'B':
+		/* cursor down */
+		c = VT_CURSOR_DOWN;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+B = %04x", c);
+		break;
+	case 'C':
+		/* cursor right */
+		c = VT_CURSOR_RIGHT;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+C = %04x", c);
+		break;
+	case 'D':
+		/* cursor left */
+		c = VT_CURSOR_LEFT;
+		con->mode = VT_CON_MODE_RAW;
+		INF("key ESC+[+D = %04x", c);
+		break;
+
+	case 'R':
+		c = VT_CURSOR_POS;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+
+	case 'c':
+		c = VT_TERM_TYPE;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+
+	case '?':
+		INFS("key ESC+[?");
+		break;
+
+	case '~': {
+		int ctrl = con->idx ? VT_CTRL : 0;
+		con->mode = VT_CON_MODE_RAW;
+		switch (con->val[0]) {
+		case 1:
+			c = VT_HOME + ctrl;
+			break;
+		case 2:
+			c = VT_INSERT + ctrl;
+			break; case 3:
+			/* delete */
+			c = VT_DELETE + ctrl;
+			break;
+		case 4:
+			/* end */
+			c = VT_END + ctrl;
+			break;
+		case 5:
+			c = VT_PAGE_UP + ctrl;
+			break;
+		case 6:
+			c = VT_PAGE_DOWN + ctrl;
+			break;
+		default:
+			INF("key ESC+[+%d~", con->val[0]);
+			c = -1;
+			break;
+		}
+		break;
+	}
+	default:
+		{
+			if (con->idx == 2)
+				INF("key ESC+[%d;%d+%c", con->val[0], con->val[1], c);
+			else if (con->idx == 1)
+				INF("key ESC+[%d+%c", con->val[0], c);
+			else
+				WARN("key ESC+[%c",  c);
+		}
+		c = -1;
+		con->mode = VT_CON_MODE_RAW;
+		break;
+	};
+
+	return c;
+}
+
+const vt_key_decode_t __vt_con_decode_by_mode[]  = {
+	[VT_CON_MODE_RAW] = __vt_con_raw_decode,
+	[VT_CON_MODE_ESC] = __vt_con_esc_decode,
+	[VT_CON_MODE_ESC_O] = __vt_con_esc_o_decode,
+	[VT_CON_MODE_ESC_VAL] = __vt_con_esc_val_decode
+};
+
+int __vt_putc(int c)
 {
 	char buf[1];
 
@@ -539,7 +571,7 @@ int vt_putc(int c)
 	return __vt_console_write(buf, 1);
 }
 
-int vt_puts(const char * s)
+int __vt_puts(const char * s)
 {
 	return __vt_console_write(s, strlen(s));
 }
@@ -571,37 +603,47 @@ int vt_getkey(unsigned int tmo_ms)
 	return ret;
 }
 
-int __vt_win_fwrite(struct vt_win * win, const void * buf, unsigned int len) 
+int __vt_get_cursor_pos(struct vt_pos * pos) 
 {
-	int cnt;
+	int c;
 
-	__vt_lock();
-	__vt_win_open(win);
+	__vt_flush();
 
-	cnt = __vt_win_write(win, buf, len); 
+	__vt_console_write(VT100_QUERY_CURSOR_POS, 
+					   sizeof(VT100_QUERY_CURSOR_POS));
 
-	__vt_win_close(win);
-	__vt_unlock();
+	while ((c = __vt_getc()) > 0) {
+		if ((c = __vt_console_decode(&__sys_vt.con, c)) > 0)
+			if (c == VT_CURSOR_POS) {
+				pos->x = __sys_vt.con.val[1];
+				pos->y = __sys_vt.con.val[0];
+				INF("pos = (%d, %d)", pos->x, pos->y);
+				return 0;
+			}
+	}
 
-	return cnt;
+	return c;
 }
 
-const struct fileop vt_win_fops = {
-	.write = (int (*)(void *, const void *, size_t))__vt_win_fwrite,
-	.read = (int (*)(void *, void *, size_t, unsigned int))null_read,
-	.flush = (int (*)(void *))__vt_win_drain,
-	.close = (int (*)(void *))null_close
-};
 
-struct file vt_console_file;
-
-FILE * vt_console_fopen(struct vt_win * win)
+int __vt_get_term_type(void) 
 {
-	struct file * f = &vt_console_file;
+	int c;
 
-	f->data = (void *)win;
-	f->op = &vt_win_fops;
+	__vt_flush();
 
-	return f;
+	__vt_console_write(VT100_QUERY_DEVICE_CODE, 
+					   sizeof(VT100_QUERY_DEVICE_CODE));
+
+	while ((c = __vt_getc()) > 0) {
+		if ((c = __vt_console_decode(&__sys_vt.con, c)) > 0)
+			if (c == VT_TERM_TYPE) {
+				c = __sys_vt.con.val[0];
+				INF("type = %d", c);
+				return c;
+			}
+	}
+
+	return c;
 }
 

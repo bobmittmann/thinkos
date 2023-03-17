@@ -35,53 +35,6 @@
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
 
-/* Board description */
-struct thinkos_board_desc {
-	char name[16];
-	char desc[32];
-	struct {
-		union {
-			char tag[8];
-			uint64_t hash;
-		};
-		struct {
-			uint8_t extra[6];
-			uint8_t minor;
-			uint8_t major;
-		} rev;
-	} hw;
-
-	struct {
-		union {
-			char tag[8];
-			uint64_t hash;
-		};
-		struct {
-			uint8_t extra[6];
-			uint8_t minor;
-			uint8_t major;
-		} ver;
-	} sw;
-
-	struct {
-		char tag[8];
-		uint32_t id;
-	} cpu;
-
-	int (* init)(void *);
-	int (* reset)(void *);
-	int (* sleep)(void *);
-	int (* wakeup)(void *);
-	int (* app)(void *);
-
-	struct {
-		uint8_t cnt;
-		union {
-			const struct mem_desc * lst[3];
-		};
-	} memory;
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif

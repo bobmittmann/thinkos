@@ -37,7 +37,7 @@
 
 extern const uint8_t usb_xflash_pic[];
 extern const unsigned int sizeof_usb_xflash_pic;
-extern uint32_t __data_start[]; 
+extern uint8_t __data_start[]; 
 
 struct magic {
 	struct {
@@ -49,6 +49,9 @@ struct magic {
 		uint32_t comp;
 	} rec[];
 };
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 
 const struct magic firmware_magic = {
 	.hdr = {
@@ -71,9 +74,13 @@ const struct magic firmware_magic = {
 	}
 };
 
+#pragma GCC diagnostic pop
+
+#define XFLASH_CODELET(_ADDR_) (int (*)(uint32_t, uint32_t, const struct magic *))(_ADDR_);
+
 void __attribute__((noreturn)) usb_xflash(uint32_t offs, uint32_t len)
 {
-	uint32_t * xflash_code = __data_start;
+	uint8_t * xflash_code = __data_start;
 	int (* xflash_ram)(uint32_t, uint32_t, const struct magic *);
 
 	DCC_LOG3(LOG_TRACE, "sp=%08x offs=%08x len=%d", cm3_sp_get(), offs, len);
@@ -82,9 +89,10 @@ void __attribute__((noreturn)) usb_xflash(uint32_t offs, uint32_t len)
 
 	memcpy(xflash_code, usb_xflash_pic, sizeof_usb_xflash_pic);
 
-	xflash_ram = ((void *)xflash_code) + 1;
+	xflash_ram = XFLASH_CODELET(((uintptr_t)xflash_code) + 1);
 	xflash_ram(offs, len, &firmware_magic);
 
-	cm3_sysrst();
+//	cm3_sysrst();
+	for(;;);
 }
 

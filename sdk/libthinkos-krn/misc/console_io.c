@@ -22,8 +22,8 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #define __THINKOS_KERNEL__
@@ -41,6 +41,9 @@ _Pragma ("GCC optimize (\"Os\")")
 #error "need THINKOS_ENABLE_TIMED_CALLS"
 #endif
 #endif
+
+#include <sys/dcclog.h>
+#include <sys/dcclog.h>
 
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
 {
@@ -62,6 +65,11 @@ int krn_console_write(const void * buf, unsigned int len)
 	return krn_console_dev_send(NULL, buf, len);
 }
 
+int krn_console_crlf(void)
+{
+	return krn_console_dev_send(NULL, "\r\n", 2);
+}
+
 int krn_console_puts(const char * s)
 {
 	int n = 0;
@@ -79,14 +87,33 @@ int krn_console_putc(int c)
 	return krn_console_dev_send(NULL, buf, 1);
 }
 
+int krn_console_puthex(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex32(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 8);
+}
+
+int krn_console_wrln(const char * ln)
+{
+	krn_console_puts(ln);
+	return krn_console_crlf();
+}
 
 int krn_console_dev_recv(void * dev, void * buf, 
 					  unsigned int len, unsigned int msec) 
 {
 	int ret = 0;
 
+
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret < 0) {
+//			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
+		} else {
+			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread()->%d", ret);
+		}
 	} while (ret == 0);
 
 	return ret;
@@ -95,11 +122,22 @@ int krn_console_dev_recv(void * dev, void * buf,
 int krn_console_getc(unsigned int tmo)
 {
 	uint8_t buf[4];
+	int n;
+	int c;
 
-	if (krn_console_dev_recv(NULL, buf, 1, tmo)  < 0)
+	if ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) <= 0) {
+		DCC_LOG1(LOG_TRACE, "ret=%d", n);
 		return -1;
+	}
 
-	return buf[0];
+	c = buf[0];
+
+	DCC_LOG2(LOG_TRACE, "0x%02x 0x%02x", buf[0], buf[1]);
+
+	/* XXX: echo */
+	krn_console_dev_send(NULL, buf, sizeof(char));
+
+	return c;
 }
 
 #define IN_BS      '\x8'
@@ -127,7 +165,7 @@ int krn_console_gets(char * s, int size)
 	pos = 0;
 
 	for (;;) {
-		if ((ret = krn_console_dev_recv(NULL, buf, sizeof(char), 1000)) <= 0) {
+		if ((ret = krn_console_dev_recv(NULL, buf, sizeof(char), 5000)) <= 0) {
 			if (ret >= THINKOS_ETIMEDOUT)
 				continue;	
 			return ret;
@@ -150,6 +188,7 @@ int krn_console_gets(char * s, int size)
 			}
 			continue;
 		} else if (c == IN_ESC) {
+			continue;
 		} else if (pos == size) {
 			krn_console_puts(OUT_BEL);
 			continue;

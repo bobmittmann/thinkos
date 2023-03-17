@@ -107,6 +107,7 @@ enum usb_ep_ctl {
 	USB_EP_NAK_SET,
 	USB_EP_NAK_CLR,
 	USB_EP_DISABLE,
+	USB_EP_IN_REQ
 };
 
 
@@ -119,6 +120,8 @@ typedef int (* usb_dev_ep_init_t)(void *, const usb_dev_ep_info_t *,
 typedef int (* usb_dev_ep_ctl_t)(void *, int, unsigned int);
 
 typedef int (* usb_dev_ep_pkt_xmit_t)(void *, int, const void *, int);
+
+typedef int (* usb_dev_ep_pkt_recv_t)(void *, int, const void *, int);
 
 typedef int (* usb_dev_ep_pkt_recv_t)(void *, int, const void *, int);
 

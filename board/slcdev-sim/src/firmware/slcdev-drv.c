@@ -1117,8 +1117,8 @@ void stm32_tim10_isr(void)
 
 void stm32_comp_tsc_isr(void)
 {
-	struct stm32f_exti * exti = STM32_EXTI;
-	struct stm32f_tim * tim = STM32_TIM10;
+	struct stm32_exti * exti = STM32_EXTI;
+	struct stm32_tim * tim = STM32_TIM10;
 	struct ss_device * dev = slcdev_drv.dev;
 	uint32_t ftsr;
 
@@ -1408,8 +1408,8 @@ void stm32_tim4_isr(void)
 static void slc_sense_init(void)
 {
 	struct stm32_comp * comp = STM32_COMP;
-	struct stm32f_exti * exti = STM32_EXTI;
-	struct stm32f_tim * tim = STM32_TIM10;
+	struct stm32_exti * exti = STM32_EXTI;
+	struct stm32_tim * tim = STM32_TIM10;
 	uint32_t div;
 
 	stm32_clk_enable(STM32_RCC, STM32_CLK_COMP);

@@ -3,138 +3,106 @@
   ---------------------------------------------------------------------------*/
 
 #include <stdlib.h>
+#include <string.h>
 #include "cmd_tab.h"
 
-
-const char * const boot_cmd_sym_tab[] = {
-	[BOOT_CMD_APP] = "app",
-	[BOOT_CMD_DIAG] = "diag",
-	[BOOT_CMD_ERASE] = "erase",
-	[BOOT_CMD_HELP] = "help",
-	[BOOT_CMD_INFO] = "info",
-	[BOOT_CMD_RCVY] = "rcvy",
-	[BOOT_CMD_REBOOT] = "reboot",
+const char * const btl_cmd_sym_tab[] = {
+	[BTL_CMD_APP] = "app",
+	[BTL_CMD_ERASE] = "erase",
+	[BTL_CMD_HELP] = "help",
+	[BTL_CMD_INFO] = "info",
+	[BTL_CMD_RCVY] = "rcvy",
+	[BTL_CMD_REBOOT] = "reboot",
+	[BTL_CMD_TEST] = "test",
 };
 
-const char * const boot_cmd_brief_tab[] = {
-	[BOOT_CMD_APP] = "Run the application",
-	[BOOT_CMD_DIAG] = "Run the diagnostics app",
-	[BOOT_CMD_ERASE] = "erase a flash partition",
-	[BOOT_CMD_HELP] = "Display a summary list of commands",
-	[BOOT_CMD_INFO] = "Display system information",
-	[BOOT_CMD_RCVY] = "YMODEM file receive to flash partition",
-	[BOOT_CMD_REBOOT] = "Reboot the system",
+const char * const btl_cmd_brief_tab[] = {
+	[BTL_CMD_APP] = "Run the application",
+	[BTL_CMD_ERASE] = "Erase application",
+	[BTL_CMD_HELP] = "Display a list of commands",
+	[BTL_CMD_INFO] = "Display system information",
+	[BTL_CMD_RCVY] = "YMODEM app upload",
+	[BTL_CMD_REBOOT] = "Reboot the system",
+	[BTL_CMD_TEST] = "Perform a test",
 };
 
-const char * const boot_cmd_desc_tab[] = {
-	[BOOT_CMD_APP] = "",
-	[BOOT_CMD_DIAG] = "",
-	[BOOT_CMD_ERASE] = "Erase a flash block.",
-	[BOOT_CMD_HELP] = "Display a summary list of commands.",
-	[BOOT_CMD_INFO] = "",
-	[BOOT_CMD_RCVY] = "This command uses YMODEM protocol to receive a file and write it to a flash partrition.",
-	[BOOT_CMD_REBOOT] = "Write the content of a FLASH partition to the console.",
+const char btl_cmd_alias_tab[][4] = {
+	[BTL_CMD_APP] = "",
+	[BTL_CMD_ERASE] = "e",
+	[BTL_CMD_HELP] = "h",
+	[BTL_CMD_INFO] = "i",
+	[BTL_CMD_RCVY] = "y",
+	[BTL_CMD_REBOOT] = "",
+	[BTL_CMD_TEST] = "t",
 };
 
-const char boot_cmd_alias_tab[][4] = {
-	[BOOT_CMD_APP] = "",
-	[BOOT_CMD_DIAG] = "",
-	[BOOT_CMD_ERASE] = "e",
-	[BOOT_CMD_HELP] = "h",
-	[BOOT_CMD_INFO] = "i",
-	[BOOT_CMD_RCVY] = "y",
-	[BOOT_CMD_REBOOT] = "",
+const char * const btl_cmd_param_tab[] = {
+	[BTL_CMD_APP] = NULL,
+	[BTL_CMD_ERASE] = NULL,
+	[BTL_CMD_HELP] = "CMD",
+	[BTL_CMD_INFO] = NULL,
+	[BTL_CMD_RCVY] = NULL,
+	[BTL_CMD_REBOOT] = NULL,
+	[BTL_CMD_TEST] = NULL,
 };
 
-const char * const boot_cmd_param_tab[] = {
-	[BOOT_CMD_APP] = NULL,
-	[BOOT_CMD_DIAG] = NULL,
-	[BOOT_CMD_ERASE] = "app | diag",
-	[BOOT_CMD_HELP] = "CMD",
-	[BOOT_CMD_INFO] = NULL,
-	[BOOT_CMD_RCVY] = "app | diag",
-	[BOOT_CMD_REBOOT] = NULL,
-};
-
-const boot_cmd_callback_t boot_cmd_call_tab[] = {
-	[BOOT_CMD_APP] = boot_cmd_app,
-	[BOOT_CMD_DIAG] = boot_cmd_diag,
-	[BOOT_CMD_ERASE] = boot_cmd_erase,
-	[BOOT_CMD_HELP] = boot_cmd_help,
-	[BOOT_CMD_INFO] = boot_cmd_info,
-	[BOOT_CMD_RCVY] = boot_cmd_rcvy,
-	[BOOT_CMD_REBOOT] = boot_cmd_reboot,
+const btl_cmd_callback_t btl_cmd_call_tab[] = {
+	[BTL_CMD_APP] = btl_cmd_app,
+	[BTL_CMD_ERASE] = btl_cmd_erase,
+	[BTL_CMD_HELP] = btl_cmd_help,
+	[BTL_CMD_INFO] = btl_cmd_info,
+	[BTL_CMD_RCVY] = btl_cmd_rcvy,
+	[BTL_CMD_REBOOT] = btl_cmd_reboot,
+	[BTL_CMD_TEST] = btl_cmd_test,
 };
 
 /*
-   Table generated with Fisher and Yates permutation
-   algorithm
+   List search...
 */
 
-static const uint8_t p_tab[] = {
-	 88,   1,  11, 113,  49,  58, 125,  75,
-	 65,  90, 103,  93,  29,  86,   6,  92,
-	 16,  25,  42,  19,  31,  47,  33,  69,
-	100,   0,  96, 118, 106, 116,  89,  87,
-	115, 122,  18,  94,  23,  70,  60,  77,
-	 72,  20,  55,   7, 107,  66,  28,  26,
-	104,  73, 108,  10,  13, 102, 120,  78,
-	 37,  36,  54, 101,  21,  81,   3, 117,
-	 83,  84,  68, 127,  59,  27,  43, 124,
-	109,  67,  95,  32,  45,  57,   5, 114,
-	 40,  24,  14, 112,  99,  85,  79, 123,
-	 44,  50,  64, 119,  76,  12,  62,   4,
-	 51, 110,  61,  46,  80,  98,  56,  48,
-	 38,  97, 121,  41,  30,  22,  39,  63,
-	  2,  35, 126,  17,  34,  71,   9,  82,
-	 52,  74,  53,  15, 111, 105,   8,  91
-};
-
-static const uint8_t s_tab[] = {
-	 20,  38,  46,  50,  57,  61,  74,  97,
-	 98, 111, 126
-};
-
-static const uint8_t i_tab[] = {
-	  1,   4,   4,   5,   3,   7,   6,   5,
-	  3,   2,   6
-};
-
-static int h_lookup(int x)
+int btl_cmd_lookup(struct btl_shell_env * env, const char * str)
 {
-	int i = 0;
-	int j = sizeof(s_tab) - 1;
+	int i;
 
-	while (i <= j) {
-		int k = i + ((j - i) / 2);
-		int y = s_tab[k];
-		if (y == x) {
-			return k;
-		} else if (y < x) {
-			i = k + 1;
-		} else {
-			j = k - 1;
-		}
+	for (i = BTL_CMD_FIRST; i <= BTL_CMD_LAST; ++i) {
+		if (strcmp(str, btl_cmd_sym_tab[i]) == 0)
+			return i;
+		if (strcmp(str, btl_cmd_alias_tab[i]) == 0)
+			return i;
 	}
 
-	return -1;
+	return -2;
 }
 
-int boot_cmd_lookup(const char * str)
+int btl_cmd_first(struct btl_shell_env * env)
 {
-	int h = 0;
-	int c;
-	int i;
-	int y;
+	return BTL_CMD_FIRST;
+}
 
-	for (i = 0; (c = str[i]) != '\0'; ++i) {
-		h = p_tab[c ^ h];
-	}
+int btl_cmd_last(struct btl_shell_env * env)
+{
+	return BTL_CMD_LAST;
+}
 
-	if ((y = h_lookup(h)) < 0) {
-		return y;
-	}
+const char * btl_cmd_name(struct btl_shell_env * env, unsigned int code)
+{
+	return btl_cmd_sym_tab[code];
+}
 
-	return i_tab[y];
+const char * btl_cmd_alias(struct btl_shell_env * env, unsigned int code)
+{
+	return btl_cmd_alias_tab[code];
+}
+
+const char * btl_cmd_brief(struct btl_shell_env * env, unsigned int code)
+{
+	return btl_cmd_brief_tab[code];
+}
+
+int btl_cmd_call(struct btl_shell_env * env, int argc, char * argv[], unsigned int code)
+{
+	if (code > BTL_CMD_LAST)
+		return -2;
+	return btl_cmd_call_tab[code](env, argc, argv);
 }
 

@@ -25,24 +25,24 @@ LIB_STATIC = thinkos-mon
 
 COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
 
-COMMIO_CFILES = monitor_putc.c monitor_puts.c \
+COMMIO_CFILES = monitor_write.c monitor_read.c \
+				monitor_putc.c monitor_puts.c \
 		monitor_getc.c monitor_gets.c \
 		monitor_printf.c monitor_scanf.c \
+		monitor_println.c \
 		monitor_send_misc.c \
 		print_osinfo.c print_alloc.c print_thread.c \
 		print_context.c print_stack_usage.c \
 		print_exception.c print_profile.c  \
-		monitor_hexdump.c
+		monitor_hexdump.c monitor_newln.c
 
-CFILES = thinkos_monitor.c monitor_thread.c monitor_memory.c \
+CFILES = monitor_thread.c monitor_memory.c \
 	 monitor_console_task.c \
 	 monitor_cyccnt.c \
 	 monitor_flash.c monitor_events.c \
 	 app_exec.c mon_sched_dbg.c \
 	 $(addprefix comm/,$(COMM_CFILES)) \
 	 $(addprefix commio/,$(COMMIO_CFILES))
-
-SFILES = monitor_swap.S monitor_sched.S
 
 include ../../mk/lib.mk
 

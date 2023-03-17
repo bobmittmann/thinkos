@@ -23,44 +23,41 @@ VERSION_DATE = "2017-06-19"
 VERSION_MAJOR = "0"
 VERSION_MINOR = "1"
 
-PROJECT_ROOT = ../../
-THINKOS_DIR = $(PROJECT_ROOT)/../..
+PROG = doorbell
+
+THINKOS_DIR = ../../../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
-LIBMAD_DIR = $(PROJECT_ROOT)/src/libmad
+TEST_DIR = $(THINKOS_DIR)/test
+LIBMAD_DIR = ../libmad
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
-
-PROG = doorbell
 
 CFILES = doorbell.c iodrv.c dac.c spi.c \
 		 casa.c amora.c batatinha.c entre.c bell1.c vaembora.c
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 \
-		  $(SDK_DIR)/libthinkos-usr $(SDK_DIR)/libtty $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libc $(SDK_DIR)/libtrace $(SDK_DIR)/libfixpt $(LIBMAD_DIR)
+ARCH_LIBS = stm32f
 
-LIBS = gcc m stm32f cm3 util c thinkos-usr fixpt tty mad
+SDK_LIBS = thinkos-usr util c fixpt tty
 
-INCPATH = $(SDK_DIR)/include $(PROJECT_ROOT)/src/include .
+LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
+		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))\
+		  $(LIBMAD_DIR)
+
+LIBS = m $(ARCH_LIBS) $(SDK_LIBS) mad
+
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
-CFLAGS = -g -Ofast -Wall -ffunction-sections -fdata-sections
-OPTIONS = -g -mno-unaligned-access 
-LDFLAGS = -Wl,--gc-sections 
 
-RELEASE_DIR := Release
-DEBUG_DIR := Debug
-#LIBPATH = ../sdklibs/Debug
-#LIBPATH = ../sdklibs/Release
+#LIBPATH = $(LIBMAD_DIR)
 
-LIBPATH += $(MAD_LIB_DIR)
+CFLAGS = -O1 
 
 MACH = stm32l433xc
-THINKAPP  = 0x08010000
-LDCODE := $(THINKAPP)
+LDCODE = 0x08010000
 LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32.mk
+include $(ARCH_DIR)/mk/stm32-app.mk
 
 %.c : %.mp3
 	$(BIN2HEX) -H mp3lib.h -o $@ $<

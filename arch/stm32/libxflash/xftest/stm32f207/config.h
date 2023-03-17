@@ -85,7 +85,7 @@
 #define THINKOS_ENABLE_MPU            0
 #define THINKOS_ENABLE_FPU            0
 #define THINKOS_ENABLE_CTL            0
-#define THINKOS_ENABLE_COMM           0
+#define THINKOS_COMM_MAX              0
 #define THINKOS_ENABLE_STACK_INIT     1
 
 /* -------------------------------------------------------------------------

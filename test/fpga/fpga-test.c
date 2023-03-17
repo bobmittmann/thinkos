@@ -560,7 +560,7 @@ void jtag_reg_test(struct jtag_io * jtag)
 
 void jtag_irq_init(void)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 
 	/* Clear EXTI pending flag */
 	exti->pr = (1 << 6);
@@ -580,7 +580,7 @@ void jtag_irq_enable(void)
 
 void __stm32f_exti9_5_isr(void)
 {
-	struct stm32f_exti * exti = STM32F_EXTI;
+	struct stm32_exti * exti = STM32_EXTI;
 
 	trace("IRQ...");
 

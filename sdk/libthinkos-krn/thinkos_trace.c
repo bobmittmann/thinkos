@@ -23,11 +23,11 @@
 #define __THINKOS_TRACE__
 #include <thinkos/trace.h>
 
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
 
+#include <thinkos.h>
 #include <sys/param.h>
 #include <stdbool.h>
 
@@ -345,7 +345,7 @@ void thinkos_trace_svc(int32_t * arg, int self)
     uint32_t now;
 
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (ref == NULL) {
 		__THINKOS_ERROR(THINKOS_ERR_TRACE_ENTRY_NULL);
 		arg[0] = THINKOS_EINVAL;

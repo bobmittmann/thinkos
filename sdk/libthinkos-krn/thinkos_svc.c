@@ -117,21 +117,38 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_gate_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
+void thinkos_irq_dbg_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_irq_timedwait_cleanup_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_irq_timedwait_fixup_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 
-void thinkos_console_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
+void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
+void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
+void thinkos_console_timed_fixup_svc(int32_t arg[], int self, 
+								  struct thinkos_rt * krn);
 
 void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_comm_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_comm_timedsend_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn);
+void thinkos_comm_timedrecv_svc(int32_t arg[], int self, 
+								struct thinkos_rt * krn);
+void thinkos_comm_timed_fixup_svc(int32_t arg[], int self, 
+								  struct thinkos_rt * krn);
+
 
 void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
@@ -145,17 +162,6 @@ void thinkos_app_exec_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_time_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-#if (THINKOS_ENABLE_ESCALATE)
-/* Call a function in priviledged service mode. */
-void thinkos_escalate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
-{
-	int32_t ( * call)(int32_t, int32_t, int32_t);
-
-	call = (int32_t (*)(int32_t, int32_t, int32_t))arg[0];
-	arg[0] = call(arg[1], arg[2], arg[3]);
-}
-#endif
-
 void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	__THINKOS_ERROR(self, THINKOS_ERR_SYSCALL_INVALID);
@@ -164,7 +170,7 @@ void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 void thinkos_clock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	arg[0] = thinkos_rt.ticks;
+	arg[0] = thinkos_rt.clk.time;
 }
 
 void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -185,7 +191,7 @@ void thinkos_yield_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 void thinkos_critical_enter_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	if (++thinkos_rt.critical_cnt) {
-		thinkos_krn_sched_off();
+		__krn_sched_off();
 	}
 }
 
@@ -195,7 +201,7 @@ void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		__THINKOS_ERROR(self, THINKOS_ERR_CRITICAL_EXIT);
 		arg[0] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
-		thinkos_krn_sched_on();
+		__krn_sched_on();
 	}
 }
 #endif
@@ -205,6 +211,13 @@ typedef void (* thinkos_svc_t)(int32_t arg[], int self, struct thinkos_rt * krn)
 thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,
 	[THINKOS_THREAD_INIT] = thinkos_thread_init_svc,
+
+
+#if (THINKOS_ENABLE_CTL)
+	[THINKOS_CTL] = thinkos_ctl_svc,
+#else
+	[THINKOS_CTL] = thinkos_nosys_svc,
+#endif
 
 	[THINKOS_CLOCK] = thinkos_clock_svc,
 
@@ -237,9 +250,9 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_irq_timedwait_cleanup_svc,
+	[THINKOS_IRQ_TIMEDWAIT_FIXUP] = thinkos_irq_timedwait_fixup_svc,
 #else
-	[THINKOS_IRQ_TIMEDWAIT_CLEANUP] = thinkos_nosys_svc,
+	[THINKOS_IRQ_TIMEDWAIT_FIXUP] = thinkos_nosys_svc,
 #endif /* THINKOS_ENABLE_IRQ_TIMEDWAIT  */
 
 #if (THINKOS_ENABLE_IRQ_CTL)
@@ -491,11 +504,24 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
  * --------------------------------------------- */
 
 #if (THINKOS_ENABLE_CONSOLE)
-	[THINKOS_CONSOLE] = thinkos_console_svc,
+	[THINKOS_CONSOLE_CTL] = thinkos_console_ctl_svc,
+	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
 #else
-	[THINKOS_CONSOLE] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
 #endif
 
+#if (THINKOS_ENABLE_CONSOLE_READ)
+	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
+#else
+	[THINKOS_CONSOLE_RECV] = thinkos_nosys_svc,
+#endif
+
+#if (THINKOS_ENABLE_CONSOLE) && (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_console_timed_fixup_svc,
+#else
+	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_nosys_svc,
+#endif
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
 	[THINKOS_OBJ_ALLOC] = thinkos_obj_alloc_svc,
@@ -544,18 +570,26 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #else
 	[THINKOS_TERMINATE] = thinkos_nosys_svc,
 #endif
+/* ----------------------------------------------
+ * Comm 
+ * --------------------------------------------- */
 
-#if (THINKOS_ENABLE_CTL)
-	[THINKOS_CTL] = thinkos_ctl_svc,
+#if (THINKOS_COMM_MAX) > 0
+	[THINKOS_COMM_CTL] = thinkos_comm_ctl_svc,
+	[THINKOS_COMM_SEND] = thinkos_comm_send_svc,
+	[THINKOS_COMM_RECV] = thinkos_comm_recv_svc,
+  #if (THINKOS_ENABLE_TIMED_CALLS)
+	[THINKOS_COMM_TIMED_FIXUP] = thinkos_comm_timed_fixup_svc,
+  #else
+	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
+  #endif
 #else
-	[THINKOS_CTL] = thinkos_nosys_svc,
+	[THINKOS_COMM_CTL] = thinkos_nosys_svc,
+	[THINKOS_COMM_SEND] = thinkos_nosys_svc,
+	[THINKOS_COMM_RECV] = thinkos_nosys_svc,
+	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
 #endif
 
-#if (THINKOS_ENABLE_ESCALATE)
-	[THINKOS_ESCALATE] = thinkos_escalate_svc,
-#else
-	[THINKOS_ESCALATE] = thinkos_nosys_svc,
-#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	[THINKOS_CRITICAL_ENTER] = thinkos_critical_enter_svc,
@@ -576,20 +610,10 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #endif
 
 
-/* ----------------------------------------------
- * Comm 
- * --------------------------------------------- */
-
-#if (THINKOS_ENABLE_COMM)
-	[THINKOS_COMM] = thinkos_comm_svc,
-#else
-	[THINKOS_COMM] = thinkos_nosys_svc,
-#endif
-
 #if (THINKOS_ENABLE_MONITOR_SYSCALL) 
-	[THINKOS_MONITOR] = thinkos_monitor_svc,
+	[THINKOS_MONITOR_CTL] = thinkos_monitor_svc,
 #else
-	[THINKOS_MONITOR] = thinkos_nosys_svc,
+	[THINKOS_MONITOR_CTL] = thinkos_nosys_svc,
 #endif
 
 #if (THINKOS_ENABLE_TRACE)
@@ -623,6 +647,12 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #else
 	[THINKOS_APP_EXEC] = thinkos_nosys_svc,
 #endif
+
+#if (THINKOS_IRQ_MAX) > 0
+	[THINKOS_IRQ_DBG] = thinkos_irq_dbg_svc,
+#else
+	[THINKOS_IRQ_DBG] = thinkos_nosys_svc,
+#endif /* THINKOS_IRQ_MAX > 0 */
 
 };
 

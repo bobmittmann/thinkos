@@ -30,13 +30,13 @@ VERSION_MINOR = "4"
 
 PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c monitor.c usb_xflash_pic.c usb_xflash.c
+CFILES = boot.c #usb-cdc-comm.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
 		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem
 
-LIBS = stm32f util thinkos-krn thinkos-mon xmodem ice-comm 
+LIBS = stm32f thinkos-krn thinkos-mon util xmodem ice-comm 
 
 INCPATH = ../include
 
@@ -45,7 +45,7 @@ CDEFS = CONFIG_H
 CFLAGS = -Os 
 
 MACH = stm32f103x6
-KRN_CODE_SIZE = 12288
+KRN_CODE_SIZE = 10240
 KRN_DATA_SIZE = 2048
 include $(ARCH_DIR)/mk/stm32-krn.mk
 

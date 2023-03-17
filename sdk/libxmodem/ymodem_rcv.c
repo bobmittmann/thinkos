@@ -32,6 +32,9 @@
 #include <xmodem.h>
 #include <crc.h>
 
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 #include <sys/dcclog.h>
 
 #define SOH  0x01
@@ -90,6 +93,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 	unsigned int seq;
 	int ret = 0;
 	int cnt = 0;
+	int junk = 0;
 	int rem;
 	int len;
 
@@ -99,13 +103,19 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 	}
 
 	for (;;) {
+		if (junk) {
+//			__thinkos_dbg_halt();
+//			DCC_LOG(LOG_TRACE, "[JUNK]");
+		} else {
+//			DCC_LOG(LOG_TRACE, "[SYN]");
+		}
 		if ((ret = ry->comm->op.send(ry->comm->arg, &ry->sync, 1)) < 0) {
+			DCC_LOG1(LOG_WARNING, "send()->%d", ret);
 			return ret;
 		}
 
 		for (;;) {
 			int c;
-
 			ret = ry->comm->op.recv(ry->comm->arg, pkt, 
 									1, YMODEM_RCV_TMOUT_MS);
 
@@ -138,15 +148,24 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 			if (c == EOT) {
 				DCC_LOG(LOG_TRACE, "EOT");
-				/* end of transmission */
-				ry->state = YR_EOT;
 				pkt[0] = ACK;
 				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
 				ry->comm->op.send(ry->comm->arg, pkt, 1);
+				/* end of transmission */
+				ry->state = YR_EOT;
+//				ry->state = (ry->state = YR_EOT) ? YR_OK : YR_EOT;
 				return 0;
 			}
 
 			DCC_LOG1(LOG_WARNING, "YMODEM RX=%02x", c);
+
+			if (ry->state == YR_EOT) {
+				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
+				ry->state = YR_OK;
+				return 0;
+			}
+
+			junk++;
 		}
 
 		len = cnt + ((ry->crc_mode) ? 5 : 4);
@@ -156,10 +175,16 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 		DCC_LOG1(LOG_TRACE, "%d remaining bytes...", rem);
 		/* receive the packet */
 		while (rem) {
-			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 500);
+			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 127);
 
-			if (ret == THINKOS_ETIMEDOUT)
-				goto timeout;
+			if (ret == THINKOS_ETIMEDOUT)  {
+#if 0
+				DCC_LOG(LOG_ERROR, "rcv timeout, try again...");
+				ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 128);
+				if (ret == THINKOS_ETIMEDOUT)
+#endif					
+					goto timeout;
+			}
 
 			if (ret < 0) {
 				DCC_LOG1(LOG_ERROR, "comm receive error, ret=%d", ret);
@@ -244,7 +269,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 			pkt[0] = ACK;
 			ry->comm->op.send(ry->comm->arg, pkt, 1);
 		} else {
-			ry->retry = 10;
+			ry->retry = 2;
 			ry->sync = ACK;
 			if ((ry->count + cnt) > ry->fsize)
 				cnt = ry->fsize - ry->count;
@@ -259,7 +284,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 error:
 		/* flush */
-		while (ry->comm->op.recv(ry->comm->arg, pkt, 1024, 200) > 0);
+		while (ry->comm->op.recv(ry->comm->arg, pkt, 1024, 255) > 0);
 		ry->sync = NAK;
 		ret = -1;
 		break;
@@ -267,12 +292,15 @@ error:
 timeout:
 		DCC_LOG(LOG_TRACE, "timeout...");
 
+		if ((ry->state == YR_EOT) ||
+			((ry->count == ry->fsize) && (ry->xmodem == 0))) {
+			DCC_LOG(LOG_TRACE, "[EOT] transfer complete!!");
+			ry->state = YR_OK;
+			return 0;
+		}
+
+
 		if ((--ry->retry) == 0) {
-            if ((ry->count == ry->fsize) && (ry->xmodem == 0)) {
-                DCC_LOG(LOG_TRACE, "[EOT] transfer complete!!");
-				ry->state = YR_EOT;
-                return 0;
-            }
 			/* too many errors */
 			DCC_LOG(LOG_WARNING, "[ERR] too many errors!");
 			ry->state = YR_ERR;
@@ -371,8 +399,14 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 			break;
 		}
 
-		if ((ret = ymodem_rcv_pkt(ry)) <= 0)
+		if ((ret = ymodem_rcv_pkt(ry)) < 0) {
 			break;
+		}
+		if (ret == 0) {
+			if (ry->state <= YR_OK) {
+				break;
+			}
+		}
 
 		if (!ry->xmodem && (ry->pktno == 1)) {
 			if ((ret = ymodem_rcv_decode(ry->pkt.data, 
@@ -391,6 +425,7 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 
 	return ret;
 }
+
 
 int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname, 
 					 unsigned int * pfsize)
@@ -419,7 +454,7 @@ int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname,
 			}
 
 		} else {
-			DCC_LOG1(LOG_WARNING, "pktno=%d!!!!", ry->pktno);
+			DCC_LOG1(LOG_INFO, "pktno=%d!!!!", ry->pktno);
 			ry->data_len = ret;
 			ry->data_pos = 0;
 		}
@@ -432,6 +467,5 @@ int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname,
 
 	return ret;
 }
-
 
 

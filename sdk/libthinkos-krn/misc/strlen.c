@@ -21,8 +21,9 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 /*
@@ -37,4 +38,7 @@ unsigned int __thinkos_strlen(const char * __s, unsigned int __max)
 
 	return n;
 }
+
+unsigned int strlen(const char *, unsigned int)
+	__attribute__ ((weak, alias ("__thinkos_strlen")));
 

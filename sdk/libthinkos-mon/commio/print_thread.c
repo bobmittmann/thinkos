@@ -62,8 +62,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 
 	type = __thinkos_obj_kind(wq);
 
-	monitor_printf(comm, " - No: %d", thread_id); 
-	monitor_printf(comm, ", '%s'", tag); 
+	monitor_printf(comm, " - No: %d '%s'", thread_id, tag); 
 
 	if (THINKOS_OBJ_READY == type) {
 #if (THINKOS_IRQ_MAX) > 0
@@ -75,20 +74,22 @@ void monitor_print_thread(const struct monitor_comm * comm,
 				}
 			}
 			if (irq < THINKOS_IRQ_MAX) {
-				monitor_printf(comm, " wait on IRQ[%d]\r\n", irq);
+				monitor_printf(comm, " wait on IRQ[%d]", irq);
 			} else
-				monitor_printf(comm, " %s.\r\n", __thinkos_kind_name(type)); 
+				monitor_printf(comm, " %s.", __thinkos_kind_name(type)); 
 		} else
 #endif
-		monitor_printf(comm, " %s.\r\n", __thinkos_kind_name(type)); 
+		monitor_printf(comm, " %s.", __thinkos_kind_name(type)); 
 	} else {
 		if (THINKOS_OBJ_FAULT == type) {
 			monitor_printf(comm, " FAULT!");
 		} else 
-			monitor_printf(comm, " %swait on %s(%3d)\r\n", 
+			monitor_printf(comm, " %swait on %s(%3d)", 
 						  tmw ? "time" : "", __thinkos_kind_name(type), wq); 
 
 	}
+
+	monitor_newln(comm);
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	monitor_printf(comm, " - sched: val=%3d pri=%3d", 
@@ -102,7 +103,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
 	monitor_print_context(comm, ctx, sp, ctrl);
 
-	monitor_printf(comm, "\r\n");
+	monitor_newln(comm);
 }
 
 

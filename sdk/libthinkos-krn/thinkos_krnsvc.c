@@ -27,13 +27,13 @@
 #include <thinkos/error.h>
 #define __THINKOS_KRNSVC__
 #include <thinkos/krnsvc.h>
-#include <vt100.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #include <sys/dcclog.h>
+#include <vt100.h>
 
 #if (THINKOS_ENABLE_KRNSVC)
 
@@ -58,7 +58,7 @@ void thinkos_krnsvc_isr(uint32_t arg[], uint32_t opc)
 			(void)err;
 			DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BYW
 					 "/!\\ Error %d [%s] /!\\" VT_POP, 
-					 err, thinkos_err_name_lut[err]);
+					 err, thinkos_krn_err_tag(err));
 		}
 		break;
 

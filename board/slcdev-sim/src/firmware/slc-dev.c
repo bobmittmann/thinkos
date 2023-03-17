@@ -24,7 +24,7 @@ extern const struct shell_cmd cmd_tab[];
 
 const char version_str[] = "SLC Device Simulator " \
 							VERSION_NUM " - " VERSION_DATE;
-const char copyright_str[] = "(c) Copyright 2014-2015 - Mircom Group";
+const char copyright_str[] = "(c) Copyright 2021 - Bob Mittmann";
 
 
 uint32_t __attribute__((aligned(8))) io_event_stack[24];

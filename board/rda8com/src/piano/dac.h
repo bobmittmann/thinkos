@@ -26,15 +26,15 @@
 #include <stdint.h> 
 
 #ifndef DAC_FRAME_SIZE
-#define DAC_FRAME_SIZE 256
+#define DAC_FRAME_SIZE 128
 #endif
 
 #ifndef DAC_SAMPLE_RATE
-#define DAC_SAMPLE_RATE 44100
+#define DAC_SAMPLE_RATE 22050
 #endif
 
 #ifndef DAC_VOICES_MAX 
-#define DAC_VOICES_MAX 8
+#define DAC_VOICES_MAX 9
 #endif
 
 #ifndef DAC_PIPELINE_MAX 
@@ -50,6 +50,9 @@ struct dac_stream {
 	void * arg;
 	const struct dac_stream_op * op;
 };
+
+const struct dac_stream_op silence_gen_op;
+const struct dac_stream silence;
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +71,10 @@ void dac_start(void);
 void dac_stop(void);
 
 void dac_gain_set(float gain);
+
+float dac_gain_get(void);
+
+int dac_voice_max(void);
 
 void dac_stream_play(const struct dac_stream * s, float t);
 

@@ -48,7 +48,7 @@
 #define STM32_SAI1   ((struct stm32_sai *)STM32_BASE_SAI1)
 
 #define STM32_SYSCFG ((struct stm32_syscfg *)STM32_BASE_SYSCFG)
-#define STM32F_EXTI  ((struct stm32f_exti *)STM32_BASE_EXTI)
+#define STM32_EXTI  ((struct stm32_exti *)STM32_BASE_EXTI)
 
 #define STM32_USART1 ((struct stm32_usart *)STM32_BASE_USART1)
 #define STM32_USART2 ((struct stm32_usart *)STM32_BASE_USART2)

@@ -21,8 +21,9 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 /*
@@ -42,4 +43,7 @@ void __thinkos_memcpy(void * __dst, const void * __src,  unsigned int __n)
 		__n--;
 	}
 }
+
+void memcpy(void *, const void *, size_t)
+	__attribute__ ((weak, alias ("__thinkos_memcpy")));
 

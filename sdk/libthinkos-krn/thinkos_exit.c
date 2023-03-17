@@ -60,10 +60,10 @@ static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 		__krn_sched_active_clr(krn);
 	}
 
+	__krn_thread_suspend(krn, th);
+
 	/* clear context. */
 	__thread_ctx_clr(krn, th);
-
-	__krn_thread_suspend(krn, th);
 
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
@@ -103,7 +103,9 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	if ((ret = __krn_thread_check(krn, thread)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread);
+/* XXX: Do not throw an error if thread do not exist...
 		__THINKOS_ERROR(self, ret);
+*/
 		arg[0] = THINKOS_EINVAL;
 		return;
 	}
@@ -115,16 +117,27 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__bit_mem_wr((uint32_t *)&krn->wq_tmshare, (thread - 1), 0);  
 #endif
 
+	__thread_clk_disable(krn, thread);
+
 #if (THINKOS_ENABLE_CANCEL)
 #if (THINKOS_ENABLE_THREAD_STAT)
 	{
 		int stat;
-		/* update the thread status */
+		int wq;
+
+		/* get the thread status */
 		stat = krn->th_stat[thread];
-		DCC_LOG1(LOG_INFO, "wq=%d", stat >> 1); 
+
+#if (THINKOS_IRQ_MAX) > 0
+		/* FIXME: ... */
+		__krn_irq_thread_del(krn, thread);
+#endif
+
+		wq = stat >> 1;
+		DCC_LOG1(LOG_TRACE, "wq=%d", wq); 
 		__thread_stat_clr(krn, thread);
 		/* remove from other wait queue, if any */
-		__bit_mem_wr(&krn->wq_lst[stat >> 1], (thread - 1), 0);  
+		__bit_mem_wr(&krn->wq_lst[wq], (thread - 1), 0);  
 	}
 #else
 	{
@@ -132,6 +145,9 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* remove from other wait queues, if any */
 		for (i = 0; i < THINKOS_WQ_CNT; ++i)
 			__bit_mem_wr(&krn->wq_lst[i], (thread - 1), 0);  
+#if (THINKOS_IRQ_MAX) > 0
+		__krn_irq_thread_del(krn, thread);
+#endif
 	}
 #endif
 #endif /* THINKOS_ENABLE_CANCEL */
@@ -149,7 +165,7 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				__thread_r0_set(krn, th, code);
 			} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 			/* signal the scheduler ... */
-			__krn_defer_sched(krn);
+			__krn_sched_defer(krn);
 		}
 	}
 #endif
@@ -186,7 +202,7 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
 		/* remove from the ready wait queue */
 		__krn_thread_suspend(krn, self);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 #endif /* THINKOS_ENABLE_JOIN */
 

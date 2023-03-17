@@ -23,13 +23,12 @@ include ../../mk/config.mk
 
 LIB_STATIC = thinkos-krn
 
-MISC_CFILES = thinkos_obj.c strlen.c \
-			  memcpy.c memcpy32.c memset32.c \
-			  snprintf.c console_io.c \
-			  active.c suspended.c \
-			  thread_getnext.c thread_get.c \
-			  thread_isfaulty.c thread_ispaused.c \
-			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c \
+MISC_CFILES = strlen.c strcmp.c memcpy.c memcpy32.c memset32.c\
+			  thinkos_obj.c snprintf.c console_io.c\
+			  active.c suspended.c fmt_hex.c\
+			  thread_getnext.c thread_get.c\
+			  thread_isfaulty.c thread_ispaused.c\
+			  thread_isalive.c pause_all.c resume_all.c xcpt_util.c\
 			  cpu-info.c scan_stack.c thread_wq_get.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
@@ -43,6 +42,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
 		 thinkos_krnsvc.c thinkos_sysrst.c thinkos_time.c \
+		 thinkos_fifo.c thinkos_comm.c thinkos_monitor.c \
 		 thinkos_obj_kind_lut.c \
 		 thinkos_app.c thinkos_trace.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
@@ -51,14 +51,16 @@ ifeq ($(CPU), cortex-m4)
   SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
 		   cortex-m/thinkos_vec-cortex-m3.S \
 		   cortex-m/thinkos_svc-cortex-m3.S \
-		   cortex-m/thinkos_sched-cortex-m4f.S
+		   cortex-m/thinkos_sched-cortex-m4f.S \
+		   cortex-m/monitor_swap.S
 endif
 
 ifeq ($(CPU), cortex-m3)
   SFILES = cortex-m/thinkos_crt0-cortex-m3.S \
 		   cortex-m/thinkos_vec-cortex-m3.S \
 		   cortex-m/thinkos_svc-cortex-m3.S \
-		   cortex-m/thinkos_sched-cortex-m4f.S
+		   cortex-m/thinkos_sched-cortex-m4f.S \
+		   cortex-m/monitor_swap.S
 #		   cortex-m/thinkos_sched-cortex-m3.S
 #		   cortex-m/thinkos_sched-cortex-m3-msk.S
 endif

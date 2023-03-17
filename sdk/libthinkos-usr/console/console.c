@@ -1,5 +1,5 @@
 /* 
- * File:	 stdio.c
+ * File:	 console.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -46,6 +46,12 @@ int console_read(void * dev, void * buf, size_t len, unsigned int msec)
 
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret == THINKOS_EAGAIN) {
+			ret = 0;
+		} else if (ret == THINKOS_EINTR) {
+			ret = 0;
+		}
+
 	} while (ret == 0);
 
 	return ret;
@@ -66,6 +72,33 @@ int console_flush(void * dev)
 	return 0;
 }
 
+int console_flush_n_drain(void * dev)
+{
+	uint8_t buf[16];
+	int ret;
+
+	do {
+		ret = thinkos_console_timedread(buf, sizeof(buf), 50);
+		if (ret == THINKOS_EAGAIN) {
+			ret = 0;
+		} else if (ret == THINKOS_EINTR) {
+			ret = 0;
+		} else if (ret == THINKOS_ETIMEDOUT) {
+			ret = 0;
+		}
+	} while (ret > 0);
+
+	ret = thinkos_console_drain();
+
+#if 0
+	do {
+		ret = thinkos_console_drain();
+	} while (ret > 0);
+#endif
+
+	return ret;
+}
+
 int console_close(void * dev)
 {
 	return thinkos_console_close();
@@ -81,7 +114,7 @@ bool console_is_connected(void)
 const struct fileop console_fops = {
 	.write = (int (*)(void *, const void *, size_t))console_write,
 	.read = (int (*)(void *, void *, size_t, unsigned int))console_read,
-	.flush = (int (*)(void *))console_drain,
+	.flush = (int (*)(void *))console_flush_n_drain,
 	.close = (int (*)(void *))console_close
 };
 

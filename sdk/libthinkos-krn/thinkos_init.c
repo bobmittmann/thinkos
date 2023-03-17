@@ -38,7 +38,7 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
 							   uint32_t opt)
 {
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 	int priority = __PRIORITY(opt);
 #endif
 	int th = __ID(opt);
@@ -50,7 +50,7 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 	if (th < 1)
 		th = 1;
 
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* alloc main thread */
 	th = __thinkos_thread_alloc(th);
 #else
@@ -58,13 +58,13 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 		th = THINKOS_THREADS_MAX;
 #endif
 
-#if THINKOS_ENABLE_TIMESHARE
+#if (THINKOS_ENABLE_TIMESHARE)
 
-#if THINKOS_SCHED_LIMIT_MIN < 1
+#if (THINKOS_SCHED_LIMIT_MIN) < 1
 #error "THINKOS_SCHED_LIMIT_MIN must be at least 1"
 #endif
 
-#if THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN
+#if (THINKOS_SCHED_LIMIT_MAX) < (THINKOS_SCHED_LIMIT_MIN)
 #error "THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN !!!"
 #endif
 	if (priority > THINKOS_SCHED_LIMIT_MAX)
@@ -75,8 +75,8 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 
 	/* set the initial schedule limit */
 	krn->sched_limit = priority;
-	if (krn->sched_limit < THINKOS_SCHED_LIMIT_MIN)
-		krn->sched_limit = THINKOS_SCHED_LIMIT_MIN;
+	if (krn->sched_limit < (THINKOS_SCHED_LIMIT_MIN))
+		krn->sched_limit = (THINKOS_SCHED_LIMIT_MIN);
 #endif /* THINKOS_ENABLE_TIMESHARE */
 
 	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
@@ -98,10 +98,9 @@ static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 extern void * __bss_end;
 extern void * __heap_start;
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_initializer * lst[])
+int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+					 const struct thinkos_mem_map * map)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	int thread_no;
 	uint32_t ctrl;
 	uint32_t ccr;
@@ -126,14 +125,24 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	_Static_assert (offsetof(struct thinkos_rt, idle_ctx) == 
 					OFFSETOF_KRN_IDLE_CTX, "OFFSETOF_KRN_IDLE_CTX");
 
+	_Static_assert (offsetof(struct thinkos_rt, clk) == 
+					OFFSETOF_KRN_CLK, "OFFSETOF_KRN_CLK");
+
 #if (THINKOS_ENABLE_PROFILING)
+	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
+					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYC");
+
 	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
 					OFFSETOF_KRN_CYCREF, "OFFSETOF_KRN_CYCREF");
 
-	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
-					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYCT");
 #endif
 
+#if (THINKOS_ENABLE_DEBUG_BASE)
+	_Static_assert (offsetof(struct thinkos_rt, debug) == 
+					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
+#endif
+
+#if 0
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
 	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
@@ -148,6 +157,8 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
 					OFFSETOF_KRN_BREAK_ID, "OFFSETOF_KRN_BREAK_ID");
 #endif
+#endif
+
 
 #if (THINKOS_ENABLE_CRITICAL)
 	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
@@ -212,7 +223,7 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
 	thinkos_krn_udelay_calibrate();
 #endif
-//	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
 	__thinkos_krn_core_init(krn);
 
@@ -353,15 +364,12 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	thinkos_krn_exception_init();
 #endif
 
-	DCC_LOG(LOG_TRACE, "IDLE init...");
-	thinkos_krn_idle_init();
+	DCC_LOG(LOG_TRACE, "SYysTick init...");
+	thinkos_krn_systick_init(krn);
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 	__thinkos_krn_time_init(krn);
 #endif
-
-	DCC_LOG(LOG_TRACE, "SYysTick init...");
-	thinkos_krn_systick_init();
 
 #if (THINKOS_ENABLE_CONSOLE)
 	DCC_LOG(LOG_TRACE, "Console init...");
@@ -376,49 +384,46 @@ int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
 	DCC_LOG(LOG_TRACE, "Interrupts init init...");
 	__thinkos_krn_irq_init(krn);
 
-	if (lst == NULL) {
-		bool privileged;
+	DCC_LOG(LOG_TRACE, "IDLE init...");
+	__thinkos_krn_idle_init(krn);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
-		privileged  = __PRIVILEGED(opt);
-#else
-		privileged = false;
+	bool privileged;
+
+	privileged  = __PRIVILEGED(opt);
 #endif
 
-		DCC_LOG(LOG_TRACE, "Main thread init...");
-		thread_no = __thinkos_init_main(krn, sp, opt);
+	DCC_LOG(LOG_TRACE, "Main thread init...");
+	thread_no = __thinkos_init_main(krn, sp, opt);
 
-		/* Set the initial thread */
-		__krn_sched_active_set(krn, thread_no);
-		/* add to the ready queue */
-		__thread_ready_set(krn, thread_no);
+	/* Set the initial thread */
+	__krn_sched_active_set(krn, thread_no);
+	/* add to the ready queue */
+	__thread_ready_set(krn, thread_no);
 
-		if (privileged) {
-			DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
-		 } else {
-			DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
-			DCC_LOG(LOG_TRACE, "Enabling interrupts");
-			/* enable interrupts */
-			thinkos_krn_irq_on();
-			DCC_LOG(LOG_TRACE, "Adjusting privilege");
-			/* enable interrupts */
-			/* Adjust privilege */
-			ctrl |=  CONTROL_nPRIV;
-			cm3_control_set(ctrl);
-		}
+	DCC_LOG(LOG_TRACE, "Enabling interrupts");
+	thinkos_krn_irq_on();
 
-
-		DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
-				 thread_no, cm3_msp_get(), cm3_psp_get(), 
-				 cm3_control_get());
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	if (privileged) {
+		DCC_LOG(LOG_WARNING , "!! Main thread is Privileged !!");
 	} else {
-		/* FIXME: not implemented... */
-		return THINKOS_ENOSYS;
+		DCC_LOG(LOG_TRACE, "Main thread is unprivileged");
+		/* Adjust privilege */
+		ctrl |=  CONTROL_nPRIV;
+		cm3_control_set(ctrl);
 	}
+#endif
+
+	DCC_LOG4(LOG_TRACE, "<%d> MSP=%08x PSP=%08x CTRL=%02x", 
+			 thread_no, cm3_msp_get(), cm3_psp_get(), 
+			 cm3_control_get());
 
 	__thread_enable_all(krn);
 
+#if (DEBUG)
 	__kdump(krn);
+#endif
 
 	return thread_no;
 }

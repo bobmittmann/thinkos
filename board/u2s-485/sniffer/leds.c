@@ -71,7 +71,7 @@ uint32_t clk_time = 0;
 
 void __attribute__((noreturn)) led_task(void)
 {
-	uint32_t clk = __thinkos_ticks();
+	uint32_t clk = thinkos_clock();
 	uint32_t clk_sec = clk + 1000;
 
 	DCC_LOG1(LOG_TRACE, "[%d] started.", thinkos_thread_self());

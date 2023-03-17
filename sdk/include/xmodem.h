@@ -118,10 +118,11 @@ enum yr_state {
 	YR_CAN = -2,
 	YR_ERR = -1,
 	YR_UND = 0,
-	YR_EOT = 1,
+	YR_OK = 1,
 	YR_IDL = 2,
-	YR_HDR = 3,
-	YR_DAT = 4
+	YR_EOT = 3,
+	YR_HDR = 4,
+	YR_DAT = 5
 };
 
 struct ymodem_rcv {

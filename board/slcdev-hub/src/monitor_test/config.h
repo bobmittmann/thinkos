@@ -95,7 +95,6 @@
 #define THINKOS_ENABLE_THREAD_FAULT     1
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              0
 
 #define THINKOS_MONITOR_STACK_SIZE       1024

@@ -92,7 +92,6 @@
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              0
 
 #define THINKOS_ENABLE_MONITOR_CLOCK    1

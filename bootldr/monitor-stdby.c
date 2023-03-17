@@ -401,9 +401,6 @@ static void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 	}
 
-	/* turn the scheduler back on */
-	//thinkos_krn_sched_on();
-
 	DCC_LOG(LOG_TRACE, "done.");
 }
 

@@ -73,10 +73,10 @@ usb_cdc_class_t * usb_cdc_init(const usb_dev_t * usb,
 							   unsigned int strcnt);
 
 int usb_cdc_write(usb_cdc_class_t * cdc,
-				  const void * buf, unsigned int len);
+				  const void * buf, size_t len);
 
 int usb_cdc_read(usb_cdc_class_t * cdc, void * buf,
-				 unsigned int len, unsigned int msec);
+				 size_t len, unsigned int msec);
 
 void usb_connect(usb_cdc_class_t * cdc);
 

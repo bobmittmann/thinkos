@@ -31,6 +31,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_THREAD_ALLOC]      = "ThrdAlloc",
 	[THINKOS_ERR_THREAD_SMALLSTACK] = "SmallStack",
 	[THINKOS_ERR_IRQ_INVALID]       = "IrqInvalid",
+	[THINKOS_ERR_IRQ_TAKEN]         = "IrqTaken",
 	[THINKOS_ERR_OBJECT_INVALID]    = "ObjInvalid",
 	[THINKOS_ERR_OBJECT_ALLOC]      = "ObjAlloc",
 	[THINKOS_ERR_GATE_INVALID]      = "GateInvalid",
@@ -66,13 +67,14 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_APP_DATA_INVALID]  = "AppData",
 	[THINKOS_ERR_APP_CODE_INVALID]  = "AppCode",
 	[THINKOS_ERR_APP_BSS_INVALID]   = "AppBss",
-	[THINKOS_ERR_KRN_NORETTOBASE]   = "NoRettobase",
+	[THINKOS_ERR_APP_ABORT_REQ]     = "AbortReq",
+	[THINKOS_ERR_IDLE_MSP]          = "IdleMSP",
 	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
 	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
 	[THINKOS_ERR_KRN_STACKOVF]      = "MSPStackOvf",
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack",
 	[THINKOS_ERR_IDLE_ENTRY]        = "IdleEntry",
-	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept"
+	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept",
 };
 
 char const * thinkos_krn_err_tag(unsigned int errno)
@@ -80,12 +82,13 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
+#if (THINKOS_ENABLE_KRN_SCHED_BRK)
 void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 {
 	uint32_t act = SCHED_STAT_ACT(stat);
-	uint32_t brk = SCHED_STAT_BRK(stat);
 	uint32_t svc = SCHED_STAT_SVC(stat);
 	uint32_t err = SCHED_STAT_ERR(stat);
+	uint32_t xcp = SCHED_STAT_XCPT(stat);
 
 	(void)act;
 	(void)brk;
@@ -95,8 +98,7 @@ void thinkos_krn_sched_brk_handler(struct thinkos_rt * krn, uint32_t stat)
 	DCC_LOG4(LOG_INFO, VT_PSH VT_FGR " Service: act=%d brk=%d "
 			 "err=%d, svc=%d " VT_POP, act, brk, err, svc);
 }
-
-#define THINKOS_ENABLE_KRN_SCHED_SVC 1
+#endif
 
 #if (THINKOS_ENABLE_KRN_SCHED_SVC) 
 void thinkos_krn_sched_svc_reset(struct thinkos_rt * krn)
@@ -106,7 +108,7 @@ void thinkos_krn_sched_svc_reset(struct thinkos_rt * krn)
 	__thinkos_krn_core_reset(krn);
 }
 
-/* Kernel defered services handler */
+/* Kernel deferred services handler */
 void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 {
 	uint32_t th_act =  SCHED_STAT_ACT(stat);
@@ -142,61 +144,101 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 #endif
 
 /* Kernel error trap services handler */
-void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t stat)
+#if (THINKOS_ENABLE_ERROR_TRAP)
+void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
 {
-	uint32_t th_act =  SCHED_STAT_ACT(stat);
-	uint32_t th_brk = SCHED_STAT_BRK(stat);
-	uint32_t errno = SCHED_STAT_ERR(stat);
-
-	(void)th_act;
-	(void)th_brk;
-	(void)errno;
-
+#if (THINKOS_ENABLE_THREAD_FAULT) || (DEBUG)
+	uint32_t thread;
+	uint32_t errno = SCHED_STAT_ERR(sched);
+#endif
 #if DEBUG
-	if (errno < THINKOS_ERR_MAX) {
-		DCC_LOG4(LOG_WARNING, VT_PSH VT_FRD VT_REV 
-				 " Error %d \"%s\" - act=%d brk=%d " VT_POP, 
-				 errno, thinkos_err_name_lut[errno], th_act, th_brk); 
-	} else {
-		DCC_LOG3(LOG_WARNING, VT_PSH VT_FRD VT_REV 
-				 " Error %d - act=%d brk=%d " 
-				 VT_POP, errno, th_act, th_brk);
+	uint32_t svcno = SCHED_STAT_SVC(sched);
+#endif
+	uint32_t xcpno = SCHED_STAT_XCP(sched);
+
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	thread = __krn_sched_active_get(krn);
+//	errno = __krn_sched_err_get(krn);
+	/* Per thread error code */
+	__thread_errno_set(krn, thread, errno);
+#endif
+
+#if (DEBUG)
+	thread = __krn_sched_active_get(krn);
+	errno = __krn_sched_err_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	if (errno > 0) {
+		if (errno < THINKOS_ERR_MAX) {
+			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
+					 " Error %d \"%s\" - thread=%d" VT_POP, 
+					 errno, thinkos_err_name_lut[errno], thread); 
+		} else {
+			DCC_LOG2(LOG_WARNING, VT_PSH VT_FRD VT_REV 
+					 " Error %d - thread=%d" VT_POP, 
+					 errno, thread);
+		}
 	}
-	mdelay(500);
-//	__tdump(krn);
+
+	
+	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
+			 thread, xcpno, errno, svcno);
+
+	mdelay(1000);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 
-
-  #if (THINKOS_ENABLE_THREAD_FAULT)
-	/* -----------------------------------------------------------------------
-	 * Per thread error. Multiple faulty threads allowed ... 
-	 * -----------------------------------------------------------------------
-	 */
-	__thread_stat_set(krn, th_act, THINKOS_WQ_FAULT, false);
-	/* possibly remove from the time wait queue */
-	__thread_clk_disable(krn, th_act);
-	/* transfer error to thread */
-	__thread_errno_set(krn, th_act, errno);
-	/* clear scheduler error */
-	__krn_sched_err_clr(krn);
-  #else
-	/* -----------------------------------------------------------------------
-	 * Per thread error. Multiple faulty threads allowed ... 
-	 * Global kernel/scheduler error. A single thread fault stops the kernel.
-	 * -----------------------------------------------------------------------
-	 */
-
-	/* Disable all interrupts */
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#endif
+	/* Disable all vectored interrupts on NVIC */
 	__nvic_irq_disable_all();
-  #endif
-
-	/* Set the brake condition */
-	__krn_sched_brk_set(krn, th_act);
-	/* Notify the debug/monitor */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
-
-#endif /* THINKOS_ENABLE_MONITOR */
+	/* Enable CPU interrupts */
+	cm3_cpsie_i();
+	/* Signal monitor */
+	if (xcpno != 0) {
+		monitor_signal_break(MONITOR_KRN_FAULT);
+	} else {
+		monitor_signal_break(MONITOR_THREAD_FAULT);
+	}
+#else
+	__krn_suspend_all(krn);
+#endif
 
 }
 
+void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
+{
+#if (DEBUG)
+	uint32_t errno;
+
+	errno = __krn_sched_err_get(krn);
+
+	DCC_LOG2(LOG_PANIC, VT_PSH VT_FRD VT_REV 
+			 " Krn error %d \"%s\"" VT_POP, 
+			 errno, thinkos_err_name_lut[errno]); 
+	__kdump(krn);
+
+	mdelay(1000);
+#endif
+
+#if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#endif
+//	__thinkos_krn_core_reset(krn);
+	/* Disable all vectored interrupts on NVIC */
+	__nvic_irq_disable_all();
+	/* Enable CPU interrupts */
+	cm3_cpsie_i();
+	/* Signal monitor */
+	monitor_signal_break(MONITOR_KRN_FAULT);
+#else
+	__krn_suspend_all(krn);
+	/*  FIXME: should reboot or do something else... */
+	for(;;);
+#endif
+}
+
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
+ 

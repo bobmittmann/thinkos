@@ -28,19 +28,19 @@
 #endif 
 
 struct thinkos_thread_initializer {
-	uint32_t stack_base;
+	uintptr_t stack_base;
+	uint32_t stack_size;
 	union {
 		uint32_t opt;
 		struct {
-			uint16_t stack_size;
 			uint8_t priority;
 			uint8_t privileged: 1;
 			uint8_t paused: 1;
 			uint8_t res: 6;
 		};
 	};
-	uint32_t task_entry;
-	uint32_t task_exit;
+	uintptr_t task_entry;
+	uintptr_t task_exit;
 	uint32_t task_arg[4];
 	const struct thinkos_thread_inf * inf;
 };

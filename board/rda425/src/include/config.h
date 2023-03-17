@@ -1,24 +1,4 @@
-/* config.h - system configuration
- * --------
- *
- *   ************************************************************************
- *   **            Company Confidential - For Internal Use Only            **
- *   **          Mircom Technologies Ltd. & Affiliates ("Mircom")          **
- *   **                                                                    **
- *   **   This information is confidential and the exclusive property of   **
- *   ** Mircom.  It is intended for internal use and only for the purposes **
- *   **   provided,  and may not be disclosed to any third party without   **
- *   **                prior written permission from Mircom.               **
- *   **                                                                    **
- *   **                        Copyright 2017-2018                         **
- *   ************************************************************************
- *
- */
-
 /** 
- * @file config.h
- * @author Robinson Mittmann <bmittmann@mircomgroup.com>
- * @brief System wide configuration options.
  * 
  * This file is common to the application as well as the bootloader.
  * It holds configuration options for ThinkOS, Bootloader and other 
@@ -124,6 +104,7 @@
 #define THINKOS_MONITOR_STACK_SIZE          1024
 
 #define THINKOS_EXCEPT_STACK_SIZE           512
+#define THINKOS_ENABLE_DEBUG_BASE           1
 #define THINKOS_ENABLE_ERROR_TRAP           1
 #define THINKOS_ENABLE_EXCEPTIONS           1
 #define THINKOS_ENABLE_HARDFAULT            1
@@ -136,7 +117,6 @@
 #define THINKOS_ENABLE_DEBUG_STEP           0
 
 #define THINKOS_ENABLE_MPU                  1
-#define THINKOS_ENABLE_ESCALATE             0
 #define THINKOS_ENABLE_FPU                  1
 
 

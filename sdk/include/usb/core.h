@@ -23,8 +23,8 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifndef __SYS_USB_H__
-#define __SYS_USB_H__
+#ifndef __USB_CORE_H__
+#define __USB_CORE_H__
 
 #include <stdint.h>
 
@@ -452,5 +452,5 @@ extern "C" {
 }
 #endif
 
-#endif /* __SYS_USB_H__ */
+#endif /* __USB_CORE_H__ */
 

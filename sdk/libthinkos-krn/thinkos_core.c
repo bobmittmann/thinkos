@@ -27,14 +27,14 @@
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
 
-struct thinkos_rt thinkos_rt;
+struct thinkos_rt thinkos_rt __attribute__((section(".krn.data")));
 
-#if ((THINKOS_EXCEPT_STACK_SIZE & 0x0000003f) != 0)
+#if (((THINKOS_EXCEPT_STACK_SIZE) & 0x0000003f) != 0)
 #error "THINKOS_EXCEPT_STACK_SIZE must be a multiple 0f 64"
 #endif 
 
-uint32_t __attribute__((aligned(64))) 
-	thinkos_except_stack[THINKOS_EXCEPT_STACK_SIZE / 4];
+uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
+	thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
@@ -93,16 +93,27 @@ void __thinkos_krn_core_init(struct thinkos_rt * krn)
 #endif /* THINKOS_GATE_MAX > 0 */
 
 #if (THINKOS_ENABLE_DEBUG_BKPT)
-	krn->brk_idx = 0;
-	krn->step_id = 0;
+	krn->debug.brk_idx = 0;
+	krn->debug.step_id = 0;
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	krn->step_svc = 0;  /* step at service call bitmap */
-	krn->step_req = 0;  /* step request bitmap */
+	krn->debug.step_svc = 0;  /* step at service call bitmap */
+	krn->debug.step_req = 0;  /* step request bitmap */
 #endif
+#endif
+
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
+	for (i = 0; i < THINKOS_FLASH_MEM_MAX; ++i) {
+		struct thinkos_flash_drv * drv;
+		drv = &krn->flash_drv[i];
+		drv->wopen = 0;
+		drv->ropen = 0;
+	}
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	krn->critical_cnt = 0;
+	/* turn the scheduler back on */
+	__krn_sched_on();
 #endif
 }
 
@@ -136,48 +147,19 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 #endif
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
 	__thinkos_krn_core_init(krn);
-#if THINKOS_ENABLE_EXCEPTIONS
+/* 
+ * FIXME: the exception buffer shouldn't be cleared except by an excplicit call
+ * after debug handling??? 
+*/
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
 	thinkos_krn_exception_reset();
 #endif
 
 #if DEBUG
-//	mdelay(500);
 //	__kdump(krn);
 #endif
 }
-
-#if 0
-void __thinkos_system_reset(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FRD "!! System Reset !!" VT_POP);
-
-	DCC_LOG(LOG_TRACE, "1. ThinkOS core reset...");
-	__thinkos_krn_core_reset(krn);
-
-	
-#if (THINKOS_IRQ_MAX) > 0
-	DCC_LOG(LOG_TRACE, "2. Disable all intrerrupts ...");
-	__thinkos_irq_disable_all();
-	__thinkos_irq_reset_all();
-#endif
-
-#if THINKOS_ENABLE_EXCEPTIONS
-	DCC_LOG(LOG_TRACE, "3. exception reset...");
-	thinkos_krn_exception_reset();
-#endif
-
-	if  (active != THINKOS_THREAD_IDLE) {
-		__thread_active_set(krn, THINKOS_THREAD_VOID);
-		__thinkos_defer_sched();
-	}
-
-	/* Enable Interrupts */
-	DCC_LOG(LOG_TRACE, "4. enablig interrupts...");
-	cm3_cpsie_i();
-}
-#endif
 
 bool thinkos_sched_active(void)
 {
@@ -201,10 +183,6 @@ bool thinkos_dbgmon_active(void)
 
 bool thinkos_kernel_active(void)
 {
-#if 0
-	return (CM3_SCB->shcsr & (SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | 
-							  SCB_SHCSR_SVCALLACT)) ? true : false;
-#endif
 	return (CM3_SCB->shcsr & (SCB_SHCSR_PENDSVACT | 
 							  SCB_SHCSR_SVCALLACT)) ? true : false;
 }
@@ -247,18 +225,61 @@ int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[],
 						  unsigned int from, unsigned int cnt)
 {
 #if (THINKOS_ENABLE_PROFILING)
-	unsigned int to = from + cnt;
-
-	if (to > __KRN_THREAD_LST_SIZ)
+	if (from >= __KRN_THREAD_LST_SIZ)
 		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
 
 	__krn_cyccnt_flush(krn, __krn_sched_active_get(krn));
 	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
 
-	return to;
+	return cnt;
 #else
 	return -THINKOS_ENOSYS;
 #endif
 }
 
+int __krn_threads_inf_get(struct thinkos_rt * krn, 
+						  const struct thinkos_thread_inf * inf[],
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
+int __thread_wq_lookup(struct thinkos_rt * krn, unsigned int th)
+{
+	uint32_t msk = (1 << (th - 1));
+	int i;
+
+	for (i = THINKOS_OBJECT_LAST; i >= THINKOS_OBJECT_FIRST; --i) {
+		if (krn->wq_lst[i] & msk)
+			break;
+	}
+	
+	return i;
+}
+
+
+void thinkos_krn_sched_off(struct thinkos_rt * krn)
+{
+	__krn_sched_off();
+}
+
+void thinkos_krn_sched_on(struct thinkos_rt * krn)
+{
+	__krn_sched_on();
+}
 

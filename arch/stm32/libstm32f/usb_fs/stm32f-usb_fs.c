@@ -87,10 +87,10 @@ void stm32f_usb_pullup(struct stm32f_usb * usb, bool connect)
 #if defined(STM32L4X)
 	/* Connect the internal pull up */
 	if (connect) {
-		DCC_LOG(LOG_TRACE, "Connecting Pull Up");
+		DCC_LOG(LOG_INFO, "Connecting Pull Up");
 		usb->bcdr |= USB_DPPU;
 	} else {
-		DCC_LOG(LOG_TRACE, "Disconnecting Pull Up");
+		DCC_LOG(LOG_INFO, "Disconnecting Pull Up");
 		usb->bcdr &= ~USB_DPPU;
 	}
 #endif

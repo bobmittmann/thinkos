@@ -87,7 +87,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
                                unsigned int idx, 
                                struct thinkos_flash_drv * drv);
 
-int thinkos_flash_drv_init(unsigned int idx, 
+int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx, 
 						   const struct thinkos_flash_desc * desc);
 
 #ifdef __cplusplus

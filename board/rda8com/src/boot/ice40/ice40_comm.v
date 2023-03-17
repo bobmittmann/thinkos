@@ -1,15 +1,6 @@
 module ice40_comm (
 	input  MCLK,
-	input  MODE,
 	
-	input  UART_RXD,
-	output UART_TXD,
-
-	inout  COMM,
-	
-	input  PM_RXD,
-	output PM_TXD,
-
 	input  A_RXD,
 	output A_TXD,
 	output A_TXEN,
@@ -27,19 +18,9 @@ module ice40_comm (
 	output D_TXEN,
 	
 	input  SPI_NSS,
-	input  SPI_MISO,
+	output SPI_MISO,
 	input  SPI_MOSI,
 	input  SPI_SCK,
-
-	input  SPI_NSS1,
-	output SPI_MISO1,
-	input  SPI_MOSI1,
-	input  SPI_SCK1,
-
-	input  SAI_FS,
-	input  SAI_MCLK,
-	input  SAI_SCK,
-	input  SAI_SD,
 
 	input  SEL1,
 	input  SEL2,
@@ -49,7 +30,7 @@ module ice40_comm (
 	input  COMM1,
 	input  TDMDAT1,
 	input  TDMFS1,
-	output TDMCK1,
+	input  TDMCK1,
 
 	input  SEL5,
 	input  SEL6,
@@ -59,49 +40,86 @@ module ice40_comm (
 	input  COMM2,
 	input  TDMDAT2,
 	input  TDMFS2,
-	output TDMCK2,
+	input  TDMCK2,
 
-	input  QIO0,
-	input  QIO1,
-	input  QIO2,
-	input  QIO3,
-	input  QCLK,
-	input  QNCS,
-	
-	input  I2C_SCL,
-	input  I2C_SDA
+	input  NET_RXD,
+	output NET_TXD,
+
+	input  COMM,
+
+	input  SAI_SD,
+	input  SAI_MCLK,
+	input  SAI_SCK,
+	input  SAI_FS,
+
+	output LED1,
+	output LED2,
+
+	output IO1,
+	output IO2,
+
+	output TP12,
+	output TP13,
+
+	output TP71,
+	input TP72
+
+
 );
 
 	localparam MCLK_HZ = 79027200;
+	localparam HCLK_HZ = 11289600;
+	localparam DCLK_HZ = 2822400;
+	localparam ACLK_HZ = 22050;
+	localparam SCLK_HSZ = 10;
+
+	wire clk;
+	wire rst;
+
+	wire spi_latch;
+	wire [15:0] spi_data;
+	reg  [1:0] spi_sync;
 
 	wire [15:0] stat;
-	wire [15:0] ctrl;
-	wire clk;
+	reg  [15:0] ctrl;
+
+	reg sig;
+	reg [1:0]sw;
+	reg [1:0]st;
+
+	wire dsp_clk;
 	wire aux_clk;
 	wire slow_clk;
-	wire rst;
 
 	assign clk = MCLK;
 	assign rst = 0;
-	wire brg_clk1;
 
-/*	clkdiv #(
-		.DIV(16)
+
+	clkdiv #(
+		.DIV(28)
 	) clk1 (
 		.clk_i(clk),
+		.rst_i(rst),
+		.clk_o(dsp_clk)
+	);
+
+	clkdiv #(
+		.DIV(128)
+	) clk2 (
+		.clk_i(dsp_clk),
 		.rst_i(rst),
 		.clk_o(aux_clk)
 	);
 
 	clkdiv #(
-		.DIV(16)
-	) clk2 (
+		.DIV(2205)
+	) clk3 (
 		.clk_i(aux_clk),
 		.rst_i(rst),
 		.clk_o(slow_clk)
 	);
   
-  */
+  
 	spi_slave  #(
 		.IO_COUNT(16),
 		.CPOL(0),
@@ -109,56 +127,105 @@ module ice40_comm (
 	) slv (
 		.rst_i(rst),
 
-		.nss_i(SPI_NSS1),
-		.sck_i(SPI_SCK1),
-		.sdi_i(SPI_MOSI1),
-		.sdo_o(SPI_MISO1),
+		.nss_i(SPI_NSS),
+		.sck_i(SPI_SCK),
+		.sdi_i(SPI_MOSI),
+		.sdo_o(SPI_MISO),
 
 		.data_i(stat),
-		.data_o(ctrl)
+		.data_o(spi_data),
+		.latch_o(spi_latch)
 	);
 
-	pfracbrg #(.CLK_HZ(8000000),
-			  .BAUDRATE(2666666),
-			  .OVERSAMPLE(1),
-			  .RESOLUTION(16),
-			  .BLOCKSIZE(2))
-		u1 (.clk_i(clk), 
-			.rst_i(rst),
-			.clr_i(0),
-			.brg_clk_o(brg_clk1));
+
+	always @(posedge dsp_clk)
+	begin
+		spi_sync[1] <= spi_sync[0];
+		if ((spi_sync[0] ^ spi_sync[1]) & spi_sync[0])
+		begin
+			ctrl <= spi_data;
+		end
+	end
+
+
+	always @(posedge spi_latch or posedge spi_sync[1])
+	begin
+		if (spi_sync[1])
+			spi_sync[0] <= 0;
+		else
+			spi_sync[0] <= 1'b1;
+		
+	end
+
 
 	assign stat[0] = SEL1;
 	assign stat[1] = SEL2;
 	assign stat[2] = SEL3;
 	assign stat[3] = SEL4;
-	assign stat[7] = CTL1;
-	assign stat[4] = COMM1;
-	assign stat[5] = TDMDAT1;
-	assign stat[6] = brg_clk1;
-//	assign TDMCK1 = ctrl[0];
+	assign stat[4] = CTL1;
+	assign stat[5] = COMM1;
+	assign stat[6] = TDMDAT1;
+	assign stat[7] = TDMFS1;
+	assign stat[8] = TDMCK1;
 
-	assign stat[8] = SEL5;
-	assign stat[9] = SEL6;
-	assign stat[10] = SEL7;
-	assign stat[11] = SEL8;
-	assign stat[15] = CTL2;
-	assign stat[12] = COMM2;
-	assign stat[13] = TDMDAT2;
-	assign stat[14] = TDMFS2;
-	assign TDMCK2 = ctrl[1];
 
-	assign A_TXD = ctrl[8];
-	assign B_TXD = ctrl[9];
-	assign C_TXD = ctrl[10];
-	assign D_TXD = ctrl[11];
+	assign stat[9] = SEL5;
+	assign stat[10] = SEL6;
+	assign stat[11] = SEL7;
+	assign stat[12] = SEL8;
+	assign stat[13] = CTL2;
+	assign stat[14] = COMM2;
+	assign stat[15] = TDMDAT2;
+//	assign stat[15] = TDMFS2;
 
-	assign A_TXEN = ctrl[12];
-	assign B_TXEN = ctrl[13];
-	assign C_TXEN = ctrl[14];
-	assign D_TXEN = ctrl[15];
+	assign TDMCK2 = slow_clk;
 
-	assign UART_TXD = PM_RXD;
-	assign PM_TXD = UART_RXD;
+/*	assign SEL5 = ctrl[0];
+	assign SEL6 = ctrl[1];
+	assign SEL7 = ctrl[2];
+	assign SEL8 = ctrl[3];
+	assign CTL2 = ctrl[4];
+	assign COMM2 = ctrl[5];
+	assign TDMDAT2 = ctrl[6];
+	assign TDMFS2 = ctrl[7];
+	assign TDMCK2 = ctrl[8];
+*/
+
+	assign A_TXD = 1;
+	assign B_TXD = 1;
+	assign C_TXD = 1;
+	assign D_TXD = 1;
+	assign A_TXEN = 0;
+	assign B_TXEN = 0;
+	assign C_TXEN = 0;
+	assign D_TXEN = 0;
+
+	assign LED1 = 0;
+	assign LED2 = 0;
+
+	assign IO1 = st[0];
+	assign IO2 = st[1];
+
+	assign TP71 = sig;
+
+	always @(posedge aux_clk)
+	begin
+		sig <= !sig;
+		sw[0] <= TP72;
+		sw[1] <= sw[0];
+		if (sw[0] ^ sw[1])
+			st <= 2'b10;
+		else if (~(sw[0] | sw[1]))
+			st <= 2'b01;
+		else	
+			st <= 2'b00;
+
+	end
+
+
+//	assign TP12 = IO1;
+//	assign TP13 = IO2;
+
+
 endmodule
 

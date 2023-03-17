@@ -30,7 +30,7 @@
 
 extern struct file * null;
 
-const struct fileop null_fileop;
+extern const struct fileop null_fileop;
 
 #ifdef __cplusplus
 extern "C" {

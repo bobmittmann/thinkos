@@ -51,26 +51,6 @@ void __nvic_irq_clrpend_all(void);
 
 void __nvic_irq_enable(void);
 
-static inline void __attribute__((always_inline)) thinkos_krn_sched_off(void) {
-	/* rise the BASEPRI to stop the scheduler */
-	asm volatile ("msr BASEPRI, %0\n" : : "r" (SCHED_PRIORITY));
-}
-
-static inline void __attribute__((always_inline)) thinkos_krn_sched_on(void) {
-	/* return the BASEPRI to the default to reenable the scheduler. */
-	asm volatile ("msr BASEPRI, %0\n" : : "r" (0x00));
-}
-
-/* disable interrupts and fault handlers (set fault mask) */
-static inline void __attribute__((always_inline)) thinkos_krn_fault_off(void) {
-	asm volatile ("cpsid f\n");
-}
-
-/* enable interrupts and fault handlers (set fault mask) */
-static inline void __attribute__((always_inline)) thinkos_krn_fault_on(void) {
-	asm volatile ("cpsie f\n");
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif

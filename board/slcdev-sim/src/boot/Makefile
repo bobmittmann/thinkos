@@ -19,36 +19,38 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-PROJECT_ROOT = ../../
-THINKOS_DIR = $(PROJECT_ROOT)/../..
+VERSION_DATE = "2020-11-18"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "5"
+
+THINKOS_DIR = ../../../..
+
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
+BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+MKCMD  = python $(TOOLS_DIR)/mkcmd.py
+PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-VERSION_DATE = "2020-05-29"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "3"
+CFILES = board.c
+#monitor.c 
 
-PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
+		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
 
-CFILES = $(THINKOS_DIR)/boot/boot.c $(THINKOS_DIR)/boot/monitor.c\
-		 board.c 
+SDK_LIBS = util thinkos-krn thinkos-mon thinkos-btl xmodem ice-comm
+ARCH_LIBS = stm32f 
 
-LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libcm3 $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-dbg \
-		  $(SDK_DIR)/libice-comm 
+LIBS = $(SDK_LIBS) $(ARCH_LIBS)
 
-LIBS = cm3 stm32f util thinkos-krn thinkos-dbg gcc ice-comm 
-
-INCPATH = $(SDK_DIR)/include ../include
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os -Werror -Wall -Wextra -Wpedantic -Wdouble-promotion -Wno-unused-parameter -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -g -mno-unaligned-access 
+CFLAGS = -Os
 
 MACH = stm32l151xb
 KRN_CODE_SIZE = 8192
-KRN_DATA_SIZE = 2048
-include $(ARCH_DIR)/mk/stm32.mk
+KRN_DATA_SIZE = 2048 
+include $(ARCH_DIR)/mk/stm32-krn.mk
 

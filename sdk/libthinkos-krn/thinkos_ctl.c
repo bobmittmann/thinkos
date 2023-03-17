@@ -21,29 +21,49 @@
 
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
+#include <sys/sysclk.h>
 
 #if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
 
-static void thinkos_krn_abort(struct thinkos_rt * krn)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
-
-//	__thinkos_krn_core_reset(krn);
-	/* request scheduler to stop everything */
-	__krn_sched_svc_set(krn, 1);
-	/* Make sure to run the scheduler */
-	__krn_defer_sched(krn);
+void __thinkos_arch_esn_get(uint32_t esn[]) {
 }
 
-void thinkos_ctl_svc(int32_t * arg, unsigned int self)
+void __thinkos_arch_version_get(struct thinkos_version * ver)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
-	unsigned int req = arg[0];
-	int32_t * pval;
-	const uint32_t ** ptr;
+}
 
-	arg[0] = 0;
+void __thinkos_arch_release_get(struct thinkos_release * rel)
+{
+}
+
+void thinkos_arch_esn_get(uint32_t esn[])
+	__attribute__ ((weak, alias ("__thinkos_arch_esn_get")));
+
+
+void thinkos_arch_version_get(struct thinkos_version * ver)
+	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
+
+void thinkos_arch_release_get(struct thinkos_release * rel)
+	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
+
+
+static void thinkos_krn_abort(struct thinkos_rt * krn, int ret)
+{
+	DCC_LOG(LOG_WARNING, VT_PSH VT_FGR " /!\\ Kernel Abort /!\\ " VT_POP);
+	/* request scheduler to stop everything */
+	__krn_sched_err_set(krn, THINKOS_ERR_APP_ABORT_REQ);
+	/* Make sure to run the scheduler */
+	__krn_sched_defer(krn);
+}
+
+void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
+{
+	unsigned int req = arg[0];
+	const uint32_t ** ptr;
+	int32_t * pval;
+
+	arg[4] = THINKOS_ENOSYS;
 	
 	DCC_LOG(LOG_MSG, ".........................");
 
@@ -58,8 +78,14 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 		*pval = udelay_factor;
 		break;
 
-	case THINKOS_CTL_ABORT:
-		thinkos_krn_abort(krn);
+	case THINKOS_CTL_ABORT: {
+		int ret = (int)arg[1];
+		thinkos_krn_abort(krn,  ret);
+	}
+		break;
+	
+	case THINKOS_CTL_ERROR:
+		__THINKOS_ERROR(self, arg[1]);
 		break;
 
 /* XXX: Deprecated
@@ -76,22 +102,32 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 		}
 		break;
 
+	case THINKOS_CTL_ESN_GET:
+		thinkos_arch_esn_get((uint32_t *)arg[1]);
+		break;
+		
+	case THINKOS_CTL_VERSION_GET:
+		thinkos_version_get((struct thinkos_version *)arg[1]);
+		break;
+
+	case THINKOS_CTL_RELEASE_GET:
+		thinkos_arch_release_get((struct thinkos_release *)arg[1]);
+		break;
+
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
 #if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		unsigned int cnt;
-
-		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
-		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * cnt); 
-		arg[0] = cnt;
+		arg[4] = __krn_threads_inf_get(krn, 
+				(const struct thinkos_thread_inf **)arg[1], 
+				(unsigned int)arg[2] >> 16,
+				(unsigned int)arg[2] & 0xffff);
 		}
 		break;
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
-		arg[0] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
+		arg[4] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
 									   (unsigned int)arg[2] >> 16,
 									   (unsigned int)arg[2] & 0xffff);
 		break;
@@ -99,14 +135,14 @@ void thinkos_ctl_svc(int32_t * arg, unsigned int self)
 
 	case THINKOS_CTL_CYCCNT:
 		/* Return the current value of the CPU cycle counter */
-		arg[0] = CM3_DWT->cyccnt;
+		arg[4] = CM3_DWT->cyccnt;
 		break;
 #endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
-		arg[0] = THINKOS_EINVAL;
+		arg[4] = THINKOS_EINVAL;
 		break;
 	}
 }

@@ -96,8 +96,8 @@ enum thinkos_err {
  * @THINKOS_OBJ_PAUSED: thread paused list 
  * @THINKOS_OBJ_CANCELED: thread canceled list 
  * @THINKOS_OBJ_TMSHARE: time share waiting queue 
- * @THINKOS_OBJ_COMMSEND  : comm channel send waiting queue 
- * @THINKOS_OBJ_COMMRECV: comm channel recv waiting queue 
+ * @THINKOS_OBJ_COMMTX : comm channel send waiting queue 
+ * @THINKOS_OBJ_COMMRX : comm channel recv waiting queue 
  * @THINKOS_OBJ_IRQ: IRQ (Interrupt request) waiting queue 
  * @THINKOS_OBJ_DMA: IRQ (Direct Memory Access) waiting queue 
  * @THINKOS_OBJ_FLASH_MEM: Flesh Memory operation waiting queue 
@@ -120,8 +120,8 @@ enum thinkos_obj_kind {
 	THINKOS_OBJ_PAUSED    = 12,
 	THINKOS_OBJ_CANCELED  = 13,
 	THINKOS_OBJ_TMSHARE   = 14,
-	THINKOS_OBJ_COMMSEND  = 15,
-	THINKOS_OBJ_COMMRECV  = 16,
+	THINKOS_OBJ_COMMTX    = 15,
+	THINKOS_OBJ_COMMRX    = 16,
 	THINKOS_OBJ_IRQ       = 17,
 	THINKOS_OBJ_DMA       = 18,
 	THINKOS_OBJ_FLASH_MEM = 19,
@@ -294,8 +294,8 @@ extern "C" {
  *
  */
 
-int thinkos_krn_init(unsigned int opt, const struct thinkos_mem_map * map,
-					 const struct thinkos_thread_initializer * lst[]);
+int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+					 const struct thinkos_mem_map * map);
 
 /**
  * thinkos_krn_nrt_init() - Initializes the ThinkOS non-real-time extension.
@@ -329,8 +329,8 @@ int thinkos_reboot(uint32_t key);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_app_exec(uint32_t addr);
-
+int thinkos_app_exec(uintptr_t addr, uintptr_t arg0, 
+					 uintptr_t arg1, uintptr_t arg2, uintptr_t arg3);
 
 /* ---------------------------------------------------------------------------
  *  Object Allocation
@@ -912,8 +912,8 @@ int thinkos_flag_timedtake(int flag, unsigned int ms);
 /** 
  * DOC: Gates
  *
- * Gates are syncronization objects which provide a convenient way of 
- * creating mutual exclusion acess to 
+ * Gates are synchronization objects which provide a convenient way of 
+ * creating mutual exclusion access to 
  * code blocks signaled by interrupt handlers...
  * 
  * A gate have a lock flag and a signal flag. A gate can be in one of 
@@ -983,7 +983,7 @@ int thinkos_gate_wait(int gate);
  *
  *
  * Description:
- * If the gate is open this function return imediatelly, otherwise it will
+ * If the gate is open this function return immediately, otherwise it will
  * block the calling thread.
  *
  */
@@ -1039,7 +1039,7 @@ int thinkos_gate_close(int gate);
  * @open: Indicate the state of the gate on exit. 
  * - @p open > 0, the gate will be left open, allowing for another thread 
  * to enter the gate.
- * - @p open == 0, the gate will stay closed if not signaled, in wich case
+ * - @p open == 0, the gate will stay closed if not signaled, in which case
  * it will open accordingly.
  *
  * Return:
@@ -1105,7 +1105,7 @@ int	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void));
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_clocks(uint32_t * clk[]);
+//int thinkos_clocks(uint32_t clk[]);
 
 /**
  * thinkos_udelay_factor() - get udelay calibration factor.
@@ -1119,8 +1119,6 @@ int thinkos_udelay_factor(int32_t * factor);
 int thinkos_critical_enter(void);
 
 int thinkos_critical_exit(void);
-
-int thinkos_escalate(int (* call)(void *), void * arg);
 
 
 /** @defgroup trace Real-time trace kernel support
@@ -1160,7 +1158,7 @@ int thinkos_trace_getnext(int id, struct trace_entry * entry);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_console_write(const void * buf, unsigned int len);
+ssize_t thinkos_console_write(const void * buf, size_t len);
 
 /**
  * thinkos_console_read() -  read from console driver.
@@ -1170,7 +1168,7 @@ int thinkos_console_write(const void * buf, unsigned int len);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_console_read(void * buf, unsigned int len);
+ssize_t thinkos_console_read(void * buf, size_t len);
 
 /**
  * thinkos_console_timedread() - read from console driver with timeout.
@@ -1182,7 +1180,7 @@ int thinkos_console_read(void * buf, unsigned int len);
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_ETIMEDOUT if
  * it times out, OK %THINKOS_OK otherwise. 
  */
-int thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms);
+ssize_t thinkos_console_timedread(void * buf, size_t len, int32_t ms);
 
 int thinkos_console_is_connected(void);
 

@@ -7,7 +7,7 @@
 
 /* --- bin2hex.py: file size --- */
 
-#define SIZEOF_ICE40HX1K_BIN 1913
+#define SIZEOF_ICE40HX1K_BIN 2066
 
 
 /* --- bin.hex.py: file content --- */
@@ -16,3 +16,4 @@ extern const uint8_t ice40hx1k_bin[];
 
 
 #endif /* __ICE40HX1K_H__ */ 
+

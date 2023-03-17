@@ -27,8 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #ifndef CLOCK_DRIFT_MAX
-//#define CLOCK_DRIFT_MAX FLOAT_Q31(0.000200)
-/* FIXME: change the max drift to 200ppm */
+/* max drift: 500ppm */
 #define CLOCK_DRIFT_MAX FLOAT_Q31(0.000500)
 #endif
 
@@ -102,31 +101,47 @@ uint64_t time_clock_timestamp(struct krn_clock * clk)
 	return cyc + (((int64_t) diff * clk->hw.k) >> 8);
 }
 
+#define THINKOS_TIME_EPOCH ((uint64_t)0 << 32)
+
+#ifndef THINKOS_TIME_EPOCH
+#define THINKOS_TIME_EPOCH ((uint64_t)1606149342LL << 32)
+#endif
+
 void __thinkos_krn_time_init(struct thinkos_rt * krn)
 {
-    struct krn_clock * clk = &thinkos_rt.time_clk;
-	uint32_t div = 487530;
+	struct cm3_systick * systick = CM3_SYSTICK;
 
-	clk->resolution = THINKOS_TIME_SYSTICK_INC;
-	clk->increment = clk->resolution;
-	clk->realtime_offs = (uint64_t)1606149342LL << 32;
+	krn->clk.resolution = THINKOS_TIME_SYSTICK_INC;
+	krn->clk.increment = krn->clk.resolution;
+	krn->clk.realtime_offs.sec = THINKOS_TIME_EPOCH >> 32;
+	krn->clk.realtime_offs.frac = 0;
+	krn->clk.timestamp.sec = 0;
+	krn->clk.timestamp.frac = 0;
+	/* XXX: assume system tick = 1ms */
+	krn->clk.k = (uint64_t) (1LL << 32) / (1000 * systick->rvr);
 
-
-	clk->hw.cycles = 0;
-	clk->hw.k = (uint64_t) (1LL << (32 + 8)) / div;
-
-	DCC_LOG1(LOG_TRACE, "resolution=%d", clk->resolution);
+	DCC_LOG1(LOG_TRACE, "resolution=%d", krn->clk.resolution);
 }
 
-static uint64_t clock_timestamp(struct krn_clock * clk)
+uint64_t __krn_clock_timestamp(struct thinkos_rt * krn)
 {
-    register uint64_t ts;
+	struct cm3_systick * systick = CM3_SYSTICK;
+	union krn_time ts;
     register uint32_t dt;
+    register uint32_t cvr0;
+    register uint32_t cvr1;
+    register uint32_t cnt;
 
-	ts = clk->timestamp;
+	do {
+		cvr0 = systick->cvr;
+		ts.sec = krn->clk.timestamp.sec;
+		ts.frac = krn->clk.timestamp.frac;
+		cvr1 = systick->cvr;
+	} while (cvr0 > cvr1);
 
     /* hardware timer ticks */
-//  dt = ((uint64_t)clk->increment * cnt0 * clk->tmr_k + (1LL << 30)) >> 31;
+	cnt = systick->rvr - cvr1;
+    dt = (((uint64_t)cnt * krn->clk.k) + (1LL << 30)) >> 31;
 	dt = 0;
 
 #if 0
@@ -145,28 +160,33 @@ static uint64_t clock_timestamp(struct krn_clock * clk)
     }
 #endif
 
-    return ts + dt;
+    return ts.u64 + dt;
 }
 
 
-void thinkos_time_svc(int32_t * arg, unsigned int self)
+void thinkos_time_svc(int32_t arg[], unsigned int self, 
+					  struct thinkos_rt * krn) 
 {
-    struct krn_clock * clk = &thinkos_rt.time_clk;
+//    struct krn_clock * clk = &krn->time_clk;
 	unsigned int oper = arg[0];
 	union krn_time tm;
 
-	tm.u64 = clock_timestamp(clk);
+	tm.u64 = __krn_clock_timestamp(krn);
 
 	switch (oper) {
 	case THINKOS_TIME_MONOTONIC_GET:
-		arg[0] = tm.sec;
-		arg[1] = tm.frac;
+		arg[1] = tm.sec;
+		arg[0] = tm.frac;
+		DCC_LOG2(LOG_TRACE, "ts=%d.%06d", tm.sec, 
+				 (((uint64_t)tm.frac * 1000000) >> 32));
 		break;
 
 	case THINKOS_TIME_REALTIME_GET:
-		tm.u64 += clk->realtime_offs;
-		arg[0] = tm.sec;
-		arg[1] = tm.frac;
+//		tm.u64 += clk->realtime_offs;
+		arg[1] = tm.sec;
+		arg[0] = tm.frac;
+		DCC_LOG2(LOG_TRACE, "ts=%d.%06d", tm.sec, 
+				 (((uint64_t)tm.frac * 1000000) >> 32));
 		break;
 
 	case THINKOS_TIME_MONOTONIC_SET:
@@ -180,7 +200,10 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 			x.sec = arg[1];
 			x.frac = arg[2];
 			
-			clk->realtime_offs = (int64_t)(x.u64 - tm.u64);
+			x.u64 = (int64_t)(x.u64 - tm.u64);
+
+			krn->clk.realtime_offs.sec = x.sec;
+			krn->clk.realtime_offs.frac = x.frac;
 		}
 		arg[0] = THINKOS_OK;
 		break;
@@ -190,16 +213,24 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 	   This will adjust the clock offset only. */
 		{
 			union krn_time dt;
+			union krn_time x;
 
 			dt.sec = arg[1];
 			dt.frac = arg[2];
-			
-			clk->realtime_offs += (int64_t)(dt.u64);
+		
+			x.sec = krn->clk.realtime_offs.sec;
+			x.frac = krn->clk.realtime_offs.frac;
+
+			x.u64 += dt.u64;
+
+			krn->clk.realtime_offs.sec = x.sec;
+			krn->clk.realtime_offs.frac = x.frac;
 		}
 		arg[0] = THINKOS_OK;
 		break;
 
 	case THINKOS_TIME_REALTIME_COMP:
+		/* Drift compensation */
 		{
 			int32_t drift = arg[1];
 			int32_t est_err = arg[2];
@@ -218,7 +249,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 			//	clk->jitter = (clk->jitter + est_err) / 2;
 
 
-			clk_d = Q31_MUL(drift, clk->resolution);
+			clk_d = Q31_MUL(drift, krn->clk.resolution);
 
 			/* calculate the drift compenastion per tick */
 			//  clk->drift_comp = Q31_MUL(drift, CLK_Q31(clk->resolution));
@@ -229,7 +260,7 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 		//	clk->drift_comp = q31_d;
 
 			/* Update the increpent per tick */
-			clk->increment = clk->resolution + clk_d;
+			krn->clk.increment = krn->clk.resolution + clk_d;
 
     /* return the corrected drift adjustment per second.
        Q31 fixed point format */
@@ -245,6 +276,18 @@ void thinkos_time_svc(int32_t * arg, unsigned int self)
 		arg[0] = THINKOS_EINVAL;
 		break;
 	}
+}
+
+int krn_fmt_clk_realtime(struct thinkos_rt * krn, char * s) 
+{
+	union krn_time tm;
+	uint32_t frac;
+
+	tm.u64 = __krn_clock_timestamp(krn);
+
+	frac = ((uint64_t)tm.frac * 1000LL + (1LL << 31)) >> 32;
+
+	return krn_snprintf(s, 16, "%d.%03d", tm.sec, frac);
 }
 
 #endif /* (THINKOS_ENABLE_DATE_AND_TIME) */

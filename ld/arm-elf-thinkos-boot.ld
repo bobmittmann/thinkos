@@ -43,6 +43,8 @@ __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 
 EXTERN(_reset)
+/*EXTERN(_isr) */
+EXTERN(__nvic_vectors)
 EXTERN(ice_comm_blk)
 EXTERN(cm3_nmi_isr)
 EXTERN(cm3_hard_fault_isr)
@@ -141,9 +143,10 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
+	. = ALIGN(3);
+
 	.data :
 	{
-		. = ALIGN(3);
 		/* create a global symbol marking the start of the .data section  */
 		PROVIDE (__data_start = . );
 		/* all .data sections  */
@@ -158,6 +161,8 @@ SECTIONS
 
 	.bss :
 	{
+		*(.krn.data .krn.data*)
+		*(.krn.stack .krn.stack*)
 		/* all .bss sections  */
 		*(.bss .bss*)
 	} >"DATA"

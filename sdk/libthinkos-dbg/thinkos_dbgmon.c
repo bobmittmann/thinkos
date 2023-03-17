@@ -109,15 +109,15 @@ int dbgmon_thread_inf_get(unsigned int id, struct dbgmon_thread_inf * inf)
 		return -1;
 	}
 
-	if (thread_id == xcpt->sched.active) {
+	if (thread_id == xcpt->thread) {
 		ctx = &xcpt->ctx;
 		errno = xcpt->errno;
 		pc = ctx->pc;
-		sp = xcpt->psp;
+		sp = xcpt->sp;
 	} else if (thread_id == THINKOS_THREAD_IDLE) {
 		ctx  = __thinkos_idle_ctx();
 		pc = ctx->pc;
-		sp = xcpt->msp;
+		sp = xcpt->sp;
 	} else {
 		if (thread_id == (unsigned int)thinkos_dbgmon_rt.break_id)
 			errno = thinkos_dbgmon_rt.errno;
@@ -434,7 +434,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 	DCC_LOG2(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 			 "step_req=%08x thread_id=%d"
 			 _ATTR_POP_, 
-			 thinkos_rt.step_req, thread_id + 1);
+			 thinkos_rt.debug.step_req, thread_id + 1);
 
 	if (CM3_DCB->dhcsr & DCB_DHCSR_C_DEBUGEN) {
 		DCC_LOG(LOG_ERROR, "can't step: DCB_DHCSR_C_DEBUGEN !!");
@@ -450,7 +450,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 			return -1;
 		}
 
-		if (__bit_mem_rd(&thinkos_rt.step_req, thread_id)) {
+		if (__bit_mem_rd(&thinkos_rt.debug.step_req, thread_id)) {
 			DCC_LOG1(LOG_WARNING, "thread %d is step waiting already!", 
 					 thread_id + 1);
 			return -1;
@@ -458,7 +458,7 @@ int dbgmon_thread_step(unsigned int thread_id, bool sync)
 
 		DCC_LOG(LOG_MSG, "setting the step_req bit");
 		/* request stepping the thread  */
-		__bit_mem_wr(&thinkos_rt.step_req, thread_id, 1);
+		__bit_mem_wr(&thinkos_rt.debug.step_req, thread_id, 1);
 		/* resume the thread */
 		__thinkos_thread_resume(thread_id);
 		/* make sure to run the scheduler */
@@ -479,7 +479,7 @@ int dbgmon_thread_step_get(void)
 	struct thinkos_context * ctx;
 	int thread_id;
 
-	if ((thread_id = thinkos_rt.step_id) >= 0) {
+	if ((thread_id = thinkos_rt.debug.step_id) >= 0) {
 		if ((ctx = __thinkos_thread_ctx_get(thread_id)) == NULL)
 			return -1;
 	}
@@ -489,7 +489,7 @@ int dbgmon_thread_step_get(void)
 
 void dbgmon_thread_step_clr(void)
 {
-	thinkos_rt.step_id = -1;
+	thinkos_rt.debug.step_id = -1;
 }
 
 #endif /* THINKOS_ENABLE_DEBUG_STEP */
@@ -743,7 +743,7 @@ int thinkos_dbgmon_isr(struct armv7m_basic_frame * frm, uint32_t ret)
 
 #if (THINKOS_ENABLE_DEBUG_STEP)
 		if (dfsr & SCB_DFSR_HALTED) {
-			unsigned int thread_id = thinkos_rt.step_id;
+			unsigned int thread_id = thinkos_rt.debug.step_id;
 
 			uint32_t demcr;
 

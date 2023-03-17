@@ -60,14 +60,15 @@
 
 void __attribute__((noreturn)) app_task(void *, unsigned int);
 
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg, uintptr_t sta, 
+					   struct thinkos_rt * krn);
 
 /*
    Default Monitor Task
  */
-void __attribute__((noreturn)) 
-standby_monitor_task(const struct monitor_comm * comm, void * arg)
+void __attribute__((noreturn)) standby_monitor_task(const struct monitor_comm * comm, 
+													void * arg, uintptr_t sta, 
+													struct thinkos_rt * krn)
 {
 	const struct thinkos_board * board;
 	uint32_t sigmask = 0;
@@ -113,19 +114,11 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 					 cm3_sp_get());
 			break;
 
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
-
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 			break;
 
 		case MONITOR_APP_EXEC:
@@ -139,13 +132,13 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_create(comm, C_TASK(board->default_task), 
-										 C_ARG(NULL), true);
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
+//				if (board->default_task != NULL) {
+//					DCC_LOG(LOG_TRACE, "default_task()...!");
+//					monitor_thread_create(comm, C_TASK(board->default_task), 
+//										 C_ARG(NULL), true);
+//				} else {
+//					DCC_LOG(LOG_TRACE, "no default app set!");
+//				}
 			}
 			DCC_LOG(LOG_TRACE, "APP_EXEC done");
 			break;
@@ -174,7 +167,7 @@ standby_monitor_task(const struct monitor_comm * comm, void * arg)
 
 			/* FALLTHROUGH */
 		default:
-			monitor_exec(boot_monitor_task, arg);
+			monitor_exec(boot_monitor_task, comm, arg, 0);
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 		}
 	}
@@ -227,19 +220,11 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 					 cm3_sp_get());
 			break;
 
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
-
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 			break;
 
 		case MONITOR_APP_EXEC:
@@ -253,13 +238,13 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 				   to save some resources. As a matter of fact I don't think
 				   they are useful at all */
 				DCC_LOG(LOG_TRACE, "monitor_app_exec() failed!");
-				if (board->default_task != NULL) {
-					DCC_LOG(LOG_TRACE, "default_task()...!");
-					monitor_thread_create(comm, C_TASK(board->default_task), 
-										 C_ARG(NULL), true);
-				} else {
-					DCC_LOG(LOG_TRACE, "no default app set!");
-				}
+//				if (board->default_task != NULL) {
+//					DCC_LOG(LOG_TRACE, "default_task()...!");
+//					monitor_thread_create(comm, C_TASK(board->default_task), 
+//										 C_ARG(NULL), true);
+//				} else {
+//					DCC_LOG(LOG_TRACE, "no default app set!");
+//				}
 			}
 			DCC_LOG(LOG_TRACE, "APP_EXEC done");
 			break;
@@ -308,7 +293,7 @@ init_monitor_task(const struct monitor_comm * comm, void * arg)
 
 			/* FALLTHROUGH */
 		default:
-			monitor_exec(boot_monitor_task, arg);
+			monitor_exec(boot_monitor_task, comm, arg, 0);
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 		}
 	}

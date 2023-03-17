@@ -28,41 +28,49 @@ SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
-MKCMD  = python $(TOOLS_DIR)/mkcmd.py
+MKCMDTAB = python $(TOOLS_DIR)/mkcmd.py
 
 PROG = piano-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = ../common/spidrv.c ../common/encoder.c \
-		 piano.c dac.c keyboard.c addsynth-voice.c exp_envelope.c \
-		 addsynth-instr.c \
-		 addsynth-piano.c addsynth-xilophone.c  \
-		filt.c
+CFILES = ../common/spidrv.c piano.c dac.c keyboard.c  keyboard-cfgs.c \
+		 addsynth-voice.c exp_envelope.c addsynth-instr.c \
+		 addsynth-piano.c addsynth-xilophone.c \
+		 cmdtab.c shell.c
 
-#tonegen.c 
-#f32sin.c
+ARCH_LIBS = stm32f
 
-LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
-		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))
+SDK_LIBS = thinkos-usr util trace c fixpt tty shell 
 
-SDK_LIBS = util thinkos-usr c fixpt
+LIBDIRS = $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS))\
+		  $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS))
 
-ARCH_LIBS = stm32f 
-
-LIBS = $(SDK_LIBS) $(ARCH_LIBS) m stm32f util c thinkos-usr fixpt
+LIBS = m $(ARCH_LIBS) $(SDK_LIBS)
 
 INCPATH = ../include
 
 CDEFS = CONFIG_H 
-CFLAGS = -Ofast -fomit-frame-pointer -Werror -Wall -Wdouble-promotion -Wno-unused-parameter -Wextra 
-#-Wpedantic 
-OPTIONS = -g -mno-unaligned-access 
-LDFLAGS = -Wl,--gc-sections 
 
-MACH = stm32l433xc
-LDCODE = 0x08010000
+CFLAGS = -Og
+#LIBPATH = $(LIBMAD_DIR)
+
+APP_INSTALLDIR = /c/tmp/release/rda8com
+default: app-install
+
+MACH := stm32l433xc
+LDCODE := 0x0800a000
 LDDATA := 0x20001000
 include $(ARCH_DIR)/mk/stm32-app.mk
 
-%.c : %.mp3
-	$(BIN2HEX) -H mp3lib.h -o $@ $<
+CMDTAB_YAML = $(SRCDIR)/cmdtab.yaml
+CMDTAB_C = $(SRCDIR)/cmdtab.c
+CMDTAB_H = $(SRCDIR)/cmdtab.h
+
+$(CMDTAB_H): $(CMDTAB_C)
+
+$(CMDTAB_C): $(CMDTAB_YAML)
+	$(MKCMDTAB) -l -o $@ $<
+
+cmdtab: $(CMDTAB_H)
+
+.PHONY = cmdtab
 

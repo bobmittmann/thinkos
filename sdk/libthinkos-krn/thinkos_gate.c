@@ -26,26 +26,28 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-#if (THINKOS_GATE_MAX > 0)
+#if (THINKOS_GATE_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
 __krn_obj_is_gate(struct thinkos_rt * krn, unsigned int gate) {
 	return __obj_is_valid(gate, THINKOS_GATE_BASE, THINKOS_GATE_MAX);
 }
 
+#if (THINKOS_ENABLE_GATE_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_gate_is_alloc(struct thinkos_rt * krn, unsigned int gate) {
 	return __bit_mem_rd(krn->gate_alloc, gate - THINKOS_GATE_BASE) ? 
 		true : false;
 }
+#endif
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 int krn_gate_check(struct thinkos_rt * krn, int gate)
 {
 	if (!__krn_obj_is_gate(krn, gate)) {
 		return THINKOS_ERR_GATE_INVALID;
 	}
-#if THINKOS_ENABLE_GATE_ALLOC
+#if (THINKOS_ENABLE_GATE_ALLOC)
 	if (__krn_gate_is_alloc(krn, gate) == 0) {
 		return THINKOS_ERR_GATE_ALLOC;
 	}
@@ -69,7 +71,7 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	uint32_t * gates_bmp;
 	uint32_t bits;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
@@ -80,7 +82,7 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-#if (THINKOS_GATE_MAX < 16)
+#if (THINKOS_GATE_MAX) < 16
 	gates_bmp = &krn->gate[0];
 #else
 	gates_bmp = &krn->gate[idx / 16];
@@ -140,7 +142,7 @@ again:
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG2(LOG_INFO, "<%d> waiting at gate %d...", self, gate);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn); 
+	__krn_sched_defer(krn); 
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
@@ -153,7 +155,7 @@ void thinkos_gate_timedwait_svc(int32_t arg[], int self,
 	uint32_t * gates_bmp;
 	uint32_t bits;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
@@ -164,7 +166,7 @@ void thinkos_gate_timedwait_svc(int32_t arg[], int self,
 	}
 #endif
 
-#if (THINKOS_GATE_MAX < 16)
+#if (THINKOS_GATE_MAX) < 16
 	gates_bmp = &krn->gate[0];
 #else
 	gates_bmp = &krn->gate[idx / 16];
@@ -246,7 +248,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	uint32_t queue;
 	int th;
 	int j;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
@@ -266,7 +268,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-#if (THINKOS_GATE_MAX < 16)
+#if (THINKOS_GATE_MAX) < 16
 	gates_bmp = &krn->gate[0];
 #else
 	gates_bmp = &krn->gate[idx / 16];
@@ -343,7 +345,7 @@ again:
 	/* update status */
 	__thread_stat_clr(krn, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
@@ -355,9 +357,9 @@ void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
 	int j;
 	int th;
 
-	DCC_LOG1(LOG_TRACE, "gate %d", gate);
+	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
-#if (THINKOS_GATE_MAX < 16)
+#if (THINKOS_GATE_MAX) < 16
 	gates_bmp = &krn->gate[0];
 #else
 	gates_bmp = &krn->gate[idx / 16];
@@ -444,7 +446,7 @@ void __thinkos_gate_open_i(uint32_t gate)
 void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int gate = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
@@ -461,14 +463,14 @@ void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* open the gate */
 	__krn_gate_open(krn, gate);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);;
+	__krn_sched_defer(krn);;
 }
 
 void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	unsigned int gate = arg[0];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
@@ -509,7 +511,7 @@ bool gate_resume(struct thinkos_rt * krn, unsigned int th,
 
 		/* insert the thread into ready queue */
 		__thread_ready_set(krn, th);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
 		__thread_r0_set(krn, th, 0);
 #endif
@@ -517,7 +519,7 @@ bool gate_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_stat_clr(krn, th);
 	} else { 
 		__thread_wq_set(krn, th, gate);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		if (tmw)
 			__thread_clk_enable(krn, th);
 #endif

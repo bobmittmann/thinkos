@@ -187,10 +187,6 @@
 #define THINKOS_ENABLE_CRITICAL         0
 #endif
 
-#ifndef THINKOS_ENABLE_ESCALATE
-#define THINKOS_ENABLE_ESCALATE         0
-#endif
-
 #ifndef THINKOS_IRQ_MAX 
 #define THINKOS_IRQ_MAX                 80
 #endif
@@ -270,8 +266,8 @@
 #define THINKOS_ENABLE_CONSOLE_MISC     0
 #endif
 
-#ifndef THINKOS_ENABLE_COMM
-#define THINKOS_ENABLE_COMM             0
+#ifndef THINKOS_COMM_MAX
+#define THINKOS_COMM_MAX                0
 #endif
 
 #ifndef THINKOS_ENABLE_MPU 
@@ -396,8 +392,16 @@
    Requires the kernel services (KRNSVC) to be enabled.
    */
 #ifndef THINKOS_ENABLE_MONITOR
-#define THINKOS_ENABLE_MONITOR          0
+#define THINKOS_ENABLE_MONITOR               0
 #endif
+
+/* THINKOS_ENABLE_DEFERRED_ISR: Provides a mean of running high privilege 
+ * routines. Used by debuggers, kernel monitor, console...
+   Requires the kernel monitor to be enabled.
+ */
+#ifndef THINKOS_ENABLE_DEFERRED_ISR 
+#define THINKOS_ENABLE_DEFERRED_ISR          0
+#endif 
 
 /* THINKOS_ENABLE_MONITOR_THREADS: Monitors the creation and termination of 
    threads. It's used by the bootloader to sequence the system initialization 
@@ -406,7 +410,7 @@
    Requires the kernel monitor to be enabled.
  */
 #ifndef THINKOS_ENABLE_MONITOR_THREADS 
-#define THINKOS_ENABLE_MONITOR_THREADS  0
+#define THINKOS_ENABLE_MONITOR_THREADS       0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_CLOCK: Enable the kernel monitor clock.
@@ -419,18 +423,25 @@
    Requires the clock module to be enabled.
    */
 #ifndef THINKOS_ENABLE_MONITOR_CLOCK
-#define THINKOS_ENABLE_MONITOR_CLOCK     0
+#define THINKOS_ENABLE_MONITOR_CLOCK        0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_SYSCALL: Enable user syscall to install
    a monitor. */
 #ifndef THINKOS_ENABLE_MONITOR_SYSCALL
-#define THINKOS_ENABLE_MONITOR_SYSCALL  0
+#define THINKOS_ENABLE_MONITOR_SYSCALL      0
 #endif
 
 /* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler. */
 #ifndef THINKOS_ENABLE_MONITOR_SCHED
 #define THINKOS_ENABLE_MONITOR_SCHED        0
+#endif
+
+/* THINKOS_ENABLE_DEBUG_BASE - Enable the kernel debug base subsystem.
+   All other DEBUG features depend on this flag
+   */
+#ifndef THINKOS_ENABLE_DEBUG_BASE
+#define THINKOS_ENABLE_DEBUG_BASE           0
 #endif
 
 /* THINKOS_ENABLE_DEBUG - Enable the kernel debug subsystem.
@@ -481,12 +492,23 @@
 #define THINKOS_ENABLE_SCHED_ERROR          0
 #endif
 
+/* THINKOS_ENABLE_KRN_SCHED_BRK - Enable thread break */
+#ifndef THINKOS_ENABLE_KRN_SCHED_BRK
+#define THINKOS_ENABLE_KRN_SCHED_BRK        0
+#endif
+
+/* THINKOS_ENABLE_KRN_SCHED_SVC - This option is used to request the execution of
+   a scheduler priority tasklet. */
+#ifndef THINKOS_ENABLE_KRN_SCHED_SVC
+#define THINKOS_ENABLE_KRN_SCHED_SVC        0
+#endif
+
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
    a tasklet when the system is idle. The tasklet runs on the IDLE 
    thread context.
  */
 #ifndef THINKOS_ENABLE_IDLE_HOOKS       
-#define THINKOS_ENABLE_IDLE_HOOKS            0
+#define THINKOS_ENABLE_IDLE_HOOKS           0
 #endif
 
 /* THINKOS_ENABLE_I_CALLS - Enable building functions to be used in interrupt 
@@ -573,11 +595,6 @@
 #define THINKOS_ENABLE_READY_MASK           0
 #endif
 
-/* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
-#ifndef THINKOS_ENABLE_DATE_AND_TIME 
-#define THINKOS_ENABLE_DATE_AND_TIME        0
-#endif
-
 /* Enable kernel support for real time trace. The kernel hold the trace
    ring in a protected memory and mediate its access by the application 
    and debug monitor services. */
@@ -587,6 +604,28 @@
 
 #ifndef THINKOS_ENABLE_CTL_KRN_INFO
 #define THINKOS_ENABLE_CTL_KRN_INFO         0
+#endif
+
+#ifndef THINKOS_THREAD_STACK_MAX
+#define THINKOS_THREAD_STACK_MAX            65280
+#endif
+
+/* Kernel clock and thread timers uses a 12.20 fixed point representation.
+ *
+ * Resolution = 0.9537 uS
+ * Max interval = 34.133 minutes */
+#ifndef THINKOS_ENABLE_FRACTIONAL_CLOCK
+#define THINKOS_ENABLE_FRACTIONAL_CLOCK     0
+#endif
+
+/* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
+#ifndef THINKOS_ENABLE_DATE_AND_TIME 
+#define THINKOS_ENABLE_DATE_AND_TIME        0
+#endif
+
+/* THINKOS_ENABLE_RAM_VECTORS - Enable IRQ vectors to reside in RAM... */
+#ifndef THINKOS_ENABLE_RAM_VECTORS
+#define THINKOS_ENABLE_RAM_VECTORS 0
 #endif
 
 /* -------------------------------------------------------------------------- 
@@ -599,48 +638,51 @@
 #warn "THINKOS_THREADS_MAX set to 32"
 #endif
 
-#if (THINKOS_ENABLE_MUTEX_ALLOC) & !(THINKOS_MUTEX_MAX)
+#if (THINKOS_ENABLE_MUTEX_ALLOC) && !(THINKOS_MUTEX_MAX)
 #undef THINKOS_ENABLE_MUTEX_ALLOC
 #define THINKOS_ENABLE_MUTEX_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_COND_ALLOC) & !(THINKOS_COND_MAX)
+#if (THINKOS_ENABLE_COND_ALLOC) && !(THINKOS_COND_MAX)
 #undef THINKOS_ENABLE_COND_ALLOC
 #define THINKOS_ENABLE_COND_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_SEM_ALLOC) & !(THINKOS_SEMAPHORE_MAX)
+#if (THINKOS_ENABLE_SEM_ALLOC) && !(THINKOS_SEMAPHORE_MAX)
 #undef THINKOS_ENABLE_SEM_ALLOC
 #define THINKOS_ENABLE_SEM_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_EVENT_ALLOC) & !(THINKOS_EVENT_MAX)
+#if (THINKOS_ENABLE_EVENT_ALLOC) && !(THINKOS_EVENT_MAX)
 #undef THINKOS_ENABLE_EVENT_ALLOC
 #define THINKOS_ENABLE_EVENT_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_FLAG_ALLOC) & !(THINKOS_FLAG_MAX)
+#if (THINKOS_ENABLE_FLAG_ALLOC) && !(THINKOS_FLAG_MAX)
 #undef THINKOS_ENABLE_FLAG_ALLOC
 #define THINKOS_ENABLE_FLAG_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_GATE_ALLOC) & !(THINKOS_GATE_MAX)
+#if (THINKOS_ENABLE_GATE_ALLOC) && !(THINKOS_GATE_MAX)
 #undef THINKOS_ENABLE_GATE_ALLOC
 #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
 
+#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_FRACTIONAL_CLOCK)
+#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_FRACTIONAL_CLOCK"
+#endif
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_TIMED_CALLS)
 #error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_TIMED_CALLS"
 #endif
 
-#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_WQ_IRQ)
-#error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_WQ_IRQ"
-#endif
+//#if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_WQ_IRQ)
+//#error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_WQ_IRQ"
+//#endif
 
-#if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_WQ_IRQ)
-#error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_WQ_IRQ"
-#endif
+//#if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_WQ_IRQ)
+//#error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_WQ_IRQ"
+//#endif
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT) && !(THINKOS_ENABLE_IRQ_CTL)
 #error "THINKOS_ENABLE_IRQ_CYCCNT depends on THINKOS_ENABLE_IRQ_CTL"
@@ -666,6 +708,10 @@
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
 #endif
 
+#if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
+
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_MONITOR"
 #endif
@@ -675,6 +721,11 @@
 #error "THINKOS_ENABLE_I_CALLS depends on THINKOS_ENABLE_KRNSVC"
 #endif
 */
+
+/* debug breakpoint depends on debug base */
+#if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG_BASE)
+#error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG_BASE"
+#endif
 
 /* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)
@@ -709,6 +760,11 @@
 /* thread monitoring depends on monitor */
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+/* thread monitoring depends on monitor */
+#if (THINKOS_ENABLE_DEFERRED_ISR) && !(THINKOS_ENABLE_MONITOR)
+#error "THINKOS_ENABLE_DEFERRED_ISR depends on THINKOS_ENABLE_MONITOR"
 #endif
 
 /* monitor thread scheduler depends on monitor */
@@ -748,6 +804,7 @@
 #error "THINKOS_ENABLE_JOIN depends on THINKOS_ENABLE_TERMINATE"
 #endif
 
+#if 0
 /* timed calls, cancel, pause and debug step depend on thread status */
 #if (THINKOS_ENABLE_TIMED_CALLS ) && !(THINKOS_ENABLE_THREAD_STAT)
 #error "THINKOS_ENABLE_TIMED_CALLS  depends on THINKOS_ENABLE_THREAD_STAT"
@@ -763,6 +820,7 @@
 
 #if (THINKOS_ENABLE_DEBUG_STEP ) && !(THINKOS_ENABLE_THREAD_STAT)
 #error "THINKOS_ENABLE_DEBUG_STEP  depends on THINKOS_ENABLE_THREAD_STAT"
+#endif
 #endif
 
 #if (THINKOS_ENABLE_FPU_LS) && !(THINKOS_ENABLE_FPU)
@@ -794,6 +852,11 @@
    stack (MSP) all the remaining threads (non privileged) make use of
    the PSP instead.
  */
+
+#ifdef THINKOS_ENABLE_ESCALATE
+#warning "THINKOS_ENABLE_ESCALATE is deprecated"
+#endif
+
 #ifdef THINKOS_ENABLE_IDLE_MSP
 #error "THINKOS_ENABLE_IDLE_MSP is deprecated"
 #endif
@@ -922,10 +985,12 @@
   #define THINKOS_WQ_TMSHARE_CNT 0 
 #endif
 
-#if (THINKOS_ENABLE_COMM)
-  #define THINKOS_WQ_COMM_CNT 2
+#if (THINKOS_COMM_MAX)
+  #define THINKOS_WQ_COMM_RX_CNT (THINKOS_COMM_MAX)
+  #define THINKOS_WQ_COMM_TX_CNT (THINKOS_COMM_MAX)
 #else
-  #define THINKOS_WQ_COMM_CNT 0 
+  #define THINKOS_WQ_COMM_RX_CNT 0 
+  #define THINKOS_WQ_COMM_TX_CNT 0 
 #endif
 
 #if (THINKOS_ENABLE_WQ_IRQ)
@@ -965,7 +1030,8 @@
   THINKOS_WQ_PAUSED_CNT + \
   THINKOS_WQ_CANCELED_CNT + \
   THINKOS_WQ_TMSHARE_CNT + \
-  THINKOS_WQ_COMM_CNT + \
+  THINKOS_WQ_COMM_RX_CNT + \
+  THINKOS_WQ_COMM_TX_CNT + \
   THINKOS_WQ_IRQ_CNT + \
   THINKOS_WQ_DMA_CNT + \
   THINKOS_WQ_FLASH_MEM_CNT + \
@@ -1038,8 +1104,10 @@ struct thinkos_profile {
 		uint32_t gate_max            :8;
 
 		uint32_t queue_max           :8;
+		uint32_t comm_max            :8;
 		uint32_t irq_max             :8;
 		uint32_t dma_max             :8;
+
 		uint32_t flash_max           :8;
 
 		uint32_t except_stack_size   :16;
@@ -1054,7 +1122,6 @@ struct thinkos_profile {
 			uint32_t sleep           :1;
 			uint32_t ctl             :1;
 			uint32_t critical        :1;
-			uint32_t escalate        :1;
 			uint32_t irq_ctl         :1;
 			uint32_t pause           :1;
 			uint32_t cancel          :1;
@@ -1097,7 +1164,6 @@ struct thinkos_profile {
 			uint32_t console_drain      :1;
 			uint32_t console_read       :1;
 			uint32_t console_misc       :1;
-			uint32_t comm               :1;
 			uint32_t mpu                :1;
 			uint32_t fpu                :1;
 			uint32_t fpu_ls             :1;
@@ -1150,6 +1216,7 @@ struct thinkos_profile {
 	union {
 		uint32_t flags;
 		struct {
+			uint32_t base      :1;
 			uint32_t enabled   :1;
 			uint32_t step      :1;
 			uint32_t bkpt      :1;

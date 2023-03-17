@@ -46,8 +46,8 @@
 #define STM32F_ADC2  ((struct stm32f_adc *)STM32F_BASE_ADC2)
 #define STM32F_ADC3  ((struct stm32f_adc *)STM32F_BASE_ADC3)
 
-#define STM32F_SYSCFG ((struct stm32f_syscfg *)STM32F_BASE_SYSCFG)
-#define STM32F_EXTI  ((struct stm32f_exti *)STM32F_BASE_EXTI)
+#define STM32_SYSCFG ((struct stm32_syscfg *)STM32F_BASE_SYSCFG)
+#define STM32_EXTI  ((struct stm32_exti *)STM32F_BASE_EXTI)
 
 #define STM32_USART1 ((struct stm32_usart *)STM32_BASE_USART1)
 #define STM32_USART2 ((struct stm32_usart *)STM32_BASE_USART2)

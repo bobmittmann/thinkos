@@ -1,11 +1,27 @@
 #!/bin/sh
 
-JTAGTOOL_ADDR=192.168.10.50
-BUILD_NAME=u2s-485
+TOOLS_DIR=../../../tools
+PYTHON=python
+if [ -z "$JTAGTOOL_ADDR" ]; then
+	JTAGTOOL_ADDR=192.168.10.51
+fi
+# Collect ".bin" files in the positional parameters
+set -- `ls debug/*.bin`
+# Get the last one
+for PROG_BIN; do true; done
+# The corresponding .elf
+PROG_ELF=${PROG_BIN%%.bin}.elf
 
-../../tools/tftp_load.py -q -i -e -r  -a 0x08000000 -h ${JTAGTOOL_ADDR} debug/${BUILD_NAME}.bin 
+${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -r -a 0x08000000 \
+	-h ${JTAGTOOL_ADDR} ${PROG_BIN} 
 
 if [ $? = 0 ] ; then
-	../../tools/dcclog -h ${JTAGTOOL_ADDR} debug/${BUILD_NAME}.elf
+	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} 'connect' 'disable debug'
+#	'nrst' 
+	if [ $? = 0 ] ; then
+		# Trace
+		${TOOLS_DIR}/dcclog -h ${JTAGTOOL_ADDR} ${PROG_ELF} | tee dbg.log 
+	fi
 fi
 

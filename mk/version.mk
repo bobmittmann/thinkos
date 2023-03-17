@@ -39,7 +39,7 @@ ifndef VERSION_MINOR
 endif
 
 ifndef VERSION_DATE
-  VERSION_DATE = "2021-01-01"
+  VERSION_DATE = "2022-01-28"
 endif
 
 ifndef PYTHON

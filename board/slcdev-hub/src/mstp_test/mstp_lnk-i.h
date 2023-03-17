@@ -30,8 +30,6 @@
 #include "config.h"
 #endif
 
-#include <bacnet/mstp_lnk.h>
-
 #include <stdbool.h>
 #include <thinkos.h>
 
@@ -96,7 +94,7 @@ struct mstp_lnk {
 		uint32_t active[MSTP_LNK_MAX_MASTERS];
 	} mgmt;
 
-	struct mstp_lnk_stat stat;
+	struct mstp_lnk_stats stat;
 };
 
 /* MSTP Connection State Machine states */

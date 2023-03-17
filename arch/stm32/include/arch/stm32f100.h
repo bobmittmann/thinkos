@@ -194,7 +194,7 @@
 #define STM32F_DAC ((struct stm32f_dac *)STM32F_BASE_DAC)
 #define STM32F_ADC1 ((struct stm32f_adc *)STM32F_BASE_ADC1)
 
-#define STM32F_EXTI ((struct stm32f_exti *)STM32F_BASE_EXTI)
+#define STM32_EXTI ((struct stm32_exti *)STM32F_BASE_EXTI)
 #define STM32F_FLASH ((struct stm32f_flash *)STM32F_BASE_FLASH)
 
 #define STM32_USART1 ((struct stm32f_usart *)STM32F_BASE_USART1)

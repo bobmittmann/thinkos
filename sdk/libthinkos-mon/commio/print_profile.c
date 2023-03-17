@@ -59,6 +59,7 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_GATE_MAX", p->limit.gate_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_QUEUE_MAX", 
 				  p->limit.queue_max);
+	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_COMM_MAX", p->limit.comm_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_IRQ_MAX", p->limit.irq_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_DMA_MAX", p->limit.dma_max);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_FLASH_MEM_MAX", 
@@ -73,7 +74,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_SLEEP", p->syscall.sleep);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_KRN_CTL", p->syscall.ctl);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CRITICAL", p->syscall.critical);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_ESCALATE", p->syscall.escalate);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_IRQ_CTL", p->syscall.irq_ctl);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_PAUSE", p->syscall.pause);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CANCEL", p->syscall.cancel);
@@ -109,7 +109,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CONSOLE_READ", p->feature.console_read);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_CONSOLE_MISC", p->feature.console_misc);
 
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_COMM", p->feature.comm);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MPU", p->feature.mpu);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU", p->feature.fpu);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_FPU_LS", p->feature.fpu_ls);

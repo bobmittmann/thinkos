@@ -23,6 +23,9 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
 #include "board.h"
 
 #include <stdio.h>
@@ -30,9 +33,6 @@
 #include <sys/serial.h>
 #include <sys/param.h>
 #include <sys/delay.h>
-
-#define __THINKOS_IRQ__
-#include <thinkos/irq.h>
 
 #include <sys/dcclog.h>
 
@@ -154,8 +154,8 @@ int __serial_write(struct stm32_serial_drv * drv, const void * buf,
 
 		head = drv->tx_fifo.head;
 		free = UART_TX_FIFO_BUF_LEN - (int32_t)(head - drv->tx_fifo.tail);
-		DCC_LOG3(LOG_MSG, "head=%d tail=%d n=%d", head, drv->tx_fifo.tail, n);
 		n = MIN(rem, free);
+		DCC_LOG3(LOG_MSG, "head=%d tail=%d n=%d", head, drv->tx_fifo.tail, n);
 		for (i = 0; i < n; ++i) 
 			drv->tx_fifo.buf[head++ & (UART_TX_FIFO_BUF_LEN - 1)] = *cp++;
 		drv->tx_fifo.head = head;
@@ -370,11 +370,11 @@ void stm32f_usart2_isr(void)
 }
 
 const struct serial_op stm32f_uart_serial_op = {
-	.send = (void *)__serial_write,
-	.recv = (void *)__serial_read,
-	.drain = (void *)__serial_drain,
-	.close = (void *)__serial_close,
-	.ioctl = (void *)__serial_ioctl
+	.send = (int (*)(void *, const void *, unsigned int))__serial_write,
+	.recv = (int (*)(void *, void *, unsigned int, unsigned int))__serial_read,
+	.drain = (int (*)(void *))__serial_drain,
+	.close = (int (*)(void *))__serial_close,
+	.ioctl = (int (*)(void *, int, uintptr_t, uintptr_t))__serial_ioctl
 };
 
 const struct serial_dev uart2_serial_dev = {

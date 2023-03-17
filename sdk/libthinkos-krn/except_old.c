@@ -605,7 +605,7 @@ void thinkos_mem_manage(struct thinkos_except * xcpt)
 #endif
 
 /* -------------------------------------------------------------------------
-   Application fault defered handler 
+   Application fault deferred handler 
    ------------------------------------------------------------------------- */
 
 struct thinkos_except thinkos_except_buf 

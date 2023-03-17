@@ -44,5 +44,6 @@
 **/**/*.srs
 **/**/*.rpt
 **/**/*.prs
+**/**/*.map
 run_options.txt
 

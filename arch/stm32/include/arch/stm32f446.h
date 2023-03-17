@@ -51,14 +51,14 @@
 #define STM32F_ETH ((struct stm32f_eth *)STM32F_BASE_EMAC)
 #define STM32F_OTG_FS ((struct stm32f_otg_fs *)STM32F_BASE_OTG_FS)
 #define STM32F_FSMC ((struct stm32f_fsmc *)STM32F_BASE_FSMC)
-#define STM32F_SYSCFG ((struct stm32f_syscfg *)STM32F_BASE_SYSCFG)
+#define STM32_SYSCFG ((struct stm32_syscfg *)STM32F_BASE_SYSCFG)
 #define STM32F_DAC ((struct stm32f_dac *)STM32F_BASE_DAC)
 #define STM32F_ADC1 ((struct stm32f_adc *)STM32F_BASE_ADC1)
 #define STM32F_ADC2 ((struct stm32f_adc *)STM32F_BASE_ADC2)
 #define STM32F_ADC3 ((struct stm32f_adc *)STM32F_BASE_ADC3)
 #define STM32F_ADCC ((struct stm32f_adcc *)STM32F_BASE_ADCC)
 
-#define STM32F_EXTI ((struct stm32f_exti *)STM32F_BASE_EXTI)
+#define STM32_EXTI ((struct stm32_exti *)STM32F_BASE_EXTI)
 
 #define STM32_USART1 ((struct stm32_usart *)STM32F_BASE_USART1)
 #define STM32_USART2 ((struct stm32_usart *)STM32F_BASE_USART2)

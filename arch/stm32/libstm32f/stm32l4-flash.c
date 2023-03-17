@@ -27,6 +27,7 @@
 #include <arch/cortex-m3.h>
 #include <sys/flash-dev.h>
 #include <sys/dcclog.h>
+#include <sys/delay.h>
 
 #if defined(STM32L4X)
 
@@ -115,11 +116,17 @@ int stm32l4x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len)
 
 	/* Clear errors */
 	flash->sr = FLASH_ERR;
+	while ((sr = flash->sr) & FLASH_BSY);
 
 	cr = FLASH_STRT | FLASH_PER | FLASH_PNB(page);
 	cm3_primask_set(1);
 	sr = stm32l4x_flash_page_erase(flash, cr);
 	cm3_primask_set(pri);
+
+	cr = flash->cr & (FLASH_PER | FLASH_PNB(0xff));
+	if (cr != (FLASH_PER | FLASH_PNB(page))) {
+		return -5;
+	}
 
 	if (sr & FLASH_ERR) {
 		DCC_LOG1(LOG_WARNING, "stm32f2x_flash_sect_erase() failed"
@@ -171,6 +178,7 @@ int stm32l4x_flash_write(struct stm32_flash * flash,
 	cm3_primask_set(1);
 	sr = stm32l4x_flash_wr64(flash, dst, data0, data1);
 	cm3_primask_set(pri);
+
 	if (sr & FLASH_ERR) {
 		DCC_LOG(LOG_WARNING, "stm32f2x_flash_wr32() failed!");
 		return -1;
@@ -211,6 +219,38 @@ const struct flash_dev stm32l4x_flash_dev = {
 	.priv = (void *)STM32_FLASH,
 	.op = &stm32l4x_flash_dev_ops
 };
+
+uint32_t stm32l4x_flash_init(void)
+{
+	struct stm32_flash * flash = STM32_FLASH;
+	struct stm32_rcc *rcc = STM32_RCC;
+	uint32_t sr;
+	uint32_t cr;
+
+	/* Reset FLASH */
+	rcc->ahb1rstr |= (1 << RCC_FLASH);
+	udelay(1024);
+	rcc->ahb1rstr &= ~(1 << RCC_FLASH);
+
+	rcc->ahb1enr &= ~(1 << RCC_FLASH);
+	udelay(1024);
+	/* peripherals clock sources for FLASH */
+	rcc->ahb1enr |= (1 << RCC_FLASH);
+
+	/* Clear errors */
+	flash->sr = FLASH_ERR;
+	while ((sr = flash->sr) & FLASH_BSY);
+
+	cr = flash->cr;
+	if (cr & FLASH_LOCK) {
+		/* unlock flash write */
+		flash->keyr = FLASH_KEY1;
+		flash->keyr = FLASH_KEY2;
+	}
+
+	cr = flash->cr;
+	return cr;
+}
 
 #endif
 

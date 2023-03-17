@@ -31,17 +31,19 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_APP__
 #include <thinkos/app.h>
+#define __THINKOS_CTRL__
+#include <thinkos/ctrl.h>
 
 #include <thinkos/board.h>
 
-/* application block descriptor */
-struct monitor_app_desc {
-	char tag[8];
-	uint32_t start_addr; /* Application memory block start address */
-	uint32_t block_size; /* Size of the memory block in bytes */
-	uint16_t crc32_offs; /* Position of the CRC32 word in the memory block */
-	uint16_t filesize_offs;  /* Position of file size in the memory block */
-	const struct magic_blk * magic; /* File identification descriptor */
+enum {
+	BTL_SHELL_OK = 0,
+	BTL_SHELL_ERR_GENERAL = -1,
+	BTL_SHELL_ERR_CMD_INVALID = -2,
+	BTL_SHELL_ERR_ARG_MISSING = -3,
+	BTL_SHELL_ERR_ARG_INVALID = -4,
+	BTL_SHELL_ERR_EXTRA_ARGS = -5,
+	BTL_SHELL_ERR_UNDEFINED = -6
 };
 
 /* Board description */
@@ -56,44 +58,11 @@ struct thinkos_board {
 		} ver;
 	} hw;
 
-	struct {
-		char tag[10];
-		struct {
-			uint16_t build;
-			uint8_t minor;
-			uint8_t major;
-		} ver;
-	} sw;
+	struct thinkos_release sw;
 
-	void (* upgrade)(const struct monitor_comm *);
-	const struct monitor_comm * (* monitor_comm_init)(void);
-	struct monitor_app_desc application;
-	void * arg;
-
-	/* System initialization - runs once when the system powers up */
-	int (* init)(void);
-	/* Soft reset */
-	void (* softreset)(void);
+	void (* on_softreset)(void);
 	int (* on_break)(const struct monitor_comm *);
 
-	int (* configure_task)(void *);
-	int (* selftest_task)(void *);
-	/* ThinkOS task: monitor will run this task prior to run
-	 the application. It should implement configuration
-	 application integrity check etc... 
-	 The return code indicates wether is ok or not to call the
-	 application task. */
-	int (* preboot_task)(void *);
-	/* ThinkOS task: application loader . */
-	int (* app_task)(void *);
-	/* ThinkOS task: monitor will run this task if the application
-	   returns.  */
-	int (* default_task)(void *);
-
-	struct {
-		uint8_t mem;
-		uint8_t blk;
-	} app;
 	const struct thinkos_mem_map * memory;
 };
 
@@ -120,36 +89,81 @@ static inline void monitor_req_app_resume(void) {
 }
 
 static inline void monitor_req_app_term(void) {
-	monitor_soft_reset();
+//	monitor_soft_reset();
 	monitor_signal(MONITOR_APP_TERM);
 }
 
 static inline void monitor_req_app_erase(void) {
 	monitor_soft_reset();
-	monitor_signal(MONITOR_APP_ERASE);
+//	monitor_signal(MONITOR_APP_ERASE);
 }
 
 static inline void monitor_req_app_exec(void) {
 	monitor_soft_reset();
-	monitor_signal(MONITOR_APP_EXEC);
+//	monitor_signal(MONITOR_APP_EXEC);
 }
 
 static inline void monitor_req_app_upload(void) {
 	monitor_soft_reset();
-	monitor_signal(MONITOR_APP_UPLOAD);
+//	monitor_signal(MONITOR_APP_UPLOAD);
 }
 
 extern const struct thinkos_flash_desc board_flash_desc;
 extern struct thinkos_flash_drv board_flash_drv;
 
+struct btl_shell_env;
+
+typedef int(* btl_cmd_callback_t)(struct btl_shell_env * env, int argc, 
+								  char * argv[]);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
+int blt_cmd_lookup(struct btl_shell_env * env, const char * str);
+
+int btl_console_shell(struct btl_shell_env * env);
+
+struct btl_shell_env * btl_shell_env_getinstance(void);
+
+void btl_shell_env_prompt_set(struct btl_shell_env * env, const char * str);
+
+void btl_shell_env_motd_set(struct btl_shell_env * env, const char * str);
+
+void btl_shell_env_init(struct btl_shell_env * env, 
+					   const char * motd, const char * prompt);
+
+int btl_flash_ymodem_recv(const char * tag);
+
+int btl_flash_erase_partition(const char * tag);
+void btl_board_info(const struct thinkos_board * board);
+int btl_flash_app_exec(const char * __tag, uintptr_t __arg0, uintptr_t __arg1);
+int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max);
+
+/* ---------------------------------------------------------------------------
+ *  Shell commands
+ * ---------------------------------------------------------------------------
+ */
+
+int btl_cmd_delay(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_echo(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[]);
+
+/* ---------------------------------------------------------------------------
+ *  Monitor
+ * ---------------------------------------------------------------------------
+ */
+
+void __attribute__((noreturn)) 
+	standby_monitor_task(const struct monitor_comm * comm, 
+						 void * arg, uintptr_t sta, 
+						 struct thinkos_rt * krn);
 
 void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board,
-	void (monitor)(const struct monitor_comm *, void *));
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_rt *));
 
 bool monitor_app_suspend(void);
 

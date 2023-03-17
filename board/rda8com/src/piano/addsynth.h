@@ -28,7 +28,7 @@
 #include "envelope.h"
 #include <midi.h>
 
-#define ADDSYNTH_OSC_MAX 9
+#define ADDSYNTH_OSC_MAX 6
 
 struct osc_cfg {
 	float freq;
@@ -97,8 +97,11 @@ struct addsynth_instrument {
 	struct addsynth_voice voice[ADDSYNTH_INSTRUMENT_VOICE_MAX];
 };
 
+struct synth_dac;
+
+extern const struct addsynth_instrument_cfg addsynth_null_cfg;
 extern const struct addsynth_instrument_cfg addsynth_piano_cfg;
-extern const struct addsynth_instrument_cfg addsynth_xilofone_cfg;
+extern const struct addsynth_instrument_cfg addsynth_xilophone_cfg;
 
 #ifdef __cplusplus
 extern "C" {

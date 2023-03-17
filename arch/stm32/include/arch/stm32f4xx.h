@@ -291,10 +291,12 @@ enum {
 	STM32_UART8_ID
 };
 
-#define STM32F_BKPSRAM ((uint32_t *)STM32F_BASE_BKPSRAM)
-#define STM32F_FSMC_NE1 ((uint32_t *)0x60000000)
-#define STM32_FLASH_MEM ((uint8_t *)0x08000000)
+#define STM32F_BKPSRAM   ((uintptr_t)STM32F_BASE_BKPSRAM)
+#define STM32F_FSMC_NE1  ((uintptr_t)0x60000000)
+#define STM32_FLASH_MEM  ((uintptr_t)0x08000000)
+#define STM32_OTP_MEM    ((uintptr_t)0x1fff7800)
 
+#define STM32_MEM_OTP    (void *)(0x1fff7800)
 #define STM32_MEM_FLASH  (void *)(0x08000000)
 #define STM32_MEM_EEPROM (void *)(0x08080000)
 #define STM32_MEM_SRAM   (void *)(0x20000000)

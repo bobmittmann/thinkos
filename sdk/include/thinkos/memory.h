@@ -27,14 +27,6 @@
 #error "Never use <thinkos/memory.h> directly; include <thinkos/kernel.h> instead."
 #endif 
 
-#ifndef THINKOS_MEMORY_STACK_SIZE
-#define THINKOS_MEMORY_STACK_SIZE (960 + 16)
-#endif
-
-#ifndef THINKOS_MEMORY_ENABLE_RST_VEC
-#define THINKOS_MEMORY_ENABLE_RST_VEC CM3_RAM_VECTORS 
-#endif
-
 #include <sys/memory.h>
 
 struct thinkos_mem_blk {

@@ -28,6 +28,8 @@
 
 #include <thinkos.h>
 #include <sys/console.h>
+#include <sys/null.h>
+#include <sys/tty.h>
 
 extern const char * zarathustra[];
 
@@ -38,6 +40,7 @@ int sem_full; /* semaphore to signal a full buffer */
 
 int prod_count;
 volatile bool prod_done; /* production control flag */
+volatile bool cons_done; /* consumer control flag */
 
 int producer_task(void * arg)
 {
@@ -98,6 +101,8 @@ int consumer_task(void * arg)
 {
 	int i = 0;
 
+	cons_done = false;
+
 	printf(" %s(): [%d] started...\n", __func__, thinkos_thread_self());
 	thinkos_sleep(100);
 
@@ -124,21 +129,25 @@ int consumer_task(void * arg)
 		thinkos_sem_post(sem_empty);
 	}
 
+	cons_done = true;
+
 	return i;
 };
 
-//THINKOS_DEFINE_STACK(producer_stack, 512);
-//THINKOS_DEFINE_STACK(consumer_stack, 512);
+THINKOS_DEFINE_STACK(producer_stack, 512);
+THINKOS_DEFINE_STACK(consumer_stack, 512);
 
-uint32_t producer_stack[512];
-uint32_t consumer_stack[128];
+//uint32_t producer_stack[512];
+//uint32_t consumer_stack[128];
 
 void semaphore_test(void)
 {
 	int producer_th;
 	int consumer_th;
+#if 0
 	int producer_ret;
 	int consumer_ret;
+#endif
 
 	/* allocate the empty signal semaphores */
 	/* initialize the empty as 1 so we can insert an item immediately. */
@@ -166,14 +175,22 @@ void semaphore_test(void)
 	/* number of items to be produced */
 	prod_count = 100;
 
+	while (!prod_done) {
+		thinkos_sleep(100);
+	}
+
+	while (!cons_done) {
+		thinkos_sleep(100);
+	}
+#if 0
 	/* wait for the production thread to finish */
 	producer_ret = thinkos_join(producer_th);
-
 	/* wait for the consumer thread to finish */
 	consumer_ret = thinkos_join(consumer_th);
 
 	printf(" * Production return = %d\n", producer_ret);
 	printf(" * Consumer return = %d\n", consumer_ret);
+#endif
 
 	/* release the semaphores */
 	thinkos_sem_free(sem_empty);
@@ -182,15 +199,33 @@ void semaphore_test(void)
 	printf("\n");
 };
 
+/* -------------------------------------------------------------------------
+ * Stdio
+ * ------------------------------------------------------------------------- */
+
 void stdio_init(void)
 {
-	FILE * f;
+	struct tty_dev *tty;
+	FILE *f_raw;
+	FILE *f_tty;
+	int i;
 
-	f = console_fopen();
+	/* wait 5 seconds for the USB connection */
+	for (i = 0; i < 50; ++i) {
+		if (console_is_connected())
+			break;
+		thinkos_sleep(100);
+	}
+
+	f_raw = console_fopen();
+	tty = tty_attach(f_raw);
+	f_tty = tty_fopen(tty);
+	(void)f_tty;
+
 	/* initialize STDIO */
-	stderr = f;
-	stdout = f;
-	stdin = f;
+	stdout = f_tty;
+	stdin = f_tty;
+	stderr = null_fopen(0);
 }
 
 int main(int argc, char ** argv)
@@ -203,7 +238,9 @@ int main(int argc, char ** argv)
 	/* Print a useful information message */
 	printf("\n");
 	printf("---------------------------------------------------------\n");
-	printf(" ThinkOS - Semaphore example\n");
+	printf(" ThinkOS - Sanity test\n");
+	printf("\n");
+	printf(" Semaphore example\n");
 	printf("---------------------------------------------------------\n");
 	printf("\n");
 

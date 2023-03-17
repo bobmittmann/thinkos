@@ -99,7 +99,8 @@ int _bin_debruijn_seq(unsigned int n)
 
 	}
 
-	printf("%I64d %.6f\n", k, k / 1000000.0);
+//	printf("%I64d %.6f\n", k, (double)k / 1000000.0);
+	printf("%ld %.6f\n", k, (double)k / 1000000.0);
 
 	return 0;
 }

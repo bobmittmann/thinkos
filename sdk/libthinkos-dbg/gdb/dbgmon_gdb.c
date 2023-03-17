@@ -55,7 +55,7 @@
 //struct gdbrspd gdbrspd;
 int dbgmon_gdbrsp_comm_send(void * attr, const void * buf, size_t len)
 {
-	return monitor_comm_send(attr, buf, len);
+	return monitor_comm_write(attr, buf, len);
 }
 
 int dbgmon_gdbrsp_comm_recv(void * attr, void * buf, size_t len)
@@ -137,12 +137,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_STEP);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
-	sigmask |= (1 << MONITOR_APP_STOP);
-	sigmask |= (1 << MONITOR_APP_EXEC);
-	sigmask |= (1 << MONITOR_APP_UPLOAD);
-	sigmask |= (1 << MONITOR_APP_ERASE);
-	sigmask |= (1 << MONITOR_APP_TERM);
-	sigmask |= (1 << MONITOR_APP_RESUME);
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_CTL);
 #if (THINKOS_ENABLE_CONSOLE)
@@ -183,45 +177,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 			   by __console_reset(). */
 			thinkos_krn_console_connect_set(monitor_comm_isconnected(comm));
 #endif
-			break;
-
-		case MONITOR_APP_UPLOAD:
-			monitor_clear(MONITOR_APP_UPLOAD);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			break;
-
-
-		case MONITOR_APP_EXEC:
-			monitor_clear(MONITOR_APP_EXEC);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-#if 0
-			if (!monitor_app_exec(&this_board.application, true)) {
-				DCC_LOG(LOG_ERROR, "/!\\ monitor_app_exec() failed!");
-				gdb->active_app = false;
-			} else {
-				gdb->active_app = true;
-			}
-#endif
-			break;
-
-		case MONITOR_APP_ERASE:
-			monitor_clear(MONITOR_APP_ERASE);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			break;
-
-		case MONITOR_APP_TERM:
-			monitor_clear(MONITOR_APP_TERM);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
-			break;
-
-		case MONITOR_APP_STOP:
-			monitor_clear(MONITOR_APP_STOP);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
-			break;
-
-		case MONITOR_APP_RESUME:
-			monitor_clear(MONITOR_APP_RESUME);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
 			break;
 
 		case MONITOR_KRN_FAULT:

@@ -392,7 +392,7 @@
 
 #include <stdint.h>
 
-struct stm32f_syscfg {
+struct stm32_syscfg {
 	volatile uint32_t memrmp;
 	volatile uint32_t pmc;
 	union {

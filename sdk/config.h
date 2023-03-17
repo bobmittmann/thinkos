@@ -78,6 +78,8 @@
 
 #define THINKOS_ENABLE_GATE_ALLOC       1
 
+#define THINKOS_COMM_MAX                1
+
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
 #define THINKOS_ENABLE_ALARM            1
@@ -122,8 +124,6 @@
 
 #define THINKOS_ENABLE_CTL              1
 
-#define THINKOS_ENABLE_COMM             1
-
 #define THINKOS_ENABLE_STACK_INIT       1
 
 #define THINKOS_ENABLE_THREAD_VOID      1
@@ -131,8 +131,6 @@
 #define THINKOS_ENABLE_PREEMPTION       1
 
 #define THINKOS_ENABLE_CRITICAL         1
-
-#define THINKOS_ENABLE_ESCALATE         1
 
 #define THINKOS_ENABLE_IDLE_WFI         1
 

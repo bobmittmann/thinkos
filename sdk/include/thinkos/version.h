@@ -32,13 +32,16 @@
  */
 #define THINKOS_MKVER(MAJOR, MINOR) #MAJOR "." #MINOR
 
+#define __THINKOS_KRN_MKSTR(SYM) "" #SYM "" 
+#define THINKOS_KRN_MACH __THINKOS_KRN_MKSTR(SYM)
+
 /* ----------------------------------------------------------------------------
  * Kernel Version
  * ----------------------------------------------------------------------------
  */
 
-#define THINKOS_KERNEL_VERSION_MAJOR 0
-#define THINKOS_KERNEL_VERSION_MINOR 17
+#define THINKOS_KRN_VERSION_MAJOR 0
+#define THINKOS_KRN_VERSION_MINOR 19
 
 /* -------------------------------------------------------------------------- 
  * Profile version 

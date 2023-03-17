@@ -113,8 +113,11 @@ extern const usb_dev_t stm32f_otg_hs_dev;
  * Flash Device
  *---------------------------------------------------------------------*/
 #include <sys/flash-dev.h>
+extern const struct flash_dev stm32l1x_flash_dev;
 extern const struct flash_dev stm32l4x_flash_dev;
 
+extern const struct flash_dev stm32f1x_flash_dev;
+extern const struct flash_dev stm32f4x_flash_dev;
 
 /*---------------------------------------------------------------------
  * DMA 
@@ -215,8 +218,33 @@ void stm32f_fsmc_speed(int div);
 #define EXTI_EDGE_RISING 1
 #define EXTI_EDGE_FALLING 0
 
-void stm32f_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
+void stm32_exti_init(struct stm32_gpio * gpio, unsigned int pin, 
 					  unsigned int opt);
+
+static inline uint32_t * stm32_exti_imr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->imr, 0);
+}
+
+static inline uint32_t * stm32_exti_emr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->emr, 0);
+}
+
+static inline uint32_t * stm32_exti_rtsr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->rtsr, 0);
+}
+
+static inline uint32_t * stm32_exti_ftsr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->ftsr, 0);
+}
+
+static inline uint32_t * stm32_exti_swier_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->swier, 0);
+}
+
+static inline uint32_t * stm32_exti_pr_bitband(void) {
+	return CM3_BITBAND_DEV(&STM32_EXTI->pr, 0);
+}
+
 
 /*---------------------------------------------------------------------
  * MCO

@@ -113,9 +113,6 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 
 	opc = req->opc;
 	DCC_LOG1(LOG_INFO, "opc=%d!", opc);
-#if DEBUG
-	udelay(0x8000);
-#endif
 
 	off = req->offset;
 	size = req->size;
@@ -181,10 +178,23 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 	return size - rem;
 }
 
-int thinkos_flash_drv_init(unsigned int idx, 
-						   const struct thinkos_flash_desc * desc)
+#if ((THINKOS_FLASH_MEM_MAX) > 0)
+void __thinkos_krn_flash_drv_reset(struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	int i;
+
+	for (i = 0; i < THINKOS_FLASH_MEM_MAX; ++i) {
+		struct thinkos_flash_drv * drv;
+		drv = &krn->flash_drv[i];
+		drv->wopen = 0;
+		drv->ropen = 0;
+	};
+}
+#endif
+
+int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx, 
+							   const struct thinkos_flash_desc * desc)
+{
 	struct thinkos_flash_drv * drv;
 
 #if THINKOS_ENABLE_ARG_CHECK
@@ -230,7 +240,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
 		/* wakeup from the flash wait queue */
 		__wq_wakeup_return(krn, wq, th, ret);
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	} else {
 		DCC_LOG(LOG_INFO, "flash_drv: no waiting threads!");
 	}
@@ -259,7 +269,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 			drv = &krn->flash_drv[idx];
 
 			if ((blk = __mem_blk_lookup(drv->mem, req->tag)) != NULL) {
-				if (drv->ropen || drv->wopen) {
+				if ((drv->ropen != 0) || (drv->wopen != 0)) {
 					ret = THINKOS_EBUSY;
 					break;
 				}
@@ -274,8 +284,9 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #endif
 				ret = wq;
 
-				DCC_LOG2(LOG_INFO, "open(tag=\"%s\") --> ret=%d", 
-						 req->tag, ret);
+				DCC_LOGSTR(LOG_TRACE, "open(\"%s\")", req->tag);
+				DCC_LOG3(LOG_TRACE, "opt=%d rd=%d wr=%d", blk->opt, 
+						 drv->ropen, drv->wopen);
 				break;
 			}
 		}
@@ -326,7 +337,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	drv = &krn->flash_drv[idx];
 
 	if (opc == THINKOS_FLASH_MEM_CLOSE) {
-		if (!(drv->ropen || drv->wopen)) {
+		if ((drv->ropen == 0) && (drv->wopen == 0)) {
 			DCC_LOG(LOG_WARNING, "not open");
 			arg[0] = THINKOS_EINVAL;
 			return;
@@ -342,18 +353,20 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		return;
 	} 
 
-	if ((opc == THINKOS_FLASH_MEM_READ) && (!drv->ropen)) {
+	if ((opc == THINKOS_FLASH_MEM_READ) && (drv->ropen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for read");
 		arg[0] = THINKOS_EPERM;
 		return;
 	} 
 
-	if ((opc == THINKOS_FLASH_MEM_WRITE) && (!drv->wopen)) {
+	if (((opc == THINKOS_FLASH_MEM_WRITE) || (opc == THINKOS_FLASH_MEM_ERASE)) 
+		&& (drv->wopen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for write");
 		arg[0] = THINKOS_EPERM;
 		return;
 	} 
 
+	DCC_LOG2(LOG_TRACE, "rd=%d wr=%d", drv->ropen, drv->wopen);
 	DCC_LOG2(LOG_INFO, "flash_drv: r0=%08x r1=%08x", arg[0], arg[1]);
 	DCC_LOG2(LOG_INFO, "flash_drv: wq=%d idx=%d", wq, idx);
 
@@ -363,7 +376,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* schedule the IDLE hook ... */
-	__idle_hook_req(IDLE_HOOK_FLASH_MEM0 + idx);
+	__krn_idle_hook_req(krn, IDLE_HOOK_FLASH_MEM0 + idx);
 	/* insert into the flash wait queue */
 
 	/* (2) Save the context pointer. In case an interrupt wakes up
@@ -384,5 +397,4 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 #endif /* (THINKOS_FLASH_MEM_MAX > 0) */
-
 

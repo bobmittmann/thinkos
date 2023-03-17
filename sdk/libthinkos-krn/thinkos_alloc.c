@@ -22,7 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -36,22 +36,10 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
 
-#if 0
-static int __thinkos_bmp32_alloc(uint32_t * bmp) 
-{
-	int idx;
-
-	/* Look for an empty bit MSB first */
-	idx = __thinkos_ffs(~(*bmp));
-	if (idx < 32) {
-		/* Mark as used */
-		__bit_mem_wr(bmp, idx, 1);  
-		return idx;
-	}
-
-	return THINKOS_ENOMEM;
-}
-#endif
+#if (THINKOS_ENABLE_THREAD_ALLOC) || (THINKOS_ENABLE_MUTEX_ALLOC) || \
+	(THINKOS_ENABLE_SEM_ALLOC) || (THINKOS_ENABLE_COND_ALLOC) || \
+	(THINKOS_ENABLE_FLAG_ALLOC) || (THINKOS_ENABLE_EVENT_ALLOC) || \
+	(THINKOS_ENABLE_GATE_ALLOC)
 
 #if (BMP_ALLOC_32BITS)
 
@@ -521,6 +509,8 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 }
 
 #endif /* #if (THINKOS_ENABLE_OBJ_FREE) */
+
+#endif
 
 #endif /* (THINKOS_ENABLE_OBJ_ALLOC) */
 

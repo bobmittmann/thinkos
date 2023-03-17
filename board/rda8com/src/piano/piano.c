@@ -41,6 +41,8 @@
 #include "addsynth.h"
 #include "keyboard.h"
 
+void shell_init(void);
+
 void io_init(void)
 {
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
@@ -86,141 +88,41 @@ void stdio_init(void)
 	FILE * f;
 
 	f = console_fopen();
-//	f = null_fopen(0);
 	/* initialize STDIO */
-	stderr = f;
+	stderr = null_fopen(0);
 	stdout = f;
 	stdin = f;
 }
 
-const struct keyboard_cfg keyboard_piano_cfg = {
-	.keymap_cnt = 16,
-	.keymap = {
-		 [0] = { .key =  1, .code = MIDI_C4},
-		 [1] = { .key =  2, .code = MIDI_D4},
-		 [2] = { .key =  3, .code = MIDI_E4},
-		 [3] = { .key =  4, .code = MIDI_F4},
-		 [4] = { .key =  8, .code = MIDI_G4},
-		 [5] = { .key =  5, .code = MIDI_A4},
-		 [6] = { .key =  6, .code = MIDI_B4},
-
-		 [7] = { .key =  7, .code = MIDI_C5},
-
-		 [8] = { .key =  9, .code = MIDI_D5},
-		 [9] = { .key = 10, .code = MIDI_E5},
-		[10] = { .key = 11, .code = MIDI_F5},
-		[11] = { .key = 12, .code = MIDI_G5},
-		[12] = { .key = 13, .code = MIDI_A5},
-		[13] = { .key = 14, .code = MIDI_B5},
-
-		[14] = { .key = 15, .code = MIDI_C6},
-		[15] = { .key = 16, .code = MIDI_D6}
-	}
-};
-
-uint32_t x;
-
-int o54d_filt(float st[], float y[], float x[], unsigned int len);
-float lp_st[4];
-
-int __attribute__((noinline)) filt_test(void)
+void select_silence(void)
 {
-	float x[1024];
-	float y[256];
-	int i;
+	struct addsynth_instrument * instr;
+	instr = addsynth_instrument_getinstance();
 
-	for (i = 0; i < 1024; ++i) {
-		x[i] = (float)(RAND_MAX) / rand();
-	}
+	dac_gain_set(0);
 
-	return o54d_filt(lp_st, y, x, 1024);
+	keyboard_config(&keyboard_piano_cfg);
+	addsynth_instr_config(instr, &addsynth_null_cfg);
 }
 
-uint32_t __attribute__((noinline)) test(uint32_t r0, uint32_t r1, uint32_t r2)
+void select_xilophone(void)
 {
-	uint32_t r3;
+	struct addsynth_instrument * instr;
+	instr = addsynth_instrument_getinstance();
 
-
-	r3 = r0 & 0x7;
-	r0 = r0 & ~0x7;
-
-	switch (r3) {
-		case 0:
-			x = r1 + r2;
-		break;
-
-		case 1:
-			x = r1 - r2;
-		break;
-
-		case 2:
-			x = r1 * r2;
-		break;
-
-		case 3:
-			x = r1 / r2;
-		break;
-
-		case 4:
-			x = 3 * r1  + r2;
-		break;
-
-		case 5:
-			x = r1  + 7 * r2;
-		break;
-
-		case 6:
-			x = 17 * r1  + 11 * r2;
-		break;
-	}
-
-	return r0;
+	keyboard_config(&keyboard_xilophone_cfg);
+	addsynth_instr_config(instr, &addsynth_xilophone_cfg);
+	dac_gain_set(0.75);
 }
 
-void cpu_usage_report(FILE * f)
+void select_piano(void)
 {
-	const struct thinkos_thread_inf *infbuf[33];
-	uint32_t cycbuf[33];
-	uint32_t cycsum = 0;
-	uint32_t cycbusy;
-	uint32_t cycidle;
-	uint32_t cycdiv;
-	uint32_t idle;
-	uint32_t busy;
-	int i;
-	int cnt;
+	struct addsynth_instrument * instr;
+	instr = addsynth_instrument_getinstance();
 
-
-	/* The cycle counter and thread info must be collected with no 
-	   interruptions when threads are created/destroyed at runtime. */
-	thinkos_critical_enter();
-	cnt = thinkos_thread_inf(infbuf, 33);
-	thinkos_thread_cyccnt(cycbuf, cnt);
-	thinkos_critical_exit();
-
-	fprintf(f, "\n");
-
-	cycsum = 0;
-	for (i = 0; i < cnt; ++i)
-		cycsum += cycbuf[i];
-	cycidle = cycbuf[cnt - 1];	/* The last item is IDLE */
-	cycbusy = cycsum - cycidle;
-	cycdiv = (cycsum + 5000) / 10000;
-	busy = (cycbusy + (cycdiv / 2)) / cycdiv;
-	idle = 1000 - busy;
-	fprintf(f, "CPU usage: %d.%02d%% busy, %d.%02d%% idle\r\n",
-			busy / 100, busy % 100, idle / 100, idle % 100);
-
-	for (i = 0; i < cnt; ++i) {
-		const struct thinkos_thread_inf *inf;
-		if (((inf = infbuf[i]) != NULL) && (cycbuf[i] != 0)) {
-			uint32_t usage;
-			usage = (cycbuf[i] + cycdiv / 2) / cycdiv;
-			fprintf(f, "%2d %7s %3d.%02d%%\r\n", i, inf->tag,
-					usage / 100, usage % 100);
-		}
-	}
-
+	keyboard_config(&keyboard_piano_cfg);
+	addsynth_instr_config(instr, &addsynth_piano_cfg);
+	dac_gain_set(0.75);
 }
 
 int main(int argc, char ** argv)
@@ -230,48 +132,26 @@ int main(int argc, char ** argv)
 	stdio_init();
 
 	printf("\n\r\n\r");
-	printf("-------------------\n");
-	printf("  JUJU Synthesizer \n");
-	printf("-------------------\n");
+	printf("-------------------\r\n");
+	printf("  JUJU Synthesizer \r\n");
+	printf("-------------------\r\n");
 	printf("\n\r");
-
-	test(10, 11, 22);
-	filt_test();
 
 	io_init();
 
 	spidrv_master_init(200000);
 
-	printf("DAC init...\n\r");
-	thinkos_sleep(10);
 	dac_init();
+	dac_gain_set(0);
 
-	printf("Keyboard init...\n\r");
-	thinkos_sleep(10);
 	keyboard_init();
 
-	printf("Keyboard config...\n\r");
-	thinkos_sleep(10);
-	keyboard_config(&keyboard_piano_cfg);
-
-	printf("Instrument init...\n\r");
-	thinkos_sleep(10);
 	instr = addsynth_instrument_getinstance();
 	addsynth_instr_init(instr);
 
-	printf("Instrument config...\n\r");
-	thinkos_sleep(10);
-	addsynth_instr_config(instr, &addsynth_piano_cfg);
-
-	printf("Sequencer ...\n\r");
-	thinkos_sleep(10);
 	dac_start();
 
-	printf("------------------------------------------------------------\n\r");
-	thinkos_sleep(10);
-
-	keyboard_timer_set(1, 10000);
-	keyboard_timer_enable(1);
+	shell_init();
 
 	/* sequencer */
 	for (;;) {
@@ -292,21 +172,30 @@ int main(int argc, char ** argv)
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_on(instr, code, vel); 
-//			printf("<%2d> KEY_ON\n", arg);
+//			printf("<%2d> KEY_ON\r\n", arg);
 			break;
 		case KBD_EV_KEY_OFF:
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_off(instr, code, vel); 
-//			printf("<%2d> KEY_OFF\n", arg);
+//			printf("<%2d> KEY_OFF\r\n", arg);
+			break;
+
+		case KBD_EV_SWITCH_ON:
+			if (arg == 0)
+				select_piano();
+			else
+				select_xilophone();
+//			printf("<%2d> SWITCH ON\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_OFF:
-			printf("<%2d> SWITCH OFF\n", arg);
+			select_silence();
+//			printf("<%2d> SWITCH OFF\r\n", arg);
 			break;
 
 		case KBD_EV_TIMEOUT:
-			printf("timeout\n");
+	//		printf("timeout\r\n");
 //			cpu_usage_report(stdout);
 			break;
 		}

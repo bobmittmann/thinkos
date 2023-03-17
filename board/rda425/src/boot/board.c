@@ -31,6 +31,7 @@
 #include <thinkos/bootldr.h>
 #include <thinkos.h>
 #include <trace.h>
+#include <vt100.h>
 
 #include "board.h"
 #include "version.h"
@@ -227,8 +228,8 @@ void io_init(void)
 	stm32_gpio_mode(IO_COMM_RX, ALT_FUNC, SPEED_HIGH);
 
 	/* Raise interrupt on falling edge */
-	stm32f_exti_init(IO_COMM_NTXEN, 0);
-	stm32f_exti_init(IO_COMM_NSEL, 0);
+	stm32_exti_init(IO_COMM_NTXEN, 0);
+	stm32_exti_init(IO_COMM_NSEL, 0);
 #endif
 	/* - LEDs -------------------------------------------------------------- */
 	stm32_gpio_clr(IO_LED1A);
@@ -340,7 +341,7 @@ int board_boot_init(void)
 #if COMM_NSEL_ISR_ENABLE
 void stm32f_exti9_5_isr(void)
 {
-	struct stm32f_exti *exti = STM32F_EXTI;
+	struct stm32_exti *exti = STM32_EXTI;
 
 	exti->pr = EXTI_COMM_NSEL;
 
@@ -389,7 +390,7 @@ void ptp_uart_init(unsigned int baudrate)
 
 void stm32f_exti3_isr(void)
 {
-	struct stm32f_exti *exti = STM32F_EXTI;
+	struct stm32_exti *exti = STM32_EXTI;
 	struct stm32_usart *uart = STM32_USART2;
 	uint32_t cr1;
 
@@ -712,15 +713,23 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.softreset = board_on_softreset,
+	.on_softreset = board_on_softreset,
 	.memory = &mem_map
 };
 
-void standby_monitor_task(const struct monitor_comm * comm, void * arg);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg);
+void thinkos_arch_release_get(struct thinkos_release * rel)
+{
+    __thinkos_memcpy(rel, &this_board.sw, sizeof(struct thinkos_release));
+}
+
+void standby_monitor_task(const struct monitor_comm * comm, void * arg, 
+						  uintptr_t sta, struct thinkos_rt * krn);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   uintptr_t sta, struct thinkos_rt * krn);
 
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
     const struct monitor_comm * comm;
     uintptr_t app_addr;
 
@@ -741,9 +750,9 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 1. thinkos_krn_init()." VT_POP);
-    thinkos_krn_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+    thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
                      THINKOS_OPT_PRIVILEGED |
-                     THINKOS_OPT_STACK_SIZE(32768), NULL, NULL);
+                     THINKOS_OPT_STACK_SIZE(32768), NULL);
 
 #if DEBUG
     mdelay(125);
@@ -765,7 +774,8 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 #endif
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 4. thinkos_krn_monitor_init()." VT_POP);
-    thinkos_krn_monitor_init(comm, boot_monitor_task, (void *)&this_board);
+    thinkos_krn_monitor_init(krn, comm, 
+							 boot_monitor_task, (void *)&this_board);
 
 #if DEBUG
     mdelay(125);
@@ -791,7 +801,7 @@ void __attribute((noreturn)) main(int argc, char ** argv)
 
     DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
             "* 7. thinkos_app_exec()..." VT_POP);
-    thinkos_app_exec(app_addr);
+    thinkos_app_exec(app_addr, 0, 0, 0, 0);
     DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
             "**** thinkos_app_exec() failed." VT_POP);
 #if DEBUG

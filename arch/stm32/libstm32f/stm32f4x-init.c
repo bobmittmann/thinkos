@@ -383,7 +383,21 @@ const uint32_t stm32f_vcoi2s_hz = __VCOI2S_HZ;
 #ifndef THINKAPP
 
 /* This constant is used to calibrate the systick timer */
-const uint32_t cm3_systick_load_1ms = ((__HCLK_HZ / 8) / 1000) - 1;
+
+#define SYSTICK_DIV_1MS(__CLK_HZ__) (((__CLK_HZ__) + 4000) / 8000)
+
+#define KRN_SYSTICK_K(__CLK_HZ__) ((uint64_t)(8000ll << 32) / (__CLK_HZ__))
+
+#define SYSTICK_F_HZ(__CLK_HZ__) (((uint64_t)(__CLK_HZ__)) / \
+								  (SYSTICK_DIV_1MS(__CLK_HZ__) * 8))
+
+#define KRN_CLK_INC_Q32(__F_HZ__) ((uint64_t)(1LL << 32) / (__F_HZ__))
+
+const uint32_t cm3_systick_load_1ms = SYSTICK_DIV_1MS(__HCLK_HZ) - 1;
+
+const uint32_t krn_timer_clk_k = KRN_SYSTICK_K(__HCLK_HZ);
+const uint32_t krn_timer_freq = SYSTICK_F_HZ(__HCLK_HZ);
+const uint32_t krn_timer_inc_q32 = KRN_CLK_INC_Q32(SYSTICK_F_HZ(__HCLK_HZ));
 
 const uint32_t sysclk_hz[] = {
 	[SYSCLK_STM32_AHB] = __HCLK_HZ,
@@ -393,7 +407,7 @@ const uint32_t sysclk_hz[] = {
 	[SYSCLK_STM32_TIM2] = __HCLK_HZ,
 };
 
-void __attribute__((section(".init"))) _init(void)
+void __attribute__((section(".init"))) stm32f4x_init(void)
 {
 #if defined(STM32F446)
 	struct stm32_pwr * pwr = STM32_PWR;
@@ -538,6 +552,9 @@ void __attribute__((section(".init"))) _init(void)
 #endif
 
 }
+
+void __attribute__((weak, alias("stm32f4x_init"))) _init(void);
+
 
 #endif /* THINKAPP */
 

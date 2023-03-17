@@ -51,19 +51,20 @@ static float __powfu32(float x, uint32_t n)
 
 int exp_envelope_on(struct exp_envelope * env, uint32_t clk)
 {
-	env->e1 = 1.0;
-	env->e2 = 1.0;
+	env->e1 += (float)1.0;
+	env->e2 += (float)1.0;
 	env->c1 = 1.0;
 	env->c2 = 1.0;
 
 	return 0;
 }
 
-
 int exp_envelope_reset(struct exp_envelope *env, uint32_t clk)
 {
 	env->e1 = 1.0;
 	env->e2 = 1.0;
+	env->c1 = 1.0;
+	env->c2 = 1.0;
 
 	return 0;
 }
@@ -86,11 +87,13 @@ int exp_envelope_config(struct exp_envelope *env, float dt,
 	uint32_t nhold;
 	uint32_t ndecay;
 	uint32_t nrelease;
+	uint32_t nsupress;
 	uint32_t n;
 	float c2attack;
 	float c1hold;
 	float c1decay;
 	float c1release;
+	float c1supress;
 	float b;
 	float y;
 /*
@@ -102,6 +105,7 @@ int exp_envelope_config(struct exp_envelope *env, float dt,
 	nhold = dac_ms2samples(cfg->hold_itv_ms);
 	ndecay = dac_ms2samples(cfg->guard_itv_ms + cfg->decay_itv_ms);
 	nrelease = dac_ms2samples(cfg->release_itv_ms);
+	nsupress = dac_ms2samples(cfg->supress_itv_ms);
 	sustain_lvl = cfg->sustain_lvl;
 /*
 	printf("  sustain_lvl=%f\n", (double)sustain_lvl); 
@@ -148,18 +152,28 @@ int exp_envelope_config(struct exp_envelope *env, float dt,
 
 //	printf("3. c1=%f c2=%f e1=%f e2=%f\n", (double)c1, (double)c2,
 //		   (double)e1, (double)e2);
-	y = 0.01;
+	y = 0.001;
 	if ((n = nrelease) > 0) {
 		b = (e2 * __powfu32(c2, n) + y) / e1;
 //		printf("5. b=%f\n", (double)b); 
 		c1 = powf(b, (float)1.0 / n);
 	} else {
-		c1 = .5;
+		c1 = .125;
 	}
 	c1release = c1;
 
-//	printf("attack=%d hold=%d ndecay%d nrelease=%d\n", 
-//		   nattack, nhold, ndecay, nrelease);
+	y = 0.001;
+	if ((n = nsupress) > 0) {
+		b = (e2 * __powfu32(c2, n) + y) / e1;
+//		printf("5. b=%f\n", (double)b); 
+		c1 = powf(b, (float)1.0 / n);
+	} else {
+		c1 = 1.0;
+	}
+	c1supress = c1;
+
+//	printf("attack=%d hold=%d ndecay%d nrelease=%d nsupress=%d\r\n", 
+//		   nattack, nhold, ndecay, nrelease, nsupress);
 //	printf("c2attack=%10.8f c1hold=%10.8f c1decay=%10.8f c1release=%10.8f\n", 
 //		   (double)c2attack, (double)c1hold, 
 //		   (double)c1decay, (double)c1release);
@@ -169,6 +183,7 @@ int exp_envelope_config(struct exp_envelope *env, float dt,
 	env->c1hold = c1hold;
 	env->c1decay = c1decay;
 	env->c1release = c1release;
+	env->c1supress = c1supress;
 
 	return 0;
 };
@@ -196,7 +211,14 @@ int exp_envelope_decay(struct exp_envelope * env, uint32_t clk)
 
 int exp_envelope_sustain(struct exp_envelope * env, uint32_t clk)
 {
-	env->c1 = 1;
+	env->c1 = env->c1supress;
+
+	return 0;
+}
+
+int exp_envelope_supress(struct exp_envelope * env, uint32_t clk)
+{
+	env->c1 = env->c1supress;
 
 	return 0;
 }

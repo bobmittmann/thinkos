@@ -23,12 +23,11 @@
 #include <thinkos/kernel.h>
 #include <thinkos.h>
 
-
 const char thinkos_type_name_lut[][6] = {
 	[THINKOS_OBJ_READY]     = "Ready",
 	[THINKOS_OBJ_THREAD]    = "Thrd",
 	[THINKOS_OBJ_CLOCK]     = "Clock",
-	[THINKOS_OBJ_MUTEX]     = "Mutex",
+	[THINKOS_OBJ_MUTEX]     = "Mutx",
 	[THINKOS_OBJ_COND]      = "Cond",
 	[THINKOS_OBJ_SEMAPHORE] = "Sema",
 	[THINKOS_OBJ_EVENT]     = "EvSet",
@@ -39,8 +38,8 @@ const char thinkos_type_name_lut[][6] = {
 	[THINKOS_OBJ_PAUSED]    = "Pausd",
 	[THINKOS_OBJ_CANCELED]  = "Cancl",
 	[THINKOS_OBJ_TMSHARE]   = "Sched",
-	[THINKOS_OBJ_COMMSEND]  = "ComTx",
-	[THINKOS_OBJ_COMMRECV]  = "ComRx",
+	[THINKOS_OBJ_COMMTX]    = "ComTx",
+	[THINKOS_OBJ_COMMRX]    = "ComRx",
 	[THINKOS_OBJ_IRQ]       = "Irq",
 	[THINKOS_OBJ_DMA]       = "Dma",
 	[THINKOS_OBJ_FLASH_MEM] = "Flash",
@@ -63,8 +62,8 @@ const char thinkos_type_prefix_lut[] = {
 	[THINKOS_OBJ_PAUSED]    = 'P',
 	[THINKOS_OBJ_CANCELED]  = '-',
 	[THINKOS_OBJ_TMSHARE]   = '^',
-	[THINKOS_OBJ_COMMSEND]  = '>',
-	[THINKOS_OBJ_COMMRECV]  = '<',
+	[THINKOS_OBJ_COMMTX]    = '>',
+	[THINKOS_OBJ_COMMRX]    = '<',
 	[THINKOS_OBJ_IRQ]       = 'I',
 	[THINKOS_OBJ_DMA]       = 'D',
 	[THINKOS_OBJ_FLASH_MEM] = 'A',

@@ -150,7 +150,7 @@ the boot in the main flash, without loosing the debugger connection.
    Cleared by writing 1.
    */
 
-#define FLASH_MISERR (1 << 9)
+#define FLASH_MISERR (1 << 8)
 /* Fast programming data miss error
 In Fast programming mode, 32 double words must be sent to flash successively,
    and the new data must be sent to the flash logic control before the current data is

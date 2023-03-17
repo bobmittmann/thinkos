@@ -52,13 +52,13 @@ void monitor_print_exception(const struct monitor_comm * comm,
 
 	ipsr = xcpt->ctx.xpsr & 0x1ff;
 	if (ipsr == 0) {
-		monitor_printf(comm, "thread %d", xcpt->sched.active);
+		monitor_printf(comm, "thread %d", xcpt->thread);
 	} else if (ipsr > 15) {
 		monitor_printf(comm, "IRQ %d", ipsr - 16);
 	} else {
 		switch (ipsr) {
 		case CM3_EXCEPT_SVC:
-			monitor_printf(comm, "SVCall, thread %d", xcpt->sched.active);
+			monitor_printf(comm, "SVCall, thread %d", xcpt->thread);
 			break;
 		case CM3_EXCEPT_DEBUG_MONITOR:
 			monitor_printf(comm, "Monitor");
@@ -76,13 +76,14 @@ void monitor_print_exception(const struct monitor_comm * comm,
 
 	/* FIXME: access function.. */
 	ret = 0xffffff00 | (xcpt->ret & 0xff);
-	sp = (ret & EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+//	sp = (ret & EXC_RET_SPSEL) ? xcpt->psp : xcpt->msp;
+	sp = xcpt->sp;
 	ctrl = xcpt->control;
 
 	monitor_print_context(comm, &xcpt->ctx, sp, ctrl);
 						
-	monitor_printf(comm, " ret=%08x [ %s ] PSP=%08x MSP=%08x\r\n", 
-				  ret, __retstr(ret), xcpt->psp, xcpt->msp);
+	monitor_printf(comm, " ret=%08x [ %s ] SP=%08x\r\n", 
+				  ret, __retstr(ret), xcpt->sp);
 
 	switch (xcpt->errno) {
 #if THINKOS_ENABLE_MPU 

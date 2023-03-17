@@ -23,10 +23,9 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#define __SHELL_I__
+#include "shell-i.h"
+
 #include <ctype.h>
 
 #ifndef SHELL_ENABLE_OPERATORS 
@@ -48,9 +47,15 @@ static const char punct_str[][2] = {
 };
 #endif
 
+const char * op_assign = "=";
+const char * op_equal = "==";
+
+//static const char * op_plus = "+";
+//static const char * op_inc = "++";
+
 int shell_parseline(char * line, char ** argv, int argmax)
 {
-	char * tok;
+	char * tok = NULL;
 	int qt;
 	int n;
 	int c;
@@ -59,13 +64,13 @@ int shell_parseline(char * line, char ** argv, int argmax)
 	char * punct;
 #endif
 
-	for (n = 0; (c = *cp) && (n < argmax); ) {
+	c = *cp;
+
+	for (n = 0; (n < argmax); ) {
 		/* Remove lead blanks */
-		for (;;) {
-			c = *cp;
-			if (!isspace(c))
-				break;
+		while (isspace(c)) {
 			cp++;
+			c = *cp;
 		}
 
 		/* Quotes: copy verbatim */
@@ -80,21 +85,44 @@ int shell_parseline(char * line, char ** argv, int argmax)
 			}
 			*cp++ = '\0';
 			argv[n++] = tok;
+			c = *cp;
 			continue;
 		}
-	
+
 		tok = cp;
 
 		for (;;) {
-
 			if (c == '\0') {
-				if (tok != cp)
+				 if (tok != cp)
 					argv[n++] = tok;
 				return n;
 			}
 
+#if 0
+			if (c == '=') {
+				if (tok != cp) {
+					*cp = '\0';
+				} else	{
+					tok = (char *)op_assign;
+					cp++;
+					c = *cp;
+				}
+				argv[n++] = tok;
+				break;
+			}
+#endif
+
+			if (isspace(c)) {
+				*cp = '\0';
+				cp++;
+				c = *cp;
+				argv[n++] = tok;
+				break;
+			}
+
 #if SHELL_ENABLE_OPERATORS
 			if (ispunct(c) && (c != '.') && (c != '_')) {
+#if 0
 				if ((c == '<') && (cp[1] == '<')) {
 					*cp++ = '\0';
 					punct = "<<";
@@ -106,24 +134,22 @@ int shell_parseline(char * line, char ** argv, int argmax)
 						punct = (char *)punct_str[c - '!'];
 					}
 				}
+#endif
 
-				if (cp != tok)
-					argv[n++] = tok;
 
-				*cp++ = '\0';
-
-				if (n < argmax)
-					argv[n++] = punct;
+				if (tok != cp) {
+					*cp = '\0';
+				} else	{
+					punct = (char *)punct_str[c - '!'];
+					tok = (char *)punct;
+					cp++;
+					c = *cp;
+				}
+				argv[n++] = tok;
 
 				break;
 			} 
 #endif
-
-			if (isspace(c)) {
-				*cp++ = '\0';
-				argv[n++] = tok;
-				break;
-			}
 
 			cp++;
 			c = *cp;

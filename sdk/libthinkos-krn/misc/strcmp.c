@@ -27,8 +27,9 @@
 
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
-_Pragma ("GCC optimize (\"Os\")")
+
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 /*
@@ -50,4 +51,7 @@ int __thinkos_strcmp(const char * __s1, const char * __s2)
 
 	return 0;
 }
+
+int strcmp(const char *, const char *)
+	__attribute__ ((weak, alias ("__thinkos_strcmp")));
 

@@ -24,15 +24,7 @@
 #define __BOARD_H__
 
 #include "config.h"
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <thinkos.h>
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
 #include <sys/stm32f.h>
-#include <arch/cortex-m3.h>
 
 /* USB */
 #define USB_FS_DP STM32_GPIOA, 12
@@ -51,8 +43,8 @@
 #define LED1_IO STM32_GPIOA, 6
 #define LED2_IO STM32_GPIOA, 7
 
-#define LED_RED 1
-#define LED_AMBER 0
+#define LED_RED    1
+#define LED_AMBER  0
 
 #ifdef __cplusplus
 extern "C" {

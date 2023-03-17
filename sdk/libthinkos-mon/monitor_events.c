@@ -23,7 +23,6 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-
 #ifdef CONFIG_H
 #include "config.h"
 #endif
@@ -38,25 +37,17 @@
 
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-/*
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
-*/
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
 #define __THINKOS_KRNSVC__
 #include <thinkos/krnsvc.h>
 
 #include <thinkos.h>
-#include <vt100.h>
 
 #include <sys/dcclog.h>
 
-/*
-   Default Monitor comm event handler
- */
-uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm, 
-							 uint32_t sigmask)
+uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm, 
+							uint32_t sigmask)
 {
 	uint8_t * ptr;
 	int cnt;
@@ -66,33 +57,68 @@ uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm,
 	   consecutive spaces in the buffer. */
 	if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
 		int n;
+
 		/* receive from the COMM driver */
 		if ((n = monitor_comm_recv(comm, ptr, cnt)) > 0) {
 			/* commit the fifo head */
 			thinkos_console_rx_pipe_commit(n);
 			if (n == cnt) {
+				/* the pipe is full, clear the flag */
+				monitor_clear(MONITOR_RX_PIPE);
+				/* Wait for RX_PIPE & stop COMM_RECV notifications */
+				sigmask |= (1 << MONITOR_RX_PIPE);
+				sigmask &= ~(1 << MONITOR_COMM_RCV);
 				/* Wait for RX_PIPE */
-				DCC_LOG(LOG_INFO, "Wait for RX_PIPE && COMM_RECV");
-				sigmask |= (1 << MONITOR_COMM_RCV);
-				sigmask &=  ~(1 << MONITOR_RX_PIPE);
-				//sigmask &=  ~(1 << MONITOR_RX_PIPE);
+				DCC_LOG1(LOG_TRACE, "RX_PIPE: fifo full recv=%d", n);
 			} else {
 				/* Wait for COMM_RECV */
-				DCC_LOG(LOG_INFO, "Wait for COMM_RECV");
+				sigmask |= (1 << MONITOR_RX_PIPE);
 				sigmask |= (1 << MONITOR_COMM_RCV);
-				sigmask &=  ~(1 << MONITOR_RX_PIPE);
+				DCC_LOG2(LOG_TRACE, "RX_PIPE: free=%d recv=%d ", cnt, n);
 			}
 		} else {
-			DCC_LOG1(LOG_ERROR, "monitor_comm_recv n=%d", n);
+			monitor_clear(MONITOR_COMM_RCV);
 			/* Wait for COMM_RECV */
-			sigmask |= (1 << MONITOR_COMM_RCV);
 			sigmask &=  ~(1 << MONITOR_RX_PIPE);
+			sigmask |= (1 << MONITOR_COMM_RCV);
+			DCC_LOG1(LOG_WARNING, "RX_PIPE: free=%d recv none", cnt);
 		}
 	} else {
-		DCC_LOG(LOG_INFO, "Raw mode RX wait RX_PIPE");
-		/* Wait for RX_PIPE */
-		sigmask &= ~(1 << MONITOR_COMM_RCV);
+		monitor_clear(MONITOR_RX_PIPE);
+		/* Stop receiving */
 		sigmask |= (1 << MONITOR_RX_PIPE);
+		sigmask &= ~(1 << MONITOR_COMM_RCV);
+		DCC_LOG(LOG_WARNING, "RX_PIPE: fifo full");
+	}
+
+	return sigmask;
+}
+
+uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm, 
+							uint32_t sigmask)
+{
+	uint8_t * ptr;
+	int cnt;
+
+	if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
+		int n;
+		if ((n = monitor_comm_send(comm, ptr, cnt)) > 0) {
+			thinkos_console_tx_pipe_commit(n);
+			sigmask |= (1 << MONITOR_TX_PIPE);
+			sigmask |= (1 << MONITOR_COMM_EOT);
+		} else {
+			monitor_clear(MONITOR_COMM_EOT);
+			/* Wait for COMM_EOT, stop TX_PIPE notification */
+			sigmask &= ~(1 << MONITOR_TX_PIPE);
+			sigmask |= (1 << MONITOR_COMM_EOT);
+			DCC_LOG1(LOG_INFO, "TX_PIPE: data=%d sent none", cnt);
+		}
+	} else {
+		monitor_clear(MONITOR_TX_PIPE);
+		/* Wait for TX_PIPE, stop COMM_EOT notification */
+		sigmask |= (1 << MONITOR_TX_PIPE);
+		sigmask &= ~(1 << MONITOR_COMM_EOT);
+		DCC_LOG(LOG_INFO, "TX_PIPE: fifo empty");
 	}
 
 	return sigmask;
@@ -134,82 +160,12 @@ uint32_t monitor_on_comm_ctl(const struct monitor_comm * comm,
 	return sigmask;
 }
 
-uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm, 
-							uint32_t sigmask)
+
+/*
+   Default Monitor comm event handler
+ */
+uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm, 
+							 uint32_t sigmask)
 {
-	uint8_t * ptr;
-	int cnt;
-
-	if ((cnt = thinkos_console_tx_pipe_ptr(&ptr)) > 0) {
-		int n;
-		DCC_LOG1(LOG_INFO, "TX Pipe: cnt=%d, send...", cnt);
-		if ((n = monitor_comm_send(comm, ptr, cnt)) > 0) {
-			thinkos_console_tx_pipe_commit(n);
-			if (n == cnt) {
-				/* Wait for TX_PIPE */
-				sigmask |= (1 << MONITOR_TX_PIPE);
-				sigmask &= ~(1 << MONITOR_COMM_EOT);
-			} else {
-				/* Wait for COMM_EOT */
-				sigmask |= (1 << MONITOR_COMM_EOT);
-				sigmask &= ~(1 << MONITOR_TX_PIPE);
-			}
-		} else {
-			/* Wait for COMM_EOT */
-			sigmask |= (1 << MONITOR_COMM_EOT);
-			sigmask &=  ~(1 << MONITOR_TX_PIPE);
-		}
-	} else {
-		/* Wait for TX_PIPE */
-		DCC_LOG1(LOG_INFO, "TX Pipe: cnt=%d, wait....", cnt);
-		sigmask |= (1 << MONITOR_TX_PIPE);
-		sigmask &= ~(1 << MONITOR_COMM_EOT);
-	}
-
 	return sigmask;
 }
-
-uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm, 
-							uint32_t sigmask)
-{
-	uint8_t * ptr;
-	int cnt;
-
-	/* get a pointer to the head of the pipe.
-	   thinkos_console_rx_pipe_ptr() will return the number of 
-	   consecutive spaces in the buffer. */
-	if ((cnt = thinkos_console_rx_pipe_ptr(&ptr)) > 0) {
-		int n;
-
-		/* receive from the COMM driver */
-		if ((n = monitor_comm_recv(comm, ptr, cnt)) > 0) {
-			/* commit the fifo head */
-			thinkos_console_rx_pipe_commit(n);
-			if (n == cnt) {
-				/* Wait for RX_PIPE */
-				DCC_LOG(LOG_INFO, 
-						"RX_PIPE: Wait for RX_PIPE && COMM_RECV");
-				sigmask |= (1 << MONITOR_COMM_RCV);
-				sigmask &=  ~(1 << MONITOR_RX_PIPE);
-			} else {
-				DCC_LOG(LOG_INFO, "RX_PIPE: Wait for COMM_RECV");
-				/* Wait for COMM_RECV */
-				sigmask |= (1 << MONITOR_COMM_RCV);
-				sigmask &=  ~(1 << MONITOR_RX_PIPE);
-			}
-		} else {
-			/* Wait for COMM_RECV */
-			DCC_LOG(LOG_ERROR, "RX_PIPE: Wait for COMM_RECV");
-			sigmask |= (1 << MONITOR_COMM_RCV);
-			sigmask &=  ~(1 << MONITOR_RX_PIPE);
-		}
-	} else {
-		DCC_LOG1(LOG_ERROR, "RX_PIPE: RX, cnt=%d", cnt);
-		/* Wait for RX_PIPE */
-		sigmask &= ~(1 << MONITOR_COMM_RCV);
-		sigmask |= (1 << MONITOR_RX_PIPE);
-	}
-
-	return sigmask;
-}
-

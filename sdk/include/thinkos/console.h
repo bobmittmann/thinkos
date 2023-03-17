@@ -39,6 +39,9 @@ extern "C" {
 /* intialize kernel console */
 void thinkos_krn_console_init(void);
 
+/* resets kernel console */
+void thinkos_krn_console_reset(void);
+
 /* set/clear the kernel console's connected flag */
 void thinkos_krn_console_connect_set(bool val); 
 
@@ -52,6 +55,10 @@ bool thinkos_krn_console_is_raw_mode(void);
 int thinkos_console_rx_pipe_ptr(uint8_t ** ptr);
 /* commit 'cnt' octets on console's recieving pipe */
 void thinkos_console_rx_pipe_commit(int cnt); 
+
+ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn, 
+									  const uint8_t * buf, size_t len);
+
 
 int thinkos_console_tx_pipe_ptr(uint8_t ** ptr);
 

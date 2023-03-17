@@ -45,13 +45,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[5] = { .freq = MIDI_C4_FREQ * 6, .ampl = 0.01 }
 			},
 			.env = {
-				.guard_itv_ms = 50,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
-				.sustain_lvl = 0.75
+				.decay_itv_ms = 25,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
+				.sustain_lvl = 0.66
 			}
 		},
 		[1] = {
@@ -66,13 +67,14 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				[5] = { .freq = MIDI_D4_FREQ * 6, .ampl = 0.01 }
 			},
 			.env = {
-				.guard_itv_ms = 50,
+				.guard_itv_ms = 0,
 				.delay_itv_ms = 0,
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
-				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
-				.sustain_lvl = 0.75
+				.decay_itv_ms = 25,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
+				.sustain_lvl = 0.665
 			}
 		},
 		[2] = {
@@ -92,7 +94,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -114,7 +117,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -136,7 +140,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -158,7 +163,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -180,7 +186,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -202,7 +209,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -224,7 +232,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -246,7 +255,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -268,7 +278,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -290,7 +301,8 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
+				.supress_itv_ms = 10000,
 				.sustain_lvl = 0.75
 			}
 
@@ -312,7 +324,7 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
 				.sustain_lvl = 0.75
 			}
 
@@ -334,7 +346,7 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
 				.sustain_lvl = 0.75
 			}
 
@@ -356,7 +368,7 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
 				.sustain_lvl = 0.75
 			}
 
@@ -378,7 +390,7 @@ const struct addsynth_instrument_cfg addsynth_piano_cfg = {
 				.attack_itv_ms = 25,
 				.hold_itv_ms = 0,
 				.decay_itv_ms = 0,
-				.release_itv_ms = 125,
+				.release_itv_ms = 200,
 				.sustain_lvl = 0.75
 			}
 

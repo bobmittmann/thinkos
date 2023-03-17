@@ -22,7 +22,7 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
-#if THINKOS_ENABLE_OFAST
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
@@ -41,7 +41,7 @@ __krn_sem_is_alloc(struct thinkos_rt * krn, unsigned int sem) {
 }
 #endif
 
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 int krn_sem_check(struct thinkos_rt * krn, int sem)
 {
 	if (!__krn_obj_is_sem(krn, sem)) {
@@ -80,7 +80,7 @@ void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t sem_val;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
@@ -110,7 +110,7 @@ void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	unsigned int sem = arg[0];
 	uint32_t sem_val;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
@@ -144,7 +144,7 @@ again:
 	 */
 	__krn_thread_suspend(krn, self);
 	/* update the thread status in preparation for event wait */
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	krn->th_stat[self] = sem << 1;
 #endif
 	/* (2) Save the context pointer. In case an interrupt wakes up
@@ -181,17 +181,17 @@ again:
 	/* -- wait for event ---------------------------------------- */
 	DCC_LOG2(LOG_INFO, "<%d> waiting on semaphore %d...", self, sem);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
 	uint32_t sem_val;
 	uint32_t queue;
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
@@ -214,12 +214,10 @@ again:
 	}
 
 	__krn_thread_suspend(krn, self);
-#if THINKOS_ENABLE_THREAD_STAT
+#if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status, mark the thread clock enable bit */
 	krn->th_stat[self] = (sem << 1) + 1;
 #endif
-	__thread_ctx_set(krn, self, (struct thinkos_context *)&arg[-CTX_R0],
-							 CONTROL_SPSEL | CONTROL_nPRIV);
 	queue = __ldrex(&krn->wq_lst[sem]);
 	queue |= (1 << (self - 1));
 	if (((volatile uint32_t)krn->sem_val[sem - THINKOS_SEM_BASE] > 0) ||
@@ -241,7 +239,7 @@ again:
 	   sem_post call will change this to 0 */
 	arg[0] = THINKOS_ETIMEDOUT;
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 #endif
 
@@ -273,7 +271,7 @@ static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem)
 
 	/* insert the thread into ready queue */
 	__thread_ready_set(krn, th);  
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);
 	/* set the thread's return value */
@@ -305,7 +303,7 @@ void __thinkos_sem_post_i(uint32_t sem)
 void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
 	unsigned int sem = arg[0];
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
@@ -321,7 +319,7 @@ void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[0] = THINKOS_OK;
 	__krn_sem_post(krn, sem);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 #if (THINKOS_ENABLE_PAUSE)
@@ -336,7 +334,7 @@ bool semaphore_resume(struct thinkos_rt * krn, unsigned int th,
 		krn->sem_val[idx]--;
 		/* insert the thread into ready queue */
 		__thread_ready_set(krn, th);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
 		__thread_r0_set(krn, th, 0);
 #endif
@@ -344,7 +342,7 @@ bool semaphore_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_stat_clr(krn, th);
 	} else {
 		__thread_wq_set(krn, th, sem);
-#if THINKOS_ENABLE_TIMED_CALLS
+#if (THINKOS_ENABLE_TIMED_CALLS)
 		if (tmw)
 			__thread_clk_enable(krn, th);
 #endif

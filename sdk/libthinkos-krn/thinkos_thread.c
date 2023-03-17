@@ -25,11 +25,11 @@
 
 int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 {
-#if THINKOS_ENABLE_ARG_CHECK
+#if (THINKOS_ENABLE_ARG_CHECK)
 	if (!__krn_obj_is_thread(krn, th)) {
 		return THINKOS_ERR_THREAD_INVALID;
 	}
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	if (__krn_thread_is_alloc(krn, th) == 0) {
 		return THINKOS_ERR_THREAD_ALLOC;
 	}
@@ -38,17 +38,16 @@ int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 	return THINKOS_OK;
 }
 
-
-int thinkos_krn_thread_init(struct thinkos_rt * krn,
-							unsigned int thread_no,
-							struct thinkos_thread_initializer * init)
+int thinkos_krn_thread_init(
+	struct thinkos_rt * krn, unsigned int thread_no,
+	const struct thinkos_thread_initializer * init)
 {
 	const struct thinkos_thread_inf * inf = init->inf;
 	uintptr_t stack_base = init->stack_base;
 	uintptr_t stack_size = init->stack_size;
 	uintptr_t task_entry = init->task_entry;
 	uintptr_t task_exit = init->task_exit;
-	uint32_t * task_arg = init->task_arg;
+	uint32_t * task_arg = (uint32_t *)init->task_arg;
 	int priority = init->priority;
 	bool paused = init->paused;
 	bool privileged = init->privileged;
@@ -60,12 +59,12 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	stack_top = stack_base + stack_size;
 
 	if (inf != NULL) {
-		DCC_LOG1(LOG_TRACE, "  tag: \"%s\"", inf->tag);
+		DCC_LOG1(LOG_YAP, "  tag: \"%s\"", inf->tag);
 	}
 	DCC_LOG3(LOG_TRACE, "stack: top=%08x base=%08x size=%d", 
 			 stack_top, stack_base, stack_size);
 	DCC_LOG2(LOG_TRACE, " task: entry=%08x exit=%08x", task_entry, task_exit);
-	DCC_LOG4(LOG_TRACE, "  arg: %08x %08x %08x %08x", task_arg[0], 
+	DCC_LOG4(LOG_TRACE, " args: %08x %08x %08x %08x", task_arg[0], 
 			 task_arg[1], task_arg[2], task_arg[3]);
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
@@ -119,7 +118,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	__thinkos_memset32(stack_base, 0, free);
 #endif
 
-#if (THINKOS_NRT_THREADS_MAX > 0)
+#if (THINKOS_NRT_THREADS_MAX) > 0
 	if (thread_no >= (THINKOS_THREADS_MAX)) {
 		/* TODO: implement NRT */
 		return THINKOS_ERR_NOT_IMPLEMENTED;
@@ -141,7 +140,7 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	/* Set the thread privilege */
 	ctrl = privileged ? CONTROL_SPSEL : CONTROL_SPSEL | CONTROL_nPRIV;
 #else
-	ctrl = CONTROL_SPSEL | CONTROL_nPRIV;
+	ctrl = 0;
 #endif
 	/* commit the context to the kernel */ 
 	__thread_ctx_set(krn, thread_no, ctx, ctrl);
@@ -208,8 +207,10 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 		return;
 	};
 
-#if DEBUG
+#if (DEBUG)
+  #if (LOG_LEVEL) < (LOG_INFO)
 	__kdump(krn);
+  #endif		
 #endif
 
 	arg[0] = thread_no;
@@ -249,7 +250,7 @@ struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_except * xcpt = __thinkos_except_buf();
 
-	if (__xcpt_active_get(xcpt) == (int)thread_no)
+	if (__xcpt_thread_get(xcpt) == (int)thread_no)
 		return &xcpt->ctx;
 
 	return __thread_ctx_get(krn, thread_no);
@@ -264,16 +265,16 @@ void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th,
 	__krn_thread_suspend(krn, th);
 	__krn_wq_insert(krn, wq, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
 							unsigned int wq, unsigned int ms) {
-	__krn_tmdwq_insert(krn, wq, th, ms);
 	__krn_thread_suspend(krn, th);
+	__krn_tmdwq_insert(krn, wq, th, ms);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 #endif
 
@@ -288,7 +289,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 	/* insert into the clock wait queue */
 	__thread_clk_enable(krn, th);
 	/* signal the scheduler ... */
-	__krn_defer_sched(krn);
+	__krn_sched_defer(krn);
 }
 
 void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
@@ -304,7 +305,7 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 		} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 
 		/* signal the scheduler ... */
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 }
 

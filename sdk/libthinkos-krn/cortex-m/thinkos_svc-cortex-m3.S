@@ -47,7 +47,7 @@
 #define CONTROL_FPCA       (1 << 2)
 
 	.text
-	.align	3
+	.align	7
 	.global cm3_svc_isr
 	.thumb
 	.thumb_func
@@ -56,7 +56,9 @@ cm3_svc_isr:
 	/* The IDLE thread is the only using the main stack MSP, all
 	   other threads use the PSP. No exception is allowed to call
 	   SVC */
-	ldr      r2, .L_thinkos_rt
+//	ldr      r2, .L_thinkos_rt
+	movw     r2, :lower16:thinkos_rt
+	movt     r2, :upper16:thinkos_rt
 	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_THREAD]
 	mrs      r0, PSP
 
@@ -88,13 +90,13 @@ cm3_svc_isr:
 	ldrb     r3, [r3, #-2]
     cmp      r3, #THINKOS_SYSCALL_CNT
     bhi      thinkos_nosys_svc
-	ldr      r12, .L_call_tab
+//	ldr      r12, .L_call_tab
+	movw     r12, :lower16:thinkos_svc_call_tab
+	movt     r12, :upper16:thinkos_svc_call_tab
 	ldr      pc, [r12, r3, lsl #2]
 	.align   2
 .L_call_tab:
 	.word    thinkos_svc_call_tab
-
-	.align   2
 .L_thinkos_rt:
 	.word    thinkos_rt
 #if (THINKOS_ENABLE_DEBUG_STEP)

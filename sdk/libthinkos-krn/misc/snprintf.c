@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <thinkos.h>
 #include <sys/param.h>
+#include <sys/util.h>
 
 #ifndef KRN_PRINTF_ENABLE_LEFT_ALIGN
 #define KRN_PRINTF_ENABLE_LEFT_ALIGN    0
@@ -31,12 +32,6 @@
 #ifndef KRN_PRINTF_ENABLE_ARG_WIDTH
 #define KRN_PRINTF_ENABLE_ARG_WIDTH    0
 #endif
-
-int uint2dec(char * s, unsigned int val);
-int uint2hex(char * s, unsigned int val);
-
-int ull2dec(char * s, unsigned long long val);
-int ull2hex(char * s, unsigned long long val);
 
 #if KRN_PRINTF_ENABLE_LONG
 #define BUF_LEN 22
@@ -359,4 +354,6 @@ int krn_snprintf(char * str, size_t size, const char *fmt, ...)
 	return n;
 }
 
+int snprintf(char * str, size_t size, const char *fmt, ...) 
+	__attribute__ ((weak, alias ("krn_snprintf")));
 

@@ -34,8 +34,8 @@ void stm32f_mco2_init(void)
 	struct stm32_gpio * gpio = MCO2_GPIO;
 	int pin = MCO2_PIN;
 
-#ifdef STM32F_SYSCFG
-	struct stm32f_syscfg * syscfg = STM32F_SYSCFG;
+#ifdef STM32_SYSCFG
+	struct stm32_syscfg * syscfg = STM32_SYSCFG;
     /* enable I/O compensation cell */
 	syscfg->cmpcr |= SYSCFG_CMP_EN;
 #endif

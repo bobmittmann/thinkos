@@ -287,7 +287,7 @@ static const struct cdc_acm_descriptor_set monitor_usb_cdc_acm_desc_cfg = {
 		.endpointaddress= USB_ENDPOINT_IN + EP_INT0_ADDR,
 		.attributes = ENDPOINT_TYPE_INTERRUPT,
 		.maxpacketsize = CDC_EP_INT_MAX_PKT_SIZE,
-		.interval = 200
+		.interval = 100
 	},
 	/* Data Class Interface Descriptor Requirement */
 	.if_data0 = {
@@ -524,7 +524,7 @@ static void monitor_usb_on_rcv(usb_class_t * cl,
 			 "IRQ pkt_len=%d rcv_cnt=%d COMM_RCV..." 
 			 VT_POP, 
 			 len, cnt);
-
+	
 	monitor_signal(MONITOR_COMM_RCV);
 }
 
@@ -668,8 +668,9 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
 			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE)");
-		} else
+		} else {
 			DCC_LOG1(LOG_WARNING, "ClrFeatureDev(%d)", value);
+		}
 		break;
 
 	case STD_SET_FEATURE_DEVICE:
@@ -677,8 +678,9 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			DCC_LOG(LOG_INFO, "SetFeatureDev(REMOTE_WAKEUP)");
 		} else if (value == USB_TEST_MODE ) {
 			DCC_LOG(LOG_INFO, "SetFeatureDev(TEST_MODE )");
-		} else
+		} else {
 			DCC_LOG1(LOG_WARNING, "SetFeatureDev(%d)", value);
+		}
 		break;
 #endif
 
@@ -875,52 +877,8 @@ static int monitor_usb_comm_send(const void * comm,
 								const void * buf, unsigned int len)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
-	uint8_t * ptr = (uint8_t *)buf;
-	unsigned int rem;
-	int ret;
-	int n;
 
-	DCC_LOG1(LOG_MSG, VT_PSH VT_FMG "entry len=%d" VT_POP, len);
-
-	rem = len;
-	while (rem) {
-
-		if ((dev->status & COMM_ST_CONNECTED) == 0) {
-//			DCC_LOG(LOG_TRACE, VT_PSH VT_FMG VT_REV "not connected!=%d" VT_POP);
-			/* not connected, discard!! */
-			rem = 0;
-			break;
-		}
-
-		n = usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, ptr, rem);
-		DCC_LOG2(LOG_INFO, "usb_dev_ep_pkt_xmit(%d) %d", rem, n);
-		if (n < 0) {
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-			DCC_LOG1(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed (pkt=%d)!", 
-					 dev->stats.tx_pkt);
-#else
-			DCC_LOG(LOG_WARNING, "usb_dev_ep_pkt_xmit() failed");
-#endif
-			return n;
-		} else if (n > 0) {
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-			dev->stats.tx_pkt++;
-			dev->stats.tx_octet += n;
-#endif
-			rem -= n;
-			ptr += n;
-		}  else {
-			DCC_LOG(LOG_MSG, "monitor_expect(MONITOR_COMM_EOT)!");
-			if ((ret = monitor_expect(MONITOR_COMM_EOT)) < 0) {
-				DCC_LOG(LOG_WARNING, "monitor_expect()!");
-				return ret;
-			}
-		}
-	}
-
-	DCC_LOG1(LOG_MSG, VT_PSH VT_FMG VT_REV "return=%d" VT_POP, len - rem);
-
-	return len - rem;
+	return usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, buf, len);
 }
 
 static int monitor_usb_comm_recv(const void * comm, 
@@ -932,15 +890,13 @@ static int monitor_usb_comm_recv(const void * comm,
 	unsigned int pos;
 	unsigned int cnt;
 	unsigned int n;
-	int ret;
 
 	ack = dev->rx_ack;
-	do {
-		if ((ret = monitor_expect(MONITOR_COMM_RCV)) < 0) {
-			DCC_LOG(LOG_WARNING, "monitor_expect()!");
-			return ret;
-		}
-	 } while ((n = (int32_t)(dev->rx_seq - ack)) == 0);
+
+	if ((n = (int32_t)(dev->rx_seq - ack)) == 0)  {
+		monitor_clear(MONITOR_COMM_RCV);
+		return 0;
+	}
 
 	cnt = MIN(n, len);
 	pos = ack % CDC_RX_BUF_SIZE;
@@ -980,6 +936,7 @@ static int monitor_usb_comm_recv(const void * comm,
 
 	if ((int32_t)(dev->rx_seq - ack) > 0) {
 		DCC_LOG(LOG_INFO, "signal MONITOR_COMM_RCV!");
+
 		/* Pending data on fifo, resignal .. */
 		monitor_signal(MONITOR_COMM_RCV);
 	}

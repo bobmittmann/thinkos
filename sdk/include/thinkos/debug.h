@@ -27,9 +27,6 @@
 #error "Never use <thinkos/debug.h> on user code, this is for kenel debug."
 #endif 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
 struct thread_reg_core {
 	union {
 		uint32_t r[16];
@@ -85,6 +82,9 @@ struct thread_rec {
 extern "C" {
 #endif
 
+//#define __THINKOS_EXCEPT__
+//#include <thinkos/except.h>
+
 /* -------------------------------------------------------------------------
  * Debug API 
  * ------------------------------------------------------------------------- */
@@ -92,11 +92,11 @@ extern "C" {
 
 static inline void __attribute__((always_inline)) __thinkos_dbg_halt(void) 
 {
-	register uint32_t tst= 1;
+	register uint32_t halt = 1;
 
 	asm volatile ("1:\n" 
 				  "cmp %0, #0\n" 
-				  "bne 1b\n" : "=r"(tst) : "r"(tst));
+				  "bne 1b\n" : "=r"(halt) : "r"(halt));
 }
 
 struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int id);
@@ -109,9 +109,11 @@ uint32_t thinkos_dbg_thread_lr_get(unsigned int id);
 
 uint32_t thinkos_dbg_thread_sp_get(unsigned int id);
 
-bool thinkos_dbg_thread_ctx_is_valid(unsigned int id);
+uint32_t thinkos_dbg_thread_stack_size_get(unsigned int th);
 
-int thinkos_dbg_thread_brk_get(unsigned int id);
+uint32_t thinkos_dbg_thread_stack_base_get(unsigned int th);
+
+bool thinkos_dbg_thread_ctx_is_valid(unsigned int id);
 
 uint32_t thinkos_dbg_thread_sl_get(unsigned int id);
 
@@ -132,10 +134,13 @@ bool thinkos_dbg_thread_rec_get(unsigned int thread,
                            struct thread_reg_core * core,
                            struct thread_reg_fp * fp);
 
+int thinkos_dbg_thread_brk_get(unsigned int id);
 
 int thinkos_dbg_thread_break_get(int32_t * pcode);
 
 int thinkos_dbg_thread_break_clr(void);
+
+uint32_t thinkos_dbg_sched_state_get(void);
 
 void thinkos_dbg_reset(void);
 
@@ -151,6 +156,10 @@ int thinkos_dbg_thread_irq_get(unsigned int th);
 bool thinkos_dbg_thread_is_ready(unsigned int th);
 
 int thinkos_dbg_active_get(void);
+
+struct thinkos_except;
+
+int thinkos_dbg_except_get(struct thinkos_except * xcpt);
 
 /* -------------------------------------------------------------------------
  * Cycle counter

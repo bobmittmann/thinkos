@@ -283,21 +283,12 @@ int serdrv_init(void)
 
 	DCC_LOG1(LOG_TRACE, "DMA_CCR7=%08x", &dma->ch[TX_DMA_CHAN].ccr);
 
-#ifdef CM3_RAM_VECTORS
-	thinkos_irq_register(STM32_IRQ_USART2, IRQ_PRIORITY_LOW, 
-						 stm32_usart2_isr);
-	thinkos_irq_register(STM32_IRQ_DMA1_CH7, IRQ_PRIORITY_LOW, 
-						 stm32_dma1_channel7_isr);
-//	thinkos_irq_register(STM32_IRQ_DMA1_CH6, IRQ_PRIORITY_LOW, 
-//						 stm32_dma1_channel6_isr);
-#else
 	cm3_irq_pri_set(STM32_IRQ_USART2, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_USART2);
 	cm3_irq_pri_set(STM32_IRQ_DMA1_CH7, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_DMA1_CH7);
 	cm3_irq_pri_set(STM32_IRQ_DMA1_CH6, IRQ_PRIORITY_LOW);
 	cm3_irq_enable(STM32_IRQ_DMA1_CH6);
-#endif
 
 	return 0;
 }
@@ -611,25 +602,59 @@ const struct magic_blk thinkos_10_app_magic = {
    Bootloader and debugger, memory description  
  */
 
-const struct mem_desc sram_desc = {
-	.tag = "RAM",
-	.base = 0,
+#define RAM_BOOT  0
+#define RAM_APP   1
+
+const struct thinkos_mem_desc sram_desc = {
+	.tag = "ram",
+	.base = 0x00000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x20000000, M_RO, SZ_1K, 2},	/* Bootloader: 2KiB */
-		{"APP", 0x20000800, M_RW, SZ_1K, 8},	/* Application: 8KiB */
-		}
+		/* Bootloader: 2iB */
+		[RAM_BOOT] = {.tag = "boot",  .off = 0x20000000, M_RO, SZ_1K, 2},   
+		/* Application: 8KiB */
+		[RAM_APP] = {.tag = "app",    .off = 0x20001000, M_RW, SZ_1K, 8},   
+	}
 };
 
-const struct mem_desc flash_mem = {
-	.tag = "FLASH",
+
+#define FLASH_BOOT 0
+#define FLASH_APP  1
+
+const struct thinkos_mem_desc flash_desc = {
+	.tag = "flash",
 	.base = 0x08000000,
 	.cnt = 2,
 	.blk = {
-		{"BOOT", 0x00000000, M_RO, SZ_256, 64}, /* Bootloader: 16 KiB */
-		{"APP", 0x00002000, M_RW, SZ_256, 448},	/* Application: 112 KiB */
-		}
+		/* Bootloader: 16 KiB */
+		[FLASH_BOOT] = {.tag = "boot", .off= 0x00000000, M_RO, SZ_256, 64}, 
+		/* Application: 112 KiB */
+		[FLASH_APP] = {.tag = "app", .off = 0x0000a000, M_RW, SZ_256, 448}
+	}
 };
+
+#define MEM_FLASH  0
+#define MEM_SRAM   1
+
+const struct thinkos_mem_map mem_map = {
+	.tag = "MEM",
+	.cnt = 2,
+	.desc = {
+		[MEM_FLASH] = &flash_desc,
+		[MEM_SRAM] = &sram_desc
+	}
+};
+
+
+int board_on_break(const struct monitor_comm * comm)
+{
+	struct btl_shell_env * env = btl_shell_env_getinstance();
+
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
+
+	return monitor_thread_create(comm, C_TASK(btl_console_shell), 
+								 C_ARG(env), true);
+}
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {
@@ -646,34 +671,52 @@ const struct thinkos_board this_board = {
 		       .minor = VERSION_MINOR,
 		       .build = VERSION_BUILD}
 	       },
-	.memory = {
-		   .cnt = 2,
-		   .flash = &flash_mem,
-		   .ram = &sram_desc,
-		   .periph = NULL },
-	.application = {
-			.tag = "",
-			.start_addr = 0x08010000,
-			.block_size = (96 * 2) * 1024,
-			.magic = &thinkos_10_app_magic},
-	.init = board_init,
-	.softreset = board_on_softreset,
-	.upgrade = NULL,
-	.preboot_task = board_preboot_task,
-	.configure_task = board_configure_task,
-	.selftest_task = board_selftest_task,
-	.default_task = board_default_task
+	.memory = &mem_map,
+	.on_softreset = board_on_softreset,
+	.on_break = board_on_break
 };
 
 extern const struct flash_dev stm32l1x_flash_dev;
 
-const struct thinkos_flash_desc board_flash_desc = {
-	.mem = &flash_mem,
-	.dev = &stm32l1x_flash_dev
-};
-
-struct thinkos_flash_drv board_flash_drv;
 
 #pragma GCC diagnostic pop
 
+
+void main(int argc, char ** argv)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+//	const struct monitor_comm * comm;
+
+#if DEBUG
+	DCC_LOG_INIT();
+	DCC_LOG_CONNECT();
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, "\n\n" VT_PSH VT_BRI VT_FGR);
+	DCC_LOG(LOG_TRACE, "*************************************************");
+	DCC_LOG(LOG_TRACE, "*     RDA8COM ThinkOS Custom Bootloader         *");
+	DCC_LOG(LOG_TRACE, "*************************************************"
+			VT_POP "\n\n");
+	mdelay(125);
+
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
+			"* 1. thinkos_krn_init()." VT_POP);
+	mdelay(125);
+#endif
+
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+					 THINKOS_OPT_PRIVILEGED | THINKOS_OPT_STACK_SIZE(32768), 
+					 &mem_map);
+	board_init();
+
+//	thinkos_flash_drv_init(0, &flash_desc);
+
+//	comm = usb_comm_init(&stm32f_usb_fs_dev);
+
+//	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
+
+	thinkos_sleep(500);
+
+	btl_flash_app_exec("app", 0, 0);
+}
 

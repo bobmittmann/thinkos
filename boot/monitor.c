@@ -533,7 +533,8 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-void boot_monitor_task(const struct monitor_comm *, void * arg);
+void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+					   uintptr_t sta, void * krn);
 
 #if (BOOT_ENABLE_GDB)
 void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm, 
@@ -707,7 +708,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #if (MONITOR_RESTART_MONITOR)
 	case CTRL_Q:
 		monitor_printf(comm, "^Q\r\n");
-		monitor_exec(boot_monitor_task, NULL);
+		monitor_exec(MONITOR_TASK(boot_monitor_task), NULL, NULL, 0);
 		break;
 #endif
 #if (MONITOR_OS_RESUME)
@@ -788,7 +789,8 @@ static bool monitor_process_input(struct monitor * mon, int c)
    Default Monitor Task
  */
 void __attribute__((noreturn)) 
-boot_monitor_task(const struct monitor_comm * comm, void * arg)
+boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+					   uintptr_t sta, void * krn)
 {
 #if (MONITOR_OSINFO_ENABLE)
 	uint32_t cycref[THINKOS_THREAD_LAST + 1];
@@ -813,8 +815,8 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	monitor.thread_id = -1;
 #endif
 #if (MONITOR_DUMPMEM_ENABLE)
-	monitor.memdump.addr = board->application.start_addr;
-	monitor.memdump.size = board->application.block_size;
+	monitor.memdump.addr = 0;
+	monitor.memdump.size = 1024;
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
@@ -831,9 +833,9 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 	sigmask |= (1 << MONITOR_TX_PIPE);
 #endif
 	sigmask |= (1 << MONITOR_APP_STOP);
-	sigmask |= (1 << MONITOR_APP_EXEC);
-	sigmask |= (1 << MONITOR_APP_UPLOAD);
-	sigmask |= (1 << MONITOR_APP_ERASE);
+//	sigmask |= (1 << MONITOR_APP_EXEC);
+//	sigmask |= (1 << MONITOR_APP_UPLOAD);
+//	sigmask |= (1 << MONITOR_APP_ERASE);
 	sigmask |= (1 << MONITOR_APP_TERM);
 	sigmask |= (1 << MONITOR_APP_RESUME);
 #if (MONITOR_WATCHPOINT_ENABLE)
@@ -866,19 +868,12 @@ boot_monitor_task(const struct monitor_comm * comm, void * arg)
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_SOFTRST);
 			DCC_LOG(LOG_WARNING, "/!\\ SOFTRST signal !");
-			board->softreset();
+			board->on_softreset();
 #if (THINKOS_ENABLE_CONSOLE)
 			goto is_connected;
 #endif
 			break;
 
-#if (THINKOS_ENABLE_MONITOR_SCHED)
-		case MONITOR_RESET:
-			DCC_LOG1(LOG_TRACE, "/!\\ RESET signal (SP=0x%08x)...", 
-					 cm3_sp_get());
-			monitor_clear(MONITOR_RESET);
-			break;
-#endif
 		case MONITOR_KRN_ABORT:
 			monitor_clear(MONITOR_KRN_ABORT);
 			DCC_LOG(LOG_TRACE, "/!\\ KRN_ABORT signal...");

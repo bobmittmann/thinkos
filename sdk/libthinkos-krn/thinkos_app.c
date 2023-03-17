@@ -55,11 +55,14 @@ int thinkos_flat_check(const struct flat_app * app)
 	int32_t size;
 	uintptr_t addr;
 
-	DCC_LOG3(LOG_TRACE, "app=0x%08x pc=0x%08x sp=0x%08x", app,
-			 app->entry, app->stack);
+	addr = (uintptr_t)app;
+
+	if (addr & 0x00000003) {
+		/* Unaligned pointer */
+		return THINKOS_ERR_APP_INVALID;
+	}
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
-	addr = (uintptr_t)app;
 	if (!__thinkos_mem_usr_rd_chk(addr, sizeof(struct flat_app))) {
 		DCC_LOG1(LOG_ERROR, "invalid pointer: addr=0x%08x", addr);
 		return THINKOS_ERR_APP_INVALID;
@@ -70,6 +73,9 @@ int thinkos_flat_check(const struct flat_app * app)
 	if (app->entry != addr + 0x41) {
 		return THINKOS_ERR_APP_INVALID;
 	}
+
+	DCC_LOG3(LOG_TRACE, "app=0x%08x pc=0x%08x sp=0x%08x", app,
+			 app->entry, app->stack);
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	/* can we read and write at the application stack ? */ 
@@ -148,7 +154,7 @@ int thinkos_flat_check(const struct flat_app * app)
 const struct thinkos_thread_inf thinkos_app_inf = {
 	.tag = "APP",
 	.stack_ptr = 0,
-	.stack_size = 1024,
+	.stack_size = 8192,
 	.priority = 0,
 	.thread_id = 1,
 	.paused = 0
@@ -159,24 +165,28 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-void __attribute__((noreturn, noinline)) krn_app_at_exit(int code)
+void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
 {
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "app exit, code=%d ! " VT_POP, 
 			 code);
 	thinkos_abort();
 }
 
+void __attribute__((noreturn)) krn_app_at_exit(int code)
+	__attribute__ ((weak, alias ("__krn_app_at_exit")));
+
 int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
-						 uintptr_t addr)
+						 uintptr_t addr, uintptr_t arg[])
 {
 	struct thinkos_thread_initializer init;
 	const struct flat_app * app = (struct flat_app *)addr;
-	const struct thinkos_thread_inf * inf = &thinkos_app_inf;
+	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
 	uintptr_t stack_top;
 	uintptr_t stack_size;
 	uintptr_t stack_base;
 	uintptr_t task_entry;
 	uintptr_t task_exit;
+	uintptr_t stack_alloc = 0;
 	int ret;
 
 	if ((ret = thinkos_flat_check(app))) {
@@ -208,12 +218,13 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 		
 		DCC_LOG1(LOG_WARNING, "stack collision, moving by %d!", diff);
 		/* Stack colision */
-		stack_top -= diff;
-		stack_size -= diff;
+		stack_alloc += diff;
 	}
 #endif
 
 	/* ensure page alignment */
+	stack_size -= stack_alloc;
+	stack_top -= stack_alloc;
 	stack_size &= ~(STACK_ALIGN_MSK);
 	stack_top &= ~(STACK_ALIGN_MSK);
 	stack_base = stack_top - stack_size;  
@@ -228,10 +239,10 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 	init.stack_size = stack_size;
 	init.task_entry = task_entry;
 	init.task_exit = task_exit;
-	init.task_arg[0] = 0;
-	init.task_arg[1] = 0;
-	init.task_arg[2] = 0;
-	init.task_arg[3] = 0;
+	init.task_arg[0] = arg[0];
+	init.task_arg[1] = arg[1];
+	init.task_arg[2] = arg[2];
+	init.task_arg[3] = arg[3];
 	init.priority = 0;
 	init.paused = false;
 	init.privileged = true;
@@ -240,33 +251,35 @@ int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 	return thinkos_krn_thread_init(krn, thread_idx, &init);
 }
 
-void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
+void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
+						  struct thinkos_rt * krn)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int thread_idx;
-	uintptr_t addr = arg[0];
+	uintptr_t addr;
 	int ret;
 
 	/* collect call arguments */
-	addr = arg[0];
+	addr = arg[4];
 	
-	DCC_LOG1(LOG_TRACE, "<%2d>.........................", self);
+	DCC_LOG2(LOG_TRACE, "<%2d> addr=0x%08x ...", self, addr);
 
 	thread_idx = self;
-
+#if 0
+	/* FIXME: APP thread number ??? */
 	if (thread_idx >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self, 
 				 thread_idx);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[4] = THINKOS_EINVAL;
 		return;
 	}
+#endif
 
-	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr))) {
+	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr, arg))) {
 		DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
 				 self, ret);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[4] = THINKOS_EINVAL;
 		return;
 	};
 
@@ -279,10 +292,10 @@ void thinkos_app_exec_svc(int32_t * arg, unsigned int self)
 #endif
 		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
 		__krn_sched_active_clr(krn);
-		__krn_defer_sched(krn);
+		__krn_sched_defer(krn);
 	}
 
-	arg[0] = thread_idx;
+	arg[4] = thread_idx;
 
 	return;
 }

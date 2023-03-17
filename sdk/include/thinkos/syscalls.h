@@ -42,86 +42,86 @@
 
 #define THINKOS_IRQ_WAIT               6
 #define THINKOS_IRQ_TIMEDWAIT          7
-#define THINKOS_IRQ_CTL                8
+#define THINKOS_IRQ_TIMEDWAIT_FIXUP    8
+#define THINKOS_IRQ_CTL                9
 
-#define THINKOS_OBJ_ALLOC              9
-#define THINKOS_OBJ_FREE              10
+#define THINKOS_OBJ_ALLOC             10
+#define THINKOS_OBJ_FREE              11
 
-#define THINKOS_MUTEX_LOCK            11
-#define THINKOS_MUTEX_TRYLOCK         12
-#define THINKOS_MUTEX_TIMEDLOCK       13
-#define THINKOS_MUTEX_UNLOCK          14
+#define THINKOS_MUTEX_LOCK            12
+#define THINKOS_MUTEX_TRYLOCK         13
+#define THINKOS_MUTEX_TIMEDLOCK       14
+#define THINKOS_MUTEX_UNLOCK          15
 
-#define THINKOS_SEM_INIT              15
-#define THINKOS_SEM_WAIT              16
-#define THINKOS_SEM_TRYWAIT           17
-#define THINKOS_SEM_TIMEDWAIT         18
-#define THINKOS_SEM_POST              19
+#define THINKOS_SEM_INIT              16
+#define THINKOS_SEM_WAIT              17
+#define THINKOS_SEM_TRYWAIT           18
+#define THINKOS_SEM_TIMEDWAIT         19
+#define THINKOS_SEM_POST              20
 
-#define THINKOS_COND_WAIT             20
-#define THINKOS_COND_TIMEDWAIT        21
-#define THINKOS_COND_SIGNAL           22
-#define THINKOS_COND_BROADCAST        23
+#define THINKOS_COND_WAIT             21
+#define THINKOS_COND_TIMEDWAIT        22
+#define THINKOS_COND_SIGNAL           23
+#define THINKOS_COND_BROADCAST        24
 
-#define THINKOS_FLAG_TAKE             24
-#define THINKOS_FLAG_TIMEDTAKE        25
-#define THINKOS_FLAG_GIVE             26
+#define THINKOS_FLAG_TAKE             25
+#define THINKOS_FLAG_TIMEDTAKE        26
+#define THINKOS_FLAG_GIVE             27
 
-#define THINKOS_FLAG_VAL              27
-#define THINKOS_FLAG_CLR              28
-#define THINKOS_FLAG_SET              29
-#define THINKOS_FLAG_WATCH            30
-#define THINKOS_FLAG_TIMEDWATCH       31
+#define THINKOS_FLAG_VAL              28
+#define THINKOS_FLAG_CLR              29
+#define THINKOS_FLAG_SET              30 
+#define THINKOS_FLAG_WATCH            31
+#define THINKOS_FLAG_TIMEDWATCH       32
 
-#define THINKOS_GATE_WAIT             32
-#define THINKOS_GATE_TIMEDWAIT        33
-#define THINKOS_GATE_EXIT             34
-#define THINKOS_GATE_OPEN             35
-#define THINKOS_GATE_CLOSE            36
+#define THINKOS_GATE_WAIT             33
+#define THINKOS_GATE_TIMEDWAIT        34
+#define THINKOS_GATE_EXIT             35
+#define THINKOS_GATE_OPEN             36
+#define THINKOS_GATE_CLOSE            37
 
-#define THINKOS_EVENT_WAIT            37
-#define THINKOS_EVENT_TIMEDWAIT       38
-#define THINKOS_EVENT_RAISE           39
-#define THINKOS_EVENT_MASK            40
-#define THINKOS_EVENT_CLEAR           41
-
-#define THINKOS_CONSOLE               42
+#define THINKOS_EVENT_WAIT            38
+#define THINKOS_EVENT_TIMEDWAIT       39
+#define THINKOS_EVENT_RAISE           40
+#define THINKOS_EVENT_MASK            41
+#define THINKOS_EVENT_CLEAR           42
 
 #define THINKOS_CANCEL                43
 #define THINKOS_TERMINATE             44
 #define THINKOS_JOIN                  45
 #define THINKOS_PAUSE                 46
 #define THINKOS_RESUME                47
-
 #define THINKOS_EXIT                  48
 
-#define THINKOS_DATE_AND_TIME         49
+#define THINKOS_CONSOLE_CTL           49
+#define THINKOS_CONSOLE_SEND          50
+#define THINKOS_CONSOLE_RECV          51
+#define THINKOS_CONSOLE_TIMED_FIXUP   52
 
-#define THINKOS_COMM                  50
+#define THINKOS_COMM_CTL              53
+#define THINKOS_COMM_SEND             54
+#define THINKOS_COMM_RECV             55
+#define THINKOS_COMM_TIMED_FIXUP      56
 
-#define THINKOS_IRQ_TIMEDWAIT_CLEANUP 51
+#define THINKOS_DATE_AND_TIME         57
 
-#define THINKOS_ESCALATE              52
+#define THINKOS_CRITICAL_ENTER        58
+#define THINKOS_CRITICAL_EXIT         59
 
-#define THINKOS_CRITICAL_ENTER        53
+#define THINKOS_MONITOR_CTL           60
 
-#define THINKOS_CRITICAL_EXIT         54
+#define THINKOS_TRACE                 61
+#define THINKOS_TRACE_CTL             62
 
-#define THINKOS_MONITOR               55
+#define THINKOS_FLASH_MEM             63
 
-#define THINKOS_TRACE                 56
-#define THINKOS_TRACE_CTL             57
+#define THINKOS_APP_EXEC              64
 
-#define THINKOS_FLASH_MEM             58
+#define THINKOS_IRQ_DBG               65
 
-#define THINKOS_APP_EXEC              59
-
-#define THINKOS_SYSCALL_CNT           60
+#define THINKOS_SYSCALL_CNT           65
 
 /* THINKOS_CONSOLE options */
-#define CONSOLE_WRITE                  0
-#define CONSOLE_READ                   1
-#define CONSOLE_TIMEDREAD              2
 #define CONSOLE_OPEN                   3
 #define CONSOLE_CLOSE                  4
 #define CONSOLE_DRAIN                  5
@@ -135,10 +135,6 @@
 #define CONSOLE_IO_WR                  (1 << 0)
 #define CONSOLE_IO_RD                  (1 << 1)
 
-/* THINKOS_COMM options */
-#define COMM_SEND                      0
-#define COMM_RECV                      1
-
 /* THINKOS_CTL options */
 #define THINKOS_CTL_ABORT              0
 #define THINKOS_CTL_UDELAY_FACTOR      1
@@ -148,6 +144,11 @@
 #define THINKOS_CTL_THREAD_CYCCNT      6
 #define THINKOS_CTL_REBOOT             7
 #define THINKOS_CTL_CYCCNT             8
+#define THINKOS_CTL_ESN_GET            9
+#define THINKOS_CTL_VERSION_GET        10
+#define THINKOS_CTL_RELEASE_GET        11
+#define THINKOS_CTL_PROFILE_GET        12
+#define THINKOS_CTL_ERROR              15
 
 /* THINKOS_IRQ_CTL options */
 #define THINKOS_IRQ_DISABLE            0
@@ -183,6 +184,14 @@
 #define THINKOS_TIME_REALTIME_STEP     4
 #define THINKOS_TIME_REALTIME_COMP     5
 
+/* THINKOS_COMM_CTL operations */
+#define THINKOS_COMM_OPEN              0
+#define THINKOS_COMM_CLOSE             1
+
+
+/* THINKOS_MONITOR_CTL operations */
+#define MONITOR_CTL_TASK_INIT          0
+#define MONITOR_CTL_SIGNAL             1
 
 #ifndef __ASSEMBLER__
 
@@ -190,6 +199,8 @@
 #include <thinkos/profile.h>
 #define __THINKOS_TIME__
 #include <thinkos/time.h>
+#define __THINKOS_CTRL__
+#include <thinkos/ctrl.h>
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -280,7 +291,7 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 
 static inline int 
 thinkos_thread_init(unsigned int thread, 
-                    struct thinkos_thread_initializer * ini) {
+                    const struct thinkos_thread_initializer * ini) {
 
 	register uint32_t ret asm("r0");
 	register void * ptr asm("r1") = (void *)ini;
@@ -557,44 +568,64 @@ thinkos_gate_open_i(int gate) {
  */
 
 static inline int __attribute__((always_inline)) 
-	thinkos_irq_timedwait(int irq, unsigned int ms) {
-
-	register uint32_t err asm("r0");
+	thinkos_irq_wait(int irq) {
+	register int32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT) : 
-				  "=r"(err), "=r"(cyccnt) :
-				  "0"(irq), "1"(ms) );
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT_CLEANUP) : 
-				  "=r"(err) : "0"(irq) );
-
-	return err;
-}
-
-static inline int __attribute__((always_inline)) thinkos_irq_wait(int irq) {
-	register uint32_t err asm("r0");
-	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
-
-	return err;
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) :
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_wait_cyccnt(int irq, uint32_t * pcyccnt) {
-
-	register uint32_t err asm("r0");
+	register uint32_t ret asm("r12");
 	register uint32_t cyccnt asm("r1");
-
-	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) : 
-				  "=r"(err), "=r"(cyccnt) : "0"(irq) );
-
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_WAIT) :
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0) );
 	*pcyccnt = cyccnt;
-
-	return err;
+	return ret;
 }
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait_cyccnt(int irq, unsigned int ms, uint32_t * pcyccnt) {
+	register uint32_t ret asm("r12");
+	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0), "1"(ms) );
+	*pcyccnt = cyccnt;
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_irq_timedwait(int irq, unsigned int ms) {
+
+	register int32_t ret asm("r12");
+	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
+
+	asm volatile (ARM_SVC(THINKOS_IRQ_TIMEDWAIT)
+				  ARM_SVC(THINKOS_IRQ_TIMEDWAIT_FIXUP) : 
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0), "1"(ms) );
+
+	return ret;
+}
+
+
+static inline int __attribute__((always_inline)) 
+thinkos_irq_dbg(int irq) {
+	register int32_t ret asm("r12");
+	register uint32_t cyccnt asm("r1");
+	register uint32_t r0 asm("r0") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_DBG) :
+				  "=r"(ret), "=r"(cyccnt) : "r"(r0));
+	return ret;
+}
+
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void)) {
@@ -623,65 +654,89 @@ thinkos_irq_priority_set(int irq, unsigned int pri) {
  * --------------------------------------------------------------------------
  */
 
-static inline int __attribute__((always_inline)) 
-thinkos_console_write(const void * buf, unsigned int len) {
-	uint32_t opc = CONSOLE_WRITE;
-	register int32_t ret asm("r0");
-	register uint32_t r1 asm("r1") = (uintptr_t)buf;
-	register uint32_t r2 asm("r2") = len;
-	asm volatile (ARM_SVC(THINKOS_CONSOLE) : "=r"(ret) : 
-				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_console_write(const void * buf, size_t len) {
+	register int32_t ret asm("r12");
+	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
+	register uint32_t r1 asm("r1") = len;
+	register uint32_t r2 asm("r2") = 0;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_SEND) : 
+				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_console_read(void * buf, size_t len) {
+	register int32_t ret asm("r12");
+	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
+	register uint32_t r1 asm("r1") = len;
+	register int32_t r2 asm("r2") = 0;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_RECV) 
+				  ARM_SVC(THINKOS_CONSOLE_TIMED_FIXUP) : 
+				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_console_timedread(void * buf, size_t len, int32_t ms) {
+	register int32_t ret asm("r12");
+	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
+	register uint32_t r1 asm("r1") = len;
+	register uint32_t r2 asm("r2") = ms;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_RECV) 
+//				  ARM_SVC(THINKOS_CONSOLE_TIMED_FIXUP) 
+				  : "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_console_ioctl(unsigned int ioctl, void * arg, unsigned int size) {
-	return THINKOS_SYSCALL4(THINKOS_CONSOLE, CONSOLE_IOCTL, ioctl, arg, size);
+thinkos_console_ioctl(unsigned int ioctl, void * arg, uint32_t size) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = ioctl;
+	register uintptr_t r1 asm("r1") = (uintptr_t)arg;
+	register uint32_t r2 asm("r2") = size;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0), "r"(r1), "r"(r2));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_is_connected(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE, CONSOLE_IS_CONNECTED);
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_console_read(void * buf, unsigned int len) {
-	return THINKOS_SYSCALL3(THINKOS_CONSOLE, CONSOLE_READ, buf, len);
-}
-
-static inline int __attribute__((always_inline)) 
-thinkos_console_timedread(void * buf, unsigned int len, unsigned int ms) {
-	return THINKOS_SYSCALL4(THINKOS_CONSOLE, CONSOLE_TIMEDREAD, buf, len, ms);
+	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_IS_CONNECTED);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_close(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE, CONSOLE_CLOSE);
+	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_CLOSE);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_drain(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE, CONSOLE_DRAIN);
+	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_DRAIN);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_io_break(unsigned int which) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_IO_BREAK, which);
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
+							CONSOLE_IO_BREAK, which);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_raw_mode(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RAW_MODE_SET, enable);
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
+							CONSOLE_RAW_MODE_SET, enable);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_rd_nonblock(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_RD_NONBLOCK_SET, enable);
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
+							CONSOLE_RD_NONBLOCK_SET, enable);
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_wr_nonblock(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE, CONSOLE_WR_NONBLOCK_SET, enable);
+	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
+							CONSOLE_WR_NONBLOCK_SET, enable);
 }
 
 /* ---------------------------------------------------------------------------
@@ -689,49 +744,150 @@ thinkos_console_wr_nonblock(unsigned int enable) {
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-	thinkos_clocks(uint32_t * clk[]) {
-		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_CLOCKS, clk);
+	thinkos_clocks(uint32_t clk[]) {
+	register int32_t ret asm("r12");
+	register int32_t opc asm("r0") = THINKOS_CTL_CLOCKS;
+	register uint32_t ptr asm("r1") = (uintptr_t)clk;
+	asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+				  "r"(ptr) : "memory" );
+	return ret;
 	}
 
 static inline int __attribute__((always_inline)) 
 	thinkos_udelay_factor(int32_t * factor) {
-		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_UDELAY_FACTOR, factor);
+	register int32_t ret asm("r12");
+	register int32_t opc asm("r0") = THINKOS_CTL_UDELAY_FACTOR;
+	register int32_t ptr asm("r1") = (uintptr_t)factor;
+	asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+				  "r"(ptr) : "memory" );
+	return ret;
 	}
+
+static inline int __attribute__((always_inline))
+	thinkos_esn_get(uint32_t esn[]) {
+	register int32_t ret asm("r12");
+	register int32_t opc asm("r0") = THINKOS_CTL_ESN_GET;
+	register int32_t ptr asm("r1") = (uintptr_t)esn;
+	asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+				  "r"(ptr) : "memory" );
+	return ret;
+	}
+
 
 static inline void __attribute__((always_inline, noreturn)) 
 	thinkos_abort(void) {
 		for (;;) {
-		THINKOS_SYSCALL1(THINKOS_CTL, THINKOS_CTL_ABORT);
+			register int32_t ret asm("r12");
+			register int32_t opc asm("r0") = THINKOS_CTL_ABORT;
+			asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc));
 		}
 	}
 
-static inline int __attribute__((always_inline))
+static inline int __attribute__((always_inline)) 
 	thinkos_reboot(uint32_t key) {
-		return THINKOS_SYSCALL2(THINKOS_CTL, THINKOS_CTL_REBOOT, key);
+		register int32_t ret asm("r12");
+		register int32_t opc asm("r0") = THINKOS_CTL_REBOOT;
+		register uint32_t arg asm("r1") = key;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc), "r"(arg));
+		return ret;
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_error(uint32_t code) {
+		register int32_t ret asm("r12");
+		register int32_t opc asm("r0") = THINKOS_CTL_ERROR;
+		register uint32_t arg asm("r1") = code;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc), "r"(arg));
+		return ret;
 	}
 
 static inline int __attribute__((always_inline)) 
 	thinkos_thread_inf(const struct thinkos_thread_inf * inf[], 
-					   unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_INF, inf, max);
+					   unsigned int from, unsigned int cnt) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = THINKOS_CTL_THREAD_INF;
+		register uint32_t ptr asm("r1") = (uintptr_t)inf;
+		register uint32_t rng asm("r2") = (from << 16) + cnt;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(ptr), "r"(rng) : "memory" );
+		return ret;
 	}
 
 static inline int __attribute__((always_inline)) 
-	thinkos_thread_cyccnt(uint32_t cyccnt[], unsigned int max) {
-		return THINKOS_SYSCALL3(THINKOS_CTL, THINKOS_CTL_THREAD_CYCCNT, cyccnt, max);
+	thinkos_thread_cyccnt(uint32_t cyccnt[], 
+						  unsigned int from, unsigned int cnt) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = THINKOS_CTL_THREAD_CYCCNT;
+		register uint32_t ptr asm("r1") = (uintptr_t)cyccnt;
+		register uint32_t rng asm("r2") = (from << 16) + cnt;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(ptr), "r"(rng) : "memory" );
+		return ret;
 	}
 
 static inline uint32_t __attribute__((always_inline)) thinkos_cyccnt(void) {
 		return THINKOS_SYSCALL1(THINKOS_CTL, THINKOS_CTL_CYCCNT);
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = THINKOS_CTL_RELEASE_GET;
+		register uint32_t cyccnt asm("r0");
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret), "=r"(cyccnt) : "1"(opc));
+		return cyccnt;
 	}
 
+static inline int __attribute__((always_inline)) 
+	thinkos_release_get(struct thinkos_release * release) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = THINKOS_CTL_RELEASE_GET;
+		register uint32_t ptr asm("r1") = (uintptr_t)release;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(ptr) : "memory" );
+		return ret;
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_version_get(struct thinkos_version * version) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = THINKOS_CTL_VERSION_GET;
+		register uint32_t ptr asm("r1") = (uintptr_t)version;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(ptr) : "memory" );
+		return ret;
+	}
+
+
 struct monitor_comm;
+/*
+static inline int __attribute__((always_inline)) 
+	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
+				   const struct monitor_comm * comm, void * env) {
+	return THINKOS_SYSCALL4(THINKOS_MONITOR_CTL, MONITOR_CTL_TASK_INIT, 
+							task, comm, env);
+}
+*/
 
 static inline int __attribute__((always_inline)) 
 	thinkos_monitor(void (* task)(const struct monitor_comm *, void *), 
-				   const struct monitor_comm * comm, void * param) {
-	return THINKOS_SYSCALL3(THINKOS_MONITOR, task, comm, param);
-}
+				   const struct monitor_comm * comm, void * env) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = MONITOR_CTL_TASK_INIT;
+		register uint32_t arg1 asm("r1") = (uintptr_t)task;
+		register uint32_t arg2 asm("r2") = (uintptr_t)comm;
+		register uint32_t arg3 asm("r3") = (uintptr_t)env;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(arg1), "r"(arg2), "r"(arg3) : "memory" );
+		return ret;
+	}
+
+static inline int __attribute__((always_inline)) 
+	thinkos_monitor_signal(unsigned int signo) {
+		register int32_t ret asm("r12");
+		register uint32_t opc asm("r0") = MONITOR_CTL_SIGNAL;
+		register uint32_t arg1 asm("r1") = signo;
+		asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc),
+					  "r"(arg1) );
+		return ret;
+	}
+
 
 static inline int __attribute__((always_inline)) 
 	thinkos_critical_enter(void) {
@@ -747,14 +903,64 @@ static inline int __attribute__((always_inline))
    Communication channel
    ---------------------------------------------------------------------------*/
 
+#define __COMM_OPEN_OPC(DEVNO) ((THINKOS_COMM_OPEN << 24) + DEVNO)
+
 static inline int __attribute__((always_inline)) 
-thinkos_comm_send(uint32_t hdr, const void * buf, unsigned int len) {
-	return THINKOS_SYSCALL4(THINKOS_COMM, COMM_SEND, hdr, buf, len);
+thinkos_comm_open(unsigned int devno) {
+	register int32_t ret asm("r12");
+	register int32_t opc asm("r0") = __COMM_OPEN_OPC(devno);
+	asm volatile (ARM_SVC(THINKOS_COMM_CTL) : "=r"(ret) : "r"(opc) : );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_comm_send(unsigned int comm, const void * buf, size_t len) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = 0;
+	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+	return ret;
+}
+
+static inline ssize_t __attribute__((always_inline)) 
+thinkos_comm_timedsend(unsigned int comm, const void * buf, size_t len,
+					   uint32_t tmo) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_SEND) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_comm_recv(uint32_t * hdr, void * buf, unsigned int len) {
-	return THINKOS_SYSCALL4(THINKOS_COMM, COMM_RECV, hdr, buf, len);
+thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
+					   unsigned int tmo) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	register uint32_t r3 asm("r3") = tmo;
+	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDRECV) 
+				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
+				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
+	register int32_t ret asm("r0");
+	register uint32_t r1 asm("r1") = (uintptr_t)buf;
+	register uint32_t r2 asm("r2") = len;
+	asm volatile (ARM_SVC(THINKOS_COMM_RECV) : "=r"(ret) : 
+				  "0"(comm), "r"(r1), "r"(r2) : "memory" );
+	return ret;
 }
 
 /* ---------------------------------------------------------------------------
@@ -960,17 +1166,21 @@ static inline void thinkos_bkpt(int no) {
 	asm volatile ("bkpt %0" : : "I" (no) );
 }
 
-static inline int thinkos_escalate(int (* call)(void *), void * arg) {
-	return THINKOS_SYSCALL2(THINKOS_ESCALATE, call, arg);
-}
-
 /* ---------------------------------------------------------------------------
    Application support
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-thinkos_app_exec(uint32_t addr) {
-	return THINKOS_SYSCALL1(THINKOS_APP_EXEC, addr);
+thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1, 
+				 uintptr_t arg2, uintptr_t arg3) {
+	register int32_t ret asm("r12");
+	register uintptr_t r0 asm("r0") = arg0;
+	register uintptr_t r1 asm("r1") = arg1;
+	register uintptr_t r2 asm("r2") = arg2;
+	register uintptr_t r3 asm("r2") = arg3;
+	asm volatile (ARM_SVC(THINKOS_APP_EXEC) : 
+				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2), "r"(r3), "0"(addr) : );
+	return ret;
 }
 
 #ifdef __cplusplus

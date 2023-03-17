@@ -52,6 +52,9 @@
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
 
+#define __THINKOS_COMM__
+#include <thinkos/comm.h>
+
 /* -------------------------------------------------------------------------- 
  * Context structure offsets (used in assembler code)
  * --------------------------------------------------------------------------*/
@@ -131,14 +134,22 @@
   #define SIZEOF_KRN_TH_SL          0
 #endif
 
-#if (THINKOS_ENABLE_PROFILING)
-  #define SIZEOF_KRN_CYCREF    4
-  #define SIZEOF_KRN_TH_CYC    (__KRN_THREAD_LST_SIZ * 4)
-  #define THINKOS_KRN_THREAD_CYC_LST_SIZ (__KRN_THREAD_LST_SIZ)
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 32
 #else
-  #define SIZEOF_KRN_CYCREF    0
+  #if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
+    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 8
+  #else
+    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 4
+  #endif
+#endif
+
+#if (THINKOS_ENABLE_PROFILING)
+  #define SIZEOF_KRN_TH_CYC    (__KRN_THREAD_LST_SIZ * 4)
+  #define SIZEOF_KRN_CYCREF    4
+#else
   #define SIZEOF_KRN_TH_CYC    0
-  #define THINKOS_KRN_THREAD_CYC_LST_SIZ 0
+  #define SIZEOF_KRN_CYCREF    0
 #endif
 
 #if (THINKOS_ENABLE_CRITICAL)
@@ -163,7 +174,11 @@
 #define SIZEOF_KRN_TH_CLK    (__KRN_THREAD_LST_SIZ * 4)
 
 #if (THINKOS_ENABLE_MONITOR)
-  #define SIZEOF_KRN_MONITOR   (4 * 3)
+#if (THINKOS_ENABLE_DEFERRED_ISR)
+  #define SIZEOF_KRN_MONITOR   (4 * 7)
+#else
+  #define SIZEOF_KRN_MONITOR   (4 * 4)
+#endif
 #else
   #define SIZEOF_KRN_MONITOR   0
 #endif
@@ -186,6 +201,16 @@
   #define SIZEOF_KRN_STEP_ID   0
   #define SIZEOF_KRN_BREAK_ID  0
 #endif
+
+#if (THINKOS_ENABLE_ERROR_TRAP)
+#define SIZEOF_KRN_DBG_STATUS  4
+#else
+#define SIZEOF_KRN_DBG_STATUS  0
+#endif
+
+#define SIZEOF_KRN_DEBUG (SIZEOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_SVC +\
+						  SIZEOF_KRN_XCPT_IPSR + SIZEOF_KRN_STEP_ID +\
+						  SIZEOF_KRN_BREAK_ID + SIZEOF_KRN_DBG_STATUS)
 
 #if (THINKOS_ENABLE_READY_MASK)
   #define SIZEOF_KRN_RDY_MSK 4
@@ -236,25 +261,29 @@
 #define OFFSETOF_KRN_TH_CTX     (OFFSETOF_KRN_VOID_CTX + SIZEOF_KRN_VOID_CTX)
 #define OFFSETOF_KRN_NRT_CTX    (OFFSETOF_KRN_TH_CTX + SIZEOF_KRN_TH_CTX)
 #define OFFSETOF_KRN_IDLE_CTX   (OFFSETOF_KRN_NRT_CTX + SIZEOF_KRN_NRT_CTX)
-#define OFFSETOF_KRN_SCHED     (OFFSETOF_KRN_IDLE_CTX + SIZEOF_KRN_IDLE_CTX) 
+#define OFFSETOF_KRN_SCHED      (OFFSETOF_KRN_IDLE_CTX + SIZEOF_KRN_IDLE_CTX) 
 #define OFFSETOF_KRN_WQ_LST     (OFFSETOF_KRN_SCHED + SIZEOF_KRN_SCHED)
-#define OFFSETOF_KRN_CYCREF     (OFFSETOF_KRN_WQ_LST + SIZEOF_KRN_WQ_LST)
-#define OFFSETOF_KRN_TICKS      (OFFSETOF_KRN_CYCREF + SIZEOF_KRN_CYCREF)
-#define OFFSETOF_KRN_TH_CLK     (OFFSETOF_KRN_TICKS + SIZEOF_KRN_TICKS)
-#define OFFSETOF_KRN_TH_CYC     (OFFSETOF_KRN_TH_CLK + SIZEOF_KRN_TH_CLK)
-#define OFFSETOF_KRN_TH_SL      (OFFSETOF_KRN_TH_CYC + SIZEOF_KRN_TH_CYC)
+#define OFFSETOF_KRN_CLK        (OFFSETOF_KRN_WQ_LST + SIZEOF_KRN_WQ_LST)
+#define OFFSETOF_KRN_TH_CYC     (OFFSETOF_KRN_CLK + SIZEOF_KRN_CLK)
+#define OFFSETOF_KRN_CYCREF     (OFFSETOF_KRN_TH_CYC + SIZEOF_KRN_TH_CYC)
+
+#define OFFSETOF_KRN_TH_SL      (OFFSETOF_KRN_CYCREF + SIZEOF_KRN_CYCREF)
 #define OFFSETOF_KRN_TH_INF     (OFFSETOF_KRN_TH_SL + SIZEOF_KRN_TH_SL)
 #define OFFSETOF_KRN_TH_STAT    (OFFSETOF_KRN_TH_INF + SIZEOF_KRN_TH_INF)
 #define OFFSETOF_KRN_TH_ERRNO   (OFFSETOF_KRN_TH_STAT + SIZEOF_KRN_TH_STAT)
 
 #define A4(__X) ((__X + 3) & ~3)
+#define OFFSETOF_KRN_DEBUG      A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
 
-#define OFFSETOF_KRN_STEP_REQ   A4(OFFSETOF_KRN_TH_ERRNO + SIZEOF_KRN_TH_ERRNO)
+#define OFFSETOF_KRN_STEP_REQ   (OFFSETOF_KRN_DEBUG)
 #define OFFSETOF_KRN_STEP_SVC   (OFFSETOF_KRN_STEP_REQ + SIZEOF_KRN_STEP_REQ)
 #define OFFSETOF_KRN_XCPT_IPSR  (OFFSETOF_KRN_STEP_SVC + SIZEOF_KRN_STEP_SVC)
 #define OFFSETOF_KRN_STEP_ID    (OFFSETOF_KRN_XCPT_IPSR + SIZEOF_KRN_XCPT_IPSR)
 #define OFFSETOF_KRN_BREAK_ID   (OFFSETOF_KRN_STEP_ID + SIZEOF_KRN_STEP_ID)
-#define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+#define OFFSETOF_KRN_DBG_STATUS (OFFSETOF_KRN_BREAK_ID + SIZEOF_KRN_BREAK_ID)
+
+#define OFFSETOF_KRN_CRITCNT    (OFFSETOF_KRN_DEBUG + SIZEOF_KRN_DEBUG)
+
 #define OFFSETOF_KRN_RDY_MSK    (OFFSETOF_KRN_CRITCNT + SIZEOF_KRN_CRITCNT)
 
 #define OFFSETOF_KRN_SCHED_THREAD   (OFFSETOF_KRN_SCHED)
@@ -270,9 +299,9 @@
 //#define OFFSETOF_KRN_MON_CLK    
 //(OFFSETOF_KRN_MON_CLK + SIZEOF_KRN_MON_CLK)
 
-#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 24) & 0xff)
-#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 16) & 0xff)
-#define SCHED_STAT_BRK(__STAT__) (((__STAT__) >> 8) & 0xff)
+#define SCHED_STAT_XCP(__STAT__) (((__STAT__) >> 24) & 0xff)
+#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 16) & 0xff)
+#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 8) & 0xff)
 #define SCHED_STAT_ACT(__STAT__) ((__STAT__) & 0xff)
 
 #ifndef __ASSEMBLER__
@@ -288,18 +317,33 @@
 
 struct thinkos_mem_map;
 
+struct deferred_svc_map;
+
 /* -------------------------------------------------------------------------- 
  * Monitor control structure
  * --------------------------------------------------------------------------*/
 
 struct thinkos_monitor { 
+	uint32_t events;  /* event set bitmap */
+	uint32_t mask;  /* events mask */
+#if (THINKOS_ENABLE_DEFERRED_ISR)
+	const struct deferred_svc_map * svc; /* deferred services vectors */
+	void * env; /* environment */
+	struct comm_tx_req * tx_req;
+#endif
 	union{
 		volatile uintptr_t ctl; /* control: semaphore/context pointer [PSP] */
 		uint32_t * ctx;
 	};
-	volatile uint32_t events;  /* event set bitmap */
-	volatile uint32_t mask;  /* events mask */
+	const struct thinkos_comm * comm;
 };
+
+/* -------------------------------------------------------------------------- 
+ * Debug status structure
+ * --------------------------------------------------------------------------*/
+
+#if (THINKOS_ENABLE_DEBUG)
+#endif /* THINKOS_ENABLE_DEBUG */
 
 /* -------------------------------------------------------------------------- 
  * Thread context layout
@@ -348,6 +392,7 @@ struct thinkos_fp_context {
 
 #endif
 
+
 /* -------------------------------------------------------------------------- 
  * ThinkOS kernel data block
  * --------------------------------------------------------------------------*/
@@ -370,12 +415,13 @@ struct thinkos_rt {
 	};
 
 	union {
-		volatile uint32_t state; /* kernel state */
+		volatile uint32_t state; /* scheduler state */
 		struct {
 			volatile uint8_t act;    /* current active thread */
-			volatile uint8_t brk;    /* break thread (active at break point) */
-			volatile uint8_t svc;    /* pending service */
-			volatile uint8_t err;    /* error number */
+			volatile uint8_t svc;    /* deferred service request */
+			volatile uint8_t err;    /* thread error number - 
+										errors from syscalls */
+			volatile uint8_t xcp;    /* exception error number */
 		};
 	} sched;
 
@@ -429,9 +475,9 @@ struct thinkos_rt {
 			uint32_t wq_tmshare; /* Threads waiting for time share cycle */
 #endif
 
-#if (THINKOS_ENABLE_COMM)
-			uint32_t wq_comm_send;
-			uint32_t wq_comm_recv;
+#if ((THINKOS_COMM_MAX) > 0)
+			uint32_t wq_comm_tx[THINKOS_WQ_COMM_TX_CNT];
+			uint32_t wq_comm_rx[THINKOS_WQ_COMM_RX_CNT];
 #endif
 
 #if (THINKOS_ENABLE_WQ_IRQ)
@@ -452,20 +498,33 @@ struct thinkos_rt {
 		};
 	};
 
-#if (THINKOS_ENABLE_PROFILING)
-	/* Reference cycle ... */
-	uint32_t cycref;
-#endif
-
 	struct {
-		uint32_t ticks;
-		/* Per thread clock. Used for time wait (e.g. sleep()) */
-		uint32_t th_clk[__KRN_THREAD_LST_SIZ];
-	};
+		/* Per thread timer. Used for time wait (e.g. sleep()) */
+		uint32_t th_tmr[__KRN_THREAD_LST_SIZ];
+		uint32_t time;      /* clock present value */
+#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
+		uint32_t increment; /* fractional per tick increment */
+#endif
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+		/* date and time fractional value */
+		struct {
+			uint32_t frac;
+			uint32_t sec;
+		} timestamp;
+		struct {
+			uint32_t frac;
+			uint32_t sec;
+		} realtime_offs;
+		uint32_t resolution; /* fractional clock resolution */
+		uint32_t k; /* residual clock multiplication factor */
+#endif
+	} clk;
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* Per thread cycle count */
 	uint32_t th_cyc[__KRN_THREAD_LST_SIZ]; 
+	/* Reference cycle ... */
+	uint32_t cycref;
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -488,17 +547,30 @@ struct thinkos_rt {
 	int8_t th_errno[__KRN_THREAD_LST_SIZ]; 
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_BASE)
 	struct {
-  #if (THINKOS_ENABLE_DEBUG_STEP)
-	uint32_t step_req;  /* step request bitmap */
-	uint32_t step_svc;  /* step at service call bitmap */
-  #endif /* THINKOS_ENABLE_DEBUG_STEP */
-	uint16_t xcpt_ipsr; /* Exception IPSR */
-	int8_t   step_id;   /* current stepping thread id */
-	int8_t   brk_idx;   /* break thread index */
-	};
+#if (THINKOS_ENABLE_DEBUG_BKPT)
+#if (THINKOS_ENABLE_DEBUG_STEP)
+		uint32_t step_req;  /* step request bitmap */
+		uint32_t step_svc;  /* step at service call bitmap */
+#endif /* THINKOS_ENABLE_DEBUG_STEP */
+		uint16_t xcpt_ipsr; /* Exception IPSR */
+		int8_t   step_id;   /* current stepping thread id */
+		int8_t   brk_idx;   /* break thread index */
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
+#if (THINKOS_ENABLE_ERROR_TRAP)
+		union {
+			uint32_t status;
+			struct {
+				uint8_t thread;   /* active thread */
+				uint8_t errno;    /* error number */
+				uint8_t xcptno;   /* exception number */
+				uint8_t kfault;   /* kernel fault ??  */
+			};
+		};
+#endif
+	} debug;
+#endif
 
 #if (THINKOS_ENABLE_CRITICAL)
 	uint32_t critical_cnt; /* critical section entry counter, if not zero,
@@ -509,18 +581,11 @@ struct thinkos_rt {
 	uint32_t rdy_msk;
 #endif
 
-#if (THINKOS_ENABLE_DATE_AND_TIME)
-	struct krn_clock time_clk;
-#endif
-
 #if (THINKOS_ENABLE_MONITOR)
 	/* kernel monitor control structure */
 	struct thinkos_monitor monitor;
-  #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	/* kernel monitor timer */
-	uint32_t monitor_clock;
-  #endif
 #endif
+
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	struct thinkos_idle_rt idle_hooks;
@@ -559,13 +624,13 @@ struct thinkos_rt {
 	uint32_t gate[(THINKOS_GATE_MAX + 15) / 16]; /* gates states */
 #endif /* THINKOS_GATE_MAX > 0 */
 
+#if ((THINKOS_IRQ_MAX) > 0)
+	volatile uint8_t irq_th[THINKOS_IRQ_MAX];
+#endif /* THINKOS_IRQ_MAX */
+
 #if ((THINKOS_MUTEX_MAX) > 0)
 	uint8_t mtx_lock[THINKOS_MUTEX_MAX];
 #endif /* THINKOS_MUTEX_MAX > 0 */
-
-#if ((THINKOS_IRQ_MAX) > 0)
-	int8_t irq_th[THINKOS_IRQ_MAX];
-#endif /* THINKOS_IRQ_MAX */
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	uint32_t th_alloc[1];
@@ -601,6 +666,15 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	const struct thinkos_mem_map * mem_map;
 #endif
+#if ((THINKOS_COMM_MAX) > 0)
+	const struct thinkos_comm * comm[THINKOS_COMM_MAX];
+#endif
+
+#if (THINKOS_ENABLE_DATE_AND_TIME)
+//	struct krn_clock time_clk;
+#endif
+
+
 };
 
 /* -------------------------------------------------------------------------- 
@@ -661,17 +735,19 @@ struct thinkos_rt {
 							 - offsetof(struct thinkos_rt, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_SEND ((offsetof(struct thinkos_rt, wq_comm_send) \
+#define THINKOS_COMM_TX_BASE ((offsetof(struct thinkos_rt, wq_comm_tx) \
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_COMM_RECV ((offsetof(struct thinkos_rt, wq_comm_recv) \
+#define THINKOS_COMM_RX_BASE ((offsetof(struct thinkos_rt, wq_comm_rx) \
 								- offsetof(struct thinkos_rt, wq_lst)) \
 							   / sizeof(uint32_t))
 
+#if (THINKOS_ENABLE_WQ_IRQ)
 #define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
 						  / sizeof(uint32_t))
+#endif
 
 #define THINKOS_WQ_DMA ((offsetof(struct thinkos_rt, wq_dma) \
 						   - offsetof(struct thinkos_rt, wq_lst)) \
@@ -687,11 +763,16 @@ struct thinkos_rt {
 
 
 #define THINKOS_MUTEX_FIRST  (THINKOS_MUTEX_BASE)
-#define THINKOS_MUTEX_LAST   ((THINKOS_MUTEX_FIRST) + (THINKOS_MUTEX_MAX) - 1)
+#define THINKOS_MUTEX_LAST   (THINKOS_MUTEX_FIRST + (THINKOS_MUTEX_MAX) - 1)
 
 #define THINKOS_OBJECT_FIRST (0)
-#define THINKOS_OBJECT_LAST  ((THINKOS_OBJECT_FIRST) + (THINKOS_WQ_CNT) - 1)
+#define THINKOS_OBJECT_LAST  (THINKOS_OBJECT_FIRST + (THINKOS_WQ_CNT) - 1)
 
+#define THINKOS_COMM_RX_FIRST  (THINKOS_COMM_RX_BASE)
+#define THINKOS_COMM_RX_LAST   (THINKOS_COMM_RX_FIRST + (THINKOS_COMM_MAX) - 1)
+
+#define THINKOS_COMM_TX_FIRST  (THINKOS_COMM_TX_BASE)
+#define THINKOS_COMM_TX_LAST   (THINKOS_COMM_TX_FIRST + (THINKOS_COMM_MAX) - 1)
 
 /* -------------------------------------------------------------------------- 
  * Static initialized kernel descriptors
@@ -855,8 +936,6 @@ void __thinkos_wakeup( unsigned int wq, unsigned int th);
 void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
 
 
-uint32_t  __thinkos_ticks(void);
-
 /* -------------------------------------------------------------------------- 
  * kernel error and debug
  * --------------------------------------------------------------------------*/
@@ -931,17 +1010,28 @@ int krn_console_puts(const char * s);
 
 int krn_console_putc(int c);
 
+int krn_console_puthex(uint32_t val);
+
+int krn_console_crlf(void);
+
 int krn_console_getc(unsigned int tmo);
 
 int krn_console_gets(char * s, int size);
+
+int krn_console_wrln(const char * ln);
+
+int krn_fmt_hex32(char * s, uint32_t val);
+
+int krn_fmt_line_hex32(char * __ln, uint32_t __addr, 
+					   const void * __buf, int __cnt);
 
 /* -------------------------------------------------------------------------- 
  * kernel core functions 
  * --------------------------------------------------------------------------*/
 
 int thinkos_krn_thread_init(struct thinkos_rt * krn,
-							unsigned int thread_idx,
-							struct thinkos_thread_initializer * init);
+	unsigned int thread_idx,
+	const struct thinkos_thread_initializer * init);
 
 unsigned int thinkos_krn_active_get(struct thinkos_rt * krn);
 
@@ -978,6 +1068,10 @@ unsigned int __thinkos_obj_kind(unsigned int oid);
 int __thinkos_kind_prefix(unsigned int kind);
 
 const char * __thinkos_kind_name(unsigned int kind);
+
+void thinkos_krn_sched_off(struct thinkos_rt * krn);
+
+void thinkos_krn_sched_on(struct thinkos_rt * krn);
 
 /* -------------------------------------------------------------------------
  * Kernel Debug

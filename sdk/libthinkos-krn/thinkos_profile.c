@@ -36,8 +36,8 @@ const struct thinkos_profile thinkos_profile = {
 
 	.kernel = {
 		.version = {
-			.major = THINKOS_KERNEL_VERSION_MAJOR,
-			.minor = THINKOS_KERNEL_VERSION_MINOR,
+			.major = THINKOS_KRN_VERSION_MAJOR,
+			.minor = THINKOS_KRN_VERSION_MINOR,
 			.reserved = 0
 		},
 		.timeshare  = THINKOS_ENABLE_TIMESHARE,
@@ -61,6 +61,7 @@ const struct thinkos_profile thinkos_profile = {
 		.event_max       = THINKOS_EVENT_MAX,
 		.flag_max        = THINKOS_FLAG_MAX,
 		.gate_max        = THINKOS_GATE_MAX,
+		.comm_max        = THINKOS_COMM_MAX,
 
 		.queue_max       =  THINKOS_QUEUE_MAX,
 		.irq_max           =  THINKOS_IRQ_MAX,
@@ -74,7 +75,6 @@ const struct thinkos_profile thinkos_profile = {
 		.sleep        = THINKOS_ENABLE_SLEEP,
 		.ctl          = THINKOS_ENABLE_CTL,
 		.critical     = THINKOS_ENABLE_CRITICAL,
-		.escalate     = THINKOS_ENABLE_ESCALATE,
 		.irq_ctl      = THINKOS_ENABLE_IRQ_CTL,
 		.pause        = THINKOS_ENABLE_PAUSE,
 		.cancel       = THINKOS_ENABLE_CANCEL,
@@ -111,7 +111,6 @@ const struct thinkos_profile thinkos_profile = {
 		.console_drain   = THINKOS_ENABLE_CONSOLE_DRAIN,
 		.console_read    = THINKOS_ENABLE_CONSOLE_READ,
 		.console_misc    = THINKOS_ENABLE_CONSOLE_MISC,
-		.comm            = THINKOS_ENABLE_COMM,
 		.mpu             = THINKOS_ENABLE_MPU,
 		.fpu             = THINKOS_ENABLE_FPU,
 		.fpu_ls          = THINKOS_ENABLE_FPU_LS,
@@ -128,6 +127,14 @@ const struct thinkos_profile thinkos_profile = {
 		.stack_limit     = THINKOS_ENABLE_STACK_LIMIT
 	},
 
+	.monitor = {
+		.enabled         = THINKOS_ENABLE_MONITOR,
+		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
+		.threads         = THINKOS_ENABLE_MONITOR_THREADS,
+		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
+		.stack_size      = THINKOS_MONITOR_STACK_SIZE
+	},
+
 	.except = {
 		.exceptions      = THINKOS_ENABLE_EXCEPTIONS,
 		.busfault        = THINKOS_ENABLE_BUSFAULT,
@@ -138,15 +145,8 @@ const struct thinkos_profile thinkos_profile = {
 		.sysrst_onfault  = THINKOS_SYSRST_ONFAULT
 	},
 
-	.monitor = {
-		.enabled         = THINKOS_ENABLE_MONITOR,
-		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
-		.threads         = THINKOS_ENABLE_MONITOR_THREADS,
-		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
-		.stack_size      = THINKOS_MONITOR_STACK_SIZE
-	},
-
 	.debug = {
+		.base            = THINKOS_ENABLE_DEBUG_BASE,
 		.enabled         = THINKOS_ENABLE_DEBUG,
 		.step            = THINKOS_ENABLE_DEBUG_STEP,
 		.bkpt            = THINKOS_ENABLE_DEBUG_BKPT,
@@ -204,8 +204,10 @@ void __profile(void)
 			 p->limit.irq_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_DMA_MAX                = %d", 
 			 p->limit.dma_max);
-	DCC_LOG1(LOG_TRACE, "THINKOS_FLASH_MAX              = %d", 
+	DCC_LOG1(LOG_TRACE, "THINKOS_FLASH_MEM_MAX          = %d", 
 			 p->limit.flash_max);
+	DCC_LOG1(LOG_TRACE, "THINKOS_COMM_MAX               = %d", 
+			 p->limit.comm_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_EXCEPT_STACK_SIZE      = %d", 
 			 p->limit.except_stack_size);
 
@@ -220,8 +222,6 @@ void __profile(void)
 			 p->syscall.ctl);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CRITICAL        = %d", 
 			 p->syscall.critical);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_ESCALATE        = %d", 
-			 p->syscall.escalate);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_IRQ_CTL         = %d", 
 			 p->syscall.irq_ctl);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PAUSE           = %d", 
@@ -284,8 +284,6 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_CONSOLE_MISC    = %d", 
 			 p->feature.console_misc);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_COMM            = %d", 
-			 p->feature.comm);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MPU             = %d", 
 			 p->feature.mpu);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_FPU             = %d", 
@@ -309,6 +307,7 @@ void __profile(void)
 			 p->security.memory_clear);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_STACK_LIMIT     = %d", 
 			 p->security.stack_limit);
+
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_EXCEPTIONS      = %d", 
 			 p->except.exceptions);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_BUSFAULT        = %d", 
@@ -335,8 +334,10 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE     = %d", 
 			 p->monitor.stack_size);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG           = %d", 
-			 p->monitor.enabled);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BASE      = %d", 
+			 p->debug.base);
+	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DBGMON_XCP      = %d", 
+			 p->debug.enabled);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 
 			 p->debug.step);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BKPT      = %d", 

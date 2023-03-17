@@ -164,7 +164,6 @@ int __flash_ymodem_recv(const char * tag)
 
 	fname = (char *)buf;
 	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
-
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
 			DCC_LOG1(LOG_TRACE, "cnt=%d", cnt);
@@ -179,8 +178,7 @@ int __flash_ymodem_recv(const char * tag)
 
 	thinkos_flash_mem_close(key);
 
-
-	thinkos_sleep(500);
+	thinkos_sleep(128);
 
 	krn_console_puts("\r\nYMODEM receive ");
 	if (ret < 0)
