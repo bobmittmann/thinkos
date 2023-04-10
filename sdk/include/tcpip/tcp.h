@@ -138,7 +138,7 @@ extern const uint16_t tcp_msl;
 
 extern const char tcp_pcb_flags[64][8];
 
-const char tcp_basic_flags[16][5];
+extern const char tcp_basic_flags[16][5];
 
 extern const char tcp_all_flags[64][8];
 

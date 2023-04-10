@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include <sys/serial.h>
 
 /** @mainpage MS/TP Data Link Layer Library
@@ -396,7 +397,7 @@ int mstp_lnk_recv(struct mstp_lnk * lnk, void * buf,
  * On error #-1 is returned. 
  *
  */
- int mstp_lnk_role_set(struct mstp_lnk * lnk, enum mstp_lnk_role role);
+int mstp_lnk_role_set(struct mstp_lnk * lnk, enum mstp_lnk_role role);
 
 int mstp_lnk_role_get(struct mstp_lnk *lnk);
 
