@@ -133,7 +133,6 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 	ps = ns;
 	timer_ms[MSTP_NO_TOKEN] = T_NO_TOKEN + T_SLOT * ts;
 	__netmap_reset(mgmt->netmap, ts);
-	__list_reset(mgmt->active, MSTP_LNK_MAX_MASTERS);
 
 	/* Get a reference clock */
 	clk = thinkos_clock();
@@ -159,8 +158,8 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 
 	/* XXX: find the clock that is about to expire first */
 	dt = silence_clk - clk + timer_ms[lnk->state];
-	ret = mstp_lnk_comm_frame_recv(comm, pdu, &frm, dt);
 
+	ret = mstp_lnk_comm_frame_recv(comm, pdu, &frm, dt);
 	if (ret > 0) {
 		event_count += ret;
 		rcvd_valid_frm = true;
@@ -195,10 +194,6 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 				lnk->stats.rx_unicast++;
 		}
 
-		/* update master active counter */
-		if (src_addr < MSTP_LNK_MAX_MASTERS)
-			mgmt->active[src_addr]++;
-
 		RESET_SILENCE_TIMER();
 	} else {
 		if ((ret == MSTP_HDR_SYNC_ERROR) ||
@@ -207,8 +202,7 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 			rcvd_invalid_frm = true;
 			RESET_SILENCE_TIMER();
 #endif		
-			lnk->stats.rx_err++;
-			WARNS("MS/TP: header decoding error");
+			DBGS("MS/TP: header decoding error");
 			if ((++error_count) == MSTP_LINK_HDR_ERR_MAX) {
 				DBGS("MS/TP too many header errors");
 				mgmt->callback(lnk, MSTP_EV_LINK_TOO_MANY_ERRORS);
@@ -249,7 +243,7 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 					frame_count = 0;
 					if (sole_master) {
 						error_count = 0;
-						sole_master = false;
+						lnk->sole_master = sole_master = false;
 						mgmt->callback(lnk, MSTP_EV_MULTIMASTER);
 					}
 					if (!lnk->up_ack) {
@@ -263,19 +257,16 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 					lnk->state = MSTP_USE_TOKEN;
 					MSTP_HW_STATE(lnk->state);
 					YAPS("[IDLE] ReceivedToken --> [USE_TOKEN]");
-
 					goto transition_now;
 
 				case FRM_POLL_FOR_MASTER:
 					if (dst_addr == ts) {
 						DBG("Replying back to PFM from %d", src_addr);
-						mstp_lnk_comm_fast_send(comm, FRM_REPLY_POLL_FOR_MASTER, 
-												src_addr);
-						lnk->stats.tx_mgmt++;
+						mstp_lnk_comm_fast_send(comm, 
+							FRM_REPLY_POLL_FOR_MASTER,
+							src_addr);
 						rcvd_valid_frm = false;
 						RESET_SILENCE_TIMER();
-						/* add transmitter's address to address map */
-						__netmap_insert(mgmt->netmap, src_addr);
 					}
 					lnk->state = MSTP_IDLE;
 					MSTP_HW_STATE(lnk->state);
@@ -399,7 +390,7 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 				mgmt->loop_probe = true;
 			}
 			mstp_lnk_comm_frame_send(comm, 
-									 MKROUTE(frm_type, dst_addr, src_addr),
+							MKROUTE(frm_type, dst_addr, src_addr),
 							pdu_dat, pdu_len);
 			
 			mgmt->tx.ack = ++tx_ack;
@@ -413,8 +404,9 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 			dst_addr = lnk->tx.inf.daddr;
 			src_addr = lnk->tx.inf.saddr;
 			pdu_len = lnk->tx.pdu_len;
-			mstp_lnk_comm_frame_send(comm, MKROUTE(frm_type, dst_addr, src_addr),
-							lnk->tx.pdu, pdu_len);
+			mstp_lnk_comm_frame_send(comm, 
+				MKROUTE(frm_type, dst_addr, src_addr),
+				lnk->tx.pdu, pdu_len);
 			lnk->tx.ack = ++tx_ack;
 			thinkos_gate_open(lnk->tx.gate);
 			RESET_SILENCE_TIMER();
@@ -473,7 +465,7 @@ void mstp_lnk_master_loop(struct mstp_lnk *lnk)
 		default:
 			lnk->state = MSTP_DONE_WITH_TOKEN;
 			MSTP_HW_STATE(lnk->state);
-			DBGS("[USE_TOKEN] SendNoWait --> [DONE_WITH_TOKEN]");
+			DBGS("[USE_TOKEN] NothingToSend --> [DONE_WITH_TOKEN]");
 			goto transition_now;
 		}
 		break;
@@ -646,7 +638,6 @@ test_reply_error:
 		else if ((sole_master == false) && (ns == ts)) {
 			ps = (ts + 1) % (N_MAX_MASTER + 1);
 			mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-			lnk->stats.tx_pfm++;
 			RESET_MAINTENANCE_TIMER();
 			RESET_SILENCE_TIMER();
 			retry_count = 0;
@@ -663,8 +654,6 @@ test_reply_error:
 #if 0
 				token_count++;
 				thinkos_sleep(1);
-				/* FIXME: test only ... */
-	//			RESET_SILENCE_TIMER();
 #else
 				token_count = N_POLL - 1;
 #endif
@@ -679,7 +668,6 @@ test_reply_error:
 			else {	/* not sole master */
 				token_count++;
 				mstp_lnk_comm_fast_send(comm, FRM_TOKEN, ns);
-				lnk->stats.tx_pfm++;
 				RESET_SILENCE_TIMER();
 				retry_count = 0;
 				event_count = 0;
@@ -692,7 +680,6 @@ test_reply_error:
 			if (sole_master == true) {
 				ps = (ns + 1) % (N_MAX_MASTER + 1);
 				mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-				lnk->stats.tx_pfm++;
 				RESET_SILENCE_TIMER();
 				RESET_MAINTENANCE_TIMER();
 				ns = ts;
@@ -710,7 +697,6 @@ test_reply_error:
 			else {
 				ps = ts;
 				mstp_lnk_comm_fast_send(comm, FRM_TOKEN, ns);
-				lnk->stats.tx_token++;
 				RESET_SILENCE_TIMER();
 				retry_count = 0;
 				/* changed in Errata SSPC-135-2004 */
@@ -726,7 +712,6 @@ test_reply_error:
 		else {
 			ps = (ps + 1) % (N_MAX_MASTER + 1);
 			mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-			lnk->stats.tx_pfm++;
 			RESET_MAINTENANCE_TIMER();
 			RESET_SILENCE_TIMER();
 			retry_count = 0;
@@ -742,7 +727,6 @@ test_reply_error:
 		if (retry_count >= N_RETRY_TOKEN) {
 			ps = (ns + 1) % (N_MAX_MASTER + 1);
 			mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-			lnk->stats.tx_pfm++;
 			RESET_MAINTENANCE_TIMER();
 			RESET_SILENCE_TIMER();
 			ns = ts;	/* no known successor node */
@@ -765,7 +749,6 @@ test_reply_error:
 			if (retry_count < N_RETRY_TOKEN) {
 				retry_count++;
 				mstp_lnk_comm_fast_send(comm, FRM_TOKEN, ns);
-				lnk->stats.tx_token++;
 				RESET_SILENCE_TIMER();
 				event_count = 0;
 				/* stay in current state to listen for NS to begin using
@@ -775,7 +758,6 @@ test_reply_error:
 			} else {
 				ps = (ns + 1) % (N_MAX_MASTER + 1);
 				mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-				lnk->stats.tx_pfm++;
 				RESET_MAINTENANCE_TIMER();
 				RESET_SILENCE_TIMER();
 				ns = ts;	/* no known successor node */
@@ -792,7 +774,6 @@ test_reply_error:
 		break;
 
 	case MSTP_NO_TOKEN:
-
 		if ((SILENCE_TIMER() < (int32_t)(T_NO_TOKEN + T_SLOT * ts)) && 
 			(MAINTENANCE_TIMER() < T_MAINTENANCE_TIMEOUT)) {
 			if (event_count > N_MIN_OCTETS) {
@@ -807,7 +788,6 @@ test_reply_error:
 			if (SILENCE_TIMER() < ns_tmo) {
 				ps = (ts + 1) % (N_MAX_MASTER + 1);
 				mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-				lnk->stats.tx_pfm++;
 				RESET_MAINTENANCE_TIMER();
 				RESET_SILENCE_TIMER();
 				ns = ts;	/* next station is unknown */
@@ -839,13 +819,12 @@ test_reply_error:
 			if (dst_addr == ts
 			    && frm_type == FRM_REPLY_POLL_FOR_MASTER) {
 				if (ns != src_addr) {
-					ns = src_addr;
-					DBG("MS/TP next_station=%d", ns);
+					lnk->next_station = ns = src_addr;
+					YAP("MS/TP next_station=%d", ns);
 					__netmap_insert(mgmt->netmap, ns);
 				}
 				event_count = 0;
 				mstp_lnk_comm_fast_send(comm, FRM_TOKEN, ns);
-				lnk->stats.tx_token++;
 				RESET_SILENCE_TIMER();
 				ps = ts;
 				token_count = 0;
@@ -885,7 +864,6 @@ test_reply_error:
 				if (ns != ts) {
 					event_count = 0;
 					mstp_lnk_comm_fast_send(comm, FRM_TOKEN, ns);
-					lnk->stats.tx_token++;
 					RESET_SILENCE_TIMER();
 					retry_count = 0;
 					lnk->state = MSTP_PASS_TOKEN;
@@ -894,8 +872,8 @@ test_reply_error:
 				} else {
 					if ((ps + 1) % (N_MAX_MASTER + 1) != ts) {
 						ps = (ps + 1) % (N_MAX_MASTER + 1);
-						mstp_lnk_comm_fast_send(comm, FRM_POLL_FOR_MASTER, ps);
-						lnk->stats.tx_pfm++;
+						mstp_lnk_comm_fast_send(comm, 
+							FRM_POLL_FOR_MASTER, ps);
 						RESET_MAINTENANCE_TIMER();
 						RESET_SILENCE_TIMER();
 						retry_count = 0;
@@ -906,7 +884,7 @@ test_reply_error:
 						rcvd_invalid_frm = false;
 						lnk->state = MSTP_USE_TOKEN;
 						MSTP_HW_STATE(lnk->state);
-						sole_master = true;
+						lnk->sole_master = sole_master = true;
 						mgmt->callback(lnk, MSTP_EV_SOLE_MASTER);
 						if (!lnk->up_ack) {
 							error_count = 0;
@@ -919,7 +897,7 @@ test_reply_error:
 						}
 						INFS("[POLL_FOR_MASTER] DeclareSoleMaster -->" 
 							 " [USE_TOKEN]");
-				
+
 						goto transition_now;
 					}
 				}
@@ -937,8 +915,9 @@ test_reply_error:
 			 frm_type == FRM_BACNET_DATA_NO_REPLY ||
 			 (frm_type >= FRM_DATA_NO_REPLY &&
 			  frm_type < (FRM_DATA_NO_REPLY + 0x3f)))) {
-			mstp_lnk_comm_frame_send(comm, MKROUTE(frm_type, dst_addr, src_addr),
-							lnk->tx.pdu, lnk->tx.pdu_len);
+			mstp_lnk_comm_frame_send(comm, 
+				MKROUTE(frm_type, dst_addr, src_addr),
+					lnk->tx.pdu, lnk->tx.pdu_len);
 			thinkos_gate_open(lnk->tx.gate);
 			RESET_SILENCE_TIMER();
 			lnk->state = MSTP_IDLE;
@@ -946,8 +925,8 @@ test_reply_error:
 			INFS("[ANSWER_DATA_REQUEST] Reply --> IDLE[]");
 			rcvd_valid_frm = false;
 		} else if (SILENCE_TIMER() >= T_REPLY_DELAY) {
-			mstp_lnk_comm_fast_send(comm, FRM_REPLY_POSTPONED, src_addr);
-			lnk->stats.tx_mgmt++;
+			mstp_lnk_comm_fast_send(comm,
+				FRM_REPLY_POSTPONED, src_addr);
 			RESET_SILENCE_TIMER();
 			lnk->state = MSTP_IDLE;
 			MSTP_HW_STATE(lnk->state);
@@ -962,9 +941,9 @@ test_reply_error:
 
 			pdu[0] = rsp;
 			pdu[1] = mgmt->tst.ret;
-			mstp_lnk_comm_frame_send(comm, MKROUTE(FRM_TEST_RESPONSE, 
-												   src_addr, ts),
-									 pdu, pdu_len);
+			mstp_lnk_comm_frame_send(comm, 
+				MKROUTE(FRM_TEST_RESPONSE, src_addr, ts),
+				pdu, pdu_len);
 
 			mgmt->callback(lnk, rsp);
 			lnk->state = MSTP_IDLE;

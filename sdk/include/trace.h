@@ -520,6 +520,8 @@ int trace_tail(struct trace_iterator * it);
 
 int trace_fmt(struct trace_entry * entry, char * s, int max);
 
+int trace_skip(struct trace_entry * entry);
+
 
 /* ----------------------------------------------------------------------
  * Trace kernel level decode (no locking)

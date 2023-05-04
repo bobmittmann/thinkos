@@ -82,11 +82,11 @@
 #define STM32_HSI_HZ         16000000
 
 #ifndef STM32_APB1_PRE
-#define STM32_APB1_PRE   4
+#define STM32_APB1_PRE   1
 #endif
 
 #ifndef STM32_APB2_PRE
-#define STM32_APB2_PRE   2
+#define STM32_APB2_PRE   1
 #endif
 
 #ifndef STM32_AHB_PRE
@@ -357,32 +357,11 @@
   #endif
 #endif
 
-#define __APB1_HZ   (__HCLK_HZ) / (STM32_APB1_PRE)
-#define __APB2_HZ   (__HCLK_HZ) / (STM32_APB2_PRE)
-#define __MCO_HZ 	(__HCLK_HZ) / (STM32_MCO_DIV)
-
-/* The timer clock frequencies are automatically defined by hardware. There 
-   are two cases:
-   1. If the APB prescaler equals 1, the timer clock frequencies are 
-   set to the same frequency as that of the APB domain.
-   2. Otherwise, they are set to twice (×2) the frequency of the APB domain. */
-#if (STM32_APB1_PRE == 1)
-  #define __TIM1_HZ  (__APB1_HZ)
-#else
-  #define __TIM1_HZ  ((__APB1_HZ) * 2)
-#endif
-
-#if (STM32_APB2_PRE == 1)
-  #define __TIM2_HZ  (__APB2_HZ)
-#else
-  #define __TIM2_HZ  ((__APB2_HZ) * 2)
-#endif
-
 const uint32_t stm32f_ahb_hz  = __HCLK_HZ;
-const uint32_t stm32f_apb1_hz = __APB1_HZ;
-const uint32_t stm32f_tim1_hz = __TIM1_HZ;
-const uint32_t stm32f_apb2_hz = __APB2_HZ;
-const uint32_t stm32f_tim2_hz = __TIM2_HZ;
+const uint32_t stm32f_apb1_hz = __HCLK_HZ / 4;
+const uint32_t stm32f_tim1_hz = __HCLK_HZ / 2;
+const uint32_t stm32f_apb2_hz = __HCLK_HZ / 2;
+const uint32_t stm32f_tim2_hz = __HCLK_HZ;
 const uint32_t stm32f_hse_hz = STM32_HSE_HZ;
 const uint32_t stm32f_hsi_hz = STM32_HSI_HZ;
 #ifdef __VCO_HZ

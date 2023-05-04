@@ -56,76 +56,43 @@ const char * const state_nm[] = {
 
 void mstp_dbg_io_0_set(void)
 {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	stm32_gpio_set(PIN0);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_dbg_io_0_clr(void)
 {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	stm32_gpio_clr(PIN0); 
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_dbg_io_0_toggle(void) {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	if (stm32_gpio_stat(PIN0)) stm32_gpio_clr(PIN0); 
 	else stm32_gpio_set(PIN0);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
-
-void mstp_dbg_io_1_set(void)
-{
-	__io_dbg1_set();
-#if (MSTP_COMM_DEBUG_ENABLED)
-	stm32_gpio_set(PIN1);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
-}
-
-void mstp_dbg_io_1_clr(void)
-{
-	__io_dbg1_clr();
-#if (MSTP_COMM_DEBUG_ENABLED)
-	stm32_gpio_clr(PIN1); 
-#endif /* MSTP_COMM_DEBUG_ENABLED */
-}
-
 
 void mstp_dbg_io_1_toggle(void) {
-	__io_dbg1_toggle();
-#if (MSTP_COMM_DEBUG_ENABLED)
 	if (stm32_gpio_stat(PIN1)) stm32_gpio_clr(PIN1); 
 	else stm32_gpio_set(PIN1);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_dbg_io_2_toggle(void) {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	if (stm32_gpio_stat(PIN2)) stm32_gpio_clr(PIN2); 
 	else stm32_gpio_set(PIN2);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_dbg_io_3_toggle(void) 
 {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	if (stm32_gpio_stat(PIN3)) stm32_gpio_clr(PIN3); 
 	else stm32_gpio_set(PIN3);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_dbg_io_4_toggle(void) 
 {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	if (stm32_gpio_stat(PIN4)) stm32_gpio_clr(PIN4); 
 	else stm32_gpio_set(PIN4);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
 
 void mstp_lnk_debug_init(void)
 {
-#if (MSTP_COMM_DEBUG_ENABLED)
 	stm32_gpio_clr(PIN0);
 	stm32_gpio_mode(PIN0, OUTPUT, PUSH_PULL | SPEED_HIGH);
 
@@ -140,9 +107,7 @@ void mstp_lnk_debug_init(void)
 
 	stm32_gpio_clr(PIN4);
 	stm32_gpio_mode(PIN4, OUTPUT, PUSH_PULL | SPEED_HIGH);
-#endif /* MSTP_COMM_DEBUG_ENABLED */
 }
-
 #if MSTP_HW_TRACE_ENABLED
 /* -------------------------------------------------------------------------
  * States of the MSTP state machine
@@ -378,3 +343,29 @@ void mstp_lnk_dbg_state(struct mstp_lnk *lnk, unsigned int nst)
 		break;
 	}
 }
+
+void mstp_lnk_debug_dump(void)
+{
+	INF("MS/TP:   MSTP_LNK_MAX_NODES = %d", (uint32_t)MSTP_LNK_MAX_NODES);
+	INF("MS/TP:        MSTP_BAUDRATE = %d bps", (uint32_t)MSTP_BAUDRATE);
+	INF("MS/TP:        MSTP_LNK_MTU  = %d octets", (uint32_t)MSTP_LNK_MTU);
+	INF("MS/TP:        MSTP_OVERHEAD = %d octets", (uint32_t)MSTP_OVERHEAD);
+
+	INF("MS/TP:             T_BIT_NS = %d ns", (uint32_t)T_BIT_NS);
+	INF("MS/TP: T_PROPAGATION_MAX_NS = %d ns", (uint32_t)T_PROPAGATION_MAX_NS);
+	INF("MS/TP: T_CPU_LATENCY_MIN_NS = %d ns", (uint32_t)T_CPU_LATENCY_MIN_NS);
+	INF("MS/TP: T_CPU_LATENCY_MAX_NS = %d ns", (uint32_t)T_CPU_LATENCY_MAX_NS);
+	INF("MS/TP:      T_ROUNDTRIP_MIN = %d ms", (uint32_t)T_ROUNDTRIP_MIN);
+	INF("MS/TP:      T_ROUNDTRIP_MAX = %d ms", (uint32_t)T_ROUNDTRIP_MAX);
+	INF("MS/TP:           T_NO_TOKEN = %d ms", (uint32_t)T_NO_TOKEN);
+	INF("MS/TP:        T_REPLY_DELAY = %d ms", (uint32_t)T_REPLY_DELAY);
+	INF("MS/TP:      T_REPLY_TIMEOUT = %d ms", (uint32_t)T_REPLY_TIMEOUT);
+	INF("MS/TP:   T_LOOPBACK_TIMEOUT = %d ms", (uint32_t)T_LOOPBACK_TIMEOUT);
+	INF("MS/TP:               T_SLOT = %d ms", (uint32_t)T_SLOT);
+	INF("MS/TP:        T_USAGE_DELAY = %d ms", (uint32_t)T_USAGE_DELAY);
+	INF("MS/TP:      T_USAGE_TIMEOUT = %d ms", (uint32_t)T_USAGE_TIMEOUT);
+	INF("MS/TP:    T_MIN_OCT_TIMEOUT = %d ms", (uint32_t)T_MIN_OCT_TIMEOUT);
+	INF("MS/TP:        T_PFM_TIMEOUT = %d ms", (uint32_t)T_PFM_TIMEOUT);
+	INF("MS/TP:  T_SEND_WAIT_TIMEOUT = %d ms", (uint32_t)T_SEND_WAIT_TIMEOUT);
+}
+

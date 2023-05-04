@@ -40,7 +40,7 @@ _Pragma("GCC optimize (\"Ofast\")")
 #include "board.h"
 
 #undef TRACE_LEVEL
-#define TRACE_LEVEL TRACE_LVL_DBG
+#define TRACE_LEVEL TRACE_LVL_INF
 #include <trace.h>
 
 #if COMMLNK_TEST_ENABLED
@@ -119,39 +119,28 @@ struct mstp_lnk_comm {
 
 };
 
-#if 1
-#define COMM_BIT_TMR STM32F_TIM6
-#define COMM_TMR_CLK STM32_CLK_TIM6
-#define COMM_TMR_IRQ STM32_IRQ_TIM6
-#else
-#define COMM_BIT_TMR STM32F_TIM7
-#define COMM_TMR_CLK STM32_CLK_TIM7
-#define COMM_TMR_IRQ STM32_IRQ_TIM7
-#endif
-
-
 static void comm_bit_timer_init(unsigned int baudrate)
 {
-	struct stm32f_tim *tim = COMM_BIT_TMR;
+	struct stm32f_tim *tim = STM32F_TIM6;
 	unsigned int div;
 
 	/* Timer clock enable */
-	stm32_clk_enable(STM32_RCC, COMM_TMR_CLK);
+	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM6);
 	/* get the total divisior */
-	div = (stm32f_tim1_hz + (baudrate / 2)) / baudrate;
+	div = (stm32f_tim2_hz + (baudrate / 2)) / baudrate;
 	/* Timer configuration */
 	tim->psc = div - 1;
 	tim->arr = 0;
 	tim->cnt = 0;
 	tim->dier = TIM_UIE;	/* Update interrupt enable */
 	tim->cr1 = TIM_CMS_EDGE | TIM_OPM | TIM_URS;
-	INF("Tim6: div=%d stm32f_tim1_hz=%d freq=%d",
-	    div, stm32f_tim1_hz, baudrate);
+	INF("Tim6: div=%d stm32f_tim2_hz=%d freq=%d",
+	    div, stm32f_tim2_hz, baudrate);
 }
 
 static void nbit_sleep(unsigned int nbit)
 {
-	struct stm32f_tim *tim = COMM_BIT_TMR;
+	struct stm32f_tim *tim = STM32F_TIM6;
 
 #if 1
 	/* Disable timer */
@@ -163,7 +152,7 @@ static void nbit_sleep(unsigned int nbit)
 	tim->cr1 = TIM_CMS_EDGE | TIM_OPM | TIM_URS | TIM_CEN;
 
 	do {
-		thinkos_irq_wait(COMM_TMR_IRQ);
+		thinkos_irq_wait(STM32_IRQ_TIM6);
 	} while ((tim->sr & TIM_UIF) == 0);
 	tim->sr = 0;
 }
@@ -209,8 +198,6 @@ int mstp_lnk_comm_frame_send(struct mstp_lnk_comm *comm, unsigned int route,
 	unsigned int daddr;
 	unsigned int cnt;
 	unsigned int i;
-
-	mstp_dbg_io_1_set();
 
 	/* encode header */
 	buf[0] = 0x55;
@@ -298,7 +285,6 @@ int mstp_lnk_comm_frame_send(struct mstp_lnk_comm *comm, unsigned int route,
 	else
 		comm->stats.tx_unicast++;
 
-	mstp_dbg_io_1_clr();
 	return cnt;
 }
 
@@ -308,8 +294,6 @@ int mstp_lnk_comm_fast_send(struct mstp_lnk_comm *comm, unsigned int type,
 	const struct uart_dma_op * uart_op = comm->dev.op;
 	uint8_t *buf = comm->tx.token;
 	unsigned int crc;
-
-	mstp_dbg_io_1_set();
 
 	/* encode token */
 	buf[2] = type;
@@ -354,7 +338,6 @@ int mstp_lnk_comm_fast_send(struct mstp_lnk_comm *comm, unsigned int type,
 		break;
 	}
 
-	mstp_dbg_io_1_clr();
 	return 8;
 }
 
@@ -571,6 +554,7 @@ int mstp_lnk_comm_frame_recv(struct mstp_lnk_comm *comm, void * buf,
 			tail = (tail + cnt) % COMMLNK_RX_BUFSIZE;
 			comm->stats.rx_short++;
 			comm->rx.pre_pos = tail;
+			mstp_dbg_io_1_toggle();
 			ret = MSTP_LNK_TIMEOUT;
 			break;
 		}
@@ -629,9 +613,11 @@ int mstp_lnk_comm_frame_recv(struct mstp_lnk_comm *comm, void * buf,
 		} else if ((sync == 0xd5) || (sync == 0xf5) || 
 				   (sync == 0xfd) || (sync == 0xff)) {
 			tail = (tail + 1) % COMMLNK_RX_BUFSIZE;
+			mstp_dbg_io_0_toggle();
 			DBG("MS/TP sync 0x%02x (%d)...", sync, cnt);
 			cnt--;
 		} else {
+//			mstp_dbg_io_1_toggle();
 			DBG("MS/TP sync 0x%02x (%d) ???", sync, cnt);
 		}
 
@@ -794,7 +780,6 @@ int mstp_lnk_comm_stats_fmt(struct mstp_lnk_comm *comm, char * buf, size_t max)
 	int n;
 
 	cp += n = snprintf(cp, rem, "Link-comm:\n");
-	rem -= n;
 	cp += n = snprintf(cp, rem, "  -  idle = %9d\n", comm->stats.rx_idle);
 	rem -= n;
 	cp += n = snprintf(cp, rem, "  - break = %9d\n", comm->stats.rx_break);

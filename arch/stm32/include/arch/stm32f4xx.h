@@ -167,18 +167,18 @@
 #define STM32F_IRQ_CAN1_SCE 22 /* CAN1 SCE Interrupt */
 #define STM32F_IRQ_EXTI9_5 23 /* External Line[9:5] Interrupts */
 /* TIM1 Break interrupt and TIM9 global interrupt */
-#define STM32_IRQ_TIM1_BRK 24 /* TIM1 Break interrupt  */
-#define STM32_IRQ_TIM9 24 /* TIM9 global interrupt */
+#define STM32F_IRQ_TIM1_BRK 24 /* TIM1 Break interrupt  */
+#define STM32F_IRQ_TIM9 24 /* TIM9 global interrupt */
 /* TIM1 Update Interrupt and TIM10 global interrupt */
-#define STM32_IRQ_TIM1_UP 25 /* TIM1 Update Interrupt */
-#define STM32_IRQ_TIM10 25 /* TIM10 global interrupt */
+#define STM32F_IRQ_TIM1_UP 25 /* TIM1 Update Interrupt */
+#define STM32F_IRQ_TIM10 25 /* TIM10 global interrupt */
 /* TIM1 Trigger and Commutation Interrupt and TIM11 global interrupt */
-#define STM32_IRQ_TIM1_TRG_COM 26 /* TIM1 Trigger and Commutation Interrupt */
-#define STM32_IRQ_TIM11 26 /* TIM11 global interrupt */
-#define STM32_IRQ_TIM1_CC 27 /* TIM1 Capture Compare Interrupt */
-#define STM32_IRQ_TIM2 28 /* TIM2 global Interrupt */
-#define STM32_IRQ_TIM3 29 /* TIM3 global Interrupt */
-#define STM32_IRQ_TIM4 30 /* TIM4 global Interrupt */
+#define STM32F_IRQ_TIM1_TRG_COM 26 /* TIM1 Trigger and Commutation Interrupt */
+#define STM32F_IRQ_TIM11 26 /* TIM11 global interrupt */
+#define STM32F_IRQ_TIM1_CC 27 /* TIM1 Capture Compare Interrupt */
+#define STM32F_IRQ_TIM2 28 /* TIM2 global Interrupt */
+#define STM32F_IRQ_TIM3 29 /* TIM3 global Interrupt */
+#define STM32F_IRQ_TIM4 30 /* TIM4 global Interrupt */
 #define STM32F_IRQ_I2C1_EV 31 /* I2C1 Event Interrupt */
 
 #define STM32F_IRQ_I2C1_ER 32 /* I2C1 Error Interrupt */
@@ -193,28 +193,28 @@
 #define STM32F_IRQ_RTC_ALARM 41 /* RTC Alarm (A and B) through EXTI Line Interrupt */
 #define STM32F_IRQ_OTG_FS_WKUP 42 /* USB OTG FS Wakeup through EXTI line interrupt */
 /* TIM8 Break Interrupt and TIM12 global interrupt */
-#define STM32_IRQ_TIM8_BRK 43 /* TIM8 Break Interrupt */
-#define STM32_IRQ_TIM12 43 /* TIM12 global interrupt */
+#define STM32F_IRQ_TIM8_BRK 43 /* TIM8 Break Interrupt */
+#define STM32F_IRQ_TIM12 43 /* TIM12 global interrupt */
 /* TIM8 Update Interrupt and TIM13 global interrupt */
-#define STM32_IRQ_TIM8_UP 44 /* TIM8 Update Interrupt */
-#define STM32_IRQ_TIM13 44 /* TIM13 global interrupt */
+#define STM32F_IRQ_TIM8_UP 44 /* TIM8 Update Interrupt */
+#define STM32F_IRQ_TIM13 44 /* TIM13 global interrupt */
 /* TIM8 Trigger and Commutation Interrupt and TIM14 global interrupt */
-#define STM32_IRQ_TIM8_TRG_COM 45 /* TIM8 Trigger and Commutation Interrupt */
-#define STM32_IRQ_TIM14 45 /* TIM14 global interrupt */
-#define STM32_IRQ_TIM8_CC 46 /* TIM8 Capture Compare Interrupt */
+#define STM32F_IRQ_TIM8_TRG_COM 45 /* TIM8 Trigger and Commutation Interrupt */
+#define STM32F_IRQ_TIM14 45 /* TIM14 global interrupt */
+#define STM32F_IRQ_TIM8_CC 46 /* TIM8 Capture Compare Interrupt */
 #define STM32F_IRQ_DMA1_STREAM7 47 /* DMA1 Stream7 Interrupt */
 #define STM32F_IRQ_FSMC 48 /* FSMC global Interrupt */
 #define STM32F_IRQ_SDIO 49 /* SDIO global Interrupt */
-#define STM32_IRQ_TIM5 50 /* TIM5 global Interrupt */
+#define STM32F_IRQ_TIM5 50 /* TIM5 global Interrupt */
 #define STM32F_IRQ_SPI3 51 /* SPI3 global Interrupt */
 #define STM32_IRQ_UART4 52 /* UART4 global Interrupt */
 #define STM32_IRQ_UART5 53 /* UART5 global Interrupt */
 
 /* TIM6 global and DAC1&2 underrun error */
-#define STM32_IRQ_TIM6 54 /* TIM6 global Interrupt */
+#define STM32F_IRQ_TIM6 54 /* TIM6 global Interrupt */
 #define STM32F_IRQ_DAC 54 /* DAC1&2 underrun error Interrupt */
 
-#define STM32_IRQ_TIM7 55 /* TIM7 global interrupt */
+#define STM32F_IRQ_TIM7 55 /* TIM7 global interrupt */
 #define STM32F_IRQ_DMA2_STREAM0 56 /* DMA2 Stream 0 global Interrupt */
 #define STM32F_IRQ_DMA2_STREAM1 57 /* DMA2 Stream 1 global Interrupt */
 #define STM32F_IRQ_DMA2_STREAM2 58 /* DMA2 Stream 2 global Interrupt */

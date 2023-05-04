@@ -40,11 +40,6 @@ _Pragma("GCC optimize (\"Ofast\")")
 #define TRACE_LEVEL TRACE_LVL_DBG
 #include <trace.h>
 
-/* -------------------------------------------------------------------------
- * MS/TP 
- * ------------------------------------------------------------------------- */
-
-//void __attribute__ ((noreturn)) mstp_lnk_task(struct mstp_lnk *lnk)
 int mstp_lnk_task(struct mstp_lnk *lnk)
 {
 	int role;
@@ -74,18 +69,21 @@ int mstp_lnk_task(struct mstp_lnk *lnk)
 		default:
 			thinkos_sleep(10);
 
-		};
+		}
 	}
 
 	return 0;
 }
 
-//uint32_t mstp_stack[512] __attribute__ ((aligned(8), section(".stack")));
-uint32_t mstp_stack[512] __attribute__ ((aligned(16)));
+/* -------------------------------------------------------------------------
+ * Initialization
+ * ------------------------------------------------------------------------- */
+
+uint32_t mstp_lnk_stack[256] __attribute__ ((aligned(8), section(".stack")));
 
 const struct thinkos_thread_inf mstp_lnk_thread_inf = {
-	.stack_ptr = mstp_stack,
-	.stack_size = sizeof(mstp_stack),
+	.stack_ptr = mstp_lnk_stack,
+	.stack_size = sizeof(mstp_lnk_stack),
 	.priority = 4,
 	.thread_id = 4,
 	.paused = 0,
@@ -123,32 +121,12 @@ int mstp_lnk_init(struct mstp_lnk *lnk, const char *tag,
 
 	mstp_lnk_debug_init();
 
+	lnk->speed = MSTP_BAUDRATE;
+	lnk->mtu = MSTP_LNK_MTU;
 	lnk->comm = comm;
-	mstp_lnk_comm_init(comm, MSTP_BAUDRATE, MSTP_LNK_TX_IDLE_BITS, addr);
+	mstp_lnk_comm_init(comm, lnk->speed, MSTP_LNK_TX_IDLE_BITS, addr);
 
 	lnk->this_station = addr;
-
-	INF("MS/TP:   MSTP_LNK_MAX_NODES = %d", (uint32_t)MSTP_LNK_MAX_NODES);
-	INF("MS/TP:        MSTP_BAUDRATE = %d bps", (uint32_t)MSTP_BAUDRATE);
-	INF("MS/TP:        MSTP_LNK_MTU  = %d octets", (uint32_t)MSTP_LNK_MTU);
-	INF("MS/TP:        MSTP_OVERHEAD = %d octets", (uint32_t)MSTP_OVERHEAD);
-
-	INF("MS/TP:             T_BIT_NS = %d ns", (uint32_t)T_BIT_NS);
-	INF("MS/TP: T_PROPAGATION_MAX_NS = %d ns", (uint32_t)T_PROPAGATION_MAX_NS);
-	INF("MS/TP: T_CPU_LATENCY_MIN_NS = %d ns", (uint32_t)T_CPU_LATENCY_MIN_NS);
-	INF("MS/TP: T_CPU_LATENCY_MAX_NS = %d ns", (uint32_t)T_CPU_LATENCY_MAX_NS);
-	INF("MS/TP:      T_ROUNDTRIP_MIN = %d ms", (uint32_t)T_ROUNDTRIP_MIN);
-	INF("MS/TP:      T_ROUNDTRIP_MAX = %d ms", (uint32_t)T_ROUNDTRIP_MAX);
-	INF("MS/TP:           T_NO_TOKEN = %d ms", (uint32_t)T_NO_TOKEN);
-	INF("MS/TP:        T_REPLY_DELAY = %d ms", (uint32_t)T_REPLY_DELAY);
-	INF("MS/TP:      T_REPLY_TIMEOUT = %d ms", (uint32_t)T_REPLY_TIMEOUT);
-	INF("MS/TP:   T_LOOPBACK_TIMEOUT = %d ms", (uint32_t)T_LOOPBACK_TIMEOUT);
-	INF("MS/TP:               T_SLOT = %d ms", (uint32_t)T_SLOT);
-	INF("MS/TP:        T_USAGE_DELAY = %d ms", (uint32_t)T_USAGE_DELAY);
-	INF("MS/TP:      T_USAGE_TIMEOUT = %d ms", (uint32_t)T_USAGE_TIMEOUT);
-	INF("MS/TP:    T_MIN_OCT_TIMEOUT = %d ms", (uint32_t)T_MIN_OCT_TIMEOUT);
-	INF("MS/TP:        T_PFM_TIMEOUT = %d ms", (uint32_t)T_PFM_TIMEOUT);
-	INF("MS/TP:  T_SEND_WAIT_TIMEOUT = %d ms", (uint32_t)T_SEND_WAIT_TIMEOUT);
 
 	lnk->rx.sem = thinkos_sem_alloc(0);
 	lnk->tx.gate = thinkos_gate_alloc();
@@ -175,8 +153,6 @@ int mstp_lnk_init(struct mstp_lnk *lnk, const char *tag,
 
 	/* set the management callback function to default  */
 	mgmt->callback = mstp_lnk_default_callback;
-	/* include this node's address in the address map array */
-	__netmap_reset(mgmt->netmap, addr);
 
 	lnk->alive = true;
 	ret = thinkos_thread_create_inf(C_TASK(mstp_lnk_task), (void *)lnk, 
@@ -229,6 +205,30 @@ int mstp_lnk_addr_set(struct mstp_lnk *lnk, unsigned int addr)
 	return 0;
 }
 
+int mstp_lnk_addr_get(struct mstp_lnk *lnk)
+{
+	if (lnk == NULL)
+		return -EINVAL;
+
+	return lnk->this_station;
+}
+
+int mstp_lnk_speed_get(struct mstp_lnk *lnk)
+{
+	if (lnk == NULL)
+		return -EINVAL;
+
+	return lnk->speed;
+}
+
+int mstp_lnk_mtu_get(struct mstp_lnk *lnk)
+{
+	if (lnk == NULL)
+		return -EINVAL;
+
+	return lnk->mtu;
+}
+
 int mstp_lnk_resume(struct mstp_lnk *lnk)
 {
 	if (lnk == NULL) {
@@ -241,6 +241,16 @@ int mstp_lnk_resume(struct mstp_lnk *lnk)
 	lnk->up_req = true;
 
 	return 0;
+}
+
+int mstp_lnk_up_get(struct mstp_lnk *lnk)
+{
+	if (lnk == NULL) {
+		ERRS("lnk == NULL");
+		return -EINVAL;
+	}
+
+	return lnk->up_ack;
 }
 
 int mstp_lnk_stop(struct mstp_lnk *lnk)
@@ -282,28 +292,6 @@ int mstp_lnk_stats_get(struct mstp_lnk *lnk, struct mstp_lnk_stats * stats,
 
 	return 0;
 }
-
-/* -------------------------------------------------------------------------
- *
- * Pool of resources
- * ------------------------------------------------------------------------- */
-
-static struct mstp_lnk mstp_lnk_pool[MSTP_LNK_POOL_SIZE]; 
-
-struct mstp_lnk * mstp_lnk_alloc(void)
-{
-	struct mstp_lnk * lnk;
-	int i;
-
-	for (i = 0; i < MSTP_LNK_POOL_SIZE; ++i) { 
-		lnk = &mstp_lnk_pool[i];
-		memset(lnk, 0, sizeof(struct mstp_lnk));
-		return lnk;
-	}
-
-	return NULL;
-}
-
 
 #if MSTP_HW_TRACE_ENABLED
 /* -------------------------------------------------------------------------
@@ -359,6 +347,7 @@ void mstp_trace_init(void)
 
 #endif
 
+/* XXX: this call will block */
 int mstp_lnk_recv(struct mstp_lnk *lnk, void *buf, unsigned int max,
 				  struct mstp_frame_inf *inf)
 {
@@ -419,7 +408,7 @@ int mstp_lnk_send(struct mstp_lnk *lnk, const void *buf,
 		thinkos_gate_exit(lnk->tx.gate, 1);
 		return -EAGAIN;
 	}
- 
+
 	if (cnt) {
 		lnk->tx.pdu_len = cnt;
 		memcpy(lnk->tx.pdu, buf, cnt);
@@ -428,7 +417,7 @@ int mstp_lnk_send(struct mstp_lnk *lnk, const void *buf,
 	lnk->tx.inf.saddr = ts;
 	lnk->tx.seq = ++seq;
 
-	DBG("MSTPLnkSnd(%d): %d", seq, cnt);
+	INF("MSTPLnkSnd(%d): %d", seq, cnt);
 
 	thinkos_gate_exit(lnk->tx.gate, 0);
 
@@ -442,51 +431,25 @@ int mstp_lnk_half_duplex_set(struct mstp_lnk *lnk, bool on)
 	return mstp_lnk_comm_half_duplex_set(comm, on);
 }
 
-int mstp_lnk_addr_get(struct mstp_lnk *lnk)
-{
-	return lnk->this_station;
-}
 
-int mstp_lnk_stats_fmt(struct mstp_lnk_stats * stats,
-					   char * buf, size_t max)
-{
-	char * cp = buf;
-	int rem = max;
-	int n = 0;
+/* -------------------------------------------------------------------------
+ *
+ * Pool of resources
+ * ------------------------------------------------------------------------- */
 
-	if (stats == NULL) {
-		return -EINVAL;
+static struct mstp_lnk mstp_lnk_pool[MSTP_LNK_POOL_SIZE]; 
+
+struct mstp_lnk * mstp_lnk_alloc(void)
+{
+	struct mstp_lnk * lnk;
+	int i;
+
+	for (i = 0; i < MSTP_LNK_POOL_SIZE; ++i) { 
+		lnk = &mstp_lnk_pool[i];
+		memset(lnk, 0, sizeof(struct mstp_lnk));
+		return lnk;
 	}
 
-	if (buf == NULL) {
-		return -EINVAL;
-	}
-
-	cp += n = snprintf(cp, rem, "Link-MSTP:\n");
-	rem -= n;
-	cp += n = snprintf(cp, rem, "RX error = %9d\n", stats->rx_err);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "RX token = %9d\n", stats->rx_token);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "RX mgmt  = %9d\n", stats->rx_mgmt);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "RX ucast = %9d\n", stats->rx_unicast);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "RX bcast = %9d\n", stats->rx_bcast);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX token = %9d\n", stats->tx_token);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX mgmt  = %9d\n", stats->tx_mgmt);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX PFM   = %9d\n", stats->tx_pfm);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX ucast = %9d\n", stats->tx_unicast);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX bcast = %9d\n", stats->tx_bcast);
-	rem -= n;
-	cp += n = snprintf(cp, rem, "TX tlost = %9d\n", stats->token_lost);
-	rem -= n;
-
-	return cp - buf;
+	return NULL;
 }
 

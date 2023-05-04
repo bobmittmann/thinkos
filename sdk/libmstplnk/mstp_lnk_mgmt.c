@@ -143,7 +143,8 @@ bool mstp_lnk_firstaddr(struct mstp_lnk *mstp)
 	return firstAddr;
 }
 
-ssize_t mstp_lnk_mgmt_send(struct mstp_lnk *lnk, const struct mstp_lnk_mgmt_msg * msg, 
+ssize_t mstp_lnk_mgmt_send(struct mstp_lnk *lnk, 
+						   const struct mstp_lnk_mgmt_msg * msg, 
 						   const void *buf, size_t cnt)
 {
 	struct mstp_lnk_mgmt * mgmt = &lnk->mgmt;

@@ -46,7 +46,7 @@
  * MSTP_LNK_MAX_MASTERS + 1
  */
 #ifndef MSTP_LNK_MAX_MASTERS
-#define MSTP_LNK_MAX_MASTERS 16	/* addresses 0 to 9 */
+#define MSTP_LNK_MAX_MASTERS 10	/* addresses 0 to 9 */
 #endif
 
 #ifndef MSTP_LNK_MAX_NODES
@@ -58,13 +58,13 @@
 #define MSTP_SCOPE_TRIGGER_ENABLED 0
 #endif
 
-#ifndef MSTP_LINK_HDR_ERR_MAX 
+#ifndef mstp_link_hdr_err_max 
 #define MSTP_LINK_HDR_ERR_MAX 32
 #endif
 
-#define MSTP_LNK_MTU        511
-//#define MSTP_LNK_MTU       127
-#define MSTP_LNK_PDU_MAX    (MSTP_LNK_MTU - 11)
+//#define MSTP_LNK_MTU       511
+#define MSTP_LNK_MTU       127
+#define MSTP_LNK_PDU_MAX   (MSTP_LNK_MTU - 11)
 #define MSTP_OVERHEAD		10
 #define MSTP_TOKEN_SIZE		8
 
@@ -78,12 +78,6 @@
 #define MSTP_LNK_MGMT_PDU_MIN 6
 #define MSTP_LNK_MGMT_PDU_MAX 54
 #define MSTP_LNK_MGMT_DATA_MAX ((MSTP_LNK_MGMT_PDU_MAX)  - 4)
-
-struct mstp_buf_q {
-	uint8_t q_buf[MSTP_LNK_MTU];
-	volatile uint16_t q_pdu_len;
-	struct mstp_frame_inf q_inf;
-};
 
 struct uart_dma_op;
 
@@ -128,10 +122,12 @@ struct mstp_lnk {
 	volatile uint8_t alive;
 
 	uint8_t mutex;
+	uint8_t sole_master;
 
 	volatile uint8_t prev_state;
 	volatile uint8_t state;
-	volatile uint8_t this_station;	/* this station address */
+	uint8_t this_station;	/* this station address */
+	uint8_t next_station;	/* next station address */
 
 	volatile uint8_t role_req;
 	volatile uint8_t role_ack;
@@ -274,7 +270,7 @@ struct mstp_frm_ref {
 #endif
 
 /* Number of bits between frames */
-#define N_FRAME_GAP         10
+#define N_FRAME_GAP         40
 
 /* Time bit in nanoseconds */
 #define T_BIT_NS            (1000000000LL / MSTP_BAUDRATE)
@@ -297,7 +293,7 @@ struct mstp_frm_ref {
 #define T_CPU_LATENCY_MS(__OCTETS__)  ((T_CPU_LATENCY_NS(__OCTETS__) + \
 										500000LL) / 1000000)
 
-/* Minimum and maximum latencies in milliseconds */
+/* Minimum and maximum latencies in nanoseconds */
 #define T_CPU_LATENCY_MIN_NS   T_CPU_LATENCY_NS(MSTP_OVERHEAD)
 #define T_CPU_LATENCY_MAX_NS   T_CPU_LATENCY_NS(MSTP_LNK_MTU)
 
@@ -393,7 +389,7 @@ extern const char * const state_nm[];
 
 
 #ifndef	MSTP_COMM_DEBUG_ENABLED
-#define MSTP_COMM_DEBUG_ENABLED 0
+#define MSTP_COMM_DEBUG_ENABLED 1
 #endif
 
 
@@ -420,7 +416,6 @@ extern const char * const state_nm[];
 
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -433,15 +428,13 @@ unsigned int mstp_crc8(unsigned int crc, const void *buf, int len);
 
 unsigned int mstp_crc16(unsigned int crc, const void *buf, int len);
 
-int mstp_lnk_comm_rx_en_set(struct mstp_lnk_comm *comm, bool enable);
-
-int mstp_lnk_comm_idle_bits_set(struct mstp_lnk_comm *comm, unsigned int idle_bits);
-
 void mstp_lnk_sniffer_loop(struct mstp_lnk *lnk);
 void mstp_lnk_master_loop(struct mstp_lnk *lnk);
 void mstp_lnk_slave_loop(struct mstp_lnk *lnk);
 
+int mstp_lnk_comm_rx_en_set(struct mstp_lnk_comm *comm, bool enable);
 
+int mstp_lnk_comm_idle_bits_set(struct mstp_lnk_comm *comm, unsigned int idle_bits);
 
 int mstp_lnk_comm_pending_events(struct mstp_lnk_comm *comm);
 
@@ -475,20 +468,11 @@ void mstp_lnk_debug_init(void);
 	
 void mstp_dbg_io_0_set(void); 
 void mstp_dbg_io_0_clr(void); 
+
 void mstp_dbg_io_0_toggle(void); 
-
-void mstp_dbg_io_1_set(void); 
-void mstp_dbg_io_1_clr(void); 
 void mstp_dbg_io_1_toggle(void); 
-
-void mstp_dbg_io_2_set(void); 
-void mstp_dbg_io_2_clr(void); 
 void mstp_dbg_io_2_toggle(void); 
-
-void mstp_dbg_io_3_set(void); 
-void mstp_dbg_io_3_clr(void); 
 void mstp_dbg_io_3_toggle(void); 
-
 void mstp_dbg_io_4_toggle(void); 
 
 void mstp_debug_init(void);

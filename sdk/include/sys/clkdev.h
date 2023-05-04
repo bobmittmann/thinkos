@@ -204,8 +204,13 @@ char * fmt_clk_3(char * s, int64_t x);
 /* Format a clock timetamp into a string with 6 fractional decimal digits.
    The string has to be at least 19 characters long */
 char * fmt_clk_6(char * s, int64_t x);
+#if 0
 #define FMT_CLK_6(X) fmt_clk_6(__extension__({char __s[20]; __s;}), \
 							   (int64_t)(X))
+#endif
+static inline char * FMT_CLK_6(int64_t x) { char __s[20];
+	return fmt_clk_6(__s, x); };
+
 
 /* Format a clock timetamp into a string with 9 fractional decimal digits.
    The string has to be at least 22 characters long */
