@@ -166,57 +166,53 @@ struct clkdev * clkdev_alloc(void * __clk, const struct clkdevop * __op);
    The string has to be at least 20 characters long.
    The fields to be printed are adjusted according to their content... */
 char * fmt_clk(char * s, int64_t ts);
-#define FMT_CLK(TS) fmt_clk(__extension__({char __s[20]; __s;}), (int64_t)(TS))
+#define FMT_CLK(TS) __extension__({char __s[20]; \
+		fmt_clk(__s, (int64_t)(TS)); })
 
 /* Format a clock timetamp into a string with milliseconds resolution.
    The string has to be at least 18 characters long */
 char * fmt_clk_ms(char * s, int64_t ts);
-#define FMT_CLK_MS(TS) fmt_clk_ms(__extension__({char __s[20]; __s;}), \
-								  (int64_t)(TS))
+#define FMT_CLK_MS(TS) __extension__({char __s[20]; \
+		fmt_clk_ms(__s, (int64_t)(TS)); })
 
 /* Format a clock timetamp into a string with microsseconds resolution.
    The string has to be at least 20 characters long */
 char * fmt_clk_us(char * s, int64_t ts);
-#define FMT_CLK_US(TS) fmt_clk_us(__extension__({char __s[20]; __s;}), \
-								  (int64_t)(TS))
+#define FMT_CLK_US(TS) __extension__({char __s[20]; \
+		fmt_clk_us(__s, (int64_t)(TS)); })
 
 /* Format a Q31 number using 3 decimal places */
 char * fmt_q31_3(char * s, int64_t x);
-#define FMT_Q31_3(X) fmt_q31_3(__extension__({char __s[16]; __s;}), \
-							   (int64_t)(X))
+#define FMT_Q31_3(X) __extension__({char __s[16]; \
+		fmt_q31_3(__s, X); })
 
 /* Format a Q31 number using 6 decimal places */
 char * fmt_q31_6(char * s, int64_t x);
-#define FMT_Q31_6(X) fmt_q31_6(__extension__({char __s[16]; __s;}), \
-							   (int64_t)(X))
+#define FMT_Q31_6(X) __extension__({char __s[16]; \
+		fmt_q31_6(__s, X); })
 
 /* Format a Q31 number using 9 decimal places */
 char * fmt_q31_9(char * s, int64_t x);
-#define FMT_Q31_9(X) fmt_q31_9(__extension__({char __s[16]; __s;}), \
-							   (int64_t)(X))
+#define FMT_Q31_9(X) __extension__({char __s[16]; \
+		fmt_q31_9(__s, X); })
 
 /* Format a clock timetamp into a string with 3 fractional decimal digits.
    The string has to be at least 16 characters long */
 char * fmt_clk_3(char * s, int64_t x);
-#define FMT_CLK_3(X) fmt_clk_3(__extension__({char __s[16]; __s;}), \
-							   (int64_t)(X))
+#define FMT_CLK_3(X) __extension__({char __s[16]; \
+		fmt_clk_3(__s, X); })
 
 /* Format a clock timetamp into a string with 6 fractional decimal digits.
    The string has to be at least 19 characters long */
 char * fmt_clk_6(char * s, int64_t x);
-#if 0
-#define FMT_CLK_6(X) fmt_clk_6(__extension__({char __s[20]; __s;}), \
-							   (int64_t)(X))
-#endif
-static inline char * FMT_CLK_6(int64_t x) { char __s[20];
-	return fmt_clk_6(__s, x); };
-
+#define FMT_CLK_6(X) __extension__({char __s[20]; \
+		fmt_clk_6(__s, X); })
 
 /* Format a clock timetamp into a string with 9 fractional decimal digits.
    The string has to be at least 22 characters long */
 char * fmt_clk_9(char * s, int64_t x);
-#define FMT_CLK_9(X) fmt_clk_9(__extension__({char __s[22]; __s;}), \
-							   (int64_t)(X))
+#define FMT_CLK_9(X) __extension__({char __s[22]; \
+		fmt_clk_9(__s, X); })
 
 #ifdef __cplusplus
 }
