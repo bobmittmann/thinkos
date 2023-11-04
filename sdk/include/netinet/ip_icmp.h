@@ -46,6 +46,8 @@ struct icmphdr {
 	} un;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 struct icmp {
 	uint8_t  icmp_type;
 	uint8_t  icmp_code;
@@ -74,6 +76,7 @@ struct icmp {
 		uint8_t icmp_data[1];
 	};
 };
+#pragma GCC diagnostic pop
 
 
 #define ICMP_MINLEN 8
