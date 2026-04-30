@@ -173,7 +173,7 @@ static inline int serial_close(struct serial_dev * dev){
 	return dev->op->close(dev->drv);
 }
 
-extern inline int serial_ioctl(struct serial_dev * dev, 
+static inline int serial_ioctl(struct serial_dev * dev, 
 							   int opt, uintptr_t arg1, uintptr_t arg2) {
 	return dev->op->ioctl(dev->drv, opt, arg1, arg2);
 }

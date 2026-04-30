@@ -520,8 +520,7 @@ thinkos_flag_timedtake(int flag, unsigned int ms) {
 
 static inline void __attribute__((always_inline)) 
 thinkos_flag_give_i(int flag) {
-	uintptr_t * except = (uintptr_t *)(0);
-	void (* flag_give_i)(int) = (void (*)(int))except[10];
+	void (* flag_give_i)(int) = (void (*)(int))0x40;
 	flag_give_i(flag);
 }
 
@@ -557,8 +556,7 @@ thinkos_gate_timedwait(int gate, unsigned int ms) {
 
 static inline void __attribute__((always_inline)) 
 thinkos_gate_open_i(int gate) {
-	uintptr_t * except = (uintptr_t *)(0);
-	void (* __gate_open_i)(uint32_t) = (void (*)(uint32_t))except[13];
+	void (* __gate_open_i)(uint32_t) = (void (*)(uint32_t))(13 * 4);
 	__gate_open_i(gate);
 }
 
