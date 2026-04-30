@@ -709,7 +709,7 @@ def main(argv):
 
   try:
     if out_fname is not None:
-      fout_c = codecs.open(out_fname, 'w+', encoding='utf8')
+      fout_c = open(out_fname, 'w+', encoding='utf8')
     else:
       fout_c = sys.stdout
 
@@ -732,7 +732,7 @@ def main(argv):
 
   try:
     if hdr_fname:
-      fout_h = codecs.open(hdr_fname, 'w+', encoding='utf8')
+      fout_h = open(hdr_fname, 'w+', encoding='utf8')
     else:
       fout_h = sys.stdout
 

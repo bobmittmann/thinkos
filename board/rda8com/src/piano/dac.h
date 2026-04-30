@@ -51,8 +51,8 @@ struct dac_stream {
 	const struct dac_stream_op * op;
 };
 
-const struct dac_stream_op silence_gen_op;
-const struct dac_stream silence;
+extern const struct dac_stream_op silence_gen_op;
+extern const struct dac_stream silence;
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,5 +88,6 @@ int dac_voice_op_set(int id, int step, void * arg,
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* __DAC_H__ */
 

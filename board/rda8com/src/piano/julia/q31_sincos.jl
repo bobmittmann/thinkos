@@ -5,7 +5,7 @@ using Printf;
 using Plots;
 
 # Number of entries in the table
-N_SIN = 64
+N_SIN = 4096
 
 # Order 1 polynomial interpolation best N = 32768
 # Order 2 polynomial interpolation best N = 2048
@@ -200,28 +200,25 @@ function q31sin(x::Int32, poly::Int=2)
 		acc += Q31MUL(qx0, dy10)
 		acc += Q31MUL(Q31MUL(qx0, qx1), dy20)
 	elseif (poly == 3)
-		sin_ffx::Int32 = 0
-		cos_ffx::Int32 = 0
-
 		x1 = x0 + Int32(Q31(0.5))
 		i = x1 >>> (31 - LOG2_N)
 		cos_x0 = qsintab[(i & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
 
 		fx = (x - x0)
 		j = fx >>> (31 - 2*LOG2_N)
-		ffx = fx - (j << (31 - 2*LOG2_N))
-		
-		sin_fx0 = fsintab[j + 1];
-		cos_fx0 = fcostab[j + 1];
 
-		sin_ffx = ffx
-		cos_ffx = Q31_ONE - div(Q31MUL(ffx, ffx), 2)
-	 
-		sin_fx = sin_fx0# - Q31MUL(cos_fx0, sin_ffx)
-		cos_fx = cos_fx0# + Q31MUL(sin_fx0, sin_ffx)
+		sin_fx = fsintab[j + 1]
+		cos_fx = fcostab[j + 1]
 
-		acc = Q31MUL(sin_x0, cos_fx)
-		acc += Q31MUL(cos_x0, sin_fx)
+		sin_x0 = div(sin_x0, 65536);
+		cos_x0 = div(cos_x0, 65536);
+		sin_fx = div(sin_fx, 32768);
+		cos_fx = div(cos_fx, 32768);
+
+ #		@printf("j=%03d %05d %05d\n", j, sin_fx, cos_fx)
+ #		acc = Q31MUL(sin_x0, cos_fx)
+ #		acc += Q31MUL(cos_x0, sin_fx)
+		acc = sin_x0 * cos_fx + cos_x0 * sin_fx
 	elseif (poly == 4)
 		sin_fx1::Int32 = 0
 		cos_fx1::Int32 = 0
@@ -255,35 +252,23 @@ function q31sin(x::Int32, poly::Int=2)
 		acc = Q31MUL(sin_x0, cos_fx)
 		acc += Q31MUL(cos_x0, sin_fx)
 	elseif (poly == 5)
-		a::Int32 = 0;
-		a2::Int32 = 0;
-		a3::Int32 = 0;
+		x1 = x0 + Int32(Q31(0.5))
+		i = x1 >>> (31 - LOG2_N)
+		cos_x0 = qsintab[(i & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
 
-		x1 = x0 + DX
-		sin_x1 = qsintab[((i + 1) & MASK_N) + 1] * ((x1 < 0) ? -1 : 1)
+		fx = (x - x0)
+		j = fx >>> (31 - 2*LOG2_N)
 
-		x2 = x0 + Int32(Q31(0.5))
-		j = x2 >>> (31 - LOG2_N)
-		cos_x0 = qsintab[(j & MASK_N) + 1] * ((x2 < 0) ? -1 : 1)
+		sin_fx = fsintab[j + 1]
+		cos_fx = fcostab[j + 1]
 
-		x2 += DX
-		cos_x1 = qsintab[((j + 1) & MASK_N) + 1] * ((x2 < 0) ? -1 : 1)
-
-		dx0 = x - x0
-		a = Q31DIV(dx0, DX)
-		a2 = Q31DIV(Q31MUL(dx0, dx0), Q31MUL(DX, DX))
-		a3 = Q31MUL(a2, a)
-
-		acc = sin_x0
-		acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0)
-		acc += Q31MUL(Int32(3*a2 - 2*a3), sin_x1)
-		acc += Q31MUL(Int32(a - 2*a2 + a3), cos_x0)
-		acc += Q31MUL(Int32(a3 - a2), cos_x1)
-#	acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0 - sin_x1)
-#	acc += Q31MUL(Int32(2*a3 - 3*a2), sin_x0 - sin_x1)
-#		acc += Q31MUL(a - a2, cos_x0)
-#		acc += Q31MUL(a3 - a2, cos_x0 + cos_x1)
+ 		acc = Q31MUL(sin_x0, cos_fx)
+ 		acc += Q31MUL(cos_x0, sin_fx)
 	else
+		i = (x + (1 << (30 - LOG2_N))) >>> (31 - LOG2_N)
+		x0 = i << (31 - LOG2_N)
+		sin_x0 = qsintab[(i & MASK_N) + 1] * ((x0 < 0) ? -1 : 1)
+		sin_x0 = sin_x0 & 0xffff0000;
 		acc = sin_x0
 	end
 
@@ -429,6 +414,11 @@ function q31sin(x::Int64, poly::Int=2)
 	return q31sin(Q31SAT(x), poly)
 end	
 
+function q31cos(x::Int64, poly::Int=2)
+	return q31cos(Q31SAT(x), poly)
+end	
+
+
 export filt2c_common_header
 export filt2c_gcc_header 
 
@@ -468,7 +458,7 @@ end
 
 function q31_table_entry(i::Int, x::Float64)
 	y = convert(Int64, round(x * Float64(0x7fffffff)))
-	return @sprintf("\t0x%08x, /* %3d -> %13.10f */", y & 0xffffffff, i, Q31F(y))
+	return @sprintf("\t0x%08x, /* %3d -> %13.10f */", y & 0xffffffff, i, x)
 end
 
 q31_qsin_table_entry(i::Int, n::Int) = q31_table_entry(i, sin(π*i/n))
@@ -644,10 +634,6 @@ function mk_c_q31sin_trig(n::Int64)
 	]
 end	
 
-#
-# Cosine
-#
-
 function mk_c_q31cos_poly(n::Int64)
 	txt = AbstractString[
 	""
@@ -767,7 +753,6 @@ function mk_c_q31cos_trig(n::Int64)
 	]
 end	
 
-
 function mk_q31sin(prefix, n::Int)
 
 	c_lines = vcat(mk_c_head(n) , 
@@ -808,6 +793,16 @@ function dss_test(freq::Float64, samplerate=88200)
 	return (t, y)
 end
 
+function cos_test()
+	dw::Int32 = Q31(freq / samplerate)
+	w::Int32 = 0
+
+	@printf("COS test\n", freq, samplerate);
+	@printf("dw: %d\n", dw);
+
+end
+
+
 Q31S(x::Float64) = convert(Int32, round(x * Float64(0x7fffffff)))
 
 qsintab = zeros(Int32, N_SIN)
@@ -833,7 +828,7 @@ mk_q31sin("q31sin", N_SIN)
 
 println("Calculating error...");
 
-w = collect(0.0 :1/(1024*32):0.5)
+w = collect(0.0 :1/(37199):0.5)
 #w = [-.500003, -.5, -.499997]
 y = sin.(π .* w)
 x = [Q31(a) for a in w]
@@ -858,13 +853,23 @@ ei3 = argmax(abs.(dy3))
 ei4 = argmax(abs.(dy4))
 ei5 = argmax(abs.(dy5))
 
-@printf("Max errors:\n");
-@printf(" - 0: %.10f @ %.10f\n", dy0[ei0], w[ei0])
-@printf(" - 1: %.10f @ %.10f\n", dy1[ei1], w[ei1])
-@printf(" - 2: %.10f @ %.10f\n", dy2[ei2], w[ei2])
-@printf(" - 3: %.10f @ %.10f\n", dy3[ei3], w[ei3])
-@printf(" - 4: %.10f @ %.10f\n", dy4[ei4], w[ei4])
-@printf(" - 5: %.10f @ %.10f\n", dy5[ei5], w[ei5])
+@printf("Max sine errors:\n");
+@printf(" - 0: %.10f @ %.10f\n", abs.(dy0[ei0]), w[ei0])
+@printf(" - 1: %.10f @ %.10f\n", abs.(dy1[ei1]), w[ei1])
+@printf(" - 2: %.10f @ %.10f\n", abs.(dy2[ei2]), w[ei2])
+@printf(" - 3: %.10f @ %.10f\n", abs.(dy3[ei3]), w[ei3])
+@printf(" - 4: %.10f @ %.10f\n", abs.(dy4[ei4]), w[ei4])
+@printf(" - 5: %.10f @ %.10f\n", abs.(dy5[ei5]), w[ei5])
+
+
+y = cos.(π .* w)
+x = [Q31(a) for a in w]
+y0 = [Q31F(q31cos(a, 0)) for a in x]
+dy0 = (y - y0)
+ei0 = argmax(abs.(dy0))
+@printf("Max cosine errors:\n");
+@printf(" - 0: %.10f @ %.10f\n", abs.(dy0[ei0]), w[ei0])
+
 
 #@printf("Error: %.9f %.9f %.9f...", y1, y2, y1-y2);
 #i = argmax(dy2)
@@ -907,4 +912,3 @@ display(plot((x, [abs.(dy1), abs.(dy2), abs.(dy3), abs.(dy4)]),
 	   )
 ;
 =#
-;

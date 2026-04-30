@@ -40,10 +40,6 @@ NOWARN = -Wno-sign-compare -Wno-unused-parameter
 
 CFLAGS += -Wall $(WARN) $(NOWARN) -fno-builtin -ffreestanding -fomit-frame-pointer -ffunction-sections -fdata-sections 
 
-ifeq ($(CPU), cortex-m4)
-  OPTIONS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard 
-endif
-
 ifdef CODE
     APP_CODE := $(CODE)
 else 

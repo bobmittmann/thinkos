@@ -57,21 +57,81 @@ const cmd_callback_t cmd_call_tab[] = {
 };
 
 /*
-   List search...
+   Perfect Hashing
+
+   Table generated with Fisher and Yates permutation
+   algorithm
 */
+
+static const uint8_t p_tab[] = {
+	 88,   1,  11, 113,  49,  58, 125,  75,
+	 65,  90, 103,  93,  29,  86,   6,  92,
+	 16,  25,  42,  19,  31,  47,  33,  69,
+	100,   0,  96, 118, 106, 116,  89,  87,
+	115, 122,  18,  94,  23,  70,  60,  77,
+	 72,  20,  55,   7, 107,  66,  28,  26,
+	104,  73, 108,  10,  13, 102, 120,  78,
+	 37,  36,  54, 101,  21,  81,   3, 117,
+	 83,  84,  68, 127,  59,  27,  43, 124,
+	109,  67,  95,  32,  45,  57,   5, 114,
+	 40,  24,  14, 112,  99,  85,  79, 123,
+	 44,  50,  64, 119,  76,  12,  62,   4,
+	 51, 110,  61,  46,  80,  98,  56,  48,
+	 38,  97, 121,  41,  30,  22,  39,  63,
+	  2,  35, 126,  17,  34,  71,   9,  82,
+	 52,  74,  53,  15, 111, 105,   8,  91
+};
+
+static const uint8_t s_tab[] = {
+	 20,  34,  38,  46,  50,  57,  61,  72,
+	 74,  97,  98, 126
+};
+
+static const uint8_t i_tab[] = {
+	  1,   7,   3,   3,   4,   2,   6,   7,
+	  5,   4,   2,   5
+};
+
+/*
+   Binary search...
+*/
+
+static int h_lookup(int x)
+{
+	int i = 0;
+	int j = sizeof(s_tab) - 1;
+
+	while (i <= j) {
+		int k = i + ((j - i) / 2);
+		int y = s_tab[k];
+		if (y == x) {
+			return k;
+		} else if (y < x) {
+			i = k + 1;
+		} else {
+			j = k - 1;
+		}
+	}
+
+	return -2;
+}
 
 int cmd_lookup(const char * str)
 {
+	int h = 0;
+	int c;
 	int i;
+	int y;
 
-	for (i = CMD_FIRST; i <= CMD_LAST; ++i) {
-		if (strcmp(str, cmd_sym_tab[i]) == 0)
-			return i;
-		if (strcmp(str, cmd_alias_tab[i]) == 0)
-			return i;
+	for (i = 0; (c = str[i]) != '\0'; ++i) {
+		h = p_tab[c ^ h];
 	}
 
-	return -1;
+	if ((y = h_lookup(h)) < 0) {
+		return y;
+	}
+
+	return i_tab[y];
 }
 
 int cmd_first()
@@ -102,7 +162,7 @@ const char * cmd_brief(unsigned int code)
 int cmd_call(int argc, char * argv[], unsigned int code)
 {
 	if (code > CMD_LAST)
-		return -1;
+		return -2;
 	return cmd_call_tab[code](argc, argv);
 }
 
