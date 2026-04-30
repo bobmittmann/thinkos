@@ -123,14 +123,16 @@ int btl_flash_ymodem_recv(const char * tag)
 	}
 
 	krn_console_puts("YMODEM ");
-	krn_console_wrln("receive (Ctrl+X to cancel)... ");
+	krn_console_wrln("receive (Ctrl+X to cancel) ...");
+
+	thinkos_sleep(250);
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
 	thinkos_console_raw_mode(true);
 
 	fname = (char *)buf;
-	if ((ret = ymodem_rcv_start(&ry, fname, &fsize)) >= 0) {
+	while ((ret = ymodem_rcv_start(&ry, fname, &fsize)) > 0) {
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
 			if ((ret = thinkos_flash_mem_write(key, offs, buf, cnt)) < 0) {
@@ -139,22 +141,31 @@ int btl_flash_ymodem_recv(const char * tag)
 			}
 			offs += cnt;
 		}
-		DCC_LOG1(LOG_WARNING, "ret=%d", ret);
-	} else {
-		DCC_LOG1(LOG_WARNING, "err=%d", ret);
-	}
+		if (ret < 0) {
+			DCC_LOG1(LOG_WARNING, "ret=%d", ret);
+			break;
+		}
+	} 
 
+	ymodem_rcv_flush(&ry);
 	thinkos_console_raw_mode(false);
 
 	thinkos_flash_mem_close(key);
 
-	thinkos_sleep(500);
+	thinkos_sleep(250);
 
 	krn_console_crlf();
-	krn_console_puts("YMODEM ");
-	if (ret < 0)
-		krn_console_wrln("failed!");
+
+	if (ry.xmodem)
+		krn_console_puts("XMODEM ");
 	else
+		krn_console_puts("YMODEM ");
+
+	if (ret < 0) {
+		krn_console_puts("failed: -");
+		krn_console_puthex(-ret);
+		krn_console_crlf();
+	} else
 		krn_console_wrln("ok.");
 
 	return ret;
@@ -165,7 +176,6 @@ int monitor_flash_ymodem_recv(const struct monitor_comm * comm,
 {
 	return monitor_thread_exec(comm, C_TASK(btl_flash_ymodem_recv), 
 							   C_ARG(tag));
-
 }
 
 int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1)
@@ -185,7 +195,6 @@ int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
 {
 	return btl_flash_app_exec(argv[0], 0, 0);
 }
-
 
 /* Receive a file and write it into the flash using the YMODEM protocol */
 int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max)

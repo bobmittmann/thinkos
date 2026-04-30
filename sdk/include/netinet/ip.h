@@ -57,7 +57,6 @@ struct iphdr {
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic pop
 struct iphdr_opt {
 	struct iphdr hdr;
 	uint8_t opt[];
@@ -88,6 +87,7 @@ struct iptrans_hdr {
 	struct iphdr ip;
 	uint16_t transport[16];
 };
+#pragma GCC diagnostic pop
 
 #define IP_HEADER_LEN 20
 

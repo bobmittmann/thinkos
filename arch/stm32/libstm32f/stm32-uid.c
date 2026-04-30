@@ -29,15 +29,16 @@
 
 #ifdef STM32F_UID
 
-void stm32_uid(uint32_t esn[])
+int32_t stm32_uid(uint32_t esn[])
 {
 	uint32_t * uid = STM32F_UID;
 
 	esn[0] = uid[0];
 	esn[1] = uid[1];
+	return 8;
 }
 
-void thinkos_arch_esn_get(uint32_t esn[]) 
+int32_t thinkos_arch_esn_get(uint32_t esn[]) 
 	__attribute__ ((weak, alias ("stm32_uid")));
 
 #endif

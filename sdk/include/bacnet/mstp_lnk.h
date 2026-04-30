@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include <sys/serial.h>
 
 /** @mainpage MS/TP Data Link Layer Library
@@ -219,10 +220,18 @@ struct mstp_lnk_comm;
  * @param dev A serial device driver.
  * @return On success, 0 is returned. On error #-1 is returned.
  */
-int mstp_lnk_init(struct mstp_lnk * lnk, const char * tag, 
-				  unsigned int addr, enum mstp_lnk_role role, 
-				  struct mstp_lnk_comm * comm);
 
+int mstp_lnk_init(struct mstp_lnk *lnk, const char *tag,
+				  unsigned int addr, enum mstp_lnk_role role, 
+				  struct mstp_lnk_comm * comm, void * dev);
+
+int mstp_lnk_dev_set(struct mstp_lnk *lnk, void * dev);
+
+void * mstp_lnk_dev_get(struct mstp_lnk *lnk);
+
+int mstp_lnk_speed_get(struct mstp_lnk *lnk);
+
+int mstp_lnk_mtu_get(struct mstp_lnk *lnk);
 
 /** @brief Uninitializes an MS/TP link.
  *
@@ -244,6 +253,8 @@ int mstp_lnk_resume(struct mstp_lnk * lnk);
  * @return On success, 0 is returned. On error #-1 is returned.
  */
 int mstp_lnk_stop(struct mstp_lnk * lnk);
+
+int mstp_lnk_is_up(struct mstp_lnk *lnk);
 
 /** @brief  MS/TP link master processing loop.
  *
@@ -318,6 +329,8 @@ bool mstp_lnk_firstaddr (struct mstp_lnk * mstp);
 void mstp_lnk_activemasters (struct mstp_lnk * lnk);		
 
 int mstp_lnk_addr_set(struct mstp_lnk *lnk, unsigned int addr);
+
+int mstp_lnk_addr_get(struct mstp_lnk *lnk);
 
 /**@}*/
 
@@ -396,7 +409,7 @@ int mstp_lnk_recv(struct mstp_lnk * lnk, void * buf,
  * On error #-1 is returned. 
  *
  */
- int mstp_lnk_role_set(struct mstp_lnk * lnk, enum mstp_lnk_role role);
+int mstp_lnk_role_set(struct mstp_lnk * lnk, enum mstp_lnk_role role);
 
 int mstp_lnk_role_get(struct mstp_lnk *lnk);
 

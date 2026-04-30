@@ -26,7 +26,8 @@
 #if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
 
-void __thinkos_arch_esn_get(uint32_t esn[]) {
+int32_t  __thinkos_arch_esn_get(uint32_t esn[]) {
+	return 0;
 }
 
 void __thinkos_arch_version_get(struct thinkos_version * ver)
@@ -37,7 +38,7 @@ void __thinkos_arch_release_get(struct thinkos_release * rel)
 {
 }
 
-void thinkos_arch_esn_get(uint32_t esn[])
+int32_t thinkos_arch_esn_get(uint32_t esn[])
 	__attribute__ ((weak, alias ("__thinkos_arch_esn_get")));
 
 
@@ -62,6 +63,7 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 	unsigned int req = arg[0];
 	const uint32_t ** ptr;
 	int32_t * pval;
+	int32_t ret;
 
 	arg[4] = THINKOS_ENOSYS;
 	
@@ -79,7 +81,7 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 		break;
 
 	case THINKOS_CTL_ABORT: {
-		int ret = (int)arg[1];
+		ret = (int)arg[1];
 		thinkos_krn_abort(krn,  ret);
 	}
 		break;
@@ -103,7 +105,8 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 		break;
 
 	case THINKOS_CTL_ESN_GET:
-		thinkos_arch_esn_get((uint32_t *)arg[1]);
+		ret = thinkos_arch_esn_get((uint32_t *)arg[1]);
+		arg[4] = ret;
 		break;
 		
 	case THINKOS_CTL_VERSION_GET:

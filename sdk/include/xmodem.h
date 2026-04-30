@@ -118,11 +118,10 @@ enum yr_state {
 	YR_CAN = -2,
 	YR_ERR = -1,
 	YR_UND = 0,
-	YR_OK = 1,
-	YR_IDL = 2,
-	YR_EOT = 3,
-	YR_HDR = 4,
-	YR_DAT = 5
+	YR_IDL = 1,
+	YR_EOT = 2,
+	YR_HDR = 3,
+	YR_DAT = 4,
 };
 
 struct ymodem_rcv {
@@ -296,8 +295,7 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len);
 
 int ymodem_rcv_cancel(struct ymodem_rcv * ry);
 
-
-
+int ymodem_rcv_flush(struct ymodem_rcv * ry);
 
 
 int ymodem_snd_init(struct ymodem_snd * sy, 

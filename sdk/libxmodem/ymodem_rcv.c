@@ -45,6 +45,20 @@
 #define CAN  0x18
 
 #define YMODEM_RCV_TMOUT_MS 2000
+#define YMODEM_RCV_IDLE_MS 250 
+#define YMODEM_RCV_FSIZE_MAX (1024 * 1024)
+
+static inline void __ymodem_rcv_reset(struct ymodem_rcv * ry)
+{
+	ry->pktno = 0;
+	ry->sync = ry->crc_mode ? 'C' : NAK;
+	ry->fsize = YMODEM_RCV_FSIZE_MAX;
+	ry->retry = 30;
+	ry->count = 0;
+	ry->data_len = 0;
+	ry->data_pos = 0;
+	ry->state = YR_IDL;
+}
 
 int ymodem_rcv_init(struct ymodem_rcv * ry, const struct comm_dev * comm, 
 					unsigned int mode)
@@ -53,19 +67,10 @@ int ymodem_rcv_init(struct ymodem_rcv * ry, const struct comm_dev * comm,
 		return -EINVAL;
 
 	ry->comm = comm;
-
-	ry->pktno = 0;
 	ry->crc_mode = (mode == XMODEM_RCV_CRC) ? 1 : 0;
 	ry->xmodem = 0;
-	ry->sync = ry->crc_mode ? 'C' : NAK;
-	ry->retry = 30;
-	ry->fsize = 1024 * 1024;
-	ry->count = 0;
-	ry->data_len = 0;
-	ry->data_pos = 0;
 
-	/* State initialized */
-	ry->state = YR_IDL;
+	__ymodem_rcv_reset(ry);
 
 	DCC_LOG1(LOG_TRACE, "[IDLE] %s mode", ry->crc_mode ? "CRC" : "CKSUM");
 
@@ -74,15 +79,32 @@ int ymodem_rcv_init(struct ymodem_rcv * ry, const struct comm_dev * comm,
 
 int ymodem_rcv_cancel(struct ymodem_rcv * ry)
 {
-	unsigned char * pkt = ry->pkt.hdr;
+	unsigned char * pkt = ry->pkt.data;
+
+	/*  flush */
+	while (ry->comm->op.recv(ry->comm->arg, pkt,
+							 1024, YMODEM_RCV_IDLE_MS) > 0) {
+	}
 
 	pkt[0] = CAN;
-	pkt[1] = CAN;
-
 	DCC_LOG(LOG_TRACE, " --> CAN");
-	ry->comm->op.send(ry->comm->arg, pkt, 2);
+	ry->comm->op.send(ry->comm->arg, pkt, 1);
 
 	return 0;
+}
+
+int ymodem_rcv_flush(struct ymodem_rcv * ry)
+{
+	unsigned char * pkt = ry->pkt.data;
+	int acc = 0;
+	int len;
+
+	while ((len = ry->comm->op.recv(ry->comm->arg, pkt, 
+									1024, YMODEM_RCV_IDLE_MS)) > 0) {
+		acc += len;
+	}
+
+	return acc;
 }
 
 static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
@@ -109,6 +131,7 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 		} else {
 //			DCC_LOG(LOG_TRACE, "[SYN]");
 		}
+
 		if ((ret = ry->comm->op.send(ry->comm->arg, &ry->sync, 1)) < 0) {
 			DCC_LOG1(LOG_WARNING, "send()->%d", ret);
 			return ret;
@@ -142,28 +165,22 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 			}
 
 			if (c == CAN) {
+				/* FIXME: Remote cancel !, What is the procedure? */
+				ry->sync = ACK;
+				ry->state = YR_CAN;
 				DCC_LOG(LOG_TRACE, "CAN");
 				return -1;
 			}
 
 			if (c == EOT) {
-				DCC_LOG(LOG_TRACE, "EOT");
-				pkt[0] = ACK;
-				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
-				ry->comm->op.send(ry->comm->arg, pkt, 1);
 				/* end of transmission */
+				ry->sync = ACK;
 				ry->state = YR_EOT;
-//				ry->state = (ry->state = YR_EOT) ? YR_OK : YR_EOT;
-				return 0;
+				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
+				return 1;
 			}
 
 			DCC_LOG1(LOG_WARNING, "YMODEM RX=%02x", c);
-
-			if (ry->state == YR_EOT) {
-				DCC_LOG(LOG_TRACE, "[EOT] --> ACK");
-				ry->state = YR_OK;
-				return 0;
-			}
 
 			junk++;
 		}
@@ -175,15 +192,11 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 		DCC_LOG1(LOG_TRACE, "%d remaining bytes...", rem);
 		/* receive the packet */
 		while (rem) {
-			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 127);
+			ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 
+									YMODEM_RCV_IDLE_MS);
 
 			if (ret == THINKOS_ETIMEDOUT)  {
-#if 0
-				DCC_LOG(LOG_ERROR, "rcv timeout, try again...");
-				ret = ry->comm->op.recv(ry->comm->arg, cp, rem, 128);
-				if (ret == THINKOS_ETIMEDOUT)
-#endif					
-					goto timeout;
+				goto timeout;
 			}
 
 			if (ret < 0) {
@@ -238,7 +251,6 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 			DCC_LOG2(LOG_TRACE, "CKS OK, seq=%d pktno=%d", seq, ry->pktno);
 		}
 
-
         if (seq == ((ry->pktno - 1) & 0xff)) {
             /* retransmission!! */
             if ((seq == 0) && (ry->pktno == 1) && (ry->xmodem == 0)) {
@@ -253,8 +265,8 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 		if (seq != (ry->pktno & 0xff)) {
 			if ((ry->pktno == 0) && (seq == 1)) {
-				ry->pktno++;
 				/* Fallback to XMODEM */
+				ry->pktno++;
 				ry->xmodem = 1;
 				DCC_LOG(LOG_TRACE, "Xmodem fallback");
 			} else {
@@ -263,17 +275,14 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 			}
 		}
 
-		if (ry->pktno == 0) {
+		if ((ry->pktno == 0) && (!ry->xmodem) && (ry->state < YR_HDR)) {
 			/* YModem first packet ... */
+			ry->sync = ACK;
+			ry->state = YR_HDR;
 			DCC_LOG(LOG_TRACE, "[HDR] --> ACK");
-			pkt[0] = ACK;
-			ry->comm->op.send(ry->comm->arg, pkt, 1);
 		} else {
 			ry->retry = 2;
 			ry->sync = ACK;
-			if ((ry->count + cnt) > ry->fsize)
-				cnt = ry->fsize - ry->count;
-			ry->count += cnt;
 			ry->state = YR_DAT;
 			DCC_LOG(LOG_TRACE, "[DAT] --> ACK");
 		}
@@ -282,39 +291,50 @@ static int ymodem_rcv_pkt(struct ymodem_rcv * ry)
 
 		return cnt;
 
-error:
-		/* flush */
-		while (ry->comm->op.recv(ry->comm->arg, pkt, 1024, 255) > 0);
-		ry->sync = NAK;
-		ret = -1;
-		break;
-
 timeout:
-		DCC_LOG(LOG_TRACE, "timeout...");
-
-		if ((ry->state == YR_EOT) ||
-			((ry->count == ry->fsize) && (ry->xmodem == 0))) {
+		if (ry->state == YR_EOT) {
 			DCC_LOG(LOG_TRACE, "[EOT] transfer complete!!");
-			ry->state = YR_OK;
-			return 0;
+			ry->sync = CAN;
+			ret = 0;
+			break;
 		}
 
+		if (ry->state == YR_HDR) {
+			DCC_LOG(LOG_TRACE, "[ACK] transfer complete!!");
+			ry->sync = ry->crc_mode ? 'C' : NAK;
+			ret = 1;
+			break;
+		}
 
-		if ((--ry->retry) == 0) {
-			/* too many errors */
-			DCC_LOG(LOG_WARNING, "[ERR] too many errors!");
+		if ((ry->count == ry->fsize) && (ry->xmodem == 0)) {
+			DCC_LOG(LOG_TRACE, "[ERR] file too large!!");
+			ry->sync = CAN;
 			ry->state = YR_ERR;
 			ret = -1;
 			break;
 		}
-	}
 
-	ymodem_rcv_cancel(ry);
+		DCC_LOG(LOG_TRACE, "timeout...");
+error:
+		if ((--ry->retry) == 0) {
+			/* too many errors */
+			DCC_LOG(LOG_WARNING, "[ERR] too many errors!");
+			ry->sync = CAN;
+			ry->state = YR_ERR;
+			ret = -1;
+			break;
+		}
+
+	}
 
 	return ret;
 }
 
-unsigned long dec2int(const char * __s)
+
+
+/* File information packet decoding */
+
+static unsigned long dec2int(const char * __s)
 {
 	unsigned long val = 0;
 	char * cp = (char *)__s;
@@ -333,25 +353,27 @@ unsigned long dec2int(const char * __s)
 
 static int ymodem_rcv_decode(void * pkt, int len, char * fname)
 {
+	char * cp = (char *)pkt;
 	unsigned int fsize;
-	char * cp;
 	int ret;
 	int i;
 
-	cp = (char *)pkt;
-	if (*cp == '\0') {
+	if (cp[0] == '\0') {
 		DCC_LOG(LOG_WARNING, "file name is empty!");
 		ret = 0;
 	} else {
-
 		DCC_LOGSTR(LOG_TRACE, "fname='%s'", cp);
 		if (fname != NULL) { 
+			/* Get file name */
 			for (i = 0; (cp[i] != '\0') & (i < len); ++i)
 				fname[i] = cp[i];
 			fname[i] = '\0';
 		} else {
+			/* Skip file name */
 			for (i = 0; (cp[i] != '\0') & (i < len); ++i);
 		}
+
+		/* Skip zeros */
 		for (; (cp[i] == '\0') & (i < len); ++i);
 
 		if (i < len) {
@@ -364,7 +386,51 @@ static int ymodem_rcv_decode(void * pkt, int len, char * fname)
 			ret = fsize;
 		} else {
 			DCC_LOG(LOG_WARNING, "no file size info!");
-			ret = -1;
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+
+
+int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname, 
+					 unsigned int * pfsize)
+{
+	int ret;
+
+	if (ry == NULL)
+		return -EINVAL;
+
+	if (ry->xmodem)
+		return 0;
+
+	__ymodem_rcv_reset(ry);
+
+	while ((ret = ymodem_rcv_pkt(ry)) > 0) { 
+		int cnt = ret;
+
+		if (cnt < 128) {
+			/* if not a data packet ....} */
+			continue;
+		}
+
+		if ((ry->pktno == 1) && (!ry->xmodem)) {
+			/* YModem file metadata packet */
+			if ((ret = ymodem_rcv_decode(ry->pkt.data, cnt, fname)) > 0) {
+				ry->fsize = ret;
+				if (pfsize != NULL)
+					*pfsize = ret;
+				break;
+			}
+			if (ret == 0) {	
+				ry->state = YR_EOT;
+			}
+		} else {
+			ry->count += cnt;
+			ry->data_len = ret;
+			ry->data_pos = 0;
+			break;
 		}
 	}
 
@@ -377,14 +443,18 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 	int rem;
 	int ret;
 
+	if (ry == NULL)
+		return -EINVAL;
+
 	if ((dst == NULL) || (len <= 0)) {
 		return -EINVAL;
 	}
 
 	for (;;) {
+		int cnt;
+
 		if ((rem = (ry->data_len - ry->data_pos)) > 0) {
 			unsigned char * src;
-			int cnt;
 			int i;
 
 			cnt = MIN(rem, len);
@@ -399,73 +469,22 @@ int ymodem_rcv_loop(struct ymodem_rcv * ry, void * data, int len)
 			break;
 		}
 
-		if ((ret = ymodem_rcv_pkt(ry)) < 0) {
+		if ((ret = ymodem_rcv_pkt(ry)) <= 0) {
 			break;
 		}
-		if (ret == 0) {
-			if (ry->state <= YR_OK) {
-				break;
-			}
-		}
 
-		if (!ry->xmodem && (ry->pktno == 1)) {
-			if ((ret = ymodem_rcv_decode(ry->pkt.data, 
-										 len, NULL)) > 0) {
-				ry->fsize = ret;
-				ry->data_len = 0;
-				ry->data_pos = 0;
-				ret = 0;
-				break;
-			}
-		} else {
+		cnt = ret;
+		if (cnt >= 128) {
+		/* XXX: clip the data to the file size */
+			if ((ry->count + cnt) > ry->fsize)
+				cnt = ry->fsize - ry->count;
+			ry->count += cnt;
 			ry->data_len = ret;
 			ry->data_pos = 0;
 		}
+
 	} 
 
 	return ret;
 }
-
-
-int ymodem_rcv_start(struct ymodem_rcv * ry, char * fname, 
-					 unsigned int * pfsize)
-{
-	int ret;
-
-	if (ry->state < YR_IDL) {
-		DCC_LOG1(LOG_ERROR, "invalid state %d", ry->state);
-		return -EPERM;
-	}
-
-	while ((ret = ymodem_rcv_pkt(ry)) > 0) { 
-
-		if (ry->xmodem)
-			return ret;
-
-		if (ry->pktno == 1) {
-			int len = ret;
-
-			if ((ret = ymodem_rcv_decode(ry->pkt.data, len, fname)) > 0) {
-				ry->fsize = ret;
-				if (pfsize != NULL)
-					*pfsize = ret;
-
-				DCC_LOG1(LOG_TRACE, "fsize=%d", ret);
-			}
-
-		} else {
-			DCC_LOG1(LOG_INFO, "pktno=%d!!!!", ry->pktno);
-			ry->data_len = ret;
-			ry->data_pos = 0;
-		}
-
-		if (ry->state == YR_DAT) {
-			ret = 0;
-			break;
-		}
-	}
-
-	return ret;
-}
-
 
