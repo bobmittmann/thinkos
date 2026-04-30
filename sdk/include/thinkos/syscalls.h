@@ -520,7 +520,7 @@ thinkos_flag_timedtake(int flag, unsigned int ms) {
 
 static inline void __attribute__((always_inline)) 
 thinkos_flag_give_i(int flag) {
-	void (* flag_give_i)(int) = (void (*)(int))0x40;
+	void (* flag_give_i)(int) = (void (*)(int))(10 * 4);
 	flag_give_i(flag);
 }
 
