@@ -6,7 +6,7 @@ using Plots;
 
 
 # Number of entries in the sine table
-global N_SINE = 1024
+global N_SINE = 4096
 # Number of entries in the interpolation table
 global M_INTRP = 256
 
@@ -37,7 +37,7 @@ function degree_to_bam32(alpha::Float64)
 	return bam32
 end
 
-# Convert from a normalized angle to a BAM32 format
+# Convert from a normalized flosting point angle to a BAM32 format
 function norm_to_bam32(omega::Float64)
 	wrap::Float64 = omega - floor(omega)
 	bam32::UInt32 = UInt32(round(wrap * Float64(1 << 32)))
@@ -143,12 +143,17 @@ function q15sin_lin_intrp(x::UInt32)
 	x0 = i << (32 - LOG2_N)
 	dx = (x - x0) >>> (17 - LOG2_N)
 
+	_dx::Int32 = (x >>> ((32 - 15) - LOG2_N)) & 0x7fff
+	if (_dx != dx)
+		@printf("%04x != %04x\n", _dx, dx)
+	end
+
 	sin_x0 = qsintab[i + 1]
 	sin_x1 = qsintab[((i + 1) & MASK_N) + 1]
 
 	dy = (sin_x1 - sin_x0)
 
-	y = sin_x0 + (dx * dy) >> 15
+	y = sin_x0 + (_dx * dy) >> 15
 	return y
 end
 
@@ -178,8 +183,8 @@ function q15sin_trig_intrp(x::UInt32)
 	sin_dx = fsintab[j + 1]
 	cos_dx = fcostab[j + 1]
 
- # 	y = (sin_x * cos_dx + cos_x * sin_dx) >> 16
- 	y = sin_x + ((cos_x * sin_dx) >> 16)
+ #	y = (sin_x * cos_dx + cos_x * sin_dx) >> 16
+	y = sin_x + ((cos_x * sin_dx) >> 16)
  #	@printf("<%.5f, %6d %6d %6d>\n", U32_TO_F(x), sin_x, cos_x, y)
 	return y
 end
@@ -267,15 +272,16 @@ end
 function mk_c_q15qsin_tab(n::Int)
 	txt1 = AbstractString[
 	"/* Sine/cosine lookup table. */"
-		@sprintf("static const int16_t q15sintab[%d] = {", n)
+		@sprintf("static const int16_t q15sintab[%d + 1] = {", n)
 	]
 
 	txt2 = AbstractString[
 		q15_qsin_table_line(i, n) for i in 0:8:n-8
 	]
 
+	# Add one extra entry for the linear interpolation wrap around
 	txt3 = AbstractString[
-		"};"
+		"0 };"
 		""
 	]
 
@@ -331,11 +337,12 @@ function mk_c_q15sin_lin(n::Int64)
 	"\tuint32_t i;"
 	""
 	"\ti = x >> (32 - LOG2_N);"
-	"\tx0 = i << (32 - LOG2_N);"
-	"\tdx = (int32_t)(x - x0) >> (17 - LOG2_N);"
+	"\t/* x0 = i << (32 - LOG2_N);"
+	"\tdx = (int32_t)(x - x0) >> (17 - LOG2_N); */"
+	"\tdx = (int32_t)(x >> (17 - LOG2_N)) & 0x3fff;"
 	""
 	"\tsin_x0 = q15sintab[i];"
-	"\ti = (i + 1) & MASK_N;"
+	"\t/* i = (i + 1) & MASK_N; */"
 	"\tsin_x1 = q15sintab[i];"
 	""
 	"\tdy = sin_x1 - sin_x0;"
@@ -446,13 +453,13 @@ function mk_q15sincos(prefix)
 end
 
 @printf("Creating sine lookup table: %d entries...\n", N_SINE)
-qsintab = zeros(Int16, N_SINE)
+global qsintab = zeros(Int16, N_SINE + 1)
 @printf("Creating secondary cos/sin lookup tables: %d entries...\n", M_INTRP)
-fsintab = zeros(UInt16, M_INTRP + 1)
-fcostab = zeros(UInt16, M_INTRP + 1)
+global fsintab = zeros(UInt16, M_INTRP + 1)
+global fcostab = zeros(UInt16, M_INTRP + 1)
 
 # Generate the sine table
-for i in 0:N_SINE-1
+for i in 0:N_SINE
 	θ = 2*π*i/N_SINE
 	qsintab[i + 1] = FLOAT_TO_Q15(sin(θ))
 end

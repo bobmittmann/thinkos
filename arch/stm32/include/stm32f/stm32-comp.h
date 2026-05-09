@@ -24,7 +24,7 @@
  */ 
 
 #ifndef __STM32_COMP_H__
-#define __STM32_cOMP_H__
+#define __STM32_COMP_H__
 
 /*-------------------------------------------------------------------------
  * comparator (COMP)

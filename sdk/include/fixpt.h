@@ -183,11 +183,28 @@
 /* Q31 Unsigned Divide */
 #define Q31_UDIV(X, Y) (((uint64_t)(X) << 31) / (uint32_t)(Y))
 
+/* -------------------------------------------------------------------------
+ Q0.32 format: 0 ... 0.9999999997671694
+ */
+
+/* Convert from fixed point Q0.32 to float point */
+#define Q32_TO_FP(X) ((float)(X) * (float)1.0/4294967296.)
+/* Conversion form float to fixed point unsigned Q0.32 */
+#define FP_TO_Q32(F) ((float)(F) * (float)(4294967296.))
+ 
+#define Q32_MAX ((uint32_t)4294967295)
+#define Q32_MIN ((uint32_t)0)
+
+/* Q32 Unsigned Multiply */
+#define Q32_UMUL(X1, X2) (((uint64_t)(X1) * (uint32_t)(X2)) >> 32)
+
+/* Q32 Unsigned Divide */
+#define Q32_UDIV(X, Y) (((uint64_t)(X) << 32) / (uint32_t)(Y))
 
 /* FLoor(log2(n)) for 32 bits 
-   Use this macro only with constant values as the generated
-   code can be very inneficient. The function ilog2() is better suited for 
-   general usage.
+   Use this macro only with constant values, defining macros for example,
+   as the otherwise generated code can be very inneficient. The function 
+   ilog2() is better suited for general code usage.
  */
 #ifndef ILOG2
   #define ILOG2(X) (((X)&(0xffff0000))?(((X)&(0xff000000))?\

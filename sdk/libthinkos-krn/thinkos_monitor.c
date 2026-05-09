@@ -554,7 +554,7 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	case MONITOR_CTL_TASK_INIT: {
 		void (* task)(const struct monitor_comm *, void *) = 
 			(void (*)(const struct monitor_comm *, void *))arg[1];
-		const struct monitor_comm * comm (const struct monitor_comm *)arg[2];
+	//	const struct monitor_comm * comm (const struct monitor_comm *)arg[2];
 		void * env = (void *)arg[3];
 
 		/* disable interrupts */
