@@ -24,8 +24,6 @@
 
 #include <sys/param.h>
 
-#define SVC_RETCODE 4
-
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
@@ -513,7 +511,7 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	/* Set the return value to ZERO. The calling thread 
 	   should retry sending data. */
-	arg[SVC_RETCODE] = 0;
+	arg[SVC_RETCODE_ARG] = 0;
 
 	/* pipe->head is declared as volatile, 
 	   for performance reasons we read it only once at 
@@ -524,12 +522,16 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((max = (tail - head + THINKOS_CONSOLE_TX_FIFO_LEN)) == 0) {
 		/* -- wait for event ---------------------------------------- */
 		if (thinkos_console_rt.connected) {
-			DCC_LOG2(LOG_INFO, "<%d> fifo full: waiting %d...", self, wq);
+			DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
 			/* signal the scheduler ... */
 			__krn_sched_defer(krn); 
 		} else {
+#if 0
 			/* flush the pipe */
 			pipe->tail = head;
+#else
+			arg[SVC_RETCODE_ARG] = len;
+#endif
 			/* remove from console wait queue */
 			__krn_wq_remove(krn, wq, self);
 			/* insert into the ready wait queue */
@@ -567,7 +569,7 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* insert into the ready wait queue */
 		__thread_ready_set(krn, self);  
 
-		arg[SVC_RETCODE] = cnt;
+		arg[SVC_RETCODE_ARG] = cnt;
 
 		/* signal driver */
 		console_signal_tx_pipe();
@@ -681,7 +683,7 @@ rd_again:
 		DCC_LOG3(LOG_INFO, "<%2d> rx_pipe_read(len=%d) => %d", 
 				 self, len, n);
 		console_signal_rx_pipe();
-		arg[SVC_RETCODE] = n;
+		arg[SVC_RETCODE_ARG] = n;
 		return;
 	}
 
@@ -698,7 +700,7 @@ rd_again:
 #endif
 	if (nonblock) {
 		/* if timeout is 0 do not block */
-		arg[SVC_RETCODE] = THINKOS_EAGAIN;
+		arg[SVC_RETCODE_ARG] = THINKOS_EAGAIN;
 		DCC_LOG2(LOG_WARNING, "<%2d> tmo=%d !!!", self, tmo);
 		return;
 	}
@@ -731,7 +733,7 @@ rd_again:
 	if (tmo > 0) {
 		/* Set the default return value to timeout. The
 		   thinkos_console_rx_pipe_commit() call will change this to 0 */
-		arg[SVC_RETCODE] = THINKOS_ETIMEDOUT;
+		arg[SVC_RETCODE_ARG] = THINKOS_ETIMEDOUT;
 		/* set the clock */
 		__thread_clk_itv_set(krn, self, tmo);
 		/* update the thread status in preparation for event wait */
@@ -745,7 +747,7 @@ rd_again:
 	{
 		/* Set the return value to ZERO. The calling thread 
 		   should retry sending data. */
-		arg[SVC_RETCODE] = 0;
+		arg[SVC_RETCODE_ARG] = 0;
 		/* update the thread status in preparation for event wait */
 #if (THINKOS_ENABLE_THREAD_STAT)
 		__thread_stat_set(krn, self, wq, 0);
@@ -803,7 +805,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	/* Set the return value to THINKOS_EAGAIN. The calling thread 
 	   should retry sending data. */
-	arg[SVC_RETCODE] = THINKOS_EAGAIN;
+	arg[SVC_RETCODE_ARG] = THINKOS_EAGAIN;
 
 	/* pipe->head is declared as volatile, 
 	   for performance reasons we read it only once at 
@@ -822,7 +824,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* insert into the ready wait queue */
 		__thread_ready_set(krn, self);  
 
-		arg[SVC_RETCODE] = 0;
+		arg[SVC_RETCODE_ARG] = 0;
 	}
 
 }
@@ -856,14 +858,14 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CONSOLE_OPEN)
 	case CONSOLE_OPEN:
 		thinkos_console_rt.open_cnt++;
-		arg[SVC_RETCODE] = THINKOS_OK;
+		arg[SVC_RETCODE_ARG] = THINKOS_OK;
 		break;
 
 	case CONSOLE_CLOSE:
 		if (thinkos_console_rt.open_cnt > 0)
-			arg[SVC_RETCODE] = THINKOS_EBADF;
+			arg[SVC_RETCODE_ARG] = THINKOS_EBADF;
 		else
-			arg[SVC_RETCODE] = THINKOS_OK;
+			arg[SVC_RETCODE_ARG] = THINKOS_OK;
 		break;
 #endif
 
@@ -871,7 +873,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	case CONSOLE_IS_CONNECTED:
 		DCC_LOG1(LOG_MSG, "CONSOLE_IS_CONNECTED(%d)", 
 				thinkos_console_rt.connected);
-		arg[SVC_RETCODE] = thinkos_console_rt.connected;
+		arg[SVC_RETCODE_ARG] = thinkos_console_rt.connected;
 		break;
 #endif
 
@@ -905,7 +907,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CONSOLE_DRAIN)
 		thinkos_console_drain_svc(arg, self, krn);
 #else
-		arg[SVC_RETCODE] = THINKOS_OK;
+		arg[SVC_RETCODE_ARG] = THINKOS_OK;
 #endif
 		break;
 
@@ -916,7 +918,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 			thinkos_console_rt.raw_mode = val ? 1 : 0;
 			DCC_LOG1(LOG_INFO, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
-			arg[SVC_RETCODE] = THINKOS_OK;
+			arg[SVC_RETCODE_ARG] = THINKOS_OK;
 			console_signal_ctl();
 		}
 		break;
@@ -925,7 +927,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid console request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CONSOLE_REQINV);
-		arg[SVC_RETCODE] = THINKOS_EINVAL;
+		arg[SVC_RETCODE_ARG] = THINKOS_EINVAL;
 		break;
 	}
 }
@@ -951,7 +953,7 @@ void thinkos_krn_console_connect_set(bool val)
 
 void thinkos_krn_console_reset(void)
 {
-	DCC_LOG1(LOG_INFO, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
+	DCC_LOG1(LOG_TRACE, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
 					 sizeof(thinkos_console_rt));
 	console_clear_tx_pipe();

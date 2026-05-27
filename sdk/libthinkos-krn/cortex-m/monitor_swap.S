@@ -81,13 +81,10 @@ __monitor_bootstrap:
 
 	movs   r0, r5
 	movs   r1, r6
-	movs   r2, r7
-	movw   r3, #:lower16:thinkos_rt
-	movt   r3, #:upper16:thinkos_rt
+	movw   r2, #:lower16:thinkos_rt
+	movt   r2, #:upper16:thinkos_rt
 	/* adjust "at_exit" return function */
-	/* lr: thinkos_rt */
-	movw   lr, #:lower16:__monitor_at_exit
-	movt   lr, #:upper16:__monitor_at_exit
+	movs   lr, r7
 	bx     r4
 
 	.size   __monitor_bootstrap, . - __monitor_bootstrap
@@ -95,7 +92,6 @@ __monitor_bootstrap:
 
 	.extern thinkos_monitor_stack
 	.extern thinkos_monitor_stack_size
-	.extern __monitor_at_exit
 
 	.text
 	.align	2
@@ -122,69 +118,17 @@ __monitor_context_exec:
 	mov      r0, r1
 	/* r1: env */
 	mov      r1, r2
-	/* r2: status */
-	mov      r1, r3
-
-	/* r3: thinkos_rt */
-	movw     r3, #:lower16:thinkos_rt
-	movt     r3, #:upper16:thinkos_rt
+	/* r2: thinkos_rt */
+	movw     r2, #:lower16:thinkos_rt
+	movt     r2, #:upper16:thinkos_rt
+	/* lr: at_exit */
+	mov      lr, r3
 
 	/* adjust "at_exit" return function */
 	/* lr: thinkos_rt */
-	movw     lr, #:lower16:__monitor_at_exit
-	movt     lr, #:upper16:__monitor_at_exit
 
 	/* call new task */
 	bx       r7
 
 	.size   __monitor_context_exec , . - __monitor_context_exec
-
-#if 0
-	.syntax unified
-	.cpu cortex-m3
-
-	.text
-	.align	2
-	.global	__monitor_context_init
-	.thumb
-	.thumb_func
-__monitor_context_set:
-
-	push   {r4-r11,lr}
-	mrs    r3, APSR
-	push   {r3}
-
-/*	Cortex M4, 
-	ARM ID number 752419 as Cat 2
-	Description
-	An interrupt occurring during the data-phase of a single word load to 
-	the stack pointer (SP/R13) can cause an erroneous behavior of the device. 
-	In addition, returning from the interrupt results in the load instruction 
-	being executed with an additional time.
-	For all the instructions performing an update of the base register, 
-	the base register is erroneously updated on each execution, resulting 
-	in the stack pointer being loaded from an incorrect memory location.
-		The instructions affected by this limitation are the following:
-		• LDR SP, [Rn],#imm
-		• LDR SP, [Rn,#imm]!
-		• LDR SP, [Rn,#imm]
-		• LDR SP, [Rn]
-		• LDR SP, [Rn,Rm] */
-	mov    r3, sp
-	str    sp, [r0] /* save context */
-
-	/* reset sp */
-
-
-	mov    sp, r2
-#if 0
-	mov    r0, r1 /* optional return value */
-#endif
-	pop    {r3}
-	msr    APSR_nzcvq, r3
-	pop    {r4-r11,lr}
-	bx     lr
-
-	.size   __monitor_context_set , . - __monitor_context_set 
-#endif
 

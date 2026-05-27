@@ -34,9 +34,24 @@ void __attribute__((noreturn)) thinkos_krn_sysrst(void)
 	/* wait a bit */
 	udelay(32768);
 	/* request system reset */
-	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
+//	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
+	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ |
+		SCB_AIRCR_VECTRESET;
 	for(;;);
 }
 
+#if (THINKOS_SYSRST_ONFAULT)
+
 void _exit(void) __attribute__((noreturn, weak, alias("thinkos_krn_sysrst")));
+
+#else
+
+#include <thinkos.h>
+
+void _exit(void) 
+{
+	thinkos_abort();
+}
+
+#endif
 

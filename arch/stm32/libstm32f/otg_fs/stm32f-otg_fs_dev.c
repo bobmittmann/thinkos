@@ -520,21 +520,21 @@ int stm32f_otg_dev_ep_pkt_xmit(struct stm32f_otg_drv * drv, int ep_id,
 	if (ep->state != EP_IDLE) {
 #if DEBUG
 		if (ep->state == EP_IN_DATA) {
-			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+			DCC_LOG4(LOG_INFO, VT_PSH VT_FMG
 					 "[%d] IN_DATA EPENA=%d NAKSTS=%d DPID=%d." 
 					 VT_POP, idx, 
 					 diepctl & OTG_FS_EPENA ? 1 : 0, 
 					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
 					 diepctl & OTG_FS_DPID ? 1 : 0);
 		} else if (ep->state == EP_IN_DATA_ZLP) {
-			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+			DCC_LOG4(LOG_INFO, VT_PSH VT_FMG
 					 "[%d] IN_DATA_ZLP EPENA=%d NAKSTS=%d DPID=%d." 
 					 VT_POP, idx, 
 					 diepctl & OTG_FS_EPENA ? 1 : 0, 
 					 diepctl & OTG_FS_NAKSTS ? 1 : 0, 
 					 diepctl & OTG_FS_DPID ? 1 : 0);
 		} else if (ep->state == EP_IN_ZLP) {
-			DCC_LOG4(LOG_MSG, VT_PSH VT_FMG
+			DCC_LOG4(LOG_INFO, VT_PSH VT_FMG
 					 "[%d] IN_ZLP EPENA=%d NAKSTS=%d DPID=%d." 
 					 VT_POP, idx, 
 					 diepctl & OTG_FS_EPENA ? 1 : 0, 
@@ -1331,7 +1331,6 @@ static void stm32f_otg_dev_ep0_setup(struct stm32f_otg_drv * drv)
 		/* EP enable */
 		otg_fs->outep[0].doepctl |= OTG_FS_EPENA | OTG_FS_CNAK;
 	}
-
 }
 
 static void stm32f_otg_dev_reset(struct stm32f_otg_drv * drv)
@@ -1361,6 +1360,7 @@ static void stm32f_otg_dev_reset(struct stm32f_otg_drv * drv)
 	for (i = 0; i < OTG_EP_MAX; i++) {
 		drv->ep[i].xfr_len = 0;
 		drv->ep[i].xfr_cnt = 0;
+		drv->ep[i].state = EP_UNCONFIGURED;
 	}
 
 	/* Flush the Tx FIFO */

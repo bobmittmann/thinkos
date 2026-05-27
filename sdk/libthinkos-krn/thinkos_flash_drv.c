@@ -382,6 +382,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* (2) Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
+
 /* NEW: 2020-12-02 performed by the svc call entry stub 
 	__thread_ctx_flush(krn, arg, self);
 */

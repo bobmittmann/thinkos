@@ -343,7 +343,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 		int32_t tgt_idx = arg[1];
 
 		tgt_idx -= base;  
-		DCC_LOG1(LOG_MSG, "tgt_idx = %d", tgt_idx);
+		DCC_LOG1(LOG_TRACE, "tgt_idx = %d", tgt_idx);
 
 		if ((idx = __thinkos_hilo_alloc(bmp, max, tgt_idx)) >= 0) {
 			idx += base;

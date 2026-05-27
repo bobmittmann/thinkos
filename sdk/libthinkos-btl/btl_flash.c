@@ -155,15 +155,15 @@ int btl_flash_ymodem_recv(const char * tag)
 	thinkos_sleep(250);
 
 	krn_console_crlf();
-
+#if 0
 	if (ry.xmodem)
 		krn_console_puts("XMODEM ");
 	else
 		krn_console_puts("YMODEM ");
-
+#endif
 	if (ret < 0) {
 		krn_console_puts("failed: -");
-		krn_console_puthex(-ret);
+		krn_console_put_uint(-ret);
 		krn_console_crlf();
 	} else
 		krn_console_wrln("ok.");
@@ -185,10 +185,12 @@ int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1)
 
 	if ((ret = thinkos_flash_mem_stat(tag, &stat)) < 0) {
 		DCC_LOGSTR(LOG_ERROR, "thinkos_flash_mem_stat('%s') fail.", tag);
-		return ret;
+		return BTL_SHELL_ERR_ARG_INVALID; 
 	}
 
-	return thinkos_app_exec(stat.begin, arg0, arg1, 0, 0);
+	thinkos_app_exec(stat.begin, arg0, arg1, 0, 0);
+
+	return BTL_SHELL_ERR_GENERAL; 
 }
 
 int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
@@ -196,13 +198,14 @@ int btl_cmd_exec(struct btl_shell_env * env, int argc, char * argv[])
 	return btl_flash_app_exec(argv[0], 0, 0);
 }
 
-/* Receive a file and write it into the flash using the YMODEM protocol */
+/* Read a flash partition and dump its content */
 int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max)
 {
 	int32_t rem = __max;
 	uint32_t offs = __offs;
-	uint32_t buf[32];
-	char ln[128];
+	uint32_t * cmp = (uint32_t *)-1;
+	uint32_t cmp_buf[4];
+	bool eq = false;
 	int ret = 0;
 	int key;
 
@@ -211,17 +214,36 @@ int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max)
 	}
 
 	while (rem > 0) {
+		unsigned int i;
+		uint32_t buf[4];
+		char ln[80];
 		int cnt;
 
 		cnt = 16;
 		if ((ret = thinkos_flash_mem_read(key, offs, buf, cnt)) <= 0) {
 			break;
 		}
+		cnt = ret;
 
-        cnt = ret;
-
-		krn_fmt_line_hex32(ln, offs, buf, cnt);
-		krn_console_wrln(ln);
+		if (cmp != (uint32_t *)-1) { 
+			for (i = 0; i < (cnt / sizeof(uint32_t)); ++i) {
+				if (cmp[i] != buf[i]) {
+					eq = false;
+					goto dump_line;
+				}
+			}
+			if (!eq) {
+				krn_console_wrln(" ...");
+				eq = true;
+			}
+		} else {
+dump_line:
+			krn_fmt_line_hex32(ln, offs, buf, cnt);
+			krn_console_wrln(ln);
+		}
+		cmp = cmp_buf;
+		/* Copy the working buffer to the compare buffer */
+		__thinkos_memcpy32(cmp, buf, cnt);
 
 		offs += cnt;
 		rem -= cnt;
@@ -231,4 +253,5 @@ int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max)
 
 	return ret;
 }
+
 

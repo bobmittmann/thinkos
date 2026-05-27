@@ -43,8 +43,8 @@ class Version():
     month = int(x[1])
     day = int(x[2])
 
-    ref = datetime.datetime(year, month, day)
-    utcnow = datetime.datetime.utcnow()
+    ref = datetime.datetime(year, month, day, tzinfo=datetime.timezone.utc)
+    utcnow = datetime.datetime.now(datetime.UTC)
     unixtime = time.mktime(datetime.datetime.now().timetuple())
     diff = utcnow - ref
     build = int((diff.days * 24) + (diff.seconds / (60 * 60)))

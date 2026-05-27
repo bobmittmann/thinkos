@@ -67,7 +67,7 @@ struct thinkos_idle_rt {
 extern "C" {
 #endif
 
-void __thinkos_krn_idle_init(struct thinkos_rt * krn);
+void thinkos_krn_idle_init(struct thinkos_rt * krn);
 
 struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn);
 

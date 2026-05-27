@@ -88,7 +88,7 @@ __krn_obj_is_commrx(struct thinkos_rt * krn, unsigned int oid) {
 int krn_comm_tx_check(struct thinkos_rt * krn, unsigned int oid) {
 	if (!__krn_obj_is_commtx(krn, oid)) {
 		/* FIXME: specific error */
-		return THINKOS_ERR_KRN_FAULT;
+		return THINKOS_ERR_GENERAL;
 	}
 	return THINKOS_OK;
 }
@@ -96,7 +96,7 @@ int krn_comm_tx_check(struct thinkos_rt * krn, unsigned int oid) {
 int krn_comm_rx_check(struct thinkos_rt * krn, unsigned int oid) {
 	if (!__krn_obj_is_commrx(krn, oid)) {
 		/* FIXME: specific error */
-		return THINKOS_ERR_KRN_FAULT;
+		return THINKOS_ERR_GENERAL;
 	}
 	return THINKOS_OK;
 }
@@ -242,6 +242,7 @@ void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 void thinkos_comm_timedsend_svc(int32_t arg[], int self, 
 							   struct thinkos_rt * krn)
 {
+	thinkos_comm_send_svc(arg, self, krn);
 }
 
 int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
@@ -391,7 +392,7 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		(void)oid;
 #if (THINKOS_ENABLE_SANITY_CHECK)
 		if (comm == NULL) {
-			__THINKOS_ERROR(self, THINKOS_ERR_KRN_FAULT);
+			__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
 			arg[4] = THINKOS_EINVAL;
 			return;
 		}

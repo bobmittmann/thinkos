@@ -27,7 +27,7 @@
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
 
-struct thinkos_rt thinkos_rt __attribute__((section(".krn.data")));
+struct thinkos_rt thinkos_rt __attribute__((aligned(4), section(".krn.data")));
 
 #if (((THINKOS_EXCEPT_STACK_SIZE) & 0x0000003f) != 0)
 #error "THINKOS_EXCEPT_STACK_SIZE must be a multiple 0f 64"
@@ -38,11 +38,23 @@ uint32_t __attribute__((aligned(8), section(".krn.stack")))
 
 const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
 
-void __thinkos_krn_core_init(struct thinkos_rt * krn)
+uint32_t * thinkos_krn_xcpt_stack_top(void)
+{
+	uintptr_t sp;
+
+	sp = (uintptr_t)(uint32_t *)thinkos_except_stack;
+	sp += sizeof(thinkos_except_stack) - sizeof(struct thinkos_context);
+
+	return (uint32_t *)sp;
+}
+
+
+void thinkos_krn_core_init(struct thinkos_rt * krn)
 {
 	unsigned int i;
 
-	krn->sched.state = 0x00000000;
+	/* Clear current thread, break thread, errno and xcpno */
+	__krn_sched_ctrl_set(krn, 0x00000000);
 
 	/* clear all wait queues */
 	for (i = 0; i < THINKOS_WQ_CNT; ++i)
@@ -133,7 +145,7 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 }
 #endif
 
-void __thinkos_krn_core_reset(struct thinkos_rt * krn)
+void thinkos_krn_core_reset(struct thinkos_rt * krn)
 {
 #if DEBUG
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Core Reset !!" VT_POP);
@@ -146,7 +158,8 @@ void __thinkos_krn_core_reset(struct thinkos_rt * krn)
 	__krn_irq_reset_all(krn);
 #endif
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
-	__thinkos_krn_core_init(krn);
+	thinkos_krn_core_init(krn);
+
 /* 
  * FIXME: the exception buffer shouldn't be cleared except by an excplicit call
  * after debug handling??? 
@@ -231,7 +244,7 @@ int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[],
 	if (cnt > (__KRN_THREAD_LST_SIZ - from))
 		cnt = (__KRN_THREAD_LST_SIZ - from);
 
-	__krn_cyccnt_flush(krn, __krn_sched_active_get(krn));
+	__krn_cyccnt_flush(krn, __krn_sched_act_get(krn));
 	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
 
 	return cnt;

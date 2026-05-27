@@ -23,78 +23,6 @@
 
 #include <sys/dcclog.h>
 
-#if (THINKOS_ENABLE_THREAD_INFO)
-const struct thinkos_thread_inf thinkos_main_inf = {
-	.tag = "MAIN",
-	.stack_ptr = &__krn_stack_start,
-	.stack_size = (uintptr_t)&__krn_stack_size,
-	.priority = 0,
-	.thread_id = 1,
-	.privileged = 0,
-	.paused = 0
-};
-#endif
-
-static int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
-							   uint32_t opt)
-{
-#if (THINKOS_ENABLE_TIMESHARE)
-	int priority = __PRIORITY(opt);
-#endif
-	int th = __ID(opt);
-
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	uintptr_t sl = (uintptr_t)&__krn_stack_start;
-#endif
-
-	if (th < 1)
-		th = 1;
-
-#if (THINKOS_ENABLE_THREAD_ALLOC)
-	/* alloc main thread */
-	th = __thinkos_thread_alloc(th);
-#else
-	if (th > THINKOS_THREADS_MAX)
-		th = THINKOS_THREADS_MAX;
-#endif
-
-#if (THINKOS_ENABLE_TIMESHARE)
-
-#if (THINKOS_SCHED_LIMIT_MIN) < 1
-#error "THINKOS_SCHED_LIMIT_MIN must be at least 1"
-#endif
-
-#if (THINKOS_SCHED_LIMIT_MAX) < (THINKOS_SCHED_LIMIT_MIN)
-#error "THINKOS_SCHED_LIMIT_MAX < THINKOS_SCHED_LIMIT_MIN !!!"
-#endif
-	if (priority > THINKOS_SCHED_LIMIT_MAX)
-		priority = THINKOS_SCHED_LIMIT_MAX;
-
-	krn->sched_pri[th] = priority;
-	krn->sched_val[th] = priority / 2;
-
-	/* set the initial schedule limit */
-	krn->sched_limit = priority;
-	if (krn->sched_limit < (THINKOS_SCHED_LIMIT_MIN))
-		krn->sched_limit = (THINKOS_SCHED_LIMIT_MIN);
-#endif /* THINKOS_ENABLE_TIMESHARE */
-
-	DCC_LOG3(LOG_TRACE, "<%2d> threads_max=%d ready=%08x", 
-			 th, THINKOS_THREADS_MAX, krn->wq_ready);
-
-#if (THINKOS_ENABLE_STACK_LIMIT)
-	__thread_sl_set(krn, th, (uintptr_t)sl);
-	DCC_LOG1(LOG_TRACE, " sl=%08x", __thread_sl_get(krn, th));
-#endif
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	__thread_inf_set(krn, th, (struct thinkos_thread_inf *)
-					 &thinkos_main_inf);
-#endif
-
-	return th;
-}
-
 extern void * __bss_end;
 extern void * __heap_start;
 
@@ -137,7 +65,7 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BASE)
+#if (THINKOS_ENABLE_DEBUG)
 	_Static_assert (offsetof(struct thinkos_rt, debug) == 
 					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
 #endif
@@ -225,7 +153,7 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 #endif
 	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
 
-	__thinkos_krn_core_init(krn);
+	thinkos_krn_core_init(krn);
 
 	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", krn);
 
@@ -357,7 +285,7 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	ctrl = CONTROL_SPSEL;
 	cm3_control_set(ctrl);
 	/* configure the main stack */
-	cm3_msp_set((uintptr_t)__thinkos_xcpt_stack_top());
+	cm3_msp_set((uintptr_t)thinkos_krn_xcpt_stack_top());
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "Exceptions init....");
@@ -381,11 +309,11 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 		return ret;
 	}
 
-	DCC_LOG(LOG_TRACE, "Interrupts init init...");
-	__thinkos_krn_irq_init(krn);
+	DCC_LOG(LOG_TRACE, "Interrupts init...");
+	thinkos_krn_irq_init(krn);
 
 	DCC_LOG(LOG_TRACE, "IDLE init...");
-	__thinkos_krn_idle_init(krn);
+	thinkos_krn_idle_init(krn);
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	bool privileged;
@@ -397,7 +325,7 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 	thread_no = __thinkos_init_main(krn, sp, opt);
 
 	/* Set the initial thread */
-	__krn_sched_active_set(krn, thread_no);
+	__krn_sched_ctrl_set(krn, thread_no);
 	/* add to the ready queue */
 	__thread_ready_set(krn, thread_no);
 

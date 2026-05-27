@@ -273,7 +273,7 @@ void __xdump(struct thinkos_rt * krn,
 #endif
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 __xcpt_thread_get(xcpt),
-			 __krn_sched_active_get(krn)); 
+			 __krn_sched_act_get(krn)); 
 
 #if 0
 	DCC_LOG3(LOG_ERROR, " *   SCR={%s%s%s }", 
@@ -473,11 +473,11 @@ void __tdump(struct thinkos_rt * krn)
 #ifdef DEBUG
 	int i;
 
-	DCC_LOG4(LOG_TRACE, "Sched: active=%d svc=0x%02x err=%d svc=%d", 
-			 __krn_sched_active_get(krn),
-			 __krn_sched_xcp_get(krn),
+	DCC_LOG4(LOG_TRACE, "Sched: act=%d brk=%d err=%d xcp=%d", 
+			 __krn_sched_act_get(krn),
+			 __krn_sched_brk_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_svc_get(krn));
+			 __krn_sched_xcp_get(krn));
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
 #if DCCLOG_ENABLE_TAGS
@@ -652,7 +652,6 @@ void __xinfo(struct thinkos_except * xcpt)
 
 	(void)err;
 
-	mdelay(100);
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BRD
 			 "/!\\ Exception %d [%s] /!\\" VT_POP, 
 			 err, thinkos_krn_err_tag(err));
@@ -819,20 +818,20 @@ void __kdump(struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_THREAD_ALLOC)
 	DCC_LOG4(LOG_TRACE, "Active=<%2d> Ready=%08x Alloc=%08x Ticks=%u", 
-			 __krn_sched_active_get(krn), krn->wq_ready, 
+			 __krn_sched_act_get(krn), krn->wq_ready, 
 			 krn->th_alloc[0], __krn_ticks_get(krn) );
 #else
 	DCC_LOG3(LOG_TRACE, "Active=<%2d> Ready=%08x Ticks=%u", 
-			 __krn_sched_active_get(krn), krn->wq_ready, 
+			 __krn_sched_act_get(krn), krn->wq_ready, 
 			 __krn_ticks_get(krn) );
 #endif
 
-	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
-			 krn->sched.state,
-			 __krn_sched_active_get(krn),
-			 __krn_sched_xcp_get(krn),
+	DCC_LOG5(LOG_TRACE, "Sched.ctrl=%08x [act=%d brk=%d xcp=%d err=%d]", 
+			 krn->sched.ctrl,
+			 __krn_sched_act_get(krn),
+			 __krn_sched_brk_get(krn),
 			 __krn_sched_err_get(krn),
-			 __krn_sched_svc_get(krn));
+			 __krn_sched_xcp_get(krn));;
 
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;

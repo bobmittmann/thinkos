@@ -14,9 +14,11 @@
 #define BTL_CMD_INFO    5
 #define BTL_CMD_RCVY    6
 #define BTL_CMD_REBOOT    7
+#define BTL_CMD_TEST    8
+#define BTL_CMD_XXD     9
 
 #define BTL_CMD_FIRST 1
-#define BTL_CMD_LAST 7
+#define BTL_CMD_LAST 9
 
 struct btl_shell_env;
 
@@ -59,6 +61,8 @@ int btl_cmd_help(struct btl_shell_env * env, int argc, char * argv[]);
 int btl_cmd_info(struct btl_shell_env * env, int argc, char * argv[]);
 int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[]);
 int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_test(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[]);
 
 #ifdef __cplusplus
 }

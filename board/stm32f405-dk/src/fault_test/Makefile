@@ -29,13 +29,12 @@ PROG = fault_test
 
 CFILES = fault_test.c
 
-LIBDIRS = $(SDK_DIR)/libcm3 \
-		  $(ARCH_DIR)/libstm32f \
+LIBDIRS = $(ARCH_DIR)/libstm32f \
 		  $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libc \
 		  $(SDK_DIR)/libthinkos-usr \
 
-LIBS = gcc m cm3 stm32f util c thinkos-usr 
+LIBS = gcc m stm32f util c thinkos-usr 
 
 INCPATH = $(PROJECT_ROOT)/src/include
 
@@ -46,7 +45,6 @@ OPTIONS = -g -mno-unaligned-access
 MACH = stm32f415xg
 THINKAPP := 0x08020000
 LDCODE := $(THINKAPP)
-LDDATA := 0x20001000
-include $(ARCH_DIR)/mk/stm32.mk
-
+LDDATA := 0x20002000
+include $(ARCH_DIR)/mk/stm32-app.mk
 

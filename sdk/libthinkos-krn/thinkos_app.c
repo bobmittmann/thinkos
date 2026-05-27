@@ -175,7 +175,7 @@ void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
 void __attribute__((noreturn)) krn_app_at_exit(int code)
 	__attribute__ ((weak, alias ("__krn_app_at_exit")));
 
-int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
+static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr, uintptr_t arg[])
 {
 	struct thinkos_thread_initializer init;
@@ -285,13 +285,13 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 
 	if (thread_idx == self) {
 #if (THINKOS_ENABLE_SANITY_CHECK)
-		if (__krn_sched_active_get(krn) != self) {
+		if (__krn_sched_act_get(krn) != self) {
 			DCC_LOG2(LOG_ERROR, "<%2d> sched.act=%d!", self, 
-					 __krn_sched_active_get(krn));
+					 __krn_sched_act_get(krn));
 		}
 #endif
 		DCC_LOG1(LOG_WARNING, "<%2d> self == thread_idx, discarding...", self);
-		__krn_sched_active_clr(krn);
+		__krn_sched_act_clr(krn);
 		__krn_sched_defer(krn);
 	}
 

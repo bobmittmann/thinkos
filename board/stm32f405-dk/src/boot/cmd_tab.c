@@ -14,6 +14,8 @@ const char * const btl_cmd_sym_tab[] = {
 	[BTL_CMD_INFO] = "info",
 	[BTL_CMD_RCVY] = "rcvy",
 	[BTL_CMD_REBOOT] = "reboot",
+	[BTL_CMD_TEST] = "test",
+	[BTL_CMD_XXD] = "xxd",
 };
 
 const char * const btl_cmd_brief_tab[] = {
@@ -24,6 +26,8 @@ const char * const btl_cmd_brief_tab[] = {
 	[BTL_CMD_INFO] = "Display system information",
 	[BTL_CMD_RCVY] = "YMODEM file receive to flash partition",
 	[BTL_CMD_REBOOT] = "Reboot the system",
+	[BTL_CMD_TEST] = "Perform a test",
+	[BTL_CMD_XXD] = "Hexdump flash partion",
 };
 
 const char btl_cmd_alias_tab[][4] = {
@@ -34,6 +38,8 @@ const char btl_cmd_alias_tab[][4] = {
 	[BTL_CMD_INFO] = "i",
 	[BTL_CMD_RCVY] = "y",
 	[BTL_CMD_REBOOT] = "",
+	[BTL_CMD_TEST] = "t",
+	[BTL_CMD_XXD] = "x",
 };
 
 const char * const btl_cmd_param_tab[] = {
@@ -44,6 +50,8 @@ const char * const btl_cmd_param_tab[] = {
 	[BTL_CMD_INFO] = NULL,
 	[BTL_CMD_RCVY] = "app | diag",
 	[BTL_CMD_REBOOT] = NULL,
+	[BTL_CMD_TEST] = NULL,
+	[BTL_CMD_XXD] = "PART | ADDR",
 };
 
 const btl_cmd_callback_t btl_cmd_call_tab[] = {
@@ -54,6 +62,8 @@ const btl_cmd_callback_t btl_cmd_call_tab[] = {
 	[BTL_CMD_INFO] = btl_cmd_info,
 	[BTL_CMD_RCVY] = btl_cmd_rcvy,
 	[BTL_CMD_REBOOT] = btl_cmd_reboot,
+	[BTL_CMD_TEST] = btl_cmd_test,
+	[BTL_CMD_XXD] = btl_cmd_xxd,
 };
 
 /*

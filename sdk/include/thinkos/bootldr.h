@@ -89,23 +89,21 @@ static inline void monitor_req_app_resume(void) {
 }
 
 static inline void monitor_req_app_term(void) {
-//	monitor_soft_reset();
-	monitor_signal(MONITOR_APP_TERM);
+	monitor_signal_break(MONITOR_APP_TERM);
 }
 
 static inline void monitor_req_app_erase(void) {
-	monitor_soft_reset();
-//	monitor_signal(MONITOR_APP_ERASE);
+	monitor_req_softrst();
+	monitor_signal(MONITOR_APP_ERASE);
 }
 
 static inline void monitor_req_app_exec(void) {
-	monitor_soft_reset();
-//	monitor_signal(MONITOR_APP_EXEC);
+	monitor_signal_break(MONITOR_APP_EXEC);
 }
 
 static inline void monitor_req_app_upload(void) {
-	monitor_soft_reset();
-//	monitor_signal(MONITOR_APP_UPLOAD);
+	monitor_req_softrst();
+	monitor_signal(MONITOR_APP_UPLOAD);
 }
 
 extern const struct thinkos_flash_desc board_flash_desc;
@@ -171,8 +169,6 @@ bool monitor_app_continue(void);
 
 bool monitor_app_exec(const struct monitor_comm * comm);
 
-int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
-						  uintptr_t addr);
 #ifdef __cplusplus
 }
 #endif

@@ -754,7 +754,7 @@ static int usb_comm_recv(const void * comm, void * buf, unsigned int len)
 	uint32_t ack;
 	unsigned int pos;
 	unsigned int cnt;
-	unsigned int n;
+	unsigned int n = 0;
 	int ret;
 
 	ack = dev->rx_ack;

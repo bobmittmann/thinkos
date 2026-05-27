@@ -107,6 +107,8 @@ const struct thinkos_flash_desc board_flash_desc = {
 
 static void io_init(void)
 {
+	DCC_LOG(LOG_TRACE, "...");
+
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOC);
@@ -183,6 +185,7 @@ static void io_init(void)
 #define IO_I2S2_SDO      STM32_GPIOB, 15
 }
 
+
 static void board_on_softreset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
@@ -190,10 +193,10 @@ static void board_on_softreset(void)
 
 	/* disable all peripherals clock sources except USB_FS, 
 	   GPIOA and GPIOB */
-	DCC_LOG1(LOG_TRACE, "ahb1enr=0x%08x", rcc->ahb1enr);
-	DCC_LOG1(LOG_TRACE, "ahb2enr=0x%08x", rcc->ahb2enr);
-	DCC_LOG1(LOG_TRACE, "apb1enr=0x%08x", rcc->apb1enr);
-	DCC_LOG1(LOG_TRACE, "apb2enr=0x%08x", rcc->apb2enr);
+	DCC_LOG1(LOG_INFO, "ahb1enr=0x%08x", rcc->ahb1enr);
+	DCC_LOG1(LOG_INFO, "ahb2enr=0x%08x", rcc->ahb2enr);
+	DCC_LOG1(LOG_INFO, "apb1enr=0x%08x", rcc->apb1enr);
+	DCC_LOG1(LOG_INFO, "apb2enr=0x%08x", rcc->apb2enr);
 
 	/* Reset all peripherals except USB_FS, GPIOA and FLASH */
 
@@ -231,20 +234,17 @@ static void board_on_softreset(void)
 	/* reinitialize IO's */
 	io_init();
 
+	DCC_LOG1(LOG_TRACE, "OTG_FS IRQ=%d", STM32F_IRQ_OTG_FS);
 	/* Adjust USB OTG FS interrupts priority */
 	cm3_irq_pri_set(STM32F_IRQ_OTG_FS, MONITOR_PRIORITY);
-
 	/* Enable USB OTG FS interrupts */
 	cm3_irq_enable(STM32F_IRQ_OTG_FS);
 
-	DCC_LOG1(LOG_TRACE, "OTG_FS IRQ=%d", STM32F_IRQ_OTG_FS);
-
+	DCC_LOG1(LOG_TRACE, "USART1 IRQ=%d", STM32_IRQ_USART1);
 	/* configure interrupts */
 	cm3_irq_pri_set(STM32_IRQ_USART1, MONITOR_PRIORITY);
 	/* enable interrupts */
 	cm3_irq_enable(STM32_IRQ_USART1);
-
-	DCC_LOG1(LOG_TRACE, "USART1 IRQ=%d", STM32_IRQ_USART1);
 }
 
 int board_init(void)
@@ -252,7 +252,6 @@ int board_init(void)
 	stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
 
 	io_init();
-	board_on_softreset();
 
 	stm32_gpio_set(IO_LED3);
 	stm32_gpio_set(IO_LED4);
@@ -262,6 +261,8 @@ int board_init(void)
 
 void board_reset(void)
 {
+	DCC_LOG(LOG_TRACE, ".....................................");
+
 	board_on_softreset();
 }
 
@@ -271,11 +272,12 @@ void board_reset(void)
  * ----------------------------------------------------------------------------
  */
 
-#define PREBOOT_TIME_SEC 1
+#define PREBOOT_TIME_SEC 5
 
 bool board_integrity_check(void)
 {
 	uint32_t tick;
+	char s[32];
 
 	/* Time window autoboot */
 	for (tick = 0; tick < (PREBOOT_TIME_SEC * 4); ++tick) {
@@ -283,10 +285,10 @@ bool board_integrity_check(void)
 
 		thinkos_sleep(250);
 
-		krn_console_puts(".");
-
 		switch (tick & 0x3) {
 		case 0:
+			krn_snprintf(s, sizeof(s), "%d.", tick >> 2);
+			krn_console_puts(s);
 			stm32_gpio_clr(IO_LED1);
 			break;
 		case 1:
@@ -321,7 +323,7 @@ static int board_on_break(const struct monitor_comm * comm)
 {
 	struct btl_shell_env * env = btl_shell_env_getinstance();
 
-#if 1
+#if 0
 	/* Already initialized in main() */
 	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
 #endif
@@ -355,5 +357,4 @@ void thinkos_arch_release_get(struct thinkos_release * rel)
 {
     __thinkos_memcpy(rel, &this_board.sw, sizeof(struct thinkos_release));
 }
-
 

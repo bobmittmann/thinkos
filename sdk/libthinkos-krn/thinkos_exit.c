@@ -55,9 +55,9 @@ static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 	__thread_alloc_clr(krn, th);
 #endif
 
-	if (th == __krn_sched_active_get(krn)) {
+	if (th == __krn_sched_act_get(krn)) {
 		/* discard current thread context */
-		__krn_sched_active_clr(krn);
+		__krn_sched_act_clr(krn);
 	}
 
 	__krn_thread_suspend(krn, th);

@@ -59,7 +59,7 @@ cm3_svc_isr:
 //	ldr      r2, .L_thinkos_rt
 	movw     r2, :lower16:thinkos_rt
 	movt     r2, :upper16:thinkos_rt
-	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_THREAD]
+	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_ACT]
 	mrs      r0, PSP
 
 	/* NEW: 2020-12-02*/

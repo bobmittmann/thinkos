@@ -140,45 +140,19 @@ int thinkos_dbg_thread_break_get(int32_t * pcode);
 
 int thinkos_dbg_thread_break_clr(void);
 
-uint32_t thinkos_dbg_sched_state_get(void);
-
 void thinkos_dbg_reset(void);
-
-int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
-						  void (* on_exit)(unsigned int), bool privileged);
 
 void thinkos_dbg_resume_all(void);
 
 void thinkos_dbg_pause_all(void);
 
-int thinkos_dbg_thread_irq_get(unsigned int th);
-
-bool thinkos_dbg_thread_is_ready(unsigned int th);
-
 int thinkos_dbg_active_get(void);
+
+void thinkos_dbg_krn_dump(void);
 
 struct thinkos_except;
 
 int thinkos_dbg_except_get(struct thinkos_except * xcpt);
-
-/* -------------------------------------------------------------------------
- * Cycle counter
- * ------------------------------------------------------------------------- */
-
-int thinkos_dbg_threads_cyc_get(uint32_t cyc[], uint32_t from, 
-                                unsigned int max);
-
-int thinkos_dbg_mutex_lock_get(unsigned int mtx);
-
-struct thread_waitqueue;
-
-struct thread_waitqueue * thinkos_dbg_wq_from_oid(unsigned int oid);
-
-bool thinkos_dbg_wq_contains(struct thread_waitqueue * wq, 
-							 unsigned int thread);
-
-bool thinkos_dbg_wq_is_empty(struct thread_waitqueue * wq);
-
 
 void thinkos_dbg_ack(void);
 

@@ -1025,7 +1025,7 @@ void usb_cdc_comm_reset(const struct thinkos_comm * comm, int priority)
 	DCC_LOG1(LOG_TRACE, "priority=%d", priority);
 }
 
-struct thinkos_comm_krn_op usb_cdc_comm_krn_op = {
+const struct thinkos_comm_krn_op usb_cdc_comm_krn_op = {
 	.init = (int (*)(const struct thinkos_comm *, void *, int, int))usb_cdc_comm_init,
 	.reset = (void (*)(const struct thinkos_comm *, int))usb_cdc_comm_reset,
 	.done = (int (*)(const struct thinkos_comm *))NULL

@@ -8,7 +8,8 @@ uint32_t monitor_threads_cyc_sum(uint32_t cyc[],uint32_t cycref[],
 	unsigned int to;
 	unsigned int i;
 
-	if (thinkos_dbg_threads_cyc_get(cyc, from, cnt) < 0)
+
+	if (thinkos_krn_threads_cyc_get(cyc, from, cnt) < 0)
 		return 0;
 
 	to = from + cnt;

@@ -41,7 +41,6 @@ const struct thinkos_profile thinkos_profile = {
 			.reserved = 0
 		},
 		.timeshare  = THINKOS_ENABLE_TIMESHARE,
-		.preemption = THINKOS_ENABLE_PREEMPTION,
 		.sched_limit_max = THINKOS_SCHED_LIMIT_MAX,
 		.sched_limit_min = THINKOS_SCHED_LIMIT_MIN
 	},
@@ -146,7 +145,6 @@ const struct thinkos_profile thinkos_profile = {
 	},
 
 	.debug = {
-		.base            = THINKOS_ENABLE_DEBUG_BASE,
 		.enabled         = THINKOS_ENABLE_DEBUG,
 		.step            = THINKOS_ENABLE_DEBUG_STEP,
 		.bkpt            = THINKOS_ENABLE_DEBUG_BKPT,
@@ -175,8 +173,6 @@ void __profile(void)
 			 p->kernel.version.major, p->kernel.version.minor);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_TIMESHARE       = %d", 
 			 p->kernel.timeshare);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_PREEMPTION      = %d", 
-			 p->kernel.preemption);
 	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MAX        = %d", 
 			 p->kernel.sched_limit_max);
 	DCC_LOG1(LOG_TRACE, "THINKOS_SCHED_LIMIT_MIN        = %d", 
@@ -334,8 +330,6 @@ void __profile(void)
 	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE     = %d", 
 			 p->monitor.stack_size);
 
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_BASE      = %d", 
-			 p->debug.base);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DBGMON_XCP      = %d", 
 			 p->debug.enabled);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_DEBUG_STEP      = %d", 

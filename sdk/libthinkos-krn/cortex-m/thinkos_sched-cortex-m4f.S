@@ -50,6 +50,8 @@ cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
 
+	/* STEP 1 - load sched.ctrl and ready bitmap */
+
 	/* r0: thinkos_rt */
 	movw     r0, #:lower16:thinkos_rt
 	movt     r0, #:upper16:thinkos_rt
@@ -114,11 +116,11 @@ thinkos_krn_sched_core:
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the kernel scheduler control word */
 	lsrs.n   r6, r1, #8
-	/* r6: sched.ctrl >> 8 : [ 0x00 | xcp | err | svc ] 
+	/* r6: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
 
 	   r3: active_sp_ctrl : [SP | CONTROL ] 
 	   r2: ready bmp 
-	   r1: sched.ctrl = [ xcpt | err | svc | act ]  
+	   r1: sched.ctrl = [ xcp | err | brk | act ]  
 	 */
     bne.n    thinkos_krn_sched_bypass
 #endif
@@ -127,7 +129,6 @@ thinkos_krn_sched_core:
 
 #if (THINKOS_ENABLE_PROFILING)
 	/* DWT.SYCCNT */
-//	ldr.n    r6, .L_cm_dwt
 	movw     r6, #:lower16:CM3_DWT_BASE
 	movt     r6, #:upper16:CM3_DWT_BASE
 	/* r6: cyccnt = CM3_DWT->cyccnt */
@@ -191,7 +192,7 @@ thinkos_krn_sched_ctx_get:
 	   r2: new active thread id 
 	   r1: old thread id
 	   r0: thinkos_rt */
-	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
 	ands     r5, r3, #(THREAD_CTRL_MSK)
@@ -240,12 +241,12 @@ thinkos_krn_sched_ctx_get:
 .L_exit_idle:
 	/* Adjust the thread ID */
 	movs.n   r2, #THINKOS_THREAD_IDLE
-	/* set the active to IDLE */
-	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
+	/* set the active to IDLE and clear the break thread */
+	strh     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
-//#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 /* FIXME: in some circumstances we reach this code... */
-#if 0
+//#if 0
     /* load the new context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
@@ -277,16 +278,31 @@ thinkos_krn_sched_ctx_get:
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the kernel scheduler control word */
 	lsrs.n   r3, r1, #8
-	/* r6: sched.ctrl >> 8 : [ 0x00 | xcp | err | svc ] 
-
-	   r3: active_sp_ctrl : [SP | CONTROL ] 
+	beq      .L_idle_context_save
+	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
 	   r2: ready bmp 
-	   r1: sched.ctrl = [ xcpt | err | svc | act ]  */
+	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
+    rors     r3, #24 
+	it.n     eq
+	/* store the active thread id onto the break field if
+	   break is empty */
+	strbeq   r1, [r0, #OFFSETOF_KRN_SCHED_BRK]
+
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	/* Adjust the thread ID */
+	movs.n   r2, #THINKOS_THREAD_IDLE
+    subs     r3, sp, #(8*4)
+	/* r0: thinkos_rt
+	   r1: sched.ctrl = [ xcp | err | brk | act ]
+	   r2: new active 
+	   r3: SP */
+	b        thinkos_sched_dbg
+#endif
 	/* kernel is blocked, just return */
-	it      ne
-	bxne    lr
+	bx       lr
 #endif
 
+.L_idle_context_save:
 	/* Save system context (IDLE) on MSP */
 	push     {r4-r11}
     mov      r3, sp
@@ -341,11 +357,6 @@ thinkos_krn_sched_ctx_get:
 	b        thinkos_krn_sched_xcpt
 #endif
 
-	.align  0
-#if (THINKOS_ENABLE_PROFILING)
-//.L_cm_dwt:
-//	.word   CM3_DWT_BASE    /* DWT Base Address */
-#endif
 	.size   thinkos_krn_sched_core, . - thinkos_krn_sched_core
 
 
@@ -378,13 +389,23 @@ thinkos_krn_sched_trap:
 #endif
 
 	/*  r0: krn */
-	/*  r1: | err | brk | svc | act |  */
+	/*  r1: | xcp | err | brk | act |  */
+	/*  r3: context_ptr */
 thinkos_krn_sched_bypass:
 	/* store the old context pointer into the context vector */
 	str.n    r3, [r7]
+	/* store the old thread onto the break field */
+	strb     r4, [r0, #OFFSETOF_KRN_SCHED_BRK]
+	/* the new active thread is IDLE */
+	movs.n   r4, #THINKOS_THREAD_IDLE
+	/* set the active to IDLE and clear the break thread */
+	strb     r4, [r0, #OFFSETOF_KRN_SCHED_ACT]
+
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the IDLE context pointer from the context vector */
     ldr      r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
+	/* compare with the present MSP. It shuld match otherwise an 
+	   internal error occured */
     cmp.n    sp, r3
     bne.n    .L_idle_stack_xcpt_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)

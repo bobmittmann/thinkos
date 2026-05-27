@@ -31,21 +31,22 @@
 #define OFFSETOF_XCPT_CONTEXT    0
 
 #define OFFSETOF_XCPT_SP         64
+#define OFFSETOF_XCPT_SHCSR      68
+#define OFFSETOF_XCPT_CFSR       72
+#define OFFSETOF_XCPT_MMFAR      76
+#define OFFSETOF_XCPT_BFAR       80
 
-#define OFFSETOF_XCPT_CFSR       68
-#define OFFSETOF_XCPT_MMFAR      72
-#define OFFSETOF_XCPT_BFAR       76
+#define OFFSETOF_XCPT_RET        84
+#define OFFSETOF_XCPT_CONTROL    85
+#define OFFSETOF_XCPT_ERRNO      86
+#define OFFSETOF_XCPT_SEQ        87
 
-#define OFFSETOF_XCPT_RET        80
-#define OFFSETOF_XCPT_CONTROL    81
-#define OFFSETOF_XCPT_ERRNO      82
-#define OFFSETOF_XCPT_SEQ        83
-
-#define OFFSETOF_XCPT_THREAD     84
-#define OFFSETOF_XCPT_ACK        87
+#define OFFSETOF_XCPT_THREAD     88
+#define OFFSETOF_XCPT_ACK        91
 
 
 #if 0
+#define OFFSETOF_XCPT_HFSR       68
 #define OFFSETOF_XCPT_BASEPRI    5
 
 #define OFFSETOF_XCPT_PRIMASK    7
@@ -111,6 +112,8 @@ struct thinkos_except {
 	struct thinkos_context ctx;
 
 	uint32_t sp; /* SP */
+
+	uint32_t shcsr;
 	uint32_t cfsr;
 	uint32_t mmfar;
 	uint32_t bfar;
@@ -164,9 +167,7 @@ void thinkos_krn_exception_init(void);
 
 void thinkos_krn_exception_reset(void);
 
-uint32_t * __thinkos_xcpt_stack_top(void);
-
-struct thinkos_except * __thinkos_except_buf(void);
+uint32_t *  thinkos_krn_xcpt_stack_top(void);
 
 /* -------------------------------------------------------------------------
  * Exception handling utility functions

@@ -9,6 +9,8 @@ fi
 set -- `ls release/*.bin`
 # Get the last one
 for PROG_BIN; do true; done
+# The corresponding .elf
+PROG_ELF=${PROG_BIN%%.bin}.elf
 
 ${PYTHON} ${TOOLS_DIR}/tftp_load.py -q -i -e -a 0x08000000 \
 	-h ${JTAGTOOL_ADDR} ${PROG_BIN} 

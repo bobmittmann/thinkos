@@ -35,9 +35,8 @@
 #endif
 
 #if (THINKOS_IRQ_MAX) > 0
-//#if (THINKOS_ENABLE_RAM_VECTORS)
 #if (THINKOS_ENABLE_RAM_VECTORS)
-void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(128)));
+void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(256)));
 #endif
 #endif
 
@@ -91,6 +90,17 @@ void __krn_irq_thread_del(struct thinkos_rt* krn, unsigned int th)
 }
 #endif 
 
+/* Get the IRQ related to a thread */
+int __krn_thread_irq_get(struct thinkos_rt * krn, unsigned int th) 
+{
+#if (THINKOS_IRQ_MAX > 0)
+	int irq;
+	for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
+		if (krn->irq_th[irq] == th) return irq;
+	}
+#endif
+	return -1;
+}
 
 #define NVIC_IRQ_REGS ((THINKOS_IRQ_MAX + 31) / 32)
 
@@ -137,7 +147,7 @@ void __nvic_irq_clrpend_all(void)
 }
 #endif
 
-void __thinkos_krn_irq_init(struct thinkos_rt * krn)
+void thinkos_krn_irq_init(struct thinkos_rt * krn)
 {
 
 #if (THINKOS_IRQ_MAX) > 0
@@ -151,8 +161,8 @@ void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 		unsigned int tab_size = (uintptr_t)&__vcts_end - 
 			(uintptr_t)&__vcts_start;
 
-		DCC_LOG2(LOG_MSG, "copying RAM vectors 0x%08x, %d", 
-				 tab_ptr, tab_size);
+		DCC_LOG3(LOG_TRACE, "copying vectors from 0x%08x->0x%08x, %d", 
+				 tab_ptr, __ram_vectors, tab_size);
 
 		__thinkos_memcpy32(__ram_vectors, tab_ptr, tab_size);
 	}
@@ -162,7 +172,7 @@ void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 	/* Remap the Vector table to SRAM */
 	CM3_SCB->vtor = (uintptr_t)__ram_vectors; /* Vector Table Offset */
 
-	DCC_LOG1(LOG_MSG, "remaping vectors to 0x%08x", CM3_SCB->vtor);
+	DCC_LOG1(LOG_TRACE, "remaping vectors to 0x%08x", CM3_SCB->vtor);
 
 	if (CM3_SCB->vtor != (uintptr_t)__ram_vectors) {
 		DCC_LOG1(LOG_PANIC, "SCB->VTOR(0x%08x) != __ram_vectors!", 
@@ -170,7 +180,6 @@ void __thinkos_krn_irq_init(struct thinkos_rt * krn)
 	}
 #endif
 }
-
 
 #if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
@@ -492,7 +501,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 			/* set the vector */
 			__ram_vectors[irq + 16] = isr;
 
-			DCC_LOG2(LOG_MSG, "irq_register(irq=%d isr=0x%08x)", irq, isr);
+			DCC_LOG2(LOG_TRACE, "irq_register(irq=%d isr=0x%08x)", irq, isr);
 
 			/* enable this interrupt source */
 			cm3_irq_enable(irq);

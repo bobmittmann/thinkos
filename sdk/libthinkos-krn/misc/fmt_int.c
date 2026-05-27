@@ -1,5 +1,5 @@
 /* 
- * thread_getnext.c
+ * fmt_hex.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,22 +19,17 @@
  * http://www.gnu.org/
  */
 
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
-#include "thinkos_krn-i.h"
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
 
-int __thinkos_thread_getnext(int th)
+
+int krn_fmt_hex8(char * s, uint32_t val)
 {
-	struct thinkos_rt * krn = &thinkos_rt; 
-	int i;
+	n = uint2dec(cp, val.n);
 
-	i = (th < THINKOS_THREAD_FIRST) ? THINKOS_THREAD_FIRST : th + 1;
-
-	for (; i <= THINKOS_THREAD_LAST; ++i) {
-		/* Skip invalid threads */ 
-		if (__thread_ctx_is_valid(krn, i))
-			return i;
-	}
-
-	return -1;
 }
 
