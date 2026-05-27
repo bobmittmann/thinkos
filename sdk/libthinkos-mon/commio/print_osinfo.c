@@ -43,7 +43,9 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	int i;
 	int j;
 
-	active = thinkos_dbg_active_get();
+//	thinkos_dbg_krn_dump();
+
+	active = thinkos_krn_active_get();
 	monitor_printf(comm, " Active: %d", active);
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -89,11 +91,14 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 #endif
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-		if (thinkos_dbg_thread_ctx_is_valid(i)) {
+		struct krn_thread_state inf;
+
+		if (thinkos_krn_thread_state_get(i, &inf) >= 0) {
 			const char * tag;
 			uint32_t sl;
 			uint32_t sp;
 			uint32_t pc;
+//			int ctrl;
 			int oid;
 			int type;
 			int irq;
@@ -101,21 +106,23 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			bool tmw;
 
 			monitor_printf(comm, "%3d", i);
-			tag = thinkos_dbg_thread_tag_get(i);
-			sl = thinkos_dbg_thread_sl_get(i);
-			sp = thinkos_dbg_thread_sp_get(i);
-			pc = thinkos_dbg_thread_pc_get(i);
+			tag = inf.tag;
+//			ctrl = inf.ctrl;
+		    pc = inf.pc;
+		    sp = inf.sp;
+		    sl = inf.sl;
+		    errno = inf.errno;
 
 			monitor_printf(comm, " %7s | %08x | %08x | %08x", 
 						   tag, sl, sp, pc); 
 
-			oid = thinkos_dbg_thread_wq_get(i);
-			tmw = thinkos_dbg_thread_tmw_get(i);
-			if ((errno = thinkos_dbg_thread_errno_get(i)) > 0) {
+			oid = inf.wq;
+			tmw = inf.tmw;
+			if (errno > 0) {
 				monitor_printf(comm, " | ERR %2d", errno);
-			} else if ((irq = thinkos_dbg_thread_irq_get(i)) >= 0) {
+			} else if ((irq = inf.irq) >= 0) {
 				monitor_printf(comm, " | IRQ %2d", irq);
-			} else if (thinkos_dbg_thread_is_ready(i)) {
+			} else if (inf.ready) {
 				monitor_printf(comm, " | READY ");
 			} else {
 				type = __thinkos_obj_kind(oid);
@@ -128,7 +135,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			/* TODO: add timeshare info */
 #endif
 			{
-				int32_t dt = thinkos_dbg_thread_clk_itv_get(i);
+				int32_t dt = inf.itv;
 #if 0
 				int32_t sec;
 				int32_t ms;
@@ -151,7 +158,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			monitor_printf(comm, " |");
 #if (THINKOS_MUTEX_MAX) > 0
 			for (j = THINKOS_MUTEX_FIRST; j <= THINKOS_MUTEX_LAST; ++j) {
-				if (thinkos_dbg_mutex_lock_get(j) == i)
+				if (thinkos_krn_mutex_lock_get(j) == i)
 					monitor_printf(comm, " %d", j + THINKOS_MUTEX_BASE);
 			}
 #endif 
@@ -164,19 +171,19 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 		struct thread_waitqueue * wq;
 		int type;
 
-		wq = thinkos_dbg_wq_from_oid(j);
-		if (!thinkos_dbg_wq_is_empty(wq)) { 
+		wq = thinkos_krn_wq_from_oid(j);
+		if (!thinkos_krn_wq_is_empty(wq)) { 
 			type = __thinkos_obj_kind(j);
 			monitor_printf(comm, "%3d %5s: {", j, __thinkos_kind_name(type));
 			for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-				if (thinkos_dbg_wq_contains(wq, i))
+				if (thinkos_krn_wq_contains(wq, i))
 					monitor_printf(comm, " %d", i);
 			}
 			monitor_printf(comm, " }");
 #if (THINKOS_MUTEX_MAX) > 0
 			if (type == THINKOS_OBJ_MUTEX)
 				monitor_printf(comm, " [lock=%d]", 
-							   thinkos_dbg_mutex_lock_get(j));
+							   thinkos_krn_mutex_lock_get(j));
 #endif 
 			monitor_printf(comm, "\r\n");
 		}

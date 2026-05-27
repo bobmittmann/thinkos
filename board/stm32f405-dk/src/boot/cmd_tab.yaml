@@ -16,12 +16,12 @@
     This command uses YMODEM protocol to receive a file and write it to a
     flash partrition.
 
-#- cmd: xxd
-#  alias: x
-#  param: ['PART', 'ADDR']
-#  usage: 'Hexdump flash partion'
-#  help: >
-#    Write the content of a FLASH partition to the console.
+- cmd: xxd
+  alias: x
+  param: ['PART', 'ADDR']
+  usage: 'Hexdump flash partion'
+  help: >
+    Write the content of a FLASH partition to the console.
 
 - cmd: reboot
   alias:
@@ -71,8 +71,7 @@
 #  alias: ver
 #  usage: 'Show version information'
 
-
-  #- cmd: test
-  #alias: t
-  #usage: 'Perform a test'
+- cmd: test
+  alias: t
+  usage: 'Perform a test'
 

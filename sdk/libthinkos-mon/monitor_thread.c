@@ -49,7 +49,7 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	int ret = 0;
 	int sig;
 
-	if ((ret = thinkos_dbg_thread_create(task, arg, 
+	if ((ret = thinkos_main_thread_create(task, arg, 
 		__monitor_thread_on_exit, true))  < 0) {
 		return ret;
 	}
@@ -125,17 +125,16 @@ int monitor_thread_create(const struct monitor_comm * comm,
 						thinkos_task_t task, void * arg,
 						bool priviledged) 
 {
-#if (THINKOS_ENABLE_DEBUG_BASE)
 	int ret;
 
-	if ((ret = thinkos_dbg_thread_create(task, arg, 
+	if ((ret = thinkos_main_thread_create(task, arg, 
 		__monitor_thread_on_exit, priviledged))  < 0) {
 		return ret;
 	}
 
 	return ret;
+#if (THINKOS_ENABLE_DEBUG)
 #else
-	return -1;
 #endif
 }
 

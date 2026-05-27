@@ -136,9 +136,10 @@
 #define CONSOLE_IO_RD                  (1 << 1)
 
 /* THINKOS_CTL options */
-#define THINKOS_CTL_ABORT              0
-#define THINKOS_CTL_UDELAY_FACTOR      1
-#define THINKOS_CTL_CLOCKS             2
+#define THINKOS_CTL_YIELD              0
+#define THINKOS_CTL_ABORT              1
+#define THINKOS_CTL_UDELAY_FACTOR      2
+#define THINKOS_CTL_CLOCKS             3
 #define THINKOS_CTL_TRACE              4
 #define THINKOS_CTL_THREAD_INF         5
 #define THINKOS_CTL_THREAD_CYCCNT      6
@@ -627,13 +628,24 @@ thinkos_irq_dbg(int irq) {
 
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void)) {
-		return THINKOS_SYSCALL4(THINKOS_IRQ_CTL, THINKOS_IRQ_REGISTER, 
-								irq, pri, isr);
-	}
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = THINKOS_IRQ_REGISTER;
+	register uint32_t r1 asm("r1") = irq;
+	register uint32_t r2 asm("r2") = pri;
+	register uintptr_t r3 asm("r3") = (uintptr_t)isr;
+	asm volatile (ARM_SVC(THINKOS_IRQ_CTL) : 
+				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2), "r"(r3)  : );
+	return ret;
+}
 
 static inline int __attribute__((always_inline)) 
-thinkos_irq_enable(int irq) {
-	return THINKOS_SYSCALL2(THINKOS_IRQ_CTL, THINKOS_IRQ_ENABLE, irq);
+	thinkos_irq_enable(int irq) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = THINKOS_IRQ_ENABLE;
+	register uint32_t r1 asm("r1") = irq;
+	asm volatile (ARM_SVC(THINKOS_IRQ_CTL) : 
+				  "=r"(ret) : "r"(r0), "r"(r1) : );
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
@@ -700,41 +712,69 @@ thinkos_console_ioctl(unsigned int ioctl, void * arg, uint32_t size) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_is_connected(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_IS_CONNECTED);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_IS_CONNECTED;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_close(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_CLOSE);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_CLOSE;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_drain(void) {
-	return THINKOS_SYSCALL1(THINKOS_CONSOLE_CTL, CONSOLE_DRAIN);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_DRAIN;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_io_break(unsigned int which) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
-							CONSOLE_IO_BREAK, which);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_IO_BREAK;
+	register uint32_t r1 asm("r1") = which;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0), "r"(r1));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_raw_mode(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
-							CONSOLE_RAW_MODE_SET, enable);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_RAW_MODE_SET;
+	register uint32_t r1 asm("r1") = enable;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0), "r"(r1));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_rd_nonblock(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
-							CONSOLE_RD_NONBLOCK_SET, enable);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_RD_NONBLOCK_SET;
+	register uint32_t r1 asm("r1") = enable;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0), "r"(r1));
+	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_console_wr_nonblock(unsigned int enable) {
-	return THINKOS_SYSCALL2(THINKOS_CONSOLE_CTL, 
-							CONSOLE_WR_NONBLOCK_SET, enable);
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = CONSOLE_WR_NONBLOCK_SET;
+	register uint32_t r1 asm("r1") = enable;
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_CTL) 
+				  : "=r"(ret) : "r"(r0), "r"(r1));
+	return ret;
 }
 
 /* ---------------------------------------------------------------------------
@@ -771,13 +811,17 @@ static inline int __attribute__((always_inline))
 	return ret;
 	}
 
+static inline void __attribute__((always_inline)) 
+	thinkos_yield(void) {
+		register int32_t opc asm("r0") = THINKOS_CTL_YIELD;
+		asm volatile (ARM_SVC(THINKOS_CTL) : : "r"(opc));
+	}
 
 static inline void __attribute__((always_inline, noreturn)) 
 	thinkos_abort(void) {
 		for (;;) {
-			register int32_t ret asm("r12");
 			register int32_t opc asm("r0") = THINKOS_CTL_ABORT;
-			asm volatile (ARM_SVC(THINKOS_CTL) : "=r"(ret) : "r"(opc));
+			asm volatile (ARM_SVC(THINKOS_CTL) : : "r"(opc));
 		}
 	}
 

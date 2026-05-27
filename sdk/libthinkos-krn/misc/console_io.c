@@ -26,6 +26,8 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
+#include <sys/util.h>
+
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
@@ -42,7 +44,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 #endif
 
-#include <sys/dcclog.h>
 #include <sys/dcclog.h>
 
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
@@ -87,12 +88,55 @@ int krn_console_putc(int c)
 	return krn_console_dev_send(NULL, buf, 1);
 }
 
-int krn_console_puthex(uint32_t val)
+int krn_console_put_hex32(uint32_t val)
 {
 	char buf[16];
 	krn_fmt_hex32(buf, val);
 
 	return krn_console_dev_send(NULL, buf, 8);
+}
+
+int krn_console_put_hex16(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex16(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 4);
+}
+
+int krn_console_put_hex8(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex8(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 2);
+}
+
+int krn_console_put_uint(uint32_t val)
+{
+	char buf[16];
+	int n;
+
+	n = uint2dec(buf, val);
+
+	return krn_console_dev_send(NULL, buf, n);
+}
+
+int krn_console_put_int(int32_t val)
+{
+	char buf[16];
+	char * cp = buf;
+	int n = 0;
+
+	if (val < 0) {
+		val = -val;
+		*cp++ = '-';
+		n++;
+	}
+
+	n += uint2dec(cp, val);
+
+	return krn_console_dev_send(NULL, buf, n);
 }
 
 int krn_console_wrln(const char * ln)
@@ -106,13 +150,12 @@ int krn_console_dev_recv(void * dev, void * buf,
 {
 	int ret = 0;
 
-
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
 		if (ret < 0) {
 //			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
 		} else {
-			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread()->%d", ret);
+			DCC_LOG1(LOG_INFO, "thinkos_console_timedread()->%d", ret);
 		}
 	} while (ret == 0);
 
@@ -202,5 +245,4 @@ int krn_console_gets(char * s, int size)
 
 	return pos;
 }
-
 

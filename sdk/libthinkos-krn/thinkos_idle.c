@@ -32,14 +32,10 @@
 #error "Deprecated IDLE stack options!"
 #endif
 
-#if (THINKOS_ENABLE_IDLE_HOOKS)
-void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn,
-												 struct thinkos_idle_rt * idle)
-#else
 void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
-#endif
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
+	struct thinkos_idle_rt * idle = &krn->idle_hooks;
 	uint32_t map;
 	int req;
 #endif
@@ -164,16 +160,7 @@ const struct thinkos_thread_inf thinkos_idle_inf = {
 };
 #endif
 
-uint32_t *  __thinkos_xcpt_stack_top(void)
-{
-	uintptr_t sp;
-
-	sp = (uintptr_t)THINKOS_IDLE_STACK_BASE;
-	sp += THINKOS_IDLE_STACK_SIZE - sizeof(struct thinkos_context);
-
-	return (uint32_t *)sp;
-}
-
+#if 0
 struct thinkos_context * __thinkos_idle_ctx(void)
 {
 	struct thinkos_context * ctx;
@@ -185,6 +172,7 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 
 	return ctx;
 }
+#endif
 
 /* resets the idle thread and context */
 struct thinkos_context * __thinkos_krn_idle_reset(struct thinkos_rt * krn)
@@ -206,16 +194,11 @@ struct thinkos_context * __thinkos_krn_idle_reset(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	/* clear all hook requests */
 	krn->idle_hooks.req_map = 0;
-	task_arg[0] = (uintptr_t)krn;
-	task_arg[1] = (uintptr_t)&krn->idle_hooks;
-	task_arg[2] = 0;
-	task_arg[3] = 0;
-#else
+#endif
 	task_arg[0] = (uintptr_t)krn;
 	task_arg[1] = 0;
 	task_arg[2] = 0;
 	task_arg[3] = 0;
-#endif
 
 	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,
 									task_entry, task_exit, task_arg);
@@ -244,7 +227,7 @@ struct thinkos_context * __thinkos_krn_idle_reset(struct thinkos_rt * krn)
 }
 
 /* initialize the idle thread */
-void __thinkos_krn_idle_init(struct thinkos_rt * krn)
+void thinkos_krn_idle_init(struct thinkos_rt * krn)
 {
 	uintptr_t stack_base;
 	uint32_t free;

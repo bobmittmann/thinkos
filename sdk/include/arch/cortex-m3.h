@@ -84,9 +84,12 @@
 #define SCB_ICSR_PENDSTCLR          (1 << 25)
 #define SCB_ICSR_ISRPREEMPT         (1 << 23)
 #define SCB_ICSR_ISRPENDING         (1 << 22)
-#define SCB_ICSR_VECTPENDING        (0x3ff << 12)
+#define SCB_ICSR_VECTPENDING        (0x1ff << 12)
 #define SCB_ICSR_RETTOBASE          (1 << 11)
 #define SCB_ICSR_VECTACTIVE         (0x1ff << 0)
+
+#define ICSR_VECTPENDING_GET(ICSR)  (((ICSR) >> 12) & 0x1ff)
+#define ICSR_VECTACTIVE_GET(ICSR)   ((ICSR) & 0x1ff)
 
 /* SCB Interrupt Control State Register Definitions */
 #define SCB_VTOR_TBLBASE            (0x7 << 29)

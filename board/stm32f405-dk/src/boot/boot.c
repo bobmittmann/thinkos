@@ -47,12 +47,12 @@ void main(int argc, char ** argv)
 {
 	struct btl_shell_env * env = btl_shell_env_getinstance();
 	struct thinkos_rt * krn = &thinkos_rt;
-//	const struct monitor_comm * comm;
-	int h;
+	const struct monitor_comm * comm;
+//	int h;
 
 
 #if DEBUG
-	int i;
+//	int i;
 
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
@@ -66,15 +66,15 @@ void main(int argc, char ** argv)
 	mdelay(125);
 
 
-	for (i = 0; i < 100; ++i) {
+//	for (i = 0; i < 100; ++i) {
 		DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 				"* +++" VT_POP);
-		mdelay(125);
-	}
+//		mdelay(125);
+//	}
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 1. thinkos_krn_init()." VT_POP);
-	mdelay(125);
+//	mdelay(125);
 #endif
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
@@ -84,53 +84,54 @@ void main(int argc, char ** argv)
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 2. board_init()." VT_POP);
-	mdelay(125);
+//	mdelay(125);
 #endif
 	board_init();
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 3. thinkos_krn_flash_drv_init()." VT_POP);
-	mdelay(125);
+//	mdelay(125);
 #endif
 	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
 
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 4. thinkos_krn_comm_init()." VT_POP);
-	mdelay(125);
+//	mdelay(125);
 #endif
-//	thinkos_krn_comm_init(krn, 0, &stm32_uart1_comm_instance, NULL);
 	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, (void *)&stm32f_otg_fs_dev);
+//	thinkos_krn_comm_init(krn, 1, &stm32_uart1_comm_instance, NULL);
   
 #if DEBUG
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 5. usb_comm_init()." VT_POP);
-	mdelay(125);
+//	mdelay(125);
 #endif
-//	comm = usb_comm_init(&stm32f_otg_fs_dev);
+	comm = usb_comm_init(&stm32f_otg_fs_dev);
 
 #if DEBUG
-	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 5. thinkos_krn_monitor_init()." VT_POP);
+			"* 6. thinkos_krn_monitor_init()." VT_POP);
 #endif
-//	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
+	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
 	board_reset();
 
 #if DEBUG
-	mdelay(125);
+//	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 6. thinkos_krn_sched_on()." VT_POP);
+			"* 7. thinkos_krn_sched_on()." VT_POP);
 #endif
 	thinkos_krn_sched_on(krn);
 
-	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
-	thinkos_sleep(2000);
+//	h = thinkos_comm_open(0);
 
-	h = thinkos_comm_open(0);
-	thinkos_comm_timedsend(h, "Hello world!\r\n", 14, 48);
-	thinkos_comm_timedsend(h, "Many, but not all people.\r\n", 27, 0);
+//	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
+//	thinkos_sleep(2000);
+
+
+//	thinkos_comm_timedsend(h, "Hello world!\r\n", 14, 48);
+//	thinkos_comm_timedsend(h, "Many, but not all people.\r\n", 27, 0);
 
 
 	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
@@ -144,13 +145,13 @@ void main(int argc, char ** argv)
 //	thinkos_sleep(1000);
 
 	DCC_LOG(LOG_TRACE, "board_integrity_check(),,,");
-	if (board_integrity_check()) {
-		DCC_LOG(LOG_TRACE, "btl_flash_app_exec(APP)...");
-		btl_flash_app_exec("APP", 0, 0);
-	}
+//	if (board_integrity_check()) {
+	DCC_LOG(LOG_TRACE, "btl_flash_app_exec(APP)...");
+	btl_flash_app_exec("APP", 0, 0);
+//	}
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 6. btl_flash_app_exec() fail." VT_POP);
+			"* 8. btl_flash_app_exec() fail." VT_POP);
 
 	btl_console_shell(env);
 }

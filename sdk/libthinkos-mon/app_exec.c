@@ -41,7 +41,6 @@ void __app_exec_on_exit(unsigned int code)
 #endif
 }
 
-
 static int __app_exec_task(uintptr_t addr, unsigned int thread)
 {
 	int ret;
@@ -75,7 +74,7 @@ bool monitor_app_exec(const struct monitor_comm * comm)
 	DCC_LOG2(LOG_TRACE, "patition: %08x ~ %08x", part.begin, part.end);
 	addr = part.begin;
 
-	ret = thinkos_dbg_thread_create(C_TASK(__app_exec_task), C_ARG(addr), 
+	ret = thinkos_main_thread_create(C_TASK(__app_exec_task), C_ARG(addr), 
 									__app_exec_on_exit, true);
 	thread_id = ret;
 	(void)thread_id;

@@ -51,15 +51,17 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	monitor_printf(comm, "\r\n");
 
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
-		if (thinkos_dbg_thread_ctx_is_valid(i)) {
+		struct krn_thread_state inf;
+
+		if (thinkos_krn_thread_state_get(i, &inf) >= 0) {
 			uint32_t base;
 
-			tag = thinkos_dbg_thread_tag_get(i);
-			sp = thinkos_dbg_thread_sp_get(i);
-			pc = thinkos_dbg_thread_pc_get(i);
-			sl = thinkos_dbg_thread_sl_get(i);
-			base = thinkos_dbg_thread_stack_base_get(i);
-			size = thinkos_dbg_thread_stack_size_get(i);
+			tag = inf.tag;
+			sp = inf.sp;
+			pc = inf.pc;
+			sl = inf.sl;
+			base = inf.stack_base;
+			size = inf.stack_size;
 			free = __thinkos_scan_stack((void *)base, size);
 
 			monitor_printf(comm, "%3d | %7s | %08x | %08x | %08x | %6d "

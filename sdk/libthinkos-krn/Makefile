@@ -32,7 +32,7 @@ MISC_CFILES = strlen.c strcmp.c memcpy.c memcpy32.c memset32.c\
 			  cpu-info.c scan_stack.c thread_wq_get.c
 
 CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
-		 thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
+		 thinkos_main.c thinkos_thread.c thinkos_mutex.c thinkos_cond.c \
 		 thinkos_semaphore.c thinkos_event.c thinkos_irq.c \
 		 thinkos_flag.c thinkos_except.c thinkos_debug.c \
 		 thinkos_sleep.c thinkos_break.c thinkos_pause.c \
@@ -43,7 +43,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
 		 thinkos_krnsvc.c thinkos_sysrst.c thinkos_time.c \
 		 thinkos_fifo.c thinkos_comm.c thinkos_monitor.c \
-		 thinkos_obj_kind_lut.c \
+		 thinkos_obj_kind_lut.c thinkos_wq.c \
 		 thinkos_app.c thinkos_trace.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 

@@ -103,6 +103,7 @@ void monitor_signal(int sig)
 //	asm volatile ("isb\n" :  :  : );
 }
 
+#if 0
 void monitor_signal_break(int32_t sig) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -113,6 +114,7 @@ void monitor_signal_break(int32_t sig)
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
 }
+#endif
 
 #if 0
 bool monitor_is_set(int sig) 
@@ -261,7 +263,7 @@ int monitor_sleep(unsigned int ms)
 	struct thinkos_rt * krn = &thinkos_rt;
 	
 	monitor_clear(MONITOR_ALARM);
-	/* set the clock */
+	/* set the timer */
 	krn->clk.th_tmr[0] = krn->clk.time + ms;
 	/* wait for signal */
 	return monitor_expect(MONITOR_ALARM);
@@ -279,7 +281,7 @@ void monitor_alarm(unsigned int ms)
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	monitor_clear(MONITOR_ALARM);
 	monitor_unmask(MONITOR_ALARM);
-	/* set the clock */
+	/* set the timer */
 	krn->clk.th_tmr[0] = krn->clk.time + ms;
 #endif
 }
@@ -320,50 +322,117 @@ void monitor_signal_thread_terminate(unsigned int thread_id, int code)
 }
 #endif
 
-int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf)
-{
-	unsigned int thread_id = id;
+#if (THINKOS_ENABLE_ERROR_TRAP)
 
-	if (!thinkos_dbg_thread_ctx_is_valid(id)) {
+int monitor_thread_break_get(int32_t * perrno)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	int svcno;
+	int errno;
+	int xcpno;
+	int thread;
+
+	thread = __krn_sched_active_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	
+	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
+			 thread, xcpno, errno, svcno);
+
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
 		return -1;
 	}
 
-	if (inf != NULL) {
-		inf->thread_id = thread_id;
-		inf->ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
-		inf->pc = thinkos_dbg_thread_pc_get(thread_id);
-		inf->sp = thinkos_dbg_thread_sp_get(thread_id);
-		inf->errno = thinkos_dbg_thread_errno_get(thread_id);
+	if (perrno) {
+		if (xcpno != 0)
+			*perrno = xcpno;
+		else if (errno != 0) 
+			*perrno = errno;
+		else if (svcno != 0)
+			*perrno = svcno;
 	}
 
-	return 0;
-}
-
-int monitor_thread_break_get(int32_t * pcode)
-{
-	return thinkos_dbg_thread_break_get(pcode);
+	return thread;
 }
 
 int monitor_thread_break_clr(void)
 {
-	return thinkos_dbg_thread_break_clr();
+	struct thinkos_rt * krn = &thinkos_rt;
+	int svcno;
+	int errno;
+	int xcpno;
+
+	DCC_LOG(LOG_WARNING, "...");
+
+	errno = __krn_sched_err_get(krn);
+	xcpno = __krn_sched_xcp_get(krn);
+	svcno = __krn_sched_svc_get(krn);
+
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
+		return -1;
+	}
+
+	if (xcpno > 0)
+		__krn_sched_xcp_clr(krn);
+	else if (errno > 0) 
+		__krn_sched_err_clr(krn);
+	else if (svcno == 0)
+		__krn_sched_svc_clr(krn);
+
+	/* all clear ? */
+	if ((xcpno == 0) && (errno == 0) && (svcno == 0)) {
+	}
+
+	/* signal the scheduler ... */
+	__krn_preempt(krn);
+
+	return 0;
 }
 
+int monitor_thread_err_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __krn_sched_err_get(krn);
+}
+
+void monitor_thread_err_clr(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_sched_err_clr(krn);
+}
+
+int monitor_krn_xcpt_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return  __krn_sched_xcp_get(krn);
+}
+
+void monitor_krn_xcpt_clr(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	__krn_sched_xcp_clr(krn);
+
+	/* signal the scheduler ... */
+	__krn_preempt(krn);
+}
+
+uint32_t monitor_sched_ctrl_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return  __krn_sched_ctrl_get(krn);
+}
+
+#endif
  
 /* -------------------------------------------------------------------------
  * ThinkOS Monitor Core
  * ------------------------------------------------------------------------- */
-
-#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
-void monitor_null_task(struct thinkos_rt * krn, 
-					   const struct monitor_comm * comm, 
-					   void * env)
-{
-	for (;;) {
-		__monitor_context_swap(&krn->monitor.ctx); 
-	}
-}
-#endif
 
 void __monitor_at_exit(int retcode)
 {
@@ -379,15 +448,17 @@ void __monitor_at_exit(int retcode)
  * 
  */
 
-void monitor_soft_reset(void)
+void monitor_on_softrst(void)
 {
+	struct thinkos_rt * krn = &thinkos_rt;
 	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " Monitor Soft Reset " VT_POP);
 
-#if (THINKOS_ENABLE_DEBUG_BASE)
-	thinkos_dbg_reset();
-#endif
+	__thinkos_krn_core_reset(krn);
 
-	monitor_signal(MONITOR_SOFTRST); 
+#if (THINKOS_ENABLE_CONSOLE)
+	DCC_LOG(LOG_TRACE, "Console reset...");
+	thinkos_krn_console_reset();
+#endif
 }
 
 /* -------------------------------------------------------------------------
@@ -543,6 +614,17 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 
 	DCC_LOG1(LOG_TRACE, "mask=%08x", krn->monitor.mask);
 }
+
+#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
+void monitor_null_task(struct thinkos_rt * krn, 
+					   const struct monitor_comm * comm, 
+					   void * env)
+{
+	for (;;) {
+		__monitor_context_swap(&krn->monitor.ctx); 
+	}
+}
+#endif
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL)
 void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)

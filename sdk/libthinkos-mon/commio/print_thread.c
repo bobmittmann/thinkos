@@ -31,6 +31,7 @@ void monitor_print_thread(const struct monitor_comm * comm,
 						 unsigned int thread_id)
 {
 	struct thinkos_context * ctx;
+	struct krn_thread_state inf;
 	int32_t timeout;
 	uint32_t cyccnt;
 #if (THINKOS_ENABLE_TIMESHARE)
@@ -45,15 +46,14 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	int tmw;
 	int wq;
 
-	if (!thinkos_dbg_thread_ctx_is_valid(thread_id)) {
+	if (thinkos_krn_thread_state_get(thread_id, &inf) < 0)
 		return;
-	}
 
-	wq = thinkos_dbg_thread_wq_get(thread_id);
-	tmw = thinkos_dbg_thread_tmw_get(thread_id);
-	timeout = thinkos_dbg_thread_clk_itv_get(thread_id);
-	cyccnt = thinkos_dbg_thread_cyccnt_get(thread_id);
-	tag = thinkos_dbg_thread_tag_get(thread_id);
+	wq = inf.wq;
+	tmw = inf.tmw;
+	timeout = inf.itv;
+	cyccnt = inf.cycnt;
+	tag = inf.tag;
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	sched_val = rt->sched_val[thread_id];
@@ -92,15 +92,15 @@ void monitor_print_thread(const struct monitor_comm * comm,
 	monitor_newln(comm);
 
 #if (THINKOS_ENABLE_TIMESHARE)
-	monitor_printf(comm, " - sched: val=%3d pri=%3d", 
+	monitor_printf(comm, " - tmshare: val=%3d pri=%3d", 
 			 sched_val, sched_pri); 
 #endif
 	monitor_printf(comm, " - timeout=%8d ms", timeout); 
 	monitor_printf(comm, " - cycles=%u\r\n", cyccnt); 
 
-	ctx = thinkos_dbg_thread_ctx_get(thread_id);
-	sp = thinkos_dbg_thread_sp_get(thread_id);
-	ctrl = thinkos_dbg_thread_ctrl_get(thread_id);
+	ctx = inf.ctx;
+	sp = inf.sp;
+	ctrl = inf.ctrl;
 	monitor_print_context(comm, ctx, sp, ctrl);
 
 	monitor_newln(comm);

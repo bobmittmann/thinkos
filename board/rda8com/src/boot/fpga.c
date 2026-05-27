@@ -12,6 +12,10 @@
 #include "board.h"
 #include "ice40hx1k.h"
 
+#ifndef FPGA_RAW_ENABLE
+#define FPGA_RAW_ENABLE 0
+#endif
+
 #ifndef LZ_WINDOW_SIZE
 #define LZ_WINDOW_SIZE 8192
 #endif
@@ -19,11 +23,27 @@
 #define LZ_WND_MASK (LZ_WINDOW_SIZE - 1)
 
 /*
- * Send and receives a byte over the SPI port. 
+ * Configure the SPI port as master. 
  */
-static void conf_wr(int c)
+static void stm32_spi_master_init(struct stm32f_spi *spi)
 {
-	struct stm32f_spi *spi = ICE40_SPI;
+	/* initialize SPI */
+	spi->cr1 = 0;
+	spi->i2scfgr = 0;
+	spi->i2spr = 0;
+
+	/* 16 bits */
+	spi->cr2 = SPI_DS(16);
+	/* Master mode, MSB first */
+	spi->cr1 = SPI_SPE | SPI_BR_SET(2) | SPI_MSTR | SPI_SSM |
+	    SPI_SSI | SPI_CPOL | SPI_CPHA;
+}
+
+/*
+ * Send a word over the SPI port. 
+ */
+static void stm32_spi_wr16(struct stm32f_spi *spi, int c)
+{
 	unsigned int sr;
 
 	while (!((sr = spi->sr) & SPI_TXE)) {
@@ -92,7 +112,8 @@ static int lz_readvarsize(uint32_t * x, const uint8_t * buf)
 
 extern uint8_t __heap_start[];
 
-int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
+int lattice_ice40_lz77_configure(struct stm32f_spi *spi, const uint8_t buf[], 
+								 unsigned int max)
 {
 	uint8_t *wnd = (uint8_t *) (&__heap_start);
 	uint8_t marker;
@@ -145,7 +166,7 @@ int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
 			int c;
 			c = wnd[(cfgpos + 1) & LZ_WND_MASK] |
 			    (wnd[cfgpos & LZ_WND_MASK] << 8);
-			conf_wr(c);
+			stm32_spi_wr16(spi, c);
 			cfgpos += 2;
 		}
 
@@ -157,7 +178,7 @@ int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
 	for (i = 0; i < 1024; ++i) {
 		if (stm32_gpio_stat(IO_ICE40_CDONE))
 			break;
-		conf_wr(0x00);
+		stm32_spi_wr16(spi, 0x00);
 	}
 
 	if (!stm32_gpio_stat(IO_ICE40_CDONE)) {
@@ -169,7 +190,7 @@ int lattice_ice40_lz77_configure(const uint8_t buf[], unsigned int max)
 	dummy bits, effectively 49 additional SPI_SCK 
 	clock cycles measured from rising-edge to rising-edge. */
 	for (i = 0; i < 8; ++i)
-		conf_wr(0x00);
+		stm32_spi_wr16(spi, 0x00);
 
 	stm32_gpio_set(IO_ICE40_CSEL);
 
@@ -194,14 +215,14 @@ int lattice_ice40_raw_configure(const uint8_t * buf, unsigned int max)
 			break;
 
 		c = buf[n + 1] | (buf[n] << 8);
-		conf_wr(c);
+		stm32_spi_wr16(spi, c);
 	}
 
 	if (n >= max) {
 		for (i = 0; i < 128; ++i) {
 			if (stm32_gpio_stat(IO_ICE40_CDONE))
 				break;
-			conf_wr(0x00);
+			stm32_spi_wr16(spi, 0x00);
 		}
 		if (!stm32_gpio_stat(IO_ICE40_CDONE)) {
 			stm32_gpio_set(IO_ICE40_CSEL);
@@ -213,7 +234,7 @@ int lattice_ice40_raw_configure(const uint8_t * buf, unsigned int max)
 	dummy bits, effectively 49 additional SPI_SCK 
 	clock cycles measured from rising-edge to rising-edge. */
 	for (i = 0; i < 7; ++i)
-		conf_wr(0x00);
+		stm32_spi_wr16(spi, 0x00);
 
 	stm32_gpio_set(IO_ICE40_CSEL);
 
@@ -221,46 +242,33 @@ int lattice_ice40_raw_configure(const uint8_t * buf, unsigned int max)
 }
 #endif
 
-struct hdr {
-	uint32_t size;
-	uint32_t magic;
-	uint32_t algo;
-};
-
 int fpga_configure(void)
 {
+	unsigned int size = (SIZEOF_ICE40HX1K_BIN - sizeof(struct lz77_hdr));
+	uint8_t *bin = (uint8_t *)&ice40hx1k_bin[sizeof(struct lz77_hdr)];
 	struct stm32f_spi *spi = ICE40_SPI;
-	unsigned int size = (SIZEOF_ICE40HX1K_BIN - 12);
-	uint8_t *bin = (uint8_t *)&ice40hx1k_bin[12];
-	int ret = 0;
 #if (FPGA_RAW_ENABLE)
 	const uint32_t * hdr = (uint32_t *)ice40hx1k_bin;
 	uint32_t magic = ntohl(hdr[0]);
 	uint32_t algo = ntohl(hdr[1]);
 #endif
+	int ret = 0;
 
-	/* initialize SPI */
-	spi->cr1 = 0;
-	spi->i2scfgr = 0;
-	spi->i2spr = 0;
-
-	/* 16 bits */
-	spi->cr2 = SPI_DS(16);
-	/* Master mode, MSB first */
-	spi->cr1 = SPI_SPE | SPI_BR_SET(2) | SPI_MSTR | SPI_SSM |
-	    SPI_SSI | SPI_CPOL | SPI_CPHA;
+	stm32_spi_master_init(spi);
 
 #if FPGA_RAW_ENABLE
-	if ((magic == BCL1_MAGIC) || (algo == ALGO_LZ77)) {
+	if ((magic == LZ77_MAGIC)) {
 #endif
-		ret = lattice_ice40_lz77_configure(bin, size);
+		ret = lattice_ice40_lz77_configure(spi, bin, size);
 #if FPGA_RAW_ENABLE
 	} 
 	else 
 	{
-		ret = lattice_ice40_raw_configure(bin, size);
+		ret = lattice_ice40_raw_configure(spi, bin, size);
 	}
 #endif
 
 	return ret;
 }
+
+

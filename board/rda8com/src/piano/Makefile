@@ -19,9 +19,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-VERSION_DATE = "2020-04-05"
+VERSION_DATE = "2026-05-15"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "1"
+VERSION_MINOR = "2"
 
 THINKOS_DIR = ../../../..
 SDK_DIR = $(THINKOS_DIR)/sdk
@@ -48,7 +48,9 @@ LIBS = m $(ARCH_LIBS) $(SDK_LIBS)
 
 INCPATH = ../include
 
-CDEFS = CONFIG_H 
+__hwrev = 2
+
+CDEFS = CONFIG_H HWREV=$(__hwrev)
 
 CFLAGS = -Og
 #LIBPATH = $(LIBMAD_DIR)

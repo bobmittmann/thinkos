@@ -113,15 +113,6 @@ enum monitor_event {
 #define SIG_ISSET(SIGSET, SIG) (SIGSET & (1 << (SIG)))
 #define SIG_ZERO(SIGSET) SIGSET = 0
 
-struct monitor_thread_inf {
-	int8_t thread_id;
-	uint8_t errno;
-	uint8_t ctrl;
-	uint32_t pc;
-	uint32_t sp;
-	struct thinkos_context * ctx;
-};
-
 struct monitor_context {
 	/* scheduler saved context */
 	uint32_t r4;
@@ -264,9 +255,16 @@ bool monitor_is_set(int sig);
 
 int monitor_wait_idle(void);
 
-void monitor_soft_reset(void);
-
 void __monitor_idle_hook(void);
+
+/* Request a soft reset. The monitor task should 
+ * respond to this event by calling 
+ * monitor_on_softrst() */
+static inline void monitor_req_softrst(void) {
+	monitor_signal(MONITOR_SOFTRST); 
+}
+
+void monitor_on_softrst(void);
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor alarm/timer 
@@ -317,15 +315,21 @@ void monitor_signal_thread_fault(unsigned int thread_id, int32_t code);
 
 int monitor_thread_terminate_get(int * code);
 
-int monitor_thread_inf_get(unsigned int id, struct monitor_thread_inf * inf);
-
-
-
 struct thinkos_context * monitor_thread_erro_get(uint8_t * thread_id, 
 												 int8_t * code);
 int monitor_thread_break_get(int32_t * pcode);
 
 int monitor_thread_break_clr(void);
+
+int monitor_krn_xcpt_get(void);
+
+void monitor_krn_xcpt_clr(void);
+
+int monitor_thread_err_get(void);
+
+void monitor_thread_err_clr(void);
+
+uint32_t monitor_sched_ctrl_get(void);
 
 int monitor_thread_step_get(void);
 void monitor_thread_step_clr(void);
@@ -494,10 +498,14 @@ uint32_t __thinkos_monitor_isr(void);
 
 void __thinkos_monitor_sched(struct thinkos_monitor * mon); 
 
+
+uint32_t monitor_on_soft_reset(const struct monitor_comm * comm, 
+							 uint32_t sigmask);
 /* ----------------------------------------------------------------------------
  * Default Monitor comm event handler
  * ----------------------------------------------------------------------------
  */
+
 uint32_t monitor_on_comm_rcv(const struct monitor_comm * comm, 
 							 uint32_t sigmask);
 

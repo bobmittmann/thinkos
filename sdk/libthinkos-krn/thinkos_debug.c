@@ -321,7 +321,7 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BASE)
+#if (THINKOS_ENABLE_DEBUG)
 bool thinkos_dbg_thread_ctx_is_valid(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
@@ -351,64 +351,6 @@ static struct thinkos_context * __dbg_thread_ctx_get(struct thinkos_rt * krn,
     return __thread_ctx_get(krn, th);
 }
 
-static unsigned int __dbg_thread_ctrl_get(struct thinkos_rt * krn,
-                                          unsigned int th)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->control;
-
-    return __thread_ctrl_get(krn, th);
-}
-
-static uint32_t __dbg_thread_sp_get(struct thinkos_rt * krn,
-                                          unsigned int th)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->sp;
-
-    return __thread_sp_get(krn, th);
-}
-
-static uint32_t __dbg_thread_pc_get(struct thinkos_rt * krn,
-                                          unsigned int th)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->ctx.pc;
-
-    return __thread_pc_get(krn, th);
-}
-
-
-static uint32_t __dbg_thread_lr_get(struct thinkos_rt * krn,
-                                          unsigned int th)
-{
-	struct thinkos_except * xcpt = __thinkos_except_buf();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->ctx.lr;
-
-    return __thread_lr_get(krn, th);
-}
-
-
 struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
@@ -420,28 +362,28 @@ unsigned int thinkos_dbg_thread_ctrl_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
 
-    return __dbg_thread_ctrl_get(krn, th);
+    return __thread_ctrl_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_sp_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
 
-    return __dbg_thread_sp_get(krn, th);
+    return __thread_sp_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_pc_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
 
-    return __dbg_thread_pc_get(krn, th);
+    return __thread_pc_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_lr_get(unsigned int th)
 {
     struct thinkos_rt * krn = &thinkos_rt;
 
-    return __dbg_thread_lr_get(krn, th);
+    return __thread_lr_get(krn, th);
 }
 
 uint32_t thinkos_dbg_thread_sl_get(unsigned int th) 
@@ -536,7 +478,7 @@ bool thinkos_dbg_thread_get(unsigned int th, struct thinkos_thread * st,
 		return false;
 	}
 
-    ctrl = __dbg_thread_ctrl_get(krn, th);
+    ctrl = __thread_ctrl_get(krn, th);
 
 	if (st != NULL) {
 		st->thread_no = th;
@@ -654,14 +596,6 @@ int thinkos_dbg_thread_brk_get(unsigned int th)
 #endif
 
 
-uint32_t thinkos_dbg_sched_state_get(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	return krn->sched.state;
-}
-
-
 int thinkos_dbg_thread_break_get(int32_t * perrno)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -759,72 +693,6 @@ int thinkos_dbg_thread_break_clr(void)
 }
 
 
-int thinkos_dbg_mutex_lock_get(unsigned int mtx)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	if (__krn_obj_is_mutex(krn, mtx)) {
-		return __krn_mutex_lock_get(krn, mtx);
-	}
-
-	return 0;
-}
-
-int thinkos_dbg_threads_cyc_get(uint32_t cyc[], unsigned int from, 
-								unsigned int cnt)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	return __krn_threads_cyc_get(krn, cyc, from, cnt);
-}
-
-struct thread_waitqueue * thinkos_dbg_wq_from_oid(unsigned int oid)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	struct thread_waitqueue * wq;
-	unsigned int idx = oid - THINKOS_OBJECT_FIRST;
-
-	if (idx > THINKOS_OBJECT_LAST) {
-		return NULL;
-	}
-
-	wq = (struct thread_waitqueue *)&krn->wq_lst[idx];
-
-	return wq;
-}
-
-static inline bool __attribute__((always_inline)) 
-__krn_wq_contain(struct thinkos_rt * krn, struct thread_waitqueue * wq, 
-				 unsigned int th) {
-	uint32_t * ptr = (uint32_t *)wq;
-
-	/* is thread in wait queue */
-	return __bit_mem_rd(ptr, (th - 1)) ? true : false;  
-}
-
-static inline bool __attribute__((always_inline)) 
-__krn_wq_is_empty(struct thinkos_rt * krn, struct thread_waitqueue * wq) {
-	return (wq->bmp == 0) ? true : false;  
-}
-
-bool thinkos_dbg_wq_contains(struct thread_waitqueue * wq, unsigned int thread)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	if ((thread < THINKOS_THREAD_FIRST) || (thread > THINKOS_THREAD_LAST)) {
-		return false;
-	}
-
-	return __krn_wq_contain(krn, wq, thread);
-}
-
-bool thinkos_dbg_wq_is_empty(struct thread_waitqueue * wq)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	return __krn_wq_is_empty(krn, wq);
-}
-
 void thinkos_dbg_reset(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -853,77 +721,6 @@ void __attribute__((noreturn)) __dbg_thread_exit_stub(int code)
 #endif
 }
 
-extern void * __krn_stack_start;
-extern void * __krn_stack_end;
-extern int __krn_stack_size;
-
-
-
-int thinkos_dbg_thread_create(int (* entry)(void *, unsigned int), void * arg,
-						  void (* on_exit)(unsigned int), bool privileged)
-{
-#if (THINKOS_ENABLE_THREAD_INFO)
-	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
-#endif
-	struct thinkos_rt * krn = &thinkos_rt;
-	struct thinkos_thread_initializer init;
-	unsigned int thread;
-	uintptr_t stack_base;
-	uint32_t stack_size;
-	int ret;
-
-#if (THINKOS_ENABLE_THREAD_INFO)
-	thread = (inf->thread_id > 0) ? inf->thread_id : 1;
-	stack_base = (uintptr_t)inf->stack_ptr;
-	stack_size = inf->stack_size;
-#else
-	thread = 1;
-	stack_base = (uintptr_t)&__krn_stack_start;
-	stack_size = (uint32_t)&__krn_stack_size;
-#endif
-
-#if (THINKOS_THREAD_STACK_MAX)
-	if (stack_size > (THINKOS_THREAD_STACK_MAX))
-		stack_size = THINKOS_THREAD_STACK_MAX;
-#endif
-
-	/* force allocate the thread block */
-	__thread_alloc_set(krn, thread);
-
-	if (stack_base & (STACK_ALIGN_MSK)) {
-		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_base); 
-		return -1;
-	}
-
-	if (stack_size & (STACK_ALIGN_MSK)) {
-		DCC_LOG1(LOG_TRACE, "stack_Size=%08x unaligned", stack_size); 
-		stack_size &= ~(STACK_ALIGN_MSK);
-	}
-
-	init.stack_base = stack_base;
-	init.stack_size = stack_size;
-	init.task_entry = (uintptr_t)entry;
-	init.task_exit = (uintptr_t)on_exit;
-	init.task_arg[0] = (uintptr_t)arg;
-	init.task_arg[1] = thread;
-	init.task_arg[2] = 0;
-	init.task_arg[3] = 0;
-	init.priority = 0;
-	init.paused = false;
-	init.privileged = privileged;
-#if (THINKOS_ENABLE_THREAD_INFO)
-	init.inf = inf;
-#endif
-
-	if ((ret = thinkos_krn_thread_init(krn, thread, &init))) {
-		return -ret;
-	};
-
-	DCC_LOG1(LOG_TRACE, "thread=%d", thread);
-
-	return thread;
-}
-
 void thinkos_dbg_resume_all(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -948,56 +745,14 @@ void thinkos_dbg_pause_all(void)
 #endif
 }
 
-#if 0
-void thinkos_krn_dbg_req(struct thinkos_rt * krn, unsigned int opc)
-{
-	__krn_sched_svc_set(krn, opc);
-	__krn_sched_defer(krn);
-}
+#endif /* THINKOS_ENABLE_DEBUG */
 
-void thinkos_dbg_ack(void)
+void thinkos_dbg_krn_dump(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+#if DEBUG
+    struct thinkos_rt * krn = &thinkos_rt;
 
-	__krn_sched_svc_clr(krn);
-	__krn_sched_defer(krn);
-}
+	__kdump(krn);
+	__tdump(krn);
 #endif
-
-int thinkos_dbg_thread_irq_get(unsigned int th)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-#if (THINKOS_IRQ_MAX > 0)
-	if ((th >= THINKOS_THREAD_FIRST) && (th <= THINKOS_THREAD_LAST)) {
-		int irq;
-
-		for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-			if (krn->irq_th[irq] == th)
-				return irq;
-		}
-	}
-#endif
-	return -1;
 }
-
-bool thinkos_dbg_thread_is_ready(unsigned int th)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	if ((th >= THINKOS_THREAD_FIRST) && (th <= THINKOS_THREAD_LAST)) {
-		return __thread_ready_get(krn, th);
-	}
-	return false;
-}
-
-int thinkos_dbg_active_get(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	return __krn_sched_active_get(krn);
-}
-
-#endif /* THINKOS_ENABLE_DEBUG_BASE */
-
-

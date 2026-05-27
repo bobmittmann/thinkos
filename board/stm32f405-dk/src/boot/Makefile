@@ -19,9 +19,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-VERSION_DATE = "2021-10-27"
+VERSION_DATE = "2026-05-19"
 VERSION_MAJOR = "0"
-VERSION_MINOR = "18"
+VERSION_MINOR = "19"
 
 PROJECT_ROOT = ../..
 THINKOS_DIR = $(PROJECT_ROOT)/../..
@@ -33,7 +33,10 @@ BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
 
 PROG := stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c board.c monitor.c uart1-comm.c shell.c cmd_tab.c usb-cdc-comm.c
+BOOT_CFILES = monitor.c
+
+CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
+	boot.c board.c uart1-comm.c shell.c cmd_tab.c usb-cdc-comm.c
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 

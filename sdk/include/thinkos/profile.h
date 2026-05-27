@@ -179,10 +179,6 @@
 #define THINKOS_ENABLE_CTL              0
 #endif
 
-#ifndef THINKOS_ENABLE_PREEMPTION
-#define THINKOS_ENABLE_PREEMPTION       0
-#endif
-
 #ifndef THINKOS_ENABLE_CRITICAL
 #define THINKOS_ENABLE_CRITICAL         0
 #endif
@@ -482,14 +478,14 @@
 #define THINKOS_ENABLE_THREAD_FAULT         0 
 #endif
 
-/* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
-#ifndef THINKOS_ENABLE_SCHED_DEBUG
-#define THINKOS_ENABLE_SCHED_DEBUG          0
-#endif
-
 /* THINKOS_ENABLE_SCHED_ERROR - Enable stack check on scheduler */
 #ifndef THINKOS_ENABLE_SCHED_ERROR
 #define THINKOS_ENABLE_SCHED_ERROR          0
+#endif
+
+/* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
+#ifndef THINKOS_ENABLE_SCHED_DEBUG
+#define THINKOS_ENABLE_SCHED_DEBUG          0
 #endif
 
 /* THINKOS_ENABLE_KRN_SCHED_BRK - Enable thread break */
@@ -708,12 +704,18 @@
 #error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
 #endif
 
+/*
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_DEBUG_BASE)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_DEBUG_BASE"
 #endif
+*/
 
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_MONITOR"
+#endif
+
+#if (THINKOS_ENABLE_STACK_LIMIT) && !(THINKOS_ENABLE_ERROR_TRAP)
+#error "THINKOS_ENABLE_STACK_LIMIT depends on THINKOS_ENABLE_ERROR_TRAP"
 #endif
 
 /*
@@ -722,10 +724,11 @@
 #endif
 */
 
-/* debug breakpoint depends on debug base */
+/* debug breakpoint depends on debug base 
 #if (THINKOS_ENABLE_DEBUG_BKPT) && !(THINKOS_ENABLE_DEBUG_BASE)
 #error "THINKOS_ENABLE_DEBUG_BKPT depends on THINKOS_ENABLE_DEBUG_BASE"
 #endif
+*/
 
 /* debug step depends on debug breakpoint */
 #if (THINKOS_ENABLE_DEBUG_STEP) && !(THINKOS_ENABLE_DEBUG_BKPT)
@@ -843,7 +846,6 @@
 #error "THINKOS_ENABLE_CTL_KRN_INFO depends on THINKOS_ENABLE_CTL"
 #endif
 
-
 /* -------------------------------------------------------------------------- 
  * Deprecated options
  * --------------------------------------------------------------------------*/
@@ -913,7 +915,6 @@
 #ifdef THINKOS_ENABLE_CLOCK
 #error "THINKOS_ENABLE_CLOCK is deprecated"
 #endif
-
 
 /* -------------------------------------------------------------------------- 
  * Wait queues sizes

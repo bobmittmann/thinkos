@@ -175,7 +175,7 @@ void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
 void __attribute__((noreturn)) krn_app_at_exit(int code)
 	__attribute__ ((weak, alias ("__krn_app_at_exit")));
 
-int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
+static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr, uintptr_t arg[])
 {
 	struct thinkos_thread_initializer init;

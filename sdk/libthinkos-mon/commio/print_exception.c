@@ -46,6 +46,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 	uint32_t sp;
 	uint32_t ret;
 	uint32_t ctrl;
+	uint32_t shcsr;
 	int ipsr;
 
 	monitor_printf(comm, " Error %d at ", xcpt->errno);
@@ -89,7 +90,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #if THINKOS_ENABLE_MPU 
 	case THINKOS_ERR_MEM_MANAGE:
 		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		monitor_printf(comm, "mmfsr=%02x [", mmfsr);
+		monitor_printf(comm, "MMFSR=%02x [", mmfsr);
 		if (mmfsr & MMFSR_MMARVALID)
 			monitor_printf(comm, " MMARVALID");
 		if (mmfsr & MMFSR_MLSPERR)
@@ -111,7 +112,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #if THINKOS_ENABLE_BUSFAULT
 	case THINKOS_ERR_BUS_FAULT:
 		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		monitor_printf(comm, " bfsr=%02x [", bfsr);
+		monitor_printf(comm, " BFSR=%02x [", bfsr);
 		if (bfsr & BFSR_BFARVALID)  
 			monitor_printf(comm, " BFARVALID");
 		if (bfsr & BFSR_LSPERR)
@@ -135,7 +136,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #if THINKOS_ENABLE_USAGEFAULT 
 	case THINKOS_ERR_USAGE_FAULT: 
 		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
-		monitor_printf(comm, " ufsr=%04x [", ufsr);
+		monitor_printf(comm, " UFSR=%04x [", ufsr);
 		if (ufsr & UFSR_DIVBYZERO)  
 			monitor_printf(comm, " DIVBYZERO");
 		if (ufsr & UFSR_UNALIGNED)  
@@ -153,6 +154,23 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #endif
 	}
 
+	shcsr = xcpt->shcsr;
+	monitor_printf(comm, "SHCSR=%08x [%s%s%s%s%s%s%s%s%s%s%s ]", 
+/*				   (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
+				   (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
+				   (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "", */
+				   shcsr,
+				   (shcsr & SCB_SHCSR_SVCALLPENDED) ? " SVCALLPEND" : "",
+				   (shcsr & SCB_SHCSR_BUSFAULTPENDED) ?  " BUSFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_MEMFAULTPENDED) ?  " MEMFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_USGFAULTPENDED) ?  " USGFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
+				   (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
+				   (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
+				   (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
+				   (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
+				   (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
+				   (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
 }
 
 

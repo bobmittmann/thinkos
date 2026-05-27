@@ -878,6 +878,12 @@ static int monitor_usb_comm_send(const void * comm,
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 
+	if (!dev->configured) {
+		DCC_LOG(LOG_WARNING, "USB CDC not configured!");
+		/* consume all the data */
+		return len;
+	}
+
 	return usb_dev_ep_pkt_xmit(dev->usb, dev->in_ep, buf, len);
 }
 
@@ -1032,6 +1038,11 @@ const struct monitor_comm * usb_comm_init(const usb_dev_t * usb)
 	dev->shadow = 0;
 	dev->configured = 0;
 	dev->rx_paused = false;
+
+	dev->ctl_ep = 0;
+	dev->in_ep = 0;
+	dev->out_ep = 0;
+	dev->int_ep = 0;
 
 	DCC_LOG1(LOG_INFO, "usb_dev_init(%08x)", dev->usb);
 	ret = usb_dev_init(dev->usb, cl, &monitor_usb_ev);

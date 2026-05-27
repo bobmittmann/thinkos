@@ -32,8 +32,10 @@
 
 /* Maximum IRQ for this board */
 #define THINKOS_IRQ_MAX                    90
+#define THINKOS_IRQ_MAX                    90
 
 /* Enable thinkos_irq_ctl system call */
+#define THINKOS_ENABLE_RAM_VECTORS          1
 #define THINKOS_ENABLE_IRQ_CTL              1
 #define THINKOS_ENABLE_IRQ_CYCCNT           1
 #define THINKOS_ENABLE_IRQ_PRIORITY_0       1
@@ -110,16 +112,16 @@
 
 #define THINKOS_ENABLE_STACK_ALIGN          1
 #define THINKOS_ENABLE_UNALIGN_TRAP         1
+#define THINKOS_ENABLE_DIV0_TRAP            1
 #define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          1
-#define THINKOS_ENABLE_DEBUG_BASE           1
 #define THINKOS_ENABLE_ERROR_TRAP           1
 #define THINKOS_ENABLE_EXCEPTIONS           1
 #define THINKOS_ENABLE_HARDFAULT            1
 #define THINKOS_ENABLE_BUSFAULT             1
 #define THINKOS_ENABLE_USAGEFAULT           1
 #define THINKOS_ENABLE_MEMFAULT             1
-#define THINKOS_ENABLE_THREAD_FAULT         1
+#define THINKOS_ENABLE_THREAD_FAULT         0
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT            0
 #else
@@ -129,14 +131,14 @@
 /* Enable scheduler trace calls */
   #define THINKOS_ENABLE_SCHED_DEBUG        0
 /* Enable scheduler stack error detection */
-#define THINKOS_ENABLE_SCHED_ERROR          0
+#define THINKOS_ENABLE_SCHED_ERROR          1
 #else
   #define THINKOS_ENABLE_SCHED_DEBUG        0
 /* Enable scheduler stack error detection */
 #define THINKOS_ENABLE_SCHED_ERROR          0
 #endif
 
-#define THINKOS_ENABLE_DEBUG                0
+#define THINKOS_ENABLE_DEBUG                1
 #define THINKOS_ENABLE_DEBUG_BKPT           0
 #define THINKOS_ENABLE_DEBUG_WPT            0
 #define THINKOS_ENABLE_DEBUG_STEP           0
@@ -150,7 +152,7 @@
 #define THINKOS_ENABLE_PREEMPTION           1
 
 #ifdef DEBUG
-  #define THINKOS_ENABLE_IDLE_WFI           0
+  #define THINKOS_ENABLE_IDLE_WFI           1
 #else
   #define THINKOS_ENABLE_IDLE_WFI           1
 #endif
@@ -165,7 +167,7 @@
 #define THINKOS_ENABLE_STACK_INIT           1
 #define THINKOS_ENABLE_MEMORY_CLEAR         1
 #define THINKOS_FLASH_MEM_MAX               1
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     1
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
 
 #define THINKOS_ENABLE_OFAST                1
 
@@ -173,7 +175,7 @@
 #define THINKOS_ENABLE_APP_FLAT             1
 #define THINKOS_ENABLE_APP_ELF              0
 #define THINKOS_ENABLE_APP_CRC              1
-#define THINKOS_MONITOR_ENABLE_COMM_BRK     1
+#define THINKOS_MONITOR_ENABLE_COMM_BRK     0
 
 #define THINKOS_ENABLE_FRACTIONAL_CLOCK     1
 #define THINKOS_ENABLE_DATE_AND_TIME        1
@@ -186,9 +188,8 @@
 
 #define THINKOS_COMM_MAX                    1
 
-
 /* -------------------------------------------------------------------------
-   RCC 
+   STM32 RCC 
    -------------------------------------------------------------------------- */
 
 #define STM32_HCLK_HZ       168000000 /* HBA bus frequency */
@@ -220,10 +221,10 @@
 /* -------------------------------------------------------------------------
    Bootloader 
    -------------------------------------------------------------------------- */
-#define BOOT_ENABLE_GDB            0
 #define BOOT_ENABLE_THIRD          0
 #define BOOT_CUSTOM_COMM           0
 
+#define MONITOR_GDB_ENABLE         0
 #define MONITOR_DUMPMEM_ENABLE     1
 #define MONITOR_WATCHPOINT_ENABLE  0
 #define MONITOR_THREAD_STEP_ENABLE 0
@@ -233,7 +234,7 @@
 #define MONITOR_THREADINFO_ENABLE  1
 #define MONITOR_OSINFO_ENABLE      1
 #define MONITOR_APPWIPE_ENABLE     1
-#define MONITOR_APPTERM_ENABLE     1
+#define MONITOR_APP_TERM_ENABLE    1
 #define MONITOR_APPRESTART_ENABLE  1
 #define MONITOR_EXCEPTION_ENABLE   1
 #define MONITOR_FAULT_ENABLE       1
@@ -241,14 +242,6 @@
 #define MONITOR_OS_RESUME          1
 #define MONITOR_RESTART_MONITOR    1
 #define MONITOR_PREBOOT_ENABLE     1
-
-/* -------------------------------------------------------------------------
- * JTAG
- * ------------------------------------------------------------------------- */
-
-#define JTAG_VEC_BITS_MAX 256
-#define JTAG_TAP_MAX      8
-#define ENABLE_ICE_TEST   0
 
 /* -------------------------------------------------------------------------
  * Shell
@@ -262,19 +255,6 @@
  * Services
  * ------------------------------------------------------------------------- */
 
-#define ENABLE_TCP_SEND 1
-#define ENABLE_TCP_RECV 1
-#define ENABLE_USB      0
-#define ENABLE_MONITOR  1
-#define ENABLE_NETWORK  1
-#define ENABLE_TFTP     1
-#define ENABLE_NAND     1
-#define ENABLE_COMM     1
-#define ENABLE_GDB      1
-#define ENABLE_VCOM     1
-#define ENABLE_I2C      1
-#define ENABLE_TELNET   1
-
 /* -------------------------------------------------------------------------
  * Trace 
  * ------------------------------------------------------------------------- */
@@ -285,6 +265,8 @@
  * ------------------------------------------------------------------------- */
 
 #define PRINTF_ENABLE_FLOAT 1
+
+#define UDELAY_FACTOR 2687
 
 #endif /* __CONFIG_H__ */
 

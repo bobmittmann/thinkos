@@ -24,6 +24,8 @@
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 
+struct thinkos_except thinkos_except_rt;
+
 /* Static sanity check: */
 _Static_assert (offsetof(struct thinkos_except, ctx) == 
 				OFFSETOF_XCPT_CONTEXT, "OFFSETOF_XCPT_CONTEXT");
@@ -49,6 +51,9 @@ _Static_assert (offsetof(struct thinkos_except, thread) ==
 _Static_assert (offsetof(struct thinkos_except, ack) == 
 				OFFSETOF_XCPT_ACK, "OFFSETOF_XCPT_ACK");
 
+_Static_assert (offsetof(struct thinkos_except, shcsr) == 
+				OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
+
 _Static_assert (offsetof(struct thinkos_except, cfsr) == 
 				OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
 
@@ -62,7 +67,6 @@ _Static_assert (offsetof(struct thinkos_except, bfar) ==
 _Static_assert (offsetof(struct thinkos_except, hfsr) == 
 				OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
 
-
 _Static_assert (offsetof(struct thinkos_except, ipsr) == 
 				OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
 
@@ -74,9 +78,6 @@ _Static_assert (offsetof(struct thinkos_except, sched) ==
 
 _Static_assert (offsetof(struct thinkos_except, icsr) == 
 				OFFSETOF_XCPT_ICSR, "OFFSETOF_XCPT_ICSR");
-
-_Static_assert (offsetof(struct thinkos_except, shcsr) == 
-				OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
 
 #if (THINKOS_ENABLE_PROFILING)
 _Static_assert (offsetof(struct thinkos_except, cycref) == 
@@ -106,6 +107,99 @@ _Static_assert (offsetof(struct thinkos_except, cyccnt) ==
 #endif
 
 #include <sys/dcclog.h>
+
+#define SHCSR_ACT_MASK SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | \
+	SCB_SHCSR_MONITORACT | SCB_SHCSR_SVCALLACT | SCB_SHCSR_USGFAULTACT | \
+	SCB_SHCSR_BUSFAULTACT | SCB_SHCSR_MEMFAULTACT
+
+uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
+{
+	uint32_t shcsr;
+	uint32_t ipsr;
+	uint32_t act;
+	uint32_t bmp;
+	int irqregs;
+	int i;
+	
+	irqregs = (CM3_ICTR + 1);
+
+	/* Find active IRQ */
+	for (i = 0; i < irqregs ; ++i) {
+		int irqbits;
+		int j;
+		irqbits = __rbit(CM3_NVIC->iabr[i]);
+		if ((j = __clz(irqbits)) < 32) {
+			int irq;
+			irq = i * 32 + j;
+			act = irq + 16;
+			__nvic_irq_clrpend_all();
+			goto end;
+		}
+	}
+
+	shcsr = CM3_SCB->shcsr & (SHCSR_ACT_MASK);
+	ipsr = cm3_ipsr_get();
+	if (ipsr == CM3_EXCEPT_BUS_FAULT) {
+		/* currently servicing bus fault */
+		shcsr &= ~SCB_SHCSR_BUSFAULTACT;
+	} else if (ipsr == CM3_EXCEPT_USAGE_FAULT) {
+		/* currently servicing usage fault */
+		shcsr &= ~SCB_SHCSR_USGFAULTACT;
+	} else if (ipsr == CM3_EXCEPT_MEM_MANAGE) {
+		/* currently servicing memory management fault */
+		shcsr &= ~SCB_SHCSR_MEMFAULTACT;
+	}
+
+	/* check for active exceptions */
+	if ((bmp = __rbit(shcsr)) == 0) {
+		return 0;
+	}
+
+	act = __clz(bmp) + 4;
+
+end:
+	uint32_t icsr;
+	icsr = CM3_SCB->icsr;
+
+	if (icsr & SCB_ICSR_RETTOBASE) {
+		DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG " XCPT %d active RETTOBASE " VT_POP, 
+				 act);
+		return 0;
+	} else {
+		DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG " XCPT %d active" VT_POP, 
+				 act);
+	}
+	return act;
+}
+
+uint32_t __krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
+{
+	uint32_t icsr;
+//	uint32_t pend;
+	uint32_t act;
+
+//	__krn_xcpt_pend_clr(krn);
+//	__nvic_irq_disable_all();
+
+	icsr = CM3_SCB->icsr;
+	act = ICSR_VECTACTIVE_GET(icsr);
+#if 0
+	pend = ICSR_VECTPENDING_GET(icsr);
+	(void)act;
+	(void)pend;
+	DCC_LOG4(LOG_WARNING, VT_PSH VT_FMG " VECT %d pend, %d act%s%s" VT_POP, 
+			 pend, act, 
+			 (icsr & SCB_ICSR_RETTOBASE) ? " RETTTOBASE" : "",
+			 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "");
+
+	if (icsr & SCB_ICSR_RETTOBASE) 
+		return 0;
+
+	mdelay(125);
+#endif
+
+	return act;
+}
 
 void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 							  struct thinkos_context * ctx,
@@ -139,75 +233,63 @@ void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 	DCC_LOG(LOG_PANIC, "System reset!");
 #else
 #endif
-	mdelay(1000);
+#if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
+#endif
 }
 
-#define SHCSR_ACT_MASK SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | \
-	SCB_SHCSR_MONITORACT | SCB_SHCSR_SVCALLACT | SCB_SHCSR_USGFAULTACT | \
-	SCB_SHCSR_BUSFAULTACT | SCB_SHCSR_MEMFAULTACT
-
-uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
+void thinkos_krn_fault_handler(struct thinkos_rt * krn,
+							   struct thinkos_except * xcpt,
+							   uint32_t sp,
+							   uint32_t xpsr)
 {
-	uint32_t shcsr;
-	uint32_t ipsr;
-	uint32_t act;
-	int irqregs;
-	int i;
+	uint32_t errno = xpsr & 0x1ff;
+	(void)errno;
 
-	irqregs = (CM3_ICTR + 1);
+	/* Stop the scheduler */
+	__krn_sched_xcp_set(krn, 1);
 
-	/* Find next active IRQ */
-	for (i = 0; i < irqregs ; ++i) {
-		int irqbits;
-		int j;
-		irqbits = __rbit(CM3_NVIC->iabr[i]);
-		if ((j = __clz(irqbits)) < 32) {
-			int irq;
-			irq = i * 32 + j;
-			return irq + 16;
-		}
-	}
+#if (THINKOS_ENABLE_MONITOR) 
+#if (THINKOS_ENABLE_READY_MASK)
+	__thread_disble_all(krn);
+#endif
+	/* Disable all vectored interrupts on NVIC */
+	__nvic_irq_disable_all();
+
+	/* clear CFSR */
+	__krn_fault_status_clr(krn);
+	/* Clear the SVC call pending to avoid returning to a service routine
+	   as this will cause another stack fault */
+	__krn_xcpt_pend_clr(krn);
+
+	__hard(krn, &xcpt->ctx, sp, errno);
 	
-	shcsr = CM3_SCB->shcsr & (SHCSR_ACT_MASK);
-	ipsr = cm3_ipsr_get();
-	if (ipsr == CM3_EXCEPT_BUS_FAULT) {
-		/* currently servicing bus fault */
-		shcsr &= ~SCB_SHCSR_BUSFAULTACT;
-	} else if (ipsr == CM3_EXCEPT_USAGE_FAULT) {
-		/* currently servicing usage fault */
-		shcsr &= ~SCB_SHCSR_USGFAULTACT;
-	} else if (ipsr == CM3_EXCEPT_MEM_MANAGE) {
-		/* currently servicing memory management fault */
-		shcsr &= ~SCB_SHCSR_MEMFAULTACT;
-	}
+	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW " Kernel exception: %d " VT_POP, 
+			 errno);
 
-	/* check for active exceptions */
-	if ((act = __rbit(shcsr)) == 0) {
-		return 0;
-	}
+	/* Enable CPU interrupts */
+	cm3_cpsie_i();
 
-	return __clz(act) + 4;
+	/* Signal monitor */
+	monitor_signal(MONITOR_KRN_FAULT);
+
+#endif
 }
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
 /* ARM exceptions in a thread context are recorded in
    the exception buffer. Then a common handling
-   functions takes care of signaling the modules
+   function takes care of signaling the modules
    that may be affected by this condition. */
 void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 									struct thinkos_except * xcpt,
 									uint32_t errno,
 									uint32_t thread)
 {
-	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
-			 " Exception: error %d on thread %d " VT_POP, 
-			 errno, thread);
-
 	/* Stop the scheduler */
 	__krn_sched_err_set(krn, errno);
 
-#if DEBUG
+#if 0
 	mdelay(250);
 	__xinfo(xcpt);
 	DCC_EXCEPT_DUMP(krn, xcpt);
@@ -226,10 +308,22 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 #endif
 	/* Disable all vectored interrupts on NVIC */
 	__nvic_irq_disable_all();
+
+	/* clear CFSR */
+	__krn_fault_status_clr(krn);
+	/* Clear the SVC call pending to avoid returning to a service routine
+	   as this will cause another stack fault */
+	__krn_xcpt_pend_clr(krn);
+
+	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
+			 " Exception: error %d on thread %d " VT_POP, 
+			 errno, thread);
+
 	/* Enable CPU interrupts */
 	cm3_cpsie_i();
+
 	/* Signal monitor */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
+	monitor_signal(MONITOR_THREAD_FAULT);
 #else
 	__krn_suspend_all(krn);
 #endif
@@ -241,7 +335,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
    ------------------------------------------------------------------------- */
 void thinkos_krn_exception_reset(void)
 {
-	DCC_LOG(LOG_TRACE, "Exception buffer clear.");
+	DCC_LOG(LOG_TRACE, "Exception stack clear.");
 
 #if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize thread stack */
@@ -287,24 +381,6 @@ void thinkos_krn_exception_init(void)
 }
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */
-
-#if (THINKOS_SYSRST_ONFAULT)
-void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
-{
-	thinkos_krn_sysrst();
-}
-#endif
-
-#if 0
-void __attribute__((naked, noreturn)) thinkos_krn_xcpt_raise(int errno)
-{
-	/* FIXME: this is not right 
-	monitor_signal(MONITOR_THREAD_FAULT); */
-#if (THINKOS_SYSRST_ONFAULT)
-	thinkos_krn_sysrst();
-#endif
-}
-#endif
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 

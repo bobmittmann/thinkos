@@ -652,7 +652,6 @@ void __xinfo(struct thinkos_except * xcpt)
 
 	(void)err;
 
-	mdelay(100);
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BRD
 			 "/!\\ Exception %d [%s] /!\\" VT_POP, 
 			 err, thinkos_krn_err_tag(err));
@@ -827,8 +826,8 @@ void __kdump(struct thinkos_rt * krn)
 			 __krn_ticks_get(krn) );
 #endif
 
-	DCC_LOG5(LOG_TRACE, "Sched.state=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
-			 krn->sched.state,
+	DCC_LOG5(LOG_TRACE, "Sched.ctrl=%08x [act=%d xcp=0x%02x err=%d brk=%d]", 
+			 krn->sched.ctrl,
 			 __krn_sched_active_get(krn),
 			 __krn_sched_xcp_get(krn),
 			 __krn_sched_err_get(krn),

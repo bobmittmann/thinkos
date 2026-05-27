@@ -27,7 +27,6 @@
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
 #include <sys/delay.h>
-#include <sys/dcclog.h>
 #include <thinkos.h>
 #include <vt100.h>
 #include <xmodem.h>
@@ -97,23 +96,39 @@ int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[])
 	return btl_flash_ymodem_recv("app");
 }
 
-void tp12_on(void);
-void tp12_off(void);
-void tp13_on(void);
-void tp13_off(void);
+void tp12_on(void)
+{
+	__io_1_set();
+}
+
+void tp12_off(void)
+{
+	__io_1_clr();
+}
+
+void tp13_on(void)
+{
+	__io_2_set();
+}
+
+void tp13_off(void)
+{
+	__io_2_clr();
+}
 
 int btl_cmd_test(struct btl_shell_env * env, int argc, char * argv[])
 {
+	int i;
 	krn_console_puts("\r\nTest...\r\n");
 
-	for (;;) {
-		tp12_on();
-		tp13_off();
-		thinkos_sleep(8);
-		tp12_off();
-		tp13_on();
-		thinkos_sleep(8);
+	for (i = 0; i < 20; ++i) {
+		krn_console_puts(".");
+		__led_1_on();
+		thinkos_sleep(100);
+		__led_1_off();
+		thinkos_sleep(100);
 	}
+	krn_console_puts("\r\n");
 	return 0;
 }
 

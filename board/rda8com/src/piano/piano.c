@@ -172,13 +172,13 @@ int main(int argc, char ** argv)
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_on(instr, code, vel); 
-//			printf("<%2d> KEY_ON\r\n", arg);
+			printf("<%2d> KEY_ON\r\n", arg);
 			break;
 		case KBD_EV_KEY_OFF:
 			code = arg;
 			vel = 1;
 			addsynth_instr_note_off(instr, code, vel); 
-//			printf("<%2d> KEY_OFF\r\n", arg);
+			printf("<%2d> KEY_OFF\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_ON:
@@ -186,12 +186,12 @@ int main(int argc, char ** argv)
 				select_piano();
 			else
 				select_xilophone();
-//			printf("<%2d> SWITCH ON\r\n", arg);
+			printf("<%2d> SWITCH ON\r\n", arg);
 			break;
 
 		case KBD_EV_SWITCH_OFF:
 			select_silence();
-//			printf("<%2d> SWITCH OFF\r\n", arg);
+			printf("<%2d> SWITCH OFF\r\n", arg);
 			break;
 
 		case KBD_EV_TIMEOUT:

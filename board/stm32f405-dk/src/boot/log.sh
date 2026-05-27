@@ -1,12 +1,39 @@
 #!/bin/sh
 
-JTAGTOOL_ADDR=192.168.10.50
-BUILD_NAME=thinkos
-TOOLS_DIR=../../../tools
+TOOLS_DIR=../../../../tools
+PYTHON=python3
 
-${TOOLS_DIR}/tftp_reset.py -q -h ${JTAGTOOL_ADDR} 
+if [ -z "$JTAGTOOL_ADDR" ]; then
+	JTAGTOOL_ADDR=192.168.10.51
+fi
+
+# Collect ".bin" files in the positional parameters
+set -- `ls debug/*.bin`
+# Get the last one
+for PROG_BIN; do true; done
+# The corresponding .elf
+PROG_ELF=${PROG_BIN%%.bin}.elf
+
+${PYTHON} ${TOOLS_DIR}/tftp_reset.py -q -h ${JTAGTOOL_ADDR} 
 
 if [ $? = 0 ] ; then
-	${TOOLS_DIR}/dcclog -h ${JTAGTOOL_ADDR} debug/${BUILD_NAME}.elf
+	# Collect ".bin" files in the positional parameters
+	set -- `ls ../app/Release/*.elf`
+	# Get the last one
+	for APP_ELF; 
+		do true; 
+	done
+
+	if [ "${APP_ELF}" = "" ] ; then
+		echo "No application found..."
+	fi
+
+	# Disable the halt debug mode by clearing C_DEBUGEN on DHCSR
+	${PYTHON} ${TOOLS_DIR}/tftp_cmd.py -h ${JTAGTOOL_ADDR} \
+		'nrst' 'tgt 9 f c' 'run' 'disable debug'
+	if [ $? = 0 ] ; then
+		# Trace
+		${TOOLS_DIR}/dcclog -h ${JTAGTOOL_ADDR} ${PROG_ELF} ${APP_ELF}| tee dbg.log
+	fi
 fi
 

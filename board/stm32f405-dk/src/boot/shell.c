@@ -117,3 +117,39 @@ int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[])
 	return btl_flash_ymodem_recv("APP");
 }
 
+int btl_cmd_test(struct btl_shell_env * env, int argc, char * argv[])
+{
+	uint32_t tick;
+	char s[32];
+
+	/* Time window autoboot */
+	for (tick = 0; tick < (10 * 4); ++tick) {
+
+		thinkos_sleep(250);
+
+		switch (tick & 0x3) {
+		case 0:
+			krn_snprintf(s, sizeof(s), "%d.", tick >> 2);
+			krn_console_puts(s);
+			stm32_gpio_clr(IO_LED1);
+			break;
+		case 1:
+			stm32_gpio_clr(IO_LED2);
+			break;
+		case 2:
+			stm32_gpio_set(IO_LED1);
+			break;
+		case 3:
+			stm32_gpio_set(IO_LED2);
+			break;
+		}
+	}
+
+	krn_console_puts("\r\n");
+
+	stm32_gpio_clr(IO_LED1);
+	stm32_gpio_clr(IO_LED2);
+
+	return true;
+}
+

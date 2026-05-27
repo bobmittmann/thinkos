@@ -202,7 +202,7 @@
   #define SIZEOF_KRN_BREAK_ID  0
 #endif
 
-#if (THINKOS_ENABLE_ERROR_TRAP)
+#if (THINKOS_ENABLE_DEBUG)
 #define SIZEOF_KRN_DBG_STATUS  4
 #else
 #define SIZEOF_KRN_DBG_STATUS  0
@@ -299,10 +299,10 @@
 //#define OFFSETOF_KRN_MON_CLK    
 //(OFFSETOF_KRN_MON_CLK + SIZEOF_KRN_MON_CLK)
 
-#define SCHED_STAT_XCP(__STAT__) (((__STAT__) >> 24) & 0xff)
-#define SCHED_STAT_ERR(__STAT__) (((__STAT__) >> 16) & 0xff)
-#define SCHED_STAT_SVC(__STAT__) (((__STAT__) >> 8) & 0xff)
-#define SCHED_STAT_ACT(__STAT__) ((__STAT__) & 0xff)
+#define SCHED_CTRL_XCP(__CTRL__) (((__CTRL__) >> 24) & 0xff)
+#define SCHED_CTRL_ERR(__CTRL__) (((__CTRL__) >> 16) & 0xff)
+#define SCHED_CTRL_SVC(__CTRL__) (((__CTRL__) >> 8) & 0xff)
+#define SCHED_CTRL_ACT(__CTRL__) ((__CTRL__) & 0xff)
 
 #ifndef __ASSEMBLER__
 
@@ -371,7 +371,6 @@ struct thinkos_context {
 	uint32_t lr;
 	uint32_t pc;
 	uint32_t xpsr;
-
 };
 
 #if (THINKOS_ENABLE_FPU) 
@@ -415,7 +414,7 @@ struct thinkos_rt {
 	};
 
 	union {
-		volatile uint32_t state; /* scheduler state */
+		volatile uint32_t ctrl;      /* scheduler control word */
 		struct {
 			volatile uint8_t act;    /* current active thread */
 			volatile uint8_t svc;    /* deferred service request */
@@ -547,7 +546,7 @@ struct thinkos_rt {
 	int8_t th_errno[__KRN_THREAD_LST_SIZ]; 
 #endif
 
-#if (THINKOS_ENABLE_DEBUG_BASE)
+#if (THINKOS_ENABLE_DEBUG)
 	struct {
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
@@ -558,17 +557,15 @@ struct thinkos_rt {
 		int8_t   step_id;   /* current stepping thread id */
 		int8_t   brk_idx;   /* break thread index */
 #endif /* THINKOS_ENABLE_DEBUG_BKPT */
-#if (THINKOS_ENABLE_ERROR_TRAP)
 		union {
 			uint32_t status;
 			struct {
 				uint8_t thread;   /* active thread */
+				uint8_t scvno;    /* deferred service request */
 				uint8_t errno;    /* error number */
 				uint8_t xcptno;   /* exception number */
-				uint8_t kfault;   /* kernel fault ??  */
 			};
 		};
-#endif
 	} debug;
 #endif
 
@@ -673,8 +670,6 @@ struct thinkos_rt {
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 //	struct krn_clock time_clk;
 #endif
-
-
 };
 
 /* -------------------------------------------------------------------------- 
@@ -797,13 +792,36 @@ struct thinkos_thread_opt {
 	uint8_t paused: 1;
 };
 
-
 struct thinkos_thread_create_args {
 	int (* task)(void *);            /* R0 */
 	void * arg;                      /* R1 */
 	void * stack_ptr;                /* R2 */
 	struct thinkos_thread_opt opt;   /* R3 */
-	struct thinkos_thread_inf * inf; /* R4 */
+	struct thinkos_thread_inf * inf; /* R12 */
+};
+
+/* -------------------------------------------------------------------------- 
+ * Thread info 
+ * --------------------------------------------------------------------------*/
+
+struct krn_thread_state {
+	int8_t thread_id;
+	uint8_t errno;
+	uint8_t ctrl;
+	uint8_t tmw;
+	uint8_t ready;
+	int8_t irq;
+	uint16_t wq;
+	uint32_t pc;
+	uint32_t sp;
+	uint32_t sl;
+	struct thinkos_context * ctx;
+	const char * tag;
+	uint32_t clk;
+	int32_t itv;
+	uint32_t cycnt;
+	uint32_t stack_base;
+	uint32_t stack_size;
 };
 
 #define __THINKOS_MEMORY__
@@ -1012,6 +1030,16 @@ int krn_console_putc(int c);
 
 int krn_console_puthex(uint32_t val);
 
+int krn_console_put_hex8(uint32_t val);
+
+int krn_console_put_hex16(uint32_t val);
+
+int krn_console_put_hex32(uint32_t val);
+
+int krn_console_put_uint(uint32_t val);
+
+int krn_console_put_int(int32_t val);
+
 int krn_console_crlf(void);
 
 int krn_console_getc(unsigned int tmo);
@@ -1019,6 +1047,14 @@ int krn_console_getc(unsigned int tmo);
 int krn_console_gets(char * s, int size);
 
 int krn_console_wrln(const char * ln);
+
+/* -------------------------------------------------------------------------- 
+ * kernel format functions 
+ * --------------------------------------------------------------------------*/
+
+int krn_fmt_hex8(char * s, uint32_t val);
+
+int krn_fmt_hex16(char * s, uint32_t val);
 
 int krn_fmt_hex32(char * s, uint32_t val);
 
@@ -1033,8 +1069,6 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	unsigned int thread_idx,
 	const struct thinkos_thread_initializer * init);
 
-unsigned int thinkos_krn_active_get(struct thinkos_rt * krn);
-
 void __attribute__((noreturn)) thinkos_krn_sysrst(void);
 
 void thinkos_krn_udelay_calibrate(void);
@@ -1048,6 +1082,8 @@ bool __thinkos_thread_resume(unsigned int thread_id);
 int __thinkos_thread_wq_get(unsigned int thread_idx);
 
 int __thinkos_thread_tmw_get(unsigned int thread_idx);
+
+int thinkos_krn_active_get(void);
 
 /* -------------------------------------------------------------------------- 
  * kernel scheduler methods 
@@ -1087,6 +1123,48 @@ void __thinkos_systick_sleep(void);
 void __thinkos_systick_wakeup(void);
 
 void __thinkos_krn_time_init(struct thinkos_rt * krn);
+
+/* -------------------------------------------------------------------------
+ * Main thread
+ * ------------------------------------------------------------------------- */
+
+int thinkos_main_thread_create(int (* entry)(void *, unsigned int), void * arg,
+						  void (* on_exit)(unsigned int), bool privileged);
+/* -------------------------------------------------------------------------
+ * Cycle counter
+ * ------------------------------------------------------------------------- */
+
+
+int thinkos_krn_threads_cyc_get(uint32_t cyc[], unsigned int from, 
+								unsigned int cnt);
+
+/* -------------------------------------------------------------------------
+ * Mutex
+ * ------------------------------------------------------------------------- */
+bool thinkos_krn_mutex_resume(unsigned int thread_id, unsigned int mutex, 
+							  bool tmw) ;
+
+int thinkos_krn_mutex_lock_get(unsigned int mutex);
+
+/* -------------------------------------------------------------------------
+ * Miscelaneous 
+ * ------------------------------------------------------------------------- */
+
+struct thread_waitqueue;
+
+struct thread_waitqueue * thinkos_krn_wq_from_oid(unsigned int oid);
+
+bool thinkos_krn_wq_contains(struct thread_waitqueue * wq, 
+							 unsigned int thread);
+
+bool thinkos_krn_wq_is_empty(struct thread_waitqueue * wq);
+
+/* -------------------------------------------------------------------------
+ * Threads 
+ * ------------------------------------------------------------------------- */
+
+int thinkos_krn_thread_state_get(unsigned int id, 
+							   struct krn_thread_state * inf);
 
 #ifdef __cplusplus
 }

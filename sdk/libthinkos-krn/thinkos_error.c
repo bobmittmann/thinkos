@@ -14,11 +14,12 @@
 
 const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_NO_ERROR]              = "Ok",
+	[THINKOS_ERR_GENERAL]           = "Error",
 	[THINKOS_ERR_KRN_FAULT]         = "KrnFault",
 	[THINKOS_ERR_HARD_FAULT]        = "HardFault",
-	[THINKOS_ERR_BUS_FAULT]         = "BusFault",
-	[THINKOS_ERR_USAGE_FAULT]       = "UsageFault",
 	[THINKOS_ERR_MEM_MANAGE]        = "MemManage",
+	[THINKOS_ERR_USAGE_FAULT]       = "UsageFault",
+	[THINKOS_ERR_BUS_FAULT]         = "BusFault",
 	[THINKOS_ERR_COND_INVALID]      = "CondInvlid",
 	[THINKOS_ERR_COND_ALLOC]        = "CondAlloc",
 	[THINKOS_ERR_MUTEX_INVALID]     = "MtxInvalid",
@@ -57,7 +58,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_FLASH_INVALID]     = "FlshInvalid",
 	[THINKOS_ERR_STACK_LIMIT]       = "StackLimit",
 	[THINKOS_ERR_IDLE_STACK]        = "IdleStack",
-	[THINKOS_ERR_NOT_IMPLEMENTED]   = "IdleStack",
+	[THINKOS_ERR_NOT_IMPLEMENTED]   = "NotImplmnt",
 	[THINKOS_ERR_THREAD_STACKALIGN] = "StackAlign",
 	[THINKOS_ERR_THREAD_ENTRYADDR]  = "EntryAddr",
 	[THINKOS_ERR_THREAD_EXITADDR]   = "ExitAddr",
@@ -145,29 +146,23 @@ void thinkos_krn_sched_svc_handler(struct thinkos_rt * krn, uint32_t stat)
 
 /* Kernel error trap services handler */
 #if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
+void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 {
 #if (THINKOS_ENABLE_THREAD_FAULT) || (DEBUG)
-	uint32_t thread;
-	uint32_t errno = SCHED_STAT_ERR(sched);
+	uint32_t thread = SCHED_CTRL_ACT(ctrl);
+	uint32_t errno = SCHED_CTRL_ERR(ctrl);
 #endif
 #if DEBUG
-	uint32_t svcno = SCHED_STAT_SVC(sched);
+	uint32_t svcno = SCHED_CTRL_SVC(ctrl);
 #endif
-	uint32_t xcpno = SCHED_STAT_XCP(sched);
+	uint32_t xcpno = SCHED_CTRL_XCP(ctrl);
 
 #if (THINKOS_ENABLE_THREAD_FAULT)
-	thread = __krn_sched_active_get(krn);
-//	errno = __krn_sched_err_get(krn);
 	/* Per thread error code */
 	__thread_errno_set(krn, thread, errno);
 #endif
 
 #if (DEBUG)
-	thread = __krn_sched_active_get(krn);
-	errno = __krn_sched_err_get(krn);
-	svcno = __krn_sched_svc_get(krn);
-	xcpno = __krn_sched_xcp_get(krn);
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
 			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
@@ -179,12 +174,9 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
 					 errno, thread);
 		}
 	}
-
 	
 	DCC_LOG4(LOG_TRACE, "thread=%d xcpno=%d errno=%d svcno=%d.",  
 			 thread, xcpno, errno, svcno);
-
-	mdelay(1000);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 
@@ -197,9 +189,9 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t sched)
 	cm3_cpsie_i();
 	/* Signal monitor */
 	if (xcpno != 0) {
-		monitor_signal_break(MONITOR_KRN_FAULT);
+		monitor_signal(MONITOR_KRN_FAULT);
 	} else {
-		monitor_signal_break(MONITOR_THREAD_FAULT);
+		monitor_signal(MONITOR_THREAD_FAULT);
 	}
 #else
 	__krn_suspend_all(krn);
@@ -232,7 +224,7 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 	/* Enable CPU interrupts */
 	cm3_cpsie_i();
 	/* Signal monitor */
-	monitor_signal_break(MONITOR_KRN_FAULT);
+	monitor_signal(MONITOR_KRN_FAULT);
 #else
 	__krn_suspend_all(krn);
 	/*  FIXME: should reboot or do something else... */

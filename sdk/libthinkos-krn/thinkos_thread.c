@@ -317,3 +317,139 @@ void __krn_suspend_all(struct thinkos_rt * krn)
 }
 #endif
 
+bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th) {
+	return __krn_obj_is_thread(krn, th) && __krn_thread_is_alloc(krn, th) && 
+		__thread_ctx_is_valid(krn, th);
+}
+
+unsigned int __krn_thread_ctrl_get(struct thinkos_rt * krn, unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->control;
+
+    return __thread_ctrl_get(krn, th);
+}
+
+uint32_t __krn_thread_sp_get(struct thinkos_rt * krn, unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->sp;
+
+    return __thread_sp_get(krn, th);
+}
+
+uint32_t __krn_thread_pc_get(struct thinkos_rt * krn, unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.pc;
+
+    return __thread_pc_get(krn, th);
+}
+
+uint32_t __krn_thread_lr_get(struct thinkos_rt * krn, unsigned int th)
+{
+	struct thinkos_except * xcpt = __thinkos_except_buf();
+
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
+		return 0;
+
+    if (__xcpt_thread_get(xcpt) == th)
+		return xcpt->ctx.lr;
+
+    return __thread_lr_get(krn, th);
+}
+
+int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
+{
+	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST)) {
+		return 0;
+	}
+#if (THINKOS_ENABLE_THREAD_FAULT)
+	return __thread_errno_get(krn, th);
+#else
+	if (__krn_sched_active_get(krn) == th) {
+		int svcno = __krn_sched_svc_get(krn);
+		int errno = __krn_sched_err_get(krn);
+		int xcpno = __krn_sched_xcp_get(krn);
+
+		return (xcpno) ? xcpno : ((errno) ? errno : svcno); 
+	}
+
+	return 0;
+#endif
+}
+
+int __krn_thread_xcpt_get(struct thinkos_rt * krn, unsigned int th)
+{
+	if (__krn_sched_active_get(krn) == th) {
+		return __krn_sched_xcp_get(krn);
+	}
+
+	return 0;
+}
+
+/*
+ */
+int thinkos_krn_threads_cyc_get(uint32_t cyc[], unsigned int from, 
+								unsigned int cnt)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __krn_threads_cyc_get(krn, cyc, from, cnt);
+}
+
+int thinkos_krn_active_get(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __krn_sched_active_get(krn);
+}
+
+int thinkos_krn_thread_state_get(unsigned int id, 
+							   struct krn_thread_state * inf)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	unsigned int thread_id = id;
+
+	if (!__krn_thread_ctx_is_valid(krn, id)) {
+		return -1;
+	}
+
+	if (inf != NULL) {
+		inf->thread_id = thread_id;
+		inf->ctrl = __krn_thread_ctrl_get(krn, thread_id);
+		inf->pc = __krn_thread_pc_get(krn, thread_id);
+		inf->sp = __krn_thread_sp_get(krn, thread_id);
+		inf->errno = __krn_thread_errno_get(krn, thread_id);
+		inf->ctx = __thread_ctx_get(krn, thread_id);
+		inf->sl = __thread_sl_get(krn, thread_id);
+		inf->tag = __thread_tag_get(krn, thread_id);
+		inf->wq = __thread_wq_get(krn, thread_id);
+		inf->tmw = __thread_tmw_get(krn, thread_id);
+		inf->clk = __thread_clk_get(krn, thread_id);
+		inf->irq = __krn_thread_irq_get(krn, thread_id);
+		inf->ready = __thread_ready_get(krn, thread_id);
+		inf->itv = __thread_clk_itv_get(krn, thread_id);
+		inf->cycnt = __thread_cyccnt_get(krn, thread_id);
+		inf->stack_base = __thread_stack_base_get(krn, thread_id);
+		inf->stack_size = __thread_stack_size_get(krn, thread_id);
+	}
+
+	return 0;
+}
+
