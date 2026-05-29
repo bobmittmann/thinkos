@@ -93,8 +93,7 @@ static inline void monitor_req_app_term(void) {
 }
 
 static inline void monitor_req_app_erase(void) {
-	monitor_req_softrst();
-	monitor_signal(MONITOR_APP_ERASE);
+	monitor_signal_break(MONITOR_APP_ERASE);
 }
 
 static inline void monitor_req_app_exec(void) {
@@ -102,8 +101,7 @@ static inline void monitor_req_app_exec(void) {
 }
 
 static inline void monitor_req_app_upload(void) {
-	monitor_req_softrst();
-	monitor_signal(MONITOR_APP_UPLOAD);
+	monitor_signal_break(MONITOR_APP_UPLOAD);
 }
 
 extern const struct thinkos_flash_desc board_flash_desc;

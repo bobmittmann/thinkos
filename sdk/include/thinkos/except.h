@@ -108,7 +108,7 @@ struct armv7m_extended_frame {
 	uint32_t res;
 };
 
-struct thinkos_except {
+struct thinkos_fault {
 	struct thinkos_context ctx;
 
 	uint32_t sp; /* SP */
@@ -133,30 +133,31 @@ struct thinkos_except {
 extern uint32_t thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
 extern const uint16_t thinkos_except_stack_size;
 
+extern struct thinkos_fault thinkos_fault_rt;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static inline struct thinkos_except * __thinkos_except_buf(void) {
-	uintptr_t xcpt= (uintptr_t)thinkos_except_stack;
-	return (struct thinkos_except *)xcpt;
+static inline struct thinkos_fault * __thinkos_fault_rt(void) {
+	return &thinkos_fault_rt;
 }
 
-static inline int __xcpt_thread_get(struct thinkos_except * xcpt) {
-	uint32_t thread = xcpt->thread; 
-	return (xcpt->seq != xcpt->ack) ? (int32_t)thread : -1;
+static inline int __fault_thread_get(struct thinkos_fault * fault) {
+	uint32_t thread = fault->thread; 
+	return (fault->seq != fault->ack) ? (int32_t)thread : -1;
 }
 
-static inline bool __thinkos_xcpt_valid(struct thinkos_except * xcpt) {
-	return (xcpt->seq == xcpt->ack) ? false : true;
+static inline bool __thinkos_fault_valid(struct thinkos_fault * fault) {
+	return (fault->seq == fault->ack) ? false : true;
 }
 
-static inline int32_t __thinkos_xcpt_cnt(struct thinkos_except * xcpt) {
-	return (int32_t)xcpt->seq - (int32_t)xcpt->ack;
+static inline int32_t __thinkos_fault_cnt(struct thinkos_fault * fault) {
+	return (int32_t)fault->seq - (int32_t)fault->ack;
 }
 
-static inline bool __thinkos_xcpt_errno(struct thinkos_except * xcpt) {
-	return (xcpt->seq == xcpt->ack) ? 0 : xcpt->errno;
+static inline bool __thinkos_fault_errno(struct thinkos_fault * fault) {
+	return (fault->seq == fault->ack) ? 0 : fault->errno;
 }
 
 /* -------------------------------------------------------------------------
@@ -165,7 +166,7 @@ static inline bool __thinkos_xcpt_errno(struct thinkos_except * xcpt) {
 
 void thinkos_krn_exception_init(void);
 
-void thinkos_krn_exception_reset(void);
+void thinkos_krn_fault_clr(void);
 
 uint32_t *  thinkos_krn_xcpt_stack_top(void);
 
@@ -173,10 +174,10 @@ uint32_t *  thinkos_krn_xcpt_stack_top(void);
  * Exception handling utility functions
  * ------------------------------------------------------------------------- */
 
-void __xinfo(struct thinkos_except * xcpt);
+void __xinfo(struct thinkos_fault * fault);
 
 void __xdump(struct thinkos_rt * krn, 
-			 struct thinkos_except * xcpt);
+			 struct thinkos_fault * fault);
 
 void __idump(const char * s, uint32_t ipsr);
 

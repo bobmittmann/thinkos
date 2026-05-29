@@ -128,7 +128,7 @@ __core_vectors:
 	.thumb_func
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
-	ldr     lr, .L_xcpt_buf /* uses LR as a temporary variable */
+	ldr     lr, .L_fault_rt /* uses LR as a temporary variable */
 	add     lr, #((16-3) * 4) /* make room for LR, PC and XPSR */
 	stmdb   lr!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
 	stmdb   lr!, {r4-r11}      /* save faulty registers */
@@ -152,7 +152,7 @@ __thinkos_krn_fault:
 	 * ---------------------------------------------------------------
 	 */
 
-	ldr     r1, .L_xcpt_buf
+	ldr     r1, .L_fault_rt 
 	stmia   r1!, {r4-r11} /* save R4-R11 */
 	pop     {r4, r5, r6, r7, r8} /* read back r0-r3, r12 */
 	stmia   r1!, {r4-r8}  /* save faulty stack frame but LR, PC and XPSR */
@@ -232,7 +232,7 @@ __thinkos_krn_xcpt_done:
 	.type	__thinkos_krn_thread_err, %function
 
 __thinkos_krn_thread_err:
-	ldr     r1, .L_xcpt_buf
+	ldr     r1, .L_fault_rt 
 	stmia   r1!, {r4-r11} /* save R4-R11 */
 	pop     {r4, r5, r6, r7, r8} /* read back r0-r3, r12 */
 	mrs     r12, PSP 
@@ -325,8 +325,8 @@ __thinkos_krn_thread_err:
 
 	.align  2
 
-.L_xcpt_buf: /* exception buffer is at the bottom of the exception stack */
-	.word   thinkos_except_stack
+.L_fault_rt: /* fault buffer */
+	.word   thinkos_fault_rt
 #if 0
 
 	ldr      r0, .L_thinkos_rt

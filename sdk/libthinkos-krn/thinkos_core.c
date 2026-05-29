@@ -29,26 +29,6 @@
 
 struct thinkos_rt thinkos_rt __attribute__((aligned(4), section(".krn.data")));
 
-#if (((THINKOS_EXCEPT_STACK_SIZE) & 0x0000003f) != 0)
-#error "THINKOS_EXCEPT_STACK_SIZE must be a multiple 0f 64"
-#endif 
-
-uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
-	thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
-
-const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
-
-uint32_t * thinkos_krn_xcpt_stack_top(void)
-{
-	uintptr_t sp;
-
-	sp = (uintptr_t)(uint32_t *)thinkos_except_stack;
-	sp += sizeof(thinkos_except_stack) - sizeof(struct thinkos_context);
-
-	return (uint32_t *)sp;
-}
-
-
 void thinkos_krn_core_init(struct thinkos_rt * krn)
 {
 	unsigned int i;
@@ -160,13 +140,14 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 	DCC_LOG(LOG_TRACE, "3. Initialize kernel datastructures ...");
 	thinkos_krn_core_init(krn);
 
-/* 
- * FIXME: the exception buffer shouldn't be cleared except by an excplicit call
- * after debug handling??? 
-*/
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	DCC_LOG(LOG_TRACE, "4. exception reset...");
-	thinkos_krn_exception_reset();
+	thinkos_krn_fault_clr();
+#endif
+
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	DCC_LOG(LOG_TRACE, "5. IDLE hooks reset...");
+	__krn_idle_hooks_rst(krn);
 #endif
 
 #if DEBUG

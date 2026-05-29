@@ -39,7 +39,7 @@ enum idle_hook_signal {
 	/* Wake up the monitor */
 	IDLE_HOOK_MONITOR_WAKEUP = 1,
 	/* */
-	IDLE_HOOK_SOFTRST = 2,
+	IDLE_HOOK_CORE_RST   = 2,
 	IDLE_HOOK_EXCEPT_DONE = 3,
 	/* The higest priority goes to the Debug/Monitor */
 	IDLE_HOOK_FLASH_MEM0 = 27,
@@ -76,6 +76,9 @@ void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req);
 void __krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req);
 
 struct thinkos_context * __thinkos_idle_ctx(void);
+
+void krn_idle_req_core_rst(struct thinkos_rt * krn);
+
 
 #ifdef __cplusplus
 }

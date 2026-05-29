@@ -1551,6 +1551,13 @@ int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp,
 
 int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th);
 
+static inline void __krn_idle_hooks_rst(struct thinkos_rt * krn) {
+#if (THINKOS_ENABLE_IDLE_HOOKS)
+	/* clear all hook requests */
+	krn->idle_hooks.req_map = 0;
+#endif
+}
+
 #ifdef __cplusplus
 }
 #endif

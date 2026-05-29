@@ -222,7 +222,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 #if 0
 int __thinkos_thread_fault_code(unsigned int thread_no)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 	struct thinkos_rt * krn = &thinkos_rt;
 	unsigned int insn;
 	uint16_t * pc;
@@ -234,8 +234,8 @@ FIXME:
 		return 0;
 #endif
 
-	if (__xcpt_active_get(xcpt) == (int)thread_no)
-		return xcpt->errno;
+	if (__fault_active_get(fault) == (int)thread_no)
+		return fault->errno;
 
 	pc = (uint16_t *)__thread_pc_get(krn, thread_no);
 	insn = pc[0];
@@ -248,10 +248,10 @@ FIXME:
 struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 
-	if (__xcpt_thread_get(xcpt) == (int)thread_no)
-		return &xcpt->ctx;
+	if (__fault_thread_get(fault) == (int)thread_no)
+		return &fault->ctx;
 
 	return __thread_ctx_get(krn, thread_no);
 }
@@ -325,52 +325,52 @@ bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th)
 
 unsigned int __krn_thread_ctrl_get(struct thinkos_rt * krn, unsigned int th)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->control;
+    if (__fault_thread_get(fault) == th)
+		return fault->control;
 
     return __thread_ctrl_get(krn, th);
 }
 
 uint32_t __krn_thread_sp_get(struct thinkos_rt * krn, unsigned int th)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->sp;
+    if (__fault_thread_get(fault) == th)
+		return fault->sp;
 
     return __thread_sp_get(krn, th);
 }
 
 uint32_t __krn_thread_pc_get(struct thinkos_rt * krn, unsigned int th)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->ctx.pc;
+    if (__fault_thread_get(fault) == th)
+		return fault->ctx.pc;
 
     return __thread_pc_get(krn, th);
 }
 
 uint32_t __krn_thread_lr_get(struct thinkos_rt * krn, unsigned int th)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
 		return 0;
 
-    if (__xcpt_thread_get(xcpt) == th)
-		return xcpt->ctx.lr;
+    if (__fault_thread_get(fault) == th)
+		return fault->ctx.lr;
 
     return __thread_lr_get(krn, th);
 }
@@ -394,7 +394,7 @@ int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
 #endif
 }
 
-int __krn_thread_xcpt_get(struct thinkos_rt * krn, unsigned int th)
+int __krn_thread_fault_get(struct thinkos_rt * krn, unsigned int th)
 {
 	if (__krn_sched_act_get(krn) == th) {
 		return __krn_sched_xcp_get(krn);
@@ -430,15 +430,15 @@ bool thinkos_krn_thread_state_get(unsigned int thread_id,
 	}
 
 	if (inf != NULL) {
-		struct thinkos_except * xcpt = __thinkos_except_buf();
+		struct thinkos_fault * fault = __thinkos_fault_rt();
 
 		inf->thread_id = thread_id;
 		inf->ctrl = __krn_thread_ctrl_get(krn, thread_id);
 		inf->pc = __krn_thread_pc_get(krn, thread_id);
 		inf->sp = __krn_thread_sp_get(krn, thread_id);
 		inf->errno = __krn_thread_errno_get(krn, thread_id);
-    	if (__xcpt_thread_get(xcpt) == thread_id)
-			inf->ctx = &xcpt->ctx;
+    	if (__fault_thread_get(fault) == thread_id)
+			inf->ctx = &fault->ctx;
 		else
 			inf->ctx = __thread_ctx_get(krn, thread_id);
 		inf->sl = __thread_sl_get(krn, thread_id);

@@ -135,7 +135,7 @@ const char __xcpt_name_lut[16][12] = {
 
 /* Exception state dump */
 void __xdump(struct thinkos_rt * krn,
-			 struct thinkos_except * xcpt)
+			 struct thinkos_fault * fault)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
 //	uint32_t shcsr;
@@ -167,25 +167,25 @@ void __xdump(struct thinkos_rt * krn,
 		}
 	}
 
-	ret  = 0xffffff00 | (xcpt->ret & 0xff);
+	ret  = 0xffffff00 | (fault->ret & 0xff);
 
-	sp = xcpt->sp;
+	sp = fault->sp;
 	DCC_LOG1(LOG_ERROR, "ret=%08x", ret); 
 
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
-			xcpt->ctx.r0, xcpt->ctx.r1, 
-			xcpt->ctx.r2, xcpt->ctx.r3);
+			fault->ctx.r0, fault->ctx.r1, 
+			fault->ctx.r2, fault->ctx.r3);
 	DCC_LOG4(LOG_ERROR, "   R4=%08x  R5=%08x  R6=%08x  R7=%08x", 
-			xcpt->ctx.r4, xcpt->ctx.r5, 
-			xcpt->ctx.r6, xcpt->ctx.r7);
+			fault->ctx.r4, fault->ctx.r5, 
+			fault->ctx.r6, fault->ctx.r7);
 	DCC_LOG4(LOG_ERROR, "   R8=%08x  R9=%08x R10=%08x R11=%08x", 
-			xcpt->ctx.r8, xcpt->ctx.r9, 
-			xcpt->ctx.r10, xcpt->ctx.r11);
+			fault->ctx.r8, fault->ctx.r9, 
+			fault->ctx.r10, fault->ctx.r11);
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
-			xcpt->ctx.r12, sp, xcpt->ctx.lr, xcpt->ctx.pc);
+			fault->ctx.r12, sp, fault->ctx.lr, fault->ctx.pc);
 	DCC_LOG2(LOG_ERROR, " XPSR=%08x RET=%08x", 
-			xcpt->ctx.xpsr, ret);
-	xpsr = xcpt->ctx.xpsr;
+			fault->ctx.xpsr, ret);
+	xpsr = fault->ctx.xpsr;
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
 		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
@@ -215,39 +215,39 @@ void __xdump(struct thinkos_rt * krn,
 
 #if 0
 #if (THINKOS_ENABLE_FPU)
-	if ((xcpt->ret & CM3_EXC_RET_nFPCA) == 0) {
+	if ((fault->ret & CM3_EXC_RET_nFPCA) == 0) {
 		DCC_LOG4(LOG_ERROR, "   S0=%08x  S1=%08x  S2=%08x  S3=%08x", 
-		xcpt->ctx.s0[0], xcpt->ctx.s0[1], xcpt->ctx.s0[2], xcpt->ctx.s0[3]);
+		fault->ctx.s0[0], fault->ctx.s0[1], fault->ctx.s0[2], fault->ctx.s0[3]);
 		DCC_LOG4(LOG_ERROR, "   S4=%08x  S5=%08x  S6=%08x  S7=%08x", 
-		xcpt->ctx.s0[4], xcpt->ctx.s0[5], xcpt->ctx.s0[6], xcpt->ctx.s0[7]);
+		fault->ctx.s0[4], fault->ctx.s0[5], fault->ctx.s0[6], fault->ctx.s0[7]);
 		DCC_LOG4(LOG_ERROR, "   S8=%08x  S9=%08x S10=%08x S11=%08x", 
-		xcpt->ctx.s0[8], xcpt->ctx.s0[9], xcpt->ctx.s0[10], xcpt->ctx.s0[11]);
+		fault->ctx.s0[8], fault->ctx.s0[9], fault->ctx.s0[10], fault->ctx.s0[11]);
 		DCC_LOG4(LOG_ERROR, "  S12=%08x S13=%08x S14=%08x S15=%08x", 
-		xcpt->ctx.s0[12], xcpt->ctx.s0[13], xcpt->ctx.s0[14], xcpt->ctx.s0[15]);
+		fault->ctx.s0[12], fault->ctx.s0[13], fault->ctx.s0[14], fault->ctx.s0[15]);
 		DCC_LOG4(LOG_ERROR, "  S16=%08x S17=%08x S18=%08x S19=%08x", 
-		xcpt->ctx.s1[0], xcpt->ctx.s1[1], xcpt->ctx.s1[2], xcpt->ctx.s1[3]);
+		fault->ctx.s1[0], fault->ctx.s1[1], fault->ctx.s1[2], fault->ctx.s1[3]);
 		DCC_LOG4(LOG_ERROR, "  S20=%08x S21=%08x S22=%08x S23=%08x", 
-		xcpt->ctx.s1[4], xcpt->ctx.s1[5], xcpt->ctx.s1[6], xcpt->ctx.s1[7]);
+		fault->ctx.s1[4], fault->ctx.s1[5], fault->ctx.s1[6], fault->ctx.s1[7]);
 		DCC_LOG4(LOG_ERROR, "  S24=%08x S25=%08x S26=%08x S27=%08x", 
-				 xcpt->ctx.s1[8], xcpt->ctx.s1[9], 
-				 xcpt->ctx.s1[10], xcpt->ctx.s1[11]);
+				 fault->ctx.s1[8], fault->ctx.s1[9], 
+				 fault->ctx.s1[10], fault->ctx.s1[11]);
 		DCC_LOG4(LOG_ERROR, "  S28=%08x S29=%08x S30=%08x S31=%08x", 
-				 xcpt->ctx.s1[12], xcpt->ctx.s1[13], 
-				 xcpt->ctx.s1[14], xcpt->ctx.s1[15]);
-		DCC_LOG1(LOG_ERROR, "FPSCR=%08x", xcpt->ctx.fpscr);
+				 fault->ctx.s1[12], fault->ctx.s1[13], 
+				 fault->ctx.s1[14], fault->ctx.s1[15]);
+		DCC_LOG1(LOG_ERROR, "FPSCR=%08x", fault->ctx.fpscr);
 	} else {
 		DCC_LOG(LOG_ERROR, "EXC_RETURN.nFPCA=0");
 	}
 #endif
 #endif
 
-	ctrl = xcpt->control;
+	ctrl = fault->control;
 	DCC_LOG3(LOG_ERROR, " CTRL={%s%s%s }",
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
 			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
 #if 0
-	shcsr = xcpt->shcsr;
+	shcsr = fault->shcsr;
 	DCC_LOG10(LOG_ERROR, "SHCSR={%s%s%s%s%s%s%s%s%s%s }", 
 				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
 				 (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
@@ -260,7 +260,7 @@ void __xdump(struct thinkos_rt * krn,
 				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
 				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
 
-	icsr = xcpt->icsr;
+	icsr = fault->icsr;
 	DCC_LOG8(LOG_ERROR, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
 				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
 				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
@@ -272,7 +272,7 @@ void __xdump(struct thinkos_rt * krn,
 				 (icsr & SCB_ICSR_VECTACTIVE));
 #endif
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
-			 __xcpt_thread_get(xcpt),
+			 __fault_thread_get(fault),
 			 __krn_sched_act_get(krn)); 
 
 #if 0
@@ -304,15 +304,13 @@ void __xdump(struct thinkos_rt * krn,
 	{
 		uintptr_t stack = (uintptr_t)thinkos_except_stack;
 		unsigned long size = thinkos_except_stack_size;
-		stack +=  sizeof(struct thinkos_except);
-		size -=  sizeof(struct thinkos_except);
 
 		DCC_LOG2(LOG_ERROR, "EXCEPT stack free: %d/%6d", 
 			 __thinkos_scan_stack((void *)stack, size), 
 			 thinkos_except_stack_size); 
 	}
 #endif
-	DCC_LOG1(LOG_ERROR, "exceptions count: %d", xcpt->seq - xcpt->ack); 
+	DCC_LOG1(LOG_ERROR, "exceptions count: %d", fault->seq - fault->ack); 
 
 #endif
 }
@@ -645,10 +643,10 @@ void __pdump(void)
 #endif
 }
 
-void __xinfo(struct thinkos_except * xcpt)
+void __xinfo(struct thinkos_fault * fault)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
-	int err = xcpt->errno;
+	int err = fault->errno;
 
 	(void)err;
 
@@ -657,7 +655,7 @@ void __xinfo(struct thinkos_except * xcpt)
 			 err, thinkos_krn_err_tag(err));
 #if 0
 	if (err == THINKOS_ERR_HARD_FAULT) {
-		uint32_t hfsr = xcpt->hfsr;
+		uint32_t hfsr = fault->hfsr;
 		DCC_LOG3(LOG_PANIC, VT_PSH VT_BRI VT_FRD 
 				 "Hard fault:%s%s%s    " VT_POP, 
 				 (hfsr & SCB_HFSR_DEBUGEVT) ? " DEBUGEVT" : "",
@@ -666,9 +664,9 @@ void __xinfo(struct thinkos_except * xcpt)
 	}
 
 	if ((err == THINKOS_ERR_HARD_FAULT) || (err == THINKOS_ERR_BUS_FAULT)) {
-		uint32_t mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
-		uint32_t mmfar = xcpt->mmfar;
-		DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, xcpt->mmfar);
+		uint32_t mmfsr = SCB_CFSR_MMFSR_GET(fault->cfsr);
+		uint32_t mmfar = fault->mmfar;
+		DCC_LOG2(LOG_ERROR, "MMFSR=%08X MMFAR=%08x", mmfsr, fault->mmfar);
 		if (mmfsr) {
 			DCC_LOG6(LOG_ERROR, "    %s%s%s%s%s%s", 
 					 (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
@@ -683,7 +681,7 @@ void __xinfo(struct thinkos_except * xcpt)
 	}
 
 	if ((err == THINKOS_ERR_HARD_FAULT) || (err == THINKOS_ERR_USAGE_FAULT)) {
-		uint32_t ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
+		uint32_t ufsr = SCB_CFSR_UFSR_GET(fault->cfsr);
 		DCC_LOG1(LOG_ERROR, "UFSR=%08X", ufsr);
 		if (ufsr) {
 			DCC_LOG6(LOG_PANIC, "    %s%s%s%s%s%s", 
@@ -697,8 +695,8 @@ void __xinfo(struct thinkos_except * xcpt)
 	}
 
 	if ((err == THINKOS_ERR_HARD_FAULT) || (err == THINKOS_ERR_BUS_FAULT)) {
-		uint32_t bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
-		DCC_LOG2(LOG_ERROR, "BFSR=%08X BFAR=%08x", bfsr, xcpt->bfar);
+		uint32_t bfsr = SCB_CFSR_BFSR_GET(fault->cfsr);
+		DCC_LOG2(LOG_ERROR, "BFSR=%08X BFAR=%08x", bfsr, fault->bfar);
 		if (bfsr) {
 			DCC_LOG7(LOG_ERROR, "     %s%s%s%s%s%s%s", 
 					 (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
@@ -835,8 +833,8 @@ void __kdump(struct thinkos_rt * krn)
 
 	uintptr_t stack = (uintptr_t)thinkos_except_stack;
 	unsigned long size = thinkos_except_stack_size;
-	stack +=  sizeof(struct thinkos_except);
-	size -=  sizeof(struct thinkos_except);
+	(void)stack;
+	(void)size;
 
 #if (THINKOS_ENABLE_MONITOR)
 	DCC_LOG(LOG_TRACE, "Stack:");

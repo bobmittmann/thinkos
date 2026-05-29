@@ -24,71 +24,70 @@
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
 
-struct thinkos_except thinkos_except_rt;
-
 /* Static sanity check: */
-_Static_assert (offsetof(struct thinkos_except, ctx) == 
+_Static_assert (offsetof(struct thinkos_fault, ctx) == 
 				OFFSETOF_XCPT_CONTEXT, "OFFSETOF_XCPT_CONTEXT");
 
-_Static_assert (offsetof(struct thinkos_except, sp) == 
+_Static_assert (offsetof(struct thinkos_fault, sp) == 
 				OFFSETOF_XCPT_SP, "OFFSETOF_XCPT_SP");
 
-_Static_assert (offsetof(struct thinkos_except, ret) == 
+_Static_assert (offsetof(struct thinkos_fault, ret) == 
 				OFFSETOF_XCPT_RET, "OFFSETOF_XCPT_RET");
 
-_Static_assert (offsetof(struct thinkos_except, control) == 
+_Static_assert (offsetof(struct thinkos_fault, control) == 
 				OFFSETOF_XCPT_CONTROL, "OFFSETOF_XCPT_CONTROL");
 
-_Static_assert (offsetof(struct thinkos_except, errno) == 
+_Static_assert (offsetof(struct thinkos_fault, errno) == 
 				OFFSETOF_XCPT_ERRNO, "OFFSETOF_XCPT_ERRNO");
 
-_Static_assert (offsetof(struct thinkos_except, seq) == 
+_Static_assert (offsetof(struct thinkos_fault, seq) == 
 				OFFSETOF_XCPT_SEQ, "OFFSETOF_XCPT_SEQ");
 
-_Static_assert (offsetof(struct thinkos_except, thread) == 
+_Static_assert (offsetof(struct thinkos_fault, thread) == 
 				OFFSETOF_XCPT_THREAD, "OFFSETOF_XCPT_THREAD");
 
-_Static_assert (offsetof(struct thinkos_except, ack) == 
+_Static_assert (offsetof(struct thinkos_fault, ack) == 
 				OFFSETOF_XCPT_ACK, "OFFSETOF_XCPT_ACK");
 
-_Static_assert (offsetof(struct thinkos_except, shcsr) == 
+_Static_assert (offsetof(struct thinkos_fault, shcsr) == 
 				OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
 
-_Static_assert (offsetof(struct thinkos_except, cfsr) == 
+_Static_assert (offsetof(struct thinkos_fault, cfsr) == 
 				OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
 
-_Static_assert (offsetof(struct thinkos_except, mmfar) == 
+_Static_assert (offsetof(struct thinkos_fault, mmfar) == 
 				OFFSETOF_XCPT_MMFAR, "OFFSETOF_XCPT_MMFAR");
 
-_Static_assert (offsetof(struct thinkos_except, bfar) == 
+_Static_assert (offsetof(struct thinkos_fault, bfar) == 
 				OFFSETOF_XCPT_BFAR, "OFFSETOF_XCPT_BFAR");
 
 #if 0
-_Static_assert (offsetof(struct thinkos_except, hfsr) == 
+_Static_assert (offsetof(struct thinkos_fault, hfsr) == 
 				OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
 
-_Static_assert (offsetof(struct thinkos_except, ipsr) == 
+_Static_assert (offsetof(struct thinkos_fault, ipsr) == 
 				OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
 
-_Static_assert (offsetof(struct thinkos_except, psp) == 
+_Static_assert (offsetof(struct thinkos_fault, psp) == 
 				OFFSETOF_XCPT_PSP, "OFFSETOF_XCPT_PSP");
 
-_Static_assert (offsetof(struct thinkos_except, sched) == 
+_Static_assert (offsetof(struct thinkos_fault, sched) == 
 				OFFSETOF_XCPT_SCHED, "OFFSETOF_XCPT_SCHED");
 
-_Static_assert (offsetof(struct thinkos_except, icsr) == 
+_Static_assert (offsetof(struct thinkos_fault, icsr) == 
 				OFFSETOF_XCPT_ICSR, "OFFSETOF_XCPT_ICSR");
 
 #if (THINKOS_ENABLE_PROFILING)
-_Static_assert (offsetof(struct thinkos_except, cycref) == 
+_Static_assert (offsetof(struct thinkos_fault, cycref) == 
 				OFFSETOF_XCPT_CYCREF, "OFFSETOF_XCPT_CYCREF");
 
-_Static_assert (offsetof(struct thinkos_except, cyccnt) == 
+_Static_assert (offsetof(struct thinkos_fault, cyccnt) == 
 				OFFSETOF_XCPT_CYCCNT, "OFFSETOF_XCPT_CYCCNT");
 #endif
 
 #endif
 
+struct thinkos_fault thinkos_fault_rt __attribute__((aligned(8)));
 
 #if (DEBUG)
 /*
@@ -230,7 +229,7 @@ void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 }
 
 void thinkos_krn_fault_handler(struct thinkos_rt * krn,
-							   struct thinkos_except * xcpt,
+							   struct thinkos_fault * xcpt,
 							   uint32_t xcptno,
 							   uint32_t sp)
 {
@@ -263,7 +262,7 @@ void thinkos_krn_fault_handler(struct thinkos_rt * krn,
    function takes care of signaling the modules
    that may be affected by this condition. */
 void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
-									struct thinkos_except * xcpt,
+									struct thinkos_fault * xcpt,
 									uint32_t errno,
 									uint32_t thread)
 {
@@ -294,7 +293,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 /* -------------------------------------------------------------------------
    Application fault deferred handler 
    ------------------------------------------------------------------------- */
-void thinkos_krn_exception_reset(void)
+void thinkos_krn_fault_clr(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 	uint32_t cfsr;
@@ -308,9 +307,8 @@ void thinkos_krn_exception_reset(void)
 	}
 
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
-	DCC_LOG(LOG_TRACE, "Exception stack clear.");
-	__thinkos_memset32(thinkos_except_stack, 0, 
-					   sizeof(struct thinkos_except));
+	DCC_LOG(LOG_TRACE, "Exception clear.");
+	__thinkos_memset32(&thinkos_fault_rt, 0, sizeof(struct thinkos_fault));
 #endif
 }
 
@@ -318,7 +316,7 @@ void thinkos_krn_exception_init(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
 
-	thinkos_krn_exception_reset();
+	thinkos_krn_fault_clr();
 
 #if	(THINKOS_ENABLE_USAGEFAULT) 
 	DCC_LOG(LOG_TRACE, "USAGE fault enabled.");
@@ -344,7 +342,6 @@ void thinkos_krn_exception_init(void)
 		| SCB_SHCSR_MEMFAULTENA
 #endif
 		;
-
 }
 
 #else /* THINKOS_ENABLE_EXCEPTIONS */

@@ -33,7 +33,7 @@ COMMIO_CFILES = monitor_write.c monitor_read.c \
 		monitor_send_misc.c \
 		print_osinfo.c print_alloc.c print_thread.c \
 		print_context.c print_stack_usage.c \
-		print_exception.c print_profile.c  \
+		print_fault.c print_profile.c  \
 		monitor_hexdump.c monitor_newln.c
 
 CFILES = monitor_thread.c monitor_memory.c \

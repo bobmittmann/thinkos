@@ -41,8 +41,8 @@
 enum monitor_event {
 	/* Debug monitor internal task reset */
 	MONITOR_TASK_INIT       = 0,
-	/* Board reset request */
-	MONITOR_SOFTRST         = 1,
+	/* Kernel reset signal */
+	MONITOR_ON_CORE_RST     = 1,
 	/* ThinkOS kernel fault */
 	MONITOR_KRN_FAULT       = 2,
 	/* ThinkOS kernel reset indication */
@@ -87,8 +87,10 @@ enum monitor_event {
 	MONITOR_APP_UPLOAD      = 22,
 
 	/* User/bootloader extension events 0 to 7 */
-	MONITOR_USER_EVENT4     = 23,
-	MONITOR_USER_EVENT3     = 24,
+	MONITOR_USER_EVENT3     = 23,
+
+	/* Board reset request */
+	MONITOR_SOFTRST         = 24,
 
 	/* Debug Communication break signal */
 	SIG_COMM_BRK            = 25, 
@@ -481,8 +483,8 @@ void monitor_print_context(const struct monitor_comm * comm,
 						  const struct thinkos_context * ctx, 
 						  uint32_t sp, uint32_t ctrl);
 
-void monitor_print_exception(const struct monitor_comm * comm, 
-                            struct thinkos_except * xcpt);
+void monitor_print_fault(const struct monitor_comm * comm, 
+                            struct thinkos_fault * fault);
 
 void monitor_newln(const struct monitor_comm * comm);
 

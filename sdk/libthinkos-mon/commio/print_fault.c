@@ -31,8 +31,8 @@
 
 const char * __retstr(uint32_t __ret);
 
-void monitor_print_exception(const struct monitor_comm * comm, 
-							struct thinkos_except * xcpt)
+void monitor_print_fault(const struct monitor_comm * comm, 
+							struct thinkos_fault * fault)
 {
 #if (THINKOS_ENABLE_MPU)
 	uint32_t mmfsr;
@@ -49,17 +49,17 @@ void monitor_print_exception(const struct monitor_comm * comm,
 	uint32_t shcsr;
 	int ipsr;
 
-	monitor_printf(comm, " Error %d at ", xcpt->errno);
+	monitor_printf(comm, " Error %d at ", fault->errno);
 
-	ipsr = xcpt->ctx.xpsr & 0x1ff;
+	ipsr = fault->ctx.xpsr & 0x1ff;
 	if (ipsr == 0) {
-		monitor_printf(comm, "thread %d", xcpt->thread);
+		monitor_printf(comm, "thread %d", fault->thread);
 	} else if (ipsr > 15) {
 		monitor_printf(comm, "IRQ %d", ipsr - 16);
 	} else {
 		switch (ipsr) {
 		case CM3_EXCEPT_SVC:
-			monitor_printf(comm, "SVCall, thread %d", xcpt->thread);
+			monitor_printf(comm, "SVCall, thread %d", fault->thread);
 			break;
 		case CM3_EXCEPT_DEBUG_MONITOR:
 			monitor_printf(comm, "Monitor");
@@ -73,21 +73,21 @@ void monitor_print_exception(const struct monitor_comm * comm,
 		}
 	}
 
-	monitor_printf(comm, ": %s\r\n", thinkos_krn_err_tag(xcpt->errno));
+	monitor_printf(comm, ": %s\r\n", thinkos_krn_err_tag(fault->errno));
 
-	ret = 0xffffff00 | xcpt->ret;
-	sp = xcpt->sp;
-	ctrl = xcpt->control;
+	ret = 0xffffff00 | fault->ret;
+	sp = fault->sp;
+	ctrl = fault->control;
 
-	monitor_print_context(comm, &xcpt->ctx, sp, ctrl);
+	monitor_print_context(comm, &fault->ctx, sp, ctrl);
 						
 	monitor_printf(comm, " ret=%08x [ %s ] SP=%08x\r\n", 
-				  ret, __retstr(ret), xcpt->sp);
+				  ret, __retstr(ret), fault->sp);
 
-	switch (xcpt->errno) {
+	switch (fault->errno) {
 #if THINKOS_ENABLE_MPU 
 	case THINKOS_ERR_MEM_MANAGE:
-		mmfsr = SCB_CFSR_MMFSR_GET(xcpt->cfsr);
+		mmfsr = SCB_CFSR_MMFSR_GET(fault->cfsr);
 		monitor_printf(comm, "MMFSR=%02x [", mmfsr);
 		if (mmfsr & MMFSR_MMARVALID)
 			monitor_printf(comm, " MMARVALID");
@@ -103,13 +103,13 @@ void monitor_print_exception(const struct monitor_comm * comm,
 			monitor_printf(comm, " IACCVIOL");
 		monitor_printf(comm, " ]\r\n");
 		if (mmfsr & MMFSR_MMARVALID) 
-			monitor_printf(comm, " Fault address --> %08x\r\n", xcpt->mmfar);
+			monitor_printf(comm, " Fault address --> %08x\r\n", fault->mmfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_BUSFAULT
 	case THINKOS_ERR_BUS_FAULT:
-		bfsr = SCB_CFSR_BFSR_GET(xcpt->cfsr);
+		bfsr = SCB_CFSR_BFSR_GET(fault->cfsr);
 		monitor_printf(comm, " BFSR=%02x [", bfsr);
 		if (bfsr & BFSR_BFARVALID)  
 			monitor_printf(comm, " BFARVALID");
@@ -127,13 +127,13 @@ void monitor_print_exception(const struct monitor_comm * comm,
 			monitor_printf(comm, " IBUSERR");
 		monitor_printf(comm, " ]\r\n");
 		if (bfsr & BFSR_BFARVALID) 
-			monitor_printf(comm, " Fault address --> %08x\r\n", xcpt->bfar);
+			monitor_printf(comm, " Fault address --> %08x\r\n", fault->bfar);
 		break;
 #endif
 
 #if THINKOS_ENABLE_USAGEFAULT 
 	case THINKOS_ERR_USAGE_FAULT: 
-		ufsr = SCB_CFSR_UFSR_GET(xcpt->cfsr);
+		ufsr = SCB_CFSR_UFSR_GET(fault->cfsr);
 		monitor_printf(comm, " UFSR=%04x [", ufsr);
 		if (ufsr & UFSR_DIVBYZERO)  
 			monitor_printf(comm, " DIVBYZERO");
@@ -152,7 +152,7 @@ void monitor_print_exception(const struct monitor_comm * comm,
 #endif
 	}
 
-	shcsr = xcpt->shcsr;
+	shcsr = fault->shcsr;
 	monitor_printf(comm, "SHCSR=%08x [%s%s%s%s%s%s%s%s%s%s%s ]", 
 /*				   (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
 				   (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",

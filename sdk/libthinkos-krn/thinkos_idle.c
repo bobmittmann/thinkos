@@ -32,6 +32,25 @@
 #error "Deprecated IDLE stack options!"
 #endif
 
+#if (((THINKOS_EXCEPT_STACK_SIZE) & 0x0000003f) != 0)
+#error "THINKOS_EXCEPT_STACK_SIZE must be a multiple 0f 64"
+#endif 
+
+uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
+	thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
+
+const uint16_t thinkos_except_stack_size = sizeof(thinkos_except_stack);
+
+uint32_t * thinkos_krn_xcpt_stack_top(void)
+{
+	uintptr_t sp;
+
+	sp = (uintptr_t)(uint32_t *)thinkos_except_stack;
+	sp += sizeof(thinkos_except_stack) - sizeof(struct thinkos_context);
+
+	return (uint32_t *)sp;
+}
+
 void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
@@ -72,27 +91,32 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 						"IDLE_HOOK_SYSRST" _ATTR_POP_ );
 				__thinkos_system_reset();
 				break;
-			case IDLE_HOOK_SOFTRST:
-				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-						"IDLE_HOOK_SOFTRST" _ATTR_POP_ );
-				monitor_signal(MONITOR_SOFTRST); 
-				break;
-
 #if THINKOS_ENABLE_EXCEPTIONS
 			case IDLE_HOOK_EXCEPT_DONE: {
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_EXCEPT_DONE" _ATTR_POP_ );
-				struct thinkos_except * xcpt = __thinkos_except_buf();
+				struct thinkos_except * xcpt = __thinkos_except_rt();
 				thinkos_exception_dsr(xcpt);
 				}
 				break;
 #endif
 #endif
 
+#if (THINKOS_ENABLE_MONITOR) 
+			case IDLE_HOOK_CORE_RST:
+				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
+						"IDLE_HOOK_CORE_RST" _ATTR_POP_ );
+				thinkos_krn_core_reset(krn);
+				__krn_sched_defer(krn);
+				/* Notify monitor */
+				monitor_signal_break(MONITOR_ON_CORE_RST);
+				break;
+#endif
+
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
 			case IDLE_HOOK_FLASH_MEM0:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
-						"IDLE_HOOK_FLASH_MEM" _ATTR_POP_ );
+						"IDLE_HOOK_FLASH_MEM0" _ATTR_POP_ );
 				thinkos_flash_drv_tasklet(krn, 0, &thinkos_rt.flash_drv[0]);
 				break;
 
@@ -175,7 +199,7 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 #endif
 
 /* resets the idle thread and context */
-void __thinkos_krn_idle_reset(struct thinkos_rt * krn)
+static void __thinkos_krn_idle_reset(struct thinkos_rt * krn)
 {
 	struct thinkos_context * ctx;
 	uintptr_t stack_top;
@@ -255,7 +279,7 @@ void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req)
 	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 
-void _krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
+void __krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {
@@ -263,5 +287,11 @@ void _krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req)
 		map &= ~(1 << req);
 	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
+
 #endif
+
+void krn_idle_req_core_rst(struct thinkos_rt * krn)
+{
+	__krn_idle_hook_req(krn, IDLE_HOOK_CORE_RST); 
+}
 

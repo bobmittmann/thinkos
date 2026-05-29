@@ -36,7 +36,7 @@
 
 #if (THINKOS_IRQ_MAX) > 0
 #if (THINKOS_ENABLE_RAM_VECTORS)
-void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(256)));
+void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(128)));
 #endif
 #endif
 

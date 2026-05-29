@@ -484,7 +484,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		}
 	} else {
 		if (oid == THINKOS_WQ_FAULT) {
-			struct thinkos_except * xcpt = __thinkos_except_buf();
+			struct thinkos_except * xcpt = __thinkos_except_rt();
 			uint32_t bfsr;
 			uint32_t ufsr;
 			uint32_t mmfsr;

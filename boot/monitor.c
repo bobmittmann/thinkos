@@ -431,7 +431,7 @@ void monitor_print_fault_regs(const struct monitor_comm * comm)
 static void monitor_show_thread_fault(const struct monitor_comm * comm, 
 									  int thread_id, int32_t errno)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 	struct krn_thread_state inf;
 
 	monitor_newln(comm);
@@ -445,7 +445,7 @@ static void monitor_show_thread_fault(const struct monitor_comm * comm,
 	if ((errno == THINKOS_ERR_BUS_FAULT) || 
 		(errno == THINKOS_ERR_USAGE_FAULT) ||
 		(errno == THINKOS_ERR_MEM_MANAGE)) {
-		monitor_print_exception(comm, xcpt);
+		monitor_print_fault(comm, fault);
 	} else {
 		monitor_print_thread_state(comm, &inf);
 	}
@@ -455,9 +455,9 @@ static void monitor_show_thread_fault(const struct monitor_comm * comm,
 
 }
 
-static void monitor_print_fault(const struct monitor_comm * comm) 
+static void monitor_on_print_fault(const struct monitor_comm * comm) 
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+	struct thinkos_fault * fault = __thinkos_fault_rt();
 //	const struct thinkos_mem_desc * mem = &sram_desc;
 	struct krn_thread_state inf;
 //	uint32_t addr = (uint32_t)&thinkos_rt;
@@ -480,7 +480,7 @@ static void monitor_print_fault(const struct monitor_comm * comm)
 	monitor_print_thread_state(comm, &inf);
 	monitor_newln(comm);
 
-	monitor_print_exception(comm, xcpt);
+	monitor_print_fault(comm, fault);
 	monitor_newln(comm);
 
 	sched = monitor_sched_ctrl_get();
@@ -540,7 +540,7 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 static void monitor_on_krn_fault(const struct monitor_comm * comm)
 {
-	struct thinkos_except * xcpt = __thinkos_except_buf();
+//	struct thinkos_fault * fault = __thinkos_fault_buf();
 	int32_t xcpno;
 	int32_t errno;
 
@@ -551,8 +551,9 @@ static void monitor_on_krn_fault(const struct monitor_comm * comm)
 		monitor_newln(comm);
 		monitor_printf(comm, "Kernel fault: %d.%d\r\n" , xcpno, errno);
 
-		monitor_print_exception(comm, xcpt);
-		monitor_newln(comm);
+//		monitor_print_fault(comm, fault);
+//		monitor_newln(comm);
+		mdelay(100);
 	} else {
 		DCC_LOG(LOG_ERROR, "Restarting!");
 //		thinkos_krn_sysrst();
@@ -885,7 +886,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		break;
 #if (MONITOR_FAULT_ENABLE)
 	case CTRL_G:
-		monitor_print_fault(comm);
+		monitor_on_print_fault(comm);
 		break;
 #endif
 	case CTRL_Y:
@@ -980,6 +981,7 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_APP_EXEC);
+ 	sigmask |= (1 << MONITOR_ON_CORE_RST);
 
 	monitor_unmask(MONITOR_COMM_BRK);
 	monitor_unmask(MONITOR_COMM_CTL);
@@ -1036,7 +1038,6 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 			DCC_LOG(LOG_WARNING, "/!\\ COMM_BREAK signal !");
 			monitor_puts("\r\n+++\r\nBRK\r\n", comm);
 			monitor_comm_break_ack(comm);
-			monitor_req_softrst();
 			break;
 
 		case MONITOR_APP_UPLOAD:
@@ -1071,9 +1072,13 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
-			thinkos_krn_core_reset(krn);
-			thinkos_krn_console_reset();
-			monitor_signal_break(0);
+//			thinkos_krn_core_reset(krn);
+//			thinkos_krn_console_reset();
+			krn_idle_req_core_rst(krn);
+			break;
+
+		case MONITOR_ON_CORE_RST:
+			monitor_clear(MONITOR_ON_CORE_RST);
 			if (board->on_break) {
 				board->on_break(comm);
 			}
