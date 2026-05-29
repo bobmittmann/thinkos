@@ -167,7 +167,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
     #if (THINKOS_ENABLE_MONITOR_CLOCK)
 			if ((int32_t)(krn->clk.th_tmr[0] - clk) >= 0 ) {
 				sigset = krn->monitor.events;
-				sigset |= MONITOR_ALARM;
+				sigset |= (1 << MONITOR_ALARM);
 				krn->monitor.events = sigset;
 			}
     #endif
