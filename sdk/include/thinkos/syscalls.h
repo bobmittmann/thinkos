@@ -440,12 +440,6 @@ static inline int __attribute__((always_inline)) thinkos_sem_post(int sem) {
 return THINKOS_SYSCALL1(THINKOS_SEM_POST, sem);
 }
 
-static inline void  __attribute__((always_inline)) thinkos_sem_post_i(int sem) {
-uintptr_t * except = (uintptr_t *)(0);
-void (* sem_post_i)(int) = (void (*)(int))except[7];
-sem_post_i(sem);
-}
-
 /* --------------------------------------------------------------------------
  *  Event sets
  * --------------------------------------------------------------------------*/
@@ -472,13 +466,6 @@ return THINKOS_SYSCALL3(THINKOS_EVENT_MASK, set, ev, val);
 static inline int __attribute__((always_inline)) thinkos_ev_clear(
 															  int set, int ev) {
 return THINKOS_SYSCALL2(THINKOS_EVENT_CLEAR, set, ev);
-}
-
-static inline void __attribute__((always_inline)) thinkos_ev_raise_i(
-																 int set, int ev) {
-uintptr_t * except = (uintptr_t *)(0);
-void (* ev_raise_i)(int, int) = (void (*)(int, int))except[9];
-ev_raise_i(set, ev);
 }
 
 /* --------------------------------------------------------------------------
@@ -519,12 +506,6 @@ thinkos_flag_timedtake(int flag, unsigned int ms) {
 	return THINKOS_SYSCALL2(THINKOS_FLAG_TIMEDTAKE, flag, ms);
 }
 
-static inline void __attribute__((always_inline)) 
-thinkos_flag_give_i(int flag) {
-	void (* flag_give_i)(int) = (void (*)(int))(10 * 4);
-	flag_give_i(flag);
-}
-
 /* --------------------------------------------------------------------------
  * Gates
  * --------------------------------------------------------------------------
@@ -553,12 +534,6 @@ thinkos_gate_wait(int gate) {
 static inline int __attribute__((always_inline)) 
 thinkos_gate_timedwait(int gate, unsigned int ms) {
 	return THINKOS_SYSCALL2(THINKOS_GATE_TIMEDWAIT, gate, ms);
-}
-
-static inline void __attribute__((always_inline)) 
-thinkos_gate_open_i(int gate) {
-	void (* __gate_open_i)(uint32_t) = (void (*)(uint32_t))(13 * 4);
-	__gate_open_i(gate);
 }
 
 /* --------------------------------------------------------------------------

@@ -44,8 +44,6 @@
 #include <thinkos/bootldr.h>
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
-#define __THINKOS_KRNSVC__
-#include <thinkos/krnsvc.h>
 
 #include <thinkos.h>
 #include <vt100.h>

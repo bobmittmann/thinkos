@@ -282,15 +282,14 @@ static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem)
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void cm3_except7_isr(uint32_t sem)
-{
+void thinkos_krn_sem_post_i(uint32_t sem) 
+{	
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	__krn_sem_post(krn, sem); 
 	/* signal the scheduler ... */
-	__krn_preempt(krn);
+	__krn_sched_defer(krn);
 }
-
 
 void __thinkos_sem_post_i(uint32_t sem) 
 {

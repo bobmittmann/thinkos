@@ -262,7 +262,7 @@ void __krn_ev_raise(struct thinkos_rt * krn, uint32_t evset, unsigned int ev)
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void cm3_except9_isr(uint32_t evset, int ev)
+void thinkos_krn_ev_raise_i(uint32_t evset, int ev)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 

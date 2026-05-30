@@ -253,7 +253,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void cm3_except10_isr(uint32_t flag)
+void thinkos_krn_flag_give_i(uint32_t flag)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 

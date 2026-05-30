@@ -422,7 +422,7 @@ again:
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void cm3_except13_isr(uint32_t gate)
+void thinkos_gate_open_i(uint32_t gate)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 

@@ -45,6 +45,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_fifo.c thinkos_comm.c thinkos_monitor.c \
 		 thinkos_obj_kind_lut.c thinkos_wq.c \
 		 thinkos_app.c thinkos_trace.c \
+		 thinkos_i_calls.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)

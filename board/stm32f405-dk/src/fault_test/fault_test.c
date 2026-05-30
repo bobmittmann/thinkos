@@ -2,7 +2,6 @@
  * ------------
  */
 
-#include <fixpt.h>
 #include <string.h>
 #include <stdint.h>
 #include <sys/param.h>
@@ -10,9 +9,6 @@
 #include <sys/console.h>
 #include <thinkos.h>
 #include <stdio.h>
-
-#define __THINKOS_DEBUG__
-#include <thinkos/debug.h>
 
 #include "board.h"
 
@@ -132,7 +128,7 @@ void stm32_tim_init(struct stm32f_tim * tim, uint32_t period_us)
 	uint32_t n;
 
 	/* get the total divisior */
-	div = (stm32f_tim1_hz  * period_us / 1000000);
+	div = (((uint64_t)stm32f_tim1_hz  * period_us) / 1000000);
 	/* get the minimum pre scaler */
 	pre = (div / 65536) + 1;
 	/* get the reload register value */
@@ -310,6 +306,7 @@ int test1_task(int mutex)
 	return 0;
 }
 
+
 void irq_read_fault(void)
 {
 	/* Timer clock enable */
@@ -331,6 +328,37 @@ int test2_task(int mutex)
 
 	return 0;
 }
+
+
+int sem;
+
+void tim2_sem_isr(void)
+{
+	struct stm32f_tim * tim = STM32F_TIM2;
+	/* Clear timer interrupt flags */
+	tim->sr = 0;
+
+	thinkos_sem_post_i(sem); 
+}
+
+void sem_test(void)
+{
+	sem = THINKOS_SEM_DESC(0); 
+	/* Timer clock enable */
+	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM2);
+	/* configure interrupts */
+	thinkos_irq_register(STM32F_IRQ_TIM2, IRQ_PRIORITY_HIGH, tim2_sem_isr);
+	/* enable interrupts */
+	thinkos_irq_enable(STM32F_IRQ_TIM2);
+	/* Initialize timer */
+	stm32_tim_init(STM32F_TIM2, 500000);
+
+	for(;;) {
+		thinkos_sem_wait(sem);
+		printf("Tick\r\n");
+	}
+}
+
 
 void print_menu(void)
 {
@@ -390,7 +418,9 @@ int main_task(int mutex)
 		case 'p':
 			irq_read_fault();
 			break;
-
+		case '1':
+			sem_test();
+			break;
 		case 'g':
 			/* Start the test application thread */
 			thinkos_thread_create_inf(C_TASK(test2_task), 
@@ -426,7 +456,7 @@ int main(int argc, char **argv)
 	/* Initializes stdio so we can use printf and such. */
 	stdio_init();
 
-	mutex = thinkos_mutex_alloc();
+	mutex = THINKOS_MUTEX_DESC(0);
 
 	while (!thinkos_console_is_connected()) {
 		thinkos_sleep(100);

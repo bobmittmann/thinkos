@@ -40,9 +40,6 @@
 #define __THINKOS_IDLE__
 #include <thinkos/idle.h>
 
-#define __THINKOS_KRNSVC__
-#include <thinkos/krnsvc.h>
-
 #define __THINKOS_TIME__
 #include <thinkos/time.h>
 

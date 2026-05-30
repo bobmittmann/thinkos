@@ -39,8 +39,6 @@
 #include <thinkos/monitor.h>
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
-#define __THINKOS_KRNSVC__
-#include <thinkos/krnsvc.h>
 
 #include <thinkos.h>
 

@@ -441,8 +441,12 @@ thinkos_krn_halt:
 	.thumb_set  cm3_usage_fault_isr,thinkos_krn_halt
 #endif
 
+#if	!(THINKOS_ENABLE_I_CALLS) 
 	.weak       cm3_except7_isr
 	.thumb_set  cm3_except7_isr,thinkos_krn_halt
+#else
+	.extern     cm3_except7_isr
+#endif
 
 	.weak       ice_comm_blk
 	.set		ice_comm_blk, __core_vectors

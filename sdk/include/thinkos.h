@@ -245,10 +245,14 @@ struct thinkos_thread_initializer;
 
 #define __THINKOS_SYSCALLS__
 #include <thinkos/syscalls.h>
+#define __THINKOS_I_CALLS__
+#include <thinkos/i_calls.h>
 #define __THINKOS_MEMORY__
 #include <thinkos/memory.h>
 #define __THINKOS_THREAD__
 #include <thinkos/thread.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -157,7 +157,7 @@
   #define THINKOS_ENABLE_IDLE_WFI           1
 #endif
 
-#define THINKOS_ENABLE_IDLE_HOOKS           0
+#define THINKOS_ENABLE_IDLE_HOOKS           1
 
 #define THINKOS_ENABLE_OBJ_ALLOC            0
 #define THINKOS_ENABLE_OBJ_FREE             0
@@ -181,7 +181,7 @@
 #define THINKOS_CUSTOM_APP_TAG              "S32F405"
 
 #define THINKOS_ENABLE_TIMESHARE            0
-#define THINKOS_ENABLE_I_CALLS              0
+#define THINKOS_ENABLE_I_CALLS              1
 #define THINKOS_ENABLE_READY_MASK           0
 
 #define THINKOS_COMM_MAX                    2
