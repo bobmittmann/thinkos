@@ -26,63 +26,63 @@
 
 /* Static sanity check: */
 _Static_assert (offsetof(struct thinkos_fault, ctx) == 
-				OFFSETOF_XCPT_CONTEXT, "OFFSETOF_XCPT_CONTEXT");
+				OFFSETOF_FAULT_CONTEXT, "OFFSETOF_FAULT_CONTEXT");
 
 _Static_assert (offsetof(struct thinkos_fault, sp) == 
-				OFFSETOF_XCPT_SP, "OFFSETOF_XCPT_SP");
+				OFFSETOF_FAULT_SP, "OFFSETOF_FAULT_SP");
 
 _Static_assert (offsetof(struct thinkos_fault, ret) == 
-				OFFSETOF_XCPT_RET, "OFFSETOF_XCPT_RET");
+				OFFSETOF_FAULT_RET, "OFFSETOF_FAULT_RET");
 
 _Static_assert (offsetof(struct thinkos_fault, control) == 
-				OFFSETOF_XCPT_CONTROL, "OFFSETOF_XCPT_CONTROL");
+				OFFSETOF_FAULT_CONTROL, "OFFSETOF_FAULT_CONTROL");
 
 _Static_assert (offsetof(struct thinkos_fault, errno) == 
-				OFFSETOF_XCPT_ERRNO, "OFFSETOF_XCPT_ERRNO");
+				OFFSETOF_FAULT_ERRNO, "OFFSETOF_FAULT_ERRNO");
 
 _Static_assert (offsetof(struct thinkos_fault, seq) == 
-				OFFSETOF_XCPT_SEQ, "OFFSETOF_XCPT_SEQ");
+				OFFSETOF_FAULT_SEQ, "OFFSETOF_FAULT_SEQ");
 
 _Static_assert (offsetof(struct thinkos_fault, thread) == 
-				OFFSETOF_XCPT_THREAD, "OFFSETOF_XCPT_THREAD");
+				OFFSETOF_FAULT_THREAD, "OFFSETOF_FAULT_THREAD");
 
 _Static_assert (offsetof(struct thinkos_fault, ack) == 
-				OFFSETOF_XCPT_ACK, "OFFSETOF_XCPT_ACK");
+				OFFSETOF_FAULT_ACK, "OFFSETOF_FAULT_ACK");
 
 _Static_assert (offsetof(struct thinkos_fault, shcsr) == 
-				OFFSETOF_XCPT_SHCSR, "OFFSETOF_XCPT_SHCSR");
+				OFFSETOF_FAULT_SHCSR, "OFFSETOF_FAULT_SHCSR");
 
 _Static_assert (offsetof(struct thinkos_fault, cfsr) == 
-				OFFSETOF_XCPT_CFSR, "OFFSETOF_XCPT_CFSR");
+				OFFSETOF_FAULT_CFSR, "OFFSETOF_FAULT_CFSR");
 
 _Static_assert (offsetof(struct thinkos_fault, mmfar) == 
-				OFFSETOF_XCPT_MMFAR, "OFFSETOF_XCPT_MMFAR");
+				OFFSETOF_FAULT_MMFAR, "OFFSETOF_FAULT_MMFAR");
 
 _Static_assert (offsetof(struct thinkos_fault, bfar) == 
-				OFFSETOF_XCPT_BFAR, "OFFSETOF_XCPT_BFAR");
+				OFFSETOF_FAULT_BFAR, "OFFSETOF_FAULT_BFAR");
 
 #if 0
 _Static_assert (offsetof(struct thinkos_fault, hfsr) == 
-				OFFSETOF_XCPT_HFSR, "OFFSETOF_XCPT_HFSR");
+				OFFSETOF_FAULT_HFSR, "OFFSETOF_FAULT_HFSR");
 
 _Static_assert (offsetof(struct thinkos_fault, ipsr) == 
-				OFFSETOF_XCPT_IPSR, "OFFSETOF_XCPT_IPSR");
+				OFFSETOF_FAULT_IPSR, "OFFSETOF_FAULT_IPSR");
 
 _Static_assert (offsetof(struct thinkos_fault, psp) == 
-				OFFSETOF_XCPT_PSP, "OFFSETOF_XCPT_PSP");
+				OFFSETOF_FAULT_PSP, "OFFSETOF_FAULT_PSP");
 
 _Static_assert (offsetof(struct thinkos_fault, sched) == 
-				OFFSETOF_XCPT_SCHED, "OFFSETOF_XCPT_SCHED");
+				OFFSETOF_FAULT_SCHED, "OFFSETOF_FAULT_SCHED");
 
 _Static_assert (offsetof(struct thinkos_fault, icsr) == 
-				OFFSETOF_XCPT_ICSR, "OFFSETOF_XCPT_ICSR");
+				OFFSETOF_FAULT_ICSR, "OFFSETOF_FAULT_ICSR");
 
 #if (THINKOS_ENABLE_PROFILING)
 _Static_assert (offsetof(struct thinkos_fault, cycref) == 
-				OFFSETOF_XCPT_CYCREF, "OFFSETOF_XCPT_CYCREF");
+				OFFSETOF_FAULT_CYCREF, "OFFSETOF_FAULT_CYCREF");
 
 _Static_assert (offsetof(struct thinkos_fault, cyccnt) == 
-				OFFSETOF_XCPT_CYCCNT, "OFFSETOF_XCPT_CYCCNT");
+				OFFSETOF_FAULT_CYCCNT, "OFFSETOF_FAULT_CYCCNT");
 #endif
 
 #endif
@@ -100,9 +100,9 @@ struct thinkos_fault thinkos_fault_rt __attribute__((aligned(8)));
  */
 #undef THINKOS_SYSRST_ONFAULT
 #define THINKOS_SYSRST_ONFAULT    0
-#define DCC_EXCEPT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
+#define DCC_FAULT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
 #else
-#define DCC_EXCEPT_DUMP(KRN, XCPT)
+#define DCC_FAULT_DUMP(KRN, XCPT)
 #endif
 
 #include <sys/dcclog.h>
@@ -229,7 +229,7 @@ void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 }
 
 void thinkos_krn_fault_handler(struct thinkos_rt * krn,
-							   struct thinkos_fault * xcpt,
+							   struct thinkos_fault * fault,
 							   uint32_t xcptno,
 							   uint32_t sp)
 {
@@ -262,7 +262,7 @@ void thinkos_krn_fault_handler(struct thinkos_rt * krn,
    function takes care of signaling the modules
    that may be affected by this condition. */
 void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
-									struct thinkos_fault * xcpt,
+									struct thinkos_fault * fault,
 									uint32_t errno,
 									uint32_t thread)
 {
@@ -270,17 +270,17 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 	__krn_sched_err_set(krn, errno);
 
 	/* Disable all vectored interrupts on NVIC */
-	__nvic_irq_disable_all();
+//	__nvic_irq_disable_all();
 
 	/* Clear the SVC call pending to avoid returning to a service routine
 	   as this will cause another stack fault */
 	__krn_svc_pend_clr(krn);
 
-	DCC_LOG2(LOG_WARNING, VT_PSH VT_REV VT_FYW
+	DCC_LOG2(LOG_TRACE, VT_PSH VT_REV VT_FYW
 			 " Exception: error %d on thread %d " VT_POP, 
 			 errno, thread);
 
-	DCC_EXCEPT_DUMP(krn, xcpt);
+	DCC_FAULT_DUMP(krn, fault);
 
 	/* preempt the scheduler. It will run shortly ater this exception 
 	 * is unstacked. */

@@ -137,11 +137,7 @@
 #if (THINKOS_ENABLE_DATE_AND_TIME)
   #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 32
 #else
-  #if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
-    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 8
-  #else
-    #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 4
-  #endif
+  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 4
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -501,10 +497,8 @@ struct thinkos_rt {
 		/* Per thread timer. Used for time wait (e.g. sleep()) */
 		uint32_t th_tmr[__KRN_THREAD_LST_SIZ];
 		uint32_t time;      /* clock present value */
-#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
-		uint32_t increment; /* fractional per tick increment */
-#endif
 #if (THINKOS_ENABLE_DATE_AND_TIME)
+		uint32_t increment; /* fractional per tick increment */
 		/* date and time fractional value */
 		struct {
 			uint32_t frac;
@@ -812,16 +806,15 @@ struct krn_thread_state {
 	uint8_t ready;
 	int8_t irq;
 	uint16_t wq;
-	uint32_t pc;
+	struct thinkos_context * ctx;
 	uint32_t sp;
 	uint32_t sl;
-	struct thinkos_context * ctx;
+	uint32_t stack_base;
+	uint32_t stack_size;
 	const char * tag;
 	uint32_t clk;
 	int32_t itv;
 	uint32_t cycnt;
-	uint32_t stack_base;
-	uint32_t stack_size;
 };
 
 #define __THINKOS_MEMORY__
@@ -1070,6 +1063,8 @@ int thinkos_krn_thread_init(struct thinkos_rt * krn,
 	const struct thinkos_thread_initializer * init);
 
 void __attribute__((noreturn)) thinkos_krn_sysrst(void);
+
+void __attribute__((noreturn)) thinkos_krn_halt(void);
 
 void thinkos_krn_udelay_calibrate(void);
 

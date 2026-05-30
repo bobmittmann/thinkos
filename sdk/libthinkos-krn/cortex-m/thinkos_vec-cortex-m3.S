@@ -143,7 +143,7 @@ cm3_hard_fault_isr:
 	ldr     sp, .L_xcpt_stack_top
 	bl      thinkos_krn_fatal_except
 	/* never retrun */
-	bl      __krn_halt
+	b       thinkos_krn_halt
 
 __thinkos_krn_fault:
 	/* ---------------------------------------------------------------
@@ -249,7 +249,6 @@ __thinkos_krn_thread_err:
 	/* SP is probably OK */ 
 	adds    r12, #(8 * 4) /* top of faulty stack frame */
 	ldmdb   r12, {r9,r10,r11}/* load from stack frame LR, PC, XPSR */
-	subs    r12, #(8 * 4) 
 	b       2f
 
 .L_stack_err:
@@ -265,22 +264,26 @@ __thinkos_krn_thread_err:
 	stmia   r1, {r4,r5,r8,r9} /* save SHCSR, CFSR, MMFAR, BFAR */
 
 	/* roll back to the exception buffer base */
-	subs    r1, #OFFSETOF_XCPT_SHCSR
+	subs    r1, #OFFSETOF_FAULT_SHCSR
 
-	strb    lr, [r1, #OFFSETOF_XCPT_RET]
+	strb    lr, [r1, #OFFSETOF_FAULT_RET]
 	mrs     r4, CONTROL
-	strb    r4, [r1, #OFFSETOF_XCPT_CONTROL]
-	strb    r2, [r1, #OFFSETOF_XCPT_ERRNO]
+	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
+	strb    r2, [r1, #OFFSETOF_FAULT_ERRNO]
 	
 	ldr     r0, .L_thinkos_rt
 
 	ldrb    r3, [r0, #OFFSETOF_KRN_SCHED_ACT]
-	strb    r3, [r1, #OFFSETOF_XCPT_THREAD]
+	strb    r3, [r1, #OFFSETOF_FAULT_THREAD]
 
-	ldrb    r4, [r1, #OFFSETOF_XCPT_SEQ]
+	ldrb    r4, [r1, #OFFSETOF_FAULT_SEQ]
 	adds    r4, #1
-	strb    r4, [r1, #OFFSETOF_XCPT_SEQ]
+	strb    r4, [r1, #OFFSETOF_FAULT_SEQ]
 
+	/* Adjust PSP to point to the fault buffer */
+	add     r6, r1, #(8 * 4)
+	msr     PSP, r6
+#if 0
 	/* Clear the SVC call pending to avoid returning to a service routine
 	 this will cause another stack fault */
 	ldr     r4, .L_cm3_scb
@@ -291,9 +294,6 @@ __thinkos_krn_thread_err:
 	movs    r5, #SCB_ICSR_PENDSVSET
 	str     r5, [r4, #SCB_ICSR_OFFS]
 	mov     r7, lr	
-
-	/* PSP point to the exception buffer */
-	msr     PSP, r1
 
 	/* Set the error in the scheduler control */
 	strb    r2, [r0, #OFFSETOF_KRN_SCHED_ERR]
@@ -310,13 +310,13 @@ __thinkos_krn_thread_err:
 //	mov     sp, r5 
 	/* restore Idle core context */
 //	pop     {r4-r11}
-
+#endif
 	/* Call the thread exception handler */
 	/* r0: krn 
-	   r1: xcept buf
+	   r1: fault_rt
 	   r2: errno
 	   r3: active thread */
-//	b       thinkos_krn_except_err_handler
+	b       thinkos_krn_except_err_handler
 	/* reenable interrupts */
 
 
@@ -441,8 +441,6 @@ cm3_usage_fault_isr:
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
-
-
 #if (THINKOS_ENABLE_DBGMON)
 	.align  2
 	.global cm3_debug_mon_isr
@@ -461,16 +459,18 @@ cm3_debug_mon_isr:
 #endif /* THINKOS_ENABLE_DBGMON */
 
 .L_krn_halt:
-	.word   __krn_halt
+	.word   thinkos_krn_halt
 
 	.text
 	.align	2
 
 	.thumb
-	.global __krn_halt
+	.global thinkos_krn_halt
 	.thumb_func
-	.type   __krn_halt, %function
-__krn_halt:
+	.type   thinkos_krn_halt, %function
+thinkos_krn_halt:
+	/* disable interrupts */
+	cpsid   i
 	b		.
 
 	.align  2
@@ -478,7 +478,7 @@ __krn_halt:
 .L_thinkos_rt:
 	.word	thinkos_rt
 
-	.size   __krn_halt, . - __krn_halt
+	.size   thinkos_krn_halt, . - thinkos_krn_halt
 
 
 
@@ -487,49 +487,49 @@ __krn_halt:
  * --------------------------------------------------------------------------*/
 
 	.weak       cm3_nmi_isr
-	.thumb_set  cm3_nmi_isr,__krn_halt
+	.thumb_set  cm3_nmi_isr,thinkos_krn_halt
 
 #if	!(THINKOS_ENABLE_HARDFAULT)
 	.weak       cm3_hard_fault_isr
-	.thumb_set  cm3_hard_fault_isr,__krn_halt
+	.thumb_set  cm3_hard_fault_isr,thinkos_krn_halt
 #endif
 
 #if	!(THINKOS_ENABLE_MEMFAULT)
 	.weak       cm3_mem_manage_isr
-	.thumb_set  cm3_mem_manage_isr,__krn_halt
+	.thumb_set  cm3_mem_manage_isr,thinkos_krn_halt
 #endif
 
 #if	!(THINKOS_ENABLE_BUSFAULT)
 	.weak       cm3_bus_fault_isr
-	.thumb_set  cm3_bus_fault_isr,__krn_halt
+	.thumb_set  cm3_bus_fault_isr,thinkos_krn_halt
 #endif
 
 #if	!(THINKOS_ENABLE_USAGEFAULT) 
 	.weak       cm3_usage_fault_isr
-	.thumb_set  cm3_usage_fault_isr,__krn_halt
+	.thumb_set  cm3_usage_fault_isr,thinkos_krn_halt
 #endif
 
 	.weak       cm3_except7_isr
-	.thumb_set  cm3_except7_isr,__krn_halt
+	.thumb_set  cm3_except7_isr,thinkos_krn_halt
 
 	.weak       ice_comm_blk
 	.set		ice_comm_blk, __core_vectors
 
 	.weak       cm3_except9_isr
-	.thumb_set  cm3_except9_isr,__krn_halt
+	.thumb_set  cm3_except9_isr,thinkos_krn_halt
 
 	.weak       cm3_except10_isr
-	.thumb_set  cm3_except10_isr,__krn_halt
+	.thumb_set  cm3_except10_isr,thinkos_krn_halt
 
 	.extern     cm3_svc_isr
 
 #if !(THINKOS_ENABLE_DBGMON)
 	.weak       cm3_debug_mon_isr
-	.thumb_set  cm3_debug_mon_isr,__krn_halt
+	.thumb_set  cm3_debug_mon_isr,thinkos_krn_halt
 #endif
 
 	.weak       cm3_except13_isr
-	.thumb_set  cm3_except13_isr,__krn_halt
+	.thumb_set  cm3_except13_isr,thinkos_krn_halt
 
 	.extern     cm3_pendsv_isr
 

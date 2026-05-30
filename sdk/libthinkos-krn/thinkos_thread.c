@@ -218,45 +218,6 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	return;
 }
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-#if 0
-int __thinkos_thread_fault_code(unsigned int thread_no)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-	struct thinkos_rt * krn = &thinkos_rt;
-	unsigned int insn;
-	uint16_t * pc;
-	int code;
-
-#if 0
-FIXME:
-	if (!__thread_isfaulty(krn, thread_no))
-		return 0;
-#endif
-
-	if (__fault_active_get(fault) == (int)thread_no)
-		return fault->errno;
-
-	pc = (uint16_t *)__thread_pc_get(krn, thread_no);
-	insn = pc[0];
-	code = insn & 0x00ff;
-
-	return code - THINKOS_BKPT_EXCEPT_OFF;
-}
-#endif
-
-struct thinkos_context * __thinkos_thread_ctx(unsigned int thread_no)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-
-	if (__fault_thread_get(fault) == (int)thread_no)
-		return &fault->ctx;
-
-	return __thread_ctx_get(krn, thread_no);
-}
-#endif
-
 void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th, 
 					   unsigned int wq) 
 {
@@ -323,58 +284,6 @@ bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th)
 		__thread_ctx_is_valid(krn, th);
 }
 
-unsigned int __krn_thread_ctrl_get(struct thinkos_rt * krn, unsigned int th)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__fault_thread_get(fault) == th)
-		return fault->control;
-
-    return __thread_ctrl_get(krn, th);
-}
-
-uint32_t __krn_thread_sp_get(struct thinkos_rt * krn, unsigned int th)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__fault_thread_get(fault) == th)
-		return fault->sp;
-
-    return __thread_sp_get(krn, th);
-}
-
-uint32_t __krn_thread_pc_get(struct thinkos_rt * krn, unsigned int th)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__fault_thread_get(fault) == th)
-		return fault->ctx.pc;
-
-    return __thread_pc_get(krn, th);
-}
-
-uint32_t __krn_thread_lr_get(struct thinkos_rt * krn, unsigned int th)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST))
-		return 0;
-
-    if (__fault_thread_get(fault) == th)
-		return fault->ctx.lr;
-
-    return __thread_lr_get(krn, th);
-}
-
 int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
 {
 	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST)) {
@@ -421,7 +330,7 @@ int thinkos_krn_active_get(void)
 }
 
 bool thinkos_krn_thread_state_get(unsigned int thread_id, 
-								  struct krn_thread_state * inf)
+								  struct krn_thread_state * st)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
@@ -429,29 +338,34 @@ bool thinkos_krn_thread_state_get(unsigned int thread_id,
 		return false;
 	}
 
-	if (inf != NULL) {
+	if (st != NULL) {
+#if (THINKOS_ENABLE_EXCEPTIONS)
 		struct thinkos_fault * fault = __thinkos_fault_rt();
 
-		inf->thread_id = thread_id;
-		inf->ctrl = __krn_thread_ctrl_get(krn, thread_id);
-		inf->pc = __krn_thread_pc_get(krn, thread_id);
-		inf->sp = __krn_thread_sp_get(krn, thread_id);
-		inf->errno = __krn_thread_errno_get(krn, thread_id);
-    	if (__fault_thread_get(fault) == thread_id)
-			inf->ctx = &fault->ctx;
-		else
-			inf->ctx = __thread_ctx_get(krn, thread_id);
-		inf->sl = __thread_sl_get(krn, thread_id);
-		inf->tag = __thread_tag_get(krn, thread_id);
-		inf->wq = __thread_wq_get(krn, thread_id);
-		inf->tmw = __thread_tmw_get(krn, thread_id);
-		inf->clk = __thread_clk_get(krn, thread_id);
-		inf->irq = __krn_thread_irq_get(krn, thread_id);
-		inf->ready = __thread_ready_get(krn, thread_id);
-		inf->itv = __thread_clk_itv_get(krn, thread_id);
-		inf->cycnt = __thread_cyccnt_get(krn, thread_id);
-		inf->stack_base = __thread_stack_base_get(krn, thread_id);
-		inf->stack_size = __thread_stack_size_get(krn, thread_id);
+    	if (__fault_thread_get(fault) == thread_id) {
+			st->ctx = &fault->ctx;
+			st->sp = fault->sp;
+			st->ctrl = fault->control;
+		} else 
+#endif
+		{
+			st->ctx = __thread_ctx_get(krn, thread_id);
+			st->sp = __thread_sp_get(krn, thread_id);
+			st->ctrl = __thread_ctrl_get(krn, thread_id);
+		}
+		st->thread_id = thread_id;
+		st->errno = __krn_thread_errno_get(krn, thread_id);
+		st->sl = __thread_sl_get(krn, thread_id);
+		st->tag = __thread_tag_get(krn, thread_id);
+		st->wq = __thread_wq_get(krn, thread_id);
+		st->tmw = __thread_tmw_get(krn, thread_id);
+		st->clk = __thread_clk_get(krn, thread_id);
+		st->irq = __krn_thread_irq_get(krn, thread_id);
+		st->ready = __thread_ready_get(krn, thread_id);
+		st->itv = __thread_clk_itv_get(krn, thread_id);
+		st->cycnt = __thread_cyccnt_get(krn, thread_id);
+		st->stack_base = __thread_stack_base_get(krn, thread_id);
+		st->stack_size = __thread_stack_size_get(krn, thread_id);
 	}
 
 	return true;

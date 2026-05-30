@@ -28,54 +28,46 @@
 #endif 
 
 
-#define OFFSETOF_XCPT_CONTEXT    0
+#define OFFSETOF_FAULT_CONTEXT    0
 
-#define OFFSETOF_XCPT_SP         64
-#define OFFSETOF_XCPT_SHCSR      68
-#define OFFSETOF_XCPT_CFSR       72
-#define OFFSETOF_XCPT_MMFAR      76
-#define OFFSETOF_XCPT_BFAR       80
+#define OFFSETOF_FAULT_SP         64
+#define OFFSETOF_FAULT_SHCSR      68
+#define OFFSETOF_FAULT_CFSR       72
+#define OFFSETOF_FAULT_MMFAR      76
+#define OFFSETOF_FAULT_BFAR       80
 
-#define OFFSETOF_XCPT_RET        84
-#define OFFSETOF_XCPT_CONTROL    85
-#define OFFSETOF_XCPT_ERRNO      86
-#define OFFSETOF_XCPT_SEQ        87
+#define OFFSETOF_FAULT_RET        84
+#define OFFSETOF_FAULT_CONTROL    85
+#define OFFSETOF_FAULT_ERRNO      86
+#define OFFSETOF_FAULT_SEQ        87
 
-#define OFFSETOF_XCPT_THREAD     88
-#define OFFSETOF_XCPT_ACK        91
+#define OFFSETOF_FAULT_THREAD     88
+#define OFFSETOF_FAULT_ACK        91
 
 
 #if 0
-#define OFFSETOF_XCPT_HFSR       68
-#define OFFSETOF_XCPT_BASEPRI    5
+#define OFFSETOF_FAULT_HFSR       68
+#define OFFSETOF_FAULT_BASEPRI    5
 
-#define OFFSETOF_XCPT_PRIMASK    7
-#define OFFSETOF_XCPT_FAULTMASK  7
-#define OFFSETOF_XCPT_MSP       72
-#define OFFSETOF_XCPT_PSP       76
+#define OFFSETOF_FAULT_PRIMASK    7
+#define OFFSETOF_FAULT_FAULTMASK  7
+#define OFFSETOF_FAULT_MSP       72
+#define OFFSETOF_FAULT_PSP       76
 
-#define OFFSETOF_XCPT_SCHED     80
-#define OFFSETOF_XCPT_READY     84
+#define OFFSETOF_FAULT_SCHED     80
+#define OFFSETOF_FAULT_READY     84
 
 
-#define OFFSETOF_XCPT_ICSR     104
-#define OFFSETOF_XCPT_SHCSR    108
+#define OFFSETOF_FAULT_ICSR     104
+#define OFFSETOF_FAULT_SHCSR    108
 
 #if (THINKOS_ENABLE_PROFILING)
-  #define OFFSETOF_XCPT_CYCREF  112
-  #define OFFSETOF_XCPT_CYCCNT  116
+  #define OFFSETOF_FAULT_CYCREF  112
+  #define OFFSETOF_FAULT_CYCCNT  116
 #else
 #endif
 
 #endif
-
-/*
-#define SIZEOF_THINKOS_EXCEPT (OFFSETOF_XCPT_CONTEXT + \
-							   (SIZEOF_THINKOS_CONTEXT))
-
-#define SIZEOF_THINKOS_EXCEPT (OFFSETOF_XCPT_CONTEXT + \
-							   (SIZEOF_THINKOS_BASIC_CONTEXT))
-*/
 
 
 #ifndef __ASSEMBLER__
@@ -144,8 +136,7 @@ static inline struct thinkos_fault * __thinkos_fault_rt(void) {
 }
 
 static inline int __fault_thread_get(struct thinkos_fault * fault) {
-	uint32_t thread = fault->thread; 
-	return (fault->seq != fault->ack) ? (int32_t)thread : -1;
+	return fault->thread; 
 }
 
 static inline bool __thinkos_fault_valid(struct thinkos_fault * fault) {

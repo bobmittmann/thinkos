@@ -92,11 +92,6 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 	(void)thread;
 	(void)errno;
 
-#if (THINKOS_ENABLE_THREAD_FAULT)
-	/* Per thread error code */
-	__thread_errno_set(krn, thread, errno);
-#endif
-
 #if (DEBUG)
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
@@ -110,23 +105,19 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 		}
 	}
 	
-	DCC_LOG1(LOG_TRACE, "ctrl=%08x",  ctrl);
+	__xdump(krn, &thinkos_fault_rt);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 
-#if (THINKOS_ENABLE_READY_MASK)
-	__thread_disble_all(krn);
-#endif
-	/* Disable all vectored interrupts on NVIC */
-	__nvic_irq_disable_all();
-	/* Enable CPU interrupts */
-	cm3_cpsie_i();
-	/* Signal monitor with soft reset */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
+	/* Signal monitor */
+	monitor_signal(MONITOR_THREAD_FAULT);
 #else
-	__krn_suspend_all(krn);
+#if (THINKOS_SYSRST_ONFAULT)
+	thinkos_krn_sysrst();
+#else
+	__krn_ctrl_err_set(0);
 #endif
-
+#endif
 }
 
 void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
@@ -153,8 +144,11 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 	/* Signal monitor */
 	monitor_signal_break(MONITOR_KRN_FAULT);
 #else
-	/*  FIXME: should reboot or do something else... */
-	for(;;);
+#if (THINKOS_SYSRST_ONFAULT)
+	thinkos_krn_sysrst();
+#else
+	thinkos_krn_halt();
+#endif
 #endif
 }
 

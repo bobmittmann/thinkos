@@ -110,7 +110,7 @@ thinkos_krn_sched_core:
 	/* check the stack limit */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_SL]
 	cmp.n    r8, r5
-	ble      .L_stack_err
+	ble      .L_thread_stack_err
 #endif
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
@@ -244,9 +244,12 @@ thinkos_krn_sched_ctx_get:
 	/* set the active to IDLE and clear the break thread */
 	strh     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
-#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
-/* FIXME: in some circumstances we reach this code... */
-//#if 0
+//#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
+#if 0
+/* FIXME: in some circumstances we reach this code... 
+   if a call to the scheduler in IDLE in different points 
+   then it's possible that the context has not being saved */
+	
     /* load the new context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
@@ -383,7 +386,7 @@ thinkos_krn_sched_trap:
 	.type   thinkos_krn_sched_trap, %function
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-.L_stack_err: 
+.L_thread_stack_err: 
 	movs.n  r5, #THINKOS_ERR_THREAD_STACKADDR 
 	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
 #endif
@@ -391,6 +394,8 @@ thinkos_krn_sched_trap:
 	/*  r0: krn */
 	/*  r1: | xcp | err | brk | act |  */
 	/*  r3: context_ptr */
+	/*  r4: thread_id */
+	/*  r7: context vector ptr */
 thinkos_krn_sched_bypass:
 	/* store the old context pointer into the context vector */
 	str.n    r3, [r7]

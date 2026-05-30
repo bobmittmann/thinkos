@@ -166,26 +166,6 @@ struct cortex_m_fp {
 	};		
 };
 
-
-/* 
- * FIXME: this should be called struct thinkos_thread_inf... 
- */
-struct thinkos_thread {
-	uint32_t stack_ptr;
-	uint32_t stack_size;
-	uint8_t  priority;
-	uint8_t  thread_no: 6;
-	uint8_t  privileged: 1;
-	uint8_t  fpca: 1;
-	char     tag[10];
-	uint16_t wq:15;
-	uint16_t tmw:1;
-	uint8_t  sched_val;
-	uint8_t  sched_pri;
-	uint32_t clk;
-	uint32_t cyc;
-};
-
 struct thinkos_thread_inf {
 	void * stack_ptr;
 	uint32_t stack_size;

@@ -105,9 +105,9 @@ const struct thinkos_flash_desc board_flash_desc = {
 
 #pragma GCC diagnostic pop
 
-static void io_init(void)
+static void board_io_init(void)
 {
-	DCC_LOG(LOG_TRACE, "...");
+	DCC_LOG(LOG_TRACE, "Initializing IO pins...");
 
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
@@ -232,7 +232,7 @@ static void board_on_softreset(void)
 	rcc->apb2enr = (1 << RCC_USART1);
 
 	/* reinitialize IO's */
-	io_init();
+	board_io_init();
 
 	DCC_LOG1(LOG_TRACE, "OTG_FS IRQ=%d", STM32F_IRQ_OTG_FS);
 	/* Adjust USB OTG FS interrupts priority */
@@ -251,7 +251,7 @@ int board_init(void)
 {
 	stm32_gpio_mode(OTG_FS_VBUS, INPUT, 0);
 
-	io_init();
+	board_io_init();
 
 	stm32_gpio_set(IO_LED3);
 	stm32_gpio_set(IO_LED4);
@@ -323,15 +323,9 @@ static int board_on_break(const struct monitor_comm * comm)
 {
 	struct btl_shell_env * env = btl_shell_env_getinstance();
 
-#if 0
-	/* Already initialized in main() */
-	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
-#endif
-
 	return monitor_thread_create(comm, C_TASK(btl_console_shell), 
 								 C_ARG(env), true);
 }
-
 
 /* Bootloader board description  */
 const struct thinkos_board this_board = {

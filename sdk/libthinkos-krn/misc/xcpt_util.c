@@ -133,7 +133,7 @@ const char __xcpt_name_lut[16][12] = {
 	"SysTick"
 };
 
-/* Exception state dump */
+/* Fault state dump */
 void __xdump(struct thinkos_rt * krn,
 			 struct thinkos_fault * fault)
 {
@@ -167,7 +167,7 @@ void __xdump(struct thinkos_rt * krn,
 		}
 	}
 
-	ret  = 0xffffff00 | (fault->ret & 0xff);
+	ret  = 0xffffff00 | fault->ret;
 
 	sp = fault->sp;
 	DCC_LOG1(LOG_ERROR, "ret=%08x", ret); 

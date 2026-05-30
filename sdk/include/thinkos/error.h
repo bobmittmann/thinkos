@@ -78,6 +78,7 @@
 
 #define THINKOS_ERR_IDLE_ENTRY         62
 #define THINKOS_ERR_IDLE_XCPT          63
+/* */
 #define THINKOS_ERR_IDLE_MSP           64
 
 #define THINKOS_ERR_COMM_INVALID       65

@@ -522,15 +522,6 @@
  *   production code.
  */
 
-/* THINKOS_ENABLE_KRNSVC - Enable kernel services. Provides a
-   framework for high priority drivers and debug.
-   It uses the undefined instruction UDF opcode. It will 
-   cause a usage fault exception which handles the calls.
- */
-#ifndef THINKOS_ENABLE_KRNSVC
-#define THINKOS_ENABLE_KRNSVC               0
-#endif
-
 /* THINKOS_FLASH_MEM_MAX - enable the kernel to handle low-level
    flash memory erase read and write operations. */
 
@@ -606,14 +597,6 @@
 #define THINKOS_THREAD_STACK_MAX            65280
 #endif
 
-/* Kernel clock and thread timers uses a 12.20 fixed point representation.
- *
- * Resolution = 0.9537 uS
- * Max interval = 34.133 minutes */
-#ifndef THINKOS_ENABLE_FRACTIONAL_CLOCK
-#define THINKOS_ENABLE_FRACTIONAL_CLOCK     0
-#endif
-
 /* THINKOS_ENABLE_DATE_AND_TIME - Enable wallclock date and time ... */
 #ifndef THINKOS_ENABLE_DATE_AND_TIME 
 #define THINKOS_ENABLE_DATE_AND_TIME        0
@@ -664,9 +647,9 @@
 #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
 
-#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_FRACTIONAL_CLOCK)
-#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_FRACTIONAL_CLOCK"
-#endif
+//#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_FRACTIONAL_CLOCK)
+//#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_FRACTIONAL_CLOCK"
+//#endif
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_TIMED_CALLS)
 #error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_TIMED_CALLS"
@@ -699,16 +682,6 @@
 #if (THINKOS_ENABLE_USAGEFAULT) && !(THINKOS_ENABLE_EXCEPTIONS)
 #error "THINKOS_ENABLE_USAGEFAULT depends on THINKOS_ENABLE_EXCEPTIONS"
 #endif
-
-#if (THINKOS_ENABLE_KRNSVC) && !(THINKOS_ENABLE_USAGEFAULT)
-#error "THINKOS_ENABLE_KRNSVC depends on THINKOS_ENABLE_USAGEFAULT"
-#endif
-
-/*
-#if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_DEBUG_BASE)
-#error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_DEBUG_BASE"
-#endif
-*/
 
 #if (THINKOS_ENABLE_ERROR_TRAP) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_ERROR_TRAP depends on THINKOS_ENABLE_MONITOR"
@@ -914,6 +887,10 @@
 /* THINKOS_ENABLE_CLOCK: Enable the support for system timer */
 #ifdef THINKOS_ENABLE_CLOCK
 #error "THINKOS_ENABLE_CLOCK is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_FRACTIONAL_CLOCK
+#error "THINKOS_ENABLE_FRACTIONAL_CLOCK is deprecated"
 #endif
 
 /* -------------------------------------------------------------------------- 
