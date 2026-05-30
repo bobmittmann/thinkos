@@ -57,14 +57,7 @@
  * The number 4 corresponds to r12 */
 #define SVC_RETCODE_ARG 4
 
-#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
-/*
- *  32Q20 fractional kernel clock 
- */
-  #define KRN_CLK_FROM_MS(__MS) (__MS * 1049)
-#else
-  #define KRN_CLK_FROM_MS(__MS) __MS 
-#endif
+#define KRN_CLK_FROM_MS(__MS) (__MS) 
 
 struct thread_waitqueue {
 	uint32_t bmp;

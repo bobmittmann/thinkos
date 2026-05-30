@@ -141,16 +141,10 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			ts.u64 += krn->clk.increment;
 			krn->clk.timestamp.sec = ts.sec;
 			krn->clk.timestamp.frac = ts.frac;
-			clk = ts.u64 >> 12; 
-#else
+#endif
 			clk = krn->clk.time; 
-#if (THINKOS_ENABLE_FRACTIONAL_CLOCK)
-			clk += krn->clk.increment;
-#else       /* clock count milliseconds */
+			/* clock count milliseconds */
 			clk += 1;
-#endif
-
-#endif
 			krn->clk.time = clk; 
 
 			uint32_t wq = __rbit(krn->wq_clock);
