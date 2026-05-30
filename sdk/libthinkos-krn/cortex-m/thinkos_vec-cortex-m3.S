@@ -283,34 +283,7 @@ __thinkos_krn_thread_err:
 	/* Adjust PSP to point to the fault buffer */
 	add     r6, r1, #(8 * 4)
 	msr     PSP, r6
-#if 0
-	/* Clear the SVC call pending to avoid returning to a service routine
-	 this will cause another stack fault */
-	ldr     r4, .L_cm3_scb
-	ldr     r5, [r4, SCB_SHCSR_OFFS]
-	bic     r5, #SCB_SHCSR_SVCALLPENDED
-	str     r5, [r4, SCB_SHCSR_OFFS]
-/* rise a pending service interrupt */
-	movs    r5, #SCB_ICSR_PENDSVSET
-	str     r5, [r4, #SCB_ICSR_OFFS]
-	mov     r7, lr	
 
-	/* Set the error in the scheduler control */
-	strb    r2, [r0, #OFFSETOF_KRN_SCHED_ERR]
-
-	/* Disable all vectored interrupts on NVIC */
-	bl      __nvic_irq_disable_all
-
-	/* Adjust the control register */
-//	movs    R4, #0
-//	msr     CONTROL, r4
-	/* Synthesizes exception return */
-//	mov     lr, #CM3_EXC_RET_THREAD_MSP
-//   ldr.w   r5, [r0, #OFFSETOF_KRN_IDLE_CTX]
-//	mov     sp, r5 
-	/* restore Idle core context */
-//	pop     {r4-r11}
-#endif
 	/* Call the thread exception handler */
 	/* r0: krn 
 	   r1: fault_rt
@@ -319,26 +292,10 @@ __thinkos_krn_thread_err:
 	b       thinkos_krn_except_err_handler
 	/* reenable interrupts */
 
-
-	cpsie   i
-	bx      r7
-
 	.align  2
 
 .L_fault_rt: /* fault buffer */
 	.word   thinkos_fault_rt
-#if 0
-
-	ldr      r0, .L_thinkos_rt
-	strb     r2,  [r0, #OFFSETOF_KRN_SCHED_XCPT]
-
-	/* rise a pending service interrupt */
-	ldr      r12, .L_cm3_scb
-	movs     r3, #SCB_ICSR_PENDSVSET
-	str      r3, [r12, #SCB_ICSR_OFFS]
-	/* should reach the PendSV (scheduler) */
-	bx       lr
-#endif
 
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
@@ -353,9 +310,9 @@ __thinkos_krn_thread_err:
 	.thumb_func
 	.type	cm3_mem_manage_isr, %function
 cm3_mem_manage_isr:
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* disable interrupts */
 	cpsid   i
-#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	push    {r0, r1, r2, r3, r12}
 	movs    r2, #THINKOS_ERR_MEM_MANAGE
@@ -363,7 +320,7 @@ cm3_mem_manage_isr:
 	beq     __thinkos_krn_fault
 	b       __thinkos_krn_thread_err
 #else
-	b       .
+	b       thinkos_krn_halt
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
 	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
 #endif
@@ -376,9 +333,9 @@ cm3_mem_manage_isr:
 	.thumb_func
 	.type	cm3_bus_fault_isr, %function
 cm3_bus_fault_isr:
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* disable interrupts */
 	cpsid   i
-#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	push    {r0, r1, r2, r3, r12}
 	movs    r2, #THINKOS_ERR_BUS_FAULT
@@ -386,7 +343,7 @@ cm3_bus_fault_isr:
 	beq     __thinkos_krn_fault
 	b       __thinkos_krn_thread_err
 #else
-	b       .
+	b       thinkos_krn_halt
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
 	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
 #endif
@@ -398,33 +355,9 @@ cm3_bus_fault_isr:
 	.thumb_func
 	.type	cm3_usage_fault_isr, %function
 cm3_usage_fault_isr:
-#if	(THINKOS_ENABLE_KRNSVC) 
-	/* Kernel services -------------------------------------------- */
-	/* Check for undefined instruction flag on UFSR */
-	push    {r0, r1, r2, r3, r12}
-	ldr     r3, .L_cm3_scb
-	ldr     r3, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
-	tst     r3, #CFSR_UNDEFINSTR /* Undefined instruction ? */
-	beq     __thinkos_krn_thread_err
-	/* Code running from the process stack (non-privileged) causes a fault.
-	   (Select the context stack according to the content of LR */
-	tst     lr, #4
-	bne     __thinkos_krn_thread_err
-	/* Get the call frame stack */
-	mov     r0, sp
-	/* Get PC from the stack */
-	ldr     r3, [r0, #(6 * 4)] 
-	/* Read the Krn SVC number from the instruction */
-	ldrb    r1, [r3, #0]
-	/* Skip undefined instruction, by adjusting the call stack (PC = PC + 2) */
-	adds    r3, r3, #2
-	str     r3, [r0, #(6 * 4)] 
-	/* Call the kernel service demultiplexer */
-	b       thinkos_krnsvc_isr
-#else
+#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* disable interrupts */
 	cpsid   i
-#if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the stack of the exception (PSP or MSP ?)*/
 	push    {r0, r1, r2, r3, r12}
 	movs    r2, #THINKOS_ERR_USAGE_FAULT
@@ -432,9 +365,8 @@ cm3_usage_fault_isr:
 	beq     __thinkos_krn_fault
 	b       __thinkos_krn_thread_err
 #else
-	b       .
+	b       thinkos_krn_halt
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
-#endif
 
 	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
 #endif

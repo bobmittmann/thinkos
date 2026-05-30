@@ -41,7 +41,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_systmr.c thinkos_ffs.c thinkos_console.c \
 		 thinkos_profile.c thinkos_error.c thinkos_memory.c \
 		 thinkos_dma.c thinkos_alloc.c thinkos_flash_drv.c \
-		 thinkos_krnsvc.c thinkos_sysrst.c thinkos_time.c \
+		 thinkos_sysrst.c thinkos_time.c \
 		 thinkos_fifo.c thinkos_comm.c thinkos_monitor.c \
 		 thinkos_obj_kind_lut.c thinkos_wq.c \
 		 thinkos_app.c thinkos_trace.c \

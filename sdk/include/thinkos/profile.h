@@ -828,6 +828,10 @@
    the PSP instead.
  */
 
+#ifdef THINKOS_ENABLE_KRNSVC
+#warning "THINKOS_ENABLE_KRNSVC is deprecated"
+#endif
+
 #ifdef THINKOS_ENABLE_ESCALATE
 #warning "THINKOS_ENABLE_ESCALATE is deprecated"
 #endif
