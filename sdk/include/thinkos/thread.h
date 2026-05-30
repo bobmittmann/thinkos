@@ -46,6 +46,24 @@ struct thinkos_thread_initializer {
 };
 
 
+/* 
+struct thinkos_thread_state {
+	uint32_t stack_base;
+	uint32_t stack_size;
+	uint8_t  priority;
+	uint8_t  thread_id: 6;
+	uint8_t  privileged: 1;
+	uint8_t  fpca: 1;
+	char     tag[10];
+	uint16_t wq:15;
+	uint16_t tmw:1;
+	uint8_t  sched_val;
+	uint8_t  sched_pri;
+	uint32_t clk;
+	uint32_t cyc;
+};
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

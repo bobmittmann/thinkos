@@ -33,11 +33,13 @@ __krn_obj_is_event(struct thinkos_rt * krn, unsigned int event) {
 	return __obj_is_valid(event, THINKOS_EVENT_BASE, THINKOS_EVENT_MAX);
 }
 
+#if (THINKOS_ENABLE_EVENT_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_event_is_alloc(struct thinkos_rt * krn, unsigned int event) {
 	return __bit_mem_rd(krn->ev_alloc, event - THINKOS_EVENT_BASE) ? 
 		true : false;
 }
+#endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 int krn_event_check(struct thinkos_rt * krn, int event)

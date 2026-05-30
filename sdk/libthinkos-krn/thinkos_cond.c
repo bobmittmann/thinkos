@@ -37,11 +37,13 @@ __krn_obj_is_cond(struct thinkos_rt * krn, unsigned int cond) {
 	return __obj_is_valid(cond, THINKOS_COND_BASE, THINKOS_COND_MAX);
 }
 
+#if (THINKOS_ENABLE_COND_ALLOC)
 static inline bool __attribute__((always_inline)) 
 __krn_cond_is_alloc(struct thinkos_rt * krn, unsigned int cond) {
 	return __bit_mem_rd(krn->cond_alloc, cond - THINKOS_COND_BASE) ? 
 		true : false;
 }
+#endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 static int krn_cond_check(struct thinkos_rt * krn, int cond)

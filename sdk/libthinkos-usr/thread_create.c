@@ -20,7 +20,7 @@ thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
 
 	hint = inf->thread_id;
 	if ((thread = thinkos_obj_thread_alloc(hint)) < 0) {
-		return thread;
+		thread = hint;
 	}
 
 	stack_top = stack_base + stack_size;  
