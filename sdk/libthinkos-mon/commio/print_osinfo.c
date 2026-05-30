@@ -108,7 +108,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 			monitor_printf(comm, "%3d", i);
 			tag = inf.tag;
 //			ctrl = inf.ctrl;
-		    pc = inf.pc;
+		    pc = inf.ctx->pc;
 		    sp = inf.sp;
 		    sl = inf.sl;
 		    errno = inf.errno;

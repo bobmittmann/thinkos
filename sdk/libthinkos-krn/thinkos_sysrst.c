@@ -24,34 +24,20 @@
  */ 
 
 
-#include <arch/cortex-m3.h>
-#include <sys/delay.h>
+#include "thinkos_krn-i.h"
 
 void __attribute__((noreturn)) thinkos_krn_sysrst(void)
 {
-	/* disable interrupts */
-	cm3_cpsid_i();
-	/* wait a bit */
-	udelay(32768);
 	/* request system reset */
-//	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
-	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ |
-		SCB_AIRCR_VECTRESET;
-	for(;;);
+	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
+//	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ |
+//		SCB_AIRCR_VECTRESET;
+
+	thinkos_krn_halt();
 }
-
-#if (THINKOS_SYSRST_ONFAULT)
-
-void _exit(void) __attribute__((noreturn, weak, alias("thinkos_krn_sysrst")));
-
-#else
-
-#include <thinkos.h>
 
 void _exit(void) 
 {
 	thinkos_abort();
 }
-
-#endif
 

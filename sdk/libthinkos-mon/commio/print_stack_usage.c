@@ -58,7 +58,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 
 			tag = inf.tag;
 			sp = inf.sp;
-			pc = inf.pc;
+			pc = inf.ctx->pc;
 			sl = inf.sl;
 			base = inf.stack_base;
 			size = inf.stack_size;
