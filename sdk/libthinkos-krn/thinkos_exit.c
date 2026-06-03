@@ -106,7 +106,7 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 /* XXX: Do not throw an error if thread do not exist...
 		__THINKOS_ERROR(self, ret);
 */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -162,7 +162,7 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				DCC_LOG2(LOG_INFO, "<%2d> wakeup from join %d.", th, wq);
 				/* wakeup all remaining threads */
 				__krn_wq_wakeup(krn, wq, th);
-				__thread_r0_set(krn, th, code);
+				__thread_return_set(krn, th, code);
 			} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 			/* signal the scheduler ... */
 			__krn_sched_defer(krn);

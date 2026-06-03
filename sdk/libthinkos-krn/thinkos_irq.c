@@ -36,7 +36,10 @@
 
 #if (THINKOS_IRQ_MAX) > 0
 #if (THINKOS_ENABLE_RAM_VECTORS)
-void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(128)));
+/* 
+ * FIXME: there are problems with aligned(128). It seems to be resolved with
+ * 256 */
+void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(256)));
 #endif
 #endif
 
@@ -250,7 +253,7 @@ void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self,
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -260,9 +263,9 @@ void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self,
 
 	/* if the timer is no longer active declare a timeout */
 	if (!__thread_clk_is_enabled(krn, self)) {
-		arg[4] = THINKOS_ETIMEDOUT;      
+		arg[SVC_RETURN] = THINKOS_ETIMEDOUT;      
 	} else {
-		arg[4] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 	}
 	
 #if (THINKOS_ENABLE_WQ_IRQ)
@@ -331,7 +334,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif /* THINKOS_ENABLE_ARG_CHECK */
@@ -351,7 +354,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 	if (old != THINKOS_THREAD_VOID) {
 		DCC_LOG1(LOG_ERROR, "irq IRQ %d is busy!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_TAKEN);
-		arg[4] = THINKOS_EFAULT;
+		arg[SVC_RETURN] = THINKOS_EFAULT;
 		return;
 	}
 #else
@@ -386,7 +389,7 @@ void thinkos_irq_dbg_svc(int32_t * arg, unsigned int self,
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif /* THINKOS_ENABLE_ARG_CHECK */
@@ -408,14 +411,14 @@ void thinkos_irq_dbg_svc(int32_t * arg, unsigned int self,
 	if (old != THINKOS_THREAD_VOID) {
 		DCC_LOG1(LOG_ERROR, "irq IRQ %d is busy!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_TAKEN);
-		arg[4] = THINKOS_EFAULT;
+		arg[SVC_RETURN] = THINKOS_EFAULT;
 		return;
 	}
-	arg[4] = old;
+	arg[SVC_RETURN] = old;
 #else
 	/* assign this thread to the interrupt */
 	krn->irq_th[irq] = self;
-	arg[4] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 #endif 
 
 	__dsb();
@@ -443,11 +446,11 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 	if (irq >= THINKOS_IRQ_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
 		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-	arg[4] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	
 	switch (req) {
 	case THINKOS_IRQ_ENABLE:
@@ -511,7 +514,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid IRQ ctl request %d!", req);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

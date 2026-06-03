@@ -348,12 +348,12 @@ void thinkos_trace_svc(int32_t * arg, int self)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (ref == NULL) {
 		__THINKOS_ERROR(THINKOS_ERR_TRACE_ENTRY_NULL);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 	if (buf == NULL) {
 		__THINKOS_ERROR(THINKOS_ERR_TRACE_ENTRY_NULL);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -385,36 +385,36 @@ void thinkos_trace_ctl_svc(int32_t * arg, int self)
 	switch (req) {
 	case THINKOS_TRACE_OPEN:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_TRACE_CLOSE:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_TRACE_READ:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_TRACE_FLUSH:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_TRACE_GETFIRST:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	case THINKOS_TRACE_GETNEXT:
 		/* TODO: not implemented yet ... */
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	default:
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

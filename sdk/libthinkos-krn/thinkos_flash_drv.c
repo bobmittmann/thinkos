@@ -290,7 +290,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				break;
 			}
 		}
-		arg[0] = ret;
+		arg[SVC_RETURN] = ret;
 		return;
 	} 
 	
@@ -317,7 +317,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 				break;
 			}
 		}
-		arg[0] = ret;
+		arg[SVC_RETURN] = ret;
 		return;
 	}
 
@@ -329,7 +329,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (idx >= THINKOS_FLASH_MEM_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid flash %d!", wq);
 		__THINKOS_ERROR(self, THINKOS_ERR_FLASH_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -339,7 +339,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (opc == THINKOS_FLASH_MEM_CLOSE) {
 		if ((drv->ropen == 0) && (drv->wopen == 0)) {
 			DCC_LOG(LOG_WARNING, "not open");
-			arg[0] = THINKOS_EINVAL;
+			arg[SVC_RETURN] = THINKOS_EINVAL;
 			return;
 		}
 
@@ -349,20 +349,20 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		 */
 		drv->wopen = 0;
 		drv->ropen = 0;
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	} 
 
 	if ((opc == THINKOS_FLASH_MEM_READ) && (drv->ropen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for read");
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	} 
 
 	if (((opc == THINKOS_FLASH_MEM_WRITE) || (opc == THINKOS_FLASH_MEM_ERASE)) 
 		&& (drv->wopen == 0)) {
 		DCC_LOG(LOG_WARNING, "not open for write");
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	} 
 
@@ -393,7 +393,7 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_thread_wait(krn, self, wq);
 #else
 	ret = thinkos_flash_drv_req(drv, req);
-	arg[0] = ret;
+	arg[SVC_RETURN] = ret;
 #endif
 }
 

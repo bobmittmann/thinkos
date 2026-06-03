@@ -205,7 +205,7 @@ void thinkos_time_svc(int32_t arg[], unsigned int self,
 			krn->clk.realtime_offs.sec = x.sec;
 			krn->clk.realtime_offs.frac = x.frac;
 		}
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		break;
 
 	case THINKOS_TIME_REALTIME_STEP:
@@ -226,7 +226,7 @@ void thinkos_time_svc(int32_t arg[], unsigned int self,
 			krn->clk.realtime_offs.sec = x.sec;
 			krn->clk.realtime_offs.frac = x.frac;
 		}
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		break;
 
 	case THINKOS_TIME_REALTIME_COMP:
@@ -267,13 +267,13 @@ void thinkos_time_svc(int32_t arg[], unsigned int self,
 //    return q31_d * clk->n_freq + Q31_MUL(q31_d, clk->q_freq);
 
 		}
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		break;
 
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid time operation %d!", oper);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

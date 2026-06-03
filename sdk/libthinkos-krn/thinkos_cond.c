@@ -72,14 +72,14 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
 				 self, cond);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -91,7 +91,7 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		DCC_LOG3(LOG_ERROR, "<%2d> mutex %d is locked by <%2d>!", 
 				 self, mutex, __krn_mutex_lock_get(krn, mutex));
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	}
 #endif
@@ -103,7 +103,7 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 
 	/* Set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	/* insert into the cond wait queue */
 	__krn_thread_wait(krn, self, cond);
 }
@@ -126,14 +126,14 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 		DCC_LOG2(LOG_ERROR, "<%d> invalid conditional variable %d!", 
 				 self, cond);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -145,7 +145,7 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 		DCC_LOG3(LOG_ERROR, "<%2d> mutex %d is locked by <%2d>!", 
 				 self, mutex, __krn_mutex_lock_get(krn, mutex));
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	}
 #endif
@@ -159,7 +159,7 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 
 	/* Set the default return value to timeout. The
 	   cond_signal call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
+	arg[SVC_RETURN] = THINKOS_ETIMEDOUT;
 	/* insert into the cond wait queue */
 	__krn_thread_timedwait(krn, self, cond, ms);
 }
@@ -177,7 +177,7 @@ void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -191,7 +191,7 @@ void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 
 	/* Set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 void thinkos_cond_broadcast_svc(int32_t arg[], int self, 
@@ -206,13 +206,13 @@ void thinkos_cond_broadcast_svc(int32_t arg[], int self,
 	if ((ret = krn_cond_check(krn, cond)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid condition %d!", self, cond);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
 	/* Set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	/* wakeup all threads waiting on the condition */
 	__krn_wq_wakeup_all(krn, cond);
 }

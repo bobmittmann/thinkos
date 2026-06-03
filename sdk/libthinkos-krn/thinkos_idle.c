@@ -199,7 +199,7 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 #endif
 
 /* resets the idle thread and context */
-static void __thinkos_krn_idle_start(struct thinkos_rt * krn)
+struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn)
 {
 	struct thinkos_context * ctx;
 	uintptr_t stack_top;
@@ -245,6 +245,8 @@ static void __thinkos_krn_idle_start(struct thinkos_rt * krn)
 			 __thread_sl_get(krn, THINKOS_THREAD_IDLE),
 			 __thread_sp_get(krn, THINKOS_THREAD_IDLE));
 #endif
+
+	return ctx;
 }
 
 /* initialize the idle thread */
@@ -266,7 +268,7 @@ void thinkos_krn_idle_init(struct thinkos_rt * krn)
 	__thinkos_memset32((void *)stack_base, 0, free);
 #endif
 
- 	__thinkos_krn_idle_start(krn);
+ 	thinkos_krn_idle_reset(krn);
 }
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)

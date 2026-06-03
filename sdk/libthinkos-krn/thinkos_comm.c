@@ -182,7 +182,7 @@ void thinkos_comm_timed_fixup_svc(int32_t arg[], int self,
 	/* Adjust return if necessary */
 	if (!__thread_clk_is_enabled(krn, self)) {
 		if (arg[0] == 0)  {
-			arg[0] = THINKOS_ETIMEDOUT;      
+			arg[SVC_RETURN] = THINKOS_ETIMEDOUT;      
 			DCC_LOG2(LOG_TRACE, "<%d> wq=%d timeout", self, arg[4]);
 		} else {
 			DCC_LOG3(LOG_TRACE, "<%d> wq=%d cnt=%d", self, arg[4], arg[0]);
@@ -214,14 +214,14 @@ void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_comm_tx_check(krn, wq)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, wq);
 		__THINKOS_ERROR(self, ret);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #if 0
 	if (!__thinkos_mem_usr_rd_chk((uint32_t)req->ptr, req->len)) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid user memory: %p!", self, req->ptr);
 		__THINKOS_ERROR(self, THINKOS_ERR_MEMORY_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -298,7 +298,7 @@ void thinkos_comm_timedrecv_svc(int32_t arg[], int self,
 
 	if ((ret = krn_comm_rx_check(krn, wq)) != THINKOS_OK) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, wq);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		__THINKOS_ERROR(self, ret);
 		return;
 	}
@@ -306,7 +306,7 @@ void thinkos_comm_timedrecv_svc(int32_t arg[], int self,
 
 	comm = krn->comm[idx];
 
-	arg[4] = wq;
+	arg[SVC_RETURN] = wq;
 	req->cnt = 0;
 
 	/* wait for event ... */
@@ -335,7 +335,7 @@ void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	if ((ret = krn_comm_rx_check(krn, wq)) != THINKOS_OK) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, wq);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		__THINKOS_ERROR(self, ret);
 		return;
 	}
@@ -381,7 +381,7 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		idx = req->idx;
 		if (idx > THINKOS_COMM_MAX) {
 			__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
-			arg[4] = THINKOS_EINVAL;
+			arg[SVC_RETURN] = THINKOS_EINVAL;
 			return;
 		}
 
@@ -393,7 +393,7 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_SANITY_CHECK)
 		if (comm == NULL) {
 			__THINKOS_ERROR(self, THINKOS_ERR_COMM_INVALID);
-			arg[4] = THINKOS_EINVAL;
+			arg[SVC_RETURN] = THINKOS_EINVAL;
 			return;
 		}
 #endif
@@ -402,13 +402,13 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		comm->drv_op->open(comm->drv);
 
 
-		arg[4] = oid;
+		arg[SVC_RETURN] = oid;
 		return;
 	} else {
 		DCC_LOG3(LOG_TRACE, "<%d> oper=%d devno=%d", self, op, req->idx);
 	}
 
-	arg[4] = THINKOS_ENOSYS;
+	arg[SVC_RETURN] = THINKOS_ENOSYS;
 }
 
 int thinkos_krn_comm_init(struct thinkos_rt * krn,

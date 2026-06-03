@@ -40,7 +40,7 @@ void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = __krn_thread_check(krn, th)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, th);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -68,8 +68,8 @@ void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	pc = (uint32_t)__thinkos_thread_terminate_stub;
 	__thread_pc_set(krn, th, pc);
-	__thread_r0_set(krn, th, code);
-	arg[0] = THINKOS_OK;
+	__thread_return_set(krn, th, code);
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 #endif
 

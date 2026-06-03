@@ -340,24 +340,23 @@ int monitor_thread_break_get(int32_t * perrno)
 		*perrno = (xcpno != 0) ? xcpno : errno;
 	}
 
-#if (DEBUG)
-	/* FIXME: this is a debug hack, should be removed */
-	__krn_preempt(krn);
-#endif
-
 	return brkid;
 }
 
+#if 1
 void monitor_thread_break_clr(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_fault * fault = &thinkos_fault_rt;
 
+	fault->ack = fault->seq;
 	__krn_sched_xcp_clr(krn);
 	__krn_sched_err_clr(krn);
 
 	/* signal the scheduler ... */
-	__krn_preempt(krn);
+	__krn_sched_defer(krn);
 }
+#endif
 
 int monitor_thread_err_get(void)
 {
@@ -373,21 +372,21 @@ void monitor_thread_err_clr(void)
 	__krn_sched_err_clr(krn);
 }
 
-int monitor_krn_xcpt_get(void)
+int monitor_krn_except_get(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	return  __krn_sched_xcp_get(krn);
 }
 
-void monitor_krn_xcpt_clr(void)
+void monitor_krn_except_clr(void)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	__krn_sched_xcp_clr(krn);
 
 	/* signal the scheduler ... */
-	__krn_preempt(krn);
+	__krn_sched_defer(krn);
 }
 
 uint32_t monitor_sched_ctrl_get(void)
@@ -601,8 +600,8 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* Set the persistent mmask */
 		krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
-//		arg[4] = (uint32_t)thinkos_monitor_rt.task;
-		arg[4] = THINKOS_OK;
+//		arg[SVC_RETURN] = (uint32_t)thinkos_monitor_rt.task;
+		arg[SVC_RETURN] = THINKOS_OK;
 
 		thinkos_monitor_rt.task = task;
 
@@ -618,7 +617,7 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	case MONITOR_CTL_SIGNAL: {
 		unsigned int signo = arg[1];
 
-		arg[4] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		thinkos_signal(signo);
 	}
 	break;
@@ -626,7 +625,7 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 
 	}

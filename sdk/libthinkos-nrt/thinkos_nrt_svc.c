@@ -59,7 +59,7 @@ void thinkos_nrt_sleep_svc(int32_t * arg, int self)
 		}
 	}
 
-	arg[0] = ms;
+	arg[SVC_RETURN] = ms;
 }
 #endif
 

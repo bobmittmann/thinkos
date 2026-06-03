@@ -38,6 +38,37 @@
 #define DCCLOG_ENABLE_TAGS 0
 #endif
 
+/* System Handler Control and State Register dump */
+void __shcsr(uint32_t shcsr)
+{
+	DCC_LOG11(LOG_TRACE, "SHCSR={%s%s%s%s%s%s%s%s%s%s%s }", 
+				   (shcsr & SCB_SHCSR_SVCALLPENDED) ? " SVCALLPEND" : "",
+				   (shcsr & SCB_SHCSR_BUSFAULTPENDED) ?  " BUSFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_MEMFAULTPENDED) ?  " MEMFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_USGFAULTPENDED) ?  " USGFAULTPEND" : "",
+				   (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
+				   (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
+				   (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
+				   (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
+				   (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
+				   (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
+				   (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
+}
+
+void __icsr(uint32_t icsr)
+{
+/* Interrupt Control and State Register */
+	DCC_LOG8(LOG_TRACE, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
+				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
+				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
+				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
+				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
+				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
+				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
+				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
+				 (icsr & SCB_ICSR_VECTACTIVE));
+}
+
 
 /* Hard fault exception dump */
 void __hard(struct thinkos_rt * krn,
@@ -138,8 +169,6 @@ void __xdump(struct thinkos_rt * krn,
 			 struct thinkos_fault * fault)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
-//	uint32_t shcsr;
-//	uint32_t icsr;
 	uint32_t xpsr;
 	uint32_t ctrl;
 	uint32_t ret;
@@ -246,30 +275,9 @@ void __xdump(struct thinkos_rt * krn,
 			 ctrl & CONTROL_FPCA? " FPCA" : "",
 			 ctrl & CONTROL_SPSEL? " SPSEL" : "",
 			 ctrl & CONTROL_nPRIV ? " nPRIV" : "");
-#if 0
-	shcsr = fault->shcsr;
-	DCC_LOG10(LOG_ERROR, "SHCSR={%s%s%s%s%s%s%s%s%s%s }", 
-				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
-				 (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
-				 (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
-				 (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
-				 (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
-
-	icsr = fault->icsr;
-	DCC_LOG8(LOG_ERROR, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
-				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
-				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
-				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
-				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
-				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
-				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
-				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
-				 (icsr & SCB_ICSR_VECTACTIVE));
+#if 1
+	__shcsr(fault->shcsr);
+	__icsr(fault->icsr);
 #endif
 	DCC_LOG2(LOG_ERROR, "(active at exception)=%d (active now)=%d", 
 			 __fault_thread_get(fault),
@@ -316,10 +324,9 @@ void __xdump(struct thinkos_rt * krn,
 }
 
 /* Interrupts state dump */
-void __idump(const char * s, uint32_t ipsr)
+void __cm_ipsr(const char * s, uint32_t ipsr)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
-	uint32_t shcsr;
 	uint32_t icsr;
 	int irqregs;
 	int irqbits;
@@ -350,18 +357,6 @@ void __idump(const char * s, uint32_t ipsr)
 	} else {
 		DCC_LOG2(LOG_TRACE, " IPSR=%d (IRQ %d)", ipsr, ipsr - 16);
 	}
-	shcsr = CM3_SCB->shcsr;
-	DCC_LOG10(LOG_TRACE, "SHCSR={%s%s%s%s%s%s%s%s%s%s }", 
-				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
-				 (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
-				 (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
-				 (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
-				 (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
 
 	icsr = CM3_SCB->icsr;
 	DCC_LOG8(LOG_TRACE, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
@@ -522,10 +517,6 @@ void __tdump(struct thinkos_rt * krn)
 
 }
 
-/* Static sanity check: */
-_Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
-				"THINKOS_THREAD_FIRST != THINKOS_THREAD_BASE");
-
 
 void __odump(void)
 {
@@ -588,28 +579,10 @@ void __pdump(void)
 	uint32_t icsr;
 
 	shcsr = CM3_SCB->shcsr;
-	DCC_LOG10(LOG_TRACE, "SHCSR={%s%s%s%s%s%s%s%s%s%s }", 
-				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
-				 (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
-				 (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
-				 (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
-				 (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
+	__shcsr(shcsr);
 
 	icsr = CM3_SCB->icsr;
-	DCC_LOG8(LOG_TRACE, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }", 
-				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
-				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
-				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
-				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
-				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
-				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
-				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
-				 (icsr & SCB_ICSR_VECTACTIVE));
+	__icsr(icsr);
 
 	DCC_LOG(LOG_TRACE, " Exceptions priorities:");
 	DCC_LOG1(LOG_TRACE, "       SVC: %d", 
@@ -643,15 +616,18 @@ void __pdump(void)
 #endif
 }
 
+void __shcsr(uint32_t shcsr);
+void __icsr(uint32_t icsr);
+
 void __xinfo(struct thinkos_fault * fault)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_ERROR)
-	int err = fault->errno;
+	int err = fault->sched.xcp;
 
 	(void)err;
 
 	DCC_LOG2(LOG_ERROR, VT_PSH VT_FBK VT_BRD
-			 "/!\\ Exception %d [%s] /!\\" VT_POP, 
+			 "/!\\ Fault %d [%s] /!\\" VT_POP, 
 			 err, thinkos_krn_err_tag(err));
 #if 0
 	if (err == THINKOS_ERR_HARD_FAULT) {
@@ -662,6 +638,7 @@ void __xinfo(struct thinkos_fault * fault)
 				 (hfsr & SCB_HFSR_FORCED) ?  " FORCED" : "",
 				 (hfsr & SCB_HFSR_VECTTBL) ? " VECTTBL" : "");
 	}
+#endif
 
 	if ((err == THINKOS_ERR_HARD_FAULT) || (err == THINKOS_ERR_BUS_FAULT)) {
 		uint32_t mmfsr = SCB_CFSR_MMFSR_GET(fault->cfsr);
@@ -708,7 +685,8 @@ void __xinfo(struct thinkos_fault * fault)
 					 (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
 		}
 	}
-#endif	
+	__shcsr(fault->shcsr);
+	__icsr(fault->icsr);
 #endif
 }
 

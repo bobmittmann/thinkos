@@ -104,7 +104,7 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 
 	case THINKOS_CTL_ESN_GET:
 		ret = thinkos_arch_esn_get((uint32_t *)arg[1]);
-		arg[SVC_RETCODE_ARG] = ret;
+		arg[SVC_RETURN] = ret;
 		break;
 		
 	case THINKOS_CTL_VERSION_GET:
@@ -118,7 +118,7 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CTL_KRN_INFO)
 #if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		arg[SVC_RETCODE_ARG] = __krn_threads_inf_get(krn, 
+		arg[SVC_RETURN] = __krn_threads_inf_get(krn, 
 				(const struct thinkos_thread_inf **)arg[1], 
 				(unsigned int)arg[2] >> 16,
 				(unsigned int)arg[2] & 0xffff);
@@ -128,7 +128,7 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
-		arg[SVC_RETCODE_ARG] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
+		arg[SVC_RETURN] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
 									   (unsigned int)arg[2] >> 16,
 									   (unsigned int)arg[2] & 0xffff);
 		break;
@@ -136,14 +136,14 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 
 	case THINKOS_CTL_CYCCNT:
 		/* Return the current value of the CPU cycle counter */
-		arg[SVC_RETCODE_ARG] = CM3_DWT->cyccnt;
+		arg[SVC_RETURN] = CM3_DWT->cyccnt;
 		break;
 #endif
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
 		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
-		arg[SVC_RETCODE_ARG] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

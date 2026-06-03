@@ -202,6 +202,17 @@ enum {
 		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G), \
 		(int)(__H), (int)(__I), (int)(__J)); }} while (0)
 
+#define DCC_LOG11(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, \
+				  __I, __J, __K) \
+	do { if (__LVL <= LOG_LEVEL)  { ice_trace11( __extension__({ \
+	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
+	static const char _m[] __attribute__ ((section(".dccdata"))) = (__FMT);\
+	static const struct dcc_trace_entry __attribute__((section(".dcclog"))) \
+	log_entry = { _f, __LINE__, __LVL, 0, __func__, _m }; \
+	(struct dcc_trace_entry *)&log_entry; }), (int)(__A), (int)(__B), \
+		(int)(__C), (int)(__D), (int)(__E), (int)(__F), (int)(__G), \
+		(int)(__H), (int)(__I), (int)(__J), (int)(__K)); }} while (0)
+
 #define DCC_LOGSTR(__LVL, __FMT, __STR) \
 	do { if (__LVL <= LOG_LEVEL)  { ice_tracestr( __extension__({ \
 	static const char _f[] __attribute__ ((section(".dccdata"))) = __FILE__;\
@@ -250,6 +261,8 @@ enum {
 #define DCC_LOG9(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I)
 #define DCC_LOG10(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, \
 				  __H, __I, __J)
+#define DCC_LOG11(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, \
+				  __H, __I, __J, __K)
 #define DCC_LOGSTR(__LVL, __FMT, __STR)
 
 #define DCC_XXD(__LVL, __STR, __PTR, __LEN) 
@@ -279,6 +292,16 @@ enum {
 
 #define LOG8(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H) \
 	DCC_LOG8(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H)
+
+#define LOG9(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I) \
+	DCC_LOG9(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I)
+
+#define LOG10(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I, __J) \
+	DCC_LOG10(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I, __J)
+
+#define LOG11(__LVL, __FMT, __A, __B, __C, __D, \
+			  __E, __F, __G, __H, __I, __J, __K) \
+	DCC_LOG11(__LVL, __FMT, __A, __B, __C, __D, __E, __F, __G, __H, __I, __J, __K)
 
 #define LOGSTR(__LVL, __FMT, __STR) DCC_LOGSTR(__LVL, __FMT, __STR)
 
@@ -326,6 +349,10 @@ void ice_trace9(const struct dcc_trace_entry * __entry, int __a, int __b,
 void ice_trace10(const struct dcc_trace_entry * __entry, int __a, int __b, 
 			 int __c, int __d, int __e, int __f, int __g, int __h,
 			 int __i, int __j);
+
+void ice_trace11(const struct dcc_trace_entry * __entry, int __a, int __b, 
+			 int __c, int __d, int __e, int __f, int __g, int __h,
+			 int __i, int __j, int __k);
 
 void ice_tracestr(const struct dcc_trace_entry * __entry, const char * __s);
 

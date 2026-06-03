@@ -124,6 +124,10 @@ int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 					OFFSETOF_KRN_TH_ERRNO, "OFFSETOF_KRN_TH_ERRNO");
 #endif
 
+/* Static sanity check: */
+_Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
+				"THINKOS_THREAD_FIRST != THINKOS_THREAD_BASE");
+
 	/* disable interrupts */
 	thinkos_krn_irq_off();
 

@@ -183,7 +183,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	if ((ret = __krn_thread_check(krn, thread_no)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread_no);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -193,7 +193,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 		DCC_LOG2(LOG_ERROR, "thread %d already exists, ctx=%08x", 
 				 thread_no, __thread_ctx_get(krn, thread_no));
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_EXIST);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -203,7 +203,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 
 	if ((ret = thinkos_krn_thread_init(krn, thread_no, init))) {
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	};
 
@@ -213,7 +213,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
   #endif		
 #endif
 
-	arg[0] = thread_no;
+	arg[SVC_RETURN] = thread_no;
 
 	return;
 }
@@ -244,7 +244,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 {
 	/* Set the default return value to timeout. 
 	   The wake up call will change this to 0 */
-	__thread_r0_set(krn, th, THINKOS_ETIMEDOUT);
+	__thread_return_set(krn, th, THINKOS_ETIMEDOUT);
 	/* set the clock */
 	__thread_clk_itv_set(krn, th, ms);
 	/* insert into the clock wait queue */
@@ -284,29 +284,12 @@ bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th)
 		__thread_ctx_is_valid(krn, th);
 }
 
-int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
+static int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
 {
-	if ((th < THINKOS_THREAD_FIRST) || (th > THINKOS_THREAD_LAST)) {
-		return 0;
-	}
-#if (THINKOS_ENABLE_THREAD_FAULT)
-	return __thread_errno_get(krn, th);
-#else
 	if (__krn_sched_brk_get(krn) == th) {
-		int errno = __krn_sched_err_get(krn);
-		int xcpno = __krn_sched_xcp_get(krn);
+		int error = __krn_sched_err_get(krn);
 
-		return (xcpno) ? xcpno : errno; 
-	}
-
-	return 0;
-#endif
-}
-
-int __krn_thread_fault_get(struct thinkos_rt * krn, unsigned int th)
-{
-	if (__krn_sched_act_get(krn) == th) {
-		return __krn_sched_xcp_get(krn);
+		return error; 
 	}
 
 	return 0;
@@ -339,6 +322,7 @@ bool thinkos_krn_thread_state_get(unsigned int thread_id,
 	}
 
 	if (st != NULL) {
+		st->thread_id = thread_id;
 #if (THINKOS_ENABLE_EXCEPTIONS)
 		struct thinkos_fault * fault = __thinkos_fault_rt();
 
@@ -346,15 +330,15 @@ bool thinkos_krn_thread_state_get(unsigned int thread_id,
 			st->ctx = &fault->ctx;
 			st->sp = fault->sp;
 			st->ctrl = fault->control;
+			st->errno = __fault_errno_get(fault);
 		} else 
 #endif
 		{
 			st->ctx = __thread_ctx_get(krn, thread_id);
 			st->sp = __thread_sp_get(krn, thread_id);
 			st->ctrl = __thread_ctrl_get(krn, thread_id);
+			st->errno = __krn_thread_errno_get(krn, thread_id);
 		}
-		st->thread_id = thread_id;
-		st->errno = __krn_thread_errno_get(krn, thread_id);
 		st->sl = __thread_sl_get(krn, thread_id);
 		st->tag = __thread_tag_get(krn, thread_id);
 		st->wq = __thread_wq_get(krn, thread_id);

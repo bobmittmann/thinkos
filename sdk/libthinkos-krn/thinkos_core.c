@@ -147,7 +147,7 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	DCC_LOG(LOG_TRACE, "5. IDLE hooks reset...");
-	__krn_idle_hooks_rst(krn);
+//	__krn_idle_hooks_rst(krn);
 #endif
 
 #if DEBUG

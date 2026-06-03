@@ -76,14 +76,14 @@ thinkos_krn_sched_core:
 	/* r1: sched ctrl [ xcpt | err | svc | thd ] */
 	/* r0: krn */
 	tst      lr, #EXC_RET_SPSEL
-	beq      .L_entry_idle
+	beq      .L_idle_entry
 
 	/* Save user thread context on PSP */
 	mrs      r3, PSP
 	/* Save context */
 	stmdb    r3!, {r4-r11}
 
-	/* extract the active thread id form sheduler control word */
+	/* extract the active thread id form scheduler control word */
     uxtb.n   r4, r1
 	/* get a pointer to the thread context vector */
     lsls.n   r7, r4, #2
@@ -241,81 +241,60 @@ thinkos_krn_sched_ctx_get:
 .L_exit_idle:
 	/* Adjust the thread ID */
 	movs.n   r2, #THINKOS_THREAD_IDLE
-	/* set the active to IDLE and clear the break thread */
-	strh     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
+	/* set the active to IDLE */
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
-//#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
-#if 0
+#if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 /* FIXME: in some circumstances we reach this code... 
-   if a call to the scheduler in IDLE in different points 
-   then it's possible that the context has not being saved */
+   if a call to the scheduler when IDLE in different points 
+   then it's possible that the context has not been saved??? */
 	
-    /* load the new context pointer from the context vector */
+    /* load the context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
+//	mov      sp, r3
     bne      .L_idle_stack_ptr_err
 
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
     mov.n     r3, sp
 #endif
-
-    /* set the control register */
-    movs.n   r4, #0
-    msr      CONTROL, r4
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_MSP
+.L_idle_restore:
 	/* restore core context */
 	pop      {r4-r11}
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	b        thinkos_sched_dbg
-#else
-	bx       lr
+	bl       thinkos_sched_dbg
 #endif
+    /* set the control register */
+    movs.n   r3, #0
+    msr      CONTROL, r3
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
+	bx       lr
 
 /* --------------------------------------------------------------------------
  * IDLE 
  * -------------------------------------------------------------------------- */
 
-.L_entry_idle:
+.L_idle_entry:
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the kernel scheduler control word */
 	lsrs.n   r3, r1, #8
-	beq      .L_idle_context_save
-	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
-	   r2: ready bmp 
-	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
-    rors     r3, #24 
-	it.n     eq
-	/* store the active thread id onto the break field if
-	   break is empty */
-	strbeq   r1, [r0, #OFFSETOF_KRN_SCHED_BRK]
-
-#if (THINKOS_ENABLE_SCHED_DEBUG)
-	/* Adjust the thread ID */
-	movs.n   r2, #THINKOS_THREAD_IDLE
-    subs     r3, sp, #(8*4)
-	/* r0: thinkos_rt
-	   r1: sched.ctrl = [ xcp | err | brk | act ]
-	   r2: new active 
-	   r3: SP */
-	b        thinkos_sched_dbg
-#endif
-	/* kernel is blocked, just return */
-	bx       lr
-#endif
-
+	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] */ 
+	bne      .L_idle_update_brk /* fault, error or break set */
+/* No fault, error or break conditions */
 .L_idle_context_save:
 	/* Save system context (IDLE) on MSP */
 	push     {r4-r11}
     mov      r3, sp
+    str.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 	/* extract the current thread id */
     uxtb.n   r4, r1
-	cbz.n    r4, 1f
+	cbz.n    r4, .L_idle_sanity_ok
 	cmp.n    r4, #THINKOS_THREAD_IDLE
 	bne      .L_idle_entry_err    
-1:
+.L_idle_sanity_ok:
 #else
 	movs.n   r4, #THINKOS_THREAD_IDLE
 #endif
@@ -335,6 +314,42 @@ thinkos_krn_sched_ctx_get:
 	movs.n   r5, #THINKOS_ERR_INVALID_POINTER
 	b        thinkos_krn_sched_xcpt
 #endif
+
+.L_idle_update_brk:
+	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
+	   r2: ready bmp 
+	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
+	/* check for error or fault */
+	lsrs.n   r3, #8
+	itt.n    eq
+	/* r3: sched.ctrl >> 16 : [ 0x00 | 0x00 | xcp | err ] */
+	/* if error or fault are set then the scheduler is locked 
+	   we return idle. */
+.L_clr_brk: 
+	/* if error or fault are not set then we clear the break and
+	   run the scheduler */
+	strbeq     r3, [r0, #OFFSETOF_KRN_SCHED_BRK]
+	beq        .L_idle_context_save
+
+	/* break and error or fault are present */
+
+.L_idle_entry_idle_exit:
+	/* copy the current thread to the break indication */
+	strb     r1, [r0, #OFFSETOF_KRN_SCHED_BRK]
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	/* Adjust the thread ID */
+	movs.n   r2, #THINKOS_THREAD_IDLE
+    subs     r3, sp, #(8*4)
+	/* r0: thinkos_rt
+	   r1: sched.ctrl = [ xcp | err | brk | act ]
+	   r2: new active 
+	   r3: SP */
+	b        thinkos_sched_dbg
+#endif
+	/* kernel is blocked, just return */
+	bx       lr
+#endif
+
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_ptr_err:
@@ -402,9 +417,9 @@ thinkos_krn_sched_bypass:
 	/* store the old thread onto the break field */
 	strb     r4, [r0, #OFFSETOF_KRN_SCHED_BRK]
 	/* the new active thread is IDLE */
-	movs.n   r4, #THINKOS_THREAD_IDLE
+	movs.n   r2, #THINKOS_THREAD_IDLE
 	/* set the active to IDLE and clear the break thread */
-	strb     r4, [r0, #OFFSETOF_KRN_SCHED_ACT]
+	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the IDLE context pointer from the context vector */
@@ -417,8 +432,8 @@ thinkos_krn_sched_bypass:
     mov.n     r3, sp
 #endif
     /* set the control register */
-    movs.n   r3, #0
-    msr      CONTROL, r3
+    movs.n   r4, #0
+    msr      CONTROL, r4
 	/* Synthesizes exception return */
 	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* Restore core context */

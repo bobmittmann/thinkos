@@ -279,6 +279,8 @@
 
 #define OFFSETOF_KRN_RDY_MSK    (OFFSETOF_KRN_CRITCNT + SIZEOF_KRN_CRITCNT)
 
+
+#define OFFSETOF_KRN_SCHED_CTRL (OFFSETOF_KRN_SCHED)
 #define OFFSETOF_KRN_SCHED_ACT  (OFFSETOF_KRN_SCHED)
 #define OFFSETOF_KRN_SCHED_BRK  (OFFSETOF_KRN_SCHED_ACT + 1)
 #define OFFSETOF_KRN_SCHED_ERR  (OFFSETOF_KRN_SCHED_BRK + 1)
@@ -413,7 +415,7 @@ struct thinkos_rt {
 			volatile uint8_t brk;    /* break thread */
 			volatile uint8_t err;    /* thread error number - 
 										errors from syscalls */
-			volatile uint8_t xcp;    /* exception error number */
+			volatile uint8_t xcp;    /* system exception number */
 		};
 	} sched;
 
@@ -951,11 +953,11 @@ void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
 /* Set the fault flag */
 void __thinkos_thread_fault_set(unsigned int th, int errno);
 
-/* Clear the fault flag */
-void __thinkos_thread_fault_clr(unsigned int th);
+/* Clear the exception flag */
+void __thinkos_thread_xcp_clr(unsigned int th);
 
-/* Get the fault flag */
-bool __thinkos_thread_fault_get(unsigned int th);
+/* Get the exception flag */
+bool __thinkos_thread_xcp_get(unsigned int th);
 
 void __thinkos_pause_all(void);
 
@@ -1082,12 +1084,6 @@ int thinkos_krn_active_get(void);
  * --------------------------------------------------------------------------*/
 
 void __thinkos_cancel_sched(void);
-
-/* flags a deferred execution of the scheduler */
-void  __thinkos_defer_sched(void);
-
-/* flags a deferred execution of the scheduler */
-void __thinkos_preempt(void);
 
 const char * __thinkos_thread_tag_get(unsigned int idx);
 

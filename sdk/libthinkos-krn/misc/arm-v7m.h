@@ -889,7 +889,24 @@ page B3-699
 #define ICSR_RETTOBASE (1 << 11)
 #define ICSR_VECTACTIVE (0x1ff << 0)
 
+/* ----------------------------------------------------------------------- */
+/* Program Status Register, XPSR                                  */
+/* ----------------------------------------------------------------------- */
 
+#define XPSR_N                  (1 << 31)
+#define XPSR_Z                  (1 << 30)
+#define XPSR_C                  (1 << 29)
+#define XPSR_V                  (1 << 28)
+#define XPSR_Q                  (1 << 27)
+#define XPSR_T                  (1 << 24)
+#define XPSR_ICI_IT_GET(__XPSR) ((((__XPSR) >> 19) & 0xc0) | \
+								 (((__XPSR) >> 10) & 0x3f))
+#define XPSR_ICI_IT_SET(__IT)   ((((__IT) & 0xc0) << 25) | \
+								 (((__IT) & 0x3f) << 10))
+#define XPSR_GE_GET(__XPSR)     (((__XPSR) >> 16) & 0xf)
+#define XPSR_GE_SET(__GE)       (((__GE) & 0xf) << 16) 
+#define XPSR_IPSR_GET(__XPSR)   ((__XPSR) & 0x1ff)
+#define XPSR_IPSR_SET(__IPSR)   ((__IPSR) & 0x1ff)
 
 
 #ifdef __ASSEMBLER__

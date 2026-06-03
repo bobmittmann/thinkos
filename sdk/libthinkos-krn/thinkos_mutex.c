@@ -69,7 +69,7 @@ void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -77,7 +77,7 @@ void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* Lock the mutex */
 		__krn_mutex_lock(krn, mutex, self);
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked", self, mutex);
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	} 
 
@@ -85,13 +85,13 @@ void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (__krn_mutex_lock_get(krn, mutex) == self) {
 		DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
-		arg[0] = THINKOS_EDEADLK;
+		arg[SVC_RETURN] = THINKOS_EDEADLK;
 		return;
 	} 
 #endif
 
 	DCC_LOG2(LOG_MSG, "<%2d> mutex %d busy...", self, mutex);
-	arg[0] = THINKOS_EAGAIN;
+	arg[SVC_RETURN] = THINKOS_EAGAIN;
 }
 
 
@@ -103,7 +103,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -111,7 +111,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* Lock the mutex */
 		__krn_mutex_lock(krn, mutex, self);
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked", self, mutex);
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	} 
 
@@ -120,7 +120,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		if (__krn_mutex_lock_get(krn, mutex) == self) {
 			DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
 			__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
-			arg[0] = THINKOS_EDEADLK;
+			arg[SVC_RETURN] = THINKOS_EDEADLK;
 			return;
 		}
 #endif
@@ -128,7 +128,7 @@ void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	DCC_LOG2(LOG_MSG , "<%2d> waiting on mutex %d...", self, mutex);
 
 	/* Set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	__krn_thread_wait(krn, self, mutex);
 }
 
@@ -142,7 +142,7 @@ void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * kr
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -150,7 +150,7 @@ void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * kr
 		/* Lock the mutex */
 		__krn_mutex_lock(krn, mutex, self);
 		DCC_LOG2(LOG_MSG, "<%2d> mutex %d locked", self, mutex);
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -158,7 +158,7 @@ void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * kr
 	if (__krn_mutex_lock_get(krn, mutex) == self) {
 		DCC_LOG2(LOG_WARNING, "<%2d> mutex %d, deadlock!", self, mutex);
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_LOCKED);
-		arg[0] = THINKOS_EDEADLK;
+		arg[SVC_RETURN] = THINKOS_EDEADLK;
 		return;
 	}
 #endif
@@ -166,7 +166,7 @@ void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * kr
 	DCC_LOG2(LOG_MSG, "<%2d> waiting on mutex %d...", self, mutex);
 	/* Set the default return value to timeout. The
 	   mutex_unlock() call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
+	arg[SVC_RETURN] = THINKOS_ETIMEDOUT;
 	__krn_thread_timedwait(krn, self, mutex, ms);
 }
 #endif
@@ -180,7 +180,7 @@ void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_mutex_check(krn, mutex)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid mutex %d!", self, mutex);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -191,13 +191,13 @@ void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		DCC_LOG3(LOG_ERROR, "<%2d> mutex %d is locked by <%2d>!", 
 				 self, mutex, __krn_mutex_lock_get(krn, mutex));
 		__THINKOS_ERROR(self, THINKOS_ERR_MUTEX_NOTMINE);
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	}
 #endif
 
 	/* Set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	DCC_LOG2(LOG_MSG, "<%2d> mutex %d unlocked.", self, mutex);
 

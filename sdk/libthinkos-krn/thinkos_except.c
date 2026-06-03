@@ -37,17 +37,17 @@ _Static_assert (offsetof(struct thinkos_fault, ret) ==
 _Static_assert (offsetof(struct thinkos_fault, control) == 
 				OFFSETOF_FAULT_CONTROL, "OFFSETOF_FAULT_CONTROL");
 
-_Static_assert (offsetof(struct thinkos_fault, errno) == 
-				OFFSETOF_FAULT_ERRNO, "OFFSETOF_FAULT_ERRNO");
-
 _Static_assert (offsetof(struct thinkos_fault, seq) == 
 				OFFSETOF_FAULT_SEQ, "OFFSETOF_FAULT_SEQ");
 
-_Static_assert (offsetof(struct thinkos_fault, thread) == 
-				OFFSETOF_FAULT_THREAD, "OFFSETOF_FAULT_THREAD");
-
 _Static_assert (offsetof(struct thinkos_fault, ack) == 
 				OFFSETOF_FAULT_ACK, "OFFSETOF_FAULT_ACK");
+
+_Static_assert (offsetof(struct thinkos_fault, sched) == 
+				OFFSETOF_FAULT_SCHED_CTRL, "OFFSETOF_FAULT_SCHED_CTRL");
+
+_Static_assert (offsetof(struct thinkos_fault, icsr) == 
+				OFFSETOF_FAULT_ICSR, "OFFSETOF_FAULT_ICSR");
 
 _Static_assert (offsetof(struct thinkos_fault, shcsr) == 
 				OFFSETOF_FAULT_SHCSR, "OFFSETOF_FAULT_SHCSR");
@@ -73,9 +73,6 @@ _Static_assert (offsetof(struct thinkos_fault, psp) ==
 
 _Static_assert (offsetof(struct thinkos_fault, sched) == 
 				OFFSETOF_FAULT_SCHED, "OFFSETOF_FAULT_SCHED");
-
-_Static_assert (offsetof(struct thinkos_fault, icsr) == 
-				OFFSETOF_FAULT_ICSR, "OFFSETOF_FAULT_ICSR");
 
 #if (THINKOS_ENABLE_PROFILING)
 _Static_assert (offsetof(struct thinkos_fault, cycref) == 
@@ -171,50 +168,21 @@ end:
 	return act;
 }
 
-uint32_t __krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
+void thinkos_krn_fatal_handler(struct thinkos_rt * krn,
+							   struct thinkos_fault * fault,
+							   uint32_t sp,
+							   uint32_t xpsr)
 {
-	uint32_t icsr;
-//	uint32_t pend;
-	uint32_t act;
-
-//	__krn_xcpt_pend_clr(krn);
-//	__nvic_irq_disable_all();
-
-	icsr = CM3_SCB->icsr;
-	act = ICSR_VECTACTIVE_GET(icsr);
-#if 0
-	pend = ICSR_VECTPENDING_GET(icsr);
-	(void)act;
-	(void)pend;
-	DCC_LOG4(LOG_WARNING, VT_PSH VT_FMG " VECT %d pend, %d act%s%s" VT_POP, 
-			 pend, act, 
-			 (icsr & SCB_ICSR_RETTOBASE) ? " RETTTOBASE" : "",
-			 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "");
-
-	if (icsr & SCB_ICSR_RETTOBASE) 
-		return 0;
-
-	mdelay(125);
-#endif
-
-	return act;
-}
-
-void thinkos_krn_fatal_except(struct thinkos_rt * krn,
-							  struct thinkos_context * ctx,
-							  uint32_t sp,
-							  uint32_t xpsr)
-{
+#if (DEBUG)
 	uint32_t ipsr = xpsr & 0x1ff;
 	int i;
-
 	DCC_LOG(LOG_PANIC, VT_PSH VT_REV VT_FRD
 			" !!! Fatal exception !!!!" VT_POP);
 
 	mdelay(250);
 
 	DCC_LOG(LOG_PANIC, "1. __hard()...");
-	__hard(krn, ctx, sp, ipsr);
+	__hard(krn, &fault->ctx, sp, ipsr);
 
 	for (i = 0; i < 10; ++i) {
 		mdelay(500);
@@ -222,19 +190,35 @@ void thinkos_krn_fatal_except(struct thinkos_rt * krn,
 	}
 
 	DCC_LOG(LOG_PANIC, "System reset!");
+#endif
 #if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
+#else
+	thinkos_krn_halt();
 #endif
-	for(;;);
 }
 
 void thinkos_krn_fault_handler(struct thinkos_rt * krn,
-							   struct thinkos_fault * fault,
-							   uint32_t xcptno,
-							   uint32_t sp)
+							   struct thinkos_fault * fault)
 {
-	/* Stop the scheduler */
-	__krn_sched_xcp_set(krn, xcptno);
+	struct cm3_scb * scb = CM3_SCB;
+	uint8_t seq = fault->seq;
+	uint8_t ack = fault->ack;
+	uint32_t cfsr;
+
+	cfsr = scb->cfsr;
+	/* Clear CFSR (Configurable Fault Status Register) */
+	scb->cfsr = cfsr;
+
+	__xinfo(fault);
+
+	if ((seq - ack) > 1) {
+		DCC_LOG3(LOG_WARNING, VT_PSH VT_REV VT_FMG 
+				 " Kernel exception: %d seq=%d ack=%d" 
+				 VT_POP, fault->sched.xcp, seq, ack);
+
+		return;
+	}
 
 	/* Disable all vectored interrupts on NVIC */
 	__nvic_irq_disable_all();
@@ -248,29 +232,31 @@ void thinkos_krn_fault_handler(struct thinkos_rt * krn,
 	__krn_svc_pend_clr(krn);
 
 	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW " Kernel exception: %d " VT_POP, 
-			 xcptno);
+			 fault->sched.xcp);
 
-	/* preempt the scheduler */
-	__krn_preempt(krn);
+	/* defer the scheduler execution */
+	__krn_sched_defer(krn);
 
 	/* Reenable CPU interrupts */
 	cm3_cpsie_i();
 }
 
 /* ARM exceptions in a thread context are recorded in
-   the exception buffer. Then a common handling
-   function takes care of signaling the modules
+   the exception buffer in the fault structure. Then a common 
+   handling function takes care of signaling the modules
    that may be affected by this condition. */
 void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
-									struct thinkos_fault * fault,
-									uint32_t errno,
-									uint32_t thread)
+									struct thinkos_fault * fault)
 {
-	/* Stop the scheduler */
-	__krn_sched_err_set(krn, errno);
+	struct cm3_scb * scb = CM3_SCB;
+	uint32_t cfsr;
+
+	cfsr = scb->cfsr;
+	/* Clear CFSR (Configurable Fault Status Register) */
+	scb->cfsr = cfsr;
 
 	/* Disable all vectored interrupts on NVIC */
-//	__nvic_irq_disable_all();
+	__nvic_irq_disable_all();
 
 	/* Clear the SVC call pending to avoid returning to a service routine
 	   as this will cause another stack fault */
@@ -278,21 +264,36 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
 
 	DCC_LOG2(LOG_TRACE, VT_PSH VT_REV VT_FYW
 			 " Exception: error %d on thread %d " VT_POP, 
-			 errno, thread);
+			 fault->sched.xcp, fault->sched.act);
+
+	if (fault != &thinkos_fault_rt) {
+		DCC_LOG2(LOG_TRACE, VT_PSH VT_REV VT_FRD
+			 " fault 0x%08x rt=0x%08x" VT_POP, fault, &thinkos_fault_rt);
+	}
 
 	DCC_FAULT_DUMP(krn, fault);
 
 	/* preempt the scheduler. It will run shortly ater this exception 
 	 * is unstacked. */
-	__krn_preempt(krn);
+	__krn_sched_defer(krn);
 
 	/* Reenable CPU interrupts */
 	cm3_cpsie_i();
 }
 
 /* -------------------------------------------------------------------------
-   Application fault deferred handler 
+   Application fault API
    ------------------------------------------------------------------------- */
+
+void thinkos_krn_fault_ack(struct thinkos_rt * krn, 
+						   struct thinkos_fault * fault)
+{
+	fault->ack++;
+	__krn_sched_err_clr(krn);
+	__krn_sched_xcp_clr(krn);
+	__krn_sched_defer(krn);
+}
+
 void thinkos_krn_fault_clr(void)
 {
 	struct cm3_scb * scb = CM3_SCB;
@@ -303,7 +304,7 @@ void thinkos_krn_fault_clr(void)
 	scb->cfsr = cfsr;
 
 	if (cfsr)  {
-		DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG  "CFSR=0x%8x" VT_POP, cfsr);
+		DCC_LOG1(LOG_TRACE, VT_PSH VT_FMG  "CFSR=0x%08x" VT_POP, cfsr);
 	}
 
 #if (THINKOS_ENABLE_MEMORY_CLEAR)

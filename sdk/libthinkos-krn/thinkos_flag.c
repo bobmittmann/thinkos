@@ -74,7 +74,7 @@ void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -94,7 +94,7 @@ again:
 		flags &= ~(1 << idx);
 		if (__strex(flags_bmp, flags))
 			goto again;
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -147,7 +147,7 @@ void thinkos_flag_timedtake_svc(int32_t arg[], int self,
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -167,7 +167,7 @@ again:
 		bits &= ~(1 << idx);
 		if (__strex(flags_bmp, bits))
 			goto again;
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -247,7 +247,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);  
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_return_set(krn, th, 0);
 #endif
 	__thread_stat_clr(krn, th);
 }
@@ -281,12 +281,12 @@ void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	__krn_flag_give(krn, flag);
 	/* signal the scheduler ... */
@@ -309,12 +309,12 @@ void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = __bit_mem_rd(krn->flag, idx);
+	arg[SVC_RETURN] = __bit_mem_rd(krn->flag, idx);
 }
 
 static void __thinkos_flag_clr(struct thinkos_rt * krn, uint32_t flag)
@@ -334,12 +334,12 @@ void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	__thinkos_flag_clr(krn, flag);
 }
 
@@ -353,13 +353,13 @@ void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
 	DCC_LOG1(LOG_INFO, "flag=%d...", flag);
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	/* set the flag and wakeup all threads waiting on the flag */
 	__bit_mem_wr(krn->flag, idx, 1);  
 	__krn_wq_wakeup_all(krn, flag);
@@ -375,13 +375,13 @@ void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
 	/* set the return value */
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	/* flag is set just return */
 	if (__bit_mem_rd(krn->flag, idx))
@@ -405,12 +405,12 @@ void thinkos_flag_timedwatch_svc(int32_t arg[], int self,
 	if ((ret = krn_flag_check(krn, flag)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, flag);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	if (__bit_mem_rd(krn->flag, idx))
 		return;
 
@@ -418,7 +418,7 @@ void thinkos_flag_timedwatch_svc(int32_t arg[], int self,
 	DCC_LOG2(LOG_INFO, "<%2d> waiting for flag %d...", self, flag);
 	/* Set the default return value to timeout. The
 	   mutex_unlock() call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
+	arg[SVC_RETURN] = THINKOS_ETIMEDOUT;
 	__krn_thread_timedwait(krn, self, flag, ms);
 }
 #endif
@@ -440,7 +440,7 @@ bool flag_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
-		__thread_r0_set(krn, th, 0);
+		__thread_return_set(krn, th, 0);
 #endif
 		/* update status */
 		__thread_stat_clr(krn, th);

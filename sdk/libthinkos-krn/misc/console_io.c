@@ -153,7 +153,7 @@ int krn_console_dev_recv(void * dev, void * buf,
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
 		if (ret < 0) {
-//			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
+			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
 		} else {
 			DCC_LOG1(LOG_INFO, "thinkos_console_timedread()->%d", ret);
 		}

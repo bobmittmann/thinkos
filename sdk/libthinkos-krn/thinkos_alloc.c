@@ -310,7 +310,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 		break;
 #endif 
 	default:
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #else
@@ -318,7 +318,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -334,7 +334,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 	if (bmp == NULL) {
 		DCC_LOG1(LOG_ERROR, "<%2d> object invalid", self);
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -365,7 +365,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 	}
 	DCC_LOG3(LOG_TRACE, "<%2d> kind=\"%s\" oid=%d", self, 
 			 __kind_name(kind), idx);
-	arg[0] = idx;
+	arg[SVC_RETURN] = idx;
 }
 
 void __krn_alloc_init(struct thinkos_rt * krn)
@@ -421,7 +421,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (oid >= THINKOS_WQ_CNT) {
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -474,7 +474,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 		break;
 #endif 
 	default:
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -483,7 +483,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
 			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -496,7 +496,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 		max = thinkos_obj_cnt_lut[kind];
 		if (idx > max) {
 			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-			arg[0] = THINKOS_ENOMEM;
+			arg[SVC_RETURN] = THINKOS_ENOMEM;
 			return;
 		}
 #endif
@@ -505,7 +505,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_rt * krn)
 #endif
 
 	__bit_mem_wr(bmp, idx, 0);
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 #endif /* #if (THINKOS_ENABLE_OBJ_FREE) */

@@ -37,14 +37,14 @@ void thinkos_break_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (wq >= THINKOS_WQ_CNT) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
 	if (!__thinkos_obj_alloc_check(wq)) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_ALLOC);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif 
@@ -65,7 +65,7 @@ void thinkos_break_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	cm3_cpsie_i();
 
-	arg[0] = 0;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 #endif /* THINKOS_ENABLE_BREAK */

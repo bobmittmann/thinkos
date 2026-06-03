@@ -77,7 +77,7 @@ void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -101,7 +101,7 @@ again:
 		if (__strex(gates_bmp, bits))
 			goto again;
 		DCC_LOG2(LOG_INFO, "<%2d> enter gate %d.", self, gate);
-		arg[0] = 0;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -161,7 +161,7 @@ void thinkos_gate_timedwait_svc(int32_t arg[], int self,
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -182,7 +182,7 @@ again:
 
 	if (((bits >> idx) & 3) == 3) {
 		DCC_LOG1(LOG_ERROR, "<%d> invalid state, open and locked.", self);
-		arg[0] = 0;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -192,7 +192,7 @@ again:
 		if (__strex(gates_bmp, bits))
 			goto again;
 		DCC_LOG2(LOG_INFO, "<%d> enter gate %d.", self, gate);
-		arg[0] = 0;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -254,7 +254,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -263,7 +263,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (!__bit_mem_rd(krn->gate, idx * 2 + 1)) {
 		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, gate);
 		__THINKOS_ERROR(self, THINKOS_ERR_GATE_UNLOCKED);
-		arg[0] = THINKOS_EPERM;
+		arg[SVC_RETURN] = THINKOS_EPERM;
 		return;
 	}
 #endif
@@ -278,7 +278,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	DCC_LOG1(LOG_MSG, "gate %d", gate);
 
-	arg[0] = 0;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	/* At this point assume the gate is locked! */
 
@@ -340,7 +340,7 @@ again:
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);  
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_return_set(krn, th, 0);
 #endif
 	/* update status */
 	__thread_stat_clr(krn, th);
@@ -416,7 +416,7 @@ again:
 	__thread_clk_disable(krn, th);  
 #endif
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_return_set(krn, th, 0);
 	/* update status */
 	__thread_stat_clr(krn, th);
 }
@@ -452,11 +452,11 @@ void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-	arg[0] = 0;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
@@ -476,11 +476,11 @@ void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_gate_check(krn, gate)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid gate %d!", self, gate);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-	arg[0] = 0;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
@@ -513,7 +513,7 @@ bool gate_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
-		__thread_r0_set(krn, th, 0);
+		__thread_return_set(krn, th, 0);
 #endif
 		/* update status */
 		__thread_stat_clr(krn, th);

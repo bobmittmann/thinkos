@@ -66,14 +66,14 @@ void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid semaphore %d!", self, sem);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
 	DCC_LOG2(LOG_INFO, "sem[%d] <= %d", sem, value);
 	krn->sem_val[sem - THINKOS_SEM_BASE] = value;
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -86,7 +86,7 @@ void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid semaphore %d!", self, sem);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -98,9 +98,9 @@ void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		sem_val = __ldrex(&krn->sem_val[sem - THINKOS_SEM_BASE]);
 		if (sem_val > 0) {
 			sem_val--;
-			arg[0] = THINKOS_OK;
+			arg[SVC_RETURN] = THINKOS_OK;
 		} else {
-			arg[0] = THINKOS_EAGAIN;
+			arg[SVC_RETURN] = THINKOS_EAGAIN;
 		}
 	} while (__strex(&krn->sem_val[sem - THINKOS_SEM_BASE], sem_val));
 }
@@ -116,7 +116,7 @@ void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid semaphore %d!", self, sem);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -131,7 +131,7 @@ again:
 		sem_val--;
 		if (__strex(&krn->sem_val[sem - THINKOS_SEM_BASE], sem_val))
 			goto again;
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -197,7 +197,7 @@ void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid semaphore %d!", self, sem);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -209,7 +209,7 @@ again:
 		sem_val--;
 		if (__strex(&krn->sem_val[sem - THINKOS_SEM_BASE], sem_val))
 			goto again;
-		arg[0] = THINKOS_OK;
+		arg[SVC_RETURN] = THINKOS_OK;
 		return;
 	}
 
@@ -237,7 +237,7 @@ again:
 	__thread_clk_enable(krn, self);
 	/* Set the default return value to timeout. The
 	   sem_post call will change this to 0 */
-	arg[0] = THINKOS_ETIMEDOUT;
+	arg[SVC_RETURN] = THINKOS_ETIMEDOUT;
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
@@ -275,7 +275,7 @@ static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_return_set(krn, th, 0);
 #endif
 	/* update status */
 	__thread_stat_clr(krn, th);
@@ -308,14 +308,14 @@ void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_sem_check(krn, sem)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid semaphore %d!", self, sem);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
 	DCC_LOG1(LOG_INFO, "sem %d +++++++++++++ ", sem);
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	__krn_sem_post(krn, sem);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
@@ -335,7 +335,7 @@ bool semaphore_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
-		__thread_r0_set(krn, th, 0);
+		__thread_return_set(krn, th, 0);
 #endif
 		/* update status */
 		__thread_stat_clr(krn, th);

@@ -86,7 +86,7 @@ void thinkos_ev_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_event_check(krn, evset)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event %d!", self, evset);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -101,7 +101,7 @@ again:
 				 krn->ev[no].pend, krn->ev[no].mask);
 		if (__strex(&krn->ev[no].pend, pend))
 			goto again;
-		arg[0] = ev;
+		arg[SVC_RETURN] = ev;
 		return;
 	}
 
@@ -162,14 +162,14 @@ void thinkos_ev_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_EVENT_ALLOC)
 	if (__bit_mem_rd(&krn->ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -186,7 +186,7 @@ again:
 		DCC_LOG2(LOG_INFO, "pending event %d.%d!", evset, ev);
 		if (__strex(&krn->ev[no].pend, pend))
 			goto again;
-		arg[0] = ev;
+		arg[SVC_RETURN] = ev;
 		return;
 	}
 
@@ -256,7 +256,7 @@ void __krn_ev_raise(struct thinkos_rt * krn, uint32_t evset, unsigned int ev)
 	__thread_clk_disable(krn, th);  
 #endif
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, ev);
+	__thread_return_set(krn, th, ev);
 	/* update status */
 	__thread_stat_clr(krn, th);
 }
@@ -291,26 +291,26 @@ void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (ev > 31) {
 		DCC_LOG1(LOG_ERROR, "event %d is invalid!", ev);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVENT_OUTOFRANGE);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_EVENT_ALLOC)
 	if (__bit_mem_rd(&krn->ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	__krn_ev_raise(krn, evset, ev);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
@@ -331,20 +331,20 @@ void thinkos_ev_mask_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (no >= THINKOS_EVENT_MAX) {
 		DCC_LOG1(LOG_ERROR, "object %d is not an event set!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #if (THINKOS_ENABLE_EVENT_ALLOC)
 	if (__bit_mem_rd(&krn->ev_alloc, no) == 0) {
 		DCC_LOG1(LOG_ERROR, "invalid event set %d!", evset);
 		__THINKOS_ERROR(self, THINKOS_ERR_EVSET_ALLOC);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	if (val == 0) {
 		/* mask the event on the mask bitmap */
 		__bit_mem_wr(&krn->ev[no].mask, ev, 0);  
@@ -394,7 +394,7 @@ again:
 	__bit_mem_wr(&krn->ev[no].mask, ev, 1);  
 
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, ev);
+	__thread_return_set(krn, th, ev);
 
 	/* insert the thread into ready queue */
 	__thread_ready_set(krn, th);
@@ -420,12 +420,12 @@ void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_event_check(krn, evset)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid event set %d!", self, evset);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	/* clear the event bit on the pending bitmap */
 	__bit_mem_wr(&krn->ev[no].pend, ev, 0);  
 }
@@ -447,7 +447,7 @@ bool evset_resume(struct thinkos_rt * krn, unsigned int th,
 		__thread_ready_set(krn, th);
 #if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
-		__thread_r0_set(krn, th, 0);
+		__thread_return_set(krn, th, 0);
 #endif
 		/* update status */
 		__thread_stat_clr(krn, th);

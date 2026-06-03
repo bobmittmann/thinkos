@@ -165,19 +165,19 @@ void thinkos_time_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	__THINKOS_ERROR(self, THINKOS_ERR_SYSCALL_INVALID);
-	arg[0] = THINKOS_ENOSYS;
+	arg[SVC_RETURN] = THINKOS_ENOSYS;
 }
 
 void thinkos_clock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
-	arg[0] = thinkos_rt.clk.time;
+	arg[SVC_RETURN] = thinkos_rt.clk.time;
 }
 
 void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
-	arg[0] = self;
+	arg[SVC_RETURN] = self;
 }
 
 
@@ -199,7 +199,7 @@ void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	if (thinkos_rt.critical_cnt == 0) {
 		__THINKOS_ERROR(self, THINKOS_ERR_CRITICAL_EXIT);
-		arg[0] = THINKOS_EFAULT;
+		arg[SVC_RETURN] = THINKOS_EFAULT;
 	} else if ((--thinkos_rt.critical_cnt) == 0) {
 		__krn_sched_on();
 	}

@@ -428,11 +428,8 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 	struct thinkos_fault * fault = __thinkos_fault_rt();
 //	const struct thinkos_mem_desc * mem = &sram_desc;
 	struct krn_thread_state inf;
-//	uint32_t addr = (uint32_t)&thinkos_rt;
-//	unsigned int size = sizeof(struct thinkos_rt);
 	int thread_id;
 	int32_t errno;
-	uint32_t sched;
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
@@ -440,39 +437,29 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 	monitor_newln(comm);
 	monitor_hbar(comm);
 
-	thinkos_krn_thread_state_get(thread_id, &inf);
-	monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-				   thinkos_krn_err_tag(inf.errno),
-				   inf.thread_id, inf.errno, inf.ctx->pc);
+	if  (thinkos_krn_thread_state_get(thread_id, &inf)) {
+		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
+					   thinkos_krn_err_tag(inf.errno),
+					   inf.thread_id, inf.errno, inf.ctx->pc);
 
-	monitor_print_thread_state(comm, &inf);
-	monitor_newln(comm);
+		monitor_print_thread_state(comm, &inf);
+		monitor_newln(comm);
+	}
 
 	monitor_print_fault(comm, fault);
 	monitor_newln(comm);
 
-	sched = monitor_sched_ctrl_get();
-	monitor_printf(comm, " krn.sched=%08x xcp=%d err=%d "
-				   "brk=%d act=%d\r\n", sched, 
-				   (sched >> 24) & 0xff, 
-				   (sched >> 16) & 0xff, 
-				   (sched >> 8) & 0xff, 
-				   (sched >> 0) & 0xff);
-#if 0
-	monitor_puts("Kernel\r\n", comm);
-	monitor_hexdump(comm, mem, addr, size);
-	addr = inf.sp;
-	size = 128;
-	monitor_puts("Stack:\r\n", comm);
-	monitor_hexdump(comm, mem, addr, size);
-#endif
-	monitor_newln(comm);
+
 }
 
 void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
 	int thread_id;
 	int32_t errno;
+	int32_t xcpno;
+
+	xcpno = monitor_krn_except_get();
+	errno = monitor_thread_err_get();
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
@@ -494,21 +481,22 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 		struct krn_thread_state inf;
 
 		monitor_newln(comm);
-		thinkos_krn_thread_state_get(thread_id, &inf);
-		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
-					   thinkos_krn_err_tag(inf.errno),
-					   inf.thread_id, inf.errno, inf.ctx->pc);
 
-		monitor_print_thread_state(comm, &inf);
+		if (errno && thinkos_krn_thread_state_get(thread_id, &inf)) {
+			monitor_printf(comm, "* Error %s [thread=%d errno=%d "
+						   "addr=0x%08x]\r\n", 
+						   thinkos_krn_err_tag(inf.errno),
+						   inf.thread_id, inf.errno, inf.ctx->pc);
 
+			monitor_print_thread_state(comm, &inf);
+		}
+		if (xcpno) {
+			struct thinkos_fault * fault = __thinkos_fault_rt();
+			monitor_print_fault(comm, fault);
+		}
 		monitor_hbar(comm);
 		monitor_newln(comm);
 
-		if (errno == 128) {
-			monitor_newln(comm);
-			monitor_puts( "Clearing break condition and resuming...\r\n", comm);
-			monitor_thread_break_clr();
-		}
 	} else {
 		DCC_LOG(LOG_ERROR, "Restarting!");
 	//	thinkos_krn_sysrst();
@@ -521,7 +509,7 @@ void monitor_on_krn_fault(const struct monitor_comm * comm)
 	int32_t xcpno;
 	int32_t errno;
 
-	xcpno = monitor_krn_xcpt_get();
+	xcpno = monitor_krn_except_get();
 	errno = monitor_thread_err_get();
 
 	if (monitor_comm_isconnected(comm)) {
@@ -535,8 +523,6 @@ void monitor_on_krn_fault(const struct monitor_comm * comm)
 		DCC_LOG(LOG_ERROR, "Restarting!");
 //		thinkos_krn_sysrst();
 	}
-
-//	monitor_krn_xcpt_clr();
 }
 #endif
 
@@ -941,7 +927,6 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 #endif
 
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_KRN_ABORT);
 #if (MONITOR_FAULT_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
@@ -994,13 +979,6 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 			board->on_softreset();
 			goto is_connected;
-			break;
-
-		case MONITOR_KRN_ABORT:
-			monitor_clear(MONITOR_KRN_ABORT);
-			monitor_puts("\r\n/!\\ KRN ABORT\r\n", comm);
-			DCC_LOG(LOG_TRACE, "/!\\ KRN_ABORT signal...");
-			monitor_signal(MONITOR_USER_EVENT3);
 			break;
 
 		case MONITOR_USR_ABORT:
@@ -1112,6 +1090,10 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
   #endif
 			/* Restore critical NVIC interrupts */
 			monitor_on_krn_fault(comm);
+
+  #if (THINKOS_ENABLE_IDLE_HOOKS)
+  	 		krn_idle_req_core_rst(krn);
+  #endif
 			break;
 #endif
 
@@ -1138,7 +1120,8 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
   #if (THINKOS_ENABLE_CONSOLE_MODE)
 			raw_mode = thinkos_krn_console_is_raw_mode();
 			if (raw_mode) {
-				sigmask = monitor_on_comm_rcv(comm, sigmask);
+				DCC_LOG(LOG_INFO, "COMM_RCV...");
+				sigmask = monitor_on_rx_pipe(comm, sigmask);
 				break;
 			}
   #endif /* THINKOS_ENABLE_CONSOLE_MODE */

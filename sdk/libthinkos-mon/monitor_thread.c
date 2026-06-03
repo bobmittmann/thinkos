@@ -59,7 +59,6 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 
 	/* return in case of fault or abort */	
 	sigmask |= (1 << MONITOR_KRN_FAULT);
-	sigmask |= (1 << MONITOR_KRN_ABORT);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_USR_ABORT);
@@ -115,11 +114,13 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	}
 }
 
+	/*
 void monitor_thread_resume(int thread_id)
 {
 	if (__thinkos_thread_resume(thread_id))
 		__thinkos_defer_sched();
 } 
+	*/
 
 int monitor_thread_create(const struct monitor_comm * comm, 
 						thinkos_task_t task, void * arg,

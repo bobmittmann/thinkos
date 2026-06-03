@@ -134,67 +134,21 @@ void stm32_tim_init(struct stm32f_tim * tim, uint32_t period_us)
 	/* get the reload register value */
 	n = (div + pre / 2) / pre;
 	/* Timer configuration */
+	tim->cr1 = 0; /* Disable counter */
 	tim->psc = pre - 1;
 	tim->arr = n - 1;
 	tim->cnt = n - 1;
 	tim->egr = TIM_UG;
-	while (tim->sr == 0);
-	tim->sr = 0;
+	while (tim->sr != 0)
+		tim->sr = 0;
 	tim->dier = TIM_UIE; /* Update interrupt enable */
-	tim->cr1 = TIM_CEN; /* Enable counter */
 }
 
-void timer2_init(uint32_t period_us)
+void stm32_tim_en(struct stm32f_tim * tim, bool en)
 {
-	/* Timer clock enable */
-	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM2);
-	/* configure interrupts */
-	if (thinkos_irq_register(STM32F_IRQ_TIM2, IRQ_PRIORITY_VERY_HIGH, 
-						 stm32f_tim2_isr) == THINKOS_OK) {
-		printf("thinkos_irq_register() ok\r\n");
-	};
-	/* enable interrupts */
-	thinkos_irq_enable(STM32F_IRQ_TIM2);
-	/* Initialize timer */
-	stm32_tim_init(STM32F_TIM2, period_us);
+	uint32_t cr1 = tim->cr1 & ~TIM_CEN;
+	tim->cr1 = cr1 | (en ? TIM_CEN : 0); /* Enable counter */
 }
-
-void timer3_init(uint32_t period_ms)
-{
-	/* Timer clock enable */
-	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM3);
-	/* Initialize timer */
-	stm32_tim_init(STM32F_TIM3, period_ms);
-	/* configure interrupts */
-//	cm3_irq_pri_set(STM32F_IRQ_TIM3, IRQ_PRIORITY_HIGH);
-	/* enable interrupts */
-//	cm3_irq_enable(STM32F_IRQ_TIM3);
-}
-
-void timer4_init(uint32_t period_ms)
-{
-	/* Timer clock enable */
-	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM4);
-	/* Initialize timer */
-	stm32_tim_init(STM32F_TIM4, period_ms);
-	/* configure interrupts */
-//	cm3_irq_pri_set(STM32F_IRQ_TIM4, IRQ_PRIORITY_REGULAR);
-	/* enable interrupts */
-//	cm3_irq_enable(STM32F_IRQ_TIM4);
-}
-
-void timer5_init(uint32_t period_ms)
-{
-	/* Timer clock enable */
-	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM5);
-	/* Initialize timer */
-	stm32_tim_init(STM32F_TIM5, period_ms);
-	/* configure interrupts */
-//	cm3_irq_pri_set(STM32F_IRQ_TIM5, IRQ_PRIORITY_LOW);
-	/* enable interrupts */
-//	cm3_irq_enable(STM32F_IRQ_TIM5);
-}
-
 
 /*--------------------------------------------------------------------------
   Fault generators
@@ -293,8 +247,20 @@ int test1_task(int mutex)
 {
 	uint32_t cnt = 0;
 
-	timer2_init(100);
+	/* Timer clock enable */
+	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM2);
+	/* configure interrupts */
+	if (thinkos_irq_register(STM32F_IRQ_TIM2, IRQ_PRIORITY_VERY_HIGH, 
+						 stm32f_tim2_isr) == THINKOS_OK) {
+		printf("thinkos_irq_register() ok\r\n");
+	};
+	/* enable interrupts */
+	thinkos_irq_enable(STM32F_IRQ_TIM2);
+	/* Initialize timer */
+	stm32_tim_init(STM32F_TIM2, 200);
 	
+	stm32_tim_en(STM32F_TIM2, true);
+
 	stack_fault_on_systick(8192);
 
 	for (;;) {
@@ -317,6 +283,8 @@ void irq_read_fault(void)
 	thinkos_irq_enable(STM32F_IRQ_TIM2);
 	/* Initialize timer */
 	stm32_tim_init(STM32F_TIM2, 200);
+
+	stm32_tim_en(STM32F_TIM2, true);
 }
 
 int test2_task(int mutex)
@@ -343,6 +311,8 @@ void tim2_sem_isr(void)
 
 void sem_test(void)
 {
+	int i;
+
 	sem = THINKOS_SEM_DESC(0); 
 	/* Timer clock enable */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_TIM2);
@@ -353,10 +323,13 @@ void sem_test(void)
 	/* Initialize timer */
 	stm32_tim_init(STM32F_TIM2, 500000);
 
-	for(;;) {
+	stm32_tim_en(STM32F_TIM2, true);
+
+	for(i = 0; i < 32; ++i) {
 		thinkos_sem_wait(sem);
-		printf("Tick\r\n");
+		printf("Tick %d\r\n", i);
 	}
+	stm32_tim_en(STM32F_TIM2, false);
 }
 
 

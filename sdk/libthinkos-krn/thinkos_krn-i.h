@@ -55,7 +55,7 @@
 
 /* Argument to receive the return value in the call stack 
  * The number 4 corresponds to r12 */
-#define SVC_RETCODE_ARG 4
+#define SVC_RETURN 4
 
 #define KRN_CLK_FROM_MS(__MS) (__MS) 
 
@@ -242,22 +242,22 @@ __krn_sched_brk_get(struct thinkos_rt * krn) {
 	return krn->sched.brk;
 }
 
-/* Set the scheduler kernel exception error */
+/* Set the scheduler kernel fault code */
 static inline void __attribute__((always_inline)) 
-__krn_sched_xcp_set(struct thinkos_rt * krn, uint8_t xcp) {
-	krn->sched.xcp = xcp;
+__krn_sched_xcp_set(struct thinkos_rt * krn, uint8_t fault) {
+	krn->sched.xcp = fault;
 }
 
-/* Get the scheduler kernel exception error */
+/* Get the scheduler kernel fault code */
 static inline uint8_t __attribute__((always_inline)) 
 	__krn_sched_xcp_get(struct thinkos_rt * krn) {
 	return krn->sched.xcp;
 }
 
-/* Clear the scheduler kernel exception error */
+/* Clear the scheduler kernel fault code */
 static inline void __attribute__((always_inline)) 
 __krn_sched_xcp_clr(struct thinkos_rt * krn) {
-	krn->sched.xcp = 0;
+	krn->sched.xcp= 0;
 }
 
 static inline uint32_t __krn_sched_ctrl_get(struct thinkos_rt * krn)
@@ -508,6 +508,11 @@ __thread_r12_set(struct thinkos_rt * krn, unsigned int th, uint32_t val) {
 }
 
 static inline void  __attribute__((always_inline)) 
+__thread_return_set(struct thinkos_rt * krn, unsigned int th, uint32_t val) {
+	__thread_ctx_get(krn, th)->r12 = val;
+}
+
+static inline void  __attribute__((always_inline)) 
 __thread_lr_set(struct thinkos_rt * krn, unsigned int th, uintptr_t val) {
 	__thread_ctx_get(krn, th)->lr = (uint32_t)val;
 }
@@ -729,7 +734,7 @@ __krn_wq_wakeup(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, 0);
+	__thread_return_set(krn, th, 0);
 #endif
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
@@ -753,11 +758,11 @@ __wq_wakeup_return(struct thinkos_rt * krn, unsigned int wq,
 	krn->th_stat[th] = 0;
 #endif
 	/* set the thread's return value */
-	__thread_r0_set(krn, th, ret);
+	__thread_return_set(krn, th, ret);
 }
 
 static inline void __attribute__((always_inline)) 
-__wq_wakeup_r12_set(struct thinkos_rt * krn, unsigned int wq, 
+__wq_wakeup_return_set(struct thinkos_rt * krn, unsigned int wq, 
                     unsigned int th, int ret) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
@@ -1541,8 +1546,6 @@ int __krn_threads_inf_get(struct thinkos_rt * krn,
 
 int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, 
 						uint32_t opt);
-
-int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th);
 
 static inline void __krn_idle_hooks_rst(struct thinkos_rt * krn) {
 #if (THINKOS_ENABLE_IDLE_HOOKS)

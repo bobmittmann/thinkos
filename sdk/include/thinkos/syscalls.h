@@ -215,52 +215,52 @@
 #define __ARM_SVC_ASM(N) "svc " #N "\n" 
 #define ARM_SVC(N) __ARM_SVC_ASM(N)
 
-#define __SYSCALL_CALL(N) __extension__({ register int ret asm("r0"); \
+#define __SYSCALL_CALL(N) __extension__({ register int32_t ret asm("r12"); \
 asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
 ret; })
 
 #define __SYSCALL_CALL1(N, A1) __extension__({ \
-register int ret asm("r0"); \
-register int r0 asm("r0") = (int)A1; \
-asm volatile ("svc " #N "\n" : "=r"(ret) : "0"(r0) : ); \
+register int32_t ret asm("r12"); \
+register int32_t r0 asm("r0") = (int32_t)A1; \
+asm volatile ("svc " #N "\n" : "=r"(ret) : "r"(r0) : ); \
 ret; } )
 
 #define __SYSCALL_CALL2(N, A1, A2) __extension__( \
-{ register int ret asm("r0"); \
-register int r0 asm("r0") = (int)A1; \
-register int r1 asm("r1") = (int)A2; \
+{ register int32_t ret asm("r12"); \
+register int32_t r0 asm("r0") = (int32_t)A1; \
+register int32_t r1 asm("r1") = (int32_t)A2; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
-"0"(r0), "r"(r1) : ); \
+"r"(r0), "r"(r1) : ); \
 ret; })
 
 #define __SYSCALL_CALL3(N, A1, A2, A3) __extension__({ \
-register int ret asm("r0"); \
-register int r0 asm("r0") = (int)A1; \
-register int r1 asm("r1") = (int)A2; \
-register int r2 asm("r2") = (int)A3; \
+register int32_t ret asm("r12"); \
+register int32_t r0 asm("r0") = (int32_t)A1; \
+register int32_t r1 asm("r1") = (int32_t)A2; \
+register int32_t r2 asm("r2") = (int32_t)A3; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
-	"0"(r0), "r"(r1), "r"(r2) : ); \
+	"r"(r0), "r"(r1), "r"(r2) : ); \
 	ret; })
 
 #define __SYSCALL_CALL4(N, A1, A2, A3, A4) __extension__({\
-register int ret asm("r0"); \
-register int r0 asm("r0") = (int)A1; \
-register int r1 asm("r1") = (int)A2; \
-register int r2 asm("r2") = (int)A3; \
-register int r3 asm("r3") = (int)A4; \
+register int32_t ret asm("r12"); \
+register int32_t r0 asm("r0") = (int32_t)A1; \
+register int32_t r1 asm("r1") = (int32_t)A2; \
+register int32_t r2 asm("r2") = (int32_t)A3; \
+register int32_t r3 asm("r3") = (int32_t)A4; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
-		"0"(r0), "r"(r1), "r"(r2), "r"(r3) : ); \
+		"r"(r0), "r"(r1), "r"(r2), "r"(r3) : ); \
 		ret; })
 
 #define __SYSCALL_CALL5(N, A1, A2, A3, A4, A5) __extension__({\
-register int ret asm("r0"); \
-register int r0 asm("r0") = (int)A1; \
-register int r1 asm("r1") = (int)A2; \
-register int r2 asm("r2") = (int)A3; \
-register int r3 asm("r3") = (int)A4; \
-register int r12 asm("r12") = (int)A5; \
+register int32_t ret asm("r12"); \
+register int32_t r0 asm("r0") = (int32_t)A1; \
+register int32_t r1 asm("r1") = (int32_t)A2; \
+register int32_t r2 asm("r2") = (int32_t)A3; \
+register int32_t r3 asm("r3") = (int32_t)A4; \
+register int32_t r12 asm("r12") = (int32_t)A5; \
 asm volatile ("svc " #N "\n" : "=r"(ret) : \
-			"0"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r12) : ); \
+			"r"(r0), "r"(r1), "r"(r2), "r"(r3), "0"(r12) : ); \
 			ret; })
 
 /* No arguments function */
@@ -293,12 +293,11 @@ static inline int __attribute__((always_inline)) thinkos_thread_self(void) {
 static inline int 
 thinkos_thread_init(unsigned int thread, 
                     const struct thinkos_thread_initializer * ini) {
-
-	register uint32_t ret asm("r0");
-	register void * ptr asm("r1") = (void *)ini;
-
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r1") = thread;
+	register uintptr_t r1 asm("r1") = (uintptr_t)ini;
 	asm volatile (ARM_SVC(THINKOS_THREAD_INIT) : 
-				  "=r"(ret) : "0"(thread), "r"(ptr) : "memory" );
+				  "=r"(ret) : "r"(r0), "r"(r1) : "memory" );
 
 	return ret;
 }
@@ -448,23 +447,23 @@ static inline int __attribute__((always_inline)) thinkos_ev_wait(int set) {
 return THINKOS_SYSCALL1(THINKOS_EVENT_WAIT, set);
 }
 
-static inline int __attribute__((always_inline)) thinkos_ev_timedwait(
-																  int set, unsigned int ms) {
+static inline int __attribute__((always_inline)) 
+	thinkos_ev_timedwait(int set, unsigned int ms) {
 return THINKOS_SYSCALL2(THINKOS_EVENT_TIMEDWAIT, set, ms);
 }
 
-static inline int __attribute__((always_inline)) thinkos_ev_raise(
-															  int set, int ev) {
+static inline int __attribute__((always_inline)) 
+	thinkos_ev_raise(int set, int ev) {
 return THINKOS_SYSCALL2(THINKOS_EVENT_RAISE, set, ev);
 }
 
-static inline int __attribute__((always_inline)) thinkos_ev_mask(
-															 int set, int ev, int val) {
+static inline int __attribute__((always_inline)) 
+	thinkos_ev_mask(int set, int ev, int val) {
 return THINKOS_SYSCALL3(THINKOS_EVENT_MASK, set, ev, val);
 }
 
-static inline int __attribute__((always_inline)) thinkos_ev_clear(
-															  int set, int ev) {
+static inline int __attribute__((always_inline)) 
+	thinkos_ev_clear(int set, int ev) {
 return THINKOS_SYSCALL2(THINKOS_EVENT_CLEAR, set, ev);
 }
 
@@ -982,11 +981,12 @@ thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
 
 static inline int __attribute__((always_inline)) 
 thinkos_comm_recv(unsigned int comm, void * buf, unsigned int len) {
-	register int32_t ret asm("r0");
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = comm;
 	register uint32_t r1 asm("r1") = (uintptr_t)buf;
 	register uint32_t r2 asm("r2") = len;
 	asm volatile (ARM_SVC(THINKOS_COMM_RECV) : "=r"(ret) : 
-				  "0"(comm), "r"(r1), "r"(r2) : "memory" );
+				  "r"(r0), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
 
@@ -1046,11 +1046,11 @@ thinkos_trace_getnext(int id, struct trace_entry * entry) {
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_open(const char * tag) {
-	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_OPEN, 0);
-	register int32_t ret asm("r0");
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = __FLASH_OPC(THINKOS_FLASH_MEM_OPEN, 0);
 	register uint32_t r1 asm("r1") = (uintptr_t)tag;
 	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
-				  "0"(opc), "r"(r1) : "memory" );
+				  "r"(r0), "r"(r1) : "memory" );
 	return ret;
 }
 
@@ -1062,28 +1062,28 @@ return THINKOS_SYSCALL1(THINKOS_FLASH_MEM,
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_read(int key, off_t offset, void * buf, size_t size) {
-	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_READ, key);
-	register int32_t ret asm("r0");
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = __FLASH_OPC(THINKOS_FLASH_MEM_READ, key);
 	register uint32_t r1 asm("r1") = (uint32_t)offset;
 	register uint32_t r2 asm("r2") = size;
 	register uint32_t r3 asm("r3") = (uintptr_t)buf;
 
 	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
-				  "0"(opc), "r"(r1), "r"(r2) , "r"(r3) : "memory" );
+				  "r"(r0), "r"(r1), "r"(r2) , "r"(r3) : "memory" );
 
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_write(int key, off_t offset, const void * buf, size_t size) {
-	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_WRITE, key);
-	register int32_t ret asm("r0");
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = __FLASH_OPC(THINKOS_FLASH_MEM_WRITE, key);
 	register uint32_t r1 asm("r1") = (uint32_t)offset;
 	register uint32_t r2 asm("r2") = size;
 	register uint32_t r3 asm("r3") = (uintptr_t)buf;
 
 	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
-				  "0"(opc), "r"(r1), "r"(r2) , "r"(r3) : "memory" );
+				  "r"(r0), "r"(r1), "r"(r2) , "r"(r3) : "memory" );
 
 	return ret;
 }
@@ -1113,12 +1113,12 @@ struct thinkos_mem_stat;
 
 static inline int __attribute__((always_inline)) 
 thinkos_flash_mem_stat(const char * tag, struct thinkos_mem_stat * stat) {
-	uint32_t opc = __FLASH_OPC(THINKOS_FLASH_MEM_STAT, 0);
-	register int32_t ret asm("r0");
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = __FLASH_OPC(THINKOS_FLASH_MEM_STAT, 0);
 	register uint32_t r1 asm("r1") = (uintptr_t)tag;
 	register uint32_t r2 asm("r2") = (uintptr_t)stat;
 	asm volatile (ARM_SVC(THINKOS_FLASH_MEM) : "=r"(ret) : 
-				  "0"(opc), "r"(r1), "r"(r2) : "memory" );
+				  "r"(r0), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
 
@@ -1128,60 +1128,66 @@ thinkos_flash_mem_stat(const char * tag, struct thinkos_mem_stat * stat) {
 
 static inline uint64_t __attribute__((always_inline)) 
 thinkos_time_monotonic_get(void) {
+	register int ret asm("r12");
 	register uint32_t t_lo asm("r0");
 	register uint32_t t_hi asm("r1");
 	union krn_time tm;
 
-	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(t_lo), "=r"(t_hi) : 
-				  "0"(THINKOS_TIME_MONOTONIC_GET));
-	tm.frac = t_lo;
-	tm.sec = t_hi;
-	return tm.u64;
-}
-
-static inline uint64_t __attribute__((always_inline)) 
-thinkos_time_realtime_get(void) {
-	register uint32_t t_lo asm("r0");
-	register uint32_t t_hi asm("r1");
-	union krn_time tm;
-
-	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(t_lo), "=r"(t_hi) : 
-				  "0"(THINKOS_TIME_REALTIME_GET));
+	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(ret), 
+				  "=r"(t_lo), "=r"(t_hi) : 
+				  "1"(THINKOS_TIME_MONOTONIC_GET));
 	tm.frac = t_lo;
 	tm.sec = t_hi;
 	return tm.u64;
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_time_realtime_set(uint64_t t) {
-	register uint32_t ret asm("r0");
-	register uint32_t r1 asm("r1") = t;
-	register uint32_t r2 asm("r2") = t >> 32;
+thinkos_time_realtime_get(union krn_time * tm) {
+	register int32_t ret asm("r12");
+	register uint32_t t_lo asm("r0");
+	register uint32_t t_hi asm("r1");
+
+	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(ret), 
+				  "=r"(t_lo), "=r"(t_hi) : 
+				  "1"(THINKOS_TIME_REALTIME_GET));
+	tm->frac = t_lo;
+	tm->sec = t_hi;
+	return ret;
+}
+
+static inline int __attribute__((always_inline)) 
+thinkos_time_realtime_set(union krn_time tm) {
+	register int32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = THINKOS_TIME_REALTIME_SET;
+	register uint32_t r1 asm("r1") = tm.frac;
+	register uint32_t r2 asm("r2") = tm.sec;
 
 	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(ret) : 
-				  "0"(THINKOS_TIME_REALTIME_SET), "r"(r1), "r"(r2));
+				  "r"(r0), "r"(r1), "r"(r2));
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_time_realtime_step(int64_t dt) {
-	register uint32_t ret asm("r0");
+	register uint32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = THINKOS_TIME_REALTIME_STEP;
 	register uint32_t r1 asm("r1") = dt;
 	register int32_t r2 asm("r2") = dt >> 32;
 
 	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(ret) : 
-				  "0"(THINKOS_TIME_REALTIME_STEP), "r"(r1), "r"(r2));
+				  "r"(r0), "r"(r1), "r"(r2));
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
-thinkos_time_realtime_comp(uint64_t dt) {
-	register uint32_t ret asm("r0");
-	register uint32_t r1 asm("r1") = dt;
-	register uint32_t r2 asm("r2") = dt >> 32;
+thinkos_time_realtime_comp(union krn_time tm) {
+	register uint32_t ret asm("r12");
+	register uint32_t r0 asm("r0") = THINKOS_TIME_REALTIME_COMP;
+	register uint32_t r1 asm("r1") = tm.frac;
+	register uint32_t r2 asm("r2") = tm.sec;
 
 	asm volatile (ARM_SVC(THINKOS_DATE_AND_TIME) : "=r"(ret) : 
-				  "0"(THINKOS_TIME_REALTIME_COMP), "r"(r1), "r"(r2));
+				  "r"(r0), "r"(r1), "r"(r2));
 	return ret;
 }
 

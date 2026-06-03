@@ -346,7 +346,7 @@ void thinkos_resume_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = __krn_thread_check(krn, th)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, th);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -355,12 +355,12 @@ void thinkos_resume_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (!__thread_ctx_is_valid(krn, th)) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", th);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_CTX_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	if (__krn_thread_resume(krn, th))
 		__krn_sched_defer(krn);
@@ -375,7 +375,7 @@ void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = __krn_thread_check(krn, th)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, th);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -384,12 +384,12 @@ void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if (!__thread_ctx_is_valid(krn, th)) {
 		DCC_LOG1(LOG_INFO, "invalid thread %d!", th);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_CTX_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 	if (__krn_thread_pause(krn, th))
 		__krn_sched_defer(krn);

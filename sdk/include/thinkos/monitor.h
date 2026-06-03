@@ -46,9 +46,14 @@ enum monitor_event {
 	/* ThinkOS kernel fault */
 	MONITOR_KRN_FAULT       = 2,
 	/* ThinkOS kernel reset indication */
-	MONITOR_KRN_ABORT       = 3,
-	/* User reqest abort */
+//	MONITOR_KRN_ABORT       = 3,
+
+	/* Board reset request */
+	MONITOR_SOFTRST         = 3,
+
+	/* User request abort */
 	MONITOR_USR_ABORT       = 4,
+
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
 	/* ThinkOS Thread step break */
@@ -88,9 +93,6 @@ enum monitor_event {
 
 	/* User/bootloader extension events 0 to 7 */
 	MONITOR_USER_EVENT3     = 23,
-
-	/* Board reset request */
-	MONITOR_SOFTRST         = 24,
 
 	/* Debug Communication break signal */
 	SIG_COMM_BRK            = 25, 
@@ -321,9 +323,9 @@ int monitor_thread_break_get(int32_t * pcode);
 
 void monitor_thread_break_clr(void);
 
-int monitor_krn_xcpt_get(void);
+int monitor_krn_except_get(void);
 
-void monitor_krn_xcpt_clr(void);
+void monitor_krn_except_clr(void);
 
 int monitor_thread_err_get(void);
 

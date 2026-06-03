@@ -270,7 +270,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self, 
 				 thread_idx);
 		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_INVALID);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -279,7 +279,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 		DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
 				 self, ret);
 		__THINKOS_ERROR(self, ret);
-		arg[4] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	};
 
@@ -295,7 +295,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 		__krn_sched_defer(krn);
 	}
 
-	arg[4] = thread_idx;
+	arg[SVC_RETURN] = thread_idx;
 
 	return;
 }

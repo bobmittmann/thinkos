@@ -126,10 +126,6 @@ static inline void __attribute__((always_inline,format (__printf__, 1, 2)))
 #define TRACE_REF_DEF(__TAG) static const struct trace_ref \
 		__attribute__((section(".rodata.trace." __TAG))) 
 
-#define __SYSCALL_CALL(N) __extension__({ register int ret asm("r0"); \
-asm volatile ("svc " #N "\n" : "=r"(ret) : : ); \
-ret; })
-
 /* ----------------------------------------------------------------------
  * Printf style trace macros
  * ----------------------------------------------------------------------

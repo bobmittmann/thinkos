@@ -32,7 +32,7 @@ void thinkos_join_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = __krn_thread_check(krn, thread)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid thread %d!", self, thread);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -46,7 +46,7 @@ void thinkos_join_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* set the return to ERROR as a default value. The
 	   exit function of the joining thread will set this to the 
 	   appropriate return code */
-	arg[0] = -1;
+	arg[SVC_RETURN] = -1;
 
 	/* insert the current thread (self) into the joining thread wait queue */
 	DCC_LOG2(LOG_TRACE, "<%2d> waiting to join with <%2d>.", self, thread);

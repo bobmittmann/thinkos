@@ -31,18 +31,19 @@
 #define OFFSETOF_FAULT_CONTEXT    0
 
 #define OFFSETOF_FAULT_SP         64
-#define OFFSETOF_FAULT_SHCSR      68
-#define OFFSETOF_FAULT_CFSR       72
-#define OFFSETOF_FAULT_MMFAR      76
-#define OFFSETOF_FAULT_BFAR       80
 
-#define OFFSETOF_FAULT_RET        84
-#define OFFSETOF_FAULT_CONTROL    85
-#define OFFSETOF_FAULT_ERRNO      86
-#define OFFSETOF_FAULT_SEQ        87
+#define OFFSETOF_FAULT_RET        68
+#define OFFSETOF_FAULT_CONTROL    69
+#define OFFSETOF_FAULT_SEQ        70
+#define OFFSETOF_FAULT_ACK        71
 
-#define OFFSETOF_FAULT_THREAD     88
-#define OFFSETOF_FAULT_ACK        91
+#define OFFSETOF_FAULT_SCHED_CTRL 72
+
+#define OFFSETOF_FAULT_ICSR       76
+#define OFFSETOF_FAULT_SHCSR      80
+#define OFFSETOF_FAULT_CFSR       84
+#define OFFSETOF_FAULT_MMFAR      88
+#define OFFSETOF_FAULT_BFAR       92
 
 
 #if 0
@@ -58,7 +59,6 @@
 #define OFFSETOF_FAULT_READY     84
 
 
-#define OFFSETOF_FAULT_ICSR     104
 #define OFFSETOF_FAULT_SHCSR    108
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -105,21 +105,27 @@ struct thinkos_fault {
 
 	uint32_t sp; /* SP */
 
-	uint32_t shcsr;
-	uint32_t cfsr;
-	uint32_t mmfar;
-	uint32_t bfar;
-
 	uint8_t ret;       /* exception exit return code low byte  */
-	uint8_t control;
-	uint8_t errno;     /* exception error code */
-	uint8_t seq;       /* number of exceptions since except_ack() */
+	uint8_t control;   /* CONTROL register */
+	uint8_t seq;       /* number of faults since fault_ack() */
+	uint8_t ack;       /* fault serviced acknowledge */
 
-	uint8_t thread;	
-	uint8_t res1;	
-	uint8_t res2;	
-	uint8_t ack;
-	
+	/* FIXME: This structure assumes a little-endian system */
+	union {
+		uint32_t ctrl;      /* scheduler control word */
+		struct {
+			uint8_t act;  /* active thread */
+			uint8_t brk;  /* break thread */
+			uint8_t err;  /* thread error number */
+			uint8_t xcp;  /* system fault number */
+		};
+	} sched;
+
+	uint32_t icsr; /* Interrupt Control and State Register */
+	uint32_t shcsr; /* System Handler Control and State Register */
+	uint32_t cfsr; /* Configurable Fault Status Register */
+	uint32_t mmfar; /* MemManage Fault Address Register */
+	uint32_t bfar; /* BusFault Address Register */
 };
 
 extern uint32_t thinkos_except_stack[(THINKOS_EXCEPT_STACK_SIZE) / 4];
@@ -136,7 +142,11 @@ static inline struct thinkos_fault * __thinkos_fault_rt(void) {
 }
 
 static inline int __fault_thread_get(struct thinkos_fault * fault) {
-	return fault->thread; 
+	return fault->sched.act; 
+}
+
+static inline int __fault_errno_get(struct thinkos_fault * fault) {
+	return fault->sched.err ? fault->sched.err : fault->sched.xcp;
 }
 
 static inline bool __thinkos_fault_valid(struct thinkos_fault * fault) {
@@ -147,8 +157,8 @@ static inline int32_t __thinkos_fault_cnt(struct thinkos_fault * fault) {
 	return (int32_t)fault->seq - (int32_t)fault->ack;
 }
 
-static inline bool __thinkos_fault_errno(struct thinkos_fault * fault) {
-	return (fault->seq == fault->ack) ? 0 : fault->errno;
+static inline bool __thinkos_fault_err(struct thinkos_fault * fault) {
+	return (fault->seq == fault->ack) ? 0 : fault->sched.err;
 }
 
 /* -------------------------------------------------------------------------

@@ -95,7 +95,7 @@ void thinkos_dma_timedwait_cleanup_svc(int32_t * arg, int self) {
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid DMA %d!", dma);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -106,9 +106,9 @@ void thinkos_dma_timedwait_cleanup_svc(int32_t * arg, int self) {
 		thinkos_rt.dma_th[dma] = THINKOS_THREAD_IDLE;
 		/* disable this interrupt source */
 		cm3_dma_disable(dma);
-		arg[0] = THINKOS_ETIMEDOUT;      /* return value */
+		arg[SVC_RETURN] = THINKOS_ETIMEDOUT;      /* return value */
 	} else {
-		arg[0] = THINKOS_OK;             /* return value */
+		arg[SVC_RETURN] = THINKOS_OK;             /* return value */
 	}
 }
 
@@ -124,7 +124,7 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG2(LOG_ERROR, "invalid DMA %d! dma_th=%d", dma, thinkos_rt.dma_th[53]);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -168,7 +168,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	if (dma >= THINKOS_DMA_MAX) {
 		DCC_LOG1(LOG_ERROR, "invalid DMA %d!", dma);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -189,7 +189,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 		 thinkos_mpu_kernel_mem.size)) {
 		DCC_LOG(LOG_ERROR, "invalid pointer!");
 		__THINKOS_ERROR(THINKOS_ERR_INVALID_POINTER);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif /* THINKOS_ENABLE_MPU */
@@ -203,7 +203,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 #endif /* THINKOS_ENABLE_ARG_CHECK */
 
 	DCC_LOG2(LOG_MSG, "<%d> DMA %d!", self, dma);
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 
 #if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* Save the context pointer. In case an interrupt wakes up
@@ -245,11 +245,11 @@ void thinkos_dma_ctl_svc(int32_t * arg, int self)
 	if (dma >= dma_max) {
 		DCC_LOG1(LOG_ERROR, "invalid DMA %d!", dma);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
-	arg[0] = 0;
+	arg[SVC_RETURN] = 0;
 	
 	switch (req) {
 /* This macro is here for backword compatibility, TODO should be deprecated */
@@ -314,7 +314,7 @@ void thinkos_dma_ctl_svc(int32_t * arg, int self)
 
 	default:
 		DCC_LOG1(LOG_ERROR, "invalid DMA ctl request %d!", req);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

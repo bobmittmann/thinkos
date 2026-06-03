@@ -124,7 +124,7 @@ void thinkos_pipe_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((ret = krn_pipe_tx_check(krn, oid)) != 0) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid pipe %d!", self, oid);
 		__THINKOS_ERROR(self, ret);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif
@@ -143,11 +143,11 @@ wr_again:
 	if ((n = __krn_fifo_write(fifo, buf, len)) > 0) {
 		DCC_LOG1(LOG_INFO, "tx_fifo_write: n=%d", n);
 		//			__krn_fifo_usr_signal(fifo);
-		arg[0] = n;
+		arg[SVC_RETURN] = n;
 	} else {
 		/* Set the return value to ZERO. The calling thread 
 		   should retry sending data. */
-		arg[0] = 0;
+		arg[SVC_RETURN] = 0;
 		/* (1) suspend the thread by removing it from the
 		   ready wait queue. The __thinkos_suspend() call cannot be nested
 		   inside a LDREX/STREX pair as it may use the exclusive access 
@@ -202,7 +202,7 @@ void thinkos_pipe_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	if ((ret = krn_pipe_rx_check(krn, pipe)) != THINKOS_OK) {
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid pipe %d!", self, pipe);
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		__THINKOS_ERROR(self, ret);
 		return;
 	}
@@ -210,7 +210,7 @@ void thinkos_pipe_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	DCC_LOG1(LOG_INFO, "pipe %d +++++++++++++ ", pipe);
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
@@ -227,7 +227,7 @@ drain_again:
 	if (!__krn_fifo_isempty(fifo)) {
 		/* Set the return value to EGAIN. The calling thread 
 		   should retry ... */
-//		arg[0] = THINKOS_EAGAIN;
+//		arg[SVC_RETURN] = THINKOS_EAGAIN;
 		/* (1) suspend the thread by removing it from the
 		   ready wait queue. The __thinkos_suspend() call cannot be nested
 		   inside a LDREX/STREX pair as it may use the exclusive access 
@@ -298,7 +298,7 @@ void thinkos_pipe_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		DCC_LOG2(LOG_ERROR, "<%2d> invalid pipe %d!", self, oid);
 		__THINKOS_ERROR(self, ret);
 #endif
-		arg[0] = THINKOS_EINVAL;
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 
@@ -307,7 +307,7 @@ void thinkos_pipe_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 	DCC_LOG1(LOG_INFO, "pipe %d +++++++++++++ ", oid);
 
-	arg[0] = THINKOS_OK;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 #endif /* THINKOS_PIPE_MAX > 0 */

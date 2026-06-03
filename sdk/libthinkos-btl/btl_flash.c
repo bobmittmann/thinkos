@@ -95,7 +95,10 @@ int btl_flash_erase_partition(const char * tag)
 
 	thinkos_flash_mem_close(key);
 
-	return ret;
+	if (ret < 0)
+		return BTL_SHELL_ERR_GENERAL; 
+
+	return BTL_SHELL_OK;
 }
 
 /* Receive a file and write it into the flash using the YMODEM protocol */
@@ -146,6 +149,8 @@ int btl_flash_ymodem_recv(const char * tag)
 			break;
 		}
 	} 
+
+	DCC_LOG(LOG_TRACE, "YMODEM stop.");
 
 	ymodem_rcv_flush(&ry);
 	thinkos_console_raw_mode(false);

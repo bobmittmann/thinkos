@@ -39,7 +39,7 @@ LIBS = gcc m stm32f util c thinkos-usr
 INCPATH = $(PROJECT_ROOT)/src/include
 
 CDEFS = CONFIG_H 
-CFLAGS = -O1 -Werror -Wall -Wextra -Wdouble-promotion -Wno-unused-parameter
+CFLAGS = -O0 -Werror -Wall -Wextra -Wdouble-promotion -Wno-unused-parameter
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f415xg

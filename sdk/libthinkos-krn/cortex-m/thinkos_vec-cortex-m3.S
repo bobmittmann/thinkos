@@ -129,22 +129,27 @@ __core_vectors:
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
 	ldr     lr, .L_fault_rt /* uses LR as a temporary variable */
-	add     lr, #((16-3) * 4) /* make room for LR, PC and XPSR */
-	stmdb   lr!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
-	stmdb   lr!, {r4-r11}      /* save faulty registers */
-	adds    r2, sp, #(8 * 4)   /* save the stack frame */
+	stmia   lr!, {r4-r11}      /* save faulty registers */
+	stmia   lr!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
+	adds    r2, sp, #(8 * 4)   
 	/* If the origin of error is the MSP being invalid then the 
 	   next instruction will cause a hard fault. Possible solutions,
 	   ignore the registers LR, PC and XPSR */
 	ldr     r0, .L_thinkos_rt
-	movs    r1, lr
+	subs    r1, lr, #((16 + 5) * 4)
 	mrs     r3, XPSR
 	/* restore SP to the top of the exception stack */
 	ldr     sp, .L_xcpt_stack_top
-	bl      thinkos_krn_fatal_except
+	bl      thinkos_krn_fatal_handler
 	/* never retrun */
 	b       thinkos_krn_halt
 
+	.size   cm3_hard_fault_isr, . - cm3_hard_fault_isr
+
+	.global	__thinkos_krn_fault
+	.thumb
+	.thumb_func
+	.type	__thinkos_krn_fault, %function
 __thinkos_krn_fault:
 	/* ---------------------------------------------------------------
      * This routine saves the basic context of the exception:
@@ -154,29 +159,56 @@ __thinkos_krn_fault:
 
 	ldr     r1, .L_fault_rt 
 	stmia   r1!, {r4-r11} /* save R4-R11 */
-	pop     {r4, r5, r6, r7, r8} /* read back r0-r3, r12 */
-	stmia   r1!, {r4-r8}  /* save faulty stack frame but LR, PC and XPSR */
-	/* If the origin of error is the MSP being invalid then the 
-	   next instruction will cause a hard fault. Possible solutions,
-	   ignore the registers LR, PC and XPSR */
-	add     r3, sp, (8 * 4)
-	ldmdb   r3, {r5-r7}  /* read LR, PC, XPSR */
-	stmia   r1!, {r5-r7} /* save LR, PC, XPSR */
+	pop     {r4-r11} /* read back R0-R3, R12,  LR, PC, XPSR */
+	stmia   r1!, {r4-r11}  /* save faulty stack frame LR, PC and XPSR */
+	subs.n  r1, #(16 * 4)
 
+	/* store the return code lower byte */
+	strb    lr, [r1, #OFFSETOF_FAULT_RET] /* fault.ret */
+	mrs     r4, CONTROL
+	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
+
+	/* Store the exception number */
 	ldr     r0, .L_thinkos_rt
+	mrs     r2, IPSR
+	strb    r2, [r0, #OFFSETOF_KRN_SCHED_XCP]
+
+	/* store the sched.ctrl */
+	ldr     r4, [r0, #OFFSETOF_KRN_SCHED_CTRL]
+	str     r4, [r1, #OFFSETOF_FAULT_SCHED_CTRL]
+
+	/* increment the sequence number */
+	ldrb    r4, [r1, #OFFSETOF_FAULT_SEQ]
+	add     r4, #1
+	strb    r4, [r1, #OFFSETOF_FAULT_SEQ]
+
+	ldr     r3, .L_cm3_scb
+	/* grab and store fault information and system status */
+	ldr.n   r4, [r3, #SCB_ICSR_OFFS]
+	str     r4, [r1, #OFFSETOF_FAULT_ICSR]
+	/* jump to the SHCSR */
+	adds.n  r3, #SCB_SHCSR_OFFS
+	ldmia   r3!, {r4-r9} /* load SHCSR, CFSR, HFSR, DFSR, MMFAR, BFAR */
+	add     r7, r1, #OFFSETOF_FAULT_SHCSR
+	stmia   r7, {r4,r5,r8,r9} /* save SHCSR, CFSR, MMFAR, BFAR */
+
 	/* restore SP to the top of the exception stack */
 	ldr     sp, .L_xcpt_stack_top
+	/* make room for IDLE thread context */
+	sub     sp, #(16*4)
 
 	/* At this point the registers are:
 	   R0 -> pointer to thinkos_rt
-	   R1 -> pointer to the exception buffer 
-	   R2 -> SP at the time of the fault 
-       R3 -> XPSR at the time of fault
+	   R1 -> pointer to the fault buffer 
+	   R2 -> exception number
 	   SP -> exception stack top
 	 */
-
+	
+	mov     r4, r0
+	mov     r5, r1
 	ldr     r6, =__thinkos_krn_xcpt_unroll_again
-	.size   cm3_hard_fault_isr, . - cm3_hard_fault_isr
+
+	.size   __thinkos_krn_fault, . - __thinkos_krn_fault
 
 	.global	__thinkos_krn_xcpt_unroll_again
 	.thumb
@@ -190,7 +222,7 @@ __thinkos_krn_xcpt_unroll_again:
 	cmp     r0, #0
 	beq     __thinkos_krn_xcpt_done
 
-	adds    r7, r0, #(1 << 24) /* set Thumb bit on XPSR */
+	orr     r7, r0, #(1 << 24) /* set Thumb bit on XPSR */
 	str     r7, [sp, #(7 * 4)] /* push XPSR onto stack frame */
 	mov     lr, #CM3_EXC_RET_HANDLER
 	bx      lr
@@ -198,8 +230,6 @@ __thinkos_krn_xcpt_unroll_again:
 	.size   __thinkos_krn_xcpt_unroll_again, . - __thinkos_krn_xcpt_unroll_again
 
 	.align  2
-	/* exception frame */
-	/*            reserved space for r12, lr, pc, xpsr */
 .L_xcpt_stack_top: 
 	.word   thinkos_except_stack + THINKOS_EXCEPT_STACK_SIZE
 
@@ -209,17 +239,30 @@ __thinkos_krn_xcpt_unroll_again:
 	.type	__thinkos_krn_xcpt_done, %function
 
 __thinkos_krn_xcpt_done:
+	/* ensure privileged access in thread mode */
+	msr     CONTROL, r0
 
-	ldmia   sp, {r0-r3}
+	mov.n   r0, r4
+	mov.n   r1, r5
 	bl      thinkos_krn_fault_handler
 
-	ldr     r6, =thinkos_idle_task
-	mov     r7, #(1 << 24) /* Thumb bit */
-	str     r6, [sp, #(6 * 4)] /* push PC onto stack frame */
-	str     r7, [sp, #(7 * 4)] /* push XPSR onto stack frame */
+	mov.n   r0, r4
+	bl      thinkos_krn_idle_reset
+	msr     MSP, r0
 
-	mov     lr, #CM3_EXC_RET_THREAD_MSP
+	sub     r4, r0, #(16 * 4)  /* make room for context dump R4-R11 */
+	msr     PSP, r4
+
+	ldr     r6, .L_krn_halt /* PC */
+	mov     r7, #(1 << 24) /* XPSR set THUMB bit */
+	stmia   r4, {r0-r7} /* push stack frame R0-R3, R12, LR, PC, XPSR */
+
+	mov     lr, #CM3_EXC_RET_THREAD_PSP
 	bx      lr
+
+	.align  2
+.L_xcpt_stack_bottom: 
+	.word   thinkos_except_stack 
 
 	.size   __thinkos_krn_xcpt_done, . - __thinkos_krn_xcpt_done
 
@@ -232,53 +275,68 @@ __thinkos_krn_xcpt_done:
 	.type	__thinkos_krn_thread_err, %function
 
 __thinkos_krn_thread_err:
-	ldr     r1, .L_fault_rt 
-	stmia   r1!, {r4-r11} /* save R4-R11 */
-	pop     {r4, r5, r6, r7, r8} /* read back r0-r3, r12 */
-	mrs     r12, PSP 
+	/* disable interrupts */
+	cpsid   i
+	/* check the stack of the exception (PSP or MSP ?)*/
+	tst     lr, #EXC_RET_SPSEL
+	beq     __thinkos_krn_fault
+	push    {lr}
+	ldr     lr, .L_fault_rt 
+	stmia   lr!, {r4-r11} /* save R4-R11 */
+	stmia   lr!, {r0-r3, r12} /* save R0-r3, R12 */
+	mrs     r7, PSP 
 	/* If the origin of error is the PSP being invalid then the 
 	   next instruction will cause a hard fault. Possible solutions,
 	   ignore the registers lr, pc and xpsr */
-
 	ldr     r3, .L_cm3_scb
 	ldr     r0, [r3, #SCB_CFSR_OFFS] /* Configurable Fault Status */
 	tst     r0, #CFSR_MSTKERR  /* Stack error SP is invalid, reading from it
 								  will cause a forced hard fault */
 	bne     .L_stack_err
-
 	/* SP is probably OK */ 
-	adds    r12, #(8 * 4) /* top of faulty stack frame */
-	ldmdb   r12, {r9,r10,r11}/* load from stack frame LR, PC, XPSR */
+	adds.n  r7, #(5 * 4) /* top of faulty stack frame */
+	ldmia   r7!, {r4,r5,r6}/* load from stack frame LR, PC, XPSR */
 	b       2f
-
 .L_stack_err:
 	/* Stack error detected */
 	/* load dummy values to LR, PC and XPSR */
-	movs    r9, #0 /* lr */
-	ldr     r10, .L_krn_halt /* pc */
-	movs    r11, #0 /* xpsr */
+	movs.n  r4, #0 /* lr */
+	movs.n  r5, #0 /* pc */
+	movs.n  r6, #0 /* xpsr */
 2:
-	stmia   r1!, {r4-r12} /* save R0-R3, R12, LR, PC, XPSR, SP */
-	add     r3, #SCB_SHCSR_OFFS
-	ldmia   r3!, {r4-r9} /* loadb SHCSR, CFSR, HFSR, DFSR, MMFAR, BFAR */
-	stmia   r1, {r4,r5,r8,r9} /* save SHCSR, CFSR, MMFAR, BFAR */
+	stmia   lr!, {r4-r7} /* save LR, PC, XPSR, SP */
 
-	/* roll back to the exception buffer base */
-	subs    r1, #OFFSETOF_FAULT_SHCSR
+	/* get a pointer to the fault buffer */
+	subs    r1, lr, #(17 * 4)
 
-	strb    lr, [r1, #OFFSETOF_FAULT_RET]
+	pop     {lr}
+	/* store the return code lower byte */
+	strb    lr, [r1, #OFFSETOF_FAULT_RET] /* fault.ret */
 	mrs     r4, CONTROL
 	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
-	strb    r2, [r1, #OFFSETOF_FAULT_ERRNO]
 	
+	/* Store the exception number */
 	ldr     r0, .L_thinkos_rt
+	mrs     r2, IPSR
+	strb    r2, [r0, #OFFSETOF_KRN_SCHED_XCP]
 
-	ldrb    r3, [r0, #OFFSETOF_KRN_SCHED_ACT]
-	strb    r3, [r1, #OFFSETOF_FAULT_THREAD]
+	/* store the sched.ctrl */
+	ldr     r4, [r0, #OFFSETOF_KRN_SCHED_CTRL]
+	str     r4, [r1, #OFFSETOF_FAULT_SCHED_CTRL]
 
+	/* increment the sequence number */
 	ldrb    r4, [r1, #OFFSETOF_FAULT_SEQ]
-	adds    r4, #1
+	add     r4, #1
 	strb    r4, [r1, #OFFSETOF_FAULT_SEQ]
+
+	/* grab and store fault information and system status */
+	ldr.n   r4, [r3, #SCB_ICSR_OFFS]
+	str     r4, [r1, #OFFSETOF_FAULT_ICSR]
+	/* jump to the SHCSR */
+	adds.n  r3, #SCB_SHCSR_OFFS
+	ldmia   r3!, {r4-r9} /* loadb SHCSR, CFSR, HFSR, DFSR, MMFAR, BFAR */
+	add     r7, r1, #OFFSETOF_FAULT_SHCSR
+	stmia   r7, {r4,r5,r8,r9} /* save SHCSR, CFSR, MMFAR, BFAR */
 
 	/* Adjust PSP to point to the fault buffer */
 	add     r6, r1, #(8 * 4)
@@ -287,7 +345,7 @@ __thinkos_krn_thread_err:
 	/* Call the thread exception handler */
 	/* r0: krn 
 	   r1: fault_rt
-	   r2: errno
+	   r2: errno/exception
 	   r3: active thread */
 	b       thinkos_krn_except_err_handler
 	/* reenable interrupts */
@@ -296,80 +354,15 @@ __thinkos_krn_thread_err:
 
 .L_fault_rt: /* fault buffer */
 	.word   thinkos_fault_rt
-
 .L_cm3_scb:
 	.word	CM3_SCB_BASE 
+.L_krn_halt:
+	.word   thinkos_krn_halt
+.L_thinkos_rt:
+	.word	thinkos_rt
 
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
-
-#if	(THINKOS_ENABLE_MEMFAULT)
-	.align	2
-	.global	cm3_mem_manage_isr
-	.thumb
-	.thumb_func
-	.type	cm3_mem_manage_isr, %function
-cm3_mem_manage_isr:
-#if (THINKOS_ENABLE_ERROR_TRAP)
-	/* disable interrupts */
-	cpsid   i
-	/* check the stack of the exception (PSP or MSP ?)*/
-	push    {r0, r1, r2, r3, r12}
-	movs    r2, #THINKOS_ERR_MEM_MANAGE
-	tst     lr, #EXC_RET_SPSEL
-	beq     __thinkos_krn_fault
-	b       __thinkos_krn_thread_err
-#else
-	b       thinkos_krn_halt
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
-	.size  cm3_mem_manage_isr, . - cm3_mem_manage_isr
-#endif
-
-#if	(THINKOS_ENABLE_BUSFAULT)
-	.thumb
-	.align	2
-	.global	cm3_bus_fault_isr
-	.thumb
-	.thumb_func
-	.type	cm3_bus_fault_isr, %function
-cm3_bus_fault_isr:
-#if (THINKOS_ENABLE_ERROR_TRAP)
-	/* disable interrupts */
-	cpsid   i
-	/* check the stack of the exception (PSP or MSP ?)*/
-	push    {r0, r1, r2, r3, r12}
-	movs    r2, #THINKOS_ERR_BUS_FAULT
-	tst     lr, #EXC_RET_SPSEL
-	beq     __thinkos_krn_fault
-	b       __thinkos_krn_thread_err
-#else
-	b       thinkos_krn_halt
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
-	.size  cm3_bus_fault_isr, . - cm3_bus_fault_isr
-#endif
-
-#if	(THINKOS_ENABLE_USAGEFAULT) 
-	.align	2
-	.global	cm3_usage_fault_isr
-	.thumb
-	.thumb_func
-	.type	cm3_usage_fault_isr, %function
-cm3_usage_fault_isr:
-#if (THINKOS_ENABLE_ERROR_TRAP)
-	/* disable interrupts */
-	cpsid   i
-	/* check the stack of the exception (PSP or MSP ?)*/
-	push    {r0, r1, r2, r3, r12}
-	movs    r2, #THINKOS_ERR_USAGE_FAULT
-	tst     lr, #EXC_RET_SPSEL
-	beq     __thinkos_krn_fault
-	b       __thinkos_krn_thread_err
-#else
-	b       thinkos_krn_halt
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
-
-	.size  cm3_usage_fault_isr, . - cm3_usage_fault_isr
-#endif
 
 #endif /* THINKOS_ENABLE_EXCEPTIONS */
 
@@ -390,8 +383,6 @@ cm3_debug_mon_isr:
 	.size   cm3_debug_mon_isr, . - cm3_debug_mon_isr
 #endif /* THINKOS_ENABLE_DBGMON */
 
-.L_krn_halt:
-	.word   thinkos_krn_halt
 
 	.text
 	.align	2
@@ -406,9 +397,6 @@ thinkos_krn_halt:
 	b		.
 
 	.align  2
-
-.L_thinkos_rt:
-	.word	thinkos_rt
 
 	.size   thinkos_krn_halt, . - thinkos_krn_halt
 
@@ -426,20 +414,14 @@ thinkos_krn_halt:
 	.thumb_set  cm3_hard_fault_isr,thinkos_krn_halt
 #endif
 
-#if	!(THINKOS_ENABLE_MEMFAULT)
 	.weak       cm3_mem_manage_isr
-	.thumb_set  cm3_mem_manage_isr,thinkos_krn_halt
-#endif
+	.thumb_set  cm3_mem_manage_isr,__thinkos_krn_thread_err
 
-#if	!(THINKOS_ENABLE_BUSFAULT)
 	.weak       cm3_bus_fault_isr
-	.thumb_set  cm3_bus_fault_isr,thinkos_krn_halt
-#endif
+	.thumb_set  cm3_bus_fault_isr,__thinkos_krn_thread_err
 
-#if	!(THINKOS_ENABLE_USAGEFAULT) 
 	.weak       cm3_usage_fault_isr
-	.thumb_set  cm3_usage_fault_isr,thinkos_krn_halt
-#endif
+	.thumb_set  cm3_usage_fault_isr,__thinkos_krn_thread_err
 
 #if	!(THINKOS_ENABLE_I_CALLS) 
 	.weak       cm3_except7_isr

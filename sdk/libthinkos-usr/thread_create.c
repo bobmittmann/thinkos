@@ -49,8 +49,9 @@ thinkos_thread_create_inf(thinkos_task_t task_ptr, void * task_arg,
 	return thread;
 }
 
-int __attribute__((noinline)) thinkos_thread_create(thinkos_task_t task_ptr, void * task_arg, 
-						  void * stack_ptr, unsigned int opt) 
+int __attribute__((noinline)) 
+thinkos_thread_create(thinkos_task_t task_ptr, void * task_arg, 
+					  void * stack_ptr, uint32_t opt) 
 {
 	struct thinkos_thread_initializer init;
 	uint32_t stack_size = opt & 0xffff;

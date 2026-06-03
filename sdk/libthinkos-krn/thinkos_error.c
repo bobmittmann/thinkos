@@ -87,12 +87,13 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 #if (THINKOS_ENABLE_ERROR_TRAP)
 void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 {
+#if (DEBUG)
 	uint32_t thread = SCHED_CTRL_ACT(ctrl);
 	uint32_t errno = SCHED_CTRL_ERR(ctrl);
+	uint32_t xcpno = SCHED_CTRL_XCP(ctrl);
 	(void)thread;
 	(void)errno;
 
-#if (DEBUG)
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
 			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
@@ -104,13 +105,19 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 					 errno, thread);
 		}
 	}
+
+	if (xcpno > 0) {
+		DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
+				 " Fault %d \"%s\" - thread=%d" VT_POP, 
+				 xcpno, thinkos_err_name_lut[xcpno], thread); 
+	}
 	
 	__xdump(krn, &thinkos_fault_rt);
 #endif
 
 #if (THINKOS_ENABLE_MONITOR) 
 	/* Signal monitor */
-	monitor_signal(MONITOR_THREAD_FAULT);
+	monitor_signal_break(MONITOR_THREAD_FAULT);
 #else
 #if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
@@ -131,25 +138,17 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 			 " Krn error %d \"%s\"" VT_POP, 
 			 errno, thinkos_err_name_lut[errno]); 
 	__kdump(krn);
+	__xinfo(&thinkos_fault_rt);
+	__xdump(krn, &thinkos_fault_rt);
+
 #endif
 
-#if (THINKOS_ENABLE_MONITOR) 
-#if (THINKOS_ENABLE_READY_MASK)
-	__thread_disble_all(krn);
-#endif
-	/* Disable all vectored interrupts on NVIC */
-	__nvic_irq_disable_all();
-	/* Enable CPU interrupts */
-	cm3_cpsie_i();
-	/* Signal monitor */
-	monitor_signal_break(MONITOR_KRN_FAULT);
-#else
 #if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
 #else
 	thinkos_krn_halt();
 #endif
-#endif
+
 }
 
 #endif /* THINKOS_ENABLE_ERROR_TRAP */

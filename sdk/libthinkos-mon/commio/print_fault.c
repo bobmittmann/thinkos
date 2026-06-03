@@ -47,19 +47,25 @@ void monitor_print_fault(const struct monitor_comm * comm,
 	uint32_t ret;
 	uint32_t ctrl;
 	uint32_t shcsr;
+	uint32_t icsr;
 	int ipsr;
+	int errno;
+	int thread;
 
-	monitor_printf(comm, " Error %d at ", fault->errno);
+	errno = __fault_errno_get(fault);
+	thread = __fault_thread_get(fault);
+
+	monitor_printf(comm, " Error %d at ", errno);
 
 	ipsr = fault->ctx.xpsr & 0x1ff;
 	if (ipsr == 0) {
-		monitor_printf(comm, "thread %d", fault->thread);
+		monitor_printf(comm, "thread %d", thread);
 	} else if (ipsr > 15) {
 		monitor_printf(comm, "IRQ %d", ipsr - 16);
 	} else {
 		switch (ipsr) {
 		case CM3_EXCEPT_SVC:
-			monitor_printf(comm, "SVCall, thread %d", fault->thread);
+			monitor_printf(comm, "SVCall, thread %d", thread);
 			break;
 		case CM3_EXCEPT_DEBUG_MONITOR:
 			monitor_printf(comm, "Monitor");
@@ -73,7 +79,7 @@ void monitor_print_fault(const struct monitor_comm * comm,
 		}
 	}
 
-	monitor_printf(comm, ": %s\r\n", thinkos_krn_err_tag(fault->errno));
+	monitor_printf(comm, ": %s\r\n", thinkos_krn_err_tag(errno));
 
 	ret = 0xffffff00 | fault->ret;
 	sp = fault->sp;
@@ -84,7 +90,7 @@ void monitor_print_fault(const struct monitor_comm * comm,
 	monitor_printf(comm, " ret=%08x [ %s ] SP=%08x\r\n", 
 				  ret, __retstr(ret), fault->sp);
 
-	switch (fault->errno) {
+	switch (fault->sched.xcp) {
 #if THINKOS_ENABLE_MPU 
 	case THINKOS_ERR_MEM_MANAGE:
 		mmfsr = SCB_CFSR_MMFSR_GET(fault->cfsr);
@@ -153,10 +159,7 @@ void monitor_print_fault(const struct monitor_comm * comm,
 	}
 
 	shcsr = fault->shcsr;
-	monitor_printf(comm, "SHCSR=%08x [%s%s%s%s%s%s%s%s%s%s%s ]", 
-/*				   (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
-				   (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
-				   (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "", */
+	monitor_printf(comm, "SHCSR=%08x [%s%s%s%s%s%s%s%s%s%s%s ]\r\n", 
 				   shcsr,
 				   (shcsr & SCB_SHCSR_SVCALLPENDED) ? " SVCALLPEND" : "",
 				   (shcsr & SCB_SHCSR_BUSFAULTPENDED) ?  " BUSFAULTPEND" : "",
@@ -169,6 +172,18 @@ void monitor_print_fault(const struct monitor_comm * comm,
 				   (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
 				   (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
 				   (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
+
+	icsr = fault->icsr;
+	monitor_printf(comm, " ICSR=%08x [%s%s%s%s%s%s VECTPENDING=%d "
+				   "VECTACTIVE=%d ]\r\n", icsr,
+				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
+				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
+				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
+				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
+				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
+				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
+				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
+				 (icsr & SCB_ICSR_VECTACTIVE));
 }
 
 
