@@ -47,7 +47,7 @@
 #define CONTROL_FPCA       (1 << 2)
 
 	.text
-	.align	7
+	.align	2
 	.global cm3_svc_isr
 	.thumb
 	.thumb_func

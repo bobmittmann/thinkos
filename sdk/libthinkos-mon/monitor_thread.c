@@ -26,6 +26,8 @@
  * Fast thread execution
  * ------------------------------------------------------------------------- */
 
+#if (THINKOS_ENABLE_MONITOR)
+
 //void __attribute__((noreturn)) 
 void __monitor_thread_on_exit(unsigned int code)
 {
@@ -134,9 +136,7 @@ int monitor_thread_create(const struct monitor_comm * comm,
 	}
 
 	return ret;
-#if (THINKOS_ENABLE_DEBUG)
-#else
-#endif
 }
 
+#endif /* THINKOS_ENABLE_MONITOR */
 

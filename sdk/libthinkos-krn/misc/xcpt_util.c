@@ -73,17 +73,16 @@ void __icsr(uint32_t icsr)
 /* Hard fault exception dump */
 void __hard(struct thinkos_rt * krn,
 			struct thinkos_context * ctx,
-			uint32_t psp,
-			uint32_t stat)
+			uint32_t psp)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
-	uint32_t ipsr;
+/*	uint32_t ipsr;
 	uint32_t xpsr;
 	int irqregs;
 	int irqbits;
 	int i;
 	int j;
-
+*/
 	DCC_LOG4(LOG_ERROR, "   R0=%08x  R1=%08x  R2=%08x  R3=%08x", 
 			ctx->r0, ctx->r1, 
 			ctx->r2, ctx->r3);
@@ -96,7 +95,8 @@ void __hard(struct thinkos_rt * krn,
 	DCC_LOG4(LOG_ERROR, "  R12=%08x  SP=%08x  LR=%08x  PC=%08x", 
 			ctx->r12, psp, ctx->lr, ctx->pc);
 
-	xpsr = ctx->xpsr;
+/*	xpsr = ctx->xpsr;
+
 	ipsr = xpsr & 0x1ff;
 	if (ipsr < 16) { 
 		DCC_LOG10(LOG_ERROR, " XPSR={ %c%c%c%c%c %c "
@@ -140,7 +140,7 @@ void __hard(struct thinkos_rt * krn,
 			DCC_LOG1(LOG_ERROR, "Pending IRQ=%d", i * 32 + j); 
 		}
 	}
-
+*/
 
 #endif
 }

@@ -24,7 +24,7 @@
 
 void board_init(void);
 void board_reset(void);
-int boot_monitor_task(const struct monitor_comm * comm, void * arg,
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
 					   struct thinkos_rt *);
 int board_integrity_check(void);
 extern const struct thinkos_mem_map board_mem_map;
@@ -50,10 +50,7 @@ void main(int argc, char ** argv)
 	const struct monitor_comm * comm;
 //	int h;
 
-
 #if DEBUG
-//	int i;
-
 	DCC_LOG_INIT();
 	DCC_LOG_CONNECT();
 	mdelay(125);
@@ -63,18 +60,8 @@ void main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, "*    STM32F405-DK ThinkOS Custom Bootloader     *");
 	DCC_LOG(LOG_TRACE, "*************************************************"
 			VT_POP "\n\n");
-	mdelay(125);
 
-
-//	for (i = 0; i < 100; ++i) {
-		DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-				"* +++" VT_POP);
-//		mdelay(125);
-//	}
-
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 1. thinkos_krn_init()." VT_POP);
-//	mdelay(125);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 1. thinkos_krn_init()." VT_POP);
 #endif
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
@@ -82,31 +69,26 @@ void main(int argc, char ** argv)
 					 THINKOS_OPT_STACK_SIZE(32768), &board_mem_map);
 
 #if DEBUG
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 2. board_init()." VT_POP);
-//	mdelay(125);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 2. board_init()." VT_POP);
 #endif
 	board_init();
 
 #if DEBUG
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 3. thinkos_krn_flash_drv_init()." VT_POP);
-//	mdelay(125);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 3. thinkos_krn_flash_drv_init()." 
+			VT_POP);
 #endif
 	thinkos_krn_flash_drv_init(krn, 0, &board_flash_desc);
 
 #if DEBUG
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 4. thinkos_krn_comm_init()." VT_POP);
-//	mdelay(125);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 4. thinkos_krn_comm_init()." 
+			VT_POP);
 #endif
-	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, (void *)&stm32f_otg_fs_dev);
+//	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
+//						  (void *)&stm32f_otg_fs_dev);
 //	thinkos_krn_comm_init(krn, 1, &stm32_uart1_comm_instance, NULL);
   
 #if DEBUG
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 5. usb_comm_init()." VT_POP);
-//	mdelay(125);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR "* 5. usb_comm_init()." VT_POP);
 #endif
 	comm = usb_comm_init(&stm32f_otg_fs_dev);
 
@@ -114,12 +96,12 @@ void main(int argc, char ** argv)
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 6. thinkos_krn_monitor_init()." VT_POP);
 #endif
-	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board, 
-							 monitor_default_atexit);
+	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
 	board_reset();
 
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
+
 #if DEBUG
-//	mdelay(125);
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
 			"* 7. thinkos_krn_sched_on()." VT_POP);
 #endif
@@ -128,31 +110,17 @@ void main(int argc, char ** argv)
 //	h = thinkos_comm_open(0);
 
 //	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
-	//thinkos_sleep(2000);
-
+//	thinkos_sleep(2000);
 
 //	thinkos_comm_timedsend(h, "Hello world!\r\n", 14, 48);
 //	thinkos_comm_timedsend(h, "Many, but not all people.\r\n", 27, 0);
 
-
-	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
-
-
-//	monitor_signal(SIG_COMM_BRK); 
-//	thinkos_sleep(1000);
-//	monitor_signal(SIG_CONSOLE_CTRL); 
-//	thinkos_sleep(1000);
-//	monitor_signal(SIG_CONSOLE_CTRL); 
-//	thinkos_sleep(1000);
-
-	DCC_LOG(LOG_TRACE, "board_integrity_check(),,,");
-//	if (board_integrity_check()) {
-	DCC_LOG(LOG_TRACE, "btl_flash_app_exec(APP)...");
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
+			"* 8. btl_flash_app_exec()..." VT_POP);
 	btl_flash_app_exec("APP", 0, 0);
-//	}
 
-	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR 
-			"* 8. btl_flash_app_exec() fail." VT_POP);
+	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FYW
+			"* 8. btl_flash_app_exec() failed." VT_POP);
 
 	btl_console_shell(env);
 }

@@ -84,10 +84,6 @@ extern const char __xcpt_name_lut[16][12];
 
 extern const uint8_t thinkos_obj_kind_lut[];
 
-extern void * __krn_stack_start;
-extern void * __krn_stack_end;
-extern int __krn_stack_size;
-
 
 bool __thinkos_obj_alloc_check(unsigned int oid);
 
@@ -1470,9 +1466,10 @@ void __context(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __trace(uintptr_t __sp_ctl, uint32_t __thread_id);
 void __thinkos(struct thinkos_rt * krn);
 void __profile(void);
-void __hard(struct thinkos_rt * krn,
+
+void __hard(struct thinkos_rt * krn, 
 			struct thinkos_context * ctx,
-			uint32_t sp, uint32_t ipsr);
+			uint32_t psp);
 
 
 /* -------------------------------------------------------------------------

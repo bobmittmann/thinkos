@@ -153,6 +153,13 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 #if DEBUG
 //	__kdump(krn);
 #endif
+
+	__krn_sched_defer(krn);
+
+#if (THINKOS_ENABLE_MONITOR) 
+	/* Notify monitor */
+	monitor_signal(MONITOR_ON_CORE_RST);
+#endif
 }
 
 bool thinkos_sched_active(void)

@@ -137,7 +137,7 @@ void thinkos_pipe_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	buf = (uint8_t *)arg[1];
 	len = arg[2];
 
-	DCC_LOG1(LOG_INFO, "Console write: len=%d", len);
+	DCC_LOG1(LOG_INFO, "Pipe write: len=%d", len);
 
 wr_again:
 	if ((n = __krn_fifo_write(fifo, buf, len)) > 0) {

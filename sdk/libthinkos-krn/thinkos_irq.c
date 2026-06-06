@@ -376,64 +376,6 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 }
 
 
-void thinkos_irq_dbg_svc(int32_t * arg, unsigned int self,
-						 struct thinkos_rt * krn)
-{
-	unsigned int irq = arg[0];
-#if (THINKOS_ENABLE_IRQ_SANITY_CHECK)
-	uint8_t * ptr;
-	uint32_t old;
-#endif
-
-#if (THINKOS_ENABLE_ARG_CHECK)
-	if (irq >= THINKOS_IRQ_MAX) {
-		DCC_LOG1(LOG_ERROR, "invalid IRQ %d!", irq);
-		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_INVALID);
-		arg[SVC_RETURN] = THINKOS_EINVAL;
-		return;
-	}
-#endif /* THINKOS_ENABLE_ARG_CHECK */
-
-	DCC_LOG2(LOG_INFO, "<%2d> IRQ %d!", self, irq);
-
-	/* remove from ready queue */
-	__krn_thread_suspend(krn, self);
-
-	/* signal the scheduler ... */
-	__krn_sched_defer(krn);
-
-#if (THINKOS_ENABLE_IRQ_SANITY_CHECK)
-	ptr = (uint8_t *)&krn->irq_th[irq];
-	do {
-		old = __ldrexb(ptr);
-	} while (__strexb(ptr, self));
-
-	if (old != THINKOS_THREAD_VOID) {
-		DCC_LOG1(LOG_ERROR, "irq IRQ %d is busy!", irq);
-		__THINKOS_ERROR(self, THINKOS_ERR_IRQ_TAKEN);
-		arg[SVC_RETURN] = THINKOS_EFAULT;
-		return;
-	}
-	arg[SVC_RETURN] = old;
-#else
-	/* assign this thread to the interrupt */
-	krn->irq_th[irq] = self;
-	arg[SVC_RETURN] = THINKOS_OK;
-#endif 
-
-	__dsb();
-
-	/* clear pending interrupt */
-	cm3_irq_pend_clr(irq);
-
-	__dsb();
-
-	/* enable this interrupt source */
-	cm3_irq_enable(irq);
-}
-#endif
-
-
 /* This macro is here for backword compatibility, TODO should be deprecated */
 #if (THINKOS_ENABLE_IRQ_CTL)
 void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
@@ -543,5 +485,7 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 	__bit_mem_wr(&krn->wq_clock, th, tmw);
 	return true;
 }
-#endif
+#endif /* (THINKOS_ENABLE_PAUSE) */
+
+#endif /* (THINKOS_IRQ_MAX) */
 

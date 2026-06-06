@@ -48,14 +48,6 @@ void thinkos_arch_release_get(struct thinkos_release * rel)
 	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
 
 
-static void thinkos_krn_abort(struct thinkos_rt * krn, int ret)
-{
-	/* request scheduler to stop everything */
-	__krn_sched_err_set(krn, THINKOS_ERR_APP_ABORT_REQ);
-	/* Make sure to run the scheduler */
-	__krn_sched_defer(krn);
-}
-
 void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 {
 	unsigned int req = arg[0];
@@ -69,11 +61,6 @@ void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_rt * krn)
 		__krn_sched_defer(krn);
 		break;
 
-	case THINKOS_CTL_ABORT:
-		ret = (int)arg[1];
-		thinkos_krn_abort(krn,  ret);
-		break;
-	
 	case THINKOS_CTL_CLOCKS:
 		ptr = (const uint32_t **)arg[1];
 		*ptr = sysclk_hz;

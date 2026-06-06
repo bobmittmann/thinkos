@@ -31,10 +31,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_MONITOR) 
 
 
-#ifndef THINKOS_ENABLE_MONITOR_NULL_TASK
-#define THINKOS_ENABLE_MONITOR_NULL_TASK 1
-#endif
-
 #define MONITOR_PERISTENT_MASK ((1 << MONITOR_SOFTRST) | (1 << MONITOR_TASK_INIT))
 
 struct {
@@ -69,17 +65,6 @@ void __attribute__((noreturn)) __monitor_bootstrap(void);
 /* -------------------------------------------------------------------------
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
-
-static inline void __monitor_event_set(struct thinkos_rt * krn, uint32_t ev) 
-{
-	uint32_t evset;
-	
-	do {
-		/* avoid possible race condition on monitor.events */
-		evset = __ldrex((uint32_t *)&krn->monitor.events);
-		evset |= ev;
-	} while (__strex((uint32_t *)&krn->monitor.events, evset));
-}
 
 void krn_monitor_signal(struct thinkos_rt * krn, int sig) 
 {
@@ -399,21 +384,6 @@ uint32_t monitor_sched_ctrl_get(void)
 #endif
  
 /* -------------------------------------------------------------------------
- * ThinkOS Monitor Core
- * ------------------------------------------------------------------------- */
-
-void monitor_default_atexit(int retcode)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " Monitor Exit " VT_POP);
-	for (;;) {
-	}
-}
-
-/* -------------------------------------------------------------------------
- * ThinkOS kernel level API
- * ------------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------------
  * Deferred ISR
  * ------------------------------------------------------------------------- */
 
@@ -488,6 +458,14 @@ const struct deferred_svc_map thinkos_def_svc = {
 };
 #endif /* (THINKOS_ENABLE_DEFERRED_ISR) */
 
+/* -------------------------------------------------------------------------
+ * ThinkOS Monitor Core
+ * ------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------
+ * ThinkOS kernel level API
+ * ------------------------------------------------------------------------- */
+
 static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
 {
 #if (THINKOS_ENABLE_STACK_INIT)
@@ -504,9 +482,19 @@ static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
 #endif
 }
 
+void monitor_exec(int (* task)(const struct monitor_comm *, 
+							   void *, struct thinkos_rt *), 
+				  const struct monitor_comm * comm, void * env,
+				  void (* atexit)(int))
+{
+	DCC_LOG1(LOG_TRACE, "task=%p", task);
+	__monitor_context_exec((uintptr_t)task, (uintptr_t)comm, env, 
+						   (uintptr_t)atexit); 
+}
+
 /* Prepare the execution environment to invoke the new monitor task. */
-static uint32_t * __monitor_ctx_init(uintptr_t task, uintptr_t comm,
-								  void * env, uintptr_t atexit)
+static uint32_t * __monitor_ctx_init(uintptr_t task, uintptr_t comm, void * env,
+									 uintptr_t atexit)
 {
 	uint32_t idx = (sizeof(thinkos_monitor_stack) - 
 		   sizeof(struct monitor_swap)) / sizeof(uint32_t);
@@ -525,23 +513,11 @@ static uint32_t * __monitor_ctx_init(uintptr_t task, uintptr_t comm,
 	return sp;
 }
 
-void monitor_exec(int (* task)(const struct monitor_comm *, 
-							   void *, struct thinkos_rt *), 
-				  const struct monitor_comm * comm, void * env, 
-				  void (* atexit)(int))
-{
-	DCC_LOG1(LOG_TRACE, "task=%p", task);
-	if (atexit == NULL)
-		atexit = monitor_default_atexit;
-	__monitor_context_exec((uintptr_t)task, (uintptr_t)comm, env, 
-						   (uintptr_t)atexit); 
-}
-
 void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 							  const struct monitor_comm * comm, 
-							  int (* task)(const struct monitor_comm *, void *,
+							  void (* task)(const struct monitor_comm *, void *,
 											struct thinkos_rt *),
-							  void * env, void (* atexit)(int))
+							  void * env)
 {
 	uint32_t * sp;
 
@@ -555,10 +531,8 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 	krn->monitor.env = (void *)env;
 #endif
 	
-	if (atexit == NULL)
-		atexit = monitor_default_atexit;
 	sp = __monitor_ctx_init((uintptr_t)task, (uintptr_t)comm, 
-							env, (uintptr_t)atexit);
+							env, (uintptr_t)thinkos_krn_halt);
 
 	krn->monitor.ctx = sp;
 	/* set the task init and software reset signals */
@@ -567,17 +541,6 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 
 	DCC_LOG1(LOG_TRACE, "mask=%08x", krn->monitor.mask);
 }
-
-#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
-void monitor_null_task(struct thinkos_rt * krn, 
-					   const struct monitor_comm * comm, 
-					   void * env)
-{
-	for (;;) {
-		__monitor_context_swap(&krn->monitor.ctx); 
-	}
-}
-#endif
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL)
 void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -633,47 +596,4 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #endif
 
 #endif /* THINKOS_ENABLE_MONITOR */
-
-#if 0
-
-/*
- * This is a wrapper for the monitor entry function (task).
- * It's pourpose is to get the arguments to the monitor entry function
- * as well as to set a fallback function if the task returns.
- */
-void __attribute__((naked, noreturn)) monitor_bootstrap(void)
-{
-	const struct monitor_comm * comm = thinkos_monitor_rt.comm; 
-	void (* monitor_task)(const struct monitor_comm *, void *);
-	void * param = thinkos_monitor_rt.param; 
-
-	param = thinkos_monitor_rt.param; 
-
-	/* Get the new task */
-	monitor_task = thinkos_monitor_rt.task; 
-
-#if (THINKOS_ENABLE_MONITOR_NULL_TASK)
-	/* Set the new task to the default NULL in 
-	   case the new task returns; */
-	thinkos_monitor_rt.task = monitor_null_task;
-#endif
-
-	/* set the clock in the past so it won't generate signals in 
-	 the near future */
-#if (THINKOS_ENABLE_MONITOR_CLOCK)
-	struct thinkos_rt * krn = &thinkos_rt;
-
-	krn->clk.th_tmr[0] = krn->clk.time - 1;
-#endif
-
-	DCC_LOG2(LOG_TRACE, "PC=%08x SP=0x%08x!", monitor_task, cm3_sp_get());
-	monitor_task(comm, param);
-	__monitor_task_reset();
-}
-static inline void __monitor_task_reset(void)
-{
-	monitor_signal(MONITOR_TASK_INIT);
-	__monitor_context_swap(&thinkos_rt.monitor.ctx); 
-}
-#endif
 

@@ -42,7 +42,7 @@
 
 	.text
 
-	.align	7
+	.align	2
 	.thumb
 
 	.thumb_func
@@ -252,7 +252,6 @@ thinkos_krn_sched_ctx_get:
     /* load the context pointer from the context vector */
     ldr.w    r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
     cmp      sp, r3
-//	mov      sp, r3
     bne      .L_idle_stack_ptr_err
 
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
@@ -281,8 +280,10 @@ thinkos_krn_sched_ctx_get:
 	/* check the kernel scheduler control word */
 	lsrs.n   r3, r1, #8
 	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] */ 
-	bne      .L_idle_update_brk /* fault, error or break set */
+	bne      .L_idle_error_trap /* fault, error or break set */
 /* No fault, error or break conditions */
+#endif
+
 .L_idle_context_save:
 	/* Save system context (IDLE) on MSP */
 	push     {r4-r11}
@@ -315,7 +316,8 @@ thinkos_krn_sched_ctx_get:
 	b        thinkos_krn_sched_xcpt
 #endif
 
-.L_idle_update_brk:
+#if (THINKOS_ENABLE_ERROR_TRAP)
+.L_idle_error_trap:
 	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
 	   r2: ready bmp 
 	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
@@ -345,10 +347,12 @@ thinkos_krn_sched_ctx_get:
 	   r2: new active 
 	   r3: SP */
 	b        thinkos_sched_dbg
-#endif
+#else
 	/* kernel is blocked, just return */
 	bx       lr
 #endif
+
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)

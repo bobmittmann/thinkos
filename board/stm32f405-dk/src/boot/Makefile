@@ -20,8 +20,8 @@
 # 
 
 VERSION_DATE = "2026-05-19"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "19"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "40"
 
 PROJECT_ROOT = ../..
 THINKOS_DIR = $(PROJECT_ROOT)/../..
@@ -42,8 +42,7 @@ LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 
 
 SDK_LIBS = util thinkos-krn thinkos-btl thinkos-mon thinkos-dbg thinkos-usr \
-		   xmodem ice-comm
-
+		   xmodem ice-comm fixpt
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)

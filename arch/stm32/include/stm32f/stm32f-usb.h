@@ -778,7 +778,7 @@ static inline void __set_ep_addr(struct stm32f_usb * usb, int ep_id, int addr) {
 /* configure a RX descriptor */
 static inline int __pktbuf_rx_cfg(struct stm32f_usb_rx_pktbuf * rx,
 		int addr, int mxpktsz) {
-	int sz = mxpktsz;
+	int sz = mxpktsz + 2; /* ADD space for CRC */
 	if (sz < 63) {
 		sz = (sz + 1) & ~0x01;
 		rx->num_block = sz >> 1;

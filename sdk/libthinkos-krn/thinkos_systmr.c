@@ -44,7 +44,8 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 	/* insert into the ready wait queue */
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
 
-	__krn_preempt(krn);
+//	__krn_preempt(krn);
+	__krn_sched_defer(krn);
 }
 
 #if (THINKOS_ENABLE_TIMESHARE)
@@ -114,7 +115,10 @@ void __krn_clk_set_wakeup(struct thinkos_rt * krn, uint32_t bmp)
 
 		krn->wq_clock = msk & ~bmp;
 #endif
-		__krn_preempt(krn);
+/*		__krn_preempt(krn);
+	FIXME: not sure if preempt is the way to go about... 
+ */
+		__krn_sched_defer(krn);
 	}
 }
 
@@ -159,10 +163,8 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 			}
 
     #if (THINKOS_ENABLE_MONITOR_CLOCK)
-			if ((int32_t)(krn->clk.th_tmr[0] - clk) >= 0 ) {
-				sigset = krn->monitor.events;
-				sigset |= (1 << MONITOR_ALARM);
-				krn->monitor.events = sigset;
+			if (((int32_t)(krn->clk.th_tmr[0] - clk)) <= 0) {
+				__monitor_event_set(krn, 1 << MONITOR_ALARM); 
 			}
     #endif
 		
@@ -216,7 +218,7 @@ void thinkos_krn_systick_init(struct thinkos_rt * krn)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 
-	DCC_LOG(LOG_TRACE, "Initializing SysTick..."); 
+	DCC_LOG(LOG_INFO, "Initializing SysTick..."); 
 	/* Initialize the SysTick module */
 	systick->rvr = cm3_systick_load_1ms; /* 1ms tick period */
 	systick->cvr = 0;
@@ -226,10 +228,10 @@ void thinkos_krn_systick_init(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 	krn->clk.resolution = THINKOS_CLK_RESOLUTION;
 	krn->clk.increment = krn->clk.resolution;
-	DCC_LOG1(LOG_TRACE, "clk.increment=%u", krn->clk.increment); 
+	DCC_LOG1(LOG_INFO, "clk.increment=%u", krn->clk.increment); 
 #elif (THINKOS_ENABLE_FRACTIONAL_CLOCK)
 	krn->clk.increment = THINKOS_CLK_INCREMENT;
-	DCC_LOG1(LOG_TRACE, "clk.increment=%u", krn->clk.increment); 
+	DCC_LOG1(LOG_INFO, "clk.increment=%u", krn->clk.increment); 
 #endif
 }
 

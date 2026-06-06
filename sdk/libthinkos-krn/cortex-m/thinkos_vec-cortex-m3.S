@@ -121,31 +121,40 @@ __core_vectors:
 /* --------------------------------------------------------------------------
  * ThinkOS - excption handler stubs
  * --------------------------------------------------------------------------*/
-#if (THINKOS_ENABLE_EXCEPTIONS)
 
 #if (THINKOS_ENABLE_HARDFAULT)
 	.global	cm3_hard_fault_isr
 	.thumb_func
 	.type	cm3_hard_fault_isr, %function
 cm3_hard_fault_isr:
-	ldr     lr, .L_fault_rt /* uses LR as a temporary variable */
-	stmia   lr!, {r4-r11}      /* save faulty registers */
-	stmia   lr!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
-	adds    r2, sp, #(8 * 4)   
+	/* uses LR as a temporary variable */
+	ldr     sp, .L_xcpt_stack
+	stmia   sp!, {r4-r11}      /* save faulty registers */
+	stmia   sp!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
+	stmia   sp!, {r0-r2}        /* LR, PC and XPSR */
 	/* If the origin of error is the MSP being invalid then the 
 	   next instruction will cause a hard fault. Possible solutions,
 	   ignore the registers LR, PC and XPSR */
-	ldr     r0, .L_thinkos_rt
-	subs    r1, lr, #((16 + 5) * 4)
+	movw    r0, #:lower16:thinkos_rt
+	movt    r0, #:upper16:thinkos_rt
+	mov     r1, sp
+	subs    r1, #((16) * 4)
+	mrs     r2, PSP
 	mrs     r3, XPSR
 	/* restore SP to the top of the exception stack */
-	ldr     sp, .L_xcpt_stack_top
-	bl      thinkos_krn_fatal_handler
-	/* never retrun */
-	b       thinkos_krn_halt
+	add     r4, r1, #THINKOS_EXCEPT_STACK_SIZE 
+	mov     sp, r4
+	b       thinkos_krn_hard_fault_handler
+
+	.align  2
+.L_xcpt_stack: 
+	.word   thinkos_except_stack 
 
 	.size   cm3_hard_fault_isr, . - cm3_hard_fault_isr
+#endif /*( (THINKOS_ENABLE_HARDFAULT) */
 
+
+#if (THINKOS_ENABLE_EXCEPTIONS)
 	.global	__thinkos_krn_fault
 	.thumb
 	.thumb_func
@@ -156,8 +165,9 @@ __thinkos_krn_fault:
 	 * R4..R11, R0-R3, R12, LR, PC, XPSR
 	 * ---------------------------------------------------------------
 	 */
+	movw    r1, #:lower16:thinkos_fault_rt
+	movt    r1, #:upper16:thinkos_fault_rt
 
-	ldr     r1, .L_fault_rt 
 	stmia   r1!, {r4-r11} /* save R4-R11 */
 	pop     {r4-r11} /* read back R0-R3, R12,  LR, PC, XPSR */
 	stmia   r1!, {r4-r11}  /* save faulty stack frame LR, PC and XPSR */
@@ -169,7 +179,8 @@ __thinkos_krn_fault:
 	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
 
 	/* Store the exception number */
-	ldr     r0, .L_thinkos_rt
+	movw     r0, #:lower16:thinkos_rt
+	movt     r0, #:upper16:thinkos_rt
 	mrs     r2, IPSR
 	strb    r2, [r0, #OFFSETOF_KRN_SCHED_XCP]
 
@@ -208,6 +219,10 @@ __thinkos_krn_fault:
 	mov     r5, r1
 	ldr     r6, =__thinkos_krn_xcpt_unroll_again
 
+	.align  2
+.L_xcpt_stack_top: 
+	.word   thinkos_except_stack + THINKOS_EXCEPT_STACK_SIZE
+
 	.size   __thinkos_krn_fault, . - __thinkos_krn_fault
 
 	.global	__thinkos_krn_xcpt_unroll_again
@@ -229,9 +244,6 @@ __thinkos_krn_xcpt_unroll_again:
 
 	.size   __thinkos_krn_xcpt_unroll_again, . - __thinkos_krn_xcpt_unroll_again
 
-	.align  2
-.L_xcpt_stack_top: 
-	.word   thinkos_except_stack + THINKOS_EXCEPT_STACK_SIZE
 
 	.global	__thinkos_krn_xcpt_done
 	.thumb
@@ -266,7 +278,7 @@ __thinkos_krn_xcpt_done:
 
 	.size   __thinkos_krn_xcpt_done, . - __thinkos_krn_xcpt_done
 
-#endif /*( (THINKOS_ENABLE_HARDFAULT) */
+#endif /*( (THINKOS_ENABLE_EXCEPTIONS) */
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	.global	__thinkos_krn_thread_err
@@ -362,9 +374,8 @@ __thinkos_krn_thread_err:
 	.word	thinkos_rt
 
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
 
-#endif /* THINKOS_ENABLE_EXCEPTIONS */
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 
 #if (THINKOS_ENABLE_DBGMON)
 	.align  2
@@ -415,13 +426,25 @@ thinkos_krn_halt:
 #endif
 
 	.weak       cm3_mem_manage_isr
+#if (THINKOS_ENABLE_MEMFAULT)
 	.thumb_set  cm3_mem_manage_isr,__thinkos_krn_thread_err
+#else
+	.thumb_set  cm3_mem_manage_isr,thinkos_krn_halt
+#endif
 
+#if	(THINKOS_ENABLE_BUSFAULT)
 	.weak       cm3_bus_fault_isr
 	.thumb_set  cm3_bus_fault_isr,__thinkos_krn_thread_err
+#else
+	.thumb_set  cm3_bus_fault_isr,thinkos_krn_halt
+#endif
 
 	.weak       cm3_usage_fault_isr
+#if (THINKOS_ENABLE_USAGEFAULT)
 	.thumb_set  cm3_usage_fault_isr,__thinkos_krn_thread_err
+#else
+	.thumb_set  cm3_usage_fault_isr,thinkos_krn_halt
+#endif
 
 #if	!(THINKOS_ENABLE_I_CALLS) 
 	.weak       cm3_except7_isr

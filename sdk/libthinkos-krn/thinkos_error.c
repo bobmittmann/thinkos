@@ -76,6 +76,8 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_KRN_UNSTACK]       = "MSPUnstack",
 	[THINKOS_ERR_IDLE_ENTRY]        = "IdleEntry",
 	[THINKOS_ERR_IDLE_XCPT]         = "IdleExcept",
+	[THINKOS_ERR_COMM_INVALID]      = "CommInvalid",
+	[THINKOS_ERR_MEMORY_INVALID]    = "MemInvalid" 
 };
 
 char const * thinkos_krn_err_tag(unsigned int errno)
@@ -126,7 +128,13 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 #endif
 #endif
 }
+#endif /* THINKOS_ENABLE_ERROR_TRAP */
 
+#if (THINKOS_ENABLE_SCHED_ERROR) 
+/*
+ * This is called when an inconsistency is detected on 
+ * the scheduler. No associated context is provided.
+ */
 void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 {
 #if (DEBUG)
@@ -138,8 +146,6 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 			 " Krn error %d \"%s\"" VT_POP, 
 			 errno, thinkos_err_name_lut[errno]); 
 	__kdump(krn);
-	__xinfo(&thinkos_fault_rt);
-	__xdump(krn, &thinkos_fault_rt);
 
 #endif
 
@@ -150,6 +156,6 @@ void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
 #endif
 
 }
+#endif /* THINKOS_ENABLE_SCHED_ERROR */
 
-#endif /* THINKOS_ENABLE_ERROR_TRAP */
  

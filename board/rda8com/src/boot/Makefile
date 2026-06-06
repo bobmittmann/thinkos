@@ -35,7 +35,10 @@ LZ_WINDOW_SIZE = 16384
 
 PROG = rda8com-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = board.c shell.c cmd_tab.c fpga.c ice40hx1k.c monitor.c 
+BOOT_CFILES = monitor.c
+
+CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
+		 board.c shell.c cmd_tab.c fpga.c ice40hx1k.c 
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 

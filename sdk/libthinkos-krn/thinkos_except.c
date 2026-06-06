@@ -21,9 +21,50 @@
  */
 
 #include "thinkos_krn-i.h"
+/*
+#ifndef LOG_LEVEL
+#define LOG_LEVEL LOG_TRACE
+#elif LOG_LEVEL < LOG_TRACE
+#undef LOG_LEVEL 
+#define LOG_LEVEL LOG_TRACE
+#endif
+ */
+#undef THINKOS_SYSRST_ONFAULT
+#define THINKOS_SYSRST_ONFAULT    0
+
+#if (DEBUG)
+#define DCC_FAULT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
+#else
+#define DCC_FAULT_DUMP(KRN, XCPT)
+#endif
+
+#include <sys/dcclog.h>
+
+
+#if (THINKOS_ENABLE_HARDFAULT)
+void __attribute__((noreturn)) thinkos_krn_hard_fault_handler(
+							struct thinkos_rt * krn,
+							struct thinkos_context * ctx,
+							uint32_t sp,
+							uint32_t xpsr)
+{
+#if (DEBUG)
+//	uint32_t ipsr = xpsr & 0x1ff;
+	DCC_LOG(LOG_PANIC, VT_PSH VT_REV VT_FRD
+			" ! Hard Fault ! " VT_POP);
+
+//	__hard(krn, ctx, sp, ipsr);
+
+#endif
+#if (THINKOS_SYSRST_ONFAULT)
+	thinkos_krn_sysrst();
+#else
+	thinkos_krn_halt();
+#endif
+}
+#endif /* THINKOS_ENABLE_HARDFAULT */
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
-
 /* Static sanity check: */
 _Static_assert (offsetof(struct thinkos_fault, ctx) == 
 				OFFSETOF_FAULT_CONTEXT, "OFFSETOF_FAULT_CONTEXT");
@@ -86,27 +127,11 @@ _Static_assert (offsetof(struct thinkos_fault, cyccnt) ==
 
 struct thinkos_fault thinkos_fault_rt __attribute__((aligned(8)));
 
-#if (DEBUG)
-/*
-#ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_TRACE
-#elif LOG_LEVEL < LOG_TRACE
-#undef LOG_LEVEL 
-#define LOG_LEVEL LOG_TRACE
-#endif
- */
-#undef THINKOS_SYSRST_ONFAULT
-#define THINKOS_SYSRST_ONFAULT    0
-#define DCC_FAULT_DUMP(KRN, XCPT) __xdump(KRN, XCPT)
-#else
-#define DCC_FAULT_DUMP(KRN, XCPT)
-#endif
-
-#include <sys/dcclog.h>
 
 #define SHCSR_ACT_MASK SCB_SHCSR_SYSTICKACT | SCB_SHCSR_PENDSVACT | \
 	SCB_SHCSR_MONITORACT | SCB_SHCSR_SVCALLACT | SCB_SHCSR_USGFAULTACT | \
 	SCB_SHCSR_BUSFAULTACT | SCB_SHCSR_MEMFAULTACT
+
 
 uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
 {
@@ -168,35 +193,6 @@ end:
 	return act;
 }
 
-void thinkos_krn_fatal_handler(struct thinkos_rt * krn,
-							   struct thinkos_fault * fault,
-							   uint32_t sp,
-							   uint32_t xpsr)
-{
-#if (DEBUG)
-	uint32_t ipsr = xpsr & 0x1ff;
-	int i;
-	DCC_LOG(LOG_PANIC, VT_PSH VT_REV VT_FRD
-			" !!! Fatal exception !!!!" VT_POP);
-
-	mdelay(250);
-
-	DCC_LOG(LOG_PANIC, "1. __hard()...");
-	__hard(krn, &fault->ctx, sp, ipsr);
-
-	for (i = 0; i < 10; ++i) {
-		mdelay(500);
-		DCC_LOG1(LOG_PANIC, "Fatal except %d.", i);
-	}
-
-	DCC_LOG(LOG_PANIC, "System reset!");
-#endif
-#if (THINKOS_SYSRST_ONFAULT)
-	thinkos_krn_sysrst();
-#else
-	thinkos_krn_halt();
-#endif
-}
 
 void thinkos_krn_fault_handler(struct thinkos_rt * krn,
 							   struct thinkos_fault * fault)

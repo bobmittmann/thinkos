@@ -22,6 +22,14 @@
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
 
+/* request a system reset on exit */
+void _exit(int code) 
+{
+	thinkos_core_reset(THINKOS_CORE_RESET_KEY);
+}
+
+void thinkos_krn_abort_at_exit(int) __attribute__ ((weak, alias ("_exit")));
+
 #if (THINKOS_ENABLE_TERMINATE)
 static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 {

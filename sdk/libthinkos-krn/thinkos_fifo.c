@@ -21,6 +21,7 @@
 
 #include "thinkos_krn-i.h"
 #include <sys/dcclog.h>
+#include "fixpt.h"
 
 #define __THINKOS_FIFO__
 #include <thinkos/fifo.h>
@@ -98,6 +99,12 @@ int __krn_fifo_getc(struct thinkos_fifo * fifo)
 
 void __krn_fifo8_init(struct thinkos_fifo8 * fifo, size_t size)
 {
+#if (DEBUG)
+	if ((1 << ilog2(size)) != size) {
+		DCC_LOG(LOG_ERROR, "size must be power of 2!!!");
+		return;
+	}
+#endif
 	fifo->size = size;
 	fifo->mark = size / 2;
 	fifo->head = 0;

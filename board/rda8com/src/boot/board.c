@@ -28,11 +28,11 @@
 #include "version.h"
 
 int fpga_configure(void);
-void boot_monitor_task(const struct monitor_comm * comm, void * arg,
-					   uintptr_t sta, struct thinkos_rt * krn);
+int boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   struct thinkos_rt * krn);
 
 void monitor_console_task(const struct monitor_comm * comm, void * arg,
-					   uintptr_t sta, struct thinkos_rt * krn);
+					   struct thinkos_rt * krn);
 
 #ifndef BOOT_ENABLE_JTAG
 #define BOOT_ENABLE_JTAG (DEBUG)
@@ -366,6 +366,7 @@ const char * const normal_argv[] = {
 
 void main(int argc, char ** argv)
 {
+	struct btl_shell_env * env = btl_shell_env_getinstance();
 	struct thinkos_rt * krn = &thinkos_rt;
 	const struct monitor_comm * comm;
 	int ret;
@@ -405,26 +406,25 @@ void main(int argc, char ** argv)
 
 	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&this_board);
 //	thinkos_krn_monitor_init(krn, comm, monitor_console_task, (void *)&this_board);
+	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
 
 	thinkos_sleep(1000);
 
 	if (ret < 0) {
 		if (thinkos_console_is_connected()) {
 			krn_console_puts("\r\nError: ");
-			krn_console_puthex(-ret);
+			krn_console_put_int(-ret);
 		}
 	} else { 
 		ret = btl_flash_app_exec("app", 1, (uintptr_t)normal_argv);
 		DCC_LOG(LOG_WARNING, "btl_flash_app_exec() faied.");
 		if (ret < 0) {
 			krn_console_puts("\r\nApp error: ");
-			krn_console_puthex(-ret);
+			krn_console_put_int(-ret);
 		}
 	}
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW " /!\\ Abort /!\\ " VT_POP);
 
-	struct btl_shell_env * env = btl_shell_env_getinstance();
-	btl_shell_env_init(env, "\r\n+++\r\nThinkOS\r\n", "boot# ");
 	btl_console_shell(env);
 }
 

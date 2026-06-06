@@ -43,6 +43,10 @@
 #define THINKOS_MONITOR_ENABLE_COMM_STATS 0
 #endif
 
+#ifndef THINKOS_MONITOR_ENABLE_COMM_CONNECT
+#define THINKOS_MONITOR_ENABLE_COMM_CONNECT 0
+#endif
+
 #ifndef THINKOS_MONITOR_ENABLE_COMM_BRK
 #define THINKOS_MONITOR_ENABLE_COMM_BRK    1
 #endif
@@ -967,6 +971,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 		DCC_LOG1(LOG_MSG, "status=%02x", ret);
 		break;
 
+#if (THINKOS_MONITOR_ENABLE_COMM_CONNECT)
 	case COMM_CTRL_CONNECT:
 		while ((dev->status & COMM_ST_CONNECTED) == 0) {
 			DCC_LOG1(LOG_TRACE, "status=%02x, waiting...", dev->status);
@@ -976,6 +981,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 			}
 		}
 		break;
+#endif
 
 #if (THINKOS_MONITOR_ENABLE_COMM_BRK)
 	case COMM_CTRL_BREAK_ACK:

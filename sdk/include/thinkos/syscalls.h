@@ -117,7 +117,7 @@
 
 #define THINKOS_APP_EXEC              64
 
-#define THINKOS_IRQ_DBG               65
+#define THINKOS_CORE_RESET            65
 
 #define THINKOS_SYSCALL_CNT           65
 
@@ -588,18 +588,6 @@ static inline int __attribute__((always_inline))
 	return ret;
 }
 
-
-static inline int __attribute__((always_inline)) 
-thinkos_irq_dbg(int irq) {
-	register int32_t ret asm("r12");
-	register uint32_t cyccnt asm("r1");
-	register uint32_t r0 asm("r0") = irq;
-	asm volatile (ARM_SVC(THINKOS_IRQ_DBG) :
-				  "=r"(ret), "=r"(cyccnt) : "r"(r0));
-	return ret;
-}
-
-
 static inline int __attribute__((always_inline)) 
 	thinkos_irq_register(int irq, unsigned int pri, void (* isr)(void)) {
 	register int32_t ret asm("r12");
@@ -801,14 +789,6 @@ static inline void __attribute__((always_inline))
 		asm volatile (ARM_SVC(THINKOS_CTL) : : "r"(opc));
 	}
 
-static inline void __attribute__((always_inline, noreturn)) 
-	thinkos_abort(void) {
-		for (;;) {
-			register int32_t opc asm("r0") = THINKOS_CTL_ABORT;
-			asm volatile (ARM_SVC(THINKOS_CTL) : : "r"(opc));
-		}
-	}
-
 static inline int __attribute__((always_inline)) 
 	thinkos_reboot(uint32_t key) {
 		register int32_t ret asm("r12");
@@ -880,6 +860,15 @@ static inline int __attribute__((always_inline))
 		return ret;
 	}
 
+#define THINKOS_CORE_RESET_KEY 0xbafafada
+
+static inline void __attribute__((always_inline, noreturn)) 
+thinkos_core_reset(uint32_t key) {
+	register uint32_t r0 asm("r0") = key;
+	asm volatile (ARM_SVC(THINKOS_CORE_RESET) :
+				  : "r"(r0));
+	for(;;);
+}
 
 struct monitor_comm;
 /*

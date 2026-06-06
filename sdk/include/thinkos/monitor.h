@@ -235,9 +235,21 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 
 void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 							  const struct monitor_comm * comm, 
-							  int (* task)(const struct monitor_comm *, void *,
+							  void (* task)(const struct monitor_comm *, void *,
 											struct thinkos_rt *),
-							  void * env, void (* atexit)(int));
+							  void * env);
+
+
+static inline void __monitor_event_set(struct thinkos_rt * krn, uint32_t ev) 
+{
+	uint32_t evset;
+
+	do {
+		/* avoid possible race condition on monitor.events */
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
+		evset |= ev;
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
+}
 
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor events/signals 

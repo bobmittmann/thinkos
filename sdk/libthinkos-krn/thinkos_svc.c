@@ -160,6 +160,8 @@ void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_app_exec_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
+void thinkos_core_reset_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+
 void thinkos_time_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
@@ -503,11 +505,14 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
  * Console
  * --------------------------------------------- */
 
-#if (THINKOS_ENABLE_CONSOLE)
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 	[THINKOS_CONSOLE_CTL] = thinkos_console_ctl_svc,
-	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
 #else
 	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
+#endif /* (THINKOS_ENABLE_CONSOLE_CTL) */
+#if (THINKOS_ENABLE_CONSOLE)
+	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
+#else
 	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
 #endif
 
@@ -648,10 +653,10 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_APP_EXEC] = thinkos_nosys_svc,
 #endif
 
-#if (THINKOS_IRQ_MAX) > 0
-	[THINKOS_IRQ_DBG] = thinkos_irq_dbg_svc,
+#if (THINKOS_ENABLE_CORE_RESET)
+	[THINKOS_CORE_RESET] = thinkos_core_reset_svc,
 #else
-	[THINKOS_IRQ_DBG] = thinkos_nosys_svc,
+	[THINKOS_CORE_RESET] = thinkos_nosys_svc,
 #endif /* THINKOS_IRQ_MAX > 0 */
 
 };

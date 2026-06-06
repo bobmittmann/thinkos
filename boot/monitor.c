@@ -47,6 +47,7 @@
 
 #include <thinkos.h>
 #include <vt100.h>
+#include <ascii.h>
 
 #include <sys/dcclog.h>
 
@@ -112,10 +113,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 
 #ifndef MONITOR_OS_RESUME
 #define MONITOR_OS_RESUME 0
-#endif
-
-#ifndef MONITOR_RESTART_MONITOR
-#define MONITOR_RESTART_MONITOR 0
 #endif
 
 #ifndef MONITOR_THREAD_STEP_ENABLE
@@ -185,8 +182,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 /* ---------------------------------------------------------------------------
  * 
  */
-
-#include <ascii.h>
 
 #if (MONITOR_GDB_ENABLE)
 #include <gdb.h>
@@ -675,7 +670,7 @@ void monitor_watchpoint(struct monitor * mon)
 }
 #endif
 
-int boot_monitor_task(const struct monitor_comm * comm, void * arg, 
+void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
 					   struct thinkos_rt * krn);
 
 #if (MONITOR_GDB_ENABLE)
@@ -815,13 +810,6 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_pause_all(comm);
 		break;
 #endif
-#if (MONITOR_RESTART_MONITOR)
-	case CTRL_Q:
-		monitor_printf(comm, "^Q\r\n");
-		monitor_exec(MONITOR_TASK(boot_monitor_task), 
-					 comm, (void *)board, NULL);
-		break;
-#endif
 #if (MONITOR_OS_RESUME)
 	case CTRL_R:
 		monitor_printf(comm, "^R\r\n");
@@ -899,8 +887,9 @@ static bool monitor_process_input(struct monitor * mon, int c)
 /*
    Default Monitor Task
  */
-int boot_monitor_task(const struct monitor_comm * comm, void * arg, 
-				  struct thinkos_rt * krn)
+void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * comm,
+												void * arg, 
+												struct thinkos_rt * krn)
 {
 	const struct thinkos_board * board;
 	struct monitor monitor;
@@ -926,7 +915,6 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 	monitor.memdump.size = 1024;
 #endif
 
-	sigmask |= (1 << MONITOR_SOFTRST);
 #if (MONITOR_FAULT_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
@@ -946,9 +934,6 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 	sigmask |= (1 << MONITOR_APP_EXEC);
  	sigmask |= (1 << MONITOR_ON_CORE_RST);
 
-	monitor_unmask(MONITOR_COMM_BRK);
-	monitor_unmask(MONITOR_COMM_CTL);
-
 #if (MONITOR_WATCHPOINT_ENABLE)
 	sigmask |= (1 << MONITOR_BREAKPOINT);
 #endif
@@ -959,6 +944,9 @@ int boot_monitor_task(const struct monitor_comm * comm, void * arg,
 	sigmask |= (1 << MONITOR_THREAD_STEP);
 #endif
 	sigmask |= (1 << MONITOR_USER_EVENT3);
+
+	monitor_unmask(MONITOR_COMM_BRK);
+	monitor_unmask(MONITOR_COMM_CTL);
 
 	DCC_LOG(LOG_TRACE, "================= ThinkOS Monitor ================="); 
 

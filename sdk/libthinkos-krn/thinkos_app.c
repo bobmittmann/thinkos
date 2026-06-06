@@ -165,16 +165,6 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-void __attribute__((noreturn, noinline)) __krn_app_at_exit(int code)
-{
-	DCC_LOG1(LOG_WARNING, VT_PSH VT_REV VT_FYW "app exit, code=%d ! " VT_POP, 
-			 code);
-	thinkos_abort();
-}
-
-void __attribute__((noreturn)) krn_app_at_exit(int code)
-	__attribute__ ((weak, alias ("__krn_app_at_exit")));
-
 static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
 						 uintptr_t addr, uintptr_t arg[])
 {
@@ -233,7 +223,7 @@ static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_id
 	 (uintptr_t)stack_base, (uintptr_t)stack_top);
 
 	task_entry = app->entry;
-	task_exit = (uintptr_t)krn_app_at_exit;
+	task_exit = (uintptr_t)thinkos_krn_abort_at_exit;
 
 	init.stack_base = stack_base;
 	init.stack_size = stack_size;

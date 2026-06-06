@@ -35,9 +35,9 @@
 /* Convert from float point to fixed point Q1.31 */
 #define FLOAT_Q31(X)     ((int32_t)((X) * 2147483648.))
 /* Q1.31 multiplication */
-#define Q31_MUL(X1, X2)   ((int32_t)(((int64_t)(X1) * (int64_t)(X2)) >> 31))
+//#define Q31_MUL(X1, X2)   ((int32_t)(((int64_t)(X1) * (int64_t)(X2)) >> 31))
 /* Q1.31 division */
-#define Q31_DIV(NUM, DEN) ((int32_t)(((int64_t)(NUM) << 31) / (int32_t)(DEN)))
+//#define Q31_DIV(NUM, DEN) ((int32_t)(((int64_t)(NUM) << 31) / (int32_t)(DEN)))
 
 
 #ifndef __ASSEMBLER__

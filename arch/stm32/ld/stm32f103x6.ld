@@ -33,6 +33,7 @@ MEMORY
 	vectors(r) : ORIGIN = 0x00000000, LENGTH = 1K
 	flash (rx) : ORIGIN = 0x08000000, LENGTH = 32K
 	sram (rw) : ORIGIN = 0x20000000, LENGTH = 10K
+	stack (rw) : ORIGIN = 0x20000800, LENGTH = 8K
 	dcclog (r) : ORIGIN = 0x40000000, LENGTH = 1024K
 }
 

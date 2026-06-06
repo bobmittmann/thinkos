@@ -1135,6 +1135,13 @@ int thinkos_krn_mutex_lock_get(unsigned int mutex);
  * Miscelaneous 
  * ------------------------------------------------------------------------- */
 
+extern void * __krn_stack_start;
+extern void * __krn_stack_end;
+extern int __krn_stack_size;
+
+#define APP_STACK_BASE ((uintptr_t)&__krn_stack_start)
+#define APP_STACK_SIZE ((uintptr_t)&__krn_stack_size)
+
 struct thread_waitqueue;
 
 struct thread_waitqueue * thinkos_krn_wq_from_oid(unsigned int oid);
@@ -1145,6 +1152,8 @@ bool thinkos_krn_wq_contains(struct thread_waitqueue * wq,
 bool thinkos_krn_wq_is_empty(struct thread_waitqueue * wq);
 
 void thinkos_krn_core_reset(struct thinkos_rt * krn);
+
+void __attribute__((noreturn, noinline)) thinkos_krn_abort_at_exit(int code);
 
 /* -------------------------------------------------------------------------
  * Threads 

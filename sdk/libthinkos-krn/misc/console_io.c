@@ -152,10 +152,12 @@ int krn_console_dev_recv(void * dev, void * buf,
 
 	do {
 		ret = thinkos_console_timedread(buf, len, msec);
-		if (ret < 0) {
-			DCC_LOG1(LOG_ERROR, "thinkos_console_timedread()->%d", ret);
+		if (ret == THINKOS_ETIMEDOUT) {
+			DCC_LOG(LOG_INFO, "thinkos_console_timedread() timed out.");
+		} else if (ret == 0) {
+			DCC_LOG(LOG_WARNING, "thinkos_console_timedread() ZERO.");
 		} else {
-			DCC_LOG1(LOG_INFO, "thinkos_console_timedread()->%d", ret);
+			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread() %d", ret);
 		}
 	} while (ret == 0);
 
@@ -168,17 +170,19 @@ int krn_console_getc(unsigned int tmo)
 	int n;
 	int c;
 
-	if ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) <= 0) {
-		DCC_LOG1(LOG_TRACE, "ret=%d", n);
-		return -1;
+	while ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) == 0)
+
+	if (n < 0) {
+		DCC_LOG1(LOG_MSG, "ret=%d", n);
+		return n;
 	}
 
 	c = buf[0];
 
-	DCC_LOG2(LOG_TRACE, "0x%02x 0x%02x", buf[0], buf[1]);
+	DCC_LOG2(LOG_INFO, "0x%02x 0x%02x", buf[0], buf[1]);
 
 	/* XXX: echo */
-	krn_console_dev_send(NULL, buf, sizeof(char));
+	krn_console_dev_send(NULL, buf, 1);
 
 	return c;
 }

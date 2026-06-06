@@ -27,6 +27,8 @@
 #error "Never use <thinkos/debug.h> on user code, this is for kenel debug."
 #endif 
 
+#include <stdint.h>
+
 struct thread_reg_core {
 	union {
 		uint32_t r[16];

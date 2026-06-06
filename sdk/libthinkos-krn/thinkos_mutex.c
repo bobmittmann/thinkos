@@ -226,11 +226,11 @@ int thinkos_krn_mutex_lock_get(unsigned int mutex)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
-	if (krn_mutex_check(krn, mutex)) {
-		return __krn_mutex_lock_get(krn, mutex);
-	}
-
-	return 0;
+#if (THINKOS_ENABLE_ARG_CHECK)
+	if (krn_mutex_check(krn, mutex) < 0)
+		return 0;
+#endif
+	return __krn_mutex_lock_get(krn, mutex);
 }
 
 #endif /* THINKOS_MUTEX_MAX > 0 */

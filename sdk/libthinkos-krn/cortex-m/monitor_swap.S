@@ -100,7 +100,6 @@ __monitor_bootstrap:
 	.thumb_func
 __monitor_context_exec:
 
-
 	/* get stack pointer */
 	movw     r6, #:lower16:thinkos_monitor_stack
 	movt     r6, #:upper16:thinkos_monitor_stack

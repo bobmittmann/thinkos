@@ -104,6 +104,8 @@ int thinkos_krn_thread_init(
 		return THINKOS_ERR_THREAD_STACKALIGN;
 	}
 
+	DCC_LOG2(LOG_TRACE, "SP=%08x PSP=%08x", cm3_sp_get(), cm3_psp_get()); 
+
 	free = stack_size - sizeof(struct thinkos_context);
 
 	(void)free;
@@ -138,17 +140,12 @@ int thinkos_krn_thread_init(
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
 	/* Set the thread privilege */
-	ctrl = privileged ? CONTROL_SPSEL : CONTROL_SPSEL | CONTROL_nPRIV;
+	ctrl = privileged ? CONTROL_SPSEL : (CONTROL_SPSEL | CONTROL_nPRIV);
 #else
 	ctrl = 0;
 #endif
 	/* commit the context to the kernel */ 
 	__thread_ctx_set(krn, thread_no, ctx, ctrl);
-
-#if (THINKOS_ENABLE_READY_MASK)
-	/* enable the thread to be scheduled ... */
-	__thread_enable(krn, thread_no);
-#endif
 
 #if (THINKOS_ENABLE_PAUSE)
 	if (paused) {
@@ -161,8 +158,14 @@ int thinkos_krn_thread_init(
 		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x ready.", 
 				 thread_no, ctx, ctrl, ctx->pc);
 		__thread_ready_set(krn, thread_no);
+#if (THINKOS_ENABLE_READY_MASK)
+		/* enable the thread to be scheduled ... */
+		__thread_enable(krn, thread_no);
+#endif
 		__krn_sched_defer(krn);
 	}
+
+	__kdump(krn);
 
 	return 0;
 }

@@ -150,9 +150,7 @@
 #define THINKOS_ENABLE_MEMORY_MAP           1
 #define THINKOS_ENABLE_CTL_KRN_INFO         1
 #define THINKOS_ENABLE_DATE_AND_TIME        0
-#define THINKOS_ENABLE_FRACTIONAL_CLOCK     0
 
-#define THINKOS_ENABLE_KRNSVC               0
 #define THINKOS_ENABLE_MONITOR_THREADS      0
 #define THINKOS_ENABLE_IDLE_HOOKS           1
 #define THINKOS_ENABLE_READY_MASK           0
@@ -162,7 +160,8 @@
 #define THINKOS_ENABLE_UNALIGN_TRAP         1
 #define THINKOS_ENABLE_DIV0_TRAP            1
 
-#define THINKOS_MONITOR_ENABLE_COMM_BRK     1
+#define THINKOS_MONITOR_ENABLE_COMM_BRK     0
+#define THINKOS_ENABLE_MONITOR_SYSCALL      0
 
 /* -------------------------------------------------------------------------
    STM32 RCC 

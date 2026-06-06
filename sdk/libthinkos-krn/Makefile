@@ -45,7 +45,7 @@ CFILES = thinkos_core.c thinkos_svc.c thinkos_init.c \
 		 thinkos_fifo.c thinkos_comm.c thinkos_monitor.c \
 		 thinkos_obj_kind_lut.c thinkos_wq.c \
 		 thinkos_app.c thinkos_trace.c \
-		 thinkos_i_calls.c \
+		 thinkos_i_calls.c thinkos_reset.c \
 		 $(addprefix misc/,$(MISC_CFILES)) \
 
 ifeq ($(CPU), cortex-m4)
@@ -62,8 +62,6 @@ ifeq ($(CPU), cortex-m3)
 		   cortex-m/thinkos_svc-cortex-m3.S \
 		   cortex-m/thinkos_sched-cortex-m4f.S \
 		   cortex-m/monitor_swap.S
-#		   cortex-m/thinkos_sched-cortex-m3.S
-#		   cortex-m/thinkos_sched-cortex-m3-msk.S
 endif
 
 include ../../mk/lib.mk

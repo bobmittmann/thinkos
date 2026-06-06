@@ -1263,7 +1263,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		}
 
 		 (void)pktbuf;
-//#ifdef STM32_IRQ_USB_FS
+#ifdef STM32_IRQ_USB_FS
 		if (epr & USB_CTR_TX) {
 			struct stm32f_usb_tx_pktbuf * tx_pktbuf;
 #if (ENABLE_IRQ_MASK)
@@ -1387,7 +1387,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				ep->on_out(drv->cl, ep_id, len);
 			}
 		}
-//#endif /* STM32_IRQ_USB_FS */
+#endif /* STM32_IRQ_USB_FS */
 	}
 
 #if (STM32_USB_FS_SUSPEND) 
@@ -1412,7 +1412,6 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		stm32f_usb_dev_reset(drv);
 	}
 
-#ifdef DEBUG
 	if (sr & USB_ERR) {
 		usb->istr = ~USB_ERR;
 		DCC_LOG(LOG_WARNING, VT_PSH VT_FRD VT_REV
@@ -1422,6 +1421,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		   of errors in a fully transparent way. */
 	}
 
+#ifdef DEBUG
 	if (sr & USB_PMAOVR) {
 		usb->istr = ~USB_PMAOVR;
 		DCC_LOG(LOG_WARNING,  VT_PSH VT_FRD VT_REV

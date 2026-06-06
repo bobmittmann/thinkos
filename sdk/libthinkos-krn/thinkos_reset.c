@@ -1,7 +1,9 @@
 /* 
+ * thinkos_sleep.c
+ *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
- * This file is part of the YARD-ICE.
+ * This file is part of the ThinkOS library.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,21 +19,16 @@
  * http://www.gnu.org/
  */
 
-/** 
- * @file thinkos-sysrst.c
- * @brief ThinkOS
- * @author Robinson Mittmann <bobmittmann@gmail.com>
- */ 
-
-
 #include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 
-void __attribute__((noreturn)) thinkos_krn_sysrst(void)
+#if (THINKOS_ENABLE_CORE_RESET)
+void thinkos_core_reset_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 {
-	/* request system reset */
-	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
-//	CM3_SCB->aircr =  SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ |
-//		SCB_AIRCR_VECTRESET;
-	for(;;);
+	if (arg[0] == THINKOS_CORE_RESET_KEY) {
+		/* request scheduler to stop everything */
+		thinkos_krn_core_reset(krn);
+	}
 }
+#endif
 

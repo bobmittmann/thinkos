@@ -401,7 +401,6 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		DCC_LOG2(LOG_TRACE, "<%d> open(%p)", self, comm->drv);
 		comm->drv_op->open(comm->drv);
 
-
 		arg[SVC_RETURN] = oid;
 		return;
 	} else {
@@ -419,13 +418,19 @@ int thinkos_krn_comm_init(struct thinkos_rt * krn,
 	int tx_wq;
 	int rx_wq;
 	
+	if (idx >= THINKOS_COMM_MAX) {
+		DCC_LOG1(LOG_ERROR, "invalid COMM interface: %d", idx);
+		return -1;
+	}
+
 	tx_wq = THINKOS_COMM_TX_FIRST + idx;
 	rx_wq = THINKOS_COMM_RX_FIRST + idx;
 
 	krn->comm[idx] = comm;
 	comm->krn_op->init(comm, parm, tx_wq, rx_wq);
 
-	return 0;
+	return idx;
 }
 
 #endif
+

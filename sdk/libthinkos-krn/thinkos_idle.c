@@ -102,16 +102,11 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 #endif
 #endif
 
-#if (THINKOS_ENABLE_MONITOR) 
 			case IDLE_HOOK_CORE_RST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_CORE_RST" _ATTR_POP_ );
 				thinkos_krn_core_reset(krn);
-				__krn_sched_defer(krn);
-				/* Notify monitor */
-				monitor_signal_break(MONITOR_ON_CORE_RST);
 				break;
-#endif
 
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
 			case IDLE_HOOK_FLASH_MEM0:
@@ -237,10 +232,10 @@ struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn)
 	__thread_ctx_set(krn, THINKOS_THREAD_IDLE, ctx, 0);
 
 #if DEBUG
-	DCC_LOG3(LOG_TRACE, VT_PSH VT_BRI VT_FCY
+	DCC_LOG3(LOG_INFO, VT_PSH VT_BRI VT_FCY
 			 "<IDLE> id=%d ctx=%08x top=%08x" VT_POP, THINKOS_THREAD_IDLE, 
 			 ctx, stack_top);
-	DCC_LOG2(LOG_TRACE, VT_PSH VT_BRI VT_FCY
+	DCC_LOG2(LOG_INFO, VT_PSH VT_BRI VT_FCY
 			 "<IDLE> sl=%08x sp=%08x" VT_POP, 
 			 __thread_sl_get(krn, THINKOS_THREAD_IDLE),
 			 __thread_sp_get(krn, THINKOS_THREAD_IDLE));

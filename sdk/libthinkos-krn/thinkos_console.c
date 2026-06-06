@@ -785,6 +785,7 @@ rd_again:
 }
 #endif
 
+
 #if (THINKOS_ENABLE_CONSOLE_DRAIN)
 void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
@@ -793,6 +794,8 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	uint32_t head;
 	uint32_t tail;
 	uint32_t cnt;
+
+	DCC_LOG2(LOG_TRACE, "<%d> draining %d ...", self, wq);
 
 	/* (1) suspend the thread by removing it from the
 	   ready wait queue. The __thinkos_suspend() call cannot be nested
@@ -835,6 +838,8 @@ void thinkos_console_timed_fixup_svc(int32_t arg[], int self,
 {
 	DCC_LOG(LOG_TRACE, "time_fixup");
 }
+
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 
 void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
@@ -931,6 +936,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		break;
 	}
 }
+#endif /* (THINKOS_ENABLE_CONSOLE_CTL) */
 
 #if (THINKOS_ENABLE_CONSOLE_MODE)
 bool thinkos_krn_console_is_raw_mode(void) 

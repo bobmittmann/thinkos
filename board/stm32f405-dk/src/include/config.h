@@ -115,13 +115,13 @@
 #define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          1
 #define THINKOS_ENABLE_ERROR_TRAP           1
-#define THINKOS_ENABLE_EXCEPTIONS           1
-#define THINKOS_ENABLE_HARDFAULT            1
 #define THINKOS_ENABLE_BUSFAULT             1
 #define THINKOS_ENABLE_USAGEFAULT           1
 #define THINKOS_ENABLE_MEMFAULT             1
 #define THINKOS_ENABLE_THREAD_FAULT         1
 
+#define THINKOS_ENABLE_HARDFAULT            1
+#define THINKOS_ENABLE_EXCEPTIONS           1
 #if DEBUG
   #define THINKOS_SYSRST_ONFAULT            1
 #else
@@ -167,7 +167,7 @@
 #define THINKOS_ENABLE_STACK_INIT           1
 #define THINKOS_ENABLE_MEMORY_CLEAR         1
 #define THINKOS_FLASH_MEM_MAX               1
-#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define THINKOS_ENABLE_MEMORY_MAP           0
 
 #define THINKOS_ENABLE_OFAST                0
 
@@ -175,7 +175,7 @@
 #define THINKOS_ENABLE_APP_FLAT             1
 #define THINKOS_ENABLE_APP_ELF              0
 #define THINKOS_ENABLE_APP_CRC              1
-#define THINKOS_MONITOR_ENABLE_COMM_BRK     0
+#define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
 #define THINKOS_ENABLE_DATE_AND_TIME        0
 #define THINKOS_CUSTOM_APP_TAG              "S32F405"
@@ -184,7 +184,15 @@
 #define THINKOS_ENABLE_I_CALLS              1
 #define THINKOS_ENABLE_READY_MASK           0
 
-#define THINKOS_COMM_MAX                    2
+/* Communication channels */
+#define THINKOS_COMM_MAX                    0
+
+/* -------------------------------------------------------------------------
+ * delay
+ * ------------------------------------------------------------------------- */
+
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define UDELAY_FACTOR                    2687
 
 /* -------------------------------------------------------------------------
    STM32 RCC 
@@ -260,8 +268,6 @@
  * ------------------------------------------------------------------------- */
 
 #define PRINTF_ENABLE_FLOAT 1
-
-#define UDELAY_FACTOR 2687
 
 #endif /* __CONFIG_H__ */
 

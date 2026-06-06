@@ -75,6 +75,7 @@ void __objkind(void)
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 
+#if DEBUG
 static uint32_t __ret_lut[8] = {
 	[0] = CM3_EXC_RET_THREAD_MSP, /* kernel */
 	[1] = 0, /* invalid */
@@ -85,9 +86,11 @@ static uint32_t __ret_lut[8] = {
 	[6] = 0, /* invalid */
 	[7] = CM3_EXC_RET_THREAD_PSP_EXT, /* user fp privileged */
 };
+#endif
 
 void __context(uintptr_t __sp_ctl, uint32_t __thd)
 {
+#if DEBUG
 	struct thinkos_context * ctx;
 	uint32_t ctrl = 0;
 	uint32_t ret;
@@ -106,6 +109,7 @@ void __context(uintptr_t __sp_ctl, uint32_t __thd)
 	DCC_LOG4(LOG_TRACE, " r12=%08x  sp=%08x  lr=%08x  pc=%08x", 
 			 ctx->r12, ctx, ctx->lr, ctx->pc);
 	DCC_LOG2(LOG_TRACE, "xpsr=%08x th=%d", ctx->xpsr, __thd);
+#endif
 }
 
 
@@ -121,6 +125,7 @@ void __context(uintptr_t __sp_ctl, uint32_t __thd)
 void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread,
 		   uint32_t __new_thread, uintptr_t __sp_ctl)
 {
+#if DEBUG
 	struct thinkos_context * ctx;
 	uint32_t msp = cm3_msp_get();
 	uint32_t ctrl = 0;
@@ -177,6 +182,7 @@ void SCHED(struct thinkos_rt * krn, uint32_t __prev_thread,
 					 ctx, ctx->pc, msp, __retstr(ret));
 		}
 	}
+#endif
 }
 
 void IDLE(struct thinkos_rt * krn, uint32_t __prev_thread,
@@ -285,6 +291,7 @@ void thinkos_sched_step_dbg(uintptr_t __sp_ctl,
 							 uint32_t __new_thread_id,
 							 uint32_t __prev_thread_id) 
 {
+#if DEBUG
 	struct thinkos_context * ctx;
 	uint32_t ctrl = 0;
 	uint32_t ret;
@@ -298,12 +305,14 @@ void thinkos_sched_step_dbg(uintptr_t __sp_ctl,
 			 "<%2d> STEP " 
 			 "PC=%08x SP=%08x"  _ATTR_POP_, 
 			 __new_thread_id, ctx->pc, (uintptr_t)ctx);
+#endif
 }
 
 void thinkos_stack_limit_dbg(uintptr_t __sp_ctl, 
 							 uint32_t __new_thread_id,
 							 uint32_t __prev_thread_id) 
 {
+#if DEBUG
 	struct thinkos_context * ctx;
 	uint32_t ctrl = 0;
 	uint32_t ret;
@@ -317,6 +326,7 @@ void thinkos_stack_limit_dbg(uintptr_t __sp_ctl,
 			 "<%2d> STEP " 
 			 "PC=%08x SP=%08x"  _ATTR_POP_, 
 			 __new_thread_id, ctx->pc, (uintptr_t)ctx);
+#endif
 }
 
 #endif

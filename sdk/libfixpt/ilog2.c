@@ -28,9 +28,11 @@
 #ifdef __arm__
 
 #include <arch/cortex-m3.h>
-int32_t ilog2(int32_t v)
+int32_t ilog2(int32_t x)
 {
-	return 31 - __clz(v);
+	if (x == 0)
+		return -1;
+	return 31 - __builtin_clz(x);
 }
 
 #else
