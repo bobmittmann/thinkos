@@ -111,7 +111,6 @@
 #define USB_STATUS_ENDPOINT_ENABLED 0
 #endif
 
-
 #ifndef USB_SYNCH_FRAME_ENABLED
 #define USB_SYNCH_FRAME_ENABLED 0
 #endif
@@ -454,10 +453,6 @@ struct usb_cdc_acm_dev {
 
 };
 
-struct usb_class_if {
-	struct usb_cdc_acm_dev dev;
-};
-
 static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 {
 	uint32_t seq;
@@ -515,10 +510,14 @@ static int monitor_usb_cdc_acm_recv(struct usb_cdc_acm_dev * dev)
 	return cnt;
 }
 
+struct usb_class_if {
+	struct usb_cdc_acm_dev dev;
+};
+
 static void monitor_usb_on_rcv(usb_class_t * cl, 
 						   unsigned int ep_id, unsigned int len)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	struct usb_cdc_acm_dev * dev = &cl->dev;
 	unsigned int cnt;
 
 	cnt = monitor_usb_cdc_acm_recv(dev);
@@ -577,7 +576,6 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 	int desc;
 
 	(void)index;
-
 
 	/* Handle supported standard device request Cf
 	 Table 9-3 in USB specification Rev 1.1 */
@@ -841,7 +839,7 @@ static const usb_dev_ep_info_t monitor_usb_ep0_info = {
 
 static void monitor_usb_on_reset(usb_class_t * cl)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	struct usb_cdc_acm_dev * dev = &cl->dev;
 	DCC_LOG(LOG_WARNING, "...");
 	/* reset internal state */
 	dev->status = 0;
@@ -860,7 +858,7 @@ static void monitor_usb_on_reset(usb_class_t * cl)
 
 static void monitor_usb_on_suspend(usb_class_t * cl)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
+	struct usb_cdc_acm_dev * dev = &cl->dev;
 	DCC_LOG(LOG_TRACE, "...");
 	dev->status = 0;
 	dev->shadow = 0;
@@ -875,6 +873,11 @@ static void monitor_usb_on_error(usb_class_t * cl, int code)
 {
 	DCC_LOG(LOG_TRACE, "...");
 
+}
+
+static void monitor_usb_on_sof(usb_class_t * cl)
+{
+	DCC_LOG(LOG_TRACE, "...");
 }
 
 static int monitor_usb_comm_send(const void * comm, 
@@ -1016,7 +1019,8 @@ static const usb_class_events_t monitor_usb_ev = {
 	.on_reset = monitor_usb_on_reset,
 	.on_suspend = monitor_usb_on_suspend,
 	.on_wakeup = monitor_usb_on_wakeup,
-	.on_error = monitor_usb_on_error
+	.on_error = monitor_usb_on_error,
+	.on_sof = monitor_usb_on_sof
 };
 
 static const struct monitor_comm_op monitor_usb_usb_cdc_comm_op = {

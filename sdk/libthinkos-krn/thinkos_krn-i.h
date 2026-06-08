@@ -55,7 +55,15 @@
 
 /* Argument to receive the return value in the call stack 
  * The number 4 corresponds to r12 */
-#define SVC_RETURN 4
+#define SVC_ARG_R0      0
+#define SVC_ARG_R1      1
+#define SVC_ARG_R2      2
+#define SVC_ARG_R3      3
+#define SVC_ARG_R12     4
+#define SVC_ARG_LR      5
+#define SVC_ARG_PC      6
+#define SVC_ARG_XPSR    7
+#define SVC_RETURN      (SVC_ARG_R12)
 
 #define KRN_CLK_FROM_MS(__MS) (__MS) 
 
@@ -729,8 +737,6 @@ __krn_wq_wakeup(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 #if (THINKOS_ENABLE_TIMED_CALLS)
 	/* possibly remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
-	/* set the thread's return value */
-	__thread_return_set(krn, th, 0);
 #endif
 #if (THINKOS_ENABLE_THREAD_STAT)
 	/* update status */
@@ -1373,21 +1379,6 @@ static inline void __attribute__((always_inline)) __krn_irq_on(void) {
 	asm volatile ("cpsie i\n");
 }
 
-struct comm_rx_req {
-	volatile uint32_t cnt;
-	uint8_t * ptr;
-	uint32_t len;
-	uint32_t tmo;
-};
-
-struct comm_tx_req {
-	uint32_t wq;
-	uint8_t * ptr;
-	uint32_t len;
-	uint32_t tmo;
-	uint32_t cnt;
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1516,6 +1507,8 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 
 void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq);
 
+unsigned int __krn_wq_wakeup_head(struct thinkos_rt * krn, unsigned int wq);
+
 int __krn_thread_check(struct thinkos_rt * krn, unsigned int th);
 
 bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th);
@@ -1550,6 +1543,20 @@ static inline void __krn_idle_hooks_rst(struct thinkos_rt * krn) {
 	krn->idle_hooks.req_map = 0;
 #endif
 }
+
+#if (THINKOS_ENABLE_MONITOR)
+static inline void __monitor_event_set(struct thinkos_rt * krn, uint32_t ev) 
+{
+	uint32_t evset;
+ 
+	do {
+		/* avoid possible race condition on monitor.events */
+		evset = __ldrex((uint32_t *)&krn->monitor.events);
+		evset |= ev;
+	} while (__strex((uint32_t *)&krn->monitor.events, evset));
+}
+#endif
+
 
 #ifdef __cplusplus
 }

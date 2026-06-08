@@ -182,6 +182,8 @@ void board_reset(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 
+	DCC_LOG(LOG_TRACE, "Initializing IO ...");
+			
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOA);
 	stm32_clk_enable(STM32_RCC, STM32_CLK_GPIOB);
 
@@ -209,14 +211,9 @@ void board_reset(void)
 	stm32_gpio_mode(USB_FS_DP, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 	stm32_gpio_mode(USB_FS_DM, ALT_FUNC, PUSH_PULL | SPEED_HIGH);
 
-#if (THINKOS_ENABLE_MONITOR)
-//	stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
-	stm32_gpio_set(USB_FS_VBUS);
-#endif
-
 	/* Adjust USB interrupt priority */
-	cm3_irq_pri_set(STM32F_IRQ_USB_HP, MONITOR_PRIORITY);
-	cm3_irq_pri_set(STM32F_IRQ_USB_LP, MONITOR_PRIORITY);
+	cm3_irq_pri_set(STM32F_IRQ_USB_HP, IRQ_HIGH_PRIORITY);
+	cm3_irq_pri_set(STM32F_IRQ_USB_LP, IRQ_HIGH_PRIORITY);
 	/* Enable USB interrupt */
 	cm3_irq_enable(STM32F_IRQ_USB_HP);
 	cm3_irq_enable(STM32F_IRQ_USB_LP);
@@ -224,9 +221,10 @@ void board_reset(void)
 
 void usb_vbus(bool on)
 {
-	if (on)
+	if (on) {
 		stm32_gpio_mode(USB_FS_VBUS, OUTPUT, PUSH_PULL | SPEED_LOW);
-	else
+		stm32_gpio_set(USB_FS_VBUS);
+	} else
 		stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
 }
 
@@ -323,12 +321,25 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 }
 #endif
 
+extern const struct thinkos_comm usb_cdc_comm_instance;
+
+volatile uint8_t a = 1;
+volatile uint8_t b = 2;
+volatile uint8_t c = 3;
+volatile uint8_t d = 4;
+
+extern const char * const zarathustra_txt[];
+extern const int zarathustra_len[];
+
+volatile uint32_t halt = 0;
+
 void main(int argc, char ** argv)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_MONITOR)
 	const struct monitor_comm * comm;
 #endif
+	uint8_t buf[64];
 	int i;
 
 	DCC_LOG_INIT();
@@ -342,7 +353,6 @@ void main(int argc, char ** argv)
 	mdelay(100);
 #endif
 
-	board_reset();
 	usb_vbus(false);
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
@@ -351,16 +361,30 @@ void main(int argc, char ** argv)
 #if (THINKOS_ENABLE_MONITOR)
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
+	board_reset();
+	
 	/* starts/restarts monitor with autoboot enabled */
 	thinkos_krn_monitor_init(krn, comm, monitor_task, NULL);
-#endif
-
-	thinkos_sleep(250);
 
 	usb_vbus(true);
 
+	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
+	thinkos_sleep(2000);
+#else
+
+	board_reset();
+
+	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
+						  (void *)&stm32f_usb_fs_dev);
+
+	usb_vbus(true);
+
+
+	DCC_LOG4(LOG_TRACE, "a=%d, b=%d, c=%d, d=%d", a, b, c, d);
+	
+	int	h = thinkos_comm_open(0);
 #if 1
-	for (i = 0; i < 10; ++i) {
+	for (i = 0; i < 8; ++i) {
 		thinkos_sleep(250);
 		if (i & 1) {
 			stm32_gpio_set(LED1_IO);
@@ -371,8 +395,24 @@ void main(int argc, char ** argv)
 		}
 	}
 #endif
-//	thinkos_thread_init(1, &app_thread_init);
 
-//	__thinkos_dbg_halt();
+	thinkos_comm_send(h, "\r\n+++\r\n", 7);
+	thinkos_comm_send(h, "Hello world!\r\n", 14);
+	thinkos_comm_send(h, "Many, but not all people.\r\n", 27);
+	halt = 1;
+	thinkos_sleep(10);
+	thinkos_comm_send(h, zarathustra_txt[1], zarathustra_len[1]);
+	thinkos_comm_send(h, zarathustra_txt[2], zarathustra_len[2]);
+	thinkos_comm_send(h, "Wise man say only fools rush in.\r\n", 34);
+	do {
+		int len = thinkos_comm_recv(h, buf, 64);
+		if (buf[0] > 'A')
+			thinkos_comm_send(h, buf, len);
+	} while (buf[0] != 'q');
+#endif
+
+	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
+	thinkos_sleep(2000);
+
 }
 

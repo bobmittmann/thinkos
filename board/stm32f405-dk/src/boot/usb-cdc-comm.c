@@ -442,7 +442,7 @@ struct usb_cdc_acm_dev {
 #define CDC_RX_BUF_SIZE CDC_EP_OUT_MAX_PKT_SIZE
 	uint8_t rx_buf[CDC_RX_BUF_SIZE];
 
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
+#if (THINKOS_ENABLE_COMM_STATS)
 	struct {
 		uint32_t tx_octet;
 		uint32_t rx_octet;
@@ -929,7 +929,7 @@ int comm_usb_cdc_comm_recv(const void * comm,
 				 m, l, n, ack, pos, cnt);
 	}
 
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
+#if (THINKOS_ENABLE_COMM_STATS)
 	dev->stats.rx_octet += cnt;
 #endif
 

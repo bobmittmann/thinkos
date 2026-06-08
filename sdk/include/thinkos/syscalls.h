@@ -934,9 +934,8 @@ thinkos_comm_send(unsigned int comm, const void * buf, size_t len) {
 	register uint32_t r0 asm("r0") = comm;
 	register uint32_t r1 asm("r1") = (uintptr_t)buf;
 	register uint32_t r2 asm("r2") = len;
-	register uint32_t r3 asm("r3") = 0;
 	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
-				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+				  "r"(r0), "r"(r1), "r"(r2), "0"(0) : "memory" );
 	return ret;
 }
 

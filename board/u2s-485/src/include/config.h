@@ -82,15 +82,15 @@
 #define THINKOS_ENABLE_PROFILING            0
 
 /* Enable the debug monitor for real-time debug */
-#define THINKOS_ENABLE_MONITOR              1
+#define THINKOS_ENABLE_MONITOR              0
 #define THINKOS_ENABLE_MONITOR_THREADS      0
 #define THINKOS_ENABLE_MONITOR_CLOCK        0
 #define THINKOS_ENABLE_MONITOR_SCHED        0
 #define THINKOS_MONITOR_STACK_SIZE        512
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
-#define THINKOS_ENABLE_CONSOLE              1
-#define THINKOS_ENABLE_CONSOLE_READ         1 
+#define THINKOS_ENABLE_CONSOLE              (THINKOS_ENABLE_MONITOR) 
+#define THINKOS_ENABLE_CONSOLE_READ         (THINKOS_ENABLE_MONITOR)
 #define THINKOS_ENABLE_CONSOLE_CTL          0 
 #define THINKOS_ENABLE_CONSOLE_MISC         0 
 #define THINKOS_ENABLE_CONSOLE_BREAK        0
@@ -182,7 +182,7 @@
 #define THINKOS_ENABLE_READY_MASK           0
 
 /* Communication channels */
-#define THINKOS_COMM_MAX                    0
+#define THINKOS_COMM_MAX                    1
 
 /* -------------------------------------------------------------------------
  * delay

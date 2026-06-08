@@ -141,6 +141,7 @@ struct stm32f_usb_drv {
 	uint16_t pktbuf_addr;
 };
 
+
 /* -------------------------------------------------------------------------
  * End point packet buffer helpers
  * ------------------------------------------------------------------------- */
@@ -331,9 +332,11 @@ static void stm32f_usb_dev_wakeup(struct stm32f_usb_drv * drv)
 }
 #endif
 
+
 static void stm32f_usb_dev_reset(struct stm32f_usb_drv * drv)
 {
 	struct stm32f_usb * usb = STM32F_USB;
+	uint32_t cntr;
 
 	DCC_LOG(LOG_INFO, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
@@ -346,15 +349,20 @@ static void stm32f_usb_dev_reset(struct stm32f_usb_drv * drv)
 	usb->daddr = USB_EF + 0;
 
 	/* Enable Correct transfer interrupts */
+	cntr = usb->cntr;
 #if (STM32_USB_FS_SUSPEND) 
-	usb->cntr |= USB_CTRM | USB_SUSPM;
+	cntr |= USB_CTRM | USB_SUSPM;
 #else
-	usb->cntr |= USB_CTRM;
+	cntr |= USB_CTRM;
 #endif
-
 #if DEBUG
-	usb->cntr |= USB_ERRM;// | USB_ESOFM;
+	cntr |= USB_ERRM;
+//	cntr |= USB_SOFM;
 #endif
+	/* Write back */
+	usb->cntr = cntr;
+
+	DCC_LOG1(LOG_TRACE, "CNTR=0x%04x", usb->cntr );
 
 #if (ENABLE_DBLBUF_DEBUG)
 	drv->pkt_read = 0;
@@ -604,8 +612,13 @@ int stm32f_usb_dev_ep_ctl(struct stm32f_usb_drv * drv,
 	case USB_EP_STALL_CLR:
 		/* TODO: implement stall clear ... */
 		break;
-
-
+#if 0
+	case USB_EP_IN_REQ:
+		/* COMM API: Unmask SOF interrupts */
+		DCC_LOG(LOG_WARNING, "EP IN REQ");
+		usb->cntr |= USB_SOFM;
+		break;
+#endif
 	case USB_EP_DISABLE:
 		ep->state = EP_DISABLED;
 		__set_ep_txstat(usb, ep_id, USB_TX_DISABLED);
@@ -623,18 +636,16 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 						   void * xfr_buf, int buf_len)
 {
 	struct stm32f_usb_pktbuf * pktbuf = STM32F_USB_PKTBUF;
-	unsigned int sz;
 	struct stm32f_usb * usb = STM32F_USB;
 	struct stm32f_usb_ep * ep;
+	unsigned int sz;
 	int mxpktsz = info->mxpktsz;
 	int ep_id;
 
 	if ((ep_id = info->addr & 0x7f) > 7) {
-		DCC_LOG1(LOG_INFO, "addr(%d) > 7", ep_id);
+		DCC_LOG1(LOG_WARNING, "addr(%d) > 7", ep_id);
 		return -1;
 	}
-
-	DCC_LOG2(LOG_MSG, "ep_id=%d mxpktsz=%d", ep_id, mxpktsz);
 
 	ep = &drv->ep[ep_id];
 	ep->mxpktsz = mxpktsz;
@@ -666,7 +677,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 		__clr_ep_flag(usb, 0, USB_EP_STATUS_OUT);
 		__set_ep_rxstat(usb, 0, USB_RX_VALID);
 
-		DCC_LOG1(LOG_INFO, "epr=0x%04x...", usb->epr[0]);
+		DCC_LOG1(LOG_TRACE, "[0] epr=0x%04x...", usb->epr[0]);
 		return 0;
 	}
 
@@ -675,6 +686,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 	__set_ep_txstat(usb, ep_id, USB_TX_NAK);
 
 	switch (info->attr & 0x03) {
+		
 #if 0
 	case ENDPOINT_TYPE_CONTROL:
 		__set_ep_type(usb, ep_id, USB_EP_CONTROL);
@@ -740,6 +752,7 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 
 	return ep_id;
 }
+
 
 void stm32f_usb_dev_ep0_out(struct stm32f_usb * usb,
 							struct stm32f_usb_ep * ep, 
@@ -984,7 +997,8 @@ int stm32f_usb_dev_init(struct stm32f_usb_drv * drv, usb_class_t * cl,
 		drv->ep[i].state = EP_DISABLED;
 	}
 
-	DCC_LOG1(LOG_INFO, VT_PSH VT_FCY "ev=0x%08x [ATTACHED]" VT_POP, drv->ev);
+	DCC_LOG2(LOG_TRACE, VT_PSH VT_FCY 
+			 "ev=0x%08x cl=0x%08x [ATTACHED]" VT_POP, drv->ev, drv->cl);
 
 #if (STM32_USB_FS_IRQ_ENABLE)
 	/* enable Cortex interrupts */
@@ -1329,6 +1343,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 #if (ENABLE_IRQ_MASK)
 			cm3_primask_set(pri);
 #endif
+			return;
 		}
 
 		if (epr & USB_CTR_RX) {
@@ -1388,6 +1403,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 			}
 		}
 #endif /* STM32_IRQ_USB_FS */
+		return;	
 	}
 
 #if (STM32_USB_FS_SUSPEND) 
@@ -1412,6 +1428,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		stm32f_usb_dev_reset(drv);
 	}
 
+#ifdef DEBUG
 	if (sr & USB_ERR) {
 		usb->istr = ~USB_ERR;
 		DCC_LOG(LOG_WARNING, VT_PSH VT_FRD VT_REV
@@ -1419,9 +1436,9 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		/* The USB software can usually ignore errors, since the 
 		   USB peripheral and the PC host manage retransmission in case 
 		   of errors in a fully transparent way. */
+		drv->ev->on_error(drv->cl, 1);
 	}
 
-#ifdef DEBUG
 	if (sr & USB_PMAOVR) {
 		usb->istr = ~USB_PMAOVR;
 		DCC_LOG(LOG_WARNING,  VT_PSH VT_FRD VT_REV
@@ -1432,7 +1449,10 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 #if 0
 	if (sr & USB_SOF) {
 		usb->istr = ~USB_SOF;
-		DCC_LOG(LOG_MSG, "SOF");
+		DCC_LOG(LOG_INFO, "USB_SOF");
+		/* mask interrupt */
+		usb->cntr &= ~USB_SOFM;
+		drv->ev->on_sof(drv->cl);
 	}
 #endif
 }

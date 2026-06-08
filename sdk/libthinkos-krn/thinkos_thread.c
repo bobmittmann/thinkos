@@ -256,6 +256,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 	__krn_sched_defer(krn);
 }
 
+
 void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 {
 	unsigned int th;
@@ -271,6 +272,39 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn);
 	}
+}
+
+unsigned int __krn_wq_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
+{
+	unsigned int th;
+	uint32_t queue;
+	int j;
+
+	do {
+		/* insert into the event wait queue */
+		queue = __ldrex(&krn->wq_lst[wq]);
+		/* get all thread from the queue bitmap */
+		if ((j = __thinkos_ffs(queue)) == 32) {
+			/* no threads waiting o the waitibg  queue. */ 
+			return 0;
+		} 
+		/* remove from the wait queue */
+		queue &= ~(1 << j);
+	} while (__strex(&krn->wq_lst[wq], queue));
+	th = j + 1;
+
+	/* insert the thread into ready queue */
+	__thread_ready_set(krn, th);  
+#if (THINKOS_ENABLE_TIMED_CALLS)
+	/* possibly remove from the time wait queue */
+	__thread_clk_disable(krn, th);
+#endif
+	/* update status */
+	__thread_stat_clr(krn, th);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+
+	return th;
 }
 
 #if 0

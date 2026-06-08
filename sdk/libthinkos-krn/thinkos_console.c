@@ -253,7 +253,7 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr)
 		cnt = THINKOS_CONSOLE_TX_FIFO_LEN - pos;
 	}
 
-	DCC_LOG4(LOG_INFO, "head=%u tail=%u cnt=%d pos=%d", 
+	DCC_LOG4(LOG_MSG, "head=%u tail=%u cnt=%d pos=%d", 
 			 head, tail, cnt, pos);
 	*ptr = &pipe->buf[pos];
 
@@ -292,7 +292,7 @@ static int __console_wr_break(struct thinkos_rt * krn)
 	int th;
 
 	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG(LOG_INFO, "no thread waiting.");
+		DCC_LOG(LOG_MSG, "no thread waiting.");
 		thinkos_console_rt.wr_break = 1;
 		ret = 0;
 	} else {
@@ -332,11 +332,11 @@ void thinkos_console_tx_pipe_commit(int cnt)
 #endif
 
 	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG(LOG_INFO, "no thread waiting.");
+		DCC_LOG(LOG_MSG, "no thread waiting.");
 		return;
 	}
 
-	DCC_LOG1(LOG_INFO, "thread_id=%d", th);
+	DCC_LOG1(LOG_MSG, "thread_id=%d", th);
 
 	/* XXX: To avoid a race condition when writing to the 
 	   pipe from the service call and this function (invoked
@@ -443,7 +443,7 @@ ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn,
 bool thinkos_console_rd_resume(struct thinkos_rt * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
-	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 
+	DCC_LOG1(LOG_MSG, "PC=%08x ...........", __thread_pc_get(krn, th)); 
 	/* wakeup from the console read wait queue setting the return value to 0.
 	   The calling thread should retry the operation. */
 	__wq_wakeup_return(krn, wq, th, 0);
@@ -455,11 +455,11 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	if (!tx_pipe_isempty()) {
-		DCC_LOG1(LOG_INFO, "PC=%08x pipe full ..",  
+		DCC_LOG1(LOG_MSG, "PC=%08x pipe full ..",  
 				 __thread_pc_get(krn, th)); 
 		console_signal_tx_pipe();
 	} else {
-		DCC_LOG1(LOG_INFO, "PC=%08x ...........",
+		DCC_LOG1(LOG_MSG, "PC=%08x ...........",
 				 __thread_pc_get(krn, th)); 
 	}
 	/* wakeup from the console write wait queue setting the return value to 0.
@@ -544,7 +544,7 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 		/* get the head position in the buffer */
 		pos = (head % THINKOS_CONSOLE_TX_FIFO_LEN);
-		DCC_LOG6(LOG_INFO, "head=%u tail=%u max=%d len=%d cnt=%d pos=%d", 
+		DCC_LOG6(LOG_MSG, "head=%u tail=%u max=%d len=%d cnt=%d pos=%d", 
 				 head, tail, max, len, cnt, pos);
 
 		/* check whether to wrap around or on not */
@@ -680,7 +680,7 @@ void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 rd_again:
 	if ((n = rx_pipe_read(buf, len)) > 0) {
-		DCC_LOG3(LOG_INFO, "<%2d> rx_pipe_read(len=%d) => %d", 
+		DCC_LOG3(LOG_MSG, "<%2d> rx_pipe_read(len=%d) => %d", 
 				 self, len, n);
 		console_signal_rx_pipe();
 		arg[SVC_RETURN] = n;
@@ -727,7 +727,7 @@ rd_again:
 #endif
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG1(LOG_INFO, "<%d> prepare ...", self);
+	DCC_LOG1(LOG_MSG, "<%d> prepare ...", self);
 
 #if (THINKOS_ENABLE_TIMED_CALLS) 
 	if (tmo > 0) {
@@ -779,7 +779,7 @@ rd_again:
 	__krn_sched_defer(krn);
 
 	/* -- wait for event ---------------------------------------- */
-	DCC_LOG1(LOG_INFO, "<%d> sleeping ...", self);
+	DCC_LOG1(LOG_MSG, "<%d> sleeping ...", self);
 
 	return;
 }
@@ -818,7 +818,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	/* get the maximum number of chars we can write into buffer */
 	if ((cnt = (head - tail)) > 0) {
 		/* -- wait for event ---------------------------------------- */
-		DCC_LOG2(LOG_INFO, "<%d> fifo full: waiting %d...", self, wq);
+		DCC_LOG2(LOG_MSG, "<%d> fifo full: waiting %d...", self, wq);
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn); 
 	} else {
@@ -922,7 +922,7 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 			bool val = arg[1];
 
 			thinkos_console_rt.raw_mode = val ? 1 : 0;
-			DCC_LOG1(LOG_INFO, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
+			DCC_LOG1(LOG_MSG, "CONSOLE_RAW_MODE %s", val ? "true" : "false");
 			arg[SVC_RETURN] = THINKOS_OK;
 			console_signal_ctl();
 		}
@@ -946,14 +946,14 @@ bool thinkos_krn_console_is_raw_mode(void)
 
 void thinkos_krn_console_raw_mode_set(bool val) 
 {
-	DCC_LOG1(LOG_INFO, "raw_mode=%s", val ? "true" : "false");
+	DCC_LOG1(LOG_MSG, "raw_mode=%s", val ? "true" : "false");
 	thinkos_console_rt.raw_mode = val;
 }
 #endif
 
 void thinkos_krn_console_connect_set(bool val) 
 {
-	DCC_LOG1(LOG_INFO, "connected=%s", val ? "true" : "false");
+	DCC_LOG1(LOG_MSG, "connected=%s", val ? "true" : "false");
 	thinkos_console_rt.connected = val;
 }
 

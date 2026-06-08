@@ -66,12 +66,14 @@ typedef void (* usb_class_on_wakeup_t)(usb_class_t * cl);
 
 typedef void (* usb_class_on_error_t)(usb_class_t * cl, int code);
 
+typedef void (* usb_class_on_sof_t)(usb_class_t * cl);
 
 struct usb_class_events {
 	usb_class_on_reset_t on_reset;
 	usb_class_on_suspend_t on_suspend;
 	usb_class_on_wakeup_t on_wakeup;
 	usb_class_on_error_t on_error;
+	usb_class_on_sof_t on_sof;
 };
 
 typedef struct usb_class_events usb_class_events_t;

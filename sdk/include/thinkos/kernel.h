@@ -773,6 +773,8 @@ struct thinkos_rt {
 #define THINKOS_FLAG_DESC(_ID)  (THINKOS_FLAG_BASE + (_ID))
 #define THINKOS_GATE_DESC(_ID)  (THINKOS_GATE_BASE + (_ID))
 #define THINKOS_FLASH_MEM_DESC(_ID)  (THINKOS_FLASH_MEM_BASE + (_ID))
+#define THINKOS_COMM_RX_DESC(_ID)  (THINKOS_COMM_RX_DESC + (_ID))
+#define THINKOS_COMM_TX_DESC(_ID)  (THINKOS_COMM_TX_DESC + (_ID))
 
 /* -------------------------------------------------------------------------- 
  * Thread initialization 

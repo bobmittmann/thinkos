@@ -34,7 +34,6 @@
  * ----------------------------------------------------------------------------
  */
 
-#if 0
 /* Status bits */
 #define COMM_ST_BREAK_REQ (1 << 0)
 #define COMM_ST_CONNECTED (1 << 1)
@@ -46,28 +45,29 @@ enum thinkos_comm_ctrl {
 	COMM_CTRL_DISCONNECT = 2,
 	COMM_CTRL_BREAK_ACK = 3
 };
-#endif
 
 /* Signals */
-enum thinkos_comm_ctrl {
+enum thinkos_comm_signal {
 	COMM_TX_FIFO = 0,
 	COMM_TX_PEND = 1,
 	COMM_RX_WAIT = 2
 };
 
 struct thinkos_comm;
+struct thinkos_comm_drv;
+
 
 struct thinkos_comm_drv_op {
-	int (*open)(const void * drv);
-	int (*send)(const void * drv, const void * buf, unsigned int len);
-	int (*recv)(const void * drv, void * buf, unsigned int len);
-	int (*ctrl)(const void * drv, unsigned int opc);
-	void (*signal)(const void * drv, unsigned int sig);
+	int (*open)(struct thinkos_comm_drv *);
+	int (*send)(struct thinkos_comm_drv *, const void * buf, unsigned int len);
+	int (*recv)(struct thinkos_comm_drv *, void * buf, unsigned int len);
+	int (*ctrl)(struct thinkos_comm_drv *, unsigned int opc);
+	void (*signal)(struct thinkos_comm_drv *, unsigned int sig);
+	void (*reset)(struct thinkos_comm_drv *, int priority);
+	int (*init)(struct thinkos_rt *, struct thinkos_comm_drv *, void * lld, int tx_wq, int rx_wq);
 };
 
 struct thinkos_comm_krn_op {
-	int (*init)(const struct thinkos_comm * comm, void * parm, int tx_wq, int rx_wq);
-	void (*reset)(const struct thinkos_comm * comm, int priority);
 	int (*done)(const struct thinkos_comm * comm);
 };
 
@@ -76,11 +76,25 @@ struct thinkos_comm {
 		char tag[8];
 		uint64_t hash;
 	};
-	const void * drv;
+	struct thinkos_comm_drv * drv;
 	const struct thinkos_comm_drv_op * drv_op;
-	const struct thinkos_comm_krn_op * krn_op;
 };
 
+struct comm_rx_req {
+	uint32_t wq;
+	uint8_t * ptr;
+	uint32_t len;
+	uint32_t tmo;
+	int32_t cnt;
+};
+
+struct comm_tx_req {
+	uint32_t wq;
+	uint8_t * ptr;
+	uint32_t len;
+	uint32_t tmo;
+	uint32_t cnt;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,37 +110,39 @@ int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int idx,
 ssize_t krn_comm_tx_wq_req_process(struct thinkos_rt * krn, unsigned int tx_wq,
 								   uint8_t * dst, size_t max);
 
-#if 0
-static inline int krn_comm_send(const struct thinkos_comm_dev * comm, 
+static inline int krn_comm_send(const struct thinkos_comm * comm, 
 								   const void * buf, unsigned int len) {
 	return comm->drv_op->send(comm->drv, buf, len);
 }
 
-static inline int krn_comm_recv(const struct thinkos_comm_dev * comm,
+static inline int krn_comm_recv(const struct thinkos_comm * comm,
 								   void * buf, unsigned int len) {
 	return comm->drv_op->recv(comm->drv, buf, len);
 }
-static inline int krn_comm_connect(const struct thinkos_comm_dev * comm) {
+static inline int krn_comm_connect(const struct thinkos_comm * comm) {
 	return comm->drv_op->ctrl(comm->drv, COMM_CTRL_CONNECT);
 }
 
-static inline int krn_comm_disconnect(const struct thinkos_comm_dev * comm) {
+static inline int krn_comm_disconnect(const struct thinkos_comm * comm) {
 	return comm->drv_op->ctrl(comm->drv, COMM_CTRL_DISCONNECT);
 }
 
-static inline int krn_comm_break_ack(const struct thinkos_comm_dev * comm) {
+static inline int krn_comm_break_ack(const struct thinkos_comm * comm) {
 	return comm->drv_op->ctrl(comm->drv, COMM_CTRL_BREAK_ACK);
 }
 
-static inline int krn_comm_status_get(const struct thinkos_comm_dev * comm) {
+static inline int krn_comm_status_get(const struct thinkos_comm * comm) {
 	return comm->drv_op->ctrl(comm->drv, COMM_CTRL_STATUS_GET);
 }
 
-static inline bool krn_comm_isconnected(const struct thinkos_comm_dev * comm) {
+static inline bool krn_comm_isconnected(const struct thinkos_comm * comm) {
 	return (comm->drv_op->ctrl(comm->drv, COMM_CTRL_STATUS_GET) & 
 	        COMM_ST_CONNECTED) ? true : false;
 }
-#endif
+
+void thinkos_krn_comm_on_eot(struct thinkos_rt * krn, unsigned int wq);
+
+void thinkos_krn_comm_on_rcv(struct thinkos_rt * krn, unsigned int wq);
 
 #ifdef __cplusplus
 }

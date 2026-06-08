@@ -30,7 +30,7 @@ VERSION_MINOR = "40"
 
 PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c #usb-cdc-comm.c
+CFILES = boot.c usb-cdc-comm.c zarathustra.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \

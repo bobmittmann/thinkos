@@ -92,13 +92,13 @@ extern "C" {
  * ------------------------------------------------------------------------- */
 
 
-static inline void __attribute__((always_inline)) __thinkos_dbg_halt(void) 
+static inline void __attribute__((always_inline)) __thinkos_dbg_halt(int cnt) 
 {
-	register uint32_t halt = 1;
+	register uint32_t halt = cnt;
 
 	asm volatile ("1:\n" 
 				  "cmp %0, #0\n" 
-				  "bne 1b\n" : "=r"(halt) : "r"(halt));
+				  "bne 1b\n" : "=r"(halt) : "0"(halt));
 }
 
 struct thinkos_context * thinkos_dbg_thread_ctx_get(unsigned int id);

@@ -38,7 +38,7 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 	/* remove from other wait queue, if any */
 	__bit_mem_wr(&krn->wq_lst[wq], (th - 1), 0);  
 #endif
-	DCC_LOG1(LOG_INFO, "<%2d> wakeup!", th);
+	DCC_LOG1(LOG_MSG, "<%2d> wakeup!", th);
 	/* remove from the time wait queue */
 	__bit_mem_wr(&krn->wq_clock, (th - 1), 0);  
 	/* insert into the ready wait queue */
@@ -162,11 +162,13 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 				}
 			}
 
+  #if (THINKOS_ENABLE_MONITOR)
     #if (THINKOS_ENABLE_MONITOR_CLOCK)
 			if (((int32_t)(krn->clk.th_tmr[0] - clk)) <= 0) {
 				__monitor_event_set(krn, 1 << MONITOR_ALARM); 
 			}
     #endif
+  #endif
 		
 
     #if (THINKOS_ENABLE_TIMESHARE)
@@ -274,7 +276,7 @@ bool clock_resume(struct thinkos_rt * krn, unsigned int th,
 		/* insert into the ready wait queue */
 //		__bit_mem_wr(&krn->wq_ready, th, 1);  
 //	} else {
-	DCC_LOG2(LOG_INFO, "th=%d PC=%08x +++++", th, __thread_pc_get(krn, th)); 
+	DCC_LOG2(LOG_MSG, "th=%d PC=%08x +++++", th, __thread_pc_get(krn, th)); 
 	if (tmw)
 		__thread_clk_enable(krn, th);
 //	}

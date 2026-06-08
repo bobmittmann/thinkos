@@ -170,7 +170,8 @@ int krn_console_getc(unsigned int tmo)
 	int n;
 	int c;
 
-	while ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) == 0)
+	while ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) == 0) {
+	}
 
 	if (n < 0) {
 		DCC_LOG1(LOG_MSG, "ret=%d", n);
@@ -179,7 +180,7 @@ int krn_console_getc(unsigned int tmo)
 
 	c = buf[0];
 
-	DCC_LOG2(LOG_INFO, "0x%02x 0x%02x", buf[0], buf[1]);
+	DCC_LOG2(LOG_YAP, "0x%02x 0x%02x", buf[0], buf[1]);
 
 	/* XXX: echo */
 	krn_console_dev_send(NULL, buf, 1);
