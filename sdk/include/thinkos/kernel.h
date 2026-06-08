@@ -773,8 +773,8 @@ struct thinkos_rt {
 #define THINKOS_FLAG_DESC(_ID)  (THINKOS_FLAG_BASE + (_ID))
 #define THINKOS_GATE_DESC(_ID)  (THINKOS_GATE_BASE + (_ID))
 #define THINKOS_FLASH_MEM_DESC(_ID)  (THINKOS_FLASH_MEM_BASE + (_ID))
-#define THINKOS_COMM_RX_DESC(_ID)  (THINKOS_COMM_RX_DESC + (_ID))
-#define THINKOS_COMM_TX_DESC(_ID)  (THINKOS_COMM_TX_DESC + (_ID))
+#define THINKOS_COMM_RX_DESC(_ID)  (THINKOS_COMM_RX_BASE + (_ID))
+#define THINKOS_COMM_TX_DESC(_ID)  (THINKOS_COMM_TX_BASE + (_ID))
 
 /* -------------------------------------------------------------------------- 
  * Thread initialization 
@@ -1143,6 +1143,7 @@ extern int __krn_stack_size;
 
 #define APP_STACK_BASE ((uintptr_t)&__krn_stack_start)
 #define APP_STACK_SIZE ((uintptr_t)&__krn_stack_size)
+#define APP_STACK_TOP ((uintptr_t)&__krn_stack_end)
 
 struct thread_waitqueue;
 

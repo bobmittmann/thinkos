@@ -48,7 +48,7 @@
 #include <sys/dcclog.h>
 
 static const struct comm_dev console_comm_dev = {
-	.arg = NULL,
+	.arg = (void *)THINKOS_COMM_TX_DESC(0),
 	.op = {
 		.send = krn_console_dev_send,
 		.recv = krn_console_dev_recv
@@ -60,10 +60,31 @@ int stm32f1x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len);
 int stm32f1x_flash_write(struct stm32_flash * flash, 
 						 off_t offs, const void * buf, size_t len);
 
-/* Receive a file and write it into the flash using the YMODEM protocol */
-int __flash_ymodem_recv(void)
+void __flash_erase(void)
 {
 	struct stm32_flash * flash = STM32_FLASH;
+	uint32_t offs = 16 * 1024;
+	uint32_t rem = 16 * 1024;
+
+	krn_console_puts("\r\n Erasing... ");
+	while (rem > 0) {
+		int ret;
+		if ((ret = stm32f1x_flash_erase(flash, offs, rem)) <= 0) {
+			krn_console_puts("failed!\r\n");
+			return;
+		}
+		DCC_LOG2(LOG_WARNING, "offs=%d ret=%d", offs, ret);
+		offs += ret;
+		rem -= ret;
+	}
+
+	krn_console_puts("Ok.\r\n");
+}
+
+/* Receive a file and write it into the flash using the YMODEM protocol */
+void __flash_ymodem_recv(void)
+{
+//	struct stm32_flash * flash = STM32_FLASH;
 	struct ymodem_rcv ry;
 	unsigned int fsize;
 	uint32_t offs = 16 * 1024;
@@ -71,7 +92,9 @@ int __flash_ymodem_recv(void)
 	char * fname;
 	int ret;
 
-	stm32f1x_flash_erase(flash, offs, 16 * 1024);
+//	stm32f1x_flash_erase(flash, offs, 16 * 1024);
+
+	krn_console_puts("\r\nReceiving YMODEM...");
 
 	ymodem_rcv_init(&ry, &console_comm_dev, XMODEM_RCV_CRC);
 
@@ -79,9 +102,20 @@ int __flash_ymodem_recv(void)
 	while ((ret = ymodem_rcv_start(&ry, fname, &fsize)) > 0) {
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
-			ret = stm32f1x_flash_write(flash, offs, buf, cnt);
-			DCC_LOG1(LOG_ERROR, "thinkos_flash_mem_write()=>%d", ret);
-			offs += cnt;
+			uint8_t * cp = buf;
+			while (cnt > 0) {
+	//			ret = stm32f1x_flash_write(flash, offs, cp, cnt);
+				ret  = 2;
+				if (ret <= 0) {
+					DCC_LOG2(LOG_TRACE, "thinkos_flash_mem_write(%d)=>%d", 
+							 offs, ret);
+					ymodem_rcv_cancel(&ry);
+					break;
+				}
+				offs += ret;
+				cp += ret;
+				cnt -= ret;
+			}
 		}
 		if (ret < 0) {
 			DCC_LOG1(LOG_WARNING, "ret=%d", ret);
@@ -92,12 +126,11 @@ int __flash_ymodem_recv(void)
 	DCC_LOG(LOG_TRACE, "YMODEM stop.");
 
 	ymodem_rcv_flush(&ry);
-
-	return ret;
 }
 
 const char help[] = 
 	"Options:\r\n" 
+	"\tE - Erase partition\r\n" 
 	"\tY - YMODEM receive\r\n" 
 	"\tQ - Quit\r\n" 
 ;
@@ -119,6 +152,10 @@ int console_shell_task(void)
 		switch (c) {
 		case 'Y':
 			__flash_ymodem_recv();
+			break;
+
+		case 'E':
+			__flash_erase();
 			break;
 
 		case '\r':
@@ -331,15 +368,12 @@ volatile uint8_t d = 4;
 extern const char * const zarathustra_txt[];
 extern const int zarathustra_len[];
 
-volatile uint32_t halt = 0;
-
 void main(int argc, char ** argv)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 #if (THINKOS_ENABLE_MONITOR)
 	const struct monitor_comm * comm;
 #endif
-	uint8_t buf[64];
 	int i;
 
 	DCC_LOG_INIT();
@@ -396,19 +430,18 @@ void main(int argc, char ** argv)
 	}
 #endif
 
+	//mdelay(10000);
+
 	thinkos_comm_send(h, "\r\n+++\r\n", 7);
 	thinkos_comm_send(h, "Hello world!\r\n", 14);
 	thinkos_comm_send(h, "Many, but not all people.\r\n", 27);
-	halt = 1;
 	thinkos_sleep(10);
-	thinkos_comm_send(h, zarathustra_txt[1], zarathustra_len[1]);
-	thinkos_comm_send(h, zarathustra_txt[2], zarathustra_len[2]);
+//	thinkos_comm_send(h, zarathustra_txt[1], zarathustra_len[1]);
+//	thinkos_comm_send(h, zarathustra_txt[2], zarathustra_len[2]);
 	thinkos_comm_send(h, "Wise man say only fools rush in.\r\n", 34);
-	do {
-		int len = thinkos_comm_recv(h, buf, 64);
-		if (buf[0] > 'A')
-			thinkos_comm_send(h, buf, len);
-	} while (buf[0] != 'q');
+
+	console_shell_task();
+
 #endif
 
 	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");

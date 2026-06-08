@@ -131,10 +131,14 @@ cm3_hard_fault_isr:
 	ldr     sp, .L_xcpt_stack
 	stmia   sp!, {r4-r11}      /* save faulty registers */
 	stmia   sp!, {r0-r3, r12}  /* save faulty stack frame but LR, PC and XPSR */
+
+	tst     lr, #EXC_RET_SPSEL
+	beq     .L_bypass
+	mrs     r7, PSP 
+	adds.n  r7, #(5*4)
+	ldmia   r7!, {r0-r2}
+.L_bypass:
 	stmia   sp!, {r0-r2}        /* LR, PC and XPSR */
-	/* If the origin of error is the MSP being invalid then the 
-	   next instruction will cause a hard fault. Possible solutions,
-	   ignore the registers LR, PC and XPSR */
 	movw    r0, #:lower16:thinkos_rt
 	movt    r0, #:upper16:thinkos_rt
 	mov     r1, sp

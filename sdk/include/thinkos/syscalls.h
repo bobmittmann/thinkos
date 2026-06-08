@@ -101,7 +101,7 @@
 #define THINKOS_COMM_CTL              53
 #define THINKOS_COMM_SEND             54
 #define THINKOS_COMM_RECV             55
-#define THINKOS_COMM_TIMED_FIXUP      56
+#define THINKOS_COMM_TIMEDRECV        56
 
 #define THINKOS_DATE_AND_TIME         57
 
@@ -955,15 +955,16 @@ thinkos_comm_timedsend(unsigned int comm, const void * buf, size_t len,
 
 static inline int __attribute__((always_inline)) 
 thinkos_comm_timedrecv(unsigned int comm, void * buf, unsigned int len,
-					   unsigned int tmo) {
+					   int32_t tmo) {
 	register int32_t ret asm("r12");
+	register int32_t tmrem asm("r3");
 	register uint32_t r0 asm("r0") = comm;
 	register uint32_t r1 asm("r1") = (uintptr_t)buf;
 	register uint32_t r2 asm("r2") = len;
 	register uint32_t r3 asm("r3") = tmo;
 	asm volatile (ARM_SVC(THINKOS_COMM_TIMEDRECV) 
-				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
-				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
+				  : "=r"(ret), "=r"(tmrem) : 
+				  "r"(r0), "r"(r1), "r"(r2), "1"(r3) : "memory" );
 	return ret;
 }
 

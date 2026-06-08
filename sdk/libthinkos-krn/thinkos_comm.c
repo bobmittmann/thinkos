@@ -101,110 +101,16 @@ int krn_comm_rx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq)
+void thinkos_krn_comm_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
 {
-	int c = -1;
-	int th;
-
-	th = __krn_wq_head(krn, tx_wq);
-	if (th != THINKOS_THREAD_NULL) {
-		struct comm_tx_req * req;
-		unsigned int len;
-		unsigned int cnt;
-
-		req = (struct comm_tx_req *)__thread_frame_get(krn, th);
-
-		if ((len = req->len) > (cnt = req->cnt)) {
-			c = req->ptr[cnt++];
-			req->cnt = cnt;
-		} 
-
-		if (len == cnt) {
-			/* wakeup from the wait queue */
-			__krn_wq_ready_thread_ins(krn, th);
-			__krn_wq_remove(krn, tx_wq, th);
-			/* signal the scheduler ... */
-			__krn_sched_defer(krn);
-		}
-	}
-
-	return c;
-}
-
-ssize_t krn_comm_tx_wq_req_process(struct thinkos_rt * krn, 
-								   unsigned int tx_wq,
-								   uint8_t * dst, size_t max)
-{
-	struct comm_tx_req * req = NULL;
-	int th;
-
-	th = __krn_wq_head(krn, tx_wq);
-	if (th != THINKOS_THREAD_NULL) {
-		req = (struct comm_tx_req *)__thread_frame_get(krn, th);
-		size_t len = req->len;
-		size_t cnt = req->cnt;
-		ssize_t rem;
-		uint8_t * src;
-
-		if ((rem = (len - cnt)) > 0) {
-			int i;
-			if (rem > max)
-				rem = max;
-		
-			src = &req->ptr[cnt];
-			for (i = 0; i < rem; ++i) {
-				dst[i] = src[i];
-			}
-			cnt += rem;
-			req->cnt = cnt + rem;
-		}
-
-		if (len == cnt) {
-			/* wakeup from the wait queue */
-			__krn_wq_ready_thread_ins(krn, th);
-			__krn_wq_remove(krn, tx_wq, th);
-			/* signal the scheduler ... */
-			__krn_sched_defer(krn);
-		}
-	
-		return rem;
-	}
-
-	return 0;
-}
-
-
-void thinkos_comm_timed_fixup_svc(int32_t arg[], int self, 
-								  struct thinkos_rt * krn)
-{
-	unsigned int wq;
-
-	/* Adjust return if necessary */
-	if (!__thread_clk_is_enabled(krn, self)) {
-		if (arg[0] == 0)  {
-			arg[SVC_RETURN] = THINKOS_ETIMEDOUT;      
-			DCC_LOG2(LOG_TRACE, "<%d> wq=%d timeout", self, arg[4]);
-		} else {
-			DCC_LOG3(LOG_TRACE, "<%d> wq=%d cnt=%d", self, arg[4], arg[0]);
-		}
-	} else {
-		DCC_LOG3(LOG_TRACE, "<%d> wq=%d cnt=%d", self, arg[4], arg[0]);
-	}
-
-	/* remove from event wait queue */
-	wq = arg[4];
-	__krn_wq_remove(krn, wq, self);  
-
-}
-
-void thinkos_krn_comm_on_eot(struct thinkos_rt * krn, unsigned int wq)
-{
-	/* wakeup all threads waiting on the condition */
-	//__krn_wq_wakeup_all(krn, wq);
 	int th = __krn_wq_wakeup_head(krn, wq);
 	(void)th;
-	DCC_LOG1(LOG_TRACE, "<%2d> wakeup...", th);
+	DCC_LOG1(LOG_MSG, "<%2d> wakeup...", th);
 }
+
+/* --------------------------------------------------------------------------*/
+/* Send operations  */
+/* --------------------------------------------------------------------------*/
 
 void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
@@ -313,52 +219,104 @@ int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
 	return ret;
 }
 
+/* --------------------------------------------------------------------------*/
+/* Receive operations  */
+/* --------------------------------------------------------------------------*/
+ 
 void thinkos_comm_timedrecv_svc(int32_t arg[], int self, 
 								struct thinkos_rt * krn)
 {
 	struct comm_rx_req * req = (struct comm_rx_req *)arg;
 	const struct thinkos_comm  * comm;
-	unsigned int oid = arg[0];
-	unsigned int wq;
+	unsigned int oid = req->oid;
+	unsigned int rx_wq;
 	unsigned int idx;
-	unsigned int tmo;
+	int32_t tmo;
+	size_t len;
 
 	idx = oid - THINKOS_COMM_TX_BASE;
-	wq = idx + THINKOS_COMM_RX_BASE;
-	tmo = req->tmo;
-
-	DCC_LOG4(LOG_TRACE, "<%d> idx=%d wq=%d tmo=%d", self, idx, wq, tmo);
+	rx_wq = idx + THINKOS_COMM_RX_BASE;
+	len = req->len;
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	int ret;
 
-	if ((ret = krn_comm_rx_check(krn, wq)) != THINKOS_OK) {
-		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, wq);
+	if ((ret = krn_comm_rx_check(krn, rx_wq)) != THINKOS_OK) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid comm %d!", self, rx_wq);
 		arg[SVC_RETURN] = THINKOS_EINVAL;
 		__THINKOS_ERROR(self, ret);
 		return;
 	}
+	if (len <= 0) {
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	}
+#if 0
+	if (!__thinkos_mem_usr_wr_chk((uint32_t)req->ptr, req->len)) {
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid user memory: %p!", self, req->ptr);
+		__THINKOS_ERROR(self, THINKOS_ERR_MEMORY_INVALID);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	}
+#else
+	if (req->ptr == NULL) {
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	}
 #endif
-
+#endif
 	comm = krn->comm[idx];
+	ssize_t ret;
 
-	arg[SVC_RETURN] = wq;
-	req->cnt = 0;
+	tmo = req->tmo;
+
+	if (tmo == 0) {
+		ret = comm->drv_op->recv(comm->drv, req->ptr, len);
+		if (ret == 0) {
+			ret = THINKOS_EAGAIN;      
+			DCC_LOG2(LOG_TRACE, "<%d> (tmo == 0) wq=%d timeout...", self, rx_wq);
+		}
+		arg[SVC_RETURN] = ret;
+		return;
+	}
 
 	/* wait for event ... */
-	__krn_thread_timedwait(krn, self, wq, tmo);
+	__krn_thread_suspend(krn, self);
+	if (tmo > 0) {
+		__krn_tmdwq_insert(krn, rx_wq, self, tmo);
+		DCC_LOG2(LOG_YAP, "<%d> (tmo > 0) %d...", self, tmo);
+	} else if (tmo < 0) {
+		DCC_LOG2(LOG_YAP, "<%d> (tmo < 0) %d...", self, tmo);
+		__krn_wq_insert(krn, rx_wq, self);
+	}
 
-	/* signal driver */
-	comm->drv_op->signal(comm->drv, COMM_RX_WAIT);
+	ret = comm->drv_op->recv(comm->drv, req->ptr, len);
+
+	DCC_LOG2(LOG_INFO, "<%d> drv->recv()=%d...", self, ret);
+
+	if  (ret == 0) {
+		if (__thread_clk_is_enabled(krn, self)) {
+			uint32_t pc;
+			/* check if the clock is still running */
+			DCC_LOG1(LOG_INFO, "<%d> clk enabled...", self);
+			/* repeat the operation */
+			pc = arg[SVC_ARG_PC];      
+			pc -= 2;
+			arg[SVC_ARG_PC] = pc;      
+			req->tmo = -1;
+			/* signal the scheduler ... */
+			__krn_sched_defer(krn);
+			return;
+		}
+		ret = THINKOS_ETIMEDOUT;
+	}
+	
+	/* roll back */
+	__thread_ready_set(krn, self);
+	__krn_wq_remove(krn, rx_wq, self);
+	req->tmo = (krn->clk.th_tmr[self] - krn->clk.time);
+	arg[SVC_RETURN] = ret;
 }
-
-void thinkos_krn_comm_on_rcv(struct thinkos_rt * krn, unsigned int wq)
-{
-	int th = __krn_wq_wakeup_head(krn, wq);
-	(void)th;
-	DCC_LOG1(LOG_TRACE, "<%2d> wakeup...", th);
-}
-
 
 void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {	
@@ -421,6 +379,10 @@ void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 }
 
+/* --------------------------------------------------------------------------*/
+/* Control operations  */
+/* --------------------------------------------------------------------------*/
+ 
 int thinkos_comm_drain(struct thinkos_comm * comm, unsigned int wq,
 					   int self, struct thinkos_rt * krn)
 {

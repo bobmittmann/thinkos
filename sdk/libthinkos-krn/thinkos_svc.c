@@ -584,9 +584,10 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_COMM_SEND] = thinkos_comm_send_svc,
 	[THINKOS_COMM_RECV] = thinkos_comm_recv_svc,
   #if (THINKOS_ENABLE_TIMED_CALLS)
-	[THINKOS_COMM_TIMED_FIXUP] = thinkos_comm_timed_fixup_svc,
+	[THINKOS_COMM_TIMEDRECV] = thinkos_comm_timedrecv_svc,
+//	[THINKOS_COMM_TIMED_FIXUP] = thinkos_comm_timed_fixup_svc,
   #else
-	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
+//	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
   #endif
 #else
 	[THINKOS_COMM_CTL] = thinkos_nosys_svc,

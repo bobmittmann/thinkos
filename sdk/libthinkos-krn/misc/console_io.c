@@ -46,6 +46,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 #include <sys/dcclog.h>
 
+#if (THINKOS_ENABLE_MONITOR) 
 int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
 {
 	uint8_t * cp = (uint8_t *)buf;
@@ -60,6 +61,43 @@ int krn_console_dev_send(void * dev, const void * buf, unsigned int len)
 
 	return len;
 }
+
+int krn_console_dev_recv(void * dev, void * buf, 
+					  unsigned int len, unsigned int msec) 
+{
+	int ret = 0;
+
+	do {
+		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret == THINKOS_ETIMEDOUT) {
+			DCC_LOG(LOG_INFO, "thinkos_console_timedread() timed out.");
+		} else if (ret == 0) {
+			DCC_LOG(LOG_WARNING, "thinkos_console_timedread() ZERO.");
+		} else {
+			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread() %d", ret);
+		}
+	} while (ret == 0);
+
+	return ret;
+}
+#endif
+
+#if (THINKOS_COMM_MAX > 0)                   
+int krn_console_dev_send(void * dev, const void * buf, unsigned int len)
+{
+	uintptr_t oid = THINKOS_COMM_TX_DESC(0);
+
+	return thinkos_comm_send(oid, buf, len);
+}
+
+int krn_console_dev_recv(void * dev, void * buf, unsigned int len, 
+						 unsigned int msec)
+{
+	uintptr_t oid = THINKOS_COMM_TX_DESC(0);
+
+	return thinkos_comm_timedrecv(oid, buf, len, msec);
+}
+#endif
 
 int krn_console_write(const void * buf, unsigned int len) 
 {
@@ -143,25 +181,6 @@ int krn_console_wrln(const char * ln)
 {
 	krn_console_puts(ln);
 	return krn_console_crlf();
-}
-
-int krn_console_dev_recv(void * dev, void * buf, 
-					  unsigned int len, unsigned int msec) 
-{
-	int ret = 0;
-
-	do {
-		ret = thinkos_console_timedread(buf, len, msec);
-		if (ret == THINKOS_ETIMEDOUT) {
-			DCC_LOG(LOG_INFO, "thinkos_console_timedread() timed out.");
-		} else if (ret == 0) {
-			DCC_LOG(LOG_WARNING, "thinkos_console_timedread() ZERO.");
-		} else {
-			DCC_LOG1(LOG_TRACE, "thinkos_console_timedread() %d", ret);
-		}
-	} while (ret == 0);
-
-	return ret;
 }
 
 int krn_console_getc(unsigned int tmo)

@@ -362,8 +362,6 @@ static void stm32f_usb_dev_reset(struct stm32f_usb_drv * drv)
 	/* Write back */
 	usb->cntr = cntr;
 
-	DCC_LOG1(LOG_TRACE, "CNTR=0x%04x", usb->cntr );
-
 #if (ENABLE_DBLBUF_DEBUG)
 	drv->pkt_read = 0;
 	drv->pkt_recv = 0;
@@ -676,8 +674,6 @@ int stm32f_usb_dev_ep_init(struct stm32f_usb_drv * drv,
 
 		__clr_ep_flag(usb, 0, USB_EP_STATUS_OUT);
 		__set_ep_rxstat(usb, 0, USB_RX_VALID);
-
-		DCC_LOG1(LOG_TRACE, "[0] epr=0x%04x...", usb->epr[0]);
 		return 0;
 	}
 

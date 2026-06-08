@@ -104,7 +104,7 @@
 #define THINKOS_ENABLE_STACK_ALIGN          1
 #define THINKOS_ENABLE_UNALIGN_TRAP         1
 #define THINKOS_ENABLE_DIV0_TRAP            1
-#define THINKOS_EXCEPT_STACK_SIZE         320
+#define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          0
 #define THINKOS_ENABLE_ERROR_TRAP           0
 #define THINKOS_ENABLE_BUSFAULT             0
@@ -112,11 +112,11 @@
 #define THINKOS_ENABLE_MEMFAULT             0
 #define THINKOS_ENABLE_THREAD_FAULT         0
 #if DEBUG
-  #define THINKOS_ENABLE_HARDFAULT          1
+  #define THINKOS_ENABLE_HARDFAULT          0
   #define THINKOS_ENABLE_EXCEPTIONS         0
   #define THINKOS_SYSRST_ONFAULT            0
 #else
-  #define THINKOS_ENABLE_HARDFAULT          1
+  #define THINKOS_ENABLE_HARDFAULT          0
   #define THINKOS_ENABLE_EXCEPTIONS         0
   #define THINKOS_SYSRST_ONFAULT            1
 #endif
@@ -138,7 +138,7 @@
 
 #define THINKOS_ENABLE_MPU                  0
 #define THINKOS_ENABLE_FPU                  0
-#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    1
 
 #define THINKOS_ENABLE_CORE_RESET           1
 #define THINKOS_ENABLE_CTL                  0

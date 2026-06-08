@@ -56,11 +56,11 @@ enum thinkos_comm_signal {
 struct thinkos_comm;
 struct thinkos_comm_drv;
 
-
 struct thinkos_comm_drv_op {
 	int (*open)(struct thinkos_comm_drv *);
 	int (*send)(struct thinkos_comm_drv *, const void * buf, unsigned int len);
 	int (*recv)(struct thinkos_comm_drv *, void * buf, unsigned int len);
+	int (*close)(struct thinkos_comm_drv *);
 	int (*ctrl)(struct thinkos_comm_drv *, unsigned int opc);
 	void (*signal)(struct thinkos_comm_drv *, unsigned int sig);
 	void (*reset)(struct thinkos_comm_drv *, int priority);
@@ -81,7 +81,7 @@ struct thinkos_comm {
 };
 
 struct comm_rx_req {
-	uint32_t wq;
+	uint32_t oid;
 	uint8_t * ptr;
 	uint32_t len;
 	uint32_t tmo;
@@ -89,7 +89,7 @@ struct comm_rx_req {
 };
 
 struct comm_tx_req {
-	uint32_t wq;
+	uint32_t oid;
 	uint8_t * ptr;
 	uint32_t len;
 	uint32_t tmo;
@@ -140,9 +140,7 @@ static inline bool krn_comm_isconnected(const struct thinkos_comm * comm) {
 	        COMM_ST_CONNECTED) ? true : false;
 }
 
-void thinkos_krn_comm_on_eot(struct thinkos_rt * krn, unsigned int wq);
-
-void thinkos_krn_comm_on_rcv(struct thinkos_rt * krn, unsigned int wq);
+void thinkos_krn_comm_wakeup_head(struct thinkos_rt * krn, unsigned int wq);
 
 #ifdef __cplusplus
 }

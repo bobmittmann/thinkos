@@ -53,7 +53,7 @@ void __attribute__((noreturn)) thinkos_krn_hard_fault_handler(
 	DCC_LOG(LOG_PANIC, VT_PSH VT_REV VT_FRD
 			" ! Hard Fault ! " VT_POP);
 
-//	__hard(krn, ctx, sp, ipsr);
+	__hard(krn, ctx, sp);
 
 #endif
 #if (THINKOS_SYSRST_ONFAULT)

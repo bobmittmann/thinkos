@@ -258,18 +258,19 @@ thinkos_krn_sched_ctx_get:
     mov.n     r3, sp
 #endif
 .L_idle_restore:
+   /* set the control register */
+    movs.n   r4, #0
+    msr      CONTROL, r4
+	/* Synthesizes exception return */
+	mov      lr, #CM3_EXC_RET_THREAD_MSP
 	/* restore core context */
 	pop      {r4-r11}
 	/* return */
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	bl       thinkos_sched_dbg
-#endif
-    /* set the control register */
-    movs.n   r3, #0
-    msr      CONTROL, r3
-	/* Synthesizes exception return */
-	mov      lr, #CM3_EXC_RET_THREAD_MSP
+	b       thinkos_sched_dbg
+#else
 	bx       lr
+#endif
 
 /* --------------------------------------------------------------------------
  * IDLE 

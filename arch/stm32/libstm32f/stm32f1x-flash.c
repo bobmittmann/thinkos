@@ -98,7 +98,7 @@ uint32_t __attribute__((section (".data#"), noinline))
 
 int stm32f1x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len)
 {
-	unsigned int size = 2048;
+	unsigned int size = FLASH_BLOCK_SIZE;
 	uint32_t addr;
 	uint32_t pri;
 	uint32_t sr;
