@@ -94,32 +94,30 @@
 #define THINKOS_EXIT                  48
 
 #define THINKOS_CONSOLE_CTL           49
-#define THINKOS_CONSOLE_SEND          50
-#define THINKOS_CONSOLE_RECV          51
-#define THINKOS_CONSOLE_TIMED_FIXUP   52
+#define THINKOS_CONSOLE_WRITE         50
+#define THINKOS_CONSOLE_TIMEDREAD     51
 
-#define THINKOS_COMM_CTL              53
-#define THINKOS_COMM_SEND             54
-#define THINKOS_COMM_RECV             55
-#define THINKOS_COMM_TIMEDRECV        56
+#define THINKOS_COMM_CTL              52
+#define THINKOS_COMM_SEND             53
+#define THINKOS_COMM_TIMEDRECV        54
 
-#define THINKOS_DATE_AND_TIME         57
+#define THINKOS_DATE_AND_TIME         55
 
-#define THINKOS_CRITICAL_ENTER        58
-#define THINKOS_CRITICAL_EXIT         59
+#define THINKOS_CRITICAL_ENTER        56
+#define THINKOS_CRITICAL_EXIT         57
 
-#define THINKOS_MONITOR_CTL           60
+#define THINKOS_MONITOR_CTL           58
 
-#define THINKOS_TRACE                 61
-#define THINKOS_TRACE_CTL             62
+#define THINKOS_TRACE                 59
+#define THINKOS_TRACE_CTL             60
 
-#define THINKOS_FLASH_MEM             63
+#define THINKOS_FLASH_MEM             61
 
-#define THINKOS_APP_EXEC              64
+#define THINKOS_APP_EXEC              62
 
-#define THINKOS_CORE_RESET            65
+#define THINKOS_CORE_RESET            63
 
-#define THINKOS_SYSCALL_CNT           65
+#define THINKOS_SYSCALL_CNT           63
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_OPEN                   3
@@ -642,19 +640,7 @@ thinkos_console_write(const void * buf, size_t len) {
 	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
 	register uint32_t r1 asm("r1") = len;
 	register uint32_t r2 asm("r2") = 0;
-	asm volatile (ARM_SVC(THINKOS_CONSOLE_SEND) : 
-				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
-	return ret;
-}
-
-static inline ssize_t __attribute__((always_inline)) 
-thinkos_console_read(void * buf, size_t len) {
-	register int32_t ret asm("r12");
-	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
-	register uint32_t r1 asm("r1") = len;
-	register int32_t r2 asm("r2") = 0;
-	asm volatile (ARM_SVC(THINKOS_CONSOLE_RECV) 
-				  ARM_SVC(THINKOS_CONSOLE_TIMED_FIXUP) : 
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_WRITE) : 
 				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
@@ -665,8 +651,7 @@ thinkos_console_timedread(void * buf, size_t len, int32_t ms) {
 	register uintptr_t r0 asm("r0") = (uintptr_t)buf;
 	register uint32_t r1 asm("r1") = len;
 	register uint32_t r2 asm("r2") = ms;
-	asm volatile (ARM_SVC(THINKOS_CONSOLE_RECV) 
-//				  ARM_SVC(THINKOS_CONSOLE_TIMED_FIXUP) 
+	asm volatile (ARM_SVC(THINKOS_CONSOLE_TIMEDREAD) 
 				  : "=r"(ret) : "r"(r0), "r"(r1), "r"(r2) : "memory" );
 	return ret;
 }
@@ -936,20 +921,6 @@ thinkos_comm_send(unsigned int comm, const void * buf, size_t len) {
 	register uint32_t r2 asm("r2") = len;
 	asm volatile (ARM_SVC(THINKOS_COMM_SEND) : "=r"(ret) : 
 				  "r"(r0), "r"(r1), "r"(r2), "0"(0) : "memory" );
-	return ret;
-}
-
-static inline ssize_t __attribute__((always_inline)) 
-thinkos_comm_timedsend(unsigned int comm, const void * buf, size_t len,
-					   uint32_t tmo) {
-	register int32_t ret asm("r12");
-	register uint32_t r0 asm("r0") = comm;
-	register uint32_t r1 asm("r1") = (uintptr_t)buf;
-	register uint32_t r2 asm("r2") = len;
-	register uint32_t r3 asm("r3") = tmo;
-	asm volatile (ARM_SVC(THINKOS_COMM_SEND) 
-				  ARM_SVC(THINKOS_COMM_TIMED_FIXUP) : "=r"(ret) : 
-				  "r"(r0), "r"(r1), "r"(r2), "r"(r3) : "memory" );
 	return ret;
 }
 

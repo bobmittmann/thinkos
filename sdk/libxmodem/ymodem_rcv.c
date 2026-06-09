@@ -359,10 +359,10 @@ static int ymodem_rcv_decode(void * pkt, int len, char * fname)
 	int i;
 
 	if (cp[0] == '\0') {
-		DCC_LOG(LOG_WARNING, "file name is empty!");
+		DCC_LOG(LOG_INFO, "file name is empty!");
 		ret = 0;
 	} else {
-		DCC_LOGSTR(LOG_TRACE, "fname='%s'", cp);
+		DCC_LOGSTR(LOG_INFO, "fname='%s'", cp);
 		if (fname != NULL) { 
 			/* Get file name */
 			for (i = 0; (cp[i] != '\0') & (i < len); ++i)
@@ -379,13 +379,13 @@ static int ymodem_rcv_decode(void * pkt, int len, char * fname)
 		if (i < len) {
 			fsize = dec2int(&cp[i]);
 			if (fsize == 0) {
-				DCC_LOG(LOG_WARNING, "file size is zero!");
+				DCC_LOG(LOG_INFO, "file size is zero!");
 			} else {
-				DCC_LOG1(LOG_TRACE, "fsize=%d", fsize);
+				DCC_LOG1(LOG_INFO, "fsize=%d", fsize);
 			}
 			ret = fsize;
 		} else {
-			DCC_LOG(LOG_WARNING, "no file size info!");
+			DCC_LOG(LOG_INFO, "no file size info!");
 			ret = 0;
 		}
 	}

@@ -853,6 +853,7 @@ static void monitor_usb_on_reset(usb_class_t * cl)
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
 	/* wakeup xmit */
 	monitor_signal(MONITOR_COMM_EOT);
+	/* wakeup control */
 	monitor_signal(MONITOR_COMM_CTL);
 }
 

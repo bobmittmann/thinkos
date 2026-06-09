@@ -67,26 +67,26 @@ uint32_t monitor_on_rx_pipe(const struct monitor_comm * comm,
 				sigmask |= (1 << MONITOR_RX_PIPE);
 				sigmask &= ~(1 << MONITOR_COMM_RCV);
 				/* Wait for RX_PIPE */
-				DCC_LOG1(LOG_TRACE, "RX_PIPE: fifo full recv=%d", n);
+				DCC_LOG1(LOG_MSG, "RX_PIPE: fifo full recv=%d", n);
 			} else {
 				/* Wait for COMM_RECV */
 				sigmask |= (1 << MONITOR_RX_PIPE);
 				sigmask |= (1 << MONITOR_COMM_RCV);
-				DCC_LOG2(LOG_TRACE, "RX_PIPE: free=%d recv=%d ", cnt, n);
+				DCC_LOG2(LOG_MSG, "RX_PIPE: free=%d recv=%d ", cnt, n);
 			}
 		} else {
 			monitor_clear(MONITOR_COMM_RCV);
 			/* Wait for COMM_RECV */
 			sigmask &=  ~(1 << MONITOR_RX_PIPE);
 			sigmask |= (1 << MONITOR_COMM_RCV);
-			DCC_LOG1(LOG_WARNING, "RX_PIPE: free=%d recv none", cnt);
+			DCC_LOG1(LOG_MSG, "RX_PIPE: free=%d recv none", cnt);
 		}
 	} else {
 		monitor_clear(MONITOR_RX_PIPE);
 		/* Stop receiving */
 		sigmask |= (1 << MONITOR_RX_PIPE);
 		sigmask &= ~(1 << MONITOR_COMM_RCV);
-		DCC_LOG(LOG_WARNING, "RX_PIPE: fifo full");
+		DCC_LOG(LOG_MSG, "RX_PIPE: fifo full");
 	}
 
 	return sigmask;
@@ -104,20 +104,20 @@ uint32_t monitor_on_tx_pipe(const struct monitor_comm * comm,
 			thinkos_console_tx_pipe_commit(n);
 			sigmask |= (1 << MONITOR_TX_PIPE);
 			sigmask |= (1 << MONITOR_COMM_EOT);
-			DCC_LOG1(LOG_INFO, "TX_PIPE: %d bytes sent", n);
+			DCC_LOG1(LOG_MSG, "TX_PIPE: %d bytes sent", n);
 		} else {
 			monitor_clear(MONITOR_COMM_EOT);
 			/* Wait for COMM_EOT, stop TX_PIPE notification */
 			sigmask &= ~(1 << MONITOR_TX_PIPE);
 			sigmask |= (1 << MONITOR_COMM_EOT);
-			DCC_LOG1(LOG_INFO, "TX_PIPE: data=%d sent none", cnt);
+			DCC_LOG1(LOG_MSG, "TX_PIPE: data=%d sent none", cnt);
 		}
 	} else {
 		monitor_clear(MONITOR_TX_PIPE);
 		/* Wait for TX_PIPE, stop COMM_EOT notification */
 		sigmask |= (1 << MONITOR_TX_PIPE);
 		sigmask &= ~(1 << MONITOR_COMM_EOT);
-		DCC_LOG(LOG_INFO, "TX_PIPE: fifo empty");
+		DCC_LOG(LOG_MSG, "TX_PIPE: fifo empty");
 	}
 
 	return sigmask;

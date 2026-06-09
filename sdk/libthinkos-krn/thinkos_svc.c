@@ -130,11 +130,11 @@ void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
 void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_console_read_svc(int32_t arg[], int self, struct thinkos_rt * krn);
 
-void thinkos_console_timed_fixup_svc(int32_t arg[], int self, 
+void thinkos_console_timedread_svc(int32_t arg[], int self, 
 								  struct thinkos_rt * krn);
 
 void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
@@ -511,21 +511,15 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CONSOLE_CTL] = thinkos_nosys_svc,
 #endif /* (THINKOS_ENABLE_CONSOLE_CTL) */
 #if (THINKOS_ENABLE_CONSOLE)
-	[THINKOS_CONSOLE_SEND] = thinkos_console_send_svc,
+	[THINKOS_CONSOLE_WRITE] = thinkos_console_write_svc,
 #else
-	[THINKOS_CONSOLE_SEND] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_WRITE] = thinkos_nosys_svc,
 #endif
 
 #if (THINKOS_ENABLE_CONSOLE_READ)
-	[THINKOS_CONSOLE_RECV] = thinkos_console_recv_svc,
+	[THINKOS_CONSOLE_TIMEDREAD] = thinkos_console_timedread_svc,
 #else
-	[THINKOS_CONSOLE_RECV] = thinkos_nosys_svc,
-#endif
-
-#if (THINKOS_ENABLE_CONSOLE) && (THINKOS_ENABLE_TIMED_CALLS)
-	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_console_timed_fixup_svc,
-#else
-	[THINKOS_CONSOLE_TIMED_FIXUP] = thinkos_nosys_svc,
+	[THINKOS_CONSOLE_TIMEDREAD] = thinkos_nosys_svc,
 #endif
 
 #if (THINKOS_ENABLE_OBJ_ALLOC)
@@ -582,20 +576,14 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 #if (THINKOS_COMM_MAX) > 0
 	[THINKOS_COMM_CTL] = thinkos_comm_ctl_svc,
 	[THINKOS_COMM_SEND] = thinkos_comm_send_svc,
-	[THINKOS_COMM_RECV] = thinkos_comm_recv_svc,
   #if (THINKOS_ENABLE_TIMED_CALLS)
 	[THINKOS_COMM_TIMEDRECV] = thinkos_comm_timedrecv_svc,
-//	[THINKOS_COMM_TIMED_FIXUP] = thinkos_comm_timed_fixup_svc,
-  #else
-//	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
   #endif
 #else
 	[THINKOS_COMM_CTL] = thinkos_nosys_svc,
 	[THINKOS_COMM_SEND] = thinkos_nosys_svc,
-	[THINKOS_COMM_RECV] = thinkos_nosys_svc,
-	[THINKOS_COMM_TIMED_FIXUP] = thinkos_nosys_svc,
+	[THINKOS_COMM_TIMEDRECV] = thinkos_nosys_svc,
 #endif
-
 
 #if (THINKOS_ENABLE_CRITICAL)
 	[THINKOS_CRITICAL_ENTER] = thinkos_critical_enter_svc,

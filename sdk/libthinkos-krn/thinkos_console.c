@@ -260,54 +260,6 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr)
 	return cnt;
 }
 
-#if (THINKOS_ENABLE_CONSOLE_BREAK)
-static int __console_rd_break(struct thinkos_rt * krn) 
-{
-	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
-	int ret;
-	int th;
-
-	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		thinkos_console_rt.rd_break = 1;
-		DCC_LOG(LOG_MSG, "no thread waiting.");
-		ret = 0;
-	} else {
-		DCC_LOG1(LOG_MSG, "break %d", th);
-
-		thinkos_console_rt.rd_break = 0;
-		/* wakeup from the console read wait queue setting the return 
-		   value to THINKOS_EINTR.
-		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, THINKOS_EINTR);
-		ret = 1;
-	}
-
-	return ret;
-}
-
-static int __console_wr_break(struct thinkos_rt * krn) 
-{
-	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
-	int ret;
-	int th;
-
-	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
-		DCC_LOG(LOG_MSG, "no thread waiting.");
-		thinkos_console_rt.wr_break = 1;
-		ret = 0;
-	} else {
-		thinkos_console_rt.rd_break = 0;
-		/* wakeup from the console write wait queue setting the return 
-		   value to 0.
-		   The calling thread should retry the operation. */
-		__wq_wakeup_return(krn, wq, th, 0);
-		ret = 1;
-	}
-
-	return ret;
-}
-#endif
-
 void thinkos_console_tx_pipe_commit(int cnt) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
@@ -326,7 +278,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	thinkos_console_rt.tx_pipe.tail = tail;
 #if 0
 	if (tail == thinkos_console_rt.tx_pipe.head) {
-		DCC_LOG(LOG_TRACE, "TX_PIPE empty");
+		DCC_LOG(LOG_MSG, "TX_PIPE empty");
 		console_clear_tx_pipe();
 	}
 #endif
@@ -469,25 +421,7 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 }
 #endif
 
-#if 0
-void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
-{	
-	struct comm_tx_req * req = (struct comm_tx_req *)arg;
-	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
-
-	DCC_LOG2(LOG_TRACE, "<%2d> console tx req... %d", self, wq);
-
-	req->cnt = 0;
-
-	/* wait for event ... */
-	__krn_thread_wait(krn, self, wq);
-
-	/* signal driver */
-	console_signal_tx_req();
-}
-#endif
-
-void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
@@ -522,7 +456,7 @@ void thinkos_console_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((max = (tail - head + THINKOS_CONSOLE_TX_FIFO_LEN)) == 0) {
 		/* -- wait for event ---------------------------------------- */
 		if (thinkos_console_rt.connected) {
-			DCC_LOG2(LOG_TRACE, "<%d> fifo full: waiting %d...", self, wq);
+			DCC_LOG2(LOG_MSG, "<%d> fifo full: waiting %d...", self, wq);
 			/* signal the scheduler ... */
 			__krn_sched_defer(krn); 
 		} else {
@@ -664,7 +598,7 @@ static int rx_pipe_read(uint8_t * buf, unsigned int len)
 
 
 #if (THINKOS_ENABLE_CONSOLE_READ)
-void thinkos_console_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_timedread_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {
 #if (THINKOS_ENABLE_TIMED_CALLS) || (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 	int nonblock;
@@ -701,7 +635,7 @@ rd_again:
 	if (nonblock) {
 		/* if timeout is 0 do not block */
 		arg[SVC_RETURN] = THINKOS_EAGAIN;
-		DCC_LOG2(LOG_WARNING, "<%2d> tmo=%d !!!", self, tmo);
+		DCC_LOG2(LOG_INFO, "<%2d> tmo=%d !!!", self, tmo);
 		return;
 	}
 #endif
@@ -721,7 +655,7 @@ rd_again:
 		/* roll back */
 		/* insert into the ready wait queue */
 		__thread_ready_set(krn, self);  
-		DCC_LOG1(LOG_WARNING, "<%d> rollback 1 ...", self);
+		DCC_LOG1(LOG_INFO, "<%d> rollback 1 ...", self);
 		goto rd_again;
 	}
 #endif
@@ -771,7 +705,7 @@ rd_again:
 		/* remove from the clock wait queue */
 		__thread_clk_disable(krn, self);
 #endif
-		DCC_LOG1(LOG_WARNING, "<%d> rollback 2 ...", self);
+		DCC_LOG1(LOG_INFO, "<%d> rollback 2 ...", self);
 		goto rd_again;
 	}
 
@@ -795,7 +729,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	uint32_t tail;
 	uint32_t cnt;
 
-	DCC_LOG2(LOG_TRACE, "<%d> draining %d ...", self, wq);
+	DCC_LOG2(LOG_MSG, "<%d> draining %d ...", self, wq);
 
 	/* (1) suspend the thread by removing it from the
 	   ready wait queue. The __thinkos_suspend() call cannot be nested
@@ -833,11 +767,55 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 #endif
 
-void thinkos_console_timed_fixup_svc(int32_t arg[], int self, 
-									 struct thinkos_rt * krn)
+
+#if (THINKOS_ENABLE_CONSOLE_BREAK)
+static int __console_rd_break(struct thinkos_rt * krn) 
 {
-	DCC_LOG(LOG_TRACE, "time_fixup");
+	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
+	int ret;
+	int th;
+
+	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
+		thinkos_console_rt.rd_break = 1;
+		DCC_LOG(LOG_MSG, "no thread waiting.");
+		ret = 0;
+	} else {
+		DCC_LOG1(LOG_MSG, "break %d", th);
+
+		thinkos_console_rt.rd_break = 0;
+		/* wakeup from the console read wait queue setting the return 
+		   value to THINKOS_EINTR.
+		   The calling thread should retry the operation. */
+		__wq_wakeup_return(krn, wq, th, THINKOS_EINTR);
+		ret = 1;
+	}
+
+	return ret;
 }
+
+static int __console_wr_break(struct thinkos_rt * krn) 
+{
+	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
+	int ret;
+	int th;
+
+	if ((th = __krn_wq_head(krn, wq)) == THINKOS_THREAD_NULL) {
+		DCC_LOG(LOG_MSG, "no thread waiting.");
+		thinkos_console_rt.wr_break = 1;
+		ret = 0;
+	} else {
+		thinkos_console_rt.rd_break = 0;
+		/* wakeup from the console write wait queue setting the return 
+		   value to 0.
+		   The calling thread should retry the operation. */
+		__wq_wakeup_return(krn, wq, th, 0);
+		ret = 1;
+	}
+
+	return ret;
+}
+#endif
+
 
 #if (THINKOS_ENABLE_CONSOLE_CTL)
 
@@ -959,7 +937,7 @@ void thinkos_krn_console_connect_set(bool val)
 
 void thinkos_krn_console_reset(void)
 {
-	DCC_LOG1(LOG_TRACE, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
+	DCC_LOG1(LOG_MSG, "thinkos_console_rt=0x%08x", &thinkos_console_rt);
 	__thinkos_memset32(&thinkos_console_rt, 0x00000000, 
 					 sizeof(thinkos_console_rt));
 	console_clear_tx_pipe();

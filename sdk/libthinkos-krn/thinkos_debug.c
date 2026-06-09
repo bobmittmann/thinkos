@@ -252,9 +252,9 @@ void ERR(struct thinkos_rt * krn, uint32_t __prev_thread,
 				 __prev_thread, __new_thread, 
 				 ctx, ctx->pc, msp, __retstr(ret));
 
-	__context(__sp_ctl, __new_thread); 
-	__kdump(krn);
-	__tdump(krn);
+//	__context(__sp_ctl, __new_thread); 
+//	__kdump(krn);
+//	__tdump(krn);
 #endif
 }
 

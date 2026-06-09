@@ -165,7 +165,11 @@ int thinkos_krn_thread_init(
 		__krn_sched_defer(krn);
 	}
 
+#if (DEBUG)
+  #if (LOG_LEVEL) < (LOG_INFO)
 	__kdump(krn);
+  #endif		
+#endif
 
 	return 0;
 }

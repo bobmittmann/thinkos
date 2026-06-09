@@ -48,7 +48,9 @@
 #include <sys/dcclog.h>
 
 static const struct comm_dev console_comm_dev = {
+#if (THINKOS_COMM_MAX) > 0
 	.arg = (void *)THINKOS_COMM_TX_DESC(0),
+#endif
 	.op = {
 		.send = krn_console_dev_send,
 		.recv = krn_console_dev_recv
@@ -66,14 +68,13 @@ void __flash_erase(void)
 	uint32_t offs = 16 * 1024;
 	uint32_t rem = 16 * 1024;
 
-	krn_console_puts("\r\n Erasing... ");
+	krn_console_puts("\r\nErasing... ");
 	while (rem > 0) {
 		int ret;
 		if ((ret = stm32f1x_flash_erase(flash, offs, rem)) <= 0) {
 			krn_console_puts("failed!\r\n");
 			return;
 		}
-		DCC_LOG2(LOG_WARNING, "offs=%d ret=%d", offs, ret);
 		offs += ret;
 		rem -= ret;
 	}
@@ -84,7 +85,7 @@ void __flash_erase(void)
 /* Receive a file and write it into the flash using the YMODEM protocol */
 void __flash_ymodem_recv(void)
 {
-//	struct stm32_flash * flash = STM32_FLASH;
+	struct stm32_flash * flash = STM32_FLASH;
 	struct ymodem_rcv ry;
 	unsigned int fsize;
 	uint32_t offs = 16 * 1024;
@@ -92,7 +93,7 @@ void __flash_ymodem_recv(void)
 	char * fname;
 	int ret;
 
-//	stm32f1x_flash_erase(flash, offs, 16 * 1024);
+	stm32f1x_flash_erase(flash, offs, 16 * 1024);
 
 	krn_console_puts("\r\nReceiving YMODEM...");
 
@@ -104,11 +105,8 @@ void __flash_ymodem_recv(void)
 			int cnt = ret;
 			uint8_t * cp = buf;
 			while (cnt > 0) {
-	//			ret = stm32f1x_flash_write(flash, offs, cp, cnt);
-				ret  = 2;
+				ret = stm32f1x_flash_write(flash, offs, cp, cnt);
 				if (ret <= 0) {
-					DCC_LOG2(LOG_TRACE, "thinkos_flash_mem_write(%d)=>%d", 
-							 offs, ret);
 					ymodem_rcv_cancel(&ry);
 					break;
 				}
@@ -118,7 +116,6 @@ void __flash_ymodem_recv(void)
 			}
 		}
 		if (ret < 0) {
-			DCC_LOG1(LOG_WARNING, "ret=%d", ret);
 			break;
 		}
 	} 
@@ -360,11 +357,6 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 
 extern const struct thinkos_comm usb_cdc_comm_instance;
 
-volatile uint8_t a = 1;
-volatile uint8_t b = 2;
-volatile uint8_t c = 3;
-volatile uint8_t d = 4;
-
 extern const char * const zarathustra_txt[];
 extern const int zarathustra_len[];
 
@@ -374,7 +366,6 @@ void main(int argc, char ** argv)
 #if (THINKOS_ENABLE_MONITOR)
 	const struct monitor_comm * comm;
 #endif
-	int i;
 
 	DCC_LOG_INIT();
 
@@ -413,9 +404,6 @@ void main(int argc, char ** argv)
 
 	usb_vbus(true);
 
-
-	DCC_LOG4(LOG_TRACE, "a=%d, b=%d, c=%d, d=%d", a, b, c, d);
-	
 	int	h = thinkos_comm_open(0);
 #if 1
 	for (i = 0; i < 8; ++i) {
@@ -444,8 +432,6 @@ void main(int argc, char ** argv)
 
 #endif
 
-	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
 	thinkos_sleep(2000);
-
 }
 

@@ -353,10 +353,6 @@ _Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
 
 	__thread_enable_all(krn);
 
-#if (DEBUG)
-	__kdump(krn);
-#endif
-
 	return thread_no;
 }
 
