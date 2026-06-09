@@ -487,5 +487,10 @@ bool irq_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif /* (THINKOS_ENABLE_PAUSE) */
 
+#else
+void __attribute__ ((aligned(4))) cm3_default_isr(unsigned int irq)
+{
+	for(;;);
+}
 #endif /* (THINKOS_IRQ_MAX) */
 

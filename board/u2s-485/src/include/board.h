@@ -24,6 +24,11 @@
 #define __BOARD_H__
 
 #include "config.h"
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <thinkos.h>
 #include <sys/stm32f.h>
 
 /* USB */

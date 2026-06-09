@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/usb-cdc.h>
-#include "capture.h"
 
 #define TIME_ABS  1
 #define DUMP_PKT  2
@@ -61,15 +60,6 @@ void raw_trace(uint32_t ts, uint8_t * rx_buf, unsigned int rx_len);
 
 void raw_trace_init(void);
 
-void trace_time_abs(bool en);
-
-void trace_raw_pkt(struct packet * pkt);
-
-void trace_damp_pkt(struct packet * pkt);
-
-void trace_sdu_pkt(struct packet * pkt);
-
-void trace_mstp_pkt(struct packet * pkt);
 #ifdef __cplusplus
 }
 #endif

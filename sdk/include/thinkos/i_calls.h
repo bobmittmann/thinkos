@@ -43,35 +43,33 @@ struct thinkos_i_call_tab {
 extern "C" {
 #endif
 
+extern struct thinkos_i_call_tab * cm_vector_except7; 
+
 /* Fixed vector for i_call table pointer */
-#define THINKOS_KRN_I_CALL_PTR (7 * 4)
+#define THINKOS_KRN_I_CALL_PTR cm_vector_except7
 
 static inline void  __attribute__((always_inline)) 
 	thinkos_sem_post_i(int sem) {
-	struct thinkos_i_call_tab ** i_call = 
-		(struct thinkos_i_call_tab **)(THINKOS_KRN_I_CALL_PTR);
-	(*i_call)->sem_post(sem);
+	struct thinkos_i_call_tab * i_call = (THINKOS_KRN_I_CALL_PTR);
+	i_call->sem_post(sem);
 }
 
 static inline void __attribute__((always_inline)) 
 	thinkos_ev_raise_i(int set, int ev) { 
-	struct thinkos_i_call_tab ** i_call = 
-		(struct thinkos_i_call_tab **)(THINKOS_KRN_I_CALL_PTR);
-	(*i_call)->ev_raise(set, ev);
+	struct thinkos_i_call_tab * i_call = (THINKOS_KRN_I_CALL_PTR);
+	i_call->ev_raise(set, ev);
 }
 
 static inline void __attribute__((always_inline)) 
 	thinkos_flag_give_i(int flag) {
-	struct thinkos_i_call_tab ** i_call = 
-		(struct thinkos_i_call_tab **)(THINKOS_KRN_I_CALL_PTR);
-	(*i_call)->flag_give(flag);
+	struct thinkos_i_call_tab * i_call = (THINKOS_KRN_I_CALL_PTR);
+	i_call->flag_give(flag);
 }
 
 static inline void __attribute__((always_inline)) 
 	thinkos_gate_open_i(int gate) {
-	struct thinkos_i_call_tab ** i_call = 
-		(struct thinkos_i_call_tab **)(THINKOS_KRN_I_CALL_PTR);
-	(*i_call)->gate_open(gate);
+	struct thinkos_i_call_tab * i_call = (THINKOS_KRN_I_CALL_PTR);
+	i_call->gate_open(gate);
 }
 
 #ifdef __cplusplus

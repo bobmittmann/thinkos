@@ -48,8 +48,8 @@
 #define LED1_IO STM32_GPIOA, 6
 #define LED2_IO STM32_GPIOA, 7
 
-#define LED_RED 1
-#define LED_AMBER 0
+#define LED_RED    1
+#define LED_AMBER  0
 
 #ifdef __cplusplus
 extern "C" {

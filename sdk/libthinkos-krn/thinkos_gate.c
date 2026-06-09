@@ -422,7 +422,7 @@ again:
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void thinkos_gate_open_i(uint32_t gate)
+void thinkos_krn_gate_open_i(int gate)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
@@ -434,7 +434,7 @@ void thinkos_gate_open_i(uint32_t gate)
 	__krn_preempt(krn);
 }
 
-void __thinkos_gate_open_i(uint32_t gate)
+void __thinkos_gate_open_i(int gate)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
@@ -528,8 +528,5 @@ bool gate_resume(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
-
-
 #endif /* THINKOS_GATE_MAX > 0 */
-
 

@@ -28,21 +28,25 @@ VERSION_DATE = "2026-06-04"
 VERSION_MAJOR = "1"
 VERSION_MINOR = "40"
 
-PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = u2s-converter-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c usb-cdc-comm.c zarathustra.c
+COMMON_CFILES =	serial2.c leds.c xflash.c usb_xflash_pic.c 
+
+CFILES = u2s-converter.c board.c usb_printf.c \
+		$(addprefix ../common/,$(COMMON_CFILES))
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
-		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem
+		  $(SDK_DIR)/libthinkos-krn \
+		  $(SDK_DIR)/libice-comm \
+		  $(SDK_DIR)/libcdc-acm
 
-LIBS = stm32f thinkos-krn thinkos-mon util xmodem ice-comm 
+LIBS = stm32f thinkos-krn cdc-acm util ice-comm
 
-INCPATH = . ../include
+INCPATH = ../include .
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os 
+CFLAGS = -O1 
 
 MACH = stm32f103x6
 KRN_CODE_SIZE = 10240

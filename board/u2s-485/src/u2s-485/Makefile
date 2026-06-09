@@ -19,34 +19,38 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-THINKOS_DIR = ../../..
+THINKOS_DIR = ../../../..
 SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
-VERSION_DATE = "2020-11-18"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "4"
+VERSION_DATE = "2026-06-04"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "40"
 
 PROG = u2s-485-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = u2s-485.c serial.c board.c leds.c usb_trace.c raw_trace.c \
-		 sdu_trace.c xflash.c usb_xflash_pic.c profclk.c
+COMMON_CFILES =	serial2.c leds.c xflash.c usb_xflash_pic.c 
+
+CFILES = u2s-485.c board.c usb_trace.c raw_trace.c \
+		 sdu_trace.c profclk.c \
+		$(addprefix ../common/,$(COMMON_CFILES))
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-usr \
-		  $(SDK_DIR)/libc $(SDK_DIR)/libice-comm $(SDK_DIR)/libcdc-acm 
+		  $(SDK_DIR)/libthinkos-krn \
+		  $(SDK_DIR)/libice-comm \
+		  $(SDK_DIR)/libcdc-acm $(SDK_DIR)/libc
 
-LIBS =  stm32f util thinkos-krn thinkos-usr c ice-comm cdc-acm
+LIBS = stm32f thinkos-krn cdc-acm util ice-comm c
 
-INCPATH = ../include
+INCPATH = ../include .
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -O1
+CFLAGS = -O1 
 
 MACH = stm32f103x6
-KRN_CODE_SIZE = 12288
+KRN_CODE_SIZE = 10240
 KRN_DATA_SIZE = 2048
 include $(ARCH_DIR)/mk/stm32-krn.mk
 

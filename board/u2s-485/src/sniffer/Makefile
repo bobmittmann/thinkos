@@ -24,28 +24,29 @@ SDK_DIR = $(THINKOS_DIR)/sdk
 ARCH_DIR = $(THINKOS_DIR)/arch/stm32
 TOOLS_DIR = $(THINKOS_DIR)/tools
 
-VERSION_DATE = "2026-06-04"
-VERSION_MAJOR = "1"
-VERSION_MINOR = "40"
+VERSION_DATE = "2020-11-18"
+VERSION_MAJOR = "0"
+VERSION_MINOR = "4"
 
-PROG = u2s-485-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = u2s-485-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = boot.c usb-cdc-comm.c zarathustra.c
+CFILES = u2s-485.c serial.c board.c leds.c usb_trace.c raw_trace.c \
+		 sdu_trace.c xflash.c usb_xflash_pic.c profclk.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
-		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-mon \
-		  $(SDK_DIR)/libice-comm $(SDK_DIR)/libxmodem
+		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-usr \
+		  $(SDK_DIR)/libc $(SDK_DIR)/libice-comm $(SDK_DIR)/libcdc-acm 
 
-LIBS = stm32f thinkos-krn thinkos-mon util xmodem ice-comm 
+LIBS =  stm32f util thinkos-krn thinkos-usr c ice-comm cdc-acm
 
-INCPATH = . ../include
+INCPATH = ../include
 
 CDEFS = CONFIG_H 
 
-CFLAGS = -Os 
+CFLAGS = -O1
 
 MACH = stm32f103x6
-KRN_CODE_SIZE = 10240
+KRN_CODE_SIZE = 12288
 KRN_DATA_SIZE = 2048
 include $(ARCH_DIR)/mk/stm32-krn.mk
 

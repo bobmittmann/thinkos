@@ -420,7 +420,7 @@ int stm32f_usb_ep_pkt_xmit(struct stm32f_usb_drv * drv, int ep_id,
 			ep->xfr_rem = 0;
 			__toggle_ep_flag(usb, ep_id, USB_SWBUF_TX);
 		} else {
-			DCC_LOG2(LOG_MSG, VT_PSH VT_FGR " len=%d [%d] single" 
+			DCC_LOG2(LOG_MSG, VT_PSH VT_FGR "[%d] len=%d single" 
 					 VT_POP, ep_id, len);
 			tx_pktbuf = &pktbuf[ep_id].tx;
 			len = __ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
@@ -1273,7 +1273,6 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 		}
 
 		 (void)pktbuf;
-#ifdef STM32_IRQ_USB_FS
 		if (epr & USB_CTR_TX) {
 			struct stm32f_usb_tx_pktbuf * tx_pktbuf;
 #if (ENABLE_IRQ_MASK)
@@ -1311,6 +1310,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				break;
 
 			case EP_IN_DATA: 
+#ifdef STM32_IRQ_USB_FS
 				/* send the next data chunk */
 				if (epr & USB_EP_DBL_BUF) {
 					DCC_LOG4(LOG_MSG, VT_PSH VT_FGR 
@@ -1322,7 +1322,9 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 					tx_pktbuf = &pktbuf[ep_id].dbtx[(epr & USB_SWBUF_TX) ? 1: 0];
 					__ep_pkt_send(usb, ep_id, ep, tx_pktbuf);
 					__toggle_ep_flag(usb, ep_id, USB_SWBUF_TX);
-				} else {
+				} else 
+#endif
+				{
 					DCC_LOG2(LOG_MSG, VT_PSH VT_FGR " len=%d [%d] single" 
 							 VT_POP, ep_id, len);
 					tx_pktbuf = &pktbuf[ep_id].tx;
@@ -1346,6 +1348,7 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 			struct stm32f_usb_rx_pktbuf * rx_pktbuf;
 			int len;
 
+#ifdef STM32_IRQ_USB_FS
 			/* OUT */
 			if (epr & USB_EP_DBL_BUF) {
 				/* clear interrupt */
@@ -1386,7 +1389,9 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				}
 					/* call class endpoint callback */
 				ep->on_out(drv->cl, ep_id, len);
-			} else {
+			} else 
+#endif /* STM32_IRQ_USB_FS */
+			{
 				/* single buffer */
 				__clr_ep_flag(usb, ep_id, USB_CTR_RX);
 				rx_pktbuf = &pktbuf[ep_id].rx;
@@ -1397,9 +1402,8 @@ void stm32f_can1_rx0_usb_lp_isr(void)
 				/* call class endpoint callback */
 				ep->on_out(drv->cl, ep_id, len);
 			}
+			return;	
 		}
-#endif /* STM32_IRQ_USB_FS */
-		return;	
 	}
 
 #if (STM32_USB_FS_SUSPEND) 

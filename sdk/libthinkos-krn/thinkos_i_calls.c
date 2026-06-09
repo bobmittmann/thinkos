@@ -68,3 +68,4 @@ const struct thinkos_i_call_tab cm3_except7_isr = {
 };
 
 //const uintptr_t __attribute__((alias("thinkos_krn_i_call_tab")));
+//
