@@ -142,12 +142,12 @@ void __flash_ymodem_recv(uint32_t offs, uint32_t size)
 }
 
 const char help[] = 
-	"Options:\r\n" 
+	"\r\nOptions:\r\n" 
 	"\tR - Run App\r\n" 
-	"\tE - Erase partition\r\n" 
+	"\tE - Erase App\r\n" 
 	"\tY - YMODEM receive\r\n" 
 	"\tQ - Quit\r\n" 
-	" [boot] > "
+	"[boot] > "
 ;
 
 int console_shell_task(void)
@@ -205,20 +205,8 @@ const struct thinkos_thread_initializer shell_thread_init = {
 	.stack_size = APP_STACK_SIZE,
 	.task_entry = (uintptr_t)console_shell_task,
 	.task_exit = (uintptr_t)thinkos_krn_abort_at_exit,
-	.task_arg[0] = (uintptr_t)"yrc",
-	.task_arg[1] = 1,
-	.priority = 1,
-	.paused = false,
-	.privileged = false,
-};
-
-const struct thinkos_thread_initializer app_thread_init = {
-	.stack_base = APP_STACK_BASE,
-	.stack_size = APP_STACK_SIZE,
-	.task_entry = (uintptr_t)0x00004000,
-	.task_exit = (uintptr_t)NULL,
-	.task_arg[0] = (uintptr_t)"app",
-	.task_arg[1] = 1,
+	.task_arg[0] = (uintptr_t)NULL,
+	.task_arg[1] = 0,
 	.priority = 1,
 	.paused = false,
 	.privileged = false,
@@ -251,8 +239,10 @@ void board_reset(void)
 	stm32_gpio_mode(USART2_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(USART2_RX, INPUT, PULL_UP);
 
+#if (THINKOS_ENABLE_APP_CRC) 
 	/* - CRC --------------------------------------------------------------- */
 	stm32_clk_enable(STM32_RCC, STM32_CLK_CRC);
+#endif
 
 	/* RS 485 */
 	stm32_gpio_mode(RS485_RXEN, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -302,12 +292,16 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_EOT);
+	sigmask |= (1 << MONITOR_TX_PIPE);
 	sigmask |= (1 << MONITOR_RX_PIPE);
 	sigmask |= (1 << MONITOR_COMM_BRK);
 	sigmask |= (1 << MONITOR_COMM_CTL);
 
 	sigmask |= (1 << MONITOR_ON_CORE_RST);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
+
+//	monitor_unmask(MONITOR_COMM_BRK);
+//	monitor_unmask(MONITOR_COMM_CTL);
 
 	for(;;) {
 		switch ((sig = monitor_select(sigmask))) {
@@ -437,8 +431,9 @@ void main(int argc, char ** argv)
 //	thinkos_comm_send(h, zarathustra_txt[2], zarathustra_len[2]);
 	thinkos_comm_send(h, "Wise man say only fools rush in.\r\n", 34);
 #endif
-
-//	console_shell_task();
+//	__app_run(APP_ADDR);
+	console_shell_task();
+	thinkos_sleep(2000);
 //	board_on_break(krn);
 }
 

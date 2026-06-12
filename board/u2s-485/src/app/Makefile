@@ -27,14 +27,15 @@ TOOLS_DIR = $(THINKOS_DIR)/tools
 
 PROG = sniffer
 
-CFILES = sniffer.c
+CFILES = sniffer.c serial_drv.c
 
 LIBDIRS = $(ARCH_DIR)/libstm32f \
 		  $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libc \
+		  $(SDK_DIR)/libtty \
 		  $(SDK_DIR)/libthinkos-usr
 
-LIBS = gcc m stm32f util c thinkos-usr 
+LIBS = gcc m stm32f util c tty thinkos-usr 
 
 INCPATH = ../boot ../include
 

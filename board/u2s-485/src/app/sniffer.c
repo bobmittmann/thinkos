@@ -7,10 +7,12 @@
 #include <sys/param.h>
 #include <sys/delay.h>
 #include <sys/console.h>
+#include <sys/tty.h>
 #include <thinkos.h>
 #include <stdio.h>
 
 #include "board.h"
+#include "serial_drv.h"
 
 uint32_t stack1[256] __attribute__ ((aligned(8)));
 
@@ -93,7 +95,7 @@ int test1_task(int mutex)
 		if (thinkos_irq_wait(STM32F_IRQ_TIM2) == THINKOS_OK) 
 		{
 			irq_count++;
-			printf("tick()\r\n");
+	//		printf("tick()\r\n");
 			cnt++;
 		} else {
 			printf("err\r\n");
@@ -107,18 +109,25 @@ int test1_task(int mutex)
 
 void stdio_init(void)
 {
-	FILE *f;
+	struct tty_dev *tty;
+	FILE *f_raw;
+	FILE *f_tty;
 
-	f = console_fopen();
+	f_raw = console_fopen();
+	tty = tty_attach(f_raw);
+	f_tty = tty_fopen(tty);
+	(void)f_tty;
+
 	/* initialize STDIO */
-	stderr = f;
-	stdout = f;
-	stdin = f;
+	stdout = f_tty;
+	stdin = f_tty;
+	stderr = f_tty;
 }
 
 void print_menu(void)
 {
 	printf("Options:\r\n");
+	printf("\t[w] - write\r\n");
 	printf("\t[q] - quit\r\n");
 	printf("\t[x] - dump memory\r\n");
 	printf("[App] # ");
@@ -127,12 +136,30 @@ void print_menu(void)
 int main_task(void)
 {
 	int c;
+	struct serial_drv * ser;
+
+	ser = serial2_init();
 
 	printf("\r\n\r\n--------------------------------------------\r\n");
 	thinkos_sleep(1000);
 	print_menu();
 	do {
+		char s[10];
+		int n;
+		int i;
+
 		switch (c = fgetc(stdin)) {
+		case 'w':
+			do {
+
+				printf("\r\n ? ");
+				fgets(s, sizeof(s), stdin);
+			} while ((n = strtol(s, NULL, 10)) == 0);
+			for (i = 0; i < n; ++i) {
+				printf("\n%5d", i);
+				__serial_write(ser, "Hello", 5);
+			}
+			break;
 		case '\r':
 			print_menu();
 			break;
