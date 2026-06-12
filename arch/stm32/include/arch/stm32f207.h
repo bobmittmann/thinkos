@@ -31,6 +31,7 @@
 
 #include <stm32f/stm32f-pwr.h>
 #include <stm32f/stm32f-syscfg.h>
+#include <stm32f/stm32-crc.h>
 #include <stm32f/stm32f-rcc.h>
 #include <stm32f/stm32f-usart.h>
 #include <stm32f/stm32f-gpio.h>
@@ -61,7 +62,7 @@
 #define STM32F_BASE_BKPSRAM 0x40024000
 #define STM32_BASE_FLASH   0x40023c00
 #define STM32_BASE_RCC     0x40023800
-#define STM32F_BASE_CRC     0x40023000
+#define STM32_BASE_CRC     0x40023000
 #define STM32_BASE_GPIOI   0x40022000
 #define STM32_BASE_GPIOH   0x40021c00
 #define STM32_BASE_GPIOG   0x40021800
@@ -215,6 +216,7 @@
 
 #define STM32_PWR ((struct stm32_pwr *)STM32F_BASE_PWR)
 #define STM32_RCC ((struct stm32_rcc *)STM32_BASE_RCC)
+#define STM32_CRC ((struct stm32_crc *)STM32_BASE_CRC)
 #define STM32_FLASH ((struct stm32_flash *)STM32_BASE_FLASH)
 
 #define STM32F_RTC ((struct stm32f_rtc *)STM32F_BASE_RTC)
