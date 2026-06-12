@@ -927,8 +927,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 	sigmask |= (1 << MONITOR_COMM_CTL);
 	sigmask |= (1 << MONITOR_APP_TERM);
 
-	sigmask |= (1 << MONITOR_THREAD_CREATE);
-	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_APP_EXEC);
  	sigmask |= (1 << MONITOR_ON_CORE_RST);
@@ -1035,16 +1033,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 		case MONITOR_APP_RESUME:
 			monitor_clear(MONITOR_APP_RESUME);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_RESUME signal !");
-			break;
-
-		case MONITOR_THREAD_CREATE:
-			monitor_clear(MONITOR_THREAD_CREATE);
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
-			break;
-
-		case MONITOR_THREAD_TERMINATE:
-			monitor_clear(MONITOR_THREAD_TERMINATE);
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
 			break;
 
 		case MONITOR_THREAD_BREAK:

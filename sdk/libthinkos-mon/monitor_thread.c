@@ -32,12 +32,8 @@
 void __monitor_thread_on_exit(unsigned int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if 1
 	monitor_signal(MONITOR_USR_ABORT);
 	thinkos_thread_abort(code);
-#else
-	thinkos_abort();
-#endif
 }
 
 /*
@@ -63,9 +59,6 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_USR_ABORT);
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
-#endif
 	sigmask |= (1 << MONITOR_COMM_BRK);
 
 	sigmask |= (1 << MONITOR_COMM_RCV);
@@ -96,18 +89,6 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-		case MONITOR_THREAD_TERMINATE: {
-			monitor_clear(MONITOR_THREAD_TERMINATE);
-			int code;
-
-			thread_id = monitor_thread_terminate_get(&code);
-			(void)code; 
-			DCC_LOG2(LOG_TRACE, "/!\\ THREAD_TERMINATE thread_id=%d code=%d",
-					thread_id, code);
-			return code;
-		}
-#endif
 		default:
 			DCC_LOG1(LOG_WARNING, "unhandled signal: %d", sig);
 			return -1;

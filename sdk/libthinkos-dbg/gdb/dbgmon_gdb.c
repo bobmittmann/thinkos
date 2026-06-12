@@ -143,8 +143,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 	sigmask |= (1 << MONITOR_RX_PIPE);
 #endif
 	sigmask |= (1 << MONITOR_SOFTRST);
-	sigmask |= (1 << MONITOR_THREAD_CREATE);
-	sigmask |= (1 << MONITOR_THREAD_TERMINATE);
 	sigmask |= (1 << MONITOR_ALARM);
 
 
@@ -194,16 +192,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 			DCC_LOG(LOG_INFO, "MONITOR_THREAD_BREAK");
 			monitor_clear(MONITOR_THREAD_BREAK);
 //			gdbrsp_on_breakpoint(gdb, pkt);
-			break;
-
-		case MONITOR_THREAD_CREATE:
-			monitor_clear(MONITOR_THREAD_CREATE);
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_CREATE signal !");
-			break;
-
-		case MONITOR_THREAD_TERMINATE:
-			monitor_clear(MONITOR_THREAD_TERMINATE);
-			DCC_LOG(LOG_TRACE, "/!\\ THREAD_TERMINATE signal !");
 			break;
 
 

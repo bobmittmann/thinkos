@@ -179,12 +179,6 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #endif
 
 	__thinkos_krn_thread_abort(krn, thread);
-
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-	DCC_LOG2(LOG_WARNING, "monitor_signal_terminate: thread=%d code=%d", 
-			 thread, code);
-	monitor_signal_thread_terminate(thread, code);
-#endif
 }
 #endif /* THINKOS_ENABLE_TERMINATE */
 

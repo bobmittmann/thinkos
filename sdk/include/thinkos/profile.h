@@ -399,6 +399,7 @@
 #define THINKOS_ENABLE_DEFERRED_ISR          0
 #endif 
 
+#if 0
 /* THINKOS_ENABLE_MONITOR_THREADS: Monitors the creation and termination of 
    threads. It's used by the bootloader to sequence the system initialization 
    also the monitor can use it to profile the user application. 
@@ -407,6 +408,7 @@
  */
 #ifndef THINKOS_ENABLE_MONITOR_THREADS 
 #define THINKOS_ENABLE_MONITOR_THREADS       0
+#endif
 #endif
 
 /* THINKOS_ENABLE_MONITOR_CLOCK: Enable the kernel monitor clock.
@@ -733,10 +735,11 @@
 #error "THINKOS_ENABLE_MONITOR_SYSCALL depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* thread monitoring depends on monitor */
+/* thread monitoring depends on monitor
 #if (THINKOS_ENABLE_MONITOR_THREADS) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_THREADS depends on THINKOS_ENABLE_MONITOR"
 #endif
+*/
 
 /* thread monitoring depends on monitor */
 #if (THINKOS_ENABLE_DEFERRED_ISR) && !(THINKOS_ENABLE_MONITOR)
@@ -895,6 +898,10 @@
 
 #ifdef THINKOS_ENABLE_FRACTIONAL_CLOCK
 #error "THINKOS_ENABLE_FRACTIONAL_CLOCK is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_MONITOR_THREADS
+#error "THINKOS_ENABLE_MONITOR_THREADS is deprecated"
 #endif
 
 /* -------------------------------------------------------------------------- 

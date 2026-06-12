@@ -39,38 +39,35 @@
  */
 
 enum monitor_event {
+	/* ThinkOS Thread create */
+	MONITOR_TASK_INIT       = 0,
 	/* Kernel reset signal */
-	MONITOR_ON_CORE_RST     = 0,
-	/* ThinkOS Thread error */
-	MONITOR_THREAD_FAULT    = 1,
-	/* Board reset request */
-	MONITOR_SOFTRST         = 2,
-	/* User request abort */
-	MONITOR_USR_ABORT       = 3,
+	MONITOR_ON_CORE_RST     = 1,
 	/* Debug timer expiry indication */
-	MONITOR_ALARM           = 4,
-
+	MONITOR_ALARM           = 2,
+	/* Board reset request */
+	MONITOR_SOFTRST         = 3,
+	/* ThinkOS Thread error */
+	MONITOR_THREAD_FAULT    = 4,
 	/* ThinkOS Thread step break */
 	MONITOR_THREAD_STEP     = 5,
-	/* ThinkOS Thread create */
-	MONITOR_THREAD_CREATE   = 6,
-	/* ThinkOS Thread teminate */
-	MONITOR_THREAD_TERMINATE = 7,
 	/* ThinkOS Thread break (stop request, error, fault, breakpoint.. ) */
-	MONITOR_THREAD_BREAK    = 8,
+	MONITOR_THREAD_BREAK    = 6,
+	/* User request abort */
+	MONITOR_USR_ABORT       = 7,
 
 	/* Debug Communication break signal */
-	MONITOR_COMM_BRK        = 9, 
+	MONITOR_COMM_BRK        = 8, 
 	/* Debug Communication data received pending */
-	MONITOR_COMM_RCV        = 10, 
-	/* Debug Communication end 3f transfer */
-	MONITOR_COMM_EOT        = 11,
+	MONITOR_COMM_RCV        = 9, 
+	/* Debug Communication end of transfer */
+	MONITOR_COMM_EOT        = 10,
 	/* Debug Communication control signal */
-	MONITOR_COMM_CTL        = 12,
+	MONITOR_COMM_CTL        = 11,
 	/* User console RX pipe data pending */
-	MONITOR_RX_PIPE         = 13,
+	MONITOR_RX_PIPE         = 12,
 	/* User console TX pipe not empty */
-	MONITOR_TX_PIPE         = 14,
+	MONITOR_TX_PIPE         = 13,
 
 	MONITOR_APP_TERM        = 15,
 	/* ThinkOS application stop request */
@@ -298,6 +295,7 @@ bool monitor_breakpoint_disable(uint32_t addr);
  *  Debug/Monitor thread API
  * ----------------------------------------------------------------------------
  */
+#if 0
 static inline void __monitor_signal_thread_create(int thread_id) {
 	monitor_signal(MONITOR_THREAD_CREATE);
 }
@@ -305,6 +303,7 @@ static inline void __monitor_signal_thread_create(int thread_id) {
 static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
+#endif
 
 void monitor_req_core_rst(void);
 

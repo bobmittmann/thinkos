@@ -31,7 +31,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_MONITOR) 
 
 
-#define MONITOR_PERISTENT_MASK ((1 << MONITOR_SOFTRST) | \
+#define MONITOR_PERISTENT_MASK ((1 << MONITOR_TASK_INIT) | \
 								(1 << MONITOR_ON_CORE_RST))
 
 struct {
@@ -42,12 +42,6 @@ struct {
 	void * param;             
 	struct comm_tx_req * tx_req;
 
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-	/* entry/exit signal thread id */
-	int8_t ret_thread_id;
-	/* entry/exit signal thread exit code */
-	int32_t ret_code;
-#endif
 } thinkos_monitor_rt;
 
 uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
@@ -84,6 +78,13 @@ void monitor_signal(int sig)
 
 	/* rise a pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTSET;
+}
+
+void monitor_req_core_rst(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	thinkos_krn_req_core_rst(krn);
 }
 
 #if 0
@@ -281,28 +282,6 @@ void monitor_alarm_stop(void)
 	monitor_mask(MONITOR_ALARM);
 }
 
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-int monitor_thread_terminate_get(int * code)
-{
-	int thread_id;
-
-	if ((thread_id = thinkos_monitor_rt.ret_thread_id) >= 0) {
-		if (code != NULL) {
-			*code = thinkos_monitor_rt.ret_code;
-		}
-	}
-
-	return thread_id;
-}
- 
-void monitor_signal_thread_terminate(unsigned int thread_id, int code) 
-{
-	thinkos_monitor_rt.ret_thread_id = thread_id;
-	thinkos_monitor_rt.ret_code = code;
-	monitor_signal(MONITOR_THREAD_TERMINATE);
-}
-#endif
-
 #if (THINKOS_ENABLE_ERROR_TRAP)
 
 int monitor_thread_break_get(int32_t * perrno)
@@ -469,11 +448,6 @@ static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
 	__thinkos_memset32(thinkos_monitor_stack, 0, 
 					   sizeof(thinkos_monitor_stack));
 #endif
-
-#if (THINKOS_ENABLE_MONITOR_THREADS)
-	thinkos_monitor_rt.ret_thread_id = -1;
-	thinkos_monitor_rt.ret_code = 0;
-#endif
 }
 
 void monitor_exec(int (* task)(const struct monitor_comm *, 
@@ -529,8 +503,8 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 							env, (uintptr_t)thinkos_krn_halt);
 
 	krn->monitor.ctx = sp;
-	/* set the task init and software reset signals */
-	krn->monitor.events = 0;
+	/* set the task init signal */
+	krn->monitor.events = (1 << MONITOR_TASK_INIT);
 	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
 	DCC_LOG1(LOG_TRACE, "mask=%08x", krn->monitor.mask);

@@ -141,8 +141,6 @@ void monitor_print_profile(const struct monitor_comm * comm,
 				   p->monitor.enabled);
 	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MONITOR_CLOCK", 
 				   p->monitor.clock);
-	monitor_printf(comm, "%32s = %d\r\n", "THINKOS_ENABLE_MONITOR_THREADS", 
-				   p->monitor.threads);
 
 	/* Debug */
 

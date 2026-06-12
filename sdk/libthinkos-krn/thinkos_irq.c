@@ -459,7 +459,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 #endif
 
 	default:
-		DCC_LOG1(LOG_ERROR, "invalid IRQ ctl request %d!", req);
+		DCC_LOG2(LOG_ERROR, "<%2d> invalid IRQ ctl request %d!", self, req);
 		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
