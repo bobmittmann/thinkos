@@ -39,61 +39,55 @@
  */
 
 enum monitor_event {
-	/* Debug monitor internal task reset */
-//	MONITOR_TASK_INIT       = 0,
 	/* Kernel reset signal */
 	MONITOR_ON_CORE_RST     = 0,
-	/* ThinkOS kernel fault */
-//	MONITOR_KRN_FAULT       = 2,
-	/* ThinkOS kernel reset indication */
-//	MONITOR_KRN_ABORT       = 3,
 	/* ThinkOS Thread error */
 	MONITOR_THREAD_FAULT    = 1,
-
 	/* Board reset request */
-	MONITOR_SOFTRST         = 3,
-
+	MONITOR_SOFTRST         = 2,
 	/* User request abort */
-	MONITOR_USR_ABORT       = 4,
-
+	MONITOR_USR_ABORT       = 3,
 	/* Debug timer expiry indication */
-	MONITOR_ALARM           = 5,
+	MONITOR_ALARM           = 4,
 
 	/* ThinkOS Thread step break */
-	MONITOR_THREAD_STEP     = 6,
+	MONITOR_THREAD_STEP     = 5,
 	/* ThinkOS Thread create */
-	MONITOR_THREAD_CREATE   = 8,
+	MONITOR_THREAD_CREATE   = 6,
 	/* ThinkOS Thread teminate */
-	MONITOR_THREAD_TERMINATE = 9,
+	MONITOR_THREAD_TERMINATE = 7,
 	/* ThinkOS Thread break (stop request, error, fault, breakpoint.. ) */
-	MONITOR_THREAD_BREAK    = 10,
+	MONITOR_THREAD_BREAK    = 8,
 
 	/* Debug Communication break signal */
-	MONITOR_COMM_BRK        = 11, 
+	MONITOR_COMM_BRK        = 9, 
 	/* Debug Communication data received pending */
-	MONITOR_COMM_RCV        = 12, 
+	MONITOR_COMM_RCV        = 10, 
 	/* Debug Communication end 3f transfer */
-	MONITOR_COMM_EOT        = 13,
+	MONITOR_COMM_EOT        = 11,
 	/* Debug Communication control signal */
-	MONITOR_COMM_CTL        = 14,
+	MONITOR_COMM_CTL        = 12,
 	/* User console RX pipe data pending */
-	MONITOR_RX_PIPE         = 15,
+	MONITOR_RX_PIPE         = 13,
 	/* User console TX pipe not empty */
-	MONITOR_TX_PIPE         = 16,
+	MONITOR_TX_PIPE         = 14,
 
-	MONITOR_APP_TERM        = 17,
+	MONITOR_APP_TERM        = 15,
 	/* ThinkOS application stop request */
-	MONITOR_APP_STOP        = 18,
+	MONITOR_APP_STOP        = 16,
 	/* ThinkOS application resume request */
-	MONITOR_APP_RESUME      = 19,
+	MONITOR_APP_RESUME      = 17,
 	/* User console */
-	MONITOR_APP_EXEC        = 20,
+	MONITOR_APP_EXEC        = 18,
 	
-	MONITOR_APP_ERASE       = 21,
-	MONITOR_APP_UPLOAD      = 22,
+	MONITOR_APP_ERASE       = 19,
+	MONITOR_APP_UPLOAD      = 20,
 
-	/* User/bootloader extension events 0 to 7 */
+	/* User/bootloader extension events 1 to 4 */
+	MONITOR_USER_EVENT1     = 21,
+	MONITOR_USER_EVENT2     = 22,
 	MONITOR_USER_EVENT3     = 23,
+	MONITOR_USER_EVENT4     = 24,
 
 	/* Debug Communication break signal */
 	SIG_COMM_BRK            = 25, 
@@ -312,6 +306,8 @@ static inline void __monitor_signal_thread_terminate(int thread_id, int code) {
 	monitor_signal(MONITOR_THREAD_TERMINATE);
 }
 
+void monitor_req_core_rst(void);
+
 void monitor_signal_break(int32_t sig); 
 
 void monitor_signal_thread_terminate(unsigned int thread_id, int code);
@@ -504,9 +500,6 @@ uint32_t __thinkos_monitor_isr(void);
 
 void __thinkos_monitor_sched(struct thinkos_monitor * mon); 
 
-
-uint32_t monitor_on_soft_reset(const struct monitor_comm * comm, 
-							 uint32_t sigmask);
 /* ----------------------------------------------------------------------------
  * Default Monitor comm event handler
  * ----------------------------------------------------------------------------

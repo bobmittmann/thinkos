@@ -140,7 +140,7 @@ int thinkos_flat_check(const struct flat_app * app)
 	if ((size < 0) || !__thinkos_mem_usr_rd_chk(addr, size)) {
 		DCC_LOG2(LOG_ERROR, ".ctor table invalid addr=0x%08x size=%d", 
 				 addr, size);
-		return THINKOS_ERR_APP_CTORS_INVALID;
+		return THINKOS_ERR_APP_CTOR_INVALID;
 	}
 #endif /* (THINKOS_ENABLE_SANITY_CHECK) */
 

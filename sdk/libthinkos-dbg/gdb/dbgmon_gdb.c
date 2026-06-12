@@ -133,8 +133,7 @@ void gdb_stub_task(struct monitor_comm * comm)
 
 	//	DCC_LOG(LOG_INFO, "Comm connected..");
 
-	sigmask = (1 << MONITOR_KRN_FAULT);
-	sigmask |= (1 << MONITOR_THREAD_FAULT);
+	sigmask = (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_STEP);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_COMM_RCV);
@@ -177,12 +176,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 			   by __console_reset(). */
 			thinkos_krn_console_connect_set(monitor_comm_isconnected(comm));
 #endif
-			break;
-
-		case MONITOR_KRN_FAULT:
-			DCC_LOG(LOG_INFO, "Exception.");
-			monitor_clear(MONITOR_KRN_FAULT);
-//			gdbrsp_on_fault(gdb, pkt);
 			break;
 
 		case MONITOR_THREAD_FAULT:
