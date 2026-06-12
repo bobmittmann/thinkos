@@ -372,9 +372,9 @@ int __thinkos_krn_mem_init(struct thinkos_rt * krn,
 							const struct thinkos_mem_map * map)
 {
 
-	DCC_LOG2(LOG_TRACE, "kernel code: %08x-%08x", (uintptr_t)&__krn_code_start, 
+	DCC_LOG2(LOG_MSG, "kernel code: %08x-%08x", (uintptr_t)&__krn_code_start, 
 			 (uintptr_t)&__krn_code_end);
-	DCC_LOG2(LOG_TRACE, "kernel data: %08x-%08x", (uintptr_t)&__krn_data_start, 
+	DCC_LOG2(LOG_MSG, "kernel data: %08x-%08x", (uintptr_t)&__krn_data_start, 
 			 (uintptr_t)&__krn_data_end);
 #if (THINKOS_ENABLE_MEMORY_MAP)
 	if (map == NULL) {

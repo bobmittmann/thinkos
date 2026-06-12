@@ -36,7 +36,7 @@ PROG := stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
 BOOT_CFILES = monitor.c
 
 CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
-	boot.c board.c uart1-comm.c shell.c cmd_tab.c usb-cdc-comm.c
+	boot.c board.c shell.c cmd_tab.c 
 
 LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 

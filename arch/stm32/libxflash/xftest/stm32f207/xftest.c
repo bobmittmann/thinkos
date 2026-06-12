@@ -181,7 +181,7 @@ void __attribute__((noreturn)) hard_fault_isr(void)
 	for(;;);
 }
 
-//struct ice_comm_blk ice_comm_blk;
+struct ice_comm_blk ice_comm_blk;
 
 __attribute__((aligned(128))) void * const cortex_m_vectors[] = {
 	0,

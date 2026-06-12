@@ -21,7 +21,7 @@
 THISDIR:= $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
 ifndef BASEDIR
-  BASEDIR := $(realpath $(THISDIR)/../..)
+  BASEDIR := $(realpath $(THISDIR)/../../..)
 endif
 
 ifndef TOOLSDIR 
@@ -31,7 +31,9 @@ endif
 CPU = cortex-m3
 OPTIONS	= -mcpu=$(CPU) -mthumb -mthumb-interwork -fpic
 LDSCRIPT = $(THISDIR)/cm3-pic.ld
-INCPATH	:= $(INCPATH) $(realpath $(THISDIR)/include) $(realpath $(BASEDIR)/sdk/include) 
+INCPATH	:= $(INCPATH) $(realpath $(THISDIR)/include) \
+		   $(realpath $(BASEDIR)/sdk/include) \
+		   $(realpath $(BASEDIR)/arch/stm32/include) 
 
 override SFLAGS := -Wall $(OPTIONS)
 override CFLAGS := -Wall $(OPTIONS) -Os -g -ffunction-sections -fdata-sections
@@ -43,6 +45,7 @@ LD = $(CROSS_COMPILE)gcc
 AS = $(CROSS_COMPILE)gcc
 OBJDUMP = $(CROSS_COMPILE)objdump
 OBJCOPY = $(CROSS_COMPILE)objcopy
+PYTHON = python3
 
 OUTDIR = $(realpath .)
 OFILES = $(addprefix $(OUTDIR)/, $(CFILES:.c=.o) $(SFILES:.S=.o))
@@ -99,5 +102,5 @@ $(CODELIB_C): $(CODELIB_BIN)
 #					  --output-target binary $< $@
 
 %.c: %.bin
-	$(TOOLSDIR)/bin2hex.py -n $(CODELIB) $< > $@ 
+	$(PYTHON) $(TOOLSDIR)/bin2hex.py -n $(CODELIB) $< > $@ 
 

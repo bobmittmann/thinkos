@@ -32,6 +32,7 @@
 #include <sys/usb-cdc.h>
 
 #include <sys/dcclog.h>
+#include <sys/ice-comm.h>
 
 struct usb_cdc_class * usb_cdc;
 
@@ -107,7 +108,7 @@ const uint8_t cdc_acm_strcnt = sizeof(cdc_acm_str) / sizeof(uint8_t *);
 
 extern const uint8_t usb_xflash_pic[];
 extern const unsigned int sizeof_usb_xflash_pic;
-extern uint32_t __data_start[]; 
+//extern uint32_t __data_start[]; 
 
 struct magic {
 	struct {
@@ -117,13 +118,13 @@ struct magic {
 	struct {
 	    uint32_t mask;
 		uint32_t comp;
-	} rec[];
+	} rec[10];
 };
 
 const struct magic firmware_magic = {
 	.hdr = {
 		.pos = 0,
-		.cnt = 10
+		.cnt = 7
 	},
 	.rec = {
 		{  0xffffffff, 0x20002800 },
@@ -149,7 +150,7 @@ void show_menu(void)
 	usb_puts("\r\n - Options:\r\n");
 	usb_puts("    [F] firmware update\r\n");
 	usb_puts("[XFLASH]: ");
-};
+}
 
 void isr(void) 
 {
@@ -161,7 +162,11 @@ void __attribute__((noreturn)) hard_fault_isr(void)
 	for(;;);
 }
 
-__attribute__((aligned(128))) void * const cortex_m_vectors[] = {
+struct ice_comm_blk ice_comm_blk;
+
+typedef void (* isr_t)(void);
+
+__attribute__((aligned(128))) isr_t const cortex_m_vectors[] = {
 	0,
 	0,
 	/* cm3_nmi_isr */
@@ -169,6 +174,7 @@ __attribute__((aligned(128))) void * const cortex_m_vectors[] = {
 	/* cm3_hard_fault_isr */
 	hard_fault_isr,
 	/* cm3_mem_manage_isr */
+#if 0
 	isr,
 	/* cm3_bus_fault_isr */
 	isr,
@@ -192,39 +198,22 @@ __attribute__((aligned(128))) void * const cortex_m_vectors[] = {
 	isr,
 	/* cm3_systick_isr */
 	isr
+#endif
 };
 
 
-
-int __attribute__((noreturn)) main(int argc, char ** argv)
+int __attribute__((noreturn)) main_task(struct usb_cdc_class * cdc)
 {
-	struct usb_cdc_class * cdc;
 	uint8_t c;
-
-	DCC_LOG_INIT();
-	DCC_LOG_CONNECT();
-
-	/* calibrate usecond delay loop */
-	DCC_LOG(LOG_TRACE, "cm3_udelay_calibrate()");
-	cm3_udelay_calibrate();
-
-	DCC_LOG(LOG_TRACE, "io_init()");
-	io_init();
-
-	DCC_LOG(LOG_TRACE, "thinkos_init()");
-	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
-
-	cdc = usb_cdc_init(&stm32f_usb_fs_dev, cdc_acm_str, cdc_acm_strcnt);
-	usb_cdc = cdc;
-
-	usb_vbus(true);
 
 	for (;;) {
 		if (usb_cdc_read(cdc, &c, 1, 1000) != 1) {
-			thinkos_sleep(100);
+			DCC_LOG(LOG_TRACE, "usb_cdc_read() ...");
+	//		thinkos_sleep(100);
 			continue;
 		}
 
+		DCC_LOG1(LOG_TRACE, "c=%d", c);
 		switch (c) {
 
 		case 'F':
@@ -238,5 +227,30 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 			show_menu();
 		}
 	}
+}
+
+
+int __attribute__((noreturn, section(".init"))) main(int argc, char ** argv)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+	struct usb_cdc_class * cdc;
+
+	DCC_LOG_INIT();
+	DCC_LOG_CONNECT();
+
+	DCC_LOG(LOG_MSG, "io_init()");
+	io_init();
+
+	DCC_LOG(LOG_MSG, "thinkos_init()");
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(1) | THINKOS_OPT_ID(1), NULL);
+
+	cdc = usb_cdc_init(&stm32f_usb_fs_dev, cdc_acm_str, cdc_acm_strcnt);
+	usb_cdc = cdc;
+
+	thinkos_sleep(1000);
+
+	usb_vbus(true);
+
+	main_task(cdc);	
 }
 

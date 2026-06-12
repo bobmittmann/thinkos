@@ -118,12 +118,26 @@ SECTIONS
 	{
 		. = ALIGN(4);
 		KEEP(*(.rodata.__FUNCTION__*))
+		KEEP(*(.rodata.__func__.*))
 		KEEP(*(.dccdata))
 	} >dcclog
 
+	.vect :
+    {
+        . = ALIGN(4);
+        PROVIDE (__text_start = .);
+        PROVIDE (__vcts_start = .);
+        KEEP (*(.core_vectors))
+        KEEP (*(.nvic_vectors))
+		KEEP (*(.rom_vectors))
+        PROVIDE (__vcts_end = .);
+    } >flash = 0xffffffff
+
+	PROVIDE(__rom_vectors_size = SIZEOF(.vect));
+
 	.init :
 	{
-		KEEP (*(.rom_vectors))
+		. = ALIGN(4); 
 		KEEP (*(.boot))
 		KEEP (*(.init))
 		/* define a global symbol marking the end of read only data sections */

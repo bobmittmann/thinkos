@@ -282,7 +282,8 @@ static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem)
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void thinkos_krn_sem_post_i(uint32_t sem) 
+
+void thinkos_krn_sem_post_i(int sem) 
 {	
 	struct thinkos_rt * krn = &thinkos_rt;
 
@@ -290,13 +291,14 @@ void thinkos_krn_sem_post_i(uint32_t sem)
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
-
+/*
 void __thinkos_sem_post_i(uint32_t sem) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	__krn_sem_post(krn, sem); 
 }
+*/
 #endif /* THINKOS_ENABLE_I_CALLS */
 
 void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)

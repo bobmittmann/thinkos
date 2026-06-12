@@ -91,9 +91,7 @@ extern "C" {
  * Debug API 
  * ------------------------------------------------------------------------- */
 
-
-static inline void __attribute__((always_inline)) __thinkos_dbg_halt(int cnt) 
-{
+static inline void __attribute__((always_inline)) __krn_dbg_halt(int cnt) {
 	register uint32_t halt = cnt;
 
 	asm volatile ("1:\n" 

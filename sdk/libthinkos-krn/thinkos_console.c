@@ -767,6 +767,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 #endif
 
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 
 #if (THINKOS_ENABLE_CONSOLE_BREAK)
 static int __console_rd_break(struct thinkos_rt * krn) 
@@ -816,8 +817,6 @@ static int __console_wr_break(struct thinkos_rt * krn)
 }
 #endif
 
-
-#if (THINKOS_ENABLE_CONSOLE_CTL)
 
 void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 {

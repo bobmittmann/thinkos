@@ -27,7 +27,7 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define THINKOS_EXCEPT_STACK_SIZE   292
+#define THINKOS_EXCEPT_STACK_SIZE   320
 
 #define THINKOS_IRQ_MAX               0
 
@@ -36,7 +36,7 @@
 #define THINKOS_ENABLE_THREAD_INFO    0
 #define THINKOS_ENABLE_THREAD_STAT    0
 
-#define THINKOS_ENABLE_IDLE_WFI       1
+#define THINKOS_ENABLE_IDLE_WFI       0
 
 #define THINKOS_ENABLE_JOIN           0
 #define THINKOS_ENABLE_PAUSE          0
@@ -47,6 +47,7 @@
 #define THINKOS_SCHED_LIMIT_MAX      32
 #define THINKOS_SCHED_LIMIT_MIN       1
 
+#define THINKOS_ENABLE_OBJ_ALLOC      0
 #define THINKOS_MUTEX_MAX             0
 #define THINKOS_ENABLE_MUTEX_ALLOC    0
 
@@ -66,7 +67,7 @@
 #define THINKOS_GATE_MAX              0
 #define THINKOS_ENABLE_GATE_ALLOC     0
 
-#define THINKOS_ENABLE_TIMED_CALLS    0
+#define THINKOS_ENABLE_TIMED_CALLS    1
 #define THINKOS_ENABLE_ALARM          0
 #define THINKOS_ENABLE_SLEEP          1
 
@@ -76,7 +77,6 @@
 #define THINKOS_ENABLE_DEADLOCK_CHECK 0
 #define THINKOS_ENABLE_SANITY_CHECK   0
 #define THINKOS_ENABLE_EXCEPTIONS     0
-#define THINKOS_UNROLL_EXCEPTIONS     0
 #define THINKOS_SYSRST_ONFAULT        0
 #define THINKOS_ENABLE_PROFILING      0
 
@@ -84,7 +84,14 @@
 #define THINKOS_ENABLE_FPU            0
 #define THINKOS_ENABLE_CTL            0
 #define THINKOS_COMM_MAX              0
-#define THINKOS_ENABLE_STACK_INIT     1
+#define THINKOS_ENABLE_STACK_INIT     0
+#define THINKOS_ENABLE_I_CALLS        1
+
+#define THINKOS_ENABLE_SCHED_DEBUG    0
+
+#define THINKOS_ENABLE_UDELAY_CALIBRATE     0
+#define UDELAY_FACTOR                     767
+
 
 /* -------------------------------------------------------------------------
  * USB device and CDC-ACM 
@@ -92,6 +99,11 @@
 
 #define STM32_ENABLE_USB_FS    1
 #define STM32F_USB_FS_EP_MAX   4
+#define STM32_ENABLE_USB_FS      1
+#define STM32_USB_FS_EP_MAX      4
+#define STM32_USB_FS_IRQ_ENABLE  1
+#define STM32_USB_FS_IO_INIT     1
+#define STM32_USB_FS_VBUS_ENABLE 0
 
 #define CDC_EP_OUT_MAX_PKT_SIZE 64
 #define CDC_EP_IN_MAX_PKT_SIZE  64
@@ -106,10 +118,6 @@
 #define CDC_TX_LOCK_NO      1
 #define CDC_CTL_FLAG_NO     2
 #define CDC_RX_FLAG_NO      3
-
-/* Semaphores */
-#define SERDRV_RX_SEM_NO    0
-
 
 #endif /* __CONFIG_H__ */
 

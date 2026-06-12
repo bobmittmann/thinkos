@@ -436,7 +436,7 @@ struct usb_cdc_acm_dev {
 	volatile uint8_t configured;
 	volatile uint8_t shadow; /* shadow (toggle) status bits */
 	volatile uint8_t status; /* device status */
-	volatile uint8_t rx_paused;
+	volatile uint8_t reserved;
 
 #if (THINKOS_ENABLE_COMM_STATS)
 	struct {
@@ -778,7 +778,6 @@ static void comm_usb_cdc_on_reset(usb_class_t * cl)
 	dev->status = 0;
 	dev->shadow = 0;
 	dev->configured = 0;
-	dev->rx_paused = false;
 	/* initializes EP0 */
 	dev->ctl_ep = usb_dev_ep_init(dev->usb, &comm_usb_cdc_ep0_info, 
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
@@ -909,7 +908,6 @@ int usb_cdc_comm_init(struct thinkos_rt * krn, struct thinkos_comm_drv * drv,
 	dev->rx_wq = rx_wq;
 	dev->shadow = 0;
 	dev->configured = 0;
-	dev->rx_paused = false;
 
 	dev->ctl_ep = 0;
 	dev->in_ep = 0;

@@ -80,9 +80,7 @@ struct ymodem_rcv {
 #if XMODEM_CHECKSUM
 	bool crc_mode;
 #endif
-#if XMODEM_FALLBACK
 	bool xmodem;
-#endif
 	unsigned char sync;
 	unsigned char retry;
 
@@ -102,9 +100,7 @@ static int ymodem_rcv_init(struct ymodem_rcv * rx)
 #else
 	rx->sync = 'C';
 #endif
-#if XMODEM_FALLBACK
 	rx->xmodem = false;
-#endif
 	rx->retry = 30;
 	rx->fsize = 1024 * 1024;
 	rx->count = 0;
@@ -256,30 +252,33 @@ static int usb_ymodem_rcv_pkt(struct ymodem_rcv * rx)
 #endif
 
 		if (seq == ((rx->pktno - 1) & 0xff)) {
-			/* retransmission */
-			DCC_LOG(LOG_WARNING, "retransmission!");
-			continue;
+            /* retransmission!! */
+            if ((seq == 0) && (rx->pktno == 1) && (rx->xmodem == 0)) {
+                DCC_LOG(LOG_WARNING, "Ymodem restart..." );
+                rx->pktno = 0;
+            } else {
+                DCC_LOG2(LOG_WARNING, "pktno=%d count=%d rxmit ..." ,
+                         rx->pktno, rx->count);
+                continue;
+            }
 		}
 
 		DCC_LOG2(LOG_TRACE, "seq=%d pktno=%d", seq, rx->pktno);
 
 #if XMODEM_SEQUENCE_CHECK
 		if (seq != (rx->pktno & 0xff)) {
-#if XMODEM_FALLBACK
 			if ((rx->pktno == 0) && (seq == 1)) {
 				rx->pktno++;
 				/* Fallback to XMODEM */
 				rx->xmodem = true;
-			} else 
-#endif
-			{
+			} else {
 				goto error;
 			}
 		}
 #endif
 		/* YModem first packet ... */
-		if (rx->pktno == 0) {
-			pkt[0] = ACK;
+      if ((rx->pktno == 0) && (!rx->xmodem)) {
+			rx->sync = ACK;
 			usb_send(CDC_TX_EP, pkt, 1);
 		} else {
 			rx->retry = 10;
@@ -383,7 +382,7 @@ static const char s_ok[] = {'\r', '\n', 'O', 'K'};
 #define PUTS(STR) usb_send(CDC_TX_EP, STR, sizeof(STR))
 #endif
 
-static const char err_code[] = { '0', '1', '2', '3', '4', '5', '6' };
+const char err_code[] = { '0', '1', '2', '3', '4', '5', '6' };
 
 #define ERROR(ERR) usb_send(CDC_TX_EP, s_err, sizeof(s_err) - 1); \
 	usb_send(CDC_TX_EP, &err_code[ERR], 1);

@@ -28,11 +28,11 @@
 #include "version.h"
 
 int fpga_configure(void);
-int boot_monitor_task(const struct monitor_comm * comm, void * arg,
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
 					   struct thinkos_rt * krn);
 
 void monitor_console_task(const struct monitor_comm * comm, void * arg,
-					   struct thinkos_rt * krn);
+						  struct thinkos_rt * krn);
 
 #ifndef BOOT_ENABLE_JTAG
 #define BOOT_ENABLE_JTAG (DEBUG)

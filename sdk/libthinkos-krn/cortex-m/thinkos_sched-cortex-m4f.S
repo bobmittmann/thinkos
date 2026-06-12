@@ -122,7 +122,7 @@ thinkos_krn_sched_core:
 	   r2: ready bmp 
 	   r1: sched.ctrl = [ xcp | err | brk | act ]  
 	 */
-    bne.n    thinkos_krn_sched_bypass
+    bne.n    thinkos_krn_sched_trap
 #endif
 
 .L_update_cyccnt:
@@ -277,6 +277,7 @@ thinkos_krn_sched_ctx_get:
  * -------------------------------------------------------------------------- */
 
 .L_idle_entry:
+
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	/* check the kernel scheduler control word */
 	lsrs.n   r3, r1, #8
@@ -314,16 +315,21 @@ thinkos_krn_sched_ctx_get:
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_nullptr_err:
 	movs.n   r5, #THINKOS_ERR_INVALID_POINTER
-	b        thinkos_krn_sched_xcpt
+	b        .L_thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
 .L_idle_error_trap:
+#if 0
+	mov  r12, #1
+1: 	cmp  r12, #0
+	bne  1b
+#endif
 	/* r3: sched.ctrl >> 8 : [ 0x00 | xcp | err | brk ] 
 	   r2: ready bmp 
 	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
 	/* check for error or fault */
-	lsrs.n   r3, #8
+	lsrs.n   r5, r3, #8
 	itt.n    eq
 	/* r3: sched.ctrl >> 16 : [ 0x00 | 0x00 | xcp | err ] */
 	/* if error or fault are set then the scheduler is locked 
@@ -331,14 +337,14 @@ thinkos_krn_sched_ctx_get:
 .L_clr_brk: 
 	/* if error or fault are not set then we clear the break and
 	   run the scheduler */
-	strbeq     r3, [r0, #OFFSETOF_KRN_SCHED_BRK]
-	beq        .L_idle_context_save
-
-	/* break and error or fault are present */
-
-.L_idle_entry_idle_exit:
-	/* copy the current thread to the break indication */
-	strb     r1, [r0, #OFFSETOF_KRN_SCHED_BRK]
+	strbeq   r5, [r0, #OFFSETOF_KRN_SCHED_BRK]
+	beq      .L_idle_context_save
+	/* error or fault are present */
+	/* check for break */ 
+	lsls.n   r5, r3, #24
+	/* no break thread yet, set it to IDLE and call the 
+	   error trap handler */
+	beq      .L_idle_error_signaling
 #if (THINKOS_ENABLE_SCHED_DEBUG)
 	/* Adjust the thread ID */
 	movs.n   r2, #THINKOS_THREAD_IDLE
@@ -352,6 +358,23 @@ thinkos_krn_sched_ctx_get:
 	/* kernel is blocked, just return */
 	bx       lr
 #endif
+	/* copy the current thread to the break indication and 
+	   call the trap error handler */
+.L_idle_error_signaling:
+	strb     r1, [r0, #OFFSETOF_KRN_SCHED_BRK]
+#if (THINKOS_ENABLE_SCHED_DEBUG)
+	/* Adjust the thread ID */
+	movs.n   r2, #THINKOS_THREAD_IDLE
+    subs     r3, sp, #(8*4)
+	/* r0: thinkos_rt
+	   r1: sched.ctrl = [ xcp | err | brk | act ]
+	   r2: new active 
+	   r3: SP */
+	push     {r0, lr}
+	bl       thinkos_sched_dbg
+	pop      {r0, lr}
+#endif
+	b        thinkos_krn_error_trap
 
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
 
@@ -359,44 +382,49 @@ thinkos_krn_sched_ctx_get:
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_ptr_err:
 	movs.n   r5, #THINKOS_ERR_IDLE_MSP
-	b        thinkos_krn_sched_xcpt
+	b        .L_thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_xcpt_err:
 	movs.n   r5, #THINKOS_ERR_IDLE_XCPT
-	b        thinkos_krn_sched_xcpt
+	b        .L_thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_SANITY_CHECK) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_entry_err:
 	movs.n   r5, #THINKOS_ERR_IDLE_ENTRY
-	b        thinkos_krn_sched_xcpt
+	b        .L_thinkos_krn_sched_xcpt
 #endif
 
 #if (THINKOS_ENABLE_STACK_LIMIT) && (THINKOS_ENABLE_SCHED_ERROR)
 .L_idle_stack_limit_err: 
 	movs.n   r5, #THINKOS_ERR_IDLE_STACK
-	b        thinkos_krn_sched_xcpt
+//	b        .L_thinkos_krn_sched_xcpt
+//  FALL THROUGH	
+#endif
+
+#if (THINKOS_ENABLE_SCHED_ERROR)
+.L_thinkos_krn_sched_xcpt:
+/* FIXME: fatal exception... */	
+	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
+	b       thinkos_krn_fatal_err_handler
+#endif /* THINKOS_ENABLE_SCHED_ERROR */
+
+#if (THINKOS_ENABLE_STACK_LIMIT)
+.L_thread_stack_err: 
+	movs.n  r5, #THINKOS_ERR_THREAD_STACKADDR 
+	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
+//	orr     r1, r1, r5, lsl #16
+	bfi     r1, r5, #16, #8
+//	b       thinkos_krn_sched_trap
+//  FALL THROUGH	
 #endif
 
 	.size   thinkos_krn_sched_core, . - thinkos_krn_sched_core
 
-
-#if (THINKOS_ENABLE_SCHED_ERROR)
-	.thumb_func
-thinkos_krn_sched_xcpt:
-	.global thinkos_krn_sched_xcpt
-	.type   thinkos_krn_sched_xcpt, %function
-/* FIXME: fatal exception... */	
-	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
-	b       thinkos_krn_fatal_err_handler
-	.size   thinkos_krn_sched_xcpt, . - thinkos_krn_sched_xcpt
-#endif /* THINKOS_ENABLE_SCHED_ERROR */
-
-
 /* --------------------------------------------------------------------------
- * Scheduler detected errors
+ * Scheduler error trap
  * -------------------------------------------------------------------------- */
 
 #if (THINKOS_ENABLE_ERROR_TRAP)
@@ -405,32 +433,26 @@ thinkos_krn_sched_trap:
 	.global thinkos_krn_sched_trap
 	.type   thinkos_krn_sched_trap, %function
 
-#if (THINKOS_ENABLE_STACK_LIMIT)
-.L_thread_stack_err: 
-	movs.n  r5, #THINKOS_ERR_THREAD_STACKADDR 
-	strb    r5, [r0, #OFFSETOF_KRN_SCHED_ERR]
-#endif
-
 	/*  r0: krn */
 	/*  r1: | xcp | err | brk | act |  */
 	/*  r3: context_ptr */
 	/*  r4: thread_id */
 	/*  r7: context vector ptr */
-thinkos_krn_sched_bypass:
+
 	/* store the old context pointer into the context vector */
 	str.n    r3, [r7]
 	/* store the old thread onto the break field */
 	strb     r4, [r0, #OFFSETOF_KRN_SCHED_BRK]
 	/* the new active thread is IDLE */
 	movs.n   r2, #THINKOS_THREAD_IDLE
-	/* set the active to IDLE and clear the break thread */
+	/* set the active to IDLE */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
 #if (THINKOS_ENABLE_SCHED_ERROR)
     /* load the IDLE context pointer from the context vector */
     ldr      r3, [r0, #OFFSETOF_KRN_IDLE_CTX]
-	/* compare with the present MSP. It shuld match otherwise an 
-	   internal error occured */
+	/* compare with the present MSP. It should match otherwise an 
+	   internal error occurred */
     cmp.n    sp, r3
     bne.n    .L_idle_stack_xcpt_err
 #elif (THINKOS_ENABLE_SCHED_DEBUG)
@@ -445,12 +467,12 @@ thinkos_krn_sched_bypass:
 	pop      {r4-r11}
 
 #if (THINKOS_ENABLE_SCHED_DEBUG)
-	push     {r1, lr}
+	push     {r0, lr}
 	bl       thinkos_sched_dbg
-	pop      {r1, lr}
+	pop      {r0, lr}
 #endif
 
-	b        thinkos_krn_sched_err_handler
+	b        thinkos_krn_error_trap
 
 	.size   thinkos_krn_sched_trap, . - thinkos_krn_sched_trap
 #endif /* THINKOS_ENABLE_ERROR_TRAP */

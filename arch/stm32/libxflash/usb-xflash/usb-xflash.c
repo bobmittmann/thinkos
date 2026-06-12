@@ -28,7 +28,7 @@ int __attribute__((section (".init"))) usb_xflash(uint32_t blk_offs,
 												  unsigned int blk_size, 
 												  const struct magic * magic)
 {
-//	return xflash(blk_offs, blk_size, magic);
-	return yflash(blk_offs, blk_size, magic);
+	return xflash(blk_offs, blk_size, magic);
+//	return yflash(blk_offs, blk_size, magic);
 }
 

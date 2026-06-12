@@ -205,6 +205,8 @@ void __attribute__ ((aligned(16))) cm3_default_isr(unsigned int irq)
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
+	//DCC_LOG1(LOG_TRACE, "servicing IRQ %d", irq);
+
 #if (THINKOS_ENABLE_IRQ_SANITY_CHECK)
 	ptr = (uint8_t *)&krn->irq_th[irq];
 	do {
@@ -341,10 +343,6 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 
 	DCC_LOG2(LOG_INFO, "<%2d> IRQ %d!", self, irq);
 
-#if (THINKOS_ENABLE_WQ_IRQ)
-	__krn_wq_insert(krn, THINKOS_WQ_IRQ, self);  
-#endif
-
 #if (THINKOS_ENABLE_IRQ_SANITY_CHECK)
 	ptr = (uint8_t *)&krn->irq_th[irq];
 	do {
@@ -362,6 +360,12 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 	krn->irq_th[irq] = self;
 #endif 
 
+	arg[SVC_RETURN] = THINKOS_OK;
+
+#if (THINKOS_ENABLE_WQ_IRQ)
+	__krn_wq_insert(krn, THINKOS_WQ_IRQ, self);  
+#endif
+
 	/* remove from ready queue */
 	__krn_thread_suspend(krn, self);
 
@@ -376,7 +380,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 }
 
 
-/* This macro is here for backword compatibility, TODO should be deprecated */
+/* This macro is here for backward compatibility, TODO should be deprecated */
 #if (THINKOS_ENABLE_IRQ_CTL)
 void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
 						 struct thinkos_rt * krn)
@@ -396,7 +400,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 	
 	switch (req) {
 	case THINKOS_IRQ_ENABLE:
-		DCC_LOG1(LOG_MSG, "enabling IRQ %d", irq);
+		DCC_LOG1(LOG_TRACE, "enabling IRQ %d", irq);
 		/* clear pending interrupt */
 		cm3_irq_enable(irq);
 		break;

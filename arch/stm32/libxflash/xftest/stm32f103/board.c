@@ -22,7 +22,7 @@
 
 #include "board.h"
 
-void usb_vbus(bool on)
+void __attribute__((section(".init"))) usb_vbus(bool on)
 {
 	if (on)
 		stm32_gpio_mode(USB_FS_VBUS, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -30,12 +30,12 @@ void usb_vbus(bool on)
 		stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
 }
 
-void io_init(void)
+void __attribute__((section(".init"))) io_init(void)
 {
 	struct stm32_rcc * rcc = STM32_RCC;
 
-	stm32_gpio_clock_en(STM32_GPIOA);
-	stm32_gpio_clock_en(STM32_GPIOB);
+	stm32_gpio_clk_en(STM32_GPIOA);
+	stm32_gpio_clk_en(STM32_GPIOB);
 
 	/* Enable Alternate Functions IO clock */
 	rcc->apb2enr |= RCC_AFIOEN;
@@ -44,5 +44,10 @@ void io_init(void)
 	stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
 	stm32_gpio_set(USB_FS_VBUS);
 
+}
+
+void reset(void)
+{
+	for(;;);
 }
 

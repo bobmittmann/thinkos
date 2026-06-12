@@ -625,13 +625,13 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 		break;
 
 	case STD_SET_ADDRESS:
-		DCC_LOG1(LOG_INFO, "SetAddr: %d [ADDRESS]", value);
+		DCC_LOG1(LOG_TRACE, "SetAddr: %d [ADDRESS]", value);
 		break;
 
 	case STD_SET_CONFIGURATION: {
 		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
 		if (value) {
-			DCC_LOG(LOG_INFO, "[CONFIGURED]");
+			DCC_LOG(LOG_TRACE, "[CONFIGURED]");
 			dev[0].in_ep = usb_dev_ep_init(usb, &monitor_usb_in_info, 
 										   NULL, 0);
 			dev[0].out_ep = usb_dev_ep_init(usb, &monitor_usb_out_info, 

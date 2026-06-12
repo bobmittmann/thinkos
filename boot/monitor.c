@@ -918,7 +918,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 #if (MONITOR_FAULT_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
-	sigmask |= (1 << MONITOR_KRN_FAULT);
 #endif
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_EOT);
@@ -953,11 +952,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 	for(;;) {
 		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
-
-		case MONITOR_TASK_INIT:
-			/* Acknowledge the signal */
-			monitor_clear(MONITOR_TASK_INIT);
-			break;
 
 			/* request a soft reset */
 		case MONITOR_SOFTRST:
@@ -1017,7 +1011,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
   #endif
   #if (THINKOS_ENABLE_IDLE_HOOKS)
-     		krn_idle_req_core_rst(krn);
+     		thinkos_krn_req_core_rst(krn);
 			break;
   #endif
 
@@ -1069,7 +1063,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			/* Restore critical NVIC interrupts */
 			monitor_on_thread_fault(comm);
 			break;
-
+#if 0
 		case MONITOR_KRN_FAULT:
 			monitor_clear(MONITOR_KRN_FAULT);
 			DCC_LOG(LOG_TRACE, "!! Kernel fault !!");
@@ -1079,10 +1073,9 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			/* Restore critical NVIC interrupts */
 			monitor_on_krn_fault(comm);
 
-  #if (THINKOS_ENABLE_IDLE_HOOKS)
-  	 		krn_idle_req_core_rst(krn);
-  #endif
+  	 		thinkos_krn_req_core_rst(krn);
 			break;
+#endif
 #endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)

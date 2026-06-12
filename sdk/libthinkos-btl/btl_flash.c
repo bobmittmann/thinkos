@@ -193,7 +193,7 @@ int btl_flash_app_exec(const char * tag, uintptr_t arg0, uintptr_t arg1)
 		return BTL_SHELL_ERR_ARG_INVALID; 
 	}
 
-	thinkos_app_exec(stat.begin, arg0, arg1, 0, 0);
+	thinkos_app_exec(stat.begin, arg0, arg1);
 
 	return BTL_SHELL_ERR_GENERAL; 
 }

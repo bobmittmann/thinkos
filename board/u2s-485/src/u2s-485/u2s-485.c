@@ -379,16 +379,18 @@ void __attribute__((noreturn)) usb_recv_task(struct vcom * vcom)
 
 	stats.rx_cnt = 0;
 	stats.tx_cnt = 0;
+	vcom->mode = VCOM_MODE_CONVERTER;
 
 	for (;;) {
 		len = usb_cdc_read(cdc, buf, VCOM_BUF_SIZE, 1000);
 
-		DCC_LOG1(LOG_MSG, "rx len=%d", len);
+		DCC_LOG1(LOG_INFO, "rx len=%d", len);
 
 		if (len > 0) {
 			usb_rx_cnt += len;
 			if (vcom->mode == VCOM_MODE_CONVERTER) {
 				led_flash(LED_RED, 50);
+				DCC_LOG1(LOG_TRACE, "serial_send len=%d", len);
 				serial_send(serial, buf, len);
 			} else {
 				// forward to service input
@@ -445,9 +447,6 @@ void __attribute__((noreturn)) serial_recv_task(struct vcom * vcom)
 
 	/* wait for line configuration */
 	usb_cdc_acm_lc_wait(cdc);
-
-	/* enable serial */
-	serial_enable(serial);
 
 	for (;;) {
 		len = serial_recv(serial, buf, VCOM_BUF_SIZE, 1000);
@@ -592,7 +591,7 @@ const struct thinkos_thread_initializer led_thread_init = {
 	.task_arg[1] = 0,
 	.task_arg[2] = 0,
 	.task_arg[3] = 0,
-	.priority = 1,
+	.priority = 4,
 	.paused = false,
 	.privileged = false
 };
@@ -608,7 +607,7 @@ const struct thinkos_thread_initializer ctrl_thread_init = {
 	.task_arg[1] = 0,
 	.task_arg[2] = 0,
 	.task_arg[3] = 0,
-	.priority = 2,
+	.priority = 1,
 	.paused = false,
 	.privileged = false
 };
@@ -622,10 +621,19 @@ const struct thinkos_thread_initializer recv_thread_init = {
 	.task_arg[1] = 0,
 	.task_arg[2] = 0,
 	.task_arg[3] = 0,
-	.priority = 3,
+	.priority = 2,
 	.paused = false,
 	.privileged = false
 };
+
+void init_threads(void)
+{
+	thinkos_thread_init(4, &led_thread_init);
+
+	thinkos_thread_init(2, &ctrl_thread_init);
+
+	thinkos_thread_init(3, &recv_thread_init);
+}
 
 int __attribute__((noreturn)) main(int argc, char ** argv)
 {
@@ -665,11 +673,7 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 
 	usb_trace_init(cdc);
 
-	thinkos_krn_thread_init(krn, 2, &led_thread_init);
-
-	thinkos_krn_thread_init(krn, 3, &ctrl_thread_init);
-
-	thinkos_krn_thread_init(krn, 4, &recv_thread_init);
+	init_threads();
 
 	usb_vbus(true);
 
@@ -681,6 +685,9 @@ int __attribute__((noreturn)) main(int argc, char ** argv)
 		thinkos_sleep(100);
 		led_off(LED_RED);
 	}
+
+	/* enable serial */
+	serial_enable(serial);
 
 	usb_recv_task(&vcom);
 }

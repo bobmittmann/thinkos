@@ -292,7 +292,7 @@ static inline int
 thinkos_thread_init(unsigned int thread, 
                     const struct thinkos_thread_initializer * ini) {
 	register int32_t ret asm("r12");
-	register uint32_t r0 asm("r1") = thread;
+	register uint32_t r0 asm("r0") = thread;
 	register uintptr_t r1 asm("r1") = (uintptr_t)ini;
 	asm volatile (ARM_SVC(THINKOS_THREAD_INIT) : 
 				  "=r"(ret) : "r"(r0), "r"(r1) : "memory" );
@@ -1164,15 +1164,13 @@ static inline void thinkos_bkpt(int no) {
    ---------------------------------------------------------------------------*/
 
 static inline int __attribute__((always_inline)) 
-thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1, 
-				 uintptr_t arg2, uintptr_t arg3) {
+thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1) {
 	register int32_t ret asm("r12");
+	register uintptr_t r12 asm("r12") = addr;
 	register uintptr_t r0 asm("r0") = arg0;
 	register uintptr_t r1 asm("r1") = arg1;
-	register uintptr_t r2 asm("r2") = arg2;
-	register uintptr_t r3 asm("r3") = arg3;
 	asm volatile (ARM_SVC(THINKOS_APP_EXEC) : 
-				  "=r"(ret) : "r"(r0), "r"(r1), "r"(r2), "r"(r3), "0"(addr) : );
+				  "=r"(ret) : "r"(r0), "r"(r1), "0"(r12) : );
 	return ret;
 }
 

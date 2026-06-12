@@ -28,10 +28,13 @@ VERSION_DATE = "2020-11-18"
 VERSION_MAJOR = "0"
 VERSION_MINOR = "4"
 
-PROG = u2s-485-$(VERSION_MAJOR).$(VERSION_MINOR)
+PROG = sniffer-485-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-CFILES = u2s-485.c serial.c board.c leds.c usb_trace.c raw_trace.c \
-		 sdu_trace.c xflash.c usb_xflash_pic.c profclk.c
+COMMON_CFILES =	serial2.c leds.c xflash.c usb_xflash_pic.c 
+
+CFILES = sniffer.c board.c usb_trace.c raw_trace.c \
+		 sdu_trace.c profclk.c \
+		$(addprefix ../common/,$(COMMON_CFILES))
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn $(SDK_DIR)/libthinkos-usr \

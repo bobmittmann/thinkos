@@ -89,6 +89,7 @@ int thinkos_flat_check(const struct flat_app * app)
 #endif
 
 	size = (app->size + 3) & ~3; /* Block alignment */
+	(void)size;
 
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	/* can we read and execute from the application address ? */ 
@@ -139,7 +140,7 @@ int thinkos_flat_check(const struct flat_app * app)
 	if ((size < 0) || !__thinkos_mem_usr_rd_chk(addr, size)) {
 		DCC_LOG2(LOG_ERROR, ".ctor table invalid addr=0x%08x size=%d", 
 				 addr, size);
-		return THINKOS_ERR_APP_BSS_INVALID;
+		return THINKOS_ERR_APP_CTORS_INVALID;
 	}
 #endif /* (THINKOS_ENABLE_SANITY_CHECK) */
 
@@ -170,7 +171,9 @@ static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_id
 {
 	struct thinkos_thread_initializer init;
 	const struct flat_app * app = (struct flat_app *)addr;
+#if (THINKOS_ENABLE_THREAD_INFO)
 	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
+#endif
 	uintptr_t stack_top;
 	uintptr_t stack_size;
 	uintptr_t stack_base;
@@ -184,9 +187,11 @@ static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_id
 		return ret;
 	}
 
+#if (LOG_LEVEL > LOG_INFO)
 	thinkos_flat_dump(app);
+#endif
 
-#if THINKOS_ENABLE_THREAD_ALLOC
+#if (THINKOS_ENABLE_THREAD_ALLOC)
 	/* force allocate the thread block */
 	__thread_alloc_set(krn, thread_idx);
 #endif
@@ -231,12 +236,14 @@ static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_id
 	init.task_exit = task_exit;
 	init.task_arg[0] = arg[0];
 	init.task_arg[1] = arg[1];
-	init.task_arg[2] = arg[2];
-	init.task_arg[3] = arg[3];
+	init.task_arg[2] = 0;
+	init.task_arg[3] = 0;
 	init.priority = 0;
 	init.paused = false;
 	init.privileged = true;
+#if (THINKOS_ENABLE_THREAD_INFO)
 	init.inf = inf;
+#endif
 
 	return thinkos_krn_thread_init(krn, thread_idx, &init);
 }
@@ -249,7 +256,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 	int ret;
 
 	/* collect call arguments */
-	addr = arg[4];
+	addr = arg[SVC_ARG_R12];
 	
 	DCC_LOG2(LOG_TRACE, "<%2d> addr=0x%08x ...", self, addr);
 
@@ -285,7 +292,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 		__krn_sched_defer(krn);
 	}
 
-	arg[SVC_RETURN] = thread_idx;
+	arg[SVC_RETURN] = THINKOS_EINVAL;
 
 	return;
 }

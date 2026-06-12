@@ -313,8 +313,7 @@ int thinkos_reboot(uint32_t key);
  * Return:
  * %THINKOS_ENOSYS if call is not implemented, %THINKOS_OK otherwise. 
  */
-int thinkos_app_exec(uintptr_t addr, uintptr_t arg0, 
-					 uintptr_t arg1, uintptr_t arg2, uintptr_t arg3);
+int thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1);
 
 /* ---------------------------------------------------------------------------
  *  Object Allocation

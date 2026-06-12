@@ -49,7 +49,7 @@ static int __app_exec_task(uintptr_t addr, unsigned int thread)
 
 	DCC_LOG(LOG_TRACE, "thinkos_app_exec()!");
 
-	if ((ret = thinkos_app_exec(addr, 0, 0, 0, 0))) {
+	if ((ret = thinkos_app_exec(addr, 0, 0))) {
 		DCC_LOG1(LOG_ERROR, "Can't start app: err=%d!", ret);
 	}
 

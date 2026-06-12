@@ -141,7 +141,7 @@ void thinkos_krn_core_reset(struct thinkos_rt * krn)
 	thinkos_krn_core_init(krn);
 
 #if (THINKOS_ENABLE_EXCEPTIONS)
-	DCC_LOG(LOG_TRACE, "4. exception reset...");
+	DCC_LOG(LOG_TRACE, "4. fault reset...");
 	thinkos_krn_fault_clr();
 #endif
 

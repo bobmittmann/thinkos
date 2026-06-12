@@ -83,10 +83,12 @@ __core_vectors:
 	.word   _reset
 	.word   cm3_nmi_isr
 	.word   cm3_hard_fault_isr
+
 	.word   cm3_mem_manage_isr
 	.word   cm3_bus_fault_isr
 	.word   cm3_usage_fault_isr
-	.word   cm3_except7_isr
+	.word   krn_i_call_tab
+	
 	.word   ice_comm_blk
 	.word   cm3_except9_isr
 	.word   cm3_except10_isr
@@ -115,7 +117,8 @@ __core_vectors:
 #define CFSR_IACCVIOL  (MMFSR_IACCVIOL << 0)
 
 
-	.text
+	.thumb
+	.section .init
 	.align  2
 
 /* --------------------------------------------------------------------------
@@ -282,8 +285,6 @@ __thinkos_krn_xcpt_done:
 
 	.size   __thinkos_krn_xcpt_done, . - __thinkos_krn_xcpt_done
 
-#endif /*( (THINKOS_ENABLE_EXCEPTIONS) */
-
 #if (THINKOS_ENABLE_ERROR_TRAP)
 	.global	__thinkos_krn_thread_err
 	.thumb
@@ -380,6 +381,7 @@ __thinkos_krn_thread_err:
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
 
 #endif /* THINKOS_ENABLE_ERROR_TRAP */
+#endif /*( (THINKOS_ENABLE_EXCEPTIONS) */
 
 #if (THINKOS_ENABLE_DBGMON)
 	.align  2
@@ -399,8 +401,9 @@ cm3_debug_mon_isr:
 #endif /* THINKOS_ENABLE_DBGMON */
 
 
-	.text
-	.align	2
+	.thumb
+	.section .init
+	.align  2
 
 	.thumb
 	.global thinkos_krn_halt
@@ -424,8 +427,8 @@ thinkos_krn_halt:
 	.weak       cm3_nmi_isr
 	.thumb_set  cm3_nmi_isr,thinkos_krn_halt
 
-#if	!(THINKOS_ENABLE_HARDFAULT)
 	.weak       cm3_hard_fault_isr
+#if	!(THINKOS_ENABLE_HARDFAULT)
 	.thumb_set  cm3_hard_fault_isr,thinkos_krn_halt
 #endif
 
@@ -436,8 +439,8 @@ thinkos_krn_halt:
 	.thumb_set  cm3_mem_manage_isr,thinkos_krn_halt
 #endif
 
-#if	(THINKOS_ENABLE_BUSFAULT)
 	.weak       cm3_bus_fault_isr
+#if	(THINKOS_ENABLE_BUSFAULT)
 	.thumb_set  cm3_bus_fault_isr,__thinkos_krn_thread_err
 #else
 	.thumb_set  cm3_bus_fault_isr,thinkos_krn_halt
@@ -454,11 +457,10 @@ thinkos_krn_halt:
 	.weak       cm3_except7_isr
 	.thumb_set  cm3_except7_isr,thinkos_krn_halt
 #else
-	.extern     cm3_except7_isr
+	.extern     krn_i_call_tab 
 #endif
 
-	.weak       ice_comm_blk
-	.set		ice_comm_blk, __core_vectors
+	.extern     ice_comm_blk
 
 	.weak       cm3_except9_isr
 	.thumb_set  cm3_except9_isr,thinkos_krn_halt

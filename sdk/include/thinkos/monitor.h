@@ -40,13 +40,15 @@
 
 enum monitor_event {
 	/* Debug monitor internal task reset */
-	MONITOR_TASK_INIT       = 0,
+//	MONITOR_TASK_INIT       = 0,
 	/* Kernel reset signal */
-	MONITOR_ON_CORE_RST     = 1,
+	MONITOR_ON_CORE_RST     = 0,
 	/* ThinkOS kernel fault */
-	MONITOR_KRN_FAULT       = 2,
+//	MONITOR_KRN_FAULT       = 2,
 	/* ThinkOS kernel reset indication */
 //	MONITOR_KRN_ABORT       = 3,
+	/* ThinkOS Thread error */
+	MONITOR_THREAD_FAULT    = 1,
 
 	/* Board reset request */
 	MONITOR_SOFTRST         = 3,
@@ -56,10 +58,9 @@ enum monitor_event {
 
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 5,
+
 	/* ThinkOS Thread step break */
 	MONITOR_THREAD_STEP     = 6,
-	/* ThinkOS Thread error */
-	MONITOR_THREAD_FAULT    = 7,
 	/* ThinkOS Thread create */
 	MONITOR_THREAD_CREATE   = 8,
 	/* ThinkOS Thread teminate */

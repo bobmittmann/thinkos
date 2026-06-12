@@ -26,7 +26,7 @@
 
 /* Enable thinkos_irq_ctl system call */
 #define THINKOS_ENABLE_RAM_VECTORS          0
-#define THINKOS_ENABLE_IRQ_CTL              1
+#define THINKOS_ENABLE_IRQ_CTL              0
 #define THINKOS_ENABLE_IRQ_CYCCNT           0
 #define THINKOS_ENABLE_IRQ_PRIORITY_0       0
 #define THINKOS_ENABLE_IRQ_TIMEDWAIT        0
@@ -60,7 +60,7 @@
  watching a flag in a given instant.*/
 #define THINKOS_ENABLE_FLAG_WATCH           0
     
-#define THINKOS_GATE_MAX                    0
+#define THINKOS_GATE_MAX                    2
 
 #define THINKOS_ENABLE_THREAD_STAT          0
 #define THINKOS_ENABLE_TIMED_CALLS          1
@@ -111,7 +111,7 @@
 #define THINKOS_ENABLE_DIV0_TRAP            1
 #define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          0
-#define THINKOS_ENABLE_ERROR_TRAP           0
+#define THINKOS_ENABLE_ERROR_TRAP           1
 #define THINKOS_ENABLE_BUSFAULT             0
 #define THINKOS_ENABLE_USAGEFAULT           0
 #define THINKOS_ENABLE_MEMFAULT             0
@@ -148,7 +148,7 @@
 #define THINKOS_ENABLE_CORE_RESET           1
 #define THINKOS_ENABLE_CTL                  0
 #define THINKOS_ENABLE_CRITICAL             0
-#define THINKOS_ENABLE_PREEMPTION           0
+#define THINKOS_ENABLE_PREEMPTION           1
 
 #ifdef DEBUG
   #define THINKOS_ENABLE_IDLE_WFI           0
@@ -174,8 +174,8 @@
 
 #define THINKOS_ENABLE_OFAST                0
 
-#define THINKOS_ENABLE_APP                  0
-#define THINKOS_ENABLE_APP_FLAT             0
+#define THINKOS_ENABLE_APP                  1
+#define THINKOS_ENABLE_APP_FLAT             1
 #define THINKOS_ENABLE_APP_ELF              0
 #define THINKOS_ENABLE_APP_CRC              0
 

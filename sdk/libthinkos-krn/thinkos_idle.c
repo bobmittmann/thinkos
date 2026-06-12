@@ -102,11 +102,13 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 #endif
 #endif
 
+#if 0
 			case IDLE_HOOK_CORE_RST:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_CORE_RST" _ATTR_POP_ );
 				thinkos_krn_core_reset(krn);
 				break;
+#endif
 
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
 			case IDLE_HOOK_FLASH_MEM0:
@@ -285,10 +287,12 @@ void __krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req)
 	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 
+/*
 void krn_idle_req_core_rst(struct thinkos_rt * krn)
 {
 	__krn_idle_hook_req(krn, IDLE_HOOK_CORE_RST); 
 }
+*/
 
 #endif
 

@@ -259,6 +259,7 @@ void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
+
 #if (THINKOS_ENABLE_SANITY_CHECK)
 	if (!__bit_mem_rd(krn->gate, idx * 2 + 1)) {
 		DCC_LOG2(LOG_ERROR, "<%d> gate %d is not locked!", self, gate);
@@ -433,7 +434,7 @@ void thinkos_krn_gate_open_i(int gate)
 	/* signal the scheduler ... */
 	__krn_preempt(krn);
 }
-
+#if 0
 void __thinkos_gate_open_i(int gate)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -441,6 +442,7 @@ void __thinkos_gate_open_i(int gate)
 	/* open the gate */
 	__krn_gate_open(krn, gate);
 }
+#endif
 #endif /* THINKOS_ENABLE_I_CALLS */
 
 void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)

@@ -67,7 +67,7 @@
 #define THINKOS_ERR_APP_DATA_INVALID   52
 #define THINKOS_ERR_APP_CODE_INVALID   53
 #define THINKOS_ERR_APP_BSS_INVALID    54
-#define THINKOS_ERR_APP_ABORT_REQ      55
+#define THINKOS_ERR_APP_CTOR_INVALID   55
 
 #define THINKOS_ERR_KRN_RETMSP         56
 #define THINKOS_ERR_KRN_RETHANDLER     57
@@ -86,6 +86,8 @@
 
 
 #define THINKOS_ERR_MAX                67
+
+#define THINKOS_REQ_CORE_RST         0x02
 
 #ifndef __ASSEMBLER__
 

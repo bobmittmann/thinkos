@@ -224,7 +224,7 @@ __krn_sched_act_clr(struct thinkos_rt * krn) {
 
 /* Set the scheduler error */
 static inline void __attribute__((always_inline)) 
-__krn_sched_err_set(struct thinkos_rt * krn, uint8_t errno) {
+__krn_sched_err_set(struct thinkos_rt * krn, int errno) {
 	krn->sched.err = errno;
 }
 
@@ -248,7 +248,7 @@ __krn_sched_brk_get(struct thinkos_rt * krn) {
 
 /* Set the scheduler kernel fault code */
 static inline void __attribute__((always_inline)) 
-__krn_sched_xcp_set(struct thinkos_rt * krn, uint8_t fault) {
+__krn_sched_xcp_set(struct thinkos_rt * krn, int fault) {
 	krn->sched.xcp = fault;
 }
 

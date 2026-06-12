@@ -43,10 +43,13 @@ struct thinkos_i_call_tab {
 extern "C" {
 #endif
 
-extern struct thinkos_i_call_tab * cm_vector_except7; 
+//extern struct thinkos_i_call_tab * cm_vector_except7; 
+ 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 
 /* Fixed vector for i_call table pointer */
-#define THINKOS_KRN_I_CALL_PTR cm_vector_except7
+#define THINKOS_KRN_I_CALL_PTR *(struct thinkos_i_call_tab **)(0x1C)
 
 static inline void  __attribute__((always_inline)) 
 	thinkos_sem_post_i(int sem) {
@@ -71,6 +74,8 @@ static inline void __attribute__((always_inline))
 	struct thinkos_i_call_tab * i_call = (THINKOS_KRN_I_CALL_PTR);
 	i_call->gate_open(gate);
 }
+
+#pragma GCC diagnostic pop
 
 #ifdef __cplusplus
 }

@@ -63,12 +63,13 @@
 #include <stm32f/stm32f-tim.h>
 #include <stm32f/stm32f-dma.h>
 #include <stm32f/stm32f-exti.h>
+#include <stm32f/stm32-crc.h>
 
 #define STM32F_BASE_UID		0x1ffff7e8
 #define STM32F_BASE_FSMC    0xa0000000
 #define STM32F_BASE_OTG_FS  0x50000000
 #define STM32F_BASE_EMAC    0x40028000
-#define STM32F_BASE_CRC     0x40023000
+#define STM32_BASE_CRC     0x40023000
 #define STM32F_BASE_FLASH   0x40022000
 #define STM32F_BASE_RCC     0x40021000
 #define STM32F_BASE_DMA2    0x40020400
@@ -214,6 +215,9 @@
 #define STM32F_RTC ((struct stm32f_rtc *)STM32F_BASE_RTC)
 #define STM32F_USB ((struct stm32f_usb *)STM32F_BASE_USB)
 #define STM32_FLASH ((struct stm32_flash *)STM32F_BASE_FLASH)
+
+#define STM32_CRC       ((struct stm32_crc *)STM32_BASE_CRC)
+
 #define STM32F_FSMC ((struct stm32f_fsmc *)STM32F_BASE_FSMC)
 #define STM32F_DAC ((struct stm32f_dac *)STM32F_BASE_DAC)
 #define STM32F_ADC1 ((struct stm32f_adc *)STM32F_BASE_ADC1)

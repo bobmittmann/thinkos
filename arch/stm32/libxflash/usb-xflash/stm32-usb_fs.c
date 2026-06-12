@@ -36,7 +36,8 @@
 #define STM32F_USB_PKTBUF_SIZE 512
 #define STM32F_USB_PKTBUF ((struct stm32f_usb_pktbuf *)STM32F_USB_PKTBUF_ADDR)
 #define STM32F_USB ((struct stm32f_usb *)STM32F_BASE_USB)
-
+#undef MIN
+#define MIN(A, B) (((A) < (B)) ? (A) : (B));
 /* -------------------------------------------------------------------------
  * End point packet buffer helpers
  * ------------------------------------------------------------------------- */

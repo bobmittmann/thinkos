@@ -219,6 +219,16 @@ static inline int serial_rx_disable(struct serial_dev * dev) {
 						  SERIAL_RX_EN, 0);
 }
 
+static inline int serial_tx_enable(struct serial_dev * dev) {
+	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_ENABLE, 
+						  SERIAL_TX_EN, 0);
+}
+
+static inline int serial_tx_disable(struct serial_dev * dev) {
+	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_DISABLE, 
+						  SERIAL_TX_EN, 0);
+}
+
 static inline int serial_flowctrl_set(struct serial_dev * dev,
 									  unsigned int flowctrl) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_FLOWCTRL_SET, 

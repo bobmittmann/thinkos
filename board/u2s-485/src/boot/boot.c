@@ -47,6 +47,11 @@
 
 #include <sys/dcclog.h>
 
+#define FLASH_ADDR 0x08000000
+#define APP_OFFS (16 * 1024)
+#define APP_SIZE (16 * 1024)
+#define APP_ADDR (FLASH_ADDR + APP_OFFS)
+
 static const struct comm_dev console_comm_dev = {
 #if (THINKOS_COMM_MAX) > 0
 	.arg = (void *)THINKOS_COMM_TX_DESC(0),
@@ -62,11 +67,19 @@ int stm32f1x_flash_erase(struct stm32_flash * flash, off_t offs, size_t len);
 int stm32f1x_flash_write(struct stm32_flash * flash, 
 						 off_t offs, const void * buf, size_t len);
 
-void __flash_erase(void)
+void __app_run(uint32_t app_addr)
+{
+    DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FGR
+            "* thinkos_app_exec()..." VT_POP);
+    thinkos_app_exec(app_addr, 0, 0);
+    DCC_LOG(LOG_ERROR, VT_PSH VT_BRI VT_FRD
+            "**** thinkos_app_exec() failed." VT_POP);
+}
+
+void __flash_erase(uint32_t offs, uint32_t size)
 {
 	struct stm32_flash * flash = STM32_FLASH;
-	uint32_t offs = 16 * 1024;
-	uint32_t rem = 16 * 1024;
+	uint32_t rem = size;
 
 	krn_console_puts("\r\nErasing... ");
 	while (rem > 0) {
@@ -83,17 +96,15 @@ void __flash_erase(void)
 }
 
 /* Receive a file and write it into the flash using the YMODEM protocol */
-void __flash_ymodem_recv(void)
+void __flash_ymodem_recv(uint32_t offs, uint32_t size)
 {
 	struct stm32_flash * flash = STM32_FLASH;
 	struct ymodem_rcv ry;
 	unsigned int fsize;
-	uint32_t offs = 16 * 1024;
+	uint32_t end = offs + size;
 	uint8_t buf[1024];
 	char * fname;
 	int ret;
-
-	stm32f1x_flash_erase(flash, offs, 16 * 1024);
 
 	krn_console_puts("\r\nReceiving YMODEM...");
 
@@ -104,6 +115,11 @@ void __flash_ymodem_recv(void)
 		while ((ret = ymodem_rcv_loop(&ry, buf, sizeof(buf))) > 0) {
 			int cnt = ret;
 			uint8_t * cp = buf;
+			if (offs >= end) {
+				ymodem_rcv_cancel(&ry);
+				ret = -1;
+				break;
+			}
 			while (cnt > 0) {
 				ret = stm32f1x_flash_write(flash, offs, cp, cnt);
 				if (ret <= 0) {
@@ -127,9 +143,11 @@ void __flash_ymodem_recv(void)
 
 const char help[] = 
 	"Options:\r\n" 
+	"\tR - Run App\r\n" 
 	"\tE - Erase partition\r\n" 
 	"\tY - YMODEM receive\r\n" 
 	"\tQ - Quit\r\n" 
+	" [boot] > "
 ;
 
 int console_shell_task(void)
@@ -148,17 +166,20 @@ int console_shell_task(void)
 
 		switch (c) {
 		case 'Y':
-			__flash_ymodem_recv();
+			__flash_ymodem_recv(APP_OFFS, APP_SIZE);
 			break;
 
 		case 'E':
-			__flash_erase();
+			__flash_erase(APP_OFFS, APP_SIZE);
+			break;
+
+		case 'R':
+			__app_run(APP_ADDR);
 			break;
 
 		case '\r':
 		case 'h':
 			krn_console_puts(help);
-			krn_console_puts("> ");
 			break;
 
 		}
@@ -179,15 +200,13 @@ int console_shell_task(void)
 	return 0;
 }
 
-const struct thinkos_thread_initializer yrecv_thread_init = {
+const struct thinkos_thread_initializer shell_thread_init = {
 	.stack_base = APP_STACK_BASE,
 	.stack_size = APP_STACK_SIZE,
 	.task_entry = (uintptr_t)console_shell_task,
 	.task_exit = (uintptr_t)thinkos_krn_abort_at_exit,
 	.task_arg[0] = (uintptr_t)"yrc",
 	.task_arg[1] = 1,
-	.task_arg[2] = 0,
-	.task_arg[3] = 0,
 	.priority = 1,
 	.paused = false,
 	.privileged = false,
@@ -200,17 +219,21 @@ const struct thinkos_thread_initializer app_thread_init = {
 	.task_exit = (uintptr_t)NULL,
 	.task_arg[0] = (uintptr_t)"app",
 	.task_arg[1] = 1,
-	.task_arg[2] = 0,
-	.task_arg[3] = 0,
 	.priority = 1,
 	.paused = false,
 	.privileged = false,
 };
 
-void board_on_break(struct thinkos_rt * krn, const struct monitor_comm * comm)
+#if 0
+void board_core_rst(struct thinkos_rt * krn)
 {
-	thinkos_krn_thread_init(krn, 1, &yrecv_thread_init);
+	thinkos_krn_thread_init(krn, 1, &rst_thread_init);
 }
+
+void board_on_break(struct thinkos_rt * krn)
+{
+}
+#endif
 
 void board_reset(void)
 {
@@ -227,6 +250,9 @@ void board_reset(void)
 	/* UART */
 	stm32_gpio_mode(USART2_TX, ALT_FUNC, PUSH_PULL | SPEED_LOW);
 	stm32_gpio_mode(USART2_RX, INPUT, PULL_UP);
+
+	/* - CRC --------------------------------------------------------------- */
+	stm32_clk_enable(STM32_RCC, STM32_CLK_CRC);
 
 	/* RS 485 */
 	stm32_gpio_mode(RS485_RXEN, OUTPUT, PUSH_PULL | SPEED_LOW);
@@ -278,41 +304,13 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_COMM_EOT);
 	sigmask |= (1 << MONITOR_RX_PIPE);
 	sigmask |= (1 << MONITOR_COMM_BRK);
+	sigmask |= (1 << MONITOR_COMM_CTL);
 
 	sigmask |= (1 << MONITOR_ON_CORE_RST);
-	sigmask |= (1 << MONITOR_SOFTRST);
-
-//	monitor_unmask(MONITOR_SOFTRST);
-//	monitor_unmask(MONITOR_COMM_BRK);
-//	monitor_unmask(MONITOR_COMM_CTL);
-
-//	monitor_alarm(2000);
+	sigmask |= (1 << MONITOR_THREAD_FAULT);
 
 	for(;;) {
 		switch ((sig = monitor_select(sigmask))) {
-#if 0
-		case MONITOR_ALARM:
-			monitor_clear(MONITOR_ALARM);
-			monitor_alarm(10000);
-			DCC_LOG(LOG_TRACE, "ALARM");
-	//		__kdump(krn);
-			break;
-#endif
-
-//		case MONITOR_COMM_CTL:
-//			monitor_clear(MONITOR_COMM_CTL);
-//			status = monitor_comm_status_get(comm);
-//			connected = (status & COMM_ST_CONNECTED) ? true : false;
-//			thinkos_krn_console_connect_set(connected);
-//			sigmask &= ~((1 << MONITOR_COMM_EOT) | 
-//						 (1 << MONITOR_COMM_RCV) |
-//						 (1 << MONITOR_RX_PIPE));
-//			sigmask |= (1 << MONITOR_TX_PIPE);
-//			if (connected) {
-//				sigmask |= ((1 << MONITOR_COMM_EOT) |
-//							(1 << MONITOR_COMM_RCV));
-//			}
-//			break;
 
 		case MONITOR_COMM_EOT:
 			/* FALLTHROUGH */
@@ -326,29 +324,46 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			sigmask = monitor_on_rx_pipe(comm, sigmask);
 			break;
 
+		case MONITOR_THREAD_FAULT:
+			{
+				int thread_id;
+				int32_t errno;
+
+				monitor_clear(MONITOR_THREAD_FAULT);
+
+				/* get the last thread known to be at fault */
+				thread_id = monitor_thread_break_get(&errno);
+				(void)thread_id;
+
+				DCC_LOG2(LOG_ERROR, "<%d> error %d !!", thread_id, errno);
+				if ((errno >= THINKOS_ERR_APP_INVALID) && 
+					(errno <= THINKOS_ERR_APP_BSS_INVALID)) {
+					DCC_LOG(LOG_ERROR, "Invalid application !");
+					monitor_thread_break_clr();
+				}
+				if (errno == THINKOS_ERR_SYSCALL_INVALID) {
+					DCC_LOG(LOG_ERROR, "Invalid System Call!");
+					monitor_thread_break_clr();
+				}
+			}
+
+			break;
+
 		case MONITOR_COMM_BRK:
 			monitor_clear(MONITOR_COMM_BRK);
-			DCC_LOG(LOG_TRACE, "Break received");
-	//		monitor_comm_break_ack(comm);
-		//	board_on_break(krn, comm);		
+			DCC_LOG(LOG_TRACE, "Line break received");
+			thinkos_krn_req_core_rst(krn);					
 			break;
 
-		case MONITOR_SOFTRST:
-			monitor_clear(MONITOR_SOFTRST);
-			DCC_LOG(LOG_TRACE, "SOFTRST");
-			board_reset();
-			/* FALLTHROUGH */
-			break;
-
-		/* FALLTHROUGH */
 		case MONITOR_ON_CORE_RST:
 			DCC_LOG(LOG_TRACE, "Core reset received");
 			monitor_clear(MONITOR_ON_CORE_RST);
 			board_reset();
-			board_on_break(krn, comm);
+			thinkos_krn_thread_init(krn, 3, &shell_thread_init);
 			break;
 
 		default:
+			DCC_LOG1(LOG_WARNING, "Unhandled signal: %d", sig);
 			monitor_clear(sig);
 		}
 	}
@@ -356,9 +371,6 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 #endif
 
 extern const struct thinkos_comm usb_cdc_comm_instance;
-
-extern const char * const zarathustra_txt[];
-extern const int zarathustra_len[];
 
 void main(int argc, char ** argv)
 {
@@ -371,14 +383,12 @@ void main(int argc, char ** argv)
 
 #if DEBUG
 	DCC_LOG_CONNECT();
-	mdelay(100);
 	DCC_LOG(LOG_TRACE, "--------------");
 	DCC_LOG(LOG_TRACE, " U2S-485 Boot ");
 	DCC_LOG(LOG_TRACE, "--------------");
-	mdelay(100);
 #endif
 
-	usb_vbus(false);
+	board_reset();
 
 	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
 					 THINKOS_OPT_PRIVILEGED, NULL);
@@ -387,17 +397,16 @@ void main(int argc, char ** argv)
 	comm = usb_comm_init(&stm32f_usb_fs_dev);
 
 	board_reset();
-	
+
 	/* starts/restarts monitor with autoboot enabled */
 	thinkos_krn_monitor_init(krn, comm, monitor_task, NULL);
 
 	usb_vbus(true);
 
+
 	DCC_LOG(LOG_TRACE, "thinkos_sleep()...");
 	thinkos_sleep(2000);
 #else
-
-	board_reset();
 
 	thinkos_krn_comm_init(krn, 0, &usb_cdc_comm_instance, 
 						  (void *)&stm32f_usb_fs_dev);
@@ -427,11 +436,9 @@ void main(int argc, char ** argv)
 //	thinkos_comm_send(h, zarathustra_txt[1], zarathustra_len[1]);
 //	thinkos_comm_send(h, zarathustra_txt[2], zarathustra_len[2]);
 	thinkos_comm_send(h, "Wise man say only fools rush in.\r\n", 34);
-
-	console_shell_task();
-
 #endif
 
-	thinkos_sleep(2000);
+//	console_shell_task();
+//	board_on_break(krn);
 }
 

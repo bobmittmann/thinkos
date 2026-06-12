@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <crc.h>
 #include "xflash.h"
+#include <sys/dcclog.h>
 
 void __attribute__((noreturn)) reset(void);
 void delay(unsigned int msec);
@@ -317,7 +318,8 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 		/* copy magic check block */
 		cnt = magic->hdr.cnt > MAGIC_REC_MAX ? MAGIC_REC_MAX : magic->hdr.cnt;
 		for (i = 0; i < cnt; ++i) {
-//			usb_send(CDC_TX_EP, "\r\nmagic.", 8);
+//			 usb_send(CDC_TX_EP, "\r\nmagic.", 8);
+			DCC_LOG(LOG_TRACE, "magic loaded");
 			magic_buf.rec[i] = magic->rec[i];
 		}	
 		magic_buf.hdr.cnt = cnt;
@@ -331,7 +333,8 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 
 	do {
 //		usb_send(CDC_TX_EP, "\r\nErasing...", 12);
-//		flash_erase(blk_offs, blk_size);
+		flash_erase(blk_offs, blk_size);
+		DCC_LOG(LOG_TRACE, "erasing...");
 
 		usb_send(CDC_TX_EP, s_xmodem, sizeof(s_xmodem) - 1);
 		usb_xmodem_rcv_init(&rx, XMODEM_RCV_CRC);

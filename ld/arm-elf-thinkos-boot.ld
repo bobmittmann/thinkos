@@ -60,11 +60,6 @@ SECTIONS
 {
 	. = 0;
 
-	.cm_vector7 0x0000001c :
-	{
-		PROVIDE(cm_vector_except7 = .);
-	}
-
 	.dcclog :
 	{
 		. = ALIGN(4);
@@ -75,6 +70,7 @@ SECTIONS
 	{
 		. = ALIGN(4);
 		KEEP(*(.rodata.__FUNCTION__*))
+		KEEP(*(.rodata.__func__.*))
 		KEEP(*(.dccdata))
 	} >dcclog
 

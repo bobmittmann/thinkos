@@ -60,7 +60,6 @@ int monitor_thread_exec(const struct monitor_comm * comm,
 	(void)thread_id;
 
 	/* return in case of fault or abort */	
-	sigmask |= (1 << MONITOR_KRN_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
 	sigmask |= (1 << MONITOR_USR_ABORT);

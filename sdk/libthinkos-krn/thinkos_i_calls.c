@@ -27,7 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 
-#if (THINKOS_SEMAPHORE_MAX) > 0
+#if ((THINKOS_SEMAPHORE_MAX) > 0) && (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_sem_post_i(int sem);
 #else
 void thinkos_krn_sem_post_i(int sem) 
@@ -35,7 +35,7 @@ void thinkos_krn_sem_post_i(int sem)
 }
 #endif /* THINKOS_SEM_MAX > 0 */
 
-#if (THINKOS_EVENT_MAX) > 0
+#if ((THINKOS_EVENT_MAX) > 0) && (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_ev_raise_i(int set, int ev);
 #else
 void thinkos_krn_ev_raise_i(int set, int ev)
@@ -43,7 +43,7 @@ void thinkos_krn_ev_raise_i(int set, int ev)
 }
 #endif
 
-#if (THINKOS_FLAG_MAX) > 0
+#if ((THINKOS_FLAG_MAX) > 0) && (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_flag_give_i(int flag);
 #else
 void thinkos_krn_flag_give_i(int flag) 
@@ -51,7 +51,7 @@ void thinkos_krn_flag_give_i(int flag)
 }
 #endif
 
-#if (THINKOS_GATE_MAX) > 0
+#if ((THINKOS_GATE_MAX) > 0) && (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_gate_open_i(int gate);
 #else
 void thinkos_krn_gate_open_i(int gate)
@@ -60,12 +60,10 @@ void thinkos_krn_gate_open_i(int gate)
 #endif
 
 /* From Interrupt Call table */
-const struct thinkos_i_call_tab cm3_except7_isr = {
+const struct thinkos_i_call_tab krn_i_call_tab = {
 	.sem_post = thinkos_krn_sem_post_i,
 	.ev_raise = thinkos_krn_ev_raise_i,
 	.flag_give = thinkos_krn_flag_give_i,
 	.gate_open = thinkos_krn_gate_open_i
 };
 
-//const uintptr_t __attribute__((alias("thinkos_krn_i_call_tab")));
-//

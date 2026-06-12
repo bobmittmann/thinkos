@@ -26,7 +26,8 @@
 extern void * __bss_end;
 extern void * __heap_start;
 
-int thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+int __attribute__((section (".init")))
+thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
 					 const struct thinkos_mem_map * map)
 {
 	int thread_no;

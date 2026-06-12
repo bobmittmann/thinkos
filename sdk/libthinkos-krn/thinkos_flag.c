@@ -253,22 +253,24 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 }
 
 #if (THINKOS_ENABLE_I_CALLS)
-void thinkos_krn_flag_give_i(uint32_t flag)
+void thinkos_krn_flag_give_i(int flag)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	__krn_flag_give(krn, flag);
 	/* signal the scheduler ... */
-	__krn_preempt(krn);
+	__krn_sched_defer(krn);
+	//__krn_preempt(krn);
 }
 
-void __thinkos_flag_give_i(uint32_t flag)
+/*void __thinkos_flag_give_i(struct thinkos_rt * krn,  uint32_t flag)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	= &thinkos_rt;
 
 	__krn_flag_give(krn, flag);
 	__krn_preempt(krn);
 }
+*/
 #endif /* THINKOS_ENABLE_I_CALLS */
 
 /* wakeup a single thread waiting on the flag OR set the flag */

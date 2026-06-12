@@ -68,7 +68,7 @@ const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_ERR_APP_DATA_INVALID]  = "AppData",
 	[THINKOS_ERR_APP_CODE_INVALID]  = "AppCode",
 	[THINKOS_ERR_APP_BSS_INVALID]   = "AppBss",
-	[THINKOS_ERR_APP_ABORT_REQ]     = "AbortReq",
+	[THINKOS_ERR_APP_CTOR_INVALID]  = "AppCtor",
 	[THINKOS_ERR_IDLE_MSP]          = "IdleMSP",
 	[THINKOS_ERR_KRN_RETMSP]        = "RetToMSP",
 	[THINKOS_ERR_KRN_IDLEFAULT]     = "FaultOnIdle",
@@ -85,16 +85,49 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
-/* Kernel error trap services handler */
-#if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
+void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int errno)
 {
-#if (DEBUG)
-	uint32_t thread = SCHED_CTRL_ACT(ctrl);
-	uint32_t errno = SCHED_CTRL_ERR(ctrl);
-	uint32_t xcpno = SCHED_CTRL_XCP(ctrl);
+	__krn_sched_xcp_set(krn, errno);
+}
+
+void thinkos_krn_req_core_rst(struct thinkos_rt * krn)
+{
+	__krn_sched_xcp_set(krn, THINKOS_REQ_CORE_RST);
+}
+
+void thinkos_krn_brk_clr(struct thinkos_rt * krn)
+{
+#if (THINKOS_ENABLE_EXCEPTIONS)
+	struct thinkos_fault * fault = &thinkos_fault_rt;
+
+	fault->ack = fault->seq;
+#endif
+	__krn_sched_xcp_clr(krn);
+	__krn_sched_err_clr(krn);
+
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+}
+
+/* Kernel error trap handler */
+#if (THINKOS_ENABLE_ERROR_TRAP)
+void thinkos_krn_error_trap(struct thinkos_rt * krn)
+{
+	uint32_t thread = __krn_sched_brk_get(krn);
+	uint32_t errno = __krn_sched_err_get(krn);
+	uint32_t xcpno = __krn_sched_xcp_get(krn);
 	(void)thread;
 	(void)errno;
+
+	if (xcpno == THINKOS_REQ_CORE_RST) {
+		DCC_LOG1(LOG_WARNING, VT_PSH VT_FYW VT_REV 
+				 " Core reset thread=%d" VT_POP, thread); 
+#if (THINKOS_ENABLE_CORE_RESET)
+		/* request scheduler to stop everything */
+		thinkos_krn_core_reset(krn);
+#endif
+		return;
+	}
 
 	if (errno > 0) {
 		if (errno < THINKOS_ERR_MAX) {
@@ -108,24 +141,15 @@ void thinkos_krn_sched_err_handler(struct thinkos_rt * krn, uint32_t ctrl)
 		}
 	}
 
-	if (xcpno > 0) {
-		DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
-				 " Fault %d \"%s\" - thread=%d" VT_POP, 
-				 xcpno, thinkos_err_name_lut[xcpno], thread); 
-	}
-	
-	__xdump(krn, &thinkos_fault_rt);
-#endif
-
 #if (THINKOS_ENABLE_MONITOR) 
 	/* Signal monitor */
-	monitor_signal_break(MONITOR_THREAD_FAULT);
+	monitor_signal(MONITOR_THREAD_FAULT);
 #else
-#if (THINKOS_SYSRST_ONFAULT)
+  #if (THINKOS_SYSRST_ONFAULT)
 	thinkos_krn_sysrst();
-#else
-	__krn_ctrl_err_set(0);
-#endif
+  #else
+	thinkos_krn_brk_clr(krn);
+  #endif
 #endif
 }
 #endif /* THINKOS_ENABLE_ERROR_TRAP */

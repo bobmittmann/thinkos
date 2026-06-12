@@ -31,7 +31,8 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_ENABLE_MONITOR) 
 
 
-#define MONITOR_PERISTENT_MASK ((1 << MONITOR_SOFTRST) | (1 << MONITOR_TASK_INIT))
+#define MONITOR_PERISTENT_MASK ((1 << MONITOR_SOFTRST) | \
+								(1 << MONITOR_ON_CORE_RST))
 
 struct {
 	/* task entry point */
@@ -85,6 +86,7 @@ void monitor_signal(int sig)
 	scb->icsr = SCB_ICSR_PENDSTSET;
 }
 
+#if 0
 void monitor_signal_break(int32_t sig) 
 {
 	struct thinkos_rt * krn = &thinkos_rt;
@@ -96,7 +98,6 @@ void monitor_signal_break(int32_t sig)
 	scb->icsr = SCB_ICSR_PENDSTSET;
 }
 
-#if 0
 bool monitor_is_set(int sig) 
 {
 	return krn->monitor.events &  (1 << sig) ? true : false;
@@ -328,20 +329,6 @@ int monitor_thread_break_get(int32_t * perrno)
 	return brkid;
 }
 
-#if 1
-void monitor_thread_break_clr(void)
-{
-	struct thinkos_rt * krn = &thinkos_rt;
-	struct thinkos_fault * fault = &thinkos_fault_rt;
-
-	fault->ack = fault->seq;
-	__krn_sched_xcp_clr(krn);
-	__krn_sched_err_clr(krn);
-
-	/* signal the scheduler ... */
-	__krn_sched_defer(krn);
-}
-#endif
 
 int monitor_thread_err_get(void)
 {
@@ -379,6 +366,13 @@ uint32_t monitor_sched_ctrl_get(void)
 	struct thinkos_rt * krn = &thinkos_rt;
 
 	return  __krn_sched_ctrl_get(krn);
+}
+
+void monitor_thread_break_clr(void)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	thinkos_krn_brk_clr(krn);
 }
 
 #endif
@@ -536,7 +530,7 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 
 	krn->monitor.ctx = sp;
 	/* set the task init and software reset signals */
-	krn->monitor.events = (1 << MONITOR_TASK_INIT);
+	krn->monitor.events = 0;
 	krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
 	DCC_LOG1(LOG_TRACE, "mask=%08x", krn->monitor.mask);

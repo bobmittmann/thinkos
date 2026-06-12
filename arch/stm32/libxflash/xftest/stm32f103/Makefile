@@ -18,20 +18,24 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
-
+THINKOS_DIR = ../../../../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
 
 PROG = xftest
 
-CFILES = xftest.c board.c ../xflash.c ../usb-xflash/stm32-usb_fs.c \
-		 ../usb-xflash/stm32f1xx-flash.c
+CFILES = xftest.c board.c ../../xflash.c ../../usb-xflash/stm32-usb_fs.c \
+		 ../../usb-xflash/stm32f1xx-flash.c
 
-LIBDIRS = ../../../sdk/libstm32f ../../../sdk/libcm3 ../../../sdk/libutil \
-		  ../../../sdk/libthinkos ../../../sdk/libc ../../../sdk/libice-comm \
-		  ../../../sdk/libcdc-acm 
+LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
+          $(SDK_DIR)/libthinkos-krn \
+          $(SDK_DIR)/libice-comm \
+          $(SDK_DIR)/libcdc-acm 
 
-LIBS = stm32f cm3 util thinkos c ice-comm cdc-acm 
+LIBS = stm32f util thinkos-krn ice-comm cdc-acm 
 
-INCPATH = ../../../sdk/include ../include
+INCPATH = ../../include
 
 CDEFS = CONFIG_H NDEBUG
 #CM3_RAM_VECTORS
@@ -43,5 +47,8 @@ JTAGTOOL_ADDR = 192.168.10.50
 
 LDSCRIPT = stm32f103_ram.ld 
 MACH = stm32f103x6
-include ../../../mk/stm32f103.mk
+KRN_CODE_SIZE = 10240
+KRN_DATA_SIZE = 2048
+include $(ARCH_DIR)/mk/stm32-krn.mk
+
 

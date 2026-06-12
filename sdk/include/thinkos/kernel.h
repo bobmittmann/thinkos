@@ -1156,6 +1156,12 @@ bool thinkos_krn_wq_is_empty(struct thread_waitqueue * wq);
 
 void thinkos_krn_core_reset(struct thinkos_rt * krn);
 
+void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int errno);
+
+void thinkos_krn_req_core_rst(struct thinkos_rt * krn);
+
+void thinkos_krn_brk_clr(struct thinkos_rt * krn);
+
 void __attribute__((noreturn, noinline)) thinkos_krn_abort_at_exit(int code);
 
 /* -------------------------------------------------------------------------

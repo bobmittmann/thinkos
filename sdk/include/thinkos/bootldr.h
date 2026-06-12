@@ -89,19 +89,19 @@ static inline void monitor_req_app_resume(void) {
 }
 
 static inline void monitor_req_app_term(void) {
-	monitor_signal_break(MONITOR_APP_TERM);
+	monitor_signal(MONITOR_APP_TERM);
 }
 
 static inline void monitor_req_app_erase(void) {
-	monitor_signal_break(MONITOR_APP_ERASE);
+	monitor_signal(MONITOR_APP_ERASE);
 }
 
 static inline void monitor_req_app_exec(void) {
-	monitor_signal_break(MONITOR_APP_EXEC);
+	monitor_signal(MONITOR_APP_EXEC);
 }
 
 static inline void monitor_req_app_upload(void) {
-	monitor_signal_break(MONITOR_APP_UPLOAD);
+	monitor_signal(MONITOR_APP_UPLOAD);
 }
 
 extern const struct thinkos_flash_desc board_flash_desc;
