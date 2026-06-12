@@ -49,12 +49,11 @@
 #define THINKOS_ENABLE_MEMORY_CLEAR         0
 #define THINKOS_ENABLE_STACK_INIT           0
 #define THINKOS_ENABLE_OFAST                0
-#define THINKOS_ENABLE_MPU                  0
+#define THINKOS_ENABLE_MPU                  1
 #define THINKOS_ENABLE_FPU                  0
 #define THINKOS_ENABLE_PRIVILEGED_THREAD    1
 #define THINKOS_ENABLE_CORE_RESET           1
 #define THINKOS_ENABLE_CTL                  0
-#define THINKOS_ENABLE_RUNMASK              0
 #define THINKOS_ENABLE_MEM_MAP              0
 #define THINKOS_ENABLE_IDLE_HOOKS           0
 #define THINKOS_ENABLE_I_CALLS              0

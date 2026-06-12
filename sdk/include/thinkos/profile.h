@@ -430,10 +430,11 @@
 #define THINKOS_ENABLE_MONITOR_SYSCALL      0
 #endif
 
-/* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler. */
+/* THINKOS_ENABLE_MONITOR_SCHED: Enable the Monitor thread scheduler.
 #ifndef THINKOS_ENABLE_MONITOR_SCHED
 #define THINKOS_ENABLE_MONITOR_SCHED        0
 #endif
+*/
 
 /* THINKOS_ENABLE_DEBUG_BASE - Enable the kernel debug base subsystem.
    All other DEBUG features depend on this flag
@@ -746,10 +747,11 @@
 #error "THINKOS_ENABLE_DEFERRED_ISR depends on THINKOS_ENABLE_MONITOR"
 #endif
 
-/* monitor thread scheduler depends on monitor */
+/* monitor thread scheduler depends on monitor 
 #if (THINKOS_ENABLE_MONITOR_SCHED) && !(THINKOS_ENABLE_MONITOR)
 #error "THINKOS_ENABLE_MONITOR_SCHED depends on THINKOS_ENABLE_MONITOR"
 #endif
+ */
 
 #if (THINKOS_ENABLE_MONITOR) && ((THINKOS_MONITOR_STACK_SIZE) < (16 * 4))
 #error "THINKOS_MONITOR_STACK_SIZE too small"
@@ -902,6 +904,10 @@
 
 #ifdef THINKOS_ENABLE_MONITOR_THREADS
 #error "THINKOS_ENABLE_MONITOR_THREADS is deprecated"
+#endif
+
+#ifdef THINKOS_ENABLE_MONITOR_SCHED
+#error "THINKOS_ENABLE_MONITOR_SCHED is deprecated"
 #endif
 
 /* -------------------------------------------------------------------------- 

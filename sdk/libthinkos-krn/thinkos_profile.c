@@ -129,7 +129,6 @@ const struct thinkos_profile thinkos_profile = {
 	.monitor = {
 		.enabled         = THINKOS_ENABLE_MONITOR,
 		.clock           = THINKOS_ENABLE_MONITOR_CLOCK,
-		.sched           = THINKOS_ENABLE_MONITOR_SCHED,
 		.stack_size      = THINKOS_MONITOR_STACK_SIZE
 	},
 
@@ -322,8 +321,6 @@ void __profile(void)
 			 p->monitor.enabled);
 	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_CLOCK   = %d", 
 			 p->monitor.clock);
-	DCC_LOG1(LOG_TRACE, "THINKOS_ENABLE_MONITOR_SCHED   = %d", 
-			 p->monitor.sched);
 	DCC_LOG1(LOG_TRACE, "THINKOS_MONITOR_STACK_SIZE     = %d", 
 			 p->monitor.stack_size);
 
