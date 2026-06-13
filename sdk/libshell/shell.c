@@ -160,7 +160,7 @@ int shell_simple(FILE * f, struct shell_ops * op)
 							op->cmd_brief(env, cmd));
 					fprintf(fout, "  usage: %s %s\n\n", 
 							op->cmd_alias(env, cmd), op->cmd_detail(env, cmd));
-				} else if (ret !=  SHELL_ABORT) {
+				} else if (ret != SHELL_ABORT) {
 					fprintf(fout, "Error: %d\n", -ret);
 					break;
 				}

@@ -87,6 +87,13 @@ void monitor_req_core_rst(void)
 	thinkos_krn_req_core_rst(krn);
 }
 
+void monitor_core_rst_and_signal(unsigned int sig)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	thinkos_krn_sched_brk(krn, sig);
+}
+
 #if 0
 void monitor_signal_break(int32_t sig) 
 {
@@ -308,6 +315,12 @@ int monitor_thread_break_get(int32_t * perrno)
 	return brkid;
 }
 
+struct thinkos_context * monitor_thread_ctx_get(unsigned int th)
+{
+	struct thinkos_rt * krn = &thinkos_rt;
+
+	return __thread_ctx_get(krn, th);
+}
 
 int monitor_thread_err_get(void)
 {

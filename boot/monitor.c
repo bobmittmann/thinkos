@@ -997,7 +997,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 		case MONITOR_APP_ERASE:
 			monitor_clear(MONITOR_APP_ERASE);
 			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-//			monitor_flash_erase_all(comm, "APP");
 			break;
 #endif
 

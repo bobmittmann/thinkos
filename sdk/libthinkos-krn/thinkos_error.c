@@ -85,14 +85,20 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
-void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int errno)
+void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int xcp)
 {
-	__krn_sched_xcp_set(krn, errno);
+	/* set the exception code */
+	__krn_sched_xcp_set(krn, xcp);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
 }
 
 void thinkos_krn_req_core_rst(struct thinkos_rt * krn)
 {
+	/* set the exception code */
 	__krn_sched_xcp_set(krn, THINKOS_REQ_CORE_RST);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
 }
 
 void thinkos_krn_brk_clr(struct thinkos_rt * krn)
@@ -111,20 +117,23 @@ void thinkos_krn_brk_clr(struct thinkos_rt * krn)
 
 /* Kernel error trap handler */
 #if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_error_trap(struct thinkos_rt * krn)
-{
+void thinkos_krn_error_trap(struct thinkos_rt * krn) {
 	uint32_t thread = __krn_sched_brk_get(krn);
 	uint32_t errno = __krn_sched_err_get(krn);
 	uint32_t xcpno = __krn_sched_xcp_get(krn);
 	(void)thread;
 	(void)errno;
 
-	if (xcpno == THINKOS_REQ_CORE_RST) {
+	if (xcpno > 0) {
 		DCC_LOG1(LOG_WARNING, VT_PSH VT_FYW VT_REV 
 				 " Core reset thread=%d" VT_POP, thread); 
 #if (THINKOS_ENABLE_CORE_RESET)
 		/* request scheduler to stop everything */
 		thinkos_krn_core_reset(krn);
+#if (THINKOS_ENABLE_MONITOR) 
+		/* Notify monitor */
+		monitor_signal(xcpno);
+#endif
 #endif
 		return;
 	}

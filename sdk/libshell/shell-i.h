@@ -47,6 +47,7 @@
 #include <sys/shell.h>
 #include <sys/tty.h>
 #include <errno.h>
+#include <trace.h>
 
 #ifndef SHELL_ARG_MAX 
 #define SHELL_ARG_MAX 16

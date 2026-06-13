@@ -25,7 +25,7 @@
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 
-#if THINKOS_ENABLE_APP
+#if (THINKOS_ENABLE_APP)
 
 /* -------------------------------------------------------------------------
  * Application execution
@@ -56,13 +56,28 @@ static int __app_exec_task(uintptr_t addr, unsigned int thread)
 	return ret;
 }
 
-bool monitor_app_exec(const struct monitor_comm * comm)
+bool monitor_app_exec(uintptr_t addr)
+{
+	int thread_id;
+	int ret;
+
+	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
+
+	ret = thinkos_main_thread_create(C_TASK(__app_exec_task), C_ARG(addr), 
+									__app_exec_on_exit, true);
+	thread_id = ret;
+	(void)thread_id;
+
+	DCC_LOG1(LOG_TRACE, "monitor_thread_exec() = %d!", ret);
+
+	return (ret < 0) ? false : true;
+}
+
+bool monitor_flash_app_exec(const struct monitor_comm * comm)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	struct thinkos_mem_part part;
 	uintptr_t addr;
-	int thread_id;
-	int ret;
 
 	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
 
@@ -74,14 +89,7 @@ bool monitor_app_exec(const struct monitor_comm * comm)
 	DCC_LOG2(LOG_TRACE, "patition: %08x ~ %08x", part.begin, part.end);
 	addr = part.begin;
 
-	ret = thinkos_main_thread_create(C_TASK(__app_exec_task), C_ARG(addr), 
-									__app_exec_on_exit, true);
-	thread_id = ret;
-	(void)thread_id;
-
-	DCC_LOG1(LOG_TRACE, "monitor_thread_exec() = %d!", ret);
-
-	return (ret < 0) ? false : true;
+	return monitor_app_exec(addr);
 }
 
 #endif

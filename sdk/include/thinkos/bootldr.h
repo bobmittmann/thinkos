@@ -165,7 +165,9 @@ bool monitor_app_suspend(void);
 
 bool monitor_app_continue(void);
 
-bool monitor_app_exec(const struct monitor_comm * comm);
+bool monitor_app_exec(uintptr_t addr);
+
+bool monitor_flash_app_exec(const struct monitor_comm * comm);
 
 #ifdef __cplusplus
 }

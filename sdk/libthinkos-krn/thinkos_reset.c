@@ -28,6 +28,8 @@ void thinkos_core_reset_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 	if (arg[0] == THINKOS_CORE_RESET_KEY) {
 		/* request scheduler to stop everything */
 		thinkos_krn_core_reset(krn);
+		/* Notify monitor */
+		monitor_signal(MONITOR_ON_CORE_RST);
 	}
 }
 #endif

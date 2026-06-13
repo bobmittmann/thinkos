@@ -46,7 +46,7 @@ enum monitor_event {
 	/* Debug timer expiry indication */
 	MONITOR_ALARM           = 2,
 	/* Board reset request */
-	MONITOR_SOFTRST         = 3,
+//	MONITOR_SOFTRST         = 3,
 	/* ThinkOS Thread error */
 	MONITOR_THREAD_FAULT    = 4,
 	/* ThinkOS Thread step break */
@@ -69,18 +69,19 @@ enum monitor_event {
 	/* User console TX pipe not empty */
 	MONITOR_TX_PIPE         = 13,
 
-	MONITOR_APP_TERM        = 15,
+	MONITOR_APP_TERM        = 14,
 	/* ThinkOS application stop request */
-	MONITOR_APP_STOP        = 16,
+	MONITOR_APP_STOP        = 15,
 	/* ThinkOS application resume request */
-	MONITOR_APP_RESUME      = 17,
+	MONITOR_APP_RESUME      = 16,
 	/* User console */
-	MONITOR_APP_EXEC        = 18,
+	MONITOR_APP_EXEC        = 17,
 	
-	MONITOR_APP_ERASE       = 19,
-	MONITOR_APP_UPLOAD      = 20,
+	MONITOR_APP_ERASE       = 18,
+	MONITOR_APP_UPLOAD      = 19,
 
-	/* User/bootloader extension events 1 to 4 */
+	/* User/bootloader extension events 0 to 4 */
+	MONITOR_USER_EVENT0     = 20,
 	MONITOR_USER_EVENT1     = 21,
 	MONITOR_USER_EVENT2     = 22,
 	MONITOR_USER_EVENT3     = 23,
@@ -255,13 +256,6 @@ int monitor_wait_idle(void);
 
 void __monitor_idle_hook(void);
 
-/* Request a soft reset. The monitor task should 
- * respond to this event by calling 
- * monitor_on_softrst() */
-static inline void monitor_req_softrst(void) {
-	monitor_signal(MONITOR_SOFTRST); 
-}
-
 /* ----------------------------------------------------------------------------
  *  Debug/Monitor alarm/timer 
  * ----------------------------------------------------------------------------
@@ -330,6 +324,10 @@ int monitor_thread_err_get(void);
 void monitor_thread_err_clr(void);
 
 uint32_t monitor_sched_ctrl_get(void);
+
+void monitor_core_rst_and_signal(unsigned int sig);
+
+struct thinkos_context * monitor_thread_ctx_get(unsigned int th);
 
 int monitor_thread_step_get(void);
 void monitor_thread_step_clr(void);
