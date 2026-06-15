@@ -36,10 +36,6 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
-#ifndef THINKOS_MONITOR_ENABLE_COMM_STATS
-#define THINKOS_MONITOR_ENABLE_COMM_STATS 0
-#endif
-
 #ifndef THINKOS_MONITOR_ENABLE_COMM_CONNECT
 #define THINKOS_MONITOR_ENABLE_COMM_CONNECT 0
 #endif
@@ -436,17 +432,8 @@ struct usb_cdc_acm_dev {
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
-#define CDC_RX_BUF_SIZE CDC_EP_OUT_MAX_PKT_SIZE
+#define CDC_RX_BUF_SIZE (2*CDC_EP_OUT_MAX_PKT_SIZE)
 	uint8_t rx_buf[CDC_RX_BUF_SIZE];
-
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-	struct {
-		uint32_t tx_octet;
-		uint32_t rx_octet;
-		uint32_t tx_pkt;
-		uint32_t rx_pkt;
-	} stats;
-#endif
 
 };
 
@@ -930,10 +917,6 @@ static int monitor_usb_comm_recv(const void * comm,
 		DCC_LOG6(LOG_INFO, "2. m=%d l=%d n=%d ack=%d pos=%d cnt=%d...", 
 				 m, l, n, ack, pos, cnt);
 	}
-
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-	dev->stats.rx_octet += cnt;
-#endif
 
 	ack += cnt;
 	dev->rx_ack = ack;

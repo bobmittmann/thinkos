@@ -28,14 +28,6 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-inline static void console_signal_tx_req(void)
-{
-#if (THINKOS_ENABLE_MONITOR)
-	monitor_signal(SIG_CONSOLE_TX);
-#else
-#endif
-}
-
 inline static void console_clear_tx_pipe(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -88,7 +80,6 @@ inline static void console_signal_ctl(void)
 #else
 #endif
 }
-
 
 #if (THINKOS_ENABLE_CONSOLE)
 
@@ -295,7 +286,7 @@ void thinkos_console_tx_pipe_commit(int cnt)
 	   from an interrupt handler), let the thread to
 	   wake up and retry. */
 	/* wakeup from the console wait queue */
-	__wq_wakeup_return(krn, wq, th, 0);
+	__krn_wq_wakeup_return(krn, wq, th, THINKOS_OK);
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn); 
 }
@@ -844,10 +835,11 @@ void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		break;
 
 	case CONSOLE_CLOSE:
-		if (thinkos_console_rt.open_cnt > 0)
-			arg[SVC_RETURN] = THINKOS_EBADF;
-		else
+		if (thinkos_console_rt.open_cnt > 0) {
+			thinkos_console_rt.open_cnt--;
 			arg[SVC_RETURN] = THINKOS_OK;
+		} else
+			arg[SVC_RETURN] = THINKOS_EBADF;
 		break;
 #endif
 

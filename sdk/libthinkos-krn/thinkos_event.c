@@ -198,8 +198,10 @@ again:
 	/* Save the context pointer. In case an interrupt wakes up
 	   this thread before the scheduler is called, this will allow
 	   the interrupt handler to locate the return value (r0) address. */
-	__thread_ctx_set(krn, self, (struct thinkos_context *)&arg[-CTX_R0],
-							 CONTROL_SPSEL | CONTROL_nPRIV);
+/* NEW: 2020-12-02 performed by the svc call entry stub  */
+//	__thread_ctx_set(krn, self, (struct thinkos_context *)&arg[-CTX_R0],
+//							 CONTROL_SPSEL | CONTROL_nPRIV);
+
 	queue = __ldrex(&krn->wq_lst[evset]);
 	queue |= (1 << (self - 1));
 	pend = (volatile uint32_t)krn->ev[no].pend;
@@ -445,10 +447,8 @@ bool evset_resume(struct thinkos_rt * krn, unsigned int th,
 		__bit_mem_wr(&krn->ev[no].pend, ev, 0);  
 		/* insert the thread into ready queue */
 		__thread_ready_set(krn, th);
-#if (THINKOS_ENABLE_TIMED_CALLS)
 		/* set the thread's return value */
-		__thread_return_set(krn, th, 0);
-#endif
+		__thread_return_set(krn, th, ev);
 		/* update status */
 		__thread_stat_clr(krn, th);
 	} else {

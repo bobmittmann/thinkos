@@ -86,9 +86,8 @@ enum monitor_event {
 	MONITOR_USER_EVENT2     = 22,
 	MONITOR_USER_EVENT3     = 23,
 	MONITOR_USER_EVENT4     = 24,
+	MONITOR_USER_EVENT5     = 25, 
 
-	/* Debug Communication break signal */
-	SIG_COMM_BRK            = 25, 
 	/* Debug Communication data received pending */
 	SIG_COMM_RCV            = 26, 
 	/* Debug Communication end 3f transfer */

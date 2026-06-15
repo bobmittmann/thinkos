@@ -364,7 +364,7 @@ void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[SVC_RETURN] = THINKOS_OK;
 	/* set the flag and wakeup all threads waiting on the flag */
 	__bit_mem_wr(krn->flag, idx, 1);  
-	__krn_wq_wakeup_all(krn, flag);
+	__krn_wq_wakeup_all(krn, flag, THINKOS_OK);
 }
 
 void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
