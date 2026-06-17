@@ -35,7 +35,7 @@ CFILES = atoi.c environ.c fclose.c fflush.c fgetc.c ftmgetc.c\
 		 printf.c puts.c vsnprintf.c sprintf.c snprintf.c\
 		 strcasecmp.c strcat.c strchr.c strrchr.c strstr.c\
 		 strcmp.c strncmp.c strcpy.c strncpy.c strlen.c\
-		 strlcpy.c strlcat.c\
+		 strlcpy.c strlcat.c stpcpy.c\
 		 strtol.c strtoul.c strtof.c vfprintf.c malloc.c calloc.c errno.c \
 		 strerror.c strtod.c strtoull.c strtod.c assert.c \
 		 rand.c stdin.c stdout.c stderr.c strtok.c null.c abort.c\
