@@ -35,9 +35,10 @@ __krn_stack_start = ORIGIN(STACK);
 __krn_stack_size = __krn_stack_end - __krn_stack_start;
 _stack = __krn_stack_end;
 
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
+
+ice_comm_blk = __krn_stack_end;
 
 EXTERN(_reset)
 

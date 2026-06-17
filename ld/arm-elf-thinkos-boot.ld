@@ -40,7 +40,7 @@ __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
 __firmware_end = ORIGIN(CODE) + LENGTH(CODE);
 
-ice_comm_blk = _stack_top - DEFINED(ice_trace_init) * 0x50;
+ice_comm_blk = __krn_stack_end;
 
 EXTERN(_reset)
 /*EXTERN(_isr) */
