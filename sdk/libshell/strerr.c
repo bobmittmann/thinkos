@@ -40,7 +40,8 @@ const char * shell_error_msg[] = {
 	[-SHELL_ERR_ARG_INVALID] = "Argument invalid",
 	[-SHELL_ERR_EXTRA_ARGS] = "Extra arguments",
 	[-SHELL_ERR_PARSE] = "Parsing Command Line",
-	[-SHELL_ERR_LOW_LEVEL] = "Low level",
+	[-SHELL_ERR_LOW_LEVEL] = "Low level fault",
+	[-SHELL_ERR_EVAL] = "Expression evaluation",
 };
 
 const char * shell_strerror(int errnum)
