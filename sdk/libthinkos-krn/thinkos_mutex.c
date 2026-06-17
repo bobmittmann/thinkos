@@ -55,7 +55,7 @@ int krn_mutex_unlock_wakeup(struct thinkos_rt * krn, int mtx)
 		/* set the mutex ownership to the new thread */
 		__krn_mutex_lock(krn, mtx, th);
 		/* wakeup from the mutex wait queue */
-		__krn_wq_wakeup(krn, mtx, th);
+		__krn_wq_wakeup_return(krn, mtx, th, THINKOS_OK);
 	}
 
 	return th;

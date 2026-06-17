@@ -29,12 +29,12 @@ COMMIO_CFILES = monitor_write.c monitor_read.c \
 				monitor_putc.c monitor_puts.c \
 		monitor_getc.c monitor_gets.c \
 		monitor_printf.c monitor_scanf.c \
-		monitor_println.c \
-		monitor_send_misc.c \
+		monitor_print_newln.c \
+		monitor_print_misc.c \
 		print_osinfo.c print_alloc.c print_thread.c \
 		print_context.c print_stack_usage.c \
 		print_fault.c print_profile.c  \
-		monitor_hexdump.c monitor_newln.c
+		monitor_hexdump.c 
 
 CFILES = monitor_thread.c monitor_memory.c \
 	 monitor_console_task.c \

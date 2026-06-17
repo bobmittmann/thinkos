@@ -18,23 +18,39 @@
  */
 
 /** 
- * @file cmd_close.c
+ * @file strerr.c
  * @brief YARD-ICE
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <sys/shell.h>
 
-int cmd_close(FILE * f, int argc, char ** argv)
-{
-	if (argc > 1)
-		return SHELL_ERR_EXTRA_ARGS;
+#define __SHELL_I__
+#include "shell-i.h"
 
-	fprintf(f, "\nBye\n");
-	fflush(f);
-	fclose(f);
-	
-	return SHELL_ABORT;
+const char * shell_error_msg[] = {
+	[SHELL_OK] = "Ok",
+	[-SHELL_ERR_GENERAL] = "General",
+	[-SHELL_ERR_CMD_INVALID] = "Command invalid",
+	[-SHELL_ERR_ARG_MISSING] = "Argument missing",
+	[-SHELL_ERR_ARG_INVALID] = "Argument invalid",
+	[-SHELL_ERR_EXTRA_ARGS] = "Extra arguments",
+	[-SHELL_ERR_PARSE] = "Parsing Command Line",
+	[-SHELL_ERR_LOW_LEVEL] = "Low level fault",
+	[-SHELL_ERR_EVAL] = "Expression evaluation",
+};
+
+const char * shell_strerror(int errnum)
+{
+	unsigned int code = -errnum;
+	if (code > SHELL_ERR_LOW_LEVEL) {
+		return "";
+	}
+
+	return shell_error_msg[code]; 
 }
 

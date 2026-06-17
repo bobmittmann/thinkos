@@ -73,6 +73,8 @@ int memcmp(const void * s1, const void * s2, size_t n);
 
 void *memmove(void *dest, const void *src, size_t n);
 
+char * stpcpy(char * restrict dst, const char * restrict src);
+
 int ffs(int i);
 
 /* FIXME: not implemented */

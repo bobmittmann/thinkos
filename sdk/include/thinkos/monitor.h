@@ -86,9 +86,8 @@ enum monitor_event {
 	MONITOR_USER_EVENT2     = 22,
 	MONITOR_USER_EVENT3     = 23,
 	MONITOR_USER_EVENT4     = 24,
+	MONITOR_USER_EVENT5     = 25, 
 
-	/* Debug Communication break signal */
-	SIG_COMM_BRK            = 25, 
 	/* Debug Communication data received pending */
 	SIG_COMM_RCV            = 26, 
 	/* Debug Communication end 3f transfer */
@@ -438,23 +437,25 @@ int monitor_putc(int c, const struct monitor_comm * comm);
 int monitor_puts(const char * s, const struct monitor_comm * comm);
 
 /* Formats and sends a 32bits signed value into decimal */
-void monitor_comm_send_int(int32_t val, unsigned int width, 
+void monitor_print_int(int32_t val, unsigned int width, 
                           const struct monitor_comm * comm);
 
 /* Formats and sends a 32bits unsigned value into decimal */
-void monitor_comm_send_uint(uint32_t val, unsigned int width, 
+void monitor_print_uint(uint32_t val, unsigned int width, 
                            const struct monitor_comm * comm); 
 
-/* Formats and sends a C string */
-void monitor_comm_send_str(const char * s, unsigned int width, 
+void monitor_print_newln(const struct monitor_comm * comm);
+
+/* Formats and sends a C left aligned string */
+void monitor_print_str(const char * s, unsigned int width, 
 		const struct monitor_comm * comm);
 
 /* Formats and sends a blanks */
-void monitor_comm_send_blanks(unsigned int width, 
+void monitor_printt_blanks(unsigned int width, 
 		const struct monitor_comm * comm);
 
 /* Formats 32bits unsigned value into hexadecimal and sends */
-void monitor_comm_send_hex(uint32_t val, unsigned int width, 
+void monitor_print_hex(uint32_t val, unsigned int width, 
 		const struct monitor_comm * comm);
 
 /* Returns a string */
@@ -465,6 +466,7 @@ int monitor_getc(const struct monitor_comm * comm);
 
 /* Minimalistic scanf style input formatter */
 int monitor_scanf(const struct monitor_comm * comm, const char *fmt, ... );
+
 
 /* Formats and sends a memory buffer formatted as hexadecimal */
 void monitor_hexdump(const struct monitor_comm * comm, 
@@ -484,14 +486,14 @@ void monitor_print_context(const struct monitor_comm * comm,
 void monitor_print_fault(const struct monitor_comm * comm, 
                             struct thinkos_fault * fault);
 
-void monitor_newln(const struct monitor_comm * comm);
-
 void monitor_print_profile(const struct monitor_comm * comm, 
                           const struct thinkos_profile * p);
 
 void monitor_print_alloc(const struct monitor_comm * comm);
 
 void monitor_print_stack_usage(const struct monitor_comm * comm);
+
+
 
 uint32_t __thinkos_monitor_isr(void);
 

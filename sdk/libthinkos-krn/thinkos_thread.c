@@ -261,7 +261,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 }
 
 
-void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
+void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq, int retval)
 {
 	unsigned int th;
 
@@ -269,7 +269,7 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq)
 		do {
 			DCC_LOG2(LOG_INFO, "<%2d> wakeup from %d.", th, wq);
 			/* wakeup from the cond wait queue */
-			__krn_wq_wakeup(krn, wq, th);
+			__krn_wq_wakeup_return(krn, wq, th, retval);
 			/* get the next thread */
 		} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
 

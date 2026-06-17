@@ -36,7 +36,9 @@ enum {
 	SHELL_ERR_ARG_INVALID = -4,
 	SHELL_ERR_EXTRA_ARGS = -5,
 	SHELL_ERR_PARSE = -6,
-	SHELL_ABORT = -7, 
+	SHELL_ERR_LOW_LEVEL = -7,
+	SHELL_ERR_EVAL = -8,
+	SHELL_ABORT = -127
 };
 
 typedef int (* shell_callback_t)(FILE * f, int argc, char ** argv);
@@ -113,6 +115,8 @@ char * history_head(struct cmd_history * ht);
 int shell_parseline(char * line, char ** argv, int argmax);
 
 char * shell_stripline(char * line);
+
+const char * shell_strerror(int errnum);
 
 /* --------------------------------------------------------------------------
    Predefined commands

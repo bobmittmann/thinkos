@@ -745,7 +745,7 @@ __krn_wq_wakeup(struct thinkos_rt * krn, unsigned int wq, unsigned int th) {
 }
 
 static inline void __attribute__((always_inline)) 
-__wq_wakeup_return(struct thinkos_rt * krn, unsigned int wq, 
+__krn_wq_wakeup_return(struct thinkos_rt * krn, unsigned int wq, 
 					   unsigned int th, int ret) {
 	/* insert the thread into ready queue */
 	__bit_mem_wr(&krn->wq_ready, (th - 1), 1);
@@ -1505,7 +1505,7 @@ void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th,
 void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th, 
 							  unsigned int ms);
 
-void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq);
+void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq, int retval);
 
 unsigned int __krn_wq_wakeup_head(struct thinkos_rt * krn, unsigned int wq);
 

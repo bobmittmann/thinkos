@@ -1,6 +1,6 @@
 /* 
- * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
- * 
+ * Copyright(c) 2004-2012 BORESTE (www.boreste.com). All Rights Reserved.
+ *
  * This file is part of the YARD-ICE.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,23 +18,23 @@
  */
 
 /** 
- * @file cmd_close.c
- * @brief YARD-ICE
+ * @file stpcpy.c
+ * @brief YARD-ICE libc
  * @author Robinson Mittmann <bobmittmann@gmail.com>
- */
+ */ 
 
-#include <stdio.h>
-#include <sys/shell.h>
+#include <stdlib.h>
+#include <string.h>
 
-int cmd_close(FILE * f, int argc, char ** argv)
+char * stpcpy(char * restrict dst, const char * restrict src)
 {
-	if (argc > 1)
-		return SHELL_ERR_EXTRA_ARGS;
+	register char * cp = dst;
+	register unsigned int c;
 
-	fprintf(f, "\nBye\n");
-	fflush(f);
-	fclose(f);
-	
-	return SHELL_ABORT;
+	for (cp = dst; (c = *cp) != '\0'; dst++, cp++) {
+		*dst = c;
+	}
+	*cp = '\0';
+
+	return cp;
 }
-

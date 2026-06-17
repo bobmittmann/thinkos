@@ -36,10 +36,6 @@
 
 #if (THINKOS_ENABLE_MONITOR)
 
-#ifndef THINKOS_MONITOR_ENABLE_COMM_STATS
-#define THINKOS_MONITOR_ENABLE_COMM_STATS 0
-#endif
-
 #ifndef THINKOS_MONITOR_ENABLE_COMM_CONNECT
 #define THINKOS_MONITOR_ENABLE_COMM_CONNECT 0
 #endif
@@ -436,17 +432,8 @@ struct usb_cdc_acm_dev {
 	volatile uint32_t rx_seq; 
 	volatile uint32_t rx_ack; 
 
-#define CDC_RX_BUF_SIZE CDC_EP_OUT_MAX_PKT_SIZE
+#define CDC_RX_BUF_SIZE (2*CDC_EP_OUT_MAX_PKT_SIZE)
 	uint8_t rx_buf[CDC_RX_BUF_SIZE];
-
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-	struct {
-		uint32_t tx_octet;
-		uint32_t rx_octet;
-		uint32_t tx_pkt;
-		uint32_t rx_pkt;
-	} stats;
-#endif
 
 };
 
@@ -796,8 +783,10 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			dev->status |= COMM_ST_CONNECTED;
 		else
 			dev->status &= ~COMM_ST_CONNECTED;
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 		/* signal monitor */
 		monitor_signal(MONITOR_COMM_CTL);
+#endif
 		break;
 
 #if (THINKOS_MONITOR_ENABLE_COMM_BRK)
@@ -850,8 +839,10 @@ static void monitor_usb_on_reset(usb_class_t * cl)
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
 	/* wakeup xmit */
 	monitor_signal(MONITOR_COMM_EOT);
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 	/* wakeup control */
 	monitor_signal(MONITOR_COMM_CTL);
+#endif
 }
 
 static void monitor_usb_on_suspend(usb_class_t * cl)
@@ -931,10 +922,6 @@ static int monitor_usb_comm_recv(const void * comm,
 				 m, l, n, ack, pos, cnt);
 	}
 
-#if (THINKOS_MONITOR_ENABLE_COMM_STATS)
-	dev->stats.rx_octet += cnt;
-#endif
-
 	ack += cnt;
 	dev->rx_ack = ack;
 
@@ -957,8 +944,9 @@ static int monitor_usb_comm_recv(const void * comm,
 
 static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	int ret = -1;
+#if (THINKOS_ENABLE_CONSOLE_CTL)
+	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 
 	switch (opc) {
 	case COMM_CTRL_STATUS_GET:
@@ -1008,6 +996,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 
 	}
 
+#endif
 	return ret;
 }
 

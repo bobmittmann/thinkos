@@ -279,7 +279,7 @@ int etharp_reply(struct ifnet * __if, uint8_t * __dha, in_addr_t __addr)
 	ifn_getaddr(__if, arp->arp_sha);
 	ip = __if->if_ipv4_addr;
 
-	DCC_LOG6(LOG_TRACE, "%02x:%02x:%02x:%02x:%02x:%02x", 
+	DCC_LOG6(LOG_MSG, "%02x:%02x:%02x:%02x:%02x:%02x", 
 			arp->arp_sha[0], arp->arp_sha[1], arp->arp_sha[2], 
 			arp->arp_sha[3], arp->arp_sha[4], arp->arp_sha[5]);
 
@@ -356,7 +356,7 @@ int etharp_input(struct ifnet * __if, struct etharp * __arp, unsigned int __len)
 		return -1;
 	}
 
-	DCC_LOG2(LOG_TRACE, "%I:%I", saddr, daddr);
+	DCC_LOG2(LOG_MSG, "%I:%I", saddr, daddr);
 
 	/* arp hardware type */
 	if (__arp->arp_hdr != HTONS(ARPHRD_ETHER)) {
@@ -392,13 +392,13 @@ int etharp_input(struct ifnet * __if, struct etharp * __arp, unsigned int __len)
 	etharp_add(saddr, __arp->arp_sha);
 
 	if (__arp->arp_op == HTONS(ARPOP_REQUEST)) {
-		DCC_LOG2(LOG_TRACE, "ARP REQUEST %I:%I", saddr, 
+		DCC_LOG2(LOG_MSG, "ARP REQUEST %I:%I", saddr, 
 				IP4_ADDR(__arp->arp_dpa[0], __arp->arp_dpa[1],
 						 __arp->arp_dpa[2], __arp->arp_dpa[3]));
 
 		return etharp_reply(__if, sha, saddr);
 	} else {
-		DCC_LOG2(LOG_TRACE, "ARP REPLY %I:%I", saddr, 
+		DCC_LOG2(LOG_MSG, "ARP REPLY %I:%I", saddr, 
 				IP4_ADDR(__arp->arp_dpa[0], __arp->arp_dpa[1],
 						 __arp->arp_dpa[2], __arp->arp_dpa[3]));
 		return 0;

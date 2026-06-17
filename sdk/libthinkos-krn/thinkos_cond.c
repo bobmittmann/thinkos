@@ -185,7 +185,7 @@ void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	if ((th = __krn_wq_head(krn, cond)) != THINKOS_THREAD_NULL) {
 		DCC_LOG2(LOG_INFO, "<%2d> wakeup from condition %d.", th, cond);
 		/* wakeup from the condition wait queue */
-		__krn_wq_wakeup(krn, cond, th);
+		__krn_wq_wakeup_return(krn, cond, th, THINKOS_OK);
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn);
 	}
@@ -214,7 +214,7 @@ void thinkos_cond_broadcast_svc(int32_t arg[], int self,
 	/* Set the return value */
 	arg[SVC_RETURN] = THINKOS_OK;
 	/* wakeup all threads waiting on the condition */
-	__krn_wq_wakeup_all(krn, cond);
+	__krn_wq_wakeup_all(krn, cond, THINKOS_OK);
 }
 
 #endif /* THINKOS_COND_MAX > 0 */

@@ -351,7 +351,7 @@ void tcp_idle_tmr(void)
 				if ((tp->t_flags & TF_IDLE) == 0) {
 					/* enter in the idle state and start counting */
 					tp->t_flags |= TF_IDLE;
-					DCC_LOG1(LOG_TRACE, "<%05x> idle", (int)tp);
+					DCC_LOG1(LOG_INFO, "<%05x> idle", (int)tp);
 					/* reset the idle counter */
 					tp->t_idle_cnt = 0;
 					/* restarts the timer */
@@ -368,7 +368,7 @@ void tcp_idle_tmr(void)
 					/* reload the keepalive timer */
 					if ((tp->t_conn_tmr = tcp_keepintvl[tp->t_idle_cnt]) != 0) {
 						/* send a keep alive probe */
-						DCC_LOG1(LOG_TRACE, "<%05x>  keep alive probe", 
+						DCC_LOG1(LOG_INFO, "<%05x>  keep alive probe", 
 								 (int)tp);
 						tcp_keepalive(tp);
 						break;

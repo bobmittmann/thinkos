@@ -95,7 +95,7 @@ int test1_task(int mutex)
 		if (thinkos_irq_wait(STM32F_IRQ_TIM2) == THINKOS_OK) 
 		{
 			irq_count++;
-	//		printf("tick()\r\n");
+			printf("tick()\r\n");
 			cnt++;
 		} else {
 			printf("err\r\n");
@@ -140,8 +140,8 @@ int main_task(void)
 
 	ser = serial2_init();
 
-	printf("\r\n\r\n--------------------------------------------\r\n");
 	thinkos_sleep(1000);
+	printf("\r\n\r\n--------------------------------------------\r\n");
 	print_menu();
 	do {
 		char s[10];

@@ -88,7 +88,7 @@ void monitor_print_thread_state(const struct monitor_comm * comm,
 
 	}
 
-	monitor_newln(comm);
+	monitor_print_newln(comm);
 
 #if (THINKOS_ENABLE_TIMESHARE)
 	monitor_printf(comm, " - tmshare: val=%3d pri=%3d", 
@@ -102,7 +102,7 @@ void monitor_print_thread_state(const struct monitor_comm * comm,
 	ctrl = inf->ctrl;
 	monitor_print_context(comm, ctx, sp, ctrl);
 
-	monitor_newln(comm);
+	monitor_print_newln(comm);
 }
 
 

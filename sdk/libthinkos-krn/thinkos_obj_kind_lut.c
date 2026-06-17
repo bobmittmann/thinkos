@@ -68,10 +68,10 @@ const struct {
 			uint8_t wq_comm_tx[THINKOS_WQ_COMM_TX_CNT];
 			uint8_t wq_comm_rx[THINKOS_WQ_COMM_RX_CNT];
 #endif
-#if (THINKOS_IRQ_MAX) > 0
+#if (THINKOS_ENABLE_WQ_IRQ)
 			uint8_t wq_irq;
 #endif
-#if (THINKOS_DMA_MAX) > 0
+#if (THINKOS_ENABLE_WQ_DMA)
 			uint8_t wq_dma;
 #endif
 #if (THINKOS_FLASH_MEM_MAX) > 0
@@ -121,10 +121,10 @@ const struct {
 	.wq_comm_tx = { [0 ... (THINKOS_COMM_MAX - 1)] = THINKOS_OBJ_COMMTX }, 
 	.wq_comm_rx = { [0 ... (THINKOS_COMM_MAX - 1)] = THINKOS_OBJ_COMMRX }, 
 #endif
-#if THINKOS_IRQ_MAX > 0
+#if (THINKOS_ENABLE_WQ_IRQ)
 	.wq_irq = THINKOS_OBJ_IRQ,
 #endif
-#if THINKOS_DMA_MAX > 0
+#if (THINKOS_ENABLE_WQ_DMA)
 	.wq_irq = THINKOS_OBJ_DMA,
 #endif
 #if THINKOS_FLASH_MEM_MAX > 0

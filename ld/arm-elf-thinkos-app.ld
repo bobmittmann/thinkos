@@ -1,5 +1,5 @@
 /* 
- * stm32f4xx.ld
+ * arm-elf-thinkos-app.ld
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -25,6 +25,9 @@ __stack_top = ORIGIN(STACK) + LENGTH(STACK);
 __stack_size = LENGTH(STACK);
 __heap_end = ORIGIN(HEAP) + LENGTH(HEAP);
 
+__stack_end = __stack_top - (DEFINED(ice_trace0)) * 0x50;
+ice_comm_blk = __stack_end;
+
 EXTERN(_reset)
 ENTRY(_reset)
 
@@ -49,7 +52,6 @@ SECTIONS
 		KEEP(*(.rodata.__FUNCTION__*))
 		KEEP(*(.dccdata))
 	} >dcclog
-
 
 	.init __code_init :
 	{
