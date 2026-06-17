@@ -96,7 +96,6 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR              1
 #define THINKOS_ENABLE_MONITOR_CLOCK        0
-#define THINKOS_ENABLE_MONITOR_SCHED        0
 #define THINKOS_MONITOR_STACK_SIZE        512
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
