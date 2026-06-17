@@ -49,7 +49,7 @@
 #define THINKOS_ENABLE_MEMORY_CLEAR         0
 #define THINKOS_ENABLE_STACK_INIT           0
 #define THINKOS_ENABLE_OFAST                0
-#define THINKOS_ENABLE_MPU                  1
+#define THINKOS_ENABLE_MPU                  0
 #define THINKOS_ENABLE_FPU                  0
 #define THINKOS_ENABLE_PRIVILEGED_THREAD    1
 #define THINKOS_ENABLE_CORE_RESET           1
@@ -83,7 +83,7 @@
 
 #define THINKOS_SEMAPHORE_MAX               4
 
-#define THINKOS_EVENT_MAX                   0
+#define THINKOS_EVENT_MAX                   2
 
 #define THINKOS_FLAG_MAX                    4
 /* Enable Rendez vous synchronization. Wakes up all threads
@@ -129,7 +129,7 @@
 
 #if DEBUG
 /* Enable scheduler trace calls */
-  #define THINKOS_ENABLE_SCHED_DEBUG        1
+  #define THINKOS_ENABLE_SCHED_DEBUG        0
   /* Enable scheduler stack error detection */
   #define THINKOS_ENABLE_SCHED_ERROR        0
   #define THINKOS_ENABLE_IDLE_WFI           0

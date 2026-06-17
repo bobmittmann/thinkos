@@ -783,8 +783,10 @@ static int monitor_usb_on_setup(usb_class_t * cl,
 			dev->status |= COMM_ST_CONNECTED;
 		else
 			dev->status &= ~COMM_ST_CONNECTED;
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 		/* signal monitor */
 		monitor_signal(MONITOR_COMM_CTL);
+#endif
 		break;
 
 #if (THINKOS_MONITOR_ENABLE_COMM_BRK)
@@ -837,8 +839,10 @@ static void monitor_usb_on_reset(usb_class_t * cl)
 								  dev->ctl_buf, CDC_CTL_BUF_LEN);
 	/* wakeup xmit */
 	monitor_signal(MONITOR_COMM_EOT);
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 	/* wakeup control */
 	monitor_signal(MONITOR_COMM_CTL);
+#endif
 }
 
 static void monitor_usb_on_suspend(usb_class_t * cl)
@@ -940,8 +944,9 @@ static int monitor_usb_comm_recv(const void * comm,
 
 static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 {
-	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 	int ret = -1;
+#if (THINKOS_ENABLE_CONSOLE_CTL)
+	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)comm;
 
 	switch (opc) {
 	case COMM_CTRL_STATUS_GET:
@@ -991,6 +996,7 @@ static int monitor_usb_comm_ctrl(const void * comm, unsigned int opc)
 
 	}
 
+#endif
 	return ret;
 }
 

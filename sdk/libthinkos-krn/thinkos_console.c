@@ -60,6 +60,7 @@ inline static void console_signal_rx_pipe(void)
 #endif
 }
 
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 inline static void console_clear_ctl(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -70,7 +71,6 @@ inline static void console_clear_ctl(void)
 #endif
 }
 
-
 inline static void console_signal_ctl(void)
 {
 #if (THINKOS_ENABLE_MONITOR)
@@ -80,6 +80,7 @@ inline static void console_signal_ctl(void)
 #else
 #endif
 }
+#endif
 
 #if (THINKOS_ENABLE_CONSOLE)
 
@@ -933,7 +934,9 @@ void thinkos_krn_console_reset(void)
 					 sizeof(thinkos_console_rt));
 	console_clear_tx_pipe();
 	console_clear_rx_pipe();
+#if (THINKOS_ENABLE_CONSOLE_CTL)
 	console_clear_ctl();
+#endif
 }
 
 void thinkos_krn_console_init(void)
