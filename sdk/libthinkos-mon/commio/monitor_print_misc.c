@@ -12,7 +12,7 @@ static const char monitor_zeros[]  = {
 	'0', '0', '0', '0', '0', '0', '0', '0',
 	'0', '0', '0', '0' };
 
-void monitor_comm_send_int(int32_t val, unsigned int width, 
+void monitor_print_int(int32_t val, unsigned int width, 
                           const struct monitor_comm * comm) 
 {
 	char s[16];
@@ -30,7 +30,7 @@ void monitor_comm_send_int(int32_t val, unsigned int width,
 	monitor_comm_write(comm, s, n);
 }
 
-void monitor_comm_send_uint(uint32_t val, unsigned int width, 
+void monitor_print_uint(uint32_t val, unsigned int width, 
                            const struct monitor_comm * comm) 
 {
 	char s[16];
@@ -41,7 +41,7 @@ void monitor_comm_send_uint(uint32_t val, unsigned int width,
 	monitor_comm_write(comm, s, n);
 }
 
-void monitor_comm_send_str(const char * s, unsigned int width, 
+void monitor_print_str(const char * s, unsigned int width, 
                           const struct monitor_comm * comm) 
 {
 	int n = 0;
@@ -53,13 +53,13 @@ void monitor_comm_send_str(const char * s, unsigned int width,
 	monitor_comm_write(comm, s, n);
 }
 
-void monitor_comm_send_blanks(unsigned int width, 
+void monitor_print_blanks(unsigned int width, 
                              const struct monitor_comm * comm) 
 {
 	monitor_comm_write(comm, monitor_blanks, width);
 }
 
-void monitor_comm_send_hex(uint32_t val, unsigned int width, 
+void monitor_print_hex(uint32_t val, unsigned int width, 
                           const struct monitor_comm * comm) 
 {
 	char s[12];

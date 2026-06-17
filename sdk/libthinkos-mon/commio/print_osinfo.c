@@ -159,7 +159,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 #if (THINKOS_MUTEX_MAX) > 0
 			for (j = THINKOS_MUTEX_FIRST; j <= THINKOS_MUTEX_LAST; ++j) {
 				if (thinkos_krn_mutex_lock_get(j) == i)
-					monitor_printf(comm, " %d", j + THINKOS_MUTEX_BASE);
+					monitor_printf(comm, " %d", j);
 			}
 #endif 
 			monitor_printf(comm, "\r\n");
