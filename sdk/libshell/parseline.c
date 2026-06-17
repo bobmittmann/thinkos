@@ -45,8 +45,11 @@ static const char punct_str[][2] = {
 	"{", "|", "}", "~"
 };
 
-const char * op_assign = "=";
-const char * op_equal = "==";
+static const char dbl_punct_str[][4] = {
+	"<<",
+	"==",
+	">>"
+};
 
 int shell_parseline(char * line, char ** argv, int argmax)
 {
@@ -65,7 +68,7 @@ int shell_parseline(char * line, char ** argv, int argmax)
 			cp++;
 			c = *cp;
 		}
-#if 0
+#if 1
 		int qt;
 
 		/* Quotes: copy verbatim */
@@ -97,6 +100,19 @@ int shell_parseline(char * line, char ** argv, int argmax)
 				argv[n++] = tok;
 				*cp = '\0';
 				cp++;
+				c = *cp;
+				break;
+			}
+
+			if ((c >= '<') && (c <= '>') && (cp[1] == c)) {
+				char * punct = (char *)dbl_punct_str[c - '<'];
+				if (tok != cp) {
+					argv[n++] = tok;
+				}
+				argv[n++] = punct;
+				*cp = '\0';
+				/* skip two */
+				cp += 2;
 				c = *cp;
 				break;
 			}
