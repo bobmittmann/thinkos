@@ -32,7 +32,7 @@
 #define __SHELL_I__
 #include "shell-i.h"
 
-const char * shell_error_msg[] = {
+const char * const shell_error_msg[] = {
 	[SHELL_OK] = "Ok",
 	[-SHELL_ERR_GENERAL] = "General",
 	[-SHELL_ERR_CMD_INVALID] = "Command invalid",

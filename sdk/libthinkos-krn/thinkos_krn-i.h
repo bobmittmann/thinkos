@@ -25,10 +25,8 @@
 #define __THINKOS_KERNEL__
 #include <thinkos/kernel.h>
 
-#if (THINKOS_ENABLE_MONITOR)
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
-#endif
 
 #define __THINKOS_CONSOLE__
 #include <thinkos/console.h>
