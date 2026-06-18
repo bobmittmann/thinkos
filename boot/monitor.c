@@ -429,7 +429,7 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
 
-	monitor_newln(comm);
+	monitor_print_newln(comm);
 	monitor_hbar(comm);
 
 	if  (thinkos_krn_thread_state_get(thread_id, &inf)) {
@@ -438,11 +438,11 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 					   inf.thread_id, inf.errno, inf.ctx->pc);
 
 		monitor_print_thread_state(comm, &inf);
-		monitor_newln(comm);
+		monitor_print_newln(comm);
 	}
 
 	monitor_print_fault(comm, fault);
-	monitor_newln(comm);
+	monitor_print_newln(comm);
 
 
 }
@@ -475,7 +475,7 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 	if (monitor_comm_isconnected(comm)) {
 		struct krn_thread_state inf;
 
-		monitor_newln(comm);
+		monitor_print_newln(comm);
 
 		if (errno && thinkos_krn_thread_state_get(thread_id, &inf)) {
 			monitor_printf(comm, "* Error %s [thread=%d errno=%d "
@@ -490,7 +490,7 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 			monitor_print_fault(comm, fault);
 		}
 		monitor_hbar(comm);
-		monitor_newln(comm);
+		monitor_print_newln(comm);
 
 	} else {
 		DCC_LOG(LOG_ERROR, "Restarting!");
@@ -508,11 +508,11 @@ void monitor_on_krn_fault(const struct monitor_comm * comm)
 	errno = monitor_thread_err_get();
 
 	if (monitor_comm_isconnected(comm)) {
-		monitor_newln(comm);
+		monitor_print_newln(comm);
 		monitor_printf(comm, "Kernel fault: %d.%d\r\n" , xcpno, errno);
 
 		monitor_print_fault(comm, fault);
-		monitor_newln(comm);
+		monitor_print_newln(comm);
 		mdelay(100);
 	} else {
 		DCC_LOG(LOG_ERROR, "Restarting!");
@@ -950,7 +950,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 	for(;;) {
 		DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask); 
 		switch ((sig = monitor_select(sigmask))) {
-
+#if 0
 			/* request a soft reset */
 		case MONITOR_SOFTRST:
 			/* Acknowledge the signal */
@@ -960,7 +960,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			board->on_softreset();
 			goto is_connected;
 			break;
-
+#endif
 		case MONITOR_USR_ABORT:
 			monitor_clear(MONITOR_USR_ABORT);
 			monitor_puts("\r\n/!\\ USR ABORT\r\n", comm);
@@ -983,6 +983,8 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			monitor_flash_ymodem_recv(comm, "APP");
 #endif
 			break;
+/* FIXME: .... */
+#define APP_START_ADDR 0x08020000
 
 		case MONITOR_APP_EXEC:
 			monitor_clear(MONITOR_APP_EXEC);
@@ -990,7 +992,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			monitor_app_exec(comm);
+			monitor_app_exec(APP_START_ADDR);
 			break;
 
 #if (MONITOR_APPWIPE_ENABLE)
@@ -1148,7 +1150,6 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 				}
 			}
 
-is_connected:
 			sigmask = monitor_on_comm_ctl(comm, sigmask);
 			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);
 			break;

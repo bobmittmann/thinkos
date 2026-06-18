@@ -34,15 +34,6 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #define MONITOR_PERISTENT_MASK ((1 << MONITOR_TASK_INIT) | \
 								(1 << MONITOR_ON_CORE_RST))
 
-struct {
-	/* task entry point */
-	void (* task)(const struct monitor_comm *, void *);
-	const struct monitor_comm * comm;
-	/* user supplied parameter */
-	void * param;             
-	struct comm_tx_req * tx_req;
-
-} thinkos_monitor_rt;
 
 uint32_t __attribute__((aligned(8), section(".krn.stack"))) 
 	thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
@@ -170,7 +161,7 @@ int monitor_select(uint32_t evmsk)
 		   making sure not to mask non maskable events */
 		evset &= evmsk;
 		/* select the event with highest priority */
-		sig = __clz(__rbit(evset & evmsk));
+		sig = __clz(__rbit(evset));
 
 		if (sig < 32)
 			break;
@@ -368,81 +359,6 @@ void monitor_thread_break_clr(void)
 }
 
 #endif
- 
-/* -------------------------------------------------------------------------
- * Deferred ISR
- * ------------------------------------------------------------------------- */
-
-#if (THINKOS_ENABLE_DEFERRED_ISR)
-void def_on_comm_brk(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_comm_rcv(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_comm_eot(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_comm_ctl(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_console_rx(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_console_tx(struct thinkos_rt * krn, void * env)
-{
-	const struct thinkos_comm * comm;
-	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
-	struct comm_tx_req * req;
-	int th;
-
-	/* check if there is a pending monitor request */
-	if ((req = krn->monitor.tx_req) != NULL) {
-		th = 0;
-	} else if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL) {
-		req = (struct comm_tx_req *)__thread_frame_get(krn, th);
-	} else {
-		DCC_LOG(LOG_WARNING, "no thread waiting.");
-		return;
-	}
-
-	if ((comm = krn->monitor.comm) == NULL) {
-		DCC_LOG(LOG_ERROR, "no communication port.");
-		return;
-	}
-}
-
-void def_on_console_ctl(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-void def_on_console_tmr(struct thinkos_rt * krn, void * env)
-{
-	DCC_LOG(LOG_WARNING, VT_PSH VT_REV VT_FYW " ... " VT_POP);
-}
-
-const struct deferred_svc_map thinkos_def_svc = {
-	.on_comm_brk = def_on_comm_brk,
-	.on_comm_rcv = def_on_comm_rcv,
-	.on_comm_eot = def_on_comm_eot,
-	.on_comm_ctl = def_on_comm_ctl,
-	.on_console_rx = def_on_console_rx,
-	.on_console_tx = def_on_console_tx,
-	.on_console_ctl = def_on_console_ctl,
-	.on_console_tmr = def_on_console_tmr
-};
-#endif /* (THINKOS_ENABLE_DEFERRED_ISR) */
 
 /* -------------------------------------------------------------------------
  * ThinkOS Monitor Core
@@ -504,18 +420,11 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 
 	thinkos_krn_monitor_reset(krn);
 
-	/* Set the communication channel */
-	thinkos_monitor_rt.comm = comm; 
-
-#if (THINKOS_ENABLE_DEFERRED_ISR)
-	krn->monitor.svc = &thinkos_def_svc;
-	krn->monitor.env = (void *)env;
-#endif
-	
 	sp = __monitor_ctx_init((uintptr_t)task, (uintptr_t)comm, 
 							env, (uintptr_t)thinkos_krn_halt);
-
 	krn->monitor.ctx = sp;
+	/* Set the communication channel */
+	krn->monitor.comm = comm; 
 	/* set the task init signal */
 	krn->monitor.events = (1 << MONITOR_TASK_INIT);
 	krn->monitor.mask = MONITOR_PERISTENT_MASK;
@@ -544,7 +453,6 @@ void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 		/* Set the persistent mmask */
 		krn->monitor.mask = MONITOR_PERISTENT_MASK;
 
-//		arg[SVC_RETURN] = (uint32_t)thinkos_monitor_rt.task;
 		arg[SVC_RETURN] = THINKOS_OK;
 
 		thinkos_monitor_rt.task = task;

@@ -238,7 +238,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
 		ret = thinkos_flash_drv_req(drv, req);
 
 		/* wakeup from the flash wait queue */
-		__wq_wakeup_return(krn, wq, th, ret);
+		__krn_wq_wakeup_return(krn, wq, th, ret);
 		/* signal the scheduler ... */
 		__krn_sched_defer(krn);
 	} else {

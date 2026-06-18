@@ -129,7 +129,7 @@
 
 #if DEBUG
 /* Enable scheduler trace calls */
-  #define THINKOS_ENABLE_SCHED_DEBUG        0
+  #define THINKOS_ENABLE_SCHED_DEBUG        1
   /* Enable scheduler stack error detection */
   #define THINKOS_ENABLE_SCHED_ERROR        0
   #define THINKOS_ENABLE_IDLE_WFI           0

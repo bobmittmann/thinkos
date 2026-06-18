@@ -99,7 +99,7 @@ CMD_TAB_H = $(SRCDIR)/cmd_tab.h
 $(CMD_TAB_H): $(CMD_TAB_C)
 
 $(CMD_TAB_C): $(CMD_TAB_YAML)
-	$(MKCMD) -e "struct btl_shell_env" -l -p btl -o $@ $<
+	$(MKCMD) -e "struct btl_shell_env" -b -p btl -o $@ $<
 
 cmdtab: $(CMD_TAB_C)
 

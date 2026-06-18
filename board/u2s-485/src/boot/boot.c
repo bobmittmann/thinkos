@@ -299,6 +299,8 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 
 	for(;;) {
+		monitor_unmask(MONITOR_ON_CORE_RST);
+
 		switch ((sig = monitor_select(sigmask))) {
 
 		case MONITOR_COMM_EOT:
@@ -348,13 +350,14 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 			monitor_clear(MONITOR_ON_CORE_RST);
 			DCC_LOG(LOG_TRACE, "Core reset received");
 			board_reset();
-			thinkos_krn_thread_init(krn, 3, &shell_thread_init);
+			thinkos_krn_thread_init(krn, 1, &shell_thread_init);
 			break;
 
 		default:
 			DCC_LOG1(LOG_WARNING, "Unhandled signal: %d", sig);
 			monitor_clear(sig);
 		}
+
 	}
 }
 

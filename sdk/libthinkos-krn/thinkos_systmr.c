@@ -181,26 +181,17 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		sigmsk = krn->monitor.mask;
 		sigact = sigset & sigmsk;
 
+		if ((sigmsk & (1 << MONITOR_ON_CORE_RST)) == 0) {
+			DCC_LOG(LOG_WARNING, "sigmask!!!!!!!!!");
+		};
+
 		/* Process monitor events */
 		if (sigact == 0)
 			break;
 
-#if (THINKOS_ENABLE_DEFERRED_ISR)
-		{
-			int ev;
-
-			if ((ev = __clz(sigact)) < 8) {
-				/* clear the TASK_INIT event */
-				sigset &= ~(1 << (31 - ev));
-				DCC_LOG2(LOG_MSG, "DSR sigset=%08x, ev=%0d", sigset, ev); 
-				krn->monitor.events = sigset;
-				krn->monitor.svc->on_event[ev](krn, krn->monitor.env);
-				continue;
-			} 
-		}
-#endif
 		DCC_LOG2(LOG_MSG, "swap sigact=%08x sched=%08x.", sigact,
 				 krn->sched.ctrl); 
+
 		__monitor_context_swap(&krn->monitor.ctx); 
 
 	} while (1);

@@ -37,7 +37,6 @@
 
 #define SERDRV_RX_FLAG_NO   0
 #define SERDRV_CTL_FLAG_NO  1
-#define VCOM_MODE_FLAG_NO   6
 
 /* Gates */
 #define SERDRV_TX_GATE_NO   0

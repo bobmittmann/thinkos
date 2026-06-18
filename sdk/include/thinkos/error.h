@@ -87,8 +87,6 @@
 
 #define THINKOS_ERR_MAX                67
 
-#define THINKOS_REQ_CORE_RST         0x02
-
 #ifndef __ASSEMBLER__
 
 

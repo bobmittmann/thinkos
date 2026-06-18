@@ -11,7 +11,6 @@
 
 #include <sys/dcclog.h>
 
-
 const char thinkos_err_name_lut[THINKOS_ERR_MAX][12] = {
 	[THINKOS_NO_ERROR]              = "Ok",
 	[THINKOS_ERR_GENERAL]           = "Error",
@@ -93,10 +92,13 @@ void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int xcp)
 	__krn_sched_defer(krn);
 }
 
+#define THINKOS_REQ_CORE_RST    MONITOR_ON_CORE_RST
+
 void thinkos_krn_req_core_rst(struct thinkos_rt * krn)
 {
 	/* set the exception code */
 	__krn_sched_xcp_set(krn, THINKOS_REQ_CORE_RST);
+
 	/* signal the scheduler ... */
 	__krn_sched_defer(krn);
 }
@@ -125,8 +127,8 @@ void thinkos_krn_error_trap(struct thinkos_rt * krn) {
 	(void)errno;
 
 	if (xcpno > 0) {
-		DCC_LOG1(LOG_WARNING, VT_PSH VT_FYW VT_REV 
-				 " Core reset thread=%d" VT_POP, thread); 
+		DCC_LOG2(LOG_WARNING, VT_PSH VT_FYW VT_REV 
+				 " Core reset thread=%d sig=%d" VT_POP, thread, xcpno); 
 #if (THINKOS_ENABLE_CORE_RESET)
 		/* request scheduler to stop everything */
 		thinkos_krn_core_reset(krn);
@@ -139,11 +141,14 @@ void thinkos_krn_error_trap(struct thinkos_rt * krn) {
 	}
 
 	if (errno > 0) {
+#if 0
 		if (errno < THINKOS_ERR_MAX) {
-			DCC_LOG3(LOG_WARNING, VT_PSH VT_FYW VT_REV 
+			DCC_LOG3(LOG_NOTICE, VT_PSH VT_FYW VT_REV 
 					 " Error %d \"%s\" - thread=%d" VT_POP, 
 					 errno, thinkos_err_name_lut[errno], thread); 
-		} else {
+		} else 
+#endif
+		{
 			DCC_LOG2(LOG_WARNING, VT_PSH VT_FRD VT_REV 
 					 " Error %d - thread=%d" VT_POP, 
 					 errno, thread);

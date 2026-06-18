@@ -56,17 +56,27 @@ const btl_cmd_callback_t btl_cmd_call_tab[] = {
 	[BTL_CMD_TEST] = btl_cmd_test,
 };
 
-/*
-   List search...
-*/
 
 int btl_cmd_lookup(struct btl_shell_env * env, const char * str)
 {
-	int i;
+	int i = BTL_CMD_FIRST;
+	int j = BTL_CMD_LAST;
 
+	/* Binary search for command names. */
+	while (i <= j) {
+		int k = i + ((j - i) / 2);
+		int cmp = strcmp(str, btl_cmd_sym_tab[k]);
+		if (cmp == 0) {
+			return k;
+		} else if (cmp < 0) {
+			i = k + 1;
+		} else {
+			j = k - 1;
+		}
+	}
+
+	/* Linear list search for command aliases. */
 	for (i = BTL_CMD_FIRST; i <= BTL_CMD_LAST; ++i) {
-		if (strcmp(str, btl_cmd_sym_tab[i]) == 0)
-			return i;
 		if (strcmp(str, btl_cmd_alias_tab[i]) == 0)
 			return i;
 	}
