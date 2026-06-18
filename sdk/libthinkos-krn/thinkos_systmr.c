@@ -181,10 +181,6 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 		sigmsk = krn->monitor.mask;
 		sigact = sigset & sigmsk;
 
-		if ((sigmsk & (1 << MONITOR_ON_CORE_RST)) == 0) {
-			DCC_LOG(LOG_WARNING, "sigmask!!!!!!!!!");
-		};
-
 		/* Process monitor events */
 		if (sigact == 0)
 			break;

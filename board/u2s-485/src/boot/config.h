@@ -156,7 +156,7 @@
 #define THINKOS_ENABLE_APP                  1
 #define THINKOS_ENABLE_APP_FLAT             1
 #define THINKOS_ENABLE_APP_ELF              0
-#define THINKOS_ENABLE_APP_CRC              1
+#define THINKOS_ENABLE_APP_CRC              0
 
 #define THINKOS_CUSTOM_APP_TAG              "U2S-485"
 
