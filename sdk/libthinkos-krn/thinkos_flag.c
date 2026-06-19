@@ -247,7 +247,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 	/* possibly remove from the time wait queue */
 	__thread_clk_disable(krn, th);  
 	/* set the thread's return value */
-	__thread_return_set(krn, th, 0);
+	__thread_return_set(krn, th, THINKOS_OK);
 #endif
 	__thread_stat_clr(krn, th);
 }
