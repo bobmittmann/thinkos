@@ -335,7 +335,7 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 		thinkos_krn_sysrst();
 		return;
 	}
-		struct krn_thread_state inf;
+	struct krn_thread_state inf;
 
 
 	if (errno == THINKOS_ERR_SYSCALL_INVALID) {

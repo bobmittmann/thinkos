@@ -101,6 +101,7 @@ int thinkos_flash_drv_erase(const struct flash_dev * dev, off_t
 
    */
 
+
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
                           struct flash_op_req * req)
 {
@@ -228,8 +229,8 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
 
 	th =__krn_wq_head(krn, wq);
 	if (th != THINKOS_THREAD_NULL) {
-		DCC_LOG2(LOG_YAP, "<%d> flash_drv tasklet r0=0x%08x", th + 1, 
-				 __thread_r0_get(krn, th));
+		DCC_LOG4(LOG_INFO, "<%d> flash_drv(%d) tasklet r0=0x%08x wq=%d", th, 
+				 idx, __thread_r0_get(krn, th), wq);
 
 		req = (struct flash_op_req *)__thread_frame_get(krn, th);
 

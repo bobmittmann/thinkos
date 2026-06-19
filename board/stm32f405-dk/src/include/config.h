@@ -31,7 +31,7 @@
    -------------------------------------------------------------------------- */
 
 /* Maximum IRQ for this board */
-#define THINKOS_IRQ_MAX                    90
+#define THINKOS_IRQ_MAX                    91
 
 /* Interrupt Vector Table Resides in RAM */
 #define THINKOS_ENABLE_RAM_VECTORS          1
@@ -53,7 +53,7 @@
 /* Check if athread tries to unlock a mutex which is
    not his own. Also check for minimum stack size on 
  thread creation. */
-#define THINKOS_ENABLE_SANITY_CHECK         0
+#define THINKOS_ENABLE_SANITY_CHECK         1
 /* Allow to interrupt a system call */
 #define THINKOS_ENABLE_BREAK                0
 #define THINKOS_ENABLE_MEMORY_CLEAR         1
@@ -83,7 +83,7 @@
 #define THINKOS_ENABLE_PAUSE                0
 #define THINKOS_ENABLE_CANCEL               0
 #define THINKOS_ENABLE_EXIT                 0
-#define THINKOS_ENABLE_TERMINATE            0
+#define THINKOS_ENABLE_TERMINATE            1
 #define THINKOS_ENABLE_TIMESHARE            0
 
 #define THINKOS_MUTEX_MAX                  24
@@ -138,9 +138,9 @@
 
 #if DEBUG
 /* Enable scheduler trace calls */
-  #define THINKOS_ENABLE_SCHED_DEBUG        0
+  #define THINKOS_ENABLE_SCHED_DEBUG        1
   /* Enable scheduler stack error detection */
-  #define THINKOS_ENABLE_SCHED_ERROR        0
+  #define THINKOS_ENABLE_SCHED_ERROR        1
   #define THINKOS_ENABLE_IDLE_WFI           0
 #else
   #define THINKOS_ENABLE_SCHED_DEBUG        0

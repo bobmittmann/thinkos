@@ -329,7 +329,7 @@ thinkos_krn_sched_ctx_get:
 	   r2: ready bmp 
 	   r1: sched.ctrl = [ xcp | err | brk | act ]  */
 	/* check for error or fault */
-	lsrs.n   r5, r3, #8
+	lsrs     r12, r3, #8
 	itt.n    eq
 	/* r3: sched.ctrl >> 16 : [ 0x00 | 0x00 | xcp | err ] */
 	/* if error or fault are set then the scheduler is locked 
@@ -337,11 +337,11 @@ thinkos_krn_sched_ctx_get:
 .L_clr_brk: 
 	/* if error or fault are not set then we clear the break and
 	   run the scheduler */
-	strbeq   r5, [r0, #OFFSETOF_KRN_SCHED_BRK]
+	strbeq   r12, [r0, #OFFSETOF_KRN_SCHED_BRK]
 	beq      .L_idle_context_save
 	/* error or fault are present */
 	/* check for break */ 
-	lsls.n   r5, r3, #24
+	lsls.n   r2, r3, #24
 	/* no break thread yet, set it to IDLE and call the 
 	   error trap handler */
 	beq      .L_idle_error_signaling

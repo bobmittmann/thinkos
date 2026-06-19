@@ -51,7 +51,7 @@ uint32_t * thinkos_krn_xcpt_stack_top(void)
 	return (uint32_t *)sp;
 }
 
-void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
+void __attribute__((noreturn, naked)) thinkos_idle_task(struct thinkos_rt * krn)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	struct thinkos_idle_rt * idle = &krn->idle_hooks;
@@ -128,7 +128,7 @@ void __attribute__((noreturn)) thinkos_idle_task(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 				break;
 			default:
-				DCC_LOG1(LOG_TRACE, "%d", req); 
+				DCC_LOG1(LOG_INFO, "%d", req); 
 		}
 #endif
 	}

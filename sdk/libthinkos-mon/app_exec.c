@@ -34,7 +34,7 @@
 void __app_exec_on_exit(unsigned int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if 1
+#if (THINKOS_ENABLE_TERMINATE)
 	thinkos_thread_abort(code);
 #else
 	thinkos_abort();

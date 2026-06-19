@@ -690,7 +690,7 @@ void thinkos_dbg_reset(void)
 void __attribute__((noreturn)) __dbg_thread_exit_stub(int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if 0
+#if (THINKOS_ENABLE_TERMINATE)
 	thinkos_thread_abort(code);
 #else
 	thinkos_abort();

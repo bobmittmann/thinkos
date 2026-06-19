@@ -33,7 +33,11 @@ void __monitor_thread_on_exit(unsigned int code)
 {
 	DCC_LOG1(LOG_WARNING, "code=%d", code);
 	monitor_signal(MONITOR_USR_ABORT);
+#if (THINKOS_ENABLE_TERMINATE)
 	thinkos_thread_abort(code);
+#else
+	thinkos_abort();
+#endif
 }
 
 /*

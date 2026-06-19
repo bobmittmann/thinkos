@@ -36,7 +36,7 @@
 
 #if (THINKOS_IRQ_MAX) > 0
 #if (THINKOS_ENABLE_RAM_VECTORS)
-void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((section(".ram_vectors")));
+void * __ram_vectors[16 + (THINKOS_IRQ_MAX)] __attribute__ ((section(".ram_vectors")));
 #endif
 #endif
 
@@ -158,8 +158,13 @@ void thinkos_krn_irq_init(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_RAM_VECTORS)
 	{
 		uint32_t * tab_ptr = (uint32_t *)&__vcts_start;
-		unsigned int tab_size = (uintptr_t)&__vcts_end - 
-			(uintptr_t)&__vcts_start;
+		unsigned int tab_size = sizeof(__ram_vectors);
+
+		if ((uintptr_t)&__vcts_end - (uintptr_t)&__vcts_start !=
+						sizeof(__ram_vectors)) {
+			DCC_LOG2(LOG_ERROR, "ROM and RAM vectors mismatch %d != %d", 
+				(uintptr_t)&__vcts_end - (uintptr_t)&__vcts_start, tab_size);
+		}
 
 		DCC_LOG3(LOG_TRACE, "copying vectors from 0x%08x->0x%08x, %d", 
 				 tab_ptr, __ram_vectors, tab_size);
