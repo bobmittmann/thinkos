@@ -333,7 +333,7 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 
 	do {
 //		usb_send(CDC_TX_EP, "\r\nErasing...", 12);
-		flash_erase(blk_offs, blk_size);
+//		flash_erase(blk_offs, blk_size);
 		DCC_LOG(LOG_TRACE, "erasing...");
 
 		usb_send(CDC_TX_EP, s_xmodem, sizeof(s_xmodem) - 1);
@@ -360,7 +360,7 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 			/* XXX: STM32F103: wait at least 50ms between erasing 
 				   and start writing to the flash!!! */
 			flash_erase(offs, rem);
-//			delay(64);
+			delay(64);
 
 			while (rem > 0) {
 				int n;

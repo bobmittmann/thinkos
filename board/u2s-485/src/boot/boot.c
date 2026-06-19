@@ -278,8 +278,6 @@ void usb_vbus(bool on)
 		stm32_gpio_mode(USB_FS_VBUS, INPUT, 0);
 }
 
-#define REQ_SHOW_MENU       MONITOR_USER_EVENT4
-
 /* Default Monitor Task */
 void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm, 
 											void * param, struct thinkos_rt * krn)

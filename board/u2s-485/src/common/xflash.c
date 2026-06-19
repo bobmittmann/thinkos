@@ -53,7 +53,7 @@ struct magic {
 const struct magic firmware_magic = {
 	.hdr = {
 		.pos = 0,
-		.cnt = 8
+		.cnt = 2
 	},
 	.rec = {
 		{  0xffffffff, 0x20002800 },

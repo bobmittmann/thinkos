@@ -149,7 +149,7 @@ static inline int __fault_errno_get(struct thinkos_fault * fault) {
 	return fault->sched.err ? fault->sched.err : fault->sched.xcp;
 }
 
-static inline bool __thinkos_fault_valid(struct thinkos_fault * fault) {
+static inline bool __thinkos_fault_is_valid(struct thinkos_fault * fault) {
 	return (fault->seq == fault->ack) ? false : true;
 }
 

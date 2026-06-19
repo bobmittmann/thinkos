@@ -36,12 +36,7 @@
 
 #if (THINKOS_IRQ_MAX) > 0
 #if (THINKOS_ENABLE_RAM_VECTORS)
-/* 
- * FIXME: there are problems with aligned(128). It seems to be resolved with
- * 256 */
-/* This is provided by the linker: arm-elf-thinkos-ramvec.ld */
-/* void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((aligned(256))); */
-
+void * __ram_vectors[THINKOS_IRQ_MAX] __attribute__ ((section(".ram_vectors")));
 #endif
 #endif
 

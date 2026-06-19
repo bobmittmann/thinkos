@@ -142,7 +142,6 @@ void gdb_stub_task(struct monitor_comm * comm)
 	sigmask |= (1 << MONITOR_TX_PIPE);
 	sigmask |= (1 << MONITOR_RX_PIPE);
 #endif
-	sigmask |= (1 << MONITOR_SOFTRST);
 	sigmask |= (1 << MONITOR_ALARM);
 
 
@@ -164,10 +163,10 @@ void gdb_stub_task(struct monitor_comm * comm)
 		break;
 #endif
 
-		case MONITOR_SOFTRST:
+		case MONITOR_USER_EVENT1:
 			DCC_LOG(LOG_INFO, "Soft reset.");
 //			this_board.softreset();
-			monitor_clear(MONITOR_SOFTRST);
+			monitor_clear(sig);
 #if THINKOS_ENABLE_CONSOLE
 //			thinkos_console_reset();
 			/* Update the console connection flag which was cleared

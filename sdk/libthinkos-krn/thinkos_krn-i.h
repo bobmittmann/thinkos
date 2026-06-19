@@ -76,7 +76,7 @@ extern const struct thinkos_thread_inf thinkos_main_inf;
 extern uintptr_t __vcts_start;
 extern uintptr_t __vcts_end;
 
-#ifdef CM3_RAM_VECTORS
+#if (THINKOS_ENABLE_RAM_VECTORS)
 extern void * __ram_vectors[];
 #endif
 

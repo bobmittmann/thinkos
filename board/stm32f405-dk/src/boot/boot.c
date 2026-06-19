@@ -27,6 +27,7 @@ void board_reset(void);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg,
 					   struct thinkos_rt *);
 int board_integrity_check(void);
+
 extern const struct thinkos_mem_map board_mem_map;
 extern const struct thinkos_board this_board;
 extern const struct thinkos_flash_desc board_flash_desc;
@@ -120,7 +121,7 @@ void main(int argc, char ** argv)
 	btl_flash_app_exec("APP", 0, 0);
 
 	DCC_LOG(LOG_TRACE, VT_PSH VT_BRI VT_FYW
-			"* 8. btl_flash_app_exec() failed." VT_POP);
+			"* 9. btl_flash_app_exec() failed." VT_POP);
 
 	btl_console_shell(env);
 }

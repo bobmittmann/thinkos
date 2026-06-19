@@ -65,12 +65,7 @@ ifndef LOAD_ADDR
   LOAD_ADDR := $(KRN_CODE)
 endif
 
-ifdef RAM_VECTORS
-  CDEFS += CM3_RAM_VECTORS
-  BOOTLD = arm-elf-thinkos-ramvec.ld
-else
-  BOOTLD = arm-elf-thinkos-boot.ld
-endif
+BOOTLD = arm-elf-thinkos-boot.ld
 
 ifdef LDSCRIPT
   LDFLAGS += -T $(LDSCRIPT)

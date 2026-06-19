@@ -83,26 +83,6 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #define MONITOR_OSINFO_ENABLE      1
 #endif
 
-#ifndef MONITOR_APPUPLOAD_ENABLE
-#define MONITOR_APPUPLOAD_ENABLE   1
-#endif
-
-#ifndef MONITOR_APPWIPE_ENABLE
-#define MONITOR_APPWIPE_ENABLE     0
-#endif
-
-#ifndef MONITOR_APP_TERM_ENABLE
-#define MONITOR_APP_TERM_ENABLE     1
-#endif
-
-#ifndef MONITOR_APPRESTART_ENABLE
-#define MONITOR_APPRESTART_ENABLE  1
-#endif
-
-#ifndef MONITOR_FAULT_ENABLE
-#define MONITOR_FAULT_ENABLE      (THINKOS_ENABLE_ERROR_TRAP)
-#endif
-
 #ifndef MONITOR_EXCEPTION_ENABLE
 #define MONITOR_EXCEPTION_ENABLE   (THINKOS_ENABLE_EXCEPTIONS)
 #endif
@@ -153,15 +133,9 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #error "Need THINKOS_ENABLE_MONITOR"
 #endif
 
-/*
-#if !(THINKOS_ENABLE_MONITOR_THREADS)
-#error "Need THINKOS_ENABLE_MONITOR_THREADS"
+#if !(THINKOS_ENABLE_CONSOLE)
+#error "Need THINKOS_ENABLE_CONSOLE"
 #endif
-
-#if !(THINKOS_ENABLE_IDLE_HOOKS)
-#error "Need THINKOS_ENABLE_IDLE_HOOKS"
-#endif
-*/
 
 #if !(THINKOS_ENABLE_CONSOLE_MODE)
 #error "Need THINKOS_ENABLE_CONSOLE_MODE"
@@ -227,9 +201,7 @@ static const char monitor_menu[] =
 #if (MONITOR_BOARDINFO_ENABLE)
 "\tCtrl+B - Show board configuration\r\n"
 #endif
-#if (MONITOR_APP_TERM_ENABLE)
 "\tCtrl+C - Stop/terminate the application\r\n"
-#endif
 #if (MONITOR_DUMPMEM_ENABLE)
 "\tCtrl+D - Show memory region content\r\n"
 #endif
@@ -238,9 +210,7 @@ static const char monitor_menu[] =
 "\tCtrl+F - Set breakpoint\r\n"
 #endif
 
-#if (MONITOR_EXCEPTION_ENABLE)
 "\tCtrl+G - Show Exception info\r\n"
-#endif
 
 #if (MONITOR_THREADINFO_ENABLE)
 "\tCtrl+N - Select Next Thread\r\n"
@@ -267,13 +237,7 @@ static const char monitor_menu[] =
 "\tCtrl+U - Stack usage info\r\n"
 #endif
 "\tCtrl+V - Show this Help\r\n"
-#if (MONITOR_APPWIPE_ENABLE)
-"\tCtrl+W - Wipe/Erase application\r\n"
-#endif
 
-#if (MONITOR_APPRESTART_ENABLE)
-"\tCtrl+Z - Restart application\r\n"
-#endif
 #if (MONITOR_WATCHPOINT_ENABLE)
 "\tCtrl+] - Set watchpoint\r\n"
 #endif
@@ -316,108 +280,6 @@ static void monitor_show_help(const struct monitor_comm * comm,
 	monitor_hbar(comm);
 }
 
-#if 0
-/* Interrupts state dump */
-void monitor_print_irqs(const struct monitor_comm * comm)
-{
-	uint32_t shcsr;
-	uint32_t icsr;
-	int irqregs;
-	int irqbits;
-	int i;
-	int j;
-
-	irqregs = CM3_ICTR + 1;
-	for (i = 0; i < irqregs ; ++i) {
-		irqbits = __rbit(CM3_NVIC->iabr[i]);
-		while ((j = __clz(irqbits)) < 32) {
-			irqbits &= ~(0x80000000 >> j);
-			monitor_printf(comm, "Active IRQ=%d\r\n", i * 32 + j); 
-		}
-	}
-
-	for (i = 0; i < irqregs ; ++i) {
-		irqbits = __rbit(CM3_NVIC->ispr[i]);
-		while ((j = __clz(irqbits)) < 32) {
-			irqbits &= ~(0x80000000 >> j);
-			monitor_printf(comm, "Pending IRQ=%d\r\n", i * 32 + j); 
-		}
-	}
-
-	shcsr = CM3_SCB->shcsr;
-			monitor_printf(comm, "SHCSR={%s%s%s%s%s%s%s%s%s%s }\r\n", 
-				 (shcsr & SCB_SHCSR_USGFAULTENA) ? " USGFAULTENA" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTENA) ? " BUSFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTENA) ? " MEMFAULTENA " : "",
-				 (shcsr & SCB_SHCSR_SYSTICKACT) ? " SYSTICKACT" : "",
-				 (shcsr & SCB_SHCSR_PENDSVACT) ? " PENDSVACT" : "",
-				 (shcsr & SCB_SHCSR_MONITORACT) ? " MONITORACT" : "",
-				 (shcsr & SCB_SHCSR_SVCALLACT) ? " SVCALLACT" : "",
-				 (shcsr & SCB_SHCSR_USGFAULTACT) ?  " USGFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_BUSFAULTACT) ?  " BUSFAULTACT" : "",
-				 (shcsr & SCB_SHCSR_MEMFAULTACT) ?  " MEMFAULTACT" : "");
-
-	icsr = CM3_SCB->icsr;
-			monitor_printf(comm, " ICSR={%s%s%s%s%s%s VECTPENDING=%d VECTACTIVE=%d }\r\njjjjj", 
-				 (icsr & SCB_ICSR_NMIPENDSET) ? " NMIPEND" : "",
-				 (icsr & SCB_ICSR_PENDSVSET) ? " PENDSV" : "",
-				 (icsr & SCB_ICSR_PENDSTSET) ? " PENDST" : "",
-				 (icsr & SCB_ICSR_ISRPREEMPT) ? " ISRPREEMPT" : "",
-				 (icsr & SCB_ICSR_ISRPENDING) ? " ISRPENDING" : "",
-				 (icsr & SCB_ICSR_RETTOBASE) ? " RETTOBASE" : "",
-				 (icsr & SCB_ICSR_VECTPENDING) >> 12,
-				 (icsr & SCB_ICSR_VECTACTIVE));
-}
-
-void monitor_print_fault_regs(const struct monitor_comm * comm)
-{
-	uint32_t cfsr = CM3_SCB->cfsr;
-	uint32_t mmfsr = SCB_CFSR_MMFSR_GET(cfsr);
-	uint32_t ufsr = SCB_CFSR_UFSR_GET(cfsr);
-	uint32_t bfsr = SCB_CFSR_BFSR_GET(cfsr);
-	uint32_t mmfar = CM3_SCB->mmfar;
-	uint32_t bfar = CM3_SCB->bfar;
-
-	monitor_printf(comm, "MMFSR=%08x MMFAR=%08x\r\n", mmfsr, mmfar);
-	if (mmfsr) {
-		monitor_printf(comm, "    %s%s%s%s%s%s\r\n", 
-					   (mmfsr & MMFSR_MMARVALID)  ? " MMARVALID" : "",
-					   (mmfsr & MMFSR_MLSPERR)  ? " MLSPERR" : "",
-					   (mmfsr & MMFSR_MSTKERR)  ? " MSTKERR" : "",
-					   (mmfsr & MMFSR_MUNSTKERR)  ? " MUNSTKERR" : "",
-					   (mmfsr & MMFSR_DACCVIOL)  ? " DACCVIOL" : "",
-					   (mmfsr & MMFSR_IACCVIOL)  ? " IACCVIOL" : "");
-	}
-
-	monitor_printf(comm, "UFSR=%08x\r\n", ufsr);
-	if (ufsr) {
-		monitor_printf(comm, "    %s%s%s%s%s%s\r\n", 
-					   (ufsr & UFSR_DIVBYZERO)  ? " DIVBYZERO" : "",
-					   (ufsr & UFSR_UNALIGNED)  ? " UNALIGNED" : "",
-					   (ufsr & UFSR_NOCP)  ? " NOCP" : "",
-					   (ufsr & UFSR_INVPC)  ? " INVPC" : "",
-					   (ufsr & UFSR_INVSTATE)  ? " INVSTATE" : "",
-					   (ufsr & UFSR_UNDEFINSTR)  ? " UNDEFINSTR" : "");
-	}
-
-	monitor_printf(comm, "BFSR=%08x BFAR=%08x\r\n", bfsr, bfar);
-	if (bfsr) {
-		monitor_printf(comm, "     %s%s%s%s%s%s%s\r\n", 
-					   (bfsr & BFSR_BFARVALID) ? " BFARVALID" : "",
-					   (bfsr & BFSR_LSPERR) ? " LSPERR" : "",
-					   (bfsr & BFSR_STKERR) ? " STKERR" : "",
-					   (bfsr & BFSR_UNSTKERR) ?  " UNSTKERR" : "",
-					   (bfsr & BFSR_IMPRECISERR) ?  " IMPRECISERR" : "",
-					   (bfsr & BFSR_PRECISERR) ?  " PRECISERR" : "",
-					   (bfsr & BFSR_IBUSERR)  ?  " IBUSERR" : "");
-	}
-}
-
-#endif
-
-#if (MONITOR_FAULT_ENABLE)
-#if (MONITOR_EXCEPTION_ENABLE)
-
 static void monitor_on_print_fault(const struct monitor_comm * comm) 
 {
 	struct thinkos_fault * fault = __thinkos_fault_rt();
@@ -451,10 +313,6 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 {
 	int thread_id;
 	int32_t errno;
-	int32_t xcpno;
-
-	xcpno = monitor_krn_except_get();
-	errno = monitor_thread_err_get();
 
 	/* get the last thread known to be at fault */
 	thread_id = monitor_thread_break_get(&errno);
@@ -472,11 +330,25 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 		return;
 	}
 
-	if (monitor_comm_isconnected(comm)) {
+	if (!monitor_comm_isconnected(comm)) {
+		DCC_LOG(LOG_ERROR, "Restarting!");
+		thinkos_krn_sysrst();
+		return;
+	}
 		struct krn_thread_state inf;
 
-		monitor_print_newln(comm);
 
+	if (errno == THINKOS_ERR_SYSCALL_INVALID) {
+    	struct thinkos_context * ctx = monitor_thread_ctx_get(thread_id);
+       	uint8_t * pc = (uint8_t *)ctx->pc;
+		uint8_t syscall = pc[-2];;
+		DCC_LOG1(LOG_ERROR, "Invalid System Call %d!", syscall);
+ 		monitor_thread_break_clr();
+
+		monitor_printf(comm, "* Invalid SysCall %d [thread=%d errno=%d "
+					   "addr=0x%08x]\r\n", syscall, thread_id, errno, (uintptr_t)pc); 
+
+	} else {
 		if (errno && thinkos_krn_thread_state_get(thread_id, &inf)) {
 			monitor_printf(comm, "* Error %s [thread=%d errno=%d "
 						   "addr=0x%08x]\r\n", 
@@ -485,43 +357,14 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 
 			monitor_print_thread_state(comm, &inf);
 		}
-		if (xcpno) {
-			struct thinkos_fault * fault = __thinkos_fault_rt();
+		struct thinkos_fault * fault = __thinkos_fault_rt();
+		if (__thinkos_fault_is_valid(fault)) {
 			monitor_print_fault(comm, fault);
 		}
-		monitor_hbar(comm);
-		monitor_print_newln(comm);
-
-	} else {
-		DCC_LOG(LOG_ERROR, "Restarting!");
-	//	thinkos_krn_sysrst();
 	}
+	monitor_hbar(comm);
+	monitor_print_newln(comm);
 }
-
-void monitor_on_krn_fault(const struct monitor_comm * comm)
-{
-	struct thinkos_fault * fault = __thinkos_fault_rt();
-	int32_t xcpno;
-	int32_t errno;
-
-	xcpno = monitor_krn_except_get();
-	errno = monitor_thread_err_get();
-
-	if (monitor_comm_isconnected(comm)) {
-		monitor_print_newln(comm);
-		monitor_printf(comm, "Kernel fault: %d.%d\r\n" , xcpno, errno);
-
-		monitor_print_fault(comm, fault);
-		monitor_print_newln(comm);
-		mdelay(100);
-	} else {
-		DCC_LOG(LOG_ERROR, "Restarting!");
-//		thinkos_krn_sysrst();
-	}
-}
-#endif
-
-#endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 static void monitor_on_bkpt(struct monitor * mon)
@@ -774,12 +617,10 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_board_info(comm, board);
 		break;
 #endif
-#if (MONITOR_APP_TERM_ENABLE)
 	case CTRL_C:
 		monitor_puts("^C\r\n", comm);
 		monitor_req_app_term();
 		break;
-#endif
 #if (MONITOR_DUMPMEM_ENABLE)
 	case CTRL_D:
 		monitor_printf(comm, "^D\r\n");
@@ -836,41 +677,9 @@ static bool monitor_process_input(struct monitor * mon, int c)
 	case CTRL_V:
 		monitor_show_help(comm, board);
 		break;
-#if (MONITOR_FAULT_ENABLE)
 	case CTRL_G:
 		monitor_on_print_fault(comm);
 		break;
-#endif
-	case CTRL_Y:
-#if 0
-		monitor_printf(comm, "^Y\r\nUpload application [y]? ");
-		if (monitor_getc(comm) == 'y') {
-			/* Request app upload */
-		} else {
-			monitor_printf(comm, "\r\n");
-		}
-#endif
-		monitor_req_app_upload();
-		break;
-#if (MONITOR_APPWIPE_ENABLE)
-	case CTRL_W:
-#if 0
-		monitor_printf(comm, "^W\r\nErase application [y]? ");
-		if (monitor_getc(comm) == 'y') {
-			/* Request app erase */
-		} else {
-			monitor_printf(comm, "\r\n");
-		}
-#endif
-		monitor_req_app_erase(); 
-		break;
-#endif
-#if (MONITOR_APPRESTART_ENABLE)
-	case CTRL_Z:
-		monitor_printf(comm, "^Z\r\n");
-		monitor_req_app_exec(); 
-		break;
-#endif
 #if (MONITOR_WATCHPOINT_ENABLE)
 	case CTRL_GS:
 		monitor_printf(comm, "^]\r\n");
@@ -894,13 +703,9 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 	const struct thinkos_board * board;
 	struct monitor monitor;
 	uint32_t sigmask = 0;
-#if (THINKOS_ENABLE_CONSOLE)
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
 	bool raw_mode = false;
-  #endif 
 	uint8_t * ptr;
 	int cnt;
-#endif
 	uint8_t buf[1];
 	int sig;
 
@@ -915,10 +720,8 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 	monitor.memdump.size = 1024;
 #endif
 
-#if (MONITOR_FAULT_ENABLE)
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 	sigmask |= (1 << MONITOR_THREAD_BREAK);
-#endif
 	sigmask |= (1 << MONITOR_COMM_RCV);
 	sigmask |= (1 << MONITOR_COMM_EOT);
 	sigmask |= (1 << MONITOR_TX_PIPE);
@@ -968,66 +771,33 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			monitor_signal(MONITOR_USER_EVENT3);
 			break;
 
+		case MONITOR_APP_TERM:
+			monitor_clear(MONITOR_APP_TERM);
+			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
+     		thinkos_krn_req_core_rst(krn);
+			break;
+
 		case MONITOR_COMM_BRK:
 			/* Acknowledge the signal */
 			monitor_clear(MONITOR_COMM_BRK);
 			DCC_LOG(LOG_WARNING, "/!\\ COMM_BREAK signal !");
 			monitor_puts("\r\n+++\r\nBRK\r\n", comm);
 			monitor_comm_break_ack(comm);
+			thinkos_krn_req_core_rst(krn);
 			break;
 
-		case MONITOR_APP_UPLOAD:
-			monitor_clear(MONITOR_APP_UPLOAD);
-#if (MONITOR_APPUPLOAD_ENABLE)
-			DCC_LOG(LOG_TRACE, "/!\\ APP_UPLOAD signal !");
-			monitor_flash_ymodem_recv(comm, "APP");
-#endif
-			break;
-/* FIXME: .... */
-#define APP_START_ADDR 0x08020000
-
-		case MONITOR_APP_EXEC:
-			monitor_clear(MONITOR_APP_EXEC);
-#if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_krn_console_raw_mode_set(raw_mode = false);
-#endif
-			DCC_LOG(LOG_TRACE, "/!\\ APP_EXEC signal !");
-			monitor_app_exec(APP_START_ADDR);
-			break;
-
-#if (MONITOR_APPWIPE_ENABLE)
-		case MONITOR_APP_ERASE:
-			monitor_clear(MONITOR_APP_ERASE);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_ERASE signal !");
-			break;
-#endif
-
-#if (MONITOR_APP_TERM_ENABLE)
-		case MONITOR_APP_TERM:
-			monitor_clear(MONITOR_APP_TERM);
-			DCC_LOG(LOG_TRACE, "/!\\ APP_TERM signal !");
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_krn_console_raw_mode_set(raw_mode = false);
-  #endif
-  #if (THINKOS_ENABLE_IDLE_HOOKS)
-     		thinkos_krn_req_core_rst(krn);
-			break;
-  #endif
-
-		/* FALLTHROUGH */
 		case MONITOR_ON_CORE_RST:
 			monitor_clear(MONITOR_ON_CORE_RST);
+			thinkos_krn_console_raw_mode_set(raw_mode = false);
+			board->on_softreset();
 			if (board->on_break) {
 				board->on_break(comm);
 			}
 			break;
-#endif
 #if 0
 		case MONITOR_APP_STOP:
 			monitor_clear(MONITOR_APP_STOP);
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
 			raw_mode = false;
-  #endif
 			DCC_LOG(LOG_TRACE, "/!\\ APP_STOP signal !");
 			break;
 
@@ -1042,37 +812,20 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			break;
 #endif
 
-#if (MONITOR_EXCEPTION_ENABLE)
+#if (MONITOR_FAULT_ENABLE)
 		case MONITOR_THREAD_FAULT:
 			monitor_clear(MONITOR_THREAD_FAULT);
 			DCC_LOG(LOG_TRACE, "Thread fault !.");
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
-  #endif
 			/* Restore critical NVIC interrupts */
 			monitor_on_thread_fault(comm);
 			break;
-#if 0
-		case MONITOR_KRN_FAULT:
-			monitor_clear(MONITOR_KRN_FAULT);
-			DCC_LOG(LOG_TRACE, "!! Kernel fault !!");
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
-			thinkos_krn_console_raw_mode_set(raw_mode = false);
-  #endif
-			/* Restore critical NVIC interrupts */
-			monitor_on_krn_fault(comm);
-
-  	 		thinkos_krn_req_core_rst(krn);
-			break;
-#endif
 #endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
 		case MONITOR_BREAKPOINT:
 			monitor_clear(MONITOR_BREAKPOINT);
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
-  #endif
 			monitor_on_bkpt(&monitor);
 			break;
 #endif
@@ -1086,18 +839,11 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 #endif
 
 		case MONITOR_COMM_RCV:
-#if (THINKOS_ENABLE_CONSOLE)
-  #if (THINKOS_ENABLE_CONSOLE_MODE)
-			raw_mode = thinkos_krn_console_is_raw_mode();
-			if (raw_mode) {
+			if ((raw_mode = thinkos_krn_console_is_raw_mode())) {
 				DCC_LOG(LOG_INFO, "COMM_RCV...");
 				sigmask = monitor_on_rx_pipe(comm, sigmask);
 				break;
 			}
-  #endif /* THINKOS_ENABLE_CONSOLE_MODE */
-
-			DCC_LOG(LOG_INFO, "COMM_RCV...");
-
 			/* receive from the COMM driver one byte at the time */
 			if ((cnt = monitor_comm_recv(comm, buf, 1)) > 0) {
 				int c = buf[0];
@@ -1120,20 +866,9 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 						/* discard */
 					}
 				}
-
-			} else {
-				DCC_LOG1(LOG_INFO, "monitor_comm_recv() = %d", cnt);
 			}
 			break;
-#else
-			if (monitor_comm_recv(comm, buf, 1) > 0) {
-				/* process the input character */
-				monitor_process_input(&monitor, buf[0]);
-			}
-#endif /* THINKOS_ENABLE_CONSOLE */
-			break;
 
-#if (THINKOS_ENABLE_CONSOLE)
 		case MONITOR_COMM_CTL:
 			DCC_LOG(LOG_MSG, "/!\\ MONITOR_COMM_CTL");
 			monitor_clear(MONITOR_COMM_CTL);
@@ -1154,20 +889,19 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			DCC_LOG1(LOG_MSG, "sigmask=%08x", sigmask);
 			break;
 
+		case MONITOR_RX_PIPE:
+			sigmask = monitor_on_rx_pipe(comm, sigmask);
+			break;
+
 		case MONITOR_COMM_EOT:
 			/* FALLTHROUGH */
 		case MONITOR_TX_PIPE:
 			sigmask = monitor_on_tx_pipe(comm, sigmask);
 			break;
 
-		case MONITOR_RX_PIPE:
-			sigmask = monitor_on_rx_pipe(comm, sigmask);
-			break;
-#endif /* THINKOS_ENABLE_CONSOLE */
-
 		default:
-			DCC_LOG1(LOG_WARNING, "unhandled SIG %d!", sig);
 			monitor_clear(sig);
+			DCC_LOG1(LOG_WARNING, "Unhandled SIG %d!", sig);
 			break;
 		}
 	}

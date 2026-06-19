@@ -216,7 +216,6 @@ void usb_drain(int ep_id)
 	}
 }
 
-#if 0
 int uint2hex(char * s, unsigned int val)
 {
 	int n;
@@ -262,5 +261,6 @@ void usb_send_hex(int ep_id, unsigned int val)
 	usb_send(ep_id, buf, n);
 }
 
+#if 0
 #endif
 

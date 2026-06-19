@@ -115,9 +115,7 @@ __rom_vectors:
 	.global __rom_vectors
 	.type __rom_vectors, %object
 	cortex_m_vectors
-#ifndef CM3_RAM_VECTORS
 	stm32f_irq_vectors
-#endif
 	.size   __rom_vectors, . - __rom_vectors
 
 	.global __sizeof_rom_vectors

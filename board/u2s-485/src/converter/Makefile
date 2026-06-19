@@ -30,10 +30,12 @@ VERSION_MINOR = "40"
 
 PROG = u2s-converter-$(VERSION_MAJOR).$(VERSION_MINOR)
 
-COMMON_CFILES =	serial2.c leds.c xflash.c usb_xflash_pic.c 
+COMMON_CFILES =	serial2.c leds.c xflash.c 
+XFLASH_CFILES =	../../../../arch/stm32/libxflash/usb-xflash/usb_xflash_pic.c 
 
 CFILES = u2s-converter.c board.c usb_printf.c \
-		$(addprefix ../common/,$(COMMON_CFILES))
+		$(addprefix ../common/,$(COMMON_CFILES)) \
+		$(XFLASH_CFILES)
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn \

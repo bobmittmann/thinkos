@@ -144,6 +144,11 @@ SECTIONS
 	/* define a global symbol marking the end of read only data sections */
 	PROVIDE(__text_end = .);
 
+	.ramvect (NOLOAD):
+	{
+		KEEP (*(.ram_vectors))
+	} >"DATA"
+
 	. = ALIGN(3);
 
 	.data :
