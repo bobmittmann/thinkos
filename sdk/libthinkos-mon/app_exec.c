@@ -33,12 +33,7 @@
 
 void __app_exec_on_exit(unsigned int code)
 {
-	DCC_LOG1(LOG_WARNING, "code=%d", code);
-#if (THINKOS_ENABLE_TERMINATE)
-	thinkos_thread_abort(code);
-#else
-	thinkos_abort();
-#endif
+	thinkos_core_reset(THINKOS_CORE_RESET_KEY);
 }
 
 static int __app_exec_task(uintptr_t addr, unsigned int thread)

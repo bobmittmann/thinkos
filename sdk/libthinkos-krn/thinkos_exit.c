@@ -119,7 +119,6 @@ void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	}
 #endif
 
-
 #if (THINKOS_ENABLE_TIMESHARE)
 	/* possibly remove from the time share wait queue */
 	__bit_mem_wr((uint32_t *)&krn->wq_tmshare, (thread - 1), 0);  

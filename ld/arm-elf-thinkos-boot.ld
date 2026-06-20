@@ -56,6 +56,11 @@ EXTERN(cm3_debug_mon_isr)
 EXTERN(cm3_pendsv_isr)
 EXTERN(cm3_systick_isr)
 
+MEMORY
+{
+	krn_dcclog (r) : ORIGIN = 0x4f400000, LENGTH = 4096K
+}
+
 SECTIONS
 {
 	. = 0;
@@ -64,7 +69,7 @@ SECTIONS
 	{
 		. = ALIGN(4);
 		KEEP(*(.dcclog))
-	} >dcclog
+	} >krn_dcclog
 
 	.dccdata :
 	{
@@ -72,7 +77,7 @@ SECTIONS
 		KEEP(*(.rodata.__FUNCTION__*))
 		KEEP(*(.rodata.__func__.*))
 		KEEP(*(.dccdata))
-	} >dcclog
+	} >krn_dcclog
 
 	.vect :
 	{
