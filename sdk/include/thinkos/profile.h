@@ -48,10 +48,6 @@
 #define THINKOS_THREADS_MAX             8
 #endif
 
-#ifndef THINKOS_NRT_THREADS_MAX
-#define THINKOS_NRT_THREADS_MAX         0
-#endif
-
 #ifndef THINKOS_ENABLE_THREAD_ALLOC
 #define THINKOS_ENABLE_THREAD_ALLOC     (THINKOS_ENABLE_OBJ_ALLOC) 
 #endif
@@ -467,7 +463,7 @@
    scheduler remains operational as long as a non-critical error ocurs.
    The falted thread is removed from the ready queue and marked appropriatelly.
    The monitor is signaled and the scheduler/kernel resumes operation with the 
-   remaining of threads. 
+   remaining threads. 
  */
 #ifndef THINKOS_ENABLE_THREAD_FAULT  
 #define THINKOS_ENABLE_THREAD_FAULT         0 
@@ -481,17 +477,6 @@
 /* THINKOS_ENABLE_SCHED_DEBUG - Enable scheduler debug trace */
 #ifndef THINKOS_ENABLE_SCHED_DEBUG
 #define THINKOS_ENABLE_SCHED_DEBUG          0
-#endif
-
-/* THINKOS_ENABLE_KRN_SCHED_BRK - Enable thread break */
-#ifndef THINKOS_ENABLE_KRN_SCHED_BRK
-#define THINKOS_ENABLE_KRN_SCHED_BRK        0
-#endif
-
-/* THINKOS_ENABLE_KRN_SCHED_SVC - This option is used to request the execution of
-   a scheduler priority tasklet. */
-#ifndef THINKOS_ENABLE_KRN_SCHED_SVC
-#define THINKOS_ENABLE_KRN_SCHED_SVC        0
 #endif
 
 /* THINKOS_ENABLE_IDLE_HOOKS - This option is used to request the execution of
@@ -516,6 +501,10 @@
  * Non implemented/Planned options, should not be used in 
  *   production code.
  */
+
+#ifndef THINKOS_NRT_THREADS_MAX
+#define THINKOS_NRT_THREADS_MAX         0
+#endif
 
 /* THINKOS_FLASH_MEM_MAX - enable the kernel to handle low-level
    flash memory erase read and write operations. */
@@ -641,10 +630,6 @@
 #undef THINKOS_ENABLE_GATE_ALLOC
 #define THINKOS_ENABLE_GATE_ALLOC 0
 #endif
-
-//#if (THINKOS_ENABLE_DATE_AND_TIME) && !(THINKOS_ENABLE_FRACTIONAL_CLOCK)
-//#error "THINKOS_ENABLE_DATE_AND_TIME depends on THINKOS_ENABLE_FRACTIONAL_CLOCK"
-//#endif
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT) && !(THINKOS_ENABLE_TIMED_CALLS)
 #error "THINKOS_ENABLE_IRQ_TIMEDWAIT depends on THINKOS_ENABLE_TIMED_CALLS"

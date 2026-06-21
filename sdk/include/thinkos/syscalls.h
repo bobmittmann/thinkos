@@ -387,20 +387,16 @@ thinkos_mutex_unlock(int mutex) {
 static inline int __attribute__((always_inline)) 
 thinkos_cond_wait(int cond, int mutex) {
 	int ret;
-	if ((ret = THINKOS_SYSCALL2(THINKOS_COND_WAIT, 
-								cond, mutex)) >= THINKOS_ETIMEDOUT) {
-		THINKOS_SYSCALL1(THINKOS_MUTEX_LOCK, mutex);
-	}
+	ret = THINKOS_SYSCALL2(THINKOS_COND_WAIT, cond, mutex);
+	THINKOS_SYSCALL1(THINKOS_MUTEX_LOCK, mutex);
 	return ret;
 }
 
 static inline int __attribute__((always_inline)) 
 thinkos_cond_timedwait(int cond, int mutex, unsigned int ms) {
 	int ret;
-	if ((ret = THINKOS_SYSCALL3(THINKOS_COND_TIMEDWAIT, 
-								 cond, mutex, ms)) >= THINKOS_ETIMEDOUT) { 
-		THINKOS_SYSCALL1(THINKOS_MUTEX_LOCK, mutex);
-	}
+	ret = THINKOS_SYSCALL3(THINKOS_COND_TIMEDWAIT, cond, mutex, ms);
+	THINKOS_SYSCALL1(THINKOS_MUTEX_LOCK, mutex);
 	return ret;
 }
 

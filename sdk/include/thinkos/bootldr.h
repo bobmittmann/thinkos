@@ -34,8 +34,6 @@
 #define __THINKOS_CTRL__
 #include <thinkos/ctrl.h>
 
-#include <thinkos/board.h>
-
 enum {
 	BTL_SHELL_OK = 0,
 	BTL_SHELL_ERR_GENERAL = -1,

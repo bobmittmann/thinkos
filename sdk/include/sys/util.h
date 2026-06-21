@@ -23,6 +23,7 @@
 #ifndef __SYS_UTIL_H__
 #define __SYS_UTIL_H__
 
+extern const char __hextab[];
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,10 +31,16 @@ extern "C" {
 
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
+int uint2hex_be(char * s, unsigned int val);
 
 int ull2dec(char * s, unsigned long long val);
 int ull2hex(char * s, unsigned long long val);
 
+int long2hex_be(char * s, unsigned long val);
+/* Long to hex little endian */
+int long2hex_le(char * s, unsigned long val);
+/* Long long to hex big endian */
+int longlong2hex_be(char * s, unsigned long long val);
 
 #ifdef __cplusplus
 }

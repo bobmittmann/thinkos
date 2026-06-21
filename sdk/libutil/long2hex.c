@@ -25,6 +25,7 @@
 
 extern const char __hextab[];
 
+/* Long to hex big endian */
 int long2hex_be(char * s, unsigned long val)
 {
 	s[0] = __hextab[((val >> 4) & 0xf)];
@@ -39,6 +40,7 @@ int long2hex_be(char * s, unsigned long val)
 	return 8;
 }
 
+/* Long to hex little endian */
 int long2hex_le(char * s, unsigned long val)
 {
 	s[0] = __hextab[((val >> 28) & 0xf)];
@@ -53,6 +55,7 @@ int long2hex_le(char * s, unsigned long val)
 	return 8;
 }
 
+/* Long long to hex big endian */
 int longlong2hex_be(char * s, unsigned long long val)
 {
 	s[0] = __hextab[((val >> 4) & 0xf)];
