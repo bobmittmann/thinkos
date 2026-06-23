@@ -89,6 +89,13 @@ double strtod(const char *nptr, char **endptr);
 
 float strtof(const char *nptr, char **endptr);
 
+typedef int (*__compar_fn_t) (const void *, const void *);
+
+/* Do a binary search for KEY in BASE, which consists of NMEMB elements
+   of SIZE bytes each, using COMPAR to perform the comparisons.  */
+void *bsearch (const void *__key, const void *__base,
+		      size_t __nmemb, size_t __size, __compar_fn_t __compar);
+
 #ifdef __cplusplus
 }
 #endif
