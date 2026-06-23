@@ -27,6 +27,9 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
 #include <sys/serial.h>
 #include <sys/param.h>
 #include <sys/usb-cdc.h>

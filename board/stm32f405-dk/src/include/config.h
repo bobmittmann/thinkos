@@ -79,10 +79,10 @@
 #define THINKOS_THREADS_MAX                32
 #define THINKOS_ENABLE_THREAD_INFO          1
 #define THINKOS_ENABLE_THREAD_STAT          0
-#define THINKOS_ENABLE_JOIN                 0
+#define THINKOS_ENABLE_JOIN                 1
 #define THINKOS_ENABLE_PAUSE                0
 #define THINKOS_ENABLE_CANCEL               0
-#define THINKOS_ENABLE_EXIT                 0
+#define THINKOS_ENABLE_EXIT                 1
 #define THINKOS_ENABLE_TERMINATE            1
 #define THINKOS_ENABLE_TIMESHARE            0
 
