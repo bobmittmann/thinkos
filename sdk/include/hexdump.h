@@ -33,6 +33,12 @@
 extern "C" {
 #endif
 
+enum hexdump_bit_width {
+	HEXDUMP_8_BITS = 1,
+	HEXDUMP_16_BITS = 2,
+	HEXDUMP_32_BITS = 3
+};
+
 /* Show a line of 16 ASCII characters */
 void show_line_char(FILE * f, uint32_t  addr, const uint8_t * data, int count);
 
