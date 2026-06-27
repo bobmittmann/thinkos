@@ -31,16 +31,19 @@ VERSION_MINOR = "40"
 PROG = u2s-converter-$(VERSION_MAJOR).$(VERSION_MINOR)
 
 COMMON_CFILES =	serial2.c leds.c xflash.c 
-XFLASH_CFILES =	../../../../arch/stm32/libxflash/usb-xflash/usb_xflash_pic.c 
+XFLASH_PIC_DIR = ../../../../arch/stm32/libxflash/usb-xflash
+XFLASH_PIC_C = $(XFLASH_PIC_DIR)/usb_xflash_pic.c 
 
 CFILES = u2s-converter.c board.c usb_printf.c \
 		$(addprefix ../common/,$(COMMON_CFILES)) \
-		$(XFLASH_CFILES)
+		$(XFLASH_PIC_C)
 
 LIBDIRS = $(ARCH_DIR)/libstm32f $(SDK_DIR)/libutil \
 		  $(SDK_DIR)/libthinkos-krn \
 		  $(SDK_DIR)/libice-comm \
 		  $(SDK_DIR)/libcdc-acm
+
+PREBUILD = $(ARCH_DIR)/libxflash/usb-xflash
 
 LIBS = stm32f thinkos-krn cdc-acm util ice-comm
 
@@ -55,3 +58,10 @@ KRN_CODE_SIZE = 10240
 KRN_DATA_SIZE = 2048
 include $(ARCH_DIR)/mk/stm32-krn.mk
 
+$(XFLASH_PIC_C): xflash_bin
+
+xflash_bin:
+	$(ACTION) "Building : $@"
+	$(Q)$(MAKE) -C $(XFLASH_PIC_DIR) all
+
+#	$(XFLASH_PIC_DIR)/usb_xflash_pic.bin

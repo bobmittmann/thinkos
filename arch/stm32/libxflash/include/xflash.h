@@ -26,7 +26,7 @@
 struct magic_hdr {
 	uint16_t pos;
 	uint16_t cnt;
-};
+} __attribute__((packed));
 
 struct magic_rec {
 	uint32_t mask;
@@ -61,7 +61,7 @@ int usb_send(int ep_id, const void * buf, unsigned int len);
 int usb_recv(int ep_id, void * buf, unsigned int len, unsigned int msec);
 int usb_drain(int ep_id);
 
-int xflash(uint32_t blk_offs, unsigned int blk_size, 
+void xflash(uint32_t blk_offs, unsigned int blk_size, 
 		   const struct magic * magic);
 
 int yflash(uint32_t blk_offs, unsigned int blk_size, 

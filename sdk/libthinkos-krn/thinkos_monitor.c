@@ -286,7 +286,6 @@ int monitor_thread_break_get(int32_t * perrno)
 {
 	struct thinkos_rt * krn = &thinkos_rt;
 	int errno;
-	int xcpno;
 	int brkid;
 	int thread;
 
@@ -294,13 +293,12 @@ int monitor_thread_break_get(int32_t * perrno)
 	(void)thread;
 	brkid = __krn_sched_brk_get(krn);
 	errno = __krn_sched_err_get(krn);
-	xcpno = __krn_sched_xcp_get(krn);
 	
-	DCC_LOG4(LOG_TRACE, "act=%d brk=%d err=%d xcp=%d",  
-			 thread, brkid, errno, xcpno);
+	DCC_LOG3(LOG_TRACE, "act=%d brk=%d err=%d",  
+			 thread, brkid, errno);
 
 	if (perrno) {
-		*perrno = (xcpno != 0) ? xcpno : errno;
+		*perrno = errno;
 	}
 
 	return brkid;

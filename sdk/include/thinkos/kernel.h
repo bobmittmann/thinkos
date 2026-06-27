@@ -27,6 +27,7 @@
 #endif 
 
 #include <arch/cortex-m3.h>
+#include <stdbool.h>
 
 #define __THINKOS_PROFILE__
 #include <thinkos/profile.h>

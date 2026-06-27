@@ -24,6 +24,7 @@
 #include <sys/param.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <crc.h>
 #include "xflash.h"
 #include <sys/dcclog.h>
@@ -301,7 +302,7 @@ static bool magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 static const char s_xmodem[] = "\r\nXmodem (^D to cancel)... ";
 static const char s_invalid[] = "\r\nInvalid file!";
 
-int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size, 
+void __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 									 const struct magic * magic)
 {
 	struct {
@@ -314,14 +315,26 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 	int ret;
 	int i;
 
-	if (magic != 0) {
+
+	if (magic != NULL) {
 		/* copy magic check block */
 		cnt = magic->hdr.cnt > MAGIC_REC_MAX ? MAGIC_REC_MAX : magic->hdr.cnt;
+#if 0
+		usb_send(CDC_TX_EP, "\r\nmagic: ", 8);
+		usb_send_hex(CDC_TX_EP, (uintptr_t)magic);
+		usb_send(CDC_TX_EP, "\tcnt: ", 6);
+		usb_send_hex(CDC_TX_EP, (uintptr_t)magic->hdr.cnt);
+		usb_send(CDC_TX_EP, "\tpos: ", 6);
+		usb_send_hex(CDC_TX_EP, (uintptr_t)magic->hdr.pos);
+#endif
+#if 1
 		for (i = 0; i < cnt; ++i) {
-//			 usb_send(CDC_TX_EP, "\r\nmagic.", 8);
-			DCC_LOG(LOG_TRACE, "magic loaded");
 			magic_buf.rec[i] = magic->rec[i];
 		}	
+#else
+		memcpy32(magic_buf.rec, magic->rec, 
+				 cnt * sizeof(struct magic_rec));
+#endif
 		magic_buf.hdr.cnt = cnt;
 		magic_buf.hdr.pos = magic->hdr.pos;
 	} else {
@@ -334,7 +347,6 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 	do {
 //		usb_send(CDC_TX_EP, "\r\nErasing...", 12);
 //		flash_erase(blk_offs, blk_size);
-		DCC_LOG(LOG_TRACE, "erasing...");
 
 		usb_send(CDC_TX_EP, s_xmodem, sizeof(s_xmodem) - 1);
 		usb_xmodem_rcv_init(&rx, XMODEM_RCV_CRC);
@@ -348,6 +360,7 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 			int rem = ret;
 
 			if (cnt == 0) {
+#if 1
 				if (!magic_match((struct magic *)&magic_buf, cnt, buf, rem)) {
 					xmodem_rcv_cancel(&rx);
 					delay(1000);
@@ -355,6 +368,7 @@ int __attribute__((noreturn)) xflash(uint32_t blk_offs, unsigned int blk_size,
 					ret = -1;
 					break;
 				}
+#endif
 			}
 
 			/* XXX: STM32F103: wait at least 50ms between erasing 

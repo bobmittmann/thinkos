@@ -42,7 +42,7 @@ struct serial_dev * serial2_open(void);
 int usb_printf(usb_cdc_class_t * cdc, const char *fmt, ... );
 
 #define FW_VERSION_MAJOR 1
-#define FW_VERSION_MINOR 11
+#define FW_VERSION_MINOR 12
 
 /* -------------------------------------------------------------------------
    USB-CDC ACM

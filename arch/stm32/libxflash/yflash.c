@@ -448,8 +448,8 @@ static int magic_match(struct magic * magic, int pos, uint8_t * buf, int len)
 #endif
 
 #if XFLASH_VERBOSE
-static const char s_err[] = "\r\nErr: ";
-static const char s_invalid[] = "\r\nInvalid file!";
+const char s_err[] = "\r\nErr: ";
+const char s_invalid[] = "\r\nInvalid file!";
 static const char s_erase[] = "\r\nFlash erase error!";
 static const char s_program[] = "\r\nFlash program error!";
 static const char s_ymodem[] = "\r\nYmodem (^X to cancel)... ";
@@ -553,7 +553,7 @@ int __attribute__((noreturn)) yflash(uint32_t blk_offs, unsigned int blk_size,
 							PUTS(s_invalid);
 #if XFLASH_DEBUG
 							ERROR(-ret);
-//							usb_hex_dump(CDC_TX_EP, ry.pkt.data, len);
+							usb_hex_dump(CDC_TX_EP, ry.pkt.data, len);
 #endif
 #endif
 							break;

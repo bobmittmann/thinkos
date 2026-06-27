@@ -8,7 +8,7 @@
 
 /** 
  * @file config.h
- * @brief USB to Serial Converter configuration
+ * @brief USB to Serial Converter Bootloader configuration
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
@@ -51,7 +51,7 @@
 #define THINKOS_ENABLE_OFAST                0
 #define THINKOS_ENABLE_MPU                  0
 #define THINKOS_ENABLE_FPU                  0
-#define THINKOS_ENABLE_PRIVILEGED_THREAD    1
+#define THINKOS_ENABLE_PRIVILEGED_THREAD    0
 #define THINKOS_ENABLE_CORE_RESET           1
 #define THINKOS_ENABLE_CTL                  0
 #define THINKOS_ENABLE_IDLE_HOOKS           0
@@ -76,7 +76,7 @@
 #define THINKOS_ENABLE_TERMINATE            0
 #define THINKOS_ENABLE_TIMESHARE            0
 
-#define THINKOS_MUTEX_MAX                   4
+#define THINKOS_MUTEX_MAX                   8
 
 #define THINKOS_COND_MAX                    4
 
@@ -101,7 +101,7 @@
 /* Console */
 #define THINKOS_ENABLE_CONSOLE              1
 #define THINKOS_ENABLE_CONSOLE_READ         1
-#define THINKOS_ENABLE_CONSOLE_CTL          0 
+#define THINKOS_ENABLE_CONSOLE_CTL          0
 #define THINKOS_ENABLE_CONSOLE_MODE         0
 #define THINKOS_ENABLE_CONSOLE_NONBLOCK     0
 #define THINKOS_ENABLE_CONSOLE_BREAK        0
@@ -112,9 +112,9 @@
 #define THINKOS_CONSOLE_TX_FIFO_LEN       128
 
 /* Error Handling */
-#define THINKOS_ENABLE_STACK_ALIGN          1
-#define THINKOS_ENABLE_UNALIGN_TRAP         1
-#define THINKOS_ENABLE_DIV0_TRAP            1
+#define THINKOS_ENABLE_STACK_ALIGN          0
+#define THINKOS_ENABLE_UNALIGN_TRAP         0
+#define THINKOS_ENABLE_DIV0_TRAP            0
 #define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          0
 #define THINKOS_ENABLE_ERROR_TRAP           1
@@ -128,7 +128,7 @@
 
 #if DEBUG
 /* Enable scheduler trace calls */
-  #define THINKOS_ENABLE_SCHED_DEBUG        1
+  #define THINKOS_ENABLE_SCHED_DEBUG        0
   /* Enable scheduler stack error detection */
   #define THINKOS_ENABLE_SCHED_ERROR        0
   #define THINKOS_ENABLE_IDLE_WFI           0

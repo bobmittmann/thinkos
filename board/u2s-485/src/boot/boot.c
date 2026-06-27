@@ -297,8 +297,6 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 	sigmask |= (1 << MONITOR_THREAD_FAULT);
 
 	for(;;) {
-		monitor_unmask(MONITOR_ON_CORE_RST);
-
 		switch ((sig = monitor_select(sigmask))) {
 
 		case MONITOR_COMM_EOT:
@@ -335,7 +333,6 @@ void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm,
 					monitor_thread_break_clr();
 				}
 			}
-
 			break;
 
 		case MONITOR_COMM_BRK:
