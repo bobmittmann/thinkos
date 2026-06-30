@@ -28,13 +28,14 @@
 
 char * stpcpy(char * restrict dst, const char * restrict src)
 {
-	register char * cp = dst;
+	register char * cpd = dst;
+	register char * cps = (char *)src;
 	register unsigned int c;
 
-	for (cp = dst; (c = *cp) != '\0'; dst++, cp++) {
-		*dst = c;
+	for (; (c = *cps) != '\0'; cpd++, cps++) {
+		*cpd = c;
 	}
-	*cp = '\0';
+	*cpd = '\0';
 
-	return cp;
+	return cpd;
 }
