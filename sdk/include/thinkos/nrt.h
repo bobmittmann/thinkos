@@ -1,5 +1,5 @@
 /* 
- * thikos_irq.h
+ * thinkos_irq.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -43,6 +43,9 @@ extern "C" {
 #endif
 
 int __thinkos_nrt_thread_init(unsigned int thread_id);
+
+int __thinkos_nrt_sched_init(struct thinkos_krn * krn);
+
 
 #ifdef __cplusplus
 }

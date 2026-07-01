@@ -1,5 +1,5 @@
 /* 
- * thikos.c
+ * thinkos_break.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,43 +19,32 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
+#include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
+
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
 
-#if THINKOS_ENABLE_BREAK
+#if (THINKOS_ENABLE_BREAK)
 
-extern const uint8_t thinkos_obj_type_lut[];
-
-void thinkos_break_svc(int32_t * arg)
+void thinkos_break_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int wq = arg[0];
 	int th;
 
-#if THINKOS_ENABLE_ARG_CHECK
-	uint32_t * alloc;
-	unsigned int idx;
-	int type;
-
-	if (wq >= THINKOS_WQ_LST_END) {
-		__THINKOS_ERROR(THINKOS_ERR_OBJECT_INVALID);
-		arg[0] = THINKOS_EINVAL;
+#if (THINKOS_ENABLE_ARG_CHECK)
+	if (wq >= THINKOS_WQ_CNT) {
+		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
-#endif 
 
-#if THINKOS_ENABLE_ARG_CHECK
-	type = thinkos_obj_type_lut[wq];
-	alloc = thinkos_obj_alloc_lut[type];
-	idx = wq - thinkos_wq_base_lut[type];
-
-	if ((alloc != NULL) && __bit_mem_rd(alloc, idx) == 0) {
+	if (!__thinkos_obj_alloc_check(wq)) {
 		DCC_LOG1(LOG_ERROR, "invalid object %d!", wq);
-		__THINKOS_ERROR(THINKOS_ERR_OBJECT_ALLOC);
-		arg[0] = THINKOS_EINVAL;
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_ALLOC);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
 	}
 #endif 
@@ -76,7 +65,7 @@ void thinkos_break_svc(int32_t * arg)
 
 	cm3_cpsie_i();
 
-	arg[0] = 0;
+	arg[SVC_RETURN] = THINKOS_OK;
 }
 
 #endif /* THINKOS_ENABLE_BREAK */

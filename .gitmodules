@@ -1,0 +1,3 @@
+[submodule "docs/linuxdoc"]
+	path = docs/linuxdoc
+	url = https://github.com/return42/linuxdoc

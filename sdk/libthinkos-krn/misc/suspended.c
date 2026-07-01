@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * suspended.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,25 +19,20 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
 bool __thinkos_suspended(void)
 {
+	struct thinkos_krn * krn = &thinkos_krn;
 	unsigned int th;
 
-	for (th = 0; th < THINKOS_THREADS_MAX; ++th) {
-		if (thinkos_rt.ctx[th] != NULL) {
+	for (th = 1; th <= THINKOS_THREADS_MAX; ++th) {
+		if (__thread_ctx_is_valid(krn, th)) {
 			bool suspended = false;
-#if THINKOS_ENABLE_JOIN
-			suspended |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);
-#endif
-#if THINKOS_ENABLE_DEBUG_FAULT
-			suspended |= __bit_mem_rd(&thinkos_rt.wq_fault, th);
-#endif
-#if THINKOS_ENABLE_PAUSE
-			suspended |= __bit_mem_rd(&thinkos_rt.wq_paused, th);
-#endif
+			suspended |= __thread_enable_get(krn, th);
+			suspended |= __thread_cancel_get(krn, th);
+			suspended |= __thread_fault_get(krn, th);
+			suspended |= __thread_pause_get(krn, th);
 			if (!suspended)
 				return false;
 		}

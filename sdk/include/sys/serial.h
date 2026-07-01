@@ -74,6 +74,7 @@
 					(SERIAL_PARITY_ODD << 4) | \
 					(SERIAL_STOPBITS_1 << 8) 
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -134,15 +135,16 @@ enum {
 	SERIAL_IOCTL_DMA_PREPARE,
 	SERIAL_IOCTL_CONF_SET,
 	SERIAL_IOCTL_CONF_GET,
-	SERIAL_IOCTL_RX_TRIG_SET
+	SERIAL_IOCTL_RX_TRIG_SET,
+	SERIAL_IOCTL_TX_BREAK
 };
 
 #define SERIAL_RX_EN 1
 #define SERIAL_TX_EN 2
 
 struct serial_op {
-	int (* send)(void *, const void *, unsigned int);
-	int (* recv)(void *, void *, unsigned int, unsigned int);
+	int (* send)(void *, const void *, size_t);
+	int (* recv)(void *, void *, size_t, unsigned int);
 	int (* drain)(void *);
 	int (* close)(void *);
 	int (* ioctl)(void *, int, uintptr_t, uintptr_t);
@@ -154,12 +156,12 @@ struct serial_dev {
 };
 
 static inline int serial_send(struct serial_dev * dev, const void * buf,
-							  unsigned int len) {
+							  size_t len) {
 	return dev->op->send(dev->drv, buf, len);
 }
 
 static inline int serial_recv(struct serial_dev * dev, void * buf,
-							  unsigned int len, unsigned int msec) {
+							  size_t len, unsigned int msec) {
 	return dev->op->recv(dev->drv, buf, len, msec);
 }
 
@@ -171,7 +173,7 @@ static inline int serial_close(struct serial_dev * dev){
 	return dev->op->close(dev->drv);
 }
 
-static inline int serial_ioctl(struct serial_dev * dev,
+static inline int serial_ioctl(struct serial_dev * dev, 
 							   int opt, uintptr_t arg1, uintptr_t arg2) {
 	return dev->op->ioctl(dev->drv, opt, arg1, arg2);
 }
@@ -217,6 +219,16 @@ static inline int serial_rx_disable(struct serial_dev * dev) {
 						  SERIAL_RX_EN, 0);
 }
 
+static inline int serial_tx_enable(struct serial_dev * dev) {
+	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_ENABLE, 
+						  SERIAL_TX_EN, 0);
+}
+
+static inline int serial_tx_disable(struct serial_dev * dev) {
+	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_DISABLE, 
+						  SERIAL_TX_EN, 0);
+}
+
 static inline int serial_flowctrl_set(struct serial_dev * dev,
 									  unsigned int flowctrl) {
 	return dev->op->ioctl(dev->drv, SERIAL_IOCTL_FLOWCTRL_SET, 
@@ -256,10 +268,10 @@ extern "C" {
 #endif
 
 int serial_send(struct serial_dev * dev, const void * buf, 
-				unsigned int len);
+				size_t len);
 
 int serial_recv(struct serial_dev * dev, void * buf, 
-				unsigned int len, unsigned int msec);
+				size_t len, unsigned int msec);
 
 int serial_drain(struct serial_dev * dev);
 

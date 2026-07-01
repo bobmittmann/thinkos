@@ -1,0 +1,137 @@
+/* 
+ * File:	 console.c
+ * Author:   Robinson Mittmann (bobmittmann@gmail.com)
+ * Target:
+ * Comment:
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+
+#include <thinkos.h>
+#include <sys/file.h>
+#include <stdbool.h>
+
+int console_write(void * dev, const void * buf, size_t len) 
+{
+	unsigned int rem = len;
+	uint8_t * cp = (uint8_t *)buf;
+	int n;
+
+	while (rem) {
+		n = thinkos_console_write(cp, rem);
+		cp += n;
+		rem -= n;
+	}
+
+	return len;
+}
+
+int console_read(void * dev, void * buf, size_t len, unsigned int msec) 
+{
+	int ret = 0;
+
+	do {
+		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret == THINKOS_EAGAIN) {
+			ret = 0;
+		} else if (ret == THINKOS_EINTR) {
+			ret = 0;
+		}
+
+	} while (ret == 0);
+
+	return ret;
+}
+
+int console_drain(void * dev)
+{
+	while (thinkos_console_drain() != 0);
+	return 0;
+}
+
+int console_flush(void * dev)
+{
+	uint8_t buf[4];
+
+	while (thinkos_console_timedread(buf, 4, 100) > 0);
+
+	return 0;
+}
+
+int console_flush_n_drain(void * dev)
+{
+	uint8_t buf[16];
+	int ret;
+
+	do {
+		ret = thinkos_console_timedread(buf, sizeof(buf), 50);
+		if (ret == THINKOS_EAGAIN) {
+			ret = 0;
+		} else if (ret == THINKOS_EINTR) {
+			ret = 0;
+		} else if (ret == THINKOS_ETIMEDOUT) {
+			ret = 0;
+		}
+	} while (ret > 0);
+
+	ret = thinkos_console_drain();
+
+#if 0
+	do {
+		ret = thinkos_console_drain();
+	} while (ret > 0);
+#endif
+
+	return ret;
+}
+
+int console_close(void * dev)
+{
+	return thinkos_console_close();
+}
+
+bool console_is_connected(void)
+{
+	int ret = thinkos_console_is_connected();
+
+	return (ret > 0) ? true : false;
+}
+
+const struct fileop console_fops = {
+	.write = (int (*)(void *, const void *, size_t))console_write,
+	.read = (int (*)(void *, void *, size_t, unsigned int))console_read,
+	.flush = (int (*)(void *))console_flush_n_drain,
+	.close = (int (*)(void *))console_close
+};
+
+const struct file console_file = {
+	.data = 0, 
+	.op = &console_fops 
+};
+
+struct file * console_fopen(void)
+{
+	struct file * f;
+	f = (struct file *)&console_file;
+	return f;
+}
+
+bool is_console_file(struct file * f) 
+{
+	return (f->op == &console_fops) ? true : false;
+}
+

@@ -119,15 +119,15 @@ void thread_wait(unsigned int thread_id)
 	uint32_t rdy;
 
 	do {
-		rdy = __ldrexw(&thinkos_rt.wq_ready);
+		rdy = __ldrexw(&thinkos_krn.wq_ready);
 		rdy &= ~(1 << thread_id);
 		if (rdy == 0) {
 			/* no more threads into the ready queue,
 			   move the timeshare queue to the ready queue */
-			rdy = thinkos_rt.wq_tmshare;
-			thinkos_rt.wq_tmshare = 0;
+			rdy = thinkos_krn.wq_tmshare;
+			thinkos_krn.wq_tmshare = 0;
 		} 
-	} while (__strexw(&thinkos_rt.wq_ready, rdy));
+	} while (__strexw(&thinkos_krn.wq_ready, rdy));
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
@@ -139,22 +139,18 @@ void thread_wait2(unsigned int thread_id)
 	uint32_t tms;
 
 	do {
-		rdy = __ldrexw(&thinkos_rt.wq_ready);
-		tms = thinkos_rt.wq_tmshare;
+		rdy = __ldrexw(&thinkos_krn.wq_ready);
+		tms = thinkos_krn.wq_tmshare;
 		rdy &= ~(1 << thread_id);
-#if ((THINKOS_THREADS_MAX) < 32) 
-		if (rdy == (1 << (THINKOS_THREADS_MAX))) {
-#else
 		if (rdy == 0) {
-#endif
 			/* no more threads into the ready queue,
 			   move the timeshare queue to the ready queue */
 			rdy |= tms;
 			tms = 0;
 		} 
-	} while (__strexw(&thinkos_rt.wq_ready, rdy));
+	} while (__strexw(&thinkos_krn.wq_ready, rdy));
 
-	thinkos_rt.wq_tmshare = tms;
+	thinkos_krn.wq_tmshare = tms;
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
@@ -166,7 +162,7 @@ void thread_suspend(unsigned int thread_id)
 	__thinkos_defer_sched();
 }
 
-struct thinkos_rt thinkos_rt;
+struct thinkos_krn thinkos_krn;
 
 int main(int argc, char ** argv)
 {

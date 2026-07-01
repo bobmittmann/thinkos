@@ -13,14 +13,15 @@
 #define __ASSERT_VOID_CAST (void)
 #endif
 
+#undef __CONCAT
+#undef __STRING
+
 #define __CONCAT(x,y) x ## y
 #define __STRING(x)	#x
 
 #ifdef	NDEBUG
 
 #define assert(EXPR)		(void)0
-
-#include <sys/dcclog.h>
 
 #else /* Not NDEBUG.  */
 

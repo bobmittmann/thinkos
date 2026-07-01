@@ -33,11 +33,7 @@
 #define THINKOS_IRQ_MAX                 98
 #define THINKOS_ENABLE_IRQ_CTL          0
 
-#define THINKOS_ENABLE_CLOCK            1
-
 #define THINKOS_ENABLE_TIMESHARE        0
-#define THINKOS_SCHED_LIMIT_MAX         32
-#define THINKOS_SCHED_LIMIT_MIN         1
 
 #define THINKOS_THREADS_MAX             4
 #define THINKOS_ENABLE_THREAD_ALLOC     0
@@ -75,8 +71,6 @@
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
 
-#define THINKOS_ENABLE_RT_DEBUG         0
-
 #define THINKOS_ENABLE_BREAK            0
 
 #define THINKOS_ENABLE_PROFILING        0
@@ -86,7 +80,6 @@
 
 #define THINKOS_EXCEPT_STACK_SIZE       332
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       1
 #define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_HARDFAULT        1
 #define THINKOS_ENABLE_BUSFAULT         1
@@ -101,11 +94,9 @@
 #define THINKOS_ENABLE_ERROR_TRAP       0
 
 #define THINKOS_ENABLE_MPU              0
-#define THINKOS_ENABLE_ESCALATE         0
 #define THINKOS_ENABLE_FPU              1
 
-#define THINKOS_ENABLE_THREAD_VOID      1
-#define THINKOS_ENABLE_DMCLOCK          0
+#define THINKOS_ENABLE_MONITOR_CLOCK    0
 
 #define THINKOS_ENABLE_CTL              0
 
@@ -113,8 +104,6 @@
 
 #define THINKOS_ENABLE_PREEMPTION       1
 #define THINKOS_ENABLE_CRITICAL         0
-
-#define THINKOS_ASM_SCHEDULER           1
 
 #define THINKOS_CONSOLE_RX_FIFO_LEN     0
 #define THINKOS_CONSOLE_TX_FIFO_LEN     0

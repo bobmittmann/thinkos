@@ -23,33 +23,23 @@ ifndef TOOLSDIR
 endif	
 
 ifndef VERSION_MAJOR
-$(error VERSION_MAJOR undefined!) 
+  $(error VERSION_MAJOR undefined!) 
 endif
 
-ifdef PROG
-  VERSION_NAME = $(PROG)
-else
-  VERSION_NAME = 
-endif	
+ifndef VERSION_NAME
+  ifdef PROG
+    VERSION_NAME = $(PROG)
+  else
+    VERSION_NAME = 
+  endif	
+endif
 
 ifndef VERSION_MINOR
   VERSION_MINOR = 0
 endif
 
 ifndef VERSION_DATE
-  VERSION_DATE = "2014-05-29"
-endif
-
-ifndef PRODUCT
-  PRODUCT = "YARD-ICE"
-endif
-
-ifndef REVISION
-  REVISION = "0.1"
-endif
-
-ifndef ASSEMBLY
-  ASSEMBLY = "A"
+  VERSION_DATE = "2022-01-28"
 endif
 
 ifndef PYTHON
@@ -70,19 +60,26 @@ else
   endif
 endif
 
-$(VERSION_H): Makefile
+ifndef VERSION_TAG
+  VERSION_TAG := $(VERSION_H:.h=.tag)
+endif
+
+$(VERSION_H): 
 	$(ACTION) "Creating: $@"
-	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE)
-	
-$(PROG_TAG):
-	$(ACTION) "Creating: $@"
-	@QTAG="$(PROG)-$(VERSION_MAJOR)_$(VERSION_MINOR)-`date -d "$$NOW" +"%Y%m%d"`"; \
-	echo $$TAG > $@;
-	cat $@
+	$(Q)$(PYTHON) $(MKVER) -o $@ -n $(VERSION_NAME) $(VERSION_MAJOR) $(VERSION_MINOR) $(VERSION_DATE) > $(VERSION_TAG)
+
+ifeq (Windows,$(HOST))
+  CLEAN_VERSION := $(strip $(subst /,\,$(VERSION_H) $(VERSION_TAG)))
+else
+  CLEAN_VERSION := $(strip $(VERSION_H) $(VERSION_TAG))
+endif
 
 version: 
-	$(Q)$(RMALL) $(VERSION_H)
+	$(Q)$(RMALL) $(VERSION_H) $(VERSION_TAG)
 	$(Q)$(MAKE) $(VERSION_H)
 
-.PHONY: version
+version-clean: 
+	$(Q)$(RMALL) $(CLEAN_VERSION)
+
+.PHONY: version version-clean
 

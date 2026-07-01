@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thread_isalive.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,34 +19,26 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
-#if THINKOS_ENABLE_JOIN || THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_JOIN) || (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isalive(unsigned int th)
 {
+	struct thinkos_krn * krn = &thinkos_krn;
 //	bool dead;
 
-	if (th == THINKOS_THREAD_IDLE)
-		return true;
-
-#if (THINKOS_ENABLE_THREAD_VOID)
-	if (th == THINKOS_THREAD_VOID)
-		return (thinkos_rt.void_ctx == NULL) ? false : true;
-#endif
-
-	if (th >= THINKOS_THREADS_MAX)
+	if (th > THINKOS_THREAD_VOID)
 		return false;
 
-	if (thinkos_rt.ctx[th] == NULL)
+	if (!__thread_ctx_is_valid(krn, th))
 		return false;
 #if 0
 	dead = false;
 #if THINKOS_ENABLE_JOIN
-	dead |= __bit_mem_rd(&thinkos_rt.wq_canceled, th);
+	dead |= __thread_canceled_get(krn, th);
 #endif
-#if THINKOS_ENABLE_DEBUG_FAULT
-	dead |= __bit_mem_rd(&thinkos_rt.wq_fault, th);
+#if THINKOS_ENABLE_THREAD_FAULT
+	dead |= __thread_fault_get(krn, th);
 #endif
 
 	return !dead;

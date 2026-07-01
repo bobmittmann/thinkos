@@ -19,6 +19,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+<<<<<<< HEAD
 THINKOSDIR = ../../../..
 SDKDIR = $(THINKOSDIR)/sdk
 
@@ -51,3 +52,53 @@ OPTIONS = -mno-unaligned-access
 
 MACH = stm32f405
 include $(THINKOSDIR)/mk/stm32.mk
+=======
+VERSION_DATE = "2026-05-19"
+VERSION_MAJOR = "1"
+VERSION_MINOR = "40"
+
+PROJECT_ROOT = ../..
+THINKOS_DIR = $(PROJECT_ROOT)/../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
+MKCMD  = python $(TOOLS_DIR)/mkcmd.py
+BIN2HEX = python $(TOOLS_DIR)/bin2hex.py
+
+PROG := stm32f405-thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
+
+BOOT_CFILES = monitor.c
+
+CFILES = $(addprefix $(THINKOS_DIR)/boot/, $(BOOT_CFILES))\
+	boot.c board.c shell.c cmd_tab.c 
+
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
+		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 
+
+SDK_LIBS = util thinkos-krn thinkos-btl thinkos-mon thinkos-dbg thinkos-usr \
+		   xmodem ice-comm fixpt
+ARCH_LIBS = stm32f 
+
+LIBS = $(SDK_LIBS) $(ARCH_LIBS)
+
+INCPATH = ../include
+
+CDEFS = CONFIG_H 
+
+CFLAGS = -Os
+
+MACH = stm32f415xg
+KRN_DATA_SIZE = 8192
+KRN_CODE_SIZE = 65536
+include $(ARCH_DIR)/mk/stm32-krn.mk
+
+CMD_TAB_YAML = $(SRCDIR)/cmd_tab.yaml
+CMD_TAB_C = $(SRCDIR)/cmd_tab.c
+CMD_TAB_H = $(SRCDIR)/cmd_tab.h
+$(CMD_TAB_H): $(CMD_TAB_C)
+
+$(CMD_TAB_C): $(CMD_TAB_YAML)
+	$(MKCMD) -e "struct btl_shell_env" -l -p btl -o $@ $<
+
+
+>>>>>>> krnsvc

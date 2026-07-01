@@ -1,5 +1,5 @@
 /* 
- * File:	 adc_test.c
+ * File:	 hello.c
  * Author:   Robinson Mittmann (bobmittmann@gmail.com)
  * Target:
  * Comment:
@@ -20,43 +20,31 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <sys/stm32f.h>
-#include <arch/cortex-m3.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <thinkos.h>
+#include <sys/console.h>
 #include <stdio.h>
-#include <sys/delay.h>
 
-#include <sys/dcclog.h>
+void stdio_init(void)
+{
+	FILE * f;
 
-void stdio_init(void);
+	f = console_fopen();
+	/* initialize STDIO */
+	stderr = f;
+	stdout = f;
+	stdin = f;
+}
 
 int main(int argc, char ** argv)
 {
-	DCC_LOG_INIT();
-	DCC_LOG_CONNECT();
-
-	DCC_LOG(LOG_TRACE, "1. cm3_udelay_calibrate()");
-
-	/* Calibrate the the uDelay loop */
-	cm3_udelay_calibrate();
-
-	DCC_LOG(LOG_TRACE, "2. stdio_init()");
-
-	DCC_LOGSTR(LOG_TRACE, "\"%s\"", "Hello world!");
-
-	/* Initialize the stdin, stdout and stderr */
 	stdio_init();
 
-	/* Print a useful information message */
-	printf("\n");
-	printf(" Hello world!\n");
-	printf("\n");
-
-	udelay(1000000);
+	for (;;) {
+		thinkos_sleep(1000);
+		printf("Hello world!\n");
+	}
 
 	return 0;
 }
+
 

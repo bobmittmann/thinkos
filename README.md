@@ -22,6 +22,8 @@ Tha absolute bare minimum configuration only the thread's stack pointer is manag
 
 All threads with priority higher than 0 go into a round-robin time sharing scheduling policy, when this feature is enabled. Their execution time will be inversely proportional to their priority.
 
+## Memory Management
+
 # Interrupt Model
 
 There are two types of interrupt handlers with ThinkOS:
@@ -42,8 +44,33 @@ ThinkOS can be configured with a varaiety of IPC mechanisms to synchronize threa
 - Events
 - Gates
 
+# Aditional Modules
+
+
+## KRNSVC - Kernel Services
+
+### Console
+### Kernel pipes
+### Kernel flash driver
+
+
+## KRNMON - Kernel Monitor
+
+
+### Console
+
+
+### Application 
+
+
+## KRNDBG - Kernel Debug
+
+
 # Configuration
 
 The file include/thinkos/kernel.h contains the definition of the structures used internally by the OS kernel. In this file there is a series of macros - prefixed by THINKOS_ - used to set default values for the configuration options.
 
 It is not recommended to change the values directly in kernel.h, create a config.h file instead, and define the macro CONFIG_H at the compiler's: -DCONFIG_H.
+ 
+## Configuration Profile 
+

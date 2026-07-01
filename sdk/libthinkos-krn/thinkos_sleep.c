@@ -1,5 +1,5 @@
 /* 
- * thikos.c
+ * thinkos_sleep.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,59 +19,52 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#if THINKOS_ENABLE_OFAST
+#include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
+
+#if (THINKOS_ENABLE_OFAST)
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
-#include <thinkos.h>
-#include <sys/delay.h>
 
-#if THINKOS_ENABLE_SLEEP
-void thinkos_sleep_svc(int32_t * arg, int self)
+#if (THINKOS_ENABLE_SLEEP)
+void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_krn * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
-#if THINKOS_ENABLE_CLOCK
-	/* set the clock */
-	thinkos_rt.clock[self] = thinkos_rt.ticks + ms;
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
 
-#if THINKOS_ENABLE_THREAD_STAT
-	/* mark the thread clock enable bit */
-	thinkos_rt.th_stat[self] = (THINKOS_WQ_CLOCK << 1) + 1;
-#endif
-
-	DCC_LOG2(LOG_MSG, "<%d> waiting %d milliseconds...", self, ms);
+	DCC_LOG2(LOG_MSG, "<%2d> itvl=%d", self, ms);
 
 	/* wait for event */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
+	/* mark the thread clock enable bit */
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
+
+	/* set the clock */
+	__thread_clk_itv_set(krn, self, ms);
+
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, self) ;
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
-#else
-	DCC_LOG1(LOG_MSG, "busy wait: %d milliseconds...", ms);
-	udelay(1000 * ms);
-#endif
+	__krn_sched_defer(krn);
 }
 #endif
 
-#if THINKOS_ENABLE_ALARM
-void thinkos_alarm_svc(int32_t * arg, int self)
+#if (THINKOS_ENABLE_ALARM)
+void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_krn * krn)
 {
-	uint32_t ms = (uint32_t)arg[0];
+	uint32_t clk = (uint32_t)arg[0];
 
-	/* set the clock */
-	thinkos_rt.clock[self] = ms;
-	/* insert into the clock wait queue */
-	__bit_mem_wr(&thinkos_rt.wq_clock, self, 1);
-#if THINKOS_ENABLE_THREAD_STAT
-	/* mark the thread clock enable bit */
-	thinkos_rt.th_stat[self] = (THINKOS_WQ_CLOCK << 1) + 1;
-#endif
+	DCC_LOG2(LOG_MSG, "<%2d> clk=%d", self, clk);
+
 	/* wait for event */
-	__thinkos_suspend(self);
+	__krn_thread_suspend(krn, self);
+	/* set the clock */
+	__thread_clk_set(krn, self, clk);
+	/* mark the thread clock enable bit */
+	__thread_stat_set(krn, self, THINKOS_WQ_CLOCK, true);
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, self);
 	/* signal the scheduler ... */
-	__thinkos_defer_sched();
+	__krn_sched_defer(krn);
 }
 #endif
 

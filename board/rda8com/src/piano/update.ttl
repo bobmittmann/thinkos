@@ -1,0 +1,78 @@
+PATTERN = 'release\*.app'
+
+findfirst dh PATTERN FNAME
+
+if result=0 then
+  findclose dh
+  messagebox "Firmware file not found!" "File not found!"
+  exit
+endif
+
+findclose dh
+getdir BASEDIR
+strconcat BASEDIR '\release\'
+makepath IMAGE BASEDIR FNAME
+
+;
+; Adjust the receive wait timeout
+;
+timeout = 5
+mtimeout = 0
+
+sendbreak
+wait 'boot#' 
+if result != 1 then
+  	messagebox 'Bootloader access error!' 'Timeout'
+	exit
+endif
+
+timeout = 2
+sendln 'e app'
+wait '[y]?' 
+if result != 1 then
+  	messagebox 'App erase error!' 'Timeout'
+	exit
+endif
+
+timeout = 10
+send 'y'
+mpause 100
+wait 'boot#' 
+if result != 1 then
+  	messagebox 'App erase error!' 'Timeout'
+	exit
+endif
+
+pause 1
+timeout = 2
+
+sendln 'y app'
+wait '[y]?' 
+if result != 1 then
+  	messagebox 'App program error!' 'Timeout'
+	exit
+endif
+
+timeout = 5
+
+send 'y'
+mpause 100
+wait '...' 
+if result != 1 then
+  	messagebox 'App program error!' 'Timeout'
+	exit
+endif
+
+; yesnobox IMAGE 'Update firmware?'
+mpause 100
+
+ymodemsend IMAGE
+
+if result != 1 then
+  	messagebox 'App transfer error!' 'YMODEM'
+	exit
+endif
+
+mpause 100
+sendln ' '
+

@@ -23,87 +23,118 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#ifdef CONFIG_H
-#include "config.h"
-#endif
+#include "board.h"
+
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
+#define __THINKOS_BOOTLDR__
+#include <thinkos/bootldr.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <sys/stm32f.h>
 #include <sys/delay.h>
-
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#define __THINKOS_BOOTLDR__
-#include <thinkos/bootldr.h>
-#include <thinkos.h>
 
 #include <sys/dcclog.h>
 
-#include "board.h"
 
-void monitor_task(struct dmon_comm * comm);
-
-#ifndef BOOT_MEM_RESERVED 
-#define BOOT_MEM_RESERVED 0x1000
+#ifndef BOOT_ENABLE_CUSTOM_COMM
+#define BOOT_ENABLE_CUSTOM_COMM 0
 #endif
 
-int main(int argc, char ** argv)
+#ifndef BOOT_SELFTEST_ENABLE
+#define BOOT_SELFTEST_ENABLE    0
+#endif
+
+#ifndef BOOT_PREBOOT_ENABLE
+#define BOOT_PREBOOT_ENABLE 1
+#endif
+
+#ifndef BOOT_MONITOR_ENABLE
+#define BOOT_MONITOR_ENABLE 1
+#endif
+
+
+void boot_monitor_task(const struct monitor_comm * comm, void * arg,
+					   uintptr_t, struct thinkos_krn *);
+
+void __attribute__((noreturn)) thinkos_boot(const struct thinkos_board * board,
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_krn *))
 {
-	struct dmon_comm * comm;
+	struct thinkos_krn * krn = &thinkos_krn;
+#if (BOOT_MONITOR_ENABLE)
+	const struct monitor_comm * comm;
+#endif
+#if (BOOT_SELFTEST_ENABLE) || (BOOT_PREBOOT_ENABLE)
+//	int ret;
+#endif
 
 	DCC_LOG_INIT();
-#if 1
 	DCC_LOG_CONNECT();
+
+	DCC_LOG(LOG_TRACE, "1. thinkos_krn_udelay_calibrate().");
+	thinkos_krn_udelay_calibrate();
+
+	DCC_LOG1(LOG_TRACE, "udelay_factor=%d.", udelay_factor);
+#if DEBUG
+//	udelay(0x8000);
 #endif
 
-#ifndef UDELAY_FACTOR 
-	DCC_LOG(LOG_INFO, "1. cm3_udelay_calibrate().");
-	cm3_udelay_calibrate();
+	DCC_LOG(LOG_TRACE, "2. thinkos_krn_init().");
+#if DEBUG
+//	udelay(0x8000);
 #endif
+	thinkos_krn_init(krn, THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0) |
+					 THINKOS_OPT_PRIVILEGED |
+					 THINKOS_OPT_STACK_SIZE(32768), NULL);
 
-	DCC_LOG1(LOG_MSG, "udelay_factor=%d.", udelay_factor);
+//	DCC_LOG(LOG_TRACE, "3. board_init().");
+#if DEBUG
+//	udelay(0x8000);
+#endif
+//	board_init();
 
-	DCC_LOG(LOG_INFO, "2. thinkos_init().");
-	thinkos_init(THINKOS_OPT_PRIORITY(0) | THINKOS_OPT_ID(0));
-
-	DCC_LOG(LOG_INFO, "3. board_init().");
-	this_board.init();
-
-	DCC_LOG(LOG_INFO, "4. usb_comm_init()");
-#if STM32_ENABLE_OTG_FS
+//	DCC_LOG(LOG_TRACE, "5. board.monitor_comm_init()");
+#if DEBUG
+//	udelay(0x8000);
+#endif
+#if (BOOT_MONITOR_ENABLE)
+//	comm = board->monitor_comm_init();
 	comm = usb_comm_init(&stm32f_otg_fs_dev);
-#elif STM32_ENABLE_OTG_HS
-	comm = usb_comm_init(&stm32f_otg_hs_dev);
-#elif STM32_ENABLE_USB_FS
-	comm = usb_comm_init(&stm32f_usb_fs_dev);
-#else
-    /* Undefined debug monitor comm port! */
-	comm = NULL;
 #endif
 
-#if THINKOS_ENABLE_CONSOLE
-	DCC_LOG(LOG_INFO, "5. thinkos_console_init()");
-	thinkos_console_init();
+#if (BOOT_MONITOR_ENABLE)
+//	DCC_LOG(LOG_TRACE, "8. thinkos_monitor()");
+#if DEBUG
+//	udelay(0x8000);
 #endif
 
-#if THINKOS_ENABLE_MPU
-	DCC_LOG(LOG_INFO, "6. thinkos_mpu_init()");
-	thinkos_mpu_init(BOOT_MEM_RESERVED);
-
-	DCC_LOG(LOG_INFO, "7. thinkos_userland()");
-	thinkos_userland();
+	thinkos_krn_monitor_init(krn, comm, boot_monitor_task, (void *)&board);
 #endif
 
-	DCC_LOG(LOG_INFO, "8. thinkos_dbgmon()");
-	thinkos_dbgmon(monitor_task, comm);
+#if (BOOT_PREBOOT_ENABLE)
+	/* This callback is used as a validation.
+	   - prevent the application to automatically run. Ex:
+	     - using a switch in the board
+		 - receiving a break on the serial line */
+//	if ((ret = board->preboot_task((void *)board)) < 0) {
+//		DCC_LOG(LOG_TRACE, "board_preboot_task() failed!");
+//		thinkos_abort();
+//	}
+#endif
 
-	DCC_LOG(LOG_INFO, "9. thinkos_thread_abort()");
-	thinkos_thread_abort(0);
+#if DEBUG
+//	udelay(0x8000);
+#endif
 
-	DCC_LOG(LOG_ERROR, "!!!! Unreachable code reached !!!");
+//	uintptr_t addr = board->application.start_addr;
+//	thinkos_app_exec(addr);
+	
+//	board->default_task((void*)board);
 
-	return 0;
+	for(;;);
 }
+
 

@@ -27,85 +27,42 @@
 #error "Never use <thinkos/bootldr.h> directly; include <thinkos.h> instead."
 #endif 
 
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
+#define __THINKOS_MONITOR__
+#include <thinkos/monitor.h>
+#define __THINKOS_APP__
+#include <thinkos/app.h>
+#define __THINKOS_CTRL__
+#include <thinkos/ctrl.h>
 
-#define SZ_128   7
-#define SZ_256   8
-#define SZ_1K   10
-#define SZ_2K   11
-#define SZ_4K   12
-#define SZ_8K   13
-#define SZ_16K  14
-#define SZ_32K  15
-#define SZ_64K  16
-#define SZ_128K 17
-#define SZ_256K 18
-#define SZ_512K 19
-#define SZ_1M   20
-#define SZ_2M   21
-#define SZ_4M   22
-#define SZ_8M   23
-#define SZ_16M  24
-#define SZ_32M  25
-#define SZ_64M  26
-#define SZ_128M 27
-#define SZ_256M 28
-#define SZ_512M 29
-#define SZ_1G   30
-#define SZ_2G   31
-
-#define BLK_RW  (0 << 7)
-#define BLK_RO  (1 << 7)
-
-/* Memory block descriptor */
-struct blk_desc {
-	uint32_t ref;
-	uint8_t  opt;
-	uint8_t  siz;
-	uint16_t cnt;
-};
-
-struct mem_desc {
-	char name[8];
-	struct blk_desc blk[];
+enum {
+	BTL_SHELL_OK = 0,
+	BTL_SHELL_ERR_GENERAL = -1,
+	BTL_SHELL_ERR_CMD_INVALID = -2,
+	BTL_SHELL_ERR_ARG_MISSING = -3,
+	BTL_SHELL_ERR_ARG_INVALID = -4,
+	BTL_SHELL_ERR_EXTRA_ARGS = -5,
+	BTL_SHELL_ERR_UNDEFINED = -6
 };
 
 /* Board description */
 struct thinkos_board {
-	char name[18];
-
+	char name[16];
+	char desc[32];
 	struct {
-		uint8_t minor;
-		uint8_t major;
-	} hw_ver;
+		char tag[12];
+		struct {
+			uint8_t minor;
+			uint8_t major;
+		} ver;
+	} hw;
 
-	struct {
-		uint8_t minor;
-		uint8_t major;
-		uint16_t build;
-	} sw_ver;
+	struct thinkos_release sw;
 
-	struct {
-		const struct mem_desc * ram;
-		const struct mem_desc * flash;
-	} memory;
+	void (* on_softreset)(void);
+	int (* on_break)(const struct monitor_comm *);
 
-	struct dbgmon_app_desc application;
-
-	int (* init)(void);
-	void (* softreset)(void);
-	bool (* autoboot)(unsigned int tick);
-	bool (* configure)(struct dmon_comm *);
-	void (* upgrade)(struct dmon_comm *);
-	void (* selftest)(struct dmon_comm *);
-	void (* on_appload)(void);
-	void (* on_error)(int code);
-	void (* on_comm_init)(void);
+	const struct thinkos_mem_map * memory;
 };
-
-/* Board description instance */
-extern const struct thinkos_board this_board;
 
 /* Boot options */
 /* Enble the debug monitor comm port initialization, Ex. USB */
@@ -121,65 +78,94 @@ extern const struct thinkos_board this_board;
 /* Try to run the application */
 #define BOOT_OPT_APPRUN     (1 << 5)
 
+static inline void monitor_req_app_stop(void) {
+	monitor_signal(MONITOR_APP_STOP);
+}
 
+static inline void monitor_req_app_resume(void) {
+	monitor_signal(MONITOR_APP_RESUME);
+}
 
-/* FIXME: Not quite sure why this is here!!!! */
-struct ymodem_rcv {
-	unsigned int pktno;
-	unsigned int fsize;
-	unsigned int count;
+static inline void monitor_req_app_term(void) {
+	monitor_signal(MONITOR_APP_TERM);
+}
 
-	unsigned char crc_mode;
-	unsigned char xmodem;
-	unsigned char sync;
-	unsigned char retry;
+static inline void monitor_req_app_erase(void) {
+	monitor_signal(MONITOR_APP_ERASE);
+}
 
-	struct { 
-		unsigned char hdr[3];
-		unsigned char data[1024];
-		unsigned char fcs[2];
-	} pkt;
-};
+static inline void monitor_req_app_exec(void) {
+	monitor_signal(MONITOR_APP_EXEC);
+}
+
+static inline void monitor_req_app_upload(void) {
+	monitor_signal(MONITOR_APP_UPLOAD);
+}
+
+extern const struct thinkos_flash_desc board_flash_desc;
+extern struct thinkos_flash_drv board_flash_drv;
+
+struct btl_shell_env;
+
+typedef int(* btl_cmd_callback_t)(struct btl_shell_env * env, int argc, 
+								  char * argv[]);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int dmon_ymodem_rcv_init(struct ymodem_rcv * rx, bool crc_mode, bool xmodem);
+int blt_cmd_lookup(struct btl_shell_env * env, const char * str);
 
-int dmon_ymodem_rcv_pkt(struct dmon_comm * comm, struct ymodem_rcv * rx);
+int btl_console_shell(struct btl_shell_env * env);
 
-void dmon_console_io_task(struct dmon_comm * comm);
+struct btl_shell_env * btl_shell_env_getinstance(void);
 
-void dmon_print_thread(struct dmon_comm * comm, unsigned int thread_id);
+void btl_shell_env_prompt_set(struct btl_shell_env * env, const char * str);
 
-void dmon_print_context(struct dmon_comm * comm, 
-						const struct thinkos_context * ctx, 
-						uint32_t sp);
+void btl_shell_env_motd_set(struct btl_shell_env * env, const char * str);
 
-void dmon_print_exception(struct dmon_comm * comm, 
-						  struct thinkos_except * xcpt);
+void btl_shell_env_init(struct btl_shell_env * env, 
+					   const char * motd, const char * prompt);
 
-int dmon_print_osinfo(struct dmon_comm * comm);
+int btl_flash_ymodem_recv(const char * tag);
 
-void dmon_print_alloc(struct dmon_comm * comm);
+int btl_flash_erase_partition(const char * tag);
+void btl_board_info(const struct thinkos_board * board);
+int btl_flash_app_exec(const char * __tag, uintptr_t __arg0, uintptr_t __arg1);
+int btl_flash_xxd(const char * __tag, uint32_t __offs, uint32_t __max);
 
-void dmon_print_stack_usage(struct dmon_comm * comm);
+/* ---------------------------------------------------------------------------
+ *  Shell commands
+ * ---------------------------------------------------------------------------
+ */
 
-void dmon_thread_exec(void (* func)(void *), void * arg);
+int btl_cmd_delay(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_echo(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_erase(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_rcvy(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_reboot(struct btl_shell_env * env, int argc, char * argv[]);
+int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[]);
 
-bool dmon_app_exec(uint32_t addr, bool paused);
+/* ---------------------------------------------------------------------------
+ *  Monitor
+ * ---------------------------------------------------------------------------
+ */
 
-bool dmon_app_erase(struct dmon_comm * comm, 
-					uint32_t addr, unsigned int size);
+void __attribute__((noreturn)) 
+	standby_monitor_task(const struct monitor_comm * comm, 
+						 void * arg, uintptr_t sta, 
+						 struct thinkos_krn * krn);
 
-int dmon_ymodem_flash(struct dmon_comm * comm,
-					  uint32_t addr, unsigned int size);
+void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board,
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_krn *));
 
-bool dmon_app_suspend(void);
+bool monitor_app_suspend(void);
 
-bool dmon_app_continue(void);
+bool monitor_app_continue(void);
 
+bool monitor_app_exec(uintptr_t addr);
+
+bool monitor_flash_app_exec(const struct monitor_comm * comm);
 
 #ifdef __cplusplus
 }

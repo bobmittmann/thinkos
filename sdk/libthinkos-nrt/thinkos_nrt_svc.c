@@ -41,7 +41,7 @@ struct {
 void thinkos_nrt_sleep_svc(int32_t * arg, int self)
 {
 	uint32_t ms = (uint32_t)arg[0];
-	uint32_t ticks = thinkos_rt.ticks;
+	uint32_t ticks = thinkos_krn.ticks;
 	int idx = self - THINKOS_NRT_THREAD0; 
 	int i;
 
@@ -59,7 +59,7 @@ void thinkos_nrt_sleep_svc(int32_t * arg, int self)
 		}
 	}
 
-	arg[0] = ms;
+	arg[SVC_RETURN] = ms;
 }
 #endif
 

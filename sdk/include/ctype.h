@@ -57,9 +57,9 @@
 
 #define	isxdigit(C)	(ctype_lut[(unsigned)(C)] & (_X + _N))
 
-#define toupper(C) ({ islower(C) ? ((C) - 'a' + 'A') : (C);})
+#define toupper(C) __extension__({ islower(C) ? ((C) - 'a' + 'A') : (C);})
 
-#define tolower(C) ({ isupper(C) ? ((C) - 'A' + 'a') : (C);})
+#define tolower(C) __extension__({ isupper(C) ? ((C) - 'A' + 'a') : (C);})
 
 extern const char ctype_lut[];
 

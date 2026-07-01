@@ -1,5 +1,5 @@
 /* 
- * thikos_core.c
+ * thinkos_core.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -24,11 +24,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/dcclog.h>
 
-/* 
-
-  */
-#if THINKOS_ENABLE_MPU
+/* -------------------------------------------------------------------------- 
+ * Memory Protection Unit
+ * --------------------------------------------------------------------------
+ */
+#if (THINKOS_ENABLE_MPU)
 
 #define STRONGLY_ORDERED MPU_RASR_TEX(0) 
 #define SHARED_DEVICE    MPU_RASR_TEX(0) | MPU_RASR_B
@@ -48,7 +50,6 @@
 #define USER_RW          MPU_RASR_AP_USER_RW
 #define PRIV_RO          MPU_RASR_AP_PRIV_RO
 #define READ_ONLY        MPU_RASR_AP_READ_ONLY
-
 
 /* Normal memory, Non-shareable, write-through */
 #define M_FLASH         (WRITE_THROUGH)
@@ -79,21 +80,40 @@ static void mpu_region_cfg(int region, uint32_t addr, uint32_t attr)
 	mpu->rasr = rasr;
 }
 
-void thinkos_mpu_init(unsigned int size)
+/** 
+ * thinkos_mpu_init:
+ * @offs: offset of the kernel protected memory block
+ * @size: size of the kernel protected memory block
+ *
+ * Initializes the Cortex-M MPU.
+ * 
+ * 
+ *
+ */
+
+void thinkos_krn_mpu_init(uint32_t code_start, uint32_t code_end, 
+						  uint32_t data_start,  uint32_t data_end)
 {
 	struct cm3_mpu * mpu = CM3_MPU;
+	uint32_t sram_base = data_start;
+	uint32_t size = data_end - data_start;
 	uint32_t bmp;
 	unsigned int n;
 
-	DCC_LOG(LOG_MSG, "configuring MPU ...");
+/* FIXME: more flexibility in defining the memory regions ..
+ */
 
-	/* how many reserved 1K blocks ? */
+	/* align kernel offset to 1K block region */
+	/* how many kernel 1K blocks ? */
 	for (n = 0; (n * 1024) < size; ++n);
 
+	DCC_LOG2(LOG_TRACE, "MPU size=%d blocks=%d.", size, n);
+
+	/* Bitmask of 1k reserved memory blocks */
 	bmp = 0xffffffff << n;
 
 	/* SRAM */
-	mpu_region_cfg(0, 0x20000000, 
+	mpu_region_cfg(0, sram_base, 
 				   M_SRAM | USER_RW | 
 				   MPU_RASR_SIZE_512K | 
 				   MPU_RASR_SRD(0x00) |
@@ -103,14 +123,14 @@ void thinkos_mpu_init(unsigned int size)
 
 	/* SRAM */
 	/* 8 * 1K blocks low */
-	mpu_region_cfg(1, 0x20000000, 
+	mpu_region_cfg(1, sram_base, 
 				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
 				   MPU_RASR_SRD(bmp & 0xff) |
 				   MPU_RASR_ENABLE);
 
 	/* 8 * 1K blocks high*/
-	mpu_region_cfg(2, 0x20000000 + 8 * 1024, 
+	mpu_region_cfg(2, sram_base + 8 * 1024, 
 				   M_SRAM | USER_RO | 
 				   MPU_RASR_SIZE_8K | 
 				   MPU_RASR_SRD((bmp >> 8) & 0xff) |
@@ -163,11 +183,6 @@ void thinkos_mpu_init(unsigned int size)
 //	mpu->ctrl = MPU_CTRL_PRIVDEFENA | MPU_CTRL_HFNMIENA | MPU_CTRL_ENABLE;
 
 //	__mpudump();
-}
-
-void thinkos_userland(void)
-{
-	cm3_control_set(CONTROL_THREAD_PSP | CONTROL_THREAD_USER);
 }
 
 #endif /* THINKOS_ENABLE_MPU */

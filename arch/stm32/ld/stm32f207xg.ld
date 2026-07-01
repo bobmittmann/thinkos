@@ -1,0 +1,42 @@
+/* 
+ * stm32f207xe.ld
+ *
+ * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
+ * 
+ * This file is part of the ThinkOS library.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3.0 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You can receive a copy of the GNU Lesser General Public License from 
+ * http://www.gnu.org/
+ */
+
+/* Devices:
+   STM32F207VG 
+   STM32F207ZG 
+   STM32F207IG 
+ */
+
+MEMORY
+{
+	vectors  (r) : ORIGIN = 0x00000000, LENGTH = 1K
+	flash   (rx) : ORIGIN = 0x08000000, LENGTH = 1024K
+	sram1   (rw) : ORIGIN = 0x20000000, LENGTH = 112K
+	sram2   (rw) : ORIGIN = 0x2001c000, LENGTH = 16K
+	rtcbkr  (rw) : ORIGIN = 0x40002850, LENGTH = 80
+	bkpsram (rw) : ORIGIN = 0x40024000, LENGTH = 4K
+	dcclog   (r) : ORIGIN = 0x4f800000, LENGTH = 4096K
+	alloc    (r) : ORIGIN = 0x4fc00000, LENGTH = 4096K
+}
+
+/* Device family vectors */
+INCLUDE stm32f2xx.ld
+

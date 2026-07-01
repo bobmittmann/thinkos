@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/usb.h>
+#include <usb/core.h>
 
 /* USB class callback functions */
 
@@ -66,12 +66,14 @@ typedef void (* usb_class_on_wakeup_t)(usb_class_t * cl);
 
 typedef void (* usb_class_on_error_t)(usb_class_t * cl, int code);
 
+typedef void (* usb_class_on_sof_t)(usb_class_t * cl);
 
 struct usb_class_events {
 	usb_class_on_reset_t on_reset;
 	usb_class_on_suspend_t on_suspend;
 	usb_class_on_wakeup_t on_wakeup;
 	usb_class_on_error_t on_error;
+	usb_class_on_sof_t on_sof;
 };
 
 typedef struct usb_class_events usb_class_events_t;
@@ -102,10 +104,12 @@ typedef struct usb_dev_ep_info usb_dev_ep_info_t;
 enum usb_ep_ctl {
 	USB_EP_RECV_OK = 0,
 	USB_EP_ZLP_SEND,
-	USB_EP_STALL,
+	USB_EP_STALL_SET,
+	USB_EP_STALL_CLR,
 	USB_EP_NAK_SET,
 	USB_EP_NAK_CLR,
-	USB_EP_DISABLE
+	USB_EP_DISABLE,
+	USB_EP_IN_REQ
 };
 
 
@@ -118,6 +122,8 @@ typedef int (* usb_dev_ep_init_t)(void *, const usb_dev_ep_info_t *,
 typedef int (* usb_dev_ep_ctl_t)(void *, int, unsigned int);
 
 typedef int (* usb_dev_ep_pkt_xmit_t)(void *, int, const void *, int);
+
+typedef int (* usb_dev_ep_pkt_recv_t)(void *, int, const void *, int);
 
 typedef int (* usb_dev_ep_pkt_recv_t)(void *, int, const void *, int);
 
@@ -161,9 +167,9 @@ static inline int usb_dev_ep_init(const usb_dev_t * dev,
 	return dev->op->ep_init(dev->priv, info, xfr_buf, buf_len);
 }
 
-static inline int usb_dev_ep_ctl(const usb_dev_t * dev, int ep_id,
+static inline int usb_dev_ep_ctl(const usb_dev_t * dev, int ep_addr,
 								 unsigned int opt) {
-	return dev->op->ep_ctl(dev->priv, ep_id, opt);
+	return dev->op->ep_ctl(dev->priv, ep_addr, opt);
 }
 
 static inline int usb_dev_ep_pkt_xmit(const usb_dev_t * dev, int ep_id,

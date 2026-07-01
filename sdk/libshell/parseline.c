@@ -23,50 +23,53 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#define __SHELL_I__
+#include "shell-i.h"
+
 #include <ctype.h>
 
 #ifndef SHELL_ENABLE_OPERATORS 
 #define SHELL_ENABLE_OPERATORS 0
 #endif
 
-#if SHELL_ENABLE_OPERATORS
 static const char punct_str[][2] = {
 	"!", "\"", "#", "$", "%", "&", "'", 
 	"(", ")", "*", "+", ",", "-", ".", "/", 
-	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+	"", "", "", "", "", "", "", "", "", "",
 	":", ";", "<", "=", ">", "?", "@",
-	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", 
-	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 
-	"[", "\\", "]", "^", "_", "`",
-	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", 
-	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
+	"", "", "", "", "", "", "", "", "", "", "", "", "", 
+	"", "", "", "", "", "", "", "", "", "", "", "", "", 
+	"[", "\\", "]", "^", "", "`",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", 
+	"", "", "", "", "", "", "", "", "", "", "", "", "", 
 	"{", "|", "}", "~"
 };
-#endif
+
+static const char dbl_punct_str[][4] = {
+	"<<",
+	"==",
+	">>"
+};
 
 int shell_parseline(char * line, char ** argv, int argmax)
 {
-	char * tok;
-	int qt;
+	char * tok = NULL;
 	int n;
 	int c;
 	char * cp = line;
-#if SHELL_ENABLE_OPERATORS
-	char * punct;
-#endif
 
-	for (n = 0; (c = *cp) && (n < argmax); ) {
+	c = *cp;
+	/* Leave an extra space for double tokens in the loop when 
+	 * a punctuation is adjacent to another token */
+	--argmax;
+	for (n = 0; (n < argmax); ) {
 		/* Remove lead blanks */
-		for (;;) {
-			c = *cp;
-			if (!isspace(c))
-				break;
+		while (isspace(c)) {
 			cp++;
+			c = *cp;
 		}
+#if 1
+		int qt;
 
 		/* Quotes: copy verbatim */
 		if ((c == '\'') || (c == '\"')) {
@@ -80,49 +83,52 @@ int shell_parseline(char * line, char ** argv, int argmax)
 			}
 			*cp++ = '\0';
 			argv[n++] = tok;
+			c = *cp;
 			continue;
 		}
-	
+#endif
 		tok = cp;
 
 		for (;;) {
-
 			if (c == '\0') {
-				if (tok != cp)
+				 if (tok != cp)
 					argv[n++] = tok;
 				return n;
 			}
 
-#if SHELL_ENABLE_OPERATORS
-			if (ispunct(c) && (c != '.') && (c != '_')) {
-				if ((c == '<') && (cp[1] == '<')) {
-					*cp++ = '\0';
-					punct = "<<";
-				} else {
-					if ((c == '>') && (cp[1] == '>')) {
-						*cp++ = '\0';
-						punct = ">>";
-					} else {
-						punct = (char *)punct_str[c - '!'];
-					}
-				}
-
-				if (cp != tok)
-					argv[n++] = tok;
-
-				*cp++ = '\0';
-
-				if (n < argmax)
-					argv[n++] = punct;
-
-				break;
-			} 
-#endif
-
 			if (isspace(c)) {
-				*cp++ = '\0';
 				argv[n++] = tok;
+				*cp = '\0';
+				cp++;
+				c = *cp;
 				break;
+			}
+
+			if ((c >= '<') && (c <= '>') && (cp[1] == c)) {
+				char * punct = (char *)dbl_punct_str[c - '<'];
+				if (tok != cp) {
+					argv[n++] = tok;
+				}
+				argv[n++] = punct;
+				*cp = '\0';
+				/* skip two */
+				cp += 2;
+				c = *cp;
+				break;
+			}
+
+			if ((c >= '!') && (c <= '~')) {
+				char * punct = (char *)punct_str[c - '!'];
+				if (*punct != '\0') {
+					if (tok != cp) {
+						argv[n++] = tok;
+					}
+					argv[n++] = punct;
+					*cp = '\0';
+					cp++;
+					c = *cp;
+					break;
+				}
 			}
 
 			cp++;

@@ -52,6 +52,7 @@
 int uint2dec(char * s, unsigned int val);
 int uint2hex(char * s, unsigned int val);
 int u32f2str(char * buf, uint32_t x, int precision); 
+extern const char __hextab[];
 
 #define PERCENT 0x01
 #define WIDTH 0x02
@@ -61,7 +62,7 @@ int u32f2str(char * buf, uint32_t x, int precision);
 
 int trace_fmt(struct trace_entry * entry, char * s, int max)
 {
-	uint32_t tail = entry->idx + 2;
+	uint32_t tail = entry->idx;
 	const char * fmt = entry->ref->fmt;
 	char buf[TRACE_STRING_MAX];
 	char * cp;
@@ -84,6 +85,75 @@ int trace_fmt(struct trace_entry * entry, char * s, int max)
 
 	/* leave room for null at the end */
 	max--;
+
+	if (entry->ref->opt & TRACE_OPT_XXD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+		cnt = 0;
+		cp = (char *)entry->ref->fmt;
+		while ((cnt < max) && *cp) {
+			s[cnt++] = *cp++;
+		}
+		if (cnt < max)
+			s[cnt++] = ':';
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+		cp = &s[cnt];
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+			else
+				val >>= 8;
+			if ((cnt + 3) < max) {
+				*cp++ = ' ';
+				*cp++ = __hextab[(val >> 4) & 0xf];
+				*cp++ = __hextab[val & 0xf];
+				cnt += 3;
+			}
+		}
+	
+		*cp ='\0';
+		entry->idx = tail;
+		return cnt;
+	} else if (entry->ref->opt & TRACE_OPT_AD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+		cnt = 0;
+		cp = (char *)entry->ref->fmt;
+		while ((cnt < max) && *cp) {
+			s[cnt++] = *cp++;
+		}
+		if (cnt < max)
+			s[cnt++] = ':';
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+		cp = &s[cnt];
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+			else
+				val >>= 8;
+			if (cnt < max) {
+				c = val & 0xff;
+				*cp++ = ((c < ' ') || (c > 126)) ? '.' : c;
+				cnt++;
+			}
+		}
+	
+		*cp ='\0';
+		entry->idx = tail;
+		return cnt;
+	}
 
 	n = 0;
 	w = 0;
@@ -317,13 +387,160 @@ print_buf:
 }
 
 const char * const trace_lvl_nm[] = {
-		" NONE",
+		"PANIC",
+		"ALERT",
+		" CRIT",
 		"ERROR",
 		" WARN",
+		" NOTE",
 		" INFO",
 		"DEBUG",
 		"  YAP",
 		" !!!!",
 		" ????"
 };
+
+int trace_skip(struct trace_entry * entry)
+{
+	uint32_t tail = entry->idx;
+	uint32_t cut = tail;
+	const char * fmt = entry->ref->fmt;
+	int flags;
+	int c;
+
+	if (entry->ref->opt & TRACE_OPT_XXD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				tail++;
+		}
+		entry->idx = tail;
+		return (int32_t)(tail - cut); 
+	} else if (entry->ref->opt & TRACE_OPT_AD) {
+		unsigned int len;
+		uint32_t val;
+		unsigned int i;
+
+
+		/* get length */
+		val = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+		len = val & 0xff;
+
+		for (i = 0; i < len; ++i) {
+			if ((i & 3) == 3)
+				tail++;
+		}
+	
+		entry->idx = tail;
+		return (int32_t)(tail - cut); 
+	}
+
+	for (flags = 0; (c = *fmt++); ) {
+		if (flags == 0) {
+			if (c == '%') {
+				flags = PERCENT;
+				continue;
+			}
+			continue;
+		}
+
+		if ((c >= '0') && (c <= '9')) {
+			if (!(flags & WIDTH)) {
+				flags |= WIDTH;
+				if (c == '0') {
+					flags |= ZERO;
+					continue;
+				}
+			}
+			continue;
+		}
+
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == '.') {
+			continue;
+		}
+#endif
+
+		if (c == '-')
+			continue;
+
+		if (c == 'c') {
+			tail++;
+			goto print_buf;
+		}
+
+		if (c == 'd') {
+			tail++;
+			goto print_buf;
+		}
+
+
+		if (c == 'x') {
+			tail++;
+			goto print_buf;
+		}
+
+		if (c == 's') {
+			uint32_t v;
+			int n = 0;
+
+			do {
+				v = trace_ring.buf[tail++ & (TRACE_RING_SIZE - 1)].val;
+				if ((c = (v & 0xff)) != 0) {
+					n++;
+					if ((c = ((v >> 8) & 0xff)) != 0) {
+						n++;
+						if ((c = ((v >> 16) & 0xff)) != 0) {
+							n++;
+							if ((c = ((v >> 24) & 0xff)) != 0) {
+								n++;
+							}
+						}
+					}
+				}
+			} while ((v & 0xff000000) && (n < TRACE_STRING_MAX));
+
+			goto print_buf;
+		}
+
+		if (c == 'u') {
+			tail++;
+			goto print_buf;
+		}
+
+#if	(PRINTF_ENABLE_IPADDR)
+		if (c == 'I') {
+			tail++;
+			goto print_buf;
+		}
+#endif
+
+#if (PRINTF_ENABLE_FLOAT)
+		if (c == 'f') {
+			tail++;
+			goto print_buf;
+		}
+#endif
+
+#if (PRINTF_ENABLE_POINTER)
+		if (c == 'p') {
+			tail++;
+			goto print_buf;
+		}
+#endif
+
+print_buf:
+		flags = 0;
+	}
+
+	entry->idx = tail;
+	return (int32_t)(tail - cut); 
+}
 

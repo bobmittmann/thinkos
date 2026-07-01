@@ -41,7 +41,7 @@ void ice_trace_init(void)
 			__LINE__, 
 			LOG_EXCEPT, 
 			0, 
-			__FUNCTION__,
+			__func__,
 			_m
 		};
 
@@ -51,5 +51,6 @@ void ice_trace_init(void)
 	ice_trace0(&log_entry);
 }
 
-void dcclog_init(const struct dcc_trace_entry * __entry) 
+void dcclog_init(void) 
 	__attribute__ ((weak, alias ("ice_trace_init")));
+

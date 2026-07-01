@@ -53,6 +53,10 @@
 #error MALLOC_CHUNK_BITS _must_ be larger than or equal to 2.
 #endif
 
+#ifndef MALLOC_ENABLE_STATS
+#define MALLOC_ENABLE_STATS 0
+#endif
+
 struct chunk {
 	uint8_t data[CHUNK_BYTES];
 };
@@ -65,7 +69,7 @@ typedef uint32_t chsize_t;
 /*	We allocate at least 2 chunks each time: 1 for header and 1+ for data. */
 struct mem {
 	chsize_t size;
-	chaddr_t data[0];
+	chaddr_t data[];
 };
 
 /*	Since holes hold no data, we use that extra chunk to our own purposes.
@@ -81,17 +85,17 @@ extern uint32_t __heap_end;
 
 struct {
 	struct hole * holes;	/* Address of the head of our holes list. */
-#ifdef ENABLE_STATS
+#if (MALLOC_ENABLE_STATS)
 	unsigned int used;
 	unsigned int size;
 #endif
 } malloc_heap = { NULL
-#ifdef ENABLE_STATS
+#if (MALLOC_ENABLE_STATS)
 	, 0, 0 
 #endif
 };
 
-#ifdef ENABLE_STATS
+#if (MALLOC_ENABLE_STATS)
 unsigned int heap_usage(void)
 {
 	return malloc_heap.used;
@@ -137,7 +141,7 @@ void __attribute__ ((constructor)) malloc_init(void)
 	DCC_LOG1(LOG_TRACE, "malloc_heap starts at 0x%p, ends at 0x%p (%lu bytes long).",
 		heap_begin, heap_end, chunks2bytes(heap_end - heap_begin));
 
-#ifdef ENABLE_STATS
+#if MALLOC_ENABLE_STATS
 	malloc_heap.size = chunks2bytes(heap_end - heap_begin);
 	malloc_heap.used = 0;
 #endif
@@ -196,7 +200,7 @@ void hole_dump(void)
 
 	puts("HOLE DUMP:");
 	for (curr = malloc_heap.holes; curr != NULL; curr = curr->next) {
-		printf("  0x%p(%u)\n", curr, curr->size);
+		printf("  0x%p(%u)\n", (void *)curr, curr->size);
 	}
 	puts("END.");
 }
@@ -212,7 +216,7 @@ void * malloc(size_t bytes)
 	DCC_LOG1(LOG_INFO, "%u bytes", (int)bytes);
 
 	if (!bytes) {		/* Why would you want to allocate 0 bytes? */
-		DCC_LOG(LOG_WARNING, "tryed to allocate 0 bytes, aborting.");
+		DCC_LOG(LOG_WARNING, "tried to allocate 0 bytes, aborting.");
 		return NULL;
 	}
 	
@@ -220,7 +224,7 @@ void * malloc(size_t bytes)
 
 	/* This is the First-Fit algorithm implementation. */
 	
-	/* This is redundant, since if malloc_heap is full, the for comparision fails and
+	/* This is redundant, since if malloc_heap is full, the for comparison fails and
 	   an invalid hole_descriptor is returned, as expected.
 	if (heap_is_full()) {
 		hole.addr = HOLE_EOL;
@@ -269,7 +273,7 @@ void * malloc(size_t bytes)
 			}
 
 			mem->size = size;
-#ifdef ENABLE_STATS
+#if (MALLOC_ENABLE_STATS)
 			malloc_heap.used += chunks2bytes(size);
 #endif
 			return mem->data;
@@ -290,11 +294,10 @@ void * malloc(size_t bytes)
 	DCC_LOG1(LOG_MSG, "mem = 0x%p", mem);
 	mem->size = size;
 
-#ifdef ENABLE_STATS
-	malloc_heap.size += chunks2bytes(heap_end - heap_begin);
+#if (MALLOC_ENABLE_STATS)
+	malloc_heap.size += chunks2bytes(__heap_end - __heap_start);
 	malloc_heap.used += chunks2bytes(size);
 #endif
-
 
 	return mem->data;
 }
@@ -320,15 +323,8 @@ void free(void * ptr)
 		/* abort(); */
 		return;
 	}
-#ifdef ENABLE_FLAGS
-	if (IS_EMPTY(mem->flags)) {
-		DCC_LOG1(LOG_ERROR, "can't free a freed memory: 0x%p", mem);
-		/* abort(); */
-		return;
-	}
-#endif
 
-#ifdef ENABLE_STATS
+#if (MALLOC_ENABLE_STATS)
 	malloc_heap.used -= chunks2bytes(mem->size);
 #endif
 	new = (struct hole *)mem;
@@ -336,7 +332,8 @@ void free(void * ptr)
 	if (malloc_heap.holes == NULL) {
 		new->next = NULL;
 		malloc_heap.holes = new;
-		DCC_LOG(LOG_MSG, "malloc_heap was full, freed memory starting new hole list.");
+		DCC_LOG(LOG_MSG, "malloc_heap was full, freed memory "
+				"starting new hole list.");
 		return;
 	}
 
@@ -361,7 +358,7 @@ void free(void * ptr)
 #endif
 			prev->size += new->size;
 			new = prev;
-			DCC_LOG(LOG_MSG, "catenated prev with new.");
+			DCC_LOG(LOG_MSG, "concatenated prev with new.");
 		} else {
 			new->next = prev->next;
 			prev->next = new;
@@ -390,7 +387,7 @@ void free(void * ptr)
 #endif
 		new->size += next->size;
 		new->next = next->next;
-		DCC_LOG(LOG_MSG, "catenated new with next, memory freed.");
+		DCC_LOG(LOG_MSG, "concatenated new with next, memory freed.");
 	} else {
 		new->next = next;
 		DCC_LOG(LOG_MSG, "new hole added to the list. memory freed.");

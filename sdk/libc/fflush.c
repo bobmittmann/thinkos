@@ -28,6 +28,10 @@
 
 int fflush(FILE * f)
 {
-	return f->op->flush(f->data);
+	int ret;
+
+	ret = f->op->flush(f->data);
+
+	return ret;
 }
 

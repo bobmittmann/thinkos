@@ -19,6 +19,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
+<<<<<<< HEAD
 THINKOSDIR = ../../../..
 SDKDIR = $(THINKOSDIR)/sdk
 
@@ -48,3 +49,31 @@ OPTIONS = -mno-unaligned-access
 
 MACH = stm32f405
 include $(THINKOSDIR)/mk/stm32.mk
+=======
+
+PROG = sanity
+
+THINKOS_DIR = ../../../..
+SDK_DIR = $(THINKOS_DIR)/sdk
+ARCH_DIR = $(THINKOS_DIR)/arch/stm32
+TOOLS_DIR = $(THINKOS_DIR)/tools
+TEST_DIR = $(THINKOS_DIR)/test
+
+CFILES = $(wildcard $(TEST_DIR)/sanity/*.c)
+
+LIBS = thinkos-usr util tty c
+
+LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(LIBS))
+
+INCPATH = ../include
+
+CDEFS = CONFIG_H 
+
+CFLAGS = -O1 
+
+MACH = stm32f415xg
+LDCODE := 0x08020000
+LDDATA := 0x20002000
+include $(ARCH_DIR)/mk/stm32-app.mk
+
+>>>>>>> krnsvc

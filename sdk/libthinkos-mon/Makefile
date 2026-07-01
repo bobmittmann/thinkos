@@ -1,0 +1,48 @@
+# File:		Makefile
+# Author:   Robinson Mittmann (bobmittmann@gmail.com)
+# Target:
+# Comment:  
+# Copyright(C) 2012 Bob Mittmann. All Rights Reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# 
+
+include ../../mk/config.mk
+
+LIB_STATIC = thinkos-mon
+
+COMM_CFILES = null_comm.c usb_comm.c usb_comm_queue.c
+
+COMMIO_CFILES = monitor_write.c monitor_read.c \
+				monitor_putc.c monitor_puts.c \
+		monitor_getc.c monitor_gets.c \
+		monitor_printf.c monitor_scanf.c \
+		monitor_print_newln.c \
+		monitor_print_misc.c \
+		print_osinfo.c print_alloc.c print_thread.c \
+		print_context.c print_stack_usage.c \
+		print_fault.c print_profile.c  \
+		monitor_hexdump.c 
+
+CFILES = monitor_thread.c monitor_memory.c \
+	 monitor_console_task.c \
+	 monitor_cyccnt.c \
+	 monitor_flash.c monitor_events.c \
+	 app_exec.c mon_sched_dbg.c \
+	 $(addprefix comm/,$(COMM_CFILES)) \
+	 $(addprefix commio/,$(COMMIO_CFILES))
+
+include ../../mk/lib.mk
+

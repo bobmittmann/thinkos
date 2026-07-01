@@ -1,5 +1,5 @@
 /* 
- * thikos_nonrt_thread.c
+ * thinkos_nonrt_thread.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -38,8 +38,8 @@ int __thinkos_nrt_thread_init(unsigned int thread_id)
 	(void)idx;
 
 	/* set the thread's return value */
-	thinkos_rt.ctx[THINKOS_THREAD_NRT_SCHED]->r0 = NRT_THREAD_CREATE;
-	__bit_mem_wr(&thinkos_rt.wq_ready, THINKOS_THREAD_NRT_SCHED, 1);
+	thinkos_krn.ctx[THINKOS_THREAD_NRT_SCHED]->r0 = NRT_THREAD_CREATE;
+	__bit_mem_wr(&thinkos_krn.wq_ready, THINKOS_THREAD_NRT_SCHED, 1);
 
 	return true;
 }

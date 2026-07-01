@@ -1,0 +1,270 @@
+/* 
+ * Copyright(C) 2011 Bob Mittmann. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
+/** 
+ * @file monitor_flash.c
+ * @brief 
+ * @author Robinson Mittmann <bobmittmann@gmail.com>
+ */
+
+#if (THINKOS_ENABLE_OFAST)
+_Pragma ("GCC optimize (\"Ofast\")")
+#endif
+
+#include <sys/util.h>
+
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
+
+#if 0
+#if !(THINKOS_ENABLE_CONSOLE_READ)
+#error "need THINKOS_ENABLE_CONSOLE_READ"
+#endif
+
+#if !(THINKOS_ENABLE_TIMED_CALLS)
+#error "need THINKOS_ENABLE_TIMED_CALLS"
+#endif
+#endif
+
+#include <sys/dcclog.h>
+
+#if (THINKOS_ENABLE_CONSOLE) 
+int krn_console_dev_send(void * dev, const void * buf, unsigned int len) 
+{
+	uint8_t * cp = (uint8_t *)buf;
+	unsigned int rem = len;
+	int n;
+
+	while (rem) {
+		n = thinkos_console_write(cp, rem);
+		cp += n;
+		rem -= n;
+	}
+
+	return len;
+}
+
+int krn_console_dev_recv(void * dev, void * buf, 
+					  unsigned int len, unsigned int msec) 
+{
+	int ret = 0;
+
+	do {
+		ret = thinkos_console_timedread(buf, len, msec);
+		if (ret == THINKOS_ETIMEDOUT) {
+			DCC_LOG(LOG_YAP, "thinkos_console_timedread() timed out.");
+		} else if (ret == 0) {
+			DCC_LOG(LOG_MSG, "thinkos_console_timedread() ZERO.");
+		} else {
+			DCC_LOG1(LOG_INFO, "thinkos_console_timedread() %d", ret);
+		}
+	} while (ret == 0);
+
+	return ret;
+}
+#elif (THINKOS_COMM_MAX > 0)                   
+int krn_console_dev_send(void * dev, const void * buf, unsigned int len)
+{
+	uintptr_t oid = THINKOS_COMM_TX_DESC(0);
+
+	return thinkos_comm_send(oid, buf, len);
+}
+
+int krn_console_dev_recv(void * dev, void * buf, unsigned int len, 
+						 unsigned int msec)
+{
+	uintptr_t oid = THINKOS_COMM_TX_DESC(0);
+
+	return thinkos_comm_timedrecv(oid, buf, len, msec);
+}
+#endif
+
+int krn_console_write(const void * buf, unsigned int len) 
+{
+	return krn_console_dev_send(NULL, buf, len);
+}
+
+int krn_console_crlf(void)
+{
+	return krn_console_dev_send(NULL, "\r\n", 2);
+}
+
+int krn_console_puts(const char * s)
+{
+	int n = 0;
+
+	while (s[n] != '\0')
+		n++;
+	return krn_console_dev_send(NULL, s, n);
+}
+
+int krn_console_putc(int c)
+{
+	uint8_t buf[4];
+
+	buf[0] = c;
+	return krn_console_dev_send(NULL, buf, 1);
+}
+
+int krn_console_put_hex32(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex32(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 8);
+}
+
+int krn_console_put_hex16(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex16(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 4);
+}
+
+int krn_console_put_hex8(uint32_t val)
+{
+	char buf[16];
+	krn_fmt_hex8(buf, val);
+
+	return krn_console_dev_send(NULL, buf, 2);
+}
+
+int krn_console_put_uint(uint32_t val)
+{
+	char buf[16];
+	int n;
+
+	n = uint2dec(buf, val);
+
+	return krn_console_dev_send(NULL, buf, n);
+}
+
+int krn_console_put_int(int32_t val)
+{
+	char buf[16];
+	char * cp = buf;
+	int n = 0;
+
+	if (val < 0) {
+		val = -val;
+		*cp++ = '-';
+		n++;
+	}
+
+	n += uint2dec(cp, val);
+
+	return krn_console_dev_send(NULL, buf, n);
+}
+
+int krn_console_wrln(const char * ln)
+{
+	krn_console_puts(ln);
+	return krn_console_crlf();
+}
+
+int krn_console_getc(unsigned int tmo)
+{
+	uint8_t buf[4];
+	int n;
+	int c;
+
+	while ((n = krn_console_dev_recv(NULL, buf, 1, tmo)) == 0) {
+	}
+
+	if (n < 0) {
+		DCC_LOG1(LOG_MSG, "ret=%d", n);
+		return n;
+	}
+
+	c = buf[0];
+
+	DCC_LOG2(LOG_YAP, "0x%02x 0x%02x", buf[0], buf[1]);
+
+	/* XXX: echo */
+	krn_console_dev_send(NULL, buf, 1);
+
+	return c;
+}
+
+#define IN_BS      '\x8'
+#define IN_DEL      0x7F
+#define IN_EOL      '\r'
+#define IN_SKIP     '\3'
+#define IN_EOF      '\x1A'
+#define IN_ESC      '\033'
+
+#define OUT_DEL     "\x8 \x8"
+#define OUT_EOL     "\r\n"
+#define OUT_SKIP    "^C\r\n"
+#define OUT_EOF     "^Z"
+#define OUT_BEL     "\7"
+
+int krn_console_gets(char * s, int size)
+{
+	char buf[1];
+	int ret;
+	int pos;
+	int c;
+
+	/* left room to '\0' */
+	size--;
+	pos = 0;
+
+	for (;;) {
+		if ((ret = krn_console_dev_recv(NULL, buf, sizeof(char), 5000)) <= 0) {
+			if (ret >= THINKOS_ETIMEDOUT)
+				continue;	
+			return ret;
+		}
+
+		c = buf[0];
+
+		if (c == IN_EOL) {
+			krn_console_puts(OUT_EOL);
+			break;
+		} else if (c == IN_SKIP) {
+			krn_console_puts(OUT_SKIP);
+			return -1;
+		} else if (c == IN_BS || c == IN_DEL) {
+			if (pos == 0) {
+				krn_console_puts(OUT_BEL);
+			} else {
+				pos--;
+				krn_console_puts(OUT_DEL);
+			}
+			continue;
+		} else if (c == IN_ESC) {
+			continue;
+		} else if (pos == size) {
+			krn_console_puts(OUT_BEL);
+			continue;
+		}
+
+		s[pos++] = c;
+		krn_console_dev_send(NULL, buf, sizeof(char));
+	}
+
+	s[pos] = '\0';
+
+	return pos;
+}
+

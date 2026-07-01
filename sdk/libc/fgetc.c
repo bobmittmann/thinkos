@@ -31,6 +31,7 @@ int fgetc(FILE * f)
 {
 	char c;
 
+	/* */ 
 	if (f->op->read(f->data, (void *)&c, sizeof(char), INT32_MAX) <= 0) {
 		return EOF;
 	}

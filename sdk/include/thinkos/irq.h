@@ -1,5 +1,5 @@
 /* 
- * thikos_irq.h
+ * thinkos_irq.h
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -26,38 +26,40 @@
 #error "Only use this file on privileged code"
 #endif 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-
 #ifndef __ASSEMBLER__
 
-#define MONITOR_PRIORITY       (0 << 5)
-#define EXCEPT_PRIORITY        (1 << 5)
-#define IRQ_DEF_PRIORITY       (4 << 5)
-#define SYSCALL_PRIORITY       (6 << 5)
-#define CLOCK_PRIORITY         (6 << 5)
-#define SCHED_PRIORITY         (7 << 5)
+#define DEBUGGER_PRIORITY       (0 << 5)
+#define EXCEPT_PRIORITY         (1 << 5)
+#define MONITOR_PRIORITY        (2 << 5)
+#define IRQ_VERY_HIGH_PRIORITY  (2 << 5)
+#define IRQ_HIGH_PRIORITY       (3 << 5)
+#define IRQ_DEF_PRIORITY        (4 << 5)
+#define IRQ_LOW_PRIORITY        (5 << 5)
+#define IRQ_VERY_LOW_PRIORITY   (6 << 5)
+#define SYSCALL_PRIORITY        (6 << 5)
+#define SCHED_PRIORITY          (7 << 5)
+
+#if (THINKOS_ENABLE_MONITOR)
+  #define CLOCK_PRIORITY          (MONITOR_PRIORITY)
+#else
+  #define CLOCK_PRIORITY          (SYSCALL_PRIORITY)
+#endif
+
+void __nvic_irq_disable_all(void);
+
+void __nvic_irq_clrpend_all(void);
+
+void __nvic_irq_enable(void);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static inline void 
-__attribute__((always_inline)) thinkos_sched_off(void)  {
-	/* rise the BASEPRI to stop the scheduler */
-	cm3_basepri_set(SCHED_PRIORITY); 
-}
+/* disable interrupts */
+void thinkos_krn_irq_off(void);
 
-static inline void 
-__attribute__((always_inline)) thinkos_sched_on(void)  {
-	/* return the BASEPRI to the default to reenable the scheduler. */
-	cm3_basepri_set(0x00);
-}
+void thinkos_krn_irq_on(void);
 
-static inline volatile uint32_t __attribute__((always_inline)) 
-	thinkos_clock_i(void)  {
-	return (volatile uint32_t)thinkos_rt.ticks;
-}
 
 #ifdef __cplusplus
 }

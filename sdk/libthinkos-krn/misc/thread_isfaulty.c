@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thread_isfaulty.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,20 +19,20 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
-#if THINKOS_ENABLE_DEBUG_FAULT
+#if (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isfaulty(unsigned int th)
 {
-	if (th >= THINKOS_THREADS_MAX)
+	struct thinkos_krn * krn = &thinkos_krn;
+
+	if (th > THINKOS_THREADS_MAX)
 		return false;
 
-	if (thinkos_rt.ctx[th] == NULL)
+	if (!__thread_ctx_is_valid(krn, th))
 		return false;
 
-	return __bit_mem_rd(&thinkos_rt.wq_fault, th);
+	return __thread_fault_get(krn, th);
 }
 #endif
-
 

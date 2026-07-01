@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * thread_getnext.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -20,19 +20,21 @@
  */
 
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
+#include "thinkos_krn-i.h"
 
 int __thinkos_thread_getnext(int th)
 {
-	int idx;
+	struct thinkos_krn * krn = &thinkos_krn; 
+	int i;
 
-	idx = (th < 0) ? 0 : th + 1;
-	
-	for (; idx < THINKOS_THREADS_MAX; ++idx) {
-		if (thinkos_rt.ctx[idx] != NULL)
-			return idx;
+	i = (th < THINKOS_THREAD_FIRST) ? THINKOS_THREAD_FIRST : th + 1;
+
+	for (; i <= THINKOS_THREAD_LAST; ++i) {
+		/* Skip invalid threads */ 
+		if (__thread_ctx_is_valid(krn, i))
+			return i;
 	}
 
 	return -1;
 }
+

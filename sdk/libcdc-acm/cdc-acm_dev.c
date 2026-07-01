@@ -37,17 +37,23 @@
 #include <thinkos.h>
 #define __THINKOS_IRQ__
 #include <thinkos/irq.h>
+#define __THINKOS_KERNEL__
+#include <thinkos/kernel.h>
+#define __THINKOS_DEBUG__
+#include <thinkos/debug.h>
+
 
 struct usb_cdc_acm {
 	/* modem bits */
 	volatile uint8_t status; /* modem status lines */
 	volatile uint8_t control; /* modem control lines */
 	volatile uint8_t flags;
+	volatile uint8_t brk;
 	struct cdc_line_coding lc;
 };
 
-#define ACM_LC_SET        (1 << 0)
-#define ACM_USB_SUSPENDED (1 << 1)
+#define ACM_LC_SET         (1 << 0)
+#define ACM_USB_SUSPENDED  (1 << 1)
 
 #define USB_CDC_IRQ_PRIORITY IRQ_PRIORITY_REGULAR
 #define CDC_CTR_BUF_LEN 16
@@ -76,6 +82,8 @@ struct usb_cdc_acm_dev {
 #ifndef CDC_RX_FLAG_NO
 	uint8_t rx_flag; /* RX flag */
 #endif
+	volatile uint8_t configured;
+
 	int8_t ctl_ep;
 	int8_t in_ep;
 	int8_t out_ep;
@@ -105,53 +113,44 @@ struct usb_cdc_acm_dev {
 #endif
 
 #ifdef CDC_CTL_FLAG_NO
-#define CTL_FLAG (THINKOS_FLAG_BASE + CDC_CTL_FLAG_NO)
+#define CTL_FLAG THINKOS_FLAG_DESC(CDC_CTL_FLAG_NO)
 #else
 #define CTL_FLAG dev->ctl_flag
 #endif
 
 #ifdef CDC_TX_DONE_NO
-#define TX_DONE (THINKOS_FLAG_BASE + CDC_TX_DONE_NO)
+#define TX_DONE THINKOS_FLAG_DESC(CDC_TX_DONE_NO)
 #else
 #define TX_DONE dev->tx_done
 #endif
 
 #ifdef CDC_TX_LOCK_NO
-#define TX_LOCK (THINKOS_FLAG_BASE + CDC_TX_LOCK_NO)
+#define TX_LOCK THINKOS_FLAG_DESC(CDC_TX_LOCK_NO)
 #else
 #define TX_LOCK dev->tx_lock
 #endif
 
 #ifdef CDC_RX_FLAG_NO
-#define RX_FLAG (THINKOS_FLAG_BASE + CDC_RX_FLAG_NO)
+#define RX_FLAG THINKOS_FLAG_DESC(CDC_RX_FLAG_NO)
 #else
 #define RX_FLAG dev->rx_flag
 #endif
 
-static inline void __memcpy(void * __dst, void * __src,  unsigned int __len)
+void usb_cdc_on_rcv(usb_class_t * class, unsigned int ep_id, unsigned int len)
 {
-	uint8_t * dst = (uint8_t *)__dst;
-	uint8_t * src = (uint8_t *)__src;
-	int i;
+	DCC_LOG(LOG_TRACE, "thinkos_flag_give_i(RX_FLAG)");
 
-	for (i = 0; i < __len; ++i)
-		dst[i] = src[i];
-}
-
-void usb_cdc_on_rcv(struct usb_cdc_acm_dev * dev, 
-					unsigned int ep_id, unsigned int len)
-{
-	DCC_LOG(LOG_INFO, "thinkos_flag_give_i(RX_FLAG)");
 	thinkos_flag_give_i(RX_FLAG);
 }
 
-void usb_cdc_on_eot(struct usb_cdc_acm_dev * dev, unsigned int ep_id)
+void usb_cdc_on_eot(usb_class_t * class, unsigned int ep_id)
 {
 	thinkos_flag_give_i(TX_DONE);
 }
 
-void usb_cdc_on_eot_int(struct usb_cdc_acm_dev * dev, unsigned int ep_id)
+void usb_cdc_on_eot_int(usb_class_t * class, unsigned int ep_id)
 {
+	//struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)class; 
 	thinkos_flag_give_i(CTL_FLAG);
 }
 
@@ -159,21 +158,21 @@ const usb_dev_ep_info_t usb_cdc_in_info = {
 	.addr = USB_ENDPOINT_IN + EP_IN_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_IN_MAX_PKT_SIZE,
-	.on_in = (void *)usb_cdc_on_eot
+	.on_in = usb_cdc_on_eot
 };
 
 const usb_dev_ep_info_t usb_cdc_out_info = {
 	.addr = USB_ENDPOINT_OUT + EP_OUT_ADDR,
 	.attr = ENDPOINT_TYPE_BULK,
 	.mxpktsz = CDC_EP_OUT_MAX_PKT_SIZE,
-	.on_out = (void *)usb_cdc_on_rcv
+	.on_out = usb_cdc_on_rcv
 };
 
 const usb_dev_ep_info_t usb_cdc_int_info = {
 	.addr = USB_ENDPOINT_IN + EP_INT_ADDR,
 	.attr = ENDPOINT_TYPE_INTERRUPT,
 	.mxpktsz = CDC_EP_INT_MAX_PKT_SIZE,
-	.on_in = (void *)usb_cdc_on_eot_int
+	.on_in = usb_cdc_on_eot_int
 };
 
 int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
@@ -223,23 +222,21 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 	case STD_SET_ADDRESS:
 		DCC_LOG1(LOG_INFO, "SetAddr: %d -------- [ADDRESS]", value);
 		/* signal any pending threads */
-//		__thinkos_ev_raise(dev->rx_ev);
 		break;
 
 	case STD_SET_CONFIGURATION: {
-		DCC_LOG1(LOG_INFO, "SetCfg: %d", value);
+		DCC_LOG1(LOG_MSG, "SetCfg: %d", value);
 
 		if (value) {
 			dev->in_ep = usb_dev_ep_init(dev->usb, &usb_cdc_in_info, NULL, 0);
 			dev->out_ep = usb_dev_ep_init(dev->usb, &usb_cdc_out_info, NULL, 0);
 			dev->int_ep = usb_dev_ep_init(dev->usb, &usb_cdc_int_info, NULL, 0);
+			dev->configured = true;
 		} else {
+			dev->configured = false;
 			usb_dev_ep_ctl(dev->usb, dev->in_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_DISABLE);
 			usb_dev_ep_ctl(dev->usb, dev->int_ep, USB_EP_DISABLE);
-			dev->in_ep = -1;
-			dev->out_ep = -1;
-			dev->int_ep = -1;
 		}
 
 		/* signal any pending threads */
@@ -259,7 +256,7 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 		//                      usb_ep0_send_word(dev, 0);
 		break;
 
-	case STD_GET_STATUS_ZERO:
+	case STD_GET_STATUS_DEVICE:
 		DCC_LOG(LOG_INFO, "GetStZr");
 		//                      usb_ep0_send_word(dev, 0);
 		break;
@@ -283,7 +280,8 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 		break;
 
 	case SET_LINE_CODING:
-		__memcpy(&dev->acm.lc, dev->ctr_buf, sizeof(struct cdc_line_coding));
+		__thinkos_memcpy(&dev->acm.lc, dev->ctr_buf, 
+						 sizeof(struct cdc_line_coding));
 
 		if ((dev->acm.flags & ACM_LC_SET) == 0) {
 			dev->acm.flags |= ACM_LC_SET;
@@ -310,10 +308,6 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 
 	case SET_CONTROL_LINE_STATE:
 		dev->acm.control = value;
-		/* there might have threads waiting for
-		   modem control line changes (DTR, RTS)
-		   wake them up */
-		thinkos_flag_give_i(CTL_FLAG);
 
 		DCC_LOG3(LOG_MSG, "CDC SetCtrl: idx=%d val=%d len=%d",
 				 index, value, len);
@@ -321,7 +315,23 @@ int usb_cdc_on_setup(usb_class_t * cl, struct usb_request * req, void ** ptr) {
 		DCC_LOG2(LOG_INFO, "CDC_DTE_PRESENT=%d ACTIVATE_CARRIER=%d >>>>",
 				(value & CDC_DTE_PRESENT) ? 1 : 0,
 				(value & CDC_ACTIVATE_CARRIER) ? 1 : 0);
+
+		/* there might have threads waiting for
+		   modem control line changes (DTR, RTS)
+		   wake them up */
+		thinkos_flag_give_i(CTL_FLAG);
 		break;
+
+	case SEND_BREAK:
+		dev->acm.brk = value;
+		/* there might have threads waiting for
+		   modem control line changes (DTR, RTS)
+		   wake them up */
+		thinkos_flag_give_i(CTL_FLAG);
+
+		DCC_LOG1(LOG_INFO, "CDC Send Break value=%d", value);
+		break;
+
 
 	default:
 		DCC_LOG5(LOG_INFO, "CDC t=%x r=%x v=%x i=%d l=%d",
@@ -343,7 +353,7 @@ void usb_cdc_on_reset(usb_class_t * cl)
 {
 	struct usb_cdc_acm_dev * dev = (struct usb_cdc_acm_dev *)cl;
 
-	DCC_LOG(LOG_INFO, "...");
+	DCC_LOG(LOG_MSG, "...");
 
 	/* invalidate th line coding structure */
     dev->acm.lc.dwDTERate = 0;
@@ -351,9 +361,7 @@ void usb_cdc_on_reset(usb_class_t * cl)
     dev->acm.lc.bParityType = 0;
     dev->acm.lc.bDataBits = 0 ;
 
-	dev->in_ep = -1;
-	dev->out_ep = -1;
-	dev->int_ep = -1;
+	dev->configured = false;
 
 	DCC_LOG(LOG_INFO, "2.");
 	/* reset control lines */
@@ -391,6 +399,11 @@ void usb_cdc_on_wakeup(usb_class_t * cl)
 }
 
 void usb_cdc_on_error(usb_class_t * cl, int code)
+{
+	DCC_LOG(LOG_INFO, "...");
+}
+
+void usb_cdc_on_sof(usb_class_t * cl)
 {
 	DCC_LOG(LOG_INFO, "...");
 }
@@ -463,47 +476,49 @@ int usb_cdc_read(usb_cdc_class_t * cl, void * buf,
 	int ret;
 	int n;
 
-	DCC_LOG3(LOG_MSG, "ep=%d len=%d msec=%d", dev->out_ep, len, msec);
-	
 	if ((n = dev->rx_cnt - dev->rx_pos) > 0) {
-		DCC_LOG(LOG_INFO, "read from intern buffer");
+		DCC_LOG(LOG_MSG, "read from intern buffer");
+		if (dev->configured) {
+			usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
+		}
 		goto read_from_buffer;
 	};
 
-	/* Ok to receive more */
-	usb_dev_ep_ctl(dev->usb, dev->out_ep, USB_EP_RECV_OK);
-
+	DCC_LOG3(LOG_TRACE, "ep=%d len=%d msec=%d", dev->out_ep, len, msec);
+	
 	for (;;) {
-		if (len >= CDC_EP_IN_MAX_PKT_SIZE) {
-			if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
-										 buf, len)) > 0) {
-				DCC_LOG1(LOG_INFO, "1. n=%d", n);
-				return n;
-			} 
-		} else {
-			if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, dev->rx_buf, 
-										 CDC_EP_IN_MAX_PKT_SIZE)) > 0) {
-				DCC_LOG1(LOG_INFO, "2. n=%d", n);
-				dev->rx_pos = 0;
-				dev->rx_cnt = n;
-				goto read_from_buffer;
+		if (dev->configured) {
+			if (len >= CDC_EP_IN_MAX_PKT_SIZE) {
+				/* receive a full packet on the suplied memory */
+				if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+											 buf, 
+											 CDC_EP_IN_MAX_PKT_SIZE)) > 0) {
+					return n;
+				} 
+			} else {
+				/* receive in the internal buffer */
+				if ((n = usb_dev_ep_pkt_recv(dev->usb, dev->out_ep, 
+											 dev->rx_buf, 
+											 CDC_EP_IN_MAX_PKT_SIZE)) > 0) {
+					dev->rx_pos = 0;
+					dev->rx_cnt = n;
+					goto read_from_buffer;
+				}
 			}
 		}
 
-		DCC_LOG1(LOG_MSG, "3. n=%d", n);
-
 		if ((ret = thinkos_flag_timedtake(RX_FLAG, msec)) < 0) {
 			if (ret == THINKOS_ETIMEDOUT) {
-				DCC_LOG(LOG_MSG, "timeout!!");
+				DCC_LOG(LOG_TRACE, "timeout!!");
 			}
 			return ret;
 		}
 	}
 
 read_from_buffer:
-	DCC_LOG(LOG_INFO, "reading from buffer");
+	DCC_LOG(LOG_MSG, "reading from buffer");
 	n = MIN(n, len);
-	__memcpy(buf, &dev->rx_buf[dev->rx_pos], n);
+	__thinkos_memcpy(buf, &dev->rx_buf[dev->rx_pos], n);
 	dev->rx_pos += n;
 
 	return n;
@@ -580,18 +595,19 @@ int usb_cdc_state_get(usb_cdc_class_t * cl, usb_cdc_state_t * state)
 
 	state->cfg.flowctrl = SERIAL_FLOWCTRL_NONE;
 
-	state->ctrl.dtr = (dev->acm.control & CDC_DTE_PRESENT);
-	state->ctrl.rts = (dev->acm.control & CDC_ACTIVATE_CARRIER);
+	state->ctrl.dtr = (dev->acm.control & CDC_DTE_PRESENT) ? 1 : 0;
+	state->ctrl.rts = (dev->acm.control & CDC_ACTIVATE_CARRIER) ? 1 : 0;
+	state->ctrl.brk = (dev->acm.brk) ? 1 : 0;
 
-	state->stat.dsr = (dev->acm.status & CDC_SERIAL_STATE_TX_CARRIER);
-	state->stat.ri = (dev->acm.status & CDC_SERIAL_STATE_RING);
-	state->stat.dcd = (dev->acm.status & CDC_SERIAL_STATE_RX_CARRIER);
+	state->stat.dsr = (dev->acm.status & CDC_SERIAL_STATE_TX_CARRIER) ? 1 : 0;
+	state->stat.ri = (dev->acm.status & CDC_SERIAL_STATE_RING) ? 1 : 0;
+	state->stat.dcd = (dev->acm.status & CDC_SERIAL_STATE_RX_CARRIER) ? 1 : 0;
 	state->stat.cts = 0;
-	state->stat.brk = (dev->acm.status & CDC_SERIAL_STATE_BREAK);
+	state->stat.brk = (dev->acm.status & CDC_SERIAL_STATE_BREAK) ? 1 : 0;
 
-	state->err.ovr = (dev->acm.status & CDC_SERIAL_STATE_OVERRUN);
-	state->err.par = (dev->acm.status & CDC_SERIAL_STATE_PARITY);
-	state->err.frm = (dev->acm.status & CDC_SERIAL_STATE_FRAMING);
+	state->err.ovr = (dev->acm.status & CDC_SERIAL_STATE_OVERRUN) ? 1 : 0;
+	state->err.par = (dev->acm.status & CDC_SERIAL_STATE_PARITY) ? 1 : 0;
+	state->err.frm = (dev->acm.status & CDC_SERIAL_STATE_FRAMING) ? 1 : 0;
 
 	state->flags = dev->acm.flags;
 
@@ -696,7 +712,8 @@ const usb_class_events_t usb_cdc_ev = {
 	.on_reset = usb_cdc_on_reset,
 	.on_suspend = usb_cdc_on_suspend,
 	.on_wakeup = usb_cdc_on_wakeup,
-	.on_error = usb_cdc_on_error
+	.on_error = usb_cdc_on_error,
+	.on_sof = usb_cdc_on_sof
 };
 
 usb_cdc_class_t * usb_cdc_init(const usb_dev_t * usb, 
@@ -724,6 +741,7 @@ usb_cdc_class_t * usb_cdc_init(const usb_dev_t * usb,
 
 	dev->rx_cnt = 0;
 	dev->rx_pos = 0;
+	dev->configured = false;
 	dev->str = str;
 	dev->strcnt = strcnt;
 

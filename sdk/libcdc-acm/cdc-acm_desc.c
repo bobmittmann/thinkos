@@ -25,6 +25,8 @@
 #include <sys/param.h>
 #include <string.h>
 
+#include <usb/cdc.h>
+
 #define ATMEL_VCOM_PRODUCT_ID 0x6119
 #define ST_VCOM_PRODUCT_ID 0x5740
 
@@ -99,18 +101,18 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 			   (excluding endpoint zero) */
 			1,
 			/* Class code */
-			CDC_INTERFACE_COMMUNICATION,
+			CDC_INTERFACE_CLASS_COMMUNICATION,
 			/* Sub-class */
 			CDC_ABSTRACT_CONTROL_MODEL,
 			/* Protocol code: (V.25ter, Common AT commands)*/
-			CDC_PROTOCOL_COMMON_AT_COMMANDS,
+			CDC_PROTOCOL_NONE,
 			/* Index of string descriptor describing this interface */
 			0x04
 		},
 		/* Header Functional Descriptor */
 		{
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_header_descriptor),
+			sizeof(struct cdc_descriptor_header),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Header functional descriptor subtype */
@@ -121,7 +123,7 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Call Management Functional Descriptor */
 		{
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_call_management_descriptor),
+			sizeof(struct cdc_descriptor_call_management),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Call management functional descriptor subtype */
@@ -135,7 +137,7 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		/* Abstract Control Management Functional Descriptor */
 		{
 			/* Size of this descriptor in bytes */
-			sizeof(struct cdc_abstract_control_management_descriptor),
+			sizeof(struct cdc_descriptor_abstract_control_management),
 			/* CS_INTERFACE descriptor type */
 			CDC_CS_INTERFACE,
 			/* Abstract control management functional descriptor subtype */
@@ -145,18 +147,15 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 		},
 		/* Union Functional Descriptor */
 		{
-			{
-				/* Size of this descriptor in bytes */
-				sizeof(struct cdc_union_1slave_descriptor),
-				/* CS_INTERFACE descriptor type */
-				CDC_CS_INTERFACE,
-				/* Union functional descriptor subtype */
-				CDC_UNION,
-				/* The interface number designated as master */
-				0
-			},
-			/* The interface number designated as first slave */
-			{ 1 }
+			/* Size of this descriptor in bytes */
+			sizeof(struct cdc_descriptor_union_1slave),
+			/* CS_INTERFACE descriptor type */
+			CDC_CS_INTERFACE,
+			/* Union functional descriptor subtype */
+			CDC_UNION,
+			/* The interface number designated as master */
+			0,
+			1
 		},
 		/* Endpoint 3 descriptor */
 		{
@@ -188,11 +187,11 @@ const struct cdc_acm_descriptor_config cdc_acm_desc_cfg = {
 			   (excluding endpoint zero) */
 			2,
 			/* Class code */
-			CDC_INTERFACE_DATA,
+			CDC_INTERFACE_CLASS_DATA,
 			/* Sub-class */
-			0,
+			CDC_INTERFACE_SUBCLASS_DATA,
 			/* Protocol code */
-			0,
+			CDC_PROTOCOL_NONE,
 			/* Index of string descriptor describing this interface */
 			0
 		},

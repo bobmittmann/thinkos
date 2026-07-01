@@ -21,11 +21,14 @@
 
 include ../../mk/config.mk
 
-LIB_STATIC = console
+LIB_STATIC = thinkos-usr
 
-CFILES = console.c
+CONSOLE_CFILES = console.c
+CORTEX_M_SFILES = crt0.S
 
-override INCPATH += ../include 
+CFILES = obj_alloc.c thread_create.c abort.c \
+	$(addprefix console/,$(CONSOLE_CFILES))
+SFILES = $(addprefix cortex-m/,$(CORTEX_M_SFILES))
 
 include ../../mk/lib.mk
 

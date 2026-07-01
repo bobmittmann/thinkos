@@ -26,19 +26,19 @@
 #define __USE_SYS_TCP__
 #include <sys/tcp.h>
 
-int tcp_recv(struct tcp_pcb * __tp, void * __buf, int __len)
+int tcp_recv(struct tcp_pcb * __tp, void * __buf, unsigned int __len)
 {
 	int n;
 
 	if (__tp == NULL) {
 		DCC_LOG(LOG_WARNING, "NULL pointer");
-		return -1;
+		return -EINVAL;
 	}
 
 	if (__len == 0) {
 		/* invalid argument */
 		DCC_LOG(LOG_WARNING, "invalid argument");
-		return -1;
+		return -EINVAL;
 	}
 
 	tcpip_net_lock();
@@ -47,7 +47,7 @@ int tcp_recv(struct tcp_pcb * __tp, void * __buf, int __len)
 	if (pcb_find((struct pcb *)__tp, &__tcp__.active) < 0) {
 		DCC_LOG1(LOG_ERROR, "<%05x> pcb_find()", (int)__tp);
 		tcpip_net_unlock();
-		return -1;
+		return -EBADF;
 	}
 #endif
 
@@ -55,7 +55,7 @@ int tcp_recv(struct tcp_pcb * __tp, void * __buf, int __len)
 		if ((__tp->t_state == TCPS_CLOSED)) {
 			DCC_LOG(LOG_WARNING, "closed!");
 			tcpip_net_unlock();
-			return -1;
+			return -EBADF;
 		}
 
 		if ((__tp->t_state == TCPS_TIME_WAIT) ||
@@ -63,6 +63,13 @@ int tcp_recv(struct tcp_pcb * __tp, void * __buf, int __len)
 			(__tp->t_state == TCPS_LAST_ACK)) {
 			tcpip_net_unlock();
 			return 0;
+		}
+
+		if (__tp->t_flags & TF_INTERRUPTED) {
+			__tp->t_flags &= ~TF_INTERRUPTED;
+			DCC_LOG(LOG_WARNING, "interrupted!");
+			tcpip_net_unlock();
+			return -EINTR;
 		}
 
 		if (__tp->rcv_q.len)

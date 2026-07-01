@@ -62,6 +62,7 @@
 #define NET_TCP_PCB_LISTEN_MAX 2
 #endif
 
+#include <errno.h>
 #include <stdint.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
@@ -113,7 +114,7 @@
 #define TF_IDLE         0x08
 #define TF_RXMT         0x10
 //#define TF_NODELAY      0x20
-//#define TF_NONBLOCK     0x40
+#define TF_INTERRUPTED  0x40
 #define TF_NEEDOUTPUT   0x80
 
 /* useful macros */

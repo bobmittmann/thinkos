@@ -33,6 +33,8 @@
 #include <thinkos/kernel.h>
 #include <sys/dcclog.h>
 
+#if 0
+
 #if THINKOS_ENABLE_THREAD_ALLOC | THINKOS_ENABLE_MUTEX_ALLOC | \
 	THINKOS_ENABLE_COND_ALLOC | THINKOS_ENABLE_SEM_ALLOC | \
 	THINKOS_ENABLE_EVENT_ALLOC | THINKOS_ENABLE_FLAG_ALLOC
@@ -53,7 +55,7 @@ static int bmp_bit_cnt(uint32_t bmp[], int bits)
 }
 #endif
 
-static void os_alloc_dump(FILE * f, struct thinkos_rt * rt)
+static void os_alloc_dump(FILE * f, struct thinkos_krn * rt)
 {
 	fprintf(f, "     ");
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -128,7 +130,7 @@ static void os_alloc_dump(FILE * f, struct thinkos_rt * rt)
 
 int cmd_osinfo(FILE * f, int argc, char ** argv)
 {
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	uint32_t * wq;
 	int i;
 #if THINKOS_ENABLE_PROFILING
@@ -142,14 +144,12 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 	if (argc > 1)
 		return SHELL_ERR_EXTRA_ARGS;
 
-	if (thinkos_rt_snapshot(&rt) < 0) {
+	if (thinkos_krn_snapshot(&rt) < 0) {
 		fprintf(f, "#ERROR: Thinkos RT_DEBUG not enabled!\n");
 		return SHELL_ERR_GENERAL;
 	}
 
-#if THINKOS_ENABLE_CLOCK
 	fprintf(f, "[ Ticks = %d ]", rt.ticks);
-#endif
 
 #if THINKOS_ENABLE_PROFILING
 	{
@@ -198,9 +198,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_TIMESHARE
 	fprintf(f, " |  Val |  Pri"); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 	fprintf(f, " | Clock (ms)"); 
-#endif
 #if THINKOS_ENABLE_PROFILING
 	fprintf(f, " | CPU %%"); 
 #endif
@@ -231,7 +229,6 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_TIMESHARE
 			fprintf(f, " | %4d | %4d", rt.sched_val[i], rt.sched_pri[i]); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 			{
 				int32_t dt = (int32_t)(rt.clock[i] - rt.ticks);
 				if (dt < 0)
@@ -239,7 +236,6 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 				else
 					fprintf(f, " | %10d", dt); 
 			}
-#endif
 #if THINKOS_ENABLE_PROFILING
 			busy = (rt.cyccnt[i] + cycdiv / 2) / cycdiv;
 			fprintf(f, " | %3d.%d", busy / 10, busy % 10);
@@ -255,7 +251,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 		}
 	}
 
-	for (wq = rt.wq_lst; wq != rt.wq_end; ++wq) {
+	for (wq = rt.wq_lst; wq != &rt.wq_lst[THINKOS_WQ_CNT]; ++wq) {
 		int oid;
 		int type;
 		if (*wq) { 
@@ -279,11 +275,12 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 	return 0;
 }
 
+
 int cmd_thread(FILE * f, int argc, char ** argv)
 {
 	uint8_t lst[THINKOS_THREADS_MAX];
 	struct thinkos_context * ctx;
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	unsigned int th;
 #if THINKOS_ENABLE_THREAD_STAT
 	int oid;
@@ -295,7 +292,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 #endif
 	int i;
 
-	thinkos_rt_snapshot(&rt);
+	thinkos_krn_snapshot(&rt);
 
 	if (argc == 1) {
 		// no arguments (dump the current thread)
@@ -338,15 +335,12 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 		fprintf(f, " - Scheduler: val=%d pri=%4d\n", 
 				rt.sched_val[th], rt.sched_pri[th]); 
 #endif
-#if THINKOS_ENABLE_CLOCK
 		fprintf(f, " - Clock: val=%d time=%d\n", rt.clock[th],
 				(int32_t)(rt.clock[th] - rt.ticks)); 
-#endif
-
 #if THINKOS_MUTEX_MAX > 0
 		fprintf(f, " - Mutex Locks: ");
 		for (j = 0; j < THINKOS_MUTEX_MAX ; ++j) {
-			if (rt.lock[j] == th)
+			if (rt.lock[j] == (int)th)
 				fprintf(f, " %d", j + THINKOS_MUTEX_BASE);
 		}
 		fprintf(f, "\n");
@@ -375,7 +369,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 #if THINKOS_ENABLE_THREAD_INFO
 static int scan_stack(uint32_t * ptr, unsigned int size)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < size / 4; ++i) {
 		if (ptr[i] != 0xdeadbeef)
@@ -388,13 +382,13 @@ static int scan_stack(uint32_t * ptr, unsigned int size)
 
 int cmd_oscheck(FILE * f, int argc, char ** argv)
 {
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	int i;
 
 	if (argc > 1)
 		return SHELL_ERR_EXTRA_ARGS;
 
-	if (thinkos_rt_snapshot(&rt) < 0) {
+	if (thinkos_krn_snapshot(&rt) < 0) {
 		fprintf(f, "#ERROR: Thinkos RT_DEBUG not enabled!\n");
 		return SHELL_ERR_GENERAL;
 	}
@@ -442,4 +436,5 @@ int cmd_oscheck(FILE * f, int argc, char ** argv)
 
 	return 0;
 }
+#endif
 

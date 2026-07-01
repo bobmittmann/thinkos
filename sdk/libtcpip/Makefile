@@ -56,7 +56,7 @@ TCP_CFILES = tcp_abort.c tcp_accept.c tcp_accept_tmo.c tcp_bind.c\
 			 tcp.c tcp_close.c tcp_connect.c tcp_drop.c tcp_dump.c\
 			 tcp_enum.c tcp_flags.c tcp_in.c tcp_keepalive.c tcp_listen.c\
 			 tcp_out.c tcp_proto_getstat.c tcp_recv.c tcp_send.c\
-			 tcp_shutdown.c tcp_tmr.c
+			 tcp_shutdown.c tcp_tmr.c tcp_interrupt.c
 
 CFILES = arping.c icmp.c in_chksum.c ip.c ip_route.c net.c pktbuf.c stat.c \
 		 $(addprefix mbuf/,$(MBUF_CFILES))\

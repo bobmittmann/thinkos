@@ -34,9 +34,6 @@
 #define THINKOS_ENABLE_IRQ_CTL          1
 
 #define THINKOS_ENABLE_IDLE_WFI         1
-#define THINKOS_IDLE_STACK_CONST        0
-#define THINKOS_IDLE_STACK_BSS          0
-#define THINKOS_IDLE_STACK_ALLOC        1
 
 #define THINKOS_ENABLE_TIMESHARE        1
 #define THINKOS_SCHED_LIMIT_MAX         32
@@ -72,7 +69,6 @@
 #define THINKOS_ENABLE_THREAD_STAT      1
 #define THINKOS_ENABLE_TIMED_CALLS      1
 
-#define THINKOS_ENABLE_CLOCK            1
 #define THINKOS_ENABLE_ALARM            1
 #define THINKOS_ENABLE_SLEEP            1
 #define THINKOS_ENABLE_BREAK            1
@@ -84,42 +80,34 @@
 #define THINKOS_ENABLE_CTL              1
 
 #define THINKOS_ENABLE_SCHED_DEBUG      0
-#define THINKOS_ENABLE_RT_DEBUG         0
 
 #define THINKOS_ENABLE_PROFILING        1
 
 #define THINKOS_ENABLE_MONITOR          1
-#define THINKOS_ENABLE_DMCLOCK          1
+#define THINKOS_ENABLE_MONITOR_CLOCK          1
 
 #define THINKOS_ENABLE_CONSOLE          1
 
 #define THINKOS_EXCEPT_STACK_SIZE       384
 #define THINKOS_ENABLE_EXCEPTIONS       1
-#define THINKOS_UNROLL_EXCEPTIONS       1
-#define THINKOS_ENABLE_EXCEPT_CLEAR     1
 #define THINKOS_ENABLE_HARDFAULT        0
 #define THINKOS_ENABLE_BUSFAULT         1
 #define THINKOS_ENABLE_USAGEFAULT       1
 #define THINKOS_ENABLE_MEMFAULT         1
 #define THINKOS_SYSRST_ONFAULT          0
-#define THINKOS_STDERR_FAULT_DUMP       0
 #define THINKOS_ENABLE_DEBUG_BKPT       1
 #define THINKOS_ENABLE_DEBUG_WPT        1
 #define THINKOS_ENABLE_DEBUG_STEP       1
-#define THINKOS_ENABLE_DEBUG_FAULT      1
+#define THINKOS_ENABLE_THREAD_FAULT     1
 #define THINKOS_ENABLE_ERROR_TRAP       1
 
 #define THINKOS_ENABLE_MPU              1
-#define THINKOS_ENABLE_ESCALATE         1
 #define THINKOS_ENABLE_FPU              1
 
-#define THINKOS_ENABLE_THREAD_VOID      1
-
-#define THINKOS_DBGMON_STACK_SIZE      (1024 + 128)
+#define THINKOS_MONITOR_STACK_SIZE      (1024 + 128)
 
 #define THINKOS_ENABLE_STACK_INIT       1
 
-#define THINKOS_ASM_SCHEDULER           1
 #define THINKOS_ENABLE_OFAST            1
 
 #define THINKOS_ENABLE_RESET_RAM_VECTORS 1
@@ -157,7 +145,6 @@
    -------------------------------------------------------------------------- */
 
 #define BOOT_ENABLE_GDB             1
-#define BOOT_MEM_RESERVED           0x1000
 #define MONITOR_CONFIGURE_ENABLE    0
 #define MONITOR_DUMPMEM_ENABLE      0
 #define MONITOR_UPGRADE_ENABLE      0

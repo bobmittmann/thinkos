@@ -35,6 +35,6 @@ int cmd_close(FILE * f, int argc, char ** argv)
 	fflush(f);
 	fclose(f);
 	
-	return 0;
+	return SHELL_ABORT;
 }
 

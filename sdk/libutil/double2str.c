@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 
 /* The floating point value is calculated as: 
 
@@ -149,7 +149,7 @@ zero:
 
 		if (precision < 0) {
 			trim = 1;
-			/* FIXME: this needs to be recaluculated */
+			/* FIXME: this needs to be recalculated */
 			precision = (((51 - exp) + 3) * 621) >> 26;
 		}
 
@@ -205,8 +205,10 @@ zero:
 
 }
 
-#define FLOAT2UINT32(F) ({ union { float f; uint32_t u; } a; a.f = (F); a.u;})
-#define DOUBLE2UINT64(D) ({ union { double d; uint64_t u; } a; a.d = (D); a.u;})
+#define FLOAT2UINT32(F) __extension__({ union { float f; uint32_t u; } \
+									  a; a.f = (F); a.u;})
+#define DOUBLE2UINT64(D) __extension__({ union { double d; uint64_t u; } \
+									   a; a.d = (D); a.u;})
 	
 int double2str(char * buf, double d, int precision) 
 {

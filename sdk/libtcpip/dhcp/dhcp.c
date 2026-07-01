@@ -252,7 +252,7 @@ int dhcp_free(struct dhcp * __dhcp)
 	return -1;
 }
 
-struct dhcp * dhcp_xid_lookup(int __xid)
+struct dhcp * dhcp_xid_lookup(unsigned int __xid)
 {
 	int i;
 
@@ -492,6 +492,7 @@ static inline void tmo_reply_set(struct dhcp * dhcp)
 static void dhcp_create_request(const struct dhcp * dhcp, struct dhcp_msg * msg)
 {
 	uint16_t i;
+	uint32_t ciaddr;	/* client IP#, for BOUND, RENEW and REBINDING states */
 
 	msg->op = BOOTP_BOOTREQUEST;
 	/* TODO: make link layer independent */
@@ -507,7 +508,8 @@ static void dhcp_create_request(const struct dhcp * dhcp, struct dhcp_msg * msg)
 	case DHCP_BOUND:
 	case DHCP_RENEWING:
 	case DHCP_REBINDING:
-		ifn_ipv4_get(dhcp->ifn, &msg->ciaddr, NULL);
+		ifn_ipv4_get(dhcp->ifn, &ciaddr, NULL);
+		msg->ciaddr = ciaddr;
 		msg->flags = 0;
 		break;
 	default:
@@ -607,6 +609,7 @@ static int dhcp_request(struct dhcp * dhcp)
 	case DHCP_INIT_REBOOT:	// MUST: requested IP
 		dhcp_set_state(dhcp, DHCP_REBOOTING);
 		DCC_LOG1(LOG_TRACE, "%s: [DHCP_REBOOTING]", ifn_name(dhcp->ifn));
+		/* FALL-THROUGH */
 	case DHCP_REBOOTING:	// MUST NOT: server ID
 		n += dhcp_option_long(&opt[n], DHCP_OPTION_REQUESTED_IP, 
 							  dhcp->ip);

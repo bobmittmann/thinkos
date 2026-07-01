@@ -94,9 +94,9 @@ int cmd_netstat(FILE *f, int argc, char ** argv)
 				"          Foreign Address        State\n");
 	fflush(f);
 
-	tcp_enum((void *)show_tcp_pcb, (void *)f);
+	tcp_enum((int (*)(struct tcp_inf *, void *))show_tcp_pcb, (void *)f);
 
-	udp_enum((void *)show_udp_pcb, (void *)f);
+	udp_enum((int (*)(struct udp_inf *, void *))show_udp_pcb, (void *)f);
 
 	return 0;
 }

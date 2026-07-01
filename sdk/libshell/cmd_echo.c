@@ -40,7 +40,7 @@ int cmd_echo(FILE *f, int argc, char ** argv)
 	for (i = 1; i < argc; ++i) {
 		if (i != 1)
 			fprintf(f, " ");
-		fprintf(f, argv[i]);
+		fprintf(f,"<%s>", argv[i]);
 	}
 
 	fprintf(f, "\n");

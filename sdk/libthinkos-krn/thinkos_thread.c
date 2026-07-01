@@ -1,5 +1,5 @@
 /* 
- * thikos.c
+ * thinkos_thread.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -19,156 +19,446 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_NRT__
-#include <thinkos/nrt.h>
-#include <thinkos.h>
-#include <sys/delay.h>
+#include "thinkos_krn-i.h"
 
-#if THINKOS_ENABLE_EXIT
-static void __exit_stub(int code)
+#include <sys/dcclog.h>
+
+int __krn_thread_check(struct thinkos_krn * krn, unsigned int th)
 {
-	thinkos_exit(code);
-}
+#if (THINKOS_ENABLE_ARG_CHECK)
+	if (!__krn_obj_is_thread(krn, th)) {
+		return THINKOS_ERR_THREAD_INVALID;
+	}
+#if (THINKOS_ENABLE_THREAD_ALLOC)
+	if (__krn_thread_is_alloc(krn, th) == 0) {
+		return THINKOS_ERR_THREAD_ALLOC;
+	}
 #endif
+#endif
+	return THINKOS_OK;
+}
 
-void __thinkos_thread_init(unsigned int thread_id, uint32_t sp, 
-						   void * task, void * arg)
+int thinkos_krn_thread_init(
+	struct thinkos_krn * krn, unsigned int thread_no,
+	const struct thinkos_thread_initializer * init)
 {
+	const struct thinkos_thread_inf * inf = init->inf;
+	uintptr_t stack_base = init->stack_base;
+	uintptr_t stack_size = init->stack_size;
+	uintptr_t task_entry = init->task_entry;
+	uintptr_t task_exit = init->task_exit;
+	uint32_t * task_arg = (uint32_t *)init->task_arg;
+	int priority = init->priority;
+	bool paused = init->paused;
+	bool privileged = init->privileged;
 	struct thinkos_context * ctx;
-	uint32_t pc;
+	uint32_t ctrl;
+	uint32_t free;
+	uint32_t stack_top;
 
-	pc = (uint32_t)task & 0xfffffffe;
-	sp &= 0xfffffff8; /* 64bits alignemnt */
+	stack_top = stack_base + stack_size;
 
-	sp -= sizeof(struct thinkos_context);
-	ctx = (struct thinkos_context *)sp;
+	if (inf != NULL) {
+		DCC_LOG1(LOG_YAP, "  tag: \"%s\"", inf->tag);
+	}
+	DCC_LOG3(LOG_TRACE, "stack: top=%08x base=%08x size=%d", 
+			 stack_top, stack_base, stack_size);
+	DCC_LOG2(LOG_TRACE, " task: entry=%08x exit=%08x", task_entry, task_exit);
+	DCC_LOG4(LOG_TRACE, " args: %08x %08x %08x %08x", task_arg[0], 
+			 task_arg[1], task_arg[2], task_arg[3]);
 
-	__thinkos_memset32(ctx, 0, sizeof(struct thinkos_context));
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	if (!__thinkos_mem_usr_rw_chk(stack_base, stack_size)) {
+		DCC_LOG2(LOG_WARNING, "stack address invalid! base=%08x size=%d", 
+				 stack_base, stack_size);
+		return THINKOS_ERR_THREAD_STACKADDR;
+	}
 
-	ctx->r0 = (uint32_t)arg;
-#if THINKOS_ENABLE_EXIT
-	ctx->lr = (uint32_t)__exit_stub;
-#else
-	ctx->lr = (uint32_t)__thinkos_thread_exit;
-#endif
-	ctx->pc = pc;
-	ctx->xpsr = CM_EPSR_T; /* set the thumb bit */
-	thinkos_rt.ctx[thread_id] = ctx;
+	if (stack_size < sizeof(struct thinkos_context)) {
+		DCC_LOG1(LOG_WARNING, "stack too small. size=%d", stack_size);
+		return THINKOS_ERR_THREAD_SMALLSTACK;
+	}
 
-#if THINKOS_ENABLE_PAUSE
-	/* insert into the paused list */
-	__bit_mem_wr(&thinkos_rt.wq_paused, thread_id, 1);  
-#endif
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	/* Set the thread privilege */
+	if (!privileged) {
+		if (!__thinkos_mem_usr_rx_chk(task_entry, 8)) {
+			DCC_LOG1(LOG_WARNING, "entry point invalid! pc=%08x", task_entry);
+			return THINKOS_ERR_THREAD_ENTRYADDR;
+		}
 
-	DCC_LOG4(LOG_TRACE, "thread=%d sp=%08x lr=%08x pc=%08x", 
-			 thread_id + 1, sp, ctx->lr, ctx->pc);
-	DCC_LOG4(LOG_MSG, "r0=%08x r1=%08x r2=%08x r3=%08x", 
-			 ctx->r0, ctx->r1, ctx->r2, ctx->r3);
-	DCC_LOG3(LOG_MSG, "msp=%08x psp=%08x ctrl=%02x", 
-			 cm3_msp_get(), cm3_psp_get(), cm3_control_get());
-}
-
-/* initialize a thread context */
-void thinkos_thread_create_svc(int32_t * arg)
-{
-	struct thinkos_thread_init * init = (struct thinkos_thread_init *)arg;
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	int target_id = init->opt.id - 1;
-	int thread_id;
-	uint32_t sp;
-
-#if THINKOS_ENABLE_THREAD_ALLOC
-	DCC_LOG1(LOG_INFO, "thinkos_rt.th_alloc=0x%08x", thinkos_rt.th_alloc[0]);
-
-	if (target_id >= THINKOS_THREADS_MAX) {
-		thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, THINKOS_THREADS_MAX);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", target_id, 
-				 thread_id);
-	} else {
-		/* Look for the next available slot */
-		if (target_id < 0)
-			target_id = 0;
-		thread_id = thinkos_alloc_lo(thinkos_rt.th_alloc, target_id);
-		DCC_LOG2(LOG_INFO, "thinkos_alloc_lo() %d -> %d.", 
-				 target_id, thread_id);
-		if (thread_id < 0) {
-			thread_id = thinkos_alloc_hi(thinkos_rt.th_alloc, target_id);
-			DCC_LOG2(LOG_INFO, "thinkos_alloc_hi() %d -> %d.", 
-					target_id, thread_id);
+		if (!__thinkos_mem_usr_rx_chk(task_exit, 8)) {
+			DCC_LOG1(LOG_WARNING, "exit point invalid! lr=%08x", task_exit);
+			return THINKOS_ERR_THREAD_EXITADDR;
 		}
 	}
-
-	if (thread_id < 0) {
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_ALLOC);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
-#else
-	thread_id = target_id;
-	if (thread_id >= (THINKOS_THREADS_MAX) + (THINKOS_NRT_THREADS_MAX)) {
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_INVALID);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
 #endif
-
-	sp = (uint32_t)init->stack_ptr + init->opt.stack_size;
-
-#if THINKOS_ENABLE_SANITY_CHECK
-	if (init->opt.stack_size < sizeof(struct thinkos_context)) {
-		DCC_LOG1(LOG_INFO, "stack too small. size=%d", init->opt.stack_size);
-		__THINKOS_ERROR(THINKOS_ERR_THREAD_SMALLSTACK);
-		arg[0] = THINKOS_EINVAL;
-		return;
-	}
 #endif
+	if (stack_top & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_PANIC, "stack_top=%08x unaligned", stack_top); 
+		return THINKOS_ERR_THREAD_STACKALIGN;
+	}
 
-#if THINKOS_ENABLE_STACK_INIT
+	if (stack_size & (STACK_ALIGN_MSK)) {
+		DCC_LOG1(LOG_PANIC, "stack_Size=%08x unaligned", stack_size); 
+		return THINKOS_ERR_THREAD_STACKALIGN;
+	}
+
+	DCC_LOG2(LOG_TRACE, "SP=%08x PSP=%08x", cm3_sp_get(), cm3_psp_get()); 
+
+	free = stack_size - sizeof(struct thinkos_context);
+
+	(void)free;
+	(void)ctrl;
+	(void)paused;
+	(void)privileged;
+	(void)priority;
+#if (THINKOS_ENABLE_STACK_INIT)
 	/* initialize stack */
-	__thinkos_memset32(init->stack_ptr, 0xdeadbeef, init->opt.stack_size);
+	__thinkos_memset32((void *)stack_base, 0xdeadbeef, free);
+#elif (THINKOS_ENABLE_MEMORY_CLEAR)
+	__thinkos_memset32(stack_base, 0, free);
 #endif
 
-#if THINKOS_ENABLE_THREAD_INFO
-	thinkos_rt.th_inf[thread_id] = init->inf;
-#endif
-
-#if THINKOS_NRT_THREADS_MAX > 0
-	if (thread_id >= (THINKOS_THREADS_MAX)){
-		arg[0] = __thinkos_nrt_thread_init(thread_id);
-		return;
+#if (THINKOS_NRT_THREADS_MAX) > 0
+	if (thread_no >= (THINKOS_THREADS_MAX)) {
+		/* TODO: implement NRT */
+		return THINKOS_ERR_NOT_IMPLEMENTED;
 	}
 #endif
 
-	__thinkos_thread_init(thread_id, sp, init->task, init->arg);
+	ctx = __thinkos_thread_ctx_init(stack_top, stack_size,
+									task_entry, task_exit, task_arg);
 
-#if THINKOS_ENABLE_TIMESHARE
-	thinkos_rt.sched_pri[thread_id] = init->opt.priority;
-	if (thinkos_rt.sched_pri[thread_id] > THINKOS_SCHED_LIMIT_MAX)
-		thinkos_rt.sched_pri[thread_id] = THINKOS_SCHED_LIMIT_MAX;
+	__thread_fault_clr(krn, thread_no);
 
-	/* update schedule limit */
-	if (thinkos_rt.sched_limit < thinkos_rt.sched_pri[thread_id]) {
-		thinkos_rt.sched_limit = thinkos_rt.sched_pri[thread_id];
-	}
-	thinkos_rt.sched_val[thread_id] = thinkos_rt.sched_limit / 2;
+	__thread_sl_set(krn, thread_no, stack_base);
+
+	__thread_priority_set(krn, thread_no, priority);
+
+	__thread_inf_set(krn, thread_no, inf);
+
+#if (THINKOS_ENABLE_PRIVILEGED_THREAD)
+	/* Set the thread privilege */
+	ctrl = privileged ? CONTROL_SPSEL : (CONTROL_SPSEL | CONTROL_nPRIV);
+#else
+	ctrl = 0;
 #endif
+	/* commit the context to the kernel */ 
+	__thread_ctx_set(krn, thread_no, ctx, ctrl);
 
-#if THINKOS_ENABLE_PAUSE
-	if (!init->opt.paused)
+#if (THINKOS_ENABLE_PAUSE)
+	if (paused) {
+		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x paused...", 
+				 thread_no, ctx, ctrl, ctx->pc);
+		__thread_pause_set(krn, thread_no);
+	} else 
 #endif
 	{
-		DCC_LOG(LOG_JABBER, "__thinkos_thread_resume()");
-		__thinkos_thread_resume(thread_id);
-		DCC_LOG(LOG_JABBER, "__thinkos_defer_sched()");
-		__thinkos_defer_sched();
+		DCC_LOG4(LOG_TRACE, "<%d> ctx=%08x ctrl=%d pc=%08x ready.", 
+				 thread_no, ctx, ctrl, ctx->pc);
+		__thread_ready_set(krn, thread_no);
+#if (THINKOS_ENABLE_READY_MASK)
+		/* enable the thread to be scheduled ... */
+		__thread_enable(krn, thread_no);
+#endif
+		__krn_sched_defer(krn);
 	}
 
-	/* Internal thread ids start form 0 whereas user
-	   thread numbers start form one ... */
-	arg[0] = thread_id + 1;
+#if (DEBUG)
+  #if (LOG_LEVEL) < (LOG_INFO)
+	__kdump(krn);
+  #endif		
+#endif
+
+	return 0;
 }
 
+/* initialize a thread */
+void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
+{
+	struct thinkos_krn * krn = &thinkos_krn;
+	struct thinkos_thread_initializer * init;
+	unsigned int thread_no;
+	int ret;
+
+	/* collect call arguments */
+	thread_no = arg[0];
+	init = (struct thinkos_thread_initializer *)arg[1];
+
+#if (THINKOS_ENABLE_ARG_CHECK)
+	if ((ret = __krn_thread_check(krn, thread_no)) != 0) {
+		DCC_LOG2(LOG_ERROR, "<%d> invalid thread %d!", self, thread_no);
+		__THINKOS_ERROR(self, ret);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	}
+#endif
+
+#if (THINKOS_ENABLE_SANITY_CHECK)
+	if (__thread_ctx_is_valid(krn, thread_no)) {
+		DCC_LOG2(LOG_ERROR, "thread %d already exists, ctx=%08x", 
+				 thread_no, __thread_ctx_get(krn, thread_no));
+		__THINKOS_ERROR(self, THINKOS_ERR_THREAD_EXIST);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	}
+#endif
+
+	DCC_LOG3(LOG_TRACE, "<%2d> thread=%d init=0x%08x",
+			 self, thread_no, init);
+
+	if ((ret = thinkos_krn_thread_init(krn, thread_no, init))) {
+		__THINKOS_ERROR(self, ret);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
+		return;
+	};
+
+#if (DEBUG)
+  #if (LOG_LEVEL) < (LOG_INFO)
+	__kdump(krn);
+  #endif		
+#endif
+
+	arg[SVC_RETURN] = thread_no;
+
+	return;
+}
+
+void __krn_thread_wait(struct thinkos_krn * krn, unsigned int th, 
+					   unsigned int wq) 
+{
+	/* (1) suspend the thread by removing it from the
+	   ready wait queue. */
+	__krn_thread_suspend(krn, th);
+	__krn_wq_insert(krn, wq, th);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+}
+
+#if (THINKOS_ENABLE_TIMED_CALLS)
+void __krn_thread_timedwait(struct thinkos_krn * krn, unsigned int th, 
+							unsigned int wq, unsigned int ms) {
+	__krn_thread_suspend(krn, th);
+	__krn_tmdwq_insert(krn, wq, th, ms);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+}
+#endif
+
+void __krn_thread_clk_itv_wait(struct thinkos_krn * krn, unsigned int th, 
+							  unsigned int ms) 
+{
+	/* Set the default return value to timeout. 
+	   The wake up call will change this to 0 */
+	__thread_return_set(krn, th, THINKOS_ETIMEDOUT);
+	/* set the clock */
+	__thread_clk_itv_set(krn, th, ms);
+	/* insert into the clock wait queue */
+	__thread_clk_enable(krn, th);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+}
+
+
+void __krn_wq_wakeup_all(struct thinkos_krn * krn, unsigned int wq, int retval)
+{
+	unsigned int th;
+
+	if ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL) {
+		do {
+			DCC_LOG2(LOG_INFO, "<%2d> wakeup from %d.", th, wq);
+			/* wakeup from the cond wait queue */
+			__krn_wq_wakeup_return(krn, wq, th, retval);
+			/* get the next thread */
+		} while ((th = __krn_wq_head(krn, wq)) != THINKOS_THREAD_NULL);
+
+		/* signal the scheduler ... */
+		__krn_sched_defer(krn);
+	}
+}
+
+unsigned int __krn_wq_wakeup_head(struct thinkos_krn * krn, unsigned int wq)
+{
+	unsigned int th;
+	uint32_t queue;
+	int j;
+
+	do {
+		/* insert into the event wait queue */
+		queue = __ldrex(&krn->wq_lst[wq]);
+		/* get all thread from the queue bitmap */
+		if ((j = __thinkos_ffs(queue)) == 32) {
+			/* no threads waiting o the waitibg  queue. */ 
+			return 0;
+		} 
+		/* remove from the wait queue */
+		queue &= ~(1 << j);
+	} while (__strex(&krn->wq_lst[wq], queue));
+	th = j + 1;
+
+	/* insert the thread into ready queue */
+	__thread_ready_set(krn, th);  
+#if (THINKOS_ENABLE_TIMED_CALLS)
+	/* possibly remove from the time wait queue */
+	__thread_clk_disable(krn, th);
+#endif
+	/* update status */
+	__thread_stat_clr(krn, th);
+	/* signal the scheduler ... */
+	__krn_sched_defer(krn);
+
+	return th;
+}
+
+#if 0
+void __krn_suspend_all(struct thinkos_krn * krn) 
+{
+	/* remove all threads from the ready wait queue */
+	__wq_ready_clr(krn);
+}
+#endif
+
+bool __krn_thread_ctx_is_valid(struct thinkos_krn * krn, unsigned int th) 
+{
+	return __krn_obj_is_thread(krn, th) && __krn_thread_is_alloc(krn, th) && 
+		__thread_ctx_is_valid(krn, th);
+}
+
+static int __krn_thread_errno_get(struct thinkos_krn * krn, unsigned int th)
+{
+	if (__krn_sched_brk_get(krn) == th) {
+		int error = __krn_sched_err_get(krn);
+
+		return error; 
+	}
+
+	return 0;
+}
+
+void __krn_cyccnt_flush(struct thinkos_krn * krn, unsigned int th)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	uint32_t ref;
+	uint32_t cnt;
+
+	cnt = CM3_DWT->cyccnt;
+	ref = krn->cycref;
+	krn->cycref = cnt;
+
+	krn->th_cyc[th] += cnt - ref;
+#endif
+}
+
+
+int __krn_threads_cyc_get(struct thinkos_krn * krn, uint32_t cyc[], 
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__krn_cyccnt_flush(krn, __krn_sched_act_get(krn));
+	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
+/*
+ */
+int thinkos_krn_threads_cyc_get(uint32_t cyc[], unsigned int from, 
+								unsigned int cnt)
+{
+	struct thinkos_krn * krn = &thinkos_krn;
+
+	return __krn_threads_cyc_get(krn, cyc, from, cnt);
+}
+
+int thinkos_krn_active_get(void)
+{
+	struct thinkos_krn * krn = &thinkos_krn;
+
+	return __krn_sched_act_get(krn);
+}
+
+int __krn_threads_inf_get(struct thinkos_krn * krn, 
+						  const struct thinkos_thread_inf * inf[],
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
+int __thread_wq_lookup(struct thinkos_krn * krn, unsigned int th)
+{
+	uint32_t msk = (1 << (th - 1));
+	int i;
+
+	for (i = THINKOS_OBJECT_LAST; i >= THINKOS_OBJECT_FIRST; --i) {
+		if (krn->wq_lst[i] & msk)
+			break;
+	}
+	
+	return i;
+}
+
+bool thinkos_krn_thread_state_get(unsigned int thread_id, 
+								  struct krn_thread_state * st)
+{
+	struct thinkos_krn * krn = &thinkos_krn;
+
+	if (!__krn_thread_ctx_is_valid(krn, thread_id)) {
+		return false;
+	}
+
+	if (st != NULL) {
+		st->thread_id = thread_id;
+#if (THINKOS_ENABLE_EXCEPTIONS)
+		struct thinkos_fault * fault = __thinkos_fault_rt();
+
+    	if (__fault_thread_get(fault) == thread_id) {
+			st->ctx = &fault->ctx;
+			st->sp = fault->sp;
+			st->ctrl = fault->control;
+			st->errno = __fault_errno_get(fault);
+		} else 
+#endif
+		{
+			st->ctx = __thread_ctx_get(krn, thread_id);
+			st->sp = __thread_sp_get(krn, thread_id);
+			st->ctrl = __thread_ctrl_get(krn, thread_id);
+			st->errno = __krn_thread_errno_get(krn, thread_id);
+		}
+		st->sl = __thread_sl_get(krn, thread_id);
+		st->tag = __thread_tag_get(krn, thread_id);
+		st->wq = __thread_wq_get(krn, thread_id);
+		st->tmw = __thread_tmw_get(krn, thread_id);
+		st->clk = __thread_clk_get(krn, thread_id);
+		st->irq = __krn_thread_irq_get(krn, thread_id);
+		st->ready = __thread_ready_get(krn, thread_id);
+		st->itv = __thread_clk_itv_get(krn, thread_id);
+		st->cycnt = __thread_cyccnt_get(krn, thread_id);
+		st->stack_base = __thread_stack_base_get(krn, thread_id);
+		st->stack_size = __thread_stack_size_get(krn, thread_id);
+	}
+
+	return true;
+}
 

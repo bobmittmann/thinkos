@@ -1,5 +1,5 @@
 /* 
- * thikos_util.c
+ * obj_type_get.c
  *
  * Copyright(C) 2012 Robinson Mittmann. All Rights Reserved.
  * 
@@ -27,9 +27,11 @@ extern const uint8_t thinkos_obj_type_lut[];
 
 int thinkos_obj_type_get(unsigned int oid)
 {
-	if (oid >= THINKOS_WQ_LST_END)
+	unsigned int idx = oid - THINKOS_OBJECT_FIRST;
+
+	if (idx > THINKOS_OBJECT_LAST)
 		return THINKOS_EINVAL;
 
-	return thinkos_obj_type_lut[oid];
+	return thinkos_obj_type_lut[idx];
 }
 

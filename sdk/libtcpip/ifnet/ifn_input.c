@@ -99,13 +99,13 @@ void __attribute__((noreturn)) ifnet_input_task(void * arg)
 				ifn_pkt_free(ifn, pkt);
 			} else {
 				__ifnet__.stats.err++;
-				WARN("IFNET: not releasing packet: %d", pkt);
+				WARN("IFNET: not releasing packet: %p", pkt);
 			}
 		}
 	}
 }
 
-uint32_t ifnet_stack[128];
+uint32_t __attribute__((aligned(64))) ifnet_stack[128];
 
 const struct thinkos_thread_inf ifnet_input_inf = {
 	.stack_ptr = ifnet_stack, 

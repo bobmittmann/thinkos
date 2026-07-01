@@ -119,7 +119,7 @@ int cmd_ifconfig(FILE *f, int argc, char ** argv)
 	}
 
 	if (--argc == 0) {
-		ifn_enum((void *)show_ifn, (void *)f);
+		ifn_enum((int (*)(struct ifnet *, void *))show_ifn, (void *)f);
 		return 0;
 	}
 

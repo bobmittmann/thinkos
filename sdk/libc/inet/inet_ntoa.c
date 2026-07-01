@@ -35,7 +35,7 @@
 
 char * inet_ntoa(struct in_addr addr)
 {
-	static char buf[15];
+	static char buf[24];
 	
 	sprintf(buf, "%d.%d.%d.%d", IP4_ADDR1(addr.s_addr),
 		IP4_ADDR2(addr.s_addr), IP4_ADDR3(addr.s_addr), 

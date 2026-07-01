@@ -51,6 +51,17 @@ struct iphdr {
 	uint8_t opt[];
 };
 
+/*
+ * FIXME: error: ISO C forbids zero-size array 'op t' [-Werror=pedantic]
+ *  Workaround: #pragma GCC diagnostic ignored "-Wpedantic"
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+struct iphdr_opt {
+	struct iphdr hdr;
+	uint8_t opt[];
+};
+
 #define ip_off frag_off
 #define ip_len tot_len
 
@@ -76,6 +87,7 @@ struct iptrans_hdr {
 	struct iphdr ip;
 	uint16_t transport[16];
 };
+#pragma GCC diagnostic pop
 
 #define IP_HEADER_LEN 20
 

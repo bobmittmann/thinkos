@@ -30,11 +30,7 @@
 
 #define THINKOS_ENABLE_IDLE_WFI 1
 
-#define THINKOS_ENABLE_CLOCK 1
-
 #define THINKOS_ENABLE_TIMESHARE 0
-#define THINKOS_SCHED_LIMIT_MAX 32
-#define THINKOS_SCHED_LIMIT_MIN 1
 
 #define THINKOS_THREADS_MAX 12
 #define THINKOS_ENABLE_THREAD_ALLOC 1
@@ -80,8 +76,6 @@
 #define THINKOS_ENABLE_SCHED_DEBUG 0
 
 #define THINKOS_ENABLE_THREAD_INFO 1
-
-#define THINKOS_ENABLE_RT_DEBUG 1
 
 /* -------------------------------------------------------------------------
  * TCP/IP

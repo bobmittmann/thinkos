@@ -19,91 +19,48 @@
  * http://www.gnu.org/
  */
 
-#define __THINKOS_KERNEL__
-#include <thinkos/kernel.h>
-#define __THINKOS_DBGMON__
-#include <thinkos/dbgmon.h>
-#include <thinkos.h>
-#include <sys/param.h>
+#include "thinkos_krn-i.h"
+#include <sys/dcclog.h>
 #include <sys/sysclk.h>
-#include <sys/delay.h>
 
-#if THINKOS_ENABLE_CTL
-
-#if THINKOS_ENABLE_RT_DEBUG
-static void rt_snapshot(uint32_t * dst)
-{
-	uint32_t pri = cm3_primask_get();
-	uint32_t * src;
-	int i;
-
-	cm3_primask_set(1);
-#if THINKOS_ENABLE_PROFILING
-	{
-		int self = thinkos_rt.active;
-		uint32_t cyccnt = CM3_DWT->cyccnt;
-		int32_t delta = cyccnt - thinkos_rt.cycref;
-		/* update the reference */
-		thinkos_rt.cycref = cyccnt;
-		/* update thread's cycle counter */
-		thinkos_rt.cyccnt[self] += delta; 
-	}
-#endif
-
-	src = (uint32_t *)&thinkos_rt;
-
-	for (i = 0; i < (sizeof(struct thinkos_rt) / 4); ++i)
-		dst[i] = src[i];
-
-#if THINKOS_ENABLE_PROFILING
-	/* Reset cycle counters */
-	for (i = 0; i < THINKOS_THREADS_MAX + 1; i++)
-		thinkos_rt.cyccnt[i] = 0; 
-#endif
-
-	cm3_primask_set(pri);
-}
-#endif
-
-
-#if THINKOS_ENABLE_PROFILING
-static int thinkos_cycnt_get(uint32_t cycnt[], unsigned int max)
-{
-	uint32_t cyccnt;
-	int32_t delta;
-	int self;
-	int cnt = MIN(max, THINKOS_THREADS_MAX + 1);
-
-	self = thinkos_rt.active;
-	cyccnt = CM3_DWT->cyccnt;
-	delta = cyccnt - thinkos_rt.cycref;
-	/* update the reference */
-	thinkos_rt.cycref = cyccnt;
-	/* update thread's cycle counter */
-	thinkos_rt.cyccnt[self] += delta; 
-	/* copy cycle counters */
-	__thinkos_memcpy32(cycnt, thinkos_rt.cyccnt, cnt * sizeof(uint32_t));
-	/* reset cycle counters */
-	__thinkos_memset32(thinkos_rt.cyccnt, 0, cnt * sizeof(uint32_t));
-
-	return cnt; 
-}
-#endif
-
-
+#if (THINKOS_ENABLE_CTL)
 extern int32_t udelay_factor;
 
-void thinkos_ctl_svc(int32_t * arg)
+int32_t  __thinkos_arch_esn_get(uint32_t esn[]) {
+	return 0;
+}
+
+void __thinkos_arch_version_get(struct thinkos_version * ver)
+{
+}
+
+void __thinkos_arch_release_get(struct thinkos_release * rel)
+{
+}
+
+int32_t thinkos_arch_esn_get(uint32_t esn[])
+	__attribute__ ((weak, alias ("__thinkos_arch_esn_get")));
+
+void thinkos_arch_version_get(struct thinkos_version * ver)
+	__attribute__ ((weak, alias ("__thinkos_arch_version_get")));
+
+void thinkos_arch_release_get(struct thinkos_release * rel)
+	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
+
+
+void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_krn * krn)
 {
 	unsigned int req = arg[0];
-	int32_t * pval;
 	const uint32_t ** ptr;
-
-	arg[0] = 0;
-	
-	DCC_LOG(LOG_MSG, ".........................");
+	int32_t * pval;
+	int32_t ret;
 
 	switch (req) {
+	case THINKOS_CTL_YIELD:
+		/* run the scheduler */
+		__krn_sched_defer(krn);
+		break;
+
 	case THINKOS_CTL_CLOCKS:
 		ptr = (const uint32_t **)arg[1];
 		*ptr = sysclk_hz;
@@ -114,14 +71,8 @@ void thinkos_ctl_svc(int32_t * arg)
 		*pval = udelay_factor;
 		break;
 
-	case THINKOS_CTL_ABORT:
-		DCC_LOG(LOG_WARNING, "Abort!");
-		__thinkos_pause_all();
-		__thinkos_defer_sched();
-#if THINKOS_ENABLE_MONITOR
-		/* FIXME: hardcoded number */
-	  	asm volatile ("bkpt %0" : : "I" (3));
-#endif
+	case THINKOS_CTL_ERROR:
+		__THINKOS_ERROR(self, arg[1]);
 		break;
 
 /* XXX: Deprecated
@@ -132,43 +83,54 @@ void thinkos_ctl_svc(int32_t * arg)
 
 	case THINKOS_CTL_REBOOT:
 		DCC_LOG(LOG_WARNING, "Reboot!");
-		udelay(32768);
-		cm3_sysrst();
+
+		if (arg[1] == THINKOS_CTL_REBOOT_KEY) {
+			thinkos_krn_sysrst();
+		}
 		break;
 
-#if THINKOS_ENABLE_RT_DEBUG
-	case THINKOS_CTL_SNAPSHOT:
-		rt_snapshot((uint32_t *)arg[1]);
+	case THINKOS_CTL_ESN_GET:
+		ret = thinkos_arch_esn_get((uint32_t *)arg[1]);
+		arg[SVC_RETURN] = ret;
 		break;
-#endif
+		
+	case THINKOS_CTL_VERSION_GET:
+		thinkos_version_get((struct thinkos_version *)arg[1]);
+		break;
 
-#if THINKOS_ENABLE_THREAD_INFO
+	case THINKOS_CTL_RELEASE_GET:
+		thinkos_arch_release_get((struct thinkos_release *)arg[1]);
+		break;
+
+#if (THINKOS_ENABLE_CTL_KRN_INFO)
+#if (THINKOS_ENABLE_THREAD_INFO)
 	case THINKOS_CTL_THREAD_INF: {
-		unsigned int cnt;
-
-		cnt = MIN(THINKOS_THREADS_MAX + 1, arg[2]);
-		__thinkos_memcpy32((void *)arg[1], thinkos_rt.th_inf,
-						   sizeof(void *) * cnt); 
-		arg[0] = cnt;
+		arg[SVC_RETURN] = __krn_threads_inf_get(krn, 
+				(const struct thinkos_thread_inf **)arg[1], 
+				(unsigned int)arg[2] >> 16,
+				(unsigned int)arg[2] & 0xffff);
 		}
 		break;
 #endif
 
-#if THINKOS_ENABLE_PROFILING
+#if (THINKOS_ENABLE_PROFILING)
 	case THINKOS_CTL_THREAD_CYCCNT:
-		arg[0] = thinkos_cycnt_get((uint32_t *)arg[1], (unsigned int)arg[2]);
+		arg[SVC_RETURN] = __krn_threads_cyc_get(krn, (uint32_t *)arg[1], 
+									   (unsigned int)arg[2] >> 16,
+									   (unsigned int)arg[2] & 0xffff);
 		break;
 #endif
 
 	case THINKOS_CTL_CYCCNT:
 		/* Return the current value of the CPU cycle counter */
-		arg[0] = CM3_DWT->cyccnt;
+		arg[SVC_RETURN] = CM3_DWT->cyccnt;
 		break;
+#endif
 
 	default:
-		DCC_LOG1(LOG_ERROR, "invalid sysinfo request %d!", req);
-		__THINKOS_ERROR(THINKOS_ERR_CTL_REQINV);
-		arg[0] = THINKOS_EINVAL;
+		DCC_LOG1(LOG_ERROR, "invalid CTL request %d!", req);
+		__THINKOS_ERROR(self, THINKOS_ERR_CTL_REQINV);
+		arg[SVC_RETURN] = THINKOS_EINVAL;
 		break;
 	}
 }

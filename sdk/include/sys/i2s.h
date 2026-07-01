@@ -61,7 +61,7 @@ struct i2s_op {
 	int (* close)(void *);
 	int (* ioctl)(void *, int, uintptr_t, uintptr_t);
 	int (* enable)(void *);
-	int (* setbuf)(void *, int16_t *, int16_t *, unsigned int);
+	int (* setbuf)(void *, int16_t *, int16_t *, size_t);
 	int16_t * (* getbuf)(void *);
 	uint32_t (* get_dma_tx_cnt)(void *);
 	uint32_t (* get_dma_rx_cnt)(void *);

@@ -45,6 +45,10 @@
 #define TRACE_STRING_MAX 64
 #endif
 
+#ifndef TRACE_XXD_MAX
+#define TRACE_XXD_MAX 128
+#endif
+
 #ifndef TRACE_TIMER
 #if defined(STM32F_TIM5)
 #define TRACE_TIMER STM32F_TIM5
@@ -53,13 +57,27 @@
 #endif
 #endif
 
-struct trace_ring {
-	int mutex;
+
+
+#ifndef TRACE_PREFIX_MAX       
+#define TRACE_PREFIX_MAX        128
+#endif
+
+#ifndef TRACE_PRINT_BUF_LEN     
+#define TRACE_PRINT_BUF_LEN     512
+#endif
+
+struct trace_ctl {
+	uint32_t crc32;
+	unsigned int mutex;
 	uint64_t tm;
 	volatile uint32_t head;
 	volatile uint32_t tail;
 	volatile uint32_t print_pos;
 	volatile uint32_t print_tm;
+};
+
+struct trace_ring {
 	struct {
 		union {
 			const struct trace_ref * ref;
@@ -69,6 +87,7 @@ struct trace_ring {
 	} buf[TRACE_RING_SIZE];
 };
 
+extern struct trace_ctl trace_ctl;
 extern struct trace_ring trace_ring;
 
 #ifdef __cplusplus

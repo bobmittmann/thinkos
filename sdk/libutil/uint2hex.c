@@ -29,9 +29,9 @@ const char __hextab[] = {
 
 int uint2hex(char * s, unsigned int val)
 {
+	unsigned int i;
 	int n;
 	int c;
-	int i;
 
 	/* value is zero ? */
 	if (!val) {

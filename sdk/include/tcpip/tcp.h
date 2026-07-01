@@ -138,7 +138,7 @@ extern const uint16_t tcp_msl;
 
 extern const char tcp_pcb_flags[64][8];
 
-const char tcp_basic_flags[16][5];
+extern const char tcp_basic_flags[16][5];
 
 extern const char tcp_all_flags[64][8];
 
@@ -209,6 +209,8 @@ int tcp_shutdown(struct tcp_pcb * __tp, int __how);
 int tcp_flush(struct tcp_pcb * __tp, int __which);
 
 int tcp_drop(struct tcp_pcb * __tp);
+
+int tcp_interrupt(struct tcp_pcb * __tp);
 
 /* Debugging */
 int tcp_pcb_stat(struct tcp_pcb * tp, char * buf);
