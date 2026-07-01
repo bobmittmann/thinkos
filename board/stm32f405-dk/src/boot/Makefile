@@ -19,40 +19,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-<<<<<<< HEAD
-THINKOSDIR = ../../../..
-SDKDIR = $(THINKOSDIR)/sdk
-
-VERSION_DATE = "2019-01-16"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "28"
-
-PROG = thinkos-$(VERSION_MAJOR).$(VERSION_MINOR)
-
-CFILES = boot.c monitor.c otg_xflash_pic.c
-#		 usb_comm_dual.c 
-#usb_comm_audio.c 
-#app_main.c
-
-#CFILES = $(THINKOSDIR)/boot/boot.c $(THINKOSDIR)/boot/monitor.c
-
-LIBDIRS = $(SDKDIR)/libstm32f $(SDKDIR)/libcm3 $(SDKDIR)/libutil\
-		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libconsole\
-		  $(SDKDIR)/libc 
-
-LIBS = cm3 stm32f util thinkos ice-comm gcc console  c
-
-INCPATH = $(SDKDIR)/include ../include
-
-CDEFS = CONFIG_H 
-#CM3_RAM_VECTORS
-
-CFLAGS = -g -Os -Wall -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -mno-unaligned-access 
-
-MACH = stm32f405
-include $(THINKOSDIR)/mk/stm32.mk
-=======
 VERSION_DATE = "2026-05-19"
 VERSION_MAJOR = "1"
 VERSION_MINOR = "40"
@@ -101,4 +67,3 @@ $(CMD_TAB_C): $(CMD_TAB_YAML)
 	$(MKCMD) -e "struct btl_shell_env" -l -p btl -o $@ $<
 
 
->>>>>>> krnsvc

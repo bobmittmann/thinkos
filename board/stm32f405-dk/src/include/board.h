@@ -25,57 +25,6 @@
 
 #include <sys/stm32f.h>
 
-<<<<<<< HEAD
-/* -------------------------------------------------------------------------
- * USB 
- * ------------------------------------------------------------------------- */
-
-#define OTG_FS_DP       STM32_GPIOA, 12
-#define OTG_FS_DM       STM32_GPIOA, 11
-#define OTG_FS_VBUS     STM32_GPIOA, 9
-
-/* -------------------------------------------------------------------------
- * LEDs 
- * ------------------------------------------------------------------------- */
-#define IO_LED1         STM32_GPIOC, 8
-#define IO_LED2         STM32_GPIOC, 7
-#define IO_LED3         STM32_GPIOC, 14
-#define IO_LED4         STM32_GPIOC, 1
-
-/* -------------------------------------------------------------------------
- * Switch
- * ------------------------------------------------------------------------- */
-
-#define IO_SW1          STM32_GPIOC, 9
-
-/* -------------------------------------------------------------------------
- * USART1 (Debug connector)
- * ------------------------------------------------------------------------- */
-
-#define IO_USART1_TX    STM32_GPIOB, 6
-#define IO_USART1_RX    STM32_GPIOB, 7
-
-/* -------------------------------------------------------------------------
- * I2S2
- * ------------------------------------------------------------------------- */
-
-#define IO_I2S2_WS      STM32_GPIOB, 12
-#define IO_I2S2_CK      STM32_GPIOB, 13
-#define IO_I2S2EXT_SD   STM32_GPIOB, 14
-#define IO_I2S2_SD      STM32_GPIOB, 15
-
-
-/* high level led on/off functions */
-static inline void __led_on(struct stm32_gpio *__gpio, int __pin)
-{
-	stm32_gpio_set(__gpio, __pin);
-}
-
-static inline void __led_off(struct stm32_gpio *__gpio, int __pin)
-{
-	stm32_gpio_clr(__gpio, __pin);
-}
-=======
 /**************************************************************************
  * USB
  **************************************************************************/
@@ -122,7 +71,6 @@ static inline void __led_off(struct stm32_gpio *__gpio, int __pin)
 /**************************************************************************
  * FLASH memory partitions
  **************************************************************************/
->>>>>>> krnsvc
 #define FLASH_BLK_BOOT_OFFS     0x00000000
 #define FLASH_BLK_BOOT_SIZE     (16 * 1024)
 
@@ -135,8 +83,6 @@ static inline void __led_off(struct stm32_gpio *__gpio, int __pin)
 #define FLASH_BLK_APP_OFFS      0x00020000
 #define FLASH_BLK_APP_SIZE      (384 * 1024)
 
-<<<<<<< HEAD
-=======
 
 static inline void __dbg1_on(void) { stm32_gpio_set(IO_I2S2_WS); }
 static inline void __dbg1_off(void) { stm32_gpio_clr(IO_I2S2_WS); }
@@ -154,7 +100,6 @@ static inline void __dbg3_off(void) { stm32_gpio_clr(IO_I2S2_SDI); }
 static inline void __dbg4_on(void) { stm32_gpio_set(IO_I2S2_SDO); }
 static inline void __dbg4_off(void) { stm32_gpio_clr(IO_I2S2_SDO); }
 
->>>>>>> krnsvc
 #ifdef __cplusplus
 extern "C" {
 #endif

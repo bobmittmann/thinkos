@@ -19,37 +19,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
 
-<<<<<<< HEAD
-THINKOSDIR = ../../../..
-SDKDIR = $(THINKOSDIR)/sdk
-
-VERSION_DATE = "2019-01-16"
-VERSION_MAJOR = "0"
-VERSION_MINOR = "28"
-
-PROG = sanity-$(VERSION_MAJOR).$(VERSION_MINOR)
-
-CFILES = sanity.c
-
-#CFILES = $(THINKOSDIR)/boot/boot.c $(THINKOSDIR)/boot/monitor.c
-
-LIBDIRS = $(SDKDIR)/libstm32f $(SDKDIR)/libcm3 $(SDKDIR)/libutil\
-		  $(SDKDIR)/libthinkos $(SDKDIR)/libice-comm $(SDKDIR)/libconsole\
-		  $(SDKDIR)/libc 
-
-LIBS = cm3 stm32f util thinkos ice-comm gcc console  c
-
-INCPATH = $(SDKDIR)/include ../include
-
-CDEFS = CONFIG_H 
-#CM3_RAM_VECTORS
-
-CFLAGS = -g -Os -Wall -fno-builtin -ffreestanding -fomit-frame-pointer
-OPTIONS = -mno-unaligned-access 
-
-MACH = stm32f405
-include $(THINKOSDIR)/mk/stm32.mk
-=======
 
 PROG = sanity
 
@@ -76,4 +45,3 @@ LDCODE := 0x08020000
 LDDATA := 0x20002000
 include $(ARCH_DIR)/mk/stm32-app.mk
 
->>>>>>> krnsvc
