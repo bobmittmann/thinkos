@@ -412,7 +412,7 @@ static void monitor_on_print_thread(struct monitor * mon, bool next)
 #endif
 
 #if (MONITOR_THREAD_STEP_ENABLE)
-static void monitor_on_step(struct monitor * mon, struct thinkos_rt * krn)
+static void monitor_on_step(struct monitor * mon, struct thinkos_krn * krn)
 {
 	const struct monitor_comm * comm = mon->comm;
 	struct krn_thread_state inf;
@@ -514,7 +514,7 @@ void monitor_watchpoint(struct monitor * mon)
 #endif
 
 void boot_monitor_task(const struct monitor_comm * comm, void * arg, 
-					   struct thinkos_rt * krn);
+					   struct thinkos_krn * krn);
 
 #if (MONITOR_GDB_ENABLE)
 void __attribute__((naked)) gdb_bootstrap(const struct monitor_comm * comm, 
@@ -698,7 +698,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
  */
 void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * comm,
 												void * arg, 
-												struct thinkos_rt * krn)
+												struct thinkos_krn * krn)
 {
 	const struct thinkos_board * board;
 	struct monitor monitor;

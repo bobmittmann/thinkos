@@ -52,7 +52,7 @@ void __attribute__((noreturn)) __monitor_bootstrap(void);
  * Debug Monitor API
  * ------------------------------------------------------------------------- */
 
-void krn_monitor_signal(struct thinkos_rt * krn, int sig) 
+void krn_monitor_signal(struct thinkos_krn * krn, int sig) 
 {
 	__monitor_event_set(krn, (1 << sig)); 
 
@@ -62,7 +62,7 @@ void krn_monitor_signal(struct thinkos_rt * krn, int sig)
 
 void monitor_signal(int sig) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct cm3_scb * scb = CM3_SCB;
 	
 	__monitor_event_set(krn, (1 << sig)); 
@@ -73,14 +73,14 @@ void monitor_signal(int sig)
 
 void monitor_req_core_rst(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	thinkos_krn_req_core_rst(krn);
 }
 
 void monitor_core_rst_and_signal(unsigned int sig)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	thinkos_krn_sched_brk(krn, sig);
 }
@@ -88,7 +88,7 @@ void monitor_core_rst_and_signal(unsigned int sig)
 #if 0
 void monitor_signal_break(int32_t sig) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct cm3_scb * scb = CM3_SCB;
 
 	__monitor_event_set(krn, (1 << sig) | (1 << MONITOR_SOFTRST)); 
@@ -105,7 +105,7 @@ bool monitor_is_set(int sig)
 
 void monitor_unmask(int sig)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	uint32_t mask;
 
 	do {
@@ -116,7 +116,7 @@ void monitor_unmask(int sig)
 
 void monitor_mask(int sig)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	uint32_t mask;
 
 	do {
@@ -127,7 +127,7 @@ void monitor_mask(int sig)
 
 void monitor_clear(int sig)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	uint32_t evact;
 	uint32_t evset;
 
@@ -143,7 +143,7 @@ void monitor_clear(int sig)
    don't clear the event upon exiting. */
 int monitor_select(uint32_t evmsk)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	int evset;
 	uint32_t save;
 	int sig;
@@ -183,7 +183,7 @@ int monitor_select(uint32_t evmsk)
 /* wait for a single event and clear the event */
 int monitor_expect(int sig)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct cm3_scb * scb = CM3_SCB;
 	uint32_t save;
 	uint32_t evset;
@@ -240,7 +240,7 @@ int monitor_expect(int sig)
 int monitor_sleep(unsigned int ms)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	
 	monitor_clear(MONITOR_ALARM);
 	/* set the timer */
@@ -256,7 +256,7 @@ int monitor_sleep(unsigned int ms)
 void monitor_alarm(unsigned int ms)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	
 	DCC_LOG1(LOG_MSG, "alarm at %d ms!", ms);
 	monitor_clear(MONITOR_ALARM);
@@ -269,7 +269,7 @@ void monitor_alarm(unsigned int ms)
 void monitor_alarm_stop(void)
 {
 #if (THINKOS_ENABLE_MONITOR_CLOCK)
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	/* set the clock in the past so it won't generate a signal */
 	krn->clk.th_tmr[0] = krn->clk.time - 1;
@@ -284,7 +284,7 @@ void monitor_alarm_stop(void)
 
 int monitor_thread_break_get(int32_t * perrno)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	int errno;
 	int brkid;
 	int thread;
@@ -306,35 +306,35 @@ int monitor_thread_break_get(int32_t * perrno)
 
 struct thinkos_context * monitor_thread_ctx_get(unsigned int th)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return __thread_ctx_get(krn, th);
 }
 
 int monitor_thread_err_get(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return __krn_sched_err_get(krn);
 }
 
 void monitor_thread_err_clr(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_sched_err_clr(krn);
 }
 
 int monitor_krn_except_get(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return  __krn_sched_xcp_get(krn);
 }
 
 void monitor_krn_except_clr(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_sched_xcp_clr(krn);
 
@@ -344,14 +344,14 @@ void monitor_krn_except_clr(void)
 
 uint32_t monitor_sched_ctrl_get(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return  __krn_sched_ctrl_get(krn);
 }
 
 void monitor_thread_break_clr(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	thinkos_krn_brk_clr(krn);
 }
@@ -366,7 +366,7 @@ void monitor_thread_break_clr(void)
  * ThinkOS kernel level API
  * ------------------------------------------------------------------------- */
 
-static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
+static void thinkos_krn_monitor_reset(struct thinkos_krn * krn)
 {
 #if (THINKOS_ENABLE_STACK_INIT)
 	__thinkos_memset32(thinkos_monitor_stack, 0xdeadbeef, 
@@ -378,7 +378,7 @@ static void thinkos_krn_monitor_reset(struct thinkos_rt * krn)
 }
 
 void monitor_exec(int (* task)(const struct monitor_comm *, 
-							   void *, struct thinkos_rt *), 
+							   void *, struct thinkos_krn *), 
 				  const struct monitor_comm * comm, void * env,
 				  void (* atexit)(int))
 {
@@ -408,10 +408,10 @@ static uint32_t * __monitor_ctx_init(uintptr_t task, uintptr_t comm, void * env,
 	return sp;
 }
 
-void thinkos_krn_monitor_init(struct thinkos_rt * krn,
+void thinkos_krn_monitor_init(struct thinkos_krn * krn,
 							  const struct monitor_comm * comm, 
 							  void (* task)(const struct monitor_comm *, void *,
-											struct thinkos_rt *),
+											struct thinkos_krn *),
 							  void * env)
 {
 	uint32_t * sp;
@@ -431,7 +431,7 @@ void thinkos_krn_monitor_init(struct thinkos_rt * krn,
 }
 
 #if (THINKOS_ENABLE_MONITOR_SYSCALL)
-void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int oper = arg[0];
 	struct cm3_scb * scb = CM3_SCB;

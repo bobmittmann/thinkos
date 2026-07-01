@@ -59,7 +59,7 @@ void thinkos_krn_irq_off(void)
 
 
 #if (THINKOS_IRQ_MAX) > 0
-void __krn_irq_reset_all(struct thinkos_rt* krn)
+void __krn_irq_reset_all(struct thinkos_krn* krn)
 {
 	int irq;
 
@@ -73,7 +73,7 @@ void __krn_irq_reset_all(struct thinkos_rt* krn)
 
 #if (THINKOS_IRQ_MAX) > 0
 /* Cancel an interrupt ... */
-void __krn_irq_thread_del(struct thinkos_rt* krn, unsigned int th)
+void __krn_irq_thread_del(struct thinkos_krn* krn, unsigned int th)
 {
 	int irq;
 
@@ -91,7 +91,7 @@ void __krn_irq_thread_del(struct thinkos_rt* krn, unsigned int th)
 #endif 
 
 /* Get the IRQ related to a thread */
-int __krn_thread_irq_get(struct thinkos_rt * krn, unsigned int th) 
+int __krn_thread_irq_get(struct thinkos_krn * krn, unsigned int th) 
 {
 #if (THINKOS_IRQ_MAX > 0)
 	int irq;
@@ -147,7 +147,7 @@ void __nvic_irq_clrpend_all(void)
 }
 #endif
 
-void thinkos_krn_irq_init(struct thinkos_rt * krn)
+void thinkos_krn_irq_init(struct thinkos_krn * krn)
 {
 
 #if (THINKOS_IRQ_MAX) > 0
@@ -194,7 +194,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_IRQ_MAX) > 0
 void __attribute__ ((aligned(16))) cm3_default_isr(unsigned int irq)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;
@@ -248,7 +248,7 @@ void __attribute__ ((aligned(16))) cm3_default_isr(unsigned int irq)
 
 #if (THINKOS_ENABLE_IRQ_TIMEDWAIT)
 void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self, 
-									 struct thinkos_rt * krn) 
+									 struct thinkos_krn * krn) 
 {
 	unsigned int irq = arg[0];
 
@@ -288,7 +288,7 @@ void thinkos_irq_timedwait_fixup_svc(int32_t * arg, int self,
    This syscall returns the irq number upon success. 
  */
 void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self,
-							   struct thinkos_rt * krn) 
+							   struct thinkos_krn * krn) 
 {
 	unsigned int irq = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -326,7 +326,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self,
    This syscall returns the IRQ number upon success. 
  */
 void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
-						  struct thinkos_rt * krn)
+						  struct thinkos_krn * krn)
 {
 	unsigned int irq = arg[0];
 #if (THINKOS_ENABLE_IRQ_SANITY_CHECK)
@@ -385,7 +385,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 /* This macro is here for backward compatibility, TODO should be deprecated */
 #if (THINKOS_ENABLE_IRQ_CTL)
 void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
-						 struct thinkos_rt * krn)
+						 struct thinkos_krn * krn)
 {
 	unsigned int req = arg[0];
 	unsigned int irq = arg[1];
@@ -470,7 +470,7 @@ void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self,
 
 
 #if (THINKOS_ENABLE_PAUSE)
-bool irq_resume(struct thinkos_rt * krn, unsigned int th, 
+bool irq_resume(struct thinkos_krn * krn, unsigned int th, 
 				unsigned int wq, bool tmw) 
 {
 	{

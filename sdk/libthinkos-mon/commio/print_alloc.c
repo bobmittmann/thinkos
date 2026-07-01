@@ -46,7 +46,7 @@ static int bmp_bit_cnt(uint32_t bmp[], int bits)
 
 void monitor_print_alloc(const struct monitor_comm * comm)
 {
-	struct thinkos_rt * rt = &thinkos_rt;
+	struct thinkos_krn * rt = &thinkos_krn;
 
 	monitor_printf(comm, "     ");
 #if THINKOS_ENABLE_MUTEX_ALLOC

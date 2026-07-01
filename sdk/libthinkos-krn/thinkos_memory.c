@@ -290,10 +290,10 @@ int thinkos_mem_read(const struct thinkos_mem_desc * mem,
 bool __thinkos_mem_usr_rx_chk(uint32_t addr, int32_t size)
 {
 #if 0
-	uint32_t code_base = thinkos_rt.mem.krn_code.base;
-	uint32_t code_top = thinkos_rt.mem.krn_code.top;
-	uint32_t data_base = thinkos_rt.mem.krn_data.base;
-	uint32_t data_top = thinkos_rt.mem.krn_data.top;
+	uint32_t code_base = thinkos_krn.mem.krn_code.base;
+	uint32_t code_top = thinkos_krn.mem.krn_code.top;
+	uint32_t data_base = thinkos_krn.mem.krn_data.base;
+	uint32_t data_top = thinkos_krn.mem.krn_data.top;
 #else
 	uint32_t code_base = (uintptr_t)&__krn_code_start;
 	uint32_t code_top = (uintptr_t)&__krn_code_end;
@@ -368,7 +368,7 @@ void __dmap(const struct thinkos_mem_map * map)
 }
 #endif
  
-int __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+int __thinkos_krn_mem_init(struct thinkos_krn * krn, 
 							const struct thinkos_mem_map * map)
 {
 
@@ -465,7 +465,7 @@ const struct thinkos_mem_desc * __mem_desc_lookup(
 	return NULL;
 }
 
-bool __krn_mem_part_lookup(struct thinkos_rt * krn, 
+bool __krn_mem_part_lookup(struct thinkos_krn * krn, 
 	const char * desc, const char * part,
 	struct thinkos_mem_part * mp)
 {

@@ -64,7 +64,7 @@ struct thinkos_comm_drv_op {
 	int (*ctrl)(struct thinkos_comm_drv *, unsigned int opc);
 	void (*signal)(struct thinkos_comm_drv *, unsigned int sig);
 	void (*reset)(struct thinkos_comm_drv *, int priority);
-	int (*init)(struct thinkos_rt *, struct thinkos_comm_drv *, void * lld, int tx_wq, int rx_wq);
+	int (*init)(struct thinkos_krn *, struct thinkos_comm_drv *, void * lld, int tx_wq, int rx_wq);
 };
 
 struct thinkos_comm_krn_op {
@@ -100,14 +100,14 @@ struct comm_tx_req {
 extern "C" {
 #endif
 
-int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c);
+int krn_comm_rx_putc(struct thinkos_krn * krn, unsigned int rx_wq, int c);
 
-int krn_comm_tx_getc(struct thinkos_rt * krn, unsigned int tx_wq);
+int krn_comm_tx_getc(struct thinkos_krn * krn, unsigned int tx_wq);
 
-int thinkos_krn_comm_init(struct thinkos_rt * krn, unsigned int idx,
+int thinkos_krn_comm_init(struct thinkos_krn * krn, unsigned int idx,
 						  const struct thinkos_comm * comm, void * parm);
 
-ssize_t krn_comm_tx_wq_req_process(struct thinkos_rt * krn, unsigned int tx_wq,
+ssize_t krn_comm_tx_wq_req_process(struct thinkos_krn * krn, unsigned int tx_wq,
 								   uint8_t * dst, size_t max);
 
 static inline int krn_comm_send(const struct thinkos_comm * comm, 
@@ -140,7 +140,7 @@ static inline bool krn_comm_isconnected(const struct thinkos_comm * comm) {
 	        COMM_ST_CONNECTED) ? true : false;
 }
 
-void thinkos_krn_comm_wakeup_head(struct thinkos_rt * krn, unsigned int wq);
+void thinkos_krn_comm_wakeup_head(struct thinkos_krn * krn, unsigned int wq);
 
 #ifdef __cplusplus
 }

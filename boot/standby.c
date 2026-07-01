@@ -61,14 +61,14 @@
 void __attribute__((noreturn)) app_task(void *, unsigned int);
 
 void boot_monitor_task(const struct monitor_comm * comm, void * arg, uintptr_t sta, 
-					   struct thinkos_rt * krn);
+					   struct thinkos_krn * krn);
 
 /*
    Default Monitor Task
  */
 void __attribute__((noreturn)) standby_monitor_task(const struct monitor_comm * comm, 
 													void * arg, uintptr_t sta, 
-													struct thinkos_rt * krn)
+													struct thinkos_krn * krn)
 {
 	const struct thinkos_board * board;
 	uint32_t sigmask = 0;

@@ -56,8 +56,8 @@ cm3_svc_isr:
 	/* The IDLE thread is the only using the main stack MSP, all
 	   other threads use the PSP. No exception is allowed to call
 	   SVC */
-	movw     r2, :lower16:thinkos_rt
-	movt     r2, :upper16:thinkos_rt
+	movw     r2, :lower16:thinkos_krn
+	movt     r2, :upper16:thinkos_krn
 	ldrb     r1, [r2, #OFFSETOF_KRN_SCHED_ACT]
 	mrs      r0, PSP
 
@@ -96,8 +96,8 @@ cm3_svc_isr:
 	.align   2
 .L_call_tab:
 	.word    thinkos_svc_call_tab
-.L_thinkos_rt:
-	.word    thinkos_rt
+.L_thinkos_krn:
+	.word    thinkos_krn
 #if (THINKOS_ENABLE_DEBUG_STEP)
 .L_cm3_scb:
 	.word    CM3_SCB_BASE

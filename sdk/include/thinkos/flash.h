@@ -74,7 +74,7 @@ struct thinkos_flash_drv {
 	} partition;
 };
 
-struct thinkos_rt;
+struct thinkos_krn;
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,11 +83,11 @@ extern "C" {
 int thinkos_flash_drv_req(struct thinkos_flash_drv * drv, 
 						  struct flash_op_req * req);
 
-void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
+void thinkos_flash_drv_tasklet(struct thinkos_krn * krn,
                                unsigned int idx, 
                                struct thinkos_flash_drv * drv);
 
-int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx, 
+int thinkos_krn_flash_drv_init(struct thinkos_krn * krn, unsigned int idx, 
 						   const struct thinkos_flash_desc * desc);
 
 #ifdef __cplusplus

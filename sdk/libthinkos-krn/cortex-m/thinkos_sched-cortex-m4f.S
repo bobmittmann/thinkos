@@ -52,9 +52,9 @@ cm3_pendsv_isr:
 
 	/* STEP 1 - load sched.ctrl and ready bitmap */
 
-	/* r0: thinkos_rt */
-	movw     r0, #:lower16:thinkos_rt
-	movt     r0, #:upper16:thinkos_rt
+	/* r0: thinkos_krn */
+	movw     r0, #:lower16:thinkos_krn
+	movt     r0, #:upper16:thinkos_krn
 	ldrd     r1, r2, [r0, #OFFSETOF_KRN_SCHED]
 	/* r1: sched.ctrl: [ xcpt | err | svc | thd ] */
 	/* r2: sched.ready: [bitmap]  */
@@ -136,19 +136,19 @@ thinkos_krn_sched_core:
 	/* update the reference */
 	/* r5: cycref */
 	ldr      r5, [r0, #OFFSETOF_KRN_CYCREF]
-	/* thinkos_rt.cycref = cyccnt */
+	/* thinkos_krn.cycref = cyccnt */
 	str      r6, [r0, #OFFSETOF_KRN_CYCREF]
 	/* r6: delta =  cyccnt - cycref */	
 	subs.n   r6, r6, r5
 
 	/* update thread's cycle counter */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_CYC]
-	/* thinkos_rt.cyccnt[thread_id] += delta */
+	/* thinkos_krn.cyccnt[thread_id] += delta */
 	adds.n   r5, r6
 	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
 
-	/* r0: thinkos_rt 
+	/* r0: thinkos_krn 
 	   r1: sched.ctrl 
 	   r2: ready bmp 
 	   r3: active_sp_ctrl: [SP | CONTROL ] 
@@ -191,7 +191,7 @@ thinkos_krn_sched_ctx_get:
 	/* r3: new thread stack + ctrl
 	   r2: new active thread id 
 	   r1: old thread id
-	   r0: thinkos_rt */
+	   r0: thinkos_krn */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_ACT]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
@@ -349,7 +349,7 @@ thinkos_krn_sched_ctx_get:
 	/* Adjust the thread ID */
 	movs.n   r2, #THINKOS_THREAD_IDLE
     subs     r3, sp, #(8*4)
-	/* r0: thinkos_rt
+	/* r0: thinkos_krn
 	   r1: sched.ctrl = [ xcp | err | brk | act ]
 	   r2: new active 
 	   r3: SP */
@@ -366,7 +366,7 @@ thinkos_krn_sched_ctx_get:
 	/* Adjust the thread ID */
 	movs.n   r2, #THINKOS_THREAD_IDLE
     subs     r3, sp, #(8*4)
-	/* r0: thinkos_rt
+	/* r0: thinkos_krn
 	   r1: sched.ctrl = [ xcp | err | brk | act ]
 	   r2: new active 
 	   r3: SP */
@@ -486,7 +486,7 @@ thinkos_sched_step:
 	/* r3: thread context pointer */
 	/* r2: new thread id */
 	/* r1: old thread id */
-	/* r0: thinkos_rt */
+	/* r0: thinkos_krn */
 	/* r4: (1 << new_thread_id) */
 
 	/* load the new context pointer from the context vector */

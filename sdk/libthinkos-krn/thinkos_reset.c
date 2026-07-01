@@ -23,7 +23,7 @@
 #include <sys/dcclog.h>
 
 #if (THINKOS_ENABLE_CORE_RESET)
-void thinkos_core_reset_svc(int32_t * arg, int self, struct thinkos_rt * krn)
+void thinkos_core_reset_svc(int32_t * arg, int self, struct thinkos_krn * krn)
 {
 	if (arg[0] == THINKOS_CORE_RESET_KEY) {
 		/* request scheduler to stop everything */

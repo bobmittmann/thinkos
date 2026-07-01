@@ -180,7 +180,7 @@ int thinkos_flash_drv_req(struct thinkos_flash_drv * drv,
 }
 
 #if ((THINKOS_FLASH_MEM_MAX) > 0)
-void __thinkos_krn_flash_drv_reset(struct thinkos_rt * krn)
+void __thinkos_krn_flash_drv_reset(struct thinkos_krn * krn)
 {
 	int i;
 
@@ -193,7 +193,7 @@ void __thinkos_krn_flash_drv_reset(struct thinkos_rt * krn)
 }
 #endif
 
-int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx, 
+int thinkos_krn_flash_drv_init(struct thinkos_krn * krn, unsigned int idx, 
 							   const struct thinkos_flash_desc * desc)
 {
 	struct thinkos_flash_drv * drv;
@@ -219,7 +219,7 @@ int thinkos_krn_flash_drv_init(struct thinkos_rt * krn, unsigned int idx,
 }
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
+void thinkos_flash_drv_tasklet(struct thinkos_krn * krn,
 							   unsigned int idx, struct thinkos_flash_drv * drv)
 {
 	unsigned int wq = THINKOS_FLASH_MEM_DESC(idx);
@@ -248,7 +248,7 @@ void thinkos_flash_drv_tasklet(struct thinkos_rt * krn,
 }
 #endif
 
-void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	struct thinkos_flash_drv * drv;
 	struct flash_op_req * req;

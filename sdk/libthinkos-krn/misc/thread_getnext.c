@@ -24,7 +24,7 @@
 
 int __thinkos_thread_getnext(int th)
 {
-	struct thinkos_rt * krn = &thinkos_rt; 
+	struct thinkos_krn * krn = &thinkos_krn; 
 	int i;
 
 	i = (th < THINKOS_THREAD_FIRST) ? THINKOS_THREAD_FIRST : th + 1;

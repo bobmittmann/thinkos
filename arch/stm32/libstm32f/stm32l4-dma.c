@@ -48,15 +48,15 @@ void stm32l4_dma_isr(unsigned int irq)
 			/* clear the DMA transfer complete interrupt flags */
 			dma->ifcr = DMA_TCIF1 | DMA_CHTIF1;
 
-			th = thinkos_rt.irq_th[irq];
-			thinkos_rt.irq_th[irq] = THINKOS_THREAD_IDLE;
+			th = thinkos_krn.irq_th[irq];
+			thinkos_krn.irq_th[irq] = THINKOS_THREAD_IDLE;
 
 			/* insert the thread into ready queue */
-			__bit_mem_wr(&thinkos_rt.wq_ready, th, 1);
+			__bit_mem_wr(&thinkos_krn.wq_ready, th, 1);
 
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 			/* set the thread's return value */
-			thinkos_rt.ctx[th]->r1 = cyccnt;
+			thinkos_krn.ctx[th]->r1 = cyccnt;
 #endif
 		}
 	}

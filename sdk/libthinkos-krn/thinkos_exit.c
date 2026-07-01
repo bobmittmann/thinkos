@@ -31,7 +31,7 @@ void _exit(int code)
 void thinkos_krn_abort_at_exit(int) __attribute__ ((weak, alias ("_exit")));
 
 #if (THINKOS_ENABLE_TERMINATE)
-static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
+static void __thinkos_krn_thread_abort(struct thinkos_krn * krn, unsigned int th)
 {
 	DCC_LOG1(LOG_TRACE, "(thread=%d)", th); 
 
@@ -79,7 +79,7 @@ static void __thinkos_krn_thread_abort(struct thinkos_rt * krn, unsigned int th)
 #endif
 
 #if 0
-void __thinkos_krn_abort_all(struct thinkos_rt * krn)
+void __thinkos_krn_abort_all(struct thinkos_krn * krn)
 {
 	unsigned int j;
 
@@ -91,7 +91,7 @@ void __thinkos_krn_abort_all(struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_TERMINATE)
 /* Terminate the target thread */
-void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int thread;
 	int code = arg[1];
@@ -191,7 +191,7 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 
 #if (THINKOS_ENABLE_EXIT)
 void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
-					  struct thinkos_rt * krn)
+					  struct thinkos_krn * krn)
 {
 	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self, ctx->r0); 
 

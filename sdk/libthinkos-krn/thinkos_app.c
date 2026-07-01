@@ -166,7 +166,7 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_idx,
+static int thinkos_krn_app_start(struct thinkos_krn * krn, unsigned int thread_idx,
 						 uintptr_t addr, uintptr_t arg[])
 {
 	struct thinkos_thread_initializer init;
@@ -249,7 +249,7 @@ static int thinkos_krn_app_start(struct thinkos_rt * krn, unsigned int thread_id
 }
 
 void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
-						  struct thinkos_rt * krn)
+						  struct thinkos_krn * krn)
 {
 	unsigned int thread_idx;
 	uintptr_t addr;

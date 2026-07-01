@@ -61,7 +61,7 @@ uint32_t __attribute__((section (".data#"), noinline))
 	__stm32f2x_flash_wr32(struct stm32_flash * flash, uint32_t cr,
 						 uint32_t volatile * addr, uint32_t data)
 {
-	struct thinkos_rt * thinkos = &thinkos_rt;
+	struct thinkos_krn * thinkos = &thinkos_krn;
 	uint32_t ticks;
 	uint32_t sr;
 
@@ -81,7 +81,7 @@ uint32_t __attribute__((section (".data#"), noinline))
 uint32_t __attribute__((section (".data#"), noinline)) 
 	__stm32f2x_flash_sect_erase(struct stm32_flash * flash, uint32_t cr,
 								struct cm3_systick * systick, 
-								struct thinkos_rt * thinkos)
+								struct thinkos_krn * thinkos)
 {
 	uint32_t ticks;
 	uint32_t sr;
@@ -144,9 +144,9 @@ int __stm32_flash_write(uint32_t offs, const void * buf, unsigned int len)
 //		DCC_LOG2(LOG_TRACE, "0x%08x data=0x%08x", addr, data);
 		cr = FLASH_PG | FLASH_PSIZE_32;
 	//	cm3_primask_set(1);
-		clk = thinkos_rt.ticks; 
+		clk = thinkos_krn.ticks; 
 		sr = __stm32f2x_flash_wr32(flash, cr, addr, data);
-		DCC_LOG1(LOG_TRACE, "dt=%d", thinkos_rt.ticks - clk);
+		DCC_LOG1(LOG_TRACE, "dt=%d", thinkos_krn.ticks - clk);
 
 	//	cm3_primask_set(pri);
 		if (sr & FLASH_ERR) {
@@ -214,7 +214,7 @@ int __stm32_flash_erase(unsigned int offs, unsigned int len)
 		DCC_LOG2(LOG_TRACE, "sector=%d size=%d", sect, size);
 		cr = FLASH_STRT | FLASH_SER | FLASH_SNB(sect);
 		cm3_cpsid_i();
-		sr = __stm32f2x_flash_sect_erase(flash, cr, systick, &thinkos_rt);
+		sr = __stm32f2x_flash_sect_erase(flash, cr, systick, &thinkos_krn);
 		icsr = scb->icsr;
 		cm3_cpsie_i();
 		if (icsr != 0) {

@@ -25,157 +25,157 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-void thinkos_thread_init_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_thread_init_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_pause_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_resume_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_resume_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_join_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_join_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-
-void thinkos_sleep_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_alarm_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_terminate_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 
-void thinkos_obj_alloc_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sleep_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_obj_free_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_alarm_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 
-void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_obj_alloc_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_obj_free_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_mutex_lock_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_mutex_trylock_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_mutex_timedlock_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-
-void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_cond_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_cond_broadcast_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_mutex_unlock_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 
-void thinkos_ev_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_ev_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_ev_mask_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-
-
-void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_timedwatch_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_flag_timedtake_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 
-void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_cond_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_gate_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_irq_dbg_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_irq_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_irq_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_irq_timedwait_fixup_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-
-void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_cond_broadcast_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 
-void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_ev_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_ev_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_console_read_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_ev_mask_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+
+
+void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_timedwatch_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_flag_timedtake_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+
+void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_gate_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_irq_dbg_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_irq_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_irq_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_irq_timedwait_fixup_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_irq_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+
+void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_console_read_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 void thinkos_console_timedread_svc(int32_t arg[], int self, 
-								  struct thinkos_rt * krn);
+								  struct thinkos_krn * krn);
 
-void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn);
-void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 void thinkos_comm_timedsend_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn);
+								struct thinkos_krn * krn);
 void thinkos_comm_timedrecv_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn);
+								struct thinkos_krn * krn);
 void thinkos_comm_timed_fixup_svc(int32_t arg[], int self, 
-								  struct thinkos_rt * krn);
+								  struct thinkos_krn * krn);
 
 
-void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_monitor_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_trace_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_trace_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_trace_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_trace_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_flash_mem_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_app_exec_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_app_exec_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_core_reset_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_core_reset_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_time_svc(int32_t arg[], int self, struct thinkos_rt * krn);
+void thinkos_time_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
-void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_nosys_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	__THINKOS_ERROR(self, THINKOS_ERR_SYSCALL_INVALID);
 	arg[SVC_RETURN] = THINKOS_ENOSYS;
 }
 
-void thinkos_clock_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_clock_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
-	arg[SVC_RETURN] = thinkos_rt.clk.time;
+	arg[SVC_RETURN] = thinkos_krn.clk.time;
 }
 
-void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	/* Internal thread ids start form 0 whereas user
 	   thread numbers start form one ... */
@@ -183,32 +183,32 @@ void thinkos_thread_self_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 
-void thinkos_yield_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_yield_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	CM3_SCB->icsr = SCB_ICSR_PENDSVSET; /* PendSV rise */
 	asm volatile ("dsb\n"); /* Data synchronization barrier */
 }
 
 #if (THINKOS_ENABLE_CRITICAL)
-void thinkos_critical_enter_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_critical_enter_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
-	if (++thinkos_rt.critical_cnt) {
+	if (++thinkos_krn.critical_cnt) {
 		__krn_sched_off();
 	}
 }
 
-void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
-	if (thinkos_rt.critical_cnt == 0) {
+	if (thinkos_krn.critical_cnt == 0) {
 		__THINKOS_ERROR(self, THINKOS_ERR_CRITICAL_EXIT);
 		arg[SVC_RETURN] = THINKOS_EFAULT;
-	} else if ((--thinkos_rt.critical_cnt) == 0) {
+	} else if ((--thinkos_krn.critical_cnt) == 0) {
 		__krn_sched_on();
 	}
 }
 #endif
 
-typedef void (* thinkos_svc_t)(int32_t arg[], int self, struct thinkos_rt * krn);
+typedef void (* thinkos_svc_t)(int32_t arg[], int self, struct thinkos_krn * krn);
 
 thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_THREAD_SELF] = thinkos_thread_self_svc,

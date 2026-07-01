@@ -28,7 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 
 struct thread_waitqueue * thinkos_krn_wq_from_oid(unsigned int oid)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct thread_waitqueue * wq;
 	unsigned int idx = oid - THINKOS_OBJECT_FIRST;
 
@@ -43,7 +43,7 @@ struct thread_waitqueue * thinkos_krn_wq_from_oid(unsigned int oid)
 
 bool thinkos_krn_wq_contains(struct thread_waitqueue * wq, unsigned int thread)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	if ((thread < THINKOS_THREAD_FIRST) || (thread > THINKOS_THREAD_LAST)) {
 		return false;
@@ -54,7 +54,7 @@ bool thinkos_krn_wq_contains(struct thread_waitqueue * wq, unsigned int thread)
 
 bool thinkos_krn_wq_is_empty(struct thread_waitqueue * wq)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return __krn_wq_is_empty(krn, wq);
 }

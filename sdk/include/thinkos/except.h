@@ -177,14 +177,14 @@ uint32_t *  thinkos_krn_xcpt_stack_top(void);
 
 void __xinfo(struct thinkos_fault * fault);
 
-void __xdump(struct thinkos_rt * krn, 
+void __xdump(struct thinkos_krn * krn, 
 			 struct thinkos_fault * fault);
 
 void __idump(const char * s, uint32_t ipsr);
 
-void __tdump(struct thinkos_rt * krn);
+void __tdump(struct thinkos_krn * krn);
 
-void __kdump(struct thinkos_rt * krn);
+void __kdump(struct thinkos_krn * krn);
 
 void __mpudump(void);
 

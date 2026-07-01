@@ -136,7 +136,7 @@
 	.thumb_func
 __thinkos_monitor_sched:
 
-	/* r0: thinkos_rt.monitor */
+	/* r0: thinkos_krn.monitor */
 	ldr      r1, [r0]
 	/* r1: monitor context pointer / semaphore */
 	/* BUSY ? */

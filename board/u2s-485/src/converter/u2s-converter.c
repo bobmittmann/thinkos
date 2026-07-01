@@ -571,7 +571,7 @@ const struct thinkos_thread_initializer recv_thread_init = {
 
 int __attribute__((noreturn)) main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct usb_cdc_class * cdc;
 	struct serial_dev * serial;
 	int i;

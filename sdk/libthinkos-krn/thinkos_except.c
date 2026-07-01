@@ -43,7 +43,7 @@
 
 #if (THINKOS_ENABLE_HARDFAULT)
 void __attribute__((noreturn)) thinkos_krn_hard_fault_handler(
-							struct thinkos_rt * krn,
+							struct thinkos_krn * krn,
 							struct thinkos_context * ctx,
 							uint32_t sp,
 							uint32_t xpsr)
@@ -133,7 +133,7 @@ struct thinkos_fault thinkos_fault_rt __attribute__((aligned(8)));
 	SCB_SHCSR_BUSFAULTACT | SCB_SHCSR_MEMFAULTACT
 
 
-uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_rt * krn)
+uint32_t krn_xcpt_unroll_ipsr_get(struct thinkos_krn * krn)
 {
 	uint32_t shcsr;
 	uint32_t ipsr;
@@ -194,7 +194,7 @@ end:
 }
 
 
-void thinkos_krn_fault_handler(struct thinkos_rt * krn,
+void thinkos_krn_fault_handler(struct thinkos_krn * krn,
 							   struct thinkos_fault * fault)
 {
 	struct cm3_scb * scb = CM3_SCB;
@@ -241,7 +241,7 @@ void thinkos_krn_fault_handler(struct thinkos_rt * krn,
    the exception buffer in the fault structure. Then a common 
    handling function takes care of signaling the modules
    that may be affected by this condition. */
-void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
+void thinkos_krn_except_err_handler(struct thinkos_krn * krn,
 									struct thinkos_fault * fault)
 {
 	struct cm3_scb * scb = CM3_SCB;
@@ -281,7 +281,7 @@ void thinkos_krn_except_err_handler(struct thinkos_rt * krn,
    Application fault API
    ------------------------------------------------------------------------- */
 
-void thinkos_krn_fault_ack(struct thinkos_rt * krn, 
+void thinkos_krn_fault_ack(struct thinkos_krn * krn, 
 						   struct thinkos_fault * fault)
 {
 	fault->ack++;

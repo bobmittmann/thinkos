@@ -37,7 +37,7 @@ void __thinkos_dma_reset_all(void)
 	/* adjust DMA priorities to regular (above SysTick and bellow SVC) */
 	for (dma = 0; dma < THINKOS_DMA_MAX; dma++) {
 		cm3_dma_pri_set(dma, DMA_DEF_PRIORITY);
-		thinkos_rt.dma_th[dma] = THINKOS_THREAD_IDLE;
+		thinkos_krn.dma_th[dma] = THINKOS_THREAD_IDLE;
 	}
 }
 #endif
@@ -56,8 +56,8 @@ void thinkos_dma_irq(unsigned int irq)
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
 
-	thread_id = thinkos_rt.dma_th[dma];
-	thinkos_rt.dma_th[dma] = THINKOS_THREAD_IDLE;
+	thread_id = thinkos_krn.dma_th[dma];
+	thinkos_krn.dma_th[dma] = THINKOS_THREAD_IDLE;
 
 #if DEBUG
 	if (thread_id >= THINKOS_THREAD_IDLE) {
@@ -68,7 +68,7 @@ void thinkos_dma_irq(unsigned int irq)
 	}
 #endif
 	/* insert the thread into ready queue */
-	__bit_mem_wr(&thinkos_rt.wq_ready, thread_id, 1);
+	__bit_mem_wr(&thinkos_krn.wq_ready, thread_id, 1);
 
 #if (THINKOS_ENABLE_WQ_DMA)
 	/* remove from the wait queue */
@@ -78,7 +78,7 @@ void thinkos_dma_irq(unsigned int irq)
 
 #if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* set cyle count in the storage provided by the thread */
-	usr_ptr = (uint32_t *)(thinkos_rt.dma_cyccnt[thread_id]);
+	usr_ptr = (uint32_t *)(thinkos_krn.dma_cyccnt[thread_id]);
 	*usr_ptr = cyccnt;
 #endif
 
@@ -101,9 +101,9 @@ void thinkos_dma_timedwait_cleanup_svc(int32_t * arg, int self) {
 #endif
 
 	/* update the thread status if interrupt is received before timeout */
-	if (thinkos_rt.dma_th[dma] != THINKOS_THREAD_IDLE) {
+	if (thinkos_krn.dma_th[dma] != THINKOS_THREAD_IDLE) {
 		/* assign idle thread to the interrupt */
-		thinkos_rt.dma_th[dma] = THINKOS_THREAD_IDLE;
+		thinkos_krn.dma_th[dma] = THINKOS_THREAD_IDLE;
 		/* disable this interrupt source */
 		cm3_dma_disable(dma);
 		arg[SVC_RETURN] = THINKOS_ETIMEDOUT;      /* return value */
@@ -122,7 +122,7 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (dma >= THINKOS_DMA_MAX) {
-		DCC_LOG2(LOG_ERROR, "invalid DMA %d! dma_th=%d", dma, thinkos_rt.dma_th[53]);
+		DCC_LOG2(LOG_ERROR, "invalid DMA %d! dma_th=%d", dma, thinkos_krn.dma_th[53]);
 		__THINKOS_ERROR(THINKOS_ERR_DMA_INVALID);
 		arg[SVC_RETURN] = THINKOS_EINVAL;
 		return;
@@ -132,8 +132,8 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 #if (THINKOS_ENABLE_DMA_CYCCNT)
 	/* The cycle count is returned on the location pointed by dma_cyccnt. Make
 	   sure it is a valid reference. */
-	cyccnt_ptr = (uint32_t *)&thinkos_rt.dma_cyccnt[self];
-	thinkos_rt.dma_cyccnt[self] = cyccnt_ptr;
+	cyccnt_ptr = (uint32_t *)&thinkos_krn.dma_cyccnt[self];
+	thinkos_krn.dma_cyccnt[self] = cyccnt_ptr;
 #endif
 
 	/* remove from ready Q */
@@ -144,7 +144,7 @@ void thinkos_dma_timedwait_svc(int32_t * arg, int self)
 #endif 
 
 	/* assign this thread to the interrupt */
-	thinkos_rt.dma_th[dma] = self;
+	thinkos_krn.dma_th[dma] = self;
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();
@@ -178,7 +178,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 	if (NULL == (void *)arg[1]) {
 		/* If the user pointer is null then ignore the cycle count, but
 		   make sure dma_cyccnt is a valid reference. */
-		cyccnt_ptr = (uint32_t *)&thinkos_rt.dma_cyccnt[self];
+		cyccnt_ptr = (uint32_t *)&thinkos_krn.dma_cyccnt[self];
 	} 
 #if (THINKOS_ENABLE_MPU)
 	/* There is a potential security brech as the pointer is written by 
@@ -197,7 +197,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 		cyccnt_ptr = (uint32_t *)arg[1];
 	}
 
-	thinkos_rt.dma_cyccnt[self] = cyccnt_ptr;
+	thinkos_krn.dma_cyccnt[self] = cyccnt_ptr;
 #endif /* THINKOS_ENABLE_DMA_CYCCNT */
 
 #endif /* THINKOS_ENABLE_ARG_CHECK */
@@ -221,7 +221,7 @@ void thinkos_dma_wait_svc(int32_t * arg, int self)
 #endif
 
 	/* assign this thread to the interrupt */
-	thinkos_rt.dma_th[dma] = self;
+	thinkos_krn.dma_th[dma] = self;
 
 	/* signal the scheduler ... */
 	__thinkos_defer_sched();

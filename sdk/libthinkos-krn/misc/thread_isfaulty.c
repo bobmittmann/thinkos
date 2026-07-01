@@ -24,7 +24,7 @@
 #if (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isfaulty(unsigned int th)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	if (th > THINKOS_THREADS_MAX)
 		return false;

@@ -22,7 +22,7 @@
 
 #include "thinkos_krn-i.h"
 
-int __thinkos_krn_thread_wq_get(struct thinkos_rt * krn, 
+int __thinkos_krn_thread_wq_get(struct thinkos_krn * krn, 
 								unsigned int thread_idx)
 {
 #if !(THINKOS_ENABLE_THREAD_STAT)

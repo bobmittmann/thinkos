@@ -29,20 +29,20 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_GATE_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
-__krn_obj_is_gate(struct thinkos_rt * krn, unsigned int gate) {
+__krn_obj_is_gate(struct thinkos_krn * krn, unsigned int gate) {
 	return __obj_is_valid(gate, THINKOS_GATE_BASE, THINKOS_GATE_MAX);
 }
 
 #if (THINKOS_ENABLE_GATE_ALLOC)
 static inline bool __attribute__((always_inline)) 
-__krn_gate_is_alloc(struct thinkos_rt * krn, unsigned int gate) {
+__krn_gate_is_alloc(struct thinkos_krn * krn, unsigned int gate) {
 	return __bit_mem_rd(krn->gate_alloc, gate - THINKOS_GATE_BASE) ? 
 		true : false;
 }
 #endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-int krn_gate_check(struct thinkos_rt * krn, int gate)
+int krn_gate_check(struct thinkos_krn * krn, int gate)
 {
 	if (!__krn_obj_is_gate(krn, gate)) {
 		return THINKOS_ERR_GATE_INVALID;
@@ -64,7 +64,7 @@ int krn_gate_check(struct thinkos_rt * krn, int gate)
 #define __GATE_SIGNALED 1
 #define __GATE_LOCKED   2
 
-void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_gate_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int gate = arg[0];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
@@ -147,7 +147,7 @@ again:
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_gate_timedwait_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn)
+								struct thinkos_krn * krn)
 {
 	unsigned int gate = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -238,7 +238,7 @@ again:
 }
 #endif
 
-void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_gate_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int gate = arg[0];
 	unsigned int open = arg[1];
@@ -349,7 +349,7 @@ again:
 	__krn_sched_defer(krn);
 }
 
-void __krn_gate_open(struct thinkos_rt * krn, uint32_t gate)
+void __krn_gate_open(struct thinkos_krn * krn, uint32_t gate)
 {
 	unsigned int idx = gate - THINKOS_GATE_BASE;
 	uint32_t * gates_bmp;
@@ -425,7 +425,7 @@ again:
 #if (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_gate_open_i(int gate)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	DCC_LOG1(LOG_INFO, "gate %d", gate);
 
@@ -437,7 +437,7 @@ void thinkos_krn_gate_open_i(int gate)
 #if 0
 void __thinkos_gate_open_i(int gate)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	/* open the gate */
 	__krn_gate_open(krn, gate);
@@ -445,7 +445,7 @@ void __thinkos_gate_open_i(int gate)
 #endif
 #endif /* THINKOS_ENABLE_I_CALLS */
 
-void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int gate = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -468,7 +468,7 @@ void thinkos_gate_open_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_sched_defer(krn);;
 }
 
-void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int gate = arg[0];
 	unsigned int idx = gate - THINKOS_GATE_BASE;
@@ -491,7 +491,7 @@ void thinkos_gate_close_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_PAUSE)
-bool gate_resume(struct thinkos_rt * krn, unsigned int th, 
+bool gate_resume(struct thinkos_krn * krn, unsigned int th, 
 				 unsigned int gate, bool tmw) 
 {
 	unsigned int idx = gate - THINKOS_GATE_BASE;

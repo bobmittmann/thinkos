@@ -44,6 +44,9 @@ extern "C" {
 
 int __thinkos_nrt_thread_init(unsigned int thread_id);
 
+int __thinkos_nrt_sched_init(struct thinkos_krn * krn);
+
+
 #ifdef __cplusplus
 }
 #endif

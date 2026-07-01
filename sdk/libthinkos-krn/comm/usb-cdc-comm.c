@@ -419,7 +419,7 @@ struct usb_cdc_acm_dev {
 	/* underling USB device */
 	struct usb_dev * usb;
 	/* kernel */
-	struct thinkos_rt * krn;
+	struct thinkos_krn * krn;
 	/* endpoints handlers */
 	uint8_t ctl_ep;
 	uint8_t in_ep;
@@ -893,7 +893,7 @@ static const usb_class_events_t comm_usb_cdc_ev = {
 	.on_sof = comm_usb_cdc_on_sof
 };
 
-int usb_cdc_comm_init(struct thinkos_rt * krn, struct thinkos_comm_drv * drv, 
+int usb_cdc_comm_init(struct thinkos_krn * krn, struct thinkos_comm_drv * drv, 
 					  void * usb_drv, int tx_wq, int rx_wq)
 {
 	struct usb_cdc_acm_dev * dev = &drv->dev;

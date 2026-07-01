@@ -41,24 +41,24 @@
  * System timer (Cortex-M SysTick)
  * ------------------------------------------------------------------------- */
 
-static inline void __systick_int_disable(struct thinkos_rt * krn) {
+static inline void __systick_int_disable(struct thinkos_krn * krn) {
 	struct cm3_systick * systick = CM3_SYSTICK;
 	systick->csr = SYSTICK_CSR_ENABLE;
 }
 
-static inline void __systick_int_enable(struct thinkos_rt * krn) {
+static inline void __systick_int_enable(struct thinkos_krn * krn) {
 	struct cm3_systick * systick = CM3_SYSTICK;
 	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
 }
 
-static inline void __systick_pend_clr(struct thinkos_rt * krn) {
+static inline void __systick_pend_clr(struct thinkos_krn * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 
 	/* clear any pending systick interrupt */
 	scb->icsr = SCB_ICSR_PENDSTCLR;
 }
 
-static inline void __systick_pend_set(struct thinkos_rt * krn) {
+static inline void __systick_pend_set(struct thinkos_krn * krn) {
 	struct cm3_scb * scb = CM3_SCB;
 
 	/* raise a pending systick interrupt */

@@ -61,7 +61,7 @@ void io_init(void)
 /* Reset on exception */
 void __attribute__((naked, noreturn)) cm3_hard_fault_isr(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__tdump(krn);
 	thinkos_krn_sysrst();

@@ -284,7 +284,7 @@ void board_on_softreset(void)
 
 int board_init(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	board_on_softreset();
 

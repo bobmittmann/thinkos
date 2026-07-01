@@ -24,7 +24,7 @@
 #if (THINKOS_ENABLE_JOIN) || (THINKOS_ENABLE_THREAD_FAULT)
 bool __thinkos_thread_isalive(unsigned int th)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 //	bool dead;
 
 	if (th > THINKOS_THREAD_VOID)

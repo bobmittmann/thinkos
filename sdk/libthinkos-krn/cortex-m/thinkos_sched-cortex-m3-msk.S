@@ -50,8 +50,8 @@ cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
 
-	/* r3: thinkos_rt */
-	ldr.n    r3, .L_thinkos_rt
+	/* r3: thinkos_krn */
+	ldr.n    r3, .L_thinkos_krn
 	/* get the active (current) thread */
 	ldr      r2, [r3, #THINKOS_RT_ACTIVE_OFFS]
 #if (THINKOS_ENABLE_STACK_LIMIT)
@@ -97,14 +97,14 @@ thinkos_sched_update_cyccnt:
 	/* update the reference */
 	/* r5: cycref */
 	ldr      r5, [r3, #THINKOS_RT_CYCREF_OFFS]
-	/* thinkos_rt.cycref = cyccnt */
+	/* thinkos_krn.cycref = cyccnt */
 	str      r6, [r3, #THINKOS_RT_CYCREF_OFFS]
 	/* r6: delta =  cyccnt - cycref */	
 	subs     r6, r6, r5
 	/* update thread's cycle counter */
 	add      r7, r3, #THINKOS_RT_CYCCNT_OFFS
 	ldr      r5, [r7, r2, lsl #2]
-	/* thinkos_rt.cyccnt[old_thread_id] += delta */
+	/* thinkos_krn.cyccnt[old_thread_id] += delta */
 	adds     r5, r6
 	str      r5, [r7, r2, lsl #2]
 #endif
@@ -113,7 +113,7 @@ thinkos_sched_update_cyccnt:
 thinkos_sched_swap:
 	/* r0: thread stack
 	   r1: next active thread 
-	   r3: thinkos_rt */
+	   r3: thinkos_krn */
 	/* store the old context pointer into the context vector */
 	str.w	 r0, [r3, r2, lsl #2]
 
@@ -169,7 +169,7 @@ thinkos_krn_sched_ctx_restore:
 	/* r0: new thread stack
 	   r1: new active thread id and stack limit
 	   r2: old active thread id 
-	   r3: thinkos_rt */
+	   r3: thinkos_krn */
 #if (THINKOS_ENABLE_STACK_LIMIT)
 	/* r12: active stack limit  */
 	str      r12, [r3, #THINKOS_RT_ACTIVE_OFFS]
@@ -204,7 +204,7 @@ thinkos_krn_sched_ctx_restore:
 .L_stack_err: 
   #if (THINKOS_ENABLE_SCHED_ERROR)
 	bl      thinkos_krn_sched_stack_err
-	ldr.n   r3, .L_thinkos_rt
+	ldr.n   r3, .L_thinkos_krn
   #endif
   #if (THINKOS_ENABLE_SCHED_DEBUG)
     mov     r2, #THINKOS_THREAD_VOID
@@ -228,7 +228,7 @@ thinkos_sched_discard_ready:
 #endif
 
 .L_return_idle:
-	ldr.n    r3, .L_thinkos_rt
+	ldr.n    r3, .L_thinkos_krn
 	movs     r1, #THINKOS_THREAD_IDLE
 	str      r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* Synthesizes exception return */
@@ -248,8 +248,8 @@ thinkos_sched_discard_ready:
 #endif
 
 	.align  0
-.L_thinkos_rt:
-	.word	thinkos_rt
+.L_thinkos_krn:
+	.word	thinkos_krn
 #if (THINKOS_ENABLE_PROFILING)
 .L_cm_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
@@ -266,7 +266,7 @@ thinkos_sched_step:
 	/* r0: thread context pointer */
 	/* r1: new thread id */
 	/* r2: old thread id */
-	/* r3: thinkos_rt */
+	/* r3: thinkos_krn */
 	/* r4: (1 << new_thread_id) */
 
 #if (THINKOS_ENABLE_STACK_LIMIT)

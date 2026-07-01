@@ -34,7 +34,7 @@ void monitor_print_thread_state(const struct monitor_comm * comm,
 	int32_t timeout;
 	uint32_t cyccnt;
 #if (THINKOS_ENABLE_TIMESHARE)
-	struct thinkos_rt * rt = &thinkos_rt;
+	struct thinkos_krn * rt = &thinkos_krn;
 	int sched_val;
 	int sched_pri;
 #endif
@@ -68,7 +68,7 @@ void monitor_print_thread_state(const struct monitor_comm * comm,
 		if (thread_id != THINKOS_THREAD_IDLE) {
 			int irq;
 			for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-				if (thinkos_rt.irq_th[irq] == (int)thread_id) {
+				if (thinkos_krn.irq_th[irq] == (int)thread_id) {
 					break;
 				}
 			}

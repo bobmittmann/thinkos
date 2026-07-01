@@ -25,7 +25,7 @@
 void board_init(void);
 void board_reset(void);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg,
-					   struct thinkos_rt *);
+					   struct thinkos_krn *);
 int board_integrity_check(void);
 
 extern const struct thinkos_mem_map board_mem_map;
@@ -47,7 +47,7 @@ void usb_vbus_connect(bool connect)
 void main(int argc, char ** argv)
 {
 	struct btl_shell_env * env = btl_shell_env_getinstance();
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	const struct monitor_comm * comm;
 //	int h;
 

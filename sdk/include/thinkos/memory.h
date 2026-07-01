@@ -80,14 +80,14 @@ struct thinkos_mem_stat {
 	uint8_t perm;
 };
 			
-struct thinkos_rt;
+struct thinkos_krn;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-int __thinkos_krn_mem_init(struct thinkos_rt * krn, 
+int __thinkos_krn_mem_init(struct thinkos_krn * krn, 
                             const struct thinkos_mem_map * map);
 
 /* User read and write memory access check */
@@ -110,7 +110,7 @@ bool __mem_part_get(const struct thinkos_mem_map * map, unsigned int j,
 					unsigned int i, struct thinkos_mem_part * mp);
 
 
-bool __krn_mem_part_lookup(struct thinkos_rt * krn, const char * desc, 
+bool __krn_mem_part_lookup(struct thinkos_krn * krn, const char * desc, 
 						   const char * part, struct thinkos_mem_part * mem);
 
 #ifdef __cplusplus

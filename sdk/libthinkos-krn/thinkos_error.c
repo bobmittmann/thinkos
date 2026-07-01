@@ -84,7 +84,7 @@ char const * thinkos_krn_err_tag(unsigned int errno)
 	return (errno < THINKOS_ERR_MAX) ? thinkos_err_name_lut[errno] : "Undef";
 }
 
-void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int xcp)
+void thinkos_krn_sched_brk(struct thinkos_krn * krn, unsigned int xcp)
 {
 	/* set the exception code */
 	__krn_sched_xcp_set(krn, xcp);
@@ -94,7 +94,7 @@ void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int xcp)
 
 #define THINKOS_REQ_CORE_RST    MONITOR_ON_CORE_RST
 
-void thinkos_krn_req_core_rst(struct thinkos_rt * krn)
+void thinkos_krn_req_core_rst(struct thinkos_krn * krn)
 {
 	/* set the exception code */
 	__krn_sched_xcp_set(krn, THINKOS_REQ_CORE_RST);
@@ -103,7 +103,7 @@ void thinkos_krn_req_core_rst(struct thinkos_rt * krn)
 	__krn_sched_defer(krn);
 }
 
-void thinkos_krn_brk_clr(struct thinkos_rt * krn)
+void thinkos_krn_brk_clr(struct thinkos_krn * krn)
 {
 #if (THINKOS_ENABLE_EXCEPTIONS)
 	struct thinkos_fault * fault = &thinkos_fault_rt;
@@ -119,7 +119,7 @@ void thinkos_krn_brk_clr(struct thinkos_rt * krn)
 
 /* Kernel error trap handler */
 #if (THINKOS_ENABLE_ERROR_TRAP)
-void thinkos_krn_error_trap(struct thinkos_rt * krn) {
+void thinkos_krn_error_trap(struct thinkos_krn * krn) {
 	uint32_t thread = __krn_sched_brk_get(krn);
 	uint32_t errno = __krn_sched_err_get(krn);
 	uint32_t xcpno = __krn_sched_xcp_get(krn);
@@ -173,7 +173,7 @@ void thinkos_krn_error_trap(struct thinkos_rt * krn) {
  * This is called when an inconsistency is detected on 
  * the scheduler. No associated context is provided.
  */
-void thinkos_krn_fatal_err_handler(struct thinkos_rt * krn)
+void thinkos_krn_fatal_err_handler(struct thinkos_krn * krn)
 {
 #if (DEBUG)
 	uint32_t errno;

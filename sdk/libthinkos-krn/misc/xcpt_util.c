@@ -71,7 +71,7 @@ void __icsr(uint32_t icsr)
 
 
 /* Hard fault exception dump */
-void __hard(struct thinkos_rt * krn,
+void __hard(struct thinkos_krn * krn,
 			struct thinkos_context * ctx,
 			uint32_t psp)
 {
@@ -165,7 +165,7 @@ const char __xcpt_name_lut[16][12] = {
 };
 
 /* Fault state dump */
-void __xdump(struct thinkos_rt * krn,
+void __xdump(struct thinkos_krn * krn,
 			 struct thinkos_fault * fault)
 {
 #if defined(ENABLE_LOG) && (LOG_LEVEL >= LOG_PANIC)
@@ -461,7 +461,7 @@ void __xcpt_systick_int_enable(void)
 	systick->csr |= SYSTICK_CSR_TICKINT;
 }
 
-void __tdump(struct thinkos_rt * krn)
+void __tdump(struct thinkos_krn * krn)
 {
 #ifdef DEBUG
 	int i;
@@ -713,7 +713,7 @@ void __vec(void)
 #endif
 }
 
-void __kdump(struct thinkos_rt * krn)
+void __kdump(struct thinkos_krn * krn)
 {
 	unsigned int i;
 	unsigned int oid;

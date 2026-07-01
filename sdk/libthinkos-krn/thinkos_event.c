@@ -29,20 +29,20 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_EVENT_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
-__krn_obj_is_event(struct thinkos_rt * krn, unsigned int event) {
+__krn_obj_is_event(struct thinkos_krn * krn, unsigned int event) {
 	return __obj_is_valid(event, THINKOS_EVENT_BASE, THINKOS_EVENT_MAX);
 }
 
 #if (THINKOS_ENABLE_EVENT_ALLOC)
 static inline bool __attribute__((always_inline)) 
-__krn_event_is_alloc(struct thinkos_rt * krn, unsigned int event) {
+__krn_event_is_alloc(struct thinkos_krn * krn, unsigned int event) {
 	return __bit_mem_rd(krn->ev_alloc, event - THINKOS_EVENT_BASE) ? 
 		true : false;
 }
 #endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-int krn_event_check(struct thinkos_rt * krn, int event)
+int krn_event_check(struct thinkos_krn * krn, int event)
 {
 	if (!__krn_obj_is_event(krn, event)) {
 		return THINKOS_ERR_EVSET_INVALID;
@@ -72,7 +72,7 @@ void __thinkos_ev_info(unsigned int evset)
 }
 #endif
 
-void thinkos_ev_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_ev_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int evset = arg[0];
 	unsigned int no = evset - THINKOS_EVENT_BASE;
@@ -148,7 +148,7 @@ again:
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
-void thinkos_ev_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_ev_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int evset = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -220,7 +220,7 @@ again:
 }
 #endif
 
-void __krn_ev_raise(struct thinkos_rt * krn, uint32_t evset, unsigned int ev)
+void __krn_ev_raise(struct thinkos_krn * krn, uint32_t evset, unsigned int ev)
 {
 	unsigned int no = evset - THINKOS_EVENT_BASE;
 	uint32_t queue;
@@ -266,7 +266,7 @@ void __krn_ev_raise(struct thinkos_rt * krn, uint32_t evset, unsigned int ev)
 #if (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_ev_raise_i(uint32_t evset, int ev)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_ev_raise(krn, evset, ev);
 	/* signal the scheduler ... */
@@ -275,14 +275,14 @@ void thinkos_krn_ev_raise_i(uint32_t evset, int ev)
 
 void __thinkos_ev_raise_i(uint32_t evset, unsigned int ev)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_ev_raise(krn, evset, ev);
 }
 
 #endif /* THINKOS_ENABLE_I_CALLS */
 
-void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int evset = arg[0];
 	unsigned int ev = arg[1];
@@ -318,7 +318,7 @@ void thinkos_ev_raise_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_sched_defer(krn);
 }
 
-void thinkos_ev_mask_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_ev_mask_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int evset = arg[0];
 	unsigned int ev = arg[1];
@@ -410,7 +410,7 @@ again:
 	__krn_sched_defer(krn);
 }
 
-void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int evset = arg[0];
 	unsigned int ev = arg[1];
@@ -433,7 +433,7 @@ void thinkos_ev_clear_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_PAUSE)
-bool evset_resume(struct thinkos_rt * krn, unsigned int th, 
+bool evset_resume(struct thinkos_krn * krn, unsigned int th, 
 				  unsigned int evset, bool tmw) 
 {
 	unsigned int no = evset - THINKOS_EVENT_BASE;

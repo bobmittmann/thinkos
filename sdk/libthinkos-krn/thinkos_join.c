@@ -23,7 +23,7 @@
 #include <sys/dcclog.h>
 
 #if THINKOS_ENABLE_JOIN
-void thinkos_join_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_join_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int thread = (unsigned int)arg[0];
 #if THINKOS_ENABLE_ARG_CHECK

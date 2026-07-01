@@ -29,20 +29,20 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_FLAG_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
-__krn_obj_is_flag(struct thinkos_rt * krn, unsigned int flag) {
+__krn_obj_is_flag(struct thinkos_krn * krn, unsigned int flag) {
 	return __obj_is_valid(flag, THINKOS_FLAG_BASE, THINKOS_FLAG_MAX);
 }
 
 #if (THINKOS_ENABLE_FLAG_ALLOC)
 static inline bool __attribute__((always_inline)) 
-__krn_flag_is_alloc(struct thinkos_rt * krn, unsigned int flag) {
+__krn_flag_is_alloc(struct thinkos_krn * krn, unsigned int flag) {
 	return __bit_mem_rd(krn->flag_alloc, flag - THINKOS_FLAG_BASE) ? 
 		true : false;
 }
 #endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-int krn_flag_check(struct thinkos_rt * krn, int flag)
+int krn_flag_check(struct thinkos_krn * krn, int flag)
 {
 	if (!__krn_obj_is_flag(krn, flag)) {
 		return THINKOS_ERR_FLAG_INVALID;
@@ -61,7 +61,7 @@ int krn_flag_check(struct thinkos_rt * krn, int flag)
  * -------------------------------------------------------------------------- */
 
 /* wait for the flag */
-void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_take_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
@@ -133,7 +133,7 @@ again:
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_flag_timedtake_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn)
+								struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -204,7 +204,7 @@ again:
 }
 #endif
 
-void __krn_flag_give(struct thinkos_rt * krn, int flag)
+void __krn_flag_give(struct thinkos_krn * krn, int flag)
 {
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
 	uint32_t * flags_bmp;
@@ -255,7 +255,7 @@ void __krn_flag_give(struct thinkos_rt * krn, int flag)
 #if (THINKOS_ENABLE_I_CALLS)
 void thinkos_krn_flag_give_i(int flag)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_flag_give(krn, flag);
 	/* signal the scheduler ... */
@@ -263,9 +263,9 @@ void thinkos_krn_flag_give_i(int flag)
 	//__krn_preempt(krn);
 }
 
-/*void __thinkos_flag_give_i(struct thinkos_rt * krn,  uint32_t flag)
+/*void __thinkos_flag_give_i(struct thinkos_krn * krn,  uint32_t flag)
 {
-	= &thinkos_rt;
+	= &thinkos_krn;
 
 	__krn_flag_give(krn, flag);
 	__krn_preempt(krn);
@@ -274,7 +274,7 @@ void thinkos_krn_flag_give_i(int flag)
 #endif /* THINKOS_ENABLE_I_CALLS */
 
 /* wakeup a single thread waiting on the flag OR set the flag */
-void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -301,7 +301,7 @@ void thinkos_flag_give_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_FLAG_WATCH)
 
-void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
@@ -319,7 +319,7 @@ void thinkos_flag_val_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[SVC_RETURN] = __bit_mem_rd(krn->flag, idx);
 }
 
-static void __thinkos_flag_clr(struct thinkos_rt * krn, uint32_t flag)
+static void __thinkos_flag_clr(struct thinkos_krn * krn, uint32_t flag)
 {
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
 
@@ -327,7 +327,7 @@ static void __thinkos_flag_clr(struct thinkos_rt * krn, uint32_t flag)
 	__bit_mem_wr(krn->flag, idx, 0);  
 }
 
-void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -345,7 +345,7 @@ void thinkos_flag_clr_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__thinkos_flag_clr(krn, flag);
 }
 
-void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
@@ -367,7 +367,7 @@ void thinkos_flag_set_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	__krn_wq_wakeup_all(krn, flag, THINKOS_OK);
 }
 
-void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	unsigned int idx = flag - THINKOS_FLAG_BASE;
@@ -396,7 +396,7 @@ void thinkos_flag_watch_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_flag_timedwatch_svc(int32_t arg[], int self, 
-								 struct thinkos_rt * krn)
+								 struct thinkos_krn * krn)
 {
 	unsigned int flag = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -428,7 +428,7 @@ void thinkos_flag_timedwatch_svc(int32_t arg[], int self,
 #endif /* THINKOS_ENABLE_FLAG_WATCH */
 
 #if (THINKOS_ENABLE_PAUSE)
-bool flag_resume(struct thinkos_rt * krn, unsigned int th, 
+bool flag_resume(struct thinkos_krn * krn, unsigned int th, 
 				 unsigned int flag, bool tmw) 
 {
 	unsigned int idx = flag - THINKOS_FLAG_BASE;

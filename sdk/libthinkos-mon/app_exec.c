@@ -70,7 +70,7 @@ bool monitor_app_exec(uintptr_t addr)
 
 bool monitor_flash_app_exec(const struct monitor_comm * comm)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct thinkos_mem_part part;
 	uintptr_t addr;
 

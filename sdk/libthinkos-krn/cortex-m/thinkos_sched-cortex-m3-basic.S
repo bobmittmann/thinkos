@@ -66,8 +66,8 @@ thinkos_sched_get_active:
 	bne       1b
 #endif
 
-	/* r3: thinkos_rt */
-	ldr.n     r3, .L_thinkos_rt
+	/* r3: thinkos_krn */
+	ldr.n     r3, .L_thinkos_krn
 	/* get the active (current) thread and the ready bitmap */
 	ldrd      r2, r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 	/* r1: ready, */
@@ -90,7 +90,7 @@ thinkos_sched_get_active:
 
 	/* r0: thread stack
 	   r1: next active thread 
-	   r3: thinkos_rt */
+	   r3: thinkos_krn */
 	/* store the old context pointer into the context vector */
 	str.w	  r0, [r3, r2, lsl #2]
 
@@ -116,7 +116,7 @@ thinkos_krn_sched_ctx_restore:
 	/* r0: new thread stack
 	   r1: new active thread id
 	   r2: old active thread id 
-	   r3: thinkos_rt */
+	   r3: thinkos_krn */
 	str       r1, [r3, #THINKOS_RT_ACTIVE_OFFS]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD)
@@ -189,8 +189,8 @@ thinkos_krn_sched_ctx_restore:
 #endif
 
 	.align  0
-.L_thinkos_rt:
-	.word	thinkos_rt
+.L_thinkos_krn:
+	.word	thinkos_krn
 .L_cm_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
 

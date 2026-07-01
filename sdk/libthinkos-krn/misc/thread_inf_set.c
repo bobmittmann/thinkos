@@ -27,8 +27,8 @@ void __thinkos_thread_inf_set(unsigned int thread_id,
 							  const struct thinkos_thread_inf * inf)
 {
 #if THINKOS_ENABLE_THREAD_INFO
-	if (thinkos_rt.ctx[thread_id] != NULL)
-		thinkos_rt.th_inf[thread_id] = (struct thinkos_thread_inf *)inf;
+	if (thinkos_krn.ctx[thread_id] != NULL)
+		thinkos_krn.th_inf[thread_id] = (struct thinkos_thread_inf *)inf;
 #endif
 }
 

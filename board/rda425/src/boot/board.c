@@ -723,13 +723,13 @@ void thinkos_arch_release_get(struct thinkos_release * rel)
 }
 
 void standby_monitor_task(const struct monitor_comm * comm, void * arg, 
-						  uintptr_t sta, struct thinkos_rt * krn);
+						  uintptr_t sta, struct thinkos_krn * krn);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg,
-					   uintptr_t sta, struct thinkos_rt * krn);
+					   uintptr_t sta, struct thinkos_krn * krn);
 
 void __attribute((noreturn)) main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
     const struct monitor_comm * comm;
     uintptr_t app_addr;
 

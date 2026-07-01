@@ -124,6 +124,8 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 				monitor_printf(comm, " | IRQ %2d", irq);
 			} else if (inf.ready) {
 				monitor_printf(comm, " | READY ");
+			} else if (oid < 0) {
+				monitor_printf(comm, " | Z:MBIE"); 
 			} else {
 				type = __thinkos_obj_kind(oid);
 				monitor_printf(comm, " | %c%c %3d", 

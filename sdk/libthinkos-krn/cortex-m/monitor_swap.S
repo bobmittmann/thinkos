@@ -81,8 +81,8 @@ __monitor_bootstrap:
 
 	movs   r0, r5
 	movs   r1, r6
-	movw   r2, #:lower16:thinkos_rt
-	movt   r2, #:upper16:thinkos_rt
+	movw   r2, #:lower16:thinkos_krn
+	movt   r2, #:upper16:thinkos_krn
 	/* adjust "at_exit" return function */
 	movs   lr, r7
 	bx     r4
@@ -117,14 +117,14 @@ __monitor_context_exec:
 	mov      r0, r1
 	/* r1: env */
 	mov      r1, r2
-	/* r2: thinkos_rt */
-	movw     r2, #:lower16:thinkos_rt
-	movt     r2, #:upper16:thinkos_rt
+	/* r2: thinkos_krn */
+	movw     r2, #:lower16:thinkos_krn
+	movt     r2, #:upper16:thinkos_krn
 	/* lr: at_exit */
 	mov      lr, r3
 
 	/* adjust "at_exit" return function */
-	/* lr: thinkos_rt */
+	/* lr: thinkos_krn */
 
 	/* call new task */
 	bx       r7

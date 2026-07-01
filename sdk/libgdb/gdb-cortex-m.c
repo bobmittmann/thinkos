@@ -93,9 +93,9 @@ int thread_getnext(int thread_id)
 		id = __thinkos_thread_getnext(thread_id - THREAD_ID_OFFS);
 
 	if (id < 0) {
-		if (thinkos_rt.xcpt_ipsr != 0) {
+		if (thinkos_krn.xcpt_ipsr != 0) {
 			DCC_LOG1(LOG_WARNING, "Exception at IRQ:%d!", 
-					 thinkos_rt.xcpt_ipsr - 16);
+					 thinkos_krn.xcpt_ipsr - 16);
 			return THREAD_ID_IRQ;
 		}
 		DCC_LOG(LOG_MSG, "no more threads.");
@@ -110,20 +110,20 @@ int thread_getnext(int thread_id)
 
 int thread_active(void)
 {
-	if (thinkos_rt.active == THINKOS_THREAD_IDLE) {
+	if (thinkos_krn.active == THINKOS_THREAD_IDLE) {
 		DCC_LOG(LOG_TRACE, "IDLE");
 	}
-	return thinkos_rt.active + THREAD_ID_OFFS;
+	return thinkos_krn.active + THREAD_ID_OFFS;
 }
 
 int thread_step_id(void)
 {
-	if (thinkos_rt.step_id == -1) {
+	if (thinkos_krn.step_id == -1) {
 		DCC_LOG(LOG_WARNING, "invalid step thread!");
-		return thinkos_rt.active + THREAD_ID_OFFS;
+		return thinkos_krn.active + THREAD_ID_OFFS;
 	}
 
-	return thinkos_rt.step_id + THREAD_ID_OFFS;
+	return thinkos_krn.step_id + THREAD_ID_OFFS;
 }
 
 int thread_break_id(void)
@@ -132,12 +132,12 @@ int thread_break_id(void)
 	
 	if ((break_id = dbgmon_thread_break_get()) == -1) {
 		DCC_LOG(LOG_WARNING, "invalid break thread!");
-		if (thinkos_rt.xcpt_ipsr == 0) {
+		if (thinkos_krn.xcpt_ipsr == 0) {
 			DCC_LOG(LOG_WARNING, "No exception at IRQ!");
-			return thinkos_rt.active + THREAD_ID_OFFS;
+			return thinkos_krn.active + THREAD_ID_OFFS;
 		}
 		DCC_LOG1(LOG_WARNING, "Exception at IRQ:%d!", 
-				 thinkos_rt.xcpt_ipsr - 16);
+				 thinkos_krn.xcpt_ipsr - 16);
 		return THREAD_ID_IRQ;
 	}
 
@@ -151,17 +151,17 @@ int thread_any(void)
 {
 	int thread_id;
 
-	if ((unsigned int)thinkos_rt.active < THINKOS_THREADS_MAX) {
-		DCC_LOG1(LOG_TRACE, "active=%d", thinkos_rt.active);
-		return thinkos_rt.active + THREAD_ID_OFFS;
+	if ((unsigned int)thinkos_krn.active < THINKOS_THREADS_MAX) {
+		DCC_LOG1(LOG_TRACE, "active=%d", thinkos_krn.active);
+		return thinkos_krn.active + THREAD_ID_OFFS;
 	}
 
-	if (thinkos_rt.active == THINKOS_THREAD_IDLE)
+	if (thinkos_krn.active == THINKOS_THREAD_IDLE)
 		DCC_LOG(LOG_MSG, "IDLE thread!");
-	else if (thinkos_rt.active == THINKOS_THREAD_VOID)
+	else if (thinkos_krn.active == THINKOS_THREAD_VOID)
 		DCC_LOG(LOG_MSG, "VOID thread!");
 	else {
-		DCC_LOG1(LOG_MSG, "active=%d is invalid!", thinkos_rt.active);
+		DCC_LOG1(LOG_MSG, "active=%d is invalid!", thinkos_krn.active);
 	}
 
 	/* Active thread is IDLE or invalid, try to get the first 
@@ -454,8 +454,8 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		cp += int2str2hex(cp, ipsr - 16);
 	} else {
 #if THINKOS_ENABLE_THREAD_INFO
-		if (thinkos_rt.th_inf[thread_id] != NULL)
-			n = str2hex(cp, thinkos_rt.th_inf[thread_id]->tag);
+		if (thinkos_krn.th_inf[thread_id] != NULL)
+			n = str2hex(cp, thinkos_krn.th_inf[thread_id]->tag);
 		else
 			n = int2str2hex(cp, thread_id + THREAD_ID_OFFS);
 #else
@@ -477,11 +477,11 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 		tmw = false;
 	} else {
 #if THINKOS_ENABLE_THREAD_STAT
-		oid = thinkos_rt.th_stat[thread_id] >> 1;
-		tmw = thinkos_rt.th_stat[thread_id] & 1;
+		oid = thinkos_krn.th_stat[thread_id] >> 1;
+		tmw = thinkos_krn.th_stat[thread_id] & 1;
 #else
 		oid = THINKOS_WQ_READY; /* FIXME */
-		tmw = (thinkos_rt.wq_clock & (1 << thread_id)) ? true : false;
+		tmw = (thinkos_krn.wq_clock & (1 << thread_id)) ? true : false;
 #endif
 	}
 	if (tmw) {
@@ -576,7 +576,7 @@ int thread_info(unsigned int gdb_thread_id, char * buf)
 			if (thread_id != THINKOS_THREAD_IDLE) {
 				int irq;
 				for (irq = 0; irq < THINKOS_IRQ_MAX; ++irq) {
-					if (thinkos_rt.irq_th[irq] == (int)thread_id) {
+					if (thinkos_krn.irq_th[irq] == (int)thread_id) {
 						break;
 					}
 				}

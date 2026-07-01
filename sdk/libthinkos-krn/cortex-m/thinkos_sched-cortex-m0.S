@@ -72,8 +72,8 @@ cm3_pendsv_isr:
 	.global cm3_pendsv_isr
 	.type   cm3_pendsv_isr, %function
 
-	/* r0: thinkos_rt */
-	ldr.n    r0, .L_thinkos_rt
+	/* r0: thinkos_krn */
+	ldr.n    r0, .L_thinkos_krn
 	ldrd     r3, r2, [r0, #OFFSETOF_KRN_SCHED]
 	/* r3: sched.ctrl: [ xcpt | err | svc | thd ] */
 
@@ -162,14 +162,14 @@ thinkos_krn_sched_core:
 	/* update the reference */
 	/* r5: cycref */
 	ldr      r5, [r0, #OFFSETOF_KRN_CYCREF]
-	/* thinkos_rt.cycref = cyccnt */
+	/* thinkos_krn.cycref = cyccnt */
 	str      r6, [r0, #OFFSETOF_KRN_CYCREF]
 	/* r6: delta =  cyccnt - cycref */	
 	subs.n   r6, r6, r5
 
 	/* update thread's cycle counter */
 	ldr      r5, [r7, #OFFSETOF_KRN_TH_CYC]
-	/* thinkos_rt.cyccnt[old_thread_id] += delta */
+	/* thinkos_krn.cyccnt[old_thread_id] += delta */
 	adds.n   r5, r6
 	str      r5, [r7, #OFFSETOF_KRN_TH_CYC]
 #endif
@@ -177,7 +177,7 @@ thinkos_krn_sched_core:
 
 	/* r4: thread stack + control
 	   r2: next active thread 
-	   r0: thinkos_rt */
+	   r0: thinkos_krn */
 	/* store the old context pointer into the context vector */
 	str.n     r3, [r7]
 
@@ -216,7 +216,7 @@ thinkos_krn_sched_ctx_get:
 	/* r3: new thread stack
 	   r2: new active thread id 
 	   r1: old active thread id 
-	   r0: thinkos_rt */
+	   r0: thinkos_krn */
 	strb     r2, [r0, #OFFSETOF_KRN_SCHED_THREAD]
 
 #if (THINKOS_ENABLE_PRIVILEGED_THREAD) || (THINKOS_ENABLE_FPU)
@@ -318,8 +318,8 @@ thinkos_krn_sched_ctx_get:
 #endif
 	
 	.align  0
-.L_thinkos_rt:
-	.word	thinkos_rt
+.L_thinkos_krn:
+	.word	thinkos_krn
 #if (THINKOS_ENABLE_PROFILING)
 .L_cm_dwt:
 	.word   CM3_DWT_BASE    /* DWT Base Address */
@@ -416,7 +416,7 @@ thinkos_sched_step:
 	/* r3: thread context pointer */
 	/* r2: new thread id */
 	/* r1: old thread id */
-	/* r0: thinkos_rt */
+	/* r0: thinkos_krn */
 	/* r4: (1 << new_thread_id) */
 
 	/* load the new context pointer from the context vector */

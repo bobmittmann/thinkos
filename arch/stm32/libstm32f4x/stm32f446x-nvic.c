@@ -42,7 +42,7 @@ void __attribute__ ((aligned(16))) __default_isr(void)
 
 	/* disable this interrupt source */
 	cm3_irq_disable(irq);
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 #if (THINKOS_ENABLE_IRQ_CYCCNT)
 	/* set the thread's return value to cyle count */
 	uint32_t cyccnt = CM3_DWT->cyccnt;

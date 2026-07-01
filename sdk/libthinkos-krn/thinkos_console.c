@@ -255,7 +255,7 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr)
 void thinkos_console_tx_pipe_commit(int cnt) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	uint32_t tail;
 	int th;
 
@@ -324,7 +324,7 @@ void __con_rx_dump(void)
 
 #if 0
 /* Write into fifo from.  */
-ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn, 
+ssize_t thinkos_console_rx_pipe_write(struct thinkos_krn * krn, 
 									  const uint8_t * buf, size_t len)
 {
 	struct console_rx_pipe * pipe = &thinkos_console_rt.rx_pipe;
@@ -384,7 +384,7 @@ ssize_t thinkos_console_rx_pipe_write(struct thinkos_rt * krn,
 #endif
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
-bool thinkos_console_rd_resume(struct thinkos_rt * krn,
+bool thinkos_console_rd_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_MSG, "PC=%08x ...........", __thread_pc_get(krn, th)); 
@@ -395,7 +395,7 @@ bool thinkos_console_rd_resume(struct thinkos_rt * krn,
 	return true;
 }
 
-bool thinkos_console_wr_resume(struct thinkos_rt * krn,
+bool thinkos_console_wr_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	if (!tx_pipe_isempty()) {
@@ -413,7 +413,7 @@ bool thinkos_console_wr_resume(struct thinkos_rt * krn,
 }
 #endif
 
-void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
@@ -504,7 +504,7 @@ void thinkos_console_write_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 void thinkos_console_rx_pipe_commit(int cnt) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	int wq = THINKOS_WQ_CONSOLE_RD;
 	uint32_t * ptr = (uint32_t *)&thinkos_console_rt.rx_pipe.head;
 	uint32_t queue;
@@ -590,7 +590,7 @@ static int rx_pipe_read(uint8_t * buf, unsigned int len)
 
 
 #if (THINKOS_ENABLE_CONSOLE_READ)
-void thinkos_console_timedread_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_timedread_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 #if (THINKOS_ENABLE_TIMED_CALLS) || (THINKOS_ENABLE_CONSOLE_NONBLOCK)
 	int nonblock;
@@ -713,7 +713,7 @@ rd_again:
 
 
 #if (THINKOS_ENABLE_CONSOLE_DRAIN)
-void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	struct console_tx_pipe * pipe = &thinkos_console_rt.tx_pipe;
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
@@ -762,7 +762,7 @@ void thinkos_console_drain_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CONSOLE_CTL)
 
 #if (THINKOS_ENABLE_CONSOLE_BREAK)
-static int __console_rd_break(struct thinkos_rt * krn) 
+static int __console_rd_break(struct thinkos_krn * krn) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_RD;
 	int ret;
@@ -786,7 +786,7 @@ static int __console_rd_break(struct thinkos_rt * krn)
 	return ret;
 }
 
-static int __console_wr_break(struct thinkos_rt * krn) 
+static int __console_wr_break(struct thinkos_krn * krn) 
 {
 	unsigned int wq = THINKOS_WQ_CONSOLE_WR;
 	int ret;
@@ -810,7 +810,7 @@ static int __console_wr_break(struct thinkos_rt * krn)
 #endif
 
 
-void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_console_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int req = arg[0];
 	

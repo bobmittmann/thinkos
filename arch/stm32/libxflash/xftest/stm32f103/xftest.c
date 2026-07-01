@@ -232,7 +232,7 @@ int __attribute__((noreturn)) main_task(struct usb_cdc_class * cdc)
 
 int __attribute__((noreturn, section(".init"))) main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct usb_cdc_class * cdc;
 
 	DCC_LOG_INIT();

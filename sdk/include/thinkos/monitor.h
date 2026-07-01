@@ -177,16 +177,16 @@ extern const uint16_t thinkos_monitor_stack_size;
 
 struct deferred_svc_map {
 	union {
-		int (* on_event[8])(struct thinkos_rt * krn, void * env);
+		int (* on_event[8])(struct thinkos_krn * krn, void * env);
 		struct {
-			void (* on_comm_brk)(struct thinkos_rt * krn, void * env);
-			void (* on_comm_rcv)(struct thinkos_rt * krn, void * env);
-			void (* on_comm_eot)(struct thinkos_rt * krn, void * env);
-			void (* on_comm_ctl)(struct thinkos_rt * krn, void * env);
-			void (* on_console_rx)(struct thinkos_rt * krn, void * env);
-			void (* on_console_tx)(struct thinkos_rt * krn, void * env);
-			void (* on_console_ctl)(struct thinkos_rt * krn, void * env);
-			void (* on_console_tmr)(struct thinkos_rt * krn, void * env);
+			void (* on_comm_brk)(struct thinkos_krn * krn, void * env);
+			void (* on_comm_rcv)(struct thinkos_krn * krn, void * env);
+			void (* on_comm_eot)(struct thinkos_krn * krn, void * env);
+			void (* on_comm_ctl)(struct thinkos_krn * krn, void * env);
+			void (* on_console_rx)(struct thinkos_krn * krn, void * env);
+			void (* on_console_tx)(struct thinkos_krn * krn, void * env);
+			void (* on_console_ctl)(struct thinkos_krn * krn, void * env);
+			void (* on_console_tmr)(struct thinkos_krn * krn, void * env);
 		};
 	};
 };
@@ -226,10 +226,10 @@ static inline bool monitor_comm_isconnected(const struct monitor_comm * comm) {
 	        COMM_ST_CONNECTED) ? true : false;
 }
 
-void thinkos_krn_monitor_init(struct thinkos_rt * krn,
+void thinkos_krn_monitor_init(struct thinkos_krn * krn,
 							  const struct monitor_comm * comm, 
 							  void (* task)(const struct monitor_comm *, void *,
-											struct thinkos_rt *),
+											struct thinkos_krn *),
 							  void * env);
 
 
@@ -345,10 +345,10 @@ void monitor_thread_destroy(int thread_id);
 
 
 #define MONITOR_TASK(_F_) (int (*)(const struct monitor_comm *, \
-								   void *, struct thinkos_rt *))(_F_)
+								   void *, struct thinkos_krn *))(_F_)
 
 void monitor_exec(int (* task)(const struct monitor_comm *, 
-							   void *, struct thinkos_rt *), 
+							   void *, struct thinkos_krn *), 
 				  const struct monitor_comm * comm, void * env, 
 				  void (* atexit)(int));
 

@@ -107,7 +107,7 @@ uint64_t time_clock_timestamp(struct krn_clock * clk)
 #define THINKOS_TIME_EPOCH ((uint64_t)1606149342LL << 32)
 #endif
 
-void __thinkos_krn_time_init(struct thinkos_rt * krn)
+void __thinkos_krn_time_init(struct thinkos_krn * krn)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 
@@ -123,7 +123,7 @@ void __thinkos_krn_time_init(struct thinkos_rt * krn)
 	DCC_LOG1(LOG_TRACE, "resolution=%d", krn->clk.resolution);
 }
 
-uint64_t __krn_clock_timestamp(struct thinkos_rt * krn)
+uint64_t __krn_clock_timestamp(struct thinkos_krn * krn)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 	union krn_time ts;
@@ -165,7 +165,7 @@ uint64_t __krn_clock_timestamp(struct thinkos_rt * krn)
 
 
 void thinkos_time_svc(int32_t arg[], unsigned int self, 
-					  struct thinkos_rt * krn) 
+					  struct thinkos_krn * krn) 
 {
 //    struct krn_clock * clk = &krn->time_clk;
 	unsigned int oper = arg[0];
@@ -278,7 +278,7 @@ void thinkos_time_svc(int32_t arg[], unsigned int self,
 	}
 }
 
-int krn_fmt_clk_realtime(struct thinkos_rt * krn, char * s) 
+int krn_fmt_clk_realtime(struct thinkos_krn * krn, char * s) 
 {
 	union krn_time tm;
 	uint32_t frac;

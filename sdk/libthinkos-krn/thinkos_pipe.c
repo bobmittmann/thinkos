@@ -61,7 +61,7 @@ struct {
 } thinkos_pipe_rt;
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
-bool pipe_rx_resume(struct thinkos_rt * krn,
+bool pipe_rx_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	__wq_wakeup_return(krn, wq, th, 0);
@@ -69,7 +69,7 @@ bool pipe_rx_resume(struct thinkos_rt * krn,
 	return true;
 }
 
-bool pipe_tx_resume(struct thinkos_rt * krn,
+bool pipe_tx_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	__wq_wakeup_return(krn, wq, th, 0);
@@ -80,16 +80,16 @@ bool pipe_tx_resume(struct thinkos_rt * krn,
 #if (THINKOS_PIPE_MAX) > 0
 
 static inline int __attribute__((always_inline)) 
-__krn_obj_is_pipetx(struct thinkos_rt * krn, unsigned int oid) {
+__krn_obj_is_pipetx(struct thinkos_krn * krn, unsigned int oid) {
 	return (oid >= THINKOS_PIPE_TX_FIRST) && (oid <= THINKOS_PIPE_TX_LAST);
 }
 
 static inline int __attribute__((always_inline)) 
-__krn_obj_is_piperx(struct thinkos_rt * krn, unsigned int oid) {
+__krn_obj_is_piperx(struct thinkos_krn * krn, unsigned int oid) {
 	return (oid >= THINKOS_PIPE_RX_FIRST) && (oid <= THINKOS_PIPE_RX_LAST);
 }
 
-int krn_pipe_tx_check(struct thinkos_rt * krn, unsigned int oid) {
+int krn_pipe_tx_check(struct thinkos_krn * krn, unsigned int oid) {
 	if (!__krn_obj_is_pipetx(krn, oid)) {
 		/* FIXME: specific error */
 		return THINKOS_ERR_KRN_FAULT;
@@ -97,7 +97,7 @@ int krn_pipe_tx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-int krn_pipe_rx_check(struct thinkos_rt * krn, unsigned int oid) {
+int krn_pipe_rx_check(struct thinkos_krn * krn, unsigned int oid) {
 	if (!__krn_obj_is_piperx(krn, oid)) {
 		/* FIXME: specific error */
 		return THINKOS_ERR_KRN_FAULT;
@@ -105,7 +105,7 @@ int krn_pipe_rx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-void thinkos_pipe_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_pipe_send_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	struct thinkos_pipe  * pipe;
 	struct thinkos_fifo * fifo;
@@ -194,7 +194,7 @@ wr_again:
 	}
 }
 
-void thinkos_pipe_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_pipe_recv_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int pipe = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -216,7 +216,7 @@ void thinkos_pipe_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 int thinkos_pipe_drain(struct thinkos_pipe * pipe, unsigned int wq,
-					   int self, struct thinkos_rt * krn)
+					   int self, struct thinkos_krn * krn)
 {
 	struct thinkos_fifo * fifo;
 	uint32_t queue;
@@ -282,7 +282,7 @@ drain_again:
 	return THINKOS_OK;
 }
 
-void thinkos_pipe_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_pipe_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	struct thinkos_pipe  * pipe;
 	unsigned int oid = arg[0];

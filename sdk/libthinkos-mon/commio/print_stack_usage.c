@@ -81,7 +81,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 				   "| %6d\r\n", -1, tag, pc, sl, sp, size, free);
 
 	tag = "<IRQ>";
-	swp = (struct monitor_swap *)thinkos_rt.monitor.ctx;
+	swp = (struct monitor_swap *)thinkos_krn.monitor.ctx;
 	sp = (uintptr_t)swp;
 	pc = swp->lr;
 	sl = (uintptr_t)thinkos_except_stack;

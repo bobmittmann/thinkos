@@ -59,7 +59,7 @@ extern "C" {
 #endif
 
 void monitor_task(const struct monitor_comm * comm, void * param, 
-				  struct thinkos_rt * krn);
+				  struct thinkos_krn * krn);
 #ifdef __cplusplus
 }
 #endif

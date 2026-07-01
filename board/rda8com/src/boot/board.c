@@ -29,10 +29,10 @@
 
 int fpga_configure(void);
 void boot_monitor_task(const struct monitor_comm * comm, void * arg,
-					   struct thinkos_rt * krn);
+					   struct thinkos_krn * krn);
 
 void monitor_console_task(const struct monitor_comm * comm, void * arg,
-						  struct thinkos_rt * krn);
+						  struct thinkos_krn * krn);
 
 #ifndef BOOT_ENABLE_JTAG
 #define BOOT_ENABLE_JTAG (DEBUG)
@@ -367,7 +367,7 @@ const char * const normal_argv[] = {
 void main(int argc, char ** argv)
 {
 	struct btl_shell_env * env = btl_shell_env_getinstance();
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	const struct monitor_comm * comm;
 	int ret;
 

@@ -23,7 +23,7 @@
 
 #include <sys/dcclog.h>
 
-int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
+int __krn_thread_check(struct thinkos_krn * krn, unsigned int th)
 {
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (!__krn_obj_is_thread(krn, th)) {
@@ -39,7 +39,7 @@ int __krn_thread_check(struct thinkos_rt * krn, unsigned int th)
 }
 
 int thinkos_krn_thread_init(
-	struct thinkos_rt * krn, unsigned int thread_no,
+	struct thinkos_krn * krn, unsigned int thread_no,
 	const struct thinkos_thread_initializer * init)
 {
 	const struct thinkos_thread_inf * inf = init->inf;
@@ -177,7 +177,7 @@ int thinkos_krn_thread_init(
 /* initialize a thread */
 void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct thinkos_thread_initializer * init;
 	unsigned int thread_no;
 	int ret;
@@ -225,7 +225,7 @@ void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
 	return;
 }
 
-void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th, 
+void __krn_thread_wait(struct thinkos_krn * krn, unsigned int th, 
 					   unsigned int wq) 
 {
 	/* (1) suspend the thread by removing it from the
@@ -237,7 +237,7 @@ void __krn_thread_wait(struct thinkos_rt * krn, unsigned int th,
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
-void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th, 
+void __krn_thread_timedwait(struct thinkos_krn * krn, unsigned int th, 
 							unsigned int wq, unsigned int ms) {
 	__krn_thread_suspend(krn, th);
 	__krn_tmdwq_insert(krn, wq, th, ms);
@@ -246,7 +246,7 @@ void __krn_thread_timedwait(struct thinkos_rt * krn, unsigned int th,
 }
 #endif
 
-void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th, 
+void __krn_thread_clk_itv_wait(struct thinkos_krn * krn, unsigned int th, 
 							  unsigned int ms) 
 {
 	/* Set the default return value to timeout. 
@@ -261,7 +261,7 @@ void __krn_thread_clk_itv_wait(struct thinkos_rt * krn, unsigned int th,
 }
 
 
-void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq, int retval)
+void __krn_wq_wakeup_all(struct thinkos_krn * krn, unsigned int wq, int retval)
 {
 	unsigned int th;
 
@@ -278,7 +278,7 @@ void __krn_wq_wakeup_all(struct thinkos_rt * krn, unsigned int wq, int retval)
 	}
 }
 
-unsigned int __krn_wq_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
+unsigned int __krn_wq_wakeup_head(struct thinkos_krn * krn, unsigned int wq)
 {
 	unsigned int th;
 	uint32_t queue;
@@ -312,20 +312,20 @@ unsigned int __krn_wq_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
 }
 
 #if 0
-void __krn_suspend_all(struct thinkos_rt * krn) 
+void __krn_suspend_all(struct thinkos_krn * krn) 
 {
 	/* remove all threads from the ready wait queue */
 	__wq_ready_clr(krn);
 }
 #endif
 
-bool __krn_thread_ctx_is_valid(struct thinkos_rt * krn, unsigned int th) 
+bool __krn_thread_ctx_is_valid(struct thinkos_krn * krn, unsigned int th) 
 {
 	return __krn_obj_is_thread(krn, th) && __krn_thread_is_alloc(krn, th) && 
 		__thread_ctx_is_valid(krn, th);
 }
 
-static int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
+static int __krn_thread_errno_get(struct thinkos_krn * krn, unsigned int th)
 {
 	if (__krn_sched_brk_get(krn) == th) {
 		int error = __krn_sched_err_get(krn);
@@ -336,27 +336,93 @@ static int __krn_thread_errno_get(struct thinkos_rt * krn, unsigned int th)
 	return 0;
 }
 
+void __krn_cyccnt_flush(struct thinkos_krn * krn, unsigned int th)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	uint32_t ref;
+	uint32_t cnt;
+
+	cnt = CM3_DWT->cyccnt;
+	ref = krn->cycref;
+	krn->cycref = cnt;
+
+	krn->th_cyc[th] += cnt - ref;
+#endif
+}
+
+
+int __krn_threads_cyc_get(struct thinkos_krn * krn, uint32_t cyc[], 
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__krn_cyccnt_flush(krn, __krn_sched_act_get(krn));
+	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
 /*
  */
 int thinkos_krn_threads_cyc_get(uint32_t cyc[], unsigned int from, 
 								unsigned int cnt)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return __krn_threads_cyc_get(krn, cyc, from, cnt);
 }
 
 int thinkos_krn_active_get(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	return __krn_sched_act_get(krn);
+}
+
+int __krn_threads_inf_get(struct thinkos_krn * krn, 
+						  const struct thinkos_thread_inf * inf[],
+						  unsigned int from, unsigned int cnt)
+{
+#if (THINKOS_ENABLE_PROFILING)
+	if (from >= __KRN_THREAD_LST_SIZ)
+		return -THINKOS_EINVAL;
+
+	if (cnt > (__KRN_THREAD_LST_SIZ - from))
+		cnt = (__KRN_THREAD_LST_SIZ - from);
+
+	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
+
+	return cnt;
+#else
+	return -THINKOS_ENOSYS;
+#endif
+}
+
+int __thread_wq_lookup(struct thinkos_krn * krn, unsigned int th)
+{
+	uint32_t msk = (1 << (th - 1));
+	int i;
+
+	for (i = THINKOS_OBJECT_LAST; i >= THINKOS_OBJECT_FIRST; --i) {
+		if (krn->wq_lst[i] & msk)
+			break;
+	}
+	
+	return i;
 }
 
 bool thinkos_krn_thread_state_get(unsigned int thread_id, 
 								  struct krn_thread_state * st)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	if (!__krn_thread_ctx_is_valid(krn, thread_id)) {
 		return false;

@@ -27,7 +27,7 @@ extern void * __bss_end;
 extern void * __heap_start;
 
 int __attribute__((section (".init")))
-thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt, 
+thinkos_krn_init(struct thinkos_krn * krn, unsigned int opt, 
 					 const struct thinkos_mem_map * map)
 {
 	int thread_no;
@@ -48,80 +48,80 @@ thinkos_krn_init(struct thinkos_rt * krn, unsigned int opt,
 #endif
 
 	/* Static sanity check: */
-	_Static_assert (offsetof(struct thinkos_rt, void_ctx) == 
+	_Static_assert (offsetof(struct thinkos_krn, void_ctx) == 
 					OFFSETOF_KRN_VOID_CTX, "OFFSETOF_KRN_VOID_CTX");
 
-	_Static_assert (offsetof(struct thinkos_rt, idle_ctx) == 
+	_Static_assert (offsetof(struct thinkos_krn, idle_ctx) == 
 					OFFSETOF_KRN_IDLE_CTX, "OFFSETOF_KRN_IDLE_CTX");
 
-	_Static_assert (offsetof(struct thinkos_rt, clk) == 
+	_Static_assert (offsetof(struct thinkos_krn, clk) == 
 					OFFSETOF_KRN_CLK, "OFFSETOF_KRN_CLK");
 
 #if (THINKOS_ENABLE_PROFILING)
-	_Static_assert (offsetof(struct thinkos_rt, th_cyc) == 
+	_Static_assert (offsetof(struct thinkos_krn, th_cyc) == 
 					OFFSETOF_KRN_TH_CYC, "OFFSETOF_KRN_TH_CYC");
 
-	_Static_assert (offsetof(struct thinkos_rt, cycref) == 
+	_Static_assert (offsetof(struct thinkos_krn, cycref) == 
 					OFFSETOF_KRN_CYCREF, "OFFSETOF_KRN_CYCREF");
 
 #endif
 
 #if (THINKOS_ENABLE_DEBUG)
-	_Static_assert (offsetof(struct thinkos_rt, debug) == 
+	_Static_assert (offsetof(struct thinkos_krn, debug) == 
 					OFFSETOF_KRN_DEBUG, "OFFSETOF_KRN_DEBUG");
 #endif
 
 #if 0
 #if (THINKOS_ENABLE_DEBUG_BKPT)
 #if (THINKOS_ENABLE_DEBUG_STEP)
-	_Static_assert (offsetof(struct thinkos_rt, step_req) == 
+	_Static_assert (offsetof(struct thinkos_krn, step_req) == 
 					OFFSETOF_KRN_STEP_REQ, "OFFSETOF_KRN_STEP_REQ");
-	_Static_assert (offsetof(struct thinkos_rt, step_svc) == 
+	_Static_assert (offsetof(struct thinkos_krn, step_svc) == 
 					OFFSETOF_KRN_STEP_SVC, "OFFSETOF_KRN_STEP_SVC");
 #endif
-	_Static_assert (offsetof(struct thinkos_rt, xcpt_ipsr) == 
+	_Static_assert (offsetof(struct thinkos_krn, xcpt_ipsr) == 
 					OFFSETOF_KRN_XCPT_IPSR, "OFFSETOF_KRN_XCPT_IPSR");
-	_Static_assert (offsetof(struct thinkos_rt, step_id) == 
+	_Static_assert (offsetof(struct thinkos_krn, step_id) == 
 					OFFSETOF_KRN_STEP_ID, "OFFSETOF_KRN_STEP_ID");
-	_Static_assert (offsetof(struct thinkos_rt, brk_idx) == 
+	_Static_assert (offsetof(struct thinkos_krn, brk_idx) == 
 					OFFSETOF_KRN_BREAK_ID, "OFFSETOF_KRN_BREAK_ID");
 #endif
 #endif
 
 
 #if (THINKOS_ENABLE_CRITICAL)
-	_Static_assert (offsetof(struct thinkos_rt, critical_cnt) == 
+	_Static_assert (offsetof(struct thinkos_krn, critical_cnt) == 
 					OFFSETOF_KRN_CRITCNT, "OFFSETOF_KRN_CRITCNT");
 #endif
 
 
-	_Static_assert (offsetof(struct thinkos_rt, sched) == 
+	_Static_assert (offsetof(struct thinkos_krn, sched) == 
 					OFFSETOF_KRN_SCHED, "OFFSETOF_KRN_SCHED");
 
 #if (THINKOS_ENABLE_READY_MASK)
-	_Static_assert (offsetof(struct thinkos_rt, rdy_msk) == 
+	_Static_assert (offsetof(struct thinkos_krn, rdy_msk) == 
 					OFFSETOF_KRN_RDY_MSK, "OFFSETOF_KRN_RDY_MSK");
 #endif
 
-	_Static_assert (offsetof(struct thinkos_rt, wq_ready) == 
+	_Static_assert (offsetof(struct thinkos_krn, wq_ready) == 
 					OFFSETOF_KRN_READY, "OFFSETOF_KRN_READY");
 
 #if (THINKOS_ENABLE_STACK_LIMIT)
-	_Static_assert (offsetof(struct thinkos_rt, th_sl) == 
+	_Static_assert (offsetof(struct thinkos_krn, th_sl) == 
 					OFFSETOF_KRN_TH_SL, "OFFSETOF_KRN_TH_SL");
 #endif
 
 #if (THINKOS_ENABLE_THREAD_INF)
-	_Static_assert (offsetof(struct thinkos_rt, th_inf) == 
+	_Static_assert (offsetof(struct thinkos_krn, th_inf) == 
 					OFFSETOF_KRN_TH_INF, "OFFSETOF_KRN_TH_INF");
 #endif
 
 #if (THINKOS_ENABLE_THREAD_STAT)
-	_Static_assert (offsetof(struct thinkos_rt, th_stat) == 
+	_Static_assert (offsetof(struct thinkos_krn, th_stat) == 
 					OFFSETOF_KRN_TH_STAT, "OFFSETOF_KRN_TH_STAT");
 #endif
 #if (THINKOS_ENABLE_THREAD_FAULT)
-	_Static_assert (offsetof(struct thinkos_rt, th_errno) == 
+	_Static_assert (offsetof(struct thinkos_krn, th_errno) == 
 					OFFSETOF_KRN_TH_ERRNO, "OFFSETOF_KRN_TH_ERRNO");
 #endif
 
@@ -149,7 +149,7 @@ _Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
 #if (THINKOS_ENABLE_MEMORY_CLEAR)
 	DCC_LOG(LOG_TRACE, "1. cleanup memory().");
 	/* clear the ThinkOS runtime structure */
-	__thinkos_memset32(krn, 0, sizeof(struct thinkos_rt));  
+	__thinkos_memset32(krn, 0, sizeof(struct thinkos_krn));  
 #endif
 
 #if (THINKOS_ENABLE_UDELAY_CALIBRATE)
@@ -160,7 +160,7 @@ _Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
 
 	thinkos_krn_core_init(krn);
 
-	DCC_LOG1(LOG_MSG, "thinkos_rt=@%08x", krn);
+	DCC_LOG1(LOG_MSG, "thinkos_krn=@%08x", krn);
 
 	/* adjust exception priorities */
 	/*
@@ -277,7 +277,7 @@ _Static_assert (THINKOS_THREAD_FIRST == THINKOS_THREAD_BASE,
 	/* Enable cycle counter */
 	CM3_DWT->ctrl |= DWT_CTRL_CYCCNTENA;
 	/* set the reference to now */
-	thinkos_rt.cycref = CM3_DWT->cyccnt;
+	thinkos_krn.cycref = CM3_DWT->cyccnt;
 #endif
 
 	/* Configure the thread stack ?? 

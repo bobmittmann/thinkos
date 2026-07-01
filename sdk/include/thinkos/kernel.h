@@ -383,7 +383,7 @@ struct thinkos_fp_context {
  * ThinkOS kernel data block
  * --------------------------------------------------------------------------*/
 
-struct thinkos_rt {
+struct thinkos_krn {
 	/* This fields must be at the beginning of this structure 
 	   and their order and sizes must not be changed.
 	   This is critical for the scheduler operation. */
@@ -663,82 +663,82 @@ struct thinkos_rt {
 
 #define THINKOS_WQ_READY 0
 
-#define THINKOS_WQ_TMSHARE ((offsetof(struct thinkos_rt, wq_tmshare) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_TMSHARE ((offsetof(struct thinkos_krn, wq_tmshare) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_CLOCK ((offsetof(struct thinkos_rt, wq_clock) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_CLOCK ((offsetof(struct thinkos_krn, wq_clock) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_MUTEX_BASE ((offsetof(struct thinkos_rt, wq_mutex) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_MUTEX_BASE ((offsetof(struct thinkos_krn, wq_mutex) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_COND_BASE ((offsetof(struct thinkos_rt, wq_cond) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_COND_BASE ((offsetof(struct thinkos_krn, wq_cond) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_SEM_BASE ((offsetof(struct thinkos_rt, wq_sem) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_SEM_BASE ((offsetof(struct thinkos_krn, wq_sem) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_EVENT_BASE ((offsetof(struct thinkos_rt, wq_event) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_EVENT_BASE ((offsetof(struct thinkos_krn, wq_event) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_FLAG_BASE ((offsetof(struct thinkos_rt, wq_flag) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_FLAG_BASE ((offsetof(struct thinkos_krn, wq_flag) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_GATE_BASE ((offsetof(struct thinkos_rt, wq_gate) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_GATE_BASE ((offsetof(struct thinkos_krn, wq_gate) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_THREAD_BASE ((offsetof(struct thinkos_rt, wq_thread) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_THREAD_BASE ((offsetof(struct thinkos_krn, wq_thread) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_CONSOLE_WR ((offsetof(struct thinkos_rt, wq_console_wr) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_CONSOLE_WR ((offsetof(struct thinkos_krn, wq_console_wr) \
+								- offsetof(struct thinkos_krn, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_CONSOLE_RD ((offsetof(struct thinkos_rt, wq_console_rd) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_CONSOLE_RD ((offsetof(struct thinkos_krn, wq_console_rd) \
+								- offsetof(struct thinkos_krn, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_WQ_PAUSED ((offsetof(struct thinkos_rt, wq_paused) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_PAUSED ((offsetof(struct thinkos_krn, wq_paused) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_WQ_CANCELED ((offsetof(struct thinkos_rt, wq_canceled) \
-							 - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_CANCELED ((offsetof(struct thinkos_krn, wq_canceled) \
+							 - offsetof(struct thinkos_krn, wq_lst)) \
 							/ sizeof(uint32_t))
 
-#define THINKOS_COMM_TX_BASE ((offsetof(struct thinkos_rt, wq_comm_tx) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_COMM_TX_BASE ((offsetof(struct thinkos_krn, wq_comm_tx) \
+								- offsetof(struct thinkos_krn, wq_lst)) \
 							   / sizeof(uint32_t))
 
-#define THINKOS_COMM_RX_BASE ((offsetof(struct thinkos_rt, wq_comm_rx) \
-								- offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_COMM_RX_BASE ((offsetof(struct thinkos_krn, wq_comm_rx) \
+								- offsetof(struct thinkos_krn, wq_lst)) \
 							   / sizeof(uint32_t))
 
 #if (THINKOS_ENABLE_WQ_IRQ)
-#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_rt, wq_irq) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_IRQ ((offsetof(struct thinkos_krn, wq_irq) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 #endif
 
-#define THINKOS_WQ_DMA ((offsetof(struct thinkos_rt, wq_dma) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_DMA ((offsetof(struct thinkos_krn, wq_dma) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_FLASH_MEM_BASE ((offsetof(struct thinkos_rt, wq_flash_mem) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_FLASH_MEM_BASE ((offsetof(struct thinkos_krn, wq_flash_mem) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 
-#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_rt, wq_fault) \
-						   - offsetof(struct thinkos_rt, wq_lst)) \
+#define THINKOS_WQ_FAULT ((offsetof(struct thinkos_krn, wq_fault) \
+						   - offsetof(struct thinkos_krn, wq_lst)) \
 						  / sizeof(uint32_t))
 
 
@@ -798,7 +798,7 @@ struct krn_thread_state {
 	uint8_t tmw;
 	uint8_t ready;
 	int8_t irq;
-	uint16_t wq;
+	int16_t wq;
 	struct thinkos_context * ctx;
 	uint32_t sp;
 	uint32_t sl;
@@ -815,7 +815,7 @@ struct krn_thread_state {
 
 #include <stdarg.h>
 
-extern struct thinkos_rt thinkos_rt;
+extern struct thinkos_krn thinkos_krn;
 
 #if (THINKOS_ENABLE_THREAD_INFO)
 extern const struct thinkos_thread_inf thinkos_main_inf;
@@ -1051,7 +1051,7 @@ int krn_fmt_line_hex32(char * __ln, uint32_t __addr,
  * kernel core functions 
  * --------------------------------------------------------------------------*/
 
-int thinkos_krn_thread_init(struct thinkos_rt * krn,
+int thinkos_krn_thread_init(struct thinkos_krn * krn,
 	unsigned int thread_idx,
 	const struct thinkos_thread_initializer * init);
 
@@ -1087,9 +1087,9 @@ int __thinkos_kind_prefix(unsigned int kind);
 
 const char * __thinkos_kind_name(unsigned int kind);
 
-void thinkos_krn_sched_off(struct thinkos_rt * krn);
+void thinkos_krn_sched_off(struct thinkos_krn * krn);
 
-void thinkos_krn_sched_on(struct thinkos_rt * krn);
+void thinkos_krn_sched_on(struct thinkos_krn * krn);
 
 /* -------------------------------------------------------------------------
  * Kernel Debug
@@ -1101,7 +1101,7 @@ void __thinkos_systick_sleep(void);
 
 void __thinkos_systick_wakeup(void);
 
-void __thinkos_krn_time_init(struct thinkos_rt * krn);
+void __thinkos_krn_time_init(struct thinkos_krn * krn);
 
 /* -------------------------------------------------------------------------
  * Main thread
@@ -1146,13 +1146,13 @@ bool thinkos_krn_wq_contains(struct thread_waitqueue * wq,
 
 bool thinkos_krn_wq_is_empty(struct thread_waitqueue * wq);
 
-void thinkos_krn_core_reset(struct thinkos_rt * krn);
+void thinkos_krn_core_reset(struct thinkos_krn * krn);
 
-void thinkos_krn_sched_brk(struct thinkos_rt * krn, unsigned int errno);
+void thinkos_krn_sched_brk(struct thinkos_krn * krn, unsigned int errno);
 
-void thinkos_krn_req_core_rst(struct thinkos_rt * krn);
+void thinkos_krn_req_core_rst(struct thinkos_krn * krn);
 
-void thinkos_krn_brk_clr(struct thinkos_rt * krn);
+void thinkos_krn_brk_clr(struct thinkos_krn * krn);
 
 void __attribute__((noreturn, noinline)) thinkos_krn_abort_at_exit(int code);
 

@@ -213,12 +213,12 @@ const struct thinkos_thread_initializer shell_thread_init = {
 };
 
 #if 0
-void board_core_rst(struct thinkos_rt * krn)
+void board_core_rst(struct thinkos_krn * krn)
 {
 	thinkos_krn_thread_init(krn, 1, &rst_thread_init);
 }
 
-void board_on_break(struct thinkos_rt * krn)
+void board_on_break(struct thinkos_krn * krn)
 {
 }
 #endif
@@ -280,7 +280,7 @@ void usb_vbus(bool on)
 
 /* Default Monitor Task */
 void __attribute__((noreturn)) monitor_task(const struct monitor_comm * comm, 
-											void * param, struct thinkos_rt * krn)
+											void * param, struct thinkos_krn * krn)
 {
 	uint32_t sigmask = 0;
 	uint32_t sig;
@@ -360,7 +360,7 @@ extern const struct thinkos_comm usb_cdc_comm_instance;
 
 void main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	const struct monitor_comm * comm;
 
 	DCC_LOG_INIT();

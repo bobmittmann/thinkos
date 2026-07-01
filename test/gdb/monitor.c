@@ -55,10 +55,10 @@ void monitor_on_step(struct dmon_comm * comm)
 {
 	struct thinkos_thread st;
 	struct thinkos_context * ctx;
-	int id = thinkos_rt.step_id;
+	int id = thinkos_krn.step_id;
 	int type;
 
-	if (__thinkos_thread_get(&thinkos_rt, &st, id) < 0) {
+	if (__thinkos_thread_get(&thinkos_krn, &st, id) < 0) {
 		dmprintf(comm, "Thread %d is invalid!\r\n", id);
 		return;
 	}

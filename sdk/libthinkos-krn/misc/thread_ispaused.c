@@ -25,7 +25,7 @@
 #if THINKOS_ENABLE_PAUSE
 bool __thinkos_thread_ispaused(unsigned int th)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	if (th > THINKOS_THREADS_MAX) {
 		DCC_LOG1(LOG_WARNING, "invalid thread %d!", th);

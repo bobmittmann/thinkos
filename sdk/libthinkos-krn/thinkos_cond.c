@@ -33,20 +33,20 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if ((THINKOS_COND_MAX) > 0)
 
 static inline bool __attribute__((always_inline)) 
-__krn_obj_is_cond(struct thinkos_rt * krn, unsigned int cond) {
+__krn_obj_is_cond(struct thinkos_krn * krn, unsigned int cond) {
 	return __obj_is_valid(cond, THINKOS_COND_BASE, THINKOS_COND_MAX);
 }
 
 #if (THINKOS_ENABLE_COND_ALLOC)
 static inline bool __attribute__((always_inline)) 
-__krn_cond_is_alloc(struct thinkos_rt * krn, unsigned int cond) {
+__krn_cond_is_alloc(struct thinkos_krn * krn, unsigned int cond) {
 	return __bit_mem_rd(krn->cond_alloc, cond - THINKOS_COND_BASE) ? 
 		true : false;
 }
 #endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-static int krn_cond_check(struct thinkos_rt * krn, int cond)
+static int krn_cond_check(struct thinkos_krn * krn, int cond)
 {
 	if (!__krn_obj_is_cond(krn, cond)) {
 		return THINKOS_ERR_COND_INVALID;
@@ -60,7 +60,7 @@ static int krn_cond_check(struct thinkos_rt * krn, int cond)
 }
 #endif
 
-void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
@@ -111,7 +111,7 @@ void thinkos_cond_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
 void thinkos_cond_timedwait_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn)
+								struct thinkos_krn * krn)
 {
 	unsigned int cond = arg[0];
 	unsigned int mutex = arg[1];
@@ -165,7 +165,7 @@ void thinkos_cond_timedwait_svc(int32_t arg[], int self,
 }
 #endif
 
-void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int cond = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -195,7 +195,7 @@ void thinkos_cond_signal_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 void thinkos_cond_broadcast_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn)
+								struct thinkos_krn * krn)
 {	
 	unsigned int cond = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -220,7 +220,7 @@ void thinkos_cond_broadcast_svc(int32_t arg[], int self,
 #endif /* THINKOS_COND_MAX > 0 */
 
 #if (THINKOS_ENABLE_PAUSE)
-bool krn_cond_resume(struct thinkos_rt * krn, unsigned int th, 
+bool krn_cond_resume(struct thinkos_krn * krn, unsigned int th, 
 						unsigned int wq, bool tmw) 
 {
 	DCC_LOG1(LOG_INFO, "PC=%08x ...........", __thread_pc_get(krn, th)); 

@@ -51,7 +51,7 @@ uint32_t * thinkos_krn_xcpt_stack_top(void)
 	return (uint32_t *)sp;
 }
 
-void __attribute__((noreturn, naked)) thinkos_idle_task(struct thinkos_rt * krn)
+void __attribute__((noreturn, naked)) thinkos_idle_task(struct thinkos_krn * krn)
 {
 #if (THINKOS_ENABLE_IDLE_HOOKS)
 	struct thinkos_idle_rt * idle = &krn->idle_hooks;
@@ -81,27 +81,27 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(struct thinkos_rt * krn)
 			case IDLE_HOOK_FLASH_MEM0:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM0" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(krn, 0, &thinkos_rt.flash_drv[0]);
+				thinkos_flash_drv_tasklet(krn, 0, &thinkos_krn.flash_drv[0]);
 				break;
 
 #if ((THINKOS_FLASH_MEM_MAX) > 1)
 			case IDLE_HOOK_FLASH_MEM1:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM1" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(krn, 1, &thinkos_rt.flash_drv[1]);
+				thinkos_flash_drv_tasklet(krn, 1, &thinkos_krn.flash_drv[1]);
 				break;
 #if ((THINKOS_FLASH_MEM_MAX) > 2)
 			case IDLE_HOOK_FLASH_MEM2:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(krn, 2, &thinkos_rt.flash_drv[2]);
+				thinkos_flash_drv_tasklet(krn, 2, &thinkos_krn.flash_drv[2]);
 				break;
 #endif
 #if ((THINKOS_FLASH_MEM_MAX) > 3)
 			case IDLE_HOOK_FLASH_MEM3:
 				DCC_LOG(LOG_TRACE, _ATTR_PUSH_ _FG_GREEN_ 
 						"IDLE_HOOK_FLASH_MEM2" _ATTR_POP_ );
-				thinkos_flash_drv_tasklet(krn, 3, &thinkos_rt.flash_drv[3]);
+				thinkos_flash_drv_tasklet(krn, 3, &thinkos_krn.flash_drv[3]);
 				break;
 #endif
 #endif
@@ -114,7 +114,7 @@ void __attribute__((noreturn, naked)) thinkos_idle_task(struct thinkos_rt * krn)
 #if (THINKOS_ENABLE_CRITICAL)
 				/* Force the scheduler to run if there are 
 				   threads in the ready queue. */
-				if (thinkos_rt.wq_ready != 0) {
+				if (thinkos_krn.wq_ready != 0) {
 					__krn_sched_defer(krn);
 				}
 #endif
@@ -163,7 +163,7 @@ struct thinkos_context * __thinkos_idle_ctx(void)
 #endif
 
 /* resets the idle thread and context */
-struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn)
+struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_krn * krn)
 {
 	struct thinkos_context * ctx;
 	uintptr_t stack_top;
@@ -214,7 +214,7 @@ struct thinkos_context * thinkos_krn_idle_reset(struct thinkos_rt * krn)
 }
 
 /* initialize the idle thread */
-void thinkos_krn_idle_init(struct thinkos_rt * krn)
+void thinkos_krn_idle_init(struct thinkos_krn * krn)
 {
 	uintptr_t stack_base;
 	uint32_t free;
@@ -236,7 +236,7 @@ void thinkos_krn_idle_init(struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_IDLE_HOOKS)
-void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req) 
+void __krn_idle_hook_req(struct thinkos_krn * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {
@@ -245,7 +245,7 @@ void __krn_idle_hook_req(struct thinkos_rt * krn, unsigned int req)
 	} while (__strex((uint32_t *)&krn->idle_hooks.req_map, map));
 }
 
-void __krn_idle_hook_clr(struct thinkos_rt * krn, unsigned int req) 
+void __krn_idle_hook_clr(struct thinkos_krn * krn, unsigned int req) 
 {
 	uint32_t map;
 	do {

@@ -684,7 +684,7 @@ extern const struct flash_dev stm32l1x_flash_dev;
 
 void main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 //	const struct monitor_comm * comm;
 
 #if DEBUG

@@ -378,7 +378,7 @@ int rsp_monitor_write(struct gdb_rspd * gdb, char * pkt,
 
 void print_stack_usage(struct gdb_rspd * gdb, char * pkt)
 {
-	struct thinkos_rt * rt = &thinkos_rt;
+	struct thinkos_krn * rt = &thinkos_krn;
 	char * str;
 	char * cp;
 	int i;

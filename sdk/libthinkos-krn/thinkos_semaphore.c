@@ -29,20 +29,20 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #if (THINKOS_SEMAPHORE_MAX) > 0
 
 static inline bool __attribute__((always_inline)) 
-__krn_obj_is_sem(struct thinkos_rt * krn, unsigned int sem) {
+__krn_obj_is_sem(struct thinkos_krn * krn, unsigned int sem) {
 	return __obj_is_valid(sem, THINKOS_SEM_BASE, THINKOS_SEMAPHORE_MAX);
 }
 
 #if (THINKOS_ENABLE_SEM_ALLOC)
 static inline bool __attribute__((always_inline)) 
-__krn_sem_is_alloc(struct thinkos_rt * krn, unsigned int sem) {
+__krn_sem_is_alloc(struct thinkos_krn * krn, unsigned int sem) {
 	return __bit_mem_rd(krn->sem_alloc, sem - THINKOS_SEM_BASE) ? 
 		true : false;
 }
 #endif
 
 #if (THINKOS_ENABLE_ARG_CHECK)
-int krn_sem_check(struct thinkos_rt * krn, int sem)
+int krn_sem_check(struct thinkos_krn * krn, int sem)
 {
 	if (!__krn_obj_is_sem(krn, sem)) {
 		return THINKOS_ERR_SEM_INVALID;
@@ -56,7 +56,7 @@ int krn_sem_check(struct thinkos_rt * krn, int sem)
 }
 #endif
 
-void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t value = (uint32_t)arg[1];
@@ -76,7 +76,7 @@ void thinkos_sem_init_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[SVC_RETURN] = THINKOS_OK;
 }
 
-void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t sem_val;
@@ -105,7 +105,7 @@ void thinkos_sem_trywait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	} while (__strex(&krn->sem_val[sem - THINKOS_SEM_BASE], sem_val));
 }
 
-void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_sem_wait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t sem_val;
@@ -185,7 +185,7 @@ again:
 }
 
 #if (THINKOS_ENABLE_TIMED_CALLS)
-void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_sem_timedwait_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int sem = arg[0];
 	uint32_t ms = (uint32_t)arg[1];
@@ -243,7 +243,7 @@ again:
 }
 #endif
 
-static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem) 
+static void __krn_sem_post(struct thinkos_krn * krn, uint32_t sem) 
 {
 	uint32_t queue;
 	int idx;
@@ -285,7 +285,7 @@ static void __krn_sem_post(struct thinkos_rt * krn, uint32_t sem)
 
 void thinkos_krn_sem_post_i(int sem) 
 {	
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_sem_post(krn, sem); 
 	/* signal the scheduler ... */
@@ -294,14 +294,14 @@ void thinkos_krn_sem_post_i(int sem)
 /*
 void __thinkos_sem_post_i(uint32_t sem) 
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 
 	__krn_sem_post(krn, sem); 
 }
 */
 #endif /* THINKOS_ENABLE_I_CALLS */
 
-void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	unsigned int sem = arg[0];
 #if (THINKOS_ENABLE_ARG_CHECK)
@@ -324,7 +324,7 @@ void thinkos_sem_post_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 #if (THINKOS_ENABLE_PAUSE)
-bool semaphore_resume(struct thinkos_rt * krn, unsigned int th, 
+bool semaphore_resume(struct thinkos_krn * krn, unsigned int th, 
 							 unsigned int sem, bool tmw) 
 {
 	unsigned int idx = sem - THINKOS_SEM_BASE;

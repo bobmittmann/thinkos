@@ -55,7 +55,7 @@ static int bmp_bit_cnt(uint32_t bmp[], int bits)
 }
 #endif
 
-static void os_alloc_dump(FILE * f, struct thinkos_rt * rt)
+static void os_alloc_dump(FILE * f, struct thinkos_krn * rt)
 {
 	fprintf(f, "     ");
 #if THINKOS_ENABLE_MUTEX_ALLOC
@@ -130,7 +130,7 @@ static void os_alloc_dump(FILE * f, struct thinkos_rt * rt)
 
 int cmd_osinfo(FILE * f, int argc, char ** argv)
 {
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	uint32_t * wq;
 	int i;
 #if THINKOS_ENABLE_PROFILING
@@ -144,7 +144,7 @@ int cmd_osinfo(FILE * f, int argc, char ** argv)
 	if (argc > 1)
 		return SHELL_ERR_EXTRA_ARGS;
 
-	if (thinkos_rt_snapshot(&rt) < 0) {
+	if (thinkos_krn_snapshot(&rt) < 0) {
 		fprintf(f, "#ERROR: Thinkos RT_DEBUG not enabled!\n");
 		return SHELL_ERR_GENERAL;
 	}
@@ -280,7 +280,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 {
 	uint8_t lst[THINKOS_THREADS_MAX];
 	struct thinkos_context * ctx;
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	unsigned int th;
 #if THINKOS_ENABLE_THREAD_STAT
 	int oid;
@@ -292,7 +292,7 @@ int cmd_thread(FILE * f, int argc, char ** argv)
 #endif
 	int i;
 
-	thinkos_rt_snapshot(&rt);
+	thinkos_krn_snapshot(&rt);
 
 	if (argc == 1) {
 		// no arguments (dump the current thread)
@@ -382,13 +382,13 @@ static int scan_stack(uint32_t * ptr, unsigned int size)
 
 int cmd_oscheck(FILE * f, int argc, char ** argv)
 {
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	int i;
 
 	if (argc > 1)
 		return SHELL_ERR_EXTRA_ARGS;
 
-	if (thinkos_rt_snapshot(&rt) < 0) {
+	if (thinkos_krn_snapshot(&rt) < 0) {
 		fprintf(f, "#ERROR: Thinkos RT_DEBUG not enabled!\n");
 		return SHELL_ERR_GENERAL;
 	}

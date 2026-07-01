@@ -109,7 +109,7 @@ void busy_test(void)
 	uint32_t sum;
 	uint32_t ref;
 	uint32_t wrk;
-	struct thinkos_rt rt;
+	struct thinkos_krn rt;
 	uint32_t cycsum;
 	int ret;
 	int i;
@@ -118,9 +118,9 @@ void busy_test(void)
 	printf("---------------------------------------------------------\n");
 	printf(" - Scheduler test\n");
 
-	thinkos_rt_snapshot(&rt);
+	thinkos_krn_snapshot(&rt);
 	thinkos_sleep(1000);
-	thinkos_rt_snapshot(&rt);
+	thinkos_krn_snapshot(&rt);
 	cycsum = 0;
 
 	for (j = 0; j < THINKOS_THREADS_MAX + 1; ++j) {
@@ -164,9 +164,9 @@ void busy_test(void)
 		x[1] = dev[1].cnt;
 		x[2] = dev[2].cnt;
 		x[3] = dev[3].cnt;
-		thinkos_rt_snapshot(&rt);
+		thinkos_krn_snapshot(&rt);
 		thinkos_sleep(1000);
-		thinkos_rt_snapshot(&rt);
+		thinkos_krn_snapshot(&rt);
 		y[0] = dev[0].cnt;
 		y[1] = dev[1].cnt;
 		y[2] = dev[2].cnt;

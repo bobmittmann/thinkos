@@ -35,7 +35,7 @@ const struct thinkos_thread_inf thinkos_main_inf = {
 };
 #endif
 
-int __thinkos_init_main(struct thinkos_rt * krn, uintptr_t sp, uint32_t opt)
+int __thinkos_init_main(struct thinkos_krn * krn, uintptr_t sp, uint32_t opt)
 {
 #if (THINKOS_ENABLE_TIMESHARE)
 	int priority = __PRIORITY(opt);
@@ -104,7 +104,7 @@ int thinkos_main_thread_create(int (* entry)(void *, unsigned int), void * arg,
 #if (THINKOS_ENABLE_THREAD_INFO)
 	const struct thinkos_thread_inf * inf = &thinkos_main_inf;
 #endif
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct thinkos_thread_initializer init;
 	unsigned int thread;
 	uintptr_t stack_base;

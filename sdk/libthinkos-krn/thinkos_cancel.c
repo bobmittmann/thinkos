@@ -28,7 +28,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_ENABLE_CANCEL)
-void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_cancel_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int th = (unsigned int)((arg[0] == 0) ? self : arg[0]);
 	int code = arg[1];

@@ -23,7 +23,7 @@
 
 bool __thinkos_suspended(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	unsigned int th;
 
 	for (th = 1; th <= THINKOS_THREADS_MAX; ++th) {

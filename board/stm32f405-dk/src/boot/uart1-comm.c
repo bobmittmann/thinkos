@@ -147,7 +147,7 @@ void stm32f_usart1_isr(void)
 	struct thinkos_fifo8 * tx_fifo = THINKOS_FIFO8(&drv->tx_fifo);
 #endif
 	struct stm32_usart * uart = drv->uart;
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	uint32_t cr;
 	uint32_t sr;
 	int c;

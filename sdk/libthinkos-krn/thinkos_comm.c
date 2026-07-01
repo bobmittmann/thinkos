@@ -58,7 +58,7 @@ struct {
 } thinkos_comm_rt;
 
 #if (THINKOS_ENABLE_PAUSE) && (THINKOS_ENABLE_THREAD_STAT)
-bool comm_rx_resume(struct thinkos_rt * krn,
+bool comm_rx_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	__wq_wakeup_return(krn, wq, th, 0);
@@ -66,7 +66,7 @@ bool comm_rx_resume(struct thinkos_rt * krn,
 	return true;
 }
 
-bool comm_tx_resume(struct thinkos_rt * krn,
+bool comm_tx_resume(struct thinkos_krn * krn,
 							   unsigned int th, unsigned int wq, bool tmw) 
 {
 	__wq_wakeup_return(krn, wq, th, 0);
@@ -76,16 +76,16 @@ bool comm_tx_resume(struct thinkos_rt * krn,
 
 
 static inline int __attribute__((always_inline)) 
-__krn_obj_is_commtx(struct thinkos_rt * krn, unsigned int oid) {
+__krn_obj_is_commtx(struct thinkos_krn * krn, unsigned int oid) {
 	return (oid >= THINKOS_COMM_TX_FIRST) && (oid <= THINKOS_COMM_TX_LAST);
 }
 
 static inline int __attribute__((always_inline)) 
-__krn_obj_is_commrx(struct thinkos_rt * krn, unsigned int oid) {
+__krn_obj_is_commrx(struct thinkos_krn * krn, unsigned int oid) {
 	return (oid >= THINKOS_COMM_RX_FIRST) && (oid <= THINKOS_COMM_RX_LAST);
 }
 
-int krn_comm_tx_check(struct thinkos_rt * krn, unsigned int oid) {
+int krn_comm_tx_check(struct thinkos_krn * krn, unsigned int oid) {
 	if (!__krn_obj_is_commtx(krn, oid)) {
 		/* FIXME: specific error */
 		return THINKOS_ERR_GENERAL;
@@ -93,7 +93,7 @@ int krn_comm_tx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-int krn_comm_rx_check(struct thinkos_rt * krn, unsigned int oid) {
+int krn_comm_rx_check(struct thinkos_krn * krn, unsigned int oid) {
 	if (!__krn_obj_is_commrx(krn, oid)) {
 		/* FIXME: specific error */
 		return THINKOS_ERR_GENERAL;
@@ -101,7 +101,7 @@ int krn_comm_rx_check(struct thinkos_rt * krn, unsigned int oid) {
 	return THINKOS_OK;
 }
 
-void thinkos_krn_comm_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
+void thinkos_krn_comm_wakeup_head(struct thinkos_krn * krn, unsigned int wq)
 {
 	int th = __krn_wq_wakeup_head(krn, wq);
 	(void)th;
@@ -112,7 +112,7 @@ void thinkos_krn_comm_wakeup_head(struct thinkos_rt * krn, unsigned int wq)
 /* Send operations  */
 /* --------------------------------------------------------------------------*/
 
-void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	struct comm_tx_req * req = (struct comm_tx_req *)arg;
 	const struct thinkos_comm  * comm;
@@ -182,12 +182,12 @@ void thinkos_comm_send_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 }
 
 void thinkos_comm_timedsend_svc(int32_t arg[], int self, 
-							   struct thinkos_rt * krn)
+							   struct thinkos_krn * krn)
 {
 	thinkos_comm_send_svc(arg, self, krn);
 }
 
-int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
+int krn_comm_rx_putc(struct thinkos_krn * krn, unsigned int rx_wq, int c)
 {
 	int ret = -1;
 	int th;
@@ -224,7 +224,7 @@ int krn_comm_rx_putc(struct thinkos_rt * krn, unsigned int rx_wq, int c)
 /* --------------------------------------------------------------------------*/
  
 void thinkos_comm_timedrecv_svc(int32_t arg[], int self, 
-								struct thinkos_rt * krn)
+								struct thinkos_krn * krn)
 {
 	struct comm_rx_req * req = (struct comm_rx_req *)arg;
 	const struct thinkos_comm  * comm;
@@ -318,7 +318,7 @@ void thinkos_comm_timedrecv_svc(int32_t arg[], int self,
 	arg[SVC_RETURN] = ret;
 }
 
-void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	struct comm_rx_req * req = (struct comm_rx_req *)arg;
 	const struct thinkos_comm  * comm;
@@ -384,7 +384,7 @@ void thinkos_comm_recv_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 /* --------------------------------------------------------------------------*/
  
 int thinkos_comm_drain(struct thinkos_comm * comm, unsigned int wq,
-					   int self, struct thinkos_rt * krn)
+					   int self, struct thinkos_krn * krn)
 {
 	return THINKOS_OK;
 }
@@ -398,7 +398,7 @@ struct comm_ctl_req {
 	};
 };
 
-void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
+void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {	
 	const struct thinkos_comm  * comm;
 	struct comm_ctl_req * req;
@@ -442,7 +442,7 @@ void thinkos_comm_ctl_svc(int32_t arg[], int self, struct thinkos_rt * krn)
 	arg[SVC_RETURN] = THINKOS_ENOSYS;
 }
 
-int thinkos_krn_comm_init(struct thinkos_rt * krn,
+int thinkos_krn_comm_init(struct thinkos_krn * krn,
 						  unsigned int idx,
 						  const struct thinkos_comm * comm, 
 						  void * lowlvldrv)

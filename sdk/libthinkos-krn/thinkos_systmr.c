@@ -27,7 +27,7 @@
 _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
-void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn, 
+void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_krn * krn, 
 														 unsigned int th) 
 {
 #if (THINKOS_ENABLE_THREAD_STAT)
@@ -49,21 +49,21 @@ void __attribute__((noinline)) __thinkos_krn_clk_wakeup(struct thinkos_rt * krn,
 }
 
 #if (THINKOS_ENABLE_TIMESHARE)
-static void __thinkos_krn_timeshare(struct thinkos_rt * krn) 
+static void __thinkos_krn_timeshare(struct thinkos_krn * krn) 
 {
 	int32_t idx;
 
 	idx = __krn_sched_active_get(krn);
 
 	/*  */
-	thinkos_rt.sched_val[idx] -= thinkos_rt.sched_pri[idx];
-	if (thinkos_rt.sched_val[idx] < 0) {
-		thinkos_rt.sched_val[idx] += thinkos_rt.sched_limit;
-		if (__bit_mem_rd(&thinkos_rt.wq_ready, idx) == 0) {
+	thinkos_krn.sched_val[idx] -= thinkos_krn.sched_pri[idx];
+	if (thinkos_krn.sched_val[idx] < 0) {
+		thinkos_krn.sched_val[idx] += thinkos_krn.sched_limit;
+		if (__bit_mem_rd(&thinkos_krn.wq_ready, idx) == 0) {
 			DCC_LOG1(LOG_TRACE, "thread %d is active but not ready!!!", idx);
 		} else {
 			/* insert into the CPU wait queue */
-			__bit_mem_wr(&thinkos_rt.wq_tmshare, idx, 1);  
+			__bit_mem_wr(&thinkos_krn.wq_tmshare, idx, 1);  
 			__krn_thread_suspend(krn, idx + 1);
 			__krn_preempt(krn);
 		}
@@ -78,7 +78,7 @@ static void __thinkos_krn_timeshare(struct thinkos_rt * krn)
 
 void __monitor_context_swap(uint32_t ** pctx); 
 
-void __krn_clk_set_wakeup(struct thinkos_rt * krn, uint32_t bmp)
+void __krn_clk_set_wakeup(struct thinkos_krn * krn, uint32_t bmp)
 {
 	uint32_t msk;
 
@@ -124,7 +124,7 @@ void __krn_clk_set_wakeup(struct thinkos_rt * krn, uint32_t bmp)
 
 void __attribute__((aligned(16))) cm3_systick_isr(void)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
   #if (THINKOS_ENABLE_MONITOR)
 	struct cm3_systick * systick = CM3_SYSTICK;
 	do {
@@ -203,7 +203,7 @@ void __attribute__((aligned(16))) cm3_systick_isr(void)
 #define THINKOS_CLK_RESOLUTION (((uint64_t)(1LL << 32) / \
 								(THINKOS_SYSTICK_FREQ)))
 
-void thinkos_krn_systick_init(struct thinkos_rt * krn)
+void thinkos_krn_systick_init(struct thinkos_krn * krn)
 {
 	struct cm3_systick * systick = CM3_SYSTICK;
 
@@ -252,7 +252,7 @@ void thinkos_krn_udelay_calibrate(void)
 #endif
 
 #if (THINKOS_ENABLE_PAUSE)
-bool clock_resume(struct thinkos_rt * krn, unsigned int th, 
+bool clock_resume(struct thinkos_krn * krn, unsigned int th, 
 				  unsigned int wq, bool tmw) 
 {
 //	if ((int32_t)(krn->clock[th] - krn->ticks) <= 0) {

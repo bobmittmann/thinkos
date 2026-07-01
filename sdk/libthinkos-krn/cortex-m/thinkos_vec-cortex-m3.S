@@ -142,8 +142,8 @@ cm3_hard_fault_isr:
 	ldmia   r7!, {r0-r2}
 .L_bypass:
 	stmia   sp!, {r0-r2}        /* LR, PC and XPSR */
-	movw    r0, #:lower16:thinkos_rt
-	movt    r0, #:upper16:thinkos_rt
+	movw    r0, #:lower16:thinkos_krn
+	movt    r0, #:upper16:thinkos_krn
 	mov     r1, sp
 	subs    r1, #((16) * 4)
 	mrs     r2, PSP
@@ -186,8 +186,8 @@ __thinkos_krn_fault:
 	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
 
 	/* Store the exception number */
-	movw     r0, #:lower16:thinkos_rt
-	movt     r0, #:upper16:thinkos_rt
+	movw     r0, #:lower16:thinkos_krn
+	movt     r0, #:upper16:thinkos_krn
 	mrs     r2, IPSR
 	strb    r2, [r0, #OFFSETOF_KRN_SCHED_XCP]
 
@@ -216,7 +216,7 @@ __thinkos_krn_fault:
 	sub     sp, #(16*4)
 
 	/* At this point the registers are:
-	   R0 -> pointer to thinkos_rt
+	   R0 -> pointer to thinkos_krn
 	   R1 -> pointer to the fault buffer 
 	   R2 -> exception number
 	   SP -> exception stack top
@@ -333,7 +333,7 @@ __thinkos_krn_thread_err:
 	strb    r4, [r1, #OFFSETOF_FAULT_CONTROL]
 	
 	/* Store the exception number */
-	ldr     r0, .L_thinkos_rt
+	ldr     r0, .L_thinkos_krn
 	mrs     r2, IPSR
 	strb    r2, [r0, #OFFSETOF_KRN_SCHED_XCP]
 
@@ -375,8 +375,8 @@ __thinkos_krn_thread_err:
 	.word	CM3_SCB_BASE 
 .L_krn_halt:
 	.word   thinkos_krn_halt
-.L_thinkos_rt:
-	.word	thinkos_rt
+.L_thinkos_krn:
+	.word	thinkos_krn
 
 	.size   __thinkos_krn_thread_err, . - __thinkos_krn_thread_err
 

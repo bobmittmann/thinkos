@@ -154,10 +154,10 @@ int btl_cmd_xxd(struct btl_shell_env * env, int argc, char * argv[]);
 void __attribute__((noreturn)) 
 	standby_monitor_task(const struct monitor_comm * comm, 
 						 void * arg, uintptr_t sta, 
-						 struct thinkos_rt * krn);
+						 struct thinkos_krn * krn);
 
 void __attribute((noreturn)) thinkos_boot(const struct thinkos_board * board,
-	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_rt *));
+	void (monitor)(const struct monitor_comm *, void *, uintptr_t, struct thinkos_krn *));
 
 bool monitor_app_suspend(void);
 

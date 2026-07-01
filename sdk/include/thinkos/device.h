@@ -49,10 +49,10 @@ extern "C" {
 #endif
 
 
-int __thinkos_krn_dev_init(struct thinkos_rt * krn, 
+int __thinkos_krn_dev_init(struct thinkos_krn * krn, 
                             const struct thinkos_dev_map * map);
 
-bool __krn_dev_lookup(struct thinkos_rt * krn, const char * tag, 
+bool __krn_dev_lookup(struct thinkos_krn * krn, const char * tag, 
 					  struct thinkos_dev * dev);
 
 #ifdef __cplusplus

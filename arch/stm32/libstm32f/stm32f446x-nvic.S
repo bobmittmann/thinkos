@@ -173,8 +173,8 @@ _isr:
 	/* r6: cyccnt = CM3_DWT->cyccnt */
 	ldr.n   r2, [r2, #4]
 #endif
-	movw    r1, :lower16:thinkos_rt
-	movt    r1, :upper16:thinkos_rt
+	movw    r1, :lower16:thinkos_krn
+	movt    r1, :upper16:thinkos_krn
 #endif
 	mrs     r0, IPSR
 	subs    r0, #16

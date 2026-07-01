@@ -27,7 +27,7 @@ _Pragma ("GCC optimize (\"Ofast\")")
 #endif
 
 #if (THINKOS_ENABLE_SLEEP)
-void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
+void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_krn * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
 
@@ -49,7 +49,7 @@ void thinkos_sleep_svc(int32_t * arg, int self, struct thinkos_rt * krn)
 #endif
 
 #if (THINKOS_ENABLE_ALARM)
-void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_rt * krn)
+void thinkos_alarm_svc(int32_t * arg, int self, struct thinkos_krn * krn)
 {
 	uint32_t clk = (uint32_t)arg[0];
 

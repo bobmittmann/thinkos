@@ -27,9 +27,9 @@
  * Run Time ThinkOS block
  * --------------------------------------------------------------------------*/
 
-struct thinkos_rt thinkos_rt __attribute__((aligned(4), section(".krn.data")));
+struct thinkos_krn thinkos_krn __attribute__((aligned(4), section(".krn.data")));
 
-void thinkos_krn_core_init(struct thinkos_rt * krn)
+void thinkos_krn_core_init(struct thinkos_krn * krn)
 {
 	unsigned int i;
 
@@ -110,7 +110,7 @@ void thinkos_krn_core_init(struct thinkos_rt * krn)
 }
 
 #if 0
-void __thinkos_krn_kill_all(struct thinkos_rt * krn)
+void __thinkos_krn_kill_all(struct thinkos_krn * krn)
 {
 	int active = __thread_active_get(krn);
 
@@ -125,7 +125,7 @@ void __thinkos_krn_kill_all(struct thinkos_rt * krn)
 }
 #endif
 
-void thinkos_krn_core_reset(struct thinkos_rt * krn)
+void thinkos_krn_core_reset(struct thinkos_krn * krn)
 {
 #if DEBUG
 	DCC_LOG(LOG_WARNING, VT_PSH VT_FYW "!! Core Reset !!" VT_POP);
@@ -204,78 +204,12 @@ const char * __thinkos_kind_name(unsigned int kind)
 	return __kind_name(kind);
 }
 
-void __krn_cyccnt_flush(struct thinkos_rt * krn, unsigned int th)
-{
-#if (THINKOS_ENABLE_PROFILING)
-	uint32_t ref;
-	uint32_t cnt;
-
-	cnt = CM3_DWT->cyccnt;
-	ref = krn->cycref;
-	krn->cycref = cnt;
-
-	krn->th_cyc[th] += cnt - ref;
-#endif
-}
-
-int __krn_threads_cyc_get(struct thinkos_rt * krn, uint32_t cyc[], 
-						  unsigned int from, unsigned int cnt)
-{
-#if (THINKOS_ENABLE_PROFILING)
-	if (from >= __KRN_THREAD_LST_SIZ)
-		return -THINKOS_EINVAL;
-
-	if (cnt > (__KRN_THREAD_LST_SIZ - from))
-		cnt = (__KRN_THREAD_LST_SIZ - from);
-
-	__krn_cyccnt_flush(krn, __krn_sched_act_get(krn));
-	__thinkos_memcpy32(cyc, &krn->th_cyc[from], cnt * sizeof(uint32_t)); 
-
-	return cnt;
-#else
-	return -THINKOS_ENOSYS;
-#endif
-}
-
-int __krn_threads_inf_get(struct thinkos_rt * krn, 
-						  const struct thinkos_thread_inf * inf[],
-						  unsigned int from, unsigned int cnt)
-{
-#if (THINKOS_ENABLE_PROFILING)
-	if (from >= __KRN_THREAD_LST_SIZ)
-		return -THINKOS_EINVAL;
-
-	if (cnt > (__KRN_THREAD_LST_SIZ - from))
-		cnt = (__KRN_THREAD_LST_SIZ - from);
-
-	__thinkos_memcpy32((void *)inf, &krn->th_inf[from], cnt * sizeof(void *)); 
-
-	return cnt;
-#else
-	return -THINKOS_ENOSYS;
-#endif
-}
-
-int __thread_wq_lookup(struct thinkos_rt * krn, unsigned int th)
-{
-	uint32_t msk = (1 << (th - 1));
-	int i;
-
-	for (i = THINKOS_OBJECT_LAST; i >= THINKOS_OBJECT_FIRST; --i) {
-		if (krn->wq_lst[i] & msk)
-			break;
-	}
-	
-	return i;
-}
-
-
-void thinkos_krn_sched_off(struct thinkos_rt * krn)
+void thinkos_krn_sched_off(struct thinkos_krn * krn)
 {
 	__krn_sched_off();
 }
 
-void thinkos_krn_sched_on(struct thinkos_rt * krn)
+void thinkos_krn_sched_on(struct thinkos_krn * krn)
 {
 	__krn_sched_on();
 }

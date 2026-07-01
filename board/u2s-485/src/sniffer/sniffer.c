@@ -526,7 +526,7 @@ uint32_t __attribute__((aligned(8))) serial_recv_stack[192];
 
 struct vcom vcom;
 
-void init_threads(struct thinkos_rt * krn)
+void init_threads(struct thinkos_krn * krn)
 {
 	struct thinkos_thread_initializer init;
 	int ret;
@@ -574,7 +574,7 @@ void init_threads(struct thinkos_rt * krn)
 
 int __attribute__((noreturn)) main(int argc, char ** argv)
 {
-	struct thinkos_rt * krn = &thinkos_rt;
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct usb_cdc_class * cdc;
 	struct serial_dev * serial;
 	int i;
