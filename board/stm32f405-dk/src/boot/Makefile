@@ -42,7 +42,7 @@ LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 		  $(addprefix $(ARCH_DIR)/lib,$(ARCH_LIBS)) 
 
 SDK_LIBS = util thinkos-krn thinkos-btl thinkos-mon thinkos-dbg thinkos-usr \
-		   xmodem ice-comm fixpt
+		   thinkos-nrt xmodem ice-comm fixpt
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)

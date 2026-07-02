@@ -22,13 +22,14 @@
 #include "thinkos_krn-i.h"
 
 /* return true if at least one thread is enabled in the core */
-bool __thinkos_active(void)
+bool __thinkos_active(struct thinkos_krn * krn)
 {
 	unsigned int thread_id;
 
 	for (thread_id = 0; thread_id < THINKOS_THREADS_MAX; ++thread_id) {
-		if (__thinkos_thread_ctx_is_valid(thread_id))
+		if (__thread_ctx_is_valid(krn, thread_id)) {
 			return true;
+		}
 	}
 
 	return false;

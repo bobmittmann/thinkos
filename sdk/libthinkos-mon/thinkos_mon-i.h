@@ -28,6 +28,9 @@
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
 
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
+
 #define __THINKOS_DEBUG__
 #include <thinkos/debug.h>
 
@@ -37,40 +40,10 @@
 #include <sys/dcclog.h>
 #include <vt100.h>
 
-/* -------------------------------------------------------------------------
- * System timer (Cortex-M SysTick)
- * ------------------------------------------------------------------------- */
-
-static inline void __systick_int_disable(struct thinkos_krn * krn) {
-	struct cm3_systick * systick = CM3_SYSTICK;
-	systick->csr = SYSTICK_CSR_ENABLE;
-}
-
-static inline void __systick_int_enable(struct thinkos_krn * krn) {
-	struct cm3_systick * systick = CM3_SYSTICK;
-	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
-}
-
-static inline void __systick_pend_clr(struct thinkos_krn * krn) {
-	struct cm3_scb * scb = CM3_SCB;
-
-	/* clear any pending systick interrupt */
-	scb->icsr = SCB_ICSR_PENDSTCLR;
-}
-
-static inline void __systick_pend_set(struct thinkos_krn * krn) {
-	struct cm3_scb * scb = CM3_SCB;
-
-	/* raise a pending systick interrupt */
-	scb->icsr = SCB_ICSR_PENDSTSET;
-	asm volatile ("isb\n" :  :  : );
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int __console_puts(const char * s);
 
 #ifdef __cplusplus
 }

@@ -380,10 +380,8 @@ int thinkos_krn_threads_cyc_get(uint32_t cyc[], unsigned int from,
 	return __krn_threads_cyc_get(krn, cyc, from, cnt);
 }
 
-int thinkos_krn_active_get(void)
+int thinkos_krn_active_get(struct thinkos_krn * krn)
 {
-	struct thinkos_krn * krn = &thinkos_krn;
-
 	return __krn_sched_act_get(krn);
 }
 
@@ -419,11 +417,10 @@ int __thread_wq_lookup(struct thinkos_krn * krn, unsigned int th)
 	return i;
 }
 
-bool thinkos_krn_thread_state_get(unsigned int thread_id, 
+bool thinkos_krn_thread_state_get(struct thinkos_krn * krn,
+								  unsigned int thread_id, 
 								  struct krn_thread_state * st)
 {
-	struct thinkos_krn * krn = &thinkos_krn;
-
 	if (!__krn_thread_ctx_is_valid(krn, thread_id)) {
 		return false;
 	}

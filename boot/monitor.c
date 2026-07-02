@@ -68,7 +68,7 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_DUMPMEM_ENABLE
-#define MONITOR_DUMPMEM_ENABLE     0
+#define MONITOR_DUMPMEM_ENABLE     1
 #endif
 
 #ifndef MONITOR_STACKUSAGE_ENABLE
@@ -88,15 +88,15 @@ void gdb_stub_task(const struct monitor_comm * comm);
 #endif
 
 #ifndef MONITOR_OS_PAUSE
-#define MONITOR_OS_PAUSE 0
+#define MONITOR_OS_PAUSE 1
 #endif
 
 #ifndef MONITOR_OS_RESUME
-#define MONITOR_OS_RESUME 0
+#define MONITOR_OS_RESUME 1
 #endif
 
 #ifndef MONITOR_THREAD_STEP_ENABLE
-#define MONITOR_THREAD_STEP_ENABLE 0
+#define MONITOR_THREAD_STEP_ENABLE 1
 #endif
 
 #ifndef MONITOR_BOARDINFO_ENABLE
@@ -280,7 +280,8 @@ static void monitor_show_help(const struct monitor_comm * comm,
 	monitor_hbar(comm);
 }
 
-static void monitor_on_print_fault(const struct monitor_comm * comm) 
+static void monitor_on_print_fault(const struct monitor_comm * comm, 
+								   struct thinkos_krn * krn) 
 {
 	struct thinkos_fault * fault = __thinkos_fault_rt();
 //	const struct thinkos_mem_desc * mem = &sram_desc;
@@ -294,7 +295,7 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 	monitor_print_newln(comm);
 	monitor_hbar(comm);
 
-	if  (thinkos_krn_thread_state_get(thread_id, &inf)) {
+	if  (thinkos_krn_thread_state_get(krn, thread_id, &inf)) {
 		monitor_printf(comm, "* Error %s [thread=%d errno=%d addr=0x%08x]\r\n", 
 					   thinkos_krn_err_tag(inf.errno),
 					   inf.thread_id, inf.errno, inf.ctx->pc);
@@ -309,7 +310,8 @@ static void monitor_on_print_fault(const struct monitor_comm * comm)
 
 }
 
-void monitor_on_thread_fault(const struct monitor_comm * comm)
+void monitor_on_thread_fault(const struct monitor_comm * comm,
+							 struct thinkos_krn * krn) 
 {
 	int thread_id;
 	int32_t errno;
@@ -349,7 +351,7 @@ void monitor_on_thread_fault(const struct monitor_comm * comm)
 					   "addr=0x%08x]\r\n", syscall, thread_id, errno, (uintptr_t)pc); 
 
 	} else {
-		if (errno && thinkos_krn_thread_state_get(thread_id, &inf)) {
+		if (errno && thinkos_krn_thread_state_get(krn, thread_id, &inf)) {
 			monitor_printf(comm, "* Error %s [thread=%d errno=%d "
 						   "addr=0x%08x]\r\n", 
 						   thinkos_krn_err_tag(inf.errno),
@@ -393,17 +395,18 @@ static void monitor_on_bkpt(struct monitor * mon)
 #endif
 
 #if (MONITOR_THREADINFO_ENABLE)
-static void monitor_on_print_thread(struct monitor * mon, bool next)
+static void monitor_on_print_thread(struct monitor * mon, bool next,
+									struct thinkos_krn * krn)
 {
 	struct krn_thread_state inf;
 	int thread_id = mon->thread_id;
 
-	if (next || thinkos_krn_thread_state_get(thread_id, &inf)) { 
+	if (next || thinkos_krn_thread_state_get(krn, thread_id, &inf)) { 
 		thread_id = __thinkos_thread_getnext(thread_id);
 		if (thread_id < 0)
 			thread_id = __thinkos_thread_getnext(thread_id);
 		mon->thread_id = thread_id;
-		if (!thinkos_krn_thread_state_get(thread_id, &inf)) {
+		if (!thinkos_krn_thread_state_get(krn, thread_id, &inf)) {
 			return;
 		}
 	}
@@ -433,7 +436,7 @@ static void monitor_on_step(struct monitor * mon, struct thinkos_krn * krn)
 #endif
 
 #if (MONITOR_OS_PAUSE)
-static void monitor_pause_all(const struct monitor_comm * comm)
+static void monitor_pause_all(const struct monitor_comm * comm, struct thinkos_krn * krn)
 {
 	monitor_thread_break_clr();
 
@@ -444,7 +447,7 @@ static void monitor_pause_all(const struct monitor_comm * comm)
 #endif
 
 #if (MONITOR_OS_RESUME)
-static void monitor_resume_all(const struct monitor_comm * comm)
+static void monitor_resume_all(const struct monitor_comm * comm, struct thinkos_krn * krn)
 {
 	monitor_printf(comm, "\r\nResuming all threads...\r\n");
 	DCC_LOG(LOG_WARNING, "thinkos_dbg_resume_all()");
@@ -473,7 +476,7 @@ void monitor_show_mem(struct monitor * mon,
 #endif
 
 #if (MONITOR_BREAKPOINT_ENABLE)
-void monitor_breakpoint(struct monitor * mon)
+void monitor_breakpoint(struct monitor * mon, struct thinkos_krn * krn)
 {
 	unsigned int no = 0;
 	uint32_t addr;
@@ -494,7 +497,7 @@ void monitor_breakpoint(struct monitor * mon)
 #endif
 
 #if (MONITOR_WATCHPOINT_ENABLE)
-void monitor_watchpoint(struct monitor * mon)
+void monitor_watchpoint(struct monitor * mon, struct thinkos_krn * krn)
 {
 	unsigned int no = 0;
 	uint32_t addr;
@@ -600,7 +603,8 @@ static void monitor_board_info(const struct monitor_comm * comm,
 }
 #endif
 
-static bool monitor_process_input(struct monitor * mon, int c)
+static bool monitor_process_input(struct monitor * mon, int c, 
+								  struct thinkos_krn * krn)
 {
 	const struct monitor_comm * comm = mon->comm;
 	const struct thinkos_board * board = mon->board;
@@ -635,7 +639,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 	case CTRL_N:
-		monitor_on_print_thread(mon, true);
+		monitor_on_print_thread(mon, true, krn);
 		break;
 #endif
 #if (MONITOR_OSINFO_ENABLE)
@@ -666,7 +670,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 #endif
 #if (MONITOR_THREADINFO_ENABLE)
 	case CTRL_T:
-		monitor_on_print_thread(mon, true);
+		monitor_on_print_thread(mon, true, krn);
 		break;
 #endif
 #if (MONITOR_STACKUSAGE_ENABLE)
@@ -678,7 +682,7 @@ static bool monitor_process_input(struct monitor * mon, int c)
 		monitor_show_help(comm, board);
 		break;
 	case CTRL_G:
-		monitor_on_print_fault(comm);
+		monitor_on_print_fault(comm, krn);
 		break;
 #if (MONITOR_WATCHPOINT_ENABLE)
 	case CTRL_GS:
@@ -818,7 +822,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 			DCC_LOG(LOG_TRACE, "Thread fault !.");
 			thinkos_krn_console_raw_mode_set(raw_mode = false);
 			/* Restore critical NVIC interrupts */
-			monitor_on_thread_fault(comm);
+			monitor_on_thread_fault(comm, krn);
 			break;
 #endif
 
@@ -850,7 +854,7 @@ void __attribute__((noreturn)) boot_monitor_task(const struct monitor_comm * com
 
 				DCC_LOG1(LOG_INFO, "COMM_RCV: c=0x%02x", c);
 				/* process the input character */
-				if (!monitor_process_input(&monitor, c)) {
+				if (!monitor_process_input(&monitor, c, krn)) {
 					int n;
 					/* if the character was not consumed by the monitor 
 					   insert into the console pipe */

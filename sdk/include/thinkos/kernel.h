@@ -112,8 +112,11 @@
 /* Total number of context pointers in the kernel block
    Total number of threads plus one extra for VOID   
  */
-#define __KRN_THREAD_LST_SIZ        (1 + (THINKOS_THREADS_MAX) + \
-                                     (THINKOS_NRT_THREADS_MAX) + 1)
+#define __KRN_RT_THREAD_LST_SIZ     (1 + (THINKOS_THREADS_MAX) + 1)
+#define __KRN_NRT_THREAD_LST_SIZ    (THINKOS_NRT_THREADS_MAX)
+
+#define __KRN_THREAD_LST_SIZ        ((__KRN_RT_THREAD_LST_SIZ) + \
+                                     (__KRN_NRT_THREAD_LST_SIZ))
 
 /* -------------------------------------------------------------------------- 
  * ThinkOS RT structure offsets (used in assembler code)
@@ -133,9 +136,9 @@
 #endif
 
 #if (THINKOS_ENABLE_DATE_AND_TIME)
-  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 32
+  #define SIZEOF_KRN_CLK            (__KRN_RT_THREAD_LST_SIZ * 4) + 32
 #else
-  #define SIZEOF_KRN_CLK            (__KRN_THREAD_LST_SIZ * 4) + 4
+  #define SIZEOF_KRN_CLK            (__KRN_RT_THREAD_LST_SIZ * 4) + 4
 #endif
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -165,7 +168,7 @@
 #endif
 
 #define SIZEOF_KRN_TICKS     4
-#define SIZEOF_KRN_TH_CLK    (__KRN_THREAD_LST_SIZ * 4)
+#define SIZEOF_KRN_TH_CLK    (__KRN_RT_THREAD_LST_SIZ * 4)
 
 #if (THINKOS_ENABLE_MONITOR)
   #define SIZEOF_KRN_MONITOR   (4 * 4)
@@ -484,9 +487,9 @@ struct thinkos_krn {
 		};
 	};
 
-	struct {
+	struct thinkos_clk {
 		/* Per thread timer. Used for time wait (e.g. sleep()) */
-		uint32_t th_tmr[__KRN_THREAD_LST_SIZ];
+		uint32_t th_tmr[__KRN_RT_THREAD_LST_SIZ];
 		uint32_t time;      /* clock present value */
 #if (THINKOS_ENABLE_DATE_AND_TIME)
 		uint32_t increment; /* fractional per tick increment */
@@ -829,153 +832,11 @@ static inline unsigned int thinkos_krn_threads_max(void) {
 extern "C" {
 #endif
 
-struct thinkos_context * __thinkos_thread_ctx_get(unsigned int idx);
-
-uintptr_t __thinkos_thread_pc_get(unsigned int idx);
-
-
-uint32_t __thinkos_thread_lr_get(unsigned int id);
-
-uint32_t __thinkos_thread_sp_get(unsigned int id);
-
-uint32_t __thinkos_thread_sl_get(unsigned int id);
-
-uint32_t __thinkos_thread_xpsr_get(unsigned int id);
-
-uint32_t __thinkos_thread_r0_get(unsigned int id);
-
-void __thinkos_thread_r0_set(unsigned int id, uint32_t val);
-
-uint32_t __thinkos_thread_r1_get(unsigned int id);
-
-void __thinkos_thread_r1_set(unsigned int id, uint32_t val);
-
-void __thinkos_thread_r2_set(unsigned int id, uint32_t val);
-
-void __thinkos_thread_r3_set(unsigned int id, uint32_t val);
-
-void __thinkos_thread_pc_set(unsigned int id, uintptr_t val);
-
-void __thinkos_thread_lr_set(unsigned int id, uintptr_t val);
-
-uint32_t * __thinkos_thread_frame_get(unsigned int id);
-
-uint32_t __thinkos_thread_ctrl_get(unsigned int id);
-
-uint32_t __thinkos_thread_exec_ret_get(unsigned int id);
-
-bool __thinkos_thread_ctx_is_valid(unsigned int id);
-
-void  __thinkos_thread_ctx_set(unsigned int id, struct thinkos_context * ctx,
-							   unsigned int ctrl);
-
-void  __thinkos_thread_ctx_flush(int32_t arg[], unsigned int id);
-
-void  __thinkos_thread_ctx_clr(unsigned int id);
-
-const struct thinkos_thread_inf * __thinkos_thread_inf_get(unsigned int id);
-
-void  __thinkos_thread_inf_set(unsigned int id, 
-							   const struct thinkos_thread_inf * inf);
-
-void __thinkos_thread_inf_clr(unsigned int id);
-
-int __thinkos_thread_errno_get(unsigned int id);
-
-void __thinkos_thread_errno_set(unsigned int id, int errno);
-
-void __thinkos_thread_errno_clr(unsigned int id);
-
-void __thinkos_thread_cyccnt_clr(unsigned int id);
-
-unsigned int __thinkos_thread_stat_wq_get(unsigned int th);
-
-bool __thinkos_thread_stat_tmw_get(unsigned int th);
-
-void __thinkos_thread_stat_clr(unsigned int th);
-
-void __thinkos_thread_stat_set(unsigned int th, unsigned int wq, bool tmd);
-
-/* -------------------------------------------------------------------------- 
- * thread stack limit access methods 
- * --------------------------------------------------------------------------*/
-
-void __thinkos_thread_sl_clr(unsigned int idx);
-
-void __thinkos_thread_sl_set(unsigned int idx, uint32_t addr);
-
-void __thinkos_active_set(unsigned int th);
-
-unsigned int __thinkos_active_get(void);
-
-uint32_t __thinkos_active_sl_get(void);
-
-/* Set the active thread and stack limit */
-void __thinkos_active_sl_set(unsigned int th, uint32_t sl);
-
-bool __thinkos_thread_is_in_wq(unsigned int id, unsigned int wq);
-
-void  __thinkos_ready_clr(void);
-
-void __thinkos_suspend(unsigned int idx);
-
-int __thinkos_wq_idx(uint32_t * ptr);
-
-int __thinkos_wq_head(unsigned int wq);
-
-void __thinkos_wq_insert(unsigned int wq, unsigned int th);
-
-#if (THINKOS_ENABLE_TIMED_CALLS)
-void __thinkos_tmdwq_insert(unsigned int wq, unsigned int th, unsigned int ms);
-#endif
-
-#if (THINKOS_ENABLE_TIMED_CALLS)
-void __thinkos_wq_clock_insert(unsigned int th, unsigned int ms);
-#endif
-
-void __thinkos_wq_remove( unsigned int wq, unsigned int th);
-
-void __thinkos_wakeup( unsigned int wq, unsigned int th);
-
-void __thinkos_wakeup_return( unsigned int wq, unsigned int th, int ret);
-
 
 /* -------------------------------------------------------------------------- 
  * kernel error and debug
  * --------------------------------------------------------------------------*/
 
-/* Set the fault flag */
-void __thinkos_thread_fault_set(unsigned int th, int errno);
-
-/* Clear the exception flag */
-void __thinkos_thread_xcp_clr(unsigned int th);
-
-/* Get the exception flag */
-bool __thinkos_thread_xcp_get(unsigned int th);
-
-void __thinkos_pause_all(void);
-
-void __thinkos_resume_all(void);
-
-bool __thinkos_thread_pause(unsigned int thread_id);
-
-bool __thinkos_thread_resume(unsigned int thread_id);
-
-/* Set the pause flag */
-void __thinkos_thread_pause_set(unsigned int th);
-
-/* Clear the pause flag */
-void __thinkos_thread_pause_clr(unsigned int th);
-
-/* Get the pause flag */
-bool __thinkos_thread_pause_get(unsigned int th);
-
-
-bool __thinkos_thread_isalive(unsigned int thread_id);
-
-bool __thinkos_thread_ispaused(unsigned int thread_id);
-
-bool __thinkos_thread_isfaulty(unsigned int thread_id);
 
 /* -------------------------------------------------------------------------- 
  * kernel utility library 
@@ -999,44 +860,13 @@ uint32_t __thinkos_crc32_u32(uint32_t __buf[], unsigned int __len);
 
 uint32_t __thinkos_crc32_u8(const void * __buf, unsigned int __len); 
 
-int krn_snprintf(char * str, size_t size, const char *fmt, ...);
-int krn_vsnprintf(char * str, size_t size, const char *fmt, va_list ap);
-
-
-int krn_console_dev_send(void * dev, const void * buf, unsigned int len);
-
-int krn_console_dev_recv(void * dev, void * buf, 
-					  unsigned int len, unsigned int msec);
-
-int krn_console_write(const void * buf, unsigned int len);
-
-int krn_console_puts(const char * s);
-
-int krn_console_putc(int c);
-
-int krn_console_puthex(uint32_t val);
-
-int krn_console_put_hex8(uint32_t val);
-
-int krn_console_put_hex16(uint32_t val);
-
-int krn_console_put_hex32(uint32_t val);
-
-int krn_console_put_uint(uint32_t val);
-
-int krn_console_put_int(int32_t val);
-
-int krn_console_crlf(void);
-
-int krn_console_getc(unsigned int tmo);
-
-int krn_console_gets(char * s, int size);
-
-int krn_console_wrln(const char * ln);
-
 /* -------------------------------------------------------------------------- 
  * kernel format functions 
  * --------------------------------------------------------------------------*/
+
+int krn_snprintf(char * str, size_t size, const char *fmt, ...);
+
+int krn_vsnprintf(char * str, size_t size, const char *fmt, va_list ap);
 
 int krn_fmt_hex8(char * s, uint32_t val);
 
@@ -1064,6 +894,7 @@ void thinkos_krn_udelay_calibrate(void);
 /* -------------------------------------------------------------------------- 
  * kernel thread functions 
  * --------------------------------------------------------------------------*/
+/* FIXME: these functions are obsolete */
 
 bool __thinkos_thread_resume(unsigned int thread_id);
 
@@ -1071,7 +902,7 @@ int __thinkos_thread_wq_get(unsigned int thread_idx);
 
 int __thinkos_thread_tmw_get(unsigned int thread_idx);
 
-int thinkos_krn_active_get(void);
+int thinkos_krn_active_get(struct thinkos_krn * krn);
 
 /* -------------------------------------------------------------------------- 
  * kernel scheduler methods 
@@ -1160,7 +991,8 @@ void __attribute__((noreturn, noinline)) thinkos_krn_abort_at_exit(int code);
  * Threads 
  * ------------------------------------------------------------------------- */
 
-bool thinkos_krn_thread_state_get(unsigned int thread_id, 
+bool thinkos_krn_thread_state_get(struct thinkos_krn * krn,
+								  unsigned int thread_id, 
 								  struct krn_thread_state * state);
 
 int __thinkos_thread_getnext(int th);

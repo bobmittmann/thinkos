@@ -87,17 +87,27 @@ cm3_svc_isr:
 	ldr      r3, [r0, #(6 * 4)] 
 	/* Read the SVC number from the instruction */
 	ldrb     r3, [r3, #-2]
+	/* Make sur ewe are in range */
     cmp      r3, #THINKOS_SYSCALL_CNT
     bhi      thinkos_nosys_svc
-//	ldr      r12, .L_call_tab
+
+#if (THINKOS_NRT_THREADS_MAX > 0)
+	cmp.n    r1, THINKOS_THREADS_MAX
+	bhi      2f
 	movw     r12, :lower16:thinkos_svc_call_tab
 	movt     r12, :upper16:thinkos_svc_call_tab
 	ldr      pc, [r12, r3, lsl #2]
+2:
+	movw     r12, :lower16:thinkos_nrt_svc_call_tab
+	movt     r12, :upper16:thinkos_nrt_svc_call_tab
+	ldr      pc, [r12, r3, lsl #2]
+#else
+	movw     r12, :lower16:thinkos_svc_call_tab
+	movt     r12, :upper16:thinkos_svc_call_tab
+	ldr      pc, [r12, r3, lsl #2]
+#endif
 	.align   2
-.L_call_tab:
-	.word    thinkos_svc_call_tab
-.L_thinkos_krn:
-	.word    thinkos_krn
+
 #if (THINKOS_ENABLE_DEBUG_STEP)
 .L_cm3_scb:
 	.word    CM3_SCB_BASE

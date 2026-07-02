@@ -23,36 +23,21 @@
  * @author Robinson Mittmann <bobmittmann@gmail.com>
  */ 
 
-#define __THINKOS_NRT__
-#include <thinkos/nrt.h>
-#include <arch/cortex-m3.h>
+#include "thinkos_nrt-i.h" 
 #include <sys/dcclog.h>
-#include <stdlib.h>
-#include <thinkos.h>
+
+struct thinkos_nrt thinkos_nrt;
 
 /* wait */
 void thinkos_wait_svc(int32_t * arg, int self)
 {
-	__thinkos_suspend(self);
-	/* signal the scheduler ... */
-	__thinkos_defer_sched(); 
 }
 
 int thinkos_nrt_sched_task(void * arg)
 {
-	int event;
 	DCC_LOG(LOG_TRACE, "...");
 
 	for (;;) {
-		event = thinkos_sleep(1000);
-		switch (event) {
-		case NRT_THREAD_CREATE:
-			DCC_LOG(LOG_TRACE, "NRT_THREAD_CREATE...");
-			break;
-		default:
-			DCC_LOG(LOG_TRACE, "...");
-			break;
-		};
 	}
 
 	return 0;
@@ -76,8 +61,7 @@ int thinkos_nrt_init(void)
 	int ret;
 
 #if THINKOS_ENABLE_THREAD_INFO
-	ret = thinkos_thread_create_inf(thinkos_nrt_sched_task, 
-									thinkos_nrt_sched_stack, 
+	ret = thinkos_thread_create_inf(C_TASK(thinkos_nrt_sched_task), &thinkos_krn,
 									&thinkos_nrt_sched_inf);
 #else
 	ret = thinkos_thread_create(thinkos_nrt_sched_task, NULL, 

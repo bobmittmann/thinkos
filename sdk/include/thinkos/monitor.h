@@ -175,22 +175,6 @@ struct monitor_comm {
 extern uint32_t thinkos_monitor_stack[THINKOS_MONITOR_STACK_SIZE / 4];
 extern const uint16_t thinkos_monitor_stack_size;
 
-struct deferred_svc_map {
-	union {
-		int (* on_event[8])(struct thinkos_krn * krn, void * env);
-		struct {
-			void (* on_comm_brk)(struct thinkos_krn * krn, void * env);
-			void (* on_comm_rcv)(struct thinkos_krn * krn, void * env);
-			void (* on_comm_eot)(struct thinkos_krn * krn, void * env);
-			void (* on_comm_ctl)(struct thinkos_krn * krn, void * env);
-			void (* on_console_rx)(struct thinkos_krn * krn, void * env);
-			void (* on_console_tx)(struct thinkos_krn * krn, void * env);
-			void (* on_console_ctl)(struct thinkos_krn * krn, void * env);
-			void (* on_console_tmr)(struct thinkos_krn * krn, void * env);
-		};
-	};
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif

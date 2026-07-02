@@ -32,6 +32,7 @@ extern const uint16_t thinkos_except_stack_size;
 
 void monitor_print_stack_usage(const struct monitor_comm * comm)
 {
+	struct thinkos_krn * krn = &thinkos_krn;
 	struct monitor_swap * swp;
 	unsigned int size;
 	const char * tag;
@@ -53,7 +54,7 @@ void monitor_print_stack_usage(const struct monitor_comm * comm)
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
 		struct krn_thread_state inf;
 
-		if (thinkos_krn_thread_state_get(i, &inf)) {
+		if (thinkos_krn_thread_state_get(krn, i, &inf)) {
 			uint32_t base;
 
 			tag = inf.tag;

@@ -30,7 +30,7 @@
 #include <thinkos/kernel.h>
 
 /* Non realtime threads scheduler thread */
-#define THINKOS_THREAD_NRT_SCHED (THINKOS_THREAD_IDLE - 1)
+#define THINKOS_THREAD_NRT_SCHED THINKOS_THREADS_MAX
 
 #ifndef __ASSEMBLER__
 
@@ -44,8 +44,7 @@ extern "C" {
 
 int __thinkos_nrt_thread_init(unsigned int thread_id);
 
-int __thinkos_nrt_sched_init(struct thinkos_krn * krn);
-
+int thinkos_nrt_sched_init(struct thinkos_krn * krn);
 
 #ifdef __cplusplus
 }

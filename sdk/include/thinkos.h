@@ -170,10 +170,10 @@ struct thinkos_thread_inf {
 	void * stack_ptr;
 	uint32_t stack_size;
 	uint8_t priority;
-	uint8_t thread_id: 6;
+	uint8_t thread_id;
 	uint8_t privileged: 1;
 	uint8_t paused: 1;
-	char tag[10];
+	char tag[9];
 };
 
 /** 

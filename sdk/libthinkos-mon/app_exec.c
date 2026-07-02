@@ -63,8 +63,6 @@ bool monitor_app_exec(uintptr_t addr)
 	thread_id = ret;
 	(void)thread_id;
 
-	DCC_LOG1(LOG_TRACE, "monitor_thread_exec() = %d!", ret);
-
 	return (ret < 0) ? false : true;
 }
 
@@ -73,8 +71,6 @@ bool monitor_flash_app_exec(const struct monitor_comm * comm)
 	struct thinkos_krn * krn = &thinkos_krn;
 	struct thinkos_mem_part part;
 	uintptr_t addr;
-
-	DCC_LOG(LOG_TRACE, "creating a thread to call app_exec()!");
 
 	if (!__krn_mem_part_lookup(krn, "FLASH", "APP", &part)) {
 		DCC_LOG(LOG_ERROR, "Can't locate application...!");

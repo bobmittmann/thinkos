@@ -65,9 +65,40 @@ int thinkos_console_tx_pipe_ptr(uint8_t ** ptr);
 void thinkos_console_tx_pipe_commit(int cnt);
 
 
-int __console_getc(unsigned int tmo);
+/* -----------------------------------------------------------------------------
+ * User level console IO
+ * -------------------------------------------------------------------------- */
 
-int __console_puts(const char * s);
+int krn_console_dev_send(void * dev, const void * buf, unsigned int len);
+
+int krn_console_dev_recv(void * dev, void * buf, 
+					  unsigned int len, unsigned int msec);
+
+int krn_console_write(const void * buf, unsigned int len);
+
+int krn_console_puts(const char * s);
+
+int krn_console_putc(int c);
+
+int krn_console_puthex(uint32_t val);
+
+int krn_console_put_hex8(uint32_t val);
+
+int krn_console_put_hex16(uint32_t val);
+
+int krn_console_put_hex32(uint32_t val);
+
+int krn_console_put_uint(uint32_t val);
+
+int krn_console_put_int(int32_t val);
+
+int krn_console_crlf(void);
+
+int krn_console_getc(unsigned int tmo);
+
+int krn_console_gets(char * s, int size);
+
+int krn_console_wrln(const char * ln);
 
 #ifdef __cplusplus
 }

@@ -30,6 +30,8 @@
 #include <thinkos/flash.h>
 #define __THINKOS_MONITOR__
 #include <thinkos/monitor.h>
+#define __THINKOS_CONSOLE__
+#include <thinkos/console.h>
 #define __THINKOS_BOOTLDR__
 #include <thinkos/bootldr.h>
 #include <thinkos.h>

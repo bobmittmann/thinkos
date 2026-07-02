@@ -29,6 +29,7 @@
 
 void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 {
+	struct thinkos_krn * krn = &thinkos_krn;
 #if (THINKOS_ENABLE_PROFILING)
     int max = thinkos_krn_threads_max();
     uint32_t cyc[max];
@@ -45,7 +46,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 
 //	thinkos_dbg_krn_dump();
 
-	active = thinkos_krn_active_get();
+	active = thinkos_krn_active_get(krn);
 	monitor_printf(comm, " Active: %d", active);
 
 #if (THINKOS_ENABLE_PROFILING)
@@ -71,7 +72,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	monitor_printf(comm, "\r\n");
 
 	monitor_printf(comm, "  #"); 
-	monitor_printf(comm, "     Tag"); 
+	monitor_printf(comm, "      Tag"); 
 	monitor_printf(comm, " |    Stack"); 
 	monitor_printf(comm, " |       SP"); 
 	monitor_printf(comm, " |       PC"); 
@@ -93,7 +94,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 	for (i = THINKOS_THREAD_FIRST; i <= THINKOS_THREAD_LAST; ++i) {
 		struct krn_thread_state inf;
 
-		if (thinkos_krn_thread_state_get(i, &inf)) {
+		if (thinkos_krn_thread_state_get(krn, i, &inf)) {
 			const char * tag;
 			uint32_t sl;
 			uint32_t sp;
@@ -113,7 +114,7 @@ void monitor_print_osinfo(const struct monitor_comm * comm, uint32_t cycref[])
 		    sl = inf.sl;
 		    errno = inf.errno;
 
-			monitor_printf(comm, " %7s | %08x | %08x | %08x", 
+			monitor_printf(comm, " %8s | %08x | %08x | %08x", 
 						   tag, sl, sp, pc); 
 
 			oid = inf.wq;

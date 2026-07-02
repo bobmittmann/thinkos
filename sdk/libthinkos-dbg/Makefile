@@ -21,10 +21,12 @@
 
 include ../../mk/config.mk
 
-LIB_STATIC = thinkos-nrt
+LIB_STATIC = thinkos-dbg
 
-CFILES = thinkos_nrt_thread.c thinkos_nrt_sched.c thinkos_nrt_svc.c \
-		 thinkos_nrt_heap.c
+GDB_CFILES = dbgmon_gdb.c 
+#gdb-cortex-m.c
+
+CFILES = thinkos_dbgmon.c $(addprefix gdb/,$(GDB_CFILES)) 
 
 include ../../mk/lib.mk
 

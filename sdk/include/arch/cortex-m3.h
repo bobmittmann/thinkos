@@ -1395,6 +1395,35 @@ static inline int64_t __smull(int32_t op1, int32_t op2)
 	 __RES; \
 	 })
 
+/* -------------------------------------------------------------------------
+ * System timer (Cortex-M SysTick)
+ * ------------------------------------------------------------------------- */
+
+static inline void cm3_systick_int_disable(void) {
+	struct cm3_systick * systick = CM3_SYSTICK;
+	systick->csr = SYSTICK_CSR_ENABLE;
+}
+
+static inline void cm3_systick_int_enable(void) {
+	struct cm3_systick * systick = CM3_SYSTICK;
+	systick->csr = SYSTICK_CSR_ENABLE | SYSTICK_CSR_TICKINT;
+}
+
+static inline void cm3_systick_pend_clr(void) {
+	struct cm3_scb * scb = CM3_SCB;
+
+	/* clear any pending systick interrupt */
+	scb->icsr = SCB_ICSR_PENDSTCLR;
+}
+
+static inline void cm3_systick_pend_set(void) {
+	struct cm3_scb * scb = CM3_SCB;
+
+	/* raise a pending systick interrupt */
+	scb->icsr = SCB_ICSR_PENDSTSET;
+	asm volatile ("isb\n" :  :  : );
+}
+
 void cm3_udelay_calibrate(void);
 
 void __attribute__((noreturn)) cm3_sysrst(void);

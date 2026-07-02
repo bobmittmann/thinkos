@@ -25,21 +25,13 @@
 #include <stdbool.h>
 #include <sys/dcclog.h>
 
-bool __thinkos_nrt_thread_resume(unsigned int thread_id)
+bool thinkos_nrt_thread_resume(unsigned int thread_id)
 {
 	return true;
 }
 
-int __thinkos_nrt_thread_init(unsigned int thread_id)
+int thinkos_nrt_thread_init(unsigned int thread_id)
 {
-	int idx = thread_id - THINKOS_NRT_THREAD0; 
-
-	DCC_LOG2(LOG_TRACE, "thread=%d idx=%d", thread_id + 1, idx);
-	(void)idx;
-
-	/* set the thread's return value */
-	thinkos_krn.ctx[THINKOS_THREAD_NRT_SCHED]->r0 = NRT_THREAD_CREATE;
-	__bit_mem_wr(&thinkos_krn.wq_ready, THINKOS_THREAD_NRT_SCHED, 1);
 
 	return true;
 }
