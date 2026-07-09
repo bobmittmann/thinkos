@@ -34,7 +34,7 @@
 
 static const char punct_str[][2] = {
 	"!", "\"", "#", "$", "%", "&", "'", 
-	"(", ")", "*", "+", ",", "-", ".", "/", 
+	"(", ")", "*", "+", ",", "-", "", "/", 
 	"", "", "", "", "", "", "", "", "", "",
 	":", ";", "<", "=", ">", "?", "@",
 	"", "", "", "", "", "", "", "", "", "", "", "", "", 
@@ -63,13 +63,13 @@ int shell_parseline(char * line, char ** argv, int argmax)
 	 * a punctuation is adjacent to another token */
 	--argmax;
 	for (n = 0; (n < argmax); ) {
+		int qt;
+
 		/* Remove lead blanks */
 		while (isspace(c)) {
 			cp++;
 			c = *cp;
 		}
-#if 1
-		int qt;
 
 		/* Quotes: copy verbatim */
 		if ((c == '\'') || (c == '\"')) {
@@ -86,7 +86,6 @@ int shell_parseline(char * line, char ** argv, int argmax)
 			c = *cp;
 			continue;
 		}
-#endif
 		tok = cp;
 
 		for (;;) {
