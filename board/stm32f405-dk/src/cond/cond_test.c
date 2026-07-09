@@ -150,6 +150,14 @@ int consumer_task(struct queue * q)
  * ---------------------------------------------------------------------------
  */
 
+uint32_t stack6[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack7[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack8[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack9[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack10[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack11[512] __attribute__ ((aligned(8), section(".stack")));
+uint32_t stack12[512] __attribute__ ((aligned(8), section(".stack")));
+
 int main(int argc, char **argv)
 {
 	struct queue q;
@@ -166,18 +174,38 @@ int main(int argc, char **argv)
 	thinkos_thread_create_inf(C_TASK(consumer_task), 
 							  C_ARG(&q),
 							  &thread2_init);
-#if 0
+#if 1
+	thinkos_thread_create_inf(C_TASK(producer_task), 
+							  C_ARG(&q),
+							  &thread4_init);
+
 	thinkos_thread_create_inf(C_TASK(consumer_task), 
 							  C_ARG(&q),
 							  &thread3_init);
 
-	thinkos_thread_create_inf(C_TASK(producer_task), 
-							  C_ARG(&q),
-							  &thread4_init);
 #endif
 	thinkos_thread_create_inf(C_TASK(producer_task), 
 							  C_ARG(&q),
 							  &thread5_init);
+
+	thinkos_thread_create(C_TASK(consumer_task), 
+							  C_ARG(&q), stack6,
+							  THINKOS_OPT_STACK_SIZE(sizeof(stack6)));
+
+	thinkos_thread_create(C_TASK(producer_task), 
+							  C_ARG(&q), stack7,
+							  THINKOS_OPT_ID(7) | 
+							  THINKOS_OPT_STACK_SIZE(sizeof(stack7)));
+
+	thinkos_thread_create(C_TASK(consumer_task), 
+							  C_ARG(&q), stack8,
+							  THINKOS_OPT_ID(8) | 
+							  THINKOS_OPT_STACK_SIZE(sizeof(stack8)));
+
+	thinkos_thread_create(C_TASK(producer_task), 
+							  C_ARG(&q), stack9,
+							  THINKOS_OPT_ID(9) | 
+							  THINKOS_OPT_STACK_SIZE(sizeof(stack9)));
 
 	for(;;) {
 		thinkos_sleep(600000);

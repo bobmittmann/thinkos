@@ -117,7 +117,9 @@
 
 #define THINKOS_CORE_RESET            63
 
-#define THINKOS_SYSCALL_CNT           63
+#define THINKOS_NRT_THREAD_ALLOC      64
+
+#define THINKOS_SYSCALL_CNT           64
 
 /* THINKOS_CONSOLE options */
 #define CONSOLE_OPEN                   3
@@ -1168,6 +1170,10 @@ thinkos_app_exec(uintptr_t addr, uintptr_t arg0, uintptr_t arg1) {
 	asm volatile (ARM_SVC(THINKOS_APP_EXEC) : 
 				  "=r"(ret) : "r"(r0), "r"(r1), "0"(r12) : );
 	return ret;
+}
+
+static inline int thinkos_nrt_thread_alloc(void) {
+	return THINKOS_SYSCALL0(THINKOS_NRT_THREAD_ALLOC);
 }
 
 #ifdef __cplusplus

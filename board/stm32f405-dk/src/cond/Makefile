@@ -42,8 +42,7 @@ CFLAGS = -O0 -Werror -Wall -Wextra -Wdouble-promotion -Wno-unused-parameter
 OPTIONS = -g -mno-unaligned-access 
 
 MACH = stm32f415xg
-THINKAPP := 0x08020000
-LDCODE := $(THINKAPP)
-LDDATA := 0x20002000
+LDCODE := 0x08020000
+LDDATA := 0x20003000
 include $(ARCH_DIR)/mk/stm32-app.mk
 

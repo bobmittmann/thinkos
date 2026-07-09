@@ -510,5 +510,15 @@ thinkos_svc_t const thinkos_svc_call_tab[] = {
 	[THINKOS_CORE_RESET] = thinkos_nosys_svc,
 #endif /* THINKOS_IRQ_MAX > 0 */
 
+/* ----------------------------------------------
+ * Non Real Time .... 
+ * --------------------------------------------- */
+
+#if (THINKOS_NRT_THREAD_MAX > 0)
+	[THINKOS_NRT_THREAD_ALLOC] = thinkos_nrt_thread_alloc,
+#else
+	[THINKOS_NRT_THREAD_ALLOC] = thinkos_nosys_svc,
+#endif
+
 };
 

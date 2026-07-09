@@ -73,6 +73,7 @@ static void __thinkos_bmp_init(uint32_t bmp[], unsigned int nbits)
 	if (nbits % 32)
 		bmp[nbits / 32] = 0xffffffff << (nbits % 32);
 }
+
 #endif
 
 
@@ -259,62 +260,6 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn
 	uint32_t * bmp;
 	int idx;
 
-#if 0
-	switch (kind) {
-
-#if (THINKOS_MUTEX_MAX > 0)
-	case THINKOS_OBJ_MUTEX:
-		bmp = thinkos_krn.mutex_alloc;
-		base = THINKOS_MUTEX_BASE;
-		max = THINKOS_MUTEX_MAX;
-		break;
-#endif 
-
-#if (THINKOS_SEMAPHORE_MAX > 0)
-	case THINKOS_OBJ_SEMAPHORE:
-		bmp = thinkos_krn.sem_alloc;
-		base = THINKOS_SEM_BASE;
-		max = THINKOS_SEMAPHORE_MAX;
-		break;
-#endif 
-
-#if (THINKOS_COND_MAX > 0)
-	case THINKOS_OBJ_COND:
-		bmp = thinkos_krn.cond_alloc;
-		base = THINKOS_COND_BASE;
-		max = THINKOS_COND_MAX;
-		break;
-#endif 
-
-#if (THINKOS_FLAG_MAX > 0)
-	case THINKOS_OBJ_FLAG:
-		bmp = thinkos_krn.flag_alloc;
-		base = THINKOS_FLAG_BASE;
-		max = THINKOS_FLAG_MAX;
-		break;
-#endif 
-
-#if (THINKOS_EVENT_MAX > 0)
-	case THINKOS_OBJ_EVENT:
-		bmp = thinkos_krn.ev_alloc;
-		base = THINKOS_EVENT_BASE;
-		max = THINKOS_EVENT_MAX;
-		break;
-#endif 
-
-#if (THINKOS_GATE_MAX > 0)
-	case THINKOS_OBJ_GATE:
-		bmp = thinkos_krn.gate_alloc;
-		base = THINKOS_GATE_BASE;
-		max = THINKOS_GATE_MAX;
-		break;
-#endif 
-	default:
-		arg[SVC_RETURN] = THINKOS_EINVAL;
-		return;
-	}
-#else
-
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
 		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
@@ -327,7 +272,6 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn
 	max = thinkos_obj_cnt_lut[kind];
 	base = thinkos_obj_base_lut[kind];
 
-#endif
 	DCC_LOG3(LOG_MSG, "kind=%d base=%d max=%d", kind, base, max);
 	DCC_LOG1(LOG_MSG, "kind=\"%s\"", __kind_name(kind));
 
@@ -338,16 +282,16 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn
 		return;
 	}
 
-
 	if (kind == THINKOS_OBJ_THREAD) {
 		int32_t tgt_idx = arg[1];
 
 		tgt_idx -= base;  
-		DCC_LOG1(LOG_TRACE, "tgt_idx = %d", tgt_idx);
+		DCC_LOG1(LOG_INFO, "tgt_idx = %d", tgt_idx);
 
 		if ((idx = __thinkos_hilo_alloc(bmp, max, tgt_idx)) >= 0) {
 			idx += base;
 		}
+
 	} else {
 #if (BMP_ALLOC_32BITS)
 		if ((idx = __thinkos_alloc_lo(bmp, 0)) >= 0) {
@@ -363,7 +307,7 @@ void thinkos_obj_alloc_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn
 		}
 #endif
 	}
-	DCC_LOG3(LOG_TRACE, "<%2d> kind=\"%s\" oid=%d", self, 
+	DCC_LOG3(LOG_INFO, "<%2d> kind=\"%s\" oid=%d", self, 
 			 __kind_name(kind), idx);
 	arg[SVC_RETURN] = idx;
 }
@@ -413,6 +357,7 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn)
 	unsigned int oid = arg[0];
 	unsigned int kind;
 	unsigned int idx;
+	unsigned int base;
 	uint32_t * bmp;
 #if (THINKOS_ENABLE_ARG_CHECK)
 	unsigned int max;
@@ -428,58 +373,6 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn)
 
 	kind = __thinkos_obj_kind(oid);
 
-#if 0
-
-	switch (kind) {
-
-#if (THINKOS_MUTEX_MAX) > 0
-	case THINKOS_OBJ_MUTEX:
-		bmp = thinkos_krn.mutex_alloc;
-		idx = oid - THINKOS_MUTEX_BASE;
-		break;
-#endif 
-
-#if (THINKOS_SEMAPHORE_MAX) > 0
-	case THINKOS_OBJ_SEMAPHORE:
-		bmp = thinkos_krn.sem_alloc;
-		idx = oid - THINKOS_SEM_BASE;
-		break;
-#endif 
-
-#if (THINKOS_COND_MAX) > 0
-	case THINKOS_OBJ_COND:
-		bmp = thinkos_krn.cond_alloc;
-		idx = oid - THINKOS_COND_BASE;
-		break;
-#endif 
-
-#if (THINKOS_FLAG_MAX) > 0
-	case THINKOS_OBJ_FLAG:
-		bmp = thinkos_krn.flag_alloc;
-		idx = oid - THINKOS_FLAG_BASE;
-		break;
-#endif 
-
-#if (THINKOS_EVENT_MAX) > 0
-	case THINKOS_OBJ_EVENT:
-		bmp = thinkos_krn.ev_alloc;
-		idx = oid - THINKOS_EVENT_BASE;
-		break;
-#endif 
-
-#if (THINKOS_GATE_MAX) > 0
-	case THINKOS_OBJ_GATE:
-		bmp = thinkos_krn.gate_alloc;
-		idx = oid - THINKOS_GATE_BASE;
-		break;
-#endif 
-	default:
-		arg[SVC_RETURN] = THINKOS_EINVAL;
-		return;
-	}
-
-#else
-
 #if (THINKOS_ENABLE_ARG_CHECK)
 	if (kind > THINKOS_OBJ_GATE) {
 			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
@@ -487,21 +380,16 @@ void thinkos_obj_free_svc(int32_t * arg, int32_t self, struct thinkos_krn * krn)
 		return;
 	}
 #endif
-	{
-		unsigned int base;
-		bmp = thinkos_obj_alloc_lut[kind];
-		base = thinkos_obj_base_lut[kind];
-		idx = oid - base;
+	bmp = thinkos_obj_alloc_lut[kind];
+	base = thinkos_obj_base_lut[kind];
+	idx = oid - base;
 #if (THINKOS_ENABLE_ARG_CHECK)
-		max = thinkos_obj_cnt_lut[kind];
-		if (idx > max) {
-			__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
-			arg[SVC_RETURN] = THINKOS_ENOMEM;
-			return;
-		}
-#endif
+	max = thinkos_obj_cnt_lut[kind];
+	if (idx > max) {
+		__THINKOS_ERROR(self, THINKOS_ERR_OBJECT_INVALID);
+		arg[SVC_RETURN] = THINKOS_ENOMEM;
+		return;
 	}
-
 #endif
 
 	__bit_mem_wr(bmp, idx, 0);

@@ -93,7 +93,7 @@ cm3_svc_isr:
 
 #if (THINKOS_NRT_THREADS_MAX > 0)
 	cmp.n    r1, THINKOS_THREADS_MAX
-	bhi      2f
+	bgt      2f
 	movw     r12, :lower16:thinkos_svc_call_tab
 	movt     r12, :upper16:thinkos_svc_call_tab
 	ldr      pc, [r12, r3, lsl #2]

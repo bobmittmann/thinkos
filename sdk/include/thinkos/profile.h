@@ -503,7 +503,7 @@
  */
 
 #ifndef THINKOS_NRT_THREADS_MAX
-#define THINKOS_NRT_THREADS_MAX         0
+#define THINKOS_NRT_THREADS_MAX              0
 #endif
 
 /* THINKOS_FLASH_MEM_MAX - enable the kernel to handle low-level

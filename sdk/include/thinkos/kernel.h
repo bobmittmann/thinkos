@@ -654,10 +654,6 @@ struct thinkos_krn {
 #if ((THINKOS_COMM_MAX) > 0)
 	const struct thinkos_comm * comm[THINKOS_COMM_MAX];
 #endif
-
-#if (THINKOS_ENABLE_DATE_AND_TIME)
-//	struct krn_clock time_clk;
-#endif
 };
 
 /* -------------------------------------------------------------------------- 

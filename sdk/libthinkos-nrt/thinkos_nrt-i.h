@@ -26,6 +26,8 @@
 #include <thinkos/kernel.h>
 #define __THINKOS_NRT__
 #include <thinkos/nrt.h>
+#define __THINKOS_SVC__
+#include <thinkos/svc.h>
 
 #include <thinkos.h>
 #include <sys/delay.h>
@@ -44,18 +46,27 @@ struct thinkos_nrt {
 	struct thinkos_krn * krn;
 	/* time wait bitmap */
 	uint64_t tmw_bmp;
-	uint16_t wq[THINKOS_NRT_THREADS_MAX];
+//	uint16_t wq[THINKOS_NRT_THREADS_MAX];
+	uint32_t th_alloc[1];
+
+#if (THINKOS_NRT_THREADS_MAX)
+	uint32_t alloc[(THINKOS_NRT_THREADS_MAX + 31) / 32];
+#endif
+
 	struct {
 		struct {
 			uint8_t length;
 			uint8_t size;
+#if (THINKOS_NRT_THREADS_MAX)
 			uint8_t thread[THINKOS_NRT_THREADS_MAX];
+#endif
 		} heap;
 	} clk;
 };
 
 extern struct thinkos_nrt thinkos_nrt;
 
+#if (THINKOS_NRT_THREADS_MAX)
 static inline int32_t clk_heap_key(struct thinkos_krn * krn,
 								   struct thinkos_nrt * nrt, int i) {
 	unsigned int thread = nrt->clk.heap.thread[i];
@@ -65,6 +76,7 @@ static inline int32_t clk_heap_key(struct thinkos_krn * krn,
 static inline int32_t clk_key(struct thinkos_krn * krn, uint8_t thread) {
 	return krn->clk.th_tmr[thread] - krn->clk.time;
 }
+#endif
 
 #ifdef __cplusplus
 extern "C" {

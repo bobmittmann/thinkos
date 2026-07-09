@@ -175,9 +175,8 @@ int thinkos_krn_thread_init(
 }
 
 /* initialize a thread */
-void thinkos_thread_init_svc(int32_t * arg, unsigned int self)
+void thinkos_thread_init_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
-	struct thinkos_krn * krn = &thinkos_krn;
 	struct thinkos_thread_initializer * init;
 	unsigned int thread_no;
 	int ret;

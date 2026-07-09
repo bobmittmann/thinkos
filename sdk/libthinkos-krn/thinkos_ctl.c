@@ -48,7 +48,7 @@ void thinkos_arch_release_get(struct thinkos_release * rel)
 	__attribute__ ((weak, alias ("__thinkos_arch_release_get")));
 
 
-void thinkos_ctl_svc(uintptr_t * arg, int self, struct thinkos_krn * krn)
+void thinkos_ctl_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	unsigned int req = arg[0];
 	const uint32_t ** ptr;

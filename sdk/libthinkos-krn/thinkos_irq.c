@@ -325,7 +325,7 @@ void thinkos_irq_timedwait_svc(int32_t * arg, unsigned int self,
 /* 
    This syscall returns the IRQ number upon success. 
  */
-void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
+void thinkos_irq_wait_svc(int32_t arg[], int self,
 						  struct thinkos_krn * krn)
 {
 	unsigned int irq = arg[0];
@@ -384,7 +384,7 @@ void thinkos_irq_wait_svc(int32_t * arg, unsigned int self,
 
 /* This macro is here for backward compatibility, TODO should be deprecated */
 #if (THINKOS_ENABLE_IRQ_CTL)
-void thinkos_irq_ctl_svc(int32_t * arg, unsigned int self, 
+void thinkos_irq_ctl_svc(int32_t * arg, int self, 
 						 struct thinkos_krn * krn)
 {
 	unsigned int req = arg[0];

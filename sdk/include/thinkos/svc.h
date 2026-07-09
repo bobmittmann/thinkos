@@ -14,6 +14,18 @@
 
 #include <stdint.h>
 
+/* Argument to receive the return value in the call stack 
+ * The number 4 corresponds to r12 */
+#define SVC_ARG_R0      0
+#define SVC_ARG_R1      1
+#define SVC_ARG_R2      2
+#define SVC_ARG_R3      3
+#define SVC_ARG_R12     4
+#define SVC_ARG_LR      5
+#define SVC_ARG_PC      6
+#define SVC_ARG_XPSR    7
+#define SVC_RETURN      (SVC_ARG_R12)
+
 typedef void (* thinkos_svc_t)(int32_t arg[], int self, struct thinkos_krn * krn);
 
 #ifdef __cplusplus
@@ -170,6 +182,8 @@ void thinkos_yield_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 void thinkos_critical_enter_svc(int32_t arg[], int self, struct thinkos_krn * krn);
 
 void thinkos_critical_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn);
+
+void thinkos_nrt_thread_alloc_svc(int32_t * arg, int self, struct thinkos_krn * krn);
 
 #ifdef __cplusplus
 }

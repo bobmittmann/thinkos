@@ -77,7 +77,7 @@
 
 /* Threads */
 #define THINKOS_THREADS_MAX                32
-#define THINKOS_NRT_THREADS_MAX           221 
+#define THINKOS_NRT_THREADS_MAX           221
 #define THINKOS_ENABLE_THREAD_INFO          1
 #define THINKOS_ENABLE_THREAD_STAT          0
 #define THINKOS_ENABLE_JOIN                 1
@@ -106,7 +106,7 @@
 /* Enable the debug monitor for real-time debug */
 #define THINKOS_ENABLE_MONITOR              1
 #define THINKOS_ENABLE_MONITOR_CLOCK        1
-#define THINKOS_MONITOR_STACK_SIZE       1024 
+#define THINKOS_MONITOR_STACK_SIZE       4096
 #define THINKOS_MONITOR_ENABLE_COMM_BRK     1
 
 /* Console */
@@ -120,7 +120,7 @@
 #define THINKOS_ENABLE_CONSOLE_DRAIN        1
 #define THINKOS_ENABLE_CONSOLE_MISC         1
 #define THINKOS_CONSOLE_RX_FIFO_LEN        64
-#define THINKOS_CONSOLE_TX_FIFO_LEN       256
+#define THINKOS_CONSOLE_TX_FIFO_LEN       512
 
 /* Error Handling */
 #define THINKOS_ENABLE_STACK_ALIGN          1
@@ -129,12 +129,12 @@
 #define THINKOS_EXCEPT_STACK_SIZE         512
 #define THINKOS_ENABLE_STACK_LIMIT          1
 #define THINKOS_ENABLE_ERROR_TRAP           1
-#define THINKOS_ENABLE_BUSFAULT             1
-#define THINKOS_ENABLE_USAGEFAULT           1
-#define THINKOS_ENABLE_MEMFAULT             1
-#define THINKOS_ENABLE_THREAD_FAULT         1
-#define THINKOS_ENABLE_HARDFAULT            1
-#define THINKOS_ENABLE_EXCEPTIONS           1
+#define THINKOS_ENABLE_BUSFAULT             0
+#define THINKOS_ENABLE_USAGEFAULT           0
+#define THINKOS_ENABLE_MEMFAULT             0
+#define THINKOS_ENABLE_THREAD_FAULT         0
+#define THINKOS_ENABLE_HARDFAULT            0
+#define THINKOS_ENABLE_EXCEPTIONS           0
 #define THINKOS_SYSRST_ONFAULT              0
 
 #if DEBUG

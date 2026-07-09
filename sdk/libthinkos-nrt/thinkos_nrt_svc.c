@@ -31,10 +31,8 @@
 #include "thinkos_nrt-i.h" 
 #include <sys/dcclog.h>
 
-
-
 #if THINKOS_ENABLE_SLEEP
-void thinkos_nrt_sleep_svc(int32_t * arg, int self, struct thinkos_krn * krn)
+void thinkos_nrt_sleep_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
 	uint32_t ms = (uint32_t)arg[0];
 	struct nrt_heap * heap;
@@ -486,6 +484,17 @@ thinkos_svc_t const thinkos_nrt_svc_call_tab[] = {
 #else
 	[THINKOS_CORE_RESET] = thinkos_nosys_svc,
 #endif /* THINKOS_IRQ_MAX > 0 */
+
+
+/* ----------------------------------------------
+ * Non Real Time .... 
+ * --------------------------------------------- */
+
+#if (THINKOS_NRT_THREAD_MAX > 0)
+	[THINKOS_NRT_THREAD_ALLOC] = thinkos_nrt_thread_alloc_svc,
+#else
+	[THINKOS_NRT_THREAD_ALLOC] = thinkos_nosys_svc,
+#endif
 
 };
 

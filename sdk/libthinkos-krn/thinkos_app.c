@@ -166,7 +166,7 @@ extern void * __krn_stack_start;
 extern void * __krn_stack_end;
 extern int __krn_stack_size;
 
-static int thinkos_krn_app_start(struct thinkos_krn * krn, unsigned int thread_idx,
+static int thinkos_krn_app_start(struct thinkos_krn * krn, int thread_idx,
 						 uintptr_t addr, uintptr_t arg[])
 {
 	struct thinkos_thread_initializer init;
@@ -248,7 +248,7 @@ static int thinkos_krn_app_start(struct thinkos_krn * krn, unsigned int thread_i
 	return thinkos_krn_thread_init(krn, thread_idx, &init);
 }
 
-void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
+void thinkos_app_exec_svc(int32_t arg[], int self,
 						  struct thinkos_krn * krn)
 {
 	unsigned int thread_idx;
@@ -272,7 +272,7 @@ void thinkos_app_exec_svc(uintptr_t arg[], unsigned int self,
 	}
 #endif
 
-	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr, arg))) {
+	if ((ret = thinkos_krn_app_start(krn, thread_idx, addr, (uintptr_t *)arg))) {
 		DCC_LOG2(LOG_ERROR, "<%2d> thinkos_krn_app_start failed: %d!", 
 				 self, ret);
 		__THINKOS_ERROR(self, ret);

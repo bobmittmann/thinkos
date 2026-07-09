@@ -190,11 +190,8 @@ void __attribute__((noreturn)) __thinkos_thread_terminate_stub(int code)
 }
 
 #if (THINKOS_ENABLE_EXIT)
-void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
-					  struct thinkos_krn * krn)
+void thinkos_exit_svc(int32_t arg[], int self, struct thinkos_krn * krn)
 {
-	DCC_LOG2(LOG_INFO, "<%2d> exit with code %d!", self, ctx->r0); 
-
 #if (THINKOS_ENABLE_JOIN)
 	if (krn->wq_lst[self] == 0) {
 		DCC_LOG1(LOG_MSG, "<%2d> canceled...", self); 
@@ -208,7 +205,7 @@ void thinkos_exit_svc(struct cm3_except_context * ctx, int self,
 #endif /* THINKOS_ENABLE_JOIN */
 
 	/* adjust PC to the exit continuation call */
-	ctx->pc = (uint32_t)__thinkos_thread_terminate_stub;
+	arg[SVC_ARG_PC] = (int32_t)__thinkos_thread_terminate_stub;
 }
 
 #endif /* THINKOS_ENABLE_EXIT */

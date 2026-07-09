@@ -280,6 +280,7 @@ static void monitor_show_help(const struct monitor_comm * comm,
 	monitor_hbar(comm);
 }
 
+#if (MONITOR_EXCEPTION_ENABLE)
 static void monitor_on_print_fault(const struct monitor_comm * comm, 
 								   struct thinkos_krn * krn) 
 {
@@ -306,9 +307,8 @@ static void monitor_on_print_fault(const struct monitor_comm * comm,
 
 	monitor_print_fault(comm, fault);
 	monitor_print_newln(comm);
-
-
 }
+#endif
 
 void monitor_on_thread_fault(const struct monitor_comm * comm,
 							 struct thinkos_krn * krn) 
@@ -359,10 +359,12 @@ void monitor_on_thread_fault(const struct monitor_comm * comm,
 
 			monitor_print_thread_state(comm, &inf);
 		}
+#if (MONITOR_EXCEPTION_ENABLE)
 		struct thinkos_fault * fault = __thinkos_fault_rt();
 		if (__thinkos_fault_is_valid(fault)) {
 			monitor_print_fault(comm, fault);
 		}
+#endif
 	}
 	monitor_hbar(comm);
 	monitor_print_newln(comm);
@@ -681,9 +683,11 @@ static bool monitor_process_input(struct monitor * mon, int c,
 	case CTRL_V:
 		monitor_show_help(comm, board);
 		break;
+#if (MONITOR_EXCEPTION_ENABLE)
 	case CTRL_G:
 		monitor_on_print_fault(comm, krn);
 		break;
+#endif
 #if (MONITOR_WATCHPOINT_ENABLE)
 	case CTRL_GS:
 		monitor_printf(comm, "^]\r\n");

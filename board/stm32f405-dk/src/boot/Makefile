@@ -43,6 +43,7 @@ LIBDIRS = $(addprefix $(SDK_DIR)/lib,$(SDK_LIBS)) \
 
 SDK_LIBS = util thinkos-krn thinkos-btl thinkos-mon thinkos-dbg thinkos-usr \
 		   thinkos-nrt xmodem ice-comm fixpt
+
 ARCH_LIBS = stm32f 
 
 LIBS = $(SDK_LIBS) $(ARCH_LIBS)
@@ -54,7 +55,7 @@ CDEFS = CONFIG_H
 CFLAGS = -Os
 
 MACH = stm32f415xg
-KRN_DATA_SIZE = 8192
+KRN_DATA_SIZE = 12288
 KRN_CODE_SIZE = 65536
 include $(ARCH_DIR)/mk/stm32-krn.mk
 
